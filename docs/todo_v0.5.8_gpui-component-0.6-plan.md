@@ -164,6 +164,8 @@ Expected: all four succeed. If one fails with "package `X` requires rustc N", in
 
 In `Cargo.toml` set `rust-version = "<measured>"` under `[workspace.package]` (expected `"1.89.0"`). Do not touch `connectors/native-theme-gpui/Cargo.toml` yet (Task 6 gives it its own floor).
 
+Then, because the workspace uses `resolver = "3"` and `cargo update` resolves against the lowest workspace `rust-version` (MSRV-aware resolution), run `cargo update` once more: with the floor raised from 1.88.0 the resolver may now pick releases it held back. If `git diff --stat Cargo.lock` shows a change, repeat Step 5 on the new lock; the floor cannot drop, and if it rises, declare the new value and run this step again until the lock is stable.
+
 - [ ] **Step 7: Commit**
 
 ```bash
@@ -1065,7 +1067,7 @@ git diff Cargo.lock | grep '^[-+]name' | sort | uniq -c | head -40
 cargo check -p native-theme-gpui --lib 2>&1 | grep -c '^error'
 ```
 
-Expected: the lock diff adds the gpui-pre / gpui-base / gpui-component / gpui-kit closures and drops the gpui 0.2.2 / gpui-component 0.5.1 ones, nothing else (Task 1 already put every other crate at its latest release, so `cargo update` is idempotent for them); the error count is about `14` (the probe measured 14: the rows of §5.1; a later gpui-pre patch may add or remove one). If the lock diff shows other crates, that is the same latest-release policy applied to releases since Task 1.
+Expected: the lock diff adds the gpui-pre / gpui-base / gpui-component / gpui-kit closures and drops the gpui 0.2.2 / gpui-component 0.5.1 ones, nothing else (Task 1 already put every other crate at its latest release, so `cargo update` is idempotent for them); the error count is about `14` (the probe measured 14: the rows of §5.1; a later gpui-pre patch may add or remove one). If the lock diff shows other crates, that is the same latest-release policy applied to releases since Task 1. Cargo's MSRV-aware resolver (`resolver = "3"`) resolves against the workspace's lowest `rust-version` (1.89 after Task 1), so a crate in the gpui-pre closure whose requirement admits a 1.89-compatible release resolves to that release rather than the newest; expected, and the compile is the gate.
 
 - [ ] **Step 3: Apply the §5.1 renames**
 
@@ -1138,12 +1140,14 @@ Expected: one line, `3 error[E0004]: non-exhaustive patterns: ...` (the 15 missi
         IconName::Pause => "pause",
         IconName::Play => "play",
         IconName::RotateCw => "rotate-cw",
-        // gpui-kit's star-fill.svg is Lucide's `star` with fill="currentColor";
-        // Lucide ships no filled variant (spec §10.2).
-        IconName::StarFill => "star",
+        // Lucide ships no filled star (star-fill / star-filled absent at 1.41.0);
+        // gpui-kit's star-fill.svg is Lucide's `star` with fill="currentColor"
+        // added, which a bundled Lucide file cannot express, and the hollow
+        // `star` would make Star and StarFill indistinguishable (spec §10.2).
+        IconName::StarFill => return None,
 ```
 
-Doc comment: replace "Covers all 86 gpui-component `IconName` variants." with "Returns `Some` for every gpui-component 0.6.0 `IconName` variant; the names are Lucide's own file names (`LucideLoader::new(name)` resolves each one)."
+Doc comment: replace "Covers all 86 gpui-component `IconName` variants." with "Returns `None` where Lucide has no equivalent (today only `StarFill`, spec §10.2); every `Some` is Lucide's own file name (`LucideLoader::new(name)` resolves it)."
 
 `material_name_for_gpui_icon`: signature `-> Option<&'static str>`; body `Some(match icon { ... })`; change `IconName::StarOff => "star_border",` to
 
@@ -1185,10 +1189,16 @@ Doc comment: "Returns `None` where Material Symbols has no equivalent (today onl
         IconName::Pause => "media-playback-pause",       // exact
         IconName::Play => "media-playback-start",        // exact
         IconName::RotateCw => "object-rotate-right",     // exact
-        IconName::StarFill => "starred",                 // exact (same state as Star)
+        IconName::StarFill => "starred",                 // exact: the filled "starred" state
 ```
 
-and to the "KDE and GNOME differ" group (§10.4):
+and change the existing arm `IconName::Star => "starred",                // exact` to
+
+```rust
+        IconName::Star => "non-starred",                 // close: the hollow star, the "not starred" state; `starred` is StarFill's
+```
+
+(§10.4; `IconName::StarOff => "non-starred"` stays: the state it means). Then to the "KDE and GNOME differ" group (§10.4):
 
 ```rust
         IconName::BatteryCharging => {
@@ -1239,7 +1249,10 @@ Add the 15 variants to `ALL_ICON_NAMES` in alphabetical position (`Battery`, `Ba
     /// Variants a set legitimately lacks (spec §10.1). Every `None` a table
     /// returns must be listed here with its reason; a missing mapping cannot
     /// hide as an intentional one.
-    const LUCIDE_NONE_ALLOWED: &[(IconName, &str)] = &[];
+    const LUCIDE_NONE_ALLOWED: &[(IconName, &str)] = &[(
+        IconName::StarFill,
+        "Lucide has no filled star; gpui-kit's star-fill.svg is Lucide's star with fill added",
+    )];
     const MATERIAL_NONE_ALLOWED: &[(IconName, &str)] =
         &[(IconName::StarOff, "Material Symbols has no star-off glyph")];
 
@@ -1293,11 +1306,23 @@ Add the 15 variants to `ALL_ICON_NAMES` in alphabetical position (`Battery`, `Ba
         assert_eq!(lucide_name_for_gpui_icon(IconName::SortDescending), Some("arrow-down-wide-narrow"));
         assert_eq!(lucide_name_for_gpui_icon(IconName::WindowMaximize), Some("maximize"));
         assert_eq!(lucide_name_for_gpui_icon(IconName::WindowRestore), Some("minimize-2"));
+        assert_eq!(lucide_name_for_gpui_icon(IconName::StarFill), None);
         assert_eq!(material_name_for_gpui_icon(IconName::StarOff), None);
     }
 ```
 
-In `freedesktop_mapping_tests`: rename `all_86_gpui_icons_have_mapping_on_kde` / `_on_gnome` to `every_gpui_icon_has_a_freedesktop_name_on_kde` / `_on_gnome` asserting `fd_name.is_some_and(|n| !n.is_empty())`; in `eye_differs_by_de`, `freedesktop_standard_ignores_de`, `xfce_uses_gnome_names` wrap the expected strings in `Some(..)`; in `all_kde_names_resolve_in_breeze` and `gnome_names_resolve_in_adwaita` replace `let fd_name = ...;` with `let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), ...) else { continue };`. Any other existing assertion on a specific old Lucide name takes the new name from Step 5.
+In `freedesktop_mapping_tests`: rename `all_86_gpui_icons_have_mapping_on_kde` / `_on_gnome` to `every_gpui_icon_has_a_freedesktop_name_on_kde` / `_on_gnome` asserting `fd_name.is_some_and(|n| !n.is_empty())`; in `eye_differs_by_de`, `freedesktop_standard_ignores_de`, `xfce_uses_gnome_names` wrap the expected strings in `Some(..)`; in `all_kde_names_resolve_in_breeze` and `gnome_names_resolve_in_adwaita` replace `let fd_name = ...;` with `let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), ...) else { continue };`. Any other existing assertion on a specific old Lucide name takes the new name from Step 5, and any assertion of `Star` → `"starred"` takes `"non-starred"`. Add to `freedesktop_mapping_tests`:
+
+```rust
+    /// §10.4: the two star states must not share a glyph.
+    #[test]
+    fn star_states_have_distinct_freedesktop_names() {
+        for de in [LinuxDesktop::Kde, LinuxDesktop::Gnome] {
+            assert_eq!(freedesktop_name_for_gpui_icon(IconName::Star, de), Some("non-starred"));
+            assert_eq!(freedesktop_name_for_gpui_icon(IconName::StarFill, de), Some("starred"));
+        }
+    }
+```
 
 - [ ] **Step 7: Run the gate**
 
@@ -1317,8 +1342,10 @@ git commit -m "feat(gpui)!: move the connector to gpui-component 0.6.0 / gpui-ba
 Mechanical first pass (ScrollbarShow -> ScrollbarMode, chart_bullish/bearish,
 accordion_hover gone, IconName::Github), ThemeColor tripwire 139. The three
 icon tables return Option<&'static str>, cover the 15 new IconName variants,
-and the Lucide table returns Lucide's own names; StarOff has no Material
-equivalent and returns None. The showcase example is ported in a later commit."
+and the Lucide table returns Lucide's own names. StarFill has no Lucide
+equivalent and StarOff no Material one, both return None; the freedesktop
+table maps Star to non-starred so the two star states differ. The showcase
+example is ported in a later commit."
 ```
 
 ---
@@ -3331,7 +3358,7 @@ cargo test -p native-theme-gpui                                                 
 cargo run -p native-theme-gpui --example showcase-gpui
 ```
 
-Expected: 0 errors; clippy clean; all tests pass; the showcase opens. Visual smoke (judgment step): switch presets and light/dark in the sidebar, confirm the scrollbar keeps its native width and colours after every switch (the observer), confirm buttons show the preset's border and height, confirm the Color Map shows 139 swatches with no transparent-black entries, confirm the Icons tab shows 101 icons in Lucide and 100 in Material (StarOff empty, labelled "no Material equivalent").
+Expected: 0 errors; clippy clean; all tests pass; the showcase opens. Visual smoke (judgment step): switch presets and light/dark in the sidebar, confirm the scrollbar keeps its native width and colours after every switch (the observer), confirm buttons show the preset's border and height, confirm the Color Map shows 139 swatches with no transparent-black entries, confirm the Icons tab shows 100 icons in Lucide (StarFill empty, labelled "no Lucide equivalent") and 100 in Material (StarOff empty, labelled "no Material equivalent").
 
 - [ ] **Step 6: Commit**
 
@@ -3460,7 +3487,7 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 - Moved to **gpui-component 0.6.0**, **gpui-base 0.6.0** and GPUI published as **`gpui-pre` 0.3.x**; the crate is type-incompatible with applications on gpui-component 0.5 / gpui 0.2.
 - `to_theme(resolved, name, is_dark, reduce_transparency: bool)` → `to_theme(resolved, name, is_dark, prefs: &AccessibilityPreferences)`.
 - `from_preset(name, is_dark)` → `from_preset(name, is_dark, prefs: &AccessibilityPreferences)`.
-- `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`, `freedesktop_name_for_gpui_icon` return `Option<&'static str>`; `StarOff` has no Material equivalent and returns `None`. The Lucide table returns Lucide's own names (`Close` → `x`, `Dash` → `minus`, `Inspector` → `scan`, `ResizeCorner` → `grip`, `SortAscending` → `arrow-up-narrow-wide`, `SortDescending` → `arrow-down-wide-narrow`, `WindowMaximize` → `maximize`, `WindowRestore` → `minimize-2`).
+- `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`, `freedesktop_name_for_gpui_icon` return `Option<&'static str>`; `StarFill` has no Lucide equivalent and `StarOff` no Material one, both return `None`. The freedesktop table maps `Star` to `non-starred` (was `starred`, the filled star), so `Star` and `StarFill` render as distinct states. The Lucide table returns Lucide's own names (`Close` → `x`, `Dash` → `minus`, `Inspector` → `scan`, `ResizeCorner` → `grip`, `SortAscending` → `arrow-up-narrow-wide`, `SortDescending` → `arrow-down-wide-narrow`, `WindowMaximize` → `maximize`, `WindowRestore` → `minimize-2`).
 - `ScrollbarShow` → `ScrollbarMode`; `IconName::GitHub` → `IconName::Github` (upstream renames).
 - The crate declares its own `rust-version` (<measured>), higher than the workspace's, because the gpui-pre closure requires it.
 
@@ -3535,7 +3562,16 @@ git commit -m "docs(v0.5.8): README, CHANGELOG, ROADMAP and todo for the gpui-co
 
 - [ ] **Step 1: Prepare**
 
-Set `## [0.5.8] - <today>`; run `./pre-release-check.sh` once more; commit as `chore(release): v0.5.8`; `git status` must be clean.
+Set `## [0.5.8] - <today>`; run `./pre-release-check.sh` once more. Then run the docs build the way docs.rs will, for each target the connector's `[package.metadata.docs.rs]` declares (spec §1.3: the three-target list is unreleased and has never run on the gpui stack; D40):
+
+```bash
+rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
+for t in x86_64-unknown-linux-gnu x86_64-apple-darwin x86_64-pc-windows-msvc; do
+  DOCS_RS=1 cargo doc -p native-theme-gpui --no-deps --all-features --target "$t" || echo "DOCS FAIL: $t"
+done
+```
+
+Expected: three successes. A target that fails for a reason docs.rs shares (a dependency's build script that needs that OS's toolchain; gpui-pre's Windows-manifest step is behind its `windows-manifest` feature, which nothing in the stack enables, so it should be inert) is removed from the connector's `targets` list in this commit with the reason in the commit body and in the CHANGELOG; a failure the local machine alone causes (missing target std, disk) is fixed and re-run. Commit as `chore(release): v0.5.8`; `git status` must be clean.
 
 - [ ] **Step 2: STOP.** Ask the maintainer for explicit approval to tag and publish. Nothing below runs without it (project rule `feedback_never_bypass_checkpoints`).
 
@@ -3557,6 +3593,8 @@ Confirm the docs.rs builds of `native-theme-gpui` for all three declared targets
 4. **Fallback for the resize handle** when no variant is stored for the new mode: `border` / `drag_border` from the styled theme, upstream's own projection; now stated in spec §3.3 step 2.
 5. **`from_system()` reduce-motion rule** (§11.2 ambiguity): the reader's value where the reader supplies one, OR-ed with `detect::prefers_reduced_motion()`; never turned off by the fallback.
 6. **First-install gap** (D38, rationale error 46): the observer's subscription activates at the end of the flush that installs it, so `install_observer_once` also queues one deferred re-write of the overrides; the test `apply_then_change_in_the_same_update_keeps_overrides` runs `apply` and `Theme::change` in one update. Now in spec §3.3 and §12.
+7. **Star states** (D39, rationale errors 48–49): Lucide `StarFill` returns `None` (Lucide has no filled star; the hollow `star` would stand for two states); the freedesktop table maps `Star` to `non-starred` and `StarFill` to `starred`. Now in spec §10.1, §10.2, §10.4.
+8. **Pre-release docs.rs check** (D40) and **MSRV-aware re-update** (spec §4.3): Task 16 runs `DOCS_RS=1 cargo doc --target` per declared target before the tag; Task 1 re-runs `cargo update` after declaring the floor because `resolver = "3"` resolves against it.
 
 Design changes made during the review of 2026-09-05 and written into the spec (§8.1) and rationale (D34, D35, errors 41–43): `apply` installs a `ThemeConfig` for every stored variant, so `Theme::change` reproduces native colours in both modes; `apply_accessibility` rebuilds the styled theme from the stored variant; the re-apply helper takes a `mark` flag so `apply`'s own write never sets `reapplying`. From the third review (D36, D37, errors 44–45): the config hex export keeps alpha as `#rrggbbaa`, and `apply` ends with `refresh_windows`.
 

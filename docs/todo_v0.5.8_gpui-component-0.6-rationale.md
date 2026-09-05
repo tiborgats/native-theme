@@ -41,7 +41,11 @@ the plan names against the published sources and the repository, traced the
 first `apply` through the effect queue, and found that an upstream rebuild in
 the same update as the first `apply` escaped the observer (error 46) and that
 gpui-component's registry observer can replace the connector's configs by name
-(error 47). Section 7 records each correction.
+(error 47). A seventh pass re-checked the point-in-time facts (crates.io,
+toolchain, CI, the docs.rs metadata) and judged the icon decisions by glyph
+*state* rather than by name, and found that the Lucide table served
+`StarFill` with the hollow star and the freedesktop table served `Star` with
+the filled one (errors 48–49). Section 7 records each correction.
 
 ---
 
@@ -213,7 +217,7 @@ presets share geometry across variants.
 
 | Option | Outcome |
 |--------|---------|
-| **Bundle the genuine files; tables return `Option`** | **Chosen.** The bundles were expanded in March 2026 to cover gpui-component's icon set (commits `48f67c5`, `05e9464`), and the new files come from the same upstream sources. `Option` because the project rule is "return None rather than substitute", and because the `&'static str` contract already forced a wrong glyph once: `StarOff` in Material was served by `star_border.svg`, a duplicate hollow star, since Material Symbols has no star-off icon (§2.15). |
+| **Bundle the genuine files; tables return `Option`** | **Chosen.** The bundles were expanded in March 2026 to cover gpui-component's icon set (commits `48f67c5`, `05e9464`), and the new files come from the same upstream sources. `Option` because the project rule is "return None rather than substitute", and because the `&'static str` contract already forced a wrong glyph once: `StarOff` in Material was served by `star_border.svg`, a duplicate hollow star, since Material Symbols has no star-off icon (§2.15). The same review by glyph state later found `StarFill` served by Lucide's hollow `star` (§2.21, error 48). |
 | Keep `&'static str` and add files | Rejected: perpetuates a contract that can only be kept by fabricating or mislabelling files whenever gpui adds an icon a set lacks. |
 | Map to the nearest existing glyph | Rejected: a battery is not a search icon. |
 
@@ -300,7 +304,11 @@ that maximum to 1.89 (`font-types`), and an unmeasured 1.88.0 would be the
 lie the rule exists to prevent. The connector gets its own per-crate
 `rust-version` because the gpui-pre closure declares 1.92 and the workspace
 must not inherit a floor `native-theme` does not need; the egui connector
-design already uses the same split.
+design already uses the same split. Cargo's MSRV-aware resolver
+(`resolver = "3"`) resolves against the lowest workspace floor, so the floor
+is declared and `cargo update` re-run until the lock is stable; measuring on
+a lock resolved against the old floor and stopping there would leave the
+lock one step behind the rule.
 
 ### 2.17 Changes in `native-theme` considered
 
@@ -366,6 +374,17 @@ Lucide's three battery glyphs were read from their path data: `battery-low`
 draws one bar, `battery-medium` two, `battery-full` three, all in a
 three-bar body; `battery` is the empty body.
 
+**Lucide.** Fourteen of the fifteen names exist at 1.41.0 under the same
+names. `StarFill` does not: Lucide is a stroke set and ships `star`,
+`star-off` and `star-half` but no filled star (`star-fill.svg` and
+`star-filled.svg` are absent at the tag). gpui-kit's own `star-fill.svg` is
+Lucide's `star` with `fill="currentColor"` added, an edit the bundle cannot
+carry under the genuine-files rule. The first draft returned `star`, which
+would draw the same hollow glyph for `Star` and `StarFill`, the two states of
+a favourite toggle, the exact failure §2.9 rejects for `StarOff` in Material.
+`StarFill` returns `None` in the Lucide set; an application whose asset
+source includes gpui-kit's assets then falls back to gpui-kit's filled file.
+
 **Material Symbols Outlined**
 
 | Variant | Chosen | Why | Rejected |
@@ -404,7 +423,8 @@ specification requires a visual check of every `close` and `approximate` row.
 | `MemoryStick` | `memory` | `media-flash` (approximate) | Breeze has a RAM-module device icon (`devices/64/memory.svg`), an exact match; the first draft's `media-flash-memory-stick` matched the *name* "memory stick" (Sony's flash card) and not the meaning; Adwaita has no RAM icon |
 | `Network` | `network-workgroup` | `network-workgroup` | a group of computers; `network-wired` is a connection-status plug |
 | `Pause`, `Play`, `RotateCw` | `media-playback-pause`, `media-playback-start`, `object-rotate-right` | same | exact |
-| `StarFill` | `starred` | `starred` | freedesktop has no outline/fill pair; `Star` and `StarFill` both map to the only star state; Breeze's `rating` emblem is the alternative by name and adds nothing the existing `Star` mapping does not already use |
+| `StarFill` | `starred` | `starred` | the filled star, the "starred" state; exact |
+| `Star` (changed) | `non-starred` | `non-starred` | both themes ship the pair `non-starred` / `starred` (Breeze `status/{16,22,24}`, Adwaita `symbolic/status`); the earlier claim that freedesktop has no outline/fill pair was wrong (error 49). The hollow `non-starred` is what Lucide's `star` draws, and a `Star` / `StarFill` pair must be distinguishable. `StarOff` keeps `non-starred`, the state it means: freedesktop names are semantic, so answering a state request with the state icon is the table's design, unlike a glyph set, and freedesktop has no slashed star |
 
 ### 2.22 API shape, detail by detail
 
@@ -507,7 +527,21 @@ re-running gates:
 8. Docs before release, release only on explicit approval, per the project's
    checkpoint rule.
 
-### 2.25 Why a test and not a comment for the colour fields
+### 2.25 Pre-release docs.rs check
+
+The three-target `[package.metadata.docs.rs]` list on the connector is
+unreleased and was never exercised with GPUI: 0.5.7 declared no targets.
+docs.rs builds a foreign target with `cargo doc --target` on a Linux host and
+sets `DOCS_RS=1`. gpui-pre's build script embeds a Windows manifest only
+behind its `windows-manifest` feature, which neither gpui-component nor
+gpui-kit enables, and its macOS code has no build step, so the build most
+likely succeeds; that is a prediction, not a measurement. The same command
+therefore runs locally before the tag, and a target that fails for a reason
+docs.rs shares is dropped from the metadata before the release rather than
+after it: a published tag cannot be rewritten, and a patch release that only
+edits metadata is avoidable.
+
+### 2.26 Why a test and not a comment for the colour fields
 
 Considered: documenting "assign every new field" in `colors.rs`. Rejected:
 the failure is silent at compile time (`ThemeColor: Default`) and invisible
@@ -559,6 +593,8 @@ moment.
 | D36 | Config hex keeps alpha: `#rrggbbaa` when below 1 | gpui parses eight digits; without it `overlay`, `drag_border`, `drop_target` turn opaque after `Theme::change` (error 44) |
 | D37 | `apply` ends with `App::refresh_windows` | a change from a timer, portal signal or menu action must paint at once in every window; upstream refreshes only the window passed to `Theme::change` (error 45) |
 | D38 | `install_observer_once` queues one deferred re-write of the base overrides | the subscription activates at the end of the flush; a rebuild in the same update as the first `apply` would otherwise stand until the next one (§2.7, error 46) |
+| D39 | Lucide `StarFill` → `None`; freedesktop `Star` → `non-starred`, `StarFill` → `starred` | one glyph must not stand for two states (§2.21, errors 48–49) |
+| D40 | Docs build per declared docs.rs target run locally before the tag | the three-target metadata is untested on the gpui stack; a failing target is removed before the release, not in a patch (§2.25) |
 
 ---
 
@@ -675,7 +711,8 @@ overrides.
 
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
-from the implementation-plan pass, 46–47 from the sixth pass.
+from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
+seventh.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -724,6 +761,8 @@ from the implementation-plan pass, 46–47 from the sixth pass.
 45. **`apply` did not repaint.** Upstream's `Theme::change(mode, Some(window), cx)` refreshes the window it is given; the connector's `apply` has no window and would have relied on the next input event. `App::refresh_windows` is public (gpui-pre 0.3.3 `src/app.rs:1074`); `apply` calls it last (D37).
 46. **The first `apply` was traced only against the notifications it queued itself.** Error 40 established that the observer misses those; it did not ask what else the same update might write. A `Theme::sync_system_appearance` (or any `Theme::change`) right after the first `apply`, the usual start-up sequence, rebuilds the base theme while the observer is still inactive, and the native scrollbar geometry and handle colours would stand replaced until the next rebuild. `install_observer_once` now queues one deferred re-write after the activation (D38), and a `#[gpui::test]` runs `apply` and `Theme::change` in one update.
 47. **The single-writer check stopped at the base theme.** The registry observer (`theme/registry.rs:41-51`) does not write `gpui_base::Theme`, but it replaces the styled theme's configs with same-named registry themes before calling `Theme::change`. With the default registry (`Default`, `Default Light`, `Default Dark`) nothing collides; an application loading a same-named theme through `ThemeRegistry` would replace the connector's colours. Recorded as a limit (§2.7), in the specification (§3.3) and in the README task.
+48. **Lucide `StarFill` was served with the hollow `star`.** The row was justified by name ("gpui-kit's own file is Lucide `star` filled") without asking what the connector can draw: a bundled Lucide file has no fill, so `Star` and `StarFill` would have rendered identically, the failure §2.9 rejects for `StarOff`. Lucide 1.41.0 has no filled star (raw probes of the tag). `StarFill` returns `None` in the Lucide set (D39).
+49. **The freedesktop star reasoning claimed the themes have no outline/fill pair.** Both Breeze and Adwaita ship `non-starred` and `starred` (and `semi-starred`); the existing table mapped `Star`, Lucide's hollow star, to `starred`, the filled one, and the first draft mapped `StarFill` to the same name. `Star` now maps to `non-starred` and `StarFill` to `starred` (D39); `StarOff` keeps `non-starred`.
 
 ---
 

@@ -140,11 +140,13 @@ versions.
 | platform-facts treats radio buttons as checkboxes with a circular indicator: `label_gap` and `indicator_width` are defined for both, "Radio buttons use the same colors but with circular `border.corner_radius`" | `docs/platform-facts.md:947, 969, 1191-1210` |
 | platform-facts has no scrollbar thumb radius or track border colour | `docs/platform-facts.md` (search) |
 | Lucide bundle: 103 files, 99 name-table entries; **all 103 are Lucide icons** from tag **0.577.0** (byte-identical for sampled files). Ten are stored under gpui-component's icon names instead of Lucide's: `close` and `window-close` = `x`, `dash` and `window-minimize` = `minus`, `inspect` = `scan`, `resize-corner` = `grip`, `sort-ascending` = `arrow-up-narrow-wide`, `sort-descending` = `arrow-down-wide-narrow`, `window-maximize` = `maximize`, `window-restore` = `minimize-2` (path data identical after whitespace normalisation); the bundle already holds all eight of those files under their Lucide names, byte-identical, so the ten are duplicates, and the four files absent from the hand-written name table are `scan`, `grip`, `arrow-up-narrow-wide` and `arrow-down-wide-narrow`. The adding commit (`48f67c5`) records none of this. Nothing outside the connector uses those ten names: the role-based tables reference only `trash-2.svg` among the files affected by §10.2 (`bundled.rs:137, 163-164`), and the hand-written coverage test `lucide_by_name_covers_gpui_icons` (`bundled.rs:508`) lists them | `native-theme/icons/lucide`; `bundled.rs`; normalised comparison against the 0.577.0 files; repository grep |
-| Lucide 1.41.0 (2026-09-04) contains the 14 new names and every underlying icon above; it lacks `github` (brand icons removed upstream, commit `aa8f74eb`) and `trash-2`, which became a deprecated alias of `trash` whose glyph is identical to the old `trash-2` (path data compared) | git tree of tag 1.41.0; `icons/trash.json` at 1.41.0 |
+| Lucide 1.41.0 (2026-09-04) contains the 14 new names and every underlying icon above; it lacks `github` (brand icons removed upstream, commit `aa8f74eb`) and `trash-2`, which became a deprecated alias of `trash` whose glyph is identical to the old `trash-2` (path data compared); it has no filled star: `star`, `star-off` and `star-half` exist at the tag, `star-fill` and `star-filled` do not | git tree of tag 1.41.0; `icons/trash.json` at 1.41.0; raw probes of the tag |
 | Material bundle: `star.svg` and `star_border.svg` have identical path data (the Symbols outlined hollow star); `star_border` backs `IconName::StarOff`; Material Symbols has no star-off glyph (`star_off`, `star_outline`, `star_border` do not exist; `star_rate`, `star_half` do) | `native-theme/icons/material`; `bundled.rs:399`; connector `icons.rs:326`; GitHub contents API |
 | Material bundle: 87 files, 76 name-table entries; `search`, `settings`, `star` are byte-identical to Material Symbols **Outlined 24px** (`symbols/web/<n>/materialsymbolsoutlined/<n>_24px.svg`); `warning` and `info` match no upstream variant probed | `native-theme/icons/material`; comparisons |
 | Material Symbols files exist at upstream HEAD (`0cbb08816df0`, 2026-09-04) for every name in §10.3 | GitHub contents API |
 | Breeze and Adwaita names for all 15 icons verified on this machine | `find /usr/share/icons/{breeze,Adwaita}` |
+| Breeze (`status/{16,22,24}`) and Adwaita (`symbolic/status`) both ship the star-state pair `non-starred` / `starred` (and `semi-starred`); the connector's table maps `Star` to `starred`, the filled star | `find /usr/share/icons/{breeze,Adwaita} -iname '*starred*'`; `icons.rs:413` |
+| The connector's `[package.metadata.docs.rs]` three-target list is unreleased (added in 0.5.8); 0.5.7 declared no targets and was built on the default target only, so a multi-target docs build has never run on the gpui stack | `git show v0.5.7:connectors/native-theme-gpui/Cargo.toml`; `CHANGELOG.md:12` |
 | publish.yml soft-gates the connector for G11 (naga 27.0.3 vs codespan-reporting 0.12.0 on the 0.5.1 stack) | `.github/workflows/publish.yml:38-44, 58-60, 71-75, 156-175`; `docs/archive/v0.5.7_gaps.md` §G11 |
 | CI installs `libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev` for the connector job | `.github/workflows/ci.yml:93-95` |
 | native-theme declares no default features; the workspace MSRV 1.88.0 was measured as the maximum declared `rust-version` across the lock plus a `cargo +1.88.0 check --all-targets --locked` per member | `native-theme/Cargo.toml`; commit `0319942` |
@@ -436,6 +438,13 @@ only with a recorded reason. Applying it to §1.5:
 The iced connector is otherwise untouched by this milestone; its two
 requirements are already latest.
 
+The workspace uses `resolver = "3"` (edition 2024), so `cargo update` is
+MSRV-aware: it resolves against the lowest `rust-version` among the workspace
+members and falls back to a newer release only where no compatible one
+satisfies the requirement. The floor is therefore measured on the refreshed
+lock, declared, and `cargo update` run once more; if the lock changes, the
+per-member check is repeated (§4.4).
+
 ### 4.4 MSRV
 
 Two floors, both measured, following commit `0319942`:
@@ -586,7 +595,7 @@ comment and recorded in the CHANGELOG.
 |--------|-------|-----|
 | `to_theme(resolved, name, is_dark, reduce_transparency: bool)` | `to_theme(resolved, name, is_dark, prefs: &AccessibilityPreferences)` | the connector honoured one of four preferences; text scaling was silently dropped (`src/lib.rs:237-246`) |
 | `from_preset(name, is_dark)` | `from_preset(name, is_dark, prefs: &AccessibilityPreferences)` | accessibility is orthogonal to theme choice: a user with large text wants it under a preset too; pass `&AccessibilityPreferences::default()` or `&AccessibilityPreferences::from_system()` (§11.2) |
-| `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`, `freedesktop_name_for_gpui_icon`, all `-> &'static str` | `-> Option<&'static str>` | a set may have no equivalent; the project rule is "return None, never substitute" (§10.1) |
+| `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`, `freedesktop_name_for_gpui_icon`, all `-> &'static str` | `-> Option<&'static str>` | a set may have no equivalent; the project rule is "return None, never substitute" (§10.1); today `StarFill` in Lucide and `StarOff` in Material. The freedesktop table maps `Star` to `non-starred` instead of `starred`, so the two star states differ (§10.4) |
 | Lucide bundle names `close`, `dash`, `inspect`, `resize-corner`, `sort-ascending`, `sort-descending`, `window-close`, `window-maximize`, `window-minimize`, `window-restore`, `trash-2` accepted by `LucideLoader::new(name)` | the Lucide names `x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`, `trash`; Material name `star_border` removed | the bundle mirrors upstream under upstream's names (§10.2); the duplicate file behind `star_border` drew the wrong glyph (§10.3) |
 | dependency stack | gpui-component 0.6 / gpui-base 0.6 / gpui-pre 0.3 | §1 |
 
@@ -833,9 +842,11 @@ documented theme name), `None` when the set has no equivalent. Tests assert
 that every `Some` resolves through `bundled_icon_to_image_source`, and that
 every `None` is listed in a documented allow-list with a reason. Today the
 `&'static str` contract forces a name for every variant even where the set
-has no equivalent; the one case found is `StarOff` in Material, served by a
-duplicate hollow star (§1.3). `Option` makes the contract true, and the names
-the Lucide table returns become real Lucide names (§10.2).
+has no equivalent; two cases were found: `StarOff` in Material, served by a
+duplicate hollow star (§1.3), and `StarFill` in Lucide, which the first draft
+served with the hollow `star`; either shows one glyph for two states. `Option`
+makes the contract true, and the names the Lucide table returns become real
+Lucide names (§10.2).
 
 ### 10.2 Lucide
 
@@ -876,7 +887,7 @@ touches. File count: Lucide 103 − 10 duplicates + 14 new = 107 (the
 |---------|-------------|--------|
 | `Battery`…`BatteryWarning` (6) | `battery`, `battery-charging`, `battery-full`, `battery-low`, `battery-medium`, `battery-warning` | add |
 | `Cpu`, `FileText`, `HardDrive`, `MemoryStick`, `Network`, `Pause`, `Play`, `RotateCw` | same names | add |
-| `StarFill` | `star` | bundled; Lucide has no filled variant; gpui-kit's own file is Lucide `star` filled |
+| `StarFill` | — | `None`: Lucide ships no filled star (`star-fill`, `star-filled` absent at 1.41.0, §1.3); gpui-kit's own `star-fill.svg` is Lucide's `star` with `fill="currentColor"` added, which a bundled Lucide file cannot express; the hollow `star` would make `Star` and `StarFill` indistinguishable (rationale §2.21, D39) |
 
 ### 10.3 Material
 
@@ -932,7 +943,8 @@ and Adwaita resolution tests are the gate.
 | `Network` | `network-workgroup` | `network-workgroup` | close |
 | `Pause` / `Play` | `media-playback-pause` / `media-playback-start` | same | exact |
 | `RotateCw` | `object-rotate-right` | `object-rotate-right` | exact |
-| `StarFill` | `starred` | `starred` | exact (same as `Star`) |
+| `StarFill` | `starred` | `starred` | exact: the filled "starred" state |
+| `Star` (existing row, changed) | `non-starred` | `non-starred` | close: the hollow star, the "not starred" state, which is what Lucide's `star` draws; the table had `starred`, the filled star, which `StarFill` now takes. `StarOff` keeps `non-starred`, the state it means; freedesktop names are semantic and have no slashed star (D39) |
 
 ### 10.5 Bundle provenance, manifest, generation
 
@@ -962,8 +974,10 @@ and Adwaita resolution tests are the gate.
 ### 10.6 Tests
 
 Existing table tests adapt to `Option`; new: each of the 15 variants
-resolves in Lucide and Material; the manifest coverage test; the generated
-tables compile against the directories.
+resolves in Lucide and Material except the two documented gaps (`StarFill` in
+Lucide, `StarOff` in Material), which the allow-lists name; `Star` and
+`StarFill` map to distinct freedesktop names; the manifest coverage test; the
+generated tables compile against the directories.
 
 ---
 
@@ -1142,7 +1156,7 @@ contrast).
 | Focus-ring width/offset | derived from the element's border (`styled.rs:188-215`) |
 | High contrast | no GPUI or gpui-component receiver |
 | Scrollbar thumb radius from the platform | no platform fact; upstream's `radius` mirrored |
-| Corner radius after `Theme::change` | `ThemeConfig.radius` / `radius_lg` are `usize` in upstream's schema (`schema.rs:1093-1097`), so a fractional native radius is rounded to whole pixels once upstream re-applies the config; `to_theme` itself sets the exact value |
+| Corner radius after `Theme::change` | `ThemeConfig.radius` / `radius_lg` are `usize` in upstream's schema (`schema.rs:1093-1097`), so a fractional native radius is rounded to whole pixels once upstream re-applies the config; `to_theme` itself sets the exact value; no shipped preset has a fractional radius, so the loss is theoretical until one does |
 | macOS / Windows text scaling and high contrast in `from_system()` | no reader yet; research item |
 | Body font weight and global line height | `Root` sets only family and size (`root.rs:579, 591`); `Theme` has no weight or line-height field; per-widget builders carry weight, and line height enters only the control-height rule |
 | Button icon size | derived from the button's `Size` (`button.rs:541-542, 579-583`), inner |
@@ -1194,8 +1208,14 @@ tests, commands and per-task model routing is
 15. **Docs** (§13). Gate: `./pre-release-check.sh`, link check.
 16. **Release**: CHANGELOG date; tag and publish only on explicit approval;
     then confirm the docs.rs builds of `native-theme-gpui` for all three
-    declared targets succeed on the new stack (the 0.5.7 build did; gpui-pre
-    is new to docs.rs from this crate's side), and fix the metadata if not.
+    declared targets succeed on the new stack. The three-target metadata is
+    unreleased and has never run on the gpui stack (§1.3), so before tagging
+    the docs build of each declared target is run locally the way docs.rs
+    runs it (`DOCS_RS=1 cargo doc --no-deps --all-features --target <t>`); a
+    target that fails for a reason docs.rs would share, such as a
+    dependency's build script needing that OS's toolchain, is removed from
+    the metadata before the release rather than in a patch release (D40). Fix the
+    metadata if the published build still fails.
 
 ---
 
