@@ -193,7 +193,7 @@ without editing upstream.
 | Tier | Meaning | In this milestone |
 |------|---------|-------------------|
 | **G** — global receiver | a field or setter on a global every widget reads | `Theme.focus_ring`, `Theme.scrollbar_mode`, `Theme.font_size` (rem), gpui-base `Theme.scrollbar` / `resizable`, `App::set_reduce_motion` |
-| **R** — refinement seam | the widget applies the caller's `StyleRefinement` after its own geometry | Button, Input, MenuItem, ListItem, Tooltip, Popover, StatusBar, Dialog, DialogFooter, Progress, Checkbox, Radio, Select, Combobox, TitleBar |
+| **R** — refinement seam | the widget applies the caller's `StyleRefinement` after its own geometry | Button, Input, MenuItem, ListItem, Tooltip, Popover, StatusBar, Dialog, DialogFooter, DialogTitle, DialogDescription, Table, Progress, Checkbox, Radio, Select, Combobox, TitleBar |
 | **S** — size seam | the widget honours `Size::Size(Pixels)` | Spinner, Icon |
 | **B** — builder seam | a widget-specific builder takes the value | `Dialog::max_w`, `GroupBox::content_style`, `AccordionItem::title_style`, `Input::h` |
 | **U** — unreachable | inner element, or the widget discards refinements | §14 |
@@ -232,11 +232,11 @@ Native { resolved, accessibility } --geometry::<widget>--> StyleRefinement --ref
 
 | File | Owns |
 |------|------|
-| `src/lib.rs` | `to_theme`, `from_preset`, `from_system`, `SystemThemeExt`, metric helpers; `apply`, `apply_system_theme`, `apply_accessibility`, `NativeTheme`, `ActiveNativeTheme`, `Native` |
+| `src/lib.rs` | `to_theme`, `from_preset`, `from_system`, `SystemThemeExt`, metric helpers; `apply`, `apply_system_theme`, `apply_accessibility`, `NativeTheme`, `ActiveNativeTheme`, `Native`; the re-apply observer and its helpers (`install_observer_once`, `write_base_overrides`, `base_overrides_for`) |
 | `src/colors.rs` | `ResolvedTheme` → `ThemeColor`, 139 fields |
 | `src/config.rs` | `ThemeColor` → `ThemeConfigColors`; scaled font sizes |
 | `src/icons.rs` | three `Option`-returning tables, 101 variants |
-| `src/base_layer.rs` (new) | `ScrollbarGeometry`, `scrollbar_geometry`, `scrollbar_styles`, `resizable_theme`, `apply_overrides`, the observer body |
+| `src/base_layer.rs` (new) | `ScrollbarGeometry`, `scrollbar_geometry`, `scrollbar_styles`, `resizable_theme`, `apply_overrides` (pure functions plus one write; no `App` state of its own) |
 | `src/geometry.rs` (new) | per-widget builders, `Size` helpers, `control_height`, layout accessors |
 | `examples/showcase-gpui.rs` | ported to gpui-kit; uses `apply_system_theme` / `apply` and the geometry builders |
 
@@ -503,8 +503,8 @@ widgets with a geometry builder use it; the Color Map tab shows 139 fields.
   `gpui-pre-platform` build scripts; extend only if demanded.
 - `publish.yml`: G11's cause is gone (naga 29.0.4, codespan-reporting
   0.13.1). Run `cargo check --workspace --all-targets` on the new lock; if
-  green, remove `continue-on-error: true` from the three connector steps and
-  the two comments. Otherwise record the new reason in place of G11.
+  green, remove `continue-on-error: true` from the four connector steps
+  (clippy, test, documentation, publish) and the two comments. Otherwise record the new reason in place of G11.
 - `screenshots.yml` builds the example on macOS and Windows; the
   `test-support` dev feature also enables gpui-pre's `wayland`/`x11`
   features (`Cargo.toml:70-77`), which should be inert off Linux; the
@@ -713,8 +713,12 @@ application with `refine_style`:
 
 ```rust
 use gpui_component::StyledExt;
-let n = cx.native_theme().and_then(|t| t.native(cx));   // or Native::unscaled(&resolved)
-Button::new("save").label("Save").refine_style(&geometry::button(n))
+let button = Button::new("save").label("Save");
+// On the preset path without `apply`: `Some(Native::unscaled(&resolved))`.
+match cx.native_theme().and_then(|t| t.native(cx)) {
+    Some(n) => button.refine_style(&geometry::button(n)),
+    None => button,
+}
 ```
 
 Text setters go into the refinement's `text` field and cascade through GPUI's
@@ -953,9 +957,11 @@ item is closed.
 
 An extraction, not new detection: on Linux it runs the same KDE/GNOME reader
 code that fills the struct today (`kde/mod.rs:51`, `gnome/mod.rs:194`,
-portal reads through `pollster` as `from_system` does); on every platform
-`reduce_motion` comes from `detect::prefers_reduced_motion()`
-(`detect.rs:654-700`); fields no reader supplies keep their defaults. It
+portal reads through `pollster` as `from_system` does); `reduce_motion` is
+the reader's value where a reader supplies one, OR-ed with
+`detect::prefers_reduced_motion()` (`detect.rs:654-700`), which is what covers
+macOS and Windows; the fallback never turns a preference off; fields no reader
+supplies keep their defaults. It
 exists so the preset path can honour system preferences without resolving a
 full `SystemTheme`. macOS and Windows sources for text scaling and high
 contrast are recorded in `docs/todo.md` as research items, not guessed.
@@ -986,6 +992,7 @@ contrast are recorded in `docs/todo.md` as research items, not guessed.
 | geometry builder tests (§9.6), including `s = 1.5` | headless | values and scaling correct |
 | `scrollbar_geometry` tests | headless | widths, inset, min length, colours; `ScrollbarGeometry` derives `PartialEq + Debug` because `ScrollbarStyles` does not (`scrollbar.rs:589, 616, 655`) |
 | `to_theme` scaling test | headless | `font_size == px(size × 1.5)`; config copies scaled |
+| `hsla_to_hex_keeps_alpha_below_one`; the config test asserts the `drag_border` export has nine characters | headless | translucent colours survive the config round trip as `#rrggbbaa` (D36) |
 | `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `apply` alone (it initialises gpui-component itself, D29): styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` = splitter colour, `cx.reduce_motion()` follows prefs; after `Theme::change` with the *same* mode (which rebuilds the base theme), run twice: `resizable.handle` equals the stored variant's splitter colour after each change (proves the observer ran and left no stale `reapplying` flag) and the test returns (proves termination); the preset is chosen so the splitter colour differs from `border`, which upstream would write |
 | `#[gpui::test] apply_without_stored_variant_falls_back` | headless App | observer fallback path (§3.3 step 2) |
 | `#[gpui::test] apply_installs_configs_for_both_variants` | headless App | after `apply(dark)` then `apply(light)`: `Theme::change(Dark)` reproduces the dark variant's palette through the installed `ThemeConfig` (compared hex-for-hex, including a `button_*` field) |
@@ -1014,8 +1021,10 @@ advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compat
   were duplicates of files that already exist under Lucide's names, and
   `trash-2` is now `trash`, §10.2) and `star_border` is removed, so
   `LucideLoader::new` / `MaterialLoader::new` with the old names return `None`.
-- **Added** (native-theme-gpui): `apply`, `apply_system_theme`,
-  `apply_accessibility`, `NativeTheme`, `ActiveNativeTheme`, `Native`,
+- **Added** (native-theme-gpui): `apply` (a `ThemeConfig` for every stored
+  variant, so `Theme::change` reproduces native colours in both modes),
+  `apply_system_theme`, `apply_accessibility` (rebuilds from the stored
+  variant at runtime), `NativeTheme`, `ActiveNativeTheme`, `Native`,
   `base_layer`, `geometry`; text scaling; reduce-motion; focus-ring flag;
   15 icon mappings.
 - **Added** (native-theme): `SystemTheme.layout`,
@@ -1025,7 +1034,8 @@ advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compat
   dependency refresh (§4.3); workspace MSRV re-measured.
 - **Fixed**: icon bundle provenance recorded, Lucide refreshed to 1.41.0,
   Material refreshed to upstream HEAD, duplicate `star_border.svg` removed
-  (§10); publish.yml soft gates removed if §5.5 passes.
+  (§10); the config hex export kept alpha (`#rrggbbaa`, D36); publish.yml
+  soft gates removed if §5.5 passes.
 - Existing docs.rs entry stays. No migration guide (pre-1.0 rule).
 
 ### 13.3 ROADMAP

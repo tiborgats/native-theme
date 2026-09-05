@@ -2010,9 +2010,9 @@ git commit -m "feat(gpui): base_layer module: native scrollbar geometry and resi
 - Produces:
 
 ```rust
+#[derive(Default)]
 pub struct NativeTheme { /* private */ }
 impl gpui::Global for NativeTheme {}
-impl Default for NativeTheme {}
 impl NativeTheme {
     pub fn resolved(&self, cx: &App) -> Option<&ResolvedTheme>;
     pub fn accessibility(&self) -> &AccessibilityPreferences;
@@ -2261,7 +2261,10 @@ Add imports at the top of `lib.rs`: `use gpui::{App, Global, SharedString, px};`
 /// Stores both resolved variants (when known) because upstream's
 /// `Theme::change` switches modes without going through the connector, and the
 /// re-apply observer must then find the variant of the mode upstream switched
-/// to (rationale §2.22).
+/// to (rationale §2.22). Every field's default is the right initial state, so
+/// `Default` is derived (a hand-written impl would trip clippy's
+/// `derivable_impls`).
+#[derive(Default)]
 pub struct NativeTheme {
     light: Option<ResolvedTheme>,
     dark: Option<ResolvedTheme>,
@@ -2276,19 +2279,6 @@ pub struct NativeTheme {
 }
 
 impl Global for NativeTheme {}
-
-impl Default for NativeTheme {
-    fn default() -> Self {
-        Self {
-            light: None,
-            dark: None,
-            accessibility: AccessibilityPreferences::default(),
-            reapplying: false,
-            observer_installed: false,
-            last_is_dark: false,
-        }
-    }
-}
 
 impl NativeTheme {
     fn is_dark(&self, cx: &App) -> bool {
