@@ -5,8 +5,9 @@ edition.workspace = true
 license.workspace = true
 # NOT inherited: the gpui-pre closure declares a higher floor than the
 # workspace. Set to the lowest toolchain that compiles the library (spec §4.4);
-# provisional until Task 13 measures it.
-rust-version = "1.95"
+# measured 2026-09-06: 1.92.0-1.94.0 fail on unstable features used by
+# gpui-pre-util 0.3.3 and gpui-pre 0.3.3.
+rust-version = "1.95.0"
 repository.workspace = true
 homepage.workspace = true
 keywords = ["theme", "gpui", "gui", "native", "colors"]
