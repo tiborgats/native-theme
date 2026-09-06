@@ -75,6 +75,7 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
+pub mod base_layer;
 pub(crate) mod colors;
 pub(crate) mod config;
 pub(crate) mod derive;
