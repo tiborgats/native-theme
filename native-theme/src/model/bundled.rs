@@ -340,8 +340,10 @@ mod tests {
             );
         }
         assert!(bundled_icon_by_name("star_border", IconSet::Material).is_none());
+        assert!(bundled_icon_by_name("font_size", IconSet::Material).is_none());
         assert!(bundled_icon_by_name("trash", IconSet::Lucide).is_some());
         assert!(bundled_icon_by_name("star_fill1", IconSet::Material).is_some());
+        assert!(bundled_icon_by_name("format_size", IconSet::Material).is_some());
     }
 
     #[test]

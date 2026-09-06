@@ -166,6 +166,7 @@ fn retired_names_are_gone() {
         "lucide/window-restore.svg",
         "lucide/trash-2.svg",
         "material/star_border.svg",
+        "material/font_size.svg",
     ] {
         assert!(
             !icons_root().join(gone).exists(),
@@ -176,6 +177,7 @@ fn retired_names_are_gone() {
         "lucide/trash.svg",
         "lucide/github.svg",
         "material/star_fill1.svg",
+        "material/format_size.svg",
     ] {
         assert!(
             icons_root().join(present).is_file(),
