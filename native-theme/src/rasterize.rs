@@ -138,8 +138,8 @@ mod tests {
         let result = rasterize_svg(svg, 2).unwrap();
         if let IconData::Rgba { data, .. } = result {
             // All pixels should be the same semi-transparent white
-            for pixel in data.chunks_exact(4) {
-                let (r, _g, _b, a) = (pixel[0], pixel[1], pixel[2], pixel[3]);
+            for pixel in data.as_chunks::<4>().0 {
+                let &[r, _g, _b, a] = pixel;
                 if a > 0 {
                     // Straight alpha: R should be close to 255, not ~128
                     // (premultiplied would have R ~= 128 for alpha 128)

@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `ThemeConfig` hex export dropped alpha, so `overlay`, `drag_border` and `drop_target` turned opaque after `Theme::change`; translucent colours are now exported as `#rrggbbaa`. The config's colour copy also ignored `reduce_transparency`, so a `Theme::change` round trip restored translucent colours for a user who had asked for opaque.
 - `publish.yml`: the gpui connector is hard-gated again (the naga/codespan-reporting conflict G11 recorded does not exist on the 0.6 stack).
 - Pre-existing test-only clippy failures in `native-theme` (spinners, freedesktop, icons, kde, `tests/reader_kde.rs`) fixed so `cargo clippy --all-targets -- -D warnings` passes on the whole crate.
+- The `chunks_exact(4)` pixel loops (`unpremultiply_alpha`, the Windows `winicons` BGRA swap, a `rasterize` test, the BMP export in `native-theme-gpui`, the Windows screenshot code of both showcases) use `as_chunks::<4>()`, stable since Rust 1.88.0 (the workspace MSRV), so clippy 1.98's `chunks_exact_to_as_chunks` lint passes under `-D warnings`.
 
 ## [0.5.7] - 2026-04-21
 
@@ -185,7 +186,7 @@ let resolved = variant.into_resolved(&ResolutionContext::for_tests())?; // tests
   the pipeline's three-tier icon_theme precedence (per-variant → Theme-level
   → this fallback).
 
-Key design choices (per docs/todo_v0.5.7_gaps.md §G7 and doc 2 §J.2):
+Key design choices (per docs/archive/v0.5.7_gaps.md §G7 and doc 2 §J.2):
 
 - **No `impl Default`.** Runtime-detected types must signal intent at the
   call site. Use `from_system()` for production or `for_tests()` for

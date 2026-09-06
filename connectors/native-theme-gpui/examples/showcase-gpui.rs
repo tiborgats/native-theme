@@ -6072,7 +6072,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
             return false;
         }
 
-        for chunk in pixels.chunks_exact_mut(4) {
+        for chunk in pixels.as_chunks_mut::<4>().0 {
             chunk.swap(0, 2); // BGRA -> RGBA
             chunk[3] = 255; // force opaque
         }

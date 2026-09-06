@@ -1331,14 +1331,15 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
     buf.extend_from_slice(&0u32.to_le_bytes());
     buf.extend_from_slice(&0u32.to_le_bytes());
 
-    // Pixel data: RGBA -> BGRA conversion for BMP. `chunks_exact(4)` yields
-    // slices of exactly 4 bytes, so the destructuring pattern always matches.
-    for pixel in rgba.chunks_exact(4) {
-        let [r, g, b, a] = pixel else { continue };
-        buf.push(*b);
-        buf.push(*g);
-        buf.push(*r);
-        buf.push(*a);
+    // Pixel data: RGBA -> BGRA conversion for BMP. `as_chunks::<4>()` yields
+    // `[u8; 4]` pixels (a remainder shorter than one pixel is dropped), so the
+    // array destructuring is irrefutable and needs no indexing.
+    for pixel in rgba.as_chunks::<4>().0 {
+        let &[r, g, b, a] = pixel;
+        buf.push(b);
+        buf.push(g);
+        buf.push(r);
+        buf.push(a);
     }
 
     Some(buf)

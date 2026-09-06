@@ -93,7 +93,7 @@ fn siid_from_name(name: &str) -> Option<SHSTOCKICONID> {
 
 /// Swap BGRA byte order to RGBA by exchanging bytes 0 and 2 in each pixel.
 fn bgra_to_rgba(pixels: &mut [u8]) {
-    for pixel in pixels.chunks_exact_mut(4) {
+    for pixel in pixels.as_chunks_mut::<4>().0 {
         pixel.swap(0, 2);
     }
 }

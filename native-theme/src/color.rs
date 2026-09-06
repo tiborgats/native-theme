@@ -271,10 +271,12 @@ impl<'de> Deserialize<'de> for Rgba {
 /// Used by `rasterize`, `sficons`, and `winicons` modules (feature/platform gated).
 #[allow(dead_code)]
 pub(crate) fn unpremultiply_alpha(buffer: &mut [u8]) {
-    for pixel in buffer.chunks_exact_mut(4) {
-        // Slice-pattern destructuring binds each byte without panic-prone indexing.
-        // `chunks_exact_mut(4)` guarantees length 4, so the pattern always matches.
-        let [r, g, b, a] = pixel else { continue };
+    // `as_chunks_mut::<4>()` splits the buffer into `[u8; 4]` pixels plus a
+    // remainder shorter than one pixel; the remainder is dropped, as
+    // `chunks_exact_mut(4)` did. Array destructuring binds each byte without
+    // panic-prone indexing.
+    for pixel in buffer.as_chunks_mut::<4>().0 {
+        let [r, g, b, a] = pixel;
         let a_val = u16::from(*a);
         // `a_val in 1..=254` guarantees the divisor is non-zero; `saturating_mul`
         // cannot overflow u16 (max 255 * 255 = 65025 < 65535). The `.min(255)` cap

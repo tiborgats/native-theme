@@ -84,9 +84,11 @@
       was measured on 2026-08-10, but nothing re-checks it: every CI job
       installs `@stable`, there is no `rust-toolchain.toml`, and
       `pre-release-check.sh` has no MSRV check. The job must cover the
-      workspace at `1.88.0` (re-measured 2026-09-06, unchanged), the gpui
-      connector separately at `1.95.0` (measured 2026-09-06: gpui-pre 0.3.3
-      uses `cold_path`, stable since 1.95) and the egui connector at `1.95`.
+      workspace at `1.88.0` (re-measured 2026-09-06, unchanged; since
+      2026-09-07 `native-theme` itself uses `slice::as_chunks`, stable since
+      1.88.0, so the floor cannot drop below that), the gpui connector
+      separately at `1.95.0` (measured 2026-09-06: gpui-pre 0.3.3 uses
+      `cold_path`, stable since 1.95) and the egui connector at `1.95`.
 
 ### native-theme-gpui connector
 
