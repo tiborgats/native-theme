@@ -95,7 +95,7 @@ pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
 
-use gpui::{SharedString, px};
+use gpui::{App, Global, SharedString, px};
 use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
 use std::rc::Rc;
@@ -489,6 +489,339 @@ pub fn focus_ring_width(resolved: &ResolvedTheme) -> f32 {
 #[must_use]
 pub fn focus_ring_offset(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.focus_ring_offset
+}
+
+// ---------------------------------------------------------------------------
+// Installation: NativeTheme global, apply family, base-layer observer (§8.1, §3.3)
+// ---------------------------------------------------------------------------
+
+/// The native theme installed by [`apply`]; one per `App`, read with
+/// [`ActiveNativeTheme::native_theme`].
+///
+/// Stores both resolved variants (when known) because upstream's
+/// `Theme::change` switches modes without going through the connector, and the
+/// re-apply observer must then find the variant of the mode upstream switched
+/// to (rationale §2.22). Every field's default is the right initial state, so
+/// `Default` is derived (a hand-written impl would trip clippy's
+/// `derivable_impls`).
+#[derive(Default)]
+pub struct NativeTheme {
+    light: Option<ResolvedTheme>,
+    dark: Option<ResolvedTheme>,
+    accessibility: AccessibilityPreferences,
+    /// Set by the observer around its own write of `gpui_base::Theme`, so it
+    /// can tell that notification from an upstream rebuild (§3.3).
+    reapplying: bool,
+    observer_installed: bool,
+    /// Mode `apply` last installed; the fallback when the styled theme global
+    /// is absent (D29).
+    last_is_dark: bool,
+}
+
+impl Global for NativeTheme {}
+
+impl NativeTheme {
+    fn is_dark(&self, cx: &App) -> bool {
+        cx.try_global::<GpuiTheme>()
+            .map(GpuiTheme::is_dark)
+            .unwrap_or(self.last_is_dark)
+    }
+
+    fn variant(&self, is_dark: bool) -> Option<&ResolvedTheme> {
+        if is_dark {
+            self.dark.as_ref()
+        } else {
+            self.light.as_ref()
+        }
+    }
+
+    /// The stored variant for the styled theme's current mode, if any.
+    #[must_use]
+    pub fn resolved(&self, cx: &App) -> Option<&ResolvedTheme> {
+        self.variant(self.is_dark(cx))
+    }
+
+    /// The preferences `apply` / `apply_accessibility` last installed.
+    #[must_use]
+    pub fn accessibility(&self) -> &AccessibilityPreferences {
+        &self.accessibility
+    }
+
+    /// Borrowed view for the `geometry` builders, if a variant is stored for
+    /// the current mode.
+    #[must_use]
+    pub fn native(&self, cx: &App) -> Option<Native<'_>> {
+        self.resolved(cx).map(|resolved| Native {
+            resolved,
+            accessibility: &self.accessibility,
+        })
+    }
+}
+
+/// `cx.native_theme()`, mirroring gpui-component's `cx.theme()`.
+pub trait ActiveNativeTheme {
+    /// The installed [`NativeTheme`], or `None` before [`apply`] ran.
+    fn native_theme(&self) -> Option<&NativeTheme>;
+}
+
+impl ActiveNativeTheme for App {
+    fn native_theme(&self) -> Option<&NativeTheme> {
+        self.try_global::<NativeTheme>()
+    }
+}
+
+/// Borrowed inputs of every `geometry` builder (spec §9.1).
+#[derive(Clone, Copy)]
+pub struct Native<'a> {
+    /// The resolved theme the values come from.
+    pub resolved: &'a ResolvedTheme,
+    /// Accessibility preferences; only `text_scaling_factor` affects geometry.
+    pub accessibility: &'a AccessibilityPreferences,
+}
+
+static UNSCALED: AccessibilityPreferences = AccessibilityPreferences {
+    text_scaling_factor: 1.0,
+    reduce_motion: false,
+    high_contrast: false,
+    reduce_transparency: false,
+};
+
+impl<'a> Native<'a> {
+    /// Unscaled, no reductions: for the preset path and tests.
+    #[must_use]
+    pub fn unscaled(resolved: &'a ResolvedTheme) -> Self {
+        Self {
+            resolved,
+            accessibility: &UNSCALED,
+        }
+    }
+}
+
+/// Install `theme` as gpui-component's global theme with the native base-layer
+/// overrides, and keep them installed across upstream rebuilds (spec §8.1, §3.3).
+///
+/// 1. stores `resolved` under the theme's mode and `prefs` in [`NativeTheme`];
+/// 2. initialises gpui-component if its theme global is absent (upstream
+///    requires `gpui_component::init` before any component use; calling it
+///    here only when the global is missing means it runs at most once);
+/// 3. writes the styled theme, then installs a `ThemeConfig` for the *other*
+///    stored variant (if any) under the same display name, so upstream's
+///    `Theme::change` / `sync_system_appearance` reproduces native colours in
+///    either mode (D34);
+/// 4. projects into gpui-base (`sync_base`);
+/// 5. writes the native scrollbar geometry/colours and resize-handle colours
+///    onto gpui-base ([`base_layer::apply_overrides`]);
+/// 6. forwards `prefs.reduce_motion` to GPUI;
+/// 7. installs, once per `App`, the observer that restores step 5 whenever
+///    upstream rebuilds the base theme, together with one deferred repeat of
+///    step 5 for the update that installs it (the subscription activates only
+///    at the end of that update's effect flush, D38);
+/// 8. refreshes every window so the change paints at once (D37).
+///
+/// `theme` is moved into the global; `resolved` is cloned once.
+pub fn apply(
+    theme: GpuiTheme,
+    resolved: &ResolvedTheme,
+    prefs: &AccessibilityPreferences,
+    cx: &mut App,
+) {
+    let is_dark = theme.is_dark();
+    let (light, dark) = if is_dark {
+        (None, Some(resolved))
+    } else {
+        (Some(resolved), None)
+    };
+    apply_inner(theme, light, dark, prefs, cx);
+}
+
+/// [`SystemThemeExt::to_gpui_theme`] for the OS mode, storing both variants
+/// and installing both `ThemeConfig`s, then [`apply`]; upstream's
+/// `Theme::sync_system_appearance` then reproduces native colours in either mode.
+pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
+    let theme = sys.to_gpui_theme();
+    apply_inner(
+        theme,
+        Some(&sys.light),
+        Some(&sys.dark),
+        &sys.accessibility,
+        cx,
+    );
+}
+
+/// Apply a runtime change of the accessibility preferences (a portal signal,
+/// a settings toggle). When a variant is stored for the current mode, the
+/// styled theme is rebuilt from it with `prefs` and re-installed through the
+/// [`apply`] path, so text scaling and transparency take effect and both
+/// configs are refreshed (D35); the stored variants are kept. Without a stored
+/// variant only `reduce_motion` is forwarded and the preferences are stored.
+pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
+    let rebuilt = cx.try_global::<NativeTheme>().and_then(|nt| {
+        let is_dark = nt.is_dark(cx);
+        let resolved = nt.variant(is_dark)?;
+        let name = cx.try_global::<GpuiTheme>()?.theme_name().clone();
+        Some(to_theme(resolved, &name, is_dark, prefs))
+    });
+    match rebuilt {
+        // `None, None` keeps the stored variants; apply_inner stores `prefs`.
+        Some(theme) => apply_inner(theme, None, None, prefs, cx),
+        None => {
+            if cx.has_global::<NativeTheme>() {
+                cx.global_mut::<NativeTheme>().accessibility = prefs.clone();
+            }
+            cx.set_reduce_motion(prefs.reduce_motion);
+        }
+    }
+}
+
+fn apply_inner(
+    theme: GpuiTheme,
+    light: Option<&ResolvedTheme>,
+    dark: Option<&ResolvedTheme>,
+    prefs: &AccessibilityPreferences,
+    cx: &mut App,
+) {
+    let is_dark = theme.is_dark();
+    // The display name of the config `to_theme` built for this mode; the other
+    // variant's config takes the same name.
+    let name: SharedString = theme.theme_name().clone();
+    {
+        let nt = cx.default_global::<NativeTheme>();
+        if let Some(light) = light {
+            nt.light = Some(light.clone());
+        }
+        if let Some(dark) = dark {
+            nt.dark = Some(dark.clone());
+        }
+        nt.accessibility = prefs.clone();
+        nt.last_is_dark = is_dark;
+    }
+
+    // D29: the styled accessors panic on a missing global; init creates it.
+    if !cx.has_global::<GpuiTheme>() {
+        gpui_component::init(cx);
+    }
+    *GpuiTheme::global_mut(cx) = theme;
+
+    // D34: the other mode's config from its stored variant, so Theme::change
+    // reproduces the native palette instead of the registry default.
+    let other_config = cx.try_global::<NativeTheme>().and_then(|nt| {
+        nt.variant(!is_dark).map(|other| {
+            let mode = if is_dark {
+                GpuiThemeMode::Light
+            } else {
+                GpuiThemeMode::Dark
+            };
+            Rc::new(config::to_theme_config(other, &name, mode, prefs))
+        })
+    });
+    if let Some(cfg) = other_config {
+        let styled = GpuiTheme::global_mut(cx);
+        if is_dark {
+            styled.light_theme = cfg;
+        } else {
+            styled.dark_theme = cfg;
+        }
+    }
+
+    GpuiTheme::sync_base(cx);
+    // `false`: this write's notification may be delivered before the observer
+    // is active (§3.3), so it must not be marked as the observer's own.
+    write_base_overrides(cx, false);
+    cx.set_reduce_motion(prefs.reduce_motion);
+    install_observer_once(cx);
+    // D37: paint now. A change from a timer, portal signal or menu action must
+    // not wait for the next input event; upstream refreshes only the window
+    // passed to Theme::change (gpui-pre 0.3.3 src/app.rs:1074).
+    cx.refresh_windows();
+}
+
+/// The values to write onto gpui-base for `is_dark` (spec §3.3 step 2):
+/// the stored variant when there is one; otherwise geometry from the other
+/// variant and colours from the styled theme, which is exactly upstream's own
+/// projection (`scrollbar`, `scrollbar_thumb`, `scrollbar_thumb_hover` with
+/// active = hover; `border` / `drag_border` for the handles).
+fn base_overrides_for(
+    nt: &NativeTheme,
+    is_dark: bool,
+    styled: Option<&GpuiTheme>,
+) -> Option<(base_layer::ScrollbarGeometry, gpui_base::ResizableTheme)> {
+    if let Some(resolved) = nt.variant(is_dark) {
+        return Some((
+            base_layer::scrollbar_geometry(resolved),
+            base_layer::resizable_theme(resolved),
+        ));
+    }
+    let other = nt.variant(!is_dark)?;
+    let mut geometry = base_layer::scrollbar_geometry(other);
+    let mut resizable = base_layer::resizable_theme(other);
+    if let Some(styled) = styled {
+        geometry.track = styled.scrollbar;
+        geometry.track_active_border = styled.border;
+        geometry.thumb = styled.scrollbar_thumb;
+        geometry.thumb_hover = styled.scrollbar_thumb_hover;
+        geometry.thumb_active = styled.scrollbar_thumb_hover;
+        resizable = gpui_base::ResizableTheme {
+            handle: Some(styled.border),
+            active_handle: Some(styled.drag_border),
+        };
+    }
+    Some((geometry, resizable))
+}
+
+/// Compute and write the overrides for the current mode. `mark` flags the
+/// write as the observer's own so the observer ignores its notification
+/// (§3.3); only the observer passes `true`, because a flag set by `apply`
+/// could be delivered before the observer is active and would then never be
+/// cleared (rationale errors 40, 42).
+fn write_base_overrides(cx: &mut App, mark: bool) {
+    let Some(nt) = cx.try_global::<NativeTheme>() else {
+        return;
+    };
+    let is_dark = nt.is_dark(cx);
+    let Some((geometry, resizable)) = base_overrides_for(nt, is_dark, cx.try_global::<GpuiTheme>())
+    else {
+        return;
+    };
+    if mark {
+        cx.global_mut::<NativeTheme>().reapplying = true;
+    }
+    base_layer::apply_overrides(&geometry, resizable, cx);
+}
+
+/// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
+/// deduplicated notification (gpui-pre 0.3.3 `src/app.rs:1662-1664`), delivered
+/// after the pending mark is removed (`:1817-1821`): the observer's own write
+/// yields exactly one further delivery, absorbed by `reapplying`.
+///
+/// The subscription activates through a deferred effect (`src/app.rs:2087-2099`)
+/// at the end of the flush that follows this call, so a base-theme write made by
+/// other code in the same update as the first `apply` (a
+/// `Theme::sync_system_appearance` right after it) would stand until the next
+/// rebuild. One deferred re-write, queued after the activation, closes that gap
+/// (D38); it is the first notification the active observer receives.
+fn install_observer_once(cx: &mut App) {
+    if cx
+        .try_global::<NativeTheme>()
+        .is_none_or(|nt| nt.observer_installed)
+    {
+        return;
+    }
+    cx.global_mut::<NativeTheme>().observer_installed = true;
+    cx.observe_global::<gpui_base::Theme>(|cx| {
+        let Some(nt) = cx.try_global::<NativeTheme>() else {
+            return;
+        };
+        if nt.reapplying {
+            cx.global_mut::<NativeTheme>().reapplying = false;
+            return;
+        }
+        write_base_overrides(cx, true);
+    })
+    .detach();
+    // Effects are FIFO, so this runs after the activation above and after any
+    // same-update write. `false`: the active observer re-applies once on its
+    // delivery and absorbs its own write, like any other rebuild (§3.3).
+    cx.defer(|cx| write_base_overrides(cx, false));
 }
 
 #[cfg(test)]
@@ -946,5 +1279,284 @@ mod tests {
                 result.err()
             );
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod apply_tests {
+    use super::*;
+    use gpui::TestAppContext;
+    use gpui_component::scroll::ScrollbarMode;
+
+    fn prefs(reduce_motion: bool) -> AccessibilityPreferences {
+        AccessibilityPreferences {
+            reduce_motion,
+            ..AccessibilityPreferences::default()
+        }
+    }
+
+    /// The dark catppuccin preset, with the precondition every observer test
+    /// relies on: the native *active* handle colour (`splitter.hover_color`)
+    /// differs from `drag_border`, which upstream's projection writes there.
+    /// `handle` cannot serve as the observable: every preset inherits
+    /// `splitter.divider_color` from `defaults.border.color`
+    /// (`docs/inheritance-rules.toml:238`), which is also what upstream writes,
+    /// so that slot holds the same value whichever side wrote it.
+    fn preset_for_observer_tests(prefs: &AccessibilityPreferences) -> (GpuiTheme, ResolvedTheme) {
+        let (theme, resolved) =
+            from_preset("catppuccin-mocha", true, prefs).expect("preset should load");
+        assert_ne!(
+            colors::rgba_to_hsla(resolved.splitter.hover_color),
+            theme.drag_border,
+            "precondition: the native active-handle colour must differ from upstream's drag_border"
+        );
+        (theme, resolved)
+    }
+
+    /// A preset whose light and dark variants resolve to different backgrounds.
+    fn preset_with_two_variants(
+        prefs: &AccessibilityPreferences,
+    ) -> ((GpuiTheme, ResolvedTheme), (GpuiTheme, ResolvedTheme)) {
+        for info in Theme::list_presets() {
+            if let (Ok(dark), Ok(light)) = (
+                from_preset(info.key, true, prefs),
+                from_preset(info.key, false, prefs),
+            ) && dark.1.defaults.background_color != light.1.defaults.background_color
+            {
+                return (dark, light);
+            }
+        }
+        panic!("no preset with distinct light and dark variants");
+    }
+
+    /// §12: after `apply`, every receiver holds the native value; after upstream
+    /// rebuilds the base layer, the observer restores it; and the test returning
+    /// proves the observer terminates. Two changes catch a stale `reapplying`.
+    #[gpui::test]
+    fn apply_installs_and_survives_theme_change(cx: &mut TestAppContext) {
+        let prefs = prefs(true);
+        let (theme, resolved) = preset_for_observer_tests(&prefs);
+        let handle = colors::rgba_to_hsla(resolved.splitter.divider_color);
+        let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
+        let expected_mode = if resolved.scrollbar.overlay_mode {
+            ScrollbarMode::Scrolling
+        } else {
+            ScrollbarMode::Always
+        };
+
+        // No gpui_component::init here: apply must initialise the styled layer
+        // itself when it is absent (D29) and must not panic.
+        cx.update(|cx| apply(theme, &resolved, &prefs, cx));
+
+        cx.update(|cx| {
+            assert!(GpuiTheme::global(cx).is_dark());
+            let base = gpui_base::Theme::global(cx);
+            assert_eq!(base.scrollbar.mode(), expected_mode);
+            assert_eq!(base.resizable.handle, Some(handle));
+            assert_eq!(base.resizable.active_handle, Some(active));
+            assert!(cx.reduce_motion());
+            assert!(cx.native_theme().and_then(|t| t.resolved(cx)).is_some());
+            // Upstream's projection writes `drag_border` into active_handle; the
+            // helper's precondition makes the restore assertions below meaningful.
+            assert_ne!(GpuiTheme::global(cx).drag_border, active);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx); // rebuilds gpui_base::Theme
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::Theme::global(cx).resizable.active_handle,
+                Some(active),
+                "observer restored the native value after the first rebuild"
+            );
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::Theme::global(cx).resizable.active_handle,
+                Some(active),
+                "and after the second rebuild (no stale reapplying flag)"
+            );
+        });
+    }
+
+    /// §3.3, D38: the observer activates at the end of the effect flush that
+    /// installs it, so a rebuild in the *same* update as the first `apply` (an
+    /// application calling `Theme::sync_system_appearance` right after it) is
+    /// delivered while the observer is inactive. The deferred re-write in
+    /// `install_observer_once` closes that gap; without it this test fails.
+    #[gpui::test]
+    fn apply_then_change_in_the_same_update_keeps_overrides(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = preset_for_observer_tests(&prefs);
+        let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
+        cx.update(|cx| {
+            apply(theme, &resolved, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx); // same update: observer not yet active
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::Theme::global(cx).resizable.active_handle,
+                Some(active),
+                "the deferred re-write restored the overrides after a same-update rebuild"
+            );
+        });
+    }
+
+    /// §3.3 step 2: with no stored variant for the new mode, colours come from
+    /// the styled theme (upstream's own projection) and nothing panics.
+    #[gpui::test]
+    fn apply_without_stored_variant_falls_back(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = preset_for_observer_tests(&prefs); // stores dark only
+        cx.update(|cx| apply(theme, &resolved, &prefs, cx));
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Light, None, cx));
+        cx.update(|cx| {
+            let nt = cx.native_theme().expect("installed by apply");
+            assert!(nt.resolved(cx).is_none(), "no light variant was stored");
+            assert!(nt.native(cx).is_none());
+            let styled = GpuiTheme::global(cx);
+            let base = gpui_base::Theme::global(cx);
+            assert_eq!(base.resizable.handle, Some(styled.border));
+            assert_eq!(base.resizable.active_handle, Some(styled.drag_border));
+        });
+    }
+
+    #[gpui::test]
+    fn apply_system_theme_stores_both_variants(cx: &mut TestAppContext) {
+        let Ok(sys) = SystemTheme::from_system() else {
+            return;
+        }; // CI has no desktop
+        cx.update(|cx| apply_system_theme(&sys, cx));
+        cx.update(|cx| {
+            let nt = cx.native_theme().expect("installed");
+            assert!(nt.resolved(cx).is_some());
+            GpuiTheme::change(
+                if sys.mode.is_dark() {
+                    GpuiThemeMode::Light
+                } else {
+                    GpuiThemeMode::Dark
+                },
+                None,
+                cx,
+            );
+        });
+        cx.update(|cx| {
+            let nt = cx.native_theme().expect("installed");
+            assert!(nt.resolved(cx).is_some(), "the other variant is stored too");
+            // D34: the other mode's palette is the native one, not the registry default.
+            let other = if sys.mode.is_dark() {
+                &sys.light
+            } else {
+                &sys.dark
+            };
+            assert_eq!(
+                colors::hsla_to_hex(GpuiTheme::global(cx).background),
+                colors::hsla_to_hex(colors::rgba_to_hsla(other.defaults.background_color))
+            );
+        });
+    }
+
+    /// D34: once both variants are applied, upstream's `Theme::change` reproduces
+    /// the native palette of either mode through the installed `ThemeConfig`.
+    #[gpui::test]
+    fn apply_installs_configs_for_both_variants(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let ((dark_theme, dark), (light_theme, light)) = preset_with_two_variants(&prefs);
+        cx.update(|cx| {
+            apply(dark_theme, &dark, &prefs, cx);
+            apply(light_theme, &light, &prefs, cx); // light is current; the dark config must survive
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert!(styled.is_dark());
+            // Hex comparison: the config round trip is exact for 8-bit colours.
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                colors::hsla_to_hex(colors::rgba_to_hsla(dark.defaults.background_color))
+            );
+            assert_eq!(
+                colors::hsla_to_hex(styled.button_primary),
+                colors::hsla_to_hex(colors::rgba_to_hsla(dark.button.primary_background)),
+                "button_* fields survive the config round trip"
+            );
+            // D41: the config carries the mode's default highlighter style, so the
+            // switch to dark also switched code highlighting.
+            assert_eq!(styled.highlight_theme.appearance, GpuiThemeMode::Dark);
+            assert!(cx.native_theme().and_then(|t| t.resolved(cx)).is_some());
+        });
+    }
+
+    /// D35: a runtime preference change rebuilds the styled theme from the
+    /// stored variant, so scaling reaches `font_size` and its config copy.
+    #[gpui::test]
+    fn apply_accessibility_rescales_from_the_stored_variant(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) =
+            from_preset("catppuccin-mocha", true, &prefs).expect("preset should load");
+        cx.update(|cx| apply(theme, &resolved, &prefs, cx));
+        let scaled = AccessibilityPreferences {
+            text_scaling_factor: 1.5,
+            reduce_motion: true,
+            ..AccessibilityPreferences::default()
+        };
+        cx.update(|cx| apply_accessibility(&scaled, cx));
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(styled.font_size, px(resolved.defaults.font.size * 1.5));
+            assert_eq!(
+                styled.dark_theme.font_size,
+                Some(resolved.defaults.font.size * 1.5)
+            );
+            assert!(cx.reduce_motion());
+            let nt = cx.native_theme().expect("installed");
+            assert_eq!(nt.accessibility().text_scaling_factor, 1.5);
+            assert!(
+                nt.resolved(cx).is_some(),
+                "the stored variant survives the rebuild"
+            );
+        });
+    }
+
+    #[gpui::test]
+    fn apply_accessibility_forwards_reduce_motion(cx: &mut TestAppContext) {
+        cx.update(|cx| {
+            apply_accessibility(&prefs(true), cx); // works without a NativeTheme
+            assert!(cx.reduce_motion());
+            apply_accessibility(&prefs(false), cx);
+            assert!(!cx.reduce_motion());
+        });
+    }
+
+    #[test]
+    fn native_unscaled_has_factor_one() {
+        let (_, resolved) = from_preset(
+            "catppuccin-mocha",
+            true,
+            &AccessibilityPreferences::default(),
+        )
+        .unwrap();
+        let n = Native::unscaled(&resolved);
+        assert_eq!(text_scale_factor(n.accessibility), 1.0);
+        assert!(!n.accessibility.reduce_motion);
+    }
+
+    #[test]
+    fn base_overrides_fallback_takes_geometry_from_the_other_variant_and_colours_from_styled() {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = from_preset("catppuccin-mocha", true, &prefs).unwrap();
+        let nt = NativeTheme {
+            dark: Some(resolved.clone()),
+            ..NativeTheme::default()
+        };
+        let (g, r) =
+            base_overrides_for(&nt, false, Some(&theme)).expect("falls back to the dark variant");
+        let dark = base_layer::scrollbar_geometry(&resolved);
+        assert_eq!(g.track_width, dark.track_width);
+        assert_eq!(g.thumb_inset, dark.thumb_inset);
+        assert_eq!(g.track, theme.scrollbar);
+        assert_eq!(g.thumb_active, theme.scrollbar_thumb_hover);
+        assert_eq!(r.handle, Some(theme.border));
+        assert!(base_overrides_for(&NativeTheme::default(), false, Some(&theme)).is_none());
     }
 }
