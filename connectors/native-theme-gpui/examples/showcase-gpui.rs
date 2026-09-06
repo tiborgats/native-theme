@@ -3194,7 +3194,7 @@ impl Showcase {
                         &[],
                         &[
                             ("animation speed", "hardcoded"),
-                            ("size", "hardcoded per Size enum"),
+                            ("size", "Small/Large per Size enum; Medium via geometry::spinner_size (spinner.diameter)"),
                         ],
                     )),
             )
@@ -4025,7 +4025,7 @@ impl Showcase {
                             ("title", "muted_foreground", t.muted_foreground),
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                        &[("padding", "hardcoded")],
+                        &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")],
                     )),
             )
             // Breadcrumb (with tab navigation)
@@ -5549,7 +5549,6 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let select_style = native_geometry(cx, geometry::select);
         // Apply deferred system theme change (set by the watcher polling task).
         // Done here because apply_theme_by_name needs window access.
         if self.pending_system_theme_change {
@@ -5578,6 +5577,9 @@ impl Render for Showcase {
 
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let theme = cx.theme().clone();
+        // After the deferred system-theme change above, so the selects and the
+        // rest of the frame read the same installed theme.
+        let select_style = native_geometry(cx, geometry::select);
 
         // Ensure icon image caches match the current foreground color
         if theme.foreground != self.icon_cache_fg {
