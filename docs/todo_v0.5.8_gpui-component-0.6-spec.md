@@ -292,8 +292,18 @@ observer receives (D38). Later `apply` calls need nothing: the observer is
 active. A `#[gpui::test]` in §12 runs `apply` and `Theme::change` inside one
 update and asserts the overrides.
 
-Limit: another observer of `gpui_base::Theme` that also writes it would race
-this one. The only global observer in gpui-base and gpui-component 0.6.0
+Limit: the same deduplication that makes the observer terminate merges a
+rebuild performed by *another effect* between the observer's write and the
+delivery of its notification (a deferred callback or another observer calling
+`Theme::change`) into that notification, which the flag then absorbs. The
+observer therefore compares gpui-base's resize-handle colours with the native
+values when it absorbs its own notification and re-writes when they differ
+(D42); upstream's rebuild writes `drag_border` into `active_handle`, which
+differs from the native hover colour in every shipped preset, so the common
+case is repaired. The scrollbar styles are opaque and cannot be compared, so a
+rebuild whose handle colours happen to equal the native ones is repaired only
+by the next rebuild. Another observer of `gpui_base::Theme` that also writes it
+would race this one. The only global observer in gpui-base and gpui-component 0.6.0
 watches `ThemeRegistry` (`src/theme/registry.rs:46`), not the base theme. That
 observer does, however, replace the styled theme's `light_theme` /
 `dark_theme` with registry themes **of the same name** before calling
@@ -1050,6 +1060,7 @@ resolving a full `SystemTheme`.
 | `hsla_to_hex_keeps_alpha_below_one`; the config test asserts the `drag_border` export has nine characters | headless | translucent colours survive the config round trip as `#rrggbbaa` (D36) |
 | `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `apply` alone (it initialises gpui-component itself, D29): styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` and `resizable.active_handle` = the splitter colours, `cx.reduce_motion()` follows prefs; after `Theme::change` with the *same* mode (which rebuilds the base theme), run twice: `resizable.active_handle` equals the stored variant's `splitter.hover_color` after each change (proves the observer ran and left no stale `reapplying` flag) and the test returns (proves termination). The observable is `active_handle`, not `handle`: every preset inherits the divider colour from the border colour (§1.3), which is also what upstream writes into `handle`, whereas upstream writes the translucent `drag_border` into `active_handle`; the test asserts that precondition |
 | `#[gpui::test] apply_then_change_in_the_same_update_keeps_overrides` | headless App | `apply` and `Theme::change` inside one `cx.update`, before the observer is active: the deferred re-write (D38) leaves `resizable.handle` at the stored variant's splitter colour |
+| `#[gpui::test] observer_repairs_a_rebuild_merged_into_its_own_notification` | headless App | after `apply`, one update writes the base theme and defers a `Theme::change`: the change's notification is merged into the observer's own; the handle comparison repairs `active_handle` (D42) |
 | `#[gpui::test] apply_without_stored_variant_falls_back` | headless App | observer fallback path (§3.3 step 2) |
 | `#[gpui::test] apply_installs_configs_for_both_variants` | headless App | after `apply(dark)` then `apply(light)`: `Theme::change(Dark)` reproduces the dark variant's palette through the installed `ThemeConfig` (compared hex-for-hex, including a `button_*` field) and `highlight_theme.appearance` is `Dark` (D41) |
 | `#[gpui::test] apply_accessibility_rescales_from_the_stored_variant` | headless App | after `apply`, `apply_accessibility` with factor 1.5: `font_size` and its config copy are scaled, `reduce_motion` forwarded, preferences stored |

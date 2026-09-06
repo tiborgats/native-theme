@@ -651,6 +651,7 @@ moment.
 | D38 | `install_observer_once` queues one deferred re-write of the base overrides | the subscription activates at the end of the flush; a rebuild in the same update as the first `apply` would otherwise stand until the next one (§2.7, error 46) |
 | D39 | Lucide `StarFill` → `None`; freedesktop `Star` → `non-starred`, `StarFill` → `starred` | one glyph must not stand for two states (§2.21, errors 48–49) |
 | D40 | Connector docs.rs metadata: `all-features = true`, no `targets` list | the crate's platform-gated public items are all Linux-gated and appear on the default target; two more targets would add nothing but the first cross-target docs build of the GPUI stack (§2.25, errors 50–51) |
+| D42 | The observer, on absorbing its own notification, re-writes when gpui-base's handle colours differ from the native ones | GPUI's dedup merges a rebuild by another effect into that notification; the handles are the comparable part of the base theme (Task 10 review, error 59) |
 | D41 | `to_theme_config` carries upstream's default highlighter style for its mode | `apply_config` keeps the previous `highlight_theme` when the config has none; with both configs the connector's, a mode switch would keep the wrong highlighter (§2.18, error 52) |
 
 ---
@@ -768,7 +769,7 @@ Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
 seventh, 50–51 from the eighth, 52–54 from the ninth, 55 from the
-implementation of Task 3, 56–57 from Task 5, 58 from Task 9.
+implementation of Task 3, 56–57 from Task 5, 58 from Task 9, 59 from Task 10's review.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -828,6 +829,7 @@ implementation of Task 3, 56–57 from Task 5, 58 from Task 9.
 56. **`MemoryStick` was mapped to Material `sd_card` by name.** Rendered against the gpui-kit glyph, `sd_card` is a flash card and `memory_alt` is a RAM module with pins, the object Lucide draws. Changed to `memory_alt` (close). The other five `close`/`approximate` Material rows survived the same check.
 57. **`material/font_size.svg` was a genuine icon under a non-upstream stem.** The refresh script 404ed on it at the pinned SHA and at master; the file is byte-identical to upstream `format_size_24px.svg`. Stored as `format_size.svg`; the connector arm changes in Task 6; a breaking rename for `MaterialLoader::new("font_size")`. Found by Task 5's implementer. The same refresh showed the old bundled `lucide/delete.svg` was a trash-can glyph, not Lucide's `delete` (the backspace key gpui-kit's own icon draws); the refresh replaced it, so the connector's `Delete → delete` mapping is now correct in glyph as well as in name.
 58. **`ResolvedScrollbarTheme.thumb_active_color` was read as a plain `Rgba`.** It is a `soft_option` field (`model/widgets/mod.rs:287`) and stays `Option<Rgba>` after resolution; the four `*-live` presets leave it unset. Found by Task 9's implementer at the RED step. The active thumb now takes `thumb_hover_color` when the field is `None`, which is upstream's own projection for that slot (`theme/mod.rs:291-295`), so no value is invented; a test covers the `None` case.
+59. **The `reapplying` flag could swallow a rebuild that lands between the observer's write and its notification.** Found by Task 10's reviewer tracing the effect queue: with `[N_base, E_x]` where `E_x` calls `Theme::change`, `push_effect` drops `E_x`'s notification because the observer's own is pending (`app.rs:1663`), and the flag branch then returns without repairing. The flag-free alternative (skip the write when the base already holds the native values) is impossible for the opaque scrollbar styles, so the observer now compares the resize-handle colours, the comparable part, and re-writes on a mismatch (D42); a test reproduces the window. The residual case (handle colours coincide) is recorded as a limit in spec §3.3.
 
 ---
 
