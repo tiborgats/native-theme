@@ -107,3 +107,20 @@ Requires: gh CLI (authenticated), spectacle, Python 3, Pillow, ImageMagick 7
 ```sh
 ./scripts/pre-release.sh
 ```
+
+## refresh-icons.sh
+
+Re-downloads every bundled SVG under `native-theme/icons/` from the
+provenance manifest `native-theme/icons/SOURCES.toml` (one rule per set, one
+per-file exception per set), so a refresh or an addition is reproducible.
+
+```sh
+./scripts/refresh-icons.sh                      # refresh every file to the manifest refs
+./scripts/refresh-icons.sh add lucide battery   # add a Lucide icon by its upstream name
+./scripts/refresh-icons.sh add material lan     # add a Material Symbols icon
+```
+
+Requires Python 3.11+ (for `tomllib`) and network access. After a run,
+`cargo test -p native-theme --test icon_sources` checks the manifest and
+`cargo build -p native-theme` regenerates the by-name tables from the
+directories (`native-theme/build.rs`).

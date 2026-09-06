@@ -134,7 +134,7 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 
         // Common Actions (14)
         IconRole::ActionSave => Some(include_bytes!("../../icons/lucide/save.svg")),
-        IconRole::ActionDelete => Some(include_bytes!("../../icons/lucide/trash-2.svg")),
+        IconRole::ActionDelete => Some(include_bytes!("../../icons/lucide/trash.svg")),
         IconRole::ActionCopy => Some(include_bytes!("../../icons/lucide/copy.svg")),
         IconRole::ActionPaste => Some(include_bytes!("../../icons/lucide/clipboard-paste.svg")),
         IconRole::ActionCut => Some(include_bytes!("../../icons/lucide/scissors.svg")),
@@ -160,8 +160,8 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
         IconRole::FileGeneric => Some(include_bytes!("../../icons/lucide/file.svg")),
         IconRole::FolderClosed => Some(include_bytes!("../../icons/lucide/folder-closed.svg")),
         IconRole::FolderOpen => Some(include_bytes!("../../icons/lucide/folder-open.svg")),
-        IconRole::TrashEmpty => Some(include_bytes!("../../icons/lucide/trash-2.svg")),
-        IconRole::TrashFull => Some(include_bytes!("../../icons/lucide/trash-2.svg")), // reuse trash-2
+        IconRole::TrashEmpty => Some(include_bytes!("../../icons/lucide/trash.svg")),
+        IconRole::TrashFull => Some(include_bytes!("../../icons/lucide/trash.svg")), // reuse trash
 
         // Status (3)
         IconRole::StatusBusy => Some(include_bytes!("../../icons/lucide/loader.svg")),
@@ -316,202 +316,32 @@ mod tests {
 
     // === bundled_icon_by_name tests ===
 
+    /// §7.1: the gpui-component-style names and the two retired files no longer
+    /// resolve; callers get `None`, never a substitute.
     #[test]
-    #[cfg(feature = "lucide-icons")]
-    fn lucide_by_name_covers_gpui_icons() {
-        let names = [
-            "a-large-small",
-            "arrow-down",
-            "arrow-left",
-            "arrow-right",
-            "arrow-up",
-            "asterisk",
-            "bell",
-            "book-open",
-            "bot",
-            "building-2",
-            "calendar",
-            "case-sensitive",
-            "chart-pie",
-            "check",
-            "chevron-down",
-            "chevron-left",
-            "chevron-right",
-            "chevrons-up-down",
-            "chevron-up",
-            "circle-check",
-            "circle-user",
-            "circle-x",
+    #[cfg(all(feature = "lucide-icons", feature = "material-icons"))]
+    fn retired_bundle_names_return_none() {
+        for name in [
             "close",
-            "copy",
             "dash",
-            "delete",
-            "ellipsis",
-            "ellipsis-vertical",
-            "external-link",
-            "eye",
-            "eye-off",
-            "file",
-            "folder",
-            "folder-closed",
-            "folder-open",
-            "frame",
-            "gallery-vertical-end",
-            "github",
-            "globe",
-            "heart",
-            "heart-off",
-            "inbox",
-            "info",
             "inspect",
-            "layout-dashboard",
-            "loader",
-            "loader-circle",
-            "map",
-            "maximize",
-            "menu",
-            "minimize",
-            "minus",
-            "moon",
-            "palette",
-            "panel-bottom",
-            "panel-bottom-open",
-            "panel-left",
-            "panel-left-close",
-            "panel-left-open",
-            "panel-right",
-            "panel-right-close",
-            "panel-right-open",
-            "plus",
-            "redo",
-            "redo-2",
-            "replace",
             "resize-corner",
-            "search",
-            "settings",
-            "settings-2",
             "sort-ascending",
             "sort-descending",
-            "square-terminal",
-            "star",
-            "star-off",
-            "sun",
-            "thumbs-down",
-            "thumbs-up",
-            "triangle-alert",
-            "undo",
-            "undo-2",
-            "user",
             "window-close",
             "window-maximize",
             "window-minimize",
             "window-restore",
-        ];
-        for name in names {
-            let svg = bundled_icon_by_name(name, IconSet::Lucide);
-            assert!(svg.is_some(), "Lucide by-name missing: {}", name);
-            let bytes = svg.unwrap();
-            let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
+            "trash-2",
+        ] {
             assert!(
-                content.contains("<svg"),
-                "Lucide {} does not contain <svg tag",
-                name
+                bundled_icon_by_name(name, IconSet::Lucide).is_none(),
+                "{name} should be gone"
             );
         }
-    }
-
-    #[test]
-    #[cfg(feature = "material-icons")]
-    fn material_by_name_covers_gpui_icons() {
-        let names = [
-            "font_size",
-            "arrow_downward",
-            "arrow_back",
-            "arrow_forward",
-            "arrow_upward",
-            "emergency",
-            "notifications",
-            "menu_book",
-            "smart_toy",
-            "apartment",
-            "calendar_today",
-            "match_case",
-            "pie_chart",
-            "check",
-            "expand_more",
-            "chevron_left",
-            "chevron_right",
-            "unfold_more",
-            "expand_less",
-            "check_circle",
-            "account_circle",
-            "cancel",
-            "close",
-            "content_copy",
-            "remove",
-            "delete",
-            "more_horiz",
-            "more_vert",
-            "open_in_new",
-            "visibility",
-            "visibility_off",
-            "description",
-            "folder",
-            "folder_open",
-            "crop_free",
-            "view_carousel",
-            "code",
-            "language",
-            "favorite",
-            "heart_broken",
-            "inbox",
-            "info",
-            "developer_mode",
-            "dashboard",
-            "progress_activity",
-            "autorenew",
-            "map",
-            "open_in_full",
-            "menu",
-            "minimize",
-            "dark_mode",
-            "palette",
-            "dock_to_bottom",
-            "web_asset",
-            "side_navigation",
-            "left_panel_close",
-            "left_panel_open",
-            "right_panel_close",
-            "right_panel_open",
-            "add",
-            "redo",
-            "find_replace",
-            "drag_indicator",
-            "search",
-            "settings",
-            "tune",
-            "terminal",
-            "star",
-            "star_border",
-            "light_mode",
-            "thumb_down",
-            "thumb_up",
-            "warning",
-            "undo",
-            "person",
-            "close_fullscreen",
-        ];
-        for name in names {
-            let svg = bundled_icon_by_name(name, IconSet::Material);
-            assert!(svg.is_some(), "Material by-name missing: {}", name);
-            let bytes = svg.unwrap();
-            let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
-            assert!(
-                content.contains("<svg"),
-                "Material {} does not contain <svg tag",
-                name
-            );
-        }
+        assert!(bundled_icon_by_name("star_border", IconSet::Material).is_none());
+        assert!(bundled_icon_by_name("trash", IconSet::Lucide).is_some());
+        assert!(bundled_icon_by_name("star_fill1", IconSet::Material).is_some());
     }
 
     #[test]

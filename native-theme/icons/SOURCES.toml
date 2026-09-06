@@ -1,0 +1,41 @@
+# Provenance of every SVG under native-theme/icons/ (v0.5.8 spec §10.5).
+#
+# Each directory is covered by exactly one [[set]] rule: repository, git ref,
+# and the upstream path pattern with {name} = the file stem. A [[file]] entry
+# overrides the ref and path for one file. `scripts/refresh-icons.sh`
+# re-downloads everything from this manifest; native-theme/tests/icon_sources.rs
+# checks that every directory and exception is described here.
+
+[[set]]
+name = "lucide"
+dir = "lucide"
+repository = "https://github.com/lucide-icons/lucide"
+ref = "1.41.0"
+path = "icons/{name}.svg"
+license = "LICENSE-LUCIDE.txt"
+
+[[set]]
+name = "material"
+dir = "material"
+# Material Symbols, Outlined style, 24px, default weight, no fill. The ref is
+# the full commit SHA (the spec and rationale cite its short form 0cbb08816df0):
+# raw.githubusercontent.com resolves the short form today, but only the full
+# form is the documented stable address.
+repository = "https://github.com/google/material-design-icons"
+ref = "0cbb08816df07faaae3dca060d4ebb10b66c214f"
+path = "symbols/web/{name}/materialsymbolsoutlined/{name}_24px.svg"
+license = "LICENSE-MATERIAL.txt"
+
+[[file]]
+set = "lucide"
+file = "github.svg"
+ref = "0.577.0"
+path = "icons/github.svg"
+reason = "Lucide removed every brand icon in 1.x (commit aa8f74eb) and offers no replacement; the file stays under Lucide's ISC licence from the last tag that carries it"
+
+[[file]]
+set = "material"
+file = "star_fill1.svg"
+ref = "0cbb08816df07faaae3dca060d4ebb10b66c214f"
+path = "symbols/web/star/materialsymbolsoutlined/star_fill1_24px.svg"
+reason = "filled variant of star; the upstream stem carries _fill1 before _24px, so the set pattern does not apply"

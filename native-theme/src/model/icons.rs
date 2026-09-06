@@ -1041,7 +1041,7 @@ fn lucide_name(role: IconRole) -> Option<&'static str> {
 
         // Common Actions
         IconRole::ActionSave => "save",
-        IconRole::ActionDelete => "trash-2",
+        IconRole::ActionDelete => "trash",
         IconRole::ActionCopy => "copy",
         IconRole::ActionPaste => "clipboard-paste",
         IconRole::ActionCut => "scissors",
@@ -1067,9 +1067,9 @@ fn lucide_name(role: IconRole) -> Option<&'static str> {
         IconRole::FileGeneric => "file",
         IconRole::FolderClosed => "folder-closed",
         IconRole::FolderOpen => "folder-open",
-        IconRole::TrashEmpty => "trash-2",
+        IconRole::TrashEmpty => "trash",
         // same as TrashEmpty -- Lucide has no full-trash variant
-        IconRole::TrashFull => "trash-2",
+        IconRole::TrashFull => "trash",
 
         // Status
         IconRole::StatusBusy => "loader",
@@ -1546,7 +1546,7 @@ mod tests {
     fn icon_name_lucide_trash_full() {
         assert_eq!(
             icon_name(IconRole::TrashFull, IconSet::Lucide),
-            Some("trash-2")
+            Some("trash")
         );
     }
 
