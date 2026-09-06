@@ -788,6 +788,21 @@ fn write_base_overrides(cx: &mut App, mark: bool) {
     base_layer::apply_overrides(&geometry, resizable, cx);
 }
 
+/// Whether gpui-base's resize-handle colours are the ones the connector would
+/// write for the current mode. `ResizableTheme` derives no `PartialEq`, so both
+/// fields are compared. `true` when nothing is stored (nothing to repair).
+fn handles_hold_native_values(cx: &App) -> bool {
+    let Some(nt) = cx.try_global::<NativeTheme>() else {
+        return true;
+    };
+    let Some((_, expected)) = base_overrides_for(nt, nt.is_dark(cx), cx.try_global::<GpuiTheme>())
+    else {
+        return true;
+    };
+    let current = gpui_base::Theme::global(cx).resizable;
+    current.handle == expected.handle && current.active_handle == expected.active_handle
+}
+
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
 /// deduplicated notification (gpui-pre 0.3.3 `src/app.rs:1662-1664`), delivered
 /// after the pending mark is removed (`:1817-1821`): the observer's own write
@@ -813,6 +828,16 @@ fn install_observer_once(cx: &mut App) {
         };
         if nt.reapplying {
             cx.global_mut::<NativeTheme>().reapplying = false;
+            // A rebuild another effect performs between this observer's write
+            // and the delivery of its notification is merged into that
+            // notification by GPUI's per-type deduplication, so the flag alone
+            // would swallow it (spec §3.3, limit). The handle colours are
+            // comparable and upstream's rebuild changes them, so repair when
+            // they no longer hold the native values; the scrollbar styles are
+            // opaque and cannot be checked.
+            if !handles_hold_native_values(cx) {
+                write_base_overrides(cx, true);
+            }
             return;
         }
         write_base_overrides(cx, true);
@@ -1398,6 +1423,34 @@ mod apply_tests {
                 gpui_base::Theme::global(cx).resizable.active_handle,
                 Some(active),
                 "the deferred re-write restored the overrides after a same-update rebuild"
+            );
+        });
+    }
+
+    /// The `reapplying` flag cannot tell the observer's own notification from a
+    /// rebuild another effect performs before that notification is delivered:
+    /// GPUI merges the two (spec §3.3, limit). The observer therefore repairs
+    /// the handle colours when they no longer hold the native values. Without
+    /// that repair the deferred `Theme::change` below would leave upstream's
+    /// `drag_border` in `active_handle`.
+    #[gpui::test]
+    fn observer_repairs_a_rebuild_merged_into_its_own_notification(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = preset_for_observer_tests(&prefs);
+        let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
+        cx.update(|cx| apply(theme, &resolved, &prefs, cx)); // observer active after this flush
+        cx.update(|cx| {
+            // Queue: [N_base (this write), Defer(change)]. The observer answers
+            // N_base with a marked write whose notification lands after the
+            // deferred change; the change's own notification is deduplicated.
+            let _ = gpui_base::Theme::global_mut(cx);
+            cx.defer(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::Theme::global(cx).resizable.active_handle,
+                Some(active),
+                "the observer repaired the rebuild that its own notification had absorbed"
             );
         });
     }
