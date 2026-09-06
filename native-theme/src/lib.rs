@@ -250,6 +250,41 @@ impl Default for AccessibilityPreferences {
     }
 }
 
+impl AccessibilityPreferences {
+    /// Read the OS accessibility preferences without resolving a theme.
+    ///
+    /// Runs the same platform reader [`SystemTheme::from_system`] runs (KDE
+    /// `kdeglobals`, GNOME portal + gsettings) and takes its accessibility
+    /// block; `reduce_motion` is additionally read through
+    /// [`crate::detect::detect_reduced_motion`] on every platform. Fields no
+    /// reader supplies keep their defaults. Never fails: with no reader or a
+    /// failing reader the defaults are returned.
+    ///
+    /// Use it on the preset path, where accessibility is orthogonal to the
+    /// theme choice (a user with large text wants it under a preset too).
+    #[must_use]
+    #[cfg(target_os = "linux")]
+    pub fn from_system() -> Self {
+        pollster::block_on(pipeline::accessibility_from_system_inner())
+    }
+
+    /// Read the OS accessibility preferences without resolving a theme (non-Linux).
+    ///
+    /// The inner future has no `.await` points off Linux, so a noop-waker
+    /// single poll suffices, as in [`SystemTheme::from_system`].
+    #[must_use]
+    #[cfg(not(target_os = "linux"))]
+    pub fn from_system() -> Self {
+        let waker = std::task::Waker::noop();
+        let mut cx = std::task::Context::from_waker(&waker);
+        let mut fut = std::pin::pin!(pipeline::accessibility_from_system_inner());
+        match fut.as_mut().poll(&mut cx) {
+            std::task::Poll::Ready(prefs) => prefs,
+            std::task::Poll::Pending => Self::default(),
+        }
+    }
+}
+
 /// Complete reader result for the pipeline.
 ///
 /// Bundles the type-safe [`ReaderOutput`] with reader metadata
@@ -794,6 +829,31 @@ mod system_theme_tests {
         assert_eq!(preset.name, "adwaita");
         assert!(preset.is_live);
         assert_eq!(preset.live_name(), "adwaita-live");
+    }
+
+    /// §11.2: `from_system()` is an extraction of the reader path, so it must
+    /// agree with `SystemTheme::from_system()` wherever both succeed, and it
+    /// must never return a non-finite or non-positive text scale.
+    #[test]
+    fn accessibility_preferences_from_system_is_consistent_with_system_theme() {
+        let prefs = AccessibilityPreferences::from_system();
+        assert!(prefs.text_scaling_factor.is_finite());
+        assert!(prefs.text_scaling_factor > 0.0);
+
+        // CI has no desktop; only compare when the full pipeline also works.
+        if let Ok(sys) = SystemTheme::from_system() {
+            assert_eq!(
+                prefs.text_scaling_factor,
+                sys.accessibility.text_scaling_factor
+            );
+            assert_eq!(prefs.high_contrast, sys.accessibility.high_contrast);
+            assert_eq!(
+                prefs.reduce_transparency,
+                sys.accessibility.reduce_transparency
+            );
+            // reduce_motion may additionally be true via detect::detect_reduced_motion().
+            assert!(prefs.reduce_motion || !sys.accessibility.reduce_motion);
+        }
     }
 }
 

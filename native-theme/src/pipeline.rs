@@ -771,6 +771,28 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
     }
 }
 
+/// Reader-only extraction for [`crate::AccessibilityPreferences::from_system`]:
+/// runs the same platform reader `from_system_inner` would run and returns its
+/// accessibility block without merging or resolving a theme. Where no reader
+/// is available (or it fails) the defaults are used. `reduce_motion` is OR-ed
+/// with [`crate::detect::detect_reduced_motion`], a floor for the cases where
+/// no reader supplies it and it stays at its default: Linux outside KDE and
+/// GNOME, and macOS or Windows builds without their reader feature. A reader's
+/// own `true` is never downgraded (spec §11.2).
+pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPreferences {
+    let mut prefs = match select_reader().await {
+        Some((reader, _preset)) => match reader.read().await {
+            Ok(result) => result.accessibility,
+            Err(_) => crate::AccessibilityPreferences::default(),
+        },
+        None => crate::AccessibilityPreferences::default(),
+    };
+    if !prefs.reduce_motion {
+        prefs.reduce_motion = crate::detect::detect_reduced_motion();
+    }
+    prefs
+}
+
 // =============================================================================
 // Tests
 // =============================================================================
