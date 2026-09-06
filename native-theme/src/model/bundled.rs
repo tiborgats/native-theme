@@ -220,197 +220,10 @@ pub(crate) fn bundled_icon_by_name(name: &str, set: IconSet) -> Option<&'static 
 }
 
 #[cfg(feature = "lucide-icons")]
-fn lucide_svg_by_name(name: &str) -> Option<&'static [u8]> {
-    match name {
-        "a-large-small" => Some(include_bytes!("../../icons/lucide/a-large-small.svg")),
-        "arrow-down" => Some(include_bytes!("../../icons/lucide/arrow-down.svg")),
-        "arrow-left" => Some(include_bytes!("../../icons/lucide/arrow-left.svg")),
-        "arrow-right" => Some(include_bytes!("../../icons/lucide/arrow-right.svg")),
-        "arrow-up" => Some(include_bytes!("../../icons/lucide/arrow-up.svg")),
-        "asterisk" => Some(include_bytes!("../../icons/lucide/asterisk.svg")),
-        "bell" => Some(include_bytes!("../../icons/lucide/bell.svg")),
-        "book-open" => Some(include_bytes!("../../icons/lucide/book-open.svg")),
-        "bot" => Some(include_bytes!("../../icons/lucide/bot.svg")),
-        "building-2" => Some(include_bytes!("../../icons/lucide/building-2.svg")),
-        "calendar" => Some(include_bytes!("../../icons/lucide/calendar.svg")),
-        "case-sensitive" => Some(include_bytes!("../../icons/lucide/case-sensitive.svg")),
-        "chart-pie" => Some(include_bytes!("../../icons/lucide/chart-pie.svg")),
-        "check" => Some(include_bytes!("../../icons/lucide/check.svg")),
-        "chevron-down" => Some(include_bytes!("../../icons/lucide/chevron-down.svg")),
-        "chevron-left" => Some(include_bytes!("../../icons/lucide/chevron-left.svg")),
-        "chevron-right" => Some(include_bytes!("../../icons/lucide/chevron-right.svg")),
-        "chevrons-up-down" => Some(include_bytes!("../../icons/lucide/chevrons-up-down.svg")),
-        "chevron-up" => Some(include_bytes!("../../icons/lucide/chevron-up.svg")),
-        "circle-check" => Some(include_bytes!("../../icons/lucide/circle-check.svg")),
-        "circle-question-mark" => Some(include_bytes!(
-            "../../icons/lucide/circle-question-mark.svg"
-        )),
-        "circle-user" => Some(include_bytes!("../../icons/lucide/circle-user.svg")),
-        "circle-x" => Some(include_bytes!("../../icons/lucide/circle-x.svg")),
-        "clipboard-paste" => Some(include_bytes!("../../icons/lucide/clipboard-paste.svg")),
-        "close" => Some(include_bytes!("../../icons/lucide/close.svg")),
-        "copy" => Some(include_bytes!("../../icons/lucide/copy.svg")),
-        "dash" => Some(include_bytes!("../../icons/lucide/dash.svg")),
-        "delete" => Some(include_bytes!("../../icons/lucide/delete.svg")),
-        "ellipsis" => Some(include_bytes!("../../icons/lucide/ellipsis.svg")),
-        "ellipsis-vertical" => Some(include_bytes!("../../icons/lucide/ellipsis-vertical.svg")),
-        "external-link" => Some(include_bytes!("../../icons/lucide/external-link.svg")),
-        "eye" => Some(include_bytes!("../../icons/lucide/eye.svg")),
-        "eye-off" => Some(include_bytes!("../../icons/lucide/eye-off.svg")),
-        "file" => Some(include_bytes!("../../icons/lucide/file.svg")),
-        "folder" => Some(include_bytes!("../../icons/lucide/folder.svg")),
-        "folder-closed" => Some(include_bytes!("../../icons/lucide/folder-closed.svg")),
-        "folder-open" => Some(include_bytes!("../../icons/lucide/folder-open.svg")),
-        "frame" => Some(include_bytes!("../../icons/lucide/frame.svg")),
-        "gallery-vertical-end" => Some(include_bytes!(
-            "../../icons/lucide/gallery-vertical-end.svg"
-        )),
-        "github" => Some(include_bytes!("../../icons/lucide/github.svg")),
-        "globe" => Some(include_bytes!("../../icons/lucide/globe.svg")),
-        "heart" => Some(include_bytes!("../../icons/lucide/heart.svg")),
-        "heart-off" => Some(include_bytes!("../../icons/lucide/heart-off.svg")),
-        "house" => Some(include_bytes!("../../icons/lucide/house.svg")),
-        "inbox" => Some(include_bytes!("../../icons/lucide/inbox.svg")),
-        "info" => Some(include_bytes!("../../icons/lucide/info.svg")),
-        "inspect" => Some(include_bytes!("../../icons/lucide/inspect.svg")),
-        "layout-dashboard" => Some(include_bytes!("../../icons/lucide/layout-dashboard.svg")),
-        "loader" => Some(include_bytes!("../../icons/lucide/loader.svg")),
-        "loader-circle" => Some(include_bytes!("../../icons/lucide/loader-circle.svg")),
-        "lock" => Some(include_bytes!("../../icons/lucide/lock.svg")),
-        "map" => Some(include_bytes!("../../icons/lucide/map.svg")),
-        "maximize" => Some(include_bytes!("../../icons/lucide/maximize.svg")),
-        "menu" => Some(include_bytes!("../../icons/lucide/menu.svg")),
-        "minimize" => Some(include_bytes!("../../icons/lucide/minimize.svg")),
-        "minimize-2" => Some(include_bytes!("../../icons/lucide/minimize-2.svg")),
-        "minus" => Some(include_bytes!("../../icons/lucide/minus.svg")),
-        "moon" => Some(include_bytes!("../../icons/lucide/moon.svg")),
-        "palette" => Some(include_bytes!("../../icons/lucide/palette.svg")),
-        "panel-bottom" => Some(include_bytes!("../../icons/lucide/panel-bottom.svg")),
-        "panel-bottom-open" => Some(include_bytes!("../../icons/lucide/panel-bottom-open.svg")),
-        "panel-left" => Some(include_bytes!("../../icons/lucide/panel-left.svg")),
-        "panel-left-close" => Some(include_bytes!("../../icons/lucide/panel-left-close.svg")),
-        "panel-left-open" => Some(include_bytes!("../../icons/lucide/panel-left-open.svg")),
-        "panel-right" => Some(include_bytes!("../../icons/lucide/panel-right.svg")),
-        "panel-right-close" => Some(include_bytes!("../../icons/lucide/panel-right-close.svg")),
-        "panel-right-open" => Some(include_bytes!("../../icons/lucide/panel-right-open.svg")),
-        "pencil" => Some(include_bytes!("../../icons/lucide/pencil.svg")),
-        "plus" => Some(include_bytes!("../../icons/lucide/plus.svg")),
-        "printer" => Some(include_bytes!("../../icons/lucide/printer.svg")),
-        "redo" => Some(include_bytes!("../../icons/lucide/redo.svg")),
-        "redo-2" => Some(include_bytes!("../../icons/lucide/redo-2.svg")),
-        "refresh-cw" => Some(include_bytes!("../../icons/lucide/refresh-cw.svg")),
-        "replace" => Some(include_bytes!("../../icons/lucide/replace.svg")),
-        "resize-corner" => Some(include_bytes!("../../icons/lucide/resize-corner.svg")),
-        "save" => Some(include_bytes!("../../icons/lucide/save.svg")),
-        "scissors" => Some(include_bytes!("../../icons/lucide/scissors.svg")),
-        "search" => Some(include_bytes!("../../icons/lucide/search.svg")),
-        "settings" => Some(include_bytes!("../../icons/lucide/settings.svg")),
-        "settings-2" => Some(include_bytes!("../../icons/lucide/settings-2.svg")),
-        "shield" => Some(include_bytes!("../../icons/lucide/shield.svg")),
-        "sort-ascending" => Some(include_bytes!("../../icons/lucide/sort-ascending.svg")),
-        "sort-descending" => Some(include_bytes!("../../icons/lucide/sort-descending.svg")),
-        "square-terminal" => Some(include_bytes!("../../icons/lucide/square-terminal.svg")),
-        "star" => Some(include_bytes!("../../icons/lucide/star.svg")),
-        "star-off" => Some(include_bytes!("../../icons/lucide/star-off.svg")),
-        "sun" => Some(include_bytes!("../../icons/lucide/sun.svg")),
-        "thumbs-down" => Some(include_bytes!("../../icons/lucide/thumbs-down.svg")),
-        "thumbs-up" => Some(include_bytes!("../../icons/lucide/thumbs-up.svg")),
-        "trash-2" => Some(include_bytes!("../../icons/lucide/trash-2.svg")),
-        "triangle-alert" => Some(include_bytes!("../../icons/lucide/triangle-alert.svg")),
-        "undo" => Some(include_bytes!("../../icons/lucide/undo.svg")),
-        "undo-2" => Some(include_bytes!("../../icons/lucide/undo-2.svg")),
-        "user" => Some(include_bytes!("../../icons/lucide/user.svg")),
-        "window-close" => Some(include_bytes!("../../icons/lucide/window-close.svg")),
-        "window-maximize" => Some(include_bytes!("../../icons/lucide/window-maximize.svg")),
-        "window-minimize" => Some(include_bytes!("../../icons/lucide/window-minimize.svg")),
-        "window-restore" => Some(include_bytes!("../../icons/lucide/window-restore.svg")),
-        "x" => Some(include_bytes!("../../icons/lucide/x.svg")),
-        _ => None,
-    }
-}
+include!(concat!(env!("OUT_DIR"), "/lucide_svg_by_name.rs"));
 
 #[cfg(feature = "material-icons")]
-fn material_svg_by_name(name: &str) -> Option<&'static [u8]> {
-    match name {
-        "account_circle" => Some(include_bytes!("../../icons/material/account_circle.svg")),
-        "add" => Some(include_bytes!("../../icons/material/add.svg")),
-        "apartment" => Some(include_bytes!("../../icons/material/apartment.svg")),
-        "arrow_back" => Some(include_bytes!("../../icons/material/arrow_back.svg")),
-        "arrow_downward" => Some(include_bytes!("../../icons/material/arrow_downward.svg")),
-        "arrow_forward" => Some(include_bytes!("../../icons/material/arrow_forward.svg")),
-        "arrow_upward" => Some(include_bytes!("../../icons/material/arrow_upward.svg")),
-        "autorenew" => Some(include_bytes!("../../icons/material/autorenew.svg")),
-        "calendar_today" => Some(include_bytes!("../../icons/material/calendar_today.svg")),
-        "cancel" => Some(include_bytes!("../../icons/material/cancel.svg")),
-        "check" => Some(include_bytes!("../../icons/material/check.svg")),
-        "check_circle" => Some(include_bytes!("../../icons/material/check_circle.svg")),
-        "chevron_left" => Some(include_bytes!("../../icons/material/chevron_left.svg")),
-        "chevron_right" => Some(include_bytes!("../../icons/material/chevron_right.svg")),
-        "close" => Some(include_bytes!("../../icons/material/close.svg")),
-        "close_fullscreen" => Some(include_bytes!("../../icons/material/close_fullscreen.svg")),
-        "code" => Some(include_bytes!("../../icons/material/code.svg")),
-        "content_copy" => Some(include_bytes!("../../icons/material/content_copy.svg")),
-        "crop_free" => Some(include_bytes!("../../icons/material/crop_free.svg")),
-        "dark_mode" => Some(include_bytes!("../../icons/material/dark_mode.svg")),
-        "dashboard" => Some(include_bytes!("../../icons/material/dashboard.svg")),
-        "delete" => Some(include_bytes!("../../icons/material/delete.svg")),
-        "description" => Some(include_bytes!("../../icons/material/description.svg")),
-        "developer_mode" => Some(include_bytes!("../../icons/material/developer_mode.svg")),
-        "dock_to_bottom" => Some(include_bytes!("../../icons/material/dock_to_bottom.svg")),
-        "drag_indicator" => Some(include_bytes!("../../icons/material/drag_indicator.svg")),
-        "emergency" => Some(include_bytes!("../../icons/material/emergency.svg")),
-        "expand_less" => Some(include_bytes!("../../icons/material/expand_less.svg")),
-        "expand_more" => Some(include_bytes!("../../icons/material/expand_more.svg")),
-        "favorite" => Some(include_bytes!("../../icons/material/favorite.svg")),
-        "find_replace" => Some(include_bytes!("../../icons/material/find_replace.svg")),
-        "folder" => Some(include_bytes!("../../icons/material/folder.svg")),
-        "folder_open" => Some(include_bytes!("../../icons/material/folder_open.svg")),
-        "font_size" => Some(include_bytes!("../../icons/material/font_size.svg")),
-        "heart_broken" => Some(include_bytes!("../../icons/material/heart_broken.svg")),
-        "inbox" => Some(include_bytes!("../../icons/material/inbox.svg")),
-        "info" => Some(include_bytes!("../../icons/material/info.svg")),
-        "language" => Some(include_bytes!("../../icons/material/language.svg")),
-        "left_panel_close" => Some(include_bytes!("../../icons/material/left_panel_close.svg")),
-        "left_panel_open" => Some(include_bytes!("../../icons/material/left_panel_open.svg")),
-        "light_mode" => Some(include_bytes!("../../icons/material/light_mode.svg")),
-        "map" => Some(include_bytes!("../../icons/material/map.svg")),
-        "match_case" => Some(include_bytes!("../../icons/material/match_case.svg")),
-        "menu" => Some(include_bytes!("../../icons/material/menu.svg")),
-        "menu_book" => Some(include_bytes!("../../icons/material/menu_book.svg")),
-        "minimize" => Some(include_bytes!("../../icons/material/minimize.svg")),
-        "more_horiz" => Some(include_bytes!("../../icons/material/more_horiz.svg")),
-        "more_vert" => Some(include_bytes!("../../icons/material/more_vert.svg")),
-        "notifications" => Some(include_bytes!("../../icons/material/notifications.svg")),
-        "open_in_full" => Some(include_bytes!("../../icons/material/open_in_full.svg")),
-        "open_in_new" => Some(include_bytes!("../../icons/material/open_in_new.svg")),
-        "palette" => Some(include_bytes!("../../icons/material/palette.svg")),
-        "person" => Some(include_bytes!("../../icons/material/person.svg")),
-        "pie_chart" => Some(include_bytes!("../../icons/material/pie_chart.svg")),
-        "progress_activity" => Some(include_bytes!("../../icons/material/progress_activity.svg")),
-        "redo" => Some(include_bytes!("../../icons/material/redo.svg")),
-        "remove" => Some(include_bytes!("../../icons/material/remove.svg")),
-        "right_panel_close" => Some(include_bytes!("../../icons/material/right_panel_close.svg")),
-        "right_panel_open" => Some(include_bytes!("../../icons/material/right_panel_open.svg")),
-        "search" => Some(include_bytes!("../../icons/material/search.svg")),
-        "settings" => Some(include_bytes!("../../icons/material/settings.svg")),
-        "side_navigation" => Some(include_bytes!("../../icons/material/side_navigation.svg")),
-        "smart_toy" => Some(include_bytes!("../../icons/material/smart_toy.svg")),
-        "star" => Some(include_bytes!("../../icons/material/star.svg")),
-        "star_border" => Some(include_bytes!("../../icons/material/star_border.svg")),
-        "terminal" => Some(include_bytes!("../../icons/material/terminal.svg")),
-        "thumb_down" => Some(include_bytes!("../../icons/material/thumb_down.svg")),
-        "thumb_up" => Some(include_bytes!("../../icons/material/thumb_up.svg")),
-        "tune" => Some(include_bytes!("../../icons/material/tune.svg")),
-        "undo" => Some(include_bytes!("../../icons/material/undo.svg")),
-        "unfold_more" => Some(include_bytes!("../../icons/material/unfold_more.svg")),
-        "view_carousel" => Some(include_bytes!("../../icons/material/view_carousel.svg")),
-        "visibility" => Some(include_bytes!("../../icons/material/visibility.svg")),
-        "visibility_off" => Some(include_bytes!("../../icons/material/visibility_off.svg")),
-        "warning" => Some(include_bytes!("../../icons/material/warning.svg")),
-        "web_asset" => Some(include_bytes!("../../icons/material/web_asset.svg")),
-        _ => None,
-    }
-}
+include!(concat!(env!("OUT_DIR"), "/material_svg_by_name.rs"));
 
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
@@ -712,5 +525,47 @@ mod tests {
     fn by_name_unknown_name_returns_none() {
         assert!(bundled_icon_by_name("nonexistent-icon-xyz", IconSet::Lucide).is_none());
         assert!(bundled_icon_by_name("nonexistent_icon_xyz", IconSet::Material).is_none());
+    }
+
+    fn bundled_files(dir: &str) -> Vec<String> {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("icons")
+            .join(dir);
+        let mut names: Vec<String> = std::fs::read_dir(&path)
+            .expect("icon directory exists")
+            .map(|entry| {
+                entry
+                    .expect("readable entry")
+                    .file_name()
+                    .to_string_lossy()
+                    .into_owned()
+            })
+            .filter_map(|file| file.strip_suffix(".svg").map(str::to_owned))
+            .collect();
+        names.sort();
+        assert!(!names.is_empty(), "icons/{dir} must not be empty");
+        names
+    }
+
+    /// §10.5: the by-name table is generated from the directory, so every
+    /// bundled file resolves and the table cannot drift.
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn generated_lucide_table_covers_every_bundled_file() {
+        for name in bundled_files("lucide") {
+            let svg = bundled_icon_by_name(&name, IconSet::Lucide)
+                .unwrap_or_else(|| panic!("Lucide table misses bundled file {name}.svg"));
+            assert!(std::str::from_utf8(svg).expect("UTF-8").contains("<svg"));
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn generated_material_table_covers_every_bundled_file() {
+        for name in bundled_files("material") {
+            let svg = bundled_icon_by_name(&name, IconSet::Material)
+                .unwrap_or_else(|| panic!("Material table misses bundled file {name}.svg"));
+            assert!(std::str::from_utf8(svg).expect("UTF-8").contains("<svg"));
+        }
     }
 }
