@@ -18,7 +18,7 @@
 //!   on each change — no manual rewiring per widget.
 //! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
 //!   drive its appearance.
-//! - The Color Map tab exposes the full 108-field `ThemeColor` palette that
+//! - The Color Map tab exposes the full 139-field `ThemeColor` palette that
 //!   gpui-component exposes, with each field's current value and the
 //!   `native-theme` field it was derived from.
 //! - The Icons tab demonstrates `IconRole` mapping across Material, Lucide,
@@ -31,14 +31,13 @@
 //! sections.
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Application, Bounds, Context, Entity, Hsla,
-    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
-    Styled, Task, Timer, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
+    Animation, AnimationExt, AnyElement, App, Bounds, Context, Entity, Hsla, ImageSource,
+    IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString, StyleRefinement,
+    Styled, Task, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
 };
 use gpui_component::{
-    ActiveTheme, Disableable, Icon, IconName, PixelsExt, Placement, Root, Sizable, Size, StyledExt,
-    WindowExt,
-    accordion::Accordion,
+    ActiveTheme, Disableable, Icon, IconName, Placement, Root, Sizable, Size, StyledExt, WindowExt,
+    accordion::{Accordion, AccordionItem},
     alert::Alert,
     avatar::{Avatar, AvatarGroup},
     badge::Badge,
@@ -50,11 +49,14 @@ use gpui_component::{
     collapsible::Collapsible,
     color_picker::{ColorPicker, ColorPickerState},
     description_list::DescriptionList,
-    divider::Divider,
+    dialog::{DialogClose, DialogFooter, DialogTitle},
     form::{self, Field},
     group_box::{GroupBox, GroupBoxVariants},
     h_flex,
-    input::{Input, InputState, NumberInput, NumberInputEvent, OtpInput, OtpState, StepAction},
+    input::{
+        Input, InputState, NumberInput, NumberInputEvent, OtpInput, OtpState, StepAction, Textarea,
+        TextareaState,
+    },
     kbd::Kbd,
     label::Label,
     link::Link,
@@ -67,6 +69,7 @@ use gpui_component::{
     resizable::{h_resizable, resizable_panel, v_resizable},
     scroll::ScrollableElement,
     select::{SearchableVec, Select, SelectEvent, SelectState},
+    separator::Separator,
     setting::{SettingField, SettingGroup, SettingItem, SettingPage, Settings},
     sidebar::{Sidebar, SidebarMenu, SidebarMenuItem},
     skeleton::Skeleton,
@@ -74,7 +77,7 @@ use gpui_component::{
     spinner::Spinner,
     switch::Switch,
     tab::TabBar,
-    table::{Column, Table, TableDelegate, TableState},
+    table::{Column, DataTable, TableDelegate, TableState},
     tag::Tag,
     text::{TextView, TextViewStyle},
     theme::Theme,
@@ -105,6 +108,16 @@ use native_theme_gpui::icons::{
     to_image_source,
 };
 use native_theme_gpui::to_theme;
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native, geometry};
+
+/// gpui-component's mode for the showcase's light/dark flag.
+fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
+    if is_dark {
+        gpui_component::theme::ThemeMode::Dark
+    } else {
+        gpui_component::theme::ThemeMode::Light
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Tab indices
@@ -217,6 +230,37 @@ fn section(title: impl Into<SharedString>) -> Label {
 }
 
 /// A color swatch: small rounded square + label.
+/// The geometry refinement a builder produces for the installed native theme,
+/// or `None` before `apply` ran (spec §9.1). Returns an owned value so the
+/// borrow of `cx` ends at once.
+fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
+    cx: &App,
+    build: F,
+) -> Option<StyleRefinement> {
+    cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
+}
+
+/// Applies a geometry refinement when one is available; the widget keeps
+/// upstream's geometry otherwise.
+fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> W {
+    match style {
+        Some(s) => widget.refine_style(s),
+        None => widget,
+    }
+}
+
+/// `AccordionItem::title_style` with the native expander header height, when
+/// the native theme is installed.
+fn with_accordion_title_style(
+    item: AccordionItem,
+    style: &Option<StyleRefinement>,
+) -> AccordionItem {
+    match style {
+        Some(s) => item.title_style(s.clone()),
+        None => item,
+    }
+}
+
 fn color_swatch(name: &str, color: Hsla) -> impl IntoElement {
     let hex = hsla_to_hex(color);
     let label_text: SharedString = format!("{} {}", name, hex).into();
@@ -432,7 +476,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     }
 }
 
-/// The 86 gpui-component IconName variants shown in the gallery.
+/// The 101 gpui-component 0.6.0 IconName variants shown in the gallery.
 const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),
@@ -440,6 +484,12 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ArrowRight", IconName::ArrowRight),
     ("ArrowUp", IconName::ArrowUp),
     ("Asterisk", IconName::Asterisk),
+    ("Battery", IconName::Battery),
+    ("BatteryCharging", IconName::BatteryCharging),
+    ("BatteryFull", IconName::BatteryFull),
+    ("BatteryLow", IconName::BatteryLow),
+    ("BatteryMedium", IconName::BatteryMedium),
+    ("BatteryWarning", IconName::BatteryWarning),
     ("Bell", IconName::Bell),
     ("BookOpen", IconName::BookOpen),
     ("Bot", IconName::Bot),
@@ -458,6 +508,7 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("CircleX", IconName::CircleX),
     ("Close", IconName::Close),
     ("Copy", IconName::Copy),
+    ("Cpu", IconName::Cpu),
     ("Dash", IconName::Dash),
     ("Delete", IconName::Delete),
     ("Ellipsis", IconName::Ellipsis),
@@ -466,13 +517,15 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("Eye", IconName::Eye),
     ("EyeOff", IconName::EyeOff),
     ("File", IconName::File),
+    ("FileText", IconName::FileText),
     ("Folder", IconName::Folder),
     ("FolderClosed", IconName::FolderClosed),
     ("FolderOpen", IconName::FolderOpen),
     ("Frame", IconName::Frame),
     ("GalleryVerticalEnd", IconName::GalleryVerticalEnd),
-    ("GitHub", IconName::GitHub),
+    ("Github", IconName::Github),
     ("Globe", IconName::Globe),
+    ("HardDrive", IconName::HardDrive),
     ("Heart", IconName::Heart),
     ("HeartOff", IconName::HeartOff),
     ("Inbox", IconName::Inbox),
@@ -483,10 +536,12 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("LoaderCircle", IconName::LoaderCircle),
     ("Map", IconName::Map),
     ("Maximize", IconName::Maximize),
+    ("MemoryStick", IconName::MemoryStick),
     ("Menu", IconName::Menu),
     ("Minimize", IconName::Minimize),
     ("Minus", IconName::Minus),
     ("Moon", IconName::Moon),
+    ("Network", IconName::Network),
     ("Palette", IconName::Palette),
     ("PanelBottom", IconName::PanelBottom),
     ("PanelBottomOpen", IconName::PanelBottomOpen),
@@ -496,10 +551,13 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("PanelRight", IconName::PanelRight),
     ("PanelRightClose", IconName::PanelRightClose),
     ("PanelRightOpen", IconName::PanelRightOpen),
+    ("Pause", IconName::Pause),
+    ("Play", IconName::Play),
     ("Plus", IconName::Plus),
     ("Redo", IconName::Redo),
     ("Redo2", IconName::Redo2),
     ("Replace", IconName::Replace),
+    ("RotateCw", IconName::RotateCw),
     ("ResizeCorner", IconName::ResizeCorner),
     ("Search", IconName::Search),
     ("Settings", IconName::Settings),
@@ -508,6 +566,7 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("SortDescending", IconName::SortDescending),
     ("SquareTerminal", IconName::SquareTerminal),
     ("Star", IconName::Star),
+    ("StarFill", IconName::StarFill),
     ("StarOff", IconName::StarOff),
     ("Sun", IconName::Sun),
     ("ThumbsDown", IconName::ThumbsDown),
@@ -672,11 +731,11 @@ fn load_gpui_icons(
                 if matches!(source, IconSource::Fallback | IconSource::NotFound)
                     && let (Some(de), Some(theme)) = (&linux_de, &fd_theme)
                 {
-                    let fd_name = freedesktop_name_for_gpui_icon(icon.clone(), *de);
-                    if let Some(fd_data) = FreedesktopLoader::new(fd_name)
-                        .theme(theme)
-                        .color_opt(fg_color)
-                        .load()
+                    if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
+                        && let Some(fd_data) = FreedesktopLoader::new(fd_name)
+                            .theme(theme)
+                            .color_opt(fg_color)
+                            .load()
                     {
                         return (
                             *name,
@@ -695,11 +754,11 @@ fn load_gpui_icons(
             // No IconRole mapping — try by-name lookup for the active icon set
             #[cfg(target_os = "linux")]
             if let (Some(de), Some(theme)) = (&linux_de, &fd_theme) {
-                let fd_name = freedesktop_name_for_gpui_icon(icon.clone(), *de);
-                if let Some(data) = FreedesktopLoader::new(fd_name)
-                    .theme(theme)
-                    .color_opt(fg_color)
-                    .load()
+                if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
+                    && let Some(data) = FreedesktopLoader::new(fd_name)
+                        .theme(theme)
+                        .color_opt(fg_color)
+                        .load()
                 {
                     return (*name, icon.clone(), None, Some(data), IconSource::System);
                 }
@@ -709,8 +768,8 @@ fn load_gpui_icons(
 
             {
                 let lookup_name = match icon_set {
-                    IconSet::Lucide => Some(lucide_name_for_gpui_icon(icon.clone())),
-                    IconSet::Material => Some(material_name_for_gpui_icon(icon.clone())),
+                    IconSet::Lucide => lucide_name_for_gpui_icon(icon.clone()),
+                    IconSet::Material => material_name_for_gpui_icon(icon.clone()),
                     _ => None,
                 };
                 if let Some(lname) = lookup_name
@@ -733,7 +792,7 @@ fn load_gpui_icons(
 
 struct WidgetInfoPanel {
     text: String,
-    input_state: Entity<InputState>,
+    input_state: Entity<TextareaState>,
     /// True when `text` changed and `input_state` needs syncing on next render.
     needs_sync: bool,
 }
@@ -771,7 +830,7 @@ impl Render for WidgetInfoPanel {
                     .font_semibold(),
             )
             .child(
-                Input::new(&self.input_state)
+                Textarea::new(&self.input_state)
                     .appearance(false)
                     .text_size(px(11.0)),
             )
@@ -831,8 +890,8 @@ impl TableDelegate for SampleTableDelegate {
         self.rows.len()
     }
 
-    fn column(&self, col_ix: usize, _cx: &App) -> &Column {
-        &self.columns[col_ix]
+    fn column(&self, col_ix: usize, _cx: &App) -> Column {
+        self.columns[col_ix].clone()
     }
 
     fn render_td(
@@ -1127,7 +1186,9 @@ impl Showcase {
 
         let task = cx.spawn(async move |this, cx| {
             loop {
-                Timer::after(Duration::from_millis(min_duration)).await;
+                cx.background_executor()
+                    .timer(Duration::from_millis(min_duration))
+                    .await;
                 let Ok(()) = this.update(cx, |this, cx| {
                     for (i, (_name, frames)) in this.animated_frame_sources.iter().enumerate() {
                         if let Some(idx) = this.animated_frame_indices.get_mut(i) {
@@ -1293,8 +1354,10 @@ impl Showcase {
             &slider_state,
             window,
             |this: &mut Self, _entity, event: &SliderEvent, _window, _cx| {
-                let SliderEvent::Change(val) = event;
-                this.slider_value = val.start();
+                // 0.6.0 added `SliderEvent::Release`; only value changes matter here.
+                if let SliderEvent::Change(val) = event {
+                    this.slider_value = val.start();
+                }
             },
         )
         .detach();
@@ -1320,14 +1383,13 @@ impl Showcase {
                 let mono_font = resolved.defaults.mono_font.clone();
                 let icon_theme = system.icon_theme.clone().into_owned();
                 let icon_set = system.icon_set;
-                let theme = to_theme(
-                    resolved,
-                    &system.name,
-                    is_dark,
-                    system.accessibility.reduce_transparency,
-                );
-                *Theme::global_mut(cx) = theme;
-                window.refresh();
+                // Install the OS theme with both variants stored; the showcase's own
+                // light/dark choice then goes through upstream's mode switch, which
+                // reproduces the native palette from the installed configs (D34).
+                native_theme_gpui::apply_system_theme(&system, cx);
+                if is_dark != system.mode.is_dark() {
+                    Theme::change(gpui_theme_mode(is_dark), Some(window), cx);
+                }
                 let label = format!("default ({})", system.preset);
                 // Platform presets always specify icon_theme
                 (font, mono_font, label, icon_theme, icon_set, true, None)
@@ -1548,6 +1610,7 @@ impl Showcase {
         cx.set_menus(vec![
             Menu {
                 name: "File".into(),
+                disabled: false,
                 items: vec![
                     MenuItem::action("New", gpui::NoAction),
                     MenuItem::action("Open", gpui::NoAction),
@@ -1560,6 +1623,7 @@ impl Showcase {
             },
             Menu {
                 name: "Edit".into(),
+                disabled: false,
                 items: vec![
                     MenuItem::action("Undo", gpui::NoAction),
                     MenuItem::action("Redo", gpui::NoAction),
@@ -1573,6 +1637,7 @@ impl Showcase {
             },
             Menu {
                 name: "View".into(),
+                disabled: false,
                 items: vec![
                     MenuItem::action("Zoom In", gpui::NoAction),
                     MenuItem::action("Zoom Out", gpui::NoAction),
@@ -1583,13 +1648,14 @@ impl Showcase {
             },
             Menu {
                 name: "Help".into(),
+                disabled: false,
                 items: vec![
                     MenuItem::action("Documentation", gpui::NoAction),
                     MenuItem::action("About", gpui::NoAction),
                 ],
             },
         ]);
-        let app_menu_bar = AppMenuBar::new(window, cx);
+        let app_menu_bar = AppMenuBar::new(cx);
 
         // Start theme watcher for runtime dark/light toggle detection.
         // Skip in screenshot mode — the watcher's background thread cleanup
@@ -1660,7 +1726,7 @@ impl Showcase {
             animated_static_sources: Vec::new(),
             widget_info_panel: {
                 let info_input = cx.new(|cx| {
-                    let mut state = InputState::new(window, cx).auto_grow(4, 30);
+                    let mut state = TextareaState::new(window, cx).auto_grow(4, 30);
                     state.set_placeholder("Hover over any widget…", window, cx);
                     state
                 });
@@ -1701,14 +1767,10 @@ impl Showcase {
                     self.current_icon_set = system.icon_set;
                     // Platform presets always specify icon_theme
                     self.has_toml_icon_theme = true;
-                    let theme = to_theme(
-                        resolved,
-                        &system.name,
-                        self.is_dark,
-                        system.accessibility.reduce_transparency,
-                    );
-                    *Theme::global_mut(cx) = theme;
-                    window.refresh();
+                    native_theme_gpui::apply_system_theme(&system, cx);
+                    if self.is_dark != system.mode.is_dark() {
+                        Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
+                    }
                     self.default_label = format!("default ({})", system.preset);
                     self.error_message = None;
                 }
@@ -1742,9 +1804,11 @@ impl Showcase {
             self.current_icon_theme = r.icon_theme.into_owned();
             self.original_font = r.variant.defaults.font.clone();
             self.original_mono_font = r.variant.defaults.mono_font.clone();
-            let theme = to_theme(&r.variant, name, self.is_dark, false);
-            *Theme::global_mut(cx) = theme;
-            window.refresh();
+            // Preset path: accessibility is orthogonal to the theme choice, so the
+            // OS preferences are honoured under a preset too (spec §7.1).
+            let prefs = AccessibilityPreferences::from_system();
+            let theme = to_theme(&r.variant, name, self.is_dark, &prefs);
+            native_theme_gpui::apply(theme, &r.variant, &prefs, cx);
             self.error_message = None;
         }
 
@@ -1803,7 +1867,9 @@ impl Showcase {
         let flag = self.theme_change_flag.clone();
         cx.spawn(async move |this, cx| {
             loop {
-                Timer::after(Duration::from_millis(500)).await;
+                cx.background_executor()
+                    .timer(Duration::from_millis(500))
+                    .await;
                 if flag.swap(false, Ordering::AcqRel) {
                     let Ok(()) = this.update(cx, |this, cx| {
                         if matches!(this.color_mode, AppColorMode::System) {
@@ -1858,7 +1924,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Left sidebar: theme config inspector
     // -----------------------------------------------------------------------
-    fn render_sidebar(&self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_sidebar(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme().clone();
         let radius_str = format!("{}px", theme.radius.as_f32());
         let radius_lg_str = format!("{}px", theme.radius_lg.as_f32());
@@ -1867,7 +1933,7 @@ impl Showcase {
         let mono_family_str = self.original_mono_font.family.clone();
         let mono_size_str = format!("{}px", self.original_mono_font.size);
         let shadow_str = if theme.shadow { "true" } else { "false" };
-        let scrollbar_str = format!("{:?}", theme.scrollbar_show);
+        let scrollbar_str = format!("{:?}", theme.scrollbar_mode);
 
         let md = format!(
             "### Theme Config Inspector\n\n\
@@ -1878,7 +1944,7 @@ impl Showcase {
              **mono_font_family:** {}\n\
              **mono_font_size:** {}\n\
              **shadow:** {}\n\
-             **scrollbar_show:** {}",
+             **scrollbar_mode:** {}",
             radius_str,
             radius_lg_str,
             font_family_str,
@@ -1894,7 +1960,7 @@ impl Showcase {
             .heading_font_size(|_level, _base| px(13.0));
 
         v_flex().p_3().w_full().child(
-            TextView::markdown("config-inspector", SharedString::from(md), window, cx)
+            TextView::markdown("config-inspector", SharedString::from(md))
                 .selectable(true)
                 .style(style)
                 .text_xs(),
@@ -1920,7 +1986,10 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-primary")
-                            .child(Button::new("b-primary").label("Primary").primary())
+                            .child(refined(
+                                Button::new("b-primary").label("Primary").primary(),
+                                native_geometry(cx, geometry::button).as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Primary)",
@@ -1935,16 +2004,19 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ],
                                 &[
-                                    ("padding", "set per Size enum (XS/S/M/L)"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
-                                    ("min-height", "hardcoded"),
+                                    ("label size", "inner element (Tier U)"),
                                 ],
                             )),
                     )
                     .child(
                         div()
                             .id("tt-btn-secondary")
-                            .child(Button::new("b-secondary").label("Secondary"))
+                            .child(refined(
+                                Button::new("b-secondary").label("Secondary"),
+                                native_geometry(cx, geometry::button).as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Secondary)",
@@ -1968,7 +2040,10 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-danger")
-                            .child(Button::new("b-danger").label("Danger").danger())
+                            .child(refined(
+                                Button::new("b-danger").label("Danger").danger(),
+                                native_geometry(cx, geometry::button).as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Danger)",
@@ -1992,7 +2067,10 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-success")
-                            .child(Button::new("b-success").label("Success").success())
+                            .child(refined(
+                                Button::new("b-success").label("Success").success(),
+                                native_geometry(cx, geometry::button).as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Success)",
@@ -2016,7 +2094,10 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-warning")
-                            .child(Button::new("b-warning").label("Warning").warning())
+                            .child(refined(
+                                Button::new("b-warning").label("Warning").warning(),
+                                native_geometry(cx, geometry::button).as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Warning)",
@@ -2040,7 +2121,10 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-info")
-                            .child(Button::new("b-info").label("Info").info())
+                            .child(refined(
+                                Button::new("b-info").label("Info").info(),
+                                native_geometry(cx, geometry::button).as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Info)",
@@ -2426,11 +2510,12 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-input")
-                    .child(
+                    .child(refined(
                         Input::new(&self.input_state)
                             .with_size(Size::Medium)
                             .w(px(360.0)),
-                    )
+                        native_geometry(cx, geometry::input).as_ref(),
+                    ))
                     .on_hover(self.hover_info(
                         &fi,
                         "Input",
@@ -2492,26 +2577,39 @@ impl Showcase {
                         v_flex()
                             .gap_3()
                             .child(
-                                Checkbox::new("cb-a")
-                                    .label("Enable notifications")
-                                    .checked(checkbox_a)
-                                    .on_click(cx.listener(|this, val: &bool, _w, _cx| {
+                                refined(
+                                    Checkbox::new("cb-a"),
+                                    native_geometry(cx, geometry::checkbox).as_ref(),
+                                )
+                                .label("Enable notifications")
+                                .checked(checkbox_a)
+                                .on_click(cx.listener(
+                                    |this, val: &bool, _w, _cx| {
                                         this.checkbox_a = *val;
-                                    })),
+                                    },
+                                )),
                             )
                             .child(
-                                Checkbox::new("cb-b")
-                                    .label("Auto-save drafts")
-                                    .checked(checkbox_b)
-                                    .on_click(cx.listener(|this, val: &bool, _w, _cx| {
+                                refined(
+                                    Checkbox::new("cb-b"),
+                                    native_geometry(cx, geometry::checkbox).as_ref(),
+                                )
+                                .label("Auto-save drafts")
+                                .checked(checkbox_b)
+                                .on_click(cx.listener(
+                                    |this, val: &bool, _w, _cx| {
                                         this.checkbox_b = *val;
-                                    })),
+                                    },
+                                )),
                             )
                             .child(
-                                Checkbox::new("cb-c")
-                                    .label("Disabled checkbox")
-                                    .checked(checkbox_c)
-                                    .disabled(true),
+                                refined(
+                                    Checkbox::new("cb-c"),
+                                    native_geometry(cx, geometry::checkbox).as_ref(),
+                                )
+                                .label("Disabled checkbox")
+                                .checked(checkbox_c)
+                                .disabled(true),
                             ),
                     )
                     .on_hover(self.hover_info(
@@ -2751,7 +2849,11 @@ impl Showcase {
                 div()
                     .id("tt-table")
                     .h(px(220.0))
-                    .child(Table::new(&self.table_state).stripe(true).bordered(true))
+                    .child(
+                        DataTable::new(&self.table_state)
+                            .stripe(true)
+                            .bordered(true),
+                    )
                     .on_hover(self.hover_info(
                         &fi,
                         "Table",
@@ -2786,7 +2888,7 @@ impl Showcase {
                         &fi,
                         "List",
                         &[
-                            ("bg", "list", t.list),
+                            ("bg", "list", t.colors.list),
                             ("active", "list_active", t.list_active),
                             ("hover", "list_hover", t.list_hover),
                             ("even", "list_even", t.list_even),
@@ -2816,7 +2918,7 @@ impl Showcase {
                         &fi,
                         "Tree",
                         &[
-                            ("bg", "list", t.list),
+                            ("bg", "list", t.colors.list),
                             ("active", "list_active", t.list_active),
                             ("hover", "list_hover", t.list_hover),
                         ],
@@ -2993,28 +3095,40 @@ impl Showcase {
                                     .child(Label::new("Upload").text_sm())
                                     .child(Label::new("73%").text_sm()),
                             )
-                            .child(Progress::new().value(73.0))
+                            .child(refined(
+                                Progress::new("progress-upload").value(73.0),
+                                native_geometry(cx, geometry::progress).as_ref(),
+                            ))
                             .child(
                                 h_flex()
                                     .justify_between()
                                     .child(Label::new("Processing").text_sm())
                                     .child(Label::new("45%").text_sm()),
                             )
-                            .child(Progress::new().value(45.0))
+                            .child(refined(
+                                Progress::new("progress-processing").value(45.0),
+                                native_geometry(cx, geometry::progress).as_ref(),
+                            ))
                             .child(
                                 h_flex()
                                     .justify_between()
                                     .child(Label::new("Complete").text_sm())
                                     .child(Label::new("100%").text_sm()),
                             )
-                            .child(Progress::new().value(100.0)),
+                            .child(refined(
+                                Progress::new("progress-complete").value(100.0),
+                                native_geometry(cx, geometry::progress).as_ref(),
+                            )),
                     )
                     .on_hover(self.hover_info(
                         &fi,
                         "Progress",
                         &[("bar", "progress_bar", t.progress_bar)],
                         &[],
-                        &[("height", "hardcoded"), ("animation", "hardcoded")],
+                        &[
+                            ("geometry", "geometry::progress: progress_bar.track_height, border.corner_radius, min_width"),
+                            ("animation", "hardcoded"),
+                        ],
                     )),
             )
             // Spinners
@@ -3037,7 +3151,11 @@ impl Showcase {
                                 h_flex()
                                     .gap_2()
                                     .items_center()
-                                    .child(Spinner::new().with_size(Size::Medium))
+                                    .child(Spinner::new().with_size(
+                                        cx.native_theme()
+                                            .and_then(|nt| nt.native(cx))
+                                            .map_or(Size::Medium, geometry::spinner_size),
+                                    ))
                                     .child(Label::new("Medium").text_sm()),
                             )
                             .child(
@@ -3550,6 +3668,7 @@ impl Showcase {
     // Tab: Layout
     // -----------------------------------------------------------------------
     fn render_layout_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let accordion_title_style = native_geometry(cx, geometry::accordion_title);
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let collapsible_open = self.collapsible_open;
@@ -3646,9 +3765,9 @@ impl Showcase {
                     .child(
                         v_flex()
                             .gap_3()
-                            .child(Divider::horizontal())
-                            .child(Divider::horizontal().label("Section Break"))
-                            .child(Divider::horizontal_dashed()),
+                            .child(Separator::horizontal())
+                            .child(Separator::horizontal().label("Section Break"))
+                            .child(Separator::horizontal_dashed()),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -3668,7 +3787,13 @@ impl Showcase {
                 div()
                     .id("tt-layout-groupbox")
                     .child(
-                        GroupBox::new().title("Contained Content").fill().child(
+                        match native_geometry(cx, geometry::group_box_content) {
+                            Some(s) => GroupBox::new().content_style(s),
+                            None => GroupBox::new(),
+                        }
+                        .title("Contained Content")
+                        .fill()
+                        .child(
                             v_flex()
                                 .gap_2()
                                 .child(
@@ -3736,7 +3861,7 @@ impl Showcase {
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             (
                                 "show mode",
-                                format!("scrollbar_show: {:?}", t.scrollbar_show),
+                                format!("scrollbar_mode: {:?}", t.scrollbar_mode),
                             ),
                         ],
                         &[
@@ -3753,27 +3878,34 @@ impl Showcase {
                     .child(
                         Accordion::new("acc-1")
                             .item(|item| {
-                                item.title("What is native-theme?").open(true).child(
-                                    Label::new(
-                                        "A cross-platform theme abstraction that reads OS \
+                                with_accordion_title_style(item, &accordion_title_style)
+                                    .title("What is native-theme?")
+                                    .open(true)
+                                    .child(
+                                        Label::new(
+                                            "A cross-platform theme abstraction that reads OS \
                                              settings and maps them to toolkit-specific themes.",
-                                    )
-                                    .text_sm(),
-                                )
-                            })
-                            .item(|item| {
-                                item.title("Supported toolkits").child(
-                                    Label::new("gpui-component, iced, egui, and more planned.")
+                                        )
                                         .text_sm(),
-                                )
+                                    )
                             })
                             .item(|item| {
-                                item.title("How many presets?").child(
-                                    Label::new(
-                                        "17 built-in theme presets covering major OS styles.",
+                                with_accordion_title_style(item, &accordion_title_style)
+                                    .title("Supported toolkits")
+                                    .child(
+                                        Label::new("gpui-component, iced, egui, and more planned.")
+                                            .text_sm(),
                                     )
-                                    .text_sm(),
-                                )
+                            })
+                            .item(|item| {
+                                with_accordion_title_style(item, &accordion_title_style)
+                                    .title("How many presets?")
+                                    .child(
+                                        Label::new(
+                                            "17 built-in theme presets covering major OS styles.",
+                                        )
+                                        .text_sm(),
+                                    )
                             }),
                     )
                     .on_hover(self.hover_info(
@@ -3781,7 +3913,6 @@ impl Showcase {
                         "Accordion",
                         &[
                             ("bg", "accordion", t.accordion),
-                            ("hover", "accordion_hover", t.accordion_hover),
                             ("border", "border", t.border),
                             ("text", "foreground", t.foreground),
                             ("secondary text", "muted_foreground", t.muted_foreground),
@@ -3827,7 +3958,6 @@ impl Showcase {
                         "Collapsible",
                         &[
                             ("bg", "accordion", t.accordion),
-                            ("hover", "accordion_hover", t.accordion_hover),
                             ("border", "border", t.border),
                         ],
                         &[],
@@ -3975,7 +4105,7 @@ impl Showcase {
                     .border_color(t.border)
                     .overflow_hidden()
                     .child(
-                        Sidebar::left().collapsible(false).child(
+                        Sidebar::new("layout-sidebar").collapsible(false).child(
                             SidebarMenu::new()
                                 .child(
                                     SidebarMenuItem::new("Dashboard")
@@ -4139,8 +4269,33 @@ impl Showcase {
                         Button::new("open-dialog")
                             .label("Open Dialog")
                             .on_click(cx.listener(|_this, _ev, window, cx| {
-                                window.open_dialog(cx, |dialog, _w, _cx| {
-                                    dialog.title("Confirm Action").confirm().width(px(400.0))
+                                window.open_dialog(cx, |dialog, _w, cx| {
+                                    let n = cx.native_theme().and_then(|t| t.native(cx));
+                                    let dialog =
+                                        dialog
+                                            .title(match n {
+                                                Some(n) => DialogTitle::new()
+                                                    .refine_style(&geometry::dialog_title(n))
+                                                    .child("Confirm Action"),
+                                                None => DialogTitle::new().child("Confirm Action"),
+                                            })
+                                            .w(px(400.0))
+                                            .footer(
+                                                match n {
+                                                    Some(n) => DialogFooter::new()
+                                                        .refine_style(&geometry::dialog_footer(n)),
+                                                    None => DialogFooter::new(),
+                                                }
+                                                .child(DialogClose::new().child(
+                                                    Button::new("dialog-close").label("Close"),
+                                                )),
+                                            );
+                                    match n {
+                                        Some(n) => dialog
+                                            .refine_style(&geometry::dialog(n))
+                                            .max_w(geometry::dialog_max_width(n)),
+                                        None => dialog,
+                                    }
                                 });
                             })),
                     )
@@ -4475,9 +4630,9 @@ impl Showcase {
                     .w_full()
                     .child(
                         BarChart::new(months.clone())
-                            .x(|d: &MonthData| d.month.clone())
-                            .y(|d: &MonthData| d.value)
-                            .fill(move |_: &MonthData| bar_fill),
+                            .band(|d: &MonthData| d.month.clone())
+                            .value(|d: &MonthData| d.value)
+                            .fill(move |_: &MonthData, _, _, _| bar_fill),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -4595,8 +4750,8 @@ impl Showcase {
                         &fi,
                         "CandlestickChart",
                         &[
-                            ("bullish", "bullish", t.bullish),
-                            ("bearish", "bearish", t.bearish),
+                            ("bullish", "chart_bullish", t.chart_bullish),
+                            ("bearish", "chart_bearish", t.chart_bearish),
                             ("axis", "muted_foreground", t.muted_foreground),
                         ],
                         &[],
@@ -4868,7 +5023,8 @@ impl Showcase {
                 let cell_id = SharedString::from(format!("gpui-icon-{}", i));
 
                 // Render from cached image sources. Bundled sets (material, lucide)
-                // cover all 86 icons via by-name lookup — no mixing of sets.
+                // cover all 101 icons via by-name lookup (a set without an equivalent
+                // shows NotFound) — no mixing of sets.
                 let is_gpui_builtin = self.icon_set_name == "gpui-builtin";
                 let icon_element = if is_gpui_builtin {
                     div().child(Icon::new(icon.clone()).with_size(Size::Medium))
@@ -4950,7 +5106,7 @@ impl Showcase {
             .p_4()
             // Animated Icons section
             .child(self.render_animated_icons_section())
-            .child(Divider::horizontal())
+            .child(Separator::horizontal())
             // Native Theme Icons section
             .child(section(native_section_title))
             .child(
@@ -4958,7 +5114,7 @@ impl Showcase {
                     .id("native-icons-grid")
                     .child(div().flex().flex_wrap().gap_2().children(native_icon_cells)),
             )
-            .child(Divider::horizontal())
+            .child(Separator::horizontal())
             // gpui-component IconName gallery
             .child(section(format!(
                 "gpui-component Icons ({} variants, {} mapped to {})",
@@ -4980,7 +5136,7 @@ impl Showcase {
                                 "color",
                                 "inherited from parent foreground, customizable via text_color()",
                             ),
-                            ("SVG shapes", "86 built-in Lucide icons from gpui-component"),
+                            ("SVG shapes", "101 built-in Lucide icons from gpui-kit"),
                         ],
                     )),
             )
@@ -5047,6 +5203,80 @@ impl Showcase {
                     .child(color_swatch("secondary_foreground", t.secondary_foreground))
                     .child(color_swatch("secondary_hover", t.secondary_hover))
                     .child(color_swatch("secondary_active", t.secondary_active)),
+            )
+            // Button (0.6.0): button*/button_secondary* ← secondary*, button_primary*
+            // ← primary*, button_{danger,info,success,warning}* ← the status
+            // fields (spec §6.2) — solid native surfaces, not upstream's tint.
+            .child(section(
+                "Button (28 fields, copies of secondary/primary/status)",
+            ))
+            .child(
+                div()
+                    .flex()
+                    .flex_wrap()
+                    .gap_x(px(16.0))
+                    .gap_y(px(4.0))
+                    .child(color_swatch("button", t.button))
+                    .child(color_swatch("button_hover", t.button_hover))
+                    .child(color_swatch("button_active", t.button_active))
+                    .child(color_swatch("button_foreground", t.button_foreground))
+                    .child(color_swatch("button_secondary", t.button_secondary))
+                    .child(color_swatch(
+                        "button_secondary_hover",
+                        t.button_secondary_hover,
+                    ))
+                    .child(color_swatch(
+                        "button_secondary_active",
+                        t.button_secondary_active,
+                    ))
+                    .child(color_swatch(
+                        "button_secondary_foreground",
+                        t.button_secondary_foreground,
+                    ))
+                    .child(color_swatch("button_primary", t.button_primary))
+                    .child(color_swatch("button_primary_hover", t.button_primary_hover))
+                    .child(color_swatch(
+                        "button_primary_active",
+                        t.button_primary_active,
+                    ))
+                    .child(color_swatch(
+                        "button_primary_foreground",
+                        t.button_primary_foreground,
+                    ))
+                    .child(color_swatch("button_danger", t.button_danger))
+                    .child(color_swatch("button_danger_hover", t.button_danger_hover))
+                    .child(color_swatch("button_danger_active", t.button_danger_active))
+                    .child(color_swatch(
+                        "button_danger_foreground",
+                        t.button_danger_foreground,
+                    ))
+                    .child(color_swatch("button_info", t.button_info))
+                    .child(color_swatch("button_info_hover", t.button_info_hover))
+                    .child(color_swatch("button_info_active", t.button_info_active))
+                    .child(color_swatch(
+                        "button_info_foreground",
+                        t.button_info_foreground,
+                    ))
+                    .child(color_swatch("button_success", t.button_success))
+                    .child(color_swatch("button_success_hover", t.button_success_hover))
+                    .child(color_swatch(
+                        "button_success_active",
+                        t.button_success_active,
+                    ))
+                    .child(color_swatch(
+                        "button_success_foreground",
+                        t.button_success_foreground,
+                    ))
+                    .child(color_swatch("button_warning", t.button_warning))
+                    .child(color_swatch("button_warning_hover", t.button_warning_hover))
+                    .child(color_swatch(
+                        "button_warning_active",
+                        t.button_warning_active,
+                    ))
+                    .child(color_swatch(
+                        "button_warning_foreground",
+                        t.button_warning_foreground,
+                    )),
             )
             // Danger
             .child(section("Danger"))
@@ -5116,7 +5346,7 @@ impl Showcase {
                     .flex_wrap()
                     .gap_x(px(16.0))
                     .gap_y(px(4.0))
-                    .child(color_swatch("list", t.list))
+                    .child(color_swatch("list", t.colors.list))
                     .child(color_swatch("list_active", t.list_active))
                     .child(color_swatch("list_active_border", t.list_active_border))
                     .child(color_swatch("list_even", t.list_even))
@@ -5139,6 +5369,12 @@ impl Showcase {
                     .child(color_swatch(
                         "table_head_foreground",
                         t.table_head_foreground,
+                    ))
+                    // table_foot* mirror table_head* (spec §6.2 derivation)
+                    .child(color_swatch("table_foot", t.table_foot))
+                    .child(color_swatch(
+                        "table_foot_foreground",
+                        t.table_foot_foreground,
                     ))
                     .child(color_swatch("table_hover", t.table_hover))
                     .child(color_swatch("table_row_border", t.table_row_border)),
@@ -5206,8 +5442,7 @@ impl Showcase {
                     .flex_wrap()
                     .gap_x(px(16.0))
                     .gap_y(px(4.0))
-                    .child(color_swatch("accordion", t.accordion))
-                    .child(color_swatch("accordion_hover", t.accordion_hover)),
+                    .child(color_swatch("accordion", t.accordion)),
             )
             // GroupBox
             .child(section("GroupBox"))
@@ -5233,8 +5468,8 @@ impl Showcase {
                     .child(color_swatch("chart_3", t.chart_3))
                     .child(color_swatch("chart_4", t.chart_4))
                     .child(color_swatch("chart_5", t.chart_5))
-                    .child(color_swatch("bullish", t.bullish))
-                    .child(color_swatch("bearish", t.bearish)),
+                    .child(color_swatch("chart_bullish", t.chart_bullish))
+                    .child(color_swatch("chart_bearish", t.chart_bearish)),
             )
             // Misc
             .child(section("Misc"))
@@ -5262,6 +5497,9 @@ impl Showcase {
                     .child(color_swatch("slider_thumb", t.slider_thumb))
                     .child(color_swatch("switch", t.switch))
                     .child(color_swatch("switch_thumb", t.switch_thumb))
+                    // status_bar* ← status_bar.background_color / .border.color (spec §6.2)
+                    .child(color_swatch("status_bar", t.status_bar))
+                    .child(color_swatch("status_bar_border", t.status_bar_border))
                     .child(color_swatch("title_bar", t.title_bar))
                     .child(color_swatch("title_bar_border", t.title_bar_border))
                     .child(color_swatch("window_border", t.window_border))
@@ -5354,7 +5592,7 @@ impl Render for Showcase {
                             .with_size(Size::Small)
                             .w_full(),
                     )
-                    .child(Divider::horizontal()),
+                    .child(Separator::horizontal()),
             )
             .child(
                 v_flex()
@@ -5366,10 +5604,10 @@ impl Render for Showcase {
                             .with_size(Size::Small)
                             .w_full(),
                     )
-                    .child(Divider::horizontal()),
+                    .child(Separator::horizontal()),
             )
             .child(self.render_sidebar(window, cx))
-            .child(Divider::horizontal())
+            .child(Separator::horizontal())
             .child(self.widget_info_panel.clone());
 
         // Build the content area
@@ -5841,10 +6079,10 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
 fn main() {
     let cli_args = CliArgs::parse();
 
-    Application::new()
-        .with_assets(gpui_component_assets::Assets)
+    gpui_kit::application()
+        .with_assets(gpui_kit::assets::Assets)
         .run(move |cx: &mut App| {
-            gpui_component::init(cx);
+            gpui_kit::init(cx);
 
             // Apply CLI variant override before window opens so the initial
             // theme is resolved with the correct light/dark setting.
@@ -5989,9 +6227,13 @@ fn main() {
                         // rather than gpui's window.resize() which is async and
                         // may not execute before the capture.
                         nudge_content_size(-1.0, 0.0);
-                        Timer::after(Duration::from_millis(200)).await;
+                        cx.background_executor()
+                            .timer(Duration::from_millis(200))
+                            .await;
                         nudge_content_size(1.0, 0.0);
-                        Timer::after(Duration::from_millis(1300)).await;
+                        cx.background_executor()
+                            .timer(Duration::from_millis(1300))
+                            .await;
                         let captured = cx
                             .update_window(any_handle, |_view, window, _cx| {
                                 capture_own_window_macos(window, &path)
@@ -6010,7 +6252,9 @@ fn main() {
                     let path = screenshot_path.clone();
                     let any_handle = *window_handle;
                     cx.spawn(async move |cx| {
-                        Timer::after(Duration::from_millis(1500)).await;
+                        cx.background_executor()
+                            .timer(Duration::from_millis(1500))
+                            .await;
                         let captured = cx
                             .update_window(any_handle, |_view, window, _cx| {
                                 capture_own_window_windows(window, &path)
