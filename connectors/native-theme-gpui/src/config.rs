@@ -2,7 +2,7 @@
 //!
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
-//! shadow settings, and optionally all 108 color fields as hex strings.
+//! shadow settings, and optionally all 139 color fields as hex strings.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
@@ -16,7 +16,7 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// font_size/mono_font_size, radius/radius_lg/shadow. ResolvedFontSpec sizes are
 /// in logical pixels (conversion from platform points is handled by the resolution step).
 ///
-/// Also populates the `colors` field with all 108 ThemeColor fields converted
+/// Also populates the `colors` field with all 139 ThemeColor fields converted
 /// to hex strings, so the config can be serialized/deserialized losslessly.
 ///
 /// Fields not explicitly set inherit from `ThemeConfig::default()`.
@@ -64,12 +64,17 @@ pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: GpuiThemeMode
     }
 }
 
-/// Convert all 108 [`gpui_component::theme::ThemeColor`] fields to hex strings
-/// in a [`ThemeConfigColors`].
+/// Convert the [`gpui_component::theme::ThemeColor`] fields to hex strings in a
+/// [`ThemeConfigColors`].
 ///
 /// This enables lossless round-tripping through gpui-component's JSON theme
-/// serialization format. Each Hsla field is converted to `#rrggbb` (alpha is
-/// embedded in the pre-blended RGB, matching gpui-component's convention).
+/// serialization format. Each Hsla field is converted to `#rrggbb`, or to
+/// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
+/// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
+///
+/// All 139 ThemeColor fields are exported except the 12 private base colours
+/// (`red`, `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light`
+/// variants) plus `group_box_title_foreground`, which stay `None`.
 fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
     let h = |c: gpui::Hsla| -> Option<SharedString> { Some(SharedString::from(hsla_to_hex(c))) };
 
@@ -174,6 +179,38 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.warning_foreground = h(tc.warning_foreground);
     colors.overlay = h(tc.overlay);
     colors.window_border = h(tc.window_border);
+    colors.button = h(tc.button);
+    colors.button_hover = h(tc.button_hover);
+    colors.button_active = h(tc.button_active);
+    colors.button_foreground = h(tc.button_foreground);
+    colors.button_secondary = h(tc.button_secondary);
+    colors.button_secondary_hover = h(tc.button_secondary_hover);
+    colors.button_secondary_active = h(tc.button_secondary_active);
+    colors.button_secondary_foreground = h(tc.button_secondary_foreground);
+    colors.button_primary = h(tc.button_primary);
+    colors.button_primary_hover = h(tc.button_primary_hover);
+    colors.button_primary_active = h(tc.button_primary_active);
+    colors.button_primary_foreground = h(tc.button_primary_foreground);
+    colors.button_danger = h(tc.button_danger);
+    colors.button_danger_hover = h(tc.button_danger_hover);
+    colors.button_danger_active = h(tc.button_danger_active);
+    colors.button_danger_foreground = h(tc.button_danger_foreground);
+    colors.button_info = h(tc.button_info);
+    colors.button_info_hover = h(tc.button_info_hover);
+    colors.button_info_active = h(tc.button_info_active);
+    colors.button_info_foreground = h(tc.button_info_foreground);
+    colors.button_success = h(tc.button_success);
+    colors.button_success_hover = h(tc.button_success_hover);
+    colors.button_success_active = h(tc.button_success_active);
+    colors.button_success_foreground = h(tc.button_success_foreground);
+    colors.button_warning = h(tc.button_warning);
+    colors.button_warning_hover = h(tc.button_warning_hover);
+    colors.button_warning_active = h(tc.button_warning_active);
+    colors.button_warning_foreground = h(tc.button_warning_foreground);
+    colors.status_bar = h(tc.status_bar);
+    colors.status_bar_border = h(tc.status_bar_border);
+    colors.table_foot = h(tc.table_foot);
+    colors.table_foot_foreground = h(tc.table_foot_foreground);
     colors
 }
 
@@ -227,6 +264,40 @@ mod tests {
             Some(resolved.defaults.border.corner_radius_lg.max(0.0).round() as usize)
         );
         assert_eq!(config.shadow, Some(resolved.defaults.border.shadow_enabled));
+    }
+
+    /// §5.3: the config copy carries every new field, so `Theme::change`
+    /// reproduces the solid button surfaces instead of upstream's tint.
+    #[test]
+    fn theme_config_colors_cover_the_0_6_fields() {
+        let resolved = test_resolved();
+        let config = to_theme_config(&resolved, "New", GpuiThemeMode::Dark);
+        let c = &config.colors;
+        for (name, value) in [
+            ("button", &c.button),
+            ("button_foreground", &c.button_foreground),
+            ("button_primary", &c.button_primary),
+            ("button_primary_foreground", &c.button_primary_foreground),
+            ("button_secondary_active", &c.button_secondary_active),
+            ("button_danger_hover", &c.button_danger_hover),
+            ("button_info_active", &c.button_info_active),
+            ("button_success_foreground", &c.button_success_foreground),
+            ("button_warning", &c.button_warning),
+            ("chart_bullish", &c.chart_bullish),
+            ("chart_bearish", &c.chart_bearish),
+            ("status_bar", &c.status_bar),
+            ("status_bar_border", &c.status_bar_border),
+            ("table_foot", &c.table_foot),
+            ("table_foot_foreground", &c.table_foot_foreground),
+        ] {
+            assert!(value.is_some(), "config colour {name} not exported");
+        }
+        // D36: drag_border is primary at alpha 0.65, so its export carries alpha.
+        assert_eq!(
+            c.drag_border.as_deref().map(str::len),
+            Some(9),
+            "translucent colours are exported as #rrggbbaa"
+        );
     }
 
     #[test]

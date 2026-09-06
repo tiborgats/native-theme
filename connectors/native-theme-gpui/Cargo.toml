@@ -56,6 +56,8 @@ gpui = { package = "gpui-pre", version = "0.3.3", features = ["test-support"] }
 # and the Lucide assets under gpui_kit::assets.
 gpui-kit = "0.6.0"
 native-theme = { workspace = true, features = ["watch"] }
+# Field-by-field completeness check of ThemeColor via its Serialize impl.
+serde_json = "1.0.151"
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2 = "0.6.4"

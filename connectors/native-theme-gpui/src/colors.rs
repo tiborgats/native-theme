@@ -1,7 +1,7 @@
-//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (108 fields).
+//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (139 fields).
 //!
-//! Maps native-theme's per-widget resolved fields to gpui-component's 108-field
-//! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ~68 are
+//! Maps native-theme's per-widget resolved fields to gpui-component's 139-field
+//! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ones are
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 
@@ -25,15 +25,23 @@ pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
     gpui_rgba.into()
 }
 
-/// Convert an `Hsla` color to a `#rrggbb` hex string.
-///
-/// Alpha is discarded (only the opaque RGB is encoded).
+/// Convert an `Hsla` colour to a hex string: `#rrggbb` when opaque, `#rrggbbaa`
+/// when the alpha is below 1 (gpui parses both, gpui-pre 0.3.3
+/// `src/color.rs:224-262`). Alpha is quantised to 8 bits like the channels.
 pub(crate) fn hsla_to_hex(c: Hsla) -> String {
     let rgba: gpui::Rgba = c.into();
-    let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let g = (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!("#{r:02x}{g:02x}{b:02x}")
+    let channel = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let (r, g, b, a) = (
+        channel(rgba.r),
+        channel(rgba.g),
+        channel(rgba.b),
+        channel(rgba.a),
+    );
+    if a == u8::MAX {
+        format!("#{r:02x}{g:02x}{b:02x}")
+    } else {
+        format!("#{r:02x}{g:02x}{b:02x}{a:02x}")
+    }
 }
 
 /// Minimum WCAG contrast ratio for status foreground against its background.
@@ -130,7 +138,7 @@ struct ResolvedColors {
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
 ///
-/// Maps all 108 fields: ~40 directly from ResolvedTheme per-widget structs,
+/// Maps all 139 fields: ~40 directly from ResolvedTheme per-widget structs,
 /// the rest derived via shade generation following gpui-component's own
 /// fallback logic.
 ///
@@ -216,6 +224,7 @@ pub fn to_theme_color(
     assign_primary(&mut tc, &c, is_dark);
     assign_secondary(&mut tc, &c, is_dark);
     assign_status(&mut tc, &c, is_dark);
+    assign_buttons(&mut tc);
     assign_list_table(&mut tc, &c, is_dark);
     assign_tab_sidebar(&mut tc, &c);
     assign_charts(&mut tc, &c);
@@ -286,6 +295,49 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.chart_bearish = c.danger;
 }
 
+/// The 28 `button_*` fields gpui-component 0.6.0 reads for `Button`
+/// (`src/button/button.rs:884-949`) take the values the semantic fields their
+/// variant used in 0.5.1 (`0.5.1 src/button/button.rs:630-635, 924-929`), so a
+/// native theme's solid button surfaces render as before (spec §6.1). Nothing
+/// new is read; upstream's alternative is a tinted house style (rationale §2.4).
+fn assign_buttons(tc: &mut ThemeColor) {
+    // Ordinary push button = secondary; native themes do not distinguish a
+    // "default" from a "secondary" button, so both groups take the same values.
+    tc.button = tc.secondary;
+    tc.button_hover = tc.secondary_hover;
+    tc.button_active = tc.secondary_active;
+    tc.button_foreground = tc.secondary_foreground;
+    tc.button_secondary = tc.secondary;
+    tc.button_secondary_hover = tc.secondary_hover;
+    tc.button_secondary_active = tc.secondary_active;
+    tc.button_secondary_foreground = tc.secondary_foreground;
+
+    tc.button_primary = tc.primary;
+    tc.button_primary_hover = tc.primary_hover;
+    tc.button_primary_active = tc.primary_active;
+    tc.button_primary_foreground = tc.primary_foreground;
+
+    tc.button_danger = tc.danger;
+    tc.button_danger_hover = tc.danger_hover;
+    tc.button_danger_active = tc.danger_active;
+    tc.button_danger_foreground = tc.danger_foreground;
+
+    tc.button_info = tc.info;
+    tc.button_info_hover = tc.info_hover;
+    tc.button_info_active = tc.info_active;
+    tc.button_info_foreground = tc.info_foreground;
+
+    tc.button_success = tc.success;
+    tc.button_success_hover = tc.success_hover;
+    tc.button_success_active = tc.success_active;
+    tc.button_success_foreground = tc.success_foreground;
+
+    tc.button_warning = tc.warning;
+    tc.button_warning_hover = tc.warning_hover;
+    tc.button_warning_active = tc.warning_active;
+    tc.button_warning_foreground = tc.warning_foreground;
+}
+
 fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.list = c.bg;
     tc.list_hover = c.list_hover_bg;
@@ -303,6 +355,10 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.table_head = c.bg;
     tc.table_head_foreground = c.muted_fg;
     tc.table_row_border = c.border;
+    // Derivation (spec §6.2): the footer mirrors the header; ListTheme has no
+    // footer field and transparent black is not a colour.
+    tc.table_foot = tc.table_head;
+    tc.table_foot_foreground = tc.table_head_foreground;
 }
 
 fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
@@ -434,6 +490,10 @@ fn assign_misc(
     tc.drag_border = c.primary.opacity(0.65);
     // Drop target: 20% primary overlay for subtle target highlight.
     tc.drop_target = c.primary.opacity(0.2);
+
+    // Status bar: direct sources (spec §6.2).
+    tc.status_bar = rgba_to_hsla(resolved.status_bar.background_color);
+    tc.status_bar_border = rgba_to_hsla(resolved.status_bar.border.color);
 }
 
 fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
@@ -559,6 +619,28 @@ mod tests {
         let hex = hsla_to_hex(c);
         assert!(hex.starts_with('#'), "hex should start with #");
         assert_eq!(hex.len(), 7, "hex should be #rrggbb");
+    }
+
+    /// D36: alpha below 1 survives the config round trip as `#rrggbbaa`.
+    #[test]
+    fn hsla_to_hex_keeps_alpha_below_one() {
+        let translucent = Hsla {
+            h: 0.0,
+            s: 0.0,
+            l: 0.0,
+            a: 0.65,
+        };
+        let hex = hsla_to_hex(translucent);
+        assert_eq!(hex, "#000000a6", "0.65 × 255 rounds to 166 = a6");
+        let back = gpui::Rgba::try_from(hex.as_str()).expect("gpui parses #rrggbbaa");
+        assert!((back.a - 0.65).abs() < 1.0 / 255.0);
+        assert_eq!(
+            hsla_to_hex(Hsla {
+                a: 1.0,
+                ..translucent
+            }),
+            "#000000"
+        );
     }
 
     #[test]
@@ -874,6 +956,35 @@ mod tests {
             field_count, 139,
             "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color() and the doc table in lib.rs"
         );
+    }
+
+    /// §6.4: `ThemeColor: Default` is transparent black, so an unassigned
+    /// field is invisible at compile time and in most screenshots. Compare
+    /// every field with the zero value through serde, which sees all of them.
+    #[test]
+    fn no_theme_color_field_is_left_at_default() {
+        let zero = serde_json::to_value(Hsla::default()).expect("Hsla serialises");
+        for (resolved, is_dark) in [(test_resolved(), true), (test_resolved_light(), false)] {
+            let tc = to_theme_color(&resolved, is_dark, false);
+            let value = serde_json::to_value(tc).expect("ThemeColor serialises");
+            let fields = value
+                .as_object()
+                .expect("ThemeColor serialises as an object");
+            assert_eq!(
+                fields.len(),
+                139,
+                "serde sees a different field count than the tripwire"
+            );
+            let unassigned: Vec<&String> = fields
+                .iter()
+                .filter(|(_, v)| **v == zero)
+                .map(|(k, _)| k)
+                .collect();
+            assert!(
+                unassigned.is_empty(),
+                "fields left at transparent black (is_dark = {is_dark}): {unassigned:?}"
+            );
+        }
     }
 
     // Issue 35: per-category tripwire tests to catch doc/code drift.
