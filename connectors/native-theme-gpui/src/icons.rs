@@ -399,8 +399,10 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// - `approximate`: best available match, different metaphor
 ///
 /// Covers all 101 gpui-component 0.6.0 `IconName` variants. Returns `None`
-/// where the freedesktop icon naming specification has no equivalent (today
-/// every variant has one).
+/// where the freedesktop icon naming specification has no name for the
+/// concept (today every variant has one, some only as a labelled `close` or
+/// `approximate` substitute: `StarOff` and `HeartOff` both take
+/// `non-starred`, the "not starred / not favourite" state).
 #[cfg(target_os = "linux")]
 #[must_use]
 pub fn freedesktop_name_for_gpui_icon(
@@ -462,7 +464,7 @@ pub fn freedesktop_name_for_gpui_icon(
         IconName::SquareTerminal => "utilities-terminal", // close
         IconName::Star => "non-starred", // close: the hollow star, the "not starred" state; `starred` is StarFill's
         IconName::StarFill => "starred", // exact: the filled "starred" state
-        IconName::StarOff => "non-starred", // close: freedesktop has no slashed star; the "not starred" state
+        IconName::StarOff => "non-starred", // approximate: freedesktop has no slashed star; the "not starred" state
         IconName::Sun => "weather-clear",   // close: light mode toggle
         IconName::TriangleAlert => "dialog-warning", // exact
         IconName::Undo => "edit-undo",      // exact

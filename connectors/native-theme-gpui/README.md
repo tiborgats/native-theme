@@ -88,7 +88,8 @@ Afterwards gpui-component's own `Theme::sync_system_appearance(None, cx)` or
 `apply` installs a `ThemeConfig` for every stored variant, and the connector's
 observer restores the base-layer geometry and the 12 base-palette colours the
 config cannot carry after the switch. With only one variant stored, a switch to
-the other mode shows upstream's registry palette, so call `apply` once per
+the other mode shows upstream's built-in `ThemeColor::light()` / `dark()`
+constants (the default config carries no colours), so call `apply` once per
 variant.
 
 ## Core concepts
@@ -173,13 +174,17 @@ gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
 rebuild gpui-base's theme with upstream's fixed scrollbar styles. `apply`
 therefore installs, once per `App`, a global observer on `gpui_base::Theme`
 that writes the native scrollbar geometry and resize-handle colours back after
-every such rebuild. It absorbs the notification of its own write with a flag
+every such rebuild, and restores the 12 base-palette colours (`red` …
+`cyan_light`) the rebuild reset, because `ThemeConfigColors` keeps those
+private and the variant's config cannot carry them. It absorbs the notification of its own write with a flag
 and repairs the handle colours if another effect rebuilt the base theme in the
 meantime; the scrollbar styles are opaque upstream, so a rebuild that happens
 to leave the handle colours unchanged is repaired at the next one.
 
 Assumptions: the connector is the only code writing `gpui_base::Theme`
-besides gpui-component itself; and gpui-component's `ThemeRegistry` observer
+besides gpui-component itself, and the only code writing the styled theme's 12
+base-palette fields after `apply` (a value set there by the application is
+replaced at the next rebuild); and gpui-component's `ThemeRegistry` observer
 replaces the styled theme's configs by *name* on a registry change, so an
 application that loads a theme through `ThemeRegistry` under the same display
 name as the native theme replaces the connector's colours (the base-layer

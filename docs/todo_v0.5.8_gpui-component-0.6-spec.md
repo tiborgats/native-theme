@@ -250,7 +250,14 @@ Native { resolved, accessibility } --geometry::<widget>--> StyleRefinement --ref
 Upstream rebuilds the base theme with fixed scrollbar styles in
 `Theme::change`, `sync_system_appearance` and `sync_base`
 (§1.2). `apply` therefore installs, once per `App`, a global observer on
-`gpui_base::Theme` that restores the native overrides. The observer:
+`gpui_base::Theme` that restores the native overrides. Every such rebuild
+also resets the styled theme's 12 base-palette fields (`red` … `cyan_light`),
+which `ThemeConfigColors` keeps private (§14), and ends in `cx.set_global` of
+the base theme (`theme/mod.rs:247-256`, `:321-325`), so the observer first
+copies those 12 back from the stored variant for the current mode, writing
+only when a field differs (D43; the styled theme has no upstream observer, so
+this write cannot loop). After `apply` the connector is the sole writer of
+those 12 fields. Then the observer:
 
 1. Reads `NativeTheme`. If its `reapplying` flag is set, clears it and
    returns: the notification was caused by the observer's own write.

@@ -639,7 +639,9 @@ impl<'a> Native<'a> {
 /// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
 /// `init` afterwards resets the theme to upstream's default. A single-variant
 /// `apply` leaves the other mode's config at `ThemeConfig::default()`, so a
-/// `Theme::change` to the unstored mode shows upstream's registry palette;
+/// `Theme::change` to the unstored mode shows upstream's built-in
+/// `ThemeColor::light()` / `dark()` constants (the default config carries no
+/// colours);
 /// call `apply` once per variant to store both.
 ///
 /// `theme` is moved into the global; `resolved` is cloned once.
@@ -836,9 +838,12 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// `src/theme/schema.rs:657-668`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
 /// them to `ThemeColor::dark()` / `light()` (`:687-695`, `:1074-1078`) and
-/// ends in `sync_base`, whose notification reaches the base-theme observer.
-/// Writes only when a field differs; the styled theme has no upstream
-/// observer, so the write triggers no rebuild.
+/// ends in `cx.set_global` of `gpui_base::Theme` (`theme/mod.rs:247-256`,
+/// `:321-325`), whose notification reaches the base-theme observer. Writes
+/// only when a field differs; the styled theme has no upstream observer, so
+/// the write triggers no rebuild. After `apply` the connector is the sole
+/// writer of these 12 fields: a value an application sets on them itself is
+/// replaced at the next rebuild.
 fn repair_base_palette(cx: &mut App) {
     let Some(nt) = cx.try_global::<NativeTheme>() else {
         return;
