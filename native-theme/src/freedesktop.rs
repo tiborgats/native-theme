@@ -418,7 +418,7 @@ mod tests {
                 let s = String::from_utf8_lossy(cow);
                 assert!(s.contains("<svg"), "Icon data should contain <svg tag");
             }
-            other => assert!(false, "Expected SVG data, got {other:?}"),
+            other => panic!("Expected SVG data, got {other:?}"),
         }
     }
 

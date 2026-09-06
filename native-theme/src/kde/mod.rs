@@ -462,10 +462,10 @@ pub(crate) fn kdeglobals_path() -> std::path::PathBuf {
 /// (established in Phase 63).
 #[cfg(test)]
 fn kdeglobals_path_pure(xdg_config_home: Option<&str>, home: Option<&str>) -> std::path::PathBuf {
-    if let Some(config_home) = xdg_config_home {
-        if !config_home.is_empty() {
-            return std::path::PathBuf::from(config_home).join("kdeglobals");
-        }
+    if let Some(config_home) = xdg_config_home
+        && !config_home.is_empty()
+    {
+        return std::path::PathBuf::from(config_home).join("kdeglobals");
     }
     if let Some(home) = home {
         return std::path::PathBuf::from(home)
@@ -1136,17 +1136,16 @@ Name=whatever
         let result = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = reader_mode(&result);
 
-        if v.defaults.icon_sizes.small.is_some() {
+        if let Some(small) = v.defaults.icon_sizes.small {
             // If populated, they should be reasonable pixel values
-            let small = v.defaults.icon_sizes.small.unwrap();
             assert!(
-                small >= 8.0 && small <= 32.0,
+                (8.0..=32.0).contains(&small),
                 "small icon size should be reasonable: {small}"
             );
 
             if let Some(large) = v.defaults.icon_sizes.large {
                 assert!(
-                    large >= 24.0 && large <= 128.0,
+                    (24.0..=128.0).contains(&large),
                     "large icon size should be reasonable: {large}"
                 );
                 assert!(large > small, "large should be bigger than small");

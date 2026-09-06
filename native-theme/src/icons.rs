@@ -1048,7 +1048,6 @@ mod loading_indicator_tests {
                 AnimatedIcon::Transform(_) => {
                     // Single-frame theme icon with Spin -- valid result
                 }
-                _ => {}
             }
         }
     }

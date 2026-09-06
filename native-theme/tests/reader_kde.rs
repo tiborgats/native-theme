@@ -9,7 +9,6 @@
 use native_theme::color::Rgba;
 use native_theme::kde::from_kde_content_pure;
 use native_theme::model::font::FontSize;
-use native_theme::theme::DialogButtonOrder;
 
 // === Breeze Dark (full fixture) ===
 
@@ -85,8 +84,8 @@ fn breeze_dark_fixture_colors_and_fonts() {
 fn breeze_dark_fixture_dpi_from_ini() {
     let content = include_str!("fixtures/kde/breeze-dark.ini");
     // Pass None to let INI extraction (forceFontDPI=120) be used
-    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
-    let v = theme.dark.as_ref().unwrap();
+    let (theme, font_dpi, _accessibility) = from_kde_content_pure(content, None).unwrap();
+    let _v = theme.dark.as_ref().unwrap();
     assert_eq!(font_dpi, Some(120.0));
 }
 
@@ -95,7 +94,7 @@ fn breeze_dark_fixture_dpi_from_ini() {
 #[test]
 fn breeze_light_fixture() {
     let content = include_str!("fixtures/kde/breeze-light.ini");
-    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, _font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
 
     // Light theme, not dark
     assert!(theme.light.is_some());
@@ -122,7 +121,7 @@ fn breeze_light_fixture() {
 #[test]
 fn custom_accent_fixture() {
     let content = include_str!("fixtures/kde/custom-accent.ini");
-    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, _font_dpi, _accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
     let v = theme.dark.as_ref().unwrap();
 
     // Orange accent (246,116,0) replaces default Breeze blue
@@ -144,7 +143,7 @@ fn high_dpi_fixture() {
     let content = include_str!("fixtures/kde/high-dpi.ini");
     // Pass None to let INI extraction of forceFontDPI=192
     let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
-    let v = theme.dark.as_ref().unwrap();
+    let _v = theme.dark.as_ref().unwrap();
 
     assert_eq!(font_dpi, Some(192.0));
     // forceFontDPI must NOT set text_scaling_factor (Fix 5 from research)
@@ -158,7 +157,7 @@ fn high_dpi_fixture() {
 #[test]
 fn minimal_config_fixture() {
     let content = include_str!("fixtures/kde/minimal.ini");
-    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, _font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
 
     // Dark theme (BackgroundNormal=49,54,59 is dark)
     assert!(theme.dark.is_some());
@@ -199,7 +198,7 @@ fn minimal_config_fixture() {
 #[test]
 fn missing_groups_fixture() {
     let content = include_str!("fixtures/kde/missing-groups.ini");
-    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, _font_dpi, _accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
     let v = theme.dark.as_ref().unwrap();
 
     // Present groups work
@@ -230,7 +229,7 @@ fn missing_groups_fixture() {
 #[test]
 fn malformed_values_fixture() {
     let content = include_str!("fixtures/kde/malformed-values.ini");
-    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, _font_dpi, _accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
     let v = theme.dark.as_ref().unwrap();
 
     // Valid Window BackgroundNormal parses
@@ -262,7 +261,7 @@ fn malformed_values_fixture() {
 fn malformed_values_fixture_dpi_fallback() {
     let content = include_str!("fixtures/kde/malformed-values.ini");
     // Pass None: forceFontDPI="not_a_number" can't parse -> font_dpi is None
-    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
-    let v = theme.dark.as_ref().unwrap();
+    let (theme, font_dpi, _accessibility) = from_kde_content_pure(content, None).unwrap();
+    let _v = theme.dark.as_ref().unwrap();
     assert!(font_dpi.is_none());
 }
