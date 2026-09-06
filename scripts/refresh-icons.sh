@@ -11,7 +11,7 @@ command -v python3 >/dev/null || { echo "python3 is required" >&2; exit 1; }
 
 if [ "${1:-}" = "add" ]; then
   [ $# -eq 3 ] || { echo "usage: $0 add <set> <name>" >&2; exit 1; }
-  dir=$(python3 -c 'import sys,tomllib;m=tomllib.load(open(sys.argv[1],"rb"));print(next(s["dir"] for s in m["set"] if s["name"]==sys.argv[2]))' "$MANIFEST" "$2")
+  dir=$(python3 -c 'import sys,tomllib;m=tomllib.load(open(sys.argv[1],"rb"));d=[s["dir"] for s in m["set"] if s["name"]==sys.argv[2]];print(d[0]) if d else sys.exit("unknown set %r; sets: %s" % (sys.argv[2], [s["name"] for s in m["set"]]))' "$MANIFEST" "$2")
   : > "native-theme/icons/$dir/$3.svg"   # an empty file makes the refresh below fetch it
 fi
 
@@ -37,10 +37,14 @@ for s in data["set"]:
         except Exception as e:  # noqa: BLE001 - report and continue
             print(f"FAILED {svg}: {url}: {e}", file=sys.stderr)
             failures += 1
+            if svg.stat().st_size == 0:
+                svg.unlink()  # an `add` placeholder that never downloaded
             continue
         if b"<svg" not in body:
             print(f"FAILED {svg}: {url}: not an SVG", file=sys.stderr)
             failures += 1
+            if svg.stat().st_size == 0:
+                svg.unlink()
             continue
         svg.write_bytes(body)
         print(f"{svg} <- {url}")

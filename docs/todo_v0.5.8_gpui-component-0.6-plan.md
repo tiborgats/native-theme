@@ -148,7 +148,7 @@ cargo metadata --format-version 1 --locked \
   | jq -r '[.packages[] | select(.rust_version != null) | .rust_version] | unique | sort_by(split(".") | map(tonumber)) | last'
 ```
 
-Expected: `1.89.0` or `1.89` (from `font-types`, pulled by resvg 0.48.1). Then the authoritative per-member check, following commit `0319942`:
+Expected: `1.89.0` or `1.89` (from `font-types`, pulled by resvg 0.48.1). *(Superseded during execution: the measured floor is `1.88.0`; resvg is used with `default-features = false`, so `font-types` never enters the lock. Read `1.88.0` for `1.89.0` in steps 5–7. See Global Constraints.)* Then the authoritative per-member check, following commit `0319942`:
 
 ```bash
 rustup toolchain install 1.89.0 --profile minimal

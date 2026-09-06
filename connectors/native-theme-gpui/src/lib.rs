@@ -55,7 +55,7 @@
 //! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics) |
-//! | `tab` | 5 of 10 colours | geometry is upstream work (upstream's render re-sets height, radius and text size after applying the caller's refinement (`tab/tab.rs:800-808`)) |
+//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
 //! | `sidebar` | 2 of 6 | background, font.color |
 //! | `window` | 2 of 6 | title_bar_background, border |
 //! | `input` | 2 of 13 colours + geometry | border, caret; height, radius, border, text via `geometry::input` |
@@ -79,8 +79,9 @@
 //! **Limits.** Geometry on inner elements the caller's style cannot reach
 //! (checkbox and radio indicators, switch, slider, separator thickness,
 //! splitter width, button icon gap, input padding, popup-menu rows), and tab
-//! height, radius and text size, which `Tab`'s render re-sets after applying
-//! the refinement, stay upstream work; §14 of the v0.5.8 specification
+//! height, radius and text size, which `Tab`'s render writes into the same
+//! style bag the caller's setters fill (`tab/tab.rs:801-808`), stay upstream
+//! work; §14 of the v0.5.8 specification
 //! (<https://github.com/tiborgats/native-theme/blob/main/docs/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable.
 
@@ -627,11 +628,19 @@ impl<'a> Native<'a> {
 /// 5. writes the native scrollbar geometry/colours and resize-handle colours
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
 /// 6. forwards `prefs.reduce_motion` to GPUI;
-/// 7. installs, once per `App`, the observer that restores step 5 whenever
-///    upstream rebuilds the base theme, together with one deferred repeat of
-///    step 5 for the update that installs it (the subscription activates only
-///    at the end of that update's effect flush, D38);
+/// 7. installs, once per `App`, the observer that restores step 5 and the 12
+///    base-palette colours a `ThemeConfig` cannot carry (`red` … `cyan_light`,
+///    private in `ThemeConfigColors`; D43) whenever upstream rebuilds the
+///    theme, together with one deferred repeat for the update that installs it
+///    (the subscription activates only at the end of that update's effect
+///    flush, D38);
 /// 8. refreshes every window so the change paints at once (D37).
+///
+/// Call `gpui_component::init` (or `gpui_kit::init`) *before* `apply`: an
+/// `init` afterwards resets the theme to upstream's default. A single-variant
+/// `apply` leaves the other mode's config at `ThemeConfig::default()`, so a
+/// `Theme::change` to the unstored mode shows upstream's registry palette;
+/// call `apply` once per variant to store both.
 ///
 /// `theme` is moved into the global; `resolved` is cloned once.
 pub fn apply(
@@ -814,8 +823,39 @@ fn handles_hold_native_values(cx: &App) -> bool {
     else {
         return true;
     };
-    let current = gpui_base::Theme::global(cx).resizable;
+    let Some(current) = cx.try_global::<gpui_base::Theme>().map(|t| t.resizable) else {
+        return true;
+    };
     current.handle == expected.handle && current.active_handle == expected.active_handle
+}
+
+/// Restore the 12 base-palette colours (`red` … `cyan_light`) of the styled
+/// theme from the stored variant for the current mode (D43).
+///
+/// `ThemeConfigColors` keeps them private (gpui-component 0.6.0
+/// `src/theme/schema.rs:657-668`), so the config `apply` installs for a variant
+/// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
+/// them to `ThemeColor::dark()` / `light()` (`:687-695`, `:1074-1078`) and
+/// ends in `sync_base`, whose notification reaches the base-theme observer.
+/// Writes only when a field differs; the styled theme has no upstream
+/// observer, so the write triggers no rebuild.
+fn repair_base_palette(cx: &mut App) {
+    let Some(nt) = cx.try_global::<NativeTheme>() else {
+        return;
+    };
+    let is_dark = nt.is_dark(cx);
+    let Some(resolved) = nt.variant(is_dark) else {
+        return;
+    };
+    let native = colors::base_palette(resolved, is_dark);
+    // Probe a copy first so an unchanged palette causes no notification.
+    let differs = cx.try_global::<GpuiTheme>().is_some_and(|styled| {
+        let mut probe: gpui_component::theme::ThemeColor = **styled;
+        colors::copy_base_palette(&native, &mut probe)
+    });
+    if differs {
+        colors::copy_base_palette(&native, GpuiTheme::global_mut(cx));
+    }
 }
 
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
@@ -838,6 +878,9 @@ fn install_observer_once(cx: &mut App) {
     }
     cx.global_mut::<NativeTheme>().observer_installed = true;
     cx.observe_global::<gpui_base::Theme>(|cx| {
+        // A rebuild also resets the 12 private base-palette colours (D43);
+        // a plain comparison makes this safe on every delivery.
+        repair_base_palette(cx);
         let Some(nt) = cx.try_global::<NativeTheme>() else {
             return;
         };
@@ -861,7 +904,10 @@ fn install_observer_once(cx: &mut App) {
     // Effects are FIFO, so this runs after the activation above and after any
     // same-update write. `false`: the active observer re-applies once on its
     // delivery and absorbs its own write, like any other rebuild (§3.3).
-    cx.defer(|cx| write_base_overrides(cx, false));
+    cx.defer(|cx| {
+        write_base_overrides(cx, false);
+        repair_base_palette(cx);
+    });
 }
 
 #[cfg(test)]
@@ -1385,6 +1431,8 @@ mod apply_tests {
             ScrollbarMode::Always
         };
 
+        let native_palette = colors::base_palette(&resolved, true);
+
         // No gpui_component::init here: apply must initialise the styled layer
         // itself when it is absent (D29) and must not panic.
         cx.update(|cx| apply(theme, &resolved, &prefs, cx));
@@ -1408,6 +1456,14 @@ mod apply_tests {
                 Some(active),
                 "observer restored the native value after the first rebuild"
             );
+            // D43: the rebuild reset the 12 private base-palette fields to
+            // upstream's constants; the observer copied the native ones back.
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(
+                styled.red, native_palette.red,
+                "red restored after Theme::change"
+            );
+            assert_eq!(styled.magenta_light, native_palette.magenta_light);
             GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
         });
         cx.update(|cx| {
@@ -1429,6 +1485,7 @@ mod apply_tests {
         let prefs = AccessibilityPreferences::default();
         let (theme, resolved) = preset_for_observer_tests(&prefs);
         let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
+        let native_palette = colors::base_palette(&resolved, true);
         cx.update(|cx| {
             apply(theme, &resolved, &prefs, cx);
             GpuiTheme::change(GpuiThemeMode::Dark, None, cx); // same update: observer not yet active
@@ -1439,6 +1496,39 @@ mod apply_tests {
                 Some(active),
                 "the deferred re-write restored the overrides after a same-update rebuild"
             );
+            assert_eq!(
+                GpuiTheme::global(cx).red,
+                native_palette.red,
+                "and the base palette (D43)"
+            );
+        });
+    }
+
+    /// D43 precondition: upstream's rebuild really does reset the base palette
+    /// (otherwise the repair assertions above would be vacuous). Upstream's
+    /// own dark palette, read after a plain `init` + `change`, differs from the
+    /// preset's; `Theme::change` after `apply` would install it were there no
+    /// repair, and the repaired value is the preset's.
+    #[gpui::test]
+    fn theme_change_resets_private_base_palette_without_repair(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = preset_for_observer_tests(&prefs);
+        let native_palette = colors::base_palette(&resolved, true);
+        let upstream_red = cx.update(|cx| {
+            gpui_component::init(cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+            GpuiTheme::global(cx).red
+        });
+        assert_ne!(
+            upstream_red, native_palette.red,
+            "the preset's danger colour must differ from upstream's red for this test to mean anything"
+        );
+        cx.update(|cx| apply(theme, &resolved, &prefs, cx));
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| {
+            let red = GpuiTheme::global(cx).red;
+            assert_ne!(red, upstream_red, "the repair replaced upstream's constant");
+            assert_eq!(red, native_palette.red);
         });
     }
 

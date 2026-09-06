@@ -229,7 +229,7 @@ pub fn to_theme_color(
     assign_tab_sidebar(&mut tc, &c);
     assign_charts(&mut tc, &c);
     assign_misc(&mut tc, &c, resolved, is_dark, reduce_transparency);
-    assign_base_colors(&mut tc, &c, is_dark);
+    assign_base_colors(&mut tc, &BasePaletteInputs::from_colors(&c), is_dark);
 
     tc
 }
@@ -496,7 +496,89 @@ fn assign_misc(
     tc.status_bar_border = rgba_to_hsla(resolved.status_bar.border.color);
 }
 
-fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+/// The six native colours the 12 base-palette fields derive from.
+pub(crate) struct BasePaletteInputs {
+    bg: Hsla,
+    accent: Hsla,
+    danger: Hsla,
+    success: Hsla,
+    warning: Hsla,
+    info: Hsla,
+}
+
+impl BasePaletteInputs {
+    fn from_colors(c: &ResolvedColors) -> Self {
+        Self {
+            bg: c.bg,
+            accent: c.accent,
+            danger: c.danger,
+            success: c.success,
+            warning: c.warning,
+            info: c.info,
+        }
+    }
+
+    /// The same six values [`to_theme_color`] reads, straight from `defaults`.
+    pub(crate) fn from_resolved(resolved: &ResolvedTheme) -> Self {
+        let d = &resolved.defaults;
+        Self {
+            bg: rgba_to_hsla(d.background_color),
+            accent: rgba_to_hsla(d.accent_color),
+            danger: rgba_to_hsla(d.danger_color),
+            success: rgba_to_hsla(d.success_color),
+            warning: rgba_to_hsla(d.warning_color),
+            info: rgba_to_hsla(d.info_color),
+        }
+    }
+}
+
+/// The 12 base-palette fields (`red` … `cyan_light`) as [`to_theme_color`]
+/// assigns them, on an otherwise default `ThemeColor`.
+///
+/// `ThemeConfigColors` keeps these 12 private (gpui-component 0.6.0
+/// `src/theme/schema.rs:657-668`), so the config a stored variant installs
+/// cannot carry them and `Theme::apply_config` resets them to upstream's
+/// constants on every rebuild (`:687-695`, `:1074-1078`). `apply`'s observer
+/// copies this value back with [`copy_base_palette`] (D43).
+pub(crate) fn base_palette(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColor {
+    let mut tc = ThemeColor::default();
+    assign_base_colors(
+        &mut tc,
+        &BasePaletteInputs::from_resolved(resolved),
+        is_dark,
+    );
+    tc
+}
+
+/// Copy the 12 base-palette fields of `from` onto `to`; `true` when any differed.
+pub(crate) fn copy_base_palette(from: &ThemeColor, to: &mut ThemeColor) -> bool {
+    let mut changed = false;
+    macro_rules! copy {
+        ($($f:ident),*) => {$(
+            if to.$f != from.$f {
+                to.$f = from.$f;
+                changed = true;
+            }
+        )*};
+    }
+    copy!(
+        red,
+        red_light,
+        green,
+        green_light,
+        blue,
+        blue_light,
+        yellow,
+        yellow_light,
+        magenta,
+        magenta_light,
+        cyan,
+        cyan_light
+    );
+    changed
+}
+
+fn assign_base_colors(tc: &mut ThemeColor, c: &BasePaletteInputs, is_dark: bool) {
     // Issue 3: _light variants use mode-aware derivation. On dark themes,
     // blending toward a dark bg *darkens* the color (wrong); instead we
     // increase lightness for a visible tinted background.

@@ -120,7 +120,10 @@ per-file exception per set), so a refresh or an addition is reproducible.
 ./scripts/refresh-icons.sh add material lan     # add a Material Symbols icon
 ```
 
-Requires Python 3.11+ (for `tomllib`) and network access. After a run,
+Requires Python 3.11+ (for `tomllib`) and network access. The exit code only
+says every file was reachable; byte-identity with upstream is established by
+running the script and confirming `git diff --stat native-theme/icons` is
+empty. After a run,
 `cargo test -p native-theme --test icon_sources` checks the manifest and
 `cargo build -p native-theme` regenerates the by-name tables from the
 directories (`native-theme/build.rs`).

@@ -15,7 +15,9 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   solid button surfaces instead of upstream's tinted house style.
 - **Fonts and global geometry**: families, sizes, `radius`, `shadow`,
   `focus_ring`, `scrollbar_mode`; a `ThemeConfig` per mode so upstream's own
-  `Theme::change` reproduces the native palette in light and dark.
+  `Theme::change` reproduces the native palette in light and dark (the 12
+  base-palette fields `ThemeConfigColors` keeps private are restored by the
+  connector's observer after each switch).
 - **The base layer**: gpui-base paints scrollbars and resize handles without
   going through gpui-component; the connector writes the native scrollbar
   width, thumb width, inset and radius, minimum thumb length and colours, and
@@ -29,7 +31,9 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   opaque.
 - **Icons**: mappings from every gpui-component `IconName` (101 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
-  for the two a set lacks.
+  for the two a set lacks. `IconName` cannot be enumerated in code, so the
+  tables are audited against gpui-component 0.6.0's variant set and must be
+  re-audited on every gpui-component bump.
 
 ## How it fits
 
@@ -82,7 +86,10 @@ apply(dark, &dark_resolved, &prefs, cx);   // dark is now current; both variants
 Afterwards gpui-component's own `Theme::sync_system_appearance(None, cx)` or
 `Theme::change(mode, None, cx)` switches between the two native palettes: each
 `apply` installs a `ThemeConfig` for every stored variant, and the connector's
-observer restores the base-layer geometry after the switch.
+observer restores the base-layer geometry and the 12 base-palette colours the
+config cannot carry after the switch. With only one variant stored, a switch to
+the other mode shows upstream's registry palette, so call `apply` once per
+variant.
 
 ## Core concepts
 
@@ -155,7 +162,8 @@ heights grow only when scaled text would no longer fit:
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
 width, button icon gap, input padding, popup-menu rows; and tab height, radius
-and text size, which `Tab`'s render re-sets after applying the refinement) is
+and text size, which `Tab`'s render writes into the same style bag the caller's
+setters fill, `tab/tab.rs:801-808`) is
 listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/todo_v0.5.8_gpui-component-0.6-spec.md)
 and in the roadmap's upstream-PR list.
 

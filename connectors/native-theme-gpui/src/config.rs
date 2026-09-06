@@ -90,10 +90,11 @@ pub fn to_theme_config(
 fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
     let h = |c: gpui::Hsla| -> Option<SharedString> { Some(SharedString::from(hsla_to_hex(c))) };
 
-    // Note: ThemeConfigColors has private base color fields (red, blue, green,
-    // yellow, magenta, cyan and their _light variants) that we cannot set
-    // from outside gpui-component. Those 12 fields remain at their defaults.
-    // gpui-component's apply_config will derive them from ThemeColor fields.
+    // ThemeConfigColors keeps the 12 base-palette fields (red, blue, green,
+    // yellow, magenta, cyan and their _light variants) private (gpui-component
+    // 0.6.0 src/theme/schema.rs:657-668), so this config cannot carry them and
+    // Theme::apply_config resets them to ThemeColor::dark()/light() on every
+    // rebuild (:687-695, :1074-1078). `apply`'s observer restores them (D43).
     let mut colors = ThemeConfigColors::default();
     colors.accent = h(tc.accent);
     colors.accent_foreground = h(tc.accent_foreground);
@@ -101,7 +102,8 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.background = h(tc.background);
     colors.border = h(tc.border);
     colors.group_box = h(tc.group_box);
-    // group_box_title_foreground: not mapped — inherits from ThemeConfig default (foreground).
+    // group_box_title_foreground: left None; declared at schema.rs:357 but read
+    // nowhere in gpui-component 0.6.0 (no apply_color! arm, no consumer).
     colors.group_box_foreground = h(tc.group_box_foreground);
     colors.caret = h(tc.caret);
     colors.chart_1 = h(tc.chart_1);
@@ -339,6 +341,17 @@ mod tests {
             Some(9),
             "translucent colours are exported as #rrggbbaa"
         );
+        // Every field ThemeConfigColors exposes is exported: 139 ThemeColor
+        // fields minus the 12 private base-palette ones (D43), and
+        // group_box_title_foreground, which ThemeColor does not have, stays None.
+        let value = serde_json::to_value(c).expect("ThemeConfigColors serialises");
+        let exported = value
+            .as_object()
+            .expect("ThemeConfigColors serialises as an object")
+            .values()
+            .filter(|v| !v.is_null())
+            .count();
+        assert_eq!(exported, 127, "config colours exported");
     }
 
     #[test]

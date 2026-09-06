@@ -270,6 +270,9 @@ impl AccessibilityPreferences {
 
     /// Read the OS accessibility preferences without resolving a theme (non-Linux).
     ///
+    /// The macOS reader (`NSWorkspace`) and the Windows reader (`UISettings`)
+    /// fill the accessibility block on their platforms; `reduce_motion` is
+    /// additionally read through [`crate::detect::detect_reduced_motion`].
     /// The inner future has no `.await` points off Linux, so a noop-waker
     /// single poll suffices, as in [`SystemTheme::from_system`].
     #[must_use]

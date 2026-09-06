@@ -601,6 +601,22 @@ explicit mapping in `colors.rs` **and** `config.rs`.
 no field equals `Hsla::default()`; any legitimate exemption is listed with a
 comment and recorded in the CHANGELOG.
 
+### 6.5 Round trip through `ThemeConfig`
+
+`to_theme_config` exports 127 of the 139 fields; `ThemeConfigColors` keeps the
+12 base-palette fields private (§14), and `group_box_title_foreground` has no
+`ThemeColor` counterpart. A test counts the 127 exports. The 12 are restored by
+the observer (D43), so the palette after `Theme::change` is the native one.
+
+### 6.6 Constants carried from 0.5.1 in `colors.rs`
+
+Not `ResolvedTheme` fields and not in §8.2/§9.4; recorded here so §3.5 stays
+exhaustive: `MIN_STATUS_CONTRAST = 4.5` (WCAG 2 AA contrast for normal text)
+with white/black as the fallback foregrounds; magenta and cyan at the HSL hues
+of the pure colours (300° = 0.833, 180° = 0.5) with saturation and lightness
+from `accent` / `info` and a `0.85` saturation cap (an aesthetic constant from
+0.5.1, not derivable from a theme value).
+
 ---
 
 ## 7 -- Accessibility as an input
@@ -1130,8 +1146,9 @@ The claim that gpui-component has no receiving fields is corrected.
 
 Close: `SystemTheme` layout item. Add upstream PR candidates: styled `Theme`
 `scrollbar_styles` override honoured by `base_theme()`; `Tab` keeps the
-caller's height, radius and text size (its render re-sets them after
-`refine_style`, `tab/tab.rs:800-808`); `Theme.shadow` honoured beyond `Button` /
+caller's height, radius and text size (its render writes its own into the
+style bag the caller's setters fill, `tab/tab.rs:801-808`); public base-palette
+fields on `ThemeConfigColors` (§14); `Theme.shadow` honoured beyond `Button` /
 `tokens.shadow` consumed; `Size::Size` honoured by Checkbox and Switch; inner
 geometry (checkbox/radio indicator, switch, slider, separator thickness,
 resize-handle width, button icon gap, input padding, popup-menu items,
@@ -1177,7 +1194,9 @@ readers: both readers already fill all four fields, §1.3.)
 | Checkbox / radio indicator size | inner element sized by `Size` match; `Size::Size` falls to medium (`checkbox.rs:195-199`; `radio.rs:216-220`) |
 | Switch track / thumb / radius | inner (`switch.rs:136-146`); refinement lands on a wrapper (`:168`) |
 | Slider track / thumb | inner (`slider.rs:218, 288-289`); root refinement `:270` |
-| Tab geometry | `Tab` applies its stored style (`tab/tab.rs:606` → gpui-base `tabs.rs:180`), but its render then re-sets height, radius and text size (`tab/tab.rs:800-808`), so those never take; `min_width` and outer padding would survive (follow-up); `TabBar`'s refinement (`tab_bar.rs:490`) styles the bar |
+| Tab geometry | `Styled for Tab` hands out gpui-base `Tab`'s style bag (`tab/tab.rs:606-608`); `Tab::render` then writes its own `h` (`:801`), text size (`:803-807`) and `rounded` (`:808`) into that bag before gpui-base applies it (`tabs.rs:180`), so those three never take; `min_width` and outer padding are not overwritten and would survive (follow-up); `TabBar`'s refinement (`tab_bar.rs:490`) styles the bar |
+| Base palette across `Theme::change` | `ThemeConfigColors` keeps `red` … `cyan_light` private (`schema.rs:657-668`), so a variant's config cannot carry them and `Theme::apply_config` resets them to `ThemeColor::dark()` / `light()` (`:687-695`, `:1074-1078`); the connector's base-theme observer copies the native values back after each rebuild (D43); the durable fix is upstream |
+| `IconName` enumeration | `icon_named!` emits no `ALL`; the 101-variant list in the tests is audited by hand per gpui-component version, so an added variant is not detected until the next audit |
 | Separator thickness | absolutely positioned inner line `px(1.)` (`separator.rs:79-84`); outer gets the refinement (`:137`) |
 | Splitter divider width | `HANDLE_SIZE` constant (gpui-base `resize_handle.rs:12`) |
 | Button icon-text gap; button label size ≠ body size | inner content row (`button.rs:658-666`) |
