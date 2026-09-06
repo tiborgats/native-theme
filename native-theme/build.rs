@@ -20,9 +20,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         // added, removed or modified.
         println!("cargo:rerun-if-changed={}", icons_dir.display());
 
-        let mut names: Vec<String> = fs::read_dir(&icons_dir)?
-            .filter_map(Result::ok)
-            .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        let entries = fs::read_dir(&icons_dir)?
+            .map(|entry| entry.map(|e| e.file_name().to_string_lossy().into_owned()))
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut names: Vec<String> = entries
+            .into_iter()
             .filter_map(|file| file.strip_suffix(".svg").map(str::to_owned))
             .collect();
         names.sort();
@@ -37,7 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         for name in &names {
             writeln!(
                 out,
-                "        {name:?} => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/icons/{dir}/{name}.svg\"))),"
+                "        {name:?} => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/icons/{dir}/\", {name:?}, \".svg\"))),"
             )?;
         }
         writeln!(out, "        _ => None,")?;

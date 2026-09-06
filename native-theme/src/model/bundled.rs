@@ -527,6 +527,7 @@ mod tests {
         assert!(bundled_icon_by_name("nonexistent_icon_xyz", IconSet::Material).is_none());
     }
 
+    #[cfg(any(feature = "lucide-icons", feature = "material-icons"))]
     fn bundled_files(dir: &str) -> Vec<String> {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("icons")
