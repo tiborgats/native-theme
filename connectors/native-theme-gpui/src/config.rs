@@ -81,7 +81,6 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.accent = h(tc.accent);
     colors.accent_foreground = h(tc.accent_foreground);
     colors.accordion = h(tc.accordion);
-    colors.accordion_hover = h(tc.accordion_hover);
     colors.background = h(tc.background);
     colors.border = h(tc.border);
     colors.group_box = h(tc.group_box);
@@ -148,8 +147,8 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.success_foreground = h(tc.success_foreground);
     colors.success_hover = h(tc.success_hover);
     colors.success_active = h(tc.success_active);
-    colors.bullish = h(tc.bullish);
-    colors.bearish = h(tc.bearish);
+    colors.chart_bullish = h(tc.chart_bullish);
+    colors.chart_bearish = h(tc.chart_bearish);
     colors.switch = h(tc.switch);
     colors.switch_thumb = h(tc.switch_thumb);
     colors.tab = h(tc.tab);

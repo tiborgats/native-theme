@@ -282,8 +282,8 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.info_hover = hover_color(c.info, c.bg);
     tc.info_active = active_color(c.info, is_dark);
 
-    tc.bullish = c.success;
-    tc.bearish = c.danger;
+    tc.chart_bullish = c.success;
+    tc.chart_bearish = c.danger;
 }
 
 fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
@@ -374,9 +374,6 @@ fn assign_misc(
     tc.popover_foreground = c.popover_fg;
 
     tc.accordion = c.bg;
-    // Accordion hover: 8% accent tint over background.
-    // Matches upstream apply_config fallback pattern (Issue 60).
-    tc.accordion_hover = c.bg.blend(c.accent.opacity(0.08));
 
     // Group box: lower opacity in dark mode (0.3) to preserve background contrast;
     // light mode uses 0.4. Diverges from upstream's uniform 0.5.
@@ -867,13 +864,14 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has N Hsla fields (each 16 bytes = 4x f32).
+        // ThemeColor has 139 Hsla fields in gpui-component 0.6.0 (each 16 bytes
+        // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();
         let hsla_size = std::mem::size_of::<Hsla>();
         let field_count = size / hsla_size;
         assert_eq!(
-            field_count, 108,
+            field_count, 139,
             "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color() and the doc table in lib.rs"
         );
     }

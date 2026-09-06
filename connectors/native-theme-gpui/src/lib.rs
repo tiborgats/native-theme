@@ -93,7 +93,7 @@ pub use native_theme::{Result, SystemTheme};
 pub use native_theme::detect::LinuxDesktop;
 
 use gpui::{SharedString, px};
-use gpui_component::scroll::ScrollbarShow;
+use gpui_component::scroll::ScrollbarMode;
 use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
 use std::rc::Rc;
 
@@ -145,11 +145,12 @@ pub fn to_theme(
     theme.radius_lg = px(d.border.corner_radius_lg.max(0.0));
     theme.shadow = d.border.shadow_enabled;
 
-    // Issue 43: set scrollbar_show from resolved overlay_mode
-    theme.scrollbar_show = if resolved.scrollbar.overlay_mode {
-        ScrollbarShow::Scrolling
+    // §8.3: Scrolling (overlay, auto-hide) when the platform draws overlay
+    // scrollbars, Always otherwise.
+    theme.scrollbar_mode = if resolved.scrollbar.overlay_mode {
+        ScrollbarMode::Scrolling
     } else {
-        ScrollbarShow::Always
+        ScrollbarMode::Always
     };
 
     // Issue 43/44: set highlight_theme based on is_dark so syntax highlighting
@@ -524,22 +525,17 @@ mod tests {
         assert_eq!(theme.shadow, resolved.defaults.border.shadow_enabled);
     }
 
-    // Issue 43: scrollbar_show set from overlay_mode
+    // §8.3: scrollbar_mode set from overlay_mode
     #[test]
-    fn scrollbar_show_from_overlay_mode() {
+    fn scrollbar_mode_from_overlay_mode() {
         let resolved = test_resolved();
         let theme = to_theme(&resolved, "Scroll", true, false);
-        if resolved.scrollbar.overlay_mode {
-            assert!(
-                matches!(theme.scrollbar_show, ScrollbarShow::Scrolling),
-                "overlay_mode=true should set Scrolling"
-            );
+        let expected = if resolved.scrollbar.overlay_mode {
+            ScrollbarMode::Scrolling
         } else {
-            assert!(
-                matches!(theme.scrollbar_show, ScrollbarShow::Always),
-                "overlay_mode=false should set Always"
-            );
-        }
+            ScrollbarMode::Always
+        };
+        assert_eq!(theme.scrollbar_mode, expected);
     }
 
     // Issue 43/44: highlight_theme matches is_dark

@@ -5,9 +5,9 @@
 //! | Function | Purpose |
 //! |----------|---------|
 //! | [`icon_name`] | Map [`IconRole`] → [`IconName`] (Lucide, zero-I/O) |
-//! | [`lucide_name_for_gpui_icon`] | Map [`IconName`] → Lucide name (`&str`) |
-//! | [`material_name_for_gpui_icon`] | Map [`IconName`] → Material name (`&str`) |
-//! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (Linux only) |
+//! | [`lucide_name_for_gpui_icon`] | Map [`IconName`] → Lucide name (`Option<&str>`) |
+//! | [`material_name_for_gpui_icon`] | Map [`IconName`] → Material name (`Option<&str>`) |
+//! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (`Option<&str>`, Linux only) |
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
 //! | [`into_image_source`] | Consuming variant of [`to_image_source`] (avoids clone) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
@@ -61,7 +61,7 @@ impl std::fmt::Debug for AnimatedImageSources {
 /// Maps 30 of the 42 `IconRole` variants to `IconName`. The 12 unmapped roles
 /// (Shield, ActionSave, ActionPaste, ActionCut, ActionEdit, ActionRefresh,
 /// ActionPrint, NavHome, TrashFull, DialogQuestion, Help, Lock) have no
-/// corresponding Lucide icon in gpui-component 0.5.
+/// corresponding Lucide icon in gpui-component 0.6.
 ///
 /// # Examples
 ///
@@ -125,7 +125,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
         IconRole::UserAccount => IconName::User,
         IconRole::Notification => IconName::Bell,
 
-        // No Lucide equivalent in gpui-component 0.5
+        // No Lucide equivalent in gpui-component 0.6
         _ => return None,
     })
 }
@@ -135,16 +135,24 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::icons::LucideLoader::new`].
 ///
-/// Covers all 86 gpui-component `IconName` variants.
+/// Covers all 101 gpui-component 0.6.0 `IconName` variants. Returns `None`
+/// where Lucide has no equivalent (today only `StarFill`, spec §10.2); every
+/// `Some` is Lucide's own file name (`LucideLoader::new(name)` resolves it).
 #[must_use]
-pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
-    match icon {
+pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
+    Some(match icon {
         IconName::ALargeSmall => "a-large-small",
         IconName::ArrowDown => "arrow-down",
         IconName::ArrowLeft => "arrow-left",
         IconName::ArrowRight => "arrow-right",
         IconName::ArrowUp => "arrow-up",
         IconName::Asterisk => "asterisk",
+        IconName::Battery => "battery",
+        IconName::BatteryCharging => "battery-charging",
+        IconName::BatteryFull => "battery-full",
+        IconName::BatteryLow => "battery-low",
+        IconName::BatteryMedium => "battery-medium",
+        IconName::BatteryWarning => "battery-warning",
         IconName::Bell => "bell",
         IconName::BookOpen => "book-open",
         IconName::Bot => "bot",
@@ -161,9 +169,10 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::CircleCheck => "circle-check",
         IconName::CircleUser => "circle-user",
         IconName::CircleX => "circle-x",
-        IconName::Close => "close",
+        IconName::Close => "x",
         IconName::Copy => "copy",
-        IconName::Dash => "dash",
+        IconName::Cpu => "cpu",
+        IconName::Dash => "minus",
         IconName::Delete => "delete",
         IconName::Ellipsis => "ellipsis",
         IconName::EllipsisVertical => "ellipsis-vertical",
@@ -171,27 +180,31 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::Eye => "eye",
         IconName::EyeOff => "eye-off",
         IconName::File => "file",
+        IconName::FileText => "file-text",
         IconName::Folder => "folder",
         IconName::FolderClosed => "folder-closed",
         IconName::FolderOpen => "folder-open",
         IconName::Frame => "frame",
         IconName::GalleryVerticalEnd => "gallery-vertical-end",
-        IconName::GitHub => "github",
+        IconName::Github => "github",
         IconName::Globe => "globe",
+        IconName::HardDrive => "hard-drive",
         IconName::Heart => "heart",
         IconName::HeartOff => "heart-off",
         IconName::Inbox => "inbox",
         IconName::Info => "info",
-        IconName::Inspector => "inspect",
+        IconName::Inspector => "scan",
         IconName::LayoutDashboard => "layout-dashboard",
         IconName::Loader => "loader",
         IconName::LoaderCircle => "loader-circle",
         IconName::Map => "map",
         IconName::Maximize => "maximize",
+        IconName::MemoryStick => "memory-stick",
         IconName::Menu => "menu",
         IconName::Minimize => "minimize",
         IconName::Minus => "minus",
         IconName::Moon => "moon",
+        IconName::Network => "network",
         IconName::Palette => "palette",
         IconName::PanelBottom => "panel-bottom",
         IconName::PanelBottomOpen => "panel-bottom-open",
@@ -201,18 +214,26 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::PanelRight => "panel-right",
         IconName::PanelRightClose => "panel-right-close",
         IconName::PanelRightOpen => "panel-right-open",
+        IconName::Pause => "pause",
+        IconName::Play => "play",
         IconName::Plus => "plus",
         IconName::Redo => "redo",
         IconName::Redo2 => "redo-2",
         IconName::Replace => "replace",
-        IconName::ResizeCorner => "resize-corner",
+        IconName::ResizeCorner => "grip",
+        IconName::RotateCw => "rotate-cw",
         IconName::Search => "search",
         IconName::Settings => "settings",
         IconName::Settings2 => "settings-2",
-        IconName::SortAscending => "sort-ascending",
-        IconName::SortDescending => "sort-descending",
+        IconName::SortAscending => "arrow-up-narrow-wide",
+        IconName::SortDescending => "arrow-down-wide-narrow",
         IconName::SquareTerminal => "square-terminal",
         IconName::Star => "star",
+        // Lucide ships no filled star (star-fill / star-filled absent at 1.41.0);
+        // gpui-kit's star-fill.svg is Lucide's `star` with fill="currentColor"
+        // added, which a bundled Lucide file cannot express, and the hollow
+        // `star` would make Star and StarFill indistinguishable (spec §10.2).
+        IconName::StarFill => return None,
         IconName::StarOff => "star-off",
         IconName::Sun => "sun",
         IconName::ThumbsDown => "thumbs-down",
@@ -221,11 +242,11 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::Undo => "undo",
         IconName::Undo2 => "undo-2",
         IconName::User => "user",
-        IconName::WindowClose => "window-close",
-        IconName::WindowMaximize => "window-maximize",
-        IconName::WindowMinimize => "window-minimize",
-        IconName::WindowRestore => "window-restore",
-    }
+        IconName::WindowClose => "x",
+        IconName::WindowMaximize => "maximize",
+        IconName::WindowMinimize => "minus",
+        IconName::WindowRestore => "minimize-2",
+    })
 }
 
 /// Map a gpui-component [`IconName`] to its canonical Material icon name.
@@ -233,13 +254,16 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::icons::MaterialLoader`].
 ///
-/// Covers all 86 gpui-component `IconName` variants.
+/// Covers all 101 gpui-component 0.6.0 `IconName` variants. Returns `None`
+/// where Material Symbols has no equivalent (today only `StarOff`); every
+/// `Some` is a bundled Material Symbols Outlined 24px file.
 ///
 /// Material icon name collisions (multiple IconName variants -> same name):
 /// - ArrowUp, SortAscending -> "arrow_upward"
 /// - ArrowDown, SortDescending -> "arrow_downward"
 /// - Close, WindowClose -> "close"
 /// - Dash, Minus -> "remove"
+/// - File, FileText -> "description"
 /// - Folder, FolderClosed -> "folder"
 /// - Maximize, WindowMaximize -> "open_in_full"
 /// - Minimize, WindowMinimize -> "minimize"
@@ -247,14 +271,20 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
 /// - Redo, Redo2 -> "redo"
 /// - Undo, Undo2 -> "undo"
 #[must_use]
-pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
-    match icon {
-        IconName::ALargeSmall => "font_size",
+pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
+    Some(match icon {
+        IconName::ALargeSmall => "format_size",
         IconName::ArrowDown => "arrow_downward",
         IconName::ArrowLeft => "arrow_back",
         IconName::ArrowRight => "arrow_forward",
         IconName::ArrowUp => "arrow_upward",
         IconName::Asterisk => "emergency",
+        IconName::Battery => "battery_0_bar", // close
+        IconName::BatteryCharging => "battery_charging_full", // exact
+        IconName::BatteryFull => "battery_full", // exact
+        IconName::BatteryLow => "battery_2_bar", // close: one of three bars <-> two of six
+        IconName::BatteryMedium => "battery_4_bar", // close: two of three <-> four of six
+        IconName::BatteryWarning => "battery_alert", // exact
         IconName::Bell => "notifications",
         IconName::BookOpen => "menu_book",
         IconName::Bot => "smart_toy",
@@ -273,6 +303,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::CircleX => "cancel",
         IconName::Close => "close",
         IconName::Copy => "content_copy",
+        IconName::Cpu => "memory", // close
         IconName::Dash => "remove",
         IconName::Delete => "delete",
         IconName::Ellipsis => "more_horiz",
@@ -281,13 +312,15 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::Eye => "visibility",
         IconName::EyeOff => "visibility_off",
         IconName::File => "description",
+        IconName::FileText => "description", // exact
         IconName::Folder => "folder",
         IconName::FolderClosed => "folder",
         IconName::FolderOpen => "folder_open",
         IconName::Frame => "crop_free",
         IconName::GalleryVerticalEnd => "view_carousel",
-        IconName::GitHub => "code",
+        IconName::Github => "code",
         IconName::Globe => "language",
+        IconName::HardDrive => "hard_drive", // exact
         IconName::Heart => "favorite",
         IconName::HeartOff => "heart_broken",
         IconName::Inbox => "inbox",
@@ -298,10 +331,12 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::LoaderCircle => "autorenew",
         IconName::Map => "map",
         IconName::Maximize => "open_in_full",
+        IconName::MemoryStick => "memory_alt", // close: a RAM module with pins, like Lucide's
         IconName::Menu => "menu",
         IconName::Minimize => "minimize",
         IconName::Minus => "remove",
         IconName::Moon => "dark_mode",
+        IconName::Network => "lan", // close
         IconName::Palette => "palette",
         IconName::PanelBottom => "dock_to_bottom",
         IconName::PanelBottomOpen => "web_asset",
@@ -311,11 +346,14 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::PanelRight => "right_panel_close",
         IconName::PanelRightClose => "right_panel_close",
         IconName::PanelRightOpen => "right_panel_open",
+        IconName::Pause => "pause",     // exact
+        IconName::Play => "play_arrow", // exact
         IconName::Plus => "add",
         IconName::Redo => "redo",
         IconName::Redo2 => "redo",
         IconName::Replace => "find_replace",
         IconName::ResizeCorner => "drag_indicator",
+        IconName::RotateCw => "rotate_right", // exact
         IconName::Search => "search",
         IconName::Settings => "settings",
         IconName::Settings2 => "tune",
@@ -323,7 +361,10 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::SortDescending => "arrow_downward",
         IconName::SquareTerminal => "terminal",
         IconName::Star => "star",
-        IconName::StarOff => "star_border",
+        IconName::StarFill => "star_fill1", // exact
+        // Material Symbols has no star-off glyph; the duplicate hollow star that
+        // used to back this variant was removed (spec §10.3). None, no substitute.
+        IconName::StarOff => return None,
         IconName::Sun => "light_mode",
         IconName::ThumbsDown => "thumb_down",
         IconName::ThumbsUp => "thumb_up",
@@ -335,7 +376,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
         IconName::WindowMaximize => "open_in_full",
         IconName::WindowMinimize => "minimize",
         IconName::WindowRestore => "close_fullscreen",
-    }
+    })
 }
 
 /// Map a gpui-component [`IconName`] to its freedesktop icon name for the
@@ -357,13 +398,15 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
 /// - `close`: same concept, minor visual difference
 /// - `approximate`: best available match, different metaphor
 ///
-/// Covers all 86 gpui-component `IconName` variants.
+/// Covers all 101 gpui-component 0.6.0 `IconName` variants. Returns `None`
+/// where the freedesktop icon naming specification has no equivalent (today
+/// every variant has one).
 #[cfg(target_os = "linux")]
 #[must_use]
 pub fn freedesktop_name_for_gpui_icon(
     icon: IconName,
     de: native_theme::detect::LinuxDesktop,
-) -> &'static str {
+) -> Option<&'static str> {
     use native_theme::detect::LinuxDesktop;
 
     // GTK-based DEs follow GNOME/Adwaita naming; Qt-based follow KDE/Breeze
@@ -376,48 +419,56 @@ pub fn freedesktop_name_for_gpui_icon(
             | LinuxDesktop::Xfce
     );
 
-    match icon {
+    Some(match icon {
         // --- Icons with freedesktop standard names (all DEs) ---
-        IconName::BookOpen => "help-contents",      // close
-        IconName::Bot => "face-smile",              // approximate
-        IconName::ChevronDown => "go-down",         // close: full nav arrow, not disclosure chevron
-        IconName::ChevronLeft => "go-previous",     // close
-        IconName::ChevronRight => "go-next",        // close
-        IconName::ChevronUp => "go-up",             // close
-        IconName::CircleX => "dialog-error",        // close
-        IconName::Copy => "edit-copy",              // exact
-        IconName::Dash => "list-remove",            // exact
-        IconName::Delete => "edit-delete",          // exact
-        IconName::File => "text-x-generic",         // exact
-        IconName::Folder => "folder",               // exact
-        IconName::FolderClosed => "folder",         // exact
-        IconName::FolderOpen => "folder-open",      // exact
-        IconName::HeartOff => "non-starred",        // close: un-favorite semantics
-        IconName::Info => "dialog-information",     // exact
-        IconName::LayoutDashboard => "view-grid",   // close
-        IconName::Map => "find-location",           // close
-        IconName::Maximize => "view-fullscreen",    // exact
-        IconName::Menu => "open-menu",              // exact
-        IconName::Minimize => "window-minimize",    // exact
-        IconName::Minus => "list-remove",           // exact
-        IconName::Moon => "weather-clear-night",    // close: dark mode toggle
-        IconName::Plus => "list-add",               // exact
-        IconName::Redo => "edit-redo",              // exact
-        IconName::Redo2 => "edit-redo",             // exact
-        IconName::Replace => "edit-find-replace",   // exact
-        IconName::Search => "edit-find",            // exact
+        IconName::Battery => "battery",                     // exact
+        IconName::BookOpen => "help-contents",              // close
+        IconName::Bot => "face-smile",                      // approximate
+        IconName::ChevronDown => "go-down", // close: full nav arrow, not disclosure chevron
+        IconName::ChevronLeft => "go-previous", // close
+        IconName::ChevronRight => "go-next", // close
+        IconName::ChevronUp => "go-up",     // close
+        IconName::CircleX => "dialog-error", // close
+        IconName::Copy => "edit-copy",      // exact
+        IconName::Dash => "list-remove",    // exact
+        IconName::Delete => "edit-delete",  // exact
+        IconName::File => "text-x-generic", // exact
+        IconName::FileText => "text-x-generic", // exact
+        IconName::Folder => "folder",       // exact
+        IconName::FolderClosed => "folder", // exact
+        IconName::FolderOpen => "folder-open", // exact
+        IconName::HardDrive => "drive-harddisk", // exact
+        IconName::HeartOff => "non-starred", // close: un-favorite semantics
+        IconName::Info => "dialog-information", // exact
+        IconName::LayoutDashboard => "view-grid", // close
+        IconName::Map => "find-location",   // close
+        IconName::Maximize => "view-fullscreen", // exact
+        IconName::Menu => "open-menu",      // exact
+        IconName::Minimize => "window-minimize", // exact
+        IconName::Minus => "list-remove",   // exact
+        IconName::Moon => "weather-clear-night", // close: dark mode toggle
+        IconName::Network => "network-workgroup", // close
+        IconName::Pause => "media-playback-pause", // exact
+        IconName::Play => "media-playback-start", // exact
+        IconName::Plus => "list-add",       // exact
+        IconName::Redo => "edit-redo",      // exact
+        IconName::Redo2 => "edit-redo",     // exact
+        IconName::Replace => "edit-find-replace", // exact
+        IconName::RotateCw => "object-rotate-right", // exact
+        IconName::Search => "edit-find",    // exact
         IconName::Settings => "preferences-system", // exact
         IconName::SortAscending => "view-sort-ascending", // exact
         IconName::SortDescending => "view-sort-descending", // exact
         IconName::SquareTerminal => "utilities-terminal", // close
-        IconName::Star => "starred",                // exact
-        IconName::StarOff => "non-starred",         // exact
-        IconName::Sun => "weather-clear",           // close: light mode toggle
+        IconName::Star => "non-starred", // close: the hollow star, the "not starred" state; `starred` is StarFill's
+        IconName::StarFill => "starred", // exact: the filled "starred" state
+        IconName::StarOff => "non-starred", // exact
+        IconName::Sun => "weather-clear", // close: light mode toggle
         IconName::TriangleAlert => "dialog-warning", // exact
-        IconName::Undo => "edit-undo",              // exact
-        IconName::Undo2 => "edit-undo",             // exact
-        IconName::User => "system-users",           // exact
-        IconName::WindowClose => "window-close",    // exact
+        IconName::Undo => "edit-undo",   // exact
+        IconName::Undo2 => "edit-undo",  // exact
+        IconName::User => "system-users", // exact
+        IconName::WindowClose => "window-close", // exact
         IconName::WindowMaximize => "window-maximize", // exact
         IconName::WindowMinimize => "window-minimize", // exact
         IconName::WindowRestore => "window-restore", // exact
@@ -451,6 +502,41 @@ pub fn freedesktop_name_for_gpui_icon(
                 "go-up-skip"
             }
         } // close
+        IconName::BatteryCharging => {
+            if is_gtk {
+                "battery-full-charging"
+            } else {
+                "battery-100-charging"
+            }
+        } // close
+        IconName::BatteryFull => {
+            if is_gtk {
+                "battery-full"
+            } else {
+                "battery-100"
+            }
+        } // exact
+        IconName::BatteryLow => {
+            if is_gtk {
+                "battery-low"
+            } else {
+                "battery-020"
+            }
+        } // close
+        IconName::BatteryMedium => {
+            if is_gtk {
+                "battery-good"
+            } else {
+                "battery-050"
+            }
+        } // close
+        IconName::BatteryWarning => {
+            if is_gtk {
+                "battery-caution"
+            } else {
+                "battery-010"
+            }
+        } // close (GNOME) / approximate (KDE: near-empty level, no alert icon)
         IconName::Calendar => {
             if is_gtk {
                 "x-office-calendar"
@@ -486,6 +572,13 @@ pub fn freedesktop_name_for_gpui_icon(
                 "tab-close"
             }
         } // close
+        IconName::Cpu => {
+            if is_gtk {
+                "computer"
+            } else {
+                "cpu"
+            }
+        } // approximate (GNOME) / exact (KDE)
         IconName::Ellipsis => {
             if is_gtk {
                 "view-more-horizontal"
@@ -542,6 +635,13 @@ pub fn freedesktop_name_for_gpui_icon(
                 "process-working"
             }
         } // exact
+        IconName::MemoryStick => {
+            if is_gtk {
+                "media-flash"
+            } else {
+                "memory"
+            }
+        } // approximate (GNOME) / exact (KDE: devices/64/memory.svg is a RAM module)
         IconName::Palette => {
             if is_gtk {
                 "color-select"
@@ -670,7 +770,7 @@ pub fn freedesktop_name_for_gpui_icon(
                 "view-list-icons"
             }
         } // approximate
-        IconName::GitHub => {
+        IconName::Github => {
             if is_gtk {
                 "applications-engineering"
             } else {
@@ -726,7 +826,7 @@ pub fn freedesktop_name_for_gpui_icon(
                 "approved"
             }
         } // approximate
-    }
+    })
 }
 
 /// Default rasterization size for SVG icons.
@@ -889,8 +989,8 @@ pub fn bundled_icon_to_image_source(
     size: Option<u32>,
 ) -> Option<ImageSource> {
     let name = match icon_set {
-        native_theme::theme::IconSet::Lucide => lucide_name_for_gpui_icon(icon),
-        native_theme::theme::IconSet::Material => material_name_for_gpui_icon(icon),
+        native_theme::theme::IconSet::Lucide => lucide_name_for_gpui_icon(icon)?,
+        native_theme::theme::IconSet::Material => material_name_for_gpui_icon(icon)?,
         _ => return None,
     };
     // G3 (Phase 93-03): per-set loader replaces the demoted bundled_icon_by_name.
@@ -1254,6 +1354,12 @@ mod tests {
         IconName::ArrowRight,
         IconName::ArrowUp,
         IconName::Asterisk,
+        IconName::Battery,
+        IconName::BatteryCharging,
+        IconName::BatteryFull,
+        IconName::BatteryLow,
+        IconName::BatteryMedium,
+        IconName::BatteryWarning,
         IconName::Bell,
         IconName::BookOpen,
         IconName::Bot,
@@ -1272,6 +1378,7 @@ mod tests {
         IconName::CircleX,
         IconName::Close,
         IconName::Copy,
+        IconName::Cpu,
         IconName::Dash,
         IconName::Delete,
         IconName::Ellipsis,
@@ -1280,13 +1387,15 @@ mod tests {
         IconName::Eye,
         IconName::EyeOff,
         IconName::File,
+        IconName::FileText,
         IconName::Folder,
         IconName::FolderClosed,
         IconName::FolderOpen,
         IconName::Frame,
         IconName::GalleryVerticalEnd,
-        IconName::GitHub,
+        IconName::Github,
         IconName::Globe,
+        IconName::HardDrive,
         IconName::Heart,
         IconName::HeartOff,
         IconName::Inbox,
@@ -1297,10 +1406,12 @@ mod tests {
         IconName::LoaderCircle,
         IconName::Map,
         IconName::Maximize,
+        IconName::MemoryStick,
         IconName::Menu,
         IconName::Minimize,
         IconName::Minus,
         IconName::Moon,
+        IconName::Network,
         IconName::Palette,
         IconName::PanelBottom,
         IconName::PanelBottomOpen,
@@ -1310,11 +1421,14 @@ mod tests {
         IconName::PanelRight,
         IconName::PanelRightClose,
         IconName::PanelRightOpen,
+        IconName::Pause,
+        IconName::Play,
         IconName::Plus,
         IconName::Redo,
         IconName::Redo2,
         IconName::Replace,
         IconName::ResizeCorner,
+        IconName::RotateCw,
         IconName::Search,
         IconName::Settings,
         IconName::Settings2,
@@ -1322,6 +1436,7 @@ mod tests {
         IconName::SortDescending,
         IconName::SquareTerminal,
         IconName::Star,
+        IconName::StarFill,
         IconName::StarOff,
         IconName::Sun,
         IconName::ThumbsDown,
@@ -1336,26 +1451,97 @@ mod tests {
         IconName::WindowRestore,
     ];
 
+    fn same_variant(a: &IconName, b: &IconName) -> bool {
+        // IconName derives neither PartialEq nor Debug (icon_named! emits Clone only).
+        std::mem::discriminant(a) == std::mem::discriminant(b)
+    }
+
+    /// Variants a set legitimately lacks (spec §10.1). Every `None` a table
+    /// returns must be listed here with its reason; a missing mapping cannot
+    /// hide as an intentional one.
+    const LUCIDE_NONE_ALLOWED: &[(IconName, &str)] = &[(
+        IconName::StarFill,
+        "Lucide has no filled star; gpui-kit's star-fill.svg is Lucide's star with fill added",
+    )];
+    const MATERIAL_NONE_ALLOWED: &[(IconName, &str)] =
+        &[(IconName::StarOff, "Material Symbols has no star-off glyph")];
+
     #[test]
-    fn all_icons_have_lucide_mapping() {
+    fn every_none_is_an_allowed_gap() {
         for icon in ALL_ICON_NAMES {
-            let name = lucide_name_for_gpui_icon(icon.clone());
-            assert!(
-                !name.is_empty(),
-                "Empty Lucide mapping for an IconName variant",
-            );
+            if lucide_name_for_gpui_icon(icon.clone()).is_none() {
+                assert!(
+                    LUCIDE_NONE_ALLOWED
+                        .iter()
+                        .any(|(a, _)| same_variant(a, icon)),
+                    "an IconName has no Lucide mapping and is not in LUCIDE_NONE_ALLOWED"
+                );
+            }
+            if material_name_for_gpui_icon(icon.clone()).is_none() {
+                assert!(
+                    MATERIAL_NONE_ALLOWED
+                        .iter()
+                        .any(|(a, _)| same_variant(a, icon)),
+                    "an IconName has no Material mapping and is not in MATERIAL_NONE_ALLOWED"
+                );
+            }
+        }
+    }
+
+    /// §10.1: a table may only name a file that is actually bundled.
+    #[test]
+    fn every_some_resolves_in_its_bundle() {
+        use native_theme::theme::IconSet;
+        for icon in ALL_ICON_NAMES {
+            if let Some(name) = lucide_name_for_gpui_icon(icon.clone()) {
+                assert!(
+                    bundled_icon_to_image_source(icon.clone(), IconSet::Lucide, None, None)
+                        .is_some(),
+                    "Lucide name {name} is not bundled"
+                );
+            }
+            if let Some(name) = material_name_for_gpui_icon(icon.clone()) {
+                assert!(
+                    bundled_icon_to_image_source(icon.clone(), IconSet::Material, None, None)
+                        .is_some(),
+                    "Material name {name} is not bundled"
+                );
+            }
         }
     }
 
     #[test]
-    fn all_icons_have_material_mapping() {
-        for icon in ALL_ICON_NAMES {
-            let name = material_name_for_gpui_icon(icon.clone());
-            assert!(
-                !name.is_empty(),
-                "Empty Material mapping for an IconName variant",
-            );
-        }
+    fn lucide_table_returns_lucide_names_for_the_former_gpui_names() {
+        assert_eq!(lucide_name_for_gpui_icon(IconName::Close), Some("x"));
+        assert_eq!(lucide_name_for_gpui_icon(IconName::WindowClose), Some("x"));
+        assert_eq!(lucide_name_for_gpui_icon(IconName::Dash), Some("minus"));
+        assert_eq!(
+            lucide_name_for_gpui_icon(IconName::WindowMinimize),
+            Some("minus")
+        );
+        assert_eq!(lucide_name_for_gpui_icon(IconName::Inspector), Some("scan"));
+        assert_eq!(
+            lucide_name_for_gpui_icon(IconName::ResizeCorner),
+            Some("grip")
+        );
+        assert_eq!(
+            lucide_name_for_gpui_icon(IconName::SortAscending),
+            Some("arrow-up-narrow-wide")
+        );
+        assert_eq!(
+            lucide_name_for_gpui_icon(IconName::SortDescending),
+            Some("arrow-down-wide-narrow")
+        );
+        assert_eq!(
+            lucide_name_for_gpui_icon(IconName::WindowMaximize),
+            Some("maximize")
+        );
+        assert_eq!(
+            lucide_name_for_gpui_icon(IconName::WindowRestore),
+            Some("minimize-2")
+        );
+        assert_eq!(lucide_name_for_gpui_icon(IconName::StarFill), None);
+        assert_eq!(material_name_for_gpui_icon(IconName::StarOff), None);
     }
 
     // --- icon_name tests ---
@@ -1506,7 +1692,7 @@ mod tests {
         // If gpui-component adds or removes IconName variants, this will break.
         assert_eq!(
             ALL_ICON_NAMES.len(),
-            86,
+            101,
             "ALL_ICON_NAMES count changed (got {}) -- update the list",
             ALL_ICON_NAMES.len()
         );
@@ -2194,11 +2380,11 @@ mod freedesktop_mapping_tests {
     use native_theme::detect::LinuxDesktop;
 
     #[test]
-    fn all_86_gpui_icons_have_mapping_on_kde() {
+    fn every_gpui_icon_has_a_freedesktop_name_on_kde() {
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
             assert!(
-                !fd_name.is_empty(),
+                fd_name.is_some_and(|n| !n.is_empty()),
                 "Empty KDE freedesktop mapping for an IconName variant",
             );
         }
@@ -2208,11 +2394,11 @@ mod freedesktop_mapping_tests {
     fn eye_differs_by_de() {
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Kde),
-            "view-visible",
+            Some("view-visible"),
         );
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Gnome),
-            "view-reveal",
+            Some("view-reveal"),
         );
     }
 
@@ -2226,12 +2412,27 @@ mod freedesktop_mapping_tests {
     }
 
     #[test]
-    fn all_86_gpui_icons_have_mapping_on_gnome() {
+    fn every_gpui_icon_has_a_freedesktop_name_on_gnome() {
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
             assert!(
-                !fd_name.is_empty(),
+                fd_name.is_some_and(|n| !n.is_empty()),
                 "Empty GNOME freedesktop mapping for an IconName variant",
+            );
+        }
+    }
+
+    /// §10.4: the two star states must not share a glyph.
+    #[test]
+    fn star_states_have_distinct_freedesktop_names() {
+        for de in [LinuxDesktop::Kde, LinuxDesktop::Gnome] {
+            assert_eq!(
+                freedesktop_name_for_gpui_icon(IconName::Star, de),
+                Some("non-starred")
+            );
+            assert_eq!(
+                freedesktop_name_for_gpui_icon(IconName::StarFill, de),
+                Some("starred")
             );
         }
     }
@@ -2241,11 +2442,11 @@ mod freedesktop_mapping_tests {
         // XFCE is GTK-based and should use GNOME naming convention
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Xfce),
-            "view-reveal",
+            Some("view-reveal"),
         );
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Bell, LinuxDesktop::Xfce),
-            "alarm",
+            Some("alarm"),
         );
     }
 
@@ -2260,7 +2461,10 @@ mod freedesktop_mapping_tests {
 
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
-            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
+            let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde)
+            else {
+                continue;
+            };
             if FreedesktopLoader::new(fd_name)
                 .theme(&theme)
                 .size(24)
@@ -2283,7 +2487,10 @@ mod freedesktop_mapping_tests {
         // Only runs when Adwaita is installed (it usually is on any Linux).
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
-            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
+            let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome)
+            else {
+                continue;
+            };
             if FreedesktopLoader::new(fd_name)
                 .theme("Adwaita")
                 .size(24)
