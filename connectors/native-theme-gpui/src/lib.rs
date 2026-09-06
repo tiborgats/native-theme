@@ -79,6 +79,7 @@ pub mod base_layer;
 pub(crate) mod colors;
 pub(crate) mod config;
 pub(crate) mod derive;
+pub mod geometry;
 pub mod icons;
 
 // Re-export native-theme types that appear in public signatures so downstream
