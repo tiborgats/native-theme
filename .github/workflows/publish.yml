@@ -35,10 +35,7 @@ jobs:
           cargo clippy -p native-theme --all-targets
           cargo clippy -p native-theme-iced --all-targets
 
-      # native-theme-gpui: soft-gated due to upstream G11 incompatibility
-      # (naga 27.0.3 vs codespan-reporting 0.12.0). See docs/todo_v0.5.7_gaps.md §G11.
-      - name: Clippy native-theme-gpui (soft)
-        continue-on-error: true
+      - name: Clippy native-theme-gpui
         env:
           RUSTFLAGS: -Dwarnings
         run: cargo clippy -p native-theme-gpui --all-targets
@@ -55,8 +52,7 @@ jobs:
       - name: Test native-theme-iced
         run: cargo test -p native-theme-iced
 
-      - name: Test native-theme-gpui (soft)
-        continue-on-error: true
+      - name: Test native-theme-gpui
         run: cargo test -p native-theme-gpui
 
       - name: Documentation (core)
@@ -68,8 +64,7 @@ jobs:
           cargo doc -p native-theme --no-deps
           cargo doc -p native-theme-iced --no-deps
 
-      - name: Documentation native-theme-gpui (soft)
-        continue-on-error: true
+      - name: Documentation native-theme-gpui
         env:
           RUSTDOCFLAGS: -Dwarnings
         run: cargo doc -p native-theme-gpui --no-deps
@@ -87,7 +82,7 @@ jobs:
       #   native-theme-build   (depends on derive)
       #   native-theme         (depends on derive + build)
       #   native-theme-iced    (depends on native-theme)
-      #   native-theme-gpui    (depends on native-theme; soft-gated for G11)
+      #   native-theme-gpui    (depends on native-theme)
       #
       # Waits between publishes let the crates.io sparse index settle so the
       # next `cargo publish` can resolve the prior crate from the registry.
@@ -153,11 +148,7 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-      # native-theme-gpui: soft-gated. Upstream G11 (naga 27.0.3 vs
-      # codespan-reporting 0.12.0) can block the publish-time verify compile.
-      # See docs/todo_v0.5.7_gaps.md §G11.
-      - name: Publish native-theme-gpui (soft)
-        continue-on-error: true
+      - name: Publish native-theme-gpui
         run: |
           OUTPUT=$(cargo publish -p native-theme-gpui 2>&1) || {
             if echo "$OUTPUT" | grep -qi "already.*uploaded\|already.*published"; then
