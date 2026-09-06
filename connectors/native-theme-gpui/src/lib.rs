@@ -5,9 +5,10 @@
 //! # Quick Start
 //!
 //! ```ignore
-//! use native_theme_gpui::from_preset;
+//! use native_theme_gpui::{AccessibilityPreferences, from_preset};
 //!
-//! let (theme, resolved) = from_preset("catppuccin-mocha", true)?;
+//! let prefs = AccessibilityPreferences::from_system();
+//! let (theme, resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
 //! ```
 //!
 //! Or from the OS-detected theme:
@@ -24,12 +25,13 @@
 //!
 //! ```ignore
 //! use native_theme::theme::{ColorMode, Theme};
-//! use native_theme_gpui::to_theme;
+//! use native_theme_gpui::{AccessibilityPreferences, to_theme};
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
 //! let variant = nt.into_variant(ColorMode::Dark)?;
 //! let resolved = variant.resolve_system()?;
-//! let theme = to_theme(&resolved, "Catppuccin Mocha", true, false);
+//! let prefs = AccessibilityPreferences::from_system();
+//! let theme = to_theme(&resolved, "Catppuccin Mocha", true, &prefs);
 //! ```
 //!
 //! # Single-Mode Behavior
@@ -87,7 +89,7 @@ pub use native_theme::theme::{
     AnimatedIcon, ColorMode, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet,
     ResolvedTheme, Theme, ThemeMode, TransformAnimation,
 };
-pub use native_theme::{Result, SystemTheme};
+pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
@@ -121,9 +123,10 @@ pub fn to_theme(
     resolved: &ResolvedTheme,
     name: &str,
     is_dark: bool,
-    reduce_transparency: bool,
+    prefs: &AccessibilityPreferences,
 ) -> GpuiTheme {
-    let theme_color = colors::to_theme_color(resolved, is_dark, reduce_transparency);
+    let s = text_scale_factor(prefs);
+    let theme_color = colors::to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let mode = if is_dark {
         GpuiThemeMode::Dark
     } else {
@@ -137,13 +140,20 @@ pub fn to_theme(
     // It's used internally by gpui-component for transparent overlays.
     theme.mode = mode;
     theme.font_family = SharedString::from(d.font.family.clone());
-    theme.font_size = px(d.font.size);
+    // §3.4: Root sets the window rem to font_size (gpui-component 0.6.0
+    // src/root.rs:579), so scaling these two sizes scales every rem-relative
+    // size in gpui-component, as the platform toolkit scales its own text.
+    theme.font_size = px(d.font.size * s);
     theme.mono_font_family = SharedString::from(d.mono_font.family.clone());
-    theme.mono_font_size = px(d.mono_font.size);
+    theme.mono_font_size = px(d.mono_font.size * s);
     // Issue 14: clamp radius to non-negative
     theme.radius = px(d.border.corner_radius.max(0.0));
     theme.radius_lg = px(d.border.corner_radius_lg.max(0.0));
     theme.shadow = d.border.shadow_enabled;
+
+    // §8.3: the ring is drawn only when the theme gives it a width; its width
+    // and offset have no receiver (derived from the element's border upstream).
+    theme.focus_ring = d.focus_ring_width > 0.0;
 
     // §8.3: Scrolling (overlay, auto-hide) when the platform draws overlay
     // scrollbars, Always otherwise.
@@ -162,7 +172,7 @@ pub fn to_theme(
     };
 
     // Store config for gpui-component's theme switching
-    let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode));
+    let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode, prefs));
     if mode == GpuiThemeMode::Dark {
         theme.dark_theme = config;
     } else {
@@ -182,6 +192,10 @@ pub fn to_theme(
 ///
 /// The preset name is used as the theme display name.
 ///
+/// Pass `&AccessibilityPreferences::default()` for no scaling, or
+/// `&AccessibilityPreferences::from_system()` to honour the OS preferences
+/// under a preset (spec §7.1).
+///
 /// # Errors
 ///
 /// Returns an error if the preset name is not recognized or if resolution fails.
@@ -189,11 +203,18 @@ pub fn to_theme(
 /// # Examples
 ///
 /// ```ignore
-/// let (dark_theme, resolved) = native_theme_gpui::from_preset("dracula", true)?;
-/// let (light_theme, _) = native_theme_gpui::from_preset("catppuccin-latte", false)?;
+/// use native_theme_gpui::AccessibilityPreferences;
+///
+/// let prefs = AccessibilityPreferences::from_system();
+/// let (dark_theme, resolved) = native_theme_gpui::from_preset("dracula", true, &prefs)?;
+/// let (light_theme, _) = native_theme_gpui::from_preset("catppuccin-latte", false, &prefs)?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedTheme)> {
+pub fn from_preset(
+    name: &str,
+    is_dark: bool,
+    prefs: &AccessibilityPreferences,
+) -> Result<(GpuiTheme, ResolvedTheme)> {
     let spec = Theme::preset(name)?;
     let display_name = spec.name.clone();
     let variant = spec.into_variant(if is_dark {
@@ -202,7 +223,7 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedThem
         ColorMode::Light
     })?;
     let resolved = variant.resolve_system()?;
-    let theme = to_theme(&resolved, &display_name, is_dark, false);
+    let theme = to_theme(&resolved, &display_name, is_dark, prefs);
     Ok((theme, resolved))
 }
 
@@ -238,10 +259,10 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedThem
 pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
     let sys = SystemTheme::from_system()?;
     let is_dark = sys.mode.is_dark();
-    let reduce_transparency = sys.accessibility.reduce_transparency;
     let name = sys.name; // K-5: move instead of clone
+    let accessibility = sys.accessibility;
     let resolved = if is_dark { sys.dark } else { sys.light };
-    let theme = to_theme(&resolved, &name, is_dark, reduce_transparency);
+    let theme = to_theme(&resolved, &name, is_dark, &accessibility);
     Ok((theme, resolved, is_dark))
 }
 
@@ -270,7 +291,7 @@ impl SystemThemeExt for SystemTheme {
             self.pick(self.mode),
             &self.name,
             self.mode.is_dark(),
-            self.accessibility.reduce_transparency,
+            &self.accessibility,
         )
     }
 }
@@ -366,6 +387,15 @@ pub fn icon_sizes(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedIco
 #[must_use]
 pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTextScale {
     &resolved.text_scale
+}
+
+/// Text-scaling multiplier from the preferences: the factor when it is finite
+/// and positive, else `1.0` (spec §7.2). Named `text_scale_factor` because
+/// [`text_scale()`], the public typography-scale accessor, already owns the
+/// shorter name.
+pub(crate) fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
+    let s = prefs.text_scaling_factor;
+    if s.is_finite() && s > 0.0 { s } else { 1.0 }
 }
 
 // --- Issue 36: Line height multiplier ---
@@ -476,10 +506,22 @@ mod tests {
             .expect("resolved preset must validate")
     }
 
+    fn scaled(factor: f32) -> AccessibilityPreferences {
+        AccessibilityPreferences {
+            text_scaling_factor: factor,
+            ..AccessibilityPreferences::default()
+        }
+    }
+
     #[test]
     fn to_theme_produces_valid_theme() {
         let resolved = test_resolved();
-        let theme = to_theme(&resolved, "Test", true, false);
+        let theme = to_theme(
+            &resolved,
+            "Test",
+            true,
+            &AccessibilityPreferences::default(),
+        );
 
         // Theme should have the correct mode
         assert!(theme.is_dark());
@@ -494,7 +536,12 @@ mod tests {
         let resolved = variant
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate");
-        let theme = to_theme(&resolved, "DarkTest", true, false);
+        let theme = to_theme(
+            &resolved,
+            "DarkTest",
+            true,
+            &AccessibilityPreferences::default(),
+        );
 
         assert!(theme.is_dark());
     }
@@ -502,7 +549,12 @@ mod tests {
     #[test]
     fn to_theme_applies_font_and_geometry() {
         let resolved = test_resolved();
-        let theme = to_theme(&resolved, "Test", true, false);
+        let theme = to_theme(
+            &resolved,
+            "Test",
+            true,
+            &AccessibilityPreferences::default(),
+        );
 
         assert_eq!(
             theme.font_family.as_ref(),
@@ -529,7 +581,12 @@ mod tests {
     #[test]
     fn scrollbar_mode_from_overlay_mode() {
         let resolved = test_resolved();
-        let theme = to_theme(&resolved, "Scroll", true, false);
+        let theme = to_theme(
+            &resolved,
+            "Scroll",
+            true,
+            &AccessibilityPreferences::default(),
+        );
         let expected = if resolved.scrollbar.overlay_mode {
             ScrollbarMode::Scrolling
         } else {
@@ -542,7 +599,12 @@ mod tests {
     #[test]
     fn highlight_theme_matches_is_dark() {
         let resolved = test_resolved();
-        let dark_theme = to_theme(&resolved, "Dark", true, false);
+        let dark_theme = to_theme(
+            &resolved,
+            "Dark",
+            true,
+            &AccessibilityPreferences::default(),
+        );
         assert_eq!(
             dark_theme.highlight_theme.appearance,
             GpuiThemeMode::Dark,
@@ -556,7 +618,12 @@ mod tests {
                 .into_resolved(&native_theme::ResolutionContext::for_tests())
                 .expect("must validate")
         };
-        let light_theme = to_theme(&light_resolved, "Light", false, false);
+        let light_theme = to_theme(
+            &light_resolved,
+            "Light",
+            false,
+            &AccessibilityPreferences::default(),
+        );
         assert_eq!(
             light_theme.highlight_theme.appearance,
             GpuiThemeMode::Light,
@@ -564,31 +631,104 @@ mod tests {
         );
     }
 
+    /// §3.4: font sizes carry the factor; the config copies too, so
+    /// `Theme::change` reproduces them.
+    #[test]
+    fn to_theme_scales_font_sizes_by_the_text_scaling_factor() {
+        let resolved = test_resolved();
+        let theme = to_theme(&resolved, "Scaled", true, &scaled(1.5));
+        assert_eq!(theme.font_size, px(resolved.defaults.font.size * 1.5));
+        assert_eq!(
+            theme.mono_font_size,
+            px(resolved.defaults.mono_font.size * 1.5)
+        );
+        assert_eq!(
+            theme.dark_theme.font_size,
+            Some(resolved.defaults.font.size * 1.5)
+        );
+        assert_eq!(
+            theme.dark_theme.mono_font_size,
+            Some(resolved.defaults.mono_font.size * 1.5)
+        );
+    }
+
+    /// §7.2: a non-finite or non-positive factor means "no scaling".
+    #[test]
+    fn to_theme_ignores_a_degenerate_text_scaling_factor() {
+        let resolved = test_resolved();
+        for factor in [0.0, -1.0, f32::NAN, f32::INFINITY] {
+            let theme = to_theme(&resolved, "Degenerate", true, &scaled(factor));
+            assert_eq!(
+                theme.font_size,
+                px(resolved.defaults.font.size),
+                "factor {factor}"
+            );
+        }
+    }
+
+    /// §8.3: only the flag has a receiver; a zero-width ring is not drawn.
+    #[test]
+    fn focus_ring_follows_focus_ring_width() {
+        let resolved = test_resolved();
+        let theme = to_theme(
+            &resolved,
+            "Ring",
+            true,
+            &AccessibilityPreferences::default(),
+        );
+        assert_eq!(theme.focus_ring, resolved.defaults.focus_ring_width > 0.0);
+    }
+
     // -- from_preset tests --
 
     #[test]
+    fn from_preset_takes_preferences() {
+        let (theme, resolved) =
+            from_preset("catppuccin-latte", false, &scaled(1.5)).expect("preset should load");
+        assert_eq!(theme.font_size, px(resolved.defaults.font.size * 1.5));
+    }
+
+    #[test]
     fn from_preset_valid_light() {
-        let (theme, _resolved) =
-            from_preset("catppuccin-latte", false).expect("preset should load");
+        let (theme, _resolved) = from_preset(
+            "catppuccin-latte",
+            false,
+            &AccessibilityPreferences::default(),
+        )
+        .expect("preset should load");
         assert!(!theme.is_dark());
     }
 
     #[test]
     fn from_preset_valid_dark() {
-        let (theme, _resolved) = from_preset("catppuccin-mocha", true).expect("preset should load");
+        let (theme, _resolved) = from_preset(
+            "catppuccin-mocha",
+            true,
+            &AccessibilityPreferences::default(),
+        )
+        .expect("preset should load");
         assert!(theme.is_dark());
     }
 
     #[test]
     fn from_preset_returns_resolved() {
-        let (_theme, resolved) = from_preset("catppuccin-mocha", true).expect("preset should load");
+        let (_theme, resolved) = from_preset(
+            "catppuccin-mocha",
+            true,
+            &AccessibilityPreferences::default(),
+        )
+        .expect("preset should load");
         // ResolvedTheme should have populated defaults
         assert!(resolved.defaults.font.size > 0.0);
     }
 
     #[test]
     fn from_preset_invalid_name() {
-        let result = from_preset("nonexistent-preset", false);
+        let result = from_preset(
+            "nonexistent-preset",
+            false,
+            &AccessibilityPreferences::default(),
+        );
         assert!(result.is_err(), "invalid preset should return Err");
     }
 
@@ -596,8 +736,18 @@ mod tests {
     #[test]
     fn from_preset_error_message_includes_mode() {
         // Both modes should load for catppuccin-mocha (it has both variants)
-        let _ = from_preset("catppuccin-mocha", true).expect("dark should work");
-        let _ = from_preset("catppuccin-mocha", false).expect("light should work");
+        let _ = from_preset(
+            "catppuccin-mocha",
+            true,
+            &AccessibilityPreferences::default(),
+        )
+        .expect("dark should work");
+        let _ = from_preset(
+            "catppuccin-mocha",
+            false,
+            &AccessibilityPreferences::default(),
+        )
+        .expect("light should work");
     }
 
     // -- SystemThemeExt + from_system tests --
@@ -643,7 +793,7 @@ mod tests {
             sys.pick(sys.mode),
             &sys.name,
             sys.mode.is_dark(),
-            sys.accessibility.reduce_transparency,
+            &sys.accessibility,
         );
         // Both paths should produce identical results
         assert_eq!(
@@ -774,7 +924,7 @@ mod tests {
         let presets = Theme::list_presets();
         for info in presets {
             let name = info.key;
-            let result = from_preset(name, true);
+            let result = from_preset(name, true, &AccessibilityPreferences::default());
             assert!(
                 result.is_ok(),
                 "from_preset({name}, true) failed: {:?}",
@@ -788,7 +938,7 @@ mod tests {
         let presets = Theme::list_presets();
         for info in presets {
             let name = info.key;
-            let result = from_preset(name, false);
+            let result = from_preset(name, false, &AccessibilityPreferences::default());
             assert!(
                 result.is_ok(),
                 "from_preset({name}, false) failed: {:?}",

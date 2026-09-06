@@ -20,32 +20,46 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// to hex strings, so the config can be serialized/deserialized losslessly.
 ///
 /// Fields not explicitly set inherit from `ThemeConfig::default()`.
-///
-/// `highlight` is left at None here. The `Theme.highlight_theme` field is set
-/// directly in `to_theme()` using `HighlightTheme::default_dark()` or
-/// `default_light()` based on `is_dark`. Custom syntax colors require the full
-/// `HighlightTheme` API.
-pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: GpuiThemeMode) -> ThemeConfig {
+pub fn to_theme_config(
+    resolved: &ResolvedTheme,
+    name: &str,
+    mode: GpuiThemeMode,
+    prefs: &native_theme::AccessibilityPreferences,
+) -> ThemeConfig {
     let d = &resolved.defaults;
     let is_dark = mode.is_dark();
+    let s = crate::text_scale_factor(prefs);
 
     // Issue 14: clamp radius to non-negative before rounding
     let radius = d.border.corner_radius.max(0.0).round() as usize;
     let radius_lg = d.border.corner_radius_lg.max(0.0).round() as usize;
 
     // Issue 5: populate ThemeConfigColors from computed ThemeColor
-    let tc = to_theme_color(resolved, is_dark, false);
+    let tc = to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let colors = theme_color_to_config_colors(&tc);
+
+    // D41: upstream's own default highlighter style for this mode. Theme::change
+    // installs a config's highlight as highlight_theme only when it is Some
+    // (gpui-component 0.6.0 src/theme/schema.rs:1066-1073) and otherwise keeps
+    // the previous mode's; to_theme sets Theme.highlight_theme to this same
+    // default directly, so both paths agree.
+    let highlight = if is_dark {
+        gpui_component::highlighter::HighlightTheme::default_dark()
+    } else {
+        gpui_component::highlighter::HighlightTheme::default_light()
+    };
 
     ThemeConfig {
         name: SharedString::from(name.to_string()),
         mode,
 
-        // Font sizes are in logical pixels (pt-to-px conversion handled during resolution)
+        // Font sizes are in logical pixels (pt-to-px conversion handled during
+        // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
+        // scaled sizes.
         font_family: Some(SharedString::from(d.font.family.clone())),
-        font_size: Some(d.font.size),
+        font_size: Some(d.font.size * s),
         mono_font_family: Some(SharedString::from(d.mono_font.family.clone())),
-        mono_font_size: Some(d.mono_font.size),
+        mono_font_size: Some(d.mono_font.size * s),
 
         radius: Some(radius),
         radius_lg: Some(radius_lg),
@@ -53,10 +67,8 @@ pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: GpuiThemeMode
 
         colors,
 
-        // highlight: None — Theme.highlight_theme is set directly in to_theme()
-        // via HighlightTheme::default_dark()/default_light(). ThemeConfig.highlight
-        // is for custom syntax colors and is left at None.
-        //
+        highlight: Some(highlight.style.clone()),
+
         // is_default: false (via ThemeConfig::default()) — this is intentional.
         // Connector-created themes are never the "default" theme; the application
         // decides which theme is its default.
@@ -218,7 +230,8 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::ColorMode;
+    use crate::{AccessibilityPreferences, ColorMode};
+    use gpui_component::highlighter::HighlightTheme;
     use native_theme::theme::Theme;
 
     /// Issue 1: fixed to use `into_variant(true)` for catppuccin-mocha (dark theme).
@@ -232,10 +245,33 @@ mod tests {
             .expect("resolved preset must validate")
     }
 
+    /// D41: the config carries upstream's default highlighter style for its
+    /// mode, so `Theme::change` to this mode switches code highlighting too.
+    #[test]
+    fn to_theme_config_carries_the_default_highlight_style_for_its_mode() {
+        let resolved = test_resolved();
+        let prefs = AccessibilityPreferences::default();
+        let dark = to_theme_config(&resolved, "H", GpuiThemeMode::Dark, &prefs);
+        let light = to_theme_config(&resolved, "H", GpuiThemeMode::Light, &prefs);
+        assert_eq!(
+            dark.highlight.as_ref(),
+            Some(&HighlightTheme::default_dark().style)
+        );
+        assert_eq!(
+            light.highlight.as_ref(),
+            Some(&HighlightTheme::default_light().style)
+        );
+    }
+
     #[test]
     fn to_theme_config_from_resolved() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Test Theme", GpuiThemeMode::Dark);
+        let config = to_theme_config(
+            &resolved,
+            "Test Theme",
+            GpuiThemeMode::Dark,
+            &AccessibilityPreferences::default(),
+        );
 
         assert_eq!(config.name.to_string(), "Test Theme");
         assert_eq!(config.mode, GpuiThemeMode::Dark);
@@ -271,7 +307,12 @@ mod tests {
     #[test]
     fn theme_config_colors_cover_the_0_6_fields() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "New", GpuiThemeMode::Dark);
+        let config = to_theme_config(
+            &resolved,
+            "New",
+            GpuiThemeMode::Dark,
+            &AccessibilityPreferences::default(),
+        );
         let c = &config.colors;
         for (name, value) in [
             ("button", &c.button),
@@ -303,14 +344,24 @@ mod tests {
     #[test]
     fn to_theme_config_dark_mode() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Dark", GpuiThemeMode::Dark);
+        let config = to_theme_config(
+            &resolved,
+            "Dark",
+            GpuiThemeMode::Dark,
+            &AccessibilityPreferences::default(),
+        );
         assert_eq!(config.mode, GpuiThemeMode::Dark);
     }
 
     #[test]
     fn font_size_is_not_converted_from_points() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "SizeCheck", GpuiThemeMode::Dark);
+        let config = to_theme_config(
+            &resolved,
+            "SizeCheck",
+            GpuiThemeMode::Dark,
+            &AccessibilityPreferences::default(),
+        );
 
         // The old code applied pt * (96.0/72.0) conversion. ResolvedFontSpec sizes
         // are already logical pixels, so font_size should equal the resolved value directly.
@@ -329,7 +380,12 @@ mod tests {
     #[test]
     fn theme_config_colors_populated() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Colors", GpuiThemeMode::Dark);
+        let config = to_theme_config(
+            &resolved,
+            "Colors",
+            GpuiThemeMode::Dark,
+            &AccessibilityPreferences::default(),
+        );
         assert!(
             config.colors.background.is_some(),
             "colors.background should be populated"
@@ -358,7 +414,12 @@ mod tests {
         // We can't easily set a negative radius in a resolved theme (validation
         // prevents it), so just verify the formula works on the positive path.
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Clamp", GpuiThemeMode::Dark);
+        let config = to_theme_config(
+            &resolved,
+            "Clamp",
+            GpuiThemeMode::Dark,
+            &AccessibilityPreferences::default(),
+        );
         assert!(config.radius.unwrap() < 1000, "radius should be reasonable");
     }
 
@@ -373,7 +434,12 @@ mod tests {
         let resolved = variant
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("must validate");
-        let config = to_theme_config(&resolved, "adwaita", GpuiThemeMode::Light);
+        let config = to_theme_config(
+            &resolved,
+            "adwaita",
+            GpuiThemeMode::Light,
+            &AccessibilityPreferences::default(),
+        );
         assert_eq!(
             config.radius,
             Some(9),
@@ -403,7 +469,8 @@ mod tests {
             let resolved = variant
                 .into_resolved(&native_theme::ResolutionContext::for_tests())
                 .expect("must validate");
-            let config = to_theme_config(&resolved, name, mode);
+            let config =
+                to_theme_config(&resolved, name, mode, &AccessibilityPreferences::default());
             assert_eq!(config.mode, mode, "mode mismatch for {name}");
             assert!(
                 config.colors.background.is_some(),
