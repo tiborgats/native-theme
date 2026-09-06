@@ -708,7 +708,9 @@ the connector calls a panicking accessor.
 ### 8.2 Scrollbar geometry mapping
 
 Sources: `ResolvedScrollbarTheme { track_color, thumb_color, thumb_hover_color,
-thumb_active_color, groove_width, min_thumb_length, thumb_width, overlay_mode }`,
+thumb_active_color: Option<Rgba>, groove_width, min_thumb_length, thumb_width, overlay_mode }`
+(`thumb_active_color` is a `soft_option` field, `model/widgets/mod.rs:287`: it stays
+`Option` after resolution and is unset in the four `*-live` presets),
 `defaults.border.corner_radius`, `defaults.border.color`.
 
 | Receiver (gpui-base `src/scrollbar.rs`) | Value | Kind |
@@ -716,7 +718,7 @@ thumb_active_color, groove_width, min_thumb_length, thumb_width, overlay_mode }`
 | `track.width` ×3 states (`:607`) | `px(groove_width)` | direct |
 | `track.bg` ×3 (`:597`) | `track_color` | direct; upstream uses one colour for all states (`theme/mod.rs:281-283`) |
 | `track_active.border_color` (`:602`) | `defaults.border.color` | mirrors upstream (`theme/mod.rs:283`); no scrollbar border colour in the theme |
-| `thumb.bg` / `thumb_hover.bg` / `thumb_active.bg` (`:626`) | `thumb_color` / `thumb_hover_color` / `thumb_active_color` | direct; upstream reuses hover for active |
+| `thumb.bg` / `thumb_hover.bg` / `thumb_active.bg` (`:626`) | `thumb_color` / `thumb_hover_color` / `thumb_active_color` | direct; `thumb_active` falls back to `thumb_hover_color` when the theme leaves `thumb_active_color` unset, which is upstream's own choice for the active slot (`theme/mod.rs:291-295`; rationale error 58) |
 | `thumb.width` ×3 (`:631`) | `px(thumb_width)` | direct; upstream widens the active thumb, the theme has one width |
 | `thumb.inset` ×3 (`:636`) | `px(((groove_width − thumb_width) / 2).max(0))` | **derivation**: centres the fill, which is anchored `inset` from the outer edge (`:1391-1400`) |
 | `thumb.radius` ×3 (`:641`) | `px(defaults.border.corner_radius.max(0))` | mirrors upstream (`theme/mod.rs:284-293`); no scrollbar radius in the theme or in platform-facts |

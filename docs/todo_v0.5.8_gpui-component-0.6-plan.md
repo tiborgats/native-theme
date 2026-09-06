@@ -1821,7 +1821,7 @@ rem-relative size in gpui-component scales. focus_ring = focus_ring_width > 0."
 - Modify: `connectors/native-theme-gpui/src/lib.rs` (`pub mod base_layer;`)
 
 **Interfaces:**
-- Consumes: `ResolvedTheme.scrollbar { track_color, thumb_color, thumb_hover_color, thumb_active_color, groove_width, min_thumb_length, thumb_width, overlay_mode }`, `.splitter { divider_color, hover_color }`, `.defaults.border { corner_radius, color }`; gpui-base 0.6.0 `ScrollbarStyles` / `ScrollbarTrackStyle` / `ScrollbarThumbStyle` builders (`src/scrollbar.rs:589-700`, re-exported by `gpui_component::scroll`), `gpui_base::{Theme, ResizableTheme}` (`src/theme.rs:17-112`, exported at the crate root `src/lib.rs:173`).
+- Consumes: `ResolvedTheme.scrollbar { track_color, thumb_color, thumb_hover_color, thumb_active_color: Option<Rgba> (soft option, unset in the *-live presets), groove_width, min_thumb_length, thumb_width, overlay_mode }`, `.splitter { divider_color, hover_color }`, `.defaults.border { corner_radius, color }`; gpui-base 0.6.0 `ScrollbarStyles` / `ScrollbarTrackStyle` / `ScrollbarThumbStyle` builders (`src/scrollbar.rs:589-700`, re-exported by `gpui_component::scroll`), `gpui_base::{Theme, ResizableTheme}` (`src/theme.rs:17-112`, exported at the crate root `src/lib.rs:173`).
 - Produces:
   - `pub struct ScrollbarGeometry { track_width, thumb_width, thumb_inset, thumb_radius, min_thumb_length: Pixels; track, track_active_border, thumb, thumb_hover, thumb_active: Hsla }` deriving `Debug, Clone, PartialEq`
   - `pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry`
@@ -1864,8 +1864,21 @@ mod tests {
             assert_eq!(g.track_active_border, rgba_to_hsla(r.defaults.border.color));
             assert_eq!(g.thumb, rgba_to_hsla(sb.thumb_color));
             assert_eq!(g.thumb_hover, rgba_to_hsla(sb.thumb_hover_color));
-            assert_eq!(g.thumb_active, rgba_to_hsla(sb.thumb_active_color));
+            assert_eq!(
+                g.thumb_active,
+                rgba_to_hsla(sb.thumb_active_color.unwrap_or(sb.thumb_hover_color))
+            );
         }
+    }
+
+    /// `thumb_active_color` is a soft option (unset in the `*-live` presets); the
+    /// active thumb then takes the hover colour, upstream's own choice for that slot.
+    #[test]
+    fn thumb_active_falls_back_to_hover_when_unset() {
+        let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
+        r.scrollbar.thumb_active_color = None;
+        let g = scrollbar_geometry(&r);
+        assert_eq!(g.thumb_active, g.thumb_hover);
     }
 
     /// The inset derivation clamps at zero when the thumb fills the groove.
@@ -1955,7 +1968,9 @@ pub struct ScrollbarGeometry {
     pub thumb: Hsla,
     /// `scrollbar.thumb_hover_color`.
     pub thumb_hover: Hsla,
-    /// `scrollbar.thumb_active_color` (upstream reuses hover here).
+    /// `scrollbar.thumb_active_color`, or `thumb_hover_color` when the theme
+    /// leaves it unset (a soft option, `None` in the `*-live` presets); upstream
+    /// itself puts the hover colour in the active slot (`theme/mod.rs:291-295`).
     pub thumb_active: Hsla,
 }
 
@@ -1974,7 +1989,7 @@ pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry {
         track_active_border: rgba_to_hsla(d.border.color),
         thumb: rgba_to_hsla(sb.thumb_color),
         thumb_hover: rgba_to_hsla(sb.thumb_hover_color),
-        thumb_active: rgba_to_hsla(sb.thumb_active_color),
+        thumb_active: rgba_to_hsla(sb.thumb_active_color.unwrap_or(sb.thumb_hover_color)),
     }
 }
 
