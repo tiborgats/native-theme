@@ -219,13 +219,14 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
     let svg_str = std::str::from_utf8(svg_bytes).ok()?;
 
     // Find viewBox attribute (handle both double and single quotes)
-    let (vb_attr_start, vb_val_start, quote) = if let Some(i) = svg_str.find("viewBox=\"") {
-        (i, i.saturating_add(9), '"')
-    } else if let Some(i) = svg_str.find("viewBox='") {
-        (i, i.saturating_add(9), '\'')
-    } else {
-        return None;
-    };
+    let (vb_attr_start, vb_val_start, quote) = svg_str
+        .find("viewBox=\"")
+        .map(|i| (i, i.saturating_add(9), '"'))
+        .or_else(|| {
+            svg_str
+                .find("viewBox='")
+                .map(|i| (i, i.saturating_add(9), '\''))
+        })?;
 
     let tail = svg_str.get(vb_val_start..)?;
     let vb_val_end = tail.find(quote)?.saturating_add(vb_val_start);
