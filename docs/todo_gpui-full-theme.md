@@ -32,8 +32,8 @@ correct background color (#292c30) and hover color (#93cee9) but gpui-component'
 hardcoded padding (16px instead of 6px), hardcoded height logic, and no visible
 1px border stroke in the per-widget border color (#535659). With
 `geometry::button` applied it renders at the theme's height with its padding,
-radius and border; only the label's text size (an inner element) still follows
-upstream.
+radius and border; only the label's text size and the icon gap (inner
+elements) still follow upstream.
 
 ### What native-theme provides vs what the connector uses
 
@@ -103,8 +103,10 @@ geometry. For example, Button's height and padding come from its `Size` enum
 (XSmall/Small/Medium/Large), not from the theme.
 
 Our connector maps `ResolvedThemeVariant` -> `ThemeColor` + `ThemeConfig` ->
-`Theme`. Since neither target type has per-widget geometry fields, there is
-nowhere to put the data.
+`Theme`. Neither target type has per-widget geometry fields; since v0.5.8 the
+geometry travels beside `Theme`, as `StyleRefinement`s from the `geometry`
+module that the caller applies per widget, and as `base_layer` writes to
+`gpui_base::Theme` (see the v0.5.8 column above).
 
 ### 2.3 What gpui-component's Button looks like inside
 

@@ -787,7 +787,7 @@ refinement overrides and the line where the caller's style is applied after it.
 | Function | Sources (`resolved.`) | Setters | Hardcoded → Refine | Not covered |
 |----------|------------------------|---------|--------------------|-------------|
 | `button` | `button.min_height`, `.min_width`, `.border.padding_horizontal`, `.padding_vertical`, `.corner_radius`, `.line_width`, `.color`, `button.font`, `defaults.line_height` | `h` (§9.4 height), `min_w`, `px`, `py`, `rounded`, `border`, `border_color` | `button.rs:587-601`, `:605-624` → `:650` | label text size is set on the inner content (`:658-666`, `text_base` = rem = `font_size` at Medium/Large/custom), so `button.font.size` is honoured only when it equals `defaults.font.size`; `icon_text_gap` is inner (`:658-660`) |
-| `input` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `h`, `rounded`, `border`, `text_size`, `font_weight` | `input.rs:572` (text), `:576` (height), `:580`, `:582` → `:587`; `Input::h` (`:232`) equivalent for height | padding lives in the inner editor; Tier U |
+| `input` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `.padding_vertical` (height floor via `control_height`), `input.font`, `defaults.line_height` | `h`, `rounded`, `border`, `text_size`, `font_weight` | `input.rs:572` (text), `:576` (height), `:580`, `:582` → `:587`; `Input::h` (`:232`) equivalent for height | padding lives in the inner editor; Tier U |
 | `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | `h`, `px`, `py`, `gap_x`, `text_size`, `font_weight` | `menu/menu_item.rs:101-103` → `:109` | only application-built `MenuItem`s; `PopupMenu` builds its own (`popup_menu.rs:749`) |
 | `list_item` | `list.row_height`, `list.border.padding_*`, `list.item_font`, `defaults.line_height` | `h`, `px`, `py`, `text_size`, `font_weight` | `list/list_item.rs:188-190` → `:196` | |
 | `tooltip` | `tooltip.max_width`, `tooltip.border.padding_*`, `.corner_radius`, `tooltip.font` | `max_w`, `px`, `py`, `rounded`, `text_size`, `font_weight` | `tooltip.rs:120-125` → `:126` | only application-built `Tooltip::new` (`:43`); `Button::tooltip(text)` is internal (`button.rs:360`) |
@@ -803,7 +803,7 @@ refinement overrides and the line where the caller's style is applied after it.
 | `accordion_title` | `expander.header_height` | `h` | `accordion.rs:300-303` → `:306` via `AccordionItem::title_style` (`:219`) | arrow icon sized by `Size` (`:281-282`) |
 | `checkbox` | `checkbox.label_gap`, `checkbox.font` | `gap`, `text_size`, `font_weight` | `checkbox.rs:256` → `:271` (also re-applied in the disabled state, `:232-240`, harmless) | indicator size (`:195-199`) Tier U |
 | `radio` | `checkbox.label_gap`, `checkbox.font` | `gap`, `text_size`, `font_weight` | `radio.rs:196` → `:211` | platform-facts §2.5 defines radio metrics as the checkbox's with a circular indicator (`platform-facts.md:947, 969, 1210`); indicator (`:216-220`) Tier U |
-| `select` / `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.corner_radius`, `combo_box.font`, `defaults.line_height` | `min_h`, `min_w`, `rounded`, `text_size`, `font_weight` | `select.rs:479-486` → `:490`; `combobox.rs:981-988` → `:992` | arrow size/area inner |
+| `select` / `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.corner_radius`, `.padding_vertical` (height floor via `control_height`), `combo_box.font`, `defaults.line_height` | `min_h`, `min_w`, `rounded`, `text_size`, `font_weight` | `select.rs:479-486` → `:490`; `combobox.rs:981-988` → `:992` | arrow size/area inner |
 | `title_bar` | `window.title_bar_font` | `text_size`, `font_weight` | `title_bar.rs:334` → `:342` | height overridable but no theme field |
 
 ### 9.3 Size and builder helpers
@@ -1129,8 +1129,9 @@ The claim that gpui-component has no receiving fields is corrected.
 ### 13.5 `docs/todo.md`
 
 Close: `SystemTheme` layout item. Add upstream PR candidates: styled `Theme`
-`scrollbar_styles` override honoured by `base_theme()`; `Tab` applies its
-stored `Styled` refinement; `Theme.shadow` honoured beyond `Button` /
+`scrollbar_styles` override honoured by `base_theme()`; `Tab` keeps the
+caller's height, radius and text size (its render re-sets them after
+`refine_style`, `tab/tab.rs:800-808`); `Theme.shadow` honoured beyond `Button` /
 `tokens.shadow` consumed; `Size::Size` honoured by Checkbox and Switch; inner
 geometry (checkbox/radio indicator, switch, slider, separator thickness,
 resize-handle width, button icon gap, input padding, popup-menu items,

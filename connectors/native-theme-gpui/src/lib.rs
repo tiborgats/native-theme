@@ -77,9 +77,10 @@
 //! base-layer overrides and the observer that keeps them installed.
 //!
 //! **Limits.** Geometry on inner elements the caller's style cannot reach
-//! (checkbox and radio indicators, switch, slider, tab geometry, separator
-//! thickness, splitter width, button icon gap, input padding, popup-menu rows)
-//! stays upstream work; §14 of the v0.5.8 specification
+//! (checkbox and radio indicators, switch, slider, separator thickness,
+//! splitter width, button icon gap, input padding, popup-menu rows), and tab
+//! height, radius and text size, which `Tab`'s render re-sets after applying
+//! the refinement, stay upstream work; §14 of the v0.5.8 specification
 //! (<https://github.com/tiborgats/native-theme/blob/main/docs/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable.
 

@@ -55,6 +55,7 @@ geometry now takes native heights, paddings, radii, borders and text sizes
 through the `geometry` module, and the base layer (scrollbar, resize handle)
 takes native values through `base_layer` with automatic re-application. What
 remains is geometry on **inner elements the caller's style cannot reach**,
+plus the tab properties `Tab`'s render re-sets after applying the refinement,
 which is upstream work. v0.6.2 is the set of PRs to gpui-kit, one concern
 each, framed as theming flexibility:
 
