@@ -919,7 +919,7 @@ same commit. Existence of every file below was verified.
 | `Cpu` | `memory` | close | add |
 | `FileText` | `description` | exact | bundled |
 | `HardDrive` | `hard_drive` | exact | add |
-| `MemoryStick` | `sd_card` | approximate | add |
+| `MemoryStick` | `memory_alt` | close (a RAM module with pins, like Lucide's glyph; `sd_card`, the first choice, is a flash card) | add |
 | `Network` | `lan` | close | add |
 | `Pause` | `pause` | exact | add |
 | `Play` | `play_arrow` | exact | add |
@@ -928,10 +928,12 @@ same commit. Existence of every file below was verified.
 | `Star` | `star` | exact (hollow star) | unchanged |
 | `StarOff` | — | none: Material Symbols has no star-off glyph | `None`; `star_border.svg`, a duplicate of `star.svg` that backed this variant, is removed |
 
-`close` and `approximate` rows are checked visually against the gpui-kit
-glyph during implementation and corrected if a better Symbols glyph exists;
-their upstream names and existence were verified, their glyphs were not
-inspected.
+The `close` and `approximate` rows were checked visually against the gpui-kit
+glyphs on 2026-09-06 (rendered side by side with the alternatives named in
+the rationale): `battery_0_bar`, `battery_2_bar`, `battery_4_bar`, `memory`
+and `lan` hold; `MemoryStick` moved from `sd_card` to `memory_alt`, whose
+glyph is a RAM module with pins like Lucide's, whereas `sd_card` is a flash
+card (rationale error 56).
 
 ### 10.4 Freedesktop
 

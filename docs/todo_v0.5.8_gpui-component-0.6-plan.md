@@ -572,7 +572,7 @@ the single source of truth."
 
 **Interfaces:**
 - Consumes: the generated tables from Task 4.
-- Produces: bundle names the connector's tables (Task 6) return: Lucide `x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`, `trash`, `battery`, `battery-charging`, `battery-full`, `battery-low`, `battery-medium`, `battery-warning`, `cpu`, `file-text`, `hard-drive`, `memory-stick`, `network`, `pause`, `play`, `rotate-cw`; Material `battery_0_bar`, `battery_charging_full`, `battery_full`, `battery_2_bar`, `battery_4_bar`, `battery_alert`, `memory`, `hard_drive`, `sd_card`, `lan`, `pause`, `play_arrow`, `rotate_right`, `star_fill1`. Old names `close`, `dash`, `inspect`, `resize-corner`, `sort-ascending`, `sort-descending`, `window-close`, `window-maximize`, `window-minimize`, `window-restore`, `trash-2`, `star_border` stop resolving (§7.1).
+- Produces: bundle names the connector's tables (Task 6) return: Lucide `x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`, `trash`, `battery`, `battery-charging`, `battery-full`, `battery-low`, `battery-medium`, `battery-warning`, `cpu`, `file-text`, `hard-drive`, `memory-stick`, `network`, `pause`, `play`, `rotate-cw`; Material `battery_0_bar`, `battery_charging_full`, `battery_full`, `battery_2_bar`, `battery_4_bar`, `battery_alert`, `memory`, `hard_drive`, `memory_alt`, `lan`, `pause`, `play_arrow`, `rotate_right`, `star_fill1`. Old names `close`, `dash`, `inspect`, `resize-corner`, `sort-ascending`, `sort-descending`, `window-close`, `window-maximize`, `window-minimize`, `window-restore`, `trash-2`, `star_border` stop resolving (§7.1).
 
 After this task the 0.5.1 connector's icon tests may fail (they still return the old names); Task 6 fixes them. Do not run `cargo test -p native-theme-gpui` as a gate here.
 
@@ -869,7 +869,7 @@ Then `chmod +x scripts/refresh-icons.sh`.
 # Pre-create the 28 new files empty, then one refresh fetches everything
 # (the script's `add` sub-command does the same for a single file).
 for n in battery battery-charging battery-full battery-low battery-medium battery-warning cpu file-text hard-drive memory-stick network pause play rotate-cw; do : > "native-theme/icons/lucide/$n.svg"; done
-for n in battery_0_bar battery_charging_full battery_full battery_2_bar battery_4_bar battery_alert memory hard_drive sd_card lan pause play_arrow rotate_right star_fill1; do : > "native-theme/icons/material/$n.svg"; done
+for n in battery_0_bar battery_charging_full battery_full battery_2_bar battery_4_bar battery_alert memory hard_drive memory_alt lan pause play_arrow rotate_right star_fill1; do : > "native-theme/icons/material/$n.svg"; done
 ./scripts/refresh-icons.sh
 ls native-theme/icons/lucide | wc -l; ls native-theme/icons/material | wc -l
 git status --short native-theme/icons | grep -c '^A\|^??'
@@ -880,9 +880,7 @@ Expected: exit 0 on every run; 107 Lucide files, 100 Material files; 28 added fi
 
 Every downloaded file must contain `<svg` (the script checks and exits non-zero otherwise).
 
-- [ ] **Step 8: Visual check of the `close` and `approximate` Material rows** (spec §10.3 requires it; judgment step)
-
-Open each pair side by side (any SVG viewer) and confirm the meaning matches; if a better Material Symbols glyph exists, replace the name in the manifest-driven bundle *and* in spec §10.3 / rationale §2.21:
+- [ ] **Step 8: Visual check of the `close` and `approximate` Material rows** (spec §10.3; judgment step — **done ahead of the task by the controller on 2026-09-06**: rendered side by side, five rows hold and `MemoryStick` moved from `sd_card` to `memory_alt`, already reflected in Step 7's list, spec §10.3 and rationale §2.21/error 56. The implementer only confirms the fetched `memory_alt.svg` renders as a pinned module; no other change expected.) Reference table as checked:
 
 | gpui-kit glyph (`~/.cargo/registry/src/*/gpui-kit-assets-0.6.0/assets/icons/`) | Material candidate |
 |---|---|
@@ -890,7 +888,7 @@ Open each pair side by side (any SVG viewer) and confirm the meaning matches; if
 | `battery-low.svg` | `battery_2_bar.svg` |
 | `battery-medium.svg` | `battery_4_bar.svg` |
 | `cpu.svg` | `memory.svg` (alternative to inspect: `developer_board`) |
-| `memory-stick.svg` | `sd_card.svg` (alternative to inspect: `memory_alt`) |
+| `memory-stick.svg` | `memory_alt.svg` (chosen; `sd_card` rejected as a flash card) |
 | `network.svg` | `lan.svg` (alternative: `hub`) |
 
 Record the outcome (kept or changed) in the commit body.
@@ -1171,7 +1169,7 @@ and add (§10.3, confidence in the comment):
         IconName::Cpu => "memory",                       // close
         IconName::FileText => "description",             // exact
         IconName::HardDrive => "hard_drive",             // exact
-        IconName::MemoryStick => "sd_card",              // approximate
+        IconName::MemoryStick => "memory_alt",           // close: a RAM module with pins, like Lucide's
         IconName::Network => "lan",                      // close
         IconName::Pause => "pause",                      // exact
         IconName::Play => "play_arrow",                  // exact

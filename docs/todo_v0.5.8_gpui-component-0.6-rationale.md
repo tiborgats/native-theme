@@ -420,14 +420,19 @@ source includes gpui-kit's assets then falls back to gpui-kit's filled file.
 | `BatteryMedium` | `battery_4_bar` | two of three bars is two thirds; four of six is two thirds | `battery_3_bar` (half); the horizontal `battery_horiz_*` family, because Android's native battery icons are the vertical ones and mixing families breaks the side-by-side reading |
 | `BatteryWarning` | `battery_alert` | exact meaning | |
 | `Cpu` | `memory` | by meaning Material's `memory` is the processor/memory chip icon Android uses where Lucide uses `cpu`; Material has no icon named for a processor | `developer_board`, by name a circuit board rather than a chip |
-| `MemoryStick` | `sd_card` (approximate) | Lucide draws a RAM module; Material has none; `memory` is taken by the chip and would collapse two gpui icons into one glyph; a removable memory medium is the nearest meaning | `memory_alt` exists but its glyph was not inspected; it is the alternative to check during implementation |
+| `MemoryStick` | `memory_alt` (close) | Lucide draws a RAM module; rendered side by side, Material's `memory_alt` is the same object (a module with pins top and bottom); `memory` stays with `Cpu` | `sd_card`, the first choice by name, is a flash card (error 56) |
 | `FileText` | `description` | Material's document icon; exact meaning; already bundled | |
 | `HardDrive` | `hard_drive` | exact | |
 | `Network` | `lan` | Lucide draws one node above three, a tree; a LAN topology is the nearest meaning | `hub`, by name a hub-and-spoke topology |
 
-Only the names and upstream existence of the Material rows were verified;
-glyph descriptions in this table are by meaning and name, which is why the
-specification requires a visual check of every `close` and `approximate` row.
+The `close` and `approximate` rows were rendered side by side with the
+gpui-kit glyphs and the alternatives on 2026-09-06 (Task 5 step 8, done
+ahead of the task): `battery_0_bar` is the empty vertical body, `battery_2_bar`
+and `battery_4_bar` read as one and two thirds, `memory` is the pinned chip,
+`lan` is the same one-over-two tree as Lucide's `network`; `hub` is a
+hub-and-spoke, `developer_board` a board with windows, `battery_low` a
+horizontal near-empty body outside the family. Only `MemoryStick` changed
+(error 56).
 | `Pause`, `Play`, `RotateCw` | `pause`, `play_arrow`, `rotate_right` | exact | |
 | `Star`, `StarFill`, `StarOff` | `star`, `star_fill1`, `None` | outlined and filled variants of one glyph; no star-off glyph exists | `star_border` (a duplicate of `star`) |
 
@@ -763,7 +768,7 @@ Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
 seventh, 50–51 from the eighth, 52–54 from the ninth, 55 from the
-implementation of Task 3.
+implementation of Task 3, 56 from Task 5's glyph check.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -820,6 +825,7 @@ implementation of Task 3.
 53. **The observer tests searched for a preset whose splitter divider differs from its border colour.** None exists: `splitter.divider_color` inherits `defaults.border.color` and `hover_color` inherits `divider_color` (`inheritance-rules.toml:238, 273`), and no preset defines `[splitter]`. The helper would have panicked and taken three tests with it. The observable is now `active_handle` (connector: border colour via the splitter; upstream: translucent `drag_border`), with the precondition asserted in the helper (§2.23).
 54. **`from_system()` used the cached reduce-motion detector.** `prefers_reduced_motion()` stores its first answer in a process-wide `OnceLock` (`detect.rs:654-656, 856-857`); a caller polling `from_system()` before `apply_accessibility` would have seen the reader's fresh value OR-ed with a frozen fallback. The uncached `detect_reduced_motion()` (`:662`) is used instead.
 55. **The design said only the KDE and GNOME readers fill `AccessibilityPreferences`.** The macOS reader fills all four fields from `NSWorkspace` and the system font size (`macos.rs:142-150, 513-528`) and the Windows reader from `UISettings` (`windows.rs:393-398`); only the preset-only fallback and non-KDE/GNOME Linux leave the defaults. Found by Task 3's reviewer. The OR-with-detect design is unaffected (a reader's `true` OR-ed is a no-op), but the doc comment, commit body, spec §1.3/§11.2/§13.5/§14 and rationale §2.17/§4/§6 all repeated the premise, and two "research items" asked for readers that exist. All corrected; the todo items are not added.
+56. **`MemoryStick` was mapped to Material `sd_card` by name.** Rendered against the gpui-kit glyph, `sd_card` is a flash card and `memory_alt` is a RAM module with pins, the object Lucide draws. Changed to `memory_alt` (close). The other five `close`/`approximate` Material rows survived the same check.
 
 ---
 
