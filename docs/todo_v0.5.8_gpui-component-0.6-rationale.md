@@ -331,7 +331,7 @@ lock one step behind the rule.
 | `RadioTheme` | Rejected | platform-facts §2.5 defines radio metrics as the checkbox's with a circular indicator (`platform-facts.md:947, 969, 1210`); a second struct would restate the same facts |
 | `ScrollbarTheme.thumb_radius` | Rejected for now | no platform fact; adding the field means per-platform research, recorded as a todo item; until then upstream's `radius` choice is mirrored |
 | `LayoutTheme` resolved to `f32` on `ResolvedTheme` | Rejected | all 16 static presets define the four values and the 4 live presets inherit them from the reader merge, so the data would allow it for presets; but a user theme may omit `[layout]`, and platform-facts §2.20 records no layout defaults for Windows and none for macOS `container_margin` or KDE `section_gap` (`platform-facts.md:1427-1435`); a resolver fallback would invent them, whereas `None` states "the platform specifies nothing" |
-| macOS / Windows accessibility readers | Rejected for now | new detection work per platform; research item |
+| macOS / Windows accessibility readers | Already exist | both readers fill all four `AccessibilityPreferences` fields (`macos.rs:142-150, 513-528`; `windows.rs:393-398`); the design's "research item" rested on a wrong premise (error 55) |
 
 ### 2.18 A mode-switch helper
 
@@ -684,7 +684,6 @@ moment.
 | `DataTable` header font, table rows | — | not examined in this milestone; rows are inner elements | examine in v0.6.2 |
 | Sidebar width and padding | `sidebar/mod.rs:27, 432-479` | no theme field for width; padding on inner elements | padding builder |
 | Notification, sheet, tile, list highlight, motion durations | — | the theme has no source for any of them | native-theme fields, if platform facts exist |
-| macOS / Windows text scaling and high contrast | `pipeline.rs:592, 1004, …` | no reader fills them today; `from_system()` is an extraction, not new detection | reader research |
 
 ---
 
@@ -748,7 +747,6 @@ overrides.
 |----------|---------|
 | A Lucide `github` replacement | Lucide reinstates brand icons, or the maintainer chooses to return `None` for `Github` in the Lucide set |
 | `ScrollbarTheme.thumb_radius` | platform-facts gains scrollbar radius rows |
-| macOS / Windows text scaling and high contrast in `from_system()` | reader research recorded in `docs/todo.md` |
 | Typography tokens from `TextScale` | upstream stores custom typography on the styled theme, or `TextScale` maps one-to-one |
 | Spacing tokens from `LayoutTheme` | any gpui-component widget reads `tokens.spacing` |
 | Shadow tokens from `shadow_enabled` | upstream routes component shadows through `tokens.shadow` or `Theme.shadow` |
@@ -764,7 +762,8 @@ overrides.
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
-seventh, 50–51 from the eighth, 52–54 from the ninth.
+seventh, 50–51 from the eighth, 52–54 from the ninth, 55 from the
+implementation of Task 3.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -820,6 +819,7 @@ seventh, 50–51 from the eighth, 52–54 from the ninth.
 52. **The `ThemeConfig` copies carried no highlighter style.** D34 was argued field by field for colours, fonts, radius and shadow, but `Theme::apply_config` also reads `highlight` (`schema.rs:1066-1073`) and, finding `None`, keeps the previous mode's `highlight_theme`. Both registry default themes carry one (`default-theme.json:113, 314`), which is why 0.5.7's single-config design never showed the defect. The config now carries upstream's default style for its mode (D41), and the both-variants test asserts `highlight_theme.appearance` after the switch.
 53. **The observer tests searched for a preset whose splitter divider differs from its border colour.** None exists: `splitter.divider_color` inherits `defaults.border.color` and `hover_color` inherits `divider_color` (`inheritance-rules.toml:238, 273`), and no preset defines `[splitter]`. The helper would have panicked and taken three tests with it. The observable is now `active_handle` (connector: border colour via the splitter; upstream: translucent `drag_border`), with the precondition asserted in the helper (§2.23).
 54. **`from_system()` used the cached reduce-motion detector.** `prefers_reduced_motion()` stores its first answer in a process-wide `OnceLock` (`detect.rs:654-656, 856-857`); a caller polling `from_system()` before `apply_accessibility` would have seen the reader's fresh value OR-ed with a frozen fallback. The uncached `detect_reduced_motion()` (`:662`) is used instead.
+55. **The design said only the KDE and GNOME readers fill `AccessibilityPreferences`.** The macOS reader fills all four fields from `NSWorkspace` and the system font size (`macos.rs:142-150, 513-528`) and the Windows reader from `UISettings` (`windows.rs:393-398`); only the preset-only fallback and non-KDE/GNOME Linux leave the defaults. Found by Task 3's reviewer. The OR-with-detect design is unaffected (a reader's `true` OR-ed is a no-op), but the doc comment, commit body, spec §1.3/§11.2/§13.5/§14 and rationale §2.17/§4/§6 all repeated the premise, and two "research items" asked for readers that exist. All corrected; the todo items are not added.
 
 ---
 

@@ -290,7 +290,7 @@ on the with_overlay replay."
 - Consumes: `pipeline::select_reader()` (`pipeline.rs:~612`, currently private `async fn`), `crate::reader::ThemeReader::read`, `crate::detect::detect_reduced_motion()` (`detect.rs:662`, the uncached variant).
 - Produces: `pub fn AccessibilityPreferences::from_system() -> AccessibilityPreferences`; the connector's preset path and README use it.
 
-Resolution of an ambiguity in §11.2 ("on every platform `reduce_motion` comes from `detect::detect_reduced_motion()`"): the reader's value is kept where a reader supplies one (KDE's `AnimationDurationFactor`, GNOME's portal), and `detect_reduced_motion()` is OR-ed in, so macOS and Windows (whose readers do not fill the struct) get reduce-motion detection and Linux keeps today's coverage. Nothing is ever turned *off* by the fallback. The **uncached** `detect_reduced_motion()` is used, not `prefers_reduced_motion()`: the latter caches its first answer in a process-wide `OnceLock` (`detect.rs:654-656, 856-857`), while `from_system()` re-reads the platform reader on every call and is what a caller polls before `apply_accessibility`; mixing a cached and an uncached source would freeze the fallback at its first value.
+Resolution of an ambiguity in §11.2 ("on every platform `reduce_motion` comes from `detect::detect_reduced_motion()`"): the reader's value is kept where a reader supplies one (KDE's `AnimationDurationFactor`, GNOME's portal), and `detect_reduced_motion()` is OR-ed in, as a floor for the paths that leave `reduce_motion` at its default: non-KDE/GNOME Linux, and macOS or Windows builds without their reader feature (with the feature on, both readers fill all four fields — `macos.rs:513-528`, `windows.rs:393-398`; the brief's first wording said they do not, rationale error 55). Nothing is ever turned *off* by the fallback. The **uncached** `detect_reduced_motion()` is used, not `prefers_reduced_motion()`: the latter caches its first answer in a process-wide `OnceLock` (`detect.rs:654-656, 856-857`), while `from_system()` re-reads the platform reader on every call and is what a caller polls before `apply_accessibility`; mixing a cached and an uncached source would freeze the fallback at its first value.
 
 - [ ] **Step 1: Write the failing test** in the `#[cfg(test)]` module of `native-theme/src/lib.rs`:
 
@@ -333,7 +333,8 @@ In `native-theme/src/pipeline.rs` add, directly after `from_system_inner` (same 
 /// accessibility block without merging or resolving a theme. Where no reader
 /// is available (or it fails) the defaults are used. `reduce_motion` is OR-ed
 /// with [`crate::detect::detect_reduced_motion`], which covers macOS and
-/// Windows, whose readers do not fill the struct (spec §11.2).
+/// Windows builds without their reader feature; with it on, both readers
+/// fill all four fields, and OR-ing their `true` is a no-op (spec §11.2).
 pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPreferences {
     let mut prefs = match select_reader().await {
         Some((reader, _preset)) => match reader.read().await {
@@ -405,7 +406,8 @@ git commit -m "feat(native-theme): AccessibilityPreferences::from_system()
 
 An extraction of the reader path, not new detection: the same KDE/GNOME
 reader fills the struct, reduce_motion is OR-ed with
-detect::detect_reduced_motion() so macOS and Windows are covered too."
+detect::detect_reduced_motion() as a floor for paths whose reader leaves it
+at the default."
 ```
 
 ---
@@ -3562,7 +3564,7 @@ Rewrite `## v0.6.2` (line 50-64): "108-field" → "139-field"; the connector-sid
 
 - [ ] **Step 4: `docs/todo.md` (§13.5)**
 
-Under "native-theme-gpui connector": mark `Map WidgetMetrics → gpui-component per-widget styling` done for the reachable set (v0.5.8) and list the Tier U items as upstream PR candidates (the list in Step 3); add two research items under a new "Research" heading: "scrollbar thumb radius per platform (platform-facts has none; the connector mirrors gpui-component's `radius`)" and "macOS / Windows accessibility readers for text scaling and high contrast (`AccessibilityPreferences::from_system()` fills only what the KDE/GNOME readers supply plus reduce-motion)".
+Under "native-theme-gpui connector": mark `Map WidgetMetrics → gpui-component per-widget styling` done for the reachable set (v0.5.8) and list the Tier U items as upstream PR candidates (the list in Step 3); add two research items under a new "Research" heading: "scrollbar thumb radius per platform (platform-facts has none; the connector mirrors gpui-component's `radius`)" and (no second research item: the macOS and Windows readers already fill all four accessibility fields, spec §1.3).
 
 - [ ] **Step 5: `docs/todo_gpui-full-theme.md` (§13.4)**
 
