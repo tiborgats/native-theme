@@ -261,6 +261,15 @@ fn with_accordion_title_style(
     }
 }
 
+/// A `GroupBox` whose content carries the native card geometry when the native
+/// theme is installed (`GroupBox::content_style`, spec §9.3).
+fn native_group_box(cx: &App) -> GroupBox {
+    match native_geometry(cx, geometry::group_box_content) {
+        Some(s) => GroupBox::new().content_style(s),
+        None => GroupBox::new(),
+    }
+}
+
 fn color_swatch(name: &str, color: Hsla) -> impl IntoElement {
     let hex = hsla_to_hex(color);
     let label_text: SharedString = format!("{} {}", name, hex).into();
@@ -557,8 +566,8 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
     ("Redo", IconName::Redo),
     ("Redo2", IconName::Redo2),
     ("Replace", IconName::Replace),
-    ("RotateCw", IconName::RotateCw),
     ("ResizeCorner", IconName::ResizeCorner),
+    ("RotateCw", IconName::RotateCw),
     ("Search", IconName::Search),
     ("Settings", IconName::Settings),
     ("Settings2", IconName::Settings2),
@@ -1971,6 +1980,8 @@ impl Showcase {
     // Tab: Buttons
     // -----------------------------------------------------------------------
     fn render_buttons_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // One refinement per section (spec §9.1); `None` before `apply` ran.
+        let button_style = native_geometry(cx, geometry::button);
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
@@ -1988,7 +1999,7 @@ impl Showcase {
                             .id("tt-btn-primary")
                             .child(refined(
                                 Button::new("b-primary").label("Primary").primary(),
-                                native_geometry(cx, geometry::button).as_ref(),
+                                button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(
                                 &fi,
@@ -2015,7 +2026,7 @@ impl Showcase {
                             .id("tt-btn-secondary")
                             .child(refined(
                                 Button::new("b-secondary").label("Secondary"),
-                                native_geometry(cx, geometry::button).as_ref(),
+                                button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(
                                 &fi,
@@ -2031,9 +2042,9 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
-                                    ("min-height", "hardcoded"),
+                                    ("label size", "inner element (Tier U)"),
                                 ],
                             )),
                     )
@@ -2042,7 +2053,7 @@ impl Showcase {
                             .id("tt-btn-danger")
                             .child(refined(
                                 Button::new("b-danger").label("Danger").danger(),
-                                native_geometry(cx, geometry::button).as_ref(),
+                                button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(
                                 &fi,
@@ -2058,9 +2069,9 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
-                                    ("min-height", "hardcoded"),
+                                    ("label size", "inner element (Tier U)"),
                                 ],
                             )),
                     )
@@ -2069,7 +2080,7 @@ impl Showcase {
                             .id("tt-btn-success")
                             .child(refined(
                                 Button::new("b-success").label("Success").success(),
-                                native_geometry(cx, geometry::button).as_ref(),
+                                button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(
                                 &fi,
@@ -2085,9 +2096,9 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
-                                    ("min-height", "hardcoded"),
+                                    ("label size", "inner element (Tier U)"),
                                 ],
                             )),
                     )
@@ -2096,7 +2107,7 @@ impl Showcase {
                             .id("tt-btn-warning")
                             .child(refined(
                                 Button::new("b-warning").label("Warning").warning(),
-                                native_geometry(cx, geometry::button).as_ref(),
+                                button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(
                                 &fi,
@@ -2112,9 +2123,9 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
-                                    ("min-height", "hardcoded"),
+                                    ("label size", "inner element (Tier U)"),
                                 ],
                             )),
                     )
@@ -2123,7 +2134,7 @@ impl Showcase {
                             .id("tt-btn-info")
                             .child(refined(
                                 Button::new("b-info").label("Info").info(),
-                                native_geometry(cx, geometry::button).as_ref(),
+                                button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(
                                 &fi,
@@ -2139,16 +2150,19 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
-                                    ("min-height", "hardcoded"),
+                                    ("label size", "inner element (Tier U)"),
                                 ],
                             )),
                     )
                     .child(
                         div()
                             .id("tt-btn-ghost")
-                            .child(Button::new("b-ghost").label("Ghost").ghost())
+                            .child(refined(
+                                Button::new("b-ghost").label("Ghost").ghost(),
+                                button_style.as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Ghost)",
@@ -2158,7 +2172,7 @@ impl Showcase {
                                 ],
                                 &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
                                 ],
                             )),
@@ -2166,7 +2180,10 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-link")
-                            .child(Button::new("b-link").label("Link").link())
+                            .child(refined(
+                                Button::new("b-link").label("Link").link(),
+                                button_style.as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Link)",
@@ -2176,7 +2193,7 @@ impl Showcase {
                                 ],
                                 &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
                                 ],
                             )),
@@ -2184,7 +2201,10 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-text")
-                            .child(Button::new("b-text").label("Text").text())
+                            .child(refined(
+                                Button::new("b-text").label("Text").text(),
+                                button_style.as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Text)",
@@ -2194,7 +2214,7 @@ impl Showcase {
                                 ],
                                 &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
                                 ],
                             )),
@@ -2202,12 +2222,13 @@ impl Showcase {
                     .child(
                         div()
                             .id("tt-btn-outline")
-                            .child(
+                            .child(refined(
                                 Button::new("b-outline")
                                     .label("Outline")
                                     .primary()
                                     .outline(),
-                            )
+                                button_style.as_ref(),
+                            ))
                             .on_hover(self.hover_info(
                                 &fi,
                                 "Button (Primary Outline)",
@@ -2218,7 +2239,7 @@ impl Showcase {
                                 ],
                                 &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                 &[
-                                    ("padding", "set per Size enum"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
                                 ],
                             )),
@@ -2531,8 +2552,8 @@ impl Showcase {
                             ("shadow", format!("{}", t.shadow)),
                         ],
                         &[
-                            ("padding", "set per Size enum"),
-                            ("height", "set per Size enum"),
+                            ("geometry", "geometry::input: input.min_height (control height), border.corner_radius, line_width, input.font"),
+                            ("padding", "inner editor (Tier U)"),
                         ],
                     )),
             )
@@ -2626,8 +2647,8 @@ impl Showcase {
                             ("shadow", format!("{}", t.shadow)),
                         ],
                         &[
-                            ("size", "set per Size enum"),
-                            ("indicator size", "hardcoded"),
+                            ("geometry", "geometry::checkbox: checkbox.label_gap, checkbox.font"),
+                            ("indicator size", "inner element (Tier U)"),
                         ],
                     )),
             )
@@ -3758,7 +3779,7 @@ impl Showcase {
                     )),
             )
             // Dividers
-            .child(section("Divider (solid / dashed / labeled)"))
+            .child(section("Separator (solid / dashed / labeled)"))
             .child(
                 div()
                     .id("tt-layout-divider")
@@ -3771,7 +3792,7 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(
                         &fi,
-                        "Divider",
+                        "Separator",
                         &[
                             ("line", "border", t.border),
                             ("label bg", "background", t.background),
@@ -3787,10 +3808,7 @@ impl Showcase {
                 div()
                     .id("tt-layout-groupbox")
                     .child(
-                        match native_geometry(cx, geometry::group_box_content) {
-                            Some(s) => GroupBox::new().content_style(s),
-                            None => GroupBox::new(),
-                        }
+                        native_group_box(cx)
                         .title("Contained Content")
                         .fill()
                         .child(
@@ -3820,7 +3838,7 @@ impl Showcase {
                             ("title", "muted_foreground", t.muted_foreground),
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                        &[("padding", "hardcoded")],
+                        &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")],
                     )),
             )
             // Scrollable area demo
@@ -3918,7 +3936,11 @@ impl Showcase {
                             ("secondary text", "muted_foreground", t.muted_foreground),
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                        &[("padding", "hardcoded"), ("animation", "hardcoded")],
+                        &[
+                            ("header height", "geometry::accordion_title: expander.header_height"),
+                            ("padding", "inner (Tier U)"),
+                            ("animation", "hardcoded"),
+                        ],
                     )),
             )
             // Collapsible
@@ -3973,20 +3995,20 @@ impl Showcase {
                         h_flex()
                             .gap_4()
                             .child(
-                                GroupBox::new()
+                                native_group_box(cx)
                                     .title("Default")
                                     .w(px(180.0))
                                     .child(Label::new("Default style").text_sm()),
                             )
                             .child(
-                                GroupBox::new()
+                                native_group_box(cx)
                                     .title("Filled")
                                     .fill()
                                     .w(px(180.0))
                                     .child(Label::new("Filled background").text_sm()),
                             )
                             .child(
-                                GroupBox::new()
+                                native_group_box(cx)
                                     .title("Outline")
                                     .outline()
                                     .w(px(180.0))
@@ -4261,7 +4283,7 @@ impl Showcase {
                     )),
             )
             // Dialog
-            .child(section("Dialog (confirm)"))
+            .child(section("Dialog"))
             .child(
                 div()
                     .id("tt-dialog")
@@ -5527,6 +5549,7 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let select_style = native_geometry(cx, geometry::select);
         // Apply deferred system theme change (set by the watcher polling task).
         // Done here because apply_theme_by_name needs window access.
         if self.pending_system_theme_change {
@@ -5583,12 +5606,12 @@ impl Render for Showcase {
                             .font_semibold(),
                     )
                     .child(
-                        Select::new(&self.theme_select)
+                        refined(Select::new(&self.theme_select), select_style.as_ref())
                             .with_size(Size::Small)
                             .w_full(),
                     )
                     .child(
-                        Select::new(&self.dark_mode_select)
+                        refined(Select::new(&self.dark_mode_select), select_style.as_ref())
                             .with_size(Size::Small)
                             .w_full(),
                     )
@@ -5600,7 +5623,7 @@ impl Render for Showcase {
                     .gap_3()
                     .child(Label::new("Icon Theme").text_size(px(13.0)).font_semibold())
                     .child(
-                        Select::new(&self.icon_set_select)
+                        refined(Select::new(&self.icon_set_select), select_style.as_ref())
                             .with_size(Size::Small)
                             .w_full(),
                     )
