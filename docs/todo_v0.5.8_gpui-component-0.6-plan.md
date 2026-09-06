@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-Status: Pending
+Status: Implemented on branch `v0.5.8-gpui-component-0.6` (2026-09-06); release pending the maintainer's testing and approval
 Date: 2026-09-05
 
 **Goal:** Move `native-theme-gpui` onto gpui-component 0.6.0 / gpui-base 0.6.0 / GPUI as `gpui-pre` 0.3.x and deliver everything the v0.5.8 specification lists: the complete 139-field colour mapping, accessibility as a first-class input, automatic re-application of the native base-layer overrides, per-widget geometry builders, honest `Option` icon tables on refreshed bundles, two additive `native-theme` APIs, a dependency refresh and two measured MSRV floors.

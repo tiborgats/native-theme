@@ -1,6 +1,6 @@
 # v0.5.8 — gpui connector on gpui-component 0.6: Rationale
 
-Status: Pending
+Status: Implemented on branch `v0.5.8-gpui-component-0.6` (2026-09-06); release pending the maintainer's testing and approval
 Crates: `connectors/native-theme-gpui` (primary), `native-theme` (two additive
 API items, icon bundles, dependency refresh), workspace manifests
 Companion specification:

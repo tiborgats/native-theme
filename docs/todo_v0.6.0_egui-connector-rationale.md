@@ -1076,7 +1076,7 @@ one-line change here and never a semantic divergence.
 egui minor per release line; an egui minor bump is a **breaking change** for this
 crate. Crate version equals the workspace version. The same shape as
 `iced_core = "0.14"` (`connectors/native-theme-iced/Cargo.toml:24`) and
-`gpui = "0.2.2"` (`connectors/native-theme-gpui/Cargo.toml:30`).
+`gpui = { package = "gpui-pre", version = "0.3.3" }` (`connectors/native-theme-gpui/Cargo.toml:30`).
 
 **Rejected:** an exact `=0.36.1` pin (it would reject 0.36.2 patch fixes) and any
 wider range (cargo cannot unify two semver-incompatible egui versions, and the

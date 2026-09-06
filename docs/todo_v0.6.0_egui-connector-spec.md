@@ -4714,7 +4714,7 @@ An exact `=0.36.1` pin is wrong because it would reject patch fixes. A wider
 range is impossible because the application's `egui::Style` must be *our*
 `egui::Style` and cargo cannot unify two semver-incompatible egui versions. The
 same shape as the sibling connectors, which pin `iced_core = "0.14"`
-(`connectors/native-theme-iced/Cargo.toml`) and `gpui = "0.2.2"`.
+(`connectors/native-theme-iced/Cargo.toml`) and `gpui = { package = "gpui-pre", version = "0.3.3" }`.
 
 The policy is published as a table in the README and there is **no**
 `EGUI_VERSION` constant: a hand-maintained string cannot be checked against the

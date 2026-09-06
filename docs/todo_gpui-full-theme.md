@@ -10,7 +10,7 @@ Date: 2026-04-08
 The gpui connector (`native-theme-gpui`) maps native-theme's resolved data to
 gpui-component's theming system. The mapping is lopsided:
 
-- **Colors: well-covered.** 108 `ThemeColor` fields are populated. Button
+- **Colors: well-covered.** All `ThemeColor` fields are populated (108 on gpui-component 0.5, 139 on 0.6 since v0.5.8). Button
   background, hover, active; scrollbar thumb; slider fill; tab active -- all
   mapped directly from per-widget resolved data.
 
@@ -32,32 +32,39 @@ looks noticeably different from a real KDE System Settings button.
 
 ### What native-theme provides vs what the connector uses
 
-| Widget | native-theme fields | Connector uses | Gap |
-|--------|---------------------|----------------|-----|
-| button | background_color, font.color, primary_background, primary_text_color, hover_background, hover_text_color, active_background, active_text_color, disabled_background, disabled_text_color, **border.color**, **border.corner_radius**, **border.line_width**, **border.padding_horizontal**, **border.padding_vertical**, **min_width**, **min_height**, icon_text_gap, disabled_opacity | 6 colors | 11 geometry fields |
-| input | background_color, font.color, border.color, caret_color, hover_border_color, focus_border_color, disabled_background, disabled_text_color, **border.padding_horizontal**, **border.padding_vertical**, **min_height**, border.corner_radius | 2 colors | 4 geometry fields |
-| checkbox | indicator_width, label_gap, border colors, disabled states | 0 | all fields |
-| scrollbar | track_color, thumb_color, thumb_hover_color, **groove_width**, **min_thumb_length**, **thumb_width**, overlay_mode | 3 colors | 4 geometry fields |
-| slider | fill_color, thumb_color, **track_height**, **thumb_diameter**, **tick_mark_length** | 2 colors | 3 geometry fields |
-| tab | background_color, active_background, active_text_color, bar_background, font.color, **min_width**, **min_height**, **border.padding_horizontal**, **border.padding_vertical** | 5 colors | 4 geometry fields |
-| menu | row_height, icon_text_gap, icon_size, border padding, colors | 0 | all fields |
-| tooltip | background_color, font.color, **max_width**, **border padding** | 0 | all fields |
-| dialog | button_order, button_gap, min/max dimensions, border padding, icon_size, colors | dialog_content_padding + button_spacing helpers | most geometry |
-| progress_bar | fill_color, **track_height**, **min_width** | 1 color | 2 geometry fields |
-| switch | unchecked_background, thumb_background, **track_width**, **track_height**, **thumb_diameter**, **track_radius** | 2 colors | 4 geometry fields |
-| toolbar | **bar_height**, **item_gap**, icon_size, colors | 0 | all geometry |
-| list | alternate_row, hover_background, selection_background, **row_height**, **border padding** | 3 colors | 3 geometry fields |
-| spinner | **diameter**, **min_diameter**, **stroke_width** | 0 | 3 geometry fields |
-| combo_box | **min_height**, **min_width**, **arrow_icon_size**, **arrow_area_width**, border padding | 0 | 5 geometry fields |
-| splitter | **divider_width**, colors | 0 | 1 geometry field |
-| separator | **line_width**, colors | 0 | 1 geometry field |
-| segmented_control | **segment_height**, **separator_width**, border padding | 0 | 3 geometry fields |
-| expander | **header_height**, **arrow_icon_size** | 0 | 2 geometry fields |
-| layout | **widget_gap**, **container_margin**, **window_margin**, **section_gap** | 0 | 4 geometry fields |
+| Widget | native-theme fields | Connector uses | Gap | v0.5.8 |
+|--------|---------------------|----------------|-----|--------|
+| button | background_color, font.color, primary_background, primary_text_color, hover_background, hover_text_color, active_background, active_text_color, disabled_background, disabled_text_color, **border.color**, **border.corner_radius**, **border.line_width**, **border.padding_horizontal**, **border.padding_vertical**, **min_width**, **min_height**, icon_text_gap, disabled_opacity | 6 colors | 11 geometry fields | delivered (R): h, min_w, px, py, rounded, border, border_color; label size and icon gap inner → upstream |
+| input | background_color, font.color, border.color, caret_color, hover_border_color, focus_border_color, disabled_background, disabled_text_color, **border.padding_horizontal**, **border.padding_vertical**, **min_height**, border.corner_radius | 2 colors | 4 geometry fields | delivered (R): h, rounded, border, text; padding inner → upstream |
+| checkbox | indicator_width, label_gap, border colors, disabled states | 0 | all fields | delivered (R): gap, text; indicator size upstream (`checkbox.rs:195-199`) |
+| scrollbar | track_color, thumb_color, thumb_hover_color, **groove_width**, **min_thumb_length**, **thumb_width**, overlay_mode | 3 colors | 4 geometry fields | delivered (gpui-base `ScrollbarStyles` via `base_layer`): widths, inset, min length, colours |
+| slider | fill_color, thumb_color, **track_height**, **thumb_diameter**, **tick_mark_length** | 2 colors | 3 geometry fields | upstream (`slider.rs:218, 288-289` inner) |
+| tab | background_color, active_background, active_text_color, bar_background, font.color, **min_width**, **min_height**, **border.padding_horizontal**, **border.padding_vertical** | 5 colors | 4 geometry fields | upstream (`tab.rs:606` stores a style it never applies) |
+| menu | row_height, icon_text_gap, icon_size, border padding, colors | 0 | all fields | delivered (R) for application-built `MenuItem`; `PopupMenu` rows upstream (`popup_menu.rs:749`) |
+| tooltip | background_color, font.color, **max_width**, **border padding** | 0 | all fields | delivered (R) for `Tooltip::new`; `Button::tooltip` upstream (`button.rs:360`) |
+| dialog | button_order, button_gap, min/max dimensions, border padding, icon_size, colors | dialog_content_padding + button_spacing helpers | most geometry | delivered (R paddings, min_h, max_h; B `Dialog::max_w`; footer gap; title/body fonts) |
+| progress_bar | fill_color, **track_height**, **min_width** | 1 color | 2 geometry fields | delivered (R): h, rounded, min_w |
+| switch | unchecked_background, thumb_background, **track_width**, **track_height**, **thumb_diameter**, **track_radius** | 2 colors | 4 geometry fields | upstream (`switch.rs:136-146` inner) |
+| toolbar | **bar_height**, **item_gap**, icon_size, colors | 0 | all geometry | upstream (no toolbar widget in gpui-component) |
+| list | alternate_row, hover_background, selection_background, **row_height**, **border padding** | 3 colors | 3 geometry fields | delivered (R): h, px, py, text |
+| spinner | **diameter**, **min_diameter**, **stroke_width** | 0 | 3 geometry fields | delivered (S): `Size::Size(px(diameter))`; stroke width upstream |
+| combo_box | **min_height**, **min_width**, **arrow_icon_size**, **arrow_area_width**, border padding | 0 | 5 geometry fields | delivered (R): min_h, min_w, rounded, text; arrow inner → upstream |
+| splitter | **divider_width**, colors | 0 | 1 geometry field | colours delivered (`base_layer::resizable_theme`); width upstream (`resize_handle.rs:12` constant) |
+| separator | **line_width**, colors | 0 | 1 geometry field | upstream (`separator.rs:79-84` inner line) |
+| segmented_control | **segment_height**, **separator_width**, border padding | 0 | 3 geometry fields | upstream (built from `Tab`s) |
+| expander | **header_height**, **arrow_icon_size** | 0 | 2 geometry fields | delivered (B `AccordionItem::title_style`): header height; arrow upstream |
+| layout | **widget_gap**, **container_margin**, **window_margin**, **section_gap** | 0 | 4 geometry fields | delivered (accessors over `LayoutTheme`); no gpui-component receiver, application layout |
 
-**Bold** = geometry fields that exist in native-theme but cannot be mapped.
+**Bold** = geometry fields that exist in native-theme but, before v0.5.8, had
+no path to the rendered UI.
 
-Total: ~65 per-widget geometry fields with no path to the rendered UI.
+The "v0.5.8" column records what reached the UI in v0.5.8 through the seams
+gpui-component 0.6 exposes (v0.5.8 spec §2): **R** = the widget applies the
+caller's `StyleRefinement` after its own geometry (`geometry::<widget>` +
+`refine_style`), **S** = the widget honours `Size::Size(px)`, **B** = a
+widget-specific builder takes the value; "upstream" = an inner element the
+caller's style cannot reach, listed with the line that makes it so (spec §14).
+The remaining upstream items are the v0.6.2 PR list in `ROADMAP.md`.
 
 
 ## 2 -- Why the gap exists
@@ -77,7 +84,7 @@ with state management, theme color reads, and accessibility features.
 
 gpui-component's `Theme` struct has two layers:
 
-1. **`ThemeColor`** -- a flat bag of 108 named HSLA colors. No geometry. No
+1. **`ThemeColor`** -- a flat bag of named HSLA colors (108 in 0.5, 139 in 0.6). No geometry. No
    per-widget structure. Button, input, tab, scrollbar each get 2-5 color
    slots. Our connector populates all 108.
 

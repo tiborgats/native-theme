@@ -45,30 +45,42 @@
 //!
 //! # Theme Field Coverage
 //!
-//! The connector maps a subset of [`ResolvedTheme`] fields to gpui-component's
-//! `ThemeColor` (108 color fields) and `ThemeConfig` (font/geometry).
+//! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
+//! (all 139 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
+//! the styled `Theme`'s `focus_ring` and `scrollbar_mode`, and gpui-base's
+//! scrollbar and resize-handle styles.
 //!
 //! | Category | Mapped | Notes |
 //! |----------|--------|-------|
 //! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
-//! | `defaults` geometry | radius, radius_lg, shadow | Font family/size also mapped |
-//! | `button` | 6 of 15 | primary bg/fg, bg/fg, hover_bg, active_bg |
-//! | `tab` | 5 of 10 | All colors, sizing not mapped |
+//! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
+//! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics) |
+//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab` never applies its style) |
 //! | `sidebar` | 2 of 6 | background, font.color |
 //! | `window` | 2 of 6 | title_bar_background, border |
-//! | `input` | 2 of 13 | border, caret |
-//! | `scrollbar` | 3 of 8 | track, thumb, thumb_hover |
-//! | `slider`, `switch` | 2 each | fill/thumb colors |
-//! | `progress_bar` | 1 of 5 | fill |
-//! | `list` | 3 of 13 | alternate_row, hover_bg, selection_bg |
-//! | `popover` | 2 of 3 | background, font.color |
+//! | `input` | 2 of 13 colours + geometry | border, caret; height, radius, border, text via `geometry::input` |
+//! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
+//! | `status_bar` | 2 of 3 | background, border |
+//! | `table` | head + foot | `table_foot*` mirror `table_head*` |
+//! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
+//! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
+//! | `list` | 3 of 13 colours + geometry | row height, padding, font via `geometry::list_item` |
+//! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
 //! | `link` | 1 of 9 | hover_background |
-//! | 13 other widgets | 0 fields | checkbox, menu, tooltip, dialog, etc. |
+//! | `splitter` | colours | divider/hover via `base_layer::resizable_theme`; width upstream |
 //!
-//! **Why the gap:** gpui-component's `ThemeColor` is a flat color bag with no per-widget
-//! geometry. The connector cannot map most sizing/spacing data because the target type
-//! has no corresponding fields. Users who need per-widget geometry can read it directly
-//! from the `ResolvedTheme` they passed to [`to_theme()`].
+//! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes
+//! reach the widgets through the [`geometry`] module: pure builders returning a
+//! `StyleRefinement` that the application applies with
+//! `gpui_component::StyledExt::refine_style`, where gpui-component applies the
+//! caller's style after its own geometry. [`apply`] installs the theme, the
+//! base-layer overrides and the observer that keeps them installed.
+//!
+//! **Limits.** Geometry on inner elements the caller's style cannot reach
+//! (checkbox and radio indicators, switch, slider, tab geometry, separator
+//! thickness, splitter width, button icon gap, input padding, popup-menu rows)
+//! stays upstream work; `docs/todo_v0.5.8_gpui-component-0.6-spec.md` §14
+//! lists each item with the upstream line that makes it unreachable.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -104,13 +116,13 @@ use std::rc::Rc;
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
 /// Builds a complete GpuiTheme by:
-/// 1. Mapping all 108 ThemeColor fields via `colors::to_theme_color`
+/// 1. Mapping all 139 ThemeColor fields via `colors::to_theme_color`
 /// 2. Setting font, geometry, and mode fields directly on the Theme
 /// 3. Storing a ThemeConfig in light_theme/dark_theme Rc for gpui-component switching
 ///
 /// All Theme fields are set explicitly -- no `apply_config` call is used.
 /// This avoids the fragile apply-then-restore pattern where `apply_config`
-/// would overwrite all 108 color fields with defaults.
+/// would overwrite all 139 color fields with defaults.
 ///
 /// The `is_dark` parameter is required rather than auto-derived because
 /// several presets (e.g. solarized, gruvbox) have borderline lightness
