@@ -1149,7 +1149,7 @@ Expected: one line, `3 error[E0004]: non-exhaustive patterns: ...` (the 15 missi
 
 Doc comment: replace "Covers all 86 gpui-component `IconName` variants." with "Returns `None` where Lucide has no equivalent (today only `StarFill`, spec §10.2); every `Some` is Lucide's own file name (`LucideLoader::new(name)` resolves it)."
 
-`material_name_for_gpui_icon`: signature `-> Option<&'static str>`; body `Some(match icon { ... })`; change `IconName::StarOff => "star_border",` to
+`material_name_for_gpui_icon`: signature `-> Option<&'static str>`; body `Some(match icon { ... })`; change `IconName::ALargeSmall => "font_size",` to `IconName::ALargeSmall => "format_size",` (Task 5 stored the file under its upstream name); change `IconName::StarOff => "star_border",` to
 
 ```rust
         // Material Symbols has no star-off glyph; the duplicate hollow star that
@@ -3532,7 +3532,7 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 
 #### native-theme
 
-- Bundled icon names follow upstream: the Lucide bundle no longer contains `close`, `dash`, `inspect`, `resize-corner`, `sort-ascending`, `sort-descending`, `window-close`, `window-maximize`, `window-minimize`, `window-restore` (byte-identical duplicates of `x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`) or `trash-2` (now `trash`); the Material bundle no longer contains `star_border` (a duplicate of `star`). `LucideLoader::new` / `MaterialLoader::new` with those names return `None`.
+- Bundled icon names follow upstream: the Lucide bundle no longer contains `close`, `dash`, `inspect`, `resize-corner`, `sort-ascending`, `sort-descending`, `window-close`, `window-maximize`, `window-minimize`, `window-restore` (byte-identical duplicates of `x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`) or `trash-2` (now `trash`); the Material bundle no longer contains `star_border` (a duplicate of `star`) and stores `font_size` under its upstream name `format_size`. `LucideLoader::new` / `MaterialLoader::new` with those names return `None`.
 
 ### Added
 
@@ -3546,7 +3546,7 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 
 ### Fixed
 
-- Icon bundle provenance recorded; Lucide refreshed to 1.41.0 (`github.svg` kept from 0.577.0, the last tag with brand icons); Material Symbols refreshed to upstream `0cbb08816df0`; duplicate `star_border.svg` removed.
+- Icon bundle provenance recorded; Lucide refreshed to 1.41.0 (`github.svg` kept from 0.577.0, the last tag with brand icons); Material Symbols refreshed to upstream `0cbb08816df0`; duplicate `star_border.svg` removed; the old Lucide `delete.svg` was a trash-can glyph and is now Lucide's real `delete` (the backspace key gpui-kit's own icon draws).
 - The connector honoured only `reduce_transparency`; the platform's text-scaling factor and reduce-motion preference were dropped.
 - The `ThemeConfig` hex export dropped alpha, so `overlay`, `drag_border` and `drop_target` turned opaque after `Theme::change`; translucent colours are now exported as `#rrggbbaa`.
 - `publish.yml`: the gpui connector is hard-gated again (the naga/codespan-reporting conflict G11 recorded does not exist on the 0.6 stack).

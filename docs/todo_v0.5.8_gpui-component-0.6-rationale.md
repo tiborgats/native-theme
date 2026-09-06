@@ -768,7 +768,7 @@ Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
 seventh, 50–51 from the eighth, 52–54 from the ninth, 55 from the
-implementation of Task 3, 56 from Task 5's glyph check.
+implementation of Task 3, 56–57 from Task 5.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -826,6 +826,7 @@ implementation of Task 3, 56 from Task 5's glyph check.
 54. **`from_system()` used the cached reduce-motion detector.** `prefers_reduced_motion()` stores its first answer in a process-wide `OnceLock` (`detect.rs:654-656, 856-857`); a caller polling `from_system()` before `apply_accessibility` would have seen the reader's fresh value OR-ed with a frozen fallback. The uncached `detect_reduced_motion()` (`:662`) is used instead.
 55. **The design said only the KDE and GNOME readers fill `AccessibilityPreferences`.** The macOS reader fills all four fields from `NSWorkspace` and the system font size (`macos.rs:142-150, 513-528`) and the Windows reader from `UISettings` (`windows.rs:393-398`); only the preset-only fallback and non-KDE/GNOME Linux leave the defaults. Found by Task 3's reviewer. The OR-with-detect design is unaffected (a reader's `true` OR-ed is a no-op), but the doc comment, commit body, spec §1.3/§11.2/§13.5/§14 and rationale §2.17/§4/§6 all repeated the premise, and two "research items" asked for readers that exist. All corrected; the todo items are not added.
 56. **`MemoryStick` was mapped to Material `sd_card` by name.** Rendered against the gpui-kit glyph, `sd_card` is a flash card and `memory_alt` is a RAM module with pins, the object Lucide draws. Changed to `memory_alt` (close). The other five `close`/`approximate` Material rows survived the same check.
+57. **`material/font_size.svg` was a genuine icon under a non-upstream stem.** The refresh script 404ed on it at the pinned SHA and at master; the file is byte-identical to upstream `format_size_24px.svg`. Stored as `format_size.svg`; the connector arm changes in Task 6; a breaking rename for `MaterialLoader::new("font_size")`. Found by Task 5's implementer. The same refresh showed the old bundled `lucide/delete.svg` was a trash-can glyph, not Lucide's `delete` (the backspace key gpui-kit's own icon draws); the refresh replaced it, so the connector's `Delete → delete` mapping is now correct in glyph as well as in name.
 
 ---
 

@@ -144,7 +144,7 @@ versions.
 | Lucide bundle: 103 files, 99 name-table entries; **all 103 are Lucide icons** from tag **0.577.0** (byte-identical for sampled files). Ten are stored under gpui-component's icon names instead of Lucide's: `close` and `window-close` = `x`, `dash` and `window-minimize` = `minus`, `inspect` = `scan`, `resize-corner` = `grip`, `sort-ascending` = `arrow-up-narrow-wide`, `sort-descending` = `arrow-down-wide-narrow`, `window-maximize` = `maximize`, `window-restore` = `minimize-2` (path data identical after whitespace normalisation); the bundle already holds all eight of those files under their Lucide names, byte-identical, so the ten are duplicates, and the four files absent from the hand-written name table are `scan`, `grip`, `arrow-up-narrow-wide` and `arrow-down-wide-narrow`. The adding commit (`48f67c5`) records none of this. Nothing outside the connector uses those ten names: the role-based tables reference only `trash-2.svg` among the files affected by §10.2 (`bundled.rs:137, 163-164`), and the hand-written coverage test `lucide_by_name_covers_gpui_icons` (`bundled.rs:508`) lists them | `native-theme/icons/lucide`; `bundled.rs`; normalised comparison against the 0.577.0 files; repository grep |
 | Lucide 1.41.0 (2026-09-04) contains the 14 new names and every underlying icon above; it lacks `github` (brand icons removed upstream, commit `aa8f74eb`) and `trash-2`, which became a deprecated alias of `trash` whose glyph is identical to the old `trash-2` (path data compared); it has no filled star: `star`, `star-off` and `star-half` exist at the tag, `star-fill` and `star-filled` do not | git tree of tag 1.41.0; `icons/trash.json` at 1.41.0; raw probes of the tag |
 | Material bundle: `star.svg` and `star_border.svg` have identical path data (the Symbols outlined hollow star); `star_border` backs `IconName::StarOff`; Material Symbols has no star-off glyph (`star_off`, `star_outline`, `star_border` do not exist; `star_rate`, `star_half` do) | `native-theme/icons/material`; `bundled.rs:399`; connector `icons.rs:326`; GitHub contents API |
-| Material bundle: 87 files, 76 name-table entries; `search`, `settings`, `star` are byte-identical to Material Symbols **Outlined 24px** (`symbols/web/<n>/materialsymbolsoutlined/<n>_24px.svg`); `warning` and `info` match no upstream variant probed | `native-theme/icons/material`; comparisons |
+| Material bundle: 87 files, 76 name-table entries; `search`, `settings`, `star` are byte-identical to Material Symbols **Outlined 24px** (`symbols/web/<n>/materialsymbolsoutlined/<n>_24px.svg`); `warning` and `info` match no upstream variant probed; `font_size.svg` exists under no such upstream name and is byte-identical to `format_size_24px.svg` (found when the refresh script 404ed on it, Task 5); the old Lucide `delete.svg` was a trash-can glyph, not Lucide's `delete` (a backspace key, which gpui-kit's own `delete.svg` also is) and the refresh replaced it | `native-theme/icons/material`; comparisons; Task 5 refresh run |
 | Material Symbols files exist at upstream HEAD (`0cbb08816df0`, 2026-09-04) for every name in §10.3 | GitHub contents API |
 | Breeze and Adwaita names for all 15 icons verified on this machine | `find /usr/share/icons/{breeze,Adwaita}` |
 | Breeze (`status/{16,22,24}`) and Adwaita (`symbolic/status`) both ship the star-state pair `non-starred` / `starred` (and `semi-starred`); the connector's table maps `Star` to `starred`, the filled star | `find /usr/share/icons/{breeze,Adwaita} -iname '*starred*'`; `icons.rs:413` |
@@ -602,7 +602,7 @@ comment and recorded in the CHANGELOG.
 | `to_theme(resolved, name, is_dark, reduce_transparency: bool)` | `to_theme(resolved, name, is_dark, prefs: &AccessibilityPreferences)` | the connector honoured one of four preferences; text scaling was silently dropped (`src/lib.rs:237-246`) |
 | `from_preset(name, is_dark)` | `from_preset(name, is_dark, prefs: &AccessibilityPreferences)` | accessibility is orthogonal to theme choice: a user with large text wants it under a preset too; pass `&AccessibilityPreferences::default()` or `&AccessibilityPreferences::from_system()` (§11.2) |
 | `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`, `freedesktop_name_for_gpui_icon`, all `-> &'static str` | `-> Option<&'static str>` | a set may have no equivalent; the project rule is "return None, never substitute" (§10.1); today `StarFill` in Lucide and `StarOff` in Material. The freedesktop table maps `Star` to `non-starred` instead of `starred`, so the two star states differ (§10.4) |
-| Lucide bundle names `close`, `dash`, `inspect`, `resize-corner`, `sort-ascending`, `sort-descending`, `window-close`, `window-maximize`, `window-minimize`, `window-restore`, `trash-2` accepted by `LucideLoader::new(name)` | the Lucide names `x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`, `trash`; Material name `star_border` removed | the bundle mirrors upstream under upstream's names (§10.2); the duplicate file behind `star_border` drew the wrong glyph (§10.3) |
+| Lucide bundle names `close`, `dash`, `inspect`, `resize-corner`, `sort-ascending`, `sort-descending`, `window-close`, `window-maximize`, `window-minimize`, `window-restore`, `trash-2` accepted by `LucideLoader::new(name)` | the Lucide names `x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`, `trash`; Material name `star_border` removed and `font_size` renamed `format_size` | the bundle mirrors upstream under upstream's names (§10.2); the duplicate file behind `star_border` drew the wrong glyph (§10.3); `font_size.svg` was upstream's `format_size` under a non-upstream stem (found by the refresh, rationale error 57) |
 | dependency stack | gpui-component 0.6 / gpui-base 0.6 / gpui-pre 0.3 | §1 |
 
 `from_system()` keeps its shape and passes `&sys.accessibility`.
@@ -1074,8 +1074,9 @@ advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compat
   `ScrollbarMode`; `IconName::GitHub` → `Github`; connector `rust-version`.
 - **Breaking** (native-theme): eleven Lucide bundle names stop resolving (ten
   were duplicates of files that already exist under Lucide's names, and
-  `trash-2` is now `trash`, §10.2) and `star_border` is removed, so
-  `LucideLoader::new` / `MaterialLoader::new` with the old names return `None`.
+  `trash-2` is now `trash`, §10.2), `star_border` is removed and `font_size`
+  is now `format_size` (its upstream name), so `LucideLoader::new` /
+  `MaterialLoader::new` with the old names return `None`.
 - **Added** (native-theme-gpui): `apply` (a `ThemeConfig` for every stored
   variant, so `Theme::change` reproduces native colours in both modes),
   `apply_system_theme`, `apply_accessibility` (rebuilds from the stored
@@ -1093,8 +1094,9 @@ advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compat
   list (§4.1, D40), so the existing unreleased `[0.5.8]` entry that names
   three crates is amended to two.
 - **Fixed**: icon bundle provenance recorded, Lucide refreshed to 1.41.0,
-  Material refreshed to upstream HEAD, duplicate `star_border.svg` removed
-  (§10); the config hex export kept alpha (`#rrggbbaa`, D36); the
+  Material refreshed to upstream HEAD, duplicate `star_border.svg` removed,
+  the old Lucide `delete.svg` (a trash-can glyph) replaced by Lucide's real
+  `delete` (§10, §1.3); the config hex export kept alpha (`#rrggbbaa`, D36); the
   `ThemeConfig` copies carried no highlighter style, so a `Theme::change` to
   the other mode kept the previous mode's code highlighting (D41); publish.yml
   soft gates removed if §5.5 passes.
