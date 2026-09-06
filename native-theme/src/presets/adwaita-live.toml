@@ -2,7 +2,7 @@
 # Used by the OS-first pipeline as merge base; OS reader provides colors/fonts.
 #
 # icon_theme is supplied at the Theme level so the live merge base carries
-# the same default as the full `adwaita` preset (see docs/todo_v0.5.7_gaps.md G4).
+# the same default as the full `adwaita` preset (see docs/archive/v0.5.7_gaps.md G4).
 name = "Adwaita"
 icon_theme = "Adwaita"
 

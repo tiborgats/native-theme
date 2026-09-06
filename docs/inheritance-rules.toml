@@ -21,7 +21,7 @@
 #
 # All other sections remain HAND-AUTHORED documentation of hand-written
 # inheritance rules in `native-theme/src/resolve/inheritance.rs` (out of
-# G6 codegen scope per docs/todo_v0.5.7_gaps.md §G6 scope boundary):
+# G6 codegen scope per docs/archive/v0.5.7_gaps.md §G6 scope boundary):
 #
 # Categories:
 #   [defaults_internal]    — Defaults-to-defaults chains (Phase 1, hand-written).

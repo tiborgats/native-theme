@@ -518,12 +518,14 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: packaging
 #
-# --no-verify rationale: cargo package verification compiles each tarball as if
-# it were downloaded from crates.io. For first-ever publication of this
-# workspace, the internal proc-macro crate native-theme-derive is not yet on
-# the registry, so tarball verification cannot resolve the workspace-internal
-# dep. The real tarball compilation check happens during `cargo publish`
-# itself (not run here). See RELEASING.md for the ordered publish workflow.
+# `cargo package` builds each tarball and compiles it as if it had been
+# downloaded from crates.io. The workspace-internal dependencies
+# (native-theme-derive, native-theme) are passed in the same invocation so that
+# compile resolves them from the freshly built tarballs rather than the
+# registry; the version under test is therefore verifiable before it is
+# published. `--allow-dirty` because this script runs on the working tree, not
+# on a release commit. Publishing itself, in dependency order with index waits
+# between crates, is done by .github/workflows/publish.yml on a `v*` tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Packaging"
 run_check "package (core: derive · native-theme · build)" \
@@ -606,10 +608,12 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     printf "   3. Commit any final changes\n"
     printf "   4. Tag: ${DIM}git tag v%s${NC}\n" "$CURRENT_VERSION"
     printf "   5. Push: ${DIM}git push origin v%s${NC}\n" "$CURRENT_VERSION"
-    printf "   6. Publish in order (see RELEASING.md):\n"
+    printf "   6. The pushed tag triggers .github/workflows/publish.yml, which publishes\n"
+    printf "      in dependency order with index waits between crates. Manual fallback,\n"
+    printf "      same order:\n"
     printf "      ${DIM}cargo publish -p native-theme-derive${NC}\n"
-    printf "      ${DIM}cargo publish -p native-theme${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-build${NC}\n"
+    printf "      ${DIM}cargo publish -p native-theme${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-iced${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-gpui${NC}\n"
     echo

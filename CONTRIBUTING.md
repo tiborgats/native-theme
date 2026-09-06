@@ -21,15 +21,22 @@ Before every commit, run the full pre-release check:
 ./pre-release-check.sh
 ```
 
-This is the canonical quality gate. It runs (in order): panic detection in
-non-test code, `cargo fmt --check`, `cargo clippy --workspace --all-targets`,
-`cargo test --workspace`, `cargo doc`, and `cargo package` on every publishable
-crate. The script prints a single-line status per check; a soft warning
-(`⚠`) is tolerable for a WIP branch but must be resolved before opening a
-release PR; a hard failure (`❌`) exits non-zero and must be fixed.
+This is the canonical quality gate. It runs, in order: a TODO/FIXME and
+panic-pattern scan of non-test code, per-crate `cargo check --all-targets`,
+`cargo fmt --all` (formats in place; CI uses `--check`), per-crate
+`cargo clippy --all-targets -- -D warnings`, the strict panic lints on library
+code (`clippy::unwrap_used`, `clippy::indexing_slicing` and the rest of the
+type-aware set), per-crate `cargo test`, `cargo build --examples` for the
+crates that have examples, per-crate `cargo doc --no-deps`, `cargo package` on
+every publishable crate, `cargo audit` and `cargo outdated`. The script prints
+a single-line status per check; the gpui-connector checks and the connector
+packaging are soft (`⚠`), tolerable on a WIP branch but to be resolved before
+opening a release PR; a hard failure (`❌`) exits non-zero and must be fixed.
 
-The script matches the CI pipeline that runs on every pull request, so
-passing it locally means CI will pass too.
+The script runs the checks of the CI pipeline on the local platform, plus the
+strict panic lints, packaging and outdated-dependency checks CI does not run.
+CI additionally tests `native-theme` across its feature matrix on Linux,
+Windows and macOS, which the script cannot do locally.
 
 ## Individual checks
 
