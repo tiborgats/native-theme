@@ -55,7 +55,7 @@
 //! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics) |
-//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab` never applies its style) |
+//! | `tab` | 5 of 10 colours | geometry is upstream work (upstream's render re-sets height, radius and text size after applying the caller's refinement (`tab/tab.rs:800-808`)) |
 //! | `sidebar` | 2 of 6 | background, font.color |
 //! | `window` | 2 of 6 | title_bar_background, border |
 //! | `input` | 2 of 13 colours + geometry | border, caret; height, radius, border, text via `geometry::input` |
@@ -79,7 +79,8 @@
 //! **Limits.** Geometry on inner elements the caller's style cannot reach
 //! (checkbox and radio indicators, switch, slider, tab geometry, separator
 //! thickness, splitter width, button icon gap, input padding, popup-menu rows)
-//! stays upstream work; `docs/todo_v0.5.8_gpui-component-0.6-spec.md` §14
+//! stays upstream work; §14 of the v0.5.8 specification
+//! (<https://github.com/tiborgats/native-theme/blob/main/docs/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable.
 
 #![warn(missing_docs)]

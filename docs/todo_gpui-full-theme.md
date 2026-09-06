@@ -1,7 +1,7 @@
 # Full per-widget theming for the gpui connector
 
-Status: Pending
-Date: 2026-04-08
+Status: Superseded by v0.5.8 for every reachable seam (see the "v0.5.8" column below); kept as the gap analysis
+Date: 2026-04-08 (column added 2026-09-06)
 
 ---
 
@@ -18,17 +18,22 @@ gpui-component's theming system. The mapping is lopsided:
   `font_size`, `mono_font_family`, `mono_font_size` -- all mapped via
   `ThemeConfig`.
 
-- **Per-widget geometry: not mapped.** Button padding, min-height, border
-  color, corner radius; input padding; scrollbar width; slider track height;
-  checkbox indicator size -- none of these reach the rendered UI. They exist in
-  `ResolvedThemeVariant` but gpui-component's `Theme` / `ThemeConfig` has no
-  fields to receive them.
+- **Per-widget geometry: reachable through seams, not through `Theme`.**
+  gpui-component's `Theme` / `ThemeConfig` still has no per-widget geometry
+  fields, but every widget in the v0.5.8 spec §9.2 applies the caller's
+  `StyleRefinement` after its own geometry (tier R), some honour `Size::Size`
+  (S) or a builder (B). Since v0.5.8 the connector's `geometry` module reaches
+  button padding, min-height, border colour and radius, input height, list and
+  menu rows, and the `base_layer` module reaches scrollbar width; slider track
+  height and the checkbox indicator remain inner elements (tier U, upstream).
 
-This means a KDE Breeze button in the gpui showcase has the correct background
-color (#292c30) and hover color (#93cee9), but uses gpui-component's hardcoded
-padding (16px instead of 6px), hardcoded height logic, and no visible 1px
-border stroke with the correct per-widget border color (#535659). The result
-looks noticeably different from a real KDE System Settings button.
+Before v0.5.8 this meant a KDE Breeze button in the gpui showcase had the
+correct background color (#292c30) and hover color (#93cee9) but gpui-component's
+hardcoded padding (16px instead of 6px), hardcoded height logic, and no visible
+1px border stroke in the per-widget border color (#535659). With
+`geometry::button` applied it renders at the theme's height with its padding,
+radius and border; only the label's text size (an inner element) still follows
+upstream.
 
 ### What native-theme provides vs what the connector uses
 
@@ -39,7 +44,7 @@ looks noticeably different from a real KDE System Settings button.
 | checkbox | indicator_width, label_gap, border colors, disabled states | 0 | all fields | delivered (R): gap, text; indicator size upstream (`checkbox.rs:195-199`) |
 | scrollbar | track_color, thumb_color, thumb_hover_color, **groove_width**, **min_thumb_length**, **thumb_width**, overlay_mode | 3 colors | 4 geometry fields | delivered (gpui-base `ScrollbarStyles` via `base_layer`): widths, inset, min length, colours |
 | slider | fill_color, thumb_color, **track_height**, **thumb_diameter**, **tick_mark_length** | 2 colors | 3 geometry fields | upstream (`slider.rs:218, 288-289` inner) |
-| tab | background_color, active_background, active_text_color, bar_background, font.color, **min_width**, **min_height**, **border.padding_horizontal**, **border.padding_vertical** | 5 colors | 4 geometry fields | upstream (`tab.rs:606` stores a style it never applies) |
+| tab | background_color, active_background, active_text_color, bar_background, font.color, **min_width**, **min_height**, **border.padding_horizontal**, **border.padding_vertical** | 5 colors | 4 geometry fields | upstream: upstream's render re-sets height, radius and text size after applying the caller's refinement (`tab/tab.rs:800-808`); `min_width` and outer padding are not re-set and would survive a `geometry::tab` builder (follow-up) |
 | menu | row_height, icon_text_gap, icon_size, border padding, colors | 0 | all fields | delivered (R) for application-built `MenuItem`; `PopupMenu` rows upstream (`popup_menu.rs:749`) |
 | tooltip | background_color, font.color, **max_width**, **border padding** | 0 | all fields | delivered (R) for `Tooltip::new`; `Button::tooltip` upstream (`button.rs:360`) |
 | dialog | button_order, button_gap, min/max dimensions, border padding, icon_size, colors | dialog_content_padding + button_spacing helpers | most geometry | delivered (R paddings, min_h, max_h; B `Dialog::max_w`; footer gap; title/body fonts) |
@@ -86,7 +91,7 @@ gpui-component's `Theme` struct has two layers:
 
 1. **`ThemeColor`** -- a flat bag of named HSLA colors (108 in 0.5, 139 in 0.6). No geometry. No
    per-widget structure. Button, input, tab, scrollbar each get 2-5 color
-   slots. Our connector populates all 108.
+   slots. Our connector populates all of them.
 
 2. **`ThemeConfig`** -- serializable config with font family, font size,
    radius, radius_lg, shadow, mode, name, colors (as hex strings), and

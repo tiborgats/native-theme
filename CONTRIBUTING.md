@@ -5,7 +5,8 @@ Thank you for your interest in contributing.
 ## Quick start
 
 1. Fork and clone the repository
-2. Install Rust stable (MSRV: **1.88.0**, edition **2024**)
+2. Install Rust stable (workspace MSRV **1.88.0**, edition **2024**; the gpui
+   connector alone needs **1.95.0**, so `cargo test --workspace` needs 1.95.0 or newer)
 3. Verify the workspace builds and tests pass:
 
    ```bash

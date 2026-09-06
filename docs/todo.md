@@ -99,7 +99,7 @@
 
 - [ ] a styled `Theme` scrollbar-style override honoured by `base_theme()`
       (would make the connector's re-apply observer unnecessary)
-- [ ] `Tab` applying its stored `Styled` refinement
+- [ ] `Tab` keeping the caller's height, radius and text size (its render re-sets them after applying the refinement, `tab/tab.rs:800-808`)
 - [ ] `Theme.shadow` honoured beyond `Button`; `tokens.shadow` consumed
 - [ ] `Size::Size` honoured by `Checkbox` and `Switch`
 - [ ] inner geometry exposed: checkbox/radio indicator, switch track and thumb,

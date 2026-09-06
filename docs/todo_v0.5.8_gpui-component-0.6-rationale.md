@@ -203,7 +203,7 @@ replaces the styled theme's `light_theme` / `dark_theme` with the registry's
 themes **of the same name**, then calls `Theme::change`, which the
 connector's observer handles like any rebuild. The connector's configs carry
 the native display name (`Breeze`, `Adwaita`, a preset's name); the default
-registry holds `Default`, `Default Light` and `Default Dark`
+registry holds two themes, `Default Light` and `Default Dark`
 (`theme/default-theme.json`); and the registry is notified only by
 `ThemeRegistry::watch_dir` and `load_themes_from_str`. A collision therefore
 needs an application that loads a same-named theme through the registry, and
@@ -664,7 +664,7 @@ moment.
 | Radio indicator | `radio.rs:216-220` | same | same |
 | Switch track/thumb | `switch.rs:136-146`; wrapper `:168` | inner | same |
 | Slider track/thumb | `slider.rs:218, 288-289`; root `:270` | inner | tokens |
-| Tab geometry | `tab/tab.rs:26-76` by `Size` | `impl Styled` at `:606`, never applied | apply the refinement in `render` |
+| Tab geometry | `tab/tab.rs:800-808` re-sets height, radius, text size | the `Styled` impl at `:606` IS applied (gpui-base `tabs.rs:180`), then overwritten for those three properties; `min_width`/padding would survive | stop re-setting after `refine_style` |
 | Separator thickness | `separator.rs:81-82` | absolutely positioned inner line; outer refined at `:137` | thickness builder |
 | Resize-handle width | gpui-base `resize_handle.rs:12` | constant | field on `ResizableTheme` |
 | Button icon gap; button label size ≠ body | `button.rs:658-666` | inner content row sets `text_base` and the gap | expose gap; label size independent of rem |
@@ -769,12 +769,12 @@ Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
 seventh, 50–51 from the eighth, 52–54 from the ninth, 55 from the
-implementation of Task 3, 56–57 from Task 5, 58 from Task 9, 59 from Task 10's review.
+implementation of Task 3, 56–57 from Task 5, 58 from Task 9, 59 from Task 10's review, 60–61 from Task 15's review.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
 3. **Separator thickness assumed reachable**; the line is an inner absolute element (`separator.rs:79-84`).
-4. **`Tab` assumed reachable**; its `Styled` impl (`tab.rs:606`) is never applied.
+4. **`Tab` assumed reachable**; its `Styled` impl (`tab.rs:606`) is never applied. *(Corrected by error 60: it is applied; upstream's render then re-sets height, radius and text size.)*
 5. **`Size::Size` assumed to set Button height**; it scales padding only (`button.rs:588`).
 6. **`ThemeColor::default()` assumed to be upstream's palette**; it is all zeros (`theme_color.rs:58`).
 7. **Bundles assumed to contain the new Lucide icons**; only `star` was present.
@@ -817,7 +817,7 @@ implementation of Task 3, 56–57 from Task 5, 58 from Task 9, 59 from Task 10's
 44. **The config hex export dropped alpha.** `hsla_to_hex` wrote `#rrggbb` only, so `overlay` (alpha 0.4/0.5), `drag_border` (0.65) and `drop_target` (0.2) became opaque after `Theme::change`, contradicting D34's "reproduces the native palette". gpui's `Rgba::try_from` accepts `#rrggbbaa` (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` delegates to it for `#` strings (`src/theme/color.rs:677-680`); the connector now writes eight digits when alpha is below one (D36). `ThemeConfig.radius` being `usize` is the one remaining round-trip loss, recorded in §14.
 45. **`apply` did not repaint.** Upstream's `Theme::change(mode, Some(window), cx)` refreshes the window it is given; the connector's `apply` has no window and would have relied on the next input event. `App::refresh_windows` is public (gpui-pre 0.3.3 `src/app.rs:1074`); `apply` calls it last (D37).
 46. **The first `apply` was traced only against the notifications it queued itself.** Error 40 established that the observer misses those; it did not ask what else the same update might write. A `Theme::sync_system_appearance` (or any `Theme::change`) right after the first `apply`, the usual start-up sequence, rebuilds the base theme while the observer is still inactive, and the native scrollbar geometry and handle colours would stand replaced until the next rebuild. `install_observer_once` now queues one deferred re-write after the activation (D38), and a `#[gpui::test]` runs `apply` and `Theme::change` in one update.
-47. **The single-writer check stopped at the base theme.** The registry observer (`theme/registry.rs:41-51`) does not write `gpui_base::Theme`, but it replaces the styled theme's configs with same-named registry themes before calling `Theme::change`. With the default registry (`Default`, `Default Light`, `Default Dark`) nothing collides; an application loading a same-named theme through `ThemeRegistry` would replace the connector's colours. Recorded as a limit (§2.7), in the specification (§3.3) and in the README task.
+47. **The single-writer check stopped at the base theme.** The registry observer (`theme/registry.rs:41-51`) does not write `gpui_base::Theme`, but it replaces the styled theme's configs with same-named registry themes before calling `Theme::change`. With the default registry (`Default Light`, `Default Dark`) nothing collides; an application loading a same-named theme through `ThemeRegistry` would replace the connector's colours. Recorded as a limit (§2.7), in the specification (§3.3) and in the README task.
 48. **Lucide `StarFill` was served with the hollow `star`.** The row was justified by name ("gpui-kit's own file is Lucide `star` filled") without asking what the connector can draw: a bundled Lucide file has no fill, so `Star` and `StarFill` would have rendered identically, the failure §2.9 rejects for `StarOff`. Lucide 1.41.0 has no filled star (raw probes of the tag). `StarFill` returns `None` in the Lucide set (D39).
 49. **The freedesktop star reasoning claimed the themes have no outline/fill pair.** Both Breeze and Adwaita ship `non-starred` and `starred` (and `semi-starred`); the existing table mapped `Star`, Lucide's hollow star, to `starred`, the filled one, and the first draft mapped `StarFill` to the same name. `Star` now maps to `non-starred` and `StarFill` to `starred` (D39); `StarOff` keeps `non-starred`.
 50. **The sixth pass claimed that nothing in the stack enables gpui-pre's `windows-manifest` feature.** The grep looked for the feature name in the three downstream manifests and found none, but gpui-component, gpui-base and gpui-kit all depend on gpui-pre *with default features*, and `windows-manifest` is a default (gpui-pre `Cargo.toml:59-64`). For a Windows target the build script runs `embed-resource`, which on a Linux host needs `llvm-rc`. docs.rs's image has it, so the predicted outcome (pass) was probably right for the wrong reason; the corrected facts are in §2.25 and spec §1.3.
@@ -830,6 +830,8 @@ implementation of Task 3, 56–57 from Task 5, 58 from Task 9, 59 from Task 10's
 57. **`material/font_size.svg` was a genuine icon under a non-upstream stem.** The refresh script 404ed on it at the pinned SHA and at master; the file is byte-identical to upstream `format_size_24px.svg`. Stored as `format_size.svg`; the connector arm changes in Task 6; a breaking rename for `MaterialLoader::new("font_size")`. Found by Task 5's implementer. The same refresh showed the old bundled `lucide/delete.svg` was a trash-can glyph, not Lucide's `delete` (the backspace key gpui-kit's own icon draws); the refresh replaced it, so the connector's `Delete → delete` mapping is now correct in glyph as well as in name.
 58. **`ResolvedScrollbarTheme.thumb_active_color` was read as a plain `Rgba`.** It is a `soft_option` field (`model/widgets/mod.rs:287`) and stays `Option<Rgba>` after resolution; the four `*-live` presets leave it unset. Found by Task 9's implementer at the RED step. The active thumb now takes `thumb_hover_color` when the field is `None`, which is upstream's own projection for that slot (`theme/mod.rs:291-295`), so no value is invented; a test covers the `None` case.
 59. **The `reapplying` flag could swallow a rebuild that lands between the observer's write and its notification.** Found by Task 10's reviewer tracing the effect queue: with `[N_base, E_x]` where `E_x` calls `Theme::change`, `push_effect` drops `E_x`'s notification because the observer's own is pending (`app.rs:1663`), and the flag branch then returns without repairing. The flag-free alternative (skip the write when the base already holds the native values) is impossible for the opaque scrollbar styles, so the observer now compares the resize-handle colours, the comparable part, and re-writes on a mismatch (D42); a test reproduces the window. The residual case (handle colours coincide) is recorded as a limit in spec §3.3.
+60. **"`Tab` never applies its style" was false.** gpui-component's `Styled for Tab` delegates to gpui-base's `Tab::style` and `Tab::render` applies it (`gpui-base tabs.rs:129-133, 180`); what defeats the caller is that `Tab::render` re-sets `h`, `rounded` and the text size afterwards (`tab/tab.rs:800-808`). Tier U stands for height, radius and text size; `min_width` and outer padding would survive and are a follow-up. Found by Task 15's reviewer; the spec §14 row, rationale §4/§7, the ROADMAP, todo and crate docs corrected.
+61. **The default theme registry was said to hold three names.** `default-theme.json` has three `name` keys, but the first is the theme *set*'s; `init_default_themes` keys by mode, so the registry holds two themes, `Default Light` and `Default Dark`. Corrected in the README, spec §3.3 and §2.7.
 
 ---
 

@@ -18,8 +18,8 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   `Theme::change` reproduces the native palette in light and dark.
 - **The base layer**: gpui-base paints scrollbars and resize handles without
   going through gpui-component; the connector writes the native scrollbar
-  width, thumb width and inset, minimum thumb length and colours, and the
-  splitter colours, and keeps them installed across upstream rebuilds.
+  width, thumb width, inset and radius, minimum thumb length and colours, and
+  the splitter colours, and keeps them installed across upstream rebuilds.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
   the native heights, paddings, radii, borders and text sizes for the widgets
   where gpui-component applies the caller's style after its own.
@@ -28,7 +28,8 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   reduce-motion is forwarded to GPUI; reduce-transparency keeps the overlay
   opaque.
 - **Icons**: mappings from every gpui-component `IconName` (101 variants) to
-  the bundled Lucide and Material sets and to freedesktop icon names.
+  the bundled Lucide and Material sets and to freedesktop icon names, `None`
+  for the two a set lacks.
 
 ## How it fits
 
@@ -133,9 +134,9 @@ heights grow only when scaled text would no longer fit:
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
 | `button` | `button.min_height`, `.min_width`, `.border.padding_*`, `.corner_radius`, `.line_width`, `.color`, `button.font`, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
-| `input`, `input_height` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `input.font` | `Input` (`Input::h` for the height alone) |
-| `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font` | application-built `MenuItem` |
-| `list_item` | `list.row_height`, `list.border.padding_*`, `list.item_font` | `ListItem` |
+| `input`, `input_height` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `.padding_vertical`, `input.font`, `defaults.line_height` | `Input` (`Input::h` for the height alone) |
+| `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | application-built `MenuItem` |
+| `list_item` | `list.row_height`, `list.border.padding_*`, `list.item_font`, `defaults.line_height` | `ListItem` |
 | `tooltip` | `tooltip.max_width`, `tooltip.border.padding_*`, `.corner_radius`, `tooltip.font` | application-built `Tooltip::new` |
 | `popover` | `popover.border.padding_*`, `.corner_radius` | `Popover` |
 | `status_bar` | `status_bar.border.padding_*`, `status_bar.font` | `StatusBar` |
@@ -146,7 +147,7 @@ heights grow only when scaled text would no longer fit:
 | `group_box_content` | `card.border.padding_*`, `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
 | `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |
 | `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform) | `Checkbox`, `Radio` |
-| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.corner_radius`, `combo_box.font` | `Select`, `Combobox` |
+| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.corner_radius`, `.padding_vertical`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox` |
 | `title_bar` | `window.title_bar_font` | `TitleBar` |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `defaults.icon_sizes.*` | `Spinner::with_size`, `Icon::with_size` |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
@@ -154,8 +155,8 @@ heights grow only when scaled text would no longer fit:
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, tab geometry, separator
 thickness, splitter width, button icon gap, input padding, popup-menu rows) is
-listed in `docs/todo_v0.5.8_gpui-component-0.6-spec.md` §14 and in the
-roadmap's upstream-PR list.
+listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/todo_v0.5.8_gpui-component-0.6-spec.md)
+and in the roadmap's upstream-PR list.
 
 ## How re-application works
 
@@ -173,7 +174,7 @@ besides gpui-component itself; and gpui-component's `ThemeRegistry` observer
 replaces the styled theme's configs by *name* on a registry change, so an
 application that loads a theme through `ThemeRegistry` under the same display
 name as the native theme replaces the connector's colours (the base-layer
-geometry is still restored). The default registry holds only `Default`,
+geometry is still restored). The default registry holds two themes,
 `Default Light` and `Default Dark`.
 
 ## Accessibility

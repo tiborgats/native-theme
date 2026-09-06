@@ -308,7 +308,7 @@ watches `ThemeRegistry` (`src/theme/registry.rs:46`), not the base theme. That
 observer does, however, replace the styled theme's `light_theme` /
 `dark_theme` with registry themes **of the same name** before calling
 `Theme::change` (`:41-51`); the connector's configs carry the native display
-name, the default registry holds only `Default`, `Default Light` and
+name, the default registry holds two themes, `Default Light` and
 `Default Dark` (`src/theme/default-theme.json`), and the registry is notified
 only through its own loading API (`watch_dir`, `load_themes_from_str`), so the
 connector's colours are replaced only by an application that loads a
@@ -1176,7 +1176,7 @@ readers: both readers already fill all four fields, §1.3.)
 | Checkbox / radio indicator size | inner element sized by `Size` match; `Size::Size` falls to medium (`checkbox.rs:195-199`; `radio.rs:216-220`) |
 | Switch track / thumb / radius | inner (`switch.rs:136-146`); refinement lands on a wrapper (`:168`) |
 | Slider track / thumb | inner (`slider.rs:218, 288-289`); root refinement `:270` |
-| Tab geometry | `Tab` stores a style (`tab/tab.rs:606`) but never applies it; `TabBar`'s refinement (`tab_bar.rs:490`) styles the bar |
+| Tab geometry | `Tab` applies its stored style (`tab/tab.rs:606` → gpui-base `tabs.rs:180`), but its render then re-sets height, radius and text size (`tab/tab.rs:800-808`), so those never take; `min_width` and outer padding would survive (follow-up); `TabBar`'s refinement (`tab_bar.rs:490`) styles the bar |
 | Separator thickness | absolutely positioned inner line `px(1.)` (`separator.rs:79-84`); outer gets the refinement (`:137`) |
 | Splitter divider width | `HANDLE_SIZE` constant (gpui-base `resize_handle.rs:12`) |
 | Button icon-text gap; button label size ≠ body size | inner content row (`button.rs:658-666`) |
