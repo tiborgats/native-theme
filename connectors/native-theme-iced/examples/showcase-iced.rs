@@ -2137,7 +2137,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             text("Slider with Step (5-unit increments)").size(ts.dialog_title.size),
             row![
                 slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
-                    .step(5.0)
+                    .step(5.0_f32)
                     .width(Fill),
                 text(format!("{:.0}", state.slider_step))
                     .size(ts.section_heading.size)
