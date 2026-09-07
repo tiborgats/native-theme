@@ -90,6 +90,22 @@
       separately at `1.95.0` (measured 2026-09-06: gpui-pre 0.3.3 uses
       `cold_path`, stable since 1.95) and the egui connector at `1.95`.
 
+- [ ] Cross-target warning hygiene. `cargo check -p native-theme --features
+      windows --target x86_64-pc-windows-msvc` reports 5 warnings and
+      `--features macos --target x86_64-apple-darwin` 3 (measured 2026-09-07
+      on rustc 1.98.1: `resolve/inheritance.rs:74` unreachable tail after the
+      Windows `return`, `icons.rs:466` unused `theme` off Linux,
+      `pipeline.rs:576` `preset_as_reader` used only on Linux,
+      `windows.rs:179` `read_frame_width` and `:373` `dwm_color_to_rgba`
+      never called, `macos.rs:60` unused `separator_c`). On a Windows target
+      without the `windows` feature the whole `windows` module is dead code
+      (`lib.rs:165` gates it on `target_os` only; the `not(windows)` twin
+      carries `#[allow(dead_code)]`), which is what docs.rs and a Windows
+      `native-theme-iced` build compile. None of the sites changed in
+      v0.5.8; CI's test jobs do not deny warnings, so nothing fails. The
+      MSRV CI job above is the natural place for a cross-target
+      `cargo check -D warnings`.
+
 ### native-theme-gpui connector
 
 - [x] Map `WidgetMetrics` → gpui-component per-widget styling — done in
