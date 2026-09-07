@@ -12,7 +12,7 @@ use super::ThemeChangeEvent;
 /// async runtime (tokio) is exposed to the consumer.
 ///
 /// The signal iterator is blocking -- it waits for the next D-Bus signal.
-/// Shutdown is primarily triggered by dropping the [`ThemeSubscription`], which
+/// Shutdown is primarily triggered by dropping the [`ThemeSubscription`](super::ThemeSubscription), which
 /// drops the `shutdown_tx` sender. Between signals, we also check the
 /// shutdown channel via `try_recv()` as a best-effort early exit.
 #[allow(dead_code)] // Dispatched from on_theme_change() in Phase 66 Plan 02
