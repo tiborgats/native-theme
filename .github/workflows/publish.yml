@@ -114,7 +114,7 @@ jobs:
       - name: Publish native-theme-derive
         run: |
           OUTPUT=$(cargo publish -p native-theme-derive 2>&1) || {
-            if echo "$OUTPUT" | grep -qi "already.*uploaded\|already.*published"; then
+            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
               echo "::notice::native-theme-derive already published, skipping"
             else
               echo "$OUTPUT"
@@ -130,7 +130,7 @@ jobs:
       - name: Publish native-theme-build
         run: |
           OUTPUT=$(cargo publish -p native-theme-build 2>&1) || {
-            if echo "$OUTPUT" | grep -qi "already.*uploaded\|already.*published"; then
+            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
               echo "::notice::native-theme-build already published, skipping"
             else
               echo "$OUTPUT"
@@ -146,7 +146,7 @@ jobs:
       - name: Publish native-theme
         run: |
           OUTPUT=$(cargo publish -p native-theme 2>&1) || {
-            if echo "$OUTPUT" | grep -qi "already.*uploaded\|already.*published"; then
+            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
               echo "::notice::native-theme already published, skipping"
             else
               echo "$OUTPUT"
@@ -162,7 +162,7 @@ jobs:
       - name: Publish native-theme-iced
         run: |
           OUTPUT=$(cargo publish -p native-theme-iced 2>&1) || {
-            if echo "$OUTPUT" | grep -qi "already.*uploaded\|already.*published"; then
+            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
               echo "::notice::native-theme-iced already published, skipping"
             else
               echo "$OUTPUT"
@@ -175,7 +175,7 @@ jobs:
       - name: Publish native-theme-gpui
         run: |
           OUTPUT=$(cargo publish -p native-theme-gpui 2>&1) || {
-            if echo "$OUTPUT" | grep -qi "already.*uploaded\|already.*published"; then
+            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
               echo "::notice::native-theme-gpui already published, skipping"
             else
               echo "$OUTPUT"
