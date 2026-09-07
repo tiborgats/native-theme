@@ -572,6 +572,36 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: visual assets
+#
+# scripts/pre-release.sh captures the screenshots and GIFs and stamps
+# docs/assets/PROVENANCE.toml with a hash over the sources they came from
+# (scripts/asset-stamp.sh). A mismatch at HEAD is a warning while the
+# CHANGELOG entry for this version still says "Unreleased" and a hard failure
+# once it carries a date: the release commit exists, so this tree is about to
+# be tagged. The crates.io workflow's CI gate runs the same check on the tag.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Visual assets"
+set +e
+STAMP_MSG=$(bash scripts/asset-stamp.sh check 2>&1)
+STAMP_STATUS=$?
+CLEAN_MSG=$(bash scripts/asset-stamp.sh verify-clean 2>&1)
+CLEAN_STATUS=$?
+set -e
+if [ "$STAMP_STATUS" -eq 0 ]; then
+    print_ok "$STAMP_MSG"
+elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+    print_fail "$STAMP_MSG"
+    printf "${DIM}    CHANGELOG.md dates %s: release tree, regenerate the assets before tagging${NC}\n" "$CURRENT_VERSION"
+else
+    print_warn "$STAMP_MSG"
+fi
+if [ "$CLEAN_STATUS" -ne 0 ]; then
+    print_warn "asset sources have uncommitted changes; the stamp check compared HEAD"
+    printf "${DIM}%s${NC}\n" "$(printf '%s\n' "$CLEAN_MSG" | tail -n +2 | head -5)"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Final summary
 # ─────────────────────────────────────────────────────────────────────────────
 TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT))
@@ -604,13 +634,16 @@ printf "${BOLD}═════════════════════�
 if [ "$FAIL_COUNT" -eq 0 ]; then
     printf "\n${BOLD}${BLUE}Next steps:${NC}\n"
     printf "   1. Review the changes once more\n"
-    printf "   2. Update CHANGELOG.md if needed\n"
-    printf "   3. Commit any final changes\n"
-    printf "   4. Tag: ${DIM}git tag v%s${NC}\n" "$CURRENT_VERSION"
-    printf "   5. Push: ${DIM}git push origin v%s${NC}\n" "$CURRENT_VERSION"
-    printf "   6. The pushed tag triggers .github/workflows/publish.yml, which publishes\n"
-    printf "      in dependency order with index waits between crates. Manual fallback,\n"
-    printf "      same order:\n"
+    printf "   2. Visual assets: if the check above warned, push, run ${DIM}./scripts/pre-release.sh${NC}\n"
+    printf "      and commit the assets together with docs/assets/PROVENANCE.toml\n"
+    printf "   3. Date the CHANGELOG entry, set its compare link, commit ${DIM}chore(release): v%s${NC}\n" "$CURRENT_VERSION"
+    printf "   4. Re-run this script on that commit (the asset check is hard once the entry is dated)\n"
+    printf "   5. Fast-forward main to it and push; CI runs on the exact commit\n"
+    printf "   6. Tag: ${DIM}git tag v%s${NC}\n" "$CURRENT_VERSION"
+    printf "   7. Push: ${DIM}git push origin v%s${NC}\n" "$CURRENT_VERSION"
+    printf "   8. The pushed tag triggers .github/workflows/publish.yml: its CI gate re-checks the\n"
+    printf "      stamp and the tag name, then publishes in dependency order with index waits\n"
+    printf "      between crates. Manual fallback, same order:\n"
     printf "      ${DIM}cargo publish -p native-theme-derive${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-build${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme${NC}\n"

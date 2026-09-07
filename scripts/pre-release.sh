@@ -5,9 +5,13 @@ set -euo pipefail
 #
 # Triggers CI for macOS/Windows screenshots first, then generates local
 # Linux assets in parallel while CI runs, and finally downloads the
-# CI results into the per-connector docs/assets/ directories.
+# CI results into the per-connector docs/assets/ directories and stamps
+# docs/assets/PROVENANCE.toml (scripts/asset-stamp.sh) with the sources the
+# assets came from. pre-release-check.sh and the crates.io workflow's CI gate
+# verify that stamp against HEAD.
 #
-# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland)
+# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland);
+# HEAD pushed and the asset sources committed (captures run on HEAD).
 #
 # Usage: bash scripts/pre-release.sh
 
@@ -57,6 +61,11 @@ if [ "$LOCAL" != "$REMOTE" ]; then
     fail "Push your changes before running this script (CI needs the latest code)"
 fi
 ok "Branch is up to date with remote"
+
+info "Checking that the asset sources are committed..."
+bash "$SCRIPT_DIR/asset-stamp.sh" verify-clean >/dev/null \
+    || fail "Uncommitted changes in paths the assets depend on (see: scripts/asset-stamp.sh verify-clean); commit or stash them first"
+ok "Asset sources match HEAD"
 
 info "Triggering screenshots workflow..."
 BRANCH=$(git branch --show-current)
@@ -178,6 +187,12 @@ if [ "$DOWNLOADED" -eq 0 ]; then
 fi
 ok "Downloaded $DOWNLOADED screenshots from CI"
 
+# ── Stamp the provenance ─────────────────────────────────────────────
+
+info "Recording provenance..."
+bash "$SCRIPT_DIR/asset-stamp.sh" write
+ok "docs/assets/PROVENANCE.toml written for $EXPECTED_SHA"
+
 # ── Summary ──────────────────────────────────────────────────────────
 
 echo ""
@@ -192,4 +207,4 @@ for dir in "$ICED_DIR" "$GPUI_DIR" "$NT_DIR"; do
     echo ""
 done
 
-info "Review the assets, then commit: git add native-theme/docs/assets/ connectors/native-theme-*/docs/assets/ && git commit -m 'docs: update visual assets'"
+info "Review the assets, then commit: git add docs/assets/PROVENANCE.toml native-theme/docs/assets/ connectors/native-theme-*/docs/assets/ && git commit -m 'docs: regenerate visual assets'"

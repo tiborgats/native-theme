@@ -100,12 +100,32 @@ Requires: Node.js ≥ 18, network access (first run downloads `mmdc` on demand)
 Full pre-release asset pipeline. Triggers the CI screenshots workflow for
 macOS/Windows, generates all local Linux assets while CI runs, then downloads
 the CI artifacts into the correct per-connector `docs/assets/` directory
-based on artifact name.
+based on artifact name, and finally writes `docs/assets/PROVENANCE.toml`
+through `asset-stamp.sh`. Refuses to start while HEAD is unpushed or a path
+the assets depend on has uncommitted changes, because the captures must come
+from the commit CI builds.
 
 Requires: gh CLI (authenticated), spectacle, Python 3, Pillow, ImageMagick 7
 
 ```sh
 ./scripts/pre-release.sh
+```
+
+## asset-stamp.sh
+
+Provenance stamp for the visual assets. `write` records the workspace
+version, the commit, and a SHA-256 over the git object ids of every path
+that feeds the showcases (crate manifests and sources, presets, icon
+bundles, `Cargo.lock`, the capture scripts, the screenshots workflow) into
+`docs/assets/PROVENANCE.toml`. `check` recomputes the hash at HEAD and exits
+non-zero with a message when the stamp is missing or the sources differ;
+`pre-release-check.sh` and the crates.io workflow's CI gate call it, so a
+release whose assets were captured from other sources is refused. Docs-only
+changes do not alter the hash. `verify-clean` fails when a stamped path has
+uncommitted changes; `hash` prints the current value.
+
+```sh
+./scripts/asset-stamp.sh check
 ```
 
 ## refresh-icons.sh

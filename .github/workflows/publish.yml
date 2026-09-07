@@ -20,6 +20,24 @@ jobs:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
 
+      # Refuse to publish assets captured from other sources, or a tag whose
+      # name differs from the workspace version. Both checks need no history:
+      # scripts/asset-stamp.sh hashes HEAD's git object ids.
+      - name: Visual assets and tag match this version
+        run: |
+          if ! msg=$(bash scripts/asset-stamp.sh check); then
+            echo "::error::$msg"
+            exit 1
+          fi
+          echo "$msg"
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            v=$(grep -E '^version\s*=' Cargo.toml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+            if [ "v$v" != "${{ github.ref_name }}" ]; then
+              echo "::error::tag ${{ github.ref_name }} does not match the workspace version $v"
+              exit 1
+            fi
+          fi
+
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
 

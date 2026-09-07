@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme-gpui**: `[package.metadata.docs.rs]` keeps `all-features = true` and declares no `targets`: every platform-gated public item of the crate is Linux-gated and appears on the default target (v0.5.8 spec §1.3, D40).
 - Dependency refresh: serde 1.0.229, serde_with 3.22.0, toml 1.1.5, serde_json 1.0.151, arc-swap 1.9.2, async-trait 0.1.92, ashpd 0.13.13, configparser 3.2.0, zbus 5.19.0, quote 1.0.47, proc-macro2 1.0.107, pollster 1.0, syn 3.0.5, resvg 0.48.1. Workspace MSRV re-measured: unchanged at 1.88.0 (`resvg` is used without default features, so its text stack never enters the lock).
 
+- Release tooling: `scripts/pre-release.sh` now records the provenance of the visual assets in `docs/assets/PROVENANCE.toml` (workspace version, commit, and a hash over the git object ids of every path that feeds the showcases); `pre-release-check.sh` recomputes the hash at HEAD (a warning while the CHANGELOG entry is unreleased, a hard failure once it is dated) and the crates.io workflow's CI gate refuses a tag whose assets were captured from other sources or whose name differs from the workspace version.
+
 ### Fixed
 
 - Icon bundle provenance recorded; Lucide refreshed to 1.41.0 (`github.svg` kept from 0.577.0, the last tag with brand icons); Material Symbols refreshed to upstream `0cbb08816df0`; duplicate `star_border.svg` removed; the old Lucide `delete.svg` was a trash-can glyph and is now Lucide's real `delete` (the backspace key gpui-kit's own icon draws).
@@ -42,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `publish.yml`: the gpui connector is hard-gated again (the naga/codespan-reporting conflict G11 recorded does not exist on the 0.6 stack).
 - Pre-existing test-only clippy failures in `native-theme` (spinners, freedesktop, icons, kde, `tests/reader_kde.rs`) fixed so `cargo clippy --all-targets -- -D warnings` passes on the whole crate.
 - The `chunks_exact(4)` pixel loops (`unpremultiply_alpha`, the Windows `winicons` BGRA swap, a `rasterize` test, the BMP export in `native-theme-gpui`, the Windows screenshot code of both showcases) use `as_chunks::<4>()`, stable since Rust 1.88.0 (the workspace MSRV), so clippy 1.98's `chunks_exact_to_as_chunks` lint passes under `-D warnings`.
+- CI installs `libfontconfig1-dev` and `libfreetype-dev` on every job that builds the gpui connector: the gpui-pre 0.3 stack builds `yeslogic-fontconfig-sys` without `dlopen`, so `cargo check`, clippy and rustdoc need `fontconfig.pc` on the runner (the 0.5 stack did not). `.gitignore` no longer lists `.github/`, which had silently excluded new workflow files since v0.5.0. The `watch` module's docs had four unresolved intra-doc links under the `portal` feature; the links are absolute now.
 
 ## [0.5.7] - 2026-04-21
 
