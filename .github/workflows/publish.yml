@@ -95,6 +95,12 @@ jobs:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
 
+      # `cargo publish` verifies each tarball by compiling it on this runner,
+      # so the gpui connector needs the same system libraries as the CI gate
+      # (v0.5.8's first run failed here on fontconfig.pc after four uploads).
+      - name: Install system dependencies (gpui)
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
+
       # Publish order is dictated by the workspace dependency graph:
       #   native-theme-derive  (proc-macro, no workspace deps)
       #   native-theme-build   (depends on derive)

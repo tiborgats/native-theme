@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The crates.io workflow's upload job installs the same system packages as its CI gate: the gpui-pre 0.3 stack needs `fontconfig.pc` when the upload step verifies the tarball, and the v0.5.8 run failed there after the four other crates had been uploaded; the gpui connector was uploaded by a second run of the fixed workflow.
+
 ## [0.5.8] - 2026-09-07
 
 ### Breaking Changes
