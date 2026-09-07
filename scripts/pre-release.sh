@@ -203,7 +203,9 @@ for dir in "$ICED_DIR" "$GPUI_DIR" "$NT_DIR"; do
     rel=$(realpath --relative-to="$PROJECT_ROOT" "$dir")
     count=$(find "$dir" -maxdepth 1 -type f \( -name '*.png' -o -name '*.gif' \) 2>/dev/null | wc -l)
     echo "$rel ($count files):"
-    (cd "$dir" && ls -1 *.png *.gif 2>/dev/null) | while read -r f; do echo "  $f"; done
+    # `ls` with an unmatched glob exits 2; with pipefail + set -e that aborted the
+    # script here after all work was done, so the pipeline reported failure.
+    find "$dir" -maxdepth 1 -type f \( -name '*.png' -o -name '*.gif' \) -printf '  %f\n' | sort
     echo ""
 done
 
