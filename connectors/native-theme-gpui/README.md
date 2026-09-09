@@ -45,7 +45,7 @@ crate sits.
 
 The crate requires gpui-component 0.6 and GPUI published as `gpui-pre` 0.3;
 later 0.6.x and 0.3.x releases resolve in place without a new connector
-release, and a weekly CI job (`dependency-canary.yml`) checks the connector
+release, and a nightly CI job (`dependency-canary.yml`) checks the connector
 against the newest set.
 
 ## Quick start

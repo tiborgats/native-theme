@@ -1,6 +1,6 @@
 name: Dependency canary
 
-# Weekly answer to "do the crates still build and test on the newest
+# Nightly answer to "do the crates still build and test on the newest
 # dependency set?", on a throwaway lockfile that is never committed.
 #
 # gpui-pre publishes a snapshot of Zed's GPUI every week and the gpui-kit
@@ -16,7 +16,7 @@ name: Dependency canary
 
 on:
   schedule:
-    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+    - cron: "10 18 * * *" # daily 18:10 UTC = 20:10 CEST / 19:10 CET, evening in Hungary; off the hour because GitHub delays on-the-hour schedules
   workflow_dispatch:
 
 env:

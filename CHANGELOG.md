@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A weekly dependency canary workflow (`.github/workflows/dependency-canary.yml`, also runnable on demand): `cargo update` on a throwaway lockfile, then the CI gate's clippy, test and doc steps on every crate. gpui-pre now publishes a GPUI snapshot every week and the connector's caret requirements let every consumer's `cargo update` pick it up, so a breaking snapshot is reported here before an application hits it. The same check run locally on 2026-09-09 against gpui-kit 0.6.1 and gpui-pre 0.3.4: the released 0.5.8 connector builds and passes its tests unchanged, so 0.6.1 needed no connector release.
+- A nightly dependency canary workflow (`.github/workflows/dependency-canary.yml`, 18:10 UTC, also runnable on demand): `cargo update` on a throwaway lockfile, then the CI gate's clippy, test and doc steps on every crate. gpui-pre now publishes a GPUI snapshot every week and the connector's caret requirements let every consumer's `cargo update` pick it up, so a breaking snapshot is reported here before an application hits it. The same check run locally on 2026-09-09 against gpui-kit 0.6.1 and gpui-pre 0.3.4: the released 0.5.8 connector builds and passes its tests unchanged, so 0.6.1 needed no connector release.
 
 ### Fixed
 
