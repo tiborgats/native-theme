@@ -40,14 +40,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
 
       - name: Update every dependency (throwaway lockfile)
+        env:
+          # The summary greps cargo's output, which must carry no colour codes.
+          CARGO_TERM_COLOR: never
         run: |
           cargo update 2>&1 | tee update.log
           {
             echo "## Dependency updates"
             echo
-            if grep -qE "^\s+(Updating|Adding|Removing) " update.log; then
+            # "Updating crates.io index" is not a package update.
+            if grep -E "^\s+(Updating|Adding|Removing) " update.log | grep -qv "crates.io index"; then
               echo '```'
-              grep -E "^\s+(Updating|Adding|Removing) " update.log
+              grep -E "^\s+(Locking|Updating|Adding|Removing) " update.log | grep -v "crates.io index"
               echo '```'
             else
               echo "Cargo.lock is already at the newest versions."
