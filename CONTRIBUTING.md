@@ -38,6 +38,11 @@ strict panic lints, packaging and outdated-dependency checks CI does not run.
 CI additionally tests `native-theme` across its feature matrix on Linux,
 Windows and macOS, which the script cannot do locally.
 
+A scheduled workflow, `dependency-canary.yml`, runs weekly (and on demand
+from the Actions tab) with every dependency updated on a throwaway lockfile.
+Its failure means the newest upstream set broke the crates, not that `main`
+is broken; CI on the committed `Cargo.lock` is the gate for merging.
+
 ## Individual checks
 
 If you want to run pieces manually instead of the full script:

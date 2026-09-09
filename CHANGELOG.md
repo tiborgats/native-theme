@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A weekly dependency canary workflow (`.github/workflows/dependency-canary.yml`, also runnable on demand): `cargo update` on a throwaway lockfile, then the CI gate's clippy, test and doc steps on every crate. gpui-pre now publishes a GPUI snapshot every week and the connector's caret requirements let every consumer's `cargo update` pick it up, so a breaking snapshot is reported here before an application hits it. The same check run locally on 2026-09-09 against gpui-kit 0.6.1 and gpui-pre 0.3.4: the released 0.5.8 connector builds and passes its tests unchanged, so 0.6.1 needed no connector release.
+
 ### Fixed
 
 - The crates.io workflow's upload job installs the same system packages as its CI gate: the gpui-pre 0.3 stack needs `fontconfig.pc` when the upload step verifies the tarball, and the v0.5.8 run failed there after the four other crates had been uploaded; the gpui connector was uploaded by a later run of the fixed workflow. The upload steps recognise cargo's current "already exists on crates.io index" message, so a re-run skips crates that are already up instead of failing on the first one.

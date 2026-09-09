@@ -1,0 +1,91 @@
+name: Dependency canary
+
+# Weekly answer to "do the crates still build and test on the newest
+# dependency set?", on a throwaway lockfile that is never committed.
+#
+# gpui-pre publishes a snapshot of Zed's GPUI every week and the gpui-kit
+# crates follow. The connector's caret requirements let every consumer's
+# `cargo update` pick those up, so a breaking snapshot reaches applications
+# before it reaches this repository's committed Cargo.lock. This job runs
+# the same `cargo update` a consumer would, then the CI gate's clippy, test
+# and doc steps on the result. A failure here means "the published crates no
+# longer work with the newest upstream set", not "main is broken": CI on the
+# committed lockfile stays green until Cargo.lock is refreshed.
+#
+# Linux only: the question is API compatibility, which one target answers.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  canary:
+    name: Newest dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # Restore CI's cache where it matches; never save the throwaway state.
+          save-if: false
+
+      - name: Install system dependencies (gpui)
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
+
+      - name: Update every dependency (throwaway lockfile)
+        run: |
+          cargo update 2>&1 | tee update.log
+          {
+            echo "## Dependency updates"
+            echo
+            if grep -qE "^\s+(Updating|Adding|Removing) " update.log; then
+              echo '```'
+              grep -E "^\s+(Updating|Adding|Removing) " update.log
+              echo '```'
+            else
+              echo "Cargo.lock is already at the newest versions."
+            fi
+            echo
+            echo "## Resolved GPUI stack"
+            echo
+            echo '```'
+            for c in gpui-pre gpui-base gpui-component gpui-kit; do
+              cargo pkgid "$c" 2>/dev/null | sed -E 's|.*#||; s|@| |'
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clippy
+        env:
+          RUSTFLAGS: -Dwarnings
+        run: |
+          cargo clippy -p native-theme-derive --all-targets
+          cargo clippy -p native-theme-build --all-targets
+          cargo clippy -p native-theme --all-targets
+          cargo clippy -p native-theme-iced --all-targets
+          cargo clippy -p native-theme-gpui --all-targets
+
+      - name: Test
+        run: |
+          cargo test -p native-theme-derive
+          cargo test -p native-theme-build
+          cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize
+          cargo test -p native-theme-iced
+          cargo test -p native-theme-gpui
+
+      - name: Documentation
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+        run: |
+          cargo doc -p native-theme-derive --no-deps
+          cargo doc -p native-theme-build --no-deps
+          cargo doc -p native-theme --no-deps
+          cargo doc -p native-theme-iced --no-deps
+          cargo doc -p native-theme-gpui --no-deps

@@ -31,15 +31,22 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   opaque.
 - **Icons**: mappings from every gpui-component `IconName` (101 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
-  for the two a set lacks. `IconName` cannot be enumerated in code, so the
-  tables are audited against gpui-component 0.6.0's variant set and must be
-  re-audited on every gpui-component bump.
+  for the two a set lacks. gpui-component's `IconName` cannot be enumerated
+  in code, so the tables are audited by hand: against 0.6.0's variant set,
+  and again against 0.6.1, which keeps the same 101 variants (its full Lucide
+  catalog lives in `gpui_kit_assets::IconName`). The audit is repeated on
+  every gpui-component bump.
 
 ## How it fits
 
 Depend on this crate — it pulls `native-theme` in transitively. The
 workspace-level README at the repo root has a diagram showing where each
 crate sits.
+
+The crate requires gpui-component 0.6 and GPUI published as `gpui-pre` 0.3;
+later 0.6.x and 0.3.x releases resolve in place without a new connector
+release, and a weekly CI job (`dependency-canary.yml`) checks the connector
+against the newest set.
 
 ## Quick start
 
