@@ -38,7 +38,8 @@ unchanged. "§N (0.5.8)" refers to that document.
 - No panics, no `unsafe`, no invented values, no hardcoded theme values: as
   in §0.2 (0.5.8). The repository hooks apply to test code under `src/`;
   `tests/` files may use `expect` in test functions.
-- No public item is added, removed or re-typed. The one behaviour change is §5.
+- One public item is added: the module `variants` with `ghost_button` (§8c).
+  Nothing is removed or re-typed. The one behaviour change is §5.
 - No release action (tag, upload, GitHub release) without the maintainer's
   explicit go.
 
@@ -549,9 +550,33 @@ fill. `README.md` ("What gets mapped") and `docs/todo.md` ("Upstream PR
 candidates") gain: "a `ghost_hover` / `ghost_hover_foreground` token pair
 separate from `accent` / `accent_foreground` (0.6.4 hovers ghost buttons with
 the accent pair, which native themes map to the platform's selection colours)".
-The maintainer looks at it during the visual check (§9 gate 2) and decides
-whether an application-side `ButtonCustomVariant` helper is wanted
-(rationale §2.10).
+The visual check (2026-09-20) found the same defect in the new `InputGroup`
+addon button, from a different wrong token (`muted`, rationale §1.4m), and
+settled the question: the connector ships the application-side remedy.
+
+`src/variants.rs`, public:
+
+```rust
+#[must_use]
+pub fn ghost_button(cx: &App) -> ButtonCustomVariant {
+    let theme = cx.theme();
+    ButtonCustomVariant::new(cx)
+        .foreground(theme.secondary_foreground)
+        .hover(theme.secondary_hover)
+        .active(theme.secondary_active)
+}
+```
+
+Transparent when idle, as upstream's `.ghost()` is (`ButtonCustomVariant::new`
+starts from `theme.transparent`; a non-outline custom border is the same
+colour, `button/button.rs:1033-1039`). Applied with `ButtonVariants::custom`,
+it replaces `.ghost()` on a `Button` and makes `InputGroupButton` skip its
+in-group repaint (`input/group.rs:544-545`). Two tests in the module: the
+hover equals the resolved `button.hover_background` and differs from both
+`accent` and `muted` (kde-breeze, where all three differ); and the variant
+follows a light → dark `apply`. The showcase uses it for the InputGroup's Copy
+button and shows a "Ghost (native)" button beside upstream's ghost. README
+gains a "Flat buttons" subsection under "Per-widget geometry".
 
 ---
 
@@ -586,7 +611,7 @@ listed so the plan can cite them:
 ## 10 -- Acceptance
 
 - [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings` clean on the 0.6.4 lockfile.
-- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire and the six §6 tests: 194 in the library and 6 in `tests/seams.rs` (measured on the probe).
+- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire, the two §8c variant tests and the six §6 tests: 196 in the library and 6 in `tests/seams.rs`.
 - [ ] `cargo +1.95.0 check -p native-theme-gpui --lib --locked` passes.
 - [ ] `cargo audit` exits 0 (the six allowed warnings for unmaintained crates remain; `RUSTSEC-2026-0285` is gone, E19).
 - [ ] `grep -rn 'max_h' connectors/native-theme-gpui/src/geometry.rs` still finds the dialog line, and its doc comment says the value does not reach upstream's `Dialog` (E18).

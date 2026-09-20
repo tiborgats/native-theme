@@ -118,7 +118,7 @@ use native_theme_gpui::icons::{
     to_image_source,
 };
 use native_theme_gpui::to_theme;
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native, geometry};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme, Native, geometry, variants};
 
 /// gpui-component's mode for the showcase's light/dark flag.
 fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
@@ -2094,7 +2094,7 @@ impl Showcase {
             .p_4()
             .flex_1()
             // Button variants
-            .child(section("Button Variants (all 10)"))
+            .child(section("Button Variants (all 10, and the native ghost)"))
             .child(
                 h_flex()
                     .gap_2()
@@ -2272,13 +2272,39 @@ impl Showcase {
                                 &fi,
                                 "Button (Ghost)",
                                 &[
-                                    ("text", "foreground", t.foreground),
-                                    ("hover-text", "muted_foreground", t.muted_foreground),
+                                    ("text", "secondary_foreground", t.secondary_foreground),
+                                    ("hover bg", "accent", t.accent),
+                                    ("hover text", "accent_foreground", t.accent_foreground),
                                 ],
                                 &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                 &[
                                     ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
+                                    ("hover", "gpui-component 0.6.4 hovers a ghost button with the item-highlight pair (button.rs:1125-1141), not the platform's button hover; compare \"Ghost (native)\""),
                                     ("font-weight", "hardcoded"),
+                                ],
+                            )),
+                    )
+                    .child(
+                        div()
+                            .id("tt-btn-ghost-native")
+                            .child(refined(
+                                Button::new("b-ghost-native")
+                                    .label("Ghost (native)")
+                                    .custom(variants::ghost_button(cx)),
+                                button_style.as_ref(),
+                            ))
+                            .on_hover(self.hover_info(
+                                &fi,
+                                "Button (native ghost)",
+                                &[
+                                    ("text", "secondary_foreground", t.secondary_foreground),
+                                    ("hover bg", "secondary_hover", t.secondary_hover),
+                                    ("active bg", "secondary_active", t.secondary_active),
+                                ],
+                                &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                                &[
+                                    ("variant", "native_theme_gpui::variants::ghost_button: flat like .ghost(), with the platform's button.hover_background / active_background"),
+                                    ("geometry", "geometry::button"),
                                 ],
                             )),
                     )
@@ -2687,28 +2713,16 @@ impl Showcase {
                                         InputGroupAddon::new("input-group-trailing-addon")
                                             .align(InputGroupAddonAlignment::InlineEnd)
                                             .child(
-                                                // Upstream's default, shown as
-                                                // upstream draws it: a ghost
-                                                // button repainted with a
-                                                // custom variant whose colour
-                                                // and border are
-                                                // `theme.transparent`
-                                                // (`input/group.rs:544-583`,
-                                                // `button/button.rs:942,
-                                                // :1032`). It has no fill and
-                                                // no edge until the muted
-                                                // hover, in every theme —
-                                                // `transparent` is
-                                                // `transparent_black` in
-                                                // `Theme::from` and no config
-                                                // assigns it. A variant such
-                                                // as `.secondary()` would give
-                                                // it the platform's button
-                                                // surface, but that is the
-                                                // application's choice, not
-                                                // what this section is here to
-                                                // show.
+                                                // `InputGroupButton::new` is a ghost
+                                                // button that upstream repaints, inside
+                                                // a group, with a hover of `theme.muted`
+                                                // (`input/group.rs:544-583`): a grey that
+                                                // under Breeze is barely distinguishable
+                                                // from the field, while every button
+                                                // around it hovers blue. A custom variant
+                                                // makes upstream skip that repaint.
                                                 InputGroupButton::new("input-group-copy")
+                                                    .custom(variants::ghost_button(cx))
                                                     .icon(IconName::Copy)
                                                     .label("Copy")
                                                     .tooltip("Copy the field to the clipboard")
@@ -2756,13 +2770,13 @@ impl Showcase {
                             ("border", "input", t.input),
                             ("focus ring", "ring", t.ring),
                             ("addon text", "muted_foreground", t.muted_foreground),
-                            ("addon button hover", "muted", t.muted),
+                            ("addon button hover", "secondary_hover", t.secondary_hover),
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
                             ("geometry", "geometry::input on the frame: input.min_height (single-line groups only), border.corner_radius, line_width, input.font"),
                             ("addon padding", "inner (Tier U)"),
-                            ("addon button", "upstream's default: a ghost button repainted transparent inside the group (input/group.rs:544-583), so no fill and no border until its muted hover - the same in every theme, not a native-theme artefact. Not the accent pair the standalone ghost button uses. An application picks a variant if it wants a visible surface"),
+                            ("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs:544-583)"),
                         ],
                     )),
             )

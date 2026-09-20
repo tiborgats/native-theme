@@ -54,7 +54,7 @@
 //! |----------|--------|-------|
 //! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
-//! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics) |
+//! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
 //! | `sidebar` | 2 of 6 | background, font.color |
 //! | `window` | 2 of 6 | title_bar_background, border |
@@ -96,6 +96,7 @@ pub(crate) mod config;
 pub(crate) mod derive;
 pub mod geometry;
 pub mod icons;
+pub mod variants;
 
 // Re-export native-theme types that appear in public signatures so downstream
 // crates don't need native-theme as a direct dependency.

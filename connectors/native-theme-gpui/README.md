@@ -172,11 +172,33 @@ builders are verified against real gpui-component widgets in `tests/seams.rs`,
 which lays each one out headlessly with and without the refinement and
 compares the measured height with the refinement's own field.
 
+### Flat buttons
+
+gpui-component paints a flat button's hover from a token that means something
+else: a `.ghost()` button hovers with `accent`, the item-highlight colour of
+menus and lists, and an `InputGroupButton` with `muted`, the subdued surface of
+`Kbd` and code blocks. Both are mapped correctly for what they are, so under a
+native theme those two buttons hover in colours no other button uses.
+`variants::ghost_button(cx)` is the same flat button with the platform's own
+button hover and pressed colours:
+
+```rust,ignore
+use gpui_component::button::{Button, ButtonVariants as _};
+use native_theme_gpui::variants;
+
+Button::new("close").icon(IconName::Close).custom(variants::ghost_button(cx));
+InputGroupButton::new("copy").label("Copy").custom(variants::ghost_button(cx));
+```
+
+Build it in `render`: it reads the installed theme, so it follows a light/dark
+switch. Buttons gpui-component creates internally (a dialog's close button,
+calendar navigation, the tab bar) cannot be reached this way.
+
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
-width, button icon gap, input padding, popup-menu rows; the `InputGroup`
-addon button, which upstream paints transparent and hovers with `muted`
-instead of the platform's button hover; and tab height, radius
+width, button icon gap, input padding, popup-menu rows; the hover of the
+flat buttons gpui-component builds internally, which takes `accent` where the
+platform has a button hover; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
 setters fill, `tab/tab.rs:801-808`) is
 listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)

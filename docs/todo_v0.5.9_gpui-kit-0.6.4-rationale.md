@@ -276,12 +276,14 @@ it at roughly 10. Beside it, every ordinary button in the same window hovers
 `#93cee9` and every standalone ghost button `#3daee9` (§1.4g), so one control
 in the group is grey while its neighbours are blue.
 
-Nothing in the connector can correct it: `muted` is mapped correctly for what
-it is, and upstream reads it directly. An *application* can, by passing
-`ButtonCustomVariant` (`ButtonVariants::custom`), which makes `render_in_group`
-skip the override entirely — the same lever §2.10 weighs for ghost buttons.
-Recorded as Tier U; found by hovering the widget, which no test and no earlier
-pass of this review did.
+No theme value can correct it: `muted` is read as a static subdued surface
+everywhere else (`Kbd`, Markdown code blocks, chat bubbles, `Empty`'s media
+box), so it is mapped correctly for what it is, and upstream reads it directly.
+What does correct it is upstream's own seam, `ButtonVariants::custom`: a custom
+variant makes `render_in_group` skip the repaint entirely. That is the same
+lever §2.10 weighs for ghost buttons, and with two widgets now needing it the
+connector ships it (E12). Found by the maintainer hovering the widget, which no
+test and no earlier pass of this review did.
 
 **(j) Nothing guards `Theme`'s own shape.** The three `tile_*` fields were
 `Theme` fields the connector never set (§1.2). They arrived upstream, sat
@@ -529,8 +531,8 @@ mechanism is not re-derived from source. The tests are the evidence.
 |---|---|
 | Re-map `accent` to the subtle button hover | Rejected twice over. Menus, lists, tables, the calendar and toggles would lose the platform's selection highlight — the meaning upstream gives the token ("used for accents such as hover background on MenuItem, ListItem, etc.", `theme/schema.rs:254-255`) and the one platform-facts `:1232` records for macOS (`selectedContentBackgroundColor`) and KDE (`[Colors:Selection] BackgroundNormal`); on Windows and GNOME that row already holds the same subtle fill as the button row at `:1168`, so the conflict is a macOS/KDE one. And it would only half-work: the hovered ghost *label* is `accent_foreground` (§1.4g), so a subtle fill would carry selection-coloured text. |
 | Set `Theme::tokens.accent` (what the ghost button reads) apart from `ThemeColor::accent` | Rejected. Menu items, toggles and table cells read the same `tokens.accent` (`menu/menu_item.rs:117, 121`, `button/toggle.rs:155, 202`, `table/state.rs:2198`), so the split does not separate buttons from selections; and `Theme::change` rebuilds the tokens from the config's colours (`theme/schema.rs:1103`), which would undo it. |
-| Ship a `ButtonCustomVariant` helper for applications (`geometry`-style: `native_ghost(native)`) | Partial. Fixes the application's own ghost buttons, not the 17 upstream-internal sites. Worth having only together with the upstream fix; not in v0.5.9. |
-| **Record as Tier U, propose upstream a `ghost_hover` token (fallback `accent`), and look at it first** | **Chosen for v0.5.9.** Whether the accent fill is objectionable on Breeze (whose own flat-button hover is an accent-tinted frame) is a judgment for the maintainer's eyes; the showcase's "Button Variants" row and every dialog close button show it. The decision to do more is taken at the visual check (plan Task 8), with this section as the brief. |
+| **Ship the `ButtonCustomVariant` an application needs: `variants::ghost_button(cx)`** | **Chosen**, revised 2026-09-20. First judged "partial, not in v0.5.9" because it cannot reach the 17 upstream-internal sites. The maintainer's visual check changed the weights: the new `InputGroup` addon button has the same defect from a *different* wrong token (§1.4m), so the choice was no longer "one questionable hover" but "flat buttons hover in three different colours in one window, and the connector offers the application nothing". The builder is the crate's established answer to a value upstream's tokens cannot carry (`geometry` does the same for sizes): transparent when idle exactly like `.ghost()`, hover and press from `secondary_hover` / `secondary_active`, which `apply` fills from the platform's `button.hover_background` / `active_background`. It reads the installed theme at call time, so it follows a mode switch; one test pins the hover to the resolved `button.hover_background` and proves it differs from both `accent` and `muted`. Upstream-internal buttons stay Tier U. |
+| Record as Tier U and propose upstream a `ghost_hover` token pair | Kept, for what the builder cannot reach: the buttons gpui-component builds internally. No longer the whole answer. |
 
 ### 2.11 Showcase coverage (§1.4h)
 
@@ -579,7 +581,7 @@ crate already uses three times.
 | E9 | Icon tables: wording only. Assets-enum keying and the Lucide refresh stay out. |
 | E10 | No CI workflow change (no new system package; verified from the lockfile diff). |
 | E11 | Release gates as for v0.5.8: `./pre-release-check.sh`, screenshots regenerated on the maintainer's desktop (`Cargo.lock` is a stamped path), tag and upload only on the maintainer's explicit go. |
-| E12 | Ghost-button hover: Tier U + upstream proposal; the maintainer judges it at the visual check (§2.10). |
+| E12 | Flat-button hover: the connector ships `variants::ghost_button`, a `ButtonCustomVariant` with the platform's button state colours, for the buttons an application builds (standalone ghost and `InputGroup` addon alike); upstream-internal buttons are Tier U with the token-pair proposal (§2.10, §1.4g, §1.4m). Revised after the maintainer's visual check, 2026-09-20. |
 | E13 | Showcase gains Carousel, Empty, InputGroup, a code editor and a Markdown view (§2.11). |
 | E14 | 0.5.8 is not yanked (maintainer, 2026-09-19). |
 | E15 | The v0.5.8 design documents move to `docs/archive/` in this release; these v0.5.9 documents follow once implemented (maintainer's standing rule, 2026-09-19). |
@@ -610,9 +612,8 @@ crate already uses three times.
 
 ## 5 -- Open questions for the maintainer
 
-1. Ghost-button hover (§2.10): acceptable as upstream renders it, or does it
-   need the application-side helper before an upstream fix lands? Decided at
-   the visual check.
+None. The ghost-hover question was settled at the visual check on 2026-09-20:
+the helper ships (E12).
 
 Answered 2026-09-19: 0.5.8 is not yanked (E14); implemented design documents
 are archived (E15).
