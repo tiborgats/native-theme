@@ -18,6 +18,12 @@
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
 //! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]).
+//!
+//! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
+//! [`progress`] are verified against real gpui-component widgets in
+//! `tests/seams.rs`, which lays each one out headlessly with and without the
+//! refinement; the other builders rest on the source citations in their doc
+//! comments.
 
 use gpui::{FontWeight, Pixels, StyleRefinement, Styled, px};
 use gpui_component::Size;
