@@ -196,9 +196,13 @@
 #### native-theme-iced: the same audit (found 2026-09-20, scheduled into v0.5.9)
 
 The gpui connector's state tokens were audited against the native field of the
-widget that reads them, and `accent` was wrong. The repository's own
-`connector-parity-checker` then found the same defect class in the iced
-connector. All of it is scheduled into v0.5.9 by the standing rule that a
+widget that reads them, and `accent` was wrong. The iced connector's output was
+then read the same way — every reader of every slot `to_theme` writes, found by
+grepping the `iced_widget-0.14.2` catalogs — and the same defect class was
+there. The last two items below are the ones the repository's own
+`connector-parity-checker` reports, because they are public-surface and
+feature-table differences rather than slot semantics. All of it is scheduled
+into v0.5.9 by the standing rule that a
 pre-1.0 release fixes the bugs found during it; the design is in
 `docs/todo_v0.5.9_theme-contracts-{rationale,spec}.md` and the citations stay
 here so the work is not re-derived.

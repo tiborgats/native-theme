@@ -1,9 +1,9 @@
 # v0.5.9 — Theme contracts: Specification
 
-Status: Design (2026-09-20); nothing implemented
+Status: Design (2026-09-20, revised 2026-09-21); nothing implemented
 Companion rationale:
 [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md)
-(decisions C1–C13)
+(decisions C1–C15)
 Companion plan:
 [`todo_v0.5.9_theme-contracts-plan.md`](todo_v0.5.9_theme-contracts-plan.md)
 Sibling work in the same release:
@@ -52,39 +52,49 @@ Screenshot diffing; an iced `geometry` module; upstream token proposals
 
 ## 1 -- Facts this specification rests on
 
-Verified 2026-09-20 against the published sources.
+Verified 2026-09-20 against the published sources; the rows marked † were
+corrected on 2026-09-21, when each was re-checked against the same sources.
 
 | Fact | Evidence |
 |---|---|
-| Every iced widget takes `.style(impl Fn(&Theme, Status) -> Style)` | `iced_widget-0.14.2/src/button.rs:184`, `text_input.rs:278`, `checkbox.rs:236` |
+| † Most iced widgets take `.style(impl Fn(&Theme, Status) -> Style)`, but **not all**: `container`, `progress_bar` and `tooltip` take `impl Fn(&Theme) -> Style` with no `Status`, and the menu overlay is set with `.menu_style(..)` on `PickList` / `ComboBox` rather than `.style(..)` | `button.rs:184`, `text_input.rs:278`, `checkbox.rs:236`, `toggler.rs:234`, `scrollable.rs:243`, `slider.rs:195` vs `container.rs:214`, `progress_bar.rs:112`, `tooltip.rs:139-141`, `pick_list.rs:303-305`, `combo_box.rs:308`, `overlay/menu.rs:631` (`StyleFn = Box<dyn Fn(&Theme) -> Style>`) |
 | iced's default `text_input` style reads `placeholder: palette.secondary.base.color` and `selection: palette.primary.weak.color` | `text_input.rs:1769, 1771` |
 | The iced connector writes `secondary.base.color = button.background_color` | `connectors/native-theme-iced/src/extended.rs:109` |
-| `button::secondary`'s hover reads `palette.secondary.strong.color`, which the connector never writes | `button.rs:620`; `extended.rs:109-119` writes only `.base` |
+| † `secondary.base.color` has **six** readers with **three** meanings: placeholder text, the `button::secondary` and `container::secondary` fill, and the `progress_bar::secondary` bar fill | `text_input.rs:1769`, `text_editor.rs:1476`, `pick_list.rs:910`, `button.rs:615`, `container.rs:629`, `progress_bar.rs:299` |
+| `button::secondary`'s hover reads `palette.secondary.strong.color`, which the connector never writes, and which nothing else reads | `button.rs:620`; `extended.rs:109-119` writes only `.base` |
 | The pick-list/menu overlay highlight is `palette.primary.strong` | `overlay/menu.rs:657-658` |
 | `to_theme` has no accessibility parameter | `connectors/native-theme-iced/src/lib.rs:113-116` |
-| The iced connector declares no `[features]`; the gpui one forwards four | `connectors/native-theme-iced/Cargo.toml`; `connectors/native-theme-gpui/Cargo.toml:26-31` |
+| The iced connector declares no `[features]`; the gpui one forwards four | `connectors/native-theme-iced/Cargo.toml`; `connectors/native-theme-gpui/Cargo.toml:27-32` |
 | An `[[example]]` target runs its `#[cfg(test)]` tests when the manifest sets `test = true`; the default is `false` | Cargo book, *Configuring a target*; both showcase entries currently omit it (`native-theme-gpui/Cargo.toml:80-81`, `native-theme-iced/Cargo.toml:26-27`) |
-| iced 0.14 ships no headless renderer (no `iced_test` in the closure) | `ls ~/.cargo/registry/src/*/iced*` |
-| The iced `Style` structs this specification fills | `button.rs:489-497`, `text_input.rs:1715-1725`, `checkbox.rs:530-536`, `toggler.rs:510-522`, `scrollable.rs:2273-2281`, `container.rs:464-472`, `slider.rs:591-593`, `progress_bar.rs:250-254`, `overlay/menu.rs:600-610` |
+| † **iced 0.14 does ship a headless renderer and interaction simulator.** `iced_test` 0.14.0 — "A library for testing iced applications in headless mode" — was published 2025-12-07, the same day as iced 0.14.0, and is reachable as a plain dev-dependency or through iced's `tester` feature | crates.io metadata; `iced_test-0.14.0/src/simulator.rs:45-253`; `iced-0.14.0/Cargo.toml:101`. The first draft claimed the opposite on the strength of `ls ~/.cargo/registry/src/*/iced*`, which only shows what a local build has pulled |
+| † The simulator needs a renderer backend in the test's dependency graph. Without one every widget measures 0×0 and `click` returns `TargetNotVisible`; with iced's default features the same button measured 41.904 × 20.8 and the click produced its message | measured 2026-09-21 in a scratch crate against the published sources |
+| † The iced `Style` structs this specification fills, with their **full** field ranges | `button.rs:487-498`, `text_input.rs:1713-1726`, `checkbox.rs:528-537`, `toggler.rs:508-529`, `scrollable.rs:2271-2282`, `container.rs:462-473`, `slider.rs:589-594`, `progress_bar.rs:248-255`, `overlay/menu.rs:598-611` |
+| † Seven of those nine have no `Default`; **`button::Style` and `container::Style` do** | `impl Default for Style` at `button.rs:510-520` and `container.rs:475-485`; the other seven carry only `#[derive(Debug, Clone, Copy, PartialEq)]` |
+| † Scrollbar *widths* are not in `scrollable::Style`. They live on the `Scrollbar` value passed to `.direction(..)` | `scrollable.rs:322-328` (private fields), `:355` `width`, `:367` `scroller_width` |
+| † iced has no minimum-thumb-length setting: the scroller length is `(bounds * ratio).max(2.0)`, hardcoded | `scrollable.rs:2068` |
+| `Theme::list_presets()` returns exactly the 16 user-selectable presets; the four `*-live.toml` are internal geometry-only merge bases | `native-theme/src/model/mod.rs:614` (its doctest asserts `len() == 16`), `native-theme/src/presets.rs:51` |
+| `ThemeColor` has 138 fields, and the gpui connector already proves every one is assigned | `gpui-component-0.6.4/src/theme/theme_color.rs:59`; `connectors/native-theme-gpui/src/colors.rs`, `theme_color_field_count_tripwire` and `no_theme_color_field_is_left_at_default` |
+| `gpui_base::PANEL_MIN_SIZE` is public, so a showcase test can name it | `gpui-base-0.6.4/src/lib.rs:147` |
 
 ---
 
 ## 2 -- The iced palette: what changes
 
-`src/extended.rs`, `apply_overrides`.
+`src/extended.rs`, `apply_overrides`. Two lines go; nothing is added
+(rationale §2.2a, C3).
 
 | Line today | Change | Why |
 |---|---|---|
-| `secondary.base.color = btn_bg` | **removed** | iced reads this slot as placeholder text in three widgets (§1). Leaving iced's generated value restores a readable placeholder; the button surface is delivered by `styles::button` instead. |
-| `secondary.base.text = btn_fg` | kept | the slot is text, the value is text |
-| — | **add** `secondary.strong.color = button.hover_background` | `button::secondary` reads `.strong` for its hover, and this is the one slot where `.strong` means exactly "hover" |
-| `background.weak.color = surface` | kept | the closest single meaning iced has for a subdued panel; the nine readers that want something else are served by `styles::*` |
+| `extended.secondary.base.color = to_color(colors.btn_bg)` | **removed** | six readers, three meanings (§1). Leaving iced's generated value restores a readable placeholder; the button surface is delivered by `styles::button`. |
+| `extended.secondary.base.text = to_color(colors.btn_fg)` | **removed** | its only readers pair it with `secondary.base.color`, which we no longer control. Keeping it would paint the platform's label colour on iced's generated fill — a pair no platform ever measured, and one §7 would be entitled to fail. |
+| — | **nothing added.** In particular **not** `secondary.strong.color = button.hover_background` | that slot does mean "hover" unambiguously (`button.rs:620`, nothing else reads it), but its base is now iced's, and a control that idles in one theme and hovers into another is the incoherence this release removes. `styles::button` carries idle, hover, pressed and label together. |
+| `background.weak.color = surface`, `background.weak.text = foreground` | kept | overridden as a *pair*, so they stay coherent; the closest single meaning iced has for a subdued panel. The nine readers that want something else are served by `styles::*`. |
+| `primary.base.text = accent_fg` | kept | `primary.base.color` comes from the `Palette` itself (`palette.rs:41`), so this pair is native on both sides. |
 | the four `ensure_status_contrast` lines | kept | correct as written |
 
-`OverrideColors` gains `btn_hover_bg: Rgba` and loses nothing (`btn_bg` is
-still used by `styles::button`, which takes the resolved theme directly, so
-the field is dropped from the struct if nothing else reads it — the compiler
-decides).
+`OverrideColors` loses `btn_bg` **and** `btn_fg`: after the two deletions
+nothing reads either, so leaving them fails `-D warnings` on `dead_code`. No
+field is added.
 
 No other palette slot changes. Everything else moves to §3.
 
@@ -101,46 +111,100 @@ already has `iced_widget` through `iced`. What it does cost is version
 coupling: the connector now tracks `iced_widget`, and the nightly canary will
 report a breaking change there the same way it reported gpui-component's.
 
-None of those `Style` structs derives `Default` or is `#[non_exhaustive]`
-(checked: they derive `Debug, Clone, Copy, PartialEq`). Every function
-therefore constructs its `Style` **exhaustively**, never with
-`..Default::default()`, so a field added upstream fails the build instead of
-silently taking a default — the sibling release's E17 guarantee, for free.
-
 A new public module, `src/styles.rs`. Each function takes `&ResolvedTheme`
-and returns a closure iced accepts in `.style(..)`. Pure; no global state; the
-returned closure ignores the `&Theme` argument, because the values are already
-resolved.
+and returns a closure iced accepts. Pure; no global state; the returned
+closure ignores the `&Theme` argument, because the values are already
+resolved. Each closure owns the handful of `Color` values it needs, captured
+by value, so it is `'static` and can be stored in a widget.
+
+### 3.1 Three closure shapes, not one
+
+The first draft said every function had the same signature. It does not
+(§1). There are three shapes, and each function's doc comment names which
+setter it is passed to.
 
 ```rust
+// A. with Status, passed to .style(..)
+//    button, button_primary, text_input, checkbox, toggler, scrollable, slider
 pub fn button(resolved: &ResolvedTheme)
     -> impl Fn(&Theme, button::Status) -> button::Style + use<>;
+
+// B. without Status, passed to .style(..)
+//    container_card, progress_bar, tooltip (tooltip returns container::Style)
+pub fn container_card(resolved: &ResolvedTheme)
+    -> impl Fn(&Theme) -> container::Style + use<>;
+
+// C. without Status, passed to .menu_style(..) on PickList / ComboBox
+pub fn menu(resolved: &ResolvedTheme)
+    -> impl Fn(&Theme) -> menu::Style + use<>;
+
+// D. not a closure at all: a configured widget value (C14)
+pub fn scrollbar(resolved: &ResolvedTheme) -> scrollable::Scrollbar;
 ```
 
-The signature shape is the same for every widget below. Each closure owns the
-handful of `Color` values it needs, captured by value, so it is `'static` and
-can be stored in a widget.
+Shape A was compiled against iced 0.14 before this specification was written:
+`use<>`, exhaustive construction, and acceptance by `.style()` under a
+`'static` bound.
 
-| Function | iced `Style` fields it fills | Native source |
+### 3.2 Exhaustive construction, and fields the model does not carry
+
+Every function constructs its `Style` **exhaustively**, never with
+`..Default::default()`. For the seven structs that have no `Default` the
+compiler enforces this, so an upstream field addition fails the build — the
+sibling release's E17 guarantee, for free. `button::Style` and
+`container::Style` **do** have `Default` (§1), so for those two the compiler
+cannot enforce it; the rule is ours, and §5's contract rows assert every
+field of those two by name so an added field is still noticed.
+
+Some `Style` fields have no native counterpart at all. They are not invented
+and they are not guessed:
+
+> **A `Style` field the native model does not carry takes the value iced's own
+> default style function gives it for that widget and status, cited by file
+> and line in a comment beside it.**
+
+The ones this release meets, with their sources:
+
+| Field | Value, from iced | Citation |
 |---|---|---|
-| `button` | `background`, `text_color`, `border`, `shadow` | `button.background_color` / `.font.color` / `.border.*`; `hover_background`, `active_background` per `Status` |
-| `button_primary` | as above | `button.primary_background`, `primary_text_color` |
-| `text_input` | `background`, `border`, `icon`, `placeholder`, `value`, `selection` | `input.background_color`, `.border.*`, `.placeholder_color`, `.font.color`, `.selection_background`; `hover_border_color` and `focus_border_color` per `Status` |
-| `checkbox` | `background`, `icon_color`, `border`, `text_color` | `checkbox.checked_background`, `.check_color`, `.unchecked_border_color`, `.border.*`, `.font.color` |
-| `toggler` | `background`, `background_border_*`, `foreground`, `foreground_border_*`, `text_color` | `switch.unchecked_background`, `checked_background`, `thumb_background`, `hover_*` per `Status` |
-| `scrollable` | `container`, `vertical_rail`, `horizontal_rail` | `scrollbar.track_color`, `thumb_color`, `thumb_hover_color`, `thumb_active_color`, `groove_width`, `thumb_width`, `min_thumb_length` |
-| `menu` | `background`, `border`, `text_color`, `selected_text_color`, `selected_background` | `menu.background_color`, `.border.*`, `.font.color`, `.hover_text_color`, `.hover_background` |
-| `container_card` | `background`, `border`, `shadow`, `text_color` | `card.background_color`, `.border.*` |
-| `slider` | `rail`, `handle` | `slider.track_color`, `fill_color`, `thumb_color`, `track_height`, `thumb_diameter` |
-| `progress_bar` | `background`, `bar`, `border` | `progress_bar.track_color`, `fill_color`, `.border.*` |
-| `tooltip` | via `container::Style` | `tooltip.background_color`, `.border.*`, `.font.color` |
+| `button::Style.snap`, `container::Style.snap` | `Style::default().snap`, which is `cfg!(feature = "crisp")` — **written as `Style::default().snap`, not as a literal**, so a consumer who enables `crisp` keeps it | `button.rs:517`, `container.rs:482` |
+| `scrollable::Style.gap` | `None` | `scrollable.rs:2375` |
+| `scrollable::Style.auto_scroll` | iced's `AutoScroll`, constructed as iced does from the palette | `scrollable.rs:2357-2368` |
+| `toggler::Style.border_radius` | `None` (perfectly round) | `toggler.rs:611` |
+| `toggler::Style.padding_ratio` | `0.1` | `toggler.rs:612` |
+| `menu::Style.shadow` | `Shadow::default()` | `overlay/menu.rs:658` |
+
+### 3.3 The functions
+
+| Function | Shape | Every `Style` field it fills | Native source |
+|---|---|---|---|
+| `button` | A | `background`, `text_color`, `border`, `shadow`, `snap` | `button.background_color` / `.font.color` / `.border.*`; `hover_background`, `active_background`, `hover_text_color`, `active_text_color`, `disabled_*` per `Status` |
+| `button_primary` | A | as above | `button.primary_background`, `primary_text_color` |
+| `text_input` | A | `background`, `border`, `icon`, `placeholder`, `value`, `selection` | `input.background_color`, `.border.*`, `.placeholder_color`, `.font.color`, `.selection_background`; `hover_border_color` and `focus_border_color` per `Status`; `icon` from `.font.color` |
+| `checkbox` | A | `background`, `icon_color`, `border`, `text_color` | `checkbox.checked_background`, **`.indicator_color`** (the check mark; there is no `check_color`), `.unchecked_background`, `.unchecked_border_color`, `.border.*`, `.font.color` |
+| `toggler` | A | `background`, `background_border_width`, `background_border_color`, `foreground`, `foreground_border_width`, `foreground_border_color`, `text_color`, `border_radius`, `padding_ratio` | `switch.unchecked_background`, `checked_background`, `thumb_background`, `hover_checked_background`, `hover_unchecked_background`, `disabled_*` per `Status`; the last two fields from §3.2 |
+| `scrollable` | A | `container`, `vertical_rail`, `horizontal_rail`, `gap`, `auto_scroll` | `scrollbar.track_color` → each rail's `background`; `thumb_color`, `thumb_hover_color`, `thumb_active_color` → the `Scroller` background per `Status`; the last two fields from §3.2 |
+| `scrollbar` | D | — (a `Scrollbar`, not a `Style`) | `scrollbar.groove_width` → `.width(..)`, `scrollbar.thumb_width` → `.scroller_width(..)` |
+| `menu` | C | `background`, `border`, `text_color`, `selected_text_color`, `selected_background`, `shadow` | `menu.background_color`, `.border.*`, `.font.color`, `.hover_text_color`, `.hover_background` |
+| `container_card` | B | `text_color`, `background`, `border`, `shadow`, `snap` | `card.background_color`, `.border.*`; text from `defaults.text_color` |
+| `slider` | A | `rail` (`backgrounds`, `width`, `border`), `handle` (`shape`, `background`, `border_width`, `border_color`) | `slider.fill_color` and `track_color` → `rail.backgrounds`; `track_height` → `rail.width`; `thumb_color`, `thumb_hover_color` → `handle.background`; `thumb_diameter` → `handle.shape` |
+| `progress_bar` | B | `background`, `bar`, `border` | `progress_bar.track_color`, `fill_color`, `.border.*` |
+| `tooltip` | B | a `container::Style`: `text_color`, `background`, `border`, `shadow`, `snap` | `tooltip.background_color`, `.border.*`, `.font.color` |
+
+Twelve items: eleven style functions and `scrollbar`.
+
+**One native value has no receiver in iced 0.14 and is not approximated:**
+`scrollbar.min_thumb_length`. iced computes the scroller length as
+`(bounds * ratio).max(2.0)` with no setting (§1). It is recorded here, in
+`docs/todo.md`, and in the contract file's unreachable list, rather than
+mapped onto something it is not.
 
 Widgets whose native fields the model does not carry (`Tag`, `Badge`,
 `Rule` beyond its colour) are not covered; the palette serves them.
 
-Each function's doc comment names the iced default it replaces and the slot
-whose meaning it corrects, as `variants::ghost_button` does in the gpui
-connector.
+Each function's doc comment names the iced default it replaces, the slot whose
+meaning it corrects, and the setter it is passed to — as
+`variants::ghost_button` does in the gpui connector.
 
 ---
 
@@ -152,36 +216,39 @@ them**, so those six widget themes have no receiver in iced at all today —
 the largest remaining hole in "make an iced application look native", and
 wider than any of the seven mapping defects.
 
-`iced_aw` 0.14.1 (2026-04-27) supplies exactly those, and depends on
+`iced_aw` 0.14.1 (published 2026-04-27) supplies exactly those, and depends on
 `iced_core ^0.14.0` and `iced_widget ^0.14.2` — the versions this connector
-uses, so it unifies with no version work. Its styling is the same shape as
-iced's own: a plain `Style` struct of public fields, a `Catalog` trait whose
-`Class` is `StyleFn`, and a `.style(impl Fn(&Theme, Status) -> Style)` builder
-on each widget (`src/style/card.rs:10-46, 75-85`, `src/widget/card.rs:226`).
-So `styles::aw::*` is the same pattern as §3, and costs little beyond the
-mapping itself.
+uses, so it unifies with no version work (crates.io dependency metadata,
+re-checked 2026-09-21). Its styling is the same shape as iced's own: a plain
+`Style` struct of public fields, a `Catalog` trait whose `Class` is a
+`StyleFn`, and a style setter on each widget. So `styles::aw::*` is the same
+pattern as §3 — including §3.1's rule that the exact closure shape is read
+from the widget at implementation time, not assumed.
 
 **Optional, because it is a third-party crate.** An application that does not
 use `iced_aw` must not pay for it, and native-theme must not tie its release
-cadence to a community crate. Two concrete costs: `iced_aw` depends on
-`iced_fonts`, **3.3 MB** of embedded font data, and its own iced support has
-lagged — 0.13.0 in December 2025, 0.14.0 in April 2026. A default-on
-third-party dependency would make this crate unbuildable on a new iced until
-that crate catches up, which is the failure mode the whole release exists to
-repair.
+cadence to a community crate. Two measured costs: `iced_aw` depends
+unconditionally on `iced_fonts` 0.3.0, whose published archive is **3.31 MiB**
+of embedded font data, and its iced support lags — iced 0.14.0 was published
+2025-12-07 and `iced_aw` 0.14.0 arrived 2026-04-27, four and a half months
+later. A default-on third-party dependency would make this crate unbuildable
+on a new iced for that long, which is the failure mode the whole release
+exists to repair.
 
 It is therefore off by default, and it implies `widgets`, because `iced_aw`
 itself depends on `iced_widget ^0.14.2`. See §4.2 for the full feature table.
 
 Six widgets, from eight `iced_aw` features: `tabs` is the tabbed container
-built on `tab_bar`, and `context_menu` is the same `menu` styling applied to a
-right-click overlay, so each pair shares one `styles::aw::*` function.
+built on `tab_bar` (its feature literally is `tabs = ["tab_bar"]`), and
+`context_menu` is the same `menu` styling applied to a right-click overlay, so
+each pair shares one `styles::aw::*` function. All eight feature names were
+checked against the published feature table on 2026-09-21.
 
 Covered widgets, each from the native theme that models it:
 
 | `styles::aw::*` | `iced_aw` widget | Native source |
 |---|---|---|
-| `card` | `Card` | `card.background_color`, `.border.*`; head/body/foot from `card` and `defaults` |
+| `card` | `Card` | `card.background_color`, `.border.*`; head/body/foot from `card` and `defaults` — `CardTheme` carries only `background_color` and `border`, so the rest comes from `defaults` |
 | `menu` | `Menu`, `ContextMenu` | `menu.background_color`, `.hover_background`, `.hover_text_color`, `.border.*`, `.font.color` |
 | `tab_bar` | `TabBar`, `Tabs` | `tab.background_color`, `.active_background`, `.active_text_color`, `.hover_background`, `.bar_background` |
 | `sidebar` | `Sidebar` | `sidebar.background_color`, `.selection_background`, `.selection_text_color`, `.hover_background` |
@@ -210,11 +277,11 @@ pub fn to_theme(
 ) -> iced_core::theme::Theme
 ```
 
-`from_preset` gains the same parameter. `from_system` does **not**: it already
-reads a `SystemTheme`, which carries `accessibility`, so it uses those and its
-signature keeps its shape (it returns `(Theme, ResolvedTheme, bool)` today,
-`src/lib.rs:177-181`). Taking a parameter there would let a caller contradict
-the system it just asked for.
+`from_preset` gains the same parameter. `from_system` (`src/lib.rs:177`) and
+`SystemThemeExt::to_iced_theme` (`src/lib.rs:197, 201`) do **not**: both
+already read a `SystemTheme`, which carries `accessibility`, so they use those
+and their signatures keep their shape. Taking a parameter there would let a
+caller contradict the system it just asked for.
 
 What the preferences change in iced:
 
@@ -225,6 +292,13 @@ What the preferences change in iced:
 | `reduce_motion` | recorded and exposed as `reduce_motion(prefs) -> bool`; iced has no global animation flag, so the application decides |
 
 `AccessibilityPreferences` is re-exported from the crate root, as gpui does.
+
+**Every call site changes.** The signature is used in six files:
+`src/lib.rs`, `src/extended.rs`, `src/icons.rs`, `tests/integration.rs`,
+`examples/showcase-iced.rs` and `README.md` — 43 occurrences of
+`to_theme(` / `from_preset(` / `to_iced_theme(` measured 2026-09-21. The
+README is prose, not doctests (`lib.rs` does not `include_str!` it), but it is
+updated in §8 all the same.
 
 ### 4.2 Features
 
@@ -268,35 +342,58 @@ the gpui connector, so docs.rs shows the whole surface.
 
 ## 5 -- Layer 1: the mapping contract
 
-One new file per connector: `src/contract.rs` (gpui) and `src/contract.rs`
-(iced), each `#[cfg(test)]` only.
+One new file per connector: `connectors/native-theme-gpui/src/contract.rs` and
+`connectors/native-theme-iced/src/contract.rs`, each `#[cfg(test)]` only.
 
 ### 5.1 The table
 
+The two connectors have different target types, so each declares its own row
+type. Neither is shared; with two connectors the duplication is smaller than
+the abstraction (rationale §4).
+
 ```rust
+// gpui
 /// One row of the mapping contract: a toolkit slot, the native field it must
-/// equal, and why, if it may legitimately differ anywhere.
+/// equal, and the presets where it may legitimately differ.
 struct Row {
     slot: &'static str,
     native: fn(&ResolvedTheme) -> Rgba,
     get: fn(&ThemeColor) -> Hsla,
+    /// Preset keys where this row does not hold, each with its reason.
+    exceptions: &'static [(&'static str, &'static str)],
+}
+
+// iced: the target is a palette slot or a `styles::*` output, not a struct
+// field, so the getter takes both the theme and the resolved values.
+struct Row {
+    slot: &'static str,
+    native: fn(&ResolvedTheme) -> Rgba,
+    get: fn(&Theme, &ResolvedTheme) -> Color,
+    exceptions: &'static [(&'static str, &'static str)],
 }
 ```
 
 The test iterates every row over all 16 presets in both modes and asserts
-equality. Sixteen, not the twenty files in `native-theme/src/presets/`: the
-four `*-live.toml` are geometry-only merge bases for the OS-first pipeline,
-carry no colours, and are not user-selectable (`presets.rs:51`). They are
-excluded by iterating `Theme::list_presets()`, which returns exactly the
-sixteen. A row that must differ on some preset carries the reason in a
-comment and the preset in an exception list — not a loosened assertion.
+equality. Sixteen, not the twenty preset TOMLs in `native-theme/src/presets/`:
+the four `*-live.toml` are geometry-only merge bases for the OS-first
+pipeline, carry no colours, and are not user-selectable
+(`native-theme/src/presets.rs:51`). They are excluded by iterating
+`Theme::list_presets()`, which returns exactly the sixteen (§1). A row that
+must differ on some preset carries the reason in `exceptions` — not a
+loosened assertion.
 
 Rows are the fields with a native counterpart, including the ones this release
 corrected: `accent` ← `menu.hover_background`, `accent_foreground` ←
 `menu.hover_text_color`, `sidebar_accent*` ← the sidebar's selection pair,
 `secondary_hover` ← `button.hover_background`, `list_hover`, `list_active`,
 `selection`, `input`, `primary`, the status colours, the scrollbar colours,
-the tab colours.
+the tab colours, and the four base-palette colours the connector maps
+directly (`red` ← `danger`, `green` ← `success`, `blue` ← `info`, `yellow` ←
+`warning`; `colors.rs:601-607`).
+
+For the iced connector, rows cover every `styles::*` field of §3.3 — including
+every field of `button::Style` and `container::Style` by name, because those
+two have a `Default` and the compiler will not notice an added field (§3.2).
 
 This replaces the two bespoke tests the sibling release added for `accent`
 (C10): the contract table is where that claim belongs.
@@ -308,21 +405,32 @@ This replaces the two bespoke tests the sibling release added for `accent`
 fn every_theme_color_field_has_a_declared_source() { … }
 ```
 
-Every field of `ThemeColor` appears in exactly one of three lists:
+Every field of `ThemeColor` appears in exactly one of **two** lists:
 
-1. the contract table (§5.1) — a native field;
+1. the contract table (§5.1) — equal to a named native field;
 2. `DERIVED` — with the derivation named (`hover_color(primary)`,
-   `light_variant(..)`, a blend);
-3. `UPSTREAM_DEFAULT` — with the reason (`transparent`, the 12 private
-   palette colours).
+   `light_variant(bg, danger, is_dark)`, `magenta` as a fixed hue carrying
+   the accent's saturation and lightness, a blend).
 
-The test asserts the three lists partition the 138 fields exactly: no field
-missing, none in two lists. A new upstream field therefore fails the build
-until someone classifies it, exactly as the `Theme` shape tripwire (sibling
-E17) does for shape.
+The test asserts the two lists partition the 138 fields exactly: no field
+missing, none in both. A new upstream field therefore fails the build until
+someone classifies it, exactly as the `Theme` shape tripwire (sibling E17)
+does for shape.
+
+**There is no third `UPSTREAM_DEFAULT` list.** The first draft specified one,
+for "`transparent` and the 12 private palette colours". Both halves were
+wrong: `colors.rs:601-628` assigns all twelve base-palette fields from native
+values, and `no_theme_color_field_is_left_at_default` (`colors.rs`) already
+proves, through serde over all 138 fields in both modes, that nothing is left
+at upstream's default. A list of fields we leave to upstream would be empty,
+and writing reasons into it would state something untrue. If a future upstream
+field genuinely has no native source, the right move is to add the third list
+*then*, with the real reason.
 
 The iced file does the same over the palette slots the connector writes and
-over every `styles::*` function's output.
+over every `styles::*` function's output, plus a third short list it does
+need: `UNREACHABLE`, for a native value iced has no receiver for, with the
+evidence — today exactly one entry, `scrollbar.min_thumb_length` (§3.3).
 
 ---
 
@@ -335,32 +443,38 @@ Both manifests gain `test = true` on the example target.
 | Test | Asserts |
 |---|---|
 | `every_tab_lays_out` | each of the ten tabs renders on GPUI's test platform and `debug_bounds` finds the tab root; no panic |
-| `resizable_groups_have_room_to_drag` | for each resizable group in the file, the container's size exceeds `panels × PANEL_MIN_SIZE` plus its borders. This is the finding of §1.1 stated as a rule |
-| `interactive_controls_respond` | for the controls the showcase advertises as interactive, a simulated click produces the effect: the Copy button writes the field's text to the clipboard (`cx.read_from_clipboard()`), the mode switch changes `Theme::mode`, the notification buttons push a notification |
+| `resizable_groups_have_room_to_drag` | for each resizable group in the file, the container's size exceeds `panels × gpui_base::PANEL_MIN_SIZE` plus its borders. This is the finding of rationale §1.1 stated as a rule |
+| `interactive_controls_respond` | for the controls the showcase advertises as interactive, a simulated click produces the effect: the Copy button writes the field's text to the clipboard (`cx.read_from_clipboard()`; the test platform holds a real in-memory clipboard, `gpui-pre-0.3.5/src/platform/test/platform.rs:671-677`), the mode switch changes `Theme::mode`, the notification buttons push a notification |
 
 ### 6.2 iced (`examples/showcase-iced.rs`, `#[cfg(test)] mod tests`)
 
-iced 0.14 has no headless renderer (§1), so these build and inspect rather
-than draw:
+iced 0.14 **does** render headlessly (§1), so these are real interaction
+tests, not structural inspections. `iced_test = "0.14"` joins the connector's
+`[dev-dependencies]` (C15); the showcase's existing `iced` dev-dependency
+already carries a renderer backend, which §1 records as the condition.
 
 | Test | Asserts |
 |---|---|
-| `view_builds_for_every_tab` | `view()` returns an `Element` for each tab with no panic |
-| `every_button_has_a_message` | every `button(..)` the showcase builds carries `.on_press(..)`; an iced button without one renders disabled, which is the iced form of the dead-control bug |
+| `every_tab_renders` | for each tab, `Simulator::with_size(..., view())` then `snapshot(&theme)` returns `Ok` — the interface lays out and draws with no panic. The snapshot is **not** compared to a baseline; that is Layer 4, deliberately out of scope (rationale §4) |
+| `interactive_controls_respond` | for each control the showcase advertises, `ui.click(<its label>)` succeeds and `into_messages()` contains the message it should send. A button built without `on_press` renders as `Status::Disabled` (`button.rs:342`) and its click fails — the iced form of the dead-Copy-button finding |
 | `styles_cover_every_widget_shown` | every widget the showcase renders is styled with the `styles::*` function for it — no widget is left on the palette default, because the showcase is what the README's screenshots claim the connector achieves (rationale §2.7) |
+
+If `Simulator` cannot initialise a renderer in CI, that is a **finding**: report
+it with the error, do not silently downgrade the tests to view-tree inspection.
 
 ---
 
 ## 6a -- Complete widget coverage
 
 A showcase that omits a widget is a widget nobody has ever seen under a native
-theme. Measured 2026-09-20, both omit a great deal, and the gpui connector
-omits its own work.
+theme. Measured 2026-09-20 and re-measured 2026-09-21, both omit a great deal,
+and the gpui connector omits its own work.
 
 ### 6a.1 gpui: builders the showcase never exercises
 
-**19 of the 34 `geometry` builders are never used in the showcase**, so more
-than half of the connector's own public geometry has never been looked at:
+**19 of the 34 `geometry` builders are never used in the showcase**
+(re-measured 2026-09-21: still exactly these), so more than half of the
+connector's own public geometry has never been looked at:
 
 `control_height`, `menu_item`, `tooltip`, `status_bar`, `dialog_description`,
 `table`, `radio`, `combobox`, `title_bar`, `icon_size_toolbar`,
@@ -372,13 +486,24 @@ than half of the connector's own public geometry has never been looked at:
 
 Constructible widgets absent from the showcase, filtered from
 gpui-component 0.6.4's `RenderOnce` / `IntoElement` implementations by
-discarding test harnesses and sub-parts:
+discarding test harnesses and sub-parts. Every name below was checked against
+`pub struct` in the vendored 0.6.4 source on 2026-09-21:
 
-`AlertDialog`, `Attachment`, `Bubble`, `Combobox`, `DescriptionText`,
+`AlertDialog`, `Attachment`, `Bubble`, `Combobox`, `DescriptionList`,
 `HoverCard`, `Marker`, `Message`, `MessageScroller`, `Pagination`,
-`ProgressCircle`, `Rating`, `ShimmerText`, `ShimmerGlyphs`,
-`SidebarToggleButton`, `StatusBar`, `Stepper`, `TitleBar`, `WindowBorder`,
-`CarouselNext`, `CarouselPrevious`.
+`ProgressCircle`, `Rating`, `ShimmerText`, `SidebarToggleButton`,
+`StatusBar`, `Stepper`, `TitleBar`, `WindowBorder`, `CarouselNext`,
+`CarouselPrevious`.
+
+Twenty, not the twenty-one the first draft listed. Two names in it were
+wrong: **`DescriptionText` is not a widget** — it is the label type
+`DescriptionList::new` takes (`description_list.rs:81`), exactly the kind of
+sub-part the filter is meant to discard — and **`ShimmerGlyphs` does not
+exist**; `shimmer.rs` declares `ShimmerSpread`, `ShimmerStyle` and
+`ShimmerText` and nothing else.
+
+`Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:749`), so
+showing it needs a delegate; that is work, not a blocker.
 
 `StatusBar`, `TitleBar` and `Combobox` are the ones that matter most: the
 connector ships a geometry builder for each and the showcase renders none of
@@ -389,14 +514,28 @@ are in this release.
 
 ### 6a.3 iced: widget modules the showcase never renders
 
-Of `iced_widget` 0.14.2's 37 modules, 14 are absent: `canvas`, `float`,
-`keyed`, `lazy`, `markdown`, `overlay`, `pane_grid`, `pin`, `qr_code`,
-`responsive`, `sensor`, `stack`, `table`, `themer`.
+`iced_widget` 0.14.2 has 41 source modules under `src/`; discounting `lib`,
+`helpers` and `action`, which declare no widget, 38 remain. **Fifteen are
+absent** from the showcase (measured 2026-09-21 by name reference):
+
+`canvas`, `float`, `keyed`, `lazy`, `markdown`, `overlay`, `pane_grid`,
+`pin`, `qr_code`, `responsive`, `sensor`, `shader`, `stack`, `table`,
+`themer`.
+
+Fifteen, not the fourteen the first draft listed: **`shader` was missing from
+it entirely**, so the coverage script would have failed with no exception
+entry to explain it.
 
 The themed ones — `markdown`, `pane_grid`, `qr_code`, `table`, `canvas` — are
-added. The rest are layout and utility wrappers with no visual surface of
-their own (`keyed`, `lazy`, `responsive`, `stack`, `pin`, `float`, `overlay`,
-`sensor`, `themer`) and are listed as exceptions in §6a.4 rather than shown.
+added. **Four of those five are feature-gated in `iced_widget`**, so the
+showcase's `iced` dev-dependency must add `canvas`, `markdown` and `qr_code`
+to its feature list (`iced-0.14.0/Cargo.toml`: `canvas`, `markdown`,
+`qr_code`); `pane_grid` and `table` are unconditional.
+
+The rest are layout and utility wrappers with no visual surface of their own
+(`keyed`, `lazy`, `responsive`, `stack`, `pin`, `float`, `overlay`, `sensor`,
+`themer`) or need a GPU pipeline an application supplies (`shader`), and are
+listed as exceptions in §6a.4 rather than shown.
 
 ### 6a.4 Keeping coverage complete
 
@@ -408,7 +547,7 @@ time — and asserts every `geometry::*` builder and every `variants::*`
 function is referenced at least once. A builder nobody demonstrates is a
 builder nobody has verified, which is how `geometry::dialog` carried a wrong
 radius and `geometry::menu_item` a wrong doc comment for two releases. The
-same test for iced covers `styles::*`.
+same test for iced covers `styles::*` and `styles::aw::*`.
 
 **The toolkit's surface: a script.** A test *cannot* enumerate the widgets a
 dependency offers — it cannot locate that dependency's source, and
@@ -416,12 +555,13 @@ gpui-component exposes no list of its widgets to match against. The first
 draft of this section claimed otherwise; it was wrong.
 
 `scripts/check-widget-coverage.py` does it instead: `cargo metadata
---format-version 1` gives the exact on-disk source path of `gpui-component`
-and `iced_widget`, from which the script enumerates the constructible widgets
-(types implementing `RenderOnce` or `IntoElement` for gpui, the widget modules
-for iced), discards test harnesses and internal sub-parts by the rules in
-§6a.2, and compares against the showcase. Widgets not shown must appear in
-`docs/showcase-exceptions.toml` with a reason; anything else fails the script.
+--format-version 1` gives the exact on-disk source path of `gpui-component`,
+`iced_widget` and `iced_aw`, from which the script enumerates the
+constructible widgets (types implementing `RenderOnce` or `IntoElement` for
+gpui, the source modules for iced), discards test harnesses and internal
+sub-parts by the rules in §6a.2, and compares against the showcase. Widgets
+not shown must appear in `docs/showcase-exceptions.toml` with a reason;
+anything else fails the script.
 
 It runs in two places: `pre-release-check.sh`, so a release cannot ship an
 unshown widget, and the nightly dependency canary, so an upstream release that
@@ -457,10 +597,14 @@ silent about macOS's green, because there we emit exactly what Apple gives.
 The test additionally *prints* every pair below AA without failing on it, so
 the list stays visible. Whether any of those is a preset bug rather than a
 platform fact is `preset-validator`'s question, not this test's; the ones that
-look like data errors are recorded in `docs/todo.md`.
+look like data errors are recorded in `docs/todo.md` under Research.
 
-The gpui connector already has `contrast_ratio` (`src/colors.rs:55-76`); the
-iced connector has its own in `extended.rs`. Neither is re-implemented.
+Neither contrast helper is re-implemented. The gpui connector's lives in
+`src/derive.rs` — `pub fn contrast_ratio(a: Hsla, b: Hsla) -> f32` at
+`derive.rs:54`, with `relative_luminance` at `:62`; `colors.rs` already
+imports it (`colors.rs:15`). The iced connector has its own,
+`extended.rs:59`, with `relative_luminance` at `:43`. What both lack is alpha
+compositing, so the tests composite before calling them.
 
 ---
 
@@ -468,21 +612,25 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
 
 | File | Change |
 |---|---|
-| `connectors/native-theme-iced/README.md` | a "Styles" section mirroring gpui's "Flat buttons": what the palette gives automatically, what `styles::*` gives exactly, and the one-line example |
+| `connectors/native-theme-iced/README.md` | a "Styles" section mirroring gpui's "Flat buttons": what the palette gives automatically, what `styles::*` gives exactly, the three closure shapes of §3.1 and which setter each goes to, and the feature table of §4.2. Its existing `to_theme` / `from_preset` examples take the new parameter |
 | `connectors/native-theme-iced/src/lib.rs` | crate docs: the accessibility parameter, the feature list, and the two-layer colour story |
-| `docs/todo.md` | the nine iced items of the audit move from "not yet done" to done, except the geometry gap, which stays |
+| `docs/todo.md` | the nine iced items of the audit move from "not yet done" to done, except the geometry gap, which stays; `scrollbar.min_thumb_length` is added as unreachable in iced 0.14 |
 | `CHANGELOG.md` | see below |
 
 `CHANGELOG.md`, under `## [Unreleased]`:
 
-- **Breaking Changes → native-theme-iced** — `to_theme`, `from_preset` and
-  `from_system` take `&AccessibilityPreferences`, so text scaling and reduced
-  transparency reach an iced application for the first time.
-- **Breaking Changes → native-theme-iced** — the palette no longer writes the
-  platform's button surface into the slot iced reads as placeholder text. On
-  Adwaita that placeholder was `#e8e8e8` on a `#fafafb` field, about 1.15:1
-  and invisible. Applications that relied on `button::secondary` carrying the
-  platform surface call `styles::button` instead.
+- **Breaking Changes → native-theme-iced** — `to_theme` and `from_preset` take
+  `&AccessibilityPreferences`, so text scaling and reduced transparency reach
+  an iced application for the first time. `from_system` and
+  `SystemThemeExt::to_iced_theme` are unchanged: they already read a
+  `SystemTheme`, which carries them.
+- **Breaking Changes → native-theme-iced** — the palette no longer overrides
+  iced's `secondary` colour family. One of its slots is read as placeholder
+  text by three widgets, as the secondary button and container fill, and as
+  the secondary progress bar's fill; on Adwaita the placeholder was `#e8e8e8`
+  on a `#fafafb` field, about 1.15:1 and invisible. Applications that relied
+  on `button::secondary` carrying the platform surface call `styles::button`,
+  which carries idle, hover, pressed and label together.
 - **Added** — `native_theme_iced::styles`: per-widget style functions built
   from the resolved theme, for the slots iced's palette cannot carry
   unambiguously.
@@ -497,12 +645,14 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
   the platform's own values. Measured over all 32 preset/mode combinations.
   It is not a WCAG assertion: 174 of 512 pairs sit below AA on real platform
   data, macOS's `#34c759` with white text among them.
-- **Added** — showcase self-tests in both connectors.
+- **Added** — showcase self-tests in both connectors, both of which render and
+  click headlessly.
 - **Added** — both showcases now render every widget their toolkit offers an
   application, including everything gpui-kit 0.6.2 and 0.6.4 introduced, with
   a coverage script, run by the release check and the nightly canary, that
-  fails when an upstream release adds a widget nobody shows. The gpui showcase previously exercised 15 of the connector's 34
-  geometry builders and rendered no `StatusBar`, `TitleBar` or `Combobox`.
+  fails when an upstream release adds a widget nobody shows. The gpui showcase
+  previously exercised 15 of the connector's 34 geometry builders and rendered
+  no `StatusBar`, `TitleBar` or `Combobox`.
 
 ---
 
@@ -519,6 +669,8 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
       contract test fail on a named preset (run once, per connector).
 - [ ] `grep -rn 'placeholder' connectors/native-theme-iced/src/` shows the
       placeholder fed from `input.placeholder_color`, not from a button field.
+- [ ] `grep -rn 'secondary' connectors/native-theme-iced/src/extended.rs`
+      shows no override of the `secondary` family.
 - [ ] `cargo tree -p native-theme-iced -i native-theme` shows the icon
       features enabled by default.
 - [ ] `scripts/check-widget-coverage.py` passes for both connectors, and
@@ -527,4 +679,6 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
       from the showcase makes it fail.
 - [ ] `cargo test -p native-theme-iced --features iced_aw` passes, and the
       iced showcase renders the six `iced_aw` widgets (§3a).
+- [ ] The iced showcase's `interactive_controls_respond` fails when one
+      control's `on_press` is removed (the negative control for §6.2).
 - [ ] `./pre-release-check.sh` shows no failures.
