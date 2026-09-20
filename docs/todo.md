@@ -154,6 +154,11 @@
 
 - [ ] Scrollbar thumb radius per platform: platform-facts records none, so the
       connector mirrors gpui-component's `radius` for the thumb.
+- [ ] The showcase's "Text Input" tooltip claims the input background is
+      `background`; `Input` paints `Theme::input_background()`, which equals
+      `background` only in light mode (gpui-component 0.6.4
+      `src/theme/mod.rs:379-385`). Noticed while adding the InputGroup section
+      in v0.5.9; correct the tooltip (and check the sibling widgets' claims).
 - [ ] gpui-component's `Theme::motion` (`MotionTokens`, eleven fields: four
       durations, three easings, two springs and two `Rems` travel distances,
       `src/theme/motion.rs:8-20`) stays at upstream's default, because

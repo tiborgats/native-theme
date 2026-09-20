@@ -43,6 +43,10 @@ use gpui_component::{
     badge::Badge,
     breadcrumb::{Breadcrumb, BreadcrumbItem},
     button::{Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup},
+    carousel::{
+        Carousel, CarouselContent, CarouselItem, CarouselPagination, CarouselPaginationItem,
+        CarouselState,
+    },
     chart::{AreaChart, BarChart, CandlestickChart, LineChart, PieChart},
     checkbox::Checkbox,
     clipboard::Clipboard,
@@ -50,12 +54,17 @@ use gpui_component::{
     color_picker::{ColorPicker, ColorPickerState},
     description_list::DescriptionList,
     dialog::{DialogClose, DialogFooter, DialogTitle},
+    empty::{
+        Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
+        EmptyTitle,
+    },
     form::{self, Field},
     group_box::{GroupBox, GroupBoxVariants},
     h_flex,
     input::{
-        Input, InputState, NumberInput, NumberInputEvent, OtpInput, OtpState, StepAction, Textarea,
-        TextareaState,
+        Editor, EditorState, Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment,
+        InputGroupButton, InputGroupText, InputGroupTextarea, InputState, NumberInput,
+        NumberInputEvent, OtpInput, OtpState, StepAction, Textarea, TextareaState,
     },
     kbd::Kbd,
     label::Label,
@@ -132,6 +141,66 @@ const TAB_OVERLAYS: usize = 6;
 const TAB_CHARTS: usize = 7;
 const TAB_ICONS: usize = 8;
 const TAB_THEME_MAP: usize = 9;
+
+// ---------------------------------------------------------------------------
+// Sample content (Carousel slides, code editor, Markdown)
+// ---------------------------------------------------------------------------
+
+/// The three Carousel slides of the Layout tab, as (title, caption).
+const CAROUSEL_SLIDES: &[(&str, &str)] = &[
+    (
+        "Native geometry",
+        "Control heights, corner radii and line widths come from the platform theme.",
+    ),
+    (
+        "Native colors",
+        "Every ThemeColor field is derived from the resolved native palette.",
+    ),
+    (
+        "Native icons",
+        "IconRole maps to the desktop icon theme; sets are never mixed.",
+    ),
+];
+
+/// The source the code editor holds — the connector's own install sequence.
+const EDITOR_SAMPLE: &str = r#"use gpui::App;
+use native_theme::SystemTheme;
+use native_theme_gpui::{ColorMode, apply_system_theme};
+
+/// Install the desktop's colors, fonts and geometry into gpui-component.
+fn install(cx: &mut App) -> native_theme::Result<()> {
+    let system = SystemTheme::from_system()?;
+    let mode = match system.mode.is_dark() {
+        true => ColorMode::Dark,
+        false => ColorMode::Light,
+    };
+    let resolved = system.pick(mode);
+    println!("{} {}px", resolved.defaults.font.family, resolved.defaults.font.size);
+    apply_system_theme(&system, cx);
+    Ok(())
+}
+"#;
+
+/// The Markdown source rendered by the `TextView` of the Typography tab.
+const MARKDOWN_SAMPLE: &str = r#"## What native-theme maps
+
+The connector copies the resolved desktop theme into gpui-component's `Theme`;
+see the [project README](https://github.com/tiborgats/native-theme) for the
+full list.
+
+```rust
+apply_system_theme(&system, cx);
+```
+
+> A preset is never mixed with another platform's: a Linux desktop gets a
+> Linux preset, with the matching icon set.
+
+| ResolvedTheme | gpui-component Theme |
+| --- | --- |
+| `defaults.border.corner_radius` | `radius` |
+| `defaults.mono_font.family` | `mono_font_family` |
+| `input.min_height` | `geometry::input` height |
+"#;
 
 // ---------------------------------------------------------------------------
 // Tooltip helpers
@@ -984,6 +1053,9 @@ struct Showcase {
 
     // Inputs tab
     input_state: Entity<InputState>,
+    input_group_state: Entity<InputState>,
+    input_group_button_state: Entity<InputState>,
+    input_group_textarea_state: Entity<TextareaState>,
     number_input_state: Entity<InputState>,
     slider_state: Entity<SliderState>,
     otp_state: Entity<OtpState>,
@@ -999,6 +1071,10 @@ struct Showcase {
 
     // Layout tab
     collapsible_open: bool,
+    carousel_state: Entity<CarouselState>,
+
+    // Typography tab
+    editor_state: Entity<EditorState>,
 
     // Data tab
     table_state: Entity<TableState<SampleTableDelegate>>,
@@ -1330,6 +1406,21 @@ impl Showcase {
             state
         });
 
+        let input_group_state = cx.new(|cx| {
+            let mut state = InputState::new(window, cx);
+            state.set_placeholder("Search the palette…", window, cx);
+            state
+        });
+
+        let input_group_button_state =
+            cx.new(|cx| InputState::new(window, cx).default_value("native-theme-gpui"));
+
+        let input_group_textarea_state = cx.new(|cx| {
+            let mut state = TextareaState::new(window, cx).auto_grow(3, 8);
+            state.set_placeholder("Describe what the theme should look like…", window, cx);
+            state
+        });
+
         let number_input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
             state.set_placeholder("0", window, cx);
@@ -1615,6 +1706,14 @@ impl Showcase {
             ])
         });
 
+        let carousel_state = cx.new(|_cx| CarouselState::new(CAROUSEL_SLIDES.len()));
+
+        let editor_state = cx.new(|cx| {
+            EditorState::new(window, cx)
+                .language("rust")
+                .default_value(EDITOR_SAMPLE)
+        });
+
         // Set up application menus for AppMenuBar
         cx.set_menus(vec![
             Menu {
@@ -1693,6 +1792,9 @@ impl Showcase {
             original_mono_font,
             active_tab: TAB_BUTTONS,
             input_state,
+            input_group_state,
+            input_group_button_state,
+            input_group_textarea_state,
             number_input_state,
             slider_state,
             otp_state,
@@ -1706,6 +1808,8 @@ impl Showcase {
             radio_index: Some(0),
             slider_value: 65.0,
             collapsible_open: true,
+            carousel_state,
+            editor_state,
             table_state,
             list_state,
             tree_state,
@@ -2557,6 +2661,69 @@ impl Showcase {
                         ],
                     )),
             )
+            // InputGroup
+            .child(section("InputGroup"))
+            .child(
+                div()
+                    .id("tt-input-group")
+                    .child(
+                        v_flex()
+                            .gap_3()
+                            .w(px(360.0))
+                            .child(refined(
+                                InputGroup::new("input-group-inline")
+                                    .input(Input::new(&self.input_group_state))
+                                    .addon(
+                                        InputGroupAddon::new("input-group-inline-addon")
+                                            .child(Icon::new(IconName::Search)),
+                                    ),
+                                native_geometry(cx, geometry::input).as_ref(),
+                            ))
+                            .child(refined(
+                                InputGroup::new("input-group-trailing")
+                                    .input(Input::new(&self.input_group_button_state))
+                                    .addon(
+                                        InputGroupAddon::new("input-group-trailing-addon")
+                                            .align(InputGroupAddonAlignment::InlineEnd)
+                                            .child(
+                                                InputGroupButton::new("input-group-copy")
+                                                    .icon(IconName::Copy)
+                                                    .label("Copy"),
+                                            ),
+                                    ),
+                                native_geometry(cx, geometry::input).as_ref(),
+                            ))
+                            .child(
+                                InputGroup::new("input-group-textarea")
+                                    .input(InputGroupTextarea::new(
+                                        &self.input_group_textarea_state,
+                                    ))
+                                    .addon(
+                                        InputGroupAddon::new("input-group-textarea-addon")
+                                            .align(InputGroupAddonAlignment::BlockEnd)
+                                            .child(
+                                                InputGroupText::new().child("Markdown supported"),
+                                            ),
+                                    ),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "InputGroup",
+                        &[
+                            ("border", "input", t.input),
+                            ("focus ring", "ring", t.ring),
+                            ("addon text", "muted_foreground", t.muted_foreground),
+                            ("addon button hover", "muted", t.muted),
+                        ],
+                        &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                        &[
+                            ("geometry", "geometry::input on the frame: input.min_height (single-line groups only), border.corner_radius, line_width, input.font"),
+                            ("addon padding", "inner (Tier U)"),
+                            ("addon button", "internal ghost button; hover fill is muted, not the accent pair"),
+                        ],
+                    )),
+            )
             // Number Input
             .child(section("Number Input"))
             .child(
@@ -3220,6 +3387,51 @@ impl Showcase {
                         &[("animation", "hardcoded pulse")],
                     )),
             )
+            // Empty state
+            .child(section("Empty"))
+            .child(
+                div()
+                    .id("tt-empty")
+                    .child(
+                        Empty::new()
+                            .w(px(360.0))
+                            .header(
+                                EmptyHeader::new()
+                                    .media(
+                                        EmptyMedia::new()
+                                            .with_variant(EmptyMediaVariant::Icon)
+                                            .child(Icon::new(IconName::Inbox)),
+                                    )
+                                    .title(EmptyTitle::new().child("No notifications"))
+                                    .description(EmptyDescription::new().child(
+                                        "Anything the application reports shows up here.",
+                                    )),
+                            )
+                            .content(
+                                EmptyContent::new().child(
+                                    Button::new("empty-refresh").label("Refresh").outline(),
+                                ),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Empty",
+                        &[
+                            ("border", "border", t.border),
+                            ("media bg", "muted", t.muted),
+                            ("title", "foreground", t.foreground),
+                            ("description", "muted_foreground", t.muted_foreground),
+                        ],
+                        &[(
+                            "border-radius",
+                            format!("radius_tokens().xl: {}px", t.radius_tokens().xl.as_f32()),
+                        )],
+                        &[
+                            ("border style", "hardcoded dashed"),
+                            ("media frame", "hardcoded 2rem square"),
+                        ],
+                    )),
+            )
             // Tags
             .child(section("Tags (7 colors + outline)"))
             .child(
@@ -3683,6 +3895,70 @@ impl Showcase {
                         &[],
                     )),
             )
+            // Code editor
+            .child(section("Code editor (Rust)"))
+            .child(
+                div()
+                    .id("tt-code-editor")
+                    .child(Editor::new(&self.editor_state).h(px(240.0)))
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Editor",
+                        &[
+                            ("border", "input", t.input),
+                            ("text", "foreground", t.foreground),
+                            ("caret", "caret", t.caret),
+                            ("selection", "selection", t.selection),
+                            ("line numbers", "muted_foreground", t.muted_foreground),
+                        ],
+                        &[
+                            (
+                                "mono font",
+                                format!("mono_font_family: {}", t.mono_font_family),
+                            ),
+                            (
+                                "mono size",
+                                format!("mono_font_size: {}px", t.mono_font_size.as_f32()),
+                            ),
+                        ],
+                        &[
+                            ("bg", "highlight_theme's editor_background, else input_background()"),
+                            ("syntax colors", "highlight_theme: default_light / default_dark per color mode; the grammar comes from the tree-sitter-rust dev feature"),
+                            ("line height", "hardcoded 1.5 × mono_font_size"),
+                            ("line numbers / search", "on by default"),
+                        ],
+                    )),
+            )
+            // Markdown
+            .child(section("Markdown"))
+            .child(
+                div()
+                    .id("tt-markdown")
+                    .child(TextView::markdown("markdown-sample", MARKDOWN_SAMPLE).selectable(true))
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Markdown (TextView)",
+                        &[
+                            ("text", "foreground", t.foreground),
+                            ("link", "link", t.link),
+                            ("code block bg", "muted", t.muted),
+                            ("inline code bg", "accent", t.accent),
+                            ("table border", "border", t.border),
+                            ("table head", "table_head", t.table_head),
+                        ],
+                        &[
+                            (
+                                "border-radius",
+                                format!("radius: {}px", t.radius.as_f32()),
+                            ),
+                            (
+                                "mono font",
+                                format!("mono_font_family: {}", t.mono_font_family),
+                            ),
+                        ],
+                        &[("heading sizes", "derived from the base font size")],
+                    )),
+            )
     }
 
     // -----------------------------------------------------------------------
@@ -3984,6 +4260,69 @@ impl Showcase {
                         ],
                         &[],
                         &[("animation", "hardcoded slide")],
+                    )),
+            )
+            // Carousel
+            .child(section("Carousel"))
+            .child(
+                div()
+                    .id("tt-carousel")
+                    .child(
+                        Carousel::new("carousel", &self.carousel_state)
+                            .w(px(360.0))
+                            .child(
+                                CarouselContent::new(&self.carousel_state)
+                                    .h(px(120.0))
+                                    .children(CAROUSEL_SLIDES.iter().enumerate().map(
+                                        |(ix, (title, body))| {
+                                            CarouselItem::new(
+                                                ("carousel-slide", ix),
+                                                ix,
+                                                &self.carousel_state,
+                                            )
+                                            .child(
+                                                v_flex()
+                                                    .size_full()
+                                                    .justify_center()
+                                                    .gap_1()
+                                                    .p_4()
+                                                    .rounded(t.radius)
+                                                    .bg(t.muted)
+                                                    .child(Label::new(*title).font_semibold())
+                                                    .child(
+                                                        Label::new(*body)
+                                                            .text_sm()
+                                                            .text_color(t.muted_foreground),
+                                                    ),
+                                            )
+                                        },
+                                    )),
+                            )
+                            .child(CarouselPagination::new().children(
+                                (0..CAROUSEL_SLIDES.len()).map(|ix| {
+                                    CarouselPaginationItem::new(
+                                        ("carousel-page", ix),
+                                        ix,
+                                        &self.carousel_state,
+                                    )
+                                    .child(SharedString::from((ix + 1).to_string()))
+                                }),
+                            )),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Carousel",
+                        &[
+                            ("slide bg", "muted", t.muted),
+                            ("slide text", "foreground", t.foreground),
+                            ("slide caption", "muted_foreground", t.muted_foreground),
+                            ("focus ring", "ring", t.ring),
+                        ],
+                        &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                        &[
+                            ("snap motion", "Theme::motion spring_move; ResolvedTheme has no motion field"),
+                            ("reduced motion", "gpui's App::reduce_motion, forwarded by apply_system_theme — the snap becomes instant"),
+                        ],
                     )),
             )
             // GroupBox variants
