@@ -966,20 +966,32 @@ mod tests {
     }
 
     #[test]
-    fn accent_foreground_uses_theme_value() {
+    fn accent_foreground_comes_from_the_highlight_pairs() {
         let resolved = test_resolved();
         let tc = to_theme_color(&resolved, true, false);
 
-        // accent_foreground should come from d.accent_foreground, not from fg
-        let expected = rgba_to_hsla(resolved.defaults.accent_text_color);
+        // Both are highlight *text*, each from the widget that owns it. What
+        // this fixture proves is that neither falls back to the window's
+        // foreground; it cannot tell either source from
+        // `defaults.accent_text_color`, which both used to take, because
+        // catppuccin-mocha gives all three the same white. The source itself
+        // is pinned by `accent_is_the_platforms_menu_hover_pair` (adwaita) and
+        // `sidebar_accent_is_the_sidebars_selection_pair` (windows-11 dark),
+        // on the presets where they differ.
         assert_eq!(
-            tc.accent_foreground, expected,
-            "accent_foreground should map from d.accent_text_color"
+            tc.accent_foreground,
+            rgba_to_hsla(resolved.menu.hover_text_color),
+            "accent_foreground should map from menu.hover_text_color"
         );
-        // Verify it's also used for sidebar_accent_foreground
         assert_eq!(
-            tc.sidebar_accent_foreground, expected,
-            "sidebar_accent_foreground should map from d.accent_text_color"
+            tc.sidebar_accent_foreground,
+            rgba_to_hsla(resolved.sidebar.selection_text_color),
+            "sidebar_accent_foreground should map from sidebar.selection_text_color"
+        );
+        assert_ne!(
+            tc.accent_foreground,
+            rgba_to_hsla(resolved.defaults.text_color),
+            "highlight text must not fall back to the window foreground"
         );
     }
 
@@ -1450,11 +1462,11 @@ mod tests {
         );
         assert_eq!(
             tc.sidebar_accent,
-            rgba_to_hsla(resolved.defaults.accent_color)
+            rgba_to_hsla(resolved.sidebar.selection_background)
         );
         assert_eq!(
             tc.sidebar_accent_foreground,
-            rgba_to_hsla(resolved.defaults.accent_text_color)
+            rgba_to_hsla(resolved.sidebar.selection_text_color)
         );
         assert_eq!(
             tc.sidebar_border,

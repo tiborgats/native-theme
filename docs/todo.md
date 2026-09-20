@@ -193,6 +193,52 @@
       `From`. The connector-side follow-up is listed above.
 - [ ] public base-palette fields on `ThemeConfigColors` (`red` … `cyan_light`, `schema.rs:657-668`)
 
+#### native-theme-iced: the same audit, not yet done (found 2026-09-20)
+
+The gpui connector's state tokens were audited against the native field of the
+widget that reads them, and `accent` was wrong. The repository's own
+`connector-parity-checker` then found the same defect class in the iced
+connector, unfixed. Its own release; the citations are here so the work is not
+re-derived.
+
+- [ ] Menu/pick-list highlight takes the platform accent: `Palette.primary`
+      (`palette.rs:41`) feeds `overlay/menu.rs:658` `selected_background`,
+      where the platform's field is `menu.hover_background`. Exactly the gpui
+      defect. `primary.strong` is also read by focused-input border, radio dot,
+      pick-list hover border, checkbox hover fill and scroll-thumb hover, so
+      the fix is an explicit `menu::Style`, not an override of the token.
+- [ ] `button.background_color` is written into `secondary.base.color`
+      (`extended.rs:109`), which iced reads as *placeholder text*
+      (`text_input.rs:1769`, `text_editor.rs:1476`, `pick_list.rs:910`). On
+      adwaita light that is `#e8e8e8` on a `#fafafb` field — about 1.15:1, so
+      the placeholder is invisible. `input.placeholder_color` exists and is
+      never read.
+- [ ] Hovered/dragged scrollbar thumb takes the accent
+      (`scrollable.rs:2385, 2414`); `scrollbar.thumb_hover_color` and
+      `thumb_active_color` exist and are never read.
+- [ ] `defaults.surface_color` drives nine unrelated roles
+      (`extended.rs:111`): scrollbar rail, unchecked switch track, menu panel,
+      closed pick-list, disabled input, rounded box, button hover, rule,
+      several checkbox states. Each has its own native field. An "off" switch
+      is currently indistinguishable from the page on adwaita.
+- [ ] Text selection takes a 40% accent tint (`text_input.rs:1771`) rather
+      than `input.selection_background`; the connector's own
+      `selection_color()` helper is never used in `to_theme`.
+- [ ] Borders, dividers, rails and tracks come from a lightness deviation of
+      the window background, not from `defaults.border.color` /
+      `input.border.color` / `checkbox.unchecked_border_color`; the
+      connector's `border_color()` helper is never written into the theme.
+- [ ] `apply_overrides` writes only `.base` entries, so `.weak` / `.strong`
+      keep values generated from the unoverridden palette: a button painted
+      with the platform's surface jumps to an unrelated tone on hover, and
+      `button.hover_background` is never read.
+- [ ] `to_theme` takes no `AccessibilityPreferences` (`iced/src/lib.rs:113`),
+      so text scaling, reduced transparency and reduced motion never reach an
+      iced application at all.
+- [ ] The iced connector declares no `[features]`, so a consumer depending on
+      it alone gets `native_theme::icons::load_icon` returning `None` for every
+      icon; the gpui connector forwards the four icon features.
+
 #### Research
 
 - [ ] Scrollbar thumb radius per platform: platform-facts records none, so the
