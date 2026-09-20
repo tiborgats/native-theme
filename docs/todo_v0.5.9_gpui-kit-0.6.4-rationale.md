@@ -285,6 +285,37 @@ lever §2.10 weighs for ghost buttons, and with two widgets now needing it the
 connector ships it (E12). Found by the maintainer hovering the widget, which no
 test and no earlier pass of this review did.
 
+**(n) The audit the maintainer's finding prompted: every state token against
+the native field of the widget that reads it.** §1.4m is one instance of a
+class — a token fed from a neighbouring meaning — so the class was searched:
+for every upstream read of a hover, pressed, selected or checked colour, the
+value the connector gives that token was compared, over every preset and both
+modes, with native-theme's own field for that widget. `list_hover`,
+`list_active`, `selection`, `primary` (checkbox and switch checked) and the
+sidebar background pair agree everywhere. Three do not:
+
+- `accent` / `accent_foreground`. Upstream defines the token as "hover
+  background on MenuItem, ListItem, etc." (`theme/schema.rs:254-255`) and reads
+  it in menu rows, the command palette, completion and code-action menus,
+  searchable lists, calendar days, `Toggle` and table cells. The connector fed
+  it `defaults.accent_color`. platform-facts §2.6 records the selection colour
+  for a hovered menu row only on KDE and macOS; on adwaita the token was
+  `#3584e4` where the platform says `#e8e8e8`, on windows-11 `#0078d4` where it
+  says `#0000000a`, and the text flipped to white on both. A connector bug,
+  older than this release, invisible on the maintainer's desktop because the
+  two values are equal there. Fixed (E20).
+- `sidebar_accent_foreground` differed from `sidebar.selection_text_color` on
+  windows-11 dark. Fixed with the same change.
+- `TabVariant::Outline` hovers with the *button* hover token, and `Toggle`
+  reads `accent` for its pressed state, which after E20 is the subtle fill on
+  Adwaita, Windows 11 and Material where those platforms want the accent. One
+  token, two meanings, seven menu-family readers against one: Tier U, both
+  recorded in `docs/todo.md`.
+
+Widgets for which native-theme has a hover field but upstream paints no hover
+at all (`Checkbox`, `Switch`, `Accordion`, the `Select` trigger) have nothing
+to receive it.
+
 **(j) Nothing guards `Theme`'s own shape.** The three `tile_*` fields were
 `Theme` fields the connector never set (§1.2). They arrived upstream, sat
 through 0.6.0 and 0.6.1 at upstream's defaults while the connector overwrote
@@ -588,6 +619,7 @@ crate already uses three times.
 | E16 | `geometry::menu_item` documentation corrected: no upstream receiver exists; the function stays (§1.4i). |
 | E17 | One test names all 20 `Theme` fields in an exhaustive destructuring, so a field added or removed upstream stops the build (§2.12). |
 | E18 | `geometry::dialog` keeps `max_h`, but the documentation stops claiming it reaches upstream's `Dialog`: 0.6.4 overrides it with a viewport-derived value after the refinement (§1.4k). Tier U, with a `Dialog::max_h` prop as the upstream proposal. |
+| E20 | `accent` / `accent_foreground` take the platform's menu hover pair and `sidebar_accent*` the sidebar's selection pair (§1.4n). No change on KDE or macOS; on Adwaita, Windows 11 and Material the item highlight becomes the platform's subtle fill. `Toggle`'s pressed state shares the token and is recorded as Tier U. |
 | E19 | The lockfile also takes `cargo update -p rustls` (0.23.43 → 0.23.45). `RUSTSEC-2026-0285` predates this release, but `cargo audit` is a hard CI job, so without it the release commit cannot be green (§1.3). |
 
 ---

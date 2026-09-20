@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- native-theme-gpui: gpui-component's `accent` / `accent_foreground` now take the platform's **menu hover pair** (`menu.hover_background` / `menu.hover_text_color`) instead of the platform's accent colour, and `sidebar_accent*` the sidebar's own selection pair. Upstream defines `accent` as the item highlight ("hover background on MenuItem, ListItem, etc."), and only KDE and macOS highlight a hovered menu row with the selection colour; Adwaita and Windows 11 use a subtle fill with unchanged text. Nothing moves on KDE or macOS. On Adwaita, Windows 11 and Material, hovered menu, completion, command-palette and calendar items stop turning saturated accent; a pressed `Toggle`, which reads the same token, turns subtle with them (upstream needs a separate token, recorded in `docs/todo.md`).
 - native-theme-gpui requires **gpui-component / gpui-base 0.6.4** and **gpui-pre 0.3.5**; older GPUI Kit versions are not supported. gpui-component 0.6.2 removed `ThemeColor::tiles` in a patch release, so the connector cannot serve both sides of it. An application that pins gpui-component or gpui-pre below these floors keeps resolving to native-theme-gpui 0.5.8, which still builds there.
 - `ThemeColor` mapping 139 → 138 fields and the `ThemeConfig` colour export 127 → 126: `tiles` no longer exists upstream.
 

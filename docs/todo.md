@@ -128,6 +128,17 @@
       accent pair, which native themes map to the platform's selection
       colours, so a hovered ghost button becomes a selection-coloured pill;
       `button/button.rs:1125-1132, 1141`)
+- [ ] `Toggle` needs a token of its own for the pressed state: it reads
+      `tokens.accent` (`button/toggle.rs:155, 202`), the item highlight of
+      menus and lists. Since v0.5.9 the connector feeds that token the
+      platform's menu hover pair, which on Adwaita, Windows 11 and Material is
+      a subtle fill, while those platforms' `segmented_control.active_background`
+      is the accent colour. KDE and macOS are unaffected (both are the
+      selection colour).
+- [ ] `TabVariant::Outline` hovers with `tokens.secondary_hover`, the *button*
+      hover (`tab/tab.rs:187`); every preset has a different
+      `tab.hover_background` (Breeze: `#dee0e2` against the button's
+      `#93cee9`). The default `Tab` variant has no hover fill and is unaffected.
 - [ ] `InputGroupButton` should hover with the platform's button hover, not
       `muted`: `render_in_group` hardcodes `cx.theme().muted` (halved in dark)
       for an in-group addon button (`input/group.rs:544-583`), which is the

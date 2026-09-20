@@ -6,7 +6,7 @@ Target toolkit: **gpui-component 0.6.4**, **gpui-base 0.6.4**, GPUI as the
 Older GPUI Kit versions are not supported.
 Companion rationale:
 [`todo_v0.5.9_gpui-kit-0.6.4-rationale.md`](todo_v0.5.9_gpui-kit-0.6.4-rationale.md)
-(decisions E1–E19)
+(decisions E1–E20)
 Companion plan:
 [`todo_v0.5.9_gpui-kit-0.6.4-plan.md`](todo_v0.5.9_gpui-kit-0.6.4-plan.md)
 
@@ -39,7 +39,9 @@ unchanged. "§N (0.5.8)" refers to that document.
   in §0.2 (0.5.8). The repository hooks apply to test code under `src/`;
   `tests/` files may use `expect` in test functions.
 - One public item is added: the module `variants` with `ghost_button` (§8c).
-  Nothing is removed or re-typed. The one behaviour change is §5.
+  Nothing is removed or re-typed. Two behaviour changes: reduced motion (§5)
+  and the source of the `accent` and `sidebar_accent` pairs (rationale §1.4n,
+  E20; two tests in `src/colors.rs` on the presets where old and new differ).
 - No release action (tag, upload, GitHub release) without the maintainer's
   explicit go.
 
@@ -611,7 +613,7 @@ listed so the plan can cite them:
 ## 10 -- Acceptance
 
 - [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings` clean on the 0.6.4 lockfile.
-- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire, the two §8c variant tests and the six §6 tests: 196 in the library and 6 in `tests/seams.rs`.
+- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire, the two §8c variant tests and the six §6 tests: 198 in the library and 6 in `tests/seams.rs`.
 - [ ] `cargo +1.95.0 check -p native-theme-gpui --lib --locked` passes.
 - [ ] `cargo audit` exits 0 (the six allowed warnings for unmaintained crates remain; `RUSTSEC-2026-0285` is gone, E19).
 - [ ] `grep -rn 'max_h' connectors/native-theme-gpui/src/geometry.rs` still finds the dialog line, and its doc comment says the value does not reach upstream's `Dialog` (E18).

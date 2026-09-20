@@ -253,6 +253,10 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.foreground = c.fg;
     // `accent` is upstream's item highlight, not the platform's accent colour
     // (gpui-component `src/theme/schema.rs:254-255`); see `ResolvedColors`.
+    // `Toggle` reads the same token for its pressed state
+    // (`src/button/toggle.rs:155, 202`), where Adwaita, Windows 11 and Material
+    // would want `segmented_control.active_background`; the menu family has
+    // seven readers to its one, and no value serves both. Tier U.
     tc.accent = c.menu_hover_bg;
     tc.accent_foreground = c.menu_hover_fg;
     tc.border = c.border;
