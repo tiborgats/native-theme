@@ -171,8 +171,10 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Dialog` (`src/dialog/dialog.rs:538-548, 617` → `:621`); width through
-/// [`dialog_max_width`] and `Dialog::max_w`.
+/// `Dialog` (`src/dialog/dialog.rs:538-548, 616-617` → `:621`); width through
+/// [`dialog_max_width`] and `Dialog::max_w`. The radius is the dialog's own
+/// (`dialog.border.corner_radius`), which upstream would otherwise take from
+/// `radius_lg` (`:616`); the two differ on Adwaita.
 ///
 /// `max_h` no longer reaches upstream's `Dialog`: 0.6.4 clamps it to what is
 /// left of the viewport *after* applying this style (`:535`, applied at
@@ -188,6 +190,22 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
         .py(px(d.border.padding_vertical))
         .min_h(px(d.min_height))
         .max_h(px(d.max_height))
+        .rounded(px(d.border.corner_radius.max(0.0)))
+}
+
+/// `InputGroupButton` (`src/input/group.rs:590-593` → `:596`): the platform's
+/// button radius, and nothing else.
+///
+/// gpui-component scales a control's radius with its size — an in-group
+/// button is `XSmall` and gets `radius / 2`, `Button` does the same for its
+/// small and large roundings (`src/button/button.rs:593-595`) — where
+/// native-theme records one radius per widget, whatever its size. [`button`]
+/// already restores it for a `Button`; this does the same for the button
+/// nested in a field, whose height, width and padding the group sets so that
+/// it fits, and which [`button`]'s own height would push out of the field.
+#[must_use]
+pub fn input_group_button(n: Native<'_>) -> StyleRefinement {
+    StyleRefinement::default().rounded(px(n.resolved.button.border.corner_radius.max(0.0)))
 }
 
 /// `DialogFooter` (`src/dialog/footer.rs:52` → `:56`).
@@ -553,6 +571,10 @@ mod tests {
             assert_eq!(out.padding.top, def(d.border.padding_vertical));
             assert_eq!(out.min_size.height, len(d.min_height));
             assert_eq!(out.max_size.height, len(d.max_height));
+            assert_eq!(
+                out.corner_radii.top_left,
+                abs(d.border.corner_radius.max(0.0))
+            );
             assert_eq!(dialog_footer(n).gap.width, def(d.button_gap));
             assert_eq!(dialog_footer(n).gap.height, def(d.button_gap));
             assert_text(&dialog_title(n), &d.title_font, s);
@@ -560,6 +582,42 @@ mod tests {
             assert_eq!(dialog_max_width(n), px(d.max_width));
             assert_text(&table(n), &r.list.item_font, s);
             assert_text(&title_bar(n), &r.window.title_bar_font, s);
+        });
+    }
+
+    /// The dialog's radius is its own field, not `radius_lg`: adwaita is where
+    /// the two differ (18 against 15), so it is the discriminating input.
+    #[test]
+    fn dialog_radius_is_the_dialogs_own() {
+        let r = resolved("adwaita", ColorMode::Light);
+        let prefs = scaled(1.0);
+        let n = Native {
+            resolved: &r,
+            accessibility: &prefs,
+        };
+        assert_ne!(
+            r.dialog.border.corner_radius, r.defaults.border.corner_radius_lg,
+            "adwaita no longer discriminates; pick another preset"
+        );
+        assert_eq!(
+            dialog(n).corner_radii.top_left,
+            abs(r.dialog.border.corner_radius)
+        );
+    }
+
+    /// A button nested in an input group keeps the platform's button radius;
+    /// it sets nothing else, because the group sizes it to fit the field.
+    #[test]
+    fn input_group_button_carries_only_the_button_radius() {
+        for_each_case(|r, _s, n| {
+            let out = input_group_button(n);
+            assert_eq!(
+                out.corner_radii.top_left,
+                abs(r.button.border.corner_radius.max(0.0))
+            );
+            assert_eq!(out.size.height, None);
+            assert_eq!(out.min_size.width, None);
+            assert_eq!(out.padding.left, None);
         });
     }
 

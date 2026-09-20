@@ -312,6 +312,22 @@ fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
 
 /// Applies a geometry refinement when one is available; the widget keeps
 /// upstream's geometry otherwise.
+/// `.native(cx, geometry::button)`: the builder's refinement when the native
+/// theme is installed, nothing otherwise. Called straight after the
+/// constructor, so any style the call site sets afterwards still wins.
+///
+/// Every widget in this showcase that has a `geometry` builder takes it, with
+/// three kinds of exception, each marked where it occurs: the "Button Sizes"
+/// row, which exists to show upstream's own size scale; `ButtonGroup` and
+/// `DropdownButton` children, whose joined corners the group manages; and
+/// widgets that are not `Styled` (`OtpInput`).
+trait NativeStyled: Styled + Sized {
+    fn native(self, cx: &App, build: fn(Native<'_>) -> StyleRefinement) -> Self {
+        refined(self, native_geometry(cx, build).as_ref())
+    }
+}
+impl<W: Styled> NativeStyled for W {}
+
 fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> W {
     match style {
         Some(s) => widget.refine_style(s),
@@ -1004,11 +1020,12 @@ impl ListDelegate for SampleListDelegate {
         &mut self,
         ix: gpui_component::IndexPath,
         _window: &mut Window,
-        _cx: &mut Context<ListState<Self>>,
+        cx: &mut Context<ListState<Self>>,
     ) -> Option<Self::Item> {
         let label = self.items.get(ix.row)?.clone();
         Some(
             ListItem::new(("list-item", ix.row))
+                .native(cx, geometry::list_item)
                 .child(Label::new(label).text_sm())
                 .selected(self.selected == Some(ix.row)),
         )
@@ -1058,6 +1075,10 @@ struct Showcase {
     input_group_button_state: Entity<InputState>,
     input_group_textarea_state: Entity<TextareaState>,
     number_input_state: Entity<InputState>,
+    /// The Form section's two fields. Held here, not built in `render`: a
+    /// state created per frame loses whatever was typed into it.
+    form_name_state: Entity<InputState>,
+    form_email_state: Entity<InputState>,
     slider_state: Entity<SliderState>,
     otp_state: Entity<OtpState>,
     color_picker_state: Entity<ColorPickerState>,
@@ -1419,6 +1440,17 @@ impl Showcase {
         let input_group_textarea_state = cx.new(|cx| {
             let mut state = TextareaState::new(window, cx).auto_grow(3, 8);
             state.set_placeholder("Describe what the theme should look like…", window, cx);
+            state
+        });
+
+        let form_name_state = cx.new(|cx| {
+            let mut state = InputState::new(window, cx);
+            state.set_placeholder("Enter your name", window, cx);
+            state
+        });
+        let form_email_state = cx.new(|cx| {
+            let mut state = InputState::new(window, cx);
+            state.set_placeholder("you@example.com", window, cx);
             state
         });
 
@@ -1797,6 +1829,8 @@ impl Showcase {
             input_group_button_state,
             input_group_textarea_state,
             number_input_state,
+            form_name_state,
+            form_email_state,
             slider_state,
             otp_state,
             color_picker_state,
@@ -2437,18 +2471,18 @@ impl Showcase {
                         h_flex()
                             .gap_2()
                             .child(
-                                Button::new("d-pri")
+                                Button::new("d-pri").native(cx, geometry::button)
                                     .label("Disabled Primary")
                                     .primary()
                                     .disabled(true),
                             )
                             .child(
-                                Button::new("d-sec")
+                                Button::new("d-sec").native(cx, geometry::button)
                                     .label("Disabled Secondary")
                                     .disabled(true),
                             )
                             .child(
-                                Button::new("d-dng")
+                                Button::new("d-dng").native(cx, geometry::button)
                                     .label("Disabled Danger")
                                     .danger()
                                     .disabled(true),
@@ -2472,7 +2506,7 @@ impl Showcase {
                     .id("tt-btn-loading")
                     .child(
                         h_flex().gap_2().child(
-                            Button::new("l-pri")
+                            Button::new("l-pri").native(cx, geometry::button)
                                 .label("Loading...")
                                 .primary()
                                 .loading(true),
@@ -2498,18 +2532,18 @@ impl Showcase {
                         h_flex()
                             .gap_2()
                             .child(
-                                Button::new("bi-save")
+                                Button::new("bi-save").native(cx, geometry::button)
                                     .label("Save")
                                     .primary()
                                     .icon(IconName::Check),
                             )
                             .child(
-                                Button::new("bi-search")
+                                Button::new("bi-search").native(cx, geometry::button)
                                     .label("Search")
                                     .icon(IconName::Search),
                             )
                             .child(
-                                Button::new("bi-del")
+                                Button::new("bi-del").native(cx, geometry::button)
                                     .label("Delete")
                                     .danger()
                                     .icon(IconName::Delete),
@@ -2722,6 +2756,7 @@ impl Showcase {
                                                 // around it hovers blue. A custom variant
                                                 // makes upstream skip that repaint.
                                                 InputGroupButton::new("input-group-copy")
+                                                    .native(cx, geometry::input_group_button)
                                                     .custom(variants::ghost_button(cx))
                                                     .icon(IconName::Copy)
                                                     .label("Copy")
@@ -2787,6 +2822,7 @@ impl Showcase {
                     .id("tt-number-input")
                     .child(
                         NumberInput::new(&self.number_input_state)
+                            .native(cx, geometry::input)
                             .placeholder("Enter a number")
                             .with_size(Size::Medium)
                             .w(px(200.0)),
@@ -3152,8 +3188,9 @@ impl Showcase {
                     .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
                     .child(Tree::new(
                         &self.tree_state,
-                        |ix, entry, selected, _w, _cx| {
+                        |ix, entry, selected, _w, cx| {
                             ListItem::new(("tree-item", ix))
+                                .native(cx, geometry::list_item)
                                 .child(Label::new(entry.item().label.clone()).text_sm())
                                 .selected(selected)
                         },
@@ -3465,7 +3502,7 @@ impl Showcase {
                             )
                             .content(
                                 EmptyContent::new().child(
-                                    Button::new("empty-refresh").label("Refresh").outline(),
+                                    Button::new("empty-refresh").native(cx, geometry::button).label("Refresh").outline(),
                                 ),
                             ),
                     )
@@ -3529,17 +3566,17 @@ impl Showcase {
                             .child(
                                 Badge::new()
                                     .count(5)
-                                    .child(Button::new("badge-1").label("Messages")),
+                                    .child(Button::new("badge-1").native(cx, geometry::button).label("Messages")),
                             )
                             .child(
                                 Badge::new()
                                     .count(99)
-                                    .child(Button::new("badge-2").label("Notifications")),
+                                    .child(Button::new("badge-2").native(cx, geometry::button).label("Notifications")),
                             )
                             .child(
                                 Badge::new()
                                     .dot()
-                                    .child(Button::new("badge-3").label("Updates")),
+                                    .child(Button::new("badge-3").native(cx, geometry::button).label("Updates")),
                             ),
                     )
                     .on_hover(self.hover_info(
@@ -3559,12 +3596,12 @@ impl Showcase {
                         h_flex()
                             .gap_4()
                             .child(
-                                Button::new("tooltip-1")
+                                Button::new("tooltip-1").native(cx, geometry::button)
                                     .label("Hover me")
                                     .tooltip("This is a tooltip"),
                             )
                             .child(
-                                Button::new("tooltip-2")
+                                Button::new("tooltip-2").native(cx, geometry::button)
                                     .label("With tooltip")
                                     .tooltip("Save file (Cmd+S)"),
                             ),
@@ -3589,7 +3626,7 @@ impl Showcase {
                         h_flex()
                             .gap_3()
                             .child(
-                                Button::new("notify-info")
+                                Button::new("notify-info").native(cx, geometry::button)
                                     .label("Info")
                                     .on_click(cx.listener(|_this, _ev, window, cx| {
                                         window.push_notification(
@@ -3600,7 +3637,7 @@ impl Showcase {
                                         );
                                     })),
                             )
-                            .child(Button::new("notify-success").label("Success").on_click(
+                            .child(Button::new("notify-success").native(cx, geometry::button).label("Success").on_click(
                                 cx.listener(|_this, _ev, window, cx| {
                                     window.push_notification(
                                         Notification::success("Operation completed.")
@@ -3610,7 +3647,7 @@ impl Showcase {
                                     );
                                 }),
                             ))
-                            .child(Button::new("notify-warning").label("Warning").on_click(
+                            .child(Button::new("notify-warning").native(cx, geometry::button).label("Warning").on_click(
                                 cx.listener(|_this, _ev, window, cx| {
                                     window.push_notification(
                                         Notification::warning("Careful with this action.")
@@ -3620,7 +3657,7 @@ impl Showcase {
                                     );
                                 }),
                             ))
-                            .child(Button::new("notify-error").label("Error").on_click(
+                            .child(Button::new("notify-error").native(cx, geometry::button).label("Error").on_click(
                                 cx.listener(|_this, _ev, window, cx| {
                                     window.push_notification(
                                         Notification::error("Something went wrong.")
@@ -4169,8 +4206,8 @@ impl Showcase {
                                 .child(
                                     h_flex()
                                         .gap_2()
-                                        .child(Button::new("gb-1").label("Action A"))
-                                        .child(Button::new("gb-2").label("Action B").primary()),
+                                        .child(Button::new("gb-1").native(cx, geometry::button).label("Action A"))
+                                        .child(Button::new("gb-2").native(cx, geometry::button).label("Action B").primary()),
                                 ),
                         ),
                     )
@@ -4492,22 +4529,20 @@ impl Showcase {
                     .child(
                         form::Form::horizontal()
                             .label_width(px(100.0))
-                            .child(Field::new().label("Name").required(true).child(Input::new(
-                                &cx.new(|cx| {
-                                    let mut s = InputState::new(_window, cx);
-                                    s.set_placeholder("Enter your name", _window, cx);
-                                    s
-                                }),
-                            )))
+                            .child(
+                                Field::new().label("Name").required(true).child(
+                                    Input::new(&self.form_name_state)
+                                        .native(cx, geometry::input),
+                                ),
+                            )
                             .child(
                                 Field::new()
                                     .label("Email")
                                     .description("We will never share your email.")
-                                    .child(Input::new(&cx.new(|cx| {
-                                        let mut s = InputState::new(_window, cx);
-                                        s.set_placeholder("you@example.com", _window, cx);
-                                        s
-                                    }))),
+                                    .child(
+                                        Input::new(&self.form_email_state)
+                                            .native(cx, geometry::input),
+                                    ),
                             ),
                     )
                     .on_hover(self.hover_info(
@@ -4753,6 +4788,7 @@ impl Showcase {
                             .gap_3()
                             .child(
                                 Button::new("open-sheet-right")
+                                    .native(cx, geometry::button)
                                     .label("Open Sheet (Right)")
                                     .on_click(cx.listener(|_this, _ev, window, cx| {
                                         window.open_sheet(cx, |sheet, _w, _cx| {
@@ -4762,6 +4798,7 @@ impl Showcase {
                             )
                             .child(
                                 Button::new("open-sheet-bottom")
+                                    .native(cx, geometry::button)
                                     .label("Open Sheet (Bottom)")
                                     .on_click(cx.listener(|_this, _ev, window, cx| {
                                         window.open_sheet_at(
@@ -4797,7 +4834,12 @@ impl Showcase {
                     .id("tt-popover")
                     .child(
                         Popover::new("popover-1")
-                            .trigger(Button::new("popover-trigger").label("Click for Popover"))
+                            .native(cx, geometry::popover)
+                            .trigger(
+                                Button::new("popover-trigger")
+                                    .native(cx, geometry::button)
+                                    .label("Click for Popover"),
+                            )
                             .content(|_state, _w, cx| {
                                 v_flex()
                                     .p_4()
