@@ -2687,20 +2687,28 @@ impl Showcase {
                                         InputGroupAddon::new("input-group-trailing-addon")
                                             .align(InputGroupAddonAlignment::InlineEnd)
                                             .child(
-                                                // `InputGroupButton::new` is a
-                                                // ghost button, which upstream
-                                                // then paints with a custom
-                                                // variant whose colour is
+                                                // Upstream's default, shown as
+                                                // upstream draws it: a ghost
+                                                // button repainted with a
+                                                // custom variant whose colour
+                                                // and border are
                                                 // `theme.transparent`
-                                                // (`input/group.rs:544-583`):
-                                                // no fill, no border, so it is
-                                                // indistinguishable from the
-                                                // field until hovered. A
-                                                // variant gives it the
-                                                // platform's own button
-                                                // surface instead.
+                                                // (`input/group.rs:544-583`,
+                                                // `button/button.rs:942,
+                                                // :1032`). It has no fill and
+                                                // no edge until the muted
+                                                // hover, in every theme —
+                                                // `transparent` is
+                                                // `transparent_black` in
+                                                // `Theme::from` and no config
+                                                // assigns it. A variant such
+                                                // as `.secondary()` would give
+                                                // it the platform's button
+                                                // surface, but that is the
+                                                // application's choice, not
+                                                // what this section is here to
+                                                // show.
                                                 InputGroupButton::new("input-group-copy")
-                                                    .secondary()
                                                     .icon(IconName::Copy)
                                                     .label("Copy")
                                                     .tooltip("Copy the field to the clipboard")
@@ -2754,7 +2762,7 @@ impl Showcase {
                         &[
                             ("geometry", "geometry::input on the frame: input.min_height (single-line groups only), border.corner_radius, line_width, input.font"),
                             ("addon padding", "inner (Tier U)"),
-                            ("addon button", "shown with the secondary variant: button_secondary bg, border, secondary_foreground. Upstream's default is a ghost button painted transparent inside the group (input/group.rs:544-583), invisible until its muted hover, and not the accent pair the standalone ghost button uses"),
+                            ("addon button", "upstream's default: a ghost button repainted transparent inside the group (input/group.rs:544-583), so no fill and no border until its muted hover - the same in every theme, not a native-theme artefact. Not the accent pair the standalone ghost button uses. An application picks a variant if it wants a visible surface"),
                         ],
                     )),
             )
