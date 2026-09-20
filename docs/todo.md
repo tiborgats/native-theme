@@ -193,13 +193,15 @@
       `From`. The connector-side follow-up is listed above.
 - [ ] public base-palette fields on `ThemeConfigColors` (`red` … `cyan_light`, `schema.rs:657-668`)
 
-#### native-theme-iced: the same audit, not yet done (found 2026-09-20)
+#### native-theme-iced: the same audit (found 2026-09-20, scheduled into v0.5.9)
 
 The gpui connector's state tokens were audited against the native field of the
 widget that reads them, and `accent` was wrong. The repository's own
 `connector-parity-checker` then found the same defect class in the iced
-connector, unfixed. Its own release; the citations are here so the work is not
-re-derived.
+connector. All of it is scheduled into v0.5.9 by the standing rule that a
+pre-1.0 release fixes the bugs found during it; the design is in
+`docs/todo_v0.5.9_theme-contracts-{rationale,spec}.md` and the citations stay
+here so the work is not re-derived.
 
 - [ ] Menu/pick-list highlight takes the platform accent: `Palette.primary`
       (`palette.rs:41`) feeds `overlay/menu.rs:658` `selected_background`,

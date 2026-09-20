@@ -638,7 +638,7 @@ crate already uses three times.
 
 | # | Decision |
 |---|---|
-| E1 | Release as v0.5.9, compatibility only. |
+| E1 | Release as v0.5.9. Scoped as compatibility only when written; the maintainer's standing rule — every pre-1.0 release fixes the bugs found during it — then added the theme-contract work to the same release ([`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md), C1). |
 | E2 | Floors: gpui-component / gpui-base / gpui-kit `0.6.4`, gpui-pre `0.3.5`; carets kept. `Cargo.lock` moved to the same versions. |
 | E3 | `tiles` removed from the mapping, the config export and the showcase; tripwires 138 / 126. |
 | E4 | Reduced motion: the connector undoes only its own switch, and every `false` asks gpui-base to re-read the OS (§2.4); private `Global` holding one `bool`; three new tests. |
