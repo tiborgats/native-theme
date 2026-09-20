@@ -11,7 +11,7 @@ Companion plan:
 [`todo_v0.5.9_gpui-kit-0.6.4-plan.md`](todo_v0.5.9_gpui-kit-0.6.4-plan.md)
 
 This document amends the v0.5.8 specification
-(`todo_v0.5.8_gpui-component-0.6-spec.md`); a section not mentioned here is
+(`archive/todo_v0.5.8_gpui-component-0.6-spec.md`); a section not mentioned here is
 unchanged. "§N (0.5.8)" refers to that document.
 
 ---

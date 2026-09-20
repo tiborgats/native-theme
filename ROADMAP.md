@@ -75,7 +75,7 @@ each, framed as theming flexibility:
   connector's palette repair becomes unnecessary.
 
 Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md);
-limits table: `docs/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
+limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
 
 ## Beyond v0.6
 

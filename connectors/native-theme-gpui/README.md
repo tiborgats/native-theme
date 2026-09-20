@@ -177,7 +177,7 @@ checkbox and radio indicators, switch, slider, separator thickness, splitter
 width, button icon gap, input padding, popup-menu rows; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
 setters fill, `tab/tab.rs:801-808`) is
-listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/todo_v0.5.8_gpui-component-0.6-spec.md)
+listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)
 and in the roadmap's upstream-PR list.
 
 ## How re-application works

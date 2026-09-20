@@ -82,7 +82,7 @@
 //! height, radius and text size, which `Tab`'s render writes into the same
 //! style bag the caller's setters fill (`tab/tab.rs:801-808`), stay upstream
 //! work; §14 of the v0.5.8 specification
-//! (<https://github.com/tiborgats/native-theme/blob/main/docs/todo_v0.5.8_gpui-component-0.6-spec.md>)
+//! (<https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable.
 
 #![warn(missing_docs)]

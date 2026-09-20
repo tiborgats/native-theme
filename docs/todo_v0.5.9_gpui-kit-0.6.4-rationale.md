@@ -8,7 +8,7 @@ Companion specification:
 Companion plan:
 [`todo_v0.5.9_gpui-kit-0.6.4-plan.md`](todo_v0.5.9_gpui-kit-0.6.4-plan.md)
 Predecessor: the v0.5.8 documents
-(`todo_v0.5.8_gpui-component-0.6-{rationale,spec,plan}.md`), whose decisions
+(`archive/todo_v0.5.8_gpui-component-0.6-{rationale,spec,plan}.md`), whose decisions
 D1–D43 stand unless this document says otherwise.
 
 ---
