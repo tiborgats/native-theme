@@ -663,7 +663,7 @@ Expected: no failures, and one warning from the "Visual assets" section: the ass
   2. push the branch (`scripts/pre-release.sh` refuses to run unless HEAD equals `@{u}`, and it triggers the screenshot workflow with `--ref <branch>`), then `./scripts/pre-release.sh` (screenshots + `docs/assets/PROVENANCE.toml`), commit;
   3. release commit `chore(release): v0.5.9`: rename `## [Unreleased]` to `## [0.5.9] - <date>` under a fresh empty `## [Unreleased]`, add `[0.5.9]: …/compare/v0.5.8...v0.5.9` above `CHANGELOG.md:998`; `./pre-release-check.sh` fully green on it (the asset check is hard now);
   4. fast-forward `main` and push; CI green on that commit; dispatch the dependency canary once on it; explicit go; `git tag -a v0.5.9` and `git push origin v0.5.9` by the maintainer; crates.io workflow; docs.rs; GitHub release page;
-  5. after the release: `git mv docs/todo_v0.5.9_gpui-kit-0.6.4-{rationale,spec,plan}.md docs/archive/`, fix citing paths as in Task 6, commit (the maintainer's standing rule: implemented plans are archived).
+  5. after the release: `git mv docs/todo_v0.5.9_gpui-kit-0.6.4-{rationale,spec,plan}.md docs/todo_v0.5.9_theme-contracts-{rationale,spec,plan}.md docs/archive/` — all six, since both sets are implemented in this release — fix citing paths as in Task 6, commit (the maintainer's standing rule: implemented plans are archived).
 
 **Do not perform any of 1–5.**
 
