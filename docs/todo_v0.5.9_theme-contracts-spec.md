@@ -26,7 +26,9 @@ specification assumes its state.
 4. Both connectors gain a **mapping-contract table**: every slot, the native
    field it must equal, checked over all 32 preset/mode combinations, with a
    coverage tripwire over every slot (§5).
-5. Both showcases gain self-tests (§6).
+5. Both showcases gain self-tests (§6) and show **every** widget their
+   toolkit offers an application, with a coverage test that keeps them
+   complete (§6a).
 6. Both connectors gain WCAG AA contrast invariants (§7).
 
 ### 0.2 Constraints
@@ -244,6 +246,76 @@ than draw:
 
 ---
 
+## 6a -- Complete widget coverage
+
+A showcase that omits a widget is a widget nobody has ever seen under a native
+theme. Measured 2026-09-20, both omit a great deal, and the gpui connector
+omits its own work.
+
+### 6a.1 gpui: builders the showcase never exercises
+
+**19 of the 34 `geometry` builders are never used in the showcase**, so more
+than half of the connector's own public geometry has never been looked at:
+
+`control_height`, `menu_item`, `tooltip`, `status_bar`, `dialog_description`,
+`table`, `radio`, `combobox`, `title_bar`, `icon_size_toolbar`,
+`icon_size_small`, `icon_size_large`, `icon_size_dialog`, `icon_size_panel`,
+`input_height`, `widget_gap`, `container_margin`, `window_margin`,
+`section_gap`.
+
+### 6a.2 gpui: widgets the showcase never renders
+
+Constructible widgets absent from the showcase, filtered from
+gpui-component 0.6.4's `RenderOnce` / `IntoElement` implementations by
+discarding test harnesses and sub-parts:
+
+`AlertDialog`, `Attachment`, `Bubble`, `Combobox`, `DescriptionText`,
+`HoverCard`, `Marker`, `Message`, `MessageScroller`, `Pagination`,
+`ProgressCircle`, `Rating`, `ShimmerText`, `ShimmerGlyphs`,
+`SidebarToggleButton`, `StatusBar`, `Stepper`, `TitleBar`, `WindowBorder`,
+`CarouselNext`, `CarouselPrevious`.
+
+`StatusBar`, `TitleBar` and `Combobox` are the ones that matter most: the
+connector ships a geometry builder for each and the showcase renders none of
+them. The v0.5.9 sibling rationale §2.11 deferred `Stepper`, `Rating`,
+`Pagination`, `HoverCard`, the command palette and the chat components to "a
+later showcase pass"; the maintainer's standing rule supersedes that, and they
+are in this release.
+
+### 6a.3 iced: widget modules the showcase never renders
+
+Of `iced_widget` 0.14.2's 37 modules, 14 are absent: `canvas`, `float`,
+`keyed`, `lazy`, `markdown`, `overlay`, `pane_grid`, `pin`, `qr_code`,
+`responsive`, `sensor`, `stack`, `table`, `themer`.
+
+The themed ones — `markdown`, `pane_grid`, `qr_code`, `table`, `canvas` — are
+added. The rest are layout and utility wrappers with no visual surface of
+their own (`keyed`, `lazy`, `responsive`, `stack`, `pin`, `float`, `overlay`,
+`sensor`, `themer`) and are listed as exceptions in §6a.4 rather than shown.
+
+### 6a.4 The coverage test
+
+Each showcase's `#[cfg(test)]` module gains:
+
+```rust
+#[test]
+fn every_widget_the_toolkit_offers_is_shown() { … }
+```
+
+It holds two lists — the widgets shown, and the exceptions with a reason each
+(a test harness, an internal sub-part, a layout wrapper with no visual
+surface) — and asserts they partition the toolkit's constructible widget set.
+A widget added by an upstream release therefore fails the build until someone
+either shows it or writes down why not, which is the §5.2 tripwire idea
+applied to the showcase.
+
+For the gpui connector the same test asserts the complementary claim: every
+`geometry::*` builder and every `variants::*` function is referenced by the
+showcase at least once. A builder nobody demonstrates is a builder nobody has
+verified.
+
+---
+
 ## 7 -- Layer 3: contrast invariants
 
 One test per connector, `#[cfg(test)]`, over all 32 preset/mode combinations.
@@ -297,6 +369,11 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
 - **Added** — WCAG AA contrast tests over every text-on-background pair both
   connectors produce.
 - **Added** — showcase self-tests in both connectors.
+- **Added** — both showcases now render every widget their toolkit offers an
+  application, including everything gpui-kit 0.6.2 and 0.6.4 introduced, with
+  a coverage test that fails when an upstream release adds a widget nobody
+  shows. The gpui showcase previously exercised 15 of the connector's 34
+  geometry builders and rendered no `StatusBar`, `TitleBar` or `Combobox`.
 
 ---
 
@@ -315,4 +392,8 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
       placeholder fed from `input.placeholder_color`, not from a button field.
 - [ ] `cargo tree -p native-theme-iced -i native-theme` shows the icon
       features enabled by default.
+- [ ] Both coverage tests pass, and deleting one widget from a showcase makes
+      its coverage test fail (run once per showcase as the negative control).
+- [ ] `grep -c 'geometry::' connectors/native-theme-gpui/examples/showcase-gpui.rs`
+      shows every builder referenced; the coverage test asserts it.
 - [ ] `./pre-release-check.sh` shows no failures.

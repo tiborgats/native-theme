@@ -142,6 +142,14 @@ slot we do override. The rest moves to `styles`.
 The four findings of §1.1 are the specification for this. Ordered by what they
 would have caught, cheapest first.
 
+A fifth thing the audit found, which no layer catches because it is not a
+defect but an absence: **a showcase that omits a widget hides it from every
+check that depends on the showcase.** The gpui showcase exercises 15 of the
+connector's 34 geometry builders and renders no `StatusBar`, `TitleBar` or
+`Combobox`, each of which has a builder shipped for it. Completing both
+showcases, and adding a coverage test that keeps them complete, is therefore
+part of this work rather than a later pass (specification §6a).
+
 | Layer | Catches | Why this and not something else |
 |---|---|---|
 | **1. Mapping contracts** — one data-driven test per connector: every toolkit slot, the native field of the widget that reads it, over all 32 preset/mode combinations, plus a coverage tripwire so a slot cannot be added without a declared source | the whole class of §1.2: `accent`, the iced seven, and the next one | It is the only layer that states what "correct" *means*. Everything else checks consequences. |
@@ -214,7 +222,7 @@ catch a pair we *derived* wrongly, not to grade the platform.
 | Item | Trigger |
 |---|---|
 | Screenshot diffing with perceptual thresholds | A defect that Layers 1–3 provably cannot express — clipped text, overlapping elements, a collapsed layout. Needs pinned fonts, fixed DPI and per-platform baselines first. |
-| An iced `geometry` module (menu row height, dialog paddings, control min-heights — 34 builders in gpui, 5 values in iced) | The next iced release. This one fixes colour meaning, not the geometry gap; doing both at once would double a release that is already carrying two bodies of work. |
+| An iced `geometry` module (menu row height, dialog paddings, control min-heights — 34 builders in gpui, 5 values in iced) | The next iced release. This one fixes colour meaning, not the geometry gap; doing both at once would double a release that is already carrying two bodies of work. The showcase coverage test (specification §6a.4) will keep the gap visible. |
 | Upstream fixes for the tokens gpui-component reads wrongly (`Toggle` pressed, the Outline tab hover, the checkbox border, the internally built ghost buttons) | Upstream accepting the token proposals recorded in `docs/todo.md`. |
 | A shared contract vocabulary across connectors (one table, two backends) | A third connector. With two, the duplication is smaller than the abstraction. |
 
