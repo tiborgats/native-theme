@@ -4013,21 +4013,32 @@ impl Showcase {
                             ("idle border", "border", t.border),
                         ],
                         &[],
-                        &[("min panel size", "100px hardcoded")],
+                        &[(
+                            "min panel size",
+                            "PANEL_MIN_SIZE = 100px, gpui-base src/resizable/mod.rs:14",
+                        )],
                     )),
             )
-            // Vertical resizable
+            // Vertical resizable.
+            //
+            // The height is what makes this draggable: gpui-base clamps every
+            // panel to PANEL_MIN_SIZE = 100px (`src/resizable/mod.rs:14`), so a
+            // two-panel group needs more than 200px plus the border before the
+            // divider has anywhere to go. At 200px both panels sat at 99px,
+            // already under the minimum, and the divider could not move at all.
             .child(section("Resizable Panels (vertical)"))
             .child(
                 div()
                     .id("tt-resizable-v")
-                    .h(px(200.0))
+                    .h(px(300.0))
                     .border_1()
                     .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
                     .child(
                         v_resizable("resize-v")
                             .child(
-                                resizable_panel().size(px(80.0)).child(
+                                // Above PANEL_MIN_SIZE, so the request survives
+                                // the clamp; travel is 100px..198px.
+                                resizable_panel().size(px(130.0)).child(
                                     v_flex()
                                         .p_3()
                                         .size_full()
@@ -4051,7 +4062,10 @@ impl Showcase {
                             ("idle border", "border", t.border),
                         ],
                         &[],
-                        &[("min panel size", "100px hardcoded")],
+                        &[(
+                            "min panel size",
+                            "PANEL_MIN_SIZE = 100px, gpui-base src/resizable/mod.rs:14",
+                        )],
                     )),
             )
             // Dividers
