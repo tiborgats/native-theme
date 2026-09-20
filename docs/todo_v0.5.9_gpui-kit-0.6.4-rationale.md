@@ -307,10 +307,19 @@ sidebar background pair agree everywhere. Three do not:
 - `sidebar_accent_foreground` differed from `sidebar.selection_text_color` on
   windows-11 dark. Fixed with the same change.
 - `TabVariant::Outline` hovers with the *button* hover token, and `Toggle`
-  reads `accent` for its pressed state, which after E20 is the subtle fill on
-  Adwaita, Windows 11 and Material where those platforms want the accent. One
-  token, two meanings, seven menu-family readers against one: Tier U, both
-  recorded in `docs/todo.md`.
+  reads `accent` for both its hover and its pressed state. Neither can be
+  reached from outside: `tab/tab.rs` applies no caller style at all in that
+  path, and `Toggle` passes the *same* `StyleRefinement` to its base and to
+  its pressed sub-style (`button/toggle.rs:209-214`), so any colour set there
+  would paint the idle state too. Tier U, both recorded in `docs/todo.md`.
+
+  Measured, E20's effect on `Toggle` is net positive: of the 32 preset/mode
+  combinations, 26 move to the value the platform records and 6 move away. It
+  gains the hover everywhere it was wrong — Windows 11 and Material now get
+  their own `segmented_control.hover_background` exactly — and loses only the
+  *pressed* state on Adwaita, Windows 11 and Material, where the platform wants
+  its accent and now gets the subtle fill. KDE and macOS are unaffected in both
+  states.
 
 Widgets for which native-theme has a hover field but upstream paints no hover
 at all (`Checkbox`, `Switch`, `Accordion`, the `Select` trigger) have nothing

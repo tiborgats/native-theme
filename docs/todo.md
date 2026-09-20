@@ -135,6 +135,16 @@
       wants `#0000005c` where the input border is `#e5e5e5ff`. The token is
       named `input`, so the connector feeds it the input border; upstream needs
       a checkbox border token.
+- [ ] Whether any platform scales a control's corner radius with its control
+      size. platform-facts records one `border.corner_radius` per widget on all
+      four platforms (§2.3 and the per-widget tables), and records size classes
+      only for *dimensions* — NSTextField 22/19/17, NSSwitch 38x22/32x18/26x15,
+      NSPopUpButton 21/18/15/24. On macOS the bezel corners are baked into
+      CoreUI `.car` artwork with no queryable constant (`:1311`), so a
+      size-dependent radius there is unmodelled rather than known to be absent.
+      If one exists, `ResolvedBorderSpec` would need a per-size radius and
+      `geometry::button` / `input_group_button` would follow it; today both
+      restore the widget's single radius, which is what the model carries.
 - [ ] a control's radius should not shrink with its size: an `XSmall`
       `InputGroupButton` takes `radius / 2` (`input/group.rs:590-593`) and
       `Button` does the same for its small and large roundings
