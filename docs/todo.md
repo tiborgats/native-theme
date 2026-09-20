@@ -243,6 +243,17 @@ here so the work is not re-derived.
 
 #### Research
 
+- [ ] 174 of 512 text-on-background pairs sit below WCAG AA across the 16
+      presets in both modes (measured 2026-09-20, alpha composited). Most are
+      the platform's own choice — macOS ships `success_color = "#34c759"` with
+      white text at about 2.2:1 — and the connectors must not override a
+      platform. But some look like preset data errors rather than platform
+      facts, and `preset-validator` should judge them: `material` light and
+      dark give `tab.active_text_color` and `tab.active_background` values
+      that leave the label on its own fill, and `nord` dark puts
+      `input.placeholder_color` at 1.36 against the field. The contrast test
+      added in v0.5.9 prints the whole list on every run, so it stays visible.
+
 - [ ] Scrollbar thumb radius per platform: platform-facts records none, so the
       connector mirrors gpui-component's `radius` for the thumb.
 - [ ] The showcase's "Text Input" tooltip claims the input background is

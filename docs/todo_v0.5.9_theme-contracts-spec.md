@@ -173,6 +173,10 @@ repair.
 It is therefore off by default, and it implies `widgets`, because `iced_aw`
 itself depends on `iced_widget ^0.14.2`. See §4.2 for the full feature table.
 
+Six widgets, from eight `iced_aw` features: `tabs` is the tabbed container
+built on `tab_bar`, and `context_menu` is the same `menu` styling applied to a
+right-click overlay, so each pair shares one `styles::aw::*` function.
+
 Covered widgets, each from the native theme that models it:
 
 | `styles::aw::*` | `iced_aw` widget | Native source |
@@ -181,7 +185,7 @@ Covered widgets, each from the native theme that models it:
 | `menu` | `Menu`, `ContextMenu` | `menu.background_color`, `.hover_background`, `.hover_text_color`, `.border.*`, `.font.color` |
 | `tab_bar` | `TabBar`, `Tabs` | `tab.background_color`, `.active_background`, `.active_text_color`, `.hover_background`, `.bar_background` |
 | `sidebar` | `Sidebar` | `sidebar.background_color`, `.selection_background`, `.selection_text_color`, `.hover_background` |
-| `spinner` | `Spinner` | `spinner.diameter`, `.stroke_width`, `.color` |
+| `spinner` | `Spinner` | `spinner.diameter`, `.min_diameter`, `.stroke_width`, `.fill_color` (there is no `spinner.color`) |
 | `selection_list` | `SelectionList` | `list.background_color`, `.selection_background`, `.selection_text_color`, `.hover_background`, `.row_height` |
 
 Not covered, because native-theme models no equivalent and inventing one is
