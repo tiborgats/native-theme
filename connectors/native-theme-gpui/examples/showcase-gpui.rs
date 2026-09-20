@@ -31,9 +31,10 @@
 //! sections.
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Bounds, Context, Entity, Hsla, ImageSource,
-    IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString, StyleRefinement,
-    Styled, Task, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
+    Animation, AnimationExt, AnyElement, App, Bounds, ClipboardItem, Context, Entity, Hsla,
+    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
+    StyleRefinement, Styled, Task, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems,
+    size,
 };
 use gpui_component::{
     ActiveTheme, Disableable, Icon, IconName, Placement, Root, Sizable, Size, StyledExt, WindowExt,
@@ -2688,7 +2689,27 @@ impl Showcase {
                                             .child(
                                                 InputGroupButton::new("input-group-copy")
                                                     .icon(IconName::Copy)
-                                                    .label("Copy"),
+                                                    .label("Copy")
+                                                    .tooltip("Copy the field to the clipboard")
+                                                    .on_click(cx.listener(
+                                                        |this, _, window, cx| {
+                                                            let value = this
+                                                                .input_group_button_state
+                                                                .read(cx)
+                                                                .value();
+                                                            cx.write_to_clipboard(
+                                                                ClipboardItem::new_string(
+                                                                    value.to_string(),
+                                                                ),
+                                                            );
+                                                            window.push_notification(
+                                                                Notification::success(value)
+                                                                    .title("Copied")
+                                                                    .autohide(true),
+                                                                cx,
+                                                            );
+                                                        },
+                                                    )),
                                             ),
                                     ),
                                 native_geometry(cx, geometry::input).as_ref(),

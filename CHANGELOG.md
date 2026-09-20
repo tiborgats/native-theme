@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - native-theme-gpui 0.5.8 no longer compiled on a fresh dependency resolution: gpui-component 0.6.2 (2026-09-18) removed `ThemeColor::tiles`, which the connector wrote, in a patch release that the connector's caret requirement admits. The nightly dependency canary reported it the same evening.
+- The showcase's InputGroup "Copy" button did nothing: it was built without an `on_click` handler, so it rendered and hovered but never ran. It now copies the field's text to the clipboard and confirms with a notification.
 - The showcase's vertical resizable panels could not be dragged: the demo gave the group 200px of height, while gpui-base clamps every panel to `PANEL_MIN_SIZE` (100px), so both panels sat at 99px with no slack for the divider. The group is now 300px tall with a 130px top panel. Pre-existing, not a 0.6.4 regression — the constant is the same in both versions.
 - Documentation of `geometry::menu_item`: gpui-component has no public menu-item element to apply it to — `MenuItemElement` is crate-private and `PopupMenu` builds its own rows — so it styles a menu row the application draws itself.
 - Documentation of `geometry::dialog`: gpui-component 0.6.4 clamps the dialog to what is left of the viewport *after* applying the caller's style, so the theme's `dialog.max_height` no longer reaches it. `min_height`, the paddings and `Dialog::max_w` still do.
