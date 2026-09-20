@@ -128,6 +128,19 @@
       accent pair, which native themes map to the platform's selection
       colours, so a hovered ghost button becomes a selection-coloured pill;
       `button/button.rs:1125-1132, 1141`)
+- [ ] `Checkbox` and `Radio` draw their unchecked border with `theme.input`
+      (`checkbox.rs:238`, `radio.rs:188`), the *text input's* border colour.
+      native-theme records `checkbox.unchecked_border_color` separately and the
+      two differ on 12 of the 32 preset/mode combinations — windows-11 light
+      wants `#0000005c` where the input border is `#e5e5e5ff`. The token is
+      named `input`, so the connector feeds it the input border; upstream needs
+      a checkbox border token.
+- [ ] a control's radius should not shrink with its size: an `XSmall`
+      `InputGroupButton` takes `radius / 2` (`input/group.rs:590-593`) and
+      `Button` does the same for its small and large roundings
+      (`button/button.rs:593-595`), where a platform records one radius per
+      widget whatever its size. `geometry::button` and
+      `geometry::input_group_button` restore it per call site.
 - [ ] `Toggle` needs a token of its own for the pressed state: it reads
       `tokens.accent` (`button/toggle.rs:155, 202`), the item highlight of
       menus and lists. Since v0.5.9 the connector feeds that token the

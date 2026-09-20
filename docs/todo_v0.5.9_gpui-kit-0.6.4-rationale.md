@@ -316,6 +316,34 @@ Widgets for which native-theme has a hover field but upstream paints no hover
 at all (`Checkbox`, `Switch`, `Accordion`, the `Select` trigger) have nothing
 to receive it.
 
+The same sweep over what native-theme carries besides colour — radii, sizes,
+paddings, fonts, line widths — found three more, two of them ours:
+
+- `geometry::dialog` set no radius, so upstream's `radius_lg` stood where
+  native-theme records a dialog radius of its own; the two differ on adwaita
+  (18 against 15). Fixed.
+- gpui-component scales a control's radius with its *size*: an in-group button
+  is `XSmall` and takes `radius / 2` (`input/group.rs:590-593`), and `Button`
+  does the same for its small and large roundings (`button/button.rs:593-595`),
+  where a platform records one radius per widget whatever its size.
+  `geometry::button` already restored it; `geometry::input_group_button` now
+  does for the button nested in a field. This is what the maintainer saw when
+  the Copy button's corners did not match the calendar's day buttons.
+- `Checkbox` and `Radio` draw their unchecked border with `theme.input`, the
+  text input's border colour, where native-theme has
+  `checkbox.unchecked_border_color`; they differ on 12 of the 32 preset/mode
+  combinations. The token is named `input`, so feeding it the input border is
+  right and the conflation is upstream's: Tier U.
+
+Verified and left alone: no preset gives any widget a font family different
+from the default one, and `input.focus_border_color` equals
+`defaults.focus_ring_color` everywhere, so the `ring` mapping is right. The
+separator's thickness, the slider's track, the switch's track and the splitter's
+width are set on inner children *after* the caller's style reaches the outer
+container, so they remain upstream work exactly as the v0.5.8 README says.
+`Sidebar`'s width and `Tag`'s radius are reachable, but native-theme models
+neither, so there is nothing to map.
+
 **(j) Nothing guards `Theme`'s own shape.** The three `tile_*` fields were
 `Theme` fields the connector never set (§1.2). They arrived upstream, sat
 through 0.6.0 and 0.6.1 at upstream's defaults while the connector overwrote
@@ -619,6 +647,7 @@ crate already uses three times.
 | E16 | `geometry::menu_item` documentation corrected: no upstream receiver exists; the function stays (§1.4i). |
 | E17 | One test names all 20 `Theme` fields in an exhaustive destructuring, so a field added or removed upstream stops the build (§2.12). |
 | E18 | `geometry::dialog` keeps `max_h`, but the documentation stops claiming it reaches upstream's `Dialog`: 0.6.4 overrides it with a viewport-derived value after the refinement (§1.4k). Tier U, with a `Dialog::max_h` prop as the upstream proposal. |
+| E21 | `geometry::dialog` carries the dialog's own corner radius, and a new `geometry::input_group_button` carries the platform's button radius to a button nested in an input group, which upstream halves because it is `XSmall` (§1.4n). |
 | E20 | `accent` / `accent_foreground` take the platform's menu hover pair and `sidebar_accent*` the sidebar's selection pair (§1.4n). No change on KDE or macOS; on Adwaita, Windows 11 and Material the item highlight becomes the platform's subtle fill. `Toggle`'s pressed state shares the token and is recorded as Tier U. |
 | E19 | The lockfile also takes `cargo update -p rustls` (0.23.43 → 0.23.45). `RUSTSEC-2026-0285` predates this release, but `cargo audit` is a hard CI job, so without it the release commit cannot be green (§1.3). |
 

@@ -155,7 +155,7 @@ heights grow only when scaled text would no longer fit:
 | `tooltip` | `tooltip.max_width`, `tooltip.border.padding_*`, `.corner_radius`, `tooltip.font` | application-built `Tooltip::new` |
 | `popover` | `popover.border.padding_*`, `.corner_radius` | `Popover` |
 | `status_bar` | `status_bar.border.padding_*`, `status_bar.font` | `StatusBar` |
-| `dialog`, `dialog_max_width` | `dialog.border.padding_*`, `dialog.min_height`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
+| `dialog`, `dialog_max_width` | `dialog.border.padding_*`, `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font` | declarative `Table` |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
@@ -194,11 +194,16 @@ Build it in `render`: it reads the installed theme, so it follows a light/dark
 switch. Buttons gpui-component creates internally (a dialog's close button,
 calendar navigation, the tab bar) cannot be reached this way.
 
+`input_group_button` gives a button nested in an `InputGroup` the platform's
+button radius; gpui-component sizes such a button `XSmall` and would round it
+with half the theme's radius.
+
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
 width, button icon gap, input padding, popup-menu rows; the hover of the
 flat buttons gpui-component builds internally, which takes `accent` where the
-platform has a button hover; and tab height, radius
+platform has a button hover; the checkbox and radio unchecked border, which
+takes the text input's border colour; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
 setters fill, `tab/tab.rs:801-808`) is
 listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)
