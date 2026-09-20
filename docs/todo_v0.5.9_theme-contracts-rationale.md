@@ -131,6 +131,7 @@ iced connector needs the same kind of module for colours.
 | **Two layers: correct the palette where a slot has one meaning, and add a `styles` module of per-widget style functions for everything else** | **Chosen.** It matches what iced's architecture allows and what the gpui connector already does for sizes. The palette stays the approximate default for an application that styles nothing; `styles::*` is exact for an application that opts in. Each function is a pure builder from `&ResolvedTheme`, like `geometry::*`. |
 | Only add `styles`, leave the palette alone | Rejected. It would leave the invisible placeholder (§1.3, 1.15:1) in place for every application that does not opt in, which is an accessibility failure, not a preference. |
 | Ship a wrapper widget set (`native_theme_iced::button(..)`) | Rejected. It would duplicate iced's widget API, age badly against it, and force an application to rewrite its view code rather than add one call. |
+| Keep the connector on `iced_core` alone and have `styles` return the connector's own data types | Rejected. The `Style` structs live in `iced_widget`, so the module needs that dependency; returning our own types would make every call site convert by hand. The coupling is the same one the gpui connector already accepts with `gpui-component`, it costs a consumer nothing (an iced application has `iced_widget` through `iced`), and the canary reports a breaking change there as it did for gpui-component. |
 
 The palette changes that follow from this are exactly those where the slot has
 a single meaning: stop writing a button *surface* into a slot iced reads as
@@ -188,15 +189,30 @@ can build the view tree and assert its shape but cannot draw it.
 
 ### 2.6 Contrast: which pairs, and which threshold
 
-WCAG AA is 4.5:1 for normal text and 3:1 for large text. The connector already
-has `contrast_ratio` and uses it for status foregrounds
-(`colors.rs:55-76`). The options were to assert AA everywhere, or to assert it
-only for pairs a platform actually controls.
+The first draft of this section said "assert AA for every pair the connector
+produces, with a small exception list". Measuring it first — which is why it
+was measured — showed that wrong twice over.
 
-Chosen: assert AA for every pair the *connector produces*, and record a small
-list of exceptions with a reason — a disabled control is deliberately below
-AA, and a platform's own choice is not ours to override. The test's job is to
-catch a pair we *derived* wrongly, not to grade the platform.
+Of 512 pairs across the 32 combinations, **174 sit below AA**, and they are
+not all errors: macOS ships `#34c759` with white text (`macos-sonoma.toml:21`),
+about 2.2:1, and that is Apple's own value. Asserting AA would assert that
+every platform meets AA, which is false, and satisfying the assertion would
+mean inventing values the platform did not give.
+
+A first measurement was also wrong in the other direction: it read translucent
+colours as opaque and produced 143 phantom failures, including 1.00 on Windows
+11's `#0000000a` menu hover, which is a 4 % overlay meant to composite over the
+window.
+
+| Option | Verdict |
+|---|---|
+| Assert AA everywhere | Rejected: false on real platform data (above). |
+| Assert AA with an exception list | Rejected: the list would be ~174 entries of platform data encoded in our tests, and would need editing whenever a preset is retuned. |
+| **Assert the connector never makes a pair worse than the platform's own** | **Chosen.** For each pair, compute the ratio from the native fields and the ratio from the connector's output, composite alpha on both sides first, and require ours to be no worse. It catches exactly the defect class it exists for — iced's placeholder is 1.15:1 where the native pair is readable, so our ratio is worse and it fails — and stays silent where we faithfully emit a platform's own poor choice. |
+
+The test also prints every sub-AA pair without failing, so the list stays
+visible; whether any is a preset bug rather than a platform fact belongs to
+`preset-validator`.
 
 ---
 

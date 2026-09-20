@@ -89,6 +89,21 @@ No other palette slot changes. Everything else moves to §3.
 
 ## 3 -- `native_theme_iced::styles`
 
+**This module needs a dependency the connector does not have.** The crate
+depends on `iced_core` only; every `Style` struct below lives in
+`iced_widget`, so `iced_widget = "0.14"` joins `[dependencies]`. That is the
+same shape as the gpui connector depending on `gpui-component` in order to
+name `ThemeColor`, and it costs a consumer nothing — an iced application
+already has `iced_widget` through `iced`. What it does cost is version
+coupling: the connector now tracks `iced_widget`, and the nightly canary will
+report a breaking change there the same way it reported gpui-component's.
+
+None of those `Style` structs derives `Default` or is `#[non_exhaustive]`
+(checked: they derive `Debug, Clone, Copy, PartialEq`). Every function
+therefore constructs its `Style` **exhaustively**, never with
+`..Default::default()`, so a field added upstream fails the build instead of
+silently taking a default — the sibling release's E17 guarantee, for free.
+
 A new public module, `src/styles.rs`. Each function takes `&ResolvedTheme`
 and returns a closure iced accepts in `.style(..)`. Pure; no global state; the
 returned closure ignores the `&Theme` argument, because the values are already
@@ -138,8 +153,13 @@ pub fn to_theme(
 ) -> iced_core::theme::Theme
 ```
 
-`from_preset` and `from_system` gain the same parameter, matching the gpui
-connector's signatures. What the preferences change in iced:
+`from_preset` gains the same parameter. `from_system` does **not**: it already
+reads a `SystemTheme`, which carries `accessibility`, so it uses those and its
+signature keeps its shape (it returns `(Theme, ResolvedTheme, bool)` today,
+`src/lib.rs:177-181`). Taking a parameter there would let a caller contradict
+the system it just asked for.
+
+What the preferences change in iced:
 
 | Preference | Effect |
 |---|---|
@@ -183,7 +203,11 @@ struct Row {
 ```
 
 The test iterates every row over all 16 presets in both modes and asserts
-equality. A row that must differ on some preset carries the reason in a
+equality. Sixteen, not the twenty files in `native-theme/src/presets/`: the
+four `*-live.toml` are geometry-only merge bases for the OS-first pipeline,
+carry no colours, and are not user-selectable (`presets.rs:51`). They are
+excluded by iterating `Theme::list_presets()`, which returns exactly the
+sixteen. A row that must differ on some preset carries the reason in a
 comment and the preset in an exception list — not a loosened assertion.
 
 Rows are the fields with a native counterpart, including the ones this release
@@ -295,24 +319,33 @@ their own (`keyed`, `lazy`, `responsive`, `stack`, `pin`, `float`, `overlay`,
 
 ### 6a.4 The coverage test
 
-Each showcase's `#[cfg(test)]` module gains:
+Two mechanisms, because a unit test cannot do both.
 
-```rust
-#[test]
-fn every_widget_the_toolkit_offers_is_shown() { … }
-```
+**Our own surface: a test.** A test inside the connector reads the showcase
+with `include_str!("../examples/showcase-gpui.rs")` — a path known at compile
+time — and asserts every `geometry::*` builder and every `variants::*`
+function is referenced at least once. A builder nobody demonstrates is a
+builder nobody has verified, which is how `geometry::dialog` carried a wrong
+radius and `geometry::menu_item` a wrong doc comment for two releases. The
+same test for iced covers `styles::*`.
 
-It holds two lists — the widgets shown, and the exceptions with a reason each
-(a test harness, an internal sub-part, a layout wrapper with no visual
-surface) — and asserts they partition the toolkit's constructible widget set.
-A widget added by an upstream release therefore fails the build until someone
-either shows it or writes down why not, which is the §5.2 tripwire idea
-applied to the showcase.
+**The toolkit's surface: a script.** A test *cannot* enumerate the widgets a
+dependency offers — it cannot locate that dependency's source, and
+gpui-component exposes no list of its widgets to match against. The first
+draft of this section claimed otherwise; it was wrong.
 
-For the gpui connector the same test asserts the complementary claim: every
-`geometry::*` builder and every `variants::*` function is referenced by the
-showcase at least once. A builder nobody demonstrates is a builder nobody has
-verified.
+`scripts/check-widget-coverage.py` does it instead: `cargo metadata
+--format-version 1` gives the exact on-disk source path of `gpui-component`
+and `iced_widget`, from which the script enumerates the constructible widgets
+(types implementing `RenderOnce` or `IntoElement` for gpui, the widget modules
+for iced), discards test harnesses and internal sub-parts by the rules in
+§6a.2, and compares against the showcase. Widgets not shown must appear in
+`docs/showcase-exceptions.toml` with a reason; anything else fails the script.
+
+It runs in two places: `pre-release-check.sh`, so a release cannot ship an
+unshown widget, and the nightly dependency canary, so an upstream release that
+adds a widget is reported the evening it appears rather than at the next
+release.
 
 ---
 
@@ -320,18 +353,30 @@ verified.
 
 One test per connector, `#[cfg(test)]`, over all 32 preset/mode combinations.
 
-For every (foreground, background) pair the connector produces — body text on
-background, muted text on background, button label on button surface,
-placeholder on input background, menu hover text on menu hover background,
-list selection text on list selection background, each status foreground on
-its status colour, link on background — assert `contrast_ratio >= 4.5`.
+**The rule is no-degradation, not AA.** Measured 2026-09-20 over 512 pairs:
+174 sit below WCAG AA, and they are not all errors. macOS genuinely ships
+`success_color = "#34c759"` with white text (`macos-sonoma.toml:21-22`), about
+2.2:1; Apple uses it. A connector that asserted AA would be asserting that
+every platform meets AA, which is false, and "fixing" it would mean inventing
+values the platform did not give — which the repository forbids.
 
-Exceptions are listed by name with a reason, not by loosening the threshold:
+So for each pair the test computes the ratio the *native fields* give and the
+ratio the *connector's output* gives, and asserts the connector's is not
+worse. Both sides composite any colour with alpha below 1 over its own
+background before measuring; skipping that was the first draft's error and
+produced 143 phantom failures, including a 1.00 on Windows 11's `#0000000a`
+menu hover.
 
-- disabled text, which is deliberately below AA on every platform;
-- any pair where the platform's own two values already fail, which the
-  connector must not silently "fix" — those are reported as findings against
-  the preset, and belong to `preset-validator`, not here.
+This is exactly the rule that catches the defect it exists for: iced's
+placeholder is `#e8e8e8` on `#fafafb` at 1.15:1, where the native pair —
+`input.placeholder_color` on `input.background_color` — is comfortably
+readable. Our ratio is worse than the platform's, so it fails. And it stays
+silent about macOS's green, because there we emit exactly what Apple gives.
+
+The test additionally *prints* every pair below AA without failing on it, so
+the list stays visible. Whether any of those is a preset bug rather than a
+platform fact is `preset-validator`'s question, not this test's; the ones that
+look like data errors are recorded in `docs/todo.md`.
 
 The gpui connector already has `contrast_ratio` (`src/colors.rs:55-76`); the
 iced connector has its own in `extended.rs`. Neither is re-implemented.
