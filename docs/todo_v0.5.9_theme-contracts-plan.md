@@ -112,7 +112,7 @@ Spec §3.
 
 **Interfaces:** Produces `pub fn <widget>(resolved: &ResolvedTheme) -> impl Fn(&Theme, <widget>::Status) -> <widget>::Style + use<>` for each row of spec §3's table.
 
-- [ ] **Step 1: Add the dependency** and confirm it unifies: `cargo tree -p native-theme-iced -i iced_core` shows one `iced_core`.
+- [ ] **Step 1: Add the dependency and its feature.** `iced_widget = { version = "0.14", optional = true }`, plus `widgets = ["dep:iced_widget"]` in `[features]` and `widgets` in `default` (spec §4.2). Gate the module with `#[cfg(feature = "widgets")]`. Confirm it unifies: `cargo tree -p native-theme-iced -i iced_core` shows one `iced_core`.
 - [ ] **Step 2: Write one function, `button`, completely**, as the pattern for the rest: capture the handful of `Color` values by value so the closure is `'static`; match on `Status` for the hover and pressed colours; construct `button::Style` **exhaustively**, never `..Default::default()` — those structs derive no `Default` and are not `#[non_exhaustive]`, so an upstream field addition then fails the build (C11).
 - [ ] **Step 3: A test for it**, asserting each field equals the native value it claims, over all 32 preset/mode combinations. This is the pattern every other function's test follows.
 - [ ] **Step 4: The remaining ten functions** of spec §3's table, one at a time, compiling and testing after each: `button_primary`, `text_input`, `checkbox`, `toggler`, `scrollable`, `menu`, `container_card`, `slider`, `progress_bar`, `tooltip`. Each one's doc comment names the iced default it replaces and the slot whose meaning it corrects.
@@ -155,7 +155,7 @@ Spec §3a. The six widgets native-theme models and iced core lacks.
 
 **Files:** `Cargo.toml` (optional dependency + `iced_aw` feature), `src/styles/aw.rs`, `src/lib.rs`.
 
-- [ ] **Step 1: The optional dependency.** `iced_aw = { version = "0.14", optional = true, default-features = false, features = ["card", "menu", "context_menu", "tab_bar", "tabs", "sidebar", "spinner", "selection_list"] }` and `iced_aw = ["dep:iced_aw"]` in `[features]`. Not in `default`.
+- [ ] **Step 1: The optional dependency.** `iced_aw = { version = "0.14", optional = true, default-features = false, features = ["card", "menu", "context_menu", "tab_bar", "tabs", "sidebar", "spinner", "selection_list"] }` and `iced_aw = ["widgets", "dep:iced_aw"]` in `[features]` — it implies `widgets` because `iced_aw` depends on `iced_widget ^0.14.2`. **Not** in `default`: it drags in `iced_fonts` (3.3 MB of font data) and its iced support has lagged by months (C13).
 - [ ] **Step 2: The module**, `#[cfg(feature = "iced_aw")] pub mod aw;` under `styles`. Six functions per spec §3a's table, same pattern as Task 3 — `iced_aw` styles identically (`.style(impl Fn(&Theme, Status) -> Style)`, `Catalog` with `StyleFn`; `src/widget/card.rs:226`, `src/style/card.rs:75-85`).
 - [ ] **Step 3: Tests** per function, as in Task 3 Step 3, gated on the feature.
 - [ ] **Step 4: Run.**
@@ -269,6 +269,7 @@ Spec §8.
 CARGO_BUILD_JOBS=4 cargo test --workspace --all-features
 CARGO_BUILD_JOBS=4 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings >/dev/null 2>&1; echo "clippy=$?"
 CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --no-default-features
+CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --features iced_aw
 python3 scripts/check-widget-coverage.py
 CARGO_BUILD_JOBS=4 ./pre-release-check.sh
 cargo audit >/dev/null 2>&1; echo "audit=$?"

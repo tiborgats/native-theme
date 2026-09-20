@@ -163,12 +163,15 @@ mapping itself.
 
 **Optional, because it is a third-party crate.** An application that does not
 use `iced_aw` must not pay for it, and native-theme must not tie its release
-cadence to a community crate. It is therefore a non-default feature:
+cadence to a community crate. Two concrete costs: `iced_aw` depends on
+`iced_fonts`, **3.3 MB** of embedded font data, and its own iced support has
+lagged — 0.13.0 in December 2025, 0.14.0 in April 2026. A default-on
+third-party dependency would make this crate unbuildable on a new iced until
+that crate catches up, which is the failure mode the whole release exists to
+repair.
 
-```toml
-[features]
-iced_aw = ["dep:iced_aw"]
-```
+It is therefore off by default, and it implies `widgets`, because `iced_aw`
+itself depends on `iced_widget ^0.14.2`. See §4.2 for the full feature table.
 
 Covered widgets, each from the native theme that models it:
 
@@ -226,12 +229,36 @@ same default set as the gpui connector:
 
 ```toml
 [features]
-default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+
+# Which iced crates this connector covers. Additive, never subtractive.
+widgets = ["dep:iced_widget"]            # enables `styles`
+iced_aw = ["widgets", "dep:iced_aw"]     # enables `styles::aw`
+
 material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
 system-icons = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
 ```
+
+| A consumer who wants | Writes |
+|---|---|
+| everything iced itself offers (the default) | nothing |
+| the `iced_aw` widgets too | `features = ["iced_aw"]` |
+| the palette only, no `iced_widget` | `default-features = false` |
+| the palette plus icons, no `iced_widget` | `default-features = false, features = ["lucide-icons"]` |
+
+The features are **positive**: each adds coverage. There is deliberately no
+`no_aw`, `no_widgets` or `core_only`, because Cargo unifies features across
+the whole dependency graph and a subtractive feature enabled anywhere would
+silently remove `styles` from every other consumer, with no way for them to
+countermand it. `default-features = false` is the supported way to narrow, and
+it is per-consumer (rationale §2.9).
+
+`styles` is `#[cfg(feature = "widgets")]`, `styles::aw` is
+`#[cfg(feature = "iced_aw")]`, and each module's contract and contrast tests
+carry the same gate. `[package.metadata.docs.rs] all-features = true`, as in
+the gpui connector, so docs.rs shows the whole surface.
 
 ---
 

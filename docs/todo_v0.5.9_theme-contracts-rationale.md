@@ -157,6 +157,28 @@ Only the six widgets native-theme models are covered. `badge`,
 `slide_bar` and the layout helpers have no native counterpart, and inventing
 values for them is forbidden.
 
+### 2.9 Which iced crates the connector covers, and how a consumer narrows it
+
+The connector now spans three iced crates — `iced_core` for the palette,
+`iced_widget` for `styles`, `iced_aw` for `styles::aw` — so a consumer should
+be able to pay only for what they use.
+
+| Option | Verdict |
+|---|---|
+| Subtractive features: `no_aw`, `no_widgets`, `core_only` | **Rejected, although this was the shape first proposed.** Cargo features are additive and unified across the entire dependency graph: if any crate in the graph enables `no_widgets`, `styles` disappears for *every* consumer, and the ones who needed it cannot countermand it — feature unification only ever adds. A subtractive feature therefore turns one consumer's narrowing into another's compile error, and the second consumer may not even know the first exists. |
+| **Additive features with a `default` set, narrowed by `default-features = false`** | **Chosen.** `widgets` (default) enables `styles`; `iced_aw` enables `styles::aw` and implies `widgets`. "Core only" is `default-features = false`, which is per-consumer and cannot leak. Same intent, correct polarity. |
+| One feature per widget group | Rejected: over-engineered for eleven style functions. |
+
+`iced_aw` is **not** in `default`, for two measured reasons: it depends on
+`iced_fonts`, 3.3 MB of embedded font data, and its iced support has lagged
+(0.13.0 December 2025, 0.14.0 April 2026). A default-on third-party dependency
+would make this crate unbuildable on a new iced until that crate caught up —
+which is precisely the failure this release exists to repair, one crate over.
+
+`widgets` *is* in `default`, because `iced_widget` ships in lockstep with
+`iced_core` as part of iced itself, and any real iced application already has
+it through `iced`.
+
 ### 2.3 What to automate, and what to leave to a human
 
 The four findings of §1.1 are the specification for this. Ordered by what they
@@ -252,6 +274,7 @@ visible; whether any is a preset bug rather than a platform fact belongs to
 | C10 | The gpui connector's `accent` fix (sibling E20) is re-stated as a contract-table row rather than two bespoke tests, so it is covered by the same mechanism as everything else. |
 | C11 | The iced connector takes `iced_widget` as a normal dependency, because every widget `Style` type lives there and none but `text` is in `iced_core` (§2.2). Those structs derive no `Default` and are not `#[non_exhaustive]`, so `styles::*` constructs them exhaustively and an upstream field addition fails the build. |
 | C12 | `iced_aw` is covered behind a non-default `iced_aw` feature, for the six widgets native-theme models and iced core lacks (§2.8). |
+| C13 | Coverage of the three iced crates is selected by **additive** features — `widgets` in `default`, `iced_aw` opt-in and implying `widgets` — narrowed with `default-features = false`. No subtractive feature, because Cargo unifies features across the graph and one consumer's narrowing would break another's build (§2.9). |
 
 ---
 
