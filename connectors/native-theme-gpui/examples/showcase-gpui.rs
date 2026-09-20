@@ -2687,7 +2687,20 @@ impl Showcase {
                                         InputGroupAddon::new("input-group-trailing-addon")
                                             .align(InputGroupAddonAlignment::InlineEnd)
                                             .child(
+                                                // `InputGroupButton::new` is a
+                                                // ghost button, which upstream
+                                                // then paints with a custom
+                                                // variant whose colour is
+                                                // `theme.transparent`
+                                                // (`input/group.rs:544-583`):
+                                                // no fill, no border, so it is
+                                                // indistinguishable from the
+                                                // field until hovered. A
+                                                // variant gives it the
+                                                // platform's own button
+                                                // surface instead.
                                                 InputGroupButton::new("input-group-copy")
+                                                    .secondary()
                                                     .icon(IconName::Copy)
                                                     .label("Copy")
                                                     .tooltip("Copy the field to the clipboard")
@@ -2741,7 +2754,7 @@ impl Showcase {
                         &[
                             ("geometry", "geometry::input on the frame: input.min_height (single-line groups only), border.corner_radius, line_width, input.font"),
                             ("addon padding", "inner (Tier U)"),
-                            ("addon button", "internal ghost button; hover fill is muted, not the accent pair"),
+                            ("addon button", "shown with the secondary variant: button_secondary bg, border, secondary_foreground. Upstream's default is a ghost button painted transparent inside the group (input/group.rs:544-583), invisible until its muted hover, and not the accent pair the standalone ghost button uses"),
                         ],
                     )),
             )
