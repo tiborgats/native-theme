@@ -128,6 +128,15 @@
       accent pair, which native themes map to the platform's selection
       colours, so a hovered ghost button becomes a selection-coloured pill;
       `button/button.rs:1125-1132, 1141`)
+- [ ] `InputGroupButton` should hover with the platform's button hover, not
+      `muted`: `render_in_group` hardcodes `cx.theme().muted` (halved in dark)
+      for an in-group addon button (`input/group.rs:544-583`), which is the
+      muted-background slot, not a hover colour. Measured on kde-breeze light
+      it gives `#dbdcdd`, 20 units from the `#eff0f1` field, while KDE's
+      `[Colors:Button] DecorationHover` (our `secondary_hover`) is `#93cee9` at
+      57 — so the addon button is grey while every other button in the window
+      is blue. `secondary_hover` / `button_secondary_hover` is the token it
+      wants.
 - [ ] a `Dialog::max_h` prop, or letting the caller's `max_h` win: 0.6.4
       clamps the dialog to the viewport after `refine_style`
       (`dialog/dialog.rs:631`), so a themed `dialog.max_height` cannot reach

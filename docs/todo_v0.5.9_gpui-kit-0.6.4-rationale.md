@@ -208,9 +208,14 @@ fell through to `secondary_foreground` (`:919`); pressed is
 colour (`src/colors.rs:242`), which is right for the token's older uses: menu,
 list, table, calendar and toggle highlights, where platform-facts records the
 selection colour (`docs/platform-facts.md:1232`). For a *button* hover
-platform-facts records a subtle fill on all four platforms (`:1168`), which
-the connector already serves through `secondary_hover` ←
-`button.hover_background` (`src/colors.rs:265`). So on 0.6.4 every ghost
+platform-facts records something else: `[Colors:Button] DecorationHover`
+blended, on KDE (`:1168`), which the connector already serves through
+`secondary_hover` ← `button.hover_background` (`src/colors.rs:265`). Measured
+on kde-breeze light, against the `#eff0f1` surface: the button hover is
+`#93cee9` and the accent is `#3daee9` — the same hue, but roughly twice the
+distance from the surface. So the ghost button does not hover with a wrong
+*colour family*; it hovers with the *selection* blue where KDE asks for the
+*button decoration* blue. So on 0.6.4 every ghost
 button — the application's and the ones upstream builds internally in 17 files
 (`tab/tab_bar.rs`, `dock/tab_panel.rs`, `dialog/dialog.rs`, `sheet.rs`,
 `input/input.rs`, `input/search.rs`, `input/group.rs`, `menu/app_menu_bar.rs`,
@@ -258,6 +263,25 @@ still exists and the connector still maps it, but in 0.6.4 no widget reads it �
 only `schema.rs` does, as the JSON fallback for `table_active_border`. Nothing
 to change: the field must hold a value (`colors.rs:1054` proves none is left at
 zero), and the mapping is already right if upstream restores the outline.
+
+**(m) The new `InputGroup`'s addon button hovers with the wrong token.**
+`InputGroupButton` is a ghost button that `render_in_group` repaints with a
+custom variant (`input/group.rs:544-583`): colour and border
+`theme.transparent`, and hover `cx.theme().muted`, halved in dark mode. `muted`
+is the muted-*background* slot — skeletons, switch tracks, disabled fills — and
+has no relation to a platform's button hover. Measured on kde-breeze light: the
+hover lands on `#dbdcdd`, 20 units from the `#eff0f1` field, where KDE's own
+`button.hover_background` is `#93cee9` at 57; in dark mode the 0.5 opacity puts
+it at roughly 10. Beside it, every ordinary button in the same window hovers
+`#93cee9` and every standalone ghost button `#3daee9` (§1.4g), so one control
+in the group is grey while its neighbours are blue.
+
+Nothing in the connector can correct it: `muted` is mapped correctly for what
+it is, and upstream reads it directly. An *application* can, by passing
+`ButtonCustomVariant` (`ButtonVariants::custom`), which makes `render_in_group`
+skip the override entirely — the same lever §2.10 weighs for ghost buttons.
+Recorded as Tier U; found by hovering the widget, which no test and no earlier
+pass of this review did.
 
 **(j) Nothing guards `Theme`'s own shape.** The three `tile_*` fields were
 `Theme` fields the connector never set (§1.2). They arrived upstream, sat

@@ -174,7 +174,9 @@ compares the measured height with the refinement's own field.
 
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
-width, button icon gap, input padding, popup-menu rows; and tab height, radius
+width, button icon gap, input padding, popup-menu rows; the `InputGroup`
+addon button, which upstream paints transparent and hovers with `muted`
+instead of the platform's button hover; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
 setters fill, `tab/tab.rs:801-808`) is
 listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)
