@@ -86,7 +86,13 @@ struct ResolvedColors {
     bg: Hsla,
     fg: Hsla,
     accent: Hsla,
-    accent_fg: Hsla,
+    // The item highlight gpui-component calls `accent` (menu, list, completion
+    // and calendar hover): the platform's menu hover pair, which is the
+    // selection colour on KDE and macOS and a subtle fill elsewhere.
+    menu_hover_bg: Hsla,
+    menu_hover_fg: Hsla,
+    sidebar_selection_bg: Hsla,
+    sidebar_selection_fg: Hsla,
     border: Hsla,
     // Issue 2: `muted` is the muted *background* slot (derived from surface),
     // and `muted_fg` is the muted *foreground* (d.muted IS the muted foreground).
@@ -171,7 +177,10 @@ pub fn to_theme_color(
         bg,
         fg,
         accent: rgba_to_hsla(d.accent_color),
-        accent_fg: rgba_to_hsla(d.accent_text_color),
+        menu_hover_bg: rgba_to_hsla(resolved.menu.hover_background),
+        menu_hover_fg: rgba_to_hsla(resolved.menu.hover_text_color),
+        sidebar_selection_bg: rgba_to_hsla(resolved.sidebar.selection_background),
+        sidebar_selection_fg: rgba_to_hsla(resolved.sidebar.selection_text_color),
         border: rgba_to_hsla(d.border.color),
         muted: muted_bg,
         muted_fg,
@@ -242,8 +251,10 @@ pub fn to_theme_color(
 fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.background = c.bg;
     tc.foreground = c.fg;
-    tc.accent = c.accent;
-    tc.accent_foreground = c.accent_fg;
+    // `accent` is upstream's item highlight, not the platform's accent colour
+    // (gpui-component `src/theme/schema.rs:254-255`); see `ResolvedColors`.
+    tc.accent = c.menu_hover_bg;
+    tc.accent_foreground = c.menu_hover_fg;
     tc.border = c.border;
     tc.muted = c.muted;
     tc.muted_foreground = c.muted_fg;
@@ -378,8 +389,8 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
 
     tc.sidebar = c.sidebar;
     tc.sidebar_foreground = c.sidebar_fg;
-    tc.sidebar_accent = c.accent;
-    tc.sidebar_accent_foreground = c.accent_fg;
+    tc.sidebar_accent = c.sidebar_selection_bg;
+    tc.sidebar_accent_foreground = c.sidebar_selection_fg;
     tc.sidebar_border = c.window_border;
     tc.sidebar_primary = c.primary;
     tc.sidebar_primary_foreground = c.primary_fg;
@@ -643,6 +654,64 @@ mod tests {
         variant
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate")
+    }
+
+    fn resolved_preset(name: &str, mode: ColorMode) -> ResolvedTheme {
+        Theme::preset(name)
+            .expect("preset must exist")
+            .into_variant(mode)
+            .expect("preset must have the variant")
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
+            .expect("resolved preset must validate")
+    }
+
+    /// gpui-component's `accent` is the item highlight ("hover background on
+    /// MenuItem, ListItem, etc.", 0.6.4 `src/theme/schema.rs:254-255`), so it
+    /// takes the platform's *menu* hover pair, not the platform's accent
+    /// colour. The two coincide on KDE and macOS, where a hovered menu item is
+    /// selection-coloured; on Adwaita and Windows 11 platform-facts §2.6
+    /// records a subtle fill with unchanged text, and the accent colour there
+    /// would paint every hovered menu row, completion row and calendar day
+    /// saturated blue. adwaita is the discriminating input.
+    #[test]
+    fn accent_is_the_platforms_menu_hover_pair() {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let r = resolved_preset("adwaita", mode);
+            let tc = to_theme_color(&r, matches!(mode, ColorMode::Dark), false);
+            assert_ne!(
+                rgba_to_hsla(r.menu.hover_background),
+                rgba_to_hsla(r.defaults.accent_color),
+                "adwaita no longer discriminates; pick another preset"
+            );
+            assert_eq!(tc.accent, rgba_to_hsla(r.menu.hover_background));
+            assert_eq!(tc.accent_foreground, rgba_to_hsla(r.menu.hover_text_color));
+        }
+        // Where the platform highlights menu rows with its selection colour,
+        // nothing changes.
+        let r = resolved_preset("kde-breeze", ColorMode::Light);
+        let tc = to_theme_color(&r, false, false);
+        assert_eq!(tc.accent, rgba_to_hsla(r.defaults.accent_color));
+    }
+
+    /// The sidebar's highlight pair comes from the sidebar's own selection
+    /// fields. windows-11 dark is where they differ from the accent pair.
+    #[test]
+    fn sidebar_accent_is_the_sidebars_selection_pair() {
+        let r = resolved_preset("windows-11", ColorMode::Dark);
+        let tc = to_theme_color(&r, true, false);
+        assert_ne!(
+            rgba_to_hsla(r.sidebar.selection_text_color),
+            rgba_to_hsla(r.defaults.accent_text_color),
+            "windows-11 dark no longer discriminates; pick another preset"
+        );
+        assert_eq!(
+            tc.sidebar_accent,
+            rgba_to_hsla(r.sidebar.selection_background)
+        );
+        assert_eq!(
+            tc.sidebar_accent_foreground,
+            rgba_to_hsla(r.sidebar.selection_text_color)
+        );
     }
 
     #[test]
