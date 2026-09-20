@@ -3,7 +3,7 @@
 Status: Design (2026-09-20, revised 2026-09-21); nothing implemented
 Companion rationale:
 [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md)
-(decisions C1–C16)
+(decisions C1–C17)
 Companion plan:
 [`todo_v0.5.9_theme-contracts-plan.md`](todo_v0.5.9_theme-contracts-plan.md)
 Sibling work in the same release:
@@ -119,8 +119,9 @@ report a breaking change there the same way it reported gpui-component's.
 
 A new public module, `src/styles.rs`. Each function takes `&ResolvedTheme`
 and returns a closure iced accepts. Pure; no global state; the returned
-closure ignores the `&Theme` argument, because the values are already
-resolved. Each closure owns the handful of `Color` values it needs, captured
+closure uses its `&Theme` argument for one thing only — asking iced for its
+own default where the native model has no value (§3.2) — because every native
+value is already resolved. Each closure owns the handful of `Color` values it needs, captured
 by value, so it is `'static` and can be stored in a widget.
 
 ### 3.1 Three closure shapes, not one
@@ -165,22 +166,46 @@ field of those two by name so an added field is still noticed.
 Some `Style` fields have no native counterpart at all. They are not invented
 and they are not guessed:
 
-> **A `Style` field the native model does not carry takes the value iced's own
-> default style function gives it for that widget and status, cited by file
-> and line in a comment beside it.**
+> **A `Style` field the native model does not carry is read, inside the
+> closure, from iced's own public default style function for that widget and
+> status. It is never written as a literal — not ours, and not a copy of
+> iced's.**
 
-The ones this release meets, with their sources:
+```rust
+move |theme, status| {
+    let iced = toggler::default(theme, status);   // iced's own answer
+    toggler::Style {
+        background: /* native */,
+        // … every field named; the ones with no native source read `iced`:
+        border_radius: iced.border_radius,
+        padding_ratio: iced.padding_ratio,
+    }
+}
+```
 
-| Field | Value, from iced | Citation |
-|---|---|---|
-| `button::Style.snap`, `container::Style.snap` | `Style::default().snap`, which is `cfg!(feature = "crisp")` — **written as `Style::default().snap`, not as a literal**, so a consumer who enables `crisp` keeps it | `button.rs:517`, `container.rs:482` |
-| `scrollable::Style.gap` | `None` | `scrollable.rs:2375` |
-| `scrollable::Style.auto_scroll` | iced's `AutoScroll`, constructed as iced does from the palette | `scrollable.rs:2357-2368` |
-| `toggler::Style.border_radius` | `None` (perfectly round) | `toggler.rs:610` |
-| `toggler::Style.padding_ratio` | `0.1` | `toggler.rs:611` |
-| `menu::Style.shadow` | `Shadow::default()` | `overlay/menu.rs:659` |
-| `text_input::Style.icon` | iced's own choice, `palette.background.weak.text` — the model has no input-icon colour | `text_input.rs:1768` |
-| `container::Style.text_color` for `container_card` | `None`, which inherits — `CardTheme` carries no font | `container.rs:478` |
+The first draft of this rule said "copy iced's value and cite the line". That
+would have put `0.1` and a hand-rebuilt `AutoScroll` into `src/`, where the
+repository's hook rejects hardcoded values, and it would have gone stale the
+day iced retuned a default. Every function needed is public:
+`text_input::default` (`:1758`), `toggler::default` (`:561`),
+`scrollable::default` (`:2345`), `slider::default` (`:676`),
+`checkbox::primary` (`:569`), `progress_bar::primary` (`:287`),
+`overlay::menu::default` (`:646`), and `button::Style::default()` /
+`container::Style::default()` for the two structs that have one. Construction
+stays **exhaustive** — every field is named, so a field added upstream still
+fails the build and gets classified by a person.
+
+The fields this release knows have no native source:
+
+| Field | Why the model cannot supply it |
+|---|---|
+| `button::Style.snap`, `container::Style.snap` | a renderer setting, `cfg!(feature = "crisp")` (`button.rs:517`) — a literal `false` would switch crisp rendering off for a consumer who enabled it |
+| `button::Style.shadow`, `container::Style.shadow`, `menu::Style.shadow` | the model has `defaults.shadow_color` and `border.shadow_enabled` but no offset or blur, so an iced `Shadow` cannot be built without inventing geometry |
+| `scrollable::Style.gap`, `.auto_scroll` | no native counterpart |
+| `toggler::Style.border_radius`, `.padding_ratio`, and its four border fields | `SwitchTheme` carries no border and no thumb inset |
+| `slider` `rail.border`, `handle.border_width`, `handle.border_color`; the scrollable rails' `border` | `SliderTheme` and `ScrollbarTheme` carry no border |
+| `text_input::Style.icon` | the model has no input-icon colour |
+| `container::Style.text_color` for `container_card` | `CardTheme` carries no font; iced's `None` inherits |
 
 **Soft options (C16).** Seventeen of the native fields below are
 `soft_option`: `Option` even after resolution, where `None` is the platform
@@ -204,12 +229,18 @@ field in one step:
 | `switch.disabled_thumb_color` | `switch.thumb_background` |
 | `tab.hover_background` (§3a) | `tab.background_color` |
 
-**Alpha is emitted unchanged.** Fourteen of these colours are translucent on
-some platform (Windows 11's hover overlays, macOS's scrollbar thumbs). They
-are state overlays the platform itself draws translucent over whatever lies
-beneath, and iced draws a `Style` background the same way, so `styles::*`
-passes the alpha through. Compositing belongs to §7's *measurement*, not to
-what the connector emits.
+**State layers (C17).** Fourteen of these colours are translucent on some
+platform. What to emit depends on what the colour *is*, and the platform
+documents it (rationale §2.11):
+
+| Kind | Fields | Emitted as |
+|---|---|---|
+| hover and pressed **of a widget that paints its own fill** | `button.hover_background`, `button.active_background`, `checkbox.hover_background`, `switch.hover_*` | **composited over that widget's idle fill** — the platform layers, iced replaces. For an opaque value this is the identity, so there is no branch |
+| idle and disabled fills | `*.background_color`, `*.disabled_background`, `checkbox.unchecked_background` | as given: a translucent disabled fill *replaces* the idle one and lets the window through |
+| row highlights and thumbs | `menu.hover_background`, `list.*`, `sidebar.*`, `tab.*`, the scrollbar thumb colours | as given: iced paints them over a panel or rail it also paints, so the layering happens by itself |
+
+Computed for Windows 11 light: the platform's hovered button is `#f3f3f3`; the
+raw value in a replacing toolkit gives `#e9e9e9`.
 
 ### 3.3 The functions
 
@@ -418,7 +449,10 @@ loosened assertion.
 Rows are the fields with a native counterpart, including the ones this release
 corrected: `accent` ← `menu.hover_background`, `accent_foreground` ←
 `menu.hover_text_color`, `sidebar_accent*` ← the sidebar's selection pair,
-`secondary_hover` ← `button.hover_background`, `list_hover`, `list_active`,
+`secondary_hover` ← `button.hover_background` (raw — its readers are
+transparent-idle), `button_hover` and `button_secondary_hover` ← the same
+layer **composited over `button.background_color`**, likewise the two
+`*_active` tokens (C17; `colors.rs:325, 329` copy the raw value today), `list_hover`, `list_active`,
 `selection`, `input`, `primary`, the status colours, the scrollbar colours,
 the tab colours, and the four base-palette colours the connector maps
 directly (`red` ← `danger`, `green` ← `success`, `blue` ← `info`, `yellow` ←
@@ -674,6 +708,11 @@ compositing, so the tests composite before calling them.
   both modes. Applications that relied on `button::secondary` carrying the
   platform surface call `styles::button`, which carries idle, hover, pressed
   and label together.
+- **Fixed → native-theme-gpui** — a filled button's hover and pressed colours
+  are composited over the button's own fill. Windows 11 gives them as 4 %
+  layers, and gpui-component replaces a background where the platform layers
+  it, so a hovered button landed on `#e9e9e9` where Windows draws `#f3f3f3`.
+  No other preset changes.
 - **Added** — `native_theme_iced::styles`: per-widget style functions built
   from the resolved theme, for the slots iced's palette cannot carry
   unambiguously.

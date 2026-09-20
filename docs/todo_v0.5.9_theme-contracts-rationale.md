@@ -387,7 +387,51 @@ do nothing, and that the real receivers are elsewhere.
 |---|---|
 | `to_theme(resolved, name, prefs)` for symmetry with gpui | Rejected. gpui's `Theme` holds font sizes and an overlay scrim, so its parameter has work to do; iced's would be dead, and a parameter that does nothing is a promise the crate does not keep. Parity is of capability, not of parameter lists. |
 | A separate `scaled_font_size(resolved, prefs)`, leaving `font_size(resolved)` | Rejected. It leaves the trap in place: the obvious call silently ignores the user's accessibility setting, which is the defect. |
+| Leave `from_system` alone and point callers at `SystemTheme::from_system()` plus `to_iced_theme()`, which keeps the preferences | Rejected. `from_system()` is the README's first example; an application that follows it could then never scale its text. |
 | **`font_size` and `mono_font_size` take the preferences; `from_system` returns them** | **Chosen.** The right call becomes the only call. The factor is sanitised exactly as gpui does it (`gpui/src/lib.rs:414-417`): used when finite and positive, else 1. |
+
+### 2.11 State layers: the platform layers, the toolkits replace
+
+Found 2026-09-21 while deciding what `styles::button` should emit for a
+translucent hover. Windows 11's `button.hover_background` is `#0000000a`, and
+both platform-facts (§2.3, "`SubtleFillColorSecondary` overlay") and the
+preset's own comment ("overlay on bg") say what it is: a 4 % layer drawn **on
+top of the button's fill**. iced and gpui-component both *replace* a button's
+background per state. So emitting the value as it stands paints 4 % black over
+whatever is behind the button:
+
+| | Computed for Windows 11 light (`button.background_color` `#fdfdfd`, window `#f3f3f3`) |
+|---|---|
+| What the platform draws on hover | 4 % black over `#fdfdfd` → **`#f3f3f3`** |
+| What a replacing toolkit draws from the raw value | 4 % black over the window → **`#e9e9e9`** |
+
+The same class as everything else in this document — a value whose meaning
+(layer) differs from the slot's (replacement) — and it is in the **gpui
+connector as shipped**: `colors.rs:325, 329` copy the raw overlay into
+`button_hover` and `button_secondary_hover`, which upstream's filled `Default`
+and `Secondary` buttons read (`button/button.rs:1079, 1093`).
+
+Measured scope: `button.hover_background` and `button.active_background` are
+translucent only on windows-11 (both modes); `checkbox.hover_background` on
+windows-11 and material, whose "state layer" is an overlay by Material's own
+definition. Everywhere else the values are opaque, and compositing an opaque
+colour is the identity — so one rule serves all 32 combinations.
+
+| Option | Verdict |
+|---|---|
+| Emit native alpha unchanged everywhere (the previous draft) | Rejected: wrong on Windows 11 and Material for every widget that paints its own fill. |
+| Composite every translucent colour over its widget's idle fill | Rejected. A *disabled* fill is not a layer: Adwaita's `disabled_background` at 50 % alpha replaces the idle fill and lets the window show through. Compositing it over the idle fill would yield the idle colour again — no disabled appearance at all. |
+| **Hover and pressed colours are state layers, composited over the widget's own idle fill; idle and disabled fills are emitted as given; row highlights (menu, list, sidebar, tab) are emitted as given, because the toolkit paints them over a panel it also paints** | **Chosen.** It is what the platform documents, it needs no constant — only the platform's own two colours and the platform's own alpha — and it is the compositing Layer 3 already performs to measure. |
+
+In gpui the four filled-button tokens are composited and
+`secondary_hover` / `secondary_active` stay raw: their readers are
+transparent-idle (title bar, stepper trigger, tab, calendar, and
+`variants::ghost_button`), where the raw layer over the backdrop is exactly
+right. `Hsla::blend` is the idiom `colors.rs` already uses (`:174`).
+
+One data oddity surfaced on the way and goes to `preset-validator`, not to the
+connectors: windows-11 light gives `disabled_background = "#f9f9f900"`, alpha
+zero, so a disabled button has no fill at all.
 
 ---
 
@@ -405,12 +449,13 @@ do nothing, and that the real receivers are elsewhere.
 | C8 | Layer 3: the connector never makes a text-on-background pair less readable than the platform's own values — asserted for gpui and for every `styles::*` output, reported for iced's palette layer, where iced and not the connector chooses the background; sub-AA pairs are printed, not asserted, because 174 of 512 are real platform data (§2.6). |
 | C9 | Screenshot diffing is not in this release (§4). |
 | C10 | The gpui connector's `accent` fix (sibling E20) is re-stated as a contract-table row rather than two bespoke tests, so it is covered by the same mechanism as everything else. |
-| C11 | The iced connector takes `iced_widget` as a normal dependency, because every widget `Style` type lives there and none but `text` is in `iced_core` (§2.2). Those structs derive no `Default` and are not `#[non_exhaustive]`, so `styles::*` constructs them exhaustively and an upstream field addition fails the build. A `Style` field the native model does not carry takes the value iced's own default style function gives it, cited by file and line — never a number of ours (specification §3). |
+| C11 | The iced connector takes `iced_widget` as a normal dependency, because every widget `Style` type lives there and none but `text` is in `iced_core` (§2.2). Seven of the nine structs have no `Default` and none is `#[non_exhaustive]`, so `styles::*` constructs them exhaustively and an upstream field addition fails the build. A `Style` field the native model does not carry is read, at run time, from iced's own public default style function — so no number of ours, and no copy of iced's, ever sits in `src/` (specification §3.2). |
 | C12 | `iced_aw` is covered behind a non-default `iced_aw` feature, for the six widgets native-theme models and iced core lacks (§2.8). |
 | C13 | Coverage of the three iced crates is selected by **additive** features — `widgets` in `default`, `iced_aw` opt-in and implying `widgets` — narrowed with `default-features = false`. No subtractive feature, because Cargo unifies features across the graph and one consumer's narrowing would break another's build (§2.9). |
 | C14 | Scrollbar *widths* are not a `Style` field in iced and cannot travel through `.style(..)`. `styles::scrollbar` returns a configured `scrollable::Scrollbar` carrying `groove_width` and `thumb_width`; `scrollbar.min_thumb_length` has no receiver in iced 0.14 and is recorded as unreachable rather than approximated (specification §3). |
 | C15 | `iced_test` 0.14.0 is a dev-dependency of the iced connector, for the showcase's interaction tests (§2.5). It is dev-only, so no consumer pays for it. |
-| C16 | A `soft_option` field is `Option` even after resolution, and `None` means the platform has no distinct appearance in that state. `styles::*` falls back by **copying** the widget's base-state value, never by arithmetic — the rule the egui design already set (`todo_v0.6.0_egui-connector-rationale.md` §3.6). Native alpha is emitted unchanged (specification §3.2). |
+| C16 | A `soft_option` field is `Option` even after resolution, and `None` means the platform has no distinct appearance in that state. `styles::*` falls back by **copying** the widget's base-state value, never by arithmetic — the rule the egui design already set (`todo_v0.6.0_egui-connector-rationale.md` §3.6). |
+| C17 | Hover and pressed colours are state layers: both connectors composite them over the widget's own idle fill, because the platform layers where the toolkits replace. Idle fills, disabled fills and row highlights are emitted as given. In gpui that corrects `button_hover`, `button_active`, `button_secondary_hover` and `button_secondary_active`; only windows-11 changes (§2.11). |
 
 ---
 
@@ -427,4 +472,4 @@ do nothing, and that the real receivers are elsewhere.
 
 ## 5 -- Open questions for the maintainer
 
-None. §2.2a and §2.10 settled the last two.
+None. §2.2a, §2.10 and §2.11 settled the last three.

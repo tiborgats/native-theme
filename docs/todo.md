@@ -258,6 +258,11 @@ here so the work is not re-derived.
       `input.placeholder_color` at 1.36 against the field. The contrast test
       added in v0.5.9 prints the whole list on every run, so it stays visible.
 
+- [ ] windows-11 light gives `button.disabled_background = "#f9f9f900"` — alpha
+      zero, so a disabled button has no fill at all. Found 2026-09-21 while
+      measuring translucent state colours; for `preset-validator` to judge
+      against Fluent's `ControlFillColorDisabled`.
+
 - [ ] Scrollbar thumb radius per platform: platform-facts records none, so the
       connector mirrors gpui-component's `radius` for the thumb.
 - [ ] The showcase's "Text Input" tooltip claims the input background is
