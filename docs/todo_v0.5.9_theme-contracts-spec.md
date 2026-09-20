@@ -3,7 +3,7 @@
 Status: Design (2026-09-20, revised 2026-09-21); nothing implemented
 Companion rationale:
 [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md)
-(decisions C1–C15)
+(decisions C1–C16)
 Companion plan:
 [`todo_v0.5.9_theme-contracts-plan.md`](todo_v0.5.9_theme-contracts-plan.md)
 Sibling work in the same release:
@@ -21,8 +21,8 @@ specification assumes its state.
    something else, where the slot has one meaning (§2).
 2. The iced connector gains `styles`, a module of per-widget style functions,
    for the slots that have several meanings (§3).
-3. `native_theme_iced::to_theme` takes accessibility preferences, and the
-   crate forwards the icon features (§4).
+3. Text scaling reaches an iced application, through the two font-size
+   helpers, and the crate forwards the icon features (§4).
 4. Both connectors gain a **mapping-contract table**: every slot, the native
    field it must equal, checked over all 32 preset/mode combinations, with a
    coverage tripwire over every slot (§5).
@@ -63,8 +63,14 @@ corrected on 2026-09-21, when each was re-checked against the same sources.
 | † `secondary.base.color` has **six** readers with **three** meanings: placeholder text, the `button::secondary` and `container::secondary` fill, and the `progress_bar::secondary` bar fill | `text_input.rs:1769`, `text_editor.rs:1476`, `pick_list.rs:910`, `button.rs:615`, `container.rs:629`, `progress_bar.rs:299` |
 | `button::secondary`'s hover reads `palette.secondary.strong.color`, which the connector never writes, and which nothing else reads | `button.rs:620`; `extended.rs:109-119` writes only `.base` |
 | The pick-list/menu overlay highlight is `palette.primary.strong` | `overlay/menu.rs:657-658` |
-| `to_theme` has no accessibility parameter | `connectors/native-theme-iced/src/lib.rs:113-116` |
-| The iced connector declares no `[features]`; the gpui one forwards four | `connectors/native-theme-iced/Cargo.toml`; `connectors/native-theme-gpui/Cargo.toml:27-32` |
+| Nothing in the iced connector takes accessibility preferences: `font_size` and `mono_font_size` return the platform size unscaled, and `from_system` drops the `SystemTheme` that carries them | `connectors/native-theme-iced/src/lib.rs:259, 274, 177-189` |
+| † An iced `Theme` carries a palette and no font size, so text scaling cannot land in `to_theme` | `iced_core-0.14.0/src/theme.rs`, `Theme::custom_with_fn` |
+| † Nothing the palette reads is translucent: `background`, `text`, `accent`, the three status colours, `surface` and `accent_text` are opaque in all 32 combinations. Of the colours `styles::*` emits, 14 fields are translucent somewhere, and every one is a state overlay or a scrollbar thumb — no surface | measured 2026-09-21 |
+| † Today's placeholder contrast is 1.06–1.84 on **all 32** combinations. iced's *generated* `secondary.base.color` would be worse than the platform's own pair in 22 of 32 (material light 9.11 → 2.91). `input.placeholder_color` in that slot is exactly native in foreground on all 32; its ratio is lower than native in 12, by at most 0.68, solely because iced paints a text input on the window background, which differs from `input.background_color` in 18 of 32 | measured 2026-09-21, alpha composited |
+| † `Pair::new(color, text)` is public and picks a readable text colour by iced's own rule; over the 32 combinations the label it gives on `input.placeholder_color` never falls below 4.16:1 | `iced_core-0.14.0/src/theme/palette.rs:440-445`; measured |
+| † 25 model fields are `soft_option`: they stay `Option` in `ResolvedTheme`. 17 of them are read by §3.3. None is `None` in any bundled preset, but a live OS reader may produce one | `native-theme-derive/src/gen_structs.rs:42`; `native-theme/src/model/widgets/mod.rs`; measured |
+| † **No `#[test]` can see the missing icon features.** `cargo test` builds with the dev-dependencies, which already enable `material-icons`, `lucide-icons` and `system-icons` on `native-theme`. Only the no-dev feature tree shows the defect | `cargo tree -p native-theme-iced -e no-dev,features -i native-theme` lists only `default` today |
+| The iced connector declares no `[features]`; the gpui one forwards four | `connectors/native-theme-iced/Cargo.toml`; `connectors/native-theme-gpui/Cargo.toml:26-31` |
 | An `[[example]]` target runs its `#[cfg(test)]` tests when the manifest sets `test = true`; the default is `false` | Cargo book, *Configuring a target*; both showcase entries currently omit it (`native-theme-gpui/Cargo.toml:80-81`, `native-theme-iced/Cargo.toml:26-27`) |
 | † **iced 0.14 does ship a headless renderer and interaction simulator.** `iced_test` 0.14.0 — "A library for testing iced applications in headless mode" — was published 2025-12-07, the same day as iced 0.14.0, and is reachable as a plain dev-dependency or through iced's `tester` feature | crates.io metadata; `iced_test-0.14.0/src/simulator.rs:45-253`; `iced-0.14.0/Cargo.toml:101`. The first draft claimed the opposite on the strength of `ls ~/.cargo/registry/src/*/iced*`, which only shows what a local build has pulled |
 | † The simulator needs a renderer backend in the test's dependency graph. Without one every widget measures 0×0 and `click` returns `TargetNotVisible`; with iced's default features the same button measured 41.904 × 20.8 and the click produced its message | measured 2026-09-21 in a scratch crate against the published sources |
@@ -80,21 +86,21 @@ corrected on 2026-09-21, when each was re-checked against the same sources.
 
 ## 2 -- The iced palette: what changes
 
-`src/extended.rs`, `apply_overrides`. Two lines go; nothing is added
-(rationale §2.2a, C3).
+`src/extended.rs`, `apply_overrides`. One slot changes its source (rationale
+§2.2a, C3).
 
 | Line today | Change | Why |
 |---|---|---|
-| `extended.secondary.base.color = to_color(colors.btn_bg)` | **removed** | six readers, three meanings (§1). Leaving iced's generated value restores a readable placeholder; the button surface is delivered by `styles::button`. |
-| `extended.secondary.base.text = to_color(colors.btn_fg)` | **removed** | its only readers pair it with `secondary.base.color`, which we no longer control. Keeping it would paint the platform's label colour on iced's generated fill — a pair no platform ever measured, and one §7 would be entitled to fail. |
-| — | **nothing added.** In particular **not** `secondary.strong.color = button.hover_background` | that slot does mean "hover" unambiguously (`button.rs:620`, nothing else reads it), but its base is now iced's, and a control that idles in one theme and hovers into another is the incoherence this release removes. `styles::button` carries idle, hover, pressed and label together. |
+| `extended.secondary.base.color = to_color(colors.btn_bg)` and `extended.secondary.base.text = to_color(colors.btn_fg)` | **replaced** by `extended.secondary.base = Pair::new(to_color(colors.placeholder), extended.background.base.text)` | the slot has six readers and three meanings (§1), and the text meaning wins because it is the one a wrong value makes unreadable. Measured, the placeholder foreground becomes exactly the platform's on all 32 combinations. The three fill readers get the placeholder tone, which is what iced's own design gives them, labelled by iced's own readable-text rule. |
+| — | **not** `secondary.strong.color = button.hover_background` | that slot does mean "hover" unambiguously (`button.rs:620`), but its base is no longer the button's, and a control that idles in one colour family and hovers into another is the incoherence this release removes. `styles::button` carries idle, hover, pressed and label together. |
+| — | **not** "leave iced's generated value", which the second draft chose | measured worse than the platform's own pair in 22 of 32 (§1). |
 | `background.weak.color = surface`, `background.weak.text = foreground` | kept | overridden as a *pair*, so they stay coherent; the closest single meaning iced has for a subdued panel. The nine readers that want something else are served by `styles::*`. |
 | `primary.base.text = accent_fg` | kept | `primary.base.color` comes from the `Palette` itself (`palette.rs:41`), so this pair is native on both sides. |
 | the four `ensure_status_contrast` lines | kept | correct as written |
 
-`OverrideColors` loses `btn_bg` **and** `btn_fg`: after the two deletions
-nothing reads either, so leaving them fails `-D warnings` on `dead_code`. No
-field is added.
+`OverrideColors` loses `btn_bg` and `btn_fg`, which nothing reads any more
+(leaving them fails `-D warnings` on `dead_code`), and gains
+`placeholder: Rgba`, filled from `resolved.input.placeholder_color`.
 
 No other palette slot changes. Everything else moves to §3.
 
@@ -170,9 +176,40 @@ The ones this release meets, with their sources:
 | `button::Style.snap`, `container::Style.snap` | `Style::default().snap`, which is `cfg!(feature = "crisp")` — **written as `Style::default().snap`, not as a literal**, so a consumer who enables `crisp` keeps it | `button.rs:517`, `container.rs:482` |
 | `scrollable::Style.gap` | `None` | `scrollable.rs:2375` |
 | `scrollable::Style.auto_scroll` | iced's `AutoScroll`, constructed as iced does from the palette | `scrollable.rs:2357-2368` |
-| `toggler::Style.border_radius` | `None` (perfectly round) | `toggler.rs:611` |
-| `toggler::Style.padding_ratio` | `0.1` | `toggler.rs:612` |
-| `menu::Style.shadow` | `Shadow::default()` | `overlay/menu.rs:658` |
+| `toggler::Style.border_radius` | `None` (perfectly round) | `toggler.rs:610` |
+| `toggler::Style.padding_ratio` | `0.1` | `toggler.rs:611` |
+| `menu::Style.shadow` | `Shadow::default()` | `overlay/menu.rs:659` |
+| `text_input::Style.icon` | iced's own choice, `palette.background.weak.text` — the model has no input-icon colour | `text_input.rs:1768` |
+| `container::Style.text_color` for `container_card` | `None`, which inherits — `CardTheme` carries no font | `container.rs:478` |
+
+**Soft options (C16).** Seventeen of the native fields below are
+`soft_option`: `Option` even after resolution, where `None` is the platform
+stating the widget has no distinct appearance in that state. The fallback is
+always a **copy** of the widget's base-state value — never arithmetic, never
+`unwrap` — the rule the egui design already set. Each chain ends on a required
+field in one step:
+
+| Soft option | `None` → |
+|---|---|
+| `button.active_background` | `button.hover_background` |
+| `button.disabled_background` | `button.background_color` |
+| `input.hover_border_color`, `input.focus_border_color` | `input.border.color` |
+| `input.disabled_background` | `input.background_color` |
+| `checkbox.hover_background`, `checkbox.unchecked_background`, `checkbox.disabled_background` | `checkbox.background_color` |
+| `checkbox.unchecked_border_color` | `checkbox.border.color` |
+| `scrollbar.thumb_active_color` | `scrollbar.thumb_hover_color` |
+| `slider.thumb_hover_color` | `slider.thumb_color` |
+| `switch.hover_checked_background`, `switch.disabled_checked_background` | `switch.checked_background` |
+| `switch.hover_unchecked_background`, `switch.disabled_unchecked_background` | `switch.unchecked_background` |
+| `switch.disabled_thumb_color` | `switch.thumb_background` |
+| `tab.hover_background` (§3a) | `tab.background_color` |
+
+**Alpha is emitted unchanged.** Fourteen of these colours are translucent on
+some platform (Windows 11's hover overlays, macOS's scrollbar thumbs). They
+are state overlays the platform itself draws translucent over whatever lies
+beneath, and iced draws a `Style` background the same way, so `styles::*`
+passes the alpha through. Compositing belongs to §7's *measurement*, not to
+what the connector emits.
 
 ### 3.3 The functions
 
@@ -180,13 +217,13 @@ The ones this release meets, with their sources:
 |---|---|---|---|
 | `button` | A | `background`, `text_color`, `border`, `shadow`, `snap` | `button.background_color` / `.font.color` / `.border.*`; `hover_background`, `active_background`, `hover_text_color`, `active_text_color`, `disabled_*` per `Status` |
 | `button_primary` | A | as above | `button.primary_background`, `primary_text_color` |
-| `text_input` | A | `background`, `border`, `icon`, `placeholder`, `value`, `selection` | `input.background_color`, `.border.*`, `.placeholder_color`, `.font.color`, `.selection_background`; `hover_border_color` and `focus_border_color` per `Status`; `icon` from `.font.color` |
+| `text_input` | A | `background`, `border`, `icon`, `placeholder`, `value`, `selection` | `input.background_color`, `.border.*`, `.placeholder_color`, `.font.color`, `.selection_background`; `hover_border_color` and `focus_border_color` per `Status`; `icon` from §3.2 |
 | `checkbox` | A | `background`, `icon_color`, `border`, `text_color` | `checkbox.checked_background`, **`.indicator_color`** (the check mark; there is no `check_color`), `.unchecked_background`, `.unchecked_border_color`, `.border.*`, `.font.color` |
 | `toggler` | A | `background`, `background_border_width`, `background_border_color`, `foreground`, `foreground_border_width`, `foreground_border_color`, `text_color`, `border_radius`, `padding_ratio` | `switch.unchecked_background`, `checked_background`, `thumb_background`, `hover_checked_background`, `hover_unchecked_background`, `disabled_*` per `Status`; the last two fields from §3.2 |
 | `scrollable` | A | `container`, `vertical_rail`, `horizontal_rail`, `gap`, `auto_scroll` | `scrollbar.track_color` → each rail's `background`; `thumb_color`, `thumb_hover_color`, `thumb_active_color` → the `Scroller` background per `Status`; the last two fields from §3.2 |
 | `scrollbar` | D | — (a `Scrollbar`, not a `Style`) | `scrollbar.groove_width` → `.width(..)`, `scrollbar.thumb_width` → `.scroller_width(..)` |
 | `menu` | C | `background`, `border`, `text_color`, `selected_text_color`, `selected_background`, `shadow` | `menu.background_color`, `.border.*`, `.font.color`, `.hover_text_color`, `.hover_background` |
-| `container_card` | B | `text_color`, `background`, `border`, `shadow`, `snap` | `card.background_color`, `.border.*`; text from `defaults.text_color` |
+| `container_card` | B | `text_color`, `background`, `border`, `shadow`, `snap` | `card.background_color`, `.border.*`; `text_color` and `snap` from §3.2 |
 | `slider` | A | `rail` (`backgrounds`, `width`, `border`), `handle` (`shape`, `background`, `border_width`, `border_color`) | `slider.fill_color` and `track_color` → `rail.backgrounds`; `track_height` → `rail.width`; `thumb_color`, `thumb_hover_color` → `handle.background`; `thumb_diameter` → `handle.shape` |
 | `progress_bar` | B | `background`, `bar`, `border` | `progress_bar.track_color`, `fill_color`, `.border.*` |
 | `tooltip` | B | a `container::Style`: `text_color`, `background`, `border`, `shadow`, `snap` | `tooltip.background_color`, `.border.*`, `.font.color` |
@@ -267,38 +304,34 @@ so they are covered by §6a's completeness rule like any other widget.
 
 ## 4 -- Accessibility preferences and features (iced)
 
-### 4.1 `to_theme`
+### 4.1 Text scaling
 
 ```rust
-pub fn to_theme(
-    resolved: &ResolvedTheme,
-    name: &str,
-    prefs: &AccessibilityPreferences,
-) -> iced_core::theme::Theme
+pub fn font_size(resolved: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32;
+pub fn mono_font_size(resolved: &ResolvedTheme, prefs: &AccessibilityPreferences) -> f32;
+
+pub fn from_system() -> Result<(Theme, ResolvedTheme, bool, AccessibilityPreferences)>;
 ```
 
-`from_preset` gains the same parameter. `from_system` (`src/lib.rs:177`) and
-`SystemThemeExt::to_iced_theme` (`src/lib.rs:197, 201`) do **not**: both
-already read a `SystemTheme`, which carries `accessibility`, so they use those
-and their signatures keep their shape. Taking a parameter there would let a
-caller contradict the system it just asked for.
-
-What the preferences change in iced:
-
-| Preference | Effect |
-|---|---|
-| `text_scaling_factor` | multiplies `font_size()` and `mono_font_size()` (`lib.rs:259, 274`), the two values an iced application sets on its widgets |
-| `reduce_transparency` | any colour the connector emits with alpha below 1 is composited against its background and emitted opaque |
-| `reduce_motion` | recorded and exposed as `reduce_motion(prefs) -> bool`; iced has no global animation flag, so the application decides |
-
+Each font size is multiplied by `prefs.text_scaling_factor` when that is
+finite and positive, else by 1 — the same sanitising the gpui connector does
+(`gpui/src/lib.rs:414-417`). `from_system` returns the preferences it used to
+drop, because a caller now needs them for `font_size`.
 `AccessibilityPreferences` is re-exported from the crate root, as gpui does.
 
-**Every call site changes.** The signature is used in six files:
-`src/lib.rs`, `src/extended.rs`, `src/icons.rs`, `tests/integration.rs`,
-`examples/showcase-iced.rs` and `README.md` — 43 occurrences of
-`to_theme(` / `from_preset(` / `to_iced_theme(` measured 2026-09-21. The
-README is prose, not doctests (`lib.rs` does not `include_str!` it), but it is
-updated in §8 all the same.
+**`to_theme`, `from_preset` and `SystemThemeExt::to_iced_theme` do not
+change.** The first draft gave them a preferences parameter for symmetry with
+gpui; it would have been dead (rationale §2.10):
+
+| Preference | In iced |
+|---|---|
+| `text_scaling_factor` | the two functions above. An iced `Theme` is a palette and has no font size to scale |
+| `reduce_transparency` | **no receiver today**: nothing the palette reads and no surface `styles::*` emits is translucent in any of the 32 combinations (§1). Revisit when a preset or a live reader yields a translucent surface |
+| `reduce_motion` | **no receiver**: iced has no global animation switch. The application reads the public field; the connector adds no wrapper |
+
+The call sites are few: `font_size(` and `mono_font_size(` in the showcase
+(`showcase-iced.rs:2365, 2370`), the crate's own tests, and the README;
+`from_system()` in the README and the crate docs.
 
 ### 4.2 Features
 
@@ -391,7 +424,9 @@ the tab colours, and the four base-palette colours the connector maps
 directly (`red` ← `danger`, `green` ← `success`, `blue` ← `info`, `yellow` ←
 `warning`; `colors.rs:601-607`).
 
-For the iced connector, rows cover every `styles::*` field of §3.3 — including
+For the iced connector, the palette rows include `secondary.base.color` ←
+`input.placeholder_color` — the row that would have caught the defect this
+work began with — and rows cover every `styles::*` field of §3.3 — including
 every field of `button::Style` and `container::Style` by name, because those
 two have a `Default` and the compiler will not notice an added field (§3.2).
 
@@ -588,6 +623,15 @@ background before measuring; skipping that was the first draft's error and
 produced 143 phantom failures, including a 1.00 on Windows 11's `#0000000a`
 menu hover.
 
+**Asserted where the connector controls both colours, reported where it does
+not.** The assertion covers gpui's `ThemeColor` and every `styles::*` output.
+iced's *palette* pairs are printed with both ratios and not asserted: iced
+paints a text input on the window background whatever the platform's field
+colour is, so with an exactly native placeholder the ratio is still lower
+than native in 12 of 32, by at most 0.68 (§1). Asserting that would need a
+tolerance, and a tolerance is an invented number; the foreground is pinned
+exactly by its §5 row instead.
+
 This is exactly the rule that catches the defect it exists for: iced's
 placeholder is `#e8e8e8` on `#fafafb` at 1.15:1, where the native pair —
 `input.placeholder_color` on `input.background_color` — is comfortably
@@ -612,25 +656,24 @@ compositing, so the tests composite before calling them.
 
 | File | Change |
 |---|---|
-| `connectors/native-theme-iced/README.md` | a "Styles" section mirroring gpui's "Flat buttons": what the palette gives automatically, what `styles::*` gives exactly, the three closure shapes of §3.1 and which setter each goes to, and the feature table of §4.2. Its existing `to_theme` / `from_preset` examples take the new parameter |
-| `connectors/native-theme-iced/src/lib.rs` | crate docs: the accessibility parameter, the feature list, and the two-layer colour story |
+| `connectors/native-theme-iced/README.md` | a "Styles" section mirroring gpui's "Flat buttons": what the palette gives automatically, what `styles::*` gives exactly, the three closure shapes of §3.1 and which setter each goes to, and the feature table of §4.2. Its `font_size` and `from_system` examples take the new shapes |
+| `connectors/native-theme-iced/src/lib.rs` | crate docs: text scaling and what the other two preferences cannot reach, the feature list, and the two-layer colour story |
 | `docs/todo.md` | the nine iced items of the audit move from "not yet done" to done, except the geometry gap, which stays; `scrollbar.min_thumb_length` is added as unreachable in iced 0.14 |
 | `CHANGELOG.md` | see below |
 
 `CHANGELOG.md`, under `## [Unreleased]`:
 
-- **Breaking Changes → native-theme-iced** — `to_theme` and `from_preset` take
-  `&AccessibilityPreferences`, so text scaling and reduced transparency reach
-  an iced application for the first time. `from_system` and
-  `SystemThemeExt::to_iced_theme` are unchanged: they already read a
-  `SystemTheme`, which carries them.
-- **Breaking Changes → native-theme-iced** — the palette no longer overrides
-  iced's `secondary` colour family. One of its slots is read as placeholder
-  text by three widgets, as the secondary button and container fill, and as
-  the secondary progress bar's fill; on Adwaita the placeholder was `#e8e8e8`
-  on a `#fafafb` field, about 1.15:1 and invisible. Applications that relied
-  on `button::secondary` carrying the platform surface call `styles::button`,
-  which carries idle, hover, pressed and label together.
+- **Breaking Changes → native-theme-iced** — `font_size` and `mono_font_size`
+  take `&AccessibilityPreferences`, and `from_system` returns them as a fourth
+  element, so the user's text-scaling setting reaches an iced application for
+  the first time.
+- **Breaking Changes → native-theme-iced** — iced's `secondary.base` colour
+  now carries the platform's placeholder colour instead of its button
+  surface. iced reads that slot as placeholder text in three widgets, and the
+  placeholder was between 1.06:1 and 1.84:1 — invisible — on every preset in
+  both modes. Applications that relied on `button::secondary` carrying the
+  platform surface call `styles::button`, which carries idle, hover, pressed
+  and label together.
 - **Added** — `native_theme_iced::styles`: per-widget style functions built
   from the resolved theme, for the slots iced's palette cannot carry
   unambiguously.
@@ -669,10 +712,11 @@ compositing, so the tests composite before calling them.
       contract test fail on a named preset (run once, per connector).
 - [ ] `grep -rn 'placeholder' connectors/native-theme-iced/src/` shows the
       placeholder fed from `input.placeholder_color`, not from a button field.
-- [ ] `grep -rn 'secondary' connectors/native-theme-iced/src/extended.rs`
-      shows no override of the `secondary` family.
-- [ ] `cargo tree -p native-theme-iced -i native-theme` shows the icon
-      features enabled by default.
+- [ ] `cargo tree -p native-theme-iced -e no-dev,features -i native-theme`
+      lists `material-icons`, `lucide-icons`, `system-icons` and
+      `svg-rasterize`. The `no-dev` edge filter is essential: with
+      dev-dependencies in the graph the features are already on, which is how
+      the defect stayed invisible to every test.
 - [ ] `scripts/check-widget-coverage.py` passes for both connectors, and
       removing one widget from a showcase makes it fail (the negative control).
 - [ ] The builder-coverage test passes, and deleting one `geometry::` call

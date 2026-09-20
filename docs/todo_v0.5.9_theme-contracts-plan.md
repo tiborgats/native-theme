@@ -7,9 +7,9 @@ replace the visual check with assertions that state what a correct mapping is.
 
 **Architecture:** iced's palette carries six colours where one slot feeds six
 widget roles with three different meanings, so exact native colour needs a
-per-widget seam: stop overriding the slots whose meaning is overloaded, and add
-`styles::*` (plus `styles::aw::*` behind a feature) for them. Then three layers
-of assertions — a mapping contract with a coverage tripwire, showcase
+per-widget seam: give an overloaded slot the one meaning where a wrong value is
+unreadable, and add `styles::*` (plus `styles::aw::*` behind a feature) for the
+other meanings. Then three layers of assertions — a mapping contract with a coverage tripwire, showcase
 self-tests, and a contrast invariant — plus complete widget coverage in both
 showcases, kept complete by a script.
 
@@ -17,7 +17,7 @@ showcases, kept complete by a script.
 `iced_aw` 0.14, `iced_test` 0.14 (dev-only), gpui-pre 0.3.5 test-support,
 `cargo metadata`.
 
-**Spec:** [`todo_v0.5.9_theme-contracts-spec.md`](todo_v0.5.9_theme-contracts-spec.md) — read it first. Reasons: [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md) (C1–C15).
+**Spec:** [`todo_v0.5.9_theme-contracts-spec.md`](todo_v0.5.9_theme-contracts-spec.md) — read it first. Reasons: [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md) (C1–C16).
 
 **Sibling work, already implemented on this branch:** the gpui connector's move
 to GPUI Kit 0.6.4 and the fixes from the maintainer's visual check
@@ -30,8 +30,12 @@ E1–E21). This plan assumes that state and does not repeat it.
   pass, commit — within one task. Never commit a red test, and never wire a
   gate to a check that does not yet pass: CI, the nightly canary and
   `pre-release-check.sh` all run on this branch's commits.
-- **The breaking signature change lands first (Task 1)**, so no test written
-  later is rewritten for it.
+- **The breaking signature changes land first (Task 1)**, so no test written
+  later is rewritten for them.
+- **An expected result in this plan is a measurement or it says it is not.**
+  Two earlier drafts stated outcomes that were argued and never run, and both
+  were false. Where a step says "expected", the number was measured on
+  2026-09-21 unless the step says otherwise.
 - No `unwrap` / `expect` / `panic!` / indexing / `unsafe` in non-test code. The
   repository PreToolUse hook enforces it on every Write/Edit under `src/`,
   **including test modules**, and it recognises only `#[test]`,
@@ -64,11 +68,10 @@ E1–E21). This plan assumes that state and does not repeat it.
 | File | Responsibility |
 |---|---|
 | `connectors/native-theme-iced/Cargo.toml` | the `widgets` and `iced_aw` features, the icon features, the `iced_test` dev-dependency, the showcase's extra iced features |
-| `connectors/native-theme-iced/src/lib.rs` | accessibility preferences, re-exports, crate docs |
-| `connectors/native-theme-iced/src/extended.rs` | the palette corrections (spec §2) |
+| `connectors/native-theme-iced/src/lib.rs` | text scaling, re-exports, crate docs |
+| `connectors/native-theme-iced/src/extended.rs` | the palette correction (spec §2) |
 | `connectors/native-theme-iced/src/styles.rs`, `src/styles/aw.rs` (new) | per-widget style functions (spec §3, §3a) |
 | `connectors/native-theme-iced/src/contract.rs` (new) | mapping contract, coverage tripwire, contrast (spec §5, §7) |
-| `connectors/native-theme-iced/src/icons.rs`, `tests/integration.rs` | call sites of the changed signature |
 | `connectors/native-theme-gpui/src/contract.rs` (new) | the same for gpui |
 | both `examples/showcase-*.rs` | complete widget coverage, `styles::*` throughout, self-tests |
 | both `Cargo.toml` `[[example]]` | `test = true` |
@@ -78,31 +81,34 @@ E1–E21). This plan assumes that state and does not repeat it.
 
 ---
 
-### Task 1: Accessibility preferences and the icon features (iced)
+### Task 1: Text scaling and the icon features (iced)
 
-Spec §4. This is the breaking signature change, and it goes first so that no
-test written in Tasks 2–4 is rewritten for it.
+Spec §4. The breaking signatures go first so that nothing written in Tasks
+2–4 is rewritten for them.
 
-**Files:** `src/lib.rs`, `Cargo.toml`, `src/extended.rs`, `src/icons.rs`, `tests/integration.rs`, `examples/showcase-iced.rs`.
+**Files:** `src/lib.rs`, `Cargo.toml`, `examples/showcase-iced.rs`.
 
-**Interfaces:** Produces `to_theme(&ResolvedTheme, &str, &AccessibilityPreferences)`, `from_preset(&str, bool, &AccessibilityPreferences)`, `reduce_motion(&AccessibilityPreferences) -> bool`, and `pub use native_theme::AccessibilityPreferences`.
+**Interfaces:** Produces `font_size(&ResolvedTheme, &AccessibilityPreferences) -> f32`, `mono_font_size(..)` likewise, `from_system() -> Result<(Theme, ResolvedTheme, bool, AccessibilityPreferences)>`, and `pub use native_theme::AccessibilityPreferences`. **`to_theme`, `from_preset` and `SystemThemeExt::to_iced_theme` do not change** — a palette has nothing for the preferences to act on (rationale §2.10).
 
-- [ ] **Step 1: Signatures.** `to_theme` and `from_preset` take `&AccessibilityPreferences`. `from_system` (`src/lib.rs:177`) and `SystemThemeExt::to_iced_theme` (`src/lib.rs:197, 201`) do **not**: both already read a `SystemTheme`, which carries `accessibility`, and a parameter would let a caller contradict the system it just asked for. They pass `&sys.accessibility` through.
-- [ ] **Step 2: Effects.** `text_scaling_factor` multiplies `font_size()` and `mono_font_size()` (`lib.rs:259, 274`); `reduce_transparency` composites any emitted colour with alpha below 1 over its background and emits it opaque; add `pub fn reduce_motion(prefs: &AccessibilityPreferences) -> bool`.
-- [ ] **Step 3: Re-export** `AccessibilityPreferences` from the crate root, as gpui does.
-- [ ] **Step 4: Every call site.** 43 occurrences of `to_theme(` / `from_preset(` / `to_iced_theme(` across `src/lib.rs`, `src/extended.rs`, `src/icons.rs`, `tests/integration.rs`, `examples/showcase-iced.rs` and `README.md` (measured 2026-09-21). The README is prose, not doctests, and is updated in Task 11; the five Rust files are updated here so the crate, its tests and its example stay green together.
-- [ ] **Step 5: A test that fails first.** Assert `native_theme::icons::load_icon` returns `Some` for a known icon. It fails on today's feature-less manifest.
-- [ ] **Step 6: The icon features** of spec §4.2 (not yet `widgets` or `iced_aw` — those arrive with the modules they gate), then watch the test pass. Confirm with `cargo tree -p native-theme-iced -i native-theme`.
-- [ ] **Step 7: Green, and commit.**
+- [ ] **Step 1: A test that fails first.** `font_size(&resolved, &prefs)` with `text_scaling_factor: 1.5` equals `1.5 × resolved.defaults.font.size`; with a factor of `0.0`, `NaN` or `-1.0` it equals the unscaled size. Same for `mono_font_size`. It fails to compile today, which is the failing gate.
+- [ ] **Step 2: Implement.** Multiply by the factor when it is finite and positive, else by 1 — the sanitising the gpui connector already uses (`gpui/src/lib.rs:414-417`). `from_system` keeps `sys.accessibility` and returns it as the fourth element. Re-export `AccessibilityPreferences` from the crate root.
+- [ ] **Step 3: Call sites.** `showcase-iced.rs:2365, 2370` and any test using the two helpers; the showcase already holds a `SystemTheme` (`:618, :825`), so it passes `&sys.accessibility`. The README is updated in Task 11.
+- [ ] **Step 4: The icon features — gated by the feature tree, not by a test.** No `#[test]` can see this defect: `cargo test` builds with the dev-dependencies, which already enable the icon features on `native-theme`, so `load_icon` returns `Some` in every test today. The gate is:
+
+Run: `cargo tree -p native-theme-iced -e no-dev,features -i native-theme`
+Expected before: only `native-theme feature "default"`. Expected after adding the four icon features of spec §4.2 and putting them in `default`: `material-icons`, `lucide-icons`, `system-icons` and `svg-rasterize` listed. (`widgets` and `iced_aw` arrive with the modules they gate, in Tasks 3 and 4.) The `[dev-dependencies]` feature lines stay as they are: the `--no-default-features` test run below still needs icons, and they are what supplies them there.
+
+- [ ] **Step 5: Green, and commit.**
 
 ```bash
 CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced
+CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --no-default-features
 CARGO_BUILD_JOBS=4 cargo clippy -p native-theme-iced --all-targets --all-features --locked -- -D warnings >/dev/null 2>&1; echo "clippy=$?"
 ```
 
 ---
 
-### Task 2: The iced contract mechanism, and the palette corrections it proves
+### Task 2: The iced contract mechanism, and the palette correction it proves
 
 Spec §2, §5, §7. Test-first, committed green.
 
@@ -110,19 +116,19 @@ Spec §2, §5, §7. Test-first, committed green.
 
 **Interfaces:** Produces nothing public. Consumes `to_theme`, `palette::to_color`.
 
-- [ ] **Step 1: The row type and the palette rows.** Per spec §5.1's *iced* row type — `get: fn(&Theme, &ResolvedTheme) -> Color`, plus an `exceptions` list — one row per palette slot the connector writes, each naming the native field it must equal. Iterate `Theme::list_presets()` — sixteen presets, both modes; the four `*-live.toml` are geometry-only merge bases and are not in that list.
-- [ ] **Step 2: The contrast invariant** (spec §7) in the same file: composite any colour with alpha below 1 over its own background, compute the ratio from the **native** fields and from the **connector's output**, assert ours is not worse, and print every pair below 4.5 without failing on it. Use the existing `extended.rs:59` `contrast_ratio`; do not re-implement it.
-- [ ] **Step 3: Watch them fail.**
+- [ ] **Step 1: The row type and the palette rows.** Per spec §5.1's *iced* row type — `get: fn(&Theme, &ResolvedTheme) -> Color`, plus an `exceptions` list — one row per palette slot the connector writes, each naming the native field it must equal, **including `secondary.base.color` ← `input.placeholder_color`**. Iterate `Theme::list_presets()` — sixteen presets, both modes; the four `*-live.toml` are geometry-only merge bases and are not in that list.
+- [ ] **Step 2: The contrast report** (spec §7) in the same file. For iced's *palette* pairs it **prints** both ratios and asserts nothing: iced, not the connector, chooses the background a text input is painted on. Composite any colour with alpha below 1 over its own background first. Use the existing `extended.rs:59` `contrast_ratio`; do not re-implement it. The *assertion* arrives in Task 3, over `styles::*`.
+- [ ] **Step 3: Watch it fail.**
 
-Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --lib -- contract`
-Expected: the `secondary.base.color` row fails (it holds the button surface where iced reads placeholder text), and the placeholder contrast pair fails at about 1.15:1 against a readable native pair. Any *other* failure is a finding: stop and report it.
+Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --lib -- contract --nocapture`
+Expected: the `secondary.base.color` row fails on **all 32** combinations — the slot holds the button surface — and the report prints a placeholder ratio between 1.06 and 1.84 on every one. Any *other* failing row is a finding: stop and report it.
 
-- [ ] **Step 4: Stop overriding the `secondary` family.** Delete both `extended.secondary.base.color = to_color(colors.btn_bg);` and `extended.secondary.base.text = to_color(colors.btn_fg);` (`extended.rs:109-110`). iced reads `.base.color` as placeholder text in three widgets (`text_input.rs:1769`, `text_editor.rs:1476`, `pick_list.rs:910`), as the `button::secondary` and `container::secondary` fill (`button.rs:615`, `container.rs:629`) and as the `progress_bar::secondary` bar fill (`progress_bar.rs:299`); `.base.text`'s only readers pair it with `.base.color`. iced's generated family is internally consistent and its placeholder readable by construction.
-- [ ] **Step 5: Add nothing.** In particular **do not** write `secondary.strong.color`. It is read by exactly one place — `button::secondary`'s hover (`button.rs:620`, verified) — but its base is now iced's, and a control that idles in one theme and hovers into another is the incoherence this release removes (rationale §2.2a). `styles::button` carries idle, hover, pressed and label together. Drop `btn_bg` and `btn_fg` from `OverrideColors`: nothing reads them now, and leaving them fails `-D warnings` on `dead_code`.
-- [ ] **Step 6: Watch them pass.**
+- [ ] **Step 4: The correction.** Replace `extended.rs:109-110` with `extended.secondary.base = Pair::new(to_color(colors.placeholder), extended.background.base.text);` (`iced_core::theme::palette::Pair`, public, `palette.rs:440`). `OverrideColors` loses `btn_bg` and `btn_fg` and gains `placeholder: Rgba` from `resolved.input.placeholder_color`. Update the doc comment at `extended.rs:87-88`.
+- [ ] **Step 5: Add nothing else.** Not `secondary.strong.color` — a platform hover over a base that is no longer the button's is incoherent (rationale §2.2a). And **not** "leave iced's generated value": measured, that is worse than the platform's own pair in 22 of 32.
+- [ ] **Step 6: Watch it pass.**
 
-Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced`
-Expected: all rows and the contrast invariant pass. Rows for values only `styles::*` can carry arrive in Task 3.
+Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced -- --nocapture`
+Expected: every row passes. The report now shows the placeholder ratio **equal** to the platform's in the 14 combinations where `input.background_color` is the window background, lower in 12 (by at most 0.68) and higher in 6. Those 12 are iced painting the field on the window background; they are not failures and `styles::text_input` removes them. Existing tests in `extended.rs` that assert the old button mapping are retargeted, not deleted.
 
 - [ ] **Step 7: Commit.**
 
@@ -138,8 +144,9 @@ Spec §3, §4.2.
 
 - [ ] **Step 1: The dependency and its feature.** `iced_widget = { version = "0.14", optional = true }`; `widgets = ["dep:iced_widget"]` in `[features]`, with `widgets` first in `default` (spec §4.2). Gate the module `#[cfg(feature = "widgets")]`.
 - [ ] **Step 2: `button`, written completely**, as the pattern for the rest: capture the `Color` values by value so the closure is `'static`; match on `Status` for hover, pressed and disabled; construct `button::Style` **exhaustively**, never `..Default::default()`. Note that `button::Style` is one of the two structs that *does* have a `Default` (`button.rs:510`), so the compiler will not catch an added field here — which is why §5's contract rows name every field of this struct. `snap` has no native counterpart: write `button::Style::default().snap`, never a literal, because it is `cfg!(feature = "crisp")` (`button.rs:517`).
-- [ ] **Step 3: Its contract rows**, asserting each field equals the native value it claims, over all 32 preset/mode combinations.
-- [ ] **Step 4: The remaining ten, plus `scrollbar`**, one at a time, compiling and testing after each: `button_primary`, `text_input`, `checkbox` (the check mark is `checkbox.indicator_color` — there is **no** `check_color`), `toggler` (nine fields, including `border_radius` and `padding_ratio` from spec §3.2), `scrollable` (five fields, including `gap` and `auto_scroll`), `menu` (six fields, including `shadow`), `container_card`, `slider`, `progress_bar`, `tooltip`. Read each `Style` struct and each `.style(..)` signature from the vendored source before writing the function; spec §1 lists both, but the source is the authority.
+- [ ] **Step 3: Its contract rows**, asserting each field equals the native value it claims, over all 32 preset/mode combinations, **and the contrast assertion** of spec §7 for its label on its fill in every status: here the connector controls both colours, so the no-degradation rule is asserted, not printed. This has not been run; with both colours native the ratios should be equal, and a failure is a finding in the mapping.
+- [ ] **Step 3a: Two rules that hold for every function** (spec §3.2). *Soft options:* seventeen of the fields read are `Option` even after resolution; `None` falls back by **copying** the base-state value in the table of spec §3.2 — never arithmetic, never `unwrap`. None is `None` in a bundled preset, so write one test that builds a `ResolvedTheme` with a soft option cleared and asserts the copy. *Alpha:* native alpha is emitted unchanged; compositing belongs to the measurement, not to the style.
+- [ ] **Step 4: The remaining ten, plus `scrollbar`**, one at a time, compiling and testing after each: `button_primary`, `text_input` (`icon` has no native source: iced's own `palette.background.weak.text`, `text_input.rs:1768`), `checkbox` (the check mark is `checkbox.indicator_color` — there is **no** `check_color`), `toggler` (nine fields, including `border_radius` and `padding_ratio` from spec §3.2), `scrollable` (five fields, including `gap` and `auto_scroll`), `menu` (six fields, including `shadow`), `container_card` (`text_color: None`, which inherits — `CardTheme` has no font), `slider`, `progress_bar`, `tooltip`. Read each `Style` struct and each `.style(..)` signature from the vendored source before writing the function; spec §1 lists both, but the source is the authority.
 - [ ] **Step 5: `styles::scrollbar`** (C14): returns a configured `scrollable::Scrollbar` with `.width(groove_width)` and `.scroller_width(thumb_width)`, because those are not `Style` fields (`scrollable.rs:355, 367`). Record `scrollbar.min_thumb_length` in the contract file's `UNREACHABLE` list with its evidence (`scrollable.rs:2068`); do not approximate it.
 - [ ] **Step 6: Green, in all three configurations.**
 
@@ -178,7 +185,7 @@ Spec §5. The gpui mapping is already correct; this states it.
 - [ ] **Step 3: The coverage tripwire** (spec §5.2): **two** lists — contracted, and `DERIVED` with the derivation named — asserted to partition the 138 `ThemeColor` fields exactly. There is no `UPSTREAM_DEFAULT` list: `colors.rs:601-628` assigns all twelve base-palette fields from native values, and `no_theme_color_field_is_left_at_default` already proves nothing is left at upstream's default, so such a list would be empty and any reason written into it untrue.
 - [ ] **Step 4: Prove it discriminates.** Remove one field name from its list; the test must fail naming that field. Restore.
 - [ ] **Step 5: Retire the two bespoke `accent` tests** (C10), now table rows: `accent_is_the_platforms_menu_hover_pair` and `sidebar_accent_is_the_sidebars_selection_pair`. Keep `accent_foreground_comes_from_the_highlight_pairs`, which also proves highlight text never falls back to the window foreground.
-- [ ] **Step 6: The contrast invariant** for gpui, same rule as Task 2 Step 2, using `derive::contrast_ratio` (`derive.rs:54`) — already imported by `colors.rs:15`. Do not re-implement it.
+- [ ] **Step 6: The contrast invariant** for gpui, **asserted** — the connector controls every `ThemeColor` field. Not yet run: a failure is a finding, to be reported with the pair and both ratios, not loosened. Uses `derive::contrast_ratio` (`derive.rs:54`) — already imported by `colors.rs:15`. Do not re-implement it.
 - [ ] **Step 7: Commit.**
 
 ---
@@ -266,8 +273,8 @@ Spec §6. Verified mechanism: an example with `test = true` runs its `#[cfg(test
 
 Spec §8.
 
-- [ ] **Step 1: iced README** — a "Styles" section: what the palette gives automatically, what `styles::*` gives exactly, the three closure shapes of spec §3.1 and which setter each goes to, the feature table of spec §4.2 with its consumer-facing "what to write" rows, and a one-line example. Update its existing `to_theme` / `from_preset` examples for the new parameter.
-- [ ] **Step 2: iced crate docs** — the accessibility parameter, the features, the two-layer colour story.
+- [ ] **Step 1: iced README** — a "Styles" section: what the palette gives automatically, what `styles::*` gives exactly, the three closure shapes of spec §3.1 and which setter each goes to, the feature table of spec §4.2 with its consumer-facing "what to write" rows, and a one-line example. Update its `font_size` and `from_system` examples for the new shapes.
+- [ ] **Step 2: iced crate docs** — text scaling, why the other two preferences have no receiver in iced, the features, the two-layer colour story.
 - [ ] **Step 3: `docs/todo.md`** — the nine iced audit items move to done; the iced `geometry` gap stays, with the coverage script named as what keeps it visible; add `scrollbar.min_thumb_length` as unreachable in iced 0.14. Correct the attribution in that section's preamble: `connector-parity-checker` reported the two public-surface items, and the seven mapping defects came from reading the `iced_widget` catalogs.
 - [ ] **Step 4: Reconcile the sibling specification.** `todo_v0.5.9_gpui-kit-0.6.4-spec.md` §10 states test counts (200 library, 6 seam) that this work changes, and §0.2 lists the public items added. Update both, so the two documents do not contradict each other when they are archived together.
 - [ ] **Step 5: `CHANGELOG.md`** — the entries of spec §8, under the existing **undated** `## [Unreleased]` heading. Do not date it: `pre-release-check.sh` turns the asset-stamp check from a warning into a hard failure once `## [<version>]` carries a date (the `grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}"` branch), and dating is the maintainer's release commit.

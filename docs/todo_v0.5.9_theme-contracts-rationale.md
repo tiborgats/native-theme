@@ -78,7 +78,7 @@ Seven instances:
 
 | iced slot the connector writes | What iced reads it as | What the platform says |
 |---|---|---|
-| `secondary.base.color` ← `button.background_color` (`extended.rs:109`) | **three different things across six readers**: placeholder text (`text_input.rs:1769`, `text_editor.rs:1476`, `pick_list.rs:910`), the `button::secondary` and `container::secondary` fill (`button.rs:615`, `container.rs:629`), and the `progress_bar::secondary` bar fill (`progress_bar.rs:299`) | `input.placeholder_color`, never read. On adwaita light the placeholder becomes `#e8e8e8` on a `#fafafb` field — about **1.15:1**, invisible |
+| `secondary.base.color` ← `button.background_color` (`extended.rs:109`) | **three different things across six readers**: placeholder text (`text_input.rs:1769`, `text_editor.rs:1476`, `pick_list.rs:910`), the `button::secondary` and `container::secondary` fill (`button.rs:615`, `container.rs:629`), and the `progress_bar::secondary` bar fill (`progress_bar.rs:299`) | `input.placeholder_color`, never read. On adwaita light the placeholder becomes `#e8e8e8` on a `#fafafb` field — about **1.15:1**, invisible. Measured over all 32 combinations on 2026-09-21 it is not an Adwaita problem: today's placeholder sits between **1.06:1 and 1.84:1 on every preset in both modes**, where the platforms' own pairs run from 1.36 to 10.06 |
 | `background.weak.color` ← `defaults.surface_color` (`:111`) | scrollbar rail, unchecked switch track, menu panel, closed pick-list, disabled input, rounded box, button hover, rule, several checkbox states — **nine roles across 29 references in ten widget modules** | each has its own field: `scrollbar.track_color`, `switch.unchecked_background`, `menu.background_color`, `input.disabled_background`, `button.hover_background` |
 | `primary` ← `defaults.accent_color` (`palette.rs:41`) | the pick-list/menu **item highlight** (`overlay/menu.rs:657-658`) | `menu.hover_background` — the identical defect to gpui's `accent` |
 | `primary.weak.color` (derived) | **text selection** (`text_input.rs:1771`) | `input.selection_background`; the connector even has a `selection_color()` helper (`lib.rs:316`) that `to_theme` never calls |
@@ -90,10 +90,14 @@ Two more, of a different kind, and these two are what the repository's own
 `connector-parity-checker` reports, because they are public-surface and
 feature-table differences rather than slot semantics:
 
-- `to_theme` takes no `AccessibilityPreferences` at all (`iced/src/lib.rs:113`),
-  so **text scaling, reduced transparency and reduced motion never reach an
-  iced application**. The gpui connector's own documentation already claims
-  otherwise about its sibling (`gpui/src/lib.rs:137-138`).
+- Nothing in the iced connector takes `AccessibilityPreferences`, so **text
+  scaling never reaches an iced application**: `font_size()` and
+  `mono_font_size()` (`iced/src/lib.rs:259, 274`) return the platform's size
+  unscaled, and `from_system()` (`:177`) reads the preferences and drops them.
+  §2.10 works out which preferences iced can receive at all. (An earlier
+  draft cited `gpui/src/lib.rs:137-138` as claiming otherwise about the iced
+  connector; those lines are about `is_dark`, not accessibility, and the
+  citation is withdrawn.)
 - The iced connector declares no `[features]`, so a consumer depending on it
   alone gets `native_theme::icons::load_icon` returning `None` for **every**
   icon; gpui forwards the four icon features.
@@ -138,13 +142,11 @@ iced connector needs the same kind of module for colours.
 | Ship a wrapper widget set (`native_theme_iced::button(..)`) | Rejected. It would duplicate iced's widget API, age badly against it, and force an application to rewrite its view code rather than add one call. |
 | Keep the connector on `iced_core` alone and have `styles` return the connector's own data types | Rejected. The `Style` structs live in `iced_widget`, so the module needs that dependency; returning our own types would make every call site convert by hand. The coupling is the same one the gpui connector already accepts with `gpui-component`, it costs a consumer nothing (an iced application has `iced_widget` through `iced`), and the canary reports a breaking change there as it did for gpui-component. |
 
-### 2.2a The `secondary` family: why the whole family comes out, not just one slot
+### 2.2a The `secondary` family: measured, not reasoned
 
-The first draft of the specification deleted `secondary.base.color`, kept
-`secondary.base.text`, and *added* `secondary.strong.color =
-button.hover_background`. Reading every reader of the family (2026-09-21)
-showed that combination is incoherent, and the fix is to stop overriding the
-family at all.
+This section has been wrong twice, and both times for the same reason: an
+option was chosen by argument and not measured. The measurements below are
+from 2026-09-21, over all 32 combinations, with alpha composited.
 
 The readers, verified in `iced_widget-0.14.2`:
 
@@ -154,39 +156,37 @@ The readers, verified in `iced_widget-0.14.2`:
 | `secondary.base.text` | `button::secondary`'s label, `container::secondary`'s text — **both paired with `secondary.base.color`** |
 | `secondary.strong.color` | `button::secondary`'s hover, and nothing else (`button.rs:620`) |
 
-`secondary.base.color` has to go: no value satisfies a placeholder *and* a
-button surface *and* a progress-bar fill. But once it is iced's generated
-value, its two partners are partners of a colour we no longer control:
+No value satisfies a placeholder *and* a button surface *and* a progress-bar
+fill, so one meaning has to win. The candidates, and what each does to the
+placeholder — the one reader where being wrong makes text unreadable:
 
-- Keeping `.base.text = button.font.color` paints the *platform's* label
-  colour on *iced's* generated fill. That pair has never been measured
-  together on any platform, and Layer 3 (§2.6) would be entitled to fail it —
-  our ratio against a pair the platform gives as readable.
-- Adding `.strong.color = button.hover_background` gives `button::secondary`
-  an iced-generated idle colour that jumps to the platform's hover. A control
-  that idles in one theme and hovers into another is exactly the incoherence
-  this release exists to remove.
+| Option | Placeholder contrast, measured | Verdict |
+|---|---|---|
+| Today: `button.background_color` | 1.06–1.84 on all 32 | The defect. |
+| Drop `.base.color`, keep `.base.text`, add `.strong.color = button.hover_background` (first draft) | as the next row | Rejected. A chimera: generated fill, platform label, platform hover. |
+| Override none of the family, leave iced's generated value (second draft, which called it "readable by construction") | **worse than the platform's own pair in 22 of 32**, by up to 6.2 — material light falls from 9.11 to 2.91, kde-breeze light from 4.21 to 2.91 | Rejected. Better than today and still a regression against every platform, and it fails this release's own Layer 3. The claim it rested on was never measured. |
+| **`secondary.base = Pair::new(input.placeholder_color, text)`** | the foreground is **exactly the platform's on all 32**. The ratio equals the platform's wherever the field and window backgrounds agree (14 of 32); it is lower in 12, by at most 0.68, and higher in 6 | **Chosen.** |
+| Keep the family native to the button and fix the placeholder only in `styles::text_input` | 1.06–1.84 for every consumer on `default-features = false` | Rejected: an accessibility failure for anyone who opts out of `styles`. |
 
-| Option | Verdict |
-|---|---|
-| Drop `.base.color`, keep `.base.text`, add `.strong.color` (first draft) | Rejected. A chimera: generated fill, platform label, platform hover. |
-| Keep the whole family native, fix the placeholder in `styles::text_input` | Rejected. A consumer on `default-features = false` has no `styles`, and would keep the 1.15:1 placeholder. That is the accessibility failure §2.2 refuses to leave in place. |
-| Override `.base.color` only when it happens to be contrast-safe as a placeholder | Rejected. Behaviour would vary by preset, the contract table could not state a rule, and the policy would be ours rather than the platform's. |
-| **Override none of `secondary.*`** | **Chosen.** iced's generated secondary family is internally consistent, the placeholder is readable by construction, and every platform button colour — idle, hover, pressed, label — is delivered exactly by `styles::button`, which is on by default. |
+Why the chosen option is principled and not merely the best number. iced
+itself decided that a placeholder and a secondary fill are the same colour —
+a muted mid-tone between background and text. `input.placeholder_color` *is*
+the platform's muted mid-tone. So the three text readers get the platform's
+value exactly, and the three fill readers get what iced's own design gives
+them: the placeholder tone. Their label comes from `Pair::new`
+(`iced_core-0.14.0/src/theme/palette.rs:440`), iced's own readable-text rule,
+so nothing is invented; measured, that label never falls below 4.16:1.
+`.weak` and `.strong` stay iced's generated values, which are neighbours of
+the same mid-tone by construction (`palette.rs:531-543`).
 
-What this costs, stated plainly: a consumer who writes `default-features =
-false` gets iced's own secondary button rather than the platform's surface.
-That consumer has explicitly asked for the palette alone. The README and the
-CHANGELOG say so.
+The residual 12 of 32 are not a placeholder defect. iced paints a text input
+on `background.base.color`, the *window* background, and 18 of the 32
+combinations give the field its own `input.background_color`. No palette value
+can fix that; `styles::text_input` does, exactly.
 
 `primary` is not affected and keeps `primary.base.text`: its `.base.color`
 comes from the `Palette` itself (`palette.rs:41`), so the pair stays native on
 both sides. `background.weak` keeps both members for the same reason.
-
-The palette changes that follow are therefore exactly two: stop writing a
-button surface into the `secondary` family, which iced reads as placeholder
-text among other things, and keep everything else as it is. The rest moves to
-`styles`.
 
 ### 2.3 What to automate, and what to leave to a human
 
@@ -285,6 +285,15 @@ window.
 | Assert AA with an exception list | Rejected: the list would be ~174 entries of platform data encoded in our tests, and would need editing whenever a preset is retuned. |
 | **Assert the connector never makes a pair worse than the platform's own** | **Chosen.** For each pair, compute the ratio from the native fields and the ratio from the connector's output, composite alpha on both sides first, and require ours to be no worse. It catches exactly the defect class it exists for — iced's placeholder is 1.15:1 where the native pair is readable, so our ratio is worse and it fails — and stays silent where we faithfully emit a platform's own poor choice. |
 
+**Where it is asserted, and where it can only be reported.** The rule is an
+assertion wherever the connector controls both colours of a pair: the whole of
+gpui's `ThemeColor`, and every `styles::*` output. iced's *palette* layer is
+different, because iced chooses the background: a text input is painted on
+the window background whatever the platform's field colour is (§2.2a). There
+the foreground is pinned exactly by a Layer 1 row, and the pair is printed
+with both ratios rather than asserted — asserting it would need a tolerance,
+and a tolerance is an invented number.
+
 The test also prints every sub-AA pair without failing, so the list stays
 visible; whether any is a preset bug rather than a platform fact belongs to
 `preset-validator`. The candidates found so far are recorded in
@@ -362,6 +371,24 @@ repair, one crate over.
 `iced_core` as part of iced itself, and any real iced application already has
 it through `iced`.
 
+### 2.10 What accessibility can reach in iced
+
+The first draft gave `to_theme` an `&AccessibilityPreferences` parameter "like
+its gpui sibling". Working out what the parameter would *do* showed it would
+do nothing, and that the real receivers are elsewhere.
+
+| Preference | Where it can land in iced | Finding |
+|---|---|---|
+| `text_scaling_factor` | not in `to_theme`: an iced `Theme` is a palette and carries no font size. It lands in `font_size()` and `mono_font_size()`, the two values an application puts on its widgets | those two take the preferences. `from_system()` must then hand them to the caller, because today it reads them and drops them |
+| `reduce_transparency` | would composite a translucent *surface* | **no receiver today.** Measured: none of the eight palette inputs and none of the surface colours `styles::*` emits is translucent in any of the 32 combinations. The 14 fields that are translucent somewhere are all state overlays and scrollbar thumbs, which the platform itself draws translucent |
+| `reduce_motion` | iced has no global animation switch | **no receiver.** The application reads the public field. A `reduce_motion(prefs) -> bool` wrapper, which the first draft specified, would return a field of a public struct |
+
+| Option | Verdict |
+|---|---|
+| `to_theme(resolved, name, prefs)` for symmetry with gpui | Rejected. gpui's `Theme` holds font sizes and an overlay scrim, so its parameter has work to do; iced's would be dead, and a parameter that does nothing is a promise the crate does not keep. Parity is of capability, not of parameter lists. |
+| A separate `scaled_font_size(resolved, prefs)`, leaving `font_size(resolved)` | Rejected. It leaves the trap in place: the obvious call silently ignores the user's accessibility setting, which is the defect. |
+| **`font_size` and `mono_font_size` take the preferences; `from_system` returns them** | **Chosen.** The right call becomes the only call. The factor is sanitised exactly as gpui does it (`gpui/src/lib.rs:414-417`): used when finite and positive, else 1. |
+
 ---
 
 ## 3 -- Decision record
@@ -370,12 +397,12 @@ it through `iced`.
 |---|---|
 | C1 | All of this ships in v0.5.9, under the maintainer's standing rule that every pre-1.0 release fixes the bugs found during it (§2.1). The delay to the gpui compatibility fix is accepted and recorded. |
 | C2 | The iced connector gains a `styles` module of per-widget style functions built from `&ResolvedTheme`, mirroring gpui's `geometry` and `variants` (§2.2). |
-| C3 | The iced palette stops overriding the whole `secondary` family, which iced reads as placeholder text in three widgets and as two other widgets' fill; the platform's button colours are delivered by `styles::button` (§2.2a). |
-| C4 | `native_theme_iced::to_theme` takes `&AccessibilityPreferences`, like its gpui sibling; a breaking signature change, documented under Breaking Changes. |
+| C3 | The iced palette writes `secondary.base` as `Pair::new(input.placeholder_color, text)` instead of the button surface. Of the slot's three meanings the text one wins, because it is the one where a wrong value is unreadable; measured, the placeholder foreground becomes exactly the platform's on all 32 combinations, where leaving iced's generated value would have been worse than the platform in 22. The platform's button colours are delivered by `styles::button` (§2.2a). |
+| C4 | Text scaling reaches iced where iced can receive it: `font_size` and `mono_font_size` take `&AccessibilityPreferences`, and `from_system` returns them. `to_theme`, `from_preset` and `to_iced_theme` are unchanged, because a palette has nothing for the preferences to act on (§2.10). Breaking, documented under Breaking Changes. |
 | C5 | The iced connector forwards the four icon features, so an application depending on it alone gets working icons. |
 | C6 | Layer 1: a mapping-contract table per connector, iterated over all 32 preset/mode combinations, with a coverage tripwire over every slot (§2.4). |
 | C7 | Layer 2: both showcases get `test = true` and self-tests. Both render and click headlessly — gpui on GPUI's test platform, iced with `iced_test`'s `Simulator` (§2.5). |
-| C8 | Layer 3: the connector never makes a text-on-background pair less readable than the platform's own values; sub-AA pairs are printed, not asserted, because 174 of 512 are real platform data (§2.6). |
+| C8 | Layer 3: the connector never makes a text-on-background pair less readable than the platform's own values — asserted for gpui and for every `styles::*` output, reported for iced's palette layer, where iced and not the connector chooses the background; sub-AA pairs are printed, not asserted, because 174 of 512 are real platform data (§2.6). |
 | C9 | Screenshot diffing is not in this release (§4). |
 | C10 | The gpui connector's `accent` fix (sibling E20) is re-stated as a contract-table row rather than two bespoke tests, so it is covered by the same mechanism as everything else. |
 | C11 | The iced connector takes `iced_widget` as a normal dependency, because every widget `Style` type lives there and none but `text` is in `iced_core` (§2.2). Those structs derive no `Default` and are not `#[non_exhaustive]`, so `styles::*` constructs them exhaustively and an upstream field addition fails the build. A `Style` field the native model does not carry takes the value iced's own default style function gives it, cited by file and line — never a number of ours (specification §3). |
@@ -383,6 +410,7 @@ it through `iced`.
 | C13 | Coverage of the three iced crates is selected by **additive** features — `widgets` in `default`, `iced_aw` opt-in and implying `widgets` — narrowed with `default-features = false`. No subtractive feature, because Cargo unifies features across the graph and one consumer's narrowing would break another's build (§2.9). |
 | C14 | Scrollbar *widths* are not a `Style` field in iced and cannot travel through `.style(..)`. `styles::scrollbar` returns a configured `scrollable::Scrollbar` carrying `groove_width` and `thumb_width`; `scrollbar.min_thumb_length` has no receiver in iced 0.14 and is recorded as unreachable rather than approximated (specification §3). |
 | C15 | `iced_test` 0.14.0 is a dev-dependency of the iced connector, for the showcase's interaction tests (§2.5). It is dev-only, so no consumer pays for it. |
+| C16 | A `soft_option` field is `Option` even after resolution, and `None` means the platform has no distinct appearance in that state. `styles::*` falls back by **copying** the widget's base-state value, never by arithmetic — the rule the egui design already set (`todo_v0.6.0_egui-connector-rationale.md` §3.6). Native alpha is emitted unchanged (specification §3.2). |
 
 ---
 
@@ -399,4 +427,4 @@ it through `iced`.
 
 ## 5 -- Open questions for the maintainer
 
-None. §2.2a settled the last one.
+None. §2.2a and §2.10 settled the last two.
