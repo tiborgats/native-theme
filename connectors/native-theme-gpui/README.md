@@ -203,7 +203,7 @@ geometry is still restored). The default registry holds two themes,
 | Preference | Effect |
 |---|---|
 | `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); `Root` sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights |
-| `reduce_motion` | forwarded to `App::set_reduce_motion`; GPUI's animations and gpui-component's spinner, shimmer, progress and marker honour it |
+| `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations and gpui-component's spinner, shimmer, progress and marker honour the flag |
 | `reduce_transparency` | the overlay colour becomes opaque |
 | `high_contrast` | no receiver in GPUI or gpui-component yet |
 

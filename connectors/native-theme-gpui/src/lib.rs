@@ -627,7 +627,11 @@ impl<'a> Native<'a> {
 /// 4. projects into gpui-base (`sync_base`);
 /// 5. writes the native scrollbar geometry/colours and resize-handle colours
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
-/// 6. forwards `prefs.reduce_motion` to GPUI;
+/// 6. forwards a reduced-motion *request*: `prefs.reduce_motion == true`
+///    switches `App::reduce_motion` on if it is off; a later `false` undoes
+///    only that switch, never clears a flag the connector did not set, and
+///    asks gpui-base (which reads the OS preference itself since 0.6.2) to
+///    re-read the system;
 /// 7. installs, once per `App`, the observer that restores step 5 and the 12
 ///    base-palette colours a `ThemeConfig` cannot carry (`red` … `cyan_light`,
 ///    private in `ThemeConfigColors`; D43) whenever upstream rebuilds the
@@ -643,6 +647,16 @@ impl<'a> Native<'a> {
 /// `ThemeColor::light()` / `dark()` constants (the default config carries no
 /// colours);
 /// call `apply` once per variant to store both.
+///
+/// Reduced motion: a flag that is already on is left to whoever switched it on
+/// — gpui-base following the OS, or the application. While the connector's own
+/// request stands, gpui-base discards OS readings, including the Linux
+/// portal's first answer if `apply` ran before it arrived; once the request is
+/// withdrawn, macOS and Windows are re-read at once and Linux follows again
+/// from the portal's next change signal. gpui-base decides by value, not by
+/// provenance, so an application flag that happens to equal gpui-base's own
+/// last reading is replaced when the OS reading changes. To force the flag
+/// either way regardless of the OS, call `cx.set_reduce_motion` after `apply`.
 ///
 /// `theme` is moved into the global; `resolved` is cloned once.
 pub fn apply(
@@ -679,7 +693,8 @@ pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
 /// styled theme is rebuilt from it with `prefs` and re-installed through the
 /// [`apply`] path, so text scaling and transparency take effect and both
 /// configs are refreshed (D35); the stored variants are kept. Without a stored
-/// variant only `reduce_motion` is forwarded and the preferences are stored.
+/// variant only the reduced-motion request is forwarded and the preferences
+/// are stored.
 pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
     let rebuilt = cx.try_global::<NativeTheme>().and_then(|nt| {
         let is_dark = nt.is_dark(cx);
@@ -694,9 +709,35 @@ pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
             if cx.has_global::<NativeTheme>() {
                 cx.global_mut::<NativeTheme>().accessibility = prefs.clone();
             }
-            cx.set_reduce_motion(prefs.reduce_motion);
+            forward_reduce_motion(prefs.reduce_motion, cx);
         }
     }
+}
+
+/// Whether the connector switched `App::reduce_motion` on and has not yet
+/// switched it back (spec v0.5.9 §5).
+#[derive(Default)]
+struct ReduceMotionRequest(bool);
+
+impl Global for ReduceMotionRequest {}
+
+/// `true` is a request: switch the flag on, remembering that the connector did
+/// so if it was off. `false` is the absence of a request: undo the connector's
+/// own switch, if any, and ask gpui-base (which reads the OS preference itself
+/// since 0.6.2) to re-read the system. gpui-base writes only a flag it still
+/// owns, so a flag the application set is never cleared here.
+fn forward_reduce_motion(reduce: bool, cx: &mut App) {
+    if reduce {
+        if !cx.reduce_motion() {
+            cx.default_global::<ReduceMotionRequest>().0 = true;
+            cx.set_reduce_motion(true);
+        }
+        return;
+    }
+    if std::mem::take(&mut cx.default_global::<ReduceMotionRequest>().0) {
+        cx.set_reduce_motion(false);
+    }
+    gpui_base::apply_system_reduce_motion(cx);
 }
 
 fn apply_inner(
@@ -753,7 +794,7 @@ fn apply_inner(
     // `false`: this write's notification may be delivered before the observer
     // is active (§3.3), so it must not be marked as the observer's own.
     write_base_overrides(cx, false);
-    cx.set_reduce_motion(prefs.reduce_motion);
+    forward_reduce_motion(prefs.reduce_motion, cx);
     install_observer_once(cx);
     // D37: paint now. A change from a timer, portal signal or menu action must
     // not wait for the next input event; upstream refreshes only the window
@@ -1426,6 +1467,42 @@ mod apply_tests {
     use super::*;
     use gpui::TestAppContext;
     use gpui_component::scroll::ScrollbarMode;
+
+    /// Spec v0.5.9 §5: `false` is the absence of a request. gpui-base 0.6.2+
+    /// (or the application) may have switched the flag on; a preset applied
+    /// with default preferences must not switch it off.
+    #[gpui::test]
+    fn apply_with_default_prefs_keeps_a_flag_it_did_not_set(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) =
+            from_preset("catppuccin-mocha", true, &prefs).expect("preset should load");
+        cx.update(|cx| {
+            cx.set_reduce_motion(true); // stands for gpui-base's OS reading
+            apply(theme, &resolved, &prefs, cx);
+            assert!(cx.reduce_motion());
+        });
+    }
+
+    #[gpui::test]
+    fn releasing_a_request_keeps_a_flag_that_was_already_on(cx: &mut TestAppContext) {
+        cx.update(|cx| {
+            cx.set_reduce_motion(true);
+            apply_accessibility(&prefs(true), cx);
+            apply_accessibility(&prefs(false), cx);
+            assert!(cx.reduce_motion(), "the connector never switched it on");
+        });
+    }
+
+    #[gpui::test]
+    fn a_repeated_request_is_released_once(cx: &mut TestAppContext) {
+        cx.update(|cx| {
+            apply_accessibility(&prefs(true), cx);
+            apply_accessibility(&prefs(true), cx);
+            assert!(cx.reduce_motion());
+            apply_accessibility(&prefs(false), cx);
+            assert!(!cx.reduce_motion());
+        });
+    }
 
     fn prefs(reduce_motion: bool) -> AccessibilityPreferences {
         AccessibilityPreferences {
