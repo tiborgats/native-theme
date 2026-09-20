@@ -3,7 +3,7 @@
 Status: Design (2026-09-20, revised 2026-09-21); nothing implemented
 Companion rationale:
 [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md)
-(decisions C1–C18)
+(decisions C1–C19)
 Companion plan:
 [`todo_v0.5.9_theme-contracts-plan.md`](todo_v0.5.9_theme-contracts-plan.md)
 Sibling work in the same release:
@@ -99,11 +99,15 @@ corrected on 2026-09-21, when each was re-checked against the same sources.
 | — | **not** "leave iced's generated value", which the second draft chose | measured worse than the platform's own pair in 22 of 32 (§1). |
 | `background.weak.color = surface`, `background.weak.text = foreground` | kept | overridden as a *pair*, so they stay coherent; the closest single meaning iced has for a subdued panel. The nine readers that want something else are served by `styles::*`. |
 | `primary.base.text = accent_fg` | kept | `primary.base.color` comes from the `Palette` itself (`palette.rs:41`), so this pair is native on both sides. |
-| the four `ensure_status_contrast` lines | kept | correct as written |
+| the three `ensure_status_contrast(..)` lines for `success` / `danger` / `warning` `.base.text` | **replaced** by the plain native `*_text_color`; `ensure_status_contrast`, `MIN_STATUS_CONTRAST` and their tests are deleted (C19) | measured: of 37 labels below 4.5:1 the function picks the wrong one of white and black in 31, makes 7 worse than the platform's own, and is a no-op on every real platform (rationale §2.13). `contrast_ratio` and `relative_luminance` stay, under `#[cfg(test)]`, for §7 |
 
-`OverrideColors` loses `btn_bg` and `btn_fg`, which nothing reads any more
-(leaving them fails `-D warnings` on `dead_code`), and gains
-`placeholder: Rgba`, filled from `resolved.input.placeholder_color`.
+`OverrideColors` loses `btn_bg` and `btn_fg`, and the three `*_bg` fields that
+only the enforcement read — leaving any of them fails `-D warnings` on
+`dead_code` — and gains `placeholder: Rgba`, filled from
+`resolved.input.placeholder_color`.
+
+The gpui connector makes the same removal in `src/colors.rs:50-76` and
+`assign_status`; `derive::contrast_ratio` is `pub` and stays.
 
 No other palette slot changes. Everything else moves to §3.
 
@@ -675,6 +679,15 @@ background before measuring; skipping that was the first draft's error and
 produced 143 phantom failures, including a 1.00 on Windows 11's `#0000000a`
 menu hover.
 
+**Run once already, as a probe (2026-09-21).** 448 gpui pairs: five failed.
+Three were `ensure_status_contrast` choosing the wrong one of white and black
+— removed by C19 — and two are the menu-hover pair on windows-11 dark and
+material dark, where upstream paints menus on the `popover` token and the
+platform's menu background differs from its popover background (it does in 30
+of 32). Those two are **named exceptions** in the gpui test, with that reason;
+both remain above 9:1. The probe's 14 pairs are not the final list, so the
+implemented test may find more: each is a finding.
+
 **Asserted where the connector controls both colours, reported where it does
 not.** The assertion covers gpui's `ThemeColor` and every `styles::*` output.
 iced's *palette* pairs are printed with both ratios and not asserted: iced
@@ -688,7 +701,8 @@ This is exactly the rule that catches the defect it exists for: iced's
 placeholder is `#e8e8e8` on `#fafafb` at 1.15:1, where the native pair —
 `input.placeholder_color` on `input.background_color` — is comfortably
 readable. Our ratio is worse than the platform's, so it fails. And it stays
-silent about macOS's green, because there we emit exactly what Apple gives.
+silent about macOS's green, because — once C19 removes the enforcement that
+was a no-op there anyway — we emit exactly what Apple gives.
 
 The test additionally *prints* every pair below AA without failing on it, so
 the list stays visible. Whether any of those is a preset bug rather than a
@@ -726,6 +740,12 @@ compositing, so the tests composite before calling them.
   both modes. Applications that relied on `button::secondary` carrying the
   platform surface call `styles::button`, which carries idle, hover, pressed
   and label together.
+- **Changed → both connectors** — status labels (`success`, `danger`,
+  `warning`, and gpui's `info`) are the platform's own colours. The previous
+  contrast enforcement chose between white and black by a 0.5 lightness
+  threshold, which picked the worse of the two in 31 of the 37 labels it
+  touched and made 7 less readable than the platform's own; on every real
+  platform it was a no-op.
 - **Fixed → native-theme-gpui** — a filled button's hover and pressed colours
   are composited over the button's own fill. Windows 11 gives them as 4 %
   layers, and gpui-component replaces a background where the platform layers

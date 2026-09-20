@@ -463,6 +463,53 @@ iced's `button::danger` hardcodes `border::rounded(2)` (`button.rs:739`), so
 beside a `styles::button` it would have a different corner radius — the same
 by-eye finding as the Copy button in §1.1, reproduced in the other showcase.
 
+### 2.13 Layer 3, run before it was specified: what it found
+
+The previous revision said of the gpui assertion "not yet run; a failure is a
+finding". It has now been run as a throw-away probe (2026-09-21): 14 pairs ×
+32 combinations = 448, with alpha composited. **Five fail**, of two kinds, and
+the iced status labels fail the same way in seven more.
+
+**Kind 1 — `ensure_status_contrast` defeats its own purpose.** Both connectors
+replace a status label that is below 4.5:1 with white or black
+(`gpui/src/colors.rs:58-75`, `iced/src/extended.rs:74-82`; v0.5.5 K-3). The
+choice between the two is made by a **0.5 threshold** — HSL lightness in gpui,
+relative luminance in iced — and that is not where white and black cross over
+in contrast (about 0.18 luminance). Measured over iced's 96 status labels:
+
+| | |
+|---|---|
+| below 4.5:1 natively | 37 of 96 |
+| of those, where today's pick is not the better of white and black | **31** |
+| where the connector's label is *worse than the platform's own* | **7** — catppuccin mocha light `danger` goes from 3.45 to 2.32 where black would give 9.07 |
+| on the real platforms (adwaita, macOS, iOS) | the "replacement" is the colour the platform already had: the function is a no-op there, by luck |
+
+So the enforcement has never enforced anything on a real platform, and on
+community presets it sometimes makes things worse. This specification's first
+draft called those lines "correct as written".
+
+| Option | Verdict |
+|---|---|
+| Leave it | Impossible: it fails this release's own Layer 3. |
+| Fix the chooser — take whichever of white and black contrasts more | Rejected. It would work — all 37 reach 4.5:1 — and that is the problem: **31 labels change, on every real platform.** macOS's white-on-green becomes black-on-green (2.22 → 9.46), and so do KDE's, Adwaita's and iOS's. That is the connector overriding the platform's own choice, which §2.6 refuses to do for every other pair, and replacing a platform value with a colour of ours. |
+| **Remove the enforcement and emit the platform's status label** | **Chosen.** It is what every real platform already gets today, so nothing a platform user sees changes; the seven degradations disappear; the 0.5 and 4.5 constants leave `src/`; and status labels obey the same rule as every other pair — never worse than the platform, never "better" than it either. Sub-AA status pairs stay visible in Layer 3's printed list, where `preset-validator` can judge them. |
+
+This reverses v0.5.5 K-3, which asked for the iced connector to gain the
+enforcement for parity. K-3 assumed the gpui function worked. It did not.
+
+**Kind 2 — upstream paints menus on the `popover` token.** `PopupMenu` renders
+with `.popover_style(cx)`, which is `bg(theme.popover)`
+(`gpui-component-0.6.4/src/menu/popup_menu.rs:1476`, `styled.rs:193-199`), and
+upstream has no menu-surface token. The connector feeds `popover` from
+`popover.background_color`, the token's documented meaning — but
+`menu.background_color` differs from it in **30 of 32** combinations
+(kde-breeze light: `#eff0f1` against `#ffffff`). It is the defect class of
+§1.2 again, for a *surface*, which the state-token audit did not look at.
+There is no seam: the call is hardcoded inside upstream's `render`. It joins
+the Tier U list in `docs/todo.md`, and Layer 3 carries the two combinations
+where a translucent menu hover makes it measurable (windows-11 dark, material
+dark; both still above 9:1) as named exceptions with this reason.
+
 ---
 
 ## 3 -- Decision record
@@ -487,6 +534,7 @@ by-eye finding as the Copy button in §1.1, reproduced in the other showcase.
 | C16 | A `soft_option` field is `Option` even after resolution, and `None` means the platform has no distinct appearance in that state. `styles::*` falls back by **copying** the widget's base-state value, never by arithmetic — the rule the egui design already set (`todo_v0.6.0_egui-connector-rationale.md` §3.6). |
 | C17 | Hover and pressed colours are state layers: both connectors composite them over the widget's own idle fill, because the platform layers where the toolkits replace. Idle fills, disabled fills and row highlights are emitted as given. In gpui that corrects `button_hover`, `button_active`, `button_secondary_hover` and `button_secondary_active`; only windows-11 changes (§2.11). |
 | C18 | `styles` covers every `iced_widget` widget that has both a `Style` and a native theme modelling it — nineteen functions and the `scrollbar` builder — not only the widgets whose slots §1.3 found misread (§2.12). |
+| C19 | `ensure_status_contrast` is removed from both connectors and the platform's status label is emitted as given. Measured, the function chose the wrong one of white and black in 31 of the 37 labels it touched, made 7 worse than the platform's own, and was a no-op on every real platform; correcting it instead would recolour status labels on all of them (§2.13). Reverses v0.5.5 K-3. |
 
 ---
 
@@ -503,4 +551,8 @@ by-eye finding as the Copy button in §1.1, reproduced in the other showcase.
 
 ## 5 -- Open questions for the maintainer
 
-None. §2.2a and §2.10–§2.12 settled the last four.
+One decision here reverses an earlier one of the maintainer's and is flagged
+for a veto rather than asked as a question: **C19** removes the status-label
+contrast enforcement that v0.5.5 K-3 introduced (§2.13). The plan proceeds on
+C19; if the maintainer prefers a working enforcement, the alternative is the
+second row of §2.13's table, and its cost is stated there.

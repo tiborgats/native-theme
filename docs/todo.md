@@ -128,6 +128,13 @@
       accent pair, which native themes map to the platform's selection
       colours, so a hovered ghost button becomes a selection-coloured pill;
       `button/button.rs:1125-1132, 1141`)
+- [ ] a menu-surface token. `PopupMenu` renders with `.popover_style(cx)`, i.e.
+      `bg(theme.popover)` (`menu/popup_menu.rs:1476`, `styled.rs:193-199`), and
+      there is no seam to override it. native-theme records
+      `menu.background_color` separately from `popover.background_color`, and
+      the two differ on 30 of the 32 preset/mode combinations (kde-breeze light:
+      `#eff0f1` against `#ffffff`), so every menu is painted on the popover's
+      surface. Found 2026-09-21 by running the contrast rule.
 - [ ] `Checkbox` and `Radio` draw their unchecked border with `theme.input`
       (`checkbox.rs:238`, `radio.rs:188`), the *text input's* border colour.
       native-theme records `checkbox.unchecked_border_color` separately and the
