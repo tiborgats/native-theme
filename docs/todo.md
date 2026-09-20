@@ -87,8 +87,9 @@
       workspace at `1.88.0` (re-measured 2026-09-06, unchanged; since
       2026-09-07 `native-theme` itself uses `slice::as_chunks`, stable since
       1.88.0, so the floor cannot drop below that), the gpui connector
-      separately at `1.95.0` (measured 2026-09-06: gpui-pre 0.3.3 uses
-      `cold_path`, stable since 1.95) and the egui connector at `1.95`.
+      separately at `1.95.0` (re-measured 2026-09-19 on the 0.6.4 closure:
+      1.95.0 builds, 1.94.0 fails on `std::hint::cold_path` in gpui-pre 0.3.5,
+      `src/profiler.rs:473, 494`) and the egui connector at `1.95`.
 
 - [ ] Cross-target warning hygiene. `cargo check -p native-theme --features
       windows --target x86_64-pc-windows-msvc` reports 5 warnings and
@@ -115,12 +116,22 @@
 - [ ] Key the icon tables by `gpui_kit_assets::IconName` (gpui-kit 0.6.1:
       `ALL`, `PartialEq`, `Debug`, `Hash`) so the hand audit and the
       101-count tripwire in `icons.rs` become a compile-time check over
-      `ALL`; requires the connector's floor to move to gpui-component 0.6.1.
-      Verified 2026-09-09 that the released 0.5.8 connector builds and passes
-      its tests unchanged on gpui-kit 0.6.1 with gpui-pre 0.3.3 and 0.3.4.
+      `ALL`; the floor is gpui-component 0.6.4 since v0.5.9, so nothing blocks
+      this. Verified 2026-09-09 that the released 0.5.8 connector builds and
+      passes its tests unchanged on gpui-kit 0.6.1 with gpui-pre 0.3.3 and
+      0.3.4.
 
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
+- [ ] a `ghost_hover` / `ghost_hover_foreground` token pair separate from
+      `accent` / `accent_foreground` (0.6.4 hovers ghost buttons with the
+      accent pair, which native themes map to the platform's selection
+      colours, so a hovered ghost button becomes a selection-coloured pill;
+      `button/button.rs:1125-1132, 1141`)
+- [ ] a `Dialog::max_h` prop, or letting the caller's `max_h` win: 0.6.4
+      clamps the dialog to the viewport after `refine_style`
+      (`dialog/dialog.rs:631`), so a themed `dialog.max_height` cannot reach
+      it, while the width already has `Dialog::max_w`
 - [ ] a styled `Theme` scrollbar-style override honoured by `base_theme()`
       (would make the connector's re-apply observer unnecessary)
 - [ ] `Tab` keeping the caller's height, radius and text size (its render writes its own into the style bag the caller's setters fill, `tab/tab.rs:801-808`)
@@ -143,6 +154,30 @@
 
 - [ ] Scrollbar thumb radius per platform: platform-facts records none, so the
       connector mirrors gpui-component's `radius` for the thumb.
+- [ ] gpui-component's `Theme::motion` (`MotionTokens`, eleven fields: four
+      durations, three easings, two springs and two `Rems` travel distances,
+      `src/theme/motion.rs:8-20`) stays at upstream's default, because
+      `ResolvedTheme` has no motion field at all; KDE exposes
+      `AnimationDurationFactor` and GNOME `enable-animations`, which
+      native-theme reads only as the boolean `reduce_motion`
+      (`native-theme/src/kde/mod.rs:42-52`, `src/detect.rs:674-685`). Decide
+      whether native-theme should model motion — durations, easings,
+      distances — which is a core-type change.
+- [ ] Preset font families that are not installed: GPUI resolves a named,
+      missing family through its fallback stack on every text run (upstream's
+      statement, gpui-component 0.6.4 `src/theme/system_font.rs:3-9`; not
+      measured here). Decide whether `to_theme` should fall back to
+      `.SystemUIFont` when `cx.text_system().all_font_names()` lacks the
+      family, as upstream does for its own defaults.
+- [ ] Widen the captured screenshot tabs: every capture passes `--tab buttons`
+      (`scripts/generate_gpui_screenshots.sh:70`, `screenshots.yml`), so the
+      InputGroup, Empty, Carousel, code-editor and Markdown sections never
+      appear in an artefact.
+- [ ] Re-verify the upstream `file:line` citations in this file,
+      `docs/todo_gpui-full-theme.md` and `ROADMAP.md`, which are still
+      0.6.0-era; four are known stale at 0.6.4 (`popup_menu.rs:749` — fixed in
+      the gap analysis, `button.rs:360`, `switch.rs:136-146`,
+      `checkbox.rs:195-199`).
 
 #### Upstream PR to gpui
 

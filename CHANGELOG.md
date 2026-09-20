@@ -7,12 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+#### native-theme-gpui
+
+- Requires **gpui-component / gpui-base 0.6.4** and **gpui-pre 0.3.5**; older GPUI Kit versions are not supported. gpui-component 0.6.2 removed `ThemeColor::tiles` in a patch release, so the connector cannot serve both sides of it.
+- Reduced motion is a *request*, not a write: `reduce_motion: false` no longer clears a flag the connector did not set, so gpui-base's own OS reader (new in 0.6.2) and the application keep control; `true` followed by `false` undoes only the connector's own switch and then asks gpui-base to re-read the system. Callers that relied on `apply(.., &AccessibilityPreferences::default(), ..)` to switch motion back on call `cx.set_reduce_motion(false)` themselves.
+
 ### Added
 
+- Rendered seam tests (`connectors/native-theme-gpui/tests/seams.rs`): real gpui-component widgets are laid out headlessly, with and without the connector's geometry, and the measured height is compared with the refinement's own field. `button`, `input`, `select`, `combobox`, `list_item` and `progress` are covered; CI, the publish gate and the nightly canary all run them.
+- Showcase sections for `InputGroup`, `Empty`, `Carousel`, a Rust code editor and a Markdown view — the components gpui-kit 0.6.2 added or changed.
 - A nightly dependency canary workflow (`.github/workflows/dependency-canary.yml`, 18:10 UTC, also runnable on demand): `cargo update` on a throwaway lockfile, then the CI gate's clippy, test and doc steps on every crate. gpui-pre now publishes a GPUI snapshot every week and the connector's caret requirements let every consumer's `cargo update` pick it up, so a breaking snapshot is reported here before an application hits it. The same check run locally on 2026-09-09 against gpui-kit 0.6.1 and gpui-pre 0.3.4: the released 0.5.8 connector builds and passes its tests unchanged, so 0.6.1 needed no connector release.
+
+### Changed
+
+- `ThemeColor` mapping 139 → 138 fields and the `ThemeConfig` colour export 127 → 126: `tiles` no longer exists upstream.
 
 ### Fixed
 
+- native-theme-gpui 0.5.8 no longer compiled on a fresh dependency resolution: gpui-component 0.6.2 (2026-09-18) removed `ThemeColor::tiles`, which the connector wrote, in a patch release that the connector's caret requirement admits. The nightly dependency canary reported it the same evening.
+- Documentation of `geometry::menu_item`: gpui-component has no public menu-item element to apply it to — `MenuItemElement` is crate-private and `PopupMenu` builds its own rows — so it styles a menu row the application draws itself.
+- Documentation of `geometry::dialog`: gpui-component 0.6.4 clamps the dialog to what is left of the viewport *after* applying the caller's style, so the theme's `dialog.max_height` no longer reaches it. `min_height`, the paddings and `Dialog::max_w` still do.
 - The crates.io workflow's upload job installs the same system packages as its CI gate: the gpui-pre 0.3 stack needs `fontconfig.pc` when the upload step verifies the tarball, and the v0.5.8 run failed there after the four other crates had been uploaded; the gpui connector was uploaded by a later run of the fixed workflow. The upload steps recognise cargo's current "already exists on crates.io index" message, so a re-run skips crates that are already up instead of failing on the first one.
 
 ## [0.5.8] - 2026-09-07

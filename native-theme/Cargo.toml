@@ -44,7 +44,7 @@ system-icons = [
 arc-swap = "1.9.2"
 async-trait = "0.1.92"
 inventory = "0.3.24"
-native-theme-derive = { version = "0.5.8", path = "../native-theme-derive" }
+native-theme-derive = { version = "0.5.9", path = "../native-theme-derive" }
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true
