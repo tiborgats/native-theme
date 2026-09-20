@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### native-theme-gpui
 
-- Requires **gpui-component / gpui-base 0.6.4** and **gpui-pre 0.3.5**; older GPUI Kit versions are not supported. gpui-component 0.6.2 removed `ThemeColor::tiles` in a patch release, so the connector cannot serve both sides of it.
 - Reduced motion is a *request*, not a write: `reduce_motion: false` no longer clears a flag the connector did not set, so gpui-base's own OS reader (new in 0.6.2) and the application keep control; `true` followed by `false` undoes only the connector's own switch and then asks gpui-base to re-read the system. Callers that relied on `apply(.., &AccessibilityPreferences::default(), ..)` to switch motion back on call `cx.set_reduce_motion(false)` themselves.
 
 ### Added
@@ -22,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- native-theme-gpui requires **gpui-component / gpui-base 0.6.4** and **gpui-pre 0.3.5**; older GPUI Kit versions are not supported. gpui-component 0.6.2 removed `ThemeColor::tiles` in a patch release, so the connector cannot serve both sides of it. An application that pins gpui-component or gpui-pre below these floors keeps resolving to native-theme-gpui 0.5.8, which still builds there.
 - `ThemeColor` mapping 139 → 138 fields and the `ThemeConfig` colour export 127 → 126: `tiles` no longer exists upstream.
 
 ### Fixed

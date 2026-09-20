@@ -285,6 +285,24 @@ the spinner frame timing (`native-theme/src/model/animated.rs:133`).
 | **v0.5.9 now, compatibility only** | **Chosen.** The published crate is uncompilable for new users (§1.2). v0.6.0 is reserved for the egui connector and is weeks of work. |
 | Fold into v0.6.0 | Rejected: leaves crates.io broken for the duration. |
 | Yank 0.5.8 | Rejected by the maintainer (2026-09-19). 0.5.8 still builds from an existing lockfile; once 0.5.9 exists a fresh resolve picks it. |
+| Publish the fix as 0.6.0, because the changelog has a "Breaking Changes" entry and Cargo treats `0.5.8 → 0.5.9` as compatible | Rejected; raised by the branch review (2026-09-20) and weighed here because §2.1 had not. It would defeat the release: an application on `native-theme-gpui = "0.5"` is exactly who is stuck on the uncompilable 0.5.8 (§1.2), and only a 0.5.x version reaches them through `cargo update`. A 0.6.0 would leave every one of them broken until they edit their manifest, or require publishing a 0.5.9 as well. The standing reasons also hold: the workspace shares one version, so 0.6.0 would mark `native-theme`, `-build`, `-derive` and the iced connector breaking when nothing in them changed; 0.6.0 is the egui milestone; and 0.5.7 and 0.5.8 both shipped breaking changes inside 0.5.x under that heading (v0.5.8 rationale §2.3). |
+
+What is and is not breaking here, measured rather than assumed. The raised
+floors are **not**: Cargo backtracks. A throwaway crate with
+`gpui-component = "0.6"` next to `gpui-pre = "=0.3.3"` — a pin below the floor
+gpui-component 0.6.4 itself raised in a patch release, the same shape as ours —
+resolves to gpui-component 0.6.1, the newest version the pin allows, instead of
+failing. So an application that pins gpui-component or gpui-pre below the new
+floors keeps resolving to native-theme-gpui 0.5.8, which still builds there,
+and everyone else is already on 0.6.4, where 0.5.8 does not compile at all. The
+changelog therefore files the floors under `### Changed`. (v0.5.8's move from
+gpui-component 0.5 to 0.6 was a different class: those two are
+semver-*incompatible*, so Cargo puts both in one graph and the types stop
+unifying — the same probe with `gpui-component = "=0.5.1"` beside
+`native-theme-gpui = "0.5"` resolves to 0.5.8 with *both* gpui-component 0.5.1
+and 0.6.4 present.) The reduced-motion change **is** filed as breaking: it
+changes what an existing call does, for an application that set the flag
+itself and relied on `apply(.., &default(), ..)` to clear it (§2.4).
 
 ### 2.2 Version requirements
 

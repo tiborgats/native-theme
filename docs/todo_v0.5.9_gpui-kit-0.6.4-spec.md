@@ -469,12 +469,12 @@ of the maintainer's release commit (§9), not of the implementation:
   `ThemeColor::tiles`, which the connector wrote, in a patch release that the
   connector's caret requirement admits. The nightly dependency canary reported
   it the same evening.
-- **Breaking Changes → native-theme-gpui** — requires gpui-component /
-  gpui-base 0.6.4 and gpui-pre 0.3.5; older GPUI Kit versions are not
-  supported. The file already files this class of change that way: v0.5.8's
-  move to 0.6.0 is under `### Breaking Changes` (`CHANGELOG.md:20-29`), and
-  pre-1.0 policy allows no migration document, so the changelog is the only
-  notice a consumer gets.
+- **Changed** — requires gpui-component / gpui-base 0.6.4 and gpui-pre 0.3.5;
+  older GPUI Kit versions are not supported. Not filed as breaking: Cargo
+  backtracks, so an application pinning below the floors keeps resolving to
+  0.5.8, which still builds there (measured, rationale §2.1). v0.5.8's move
+  from gpui-component 0.5 to 0.6 was filed as breaking because those versions
+  are semver-incompatible and the types stop unifying; this is not that.
 - **Changed** — `ThemeColor` mapping 139 → 138 fields, config export 127 → 126
   (`tiles` no longer exists upstream).
 - **Breaking Changes → native-theme-gpui** — reduced motion: `reduce_motion: false` no longer clears a flag
@@ -483,7 +483,10 @@ of the maintainer's release commit (§9), not of the implementation:
   own switch, and every `false` asks gpui-base to re-read the OS setting.
   Callers that relied on `apply(.., &default(), ..)` to switch motion back on
   call `cx.set_reduce_motion(false)` themselves. (Breaking because it changes
-  what an existing call does.)
+  what an existing call does; pre-1.0 policy allows no migration document, so
+  the changelog is the only notice a consumer gets. The file's own taxonomy
+  puts it under `### Breaking Changes` → `#### native-theme-gpui`, as
+  `CHANGELOG.md` did for v0.5.7 and v0.5.8.)
 - **Added** — rendered seam tests (`tests/seams.rs`): real gpui-component
   widgets are laid out headlessly with and without the connector's geometry.
 - **Added** — showcase sections for `InputGroup`, `Empty`, `Carousel`, a Rust
