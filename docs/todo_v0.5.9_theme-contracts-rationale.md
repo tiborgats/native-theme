@@ -138,6 +138,25 @@ a single meaning: stop writing a button *surface* into a slot iced reads as
 placeholder *text*, and write `.strong` where `.strong` means "hover" for a
 slot we do override. The rest moves to `styles`.
 
+### 2.8 `iced_aw`
+
+native-theme models `menu`, `card`, `tab`, `sidebar`, `spinner` and a
+selection list. iced core has **none** of them, so six of the model's widget
+themes reach nothing in an iced application. That is a larger hole than any of
+§1.3's seven defects, and `iced_aw` 0.14.1 fills it with widgets that depend
+on exactly the `iced_core` and `iced_widget` versions this connector uses.
+
+| Option | Verdict |
+|---|---|
+| Ignore it; iced core is the connector's remit | Rejected. It would leave six modelled widget themes permanently unreachable, and the project's purpose is native-looking applications, not native-looking *core* widgets. |
+| Depend on it unconditionally | Rejected. It is a third-party community crate; an application that does not use it should not pay for it, and native-theme should not tie its release cadence to it. |
+| **A non-default `iced_aw` feature carrying `styles::aw::*`** | **Chosen.** Its styling is the same shape as iced's own — plain `Style` struct, `Catalog` with `StyleFn`, `.style(closure)` per widget — so the marginal cost over §2.2 is the mapping itself. Applications opt in; the showcase enables it so the widgets are covered by the completeness rule. |
+
+Only the six widgets native-theme models are covered. `badge`,
+`date_picker`, `time_picker`, `color_picker`, `drop_down`, `number_input`,
+`slide_bar` and the layout helpers have no native counterpart, and inventing
+values for them is forbidden.
+
 ### 2.3 What to automate, and what to leave to a human
 
 The four findings of §1.1 are the specification for this. Ordered by what they
@@ -148,8 +167,9 @@ defect but an absence: **a showcase that omits a widget hides it from every
 check that depends on the showcase.** The gpui showcase exercises 15 of the
 connector's 34 geometry builders and renders no `StatusBar`, `TitleBar` or
 `Combobox`, each of which has a builder shipped for it. Completing both
-showcases, and adding a coverage test that keeps them complete, is therefore
-part of this work rather than a later pass (specification §6a).
+showcases, and keeping them complete — a test for our own builders, a script
+for the toolkit's widgets — is therefore part of this work rather than a later
+pass (specification §6a).
 
 | Layer | Catches | Why this and not something else |
 |---|---|---|
@@ -227,9 +247,11 @@ visible; whether any is a preset bug rather than a platform fact belongs to
 | C5 | The iced connector forwards the four icon features, so an application depending on it alone gets working icons. |
 | C6 | Layer 1: a mapping-contract table per connector, iterated over all 32 preset/mode combinations, with a coverage tripwire over every slot (§2.4). |
 | C7 | Layer 2: both showcases get `test = true` and self-tests; gpui renders and clicks, iced builds and inspects (§2.5). |
-| C8 | Layer 3: WCAG AA contrast over every pair the connector produces, with a listed exception set (§2.6). |
+| C8 | Layer 3: the connector never makes a text-on-background pair less readable than the platform's own values; sub-AA pairs are printed, not asserted, because 174 of 512 are real platform data (§2.6). |
 | C9 | Screenshot diffing is not in this release (§4). |
 | C10 | The gpui connector's `accent` fix (sibling E20) is re-stated as a contract-table row rather than two bespoke tests, so it is covered by the same mechanism as everything else. |
+| C11 | The iced connector takes `iced_widget` as a normal dependency, because every widget `Style` type lives there and none but `text` is in `iced_core` (§2.2). Those structs derive no `Default` and are not `#[non_exhaustive]`, so `styles::*` constructs them exhaustively and an upstream field addition fails the build. |
+| C12 | `iced_aw` is covered behind a non-default `iced_aw` feature, for the six widgets native-theme models and iced core lacks (§2.8). |
 
 ---
 

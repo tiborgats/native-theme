@@ -27,9 +27,12 @@ specification assumes its state.
    field it must equal, checked over all 32 preset/mode combinations, with a
    coverage tripwire over every slot (§5).
 5. Both showcases gain self-tests (§6) and show **every** widget their
-   toolkit offers an application, with a coverage test that keeps them
-   complete (§6a).
-6. Both connectors gain WCAG AA contrast invariants (§7).
+   toolkit offers an application, kept complete by a test for our own surface
+   and a script for the toolkit's (§6a).
+6. Both connectors gain a contrast invariant: the connector never makes a
+   text-on-background pair worse than the platform's own (§7).
+7. The iced connector optionally covers `iced_aw`, which supplies six widgets
+   native-theme models and iced core does not have (§3a).
 
 ### 0.2 Constraints
 
@@ -138,6 +141,53 @@ Widgets whose native fields the model does not carry (`Tag`, `Badge`,
 Each function's doc comment names the iced default it replaces and the slot
 whose meaning it corrects, as `variants::ghost_button` does in the gpui
 connector.
+
+---
+
+## 3a -- `iced_aw`: the widgets iced core does not have
+
+native-theme models `menu`, `card`, `tab`, `sidebar`, `spinner` and a list
+whose selection semantics match a selection list. **iced core has none of
+them**, so those six widget themes have no receiver in iced at all today —
+the largest remaining hole in "make an iced application look native", and
+wider than any of the seven mapping defects.
+
+`iced_aw` 0.14.1 (2026-04-27) supplies exactly those, and depends on
+`iced_core ^0.14.0` and `iced_widget ^0.14.2` — the versions this connector
+uses, so it unifies with no version work. Its styling is the same shape as
+iced's own: a plain `Style` struct of public fields, a `Catalog` trait whose
+`Class` is `StyleFn`, and a `.style(impl Fn(&Theme, Status) -> Style)` builder
+on each widget (`src/style/card.rs:10-46, 75-85`, `src/widget/card.rs:226`).
+So `styles::aw::*` is the same pattern as §3, and costs little beyond the
+mapping itself.
+
+**Optional, because it is a third-party crate.** An application that does not
+use `iced_aw` must not pay for it, and native-theme must not tie its release
+cadence to a community crate. It is therefore a non-default feature:
+
+```toml
+[features]
+iced_aw = ["dep:iced_aw"]
+```
+
+Covered widgets, each from the native theme that models it:
+
+| `styles::aw::*` | `iced_aw` widget | Native source |
+|---|---|---|
+| `card` | `Card` | `card.background_color`, `.border.*`; head/body/foot from `card` and `defaults` |
+| `menu` | `Menu`, `ContextMenu` | `menu.background_color`, `.hover_background`, `.hover_text_color`, `.border.*`, `.font.color` |
+| `tab_bar` | `TabBar`, `Tabs` | `tab.background_color`, `.active_background`, `.active_text_color`, `.hover_background`, `.bar_background` |
+| `sidebar` | `Sidebar` | `sidebar.background_color`, `.selection_background`, `.selection_text_color`, `.hover_background` |
+| `spinner` | `Spinner` | `spinner.diameter`, `.stroke_width`, `.color` |
+| `selection_list` | `SelectionList` | `list.background_color`, `.selection_background`, `.selection_text_color`, `.hover_background`, `.row_height` |
+
+Not covered, because native-theme models no equivalent and inventing one is
+forbidden: `badge`, `date_picker`, `time_picker`, `color_picker`, `drop_down`,
+`number_input`, `slide_bar`, `wrap`, `quad`, `labeled_frame`. They are listed
+in the showcase exception file (§6a.4) with that reason.
+
+The iced showcase enables the feature as a dev-dependency and renders all six,
+so they are covered by §6a's completeness rule like any other widget.
 
 ---
 
@@ -317,7 +367,7 @@ added. The rest are layout and utility wrappers with no visual surface of
 their own (`keyed`, `lazy`, `responsive`, `stack`, `pin`, `float`, `overlay`,
 `sensor`, `themer`) and are listed as exceptions in §6a.4 rather than shown.
 
-### 6a.4 The coverage test
+### 6a.4 Keeping coverage complete
 
 Two mechanisms, because a unit test cannot do both.
 
@@ -411,13 +461,16 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
   checked against the native field of the widget that reads it, over all 16
   presets in both modes, with a coverage tripwire so a new slot cannot ship
   without a declared source.
-- **Added** — WCAG AA contrast tests over every text-on-background pair both
-  connectors produce.
+- **Added** — a contrast invariant in both connectors: for every
+  text-on-background pair, the connector's output is never less readable than
+  the platform's own values. Measured over all 32 preset/mode combinations.
+  It is not a WCAG assertion: 174 of 512 pairs sit below AA on real platform
+  data, macOS's `#34c759` with white text among them.
 - **Added** — showcase self-tests in both connectors.
 - **Added** — both showcases now render every widget their toolkit offers an
   application, including everything gpui-kit 0.6.2 and 0.6.4 introduced, with
-  a coverage test that fails when an upstream release adds a widget nobody
-  shows. The gpui showcase previously exercised 15 of the connector's 34
+  a coverage script, run by the release check and the nightly canary, that
+  fails when an upstream release adds a widget nobody shows. The gpui showcase previously exercised 15 of the connector's 34
   geometry builders and rendered no `StatusBar`, `TitleBar` or `Combobox`.
 
 ---
@@ -437,8 +490,10 @@ iced connector has its own in `extended.rs`. Neither is re-implemented.
       placeholder fed from `input.placeholder_color`, not from a button field.
 - [ ] `cargo tree -p native-theme-iced -i native-theme` shows the icon
       features enabled by default.
-- [ ] Both coverage tests pass, and deleting one widget from a showcase makes
-      its coverage test fail (run once per showcase as the negative control).
-- [ ] `grep -c 'geometry::' connectors/native-theme-gpui/examples/showcase-gpui.rs`
-      shows every builder referenced; the coverage test asserts it.
+- [ ] `scripts/check-widget-coverage.py` passes for both connectors, and
+      removing one widget from a showcase makes it fail (the negative control).
+- [ ] The builder-coverage test passes, and deleting one `geometry::` call
+      from the showcase makes it fail.
+- [ ] `cargo test -p native-theme-iced --features iced_aw` passes, and the
+      iced showcase renders the six `iced_aw` widgets (§3a).
 - [ ] `./pre-release-check.sh` shows no failures.
