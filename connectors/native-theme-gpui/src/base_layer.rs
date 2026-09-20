@@ -2,9 +2,12 @@
 //! handles without going through gpui-component (spec §8.2, §8.3).
 //!
 //! gpui-component's `Theme::change`, `sync_system_appearance` and `sync_base`
-//! rebuild `gpui_base::Theme` with fixed scrollbar styles (gpui-component 0.6.0
-//! `src/theme/mod.rs:268-300`), so these values are written after every such
+//! rebuild `gpui_base::Theme` with fixed scrollbar styles (gpui-component
+//! `src/theme/mod.rs:294-347`), so these values are written after every such
 //! rebuild by the observer `apply` installs (`crate::apply`, spec §3.3).
+//!
+//! Upstream citations in this module are verified against gpui-component 0.6.4,
+//! gpui-base 0.6.4 and gpui-pre 0.3.5.
 
 use gpui::{App, Hsla, Pixels, px};
 use gpui_base::{ResizableTheme, Theme as BaseTheme};
@@ -17,7 +20,7 @@ use crate::colors::rgba_to_hsla;
 /// [`ResolvedTheme`].
 ///
 /// Exists because gpui-base's style structs have private fields and derive
-/// only `Clone, Default` (gpui-base 0.6.0 `src/scrollbar.rs:589, 616, 655`),
+/// only `Clone, Default` (gpui-base `src/scrollbar.rs:640, 667, 706`),
 /// so the geometry is computed into this inspectable struct, tested, and then
 /// converted with one setter per field by [`scrollbar_styles`].
 #[derive(Debug, Clone, PartialEq)]
@@ -28,10 +31,12 @@ pub struct ScrollbarGeometry {
     pub thumb_width: Pixels,
     /// `((groove_width − thumb_width) / 2).max(0)`: centres the thumb, which
     /// gpui-base anchors `inset` from the track's outer edge
-    /// (gpui-base 0.6.0 `src/scrollbar.rs:1391-1400`).
+    /// (gpui-base `src/scrollbar.rs:1200-1231`, painted at `:1505-1530`: 0.6.4
+    /// moved the arithmetic into a private `ThumbGeometry`, which subtracts
+    /// `2 × inset` from the thumb length and clamps the inset to half of it).
     pub thumb_inset: Pixels,
     /// `defaults.border.corner_radius.max(0)`, mirroring upstream's projection
-    /// (gpui-component 0.6.0 `src/theme/mod.rs:284-293`); the theme has no
+    /// (gpui-component `src/theme/mod.rs:310-330`); the theme has no
     /// scrollbar radius and platform-facts records none.
     pub thumb_radius: Pixels,
     /// `scrollbar.min_thumb_length`.
@@ -39,7 +44,7 @@ pub struct ScrollbarGeometry {
     /// `scrollbar.track_color`, all three track states (upstream uses one colour).
     pub track: Hsla,
     /// `defaults.border.color` for the active track border, mirroring upstream
-    /// (`src/theme/mod.rs:283`).
+    /// (`src/theme/mod.rs:309`).
     pub track_active_border: Hsla,
     /// `scrollbar.thumb_color`.
     pub thumb: Hsla,
@@ -47,7 +52,7 @@ pub struct ScrollbarGeometry {
     pub thumb_hover: Hsla,
     /// `scrollbar.thumb_active_color`, or `thumb_hover_color` when the theme
     /// leaves it unset (a soft option, `None` in the `*-live` presets); upstream
-    /// itself puts the hover colour in the active slot (`theme/mod.rs:291-295`).
+    /// itself puts the hover colour in the active slot (`theme/mod.rs:331-340`).
     pub thumb_active: Hsla,
 }
 
@@ -71,7 +76,7 @@ pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry {
 }
 
 /// One setter per field onto gpui-base's builders
-/// (gpui-base 0.6.0 `src/scrollbar.rs:597-646`).
+/// (gpui-base `src/scrollbar.rs:648-697`).
 #[must_use]
 pub fn scrollbar_styles(g: &ScrollbarGeometry) -> ScrollbarStyles {
     ScrollbarStyles::default()
@@ -107,7 +112,7 @@ pub fn scrollbar_styles(g: &ScrollbarGeometry) -> ScrollbarStyles {
 
 /// Resize-handle colours from the splitter (spec §8.3). Upstream projects
 /// `border` / `drag_border` into the same two slots
-/// (gpui-component 0.6.0 `src/theme/mod.rs:296-298`); the handle width is a
+/// (gpui-component `src/theme/mod.rs:342-344`); the handle width is a
 /// constant upstream (gpui-base `src/resizable/resize_handle.rs:12`), Tier U.
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
@@ -119,7 +124,7 @@ pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
 
 /// Write both onto `gpui_base::Theme`, keeping the scrollbar `mode()` and
 /// `motion()` upstream projected. Never panics: `gpui_base::Theme::global_mut`
-/// creates a default when the global is absent (gpui-base 0.6.0
+/// creates a default when the global is absent (gpui-base
 /// `src/theme.rs:31-36`).
 ///
 /// Public so an application that writes the base theme itself can restore the

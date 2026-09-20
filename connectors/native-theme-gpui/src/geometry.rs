@@ -1,4 +1,4 @@
-//! Per-widget geometry for gpui-component 0.6.0 widgets (spec §9).
+//! Per-widget geometry for gpui-component 0.6.4 widgets (spec §9).
 //!
 //! Every builder is a pure function of a [`Native`] view and returns a
 //! [`StyleRefinement`] the application applies with
@@ -24,6 +24,9 @@
 //! `tests/seams.rs`, which lays each one out headlessly with and without the
 //! refinement; the other builders rest on the source citations in their doc
 //! comments.
+//!
+//! Upstream citations in this module are verified against gpui-component 0.6.4,
+//! gpui-base 0.6.4 and gpui-pre 0.3.5.
 
 use gpui::{FontWeight, Pixels, StyleRefinement, Styled, px};
 use gpui_component::Size;
@@ -66,8 +69,8 @@ pub fn control_height(
     px(theme_height.max(text + 2.0 * border.padding_vertical))
 }
 
-/// `Button` (gpui-component 0.6.0 `src/button/button.rs:587-624` → refined at `:650`).
-/// The label's text size is set on an inner element (`:658-666`), Tier U.
+/// `Button` (gpui-component `src/button/button.rs:626-663` → refined at `:690`).
+/// The label's text size is set on an inner element (`:698-706`), Tier U.
 #[must_use]
 pub fn button(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
@@ -81,7 +84,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         .border_color(rgba_to_hsla(b.border.color))
 }
 
-/// `Input` root (`src/input/input.rs:572-582` → `:587`); padding is inner, Tier U.
+/// `Input` root (`src/input/input.rs:704-714` → `:719`); padding is inner, Tier U.
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
@@ -95,7 +98,13 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// Application-built `MenuItem` (`src/menu/menu_item.rs:101-103` → `:109`).
+/// A menu row the application draws with its own elements
+/// (`src/menu/menu_item.rs:103-105` → `:111`).
+///
+/// No gpui-component widget takes this style: upstream's `MenuItemElement` is
+/// crate-private in a private module (`src/menu/menu_item.rs:10-11`,
+/// `src/menu/mod.rs:6`) and `PopupMenu` builds its own rows, so the receiver
+/// the v0.5.8 documentation named does not exist.
 #[must_use]
 pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     let m = &n.resolved.menu;
@@ -110,7 +119,7 @@ pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `ListItem` (`src/list/list_item.rs:188-190` → `:196`).
+/// `ListItem` (`src/list/list_item.rs:185-187` → `:193`).
 #[must_use]
 pub fn list_item(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.list;
@@ -149,7 +158,7 @@ pub fn popover(n: Native<'_>) -> StyleRefinement {
         .rounded(px(p.border.corner_radius.max(0.0)))
 }
 
-/// `StatusBar` (`src/status_bar.rs:87-89` → `:95`).
+/// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
 #[must_use]
 pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     let s = &n.resolved.status_bar;
@@ -162,8 +171,15 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Dialog` (`src/dialog/dialog.rs:502-512, 578` → `:582`); width through
+/// `Dialog` (`src/dialog/dialog.rs:538-548, 617` → `:621`); width through
 /// [`dialog_max_width`] and `Dialog::max_w`.
+///
+/// `max_h` no longer reaches upstream's `Dialog`: 0.6.4 clamps it to what is
+/// left of the viewport *after* applying this style (`:535`, applied at
+/// `:631`, in a block upstream marks "high priority, can't be overridden").
+/// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
+/// refinement. Kept here for an application-drawn dialog and for the day
+/// upstream takes a `max_h` prop (spec v0.5.9 §4, E18).
 #[must_use]
 pub fn dialog(n: Native<'_>) -> StyleRefinement {
     let d = &n.resolved.dialog;
@@ -174,7 +190,7 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
         .max_h(px(d.max_height))
 }
 
-/// `DialogFooter` (`src/dialog/footer.rs:47` → `:51`).
+/// `DialogFooter` (`src/dialog/footer.rs:52` → `:56`).
 #[must_use]
 pub fn dialog_footer(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.dialog.button_gap))
@@ -227,14 +243,14 @@ pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().h(px(n.resolved.expander.header_height))
 }
 
-/// `Checkbox` (`src/checkbox.rs:256` → `:271`); the indicator is inner, Tier U.
+/// `Checkbox` (`src/checkbox.rs:271` → `:286`); the indicator is inner, Tier U.
 #[must_use]
 pub fn checkbox(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.checkbox;
     with_text(StyleRefinement::default().gap(px(c.label_gap)), &c.font, n)
 }
 
-/// `Radio` (`src/radio.rs:196` → `:211`). platform-facts §2.5 defines radio
+/// `Radio` (`src/radio.rs:211` → `:226`). platform-facts §2.5 defines radio
 /// metrics as the checkbox's with a circular indicator, so this is a fact,
 /// not a substitution (rationale D18).
 #[must_use]
@@ -242,7 +258,7 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
     checkbox(n)
 }
 
-/// `Select` (`src/select.rs:479-486` → `:490`); the arrow is inner, Tier U.
+/// `Select` (`src/select.rs:535-542` → `:546`); the arrow is inner, Tier U.
 #[must_use]
 pub fn select(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
@@ -256,13 +272,13 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Combobox` (`src/combobox.rs:981-988` → `:992`): same sources as [`select`].
+/// `Combobox` (`src/combobox.rs:986-993` → `:997`): same sources as [`select`].
 #[must_use]
 pub fn combobox(n: Native<'_>) -> StyleRefinement {
     select(n)
 }
 
-/// `TitleBar` (`src/title_bar.rs:334` → `:342`); the height has no theme field.
+/// `TitleBar` (`src/title_bar.rs:335` → `:343`); the height has no theme field.
 #[must_use]
 pub fn title_bar(n: Native<'_>) -> StyleRefinement {
     with_text(
@@ -274,7 +290,8 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
 
-/// `Spinner::with_size` (`src/spinner.rs:53-65` → `Icon`, `src/icon.rs:160, 189`).
+/// `Spinner::with_size` (`src/spinner.rs:53-65` → `Icon`, `src/icon.rs:182`;
+/// 0.6.4 merged the two sizing arms 0.6.0 had at `:160` and `:189`).
 #[must_use]
 pub fn spinner_size(n: Native<'_>) -> Size {
     Size::Size(px(n.resolved.spinner.diameter))
@@ -312,13 +329,13 @@ pub fn icon_size_panel(n: Native<'_>) -> Size {
 
 // --- Builder helpers (spec §9.3) ----------------------------------------------
 
-/// For `Dialog::max_w` (`src/dialog/dialog.rs:393`).
+/// For `Dialog::max_w` (`src/dialog/dialog.rs:419`).
 #[must_use]
 pub fn dialog_max_width(n: Native<'_>) -> Pixels {
     px(n.resolved.dialog.max_width)
 }
 
-/// For `Input::h` (`src/input/input.rs:232`): the same control height [`input`] sets.
+/// For `Input::h` (`src/input/input.rs:257`): the same control height [`input`] sets.
 #[must_use]
 pub fn input_height(n: Native<'_>) -> Pixels {
     let i = &n.resolved.input;

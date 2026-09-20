@@ -485,7 +485,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     }
 }
 
-/// The 101 gpui-component 0.6.0 IconName variants shown in the gallery.
+/// The 101 gpui-component 0.6.4 IconName variants shown in the gallery.
 const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),

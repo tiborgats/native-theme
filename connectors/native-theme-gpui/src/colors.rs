@@ -4,6 +4,9 @@
 //! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ones are
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
+//!
+//! Upstream citations in this module are verified against gpui-component 0.6.4,
+//! gpui-base 0.6.4 and gpui-pre 0.3.5.
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
@@ -26,7 +29,7 @@ pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
 }
 
 /// Convert an `Hsla` colour to a hex string: `#rrggbb` when opaque, `#rrggbbaa`
-/// when the alpha is below 1 (gpui parses both, gpui-pre 0.3.3
+/// when the alpha is below 1 (gpui parses both, gpui-pre
 /// `src/color.rs:224-262`). Alpha is quantised to 8 bits like the channels.
 pub(crate) fn hsla_to_hex(c: Hsla) -> String {
     let rgba: gpui::Rgba = c.into();
@@ -295,8 +298,8 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.chart_bearish = c.danger;
 }
 
-/// The 28 `button_*` fields gpui-component 0.6.0 reads for `Button`
-/// (`src/button/button.rs:884-949`) take the values the semantic fields their
+/// The 28 `button_*` fields gpui-component reads for `Button`
+/// (`src/button/button.rs:929-994`) take the values the semantic fields their
 /// variant used in 0.5.1 (`0.5.1 src/button/button.rs:630-635, 924-929`), so a
 /// native theme's solid button surfaces render as before (spec §6.1). Nothing
 /// new is read; upstream's alternative is a tinted house style (rationale §2.4).
@@ -533,10 +536,10 @@ impl BasePaletteInputs {
 /// The 12 base-palette fields (`red` … `cyan_light`) as [`to_theme_color`]
 /// assigns them, on an otherwise default `ThemeColor`.
 ///
-/// `ThemeConfigColors` keeps these 12 private (gpui-component 0.6.0
-/// `src/theme/schema.rs:657-668`), so the config a stored variant installs
+/// `ThemeConfigColors` keeps these 12 private (gpui-component
+/// `src/theme/schema.rs:640-674`), so the config a stored variant installs
 /// cannot carry them and `Theme::apply_config` resets them to upstream's
-/// constants on every rebuild (`:687-695`, `:1074-1078`). `apply`'s observer
+/// constants on every rebuild (`:688-696`, `:1075-1079`). `apply`'s observer
 /// copies this value back with [`copy_base_palette`] (D43).
 pub(crate) fn base_palette(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColor {
     let mut tc = ThemeColor::default();

@@ -32,7 +32,7 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
 - **Icons**: mappings from every gpui-component `IconName` (101 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
   for the two a set lacks. gpui-component's `IconName` cannot be enumerated
-  in code, so the tables are audited by hand: against 0.6.0's variant set,
+  in code, so the tables are audited by hand: against 0.6.4's variant set,
   and again against 0.6.1, which keeps the same 101 variants (its full Lucide
   catalog lives in `gpui_kit_assets::IconName`). The audit is repeated on
   every gpui-component bump.
@@ -150,12 +150,12 @@ heights grow only when scaled text would no longer fit:
 |---|---|---|
 | `button` | `button.min_height`, `.min_width`, `.border.padding_*`, `.corner_radius`, `.line_width`, `.color`, `button.font`, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
 | `input`, `input_height` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `.padding_vertical`, `input.font`, `defaults.line_height` | `Input` (`Input::h` for the height alone) |
-| `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | application-built `MenuItem` |
+| `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height`, `list.border.padding_*`, `list.item_font`, `defaults.line_height` | `ListItem` |
 | `tooltip` | `tooltip.max_width`, `tooltip.border.padding_*`, `.corner_radius`, `tooltip.font` | application-built `Tooltip::new` |
 | `popover` | `popover.border.padding_*`, `.corner_radius` | `Popover` |
 | `status_bar` | `status_bar.border.padding_*`, `status_bar.font` | `StatusBar` |
-| `dialog`, `dialog_max_width` | `dialog.border.padding_*`, `dialog.min_height`, `.max_height`, `.max_width` | `Dialog` (`Dialog::max_w` for the width) |
+| `dialog`, `dialog_max_width` | `dialog.border.padding_*`, `dialog.min_height`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font` | declarative `Table` |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
@@ -166,6 +166,11 @@ heights grow only when scaled text would no longer fit:
 | `title_bar` | `window.title_bar_font` | `TitleBar` |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `defaults.icon_sizes.*` | `Spinner::with_size`, `Icon::with_size` |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
+
+The `button`, `input`, `select`, `combobox`, `list_item` and `progress`
+builders are verified against real gpui-component widgets in `tests/seams.rs`,
+which lays each one out headlessly with and without the refinement and
+compares the measured height with the refinement's own field.
 
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
@@ -269,7 +274,7 @@ gpui-component 0.6 depends on GPUI published as the **`gpui-pre`** package:
 snapshots of Zed's `main` branch that the gpui-kit maintainer republishes as
 `0.3.N` patch bumps every other Sunday. Breaking changes from Zed therefore
 arrive as patch releases. This crate names the same package
-(`gpui = { package = "gpui-pre", version = "0.3.3" }`) so its `Hsla`, `Pixels`
+(`gpui = { package = "gpui-pre", version = "0.3.5" }`) so its `Hsla`, `Pixels`
 and `StyleRefinement` are gpui-component's types; its GPUI surface is small
 (`Hsla`, `hsla`, `Rgba`, `SharedString`, `px`, `Pixels`, `svg`, `img`,
 `ImageSource`, `ElementId`, `IntoElement`, `StyleRefinement`, `FontWeight`,

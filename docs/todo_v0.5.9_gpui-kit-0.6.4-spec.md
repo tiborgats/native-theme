@@ -588,7 +588,7 @@ listed so the plan can cite them:
 - [ ] `cargo audit` exits 0 (the six allowed warnings for unmaintained crates remain; `RUSTSEC-2026-0285` is gone, E19).
 - [ ] `grep -rn 'max_h' connectors/native-theme-gpui/src/geometry.rs` still finds the dialog line, and its doc comment says the value does not reach upstream's `Dialog` (E18).
 - [ ] `grep -rn 'tiles' connectors/native-theme-gpui/` finds exactly one line: the `Cargo.toml` comment recording why the floor is hard ("0.6.2 removed ThemeColor::tiles"). No `.rs`, `.md` or example file mentions it.
-- [ ] `grep -rn '0\.6\.0\|0\.3\.3' connectors/native-theme-gpui/` finds exactly three lines, none of them a citation: `src/lib.rs` "Planned for unification in v0.6.0" (native-theme's own version) and the two showcase comments that record what upstream 0.6.0 introduced ("0.6.0 added `SliderEvent::Release`", "Button (0.6.0):").
+- [ ] `grep -rn '0\.6\.0\|0\.3\.3' connectors/native-theme-gpui/` finds no *citation*: every remaining hit states history or native-theme's own version — `src/lib.rs:137` ("Planned for unification in v0.6.0"), the `Theme`-tripwire and `spinner_size` comments that say what 0.6.0 did, and the two showcase comments ("0.6.0 added `SliderEvent::Release`", "Button (0.6.0):").
 - [ ] `cargo tree -p native-theme-gpui -i gpui-pre` shows one gpui-pre, 0.3.5.
 - [ ] `cargo doc -p native-theme-gpui --no-deps --all-features` builds without warnings (the form `pre-release-check.sh:510-516` and CI use, plus the features docs.rs enables).
 - [ ] The showcase builds and shows the five §8a sections; `docs/todo_v0.5.8_*` no longer exists outside `docs/archive/`.

@@ -3,6 +3,9 @@
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
 //! shadow settings, and optionally all 138 color fields as hex strings.
+//!
+//! Upstream citations in this module are verified against gpui-component 0.6.4,
+//! gpui-base 0.6.4 and gpui-pre 0.3.5.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
@@ -40,7 +43,7 @@ pub fn to_theme_config(
 
     // D41: upstream's own default highlighter style for this mode. Theme::change
     // installs a config's highlight as highlight_theme only when it is Some
-    // (gpui-component 0.6.0 src/theme/schema.rs:1066-1073) and otherwise keeps
+    // (gpui-component src/theme/schema.rs:1066-1073) and otherwise keeps
     // the previous mode's; to_theme sets Theme.highlight_theme to this same
     // default directly, so both paths agree.
     let highlight = if is_dark {
@@ -92,9 +95,9 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
 
     // ThemeConfigColors keeps the 12 base-palette fields (red, blue, green,
     // yellow, magenta, cyan and their _light variants) private (gpui-component
-    // 0.6.0 src/theme/schema.rs:657-668), so this config cannot carry them and
+    // src/theme/schema.rs:640-674), so this config cannot carry them and
     // Theme::apply_config resets them to ThemeColor::dark()/light() on every
-    // rebuild (:687-695, :1074-1078). `apply`'s observer restores them (D43).
+    // rebuild (:688-696, :1075-1079). `apply`'s observer restores them (D43).
     let mut colors = ThemeConfigColors::default();
     colors.accent = h(tc.accent);
     colors.accent_foreground = h(tc.accent_foreground);
@@ -102,8 +105,8 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.background = h(tc.background);
     colors.border = h(tc.border);
     colors.group_box = h(tc.group_box);
-    // group_box_title_foreground: left None; declared at schema.rs:357 but read
-    // nowhere in gpui-component 0.6.0 (no apply_color! arm, no consumer).
+    // group_box_title_foreground: left None; declared at schema.rs:361 but read
+    // nowhere in gpui-component (no apply_color! arm, no consumer).
     colors.group_box_foreground = h(tc.group_box_foreground);
     colors.caret = h(tc.caret);
     colors.chart_1 = h(tc.chart_1);

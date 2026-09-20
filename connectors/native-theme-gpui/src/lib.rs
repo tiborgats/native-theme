@@ -157,8 +157,8 @@ pub fn to_theme(
     // It's used internally by gpui-component for transparent overlays.
     theme.mode = mode;
     theme.font_family = SharedString::from(d.font.family.clone());
-    // §3.4: Root sets the window rem to font_size (gpui-component 0.6.0
-    // src/root.rs:579), so scaling these two sizes scales every rem-relative
+    // §3.4: Root sets the window rem to font_size (gpui-component
+    // src/root.rs:582), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
     theme.font_size = px(d.font.size * s);
     theme.mono_font_family = SharedString::from(d.mono_font.family.clone());
@@ -798,7 +798,7 @@ fn apply_inner(
     install_observer_once(cx);
     // D37: paint now. A change from a timer, portal signal or menu action must
     // not wait for the next input event; upstream refreshes only the window
-    // passed to Theme::change (gpui-pre 0.3.3 src/app.rs:1074).
+    // passed to Theme::change (gpui-pre src/app.rs:1091).
     cx.refresh_windows();
 }
 
@@ -875,12 +875,12 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// Restore the 12 base-palette colours (`red` … `cyan_light`) of the styled
 /// theme from the stored variant for the current mode (D43).
 ///
-/// `ThemeConfigColors` keeps them private (gpui-component 0.6.0
-/// `src/theme/schema.rs:657-668`), so the config `apply` installs for a variant
+/// `ThemeConfigColors` keeps them private (gpui-component
+/// `src/theme/schema.rs:640-674`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
-/// them to `ThemeColor::dark()` / `light()` (`:687-695`, `:1074-1078`) and
-/// ends in `cx.set_global` of `gpui_base::Theme` (`theme/mod.rs:247-256`,
-/// `:321-325`), whose notification reaches the base-theme observer. Writes
+/// them to `ThemeColor::dark()` / `light()` (`:688-696`, `:1075-1079`) and
+/// ends in `cx.set_global` of `gpui_base::Theme` (`theme/mod.rs:271-280`,
+/// `:367-371`), whose notification reaches the base-theme observer. Writes
 /// only when a field differs; the styled theme has no upstream observer, so
 /// the write triggers no rebuild. After `apply` the connector is the sole
 /// writer of these 12 fields: a value an application sets on them itself is
@@ -905,11 +905,11 @@ fn repair_base_palette(cx: &mut App) {
 }
 
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
-/// deduplicated notification (gpui-pre 0.3.3 `src/app.rs:1662-1664`), delivered
-/// after the pending mark is removed (`:1817-1821`): the observer's own write
+/// deduplicated notification (gpui-pre `src/app.rs:1703-1705`), delivered
+/// after the pending mark is removed (`:1860-1864`): the observer's own write
 /// yields exactly one further delivery, absorbed by `reapplying`.
 ///
-/// The subscription activates through a deferred effect (`src/app.rs:2087-2099`)
+/// The subscription activates through a deferred effect (`src/app.rs:2130-2142`)
 /// at the end of the flush that follows this call, so a base-theme write made by
 /// other code in the same update as the first `apply` (a
 /// `Theme::sync_system_appearance` right after it) would stand until the next
