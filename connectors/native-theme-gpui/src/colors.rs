@@ -1,6 +1,6 @@
-//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (139 fields).
+//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (138 fields).
 //!
-//! Maps native-theme's per-widget resolved fields to gpui-component's 139-field
+//! Maps native-theme's per-widget resolved fields to gpui-component's 138-field
 //! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ones are
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
@@ -138,7 +138,7 @@ struct ResolvedColors {
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
 ///
-/// Maps all 139 fields: ~40 directly from ResolvedTheme per-widget structs,
+/// Maps all 138 fields: ~40 directly from ResolvedTheme per-widget structs,
 /// the rest derived via shade generation following gpui-component's own
 /// fallback logic.
 ///
@@ -483,8 +483,6 @@ fn assign_misc(
     tc.caret = c.input_caret;
 
     tc.skeleton = c.secondary;
-
-    tc.tiles = c.bg;
 
     // Drag border: 65% primary overlay for visible drag indicator.
     tc.drag_border = c.primary.opacity(0.65);
@@ -1028,14 +1026,14 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.6.0 (each 16 bytes
+        // ThemeColor has 138 Hsla fields in gpui-component 0.6.4 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();
         let hsla_size = std::mem::size_of::<Hsla>();
         let field_count = size / hsla_size;
         assert_eq!(
-            field_count, 139,
+            field_count, 138,
             "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color() and the doc table in lib.rs"
         );
     }
@@ -1054,7 +1052,7 @@ mod tests {
                 .expect("ThemeColor serialises as an object");
             assert_eq!(
                 fields.len(),
-                139,
+                138,
                 "serde sees a different field count than the tripwire"
             );
             let unassigned: Vec<&String> = fields

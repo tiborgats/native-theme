@@ -18,7 +18,7 @@
 //!   on each change — no manual rewiring per widget.
 //! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
 //!   drive its appearance.
-//! - The Color Map tab exposes the full 139-field `ThemeColor` palette that
+//! - The Color Map tab exposes the full 138-field `ThemeColor` palette that
 //!   gpui-component exposes, with each field's current value and the
 //!   `native-theme` field it was derived from.
 //! - The Icons tab demonstrates `IconRole` mapping across Material, Lucide,
@@ -5524,8 +5524,7 @@ impl Showcase {
                     .child(color_swatch("status_bar_border", t.status_bar_border))
                     .child(color_swatch("title_bar", t.title_bar))
                     .child(color_swatch("title_bar_border", t.title_bar_border))
-                    .child(color_swatch("window_border", t.window_border))
-                    .child(color_swatch("tiles", t.tiles)),
+                    .child(color_swatch("window_border", t.window_border)),
             )
             // Base colors
             .child(section("Base"))

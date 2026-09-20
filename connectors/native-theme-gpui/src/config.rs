@@ -2,7 +2,7 @@
 //!
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
-//! shadow settings, and optionally all 139 color fields as hex strings.
+//! shadow settings, and optionally all 138 color fields as hex strings.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
@@ -16,7 +16,7 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// font_size/mono_font_size, radius/radius_lg/shadow. ResolvedFontSpec sizes are
 /// in logical pixels (conversion from platform points is handled by the resolution step).
 ///
-/// Also populates the `colors` field with all 139 ThemeColor fields converted
+/// Also populates the `colors` field with all 138 ThemeColor fields converted
 /// to hex strings, so the config can be serialized/deserialized losslessly.
 ///
 /// Fields not explicitly set inherit from `ThemeConfig::default()`.
@@ -84,7 +84,7 @@ pub fn to_theme_config(
 /// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
-/// All 139 ThemeColor fields are exported except the 12 private base colours
+/// All 138 ThemeColor fields are exported except the 12 private base colours
 /// (`red`, `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light`
 /// variants) plus `group_box_title_foreground`, which stay `None`.
 fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
@@ -186,7 +186,6 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
     colors.table_row_border = h(tc.table_row_border);
     colors.title_bar = h(tc.title_bar);
     colors.title_bar_border = h(tc.title_bar_border);
-    colors.tiles = h(tc.tiles);
     colors.warning = h(tc.warning);
     colors.warning_active = h(tc.warning_active);
     colors.warning_hover = h(tc.warning_hover);
@@ -341,7 +340,7 @@ mod tests {
             Some(9),
             "translucent colours are exported as #rrggbbaa"
         );
-        // Every field ThemeConfigColors exposes is exported: 139 ThemeColor
+        // Every field ThemeConfigColors exposes is exported: 138 ThemeColor
         // fields minus the 12 private base-palette ones (D43), and
         // group_box_title_foreground, which ThemeColor does not have, stays None.
         let value = serde_json::to_value(c).expect("ThemeConfigColors serialises");
@@ -351,7 +350,7 @@ mod tests {
             .values()
             .filter(|v| !v.is_null())
             .count();
-        assert_eq!(exported, 127, "config colours exported");
+        assert_eq!(exported, 126, "config colours exported");
     }
 
     #[test]

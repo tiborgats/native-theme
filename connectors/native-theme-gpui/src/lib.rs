@@ -46,7 +46,7 @@
 //! # Theme Field Coverage
 //!
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
-//! (all 139 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
+//! (all 138 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
 //! the styled `Theme`'s `focus_ring` and `scrollbar_mode`, and gpui-base's
 //! scrollbar and resize-handle styles.
 //!
@@ -119,13 +119,13 @@ use std::rc::Rc;
 /// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
 /// Builds a complete GpuiTheme by:
-/// 1. Mapping all 139 ThemeColor fields via `colors::to_theme_color`
+/// 1. Mapping all 138 ThemeColor fields via `colors::to_theme_color`
 /// 2. Setting font, geometry, and mode fields directly on the Theme
 /// 3. Storing a ThemeConfig in light_theme/dark_theme Rc for gpui-component switching
 ///
 /// All Theme fields are set explicitly -- no `apply_config` call is used.
 /// This avoids the fragile apply-then-restore pattern where `apply_config`
-/// would overwrite all 139 color fields with defaults.
+/// would overwrite all 138 color fields with defaults.
 ///
 /// The `is_dark` parameter is required rather than auto-derived because
 /// several presets (e.g. solarized, gruvbox) have borderline lightness
@@ -919,6 +919,53 @@ fn install_observer_once(cx: &mut App) {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    /// Compile-time tripwire: `gpui_component::Theme` has exactly these 20
+    /// fields in 0.6.4. Upstream carried three `tile_*` fields through 0.6.0
+    /// and 0.6.1 that this connector never set, and nothing noticed until
+    /// 0.6.2 removed them again; a field *added* in a patch release would be
+    /// left at upstream's default just as silently. Naming every field here
+    /// turns either change into a compile error.
+    #[test]
+    fn every_theme_field_is_named() {
+        let theme = to_theme(
+            &test_resolved(),
+            "Test",
+            true,
+            &AccessibilityPreferences::default(),
+        );
+        let GpuiTheme {
+            // Set by `to_theme` from the resolved native theme.
+            mode: _,
+            font_family: _,
+            font_size: _,
+            mono_font_family: _,
+            mono_font_size: _,
+            radius: _,
+            radius_lg: _,
+            shadow: _,
+            focus_ring: _,
+            scrollbar_mode: _,
+            highlight_theme: _,
+            // `to_theme` fills the slot for `mode` only; the other keeps
+            // `Theme::from(&ThemeColor)`'s empty `ThemeConfig::default()` until
+            // a later `apply` stores the other variant (D34).
+            light_theme: _,
+            dark_theme: _,
+            // Written by `Theme::from(&ThemeColor)`: the 138-field colour map,
+            // the tokens upstream derives from it, and `transparent` (Issue 53).
+            colors: _,
+            tokens: _,
+            transparent: _,
+            // Left at upstream's default on purpose: native-theme models no
+            // notification placement, list highlight default, sheet margin or
+            // motion tokens (`ResolvedTheme` has no such field).
+            notification: _,
+            list: _,
+            sheet: _,
+            motion: _,
+        } = theme;
+    }
 
     /// Issue 1: fixed to use into_variant(true) for catppuccin-mocha (dark theme).
     fn test_resolved() -> ResolvedTheme {

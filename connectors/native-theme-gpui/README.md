@@ -10,7 +10,7 @@ Compatibility: gpui-component 0.6.x · gpui-base 0.6.x · GPUI as `gpui-pre` 0.3
 Turns a `native_theme::ResolvedTheme` into a fully configured
 `gpui_component::theme::Theme` and installs it:
 
-- **Colours**: all 139 `ThemeColor` fields, including the 28 `button_*`
+- **Colours**: all 138 `ThemeColor` fields, including the 28 `button_*`
   fields gpui-component 0.6 reads for `Button`, so native themes keep their
   solid button surfaces instead of upstream's tinted house style.
 - **Fonts and global geometry**: families, sizes, `radius`, `shadow`,
@@ -279,7 +279,7 @@ conflict with any other dependency wanting a later snapshot.
 
 ## What gets mapped
 
-- **All 139 `ThemeColor` fields.** The status button fields copy the semantic
+- **All 138 `ThemeColor` fields.** The status button fields copy the semantic
   colours their variant used before (solid surfaces); `table_foot*` mirror
   `table_head*`; `status_bar*` come from the status-bar theme; the rest as
   before (direct roles plus derived hover/active states).
@@ -303,7 +303,7 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-139-field colour map and a 101-icon gallery.
+138-field colour map and a 101-icon gallery.
 
 ## Gallery
 

@@ -4,9 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 # NOT inherited: the gpui-pre closure declares a higher floor than the
-# workspace. Set to the lowest toolchain that compiles the library (spec §4.4);
-# measured 2026-09-06: 1.92.0-1.94.0 fail on unstable features used by
-# gpui-pre-util 0.3.3 and gpui-pre 0.3.3.
+# workspace. Set to the lowest toolchain that compiles the library; measured
+# 2026-09-19 on the 0.6.4 closure: 1.95.0 builds, 1.94.0 fails on
+# std::hint::cold_path in gpui-pre 0.3.5 (src/profiler.rs).
 rust-version = "1.95.0"
 repository.workspace = true
 homepage.workspace = true
@@ -31,14 +31,18 @@ system-icons = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
 
 [dependencies]
-# GPUI under the package name gpui-component 0.6.0 uses, so both edges unify.
-# gpui-component does not re-export gpui, so the connector names it. Caret:
-# an exact pin in a library would conflict with any consumer whose other
-# dependencies want a later snapshot.
-gpui = { package = "gpui-pre", version = "0.3.3" }
-gpui-component = "0.6.0"
-# For gpui_base::Theme, ScrollbarTheme, ResizableTheme (not re-exported).
-gpui-base = "0.6.0"
+# GPUI under the package name gpui-component uses, so both edges unify; 0.3.5
+# is the minimum gpui-component 0.6.4 accepts. gpui-component does not
+# re-export gpui, so the connector names it. Caret: an exact pin in a library
+# would conflict with any consumer whose other dependencies want a later
+# snapshot.
+gpui = { package = "gpui-pre", version = "0.3.5" }
+# A hard floor: 0.6.2 removed ThemeColor::tiles, which older connector code
+# wrote, and added the reduced-motion reader this crate cooperates with.
+gpui-component = "0.6.4"
+# For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
+# apply_system_reduce_motion (not re-exported).
+gpui-base = "0.6.4"
 native-theme = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
@@ -52,10 +56,11 @@ native-theme = { workspace = true, features = ["windows"] }
 
 [dev-dependencies]
 # Headless App for the apply/observer tests (#[gpui::test], TestAppContext).
-gpui = { package = "gpui-pre", version = "0.3.3", features = ["test-support"] }
+gpui = { package = "gpui-pre", version = "0.3.5", features = ["test-support"] }
 # The showcase uses the facade an application would: application(), init(),
-# and the Lucide assets under gpui_kit::assets.
-gpui-kit = "0.6.0"
+# and the Lucide assets under gpui_kit::assets. tree-sitter-rust: the grammar
+# for the showcase's code editor section.
+gpui-kit = { version = "0.6.4", features = ["tree-sitter-rust"] }
 native-theme = { workspace = true, features = ["watch"] }
 # Field-by-field completeness check of ThemeColor via its Serialize impl.
 serde_json = "1.0.151"
