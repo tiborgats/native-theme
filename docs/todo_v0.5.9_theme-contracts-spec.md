@@ -3,7 +3,7 @@
 Status: Design (2026-09-20, revised 2026-09-21); nothing implemented
 Companion rationale:
 [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md)
-(decisions C1–C17)
+(decisions C1–C18)
 Companion plan:
 [`todo_v0.5.9_theme-contracts-plan.md`](todo_v0.5.9_theme-contracts-plan.md)
 Sibling work in the same release:
@@ -67,8 +67,11 @@ corrected on 2026-09-21, when each was re-checked against the same sources.
 | † An iced `Theme` carries a palette and no font size, so text scaling cannot land in `to_theme` | `iced_core-0.14.0/src/theme.rs`, `Theme::custom_with_fn` |
 | † Nothing the palette reads is translucent: `background`, `text`, `accent`, the three status colours, `surface` and `accent_text` are opaque in all 32 combinations. Of the colours `styles::*` emits, 14 fields are translucent somewhere, and every one is a state overlay or a scrollbar thumb — no surface | measured 2026-09-21 |
 | † Today's placeholder contrast is 1.06–1.84 on **all 32** combinations. iced's *generated* `secondary.base.color` would be worse than the platform's own pair in 22 of 32 (material light 9.11 → 2.91). `input.placeholder_color` in that slot is exactly native in foreground on all 32; its ratio is lower than native in 12, by at most 0.68, solely because iced paints a text input on the window background, which differs from `input.background_color` in 18 of 32 | measured 2026-09-21, alpha composited |
+| † A hovered `button::secondary` keeps the base label and swaps only the fill for `secondary.strong.color`. Today that label is below 3:1 in 24 of 32 combinations (minimum 1.20). With `secondary.base` fed from the placeholder and `.strong` left generated it is still below 3:1 in 2 (2.54, 2.66); with `.strong` a copy of `.base` it is the idle label, never below 4.16. `secondary.weak` has no reader | `button.rs:613-625`; measured 2026-09-21 |
+| † `button.background_color` equals `input.placeholder_color` in none of the 32 combinations, so the corrected row fails on all of them today | measured 2026-09-21 |
+| † The iced showcase already renders `radio` (3), `text_editor` (1), `pick_list` (4), `combo_box` (1), `rule` (35) and `button::danger` / `success` / `text` (3 / 2 / 1) | `examples/showcase-iced.rs`, counted 2026-09-21 |
 | † `Pair::new(color, text)` is public and picks a readable text colour by iced's own rule; over the 32 combinations the label it gives on `input.placeholder_color` never falls below 4.16:1 | `iced_core-0.14.0/src/theme/palette.rs:440-445`; measured |
-| † 25 model fields are `soft_option`: they stay `Option` in `ResolvedTheme`. 17 of them are read by §3.3. None is `None` in any bundled preset, but a live OS reader may produce one | `native-theme-derive/src/gen_structs.rs:42`; `native-theme/src/model/widgets/mod.rs`; measured |
+| † 25 model fields are `soft_option`: they stay `Option` in `ResolvedTheme`. 19 of them are read by §3.3. None is `None` in any bundled preset, but a live OS reader may produce one | `native-theme-derive/src/gen_structs.rs:42`; `native-theme/src/model/widgets/mod.rs`; measured |
 | † **No `#[test]` can see the missing icon features.** `cargo test` builds with the dev-dependencies, which already enable `material-icons`, `lucide-icons` and `system-icons` on `native-theme`. Only the no-dev feature tree shows the defect | `cargo tree -p native-theme-iced -e no-dev,features -i native-theme` lists only `default` today |
 | The iced connector declares no `[features]`; the gpui one forwards four | `connectors/native-theme-iced/Cargo.toml`; `connectors/native-theme-gpui/Cargo.toml:26-31` |
 | An `[[example]]` target runs its `#[cfg(test)]` tests when the manifest sets `test = true`; the default is `false` | Cargo book, *Configuring a target*; both showcase entries currently omit it (`native-theme-gpui/Cargo.toml:80-81`, `native-theme-iced/Cargo.toml:26-27`) |
@@ -91,8 +94,8 @@ corrected on 2026-09-21, when each was re-checked against the same sources.
 
 | Line today | Change | Why |
 |---|---|---|
-| `extended.secondary.base.color = to_color(colors.btn_bg)` and `extended.secondary.base.text = to_color(colors.btn_fg)` | **replaced** by `extended.secondary.base = Pair::new(to_color(colors.placeholder), extended.background.base.text)` | the slot has six readers and three meanings (§1), and the text meaning wins because it is the one a wrong value makes unreadable. Measured, the placeholder foreground becomes exactly the platform's on all 32 combinations. The three fill readers get the placeholder tone, which is what iced's own design gives them, labelled by iced's own readable-text rule. |
-| — | **not** `secondary.strong.color = button.hover_background` | that slot does mean "hover" unambiguously (`button.rs:620`), but its base is no longer the button's, and a control that idles in one colour family and hovers into another is the incoherence this release removes. `styles::button` carries idle, hover, pressed and label together. |
+| `extended.secondary.base.color = to_color(colors.btn_bg)` and `extended.secondary.base.text = to_color(colors.btn_fg)` | **replaced** by `extended.secondary.base = Pair::new(to_color(colors.placeholder), extended.background.base.text)`, followed by `extended.secondary.strong = extended.secondary.base` | the slot has six readers and three meanings (§1), and the text meaning wins because it is the one a wrong value makes unreadable. Measured, the placeholder foreground becomes exactly the platform's on all 32 combinations. The three fill readers get the placeholder tone, which is what iced's own design gives them, labelled by iced's own readable-text rule. |
+| — | **not** `secondary.strong.color = button.hover_background`, and **not** iced's generated `.strong` | the hover keeps the base label (`button.rs:620-623`), so its fill must be one that label was chosen for. The platform's hover is not, and measured, neither is the generated one (2.54 on dracula dark). A copy is: the project's rule for a state with no value of its own (C16). `styles::button` carries the platform's real idle, hover, pressed and label together. |
 | — | **not** "leave iced's generated value", which the second draft chose | measured worse than the platform's own pair in 22 of 32 (§1). |
 | `background.weak.color = surface`, `background.weak.text = foreground` | kept | overridden as a *pair*, so they stay coherent; the closest single meaning iced has for a subdued panel. The nine readers that want something else are served by `styles::*`. |
 | `primary.base.text = accent_fg` | kept | `primary.base.color` comes from the `Palette` itself (`palette.rs:41`), so this pair is native on both sides. |
@@ -132,16 +135,19 @@ setter it is passed to.
 
 ```rust
 // A. with Status, passed to .style(..)
-//    button, button_primary, text_input, checkbox, toggler, scrollable, slider
+//    button, button_primary, button_danger, button_success, button_warning,
+//    button_link, text_input, text_editor, checkbox, radio, toggler,
+//    pick_list, scrollable, slider (also serves vertical_slider)
 pub fn button(resolved: &ResolvedTheme)
     -> impl Fn(&Theme, button::Status) -> button::Style + use<>;
 
 // B. without Status, passed to .style(..)
-//    container_card, progress_bar, tooltip (tooltip returns container::Style)
+//    container_card, progress_bar, rule, tooltip (returns container::Style)
 pub fn container_card(resolved: &ResolvedTheme)
     -> impl Fn(&Theme) -> container::Style + use<>;
 
-// C. without Status, passed to .menu_style(..) on PickList / ComboBox
+// C. without Status, passed to .menu_style(..) on PickList / ComboBox.
+//    ComboBox takes no .style(..): its field is .input_style(styles::text_input(..))
 pub fn menu(resolved: &ResolvedTheme)
     -> impl Fn(&Theme) -> menu::Style + use<>;
 
@@ -206,8 +212,10 @@ The fields this release knows have no native source:
 | `slider` `rail.border`, `handle.border_width`, `handle.border_color`; the scrollable rails' `border` | `SliderTheme` and `ScrollbarTheme` carry no border |
 | `text_input::Style.icon` | the model has no input-icon colour |
 | `container::Style.text_color` for `container_card` | `CardTheme` carries no font; iced's `None` inherits |
+| `pick_list::Style.handle_color` | `ComboBoxTheme` has `arrow_icon_size` and `arrow_area_width` but no arrow colour |
+| `rule::Style.radius`, `.fill_mode`, `.snap` | `SeparatorTheme` is a colour and a width |
 
-**Soft options (C16).** Seventeen of the native fields below are
+**Soft options (C16).** Nineteen of the native fields below are
 `soft_option`: `Option` even after resolution, where `None` is the platform
 stating the widget has no distinct appearance in that state. The fallback is
 always a **copy** of the widget's base-state value — never arithmetic, never
@@ -227,6 +235,7 @@ field in one step:
 | `switch.hover_checked_background`, `switch.disabled_checked_background` | `switch.checked_background` |
 | `switch.hover_unchecked_background`, `switch.disabled_unchecked_background` | `switch.unchecked_background` |
 | `switch.disabled_thumb_color` | `switch.thumb_background` |
+| `combo_box.hover_background`, `combo_box.disabled_background` | `combo_box.background_color` |
 | `tab.hover_background` (§3a) | `tab.background_color` |
 
 **State layers (C17).** Fourteen of these colours are translucent on some
@@ -235,7 +244,7 @@ documents it (rationale §2.11):
 
 | Kind | Fields | Emitted as |
 |---|---|---|
-| hover and pressed **of a widget that paints its own fill** | `button.hover_background`, `button.active_background`, `checkbox.hover_background`, `switch.hover_*` | **composited over that widget's idle fill** — the platform layers, iced replaces. For an opaque value this is the identity, so there is no branch |
+| hover and pressed **of a widget that paints its own fill** | `button.hover_background`, `button.active_background`, `checkbox.hover_background`, `switch.hover_*`, `combo_box.hover_background`, `link.hover_background` | **composited over that widget's idle fill** — the platform layers, iced replaces. For an opaque value this is the identity, so there is no branch |
 | idle and disabled fills | `*.background_color`, `*.disabled_background`, `checkbox.unchecked_background` | as given: a translucent disabled fill *replaces* the idle one and lets the window through |
 | row highlights and thumbs | `menu.hover_background`, `list.*`, `sidebar.*`, `tab.*`, the scrollbar thumb colours | as given: iced paints them over a panel or rail it also paints, so the layering happens by itself |
 
@@ -248,18 +257,27 @@ raw value in a replacing toolkit gives `#e9e9e9`.
 |---|---|---|---|
 | `button` | A | `background`, `text_color`, `border`, `shadow`, `snap` | `button.background_color` / `.font.color` / `.border.*`; `hover_background`, `active_background`, `hover_text_color`, `active_text_color`, `disabled_*` per `Status` |
 | `button_primary` | A | as above | `button.primary_background`, `primary_text_color` |
+| `button_danger`, `button_success`, `button_warning` | A | as above | fill `defaults.danger_color` / `success_color` / `warning_color`, label the matching `*_text_color`, **border from `button.border`** — iced's own status buttons hardcode `border::rounded(2)` (`button.rs:739`) and would sit beside a native button with a different radius. Hover and pressed fills have no native source: iced's `button::danger(theme, status)` etc., which derive them from the native status colour already in the palette |
+| `button_link` | A | as above | `link.font.color`, `.hover_text_color`, `.active_text_color`, `.disabled_text_color`, `.background_color`, `.hover_background`. Replaces `button::text` |
 | `text_input` | A | `background`, `border`, `icon`, `placeholder`, `value`, `selection` | `input.background_color`, `.border.*`, `.placeholder_color`, `.font.color`, `.selection_background`; `hover_border_color` and `focus_border_color` per `Status`; `icon` from §3.2 |
+| `text_editor` | A | `background`, `border`, `placeholder`, `value`, `selection` | the `input.*` sources of `text_input`; the struct has no `icon` |
 | `checkbox` | A | `background`, `icon_color`, `border`, `text_color` | `checkbox.checked_background`, **`.indicator_color`** (the check mark; there is no `check_color`), `.unchecked_background`, `.unchecked_border_color`, `.border.*`, `.font.color` |
+| `radio` | A | `background`, `dot_color`, `border_width`, `border_color`, `text_color` | `CheckboxTheme`, which the model documents as shared by checkbox and radio (`widgets/mod.rs:138-140`): `checked_background` / `unchecked_background` by `is_selected`, `indicator_color`, `border.*` / `unchecked_border_color`, `font.color` |
 | `toggler` | A | `background`, `background_border_width`, `background_border_color`, `foreground`, `foreground_border_width`, `foreground_border_color`, `text_color`, `border_radius`, `padding_ratio` | `switch.unchecked_background`, `checked_background`, `thumb_background`, `hover_checked_background`, `hover_unchecked_background`, `disabled_*` per `Status`; the last two fields from §3.2 |
+| `pick_list` | A | `text_color`, `placeholder_color`, `handle_color`, `background`, `border` | `combo_box.font.color`, `input.placeholder_color`, `combo_box.background_color`, `.border.*`, `hover_background` per `Status`; `handle_color` has no native source — `ComboBoxTheme` carries arrow *sizes* but no arrow colour — so it is iced's own (§3.2) |
 | `scrollable` | A | `container`, `vertical_rail`, `horizontal_rail`, `gap`, `auto_scroll` | `scrollbar.track_color` → each rail's `background`; `thumb_color`, `thumb_hover_color`, `thumb_active_color` → the `Scroller` background per `Status`; the last two fields from §3.2 |
 | `scrollbar` | D | — (a `Scrollbar`, not a `Style`) | `scrollbar.groove_width` → `.width(..)`, `scrollbar.thumb_width` → `.scroller_width(..)` |
 | `menu` | C | `background`, `border`, `text_color`, `selected_text_color`, `selected_background`, `shadow` | `menu.background_color`, `.border.*`, `.font.color`, `.hover_text_color`, `.hover_background` |
 | `container_card` | B | `text_color`, `background`, `border`, `shadow`, `snap` | `card.background_color`, `.border.*`; `text_color` and `snap` from §3.2 |
 | `slider` | A | `rail` (`backgrounds`, `width`, `border`), `handle` (`shape`, `background`, `border_width`, `border_color`) | `slider.fill_color` and `track_color` → `rail.backgrounds`; `track_height` → `rail.width`; `thumb_color`, `thumb_hover_color` → `handle.background`; `thumb_diameter` → `handle.shape` |
+| `rule` | B | `color`, `radius`, `fill_mode`, `snap` | `separator.line_color`; the other three have no native source (§3.2). The thickness is the constructor's argument, not a `Style` field: the showcase passes `resolved.separator.line_width` where it writes `rule::horizontal(1)` today |
 | `progress_bar` | B | `background`, `bar`, `border` | `progress_bar.track_color`, `fill_color`, `.border.*` |
 | `tooltip` | B | a `container::Style`: `text_color`, `background`, `border`, `shadow`, `snap` | `tooltip.background_color`, `.border.*`, `.font.color` |
 
-Twelve items: eleven style functions and `scrollbar`.
+Twenty items: nineteen style functions and `scrollbar` (C18). The rule for
+membership: an `iced_widget` widget with a `Style` **and** a native theme
+that models it. `svg` and `text` styles carry a single colour an application
+already sets from the resolved theme, and get no function.
 
 **One native value has no receiver in iced 0.14 and is not approximated:**
 `scrollbar.min_thumb_length`. iced computes the scroller length as
@@ -526,7 +544,7 @@ already carries a renderer backend, which §1 records as the condition.
 |---|---|
 | `every_tab_renders` | for each tab, `Simulator::with_size(..., view())` then `snapshot(&theme)` returns `Ok` — the interface lays out and draws with no panic. The snapshot is **not** compared to a baseline; that is Layer 4, deliberately out of scope (rationale §4) |
 | `interactive_controls_respond` | for each control the showcase advertises, `ui.click(<its label>)` succeeds and `into_messages()` contains the message it should send. A button built without `on_press` renders as `Status::Disabled` (`button.rs:342`) and its click fails — the iced form of the dead-Copy-button finding |
-| `styles_cover_every_widget_shown` | every widget the showcase renders is styled with the `styles::*` function for it — no widget is left on the palette default, because the showcase is what the README's screenshots claim the connector achieves (rationale §2.7) |
+| `styles_cover_every_widget_shown` | a source-level count over the showcase file (`include_str!`): for each constructor that has a `styles` function — `button(`, `text_input(`, `text_editor(`, `checkbox(`, `radio(`, `toggler(`, `pick_list(`, `scrollable(`, `slider(`, `vertical_slider(`, `progress_bar(`, `tooltip(`, `rule::` — the number of constructor calls equals the number of matching `styles::` calls, and no `button::primary` / `secondary` / `danger` / `success` / `text` or `container::rounded_box` remains. `container(` is excluded: most containers are layout, not cards. The showcase is what the README's screenshots claim the connector achieves (rationale §2.7) |
 
 If `Simulator` cannot initialise a renderer in CI, that is a **finding**: report
 it with the error, do not silently downgrade the tests to view-tree inspection.

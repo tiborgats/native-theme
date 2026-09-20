@@ -84,7 +84,7 @@ Seven instances:
 | `primary.weak.color` (derived) | **text selection** (`text_input.rs:1771`) | `input.selection_background`; the connector even has a `selection_color()` helper (`lib.rs:316`) that `to_theme` never calls |
 | `primary.strong.color` / `primary.base.color` (derived) | **hovered** and **dragged** scrollbar thumb (`scrollable.rs:2385` and `:2414` respectively — two different slots) | `scrollbar.thumb_hover_color` / `thumb_active_color`, never read |
 | `background.strong.color` (derived from the *window background*) | every **border, divider, rail and track** (`text_input.rs:1766`, `checkbox.rs`, `rule.rs:308`, `slider.rs:687`, `progress_bar.rs`) | `defaults.border.color`, `input.border.color`, `checkbox.unchecked_border_color`; the `border_color()` helper (`lib.rs:292`) is never written into the theme |
-| only `.base` entries are written (`extended.rs:109-119`) | `.weak` / `.strong` keep values generated from the *unoverridden* palette | a button painted with the platform's surface jumps to an unrelated tone on hover, because `button::secondary`'s hover reads `secondary.strong.color` (`button.rs:620`) and `button.hover_background` is never read |
+| only `.base` entries are written (`extended.rs:109-119`) | `.weak` / `.strong` keep values generated from the *unoverridden* palette | a button painted with the platform's surface jumps to an unrelated tone on hover, because `button::secondary`'s hover reads `secondary.strong.color` (`button.rs:620`) and `button.hover_background` is never read. The label does not follow: measured 2026-09-21, a hovered `button::secondary` label is **below 3:1 in 24 of 32** combinations today, down to 1.20 on solarized dark |
 
 Two more, of a different kind, and these two are what the repository's own
 `connector-parity-checker` reports, because they are public-surface and
@@ -176,8 +176,18 @@ value exactly, and the three fill readers get what iced's own design gives
 them: the placeholder tone. Their label comes from `Pair::new`
 (`iced_core-0.14.0/src/theme/palette.rs:440`), iced's own readable-text rule,
 so nothing is invented; measured, that label never falls below 4.16:1.
-`.weak` and `.strong` stay iced's generated values, which are neighbours of
-the same mid-tone by construction (`palette.rs:531-543`).
+
+`secondary.strong` is then written as a **copy of `secondary.base`**. Its one
+reader is `button::secondary`'s hover (`button.rs:620`), which keeps the base
+label and swaps only the fill. An earlier revision of this paragraph left
+`.strong` generated and called it "a neighbour of the same mid-tone by
+construction". Measured, it is not: with a dark placeholder the generated
+hover fill is a different tone from the one the label was chosen for, and the
+hovered label falls to 2.54 (dracula dark) and 2.66 (nord dark). Copying costs
+the palette-only secondary button its hover feedback; `styles::button` has the
+platform's real hover. That is the project's own rule for a state with no
+value of its own — copy, never arithmetic (C16). `secondary.weak` has no
+reader in `iced_widget` 0.14.2 and is left alone.
 
 The residual 12 of 32 are not a placeholder defect. iced paints a text input
 on `background.base.color`, the *window* background, and 18 of the 32
@@ -356,7 +366,7 @@ be able to pay only for what they use.
 |---|---|
 | Subtractive features: `no_aw`, `no_widgets`, `core_only` | **Rejected, although this was the shape first proposed.** Cargo features are additive and unified across the entire dependency graph: if any crate in the graph enables `no_widgets`, `styles` disappears for *every* consumer, and the ones who needed it cannot countermand it — feature unification only ever adds. A subtractive feature therefore turns one consumer's narrowing into another's compile error, and the second consumer may not even know the first exists. |
 | **Additive features with a `default` set, narrowed by `default-features = false`** | **Chosen.** `widgets` (default) enables `styles`; `iced_aw` enables `styles::aw` and implies `widgets`. "Core only" is `default-features = false`, which is per-consumer and cannot leak. Same intent, correct polarity. |
-| One feature per widget group | Rejected: over-engineered for eleven style functions and one builder. |
+| One feature per widget group | Rejected: over-engineered for nineteen small style functions and one builder. |
 
 `iced_aw` is **not** in `default`, for two measured reasons (crates.io,
 2026-09-21). It depends unconditionally on `iced_fonts` 0.3.0, whose published
@@ -433,6 +443,26 @@ One data oddity surfaced on the way and goes to `preset-validator`, not to the
 connectors: windows-11 light gives `disabled_background = "#f9f9f900"`, alpha
 zero, so a disabled button has no fill at all.
 
+### 2.12 Which widgets get a `styles` function
+
+The first list was eleven functions, chosen by which slots §1.3 found
+misread. Checking it against what the iced showcase *already renders*
+(2026-09-21) showed the list had been drawn from the wrong side: four widgets
+whose defective readers §1.3 itself cites had no function at all —
+`text_editor.rs:1476` and `pick_list.rs:910` read the placeholder slot,
+`rule.rs:308` reads `background.strong`, and `radio` reads `primary.strong`.
+
+| Option | Verdict |
+|---|---|
+| Keep the eleven | Rejected. §2.7 says the showcase renders every widget natively; with no `radio`, `text_editor`, `pick_list` or `rule` function it could not, and three of §1.3's cited readers would stay unfixed for an application that opts in. |
+| A function for every widget iced has | Rejected. `Badge`-like or layout widgets with no model theme would need invented values. |
+| **A function for every `iced_widget` widget that has a `Style` *and* a native theme that models it** | **Chosen.** That adds `radio` (shares `CheckboxTheme`, as the model documents), `text_editor` (`InputTheme`), `pick_list` (`ComboBoxTheme`), `rule` (`SeparatorTheme`), and four buttons the showcase already uses: `button_danger`, `button_success`, `button_warning` (the status colours, on the *button's* border) and `button_link` (`LinkTheme`, replacing `button::text`). |
+
+The status buttons matter for a reason the maintainer has already met once:
+iced's `button::danger` hardcodes `border::rounded(2)` (`button.rs:739`), so
+beside a `styles::button` it would have a different corner radius — the same
+by-eye finding as the Copy button in §1.1, reproduced in the other showcase.
+
 ---
 
 ## 3 -- Decision record
@@ -441,7 +471,7 @@ zero, so a disabled button has no fill at all.
 |---|---|
 | C1 | All of this ships in v0.5.9, under the maintainer's standing rule that every pre-1.0 release fixes the bugs found during it (§2.1). The delay to the gpui compatibility fix is accepted and recorded. |
 | C2 | The iced connector gains a `styles` module of per-widget style functions built from `&ResolvedTheme`, mirroring gpui's `geometry` and `variants` (§2.2). |
-| C3 | The iced palette writes `secondary.base` as `Pair::new(input.placeholder_color, text)` instead of the button surface. Of the slot's three meanings the text one wins, because it is the one where a wrong value is unreadable; measured, the placeholder foreground becomes exactly the platform's on all 32 combinations, where leaving iced's generated value would have been worse than the platform in 22. The platform's button colours are delivered by `styles::button` (§2.2a). |
+| C3 | The iced palette writes `secondary.base` as `Pair::new(input.placeholder_color, text)` instead of the button surface, and `secondary.strong` as a copy of it, so a hovered label stays on the fill it was chosen for. Of the slot's three meanings the text one wins, because it is the one where a wrong value is unreadable; measured, the placeholder foreground becomes exactly the platform's on all 32 combinations, where leaving iced's generated value would have been worse than the platform in 22. The platform's button colours are delivered by `styles::button` (§2.2a). |
 | C4 | Text scaling reaches iced where iced can receive it: `font_size` and `mono_font_size` take `&AccessibilityPreferences`, and `from_system` returns them. `to_theme`, `from_preset` and `to_iced_theme` are unchanged, because a palette has nothing for the preferences to act on (§2.10). Breaking, documented under Breaking Changes. |
 | C5 | The iced connector forwards the four icon features, so an application depending on it alone gets working icons. |
 | C6 | Layer 1: a mapping-contract table per connector, iterated over all 32 preset/mode combinations, with a coverage tripwire over every slot (§2.4). |
@@ -456,6 +486,7 @@ zero, so a disabled button has no fill at all.
 | C15 | `iced_test` 0.14.0 is a dev-dependency of the iced connector, for the showcase's interaction tests (§2.5). It is dev-only, so no consumer pays for it. |
 | C16 | A `soft_option` field is `Option` even after resolution, and `None` means the platform has no distinct appearance in that state. `styles::*` falls back by **copying** the widget's base-state value, never by arithmetic — the rule the egui design already set (`todo_v0.6.0_egui-connector-rationale.md` §3.6). |
 | C17 | Hover and pressed colours are state layers: both connectors composite them over the widget's own idle fill, because the platform layers where the toolkits replace. Idle fills, disabled fills and row highlights are emitted as given. In gpui that corrects `button_hover`, `button_active`, `button_secondary_hover` and `button_secondary_active`; only windows-11 changes (§2.11). |
+| C18 | `styles` covers every `iced_widget` widget that has both a `Style` and a native theme modelling it — nineteen functions and the `scrollbar` builder — not only the widgets whose slots §1.3 found misread (§2.12). |
 
 ---
 
@@ -472,4 +503,4 @@ zero, so a disabled button has no fill at all.
 
 ## 5 -- Open questions for the maintainer
 
-None. §2.2a, §2.10 and §2.11 settled the last three.
+None. §2.2a and §2.10–§2.12 settled the last four.
