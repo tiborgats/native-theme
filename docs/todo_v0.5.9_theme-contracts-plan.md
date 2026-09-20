@@ -16,7 +16,7 @@ script.
 **Tech Stack:** Rust 2024, `iced_core` / `iced_widget` 0.14, optional
 `iced_aw` 0.14, gpui-pre 0.3.5 test-support, `cargo metadata`.
 
-**Spec:** [`todo_v0.5.9_theme-contracts-spec.md`](todo_v0.5.9_theme-contracts-spec.md) — read it first. Reasons: [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md) (C1–C12).
+**Spec:** [`todo_v0.5.9_theme-contracts-spec.md`](todo_v0.5.9_theme-contracts-spec.md) — read it first. Reasons: [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md) (C1–C13).
 
 **Sibling work, already implemented on this branch:** the gpui connector's move
 to GPUI Kit 0.6.4 and the fixes from the maintainer's visual check

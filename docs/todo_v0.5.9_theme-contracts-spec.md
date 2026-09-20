@@ -3,7 +3,7 @@
 Status: Design (2026-09-20); nothing implemented
 Companion rationale:
 [`todo_v0.5.9_theme-contracts-rationale.md`](todo_v0.5.9_theme-contracts-rationale.md)
-(decisions C1–C10)
+(decisions C1–C13)
 Companion plan:
 [`todo_v0.5.9_theme-contracts-plan.md`](todo_v0.5.9_theme-contracts-plan.md)
 Sibling work in the same release:
