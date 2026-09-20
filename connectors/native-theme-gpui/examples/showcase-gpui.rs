@@ -2128,7 +2128,7 @@ impl Showcase {
             .p_4()
             .flex_1()
             // Button variants
-            .child(section("Button Variants (all 10, and the native ghost)"))
+            .child(section("Button Variants (all 10)"))
             .child(
                 h_flex()
                     .gap_2()
@@ -2299,7 +2299,9 @@ impl Showcase {
                         div()
                             .id("tt-btn-ghost")
                             .child(refined(
-                                Button::new("b-ghost").label("Ghost").ghost(),
+                                Button::new("b-ghost")
+                                    .label("Ghost")
+                                    .custom(variants::ghost_button(cx)),
                                 button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(
@@ -2307,38 +2309,14 @@ impl Showcase {
                                 "Button (Ghost)",
                                 &[
                                     ("text", "secondary_foreground", t.secondary_foreground),
-                                    ("hover bg", "accent", t.accent),
-                                    ("hover text", "accent_foreground", t.accent_foreground),
-                                ],
-                                &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                                &[
-                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
-                                    ("hover", "gpui-component 0.6.4 hovers a ghost button with the item-highlight pair (button.rs:1125-1141), not the platform's button hover; compare \"Ghost (native)\""),
-                                    ("font-weight", "hardcoded"),
-                                ],
-                            )),
-                    )
-                    .child(
-                        div()
-                            .id("tt-btn-ghost-native")
-                            .child(refined(
-                                Button::new("b-ghost-native")
-                                    .label("Ghost (native)")
-                                    .custom(variants::ghost_button(cx)),
-                                button_style.as_ref(),
-                            ))
-                            .on_hover(self.hover_info(
-                                &fi,
-                                "Button (native ghost)",
-                                &[
-                                    ("text", "secondary_foreground", t.secondary_foreground),
                                     ("hover bg", "secondary_hover", t.secondary_hover),
                                     ("active bg", "secondary_active", t.secondary_active),
                                 ],
                                 &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                 &[
-                                    ("variant", "native_theme_gpui::variants::ghost_button: flat like .ghost(), with the platform's button.hover_background / active_background"),
-                                    ("geometry", "geometry::button"),
+                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
+                                    ("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button.rs:1125-1141), which is the menu selection colour, not a button hover"),
+                                    ("font-weight", "hardcoded"),
                                 ],
                             )),
                     )

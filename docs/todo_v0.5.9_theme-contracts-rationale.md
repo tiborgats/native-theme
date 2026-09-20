@@ -220,13 +220,36 @@ catch a pair we *derived* wrongly, not to grade the platform.
 
 ---
 
+### 2.7 What a showcase is allowed to show
+
+A showcase exists to show every widget **in the native theme**. It is also the
+screenshot source for the README, so anything it renders is what the project
+claims native-theme achieves.
+
+It follows that a showcase never deliberately renders a widget in something
+other than the best the connector can deliver. Two things this release nearly
+got wrong:
+
+- The iced showcase was going to keep one section styled by the palette alone,
+  "so a reader can see what an application gets by default". Rejected: that is
+  documentation's job, not the screenshot's. Every widget in the iced showcase
+  takes its `styles::*` function.
+- The gpui showcase showed upstream's `.ghost()` button beside a
+  `variants::ghost_button` one, to make the difference visible. Rejected for
+  the same reason, and the comparison had already served its purpose by being
+  decided. The `Ghost` entry in "Button Variants" now takes
+  `variants::ghost_button` like every other button, and the duplicate is gone.
+
+The distinction that makes this coherent: *flat* is an application's design
+choice, not upstream's default — a toolbar button and an in-field action
+button are flat on every platform, and platform-facts models one button
+appearance with no flat variant (checked 2026-09-20). What the connector owes
+a flat button is the platform's state colours, which is exactly what
+`variants::ghost_button` gives it. So a flat button in the showcase is native;
+a flat button hovering in upstream's item-highlight colour is not.
+
+---
+
 ## 5 -- Open questions for the maintainer
 
-1. §2.2 gives an application two ways to get native colours in iced: the
-   palette (automatic, approximate) and `styles::*` (explicit, exact). The
-   showcase should demonstrate the explicit path, since that is what the
-   connector recommends — but that makes the iced showcase stop being a
-   demonstration of what an application gets *by default*. The gpui showcase
-   resolved the same tension by showing upstream's default and documenting the
-   remedy. Proposal: iced's showcase uses `styles::*` throughout and keeps one
-   section styled by the palette alone, labelled, so both are visible.
+None. §2.7 settled the last one.

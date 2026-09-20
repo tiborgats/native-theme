@@ -240,7 +240,7 @@ than draw:
 |---|---|
 | `view_builds_for_every_tab` | `view()` returns an `Element` for each tab with no panic |
 | `every_button_has_a_message` | every `button(..)` the showcase builds carries `.on_press(..)`; an iced button without one renders disabled, which is the iced form of the dead-control bug |
-| `styles_cover_every_widget_shown` | each widget the showcase renders is styled with the `styles::*` function for it, so the showcase demonstrates the recommended path (rationale §5) |
+| `styles_cover_every_widget_shown` | every widget the showcase renders is styled with the `styles::*` function for it — no widget is left on the palette default, because the showcase is what the README's screenshots claim the connector achieves (rationale §2.7) |
 
 ---
 
