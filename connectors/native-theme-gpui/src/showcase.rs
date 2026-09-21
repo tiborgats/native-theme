@@ -209,6 +209,109 @@ fn the_showcase_exercises_every_builder() {
 }
 
 // ---------------------------------------------------------------------------
+// Every demo block carries a Widget Info panel
+// ---------------------------------------------------------------------------
+//
+// Widget-info spec section 2.2. A demo block is the element chain rooted at
+// `div().id("tt-<slug>")`; it runs to the next such id, or to the end of the
+// file. A block with no `.on_hover(self.hover_info(` is a widget a reader can
+// hover and learn nothing from.
+//
+// The boundaries are read from `SHOWCASE` itself and not from the stripped
+// copy: `without_comments_or_strings` removes string literals, and the id
+// *is* a string literal. The body is then checked in the stripped copy, so a
+// panel named inside a comment does not count as one. Both agree on line
+// numbers, because a removed span leaves its newlines behind (see
+// `without_comments_or_strings`).
+
+/// The marker that opens a demo block, and the call that gives it a panel.
+const BLOCK_ID: &str = ".id(\"tt-";
+const PANEL_CALL: &str = ".on_hover(self.hover_info(";
+
+/// The one demo whose id reaches `.id()` through a `const` table rather than
+/// as a literal: the resizable groups are rendered from [`RESIZABLE_GROUPS`]
+/// by a single function, so the call site reads `.id(group.id)`.
+///
+/// `every_demo_id_is_a_tt_id` keeps that indirection honest, so this marker
+/// cannot come to stand for a block that is not a demo.
+const INDIRECT_BLOCK_ID: &str = ".id(group.id)";
+
+/// The 0-based line indices of `source` that open a demo block.
+fn demo_block_starts(source: &str) -> Vec<usize> {
+    source
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.contains(BLOCK_ID) || line.contains(INDIRECT_BLOCK_ID))
+        .map(|(n, _)| n)
+        .collect()
+}
+
+/// Spec section 2.1: an id that reaches a demo block through a `const` table
+/// is still a `tt-` id.
+///
+/// Without this, [`INDIRECT_BLOCK_ID`] would be a hole: renaming a table
+/// entry to something that is not a demo would keep the marker and lose the
+/// meaning.
+#[test]
+fn every_demo_id_is_a_tt_id() {
+    let mut wrong = Vec::new();
+    let mut checked = 0usize;
+    for (n, line) in SHOWCASE.lines().enumerate() {
+        let Some(rest) = line.trim_start().strip_prefix("id: \"") else {
+            continue;
+        };
+        let Some(id) = rest.split('"').next() else {
+            continue;
+        };
+        checked += 1;
+        if !id.starts_with("tt-") {
+            wrong.push(format!("{}: {id}", n + 1));
+        }
+    }
+    assert!(
+        checked > 0,
+        "no `id: \"...\"` field found in the showcase, so this test would pass vacuously"
+    );
+    assert!(
+        wrong.is_empty(),
+        "a demo id reached through a const table must start with `tt-`, or \
+         `demo_block_starts` counts a non-demo as a demo block: {}",
+        wrong.join(", ")
+    );
+}
+
+/// Spec section 2.2: every `tt-` demo block carries a Widget Info panel.
+#[test]
+fn every_demo_block_has_a_widget_info_panel() {
+    let stripped = without_comments_or_strings(SHOWCASE);
+    let body: Vec<&str> = stripped.lines().collect();
+    let starts = demo_block_starts(SHOWCASE);
+
+    assert!(
+        !starts.is_empty(),
+        "no `{BLOCK_ID}` found in the showcase, so this test would pass vacuously"
+    );
+
+    let mut missing = Vec::new();
+    for (i, &start) in starts.iter().enumerate() {
+        let end = starts.get(i + 1).copied().unwrap_or(body.len());
+        let (from, to) = (start.min(body.len()), end.min(body.len()));
+        if !body[from..to].iter().any(|l| l.contains(PANEL_CALL)) {
+            missing.push(start + 1);
+        }
+    }
+
+    assert!(
+        missing.is_empty(),
+        "{} of {} demo blocks in examples/showcase-gpui.rs carry no Widget Info \
+         panel, so hovering them says nothing; at lines: {:?}",
+        missing.len(),
+        starts.len(),
+        missing
+    );
+}
+
+// ---------------------------------------------------------------------------
 // No hardcoded style values in the showcase
 // ---------------------------------------------------------------------------
 //
