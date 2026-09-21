@@ -548,8 +548,10 @@ pub fn checkbox(
 /// iced `Border`, so there is no corner radius to give it.
 ///
 /// The same two native fields are builder geometry here as on a checkbox:
-/// `checkbox.indicator_width` is the dot's diameter (`platform-facts.md:969`)
-/// and belongs to `Radio::size(..)` (`radio.rs:200`, laid out at `:300`), and
+/// `checkbox.indicator_width` is the radio indicator's diameter
+/// (`platform-facts.md:969`) -- the whole circle, not the selected dot, which
+/// iced draws at half of it (`radio.rs:409`) -- and belongs to
+/// `Radio::size(..)` (`radio.rs:200`, laid out at `:300`), and
 /// `checkbox.label_gap` to `Radio::spacing(..)` (`radio.rs:212`).
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn radio(

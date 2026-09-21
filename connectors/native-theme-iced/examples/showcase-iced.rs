@@ -1726,8 +1726,10 @@ fn view(state: &State) -> Element<'_, Message> {
     // ---- Right panel (tabs + content) ----
     let sp = &SP;
     let ts = &state.current_resolved.text_scale;
-    // The strip sits against the window's own edges, so all three sides are
-    // the window margin.
+    // The strip's top and right sit against the window's own edges, so those
+    // two are the window margin; its left abuts the sidebar
+    // (`row![sidebar, right_panel]`), a panel gutter that takes the same value
+    // so the strip lines up with the content below it.
     let tab_padding = Padding::ZERO
         .left(gap.window)
         .right(gap.window)
@@ -2294,7 +2296,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
             &[
                 ("label gap", &label_gap_s),
-                ("dot diameter", &indicator_width_s),
+                ("indicator diameter", &indicator_width_s),
             ],
             &[
                 ("border-radius", "radio::Style carries no corner radius"),
@@ -3553,10 +3555,15 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                     "link.font.color",
                     to_color(resolved.link.font.color),
                 ),
+                // Markdown states no colour of its own, so iced paints it with
+                // the slot `Base::base` hands every inheriting widget
+                // (`iced_core` theme.rs:334); the connector sets that slot from
+                // `defaults.text_color`, so reading it live shows what is on
+                // screen rather than the palette input behind it.
                 (
                     "text",
-                    "palette.text, set from defaults.text_color",
-                    state.current_theme.palette().text,
+                    "extended.background.base.text, from defaults.text_color",
+                    state.current_theme.extended_palette().background.base.text,
                 ),
             ],
             &[
@@ -4082,7 +4089,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let row_inset = list_t.row_height - list_t.item_font.size;
     let list_padding = if row_inset > 0.0 {
         // Only the vertical half is the platform's: the label is drawn at the
-        // row's own `bounds.x` (`selection_list/list.rs:273`), so horizontal
+        // row's own `bounds.x` (`selection_list/list.rs:274`), so horizontal
         // padding never reaches it, and the list's intrinsic width does read
         // `padding.x()` (`selection_list.rs:237`, `:244`).
         Padding::ZERO
@@ -4263,6 +4270,8 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         animated_section,
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved))
     ]
+    // Header, icon-set summary and animated section are major sections of the
+    // tab, the same role the other tab roots give `gap.section`.
     .spacing(gap.section);
     for r in grid_rows {
         content = content.push(r);

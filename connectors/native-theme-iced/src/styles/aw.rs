@@ -344,7 +344,7 @@ pub fn sidebar(
 /// vertical remainder the label leaves -- `row_height - item_font.size`, split
 /// between top and bottom -- guarding the case where a theme states a row no
 /// taller than its own label. Nothing horizontal is implied: the label is
-/// drawn at the row's own `bounds.x` (`selection_list/list.rs:273`), while the
+/// drawn at the row's own `bounds.x` (`selection_list/list.rs:274`), while the
 /// list's intrinsic width does read `padding.x()` (`selection_list.rs:237`,
 /// `:244`).
 ///
