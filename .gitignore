@@ -40,3 +40,7 @@ proptest-regressions/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Python byte-code (scripts/*.py)
+__pycache__/
+*.pyc
