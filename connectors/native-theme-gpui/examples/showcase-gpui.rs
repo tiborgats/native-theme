@@ -188,6 +188,24 @@ const CAROUSEL_SLIDES: &[(&str, &str)] = &[
     ),
 ];
 
+/// What the demo `TitleBar`'s window controls do on this platform.
+///
+/// `on_close_window` is kept only on Linux (`title_bar.rs:99-101`); on Windows
+/// the controls are hit-tested by the OS through `window_control_area`
+/// (`:220-222`), so no handler can stand between them and the real window.
+/// macOS draws none (`:254-256`).
+const TITLE_BAR_CONTROLS_NOTE: &str = if cfg!(target_os = "windows") {
+    "On Windows these buttons act on the real window: the OS hit-tests them \
+     and upstream discards the close handler, so the X really does close the \
+     showcase."
+} else if cfg!(target_os = "macos") {
+    "On macOS upstream draws no window controls in its own title bar; the \
+     system provides them."
+} else {
+    "The close button is intercepted and inert; dragging the bar moves the \
+     window and a double click zooms it."
+};
+
 /// How many pages the Data tab's `Pagination` navigates, at ten rows each.
 const PAGE_COUNT: usize = 12;
 
@@ -2950,6 +2968,7 @@ impl Showcase {
     fn render_inputs_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
+        let widget_gap = geometry::widget_gap(&self.layout);
         let checkbox_a = self.checkbox_a;
         let checkbox_b = self.checkbox_b;
         let checkbox_c = self.checkbox_c;
@@ -2967,8 +2986,7 @@ impl Showcase {
                 div()
                     .id("tt-input")
                     .child(
-                        v_flex()
-                            .gap_3()
+                        with_gap(v_flex(), widget_gap)
                             .child(refined(
                                 Input::new(&self.input_state)
                                     .with_size(Size::Medium)
@@ -3312,8 +3330,7 @@ impl Showcase {
                 div()
                     .id("tt-rating")
                     .child(
-                        h_flex()
-                            .gap_4()
+                        with_gap(h_flex(), widget_gap)
                             .items_center()
                             .child({
                                 // The stars are inline icons, so the platform's
@@ -3627,8 +3644,7 @@ impl Showcase {
                 div()
                     .id("tt-pagination")
                     .child(
-                        v_flex()
-                            .gap_2()
+                        with_gap(v_flex(), widget_gap)
                             .child(with_gap(
                                 Pagination::new("pagination-1")
                                     .current_page(self.page)
@@ -3884,8 +3900,7 @@ impl Showcase {
                 div()
                     .id("tt-message-scroller")
                     .child(
-                        v_flex()
-                            .gap_2()
+                        with_gap(v_flex(), widget_gap)
                             .w(px(460.0))
                             .child(
                                 div()
@@ -4053,6 +4068,7 @@ impl Showcase {
     ) -> impl IntoElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
+        let widget_gap = geometry::widget_gap(&self.layout);
         v_flex()
             .gap_5()
             .p_4()
@@ -4205,19 +4221,16 @@ impl Showcase {
                 div()
                     .id("tt-progress-circle")
                     .child(
-                        h_flex()
-                            .gap_6()
+                        with_gap(h_flex(), widget_gap)
                             .items_center()
                             .child(
-                                h_flex()
-                                    .gap_2()
+                                with_gap(h_flex(), widget_gap)
                                     .items_center()
                                     .child(ProgressCircle::new("progress-circle-73").value(73.0))
                                     .child(Label::new("73%").text_sm()),
                             )
                             .child(
-                                h_flex()
-                                    .gap_2()
+                                with_gap(h_flex(), widget_gap)
                                     .items_center()
                                     .child(
                                         ProgressCircle::new("progress-circle-100")
@@ -4332,8 +4345,7 @@ impl Showcase {
                 div()
                     .id("tt-shimmer-text")
                     .child(
-                        v_flex()
-                            .gap_2()
+                        with_gap(v_flex(), widget_gap)
                             .w(px(360.0))
                             // The highlight is mixed from the text colour, so
                             // each of these shimmers in whatever colour the
@@ -4489,8 +4501,7 @@ impl Showcase {
                 div()
                     .id("tt-marker")
                     .child(
-                        v_flex()
-                            .gap_3()
+                        with_gap(v_flex(), widget_gap)
                             .w(px(360.0))
                             .child(
                                 Marker::new()
@@ -5091,8 +5102,7 @@ impl Showcase {
                 div()
                     .id("tt-window-border")
                     .child(
-                        v_flex()
-                            .gap_1()
+                        with_gap(v_flex(), widget_gap)
                             .child(
                                 Label::new(SharedString::from(window_border_summary)).text_sm(),
                             )
@@ -5132,12 +5142,22 @@ impl Showcase {
                     .child(
                         TitleBar::new()
                             .native(cx, geometry::title_bar)
-                            // Linux only (`title_bar.rs:95-101`), and the reason
-                            // this bar can be shown at all: without a handler
-                            // the X calls `window.remove_window()` (`:237`),
-                            // which would close the showcase. Upstream's other
-                            // handlers — drag to move, double click to zoom —
-                            // are the widget, and stay.
+                            // Linux only (`title_bar.rs:99-101` drops the
+                            // handler on every other platform), and the reason
+                            // this bar can be shown at all there: without a
+                            // handler the X calls `window.remove_window()`
+                            // (`:237`), which would close the showcase.
+                            // Upstream's other handlers — drag to move, double
+                            // click to zoom — are the widget, and stay.
+                            //
+                            // On Windows the handler is discarded and the
+                            // controls are hit-tested by the OS instead
+                            // (`window_control_area`, `:220-222`), so this
+                            // demo bar's minimise, maximise and close act on
+                            // the real window. Nothing can intercept them
+                            // short of not drawing the widget, so the note
+                            // below says so on that platform. On macOS
+                            // upstream draws no controls at all (`:254-256`).
                             .on_close_window(cx.listener(|_this, _ev, window, cx| {
                                 window.push_notification(
                                     Notification::info(
@@ -5149,8 +5169,19 @@ impl Showcase {
                                     cx,
                                 );
                             }))
-                            .child(Label::new("native-theme showcase").text_sm()),
+                            // No `.text_sm()`: `Label::render` applies its own
+                            // refinement last (`label.rs:208`), so a size set
+                            // here would cancel the one `geometry::title_bar`
+                            // just supplied.
+                            .child(Label::new("native-theme showcase")),
                     )
+                    .child(Label::new(TITLE_BAR_CONTROLS_NOTE).text_sm().text_color(
+                        if cfg!(target_os = "windows") {
+                            t.danger
+                        } else {
+                            t.muted_foreground
+                        },
+                    ))
                     .on_hover(self.hover_info(
                         &fi,
                         "TitleBar",
@@ -5163,9 +5194,10 @@ impl Showcase {
                         ],
                         &[],
                         &[
-                            ("geometry", "geometry::title_bar: window.title_bar_font size and weight; the colour is the inherited foreground, which every preset states as the title bar's own"),
+                            ("geometry", "geometry::title_bar: window.title_bar_font size and weight, carried by the label because nothing overrides it afterwards; the colour is the inherited foreground, which every preset states as the title bar's own"),
                             ("height", "TITLE_BAR_HEIGHT = 34px (title_bar.rs:15)"),
                             ("fill", "a gradient between title_bar and background (title_bar.rs:21-35)"),
+                            ("window controls", TITLE_BAR_CONTROLS_NOTE),
                         ],
                     )),
             )
@@ -5174,18 +5206,25 @@ impl Showcase {
                 div()
                     .id("tt-toolbar")
                     .child({
-                        let row = h_flex()
-                            .px_2()
-                            .gap_2()
-                            .items_center()
-                            .bg(t.tab_bar)
-                            .border_1()
-                            .border_color(t.border)
-                            .child(native_icon(cx, IconName::Search, geometry::icon_size_toolbar))
-                            .child(native_icon(cx, IconName::Copy, geometry::icon_size_toolbar))
-                            .child(native_icon(cx, IconName::Settings, geometry::icon_size_toolbar))
-                            .child(Separator::vertical())
-                            .child(Label::new("Toolbar icons at the platform's toolbar size").text_sm());
+                        // The row is drawn with the application's own
+                        // elements, so its spacing is the application's to
+                        // set: the platform's container padding inside it and
+                        // its widget gap between the icons.
+                        let row = with_padding(
+                            with_gap(h_flex(), widget_gap),
+                            container_margin,
+                        )
+                        .items_center()
+                        .bg(t.tab_bar)
+                        .border_1()
+                        .border_color(t.border)
+                        .child(native_icon(cx, IconName::Search, geometry::icon_size_toolbar))
+                        .child(native_icon(cx, IconName::Copy, geometry::icon_size_toolbar))
+                        .child(native_icon(cx, IconName::Settings, geometry::icon_size_toolbar))
+                        .child(Separator::vertical())
+                        .child(Label::new(
+                            "Toolbar icons at the platform's toolbar size",
+                        ));
                         // gpui-component has no toolbar widget, so there is no
                         // refinement to apply: the row's own height is
                         // `geometry::control_height` of the platform's button,
@@ -5202,6 +5241,7 @@ impl Showcase {
                         &[],
                         &[
                             ("height", "geometry::control_height(button.min_height, button.font, button.border)"),
+                            ("padding", "geometry::container_margin; gap: geometry::widget_gap"),
                             ("icon size", "geometry::icon_size_toolbar: defaults.icon_sizes.toolbar"),
                         ],
                     )),
@@ -5756,8 +5796,7 @@ impl Showcase {
                 div()
                     .id("tt-stepper")
                     .child(
-                        v_flex()
-                            .gap_4()
+                        with_gap(v_flex(), widget_gap)
                             .w(px(480.0))
                             .child(
                                 Stepper::new("stepper-1")
@@ -5857,8 +5896,7 @@ impl Showcase {
                 div()
                     .id("tt-sidebar-toggle")
                     .child(
-                        h_flex()
-                            .gap_2()
+                        with_gap(h_flex(), widget_gap)
                             .items_center()
                             // `SidebarToggleButton` owns no collapsed state of
                             // its own (`sidebar/mod.rs:302-307`): the flag it
@@ -6053,6 +6091,8 @@ impl Showcase {
     ) -> impl IntoElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
+        let widget_gap = geometry::widget_gap(&self.layout);
+        let container_margin = geometry::container_margin(&self.layout);
         v_flex()
             .gap_5()
             .p_4()
@@ -6090,8 +6130,9 @@ impl Showcase {
                     .child(
                         Button::new("open-dialog")
                             .label("Open Dialog")
-                            .on_click(cx.listener(|_this, _ev, window, cx| {
-                                window.open_dialog(cx, |dialog, _w, cx| {
+                            .on_click(cx.listener(|this, _ev, window, cx| {
+                                let widget_gap = geometry::widget_gap(&this.layout);
+                                window.open_dialog(cx, move |dialog, _w, cx| {
                                     let n = cx.native_theme().and_then(|t| t.native(cx));
                                     let dialog =
                                         dialog
@@ -6110,8 +6151,7 @@ impl Showcase {
                                             // (`dialog/description.rs:50-51`).
                                             .content(move |content, _w, cx| {
                                                 content.child(
-                                                    h_flex()
-                                                        .gap_3()
+                                                    with_gap(h_flex(), widget_gap)
                                                         .items_start()
                                                         .child(native_icon(
                                                             cx,
@@ -6346,10 +6386,14 @@ impl Showcase {
                                     .label("KDE Breeze")
                                     .custom(variants::ghost_button(cx)),
                             )
-                            .content(|_state, _w, cx| {
-                                v_flex()
-                                    .p_4()
-                                    .gap_2()
+                            // The card's own padding and the gap inside it are
+                            // the application's to set, so they take the
+                            // platform's container margin and widget gap.
+                            .content(move |_state, _w, cx| {
+                                with_padding(
+                                    with_gap(v_flex(), widget_gap),
+                                    container_margin,
+                                )
                                     .w(px(260.0))
                                     .child(Label::new("KDE Breeze").font_semibold())
                                     .child(
@@ -6374,6 +6418,7 @@ impl Showcase {
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
                             ("geometry", "geometry::popover, which refines the card surface (hover_card.rs:134)"),
+                            ("card padding", "geometry::container_margin; gap: geometry::widget_gap"),
                             ("trigger", "variants::ghost_button, the flat button's native state colours"),
                             ("delays", "600ms to open, 300ms to close (hover_card.rs:46-47)"),
                         ],
@@ -6473,7 +6518,11 @@ impl Showcase {
                                     .items_center()
                                     .hover(|this| this.bg(t.accent))
                                     .child(native_icon(cx, icon, geometry::icon_size_small))
-                                    .child(Label::new(label).text_sm()),
+                                    // No `.text_sm()`: a `Label` refines
+                                    // itself last (`label.rs:208`), so the row
+                                    // would keep its own size instead of
+                                    // `menu.font`'s.
+                                    .child(Label::new(label)),
                                 row_style.as_ref(),
                             )
                         };
@@ -6499,7 +6548,7 @@ impl Showcase {
                         ],
                         &[],
                         &[
-                            ("geometry", "geometry::menu_item: menu.row_height (control height), menu.border.padding_*, menu.icon_text_gap, menu.font"),
+                            ("geometry", "geometry::menu_item: menu.row_height (control height), menu.border.padding_*, menu.icon_text_gap, menu.font — the label sets no size of its own, so the font arrives"),
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                         ],
                     )),

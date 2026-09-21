@@ -746,19 +746,33 @@ mod tests {
         for info in Theme::list_presets() {
             for mode in [ColorMode::Light, ColorMode::Dark] {
                 let r = resolved(info.key, mode);
+                let at = format!(
+                    "{}/{}",
+                    info.key,
+                    if mode == ColorMode::Dark {
+                        "dark"
+                    } else {
+                        "light"
+                    }
+                );
                 assert_eq!(
                     r.window.title_bar_font.color, r.defaults.text_color,
-                    "{}: the title bar font colour is no longer the window's, \
+                    "{at}: the title bar font colour is no longer the window's, \
                      so inheriting `foreground` no longer delivers it and \
-                     geometry::title_bar must carry it",
-                    info.key
+                     geometry::title_bar must carry it"
                 );
                 let prefs = scaled(1.0);
                 let n = Native {
                     resolved: &r,
                     accessibility: &prefs,
                 };
-                assert_eq!(title_bar(n).text.color, None);
+                assert_eq!(
+                    title_bar(n).text.color,
+                    None,
+                    "{at}: geometry::title_bar set a text colour; upstream sets \
+                     none on the bar (title_bar.rs:328-343), so there is \
+                     nothing here to displace"
+                );
             }
         }
     }

@@ -54,7 +54,7 @@ fn public_fns(source: &str) -> Vec<&str> {
 fn without_comments_or_strings(source: &str) -> String {
     let mut out = String::with_capacity(source.len());
     let mut rest = source;
-    while let Some(next) = rest.find(['/', '"', 'r']) {
+    while let Some(next) = rest.find(['/', '"', 'r', '\'']) {
         let (before, from) = rest.split_at(next);
         out.push_str(before);
         if let Some(after) = from.strip_prefix("//") {
@@ -62,6 +62,11 @@ fn without_comments_or_strings(source: &str) -> String {
                 Some(ix) => &after[ix..],
                 None => "",
             };
+        } else if let Some(len) = char_literal_len(from) {
+            // Kept as written: a char literal is code, and `'"'` or `'/'`
+            // would otherwise open a string or a comment that never closes.
+            out.push_str(&from[..len]);
+            rest = &from[len..];
         } else if let Some(body) = from.strip_prefix('"') {
             rest = &body[end_of_string(body, "\"")..];
         } else if let Some(hashes) = raw_string_hashes(from) {
@@ -89,6 +94,28 @@ fn raw_string_hashes(from: &str) -> Option<usize> {
     after_r[hashes..].starts_with('"').then_some(hashes)
 }
 
+/// The byte length of the char literal starting at `from`, or `None` when the
+/// `'` opens a lifetime instead.
+///
+/// `'a`, `'_` and `'static` are lifetimes and must fall through untouched;
+/// `'"'` and `'/'` are literals whose contents would otherwise be read as the
+/// start of a string or a comment. `scripts/check-widget-coverage.py` draws
+/// the same distinction, and the same way.
+fn char_literal_len(from: &str) -> Option<usize> {
+    let body = from.strip_prefix('\'')?;
+    if let Some(escaped) = body.strip_prefix('\\') {
+        // `'\n'`, `'\''`, `'\u{2026}'`: past the escape's own first character,
+        // then to the closing quote.
+        let skip = char_len(escaped);
+        let end = escaped[skip..].find('\'')?;
+        return Some("'\\".len() + skip + end + "'".len());
+    }
+    let first = body.chars().next()?;
+    body[first.len_utf8()..]
+        .starts_with('\'')
+        .then_some("'".len() + first.len_utf8() + "'".len())
+}
+
 /// The byte length of the first character of `s`, or 0 when it is empty.
 fn char_len(s: &str) -> usize {
     match s.chars().next() {
@@ -113,17 +140,25 @@ fn end_of_string(body: &str, delim: &str) -> usize {
     ix
 }
 
-/// Whether `haystack` references `module::name` as an identifier of its own.
+/// Whether `haystack` references `module::name` as a path of its own.
 ///
-/// The boundary check is what keeps `geometry::input` from being satisfied by
-/// `geometry::input_height`.
+/// Both ends are checked. After the name, so that `geometry::input` is not
+/// satisfied by `geometry::input_height`; before the module, so that it is not
+/// satisfied by `my_geometry::input` either. A `:` before the module is fine
+/// and deliberate: `native_theme_gpui::geometry::input` is the same builder,
+/// written out.
 fn references(haystack: &str, module: &str, name: &str) -> bool {
     let path = format!("{module}::{name}");
     haystack.match_indices(&path).any(|(ix, _)| {
-        haystack[ix + path.len()..]
+        let before_is_boundary = haystack[..ix]
+            .chars()
+            .next_back()
+            .is_none_or(|c| !c.is_alphanumeric() && c != '_');
+        let after_is_boundary = haystack[ix + path.len()..]
             .chars()
             .next()
-            .is_none_or(|c| !c.is_alphanumeric() && c != '_')
+            .is_none_or(|c| !c.is_alphanumeric() && c != '_');
+        before_is_boundary && after_is_boundary
     })
 }
 
@@ -192,9 +227,38 @@ fn the_parser_and_the_remover_do_their_jobs() {
         "popover"
     ));
 
+    // A char literal is code and closes itself, so neither the `"` nor the
+    // `/` inside one may open a string or a comment.
+    let quotes = "let q = '\"'; geometry::table(n);\n\
+                  let slash = '/'; geometry::progress(n);\n\
+                  let esc = '\\''; geometry::popover(n);\n";
+    let stripped = without_comments_or_strings(quotes);
+    for called in ["table", "progress", "popover"] {
+        assert!(
+            references(&stripped, "geometry", called),
+            "a char literal swallowed the call that follows it: {stripped}"
+        );
+    }
+
+    // A lifetime is not a char literal: the string after it must still be
+    // removed, or a quoted mention would count as a use.
+    let lifetime = "fn f(n: Native<'_>) { let s = \"geometry::button\"; }\n";
+    assert!(!references(
+        &without_comments_or_strings(lifetime),
+        "geometry",
+        "button"
+    ));
+
     assert!(references("geometry::input(n)", "geometry", "input"));
     assert!(!references(
         "geometry::input_height(n)",
+        "geometry",
+        "input"
+    ));
+    // Both ends of the path, not just the far one.
+    assert!(!references("my_geometry::input(n)", "geometry", "input"));
+    assert!(references(
+        "native_theme_gpui::geometry::input(n)",
         "geometry",
         "input"
     ));
