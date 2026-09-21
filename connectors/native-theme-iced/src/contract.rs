@@ -46,7 +46,7 @@ mod derived;
 mod pairs;
 mod rows;
 
-use derived::{DERIVED, UNREACHABLE};
+use derived::{DERIVED, SECONDARY_LABEL_AS_STATED, SECONDARY_LABEL_SUBSTITUTED, UNREACHABLE};
 use pairs::*;
 use rows::*;
 
@@ -1749,6 +1749,65 @@ fn the_unreachable_native_value_is_stated_by_every_preset() -> native_theme::Res
          entry no longer describes a value the platform gives:\n{}",
         missing.len(),
         missing.join("\n")
+    );
+    Ok(())
+}
+
+/// The `extended.secondary.base.text` entry's "31 of 32", counted rather than
+/// asserted in prose.
+///
+/// The entry says `Pair::new` does not emit the label the connector hands it:
+/// it runs `readable()` against the placeholder fill, and the platform's own
+/// `defaults.text_color` survives that only where it clears iced's contrast
+/// bar. How often it does is the entry's claim, and this is the measurement
+/// behind it -- `SECONDARY_LABEL_SUBSTITUTED` and `SECONDARY_LABEL_AS_STATED`
+/// are declared beside the sentence, so a preset added to the bundle moves
+/// the count and fails here instead of leaving the prose stale.
+#[test]
+fn readable_substitutes_the_secondary_label_on_every_combination_but_one()
+-> native_theme::Result<()> {
+    let combinations = combinations()?;
+    let mut substituted = Vec::new();
+    let mut as_stated = Vec::new();
+
+    for c in &combinations {
+        let emitted = c.theme.extended_palette().secondary.base.text;
+        let native = to_color(c.resolved.defaults.text_color);
+        if emitted == native {
+            as_stated.push(c.label());
+        } else {
+            substituted.push(format!(
+                "{}: {} instead of {}",
+                c.label(),
+                show(emitted),
+                show(native)
+            ));
+        }
+    }
+
+    println!(
+        "readable() substitutes the secondary label on {} of {} combinations:\n{}",
+        substituted.len(),
+        combinations.len(),
+        substituted.join("\n")
+    );
+    println!("it emits defaults.text_color as the platform states it on: {as_stated:?}");
+
+    let as_stated: Vec<&str> = as_stated.iter().map(String::as_str).collect();
+    assert_eq!(
+        substituted.len(),
+        SECONDARY_LABEL_SUBSTITUTED,
+        "the DERIVED entry for extended.secondary.base.text says {} of {} \
+         combinations emit a substitute; the ones that do not are {:?}",
+        SECONDARY_LABEL_SUBSTITUTED,
+        combinations.len(),
+        as_stated
+    );
+    assert_eq!(
+        as_stated.as_slice(),
+        SECONDARY_LABEL_AS_STATED,
+        "the DERIVED entry names the combinations whose label survives \
+         readable() unchanged"
     );
     Ok(())
 }

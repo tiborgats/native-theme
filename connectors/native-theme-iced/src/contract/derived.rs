@@ -5,6 +5,22 @@
 //! that read these tables live in the parent module with the rows they are
 //! checked against.
 
+/// How many of the 32 preset/mode combinations emit a substitute for the
+/// platform's own label in `extended.secondary.base.text`, and which ones do
+/// not -- the two numbers the `extended.secondary.base.text` entry below
+/// quotes in prose.
+///
+/// They live here, beside the sentence that cites them, so that a new preset
+/// moves the count and turns
+/// `readable_substitutes_the_secondary_label_on_every_combination_but_one`
+/// red instead of letting the sentence rot. The measurement is that test's,
+/// not a note of one made elsewhere.
+pub(super) const SECONDARY_LABEL_SUBSTITUTED: usize = 31;
+
+/// The combinations that emit `defaults.text_color` exactly as the platform
+/// states it -- the exception the entry below names.
+pub(super) const SECONDARY_LABEL_AS_STATED: &[&str] = &["ios/light"];
+
 /// Every field the tripwire walks that no row claims, with the derivation that
 /// fills it instead. A field is in the rows or here, never both and never
 /// neither -- that is the whole of the tripwire (section 5.2).
@@ -23,11 +39,13 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
          readable on that fill is lightened, darkened, or replaced by black or \
          white (palette.rs:692-720). So the emitted value is the platform's \
          text colour only where it clears iced's contrast bar, and mostly it \
-         does not: measured 2026-09-21 over all 32 bundled preset/mode \
-         combinations, 31 of them emit a substitute of iced's own, ios light \
-         being the only one that does not. Placeholder grey and window text \
-         are close by construction, which is exactly the pair readable() \
-         rejects",
+         does not: over all 32 bundled preset/mode combinations, 31 emit a \
+         substitute of iced's own, ios light being the only one that does \
+         not. Those are SECONDARY_LABEL_SUBSTITUTED and \
+         SECONDARY_LABEL_AS_STATED above, counted again on every run by the \
+         test named there rather than asserted here. Placeholder grey and \
+         window text are close by construction, which is exactly the pair \
+         readable() rejects",
     ),
     (
         "extended.secondary.strong.text",
