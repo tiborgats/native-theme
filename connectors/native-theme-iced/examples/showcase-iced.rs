@@ -31,9 +31,9 @@
 //! sections.
 
 use iced::widget::{
-    button, checkbox, column, combo_box, container, grid, mouse_area, pane_grid, pick_list,
-    progress_bar, radio, row, rule, scrollable, slider, space, svg, table, text, text_editor,
-    text_input, toggler, tooltip, vertical_slider,
+    button, canvas, checkbox, column, combo_box, container, grid, markdown, mouse_area, pane_grid,
+    pick_list, progress_bar, qr_code, radio, row, rule, scrollable, slider, space, svg, table,
+    text, text_editor, text_input, toggler, tooltip, vertical_slider,
 };
 use iced::{Color, Element, Fill, Length, Padding, Theme};
 
@@ -161,6 +161,7 @@ impl CliArgs {
             "range" => Some(Tab::Range),
             "display" => Some(Tab::Display),
             "layout" => Some(Tab::Layout),
+            "graphics" => Some(Tab::Graphics),
             "icons" => Some(Tab::Icons),
             "theme-map" | "thememap" => Some(Tab::ThemeMap),
             _ => None,
@@ -180,6 +181,7 @@ enum Tab {
     Range,
     Display,
     Layout,
+    Graphics,
     Icons,
     ThemeMap,
 }
@@ -192,6 +194,7 @@ impl Tab {
         Tab::Range,
         Tab::Display,
         Tab::Layout,
+        Tab::Graphics,
         Tab::Icons,
         Tab::ThemeMap,
     ];
@@ -204,6 +207,7 @@ impl Tab {
             Tab::Range => "Range",
             Tab::Display => "Display",
             Tab::Layout => "Layout",
+            Tab::Graphics => "Graphics",
             Tab::Icons => "Icons",
             Tab::ThemeMap => "Theme Map",
         }
@@ -591,6 +595,15 @@ struct State {
     /// The pane last clicked, dragged or created.
     focused_pane: Option<pane_grid::Pane>,
 
+    // Graphics tab
+    /// The parsed Markdown document the `markdown` section renders.
+    markdown_content: markdown::Content,
+    /// The last Markdown link clicked, echoed under the document.
+    markdown_link: Option<String>,
+    /// The encoded QR payload. `None` when the encoder rejects the data,
+    /// which the section then says instead of showing a code.
+    qr_data: Option<qr_code::Data>,
+
     // Icons tab
     icon_set_choice: IconSetChoice,
     icon_set_choices: Vec<IconSetChoice>,
@@ -777,6 +790,9 @@ impl Default for State {
             panes,
             pane_count,
             focused_pane: Some(first_pane),
+            markdown_content: markdown::Content::parse(MARKDOWN_SAMPLE),
+            markdown_link: None,
+            qr_data: qr_code::Data::new(QR_PAYLOAD).ok(),
             icon_set_choice,
             icon_set_choices,
             loaded_icons,
@@ -1012,6 +1028,9 @@ enum Message {
     PaneResized(pane_grid::ResizeEvent),
     PaneSplit(pane_grid::Axis, pane_grid::Pane),
     PaneClosed(pane_grid::Pane),
+
+    // Graphics tab
+    MarkdownLinkClicked(markdown::Uri),
 
     // Icons tab
     IconSetSelected(IconSetChoice),
@@ -1328,6 +1347,7 @@ fn update_inner(state: &mut State, message: Message) {
                 state.focused_pane = Some(sibling);
             }
         }
+        Message::MarkdownLinkClicked(uri) => state.markdown_link = Some(uri),
         Message::IconSetSelected(choice) => {
             state.loaded_icons =
                 load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
@@ -1538,6 +1558,7 @@ fn view(state: &State) -> Element<'_, Message> {
         Tab::Range => view_range(state),
         Tab::Display => view_display(state),
         Tab::Layout => view_layout(state),
+        Tab::Graphics => view_graphics(state),
         Tab::Icons => view_icons(state),
         Tab::ThemeMap => view_theme_map(state),
     };
@@ -3069,6 +3090,312 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         pane_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         table_demo,
+    ]
+    .spacing(sp.xl)
+    .width(Fill)
+    .into()
+}
+
+// ---------------------------------------------------------------------------
+// Tab: Graphics
+// ---------------------------------------------------------------------------
+
+/// The document the `markdown` section parses once, at start-up.
+const MARKDOWN_SAMPLE: &str = "\
+# Markdown under a native theme
+
+`iced_widget::markdown` parses its input once and renders the items every
+frame with a `Settings` value. The showcase builds that value from the
+resolved theme: heading sizes from `text_scale`, the base size from
+`defaults.font`, code size from `defaults.mono_font` and the link colour
+below from `link.font.color`.
+
+- headings, lists and rules come from the parser
+- [a link, in the platform's own link colour](https://github.com/tiborgats/native-theme)
+- inline `code` and code blocks share the monospace weight
+
+```rust
+let settings = markdown::Settings::with_text_size(size, style);
+```
+";
+
+/// What the QR code encodes.
+const QR_PAYLOAD: &str = "https://github.com/tiborgats/native-theme";
+
+/// A small drawing whose every colour and width is the platform's.
+///
+/// `canvas` has no `Catalog` and no `Style` of its own: a [`canvas::Program`]
+/// is handed the theme and paints whatever it likes (`canvas/program.rs:49`).
+/// So the values are captured from the resolved theme when the program is
+/// built, which `view` does once per frame.
+struct ThemeSketch {
+    surface: Color,
+    outline: Color,
+    outline_width: f32,
+    corner_radius: f32,
+    accent: Color,
+    ink: Color,
+    ink_width: f32,
+    dot_radius: f32,
+}
+
+impl<Message> canvas::Program<Message> for ThemeSketch {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &Self::State,
+        renderer: &iced::Renderer,
+        _theme: &Theme,
+        bounds: iced::Rectangle,
+        _cursor: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+
+        let panel = canvas::Path::rounded_rectangle(
+            iced::Point::ORIGIN,
+            frame.size(),
+            self.corner_radius.into(),
+        );
+        frame.fill(&panel, self.surface);
+        frame.stroke(
+            &panel,
+            canvas::Stroke::default()
+                .with_color(self.outline)
+                .with_width(self.outline_width),
+        );
+
+        let center = frame.center();
+        let baseline = canvas::Path::line(
+            iced::Point::new(0.0, center.y),
+            iced::Point::new(frame.width(), center.y),
+        );
+        frame.stroke(
+            &baseline,
+            canvas::Stroke::default()
+                .with_color(self.ink)
+                .with_width(self.ink_width),
+        );
+
+        frame.fill(&canvas::Path::circle(center, self.dot_radius), self.accent);
+
+        vec![frame.into_geometry()]
+    }
+}
+
+/// Canvas, QRCode and Markdown: the three modules that paint content the
+/// application supplies rather than a control.
+fn view_graphics(state: &State) -> Element<'_, Message> {
+    let sp = &SP;
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let sep = &resolved.separator;
+    let d = &resolved.defaults;
+    let line_width_s = format!("{:.0}px", sep.line_width);
+    let dot_s = format!("{:.0}px", d.icon_sizes.large);
+
+    let header = section_header(
+        "Graphics Widgets",
+        "Canvas, QRCode and Markdown: content the application paints itself",
+        resolved,
+        ts,
+        sp,
+    );
+
+    // ---- Canvas ----
+
+    let sketch = ThemeSketch {
+        surface: to_color(resolved.card.background_color),
+        outline: to_color(sep.line_color),
+        outline_width: sep.line_width,
+        corner_radius: resolved.card.border.corner_radius,
+        accent: to_color(d.accent_color),
+        ink: to_color(d.text_color),
+        ink_width: sep.line_width,
+        // iced states a circle by its radius, the model by its diameter.
+        dot_radius: d.icon_sizes.large / 2.0,
+    };
+
+    let canvas_demo = hoverable(
+        widget_tooltip(
+            "Canvas",
+            &[
+                (
+                    "panel fill",
+                    "card.background_color",
+                    to_color(resolved.card.background_color),
+                ),
+                ("outline", "separator.line_color", to_color(sep.line_color)),
+                ("baseline", "defaults.text_color", to_color(d.text_color)),
+                ("dot", "defaults.accent_color", to_color(d.accent_color)),
+            ],
+            &[
+                ("stroke width", &line_width_s),
+                ("panel radius", "card.border.corner_radius"),
+                ("dot diameter", &dot_s),
+            ],
+            &[(
+                "Style",
+                "canvas has no Catalog and no Style: a Program paints with \
+                 whatever it is given (canvas/program.rs:49-56)",
+            )],
+        ),
+        column![
+            text("Canvas (a drawing from the theme)").size(ts.dialog_title.size),
+            text(
+                "Every colour and every width below is a ResolvedTheme field, \
+                 captured when the program is built."
+            )
+            .size(ts.section_heading.size),
+            canvas(sketch)
+                .width(Length::Fixed(280.0))
+                .height(Length::Fixed(120.0)),
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- QR code ----
+
+    let qr_cell = to_color(d.text_color);
+    let qr_background = to_color(d.background_color);
+    let qr_demo: Element<'_, Message> = match &state.qr_data {
+        Some(data) => qr_code(data)
+            .style(move |_theme: &Theme| qr_code::Style {
+                cell: qr_cell,
+                background: qr_background,
+            })
+            .into(),
+        None => text("The payload could not be encoded as a QR code.")
+            .size(ts.caption.size)
+            .into(),
+    };
+
+    let qr_section = hoverable(
+        widget_tooltip(
+            "QRCode",
+            &[
+                ("cell", "defaults.text_color", qr_cell),
+                ("background", "defaults.background_color", qr_background),
+            ],
+            &[("payload", QR_PAYLOAD)],
+            &[(
+                "cell size",
+                "no native source — iced's own DEFAULT_CELL_SIZE (qr_code.rs:35)",
+            )],
+        ),
+        column![
+            text("QRCode").size(ts.dialog_title.size),
+            text("Its two-colour Style is the platform's foreground on its background:")
+                .size(ts.section_heading.size),
+            qr_demo,
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- Markdown ----
+
+    let md_settings = {
+        // Every field the model does not carry is iced's own, read at run
+        // time from the theme the connector produced.
+        let iced_style = markdown::Style::from(&state.current_theme);
+        let style = markdown::Style {
+            font: iced::Font {
+                weight: native_theme_iced::to_iced_weight(native_theme_iced::font_weight(resolved)),
+                ..iced::Font::DEFAULT
+            },
+            inline_code_highlight: iced_style.inline_code_highlight,
+            inline_code_padding: iced_style.inline_code_padding,
+            inline_code_color: iced_style.inline_code_color,
+            inline_code_font: iced::Font {
+                weight: native_theme_iced::to_iced_weight(native_theme_iced::mono_font_weight(
+                    resolved,
+                )),
+                ..iced::Font::MONOSPACE
+            },
+            code_block_font: iced::Font {
+                weight: native_theme_iced::to_iced_weight(native_theme_iced::mono_font_weight(
+                    resolved,
+                )),
+                ..iced::Font::MONOSPACE
+            },
+            link_color: to_color(resolved.link.font.color),
+        };
+        let mut settings = markdown::Settings::with_text_size(d.font.size, style);
+        settings.h1_size = ts.display.size.into();
+        settings.h2_size = ts.dialog_title.size.into();
+        settings.h3_size = ts.section_heading.size.into();
+        settings.code_size = d.mono_font.size.into();
+        settings
+    };
+
+    let link_line = match &state.markdown_link {
+        Some(uri) => format!("Last link clicked: {uri}"),
+        None => "Click the link above and it is echoed here.".to_string(),
+    };
+
+    let markdown_demo = hoverable(
+        widget_tooltip(
+            "Markdown",
+            &[
+                (
+                    "link",
+                    "link.font.color",
+                    to_color(resolved.link.font.color),
+                ),
+                ("text", "inherited from the surrounding container", {
+                    to_color(d.text_color)
+                }),
+            ],
+            &[
+                ("base size", "defaults.font.size"),
+                (
+                    "h1 / h2 / h3",
+                    "text_scale display / dialog_title / section_heading",
+                ),
+                ("code size", "defaults.mono_font.size"),
+            ],
+            &[
+                (
+                    "h4 / h5 / h6",
+                    "the model names four typographic roles, not six — iced's own",
+                ),
+                (
+                    "inline code chip",
+                    "the model states no inline-code surface; its fill and its \
+                     foreground are iced's, as a pair",
+                ),
+                (
+                    "font family",
+                    "iced's Family::Name takes a &'static str; a platform family \
+                     name is an Arc<str> and cannot become one. Only the weight \
+                     reaches the Font",
+                ),
+            ],
+        ),
+        column![
+            text("Markdown").size(ts.dialog_title.size),
+            container(
+                markdown::view(state.markdown_content.items(), md_settings)
+                    .map(Message::MarkdownLinkClicked)
+            )
+            .padding(Padding::from(sp.l))
+            .style(styles::container_card(resolved))
+            .width(Fill),
+            text(link_line).size(ts.caption.size),
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    column![
+        header,
+        canvas_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        qr_section,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        markdown_demo,
     ]
     .spacing(sp.xl)
     .width(Fill)
