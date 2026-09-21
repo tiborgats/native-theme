@@ -26,7 +26,9 @@ use crate::styles;
 #[cfg(feature = "widgets")]
 use iced_core::{Background, Border, border::Radius};
 #[cfg(feature = "widgets")]
-use iced_widget::{button, text_editor, text_input};
+use iced_widget::overlay::menu;
+#[cfg(feature = "widgets")]
+use iced_widget::{button, checkbox, pick_list, radio, slider, text_editor, text_input, toggler};
 
 /// One row of the mapping contract: a palette slot, the native field it must
 /// equal, and the presets where it may legitimately differ.
@@ -213,13 +215,27 @@ struct StyleRow<S: 'static> {
     get: fn(&Theme, &ResolvedTheme, S) -> Result<Color, String>,
 }
 
-// A row kind for a `Style` field that is a length rather than a color lived
-// here until `BorderRow` arrived: its only five users were a border's width
-// and its four radius corners, which one border row now covers. What brings it
-// back is a scalar field outside a border that the model does have a source
-// for -- `slider::Style`'s `rail.width`, from `slider.track_height` (section
-// 3.3); `toggler::Style`'s `padding_ratio` and `scrollable::Style`'s `gap`
-// have no native source and are derived instead. `git show e2e2eaf` has it.
+/// One row of the style contract for a field that is a length rather than a
+/// color.
+///
+/// Sparse, because a `Border`'s width and its four corners are one
+/// `BorderRow`: what is left for this kind is a scalar outside a border that
+/// the model has a source for. `radio::Style` states its border as a bare
+/// width and color rather than as an iced `Border`; `slider::Style` has
+/// `rail.width`, from `slider.track_height` (section 3.3), and a handle whose
+/// size is a number inside an enum. `toggler::Style`'s `padding_ratio` and
+/// `scrollable::Style`'s `gap` have no native source and are derived instead.
+///
+/// `get` returns a `Result` for the same reason `StyleRow`'s does: the
+/// slider's handle radius is a number only while the handle is a circle, and
+/// a rectangular one is a failure rather than an unwrap.
+#[cfg(feature = "widgets")]
+struct ScalarRow<S: 'static> {
+    field: &'static str,
+    statuses: &'static [S],
+    native: fn(&ResolvedTheme, S) -> f32,
+    get: fn(&Theme, &ResolvedTheme, S) -> Result<f32, String>,
+}
 
 /// The flat color of an emitted `Background`, or the reason it is not one.
 #[cfg(feature = "widgets")]
@@ -238,6 +254,16 @@ fn flat(background: Option<Background>) -> Result<Color, String> {
 #[cfg(feature = "widgets")]
 fn fill(background: Background) -> Result<Color, String> {
     flat(Some(background))
+}
+
+/// The color a `Style` field states, or the reason it states none.
+///
+/// Several `Style`s carry an `Option<Color>` whose `None` means "inherit".
+/// Where the model has the color, the connector must state it, so a `None` is
+/// a failure of the row rather than something to unwrap.
+#[cfg(feature = "widgets")]
+fn stated(color: Option<Color>) -> Result<Color, String> {
+    color.ok_or_else(|| "no color where the contract claims one".to_string())
 }
 
 /// `leaves!` with a prefix that is a value rather than a literal, pushing
@@ -857,6 +883,510 @@ const TEXT_EDITOR_BORDER_ROWS: &[BorderRow<text_editor::Status>] = &[BorderRow {
     get: |t, r, s| styles::text_editor(r)(t, s).border,
 }];
 
+/// Every value of `checkbox::Status`, not every variant: each of the three
+/// carries whether the box is checked (`checkbox.rs:506-524`), so there are
+/// six.
+#[cfg(feature = "widgets")]
+const CHECKBOX_STATUSES: &[checkbox::Status] = &[
+    checkbox::Status::Active { is_checked: false },
+    checkbox::Status::Active { is_checked: true },
+    checkbox::Status::Hovered { is_checked: false },
+    checkbox::Status::Hovered { is_checked: true },
+    checkbox::Status::Disabled { is_checked: false },
+    checkbox::Status::Disabled { is_checked: true },
+];
+
+/// The three statuses in which the check mark is painted, and so the only ones
+/// its contrast pair measures.
+#[cfg(feature = "widgets")]
+const CHECKBOX_CHECKED_STATUSES: &[checkbox::Status] = &[
+    checkbox::Status::Active { is_checked: true },
+    checkbox::Status::Hovered { is_checked: true },
+    checkbox::Status::Disabled { is_checked: true },
+];
+
+/// The other three. An unchecked box paints no mark, so the mark's color on
+/// its fill is a ratio nothing shows; this list exists so that the two can be
+/// required to partition the enum rather than the pair quietly covering half
+/// of it.
+#[cfg(feature = "widgets")]
+const CHECKBOX_UNCHECKED_STATUSES: &[checkbox::Status] = &[
+    checkbox::Status::Active { is_checked: false },
+    checkbox::Status::Hovered { is_checked: false },
+    checkbox::Status::Disabled { is_checked: false },
+];
+
+/// The fill the native fields give a checkbox at rest, by whether it is
+/// checked. `unchecked_background` is a soft option copying the checkbox's own
+/// fill, and it is an idle fill, so it is emitted as given even where the
+/// platform states it translucent -- windows-11 does, at `#0000000a`.
+#[cfg(feature = "widgets")]
+fn native_checkbox_idle(r: &ResolvedTheme, is_checked: bool) -> Color {
+    let c = &r.checkbox;
+    to_color(if is_checked {
+        c.checked_background
+    } else {
+        c.unchecked_background.unwrap_or(c.background_color)
+    })
+}
+
+/// The fill the native fields give a checkbox in `status`.
+#[cfg(feature = "widgets")]
+fn native_checkbox_fill(r: &ResolvedTheme, status: checkbox::Status) -> Color {
+    let c = &r.checkbox;
+    match status {
+        checkbox::Status::Active { is_checked } => native_checkbox_idle(r, is_checked),
+        // The hover layer goes over whichever fill the box is showing (C17).
+        checkbox::Status::Hovered { is_checked } => over(
+            to_color(c.hover_background.unwrap_or(c.background_color)),
+            native_checkbox_idle(r, is_checked),
+        ),
+        // One disabled fill for both, replacing the idle one, as given.
+        checkbox::Status::Disabled { is_checked: _ } => {
+            to_color(c.disabled_background.unwrap_or(c.background_color))
+        }
+    }
+}
+
+/// The outline the native fields give a checkbox or a radio button: an
+/// unchecked one may state a color of its own, a checked one wears the
+/// widget's border.
+#[cfg(feature = "widgets")]
+fn native_checkbox_outline(r: &ResolvedTheme, is_checked: bool) -> Color {
+    let c = &r.checkbox;
+    to_color(if is_checked {
+        c.border.color
+    } else {
+        c.unchecked_border_color.unwrap_or(c.border.color)
+    })
+}
+
+#[cfg(feature = "widgets")]
+fn native_checkbox_border(r: &ResolvedTheme, status: checkbox::Status) -> Color {
+    match status {
+        checkbox::Status::Active { is_checked }
+        | checkbox::Status::Hovered { is_checked }
+        | checkbox::Status::Disabled { is_checked } => native_checkbox_outline(r, is_checked),
+    }
+}
+
+/// Every color field of `styles::checkbox`. There is no `DERIVED` entry for
+/// this function: `checkbox::Style` has no field the model cannot fill.
+#[cfg(feature = "widgets")]
+const CHECKBOX_ROWS: &[StyleRow<checkbox::Status>] = &[
+    StyleRow {
+        field: "styles::checkbox.background",
+        statuses: CHECKBOX_STATUSES,
+        native: native_checkbox_fill,
+        get: |t, r, s| fill(styles::checkbox(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::checkbox.icon_color",
+        statuses: CHECKBOX_STATUSES,
+        native: |r, _| to_color(r.checkbox.indicator_color),
+        get: |t, r, s| Ok(styles::checkbox(r)(t, s).icon_color),
+    },
+    StyleRow {
+        field: "styles::checkbox.text_color",
+        statuses: CHECKBOX_STATUSES,
+        native: |r, _| to_color(r.checkbox.font.color),
+        get: |t, r, s| stated(styles::checkbox(r)(t, s).text_color),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const CHECKBOX_BORDER_ROWS: &[BorderRow<checkbox::Status>] = &[BorderRow {
+    field: "styles::checkbox",
+    statuses: CHECKBOX_STATUSES,
+    native: |r, s| NativeBorder {
+        color: native_checkbox_border(r, s),
+        width: r.checkbox.border.line_width,
+        radius: r.checkbox.border.corner_radius,
+    },
+    get: |t, r, s| styles::checkbox(r)(t, s).border,
+}];
+
+/// Every value of `radio::Status`: two variants carrying whether the button is
+/// selected (`radio.rs:474-487`), so four. There is no disabled variant.
+#[cfg(feature = "widgets")]
+const RADIO_STATUSES: &[radio::Status] = &[
+    radio::Status::Active { is_selected: false },
+    radio::Status::Active { is_selected: true },
+    radio::Status::Hovered { is_selected: false },
+    radio::Status::Hovered { is_selected: true },
+];
+
+/// The two statuses in which the dot is painted, and so the only ones its
+/// contrast pair measures.
+#[cfg(feature = "widgets")]
+const RADIO_SELECTED_STATUSES: &[radio::Status] = &[
+    radio::Status::Active { is_selected: true },
+    radio::Status::Hovered { is_selected: true },
+];
+
+/// The other two, for the same reason `CHECKBOX_UNCHECKED_STATUSES` exists.
+#[cfg(feature = "widgets")]
+const RADIO_UNSELECTED_STATUSES: &[radio::Status] = &[
+    radio::Status::Active { is_selected: false },
+    radio::Status::Hovered { is_selected: false },
+];
+
+/// The fill the native fields give a radio button in `status`. The model
+/// states one `CheckboxTheme` for both controls, so these are the checkbox's
+/// own fills, selected by `is_selected`.
+#[cfg(feature = "widgets")]
+fn native_radio_fill(r: &ResolvedTheme, status: radio::Status) -> Color {
+    let c = &r.checkbox;
+    match status {
+        radio::Status::Active { is_selected } => native_checkbox_idle(r, is_selected),
+        radio::Status::Hovered { is_selected } => over(
+            to_color(c.hover_background.unwrap_or(c.background_color)),
+            native_checkbox_idle(r, is_selected),
+        ),
+    }
+}
+
+#[cfg(feature = "widgets")]
+fn native_radio_border(r: &ResolvedTheme, status: radio::Status) -> Color {
+    match status {
+        radio::Status::Active { is_selected } | radio::Status::Hovered { is_selected } => {
+            native_checkbox_outline(r, is_selected)
+        }
+    }
+}
+
+/// Every color field of `styles::radio`. Nothing here is iced's either.
+#[cfg(feature = "widgets")]
+const RADIO_ROWS: &[StyleRow<radio::Status>] = &[
+    StyleRow {
+        field: "styles::radio.background",
+        statuses: RADIO_STATUSES,
+        native: native_radio_fill,
+        get: |t, r, s| fill(styles::radio(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::radio.dot_color",
+        statuses: RADIO_STATUSES,
+        native: |r, _| to_color(r.checkbox.indicator_color),
+        get: |t, r, s| Ok(styles::radio(r)(t, s).dot_color),
+    },
+    StyleRow {
+        field: "styles::radio.border_color",
+        statuses: RADIO_STATUSES,
+        native: native_radio_border,
+        get: |t, r, s| Ok(styles::radio(r)(t, s).border_color),
+    },
+    StyleRow {
+        field: "styles::radio.text_color",
+        statuses: RADIO_STATUSES,
+        native: |r, _| to_color(r.checkbox.font.color),
+        get: |t, r, s| stated(styles::radio(r)(t, s).text_color),
+    },
+];
+
+/// `radio::Style` states its border width on its own rather than inside an
+/// iced `Border`, so it is a scalar row rather than part of a border row.
+#[cfg(feature = "widgets")]
+const RADIO_SCALAR_ROWS: &[ScalarRow<radio::Status>] = &[ScalarRow {
+    field: "styles::radio.border_width",
+    statuses: RADIO_STATUSES,
+    native: |r, _| r.checkbox.border.line_width,
+    get: |t, r, s| Ok(styles::radio(r)(t, s).border_width),
+}];
+
+/// Every value of `toggler::Status`: three variants carrying whether the
+/// switch is on (`toggler.rs:486-504`), so six.
+#[cfg(feature = "widgets")]
+const TOGGLER_STATUSES: &[toggler::Status] = &[
+    toggler::Status::Active { is_toggled: false },
+    toggler::Status::Active { is_toggled: true },
+    toggler::Status::Hovered { is_toggled: false },
+    toggler::Status::Hovered { is_toggled: true },
+    toggler::Status::Disabled { is_toggled: false },
+    toggler::Status::Disabled { is_toggled: true },
+];
+
+/// The track the native fields give a switch at rest, by whether it is on.
+#[cfg(feature = "widgets")]
+fn native_toggler_idle(r: &ResolvedTheme, is_toggled: bool) -> Color {
+    to_color(if is_toggled {
+        r.switch.checked_background
+    } else {
+        r.switch.unchecked_background
+    })
+}
+
+/// The track the native fields give a switch in `status`.
+#[cfg(feature = "widgets")]
+fn native_toggler_track(r: &ResolvedTheme, status: toggler::Status) -> Color {
+    let s = &r.switch;
+    match status {
+        toggler::Status::Active { is_toggled } => native_toggler_idle(r, is_toggled),
+        // Each hover layer copies the track it covers when the platform
+        // states none, and is composited over it (C17).
+        toggler::Status::Hovered { is_toggled } => over(
+            to_color(if is_toggled {
+                s.hover_checked_background.unwrap_or(s.checked_background)
+            } else {
+                s.hover_unchecked_background
+                    .unwrap_or(s.unchecked_background)
+            }),
+            native_toggler_idle(r, is_toggled),
+        ),
+        // A disabled track replaces the idle one, so it is as given.
+        toggler::Status::Disabled { is_toggled } => to_color(if is_toggled {
+            s.disabled_checked_background
+                .unwrap_or(s.checked_background)
+        } else {
+            s.disabled_unchecked_background
+                .unwrap_or(s.unchecked_background)
+        }),
+    }
+}
+
+/// The thumb the native fields give a switch in `status`. A thumb is painted
+/// over a track the widget also paints, so it is emitted as given.
+#[cfg(feature = "widgets")]
+fn native_toggler_thumb(r: &ResolvedTheme, status: toggler::Status) -> Color {
+    let s = &r.switch;
+    to_color(match status {
+        toggler::Status::Active { is_toggled: _ } | toggler::Status::Hovered { is_toggled: _ } => {
+            s.thumb_background
+        }
+        toggler::Status::Disabled { is_toggled: _ } => {
+            s.disabled_thumb_color.unwrap_or(s.thumb_background)
+        }
+    })
+}
+
+/// Every color field of `styles::toggler`. The other six fields of
+/// `toggler::Style` are in `DERIVED`: `SwitchTheme` carries no border, no thumb
+/// inset and no font.
+#[cfg(feature = "widgets")]
+const TOGGLER_ROWS: &[StyleRow<toggler::Status>] = &[
+    StyleRow {
+        field: "styles::toggler.background",
+        statuses: TOGGLER_STATUSES,
+        native: native_toggler_track,
+        get: |t, r, s| fill(styles::toggler(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::toggler.foreground",
+        statuses: TOGGLER_STATUSES,
+        native: native_toggler_thumb,
+        get: |t, r, s| fill(styles::toggler(r)(t, s).foreground),
+    },
+];
+
+/// Every value of `pick_list::Status`: `Opened` carries whether the pointer is
+/// on the field (`pick_list.rs:838-849`), so there are four.
+#[cfg(feature = "widgets")]
+const PICK_LIST_STATUSES: &[pick_list::Status] = &[
+    pick_list::Status::Active,
+    pick_list::Status::Hovered,
+    pick_list::Status::Opened { is_hovered: false },
+    pick_list::Status::Opened { is_hovered: true },
+];
+
+/// The fill the native fields give a drop-down field in `status`. The model
+/// states no open appearance, so an open field follows its own `is_hovered`.
+#[cfg(feature = "widgets")]
+fn native_pick_list_fill(r: &ResolvedTheme, status: pick_list::Status) -> Color {
+    let c = &r.combo_box;
+    let idle = to_color(c.background_color);
+    let hovered = || {
+        over(
+            to_color(c.hover_background.unwrap_or(c.background_color)),
+            idle,
+        )
+    };
+    match status {
+        pick_list::Status::Active => idle,
+        pick_list::Status::Hovered => hovered(),
+        pick_list::Status::Opened { is_hovered } => {
+            if is_hovered {
+                hovered()
+            } else {
+                idle
+            }
+        }
+    }
+}
+
+/// Every color field of `styles::pick_list` but `handle_color`, which is
+/// iced's and sits in `DERIVED`.
+#[cfg(feature = "widgets")]
+const PICK_LIST_ROWS: &[StyleRow<pick_list::Status>] = &[
+    StyleRow {
+        field: "styles::pick_list.background",
+        statuses: PICK_LIST_STATUSES,
+        native: native_pick_list_fill,
+        get: |t, r, s| fill(styles::pick_list(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::pick_list.text_color",
+        statuses: PICK_LIST_STATUSES,
+        native: |r, _| to_color(r.combo_box.font.color),
+        get: |t, r, s| Ok(styles::pick_list(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::pick_list.placeholder_color",
+        statuses: PICK_LIST_STATUSES,
+        native: |r, _| to_color(r.input.placeholder_color),
+        get: |t, r, s| Ok(styles::pick_list(r)(t, s).placeholder_color),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const PICK_LIST_BORDER_ROWS: &[BorderRow<pick_list::Status>] = &[BorderRow {
+    field: "styles::pick_list",
+    statuses: PICK_LIST_STATUSES,
+    native: |r, _| NativeBorder {
+        color: to_color(r.combo_box.border.color),
+        width: r.combo_box.border.line_width,
+        radius: r.combo_box.border.corner_radius,
+    },
+    get: |t, r, s| styles::pick_list(r)(t, s).border,
+}];
+
+/// A menu has no `Status` (shape C), so its rows hold the unit value: the row
+/// types are generic over the widget's status, and `()` is what a widget
+/// without one has.
+#[cfg(feature = "widgets")]
+const MENU_STATUSES: &[()] = &[()];
+
+/// Every color field of `styles::menu`. Only `shadow` is iced's.
+#[cfg(feature = "widgets")]
+const MENU_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::menu.background",
+        statuses: MENU_STATUSES,
+        native: |r, ()| to_color(r.menu.background_color),
+        get: |t, r, ()| fill(styles::menu(r)(t).background),
+    },
+    StyleRow {
+        field: "styles::menu.text_color",
+        statuses: MENU_STATUSES,
+        native: |r, ()| to_color(r.menu.font.color),
+        get: |t, r, ()| Ok(styles::menu(r)(t).text_color),
+    },
+    StyleRow {
+        field: "styles::menu.selected_text_color",
+        statuses: MENU_STATUSES,
+        native: |r, ()| to_color(r.menu.hover_text_color),
+        get: |t, r, ()| Ok(styles::menu(r)(t).selected_text_color),
+    },
+    StyleRow {
+        // A row highlight, painted over a panel the widget also paints, so it
+        // is emitted as given rather than composited.
+        field: "styles::menu.selected_background",
+        statuses: MENU_STATUSES,
+        native: |r, ()| to_color(r.menu.hover_background),
+        get: |t, r, ()| fill(styles::menu(r)(t).selected_background),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const MENU_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::menu",
+    statuses: MENU_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.menu.border.color),
+        width: r.menu.border.line_width,
+        radius: r.menu.border.corner_radius,
+    },
+    get: |t, r, ()| styles::menu(r)(t).border,
+}];
+
+/// Every `slider::Status` (`slider.rs:576-586`). The rail's rows hold for all
+/// three; the handle's fill does not.
+#[cfg(feature = "widgets")]
+const SLIDER_STATUSES: &[slider::Status] = &[
+    slider::Status::Active,
+    slider::Status::Hovered,
+    slider::Status::Dragged,
+];
+
+/// The statuses whose handle the model states a color for.
+#[cfg(feature = "widgets")]
+const SLIDER_NATIVE_HANDLE_STATUSES: &[slider::Status] =
+    &[slider::Status::Active, slider::Status::Hovered];
+
+/// The status whose handle is iced's, because `SliderTheme` states no dragged
+/// thumb color. Asserted by `a_dragged_slider_handle_comes_from_iced`.
+#[cfg(feature = "widgets")]
+const SLIDER_ICED_HANDLE_STATUSES: &[slider::Status] = &[slider::Status::Dragged];
+
+/// The handle the native fields give a slider in `status`.
+///
+/// The match has no catch-all, but only `SLIDER_NATIVE_HANDLE_STATUSES` ever
+/// reaches a row; `Dragged` still has to name a color, and the thumb's own is
+/// the least surprising, so moving that status between the lists fails the row
+/// rather than passing quietly.
+#[cfg(feature = "widgets")]
+fn native_slider_handle(r: &ResolvedTheme, status: slider::Status) -> Color {
+    let s = &r.slider;
+    to_color(match status {
+        slider::Status::Active | slider::Status::Dragged => s.thumb_color,
+        // A thumb, so emitted as given rather than composited.
+        slider::Status::Hovered => s.thumb_hover_color.unwrap_or(s.thumb_color),
+    })
+}
+
+/// Every color field of `styles::slider`.
+#[cfg(feature = "widgets")]
+const SLIDER_ROWS: &[StyleRow<slider::Status>] = &[
+    StyleRow {
+        field: "styles::slider.rail.backgrounds.0",
+        statuses: SLIDER_STATUSES,
+        native: |r, _| to_color(r.slider.fill_color),
+        get: |t, r, s| fill(styles::slider(r)(t, s).rail.backgrounds.0),
+    },
+    StyleRow {
+        field: "styles::slider.rail.backgrounds.1",
+        statuses: SLIDER_STATUSES,
+        native: |r, _| to_color(r.slider.track_color),
+        get: |t, r, s| fill(styles::slider(r)(t, s).rail.backgrounds.1),
+    },
+    StyleRow {
+        field: "styles::slider.handle.background",
+        statuses: SLIDER_NATIVE_HANDLE_STATUSES,
+        native: native_slider_handle,
+        get: |t, r, s| fill(styles::slider(r)(t, s).handle.background),
+    },
+];
+
+/// The slider's two lengths.
+///
+/// `handle.shape` is an enum rather than a number, and this row is what
+/// `ScalarRow`'s `Result` exists for: the shape carries the size the model
+/// states only while it is a circle, so a rectangular handle is reported as a
+/// failure of the row instead of being unwrapped. Adding a row kind for an
+/// enum whose one native value is a length would have said less.
+#[cfg(feature = "widgets")]
+const SLIDER_SCALAR_ROWS: &[ScalarRow<slider::Status>] = &[
+    ScalarRow {
+        field: "styles::slider.rail.width",
+        statuses: SLIDER_STATUSES,
+        native: |r, _| r.slider.track_height,
+        get: |t, r, s| Ok(styles::slider(r)(t, s).rail.width),
+    },
+    ScalarRow {
+        field: "styles::slider.handle.shape",
+        statuses: SLIDER_STATUSES,
+        // iced states a circular handle by its radius, the model states the
+        // thumb's diameter.
+        native: |r, _| r.slider.thumb_diameter / 2.0,
+        get: |t, r, s| match styles::slider(r)(t, s).handle.shape {
+            slider::HandleShape::Circle { radius } => Ok(radius),
+            slider::HandleShape::Rectangle {
+                width: _,
+                border_radius: _,
+            } => Err("a rectangular handle where the contract claims a circle".to_string()),
+        },
+    },
+];
+
 /// The `field` of every style row, from every function's consts.
 ///
 /// One line per function; the coverage tripwire reads it, and `rows_claiming`
@@ -872,6 +1402,14 @@ fn style_row_fields() -> Vec<String> {
     out.extend(BUTTON_LINK_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(TEXT_INPUT_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(TEXT_EDITOR_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(CHECKBOX_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(RADIO_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(RADIO_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TOGGLER_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(PICK_LIST_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(MENU_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(SLIDER_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(SLIDER_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
     // One border row claims six leaves, so its names are built rather than
     // written -- by the same walker the tripwire uses.
     out.extend(border_row_fields(BUTTON_BORDER_ROWS));
@@ -881,6 +1419,9 @@ fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(BUTTON_WARNING_BORDER_ROWS));
     out.extend(border_row_fields(TEXT_INPUT_BORDER_ROWS));
     out.extend(border_row_fields(TEXT_EDITOR_BORDER_ROWS));
+    out.extend(border_row_fields(CHECKBOX_BORDER_ROWS));
+    out.extend(border_row_fields(PICK_LIST_BORDER_ROWS));
+    out.extend(border_row_fields(MENU_BORDER_ROWS));
     out
 }
 
@@ -982,8 +1523,39 @@ fn check_style_rows<S: Copy + std::fmt::Debug>(
     }
 }
 
-// `check_scalar_rows` went with `ScalarRow`; `check_border_rows` above is what
-// covers the five fields it used to.
+/// Assert one function's scalar rows over every combination and status.
+#[cfg(feature = "widgets")]
+fn check_scalar_rows<S: Copy + std::fmt::Debug>(
+    rows: &[ScalarRow<S>],
+    combinations: &[Combination],
+    failures: &mut Vec<String>,
+    ran: &mut Checked,
+) {
+    for row in rows {
+        ran.ran(row.field, row.statuses);
+    }
+    for c in combinations {
+        for row in rows {
+            for &status in row.statuses {
+                ran.checks += 1;
+                let expected = (row.native)(&c.resolved, status);
+                match (row.get)(&c.theme, &c.resolved, status) {
+                    Ok(actual) if actual == expected => {}
+                    Ok(actual) => failures.push(format!(
+                        "{}: {} ({status:?}) is {actual}, native gives {expected}",
+                        c.label(),
+                        row.field
+                    )),
+                    Err(why) => failures.push(format!(
+                        "{}: {} ({status:?}) is {why}",
+                        c.label(),
+                        row.field
+                    )),
+                }
+            }
+        }
+    }
+}
 
 /// Every field the tripwire walks that no row claims, with the derivation that
 /// fills it instead. A field is in the rows or here, never both and never
@@ -1127,6 +1699,110 @@ const DERIVED: &[(&str, &str)] = &[
         "styles::text_input.icon",
         "iced default: text_input::default(theme, status).icon -- the model \
          carries no input-icon color",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toggler.background_border_width",
+        "iced default: toggler::default(theme, status).background_border_width \
+         -- SwitchTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toggler.background_border_color",
+        "iced default: toggler::default(theme, status).background_border_color \
+         -- SwitchTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toggler.foreground_border_width",
+        "iced default: toggler::default(theme, status).foreground_border_width \
+         -- SwitchTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toggler.foreground_border_color",
+        "iced default: toggler::default(theme, status).foreground_border_color \
+         -- SwitchTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toggler.border_radius",
+        "iced default: toggler::default(theme, status).border_radius -- no \
+         native source per spec section 3.2, and iced's None means a \
+         perfectly round track",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toggler.padding_ratio",
+        "iced default: toggler::default(theme, status).padding_ratio -- \
+         SwitchTheme carries no thumb inset",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toggler.text_color",
+        "iced default: toggler::default(theme, status).text_color -- the model \
+         states no font for a switch, and iced's None inherits the surrounding \
+         one",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pick_list.handle_color",
+        "iced default: pick_list::default(theme, status).handle_color -- \
+         ComboBoxTheme states the arrow's sizes but not its color",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::menu.shadow",
+        "iced default: overlay::menu::default(theme).shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.rail.border.color",
+        "iced default: slider::default(theme, status).rail.border.color -- \
+         SliderTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.rail.border.width",
+        "iced default: slider::default(theme, status).rail.border.width -- \
+         SliderTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.rail.border.radius.top_left",
+        "iced default: slider::default(theme, status).rail.border.radius -- \
+         SliderTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.rail.border.radius.top_right",
+        "iced default: slider::default(theme, status).rail.border.radius -- \
+         SliderTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.rail.border.radius.bottom_right",
+        "iced default: slider::default(theme, status).rail.border.radius -- \
+         SliderTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.rail.border.radius.bottom_left",
+        "iced default: slider::default(theme, status).rail.border.radius -- \
+         SliderTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.handle.border_width",
+        "iced default: slider::default(theme, status).handle.border_width -- \
+         SliderTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::slider.handle.border_color",
+        "iced default: slider::default(theme, status).handle.border_color -- \
+         SliderTheme carries no border",
     ),
 ];
 
@@ -1449,6 +2125,222 @@ const TEXT_EDITOR_PAIRS: &[StylePair<text_editor::Status>] = &[
     },
 ];
 
+/// The check mark on the box it is painted in, and the dot on its circle.
+///
+/// Both are indicators rather than text: WCAG asks 3:1 of one, not AA's 4.5:1,
+/// so their below-AA lines are informational. What section 7 asserts of them
+/// is the same as everywhere else -- that our ratio is not worse than the
+/// platform's own pair.
+///
+/// The *label* of a checkbox or a radio button gets no pair: it is painted on
+/// the window, which this function does not emit. Its color is pinned exactly
+/// by its row instead.
+#[cfg(feature = "widgets")]
+const CHECKBOX_PAIRS: &[StylePair<checkbox::Status>] = &[StylePair {
+    what: "checkbox mark",
+    statuses: CHECKBOX_CHECKED_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::checkbox(r)(t, s);
+        // The box is painted on the window, so that is what a translucent
+        // fill -- windows-11 states one -- shows through to.
+        fill(style.background).map(|background| {
+            (
+                style.icon_color,
+                background,
+                to_color(r.defaults.background_color),
+            )
+        })
+    },
+    native: |r, s| {
+        (
+            to_color(r.checkbox.indicator_color),
+            native_checkbox_fill(r, s),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+#[cfg(feature = "widgets")]
+const RADIO_PAIRS: &[StylePair<radio::Status>] = &[StylePair {
+    what: "radio dot",
+    statuses: RADIO_SELECTED_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::radio(r)(t, s);
+        fill(style.background).map(|background| {
+            (
+                style.dot_color,
+                background,
+                to_color(r.defaults.background_color),
+            )
+        })
+    },
+    native: |r, s| {
+        (
+            to_color(r.checkbox.indicator_color),
+            native_radio_fill(r, s),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+/// The thumb on the track it slides along -- an indicator pair again, and the
+/// only one `toggler::Style` offers: its label is painted on the window.
+#[cfg(feature = "widgets")]
+const TOGGLER_PAIRS: &[StylePair<toggler::Status>] = &[StylePair {
+    what: "toggler thumb",
+    statuses: TOGGLER_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::toggler(r)(t, s);
+        let thumb = fill(style.foreground)?;
+        fill(style.background).map(|track| (thumb, track, to_color(r.defaults.background_color)))
+    },
+    native: |r, s| {
+        (
+            native_toggler_thumb(r, s),
+            native_toggler_track(r, s),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+/// Both texts a drop-down field paints, on the fill it paints them on.
+#[cfg(feature = "widgets")]
+const PICK_LIST_PAIRS: &[StylePair<pick_list::Status>] = &[
+    StylePair {
+        what: "pick list label",
+        statuses: PICK_LIST_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::pick_list(r)(t, s);
+            fill(style.background).map(|background| {
+                (
+                    style.text_color,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                to_color(r.combo_box.font.color),
+                native_pick_list_fill(r, s),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "pick list placeholder",
+        statuses: PICK_LIST_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::pick_list(r)(t, s);
+            fill(style.background).map(|background| {
+                (
+                    style.placeholder_color,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                to_color(r.input.placeholder_color),
+                native_pick_list_fill(r, s),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+];
+
+/// A menu's label on its panel, and a selected row's label on the highlight.
+/// The highlight is painted on the panel, so that -- not the window -- is the
+/// surface a translucent one shows through to.
+#[cfg(feature = "widgets")]
+const MENU_PAIRS: &[StylePair<()>] = &[
+    StylePair {
+        what: "menu label",
+        statuses: MENU_STATUSES,
+        emitted: |t, r, ()| {
+            let style = styles::menu(r)(t);
+            fill(style.background).map(|background| {
+                (
+                    style.text_color,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, ()| {
+            (
+                to_color(r.menu.font.color),
+                to_color(r.menu.background_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "menu selected label",
+        statuses: MENU_STATUSES,
+        emitted: |t, r, ()| {
+            let style = styles::menu(r)(t);
+            fill(style.selected_background).map(|highlight| {
+                (
+                    style.selected_text_color,
+                    highlight,
+                    to_color(r.menu.background_color),
+                )
+            })
+        },
+        native: |r, ()| {
+            (
+                to_color(r.menu.hover_text_color),
+                to_color(r.menu.hover_background),
+                to_color(r.menu.background_color),
+            )
+        },
+    },
+];
+
+/// The handle on each half of the rail it slides along -- the handle sits over
+/// the boundary between them, and both halves are the function's own. An
+/// indicator pair, like the checkbox mark, and only for the statuses whose
+/// handle the model states: a dragged handle is iced's on one side.
+#[cfg(feature = "widgets")]
+const SLIDER_PAIRS: &[StylePair<slider::Status>] = &[
+    StylePair {
+        what: "slider handle on the filled rail",
+        statuses: SLIDER_NATIVE_HANDLE_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::slider(r)(t, s);
+            let handle = fill(style.handle.background)?;
+            fill(style.rail.backgrounds.0)
+                .map(|rail| (handle, rail, to_color(r.defaults.background_color)))
+        },
+        native: |r, s| {
+            (
+                native_slider_handle(r, s),
+                to_color(r.slider.fill_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "slider handle on the remaining rail",
+        statuses: SLIDER_NATIVE_HANDLE_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::slider(r)(t, s);
+            let handle = fill(style.handle.background)?;
+            fill(style.rail.backgrounds.1)
+                .map(|rail| (handle, rail, to_color(r.defaults.background_color)))
+        },
+        native: |r, s| {
+            (
+                native_slider_handle(r, s),
+                to_color(r.slider.track_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+];
+
 /// The `what` of every contrast pair this file declares.
 ///
 /// The coverage tripwire has nothing to say about pairs -- whether a
@@ -1468,6 +2360,12 @@ fn style_pair_names() -> Vec<String> {
     out.extend(BUTTON_LINK_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(TEXT_INPUT_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(TEXT_EDITOR_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(CHECKBOX_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(RADIO_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(TOGGLER_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(PICK_LIST_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(MENU_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(SLIDER_PAIRS.iter().map(|p| p.what.to_string()));
     out
 }
 
@@ -1924,6 +2822,112 @@ fn text_editor_style_fields(style: &text_editor::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `checkbox::Style` the connector emits.
+#[cfg(feature = "widgets")]
+fn checkbox_style_fields(style: &checkbox::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::checkbox", checkbox::Style {
+        background, icon_color, text_color, @nested border
+    });
+    out.extend(border_fields(border, "styles::checkbox.border"));
+    out
+}
+
+/// Every field of the `radio::Style` the connector emits. Its border is two
+/// bare fields rather than an iced `Border`, so there is nothing to walk.
+#[cfg(feature = "widgets")]
+fn radio_style_fields(style: &radio::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::radio",
+        radio::Style {
+            background,
+            dot_color,
+            border_width,
+            border_color,
+            text_color
+        }
+    );
+    out
+}
+
+/// Every field of the `toggler::Style` the connector emits.
+#[cfg(feature = "widgets")]
+fn toggler_style_fields(style: &toggler::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::toggler",
+        toggler::Style {
+            background,
+            background_border_width,
+            background_border_color,
+            foreground,
+            foreground_border_width,
+            foreground_border_color,
+            text_color,
+            border_radius,
+            padding_ratio
+        }
+    );
+    out
+}
+
+/// Every field of the `pick_list::Style` the connector emits.
+#[cfg(feature = "widgets")]
+fn pick_list_style_fields(style: &pick_list::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::pick_list", pick_list::Style {
+        text_color, placeholder_color, handle_color, background, @nested border
+    });
+    out.extend(border_fields(border, "styles::pick_list.border"));
+    out
+}
+
+/// Every field of the `menu::Style` the connector emits.
+#[cfg(feature = "widgets")]
+fn menu_style_fields(style: &menu::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::menu", menu::Style {
+        background, text_color, selected_text_color, selected_background, shadow, @nested border
+    });
+    out.extend(border_fields(border, "styles::menu.border"));
+    out
+}
+
+/// Every field of the `slider::Style` the connector emits, through its two
+/// nested structs.
+#[cfg(feature = "widgets")]
+fn slider_style_fields(style: &slider::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::slider", slider::Style { @nested rail, handle });
+    leaves_under!(out, rail, "styles::slider.rail", slider::Rail {
+        width, @nested backgrounds, border
+    });
+    // The rail's two backgrounds are a tuple rather than a struct, so they are
+    // destructured here instead: a third one would fail to compile with the
+    // rest of the walk rather than go unnamed.
+    let (_filled, _remaining) = backgrounds;
+    out.push("styles::slider.rail.backgrounds.0".to_string());
+    out.push("styles::slider.rail.backgrounds.1".to_string());
+    out.extend(border_fields(border, "styles::slider.rail.border"));
+    leaves_under!(
+        out,
+        handle,
+        "styles::slider.handle",
+        slider::Handle {
+            shape,
+            background,
+            border_width,
+            border_color
+        }
+    );
+    out
+}
+
 /// Every field the tripwire walks: the palette inputs, the extended slots the
 /// connector writes, and each `styles::*` output's fields.
 #[cfg_attr(not(feature = "widgets"), allow(unused_variables))]
@@ -1977,6 +2981,27 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
         out.extend(text_editor_style_fields(&styles::text_editor(resolved)(
             theme,
             text_editor::Status::Active,
+        )));
+        out.extend(checkbox_style_fields(&styles::checkbox(resolved)(
+            theme,
+            checkbox::Status::Active { is_checked: true },
+        )));
+        out.extend(radio_style_fields(&styles::radio(resolved)(
+            theme,
+            radio::Status::Active { is_selected: true },
+        )));
+        out.extend(toggler_style_fields(&styles::toggler(resolved)(
+            theme,
+            toggler::Status::Active { is_toggled: true },
+        )));
+        out.extend(pick_list_style_fields(&styles::pick_list(resolved)(
+            theme,
+            pick_list::Status::Active,
+        )));
+        out.extend(menu_style_fields(&styles::menu(resolved)(theme)));
+        out.extend(slider_style_fields(&styles::slider(resolved)(
+            theme,
+            slider::Status::Active,
         )));
     }
     out
@@ -2205,6 +3230,188 @@ fn every_status_list_names_each_status_once() {
         all.len(),
         "TEXT_EDITOR_STATUSES must name each status exactly once"
     );
+
+    let all = [
+        checkbox::Status::Active { is_checked: false },
+        checkbox::Status::Active { is_checked: true },
+        checkbox::Status::Hovered { is_checked: false },
+        checkbox::Status::Hovered { is_checked: true },
+        checkbox::Status::Disabled { is_checked: false },
+        checkbox::Status::Disabled { is_checked: true },
+    ];
+    for status in all {
+        match status {
+            checkbox::Status::Active { is_checked: _ }
+            | checkbox::Status::Hovered { is_checked: _ }
+            | checkbox::Status::Disabled { is_checked: _ } => {}
+        }
+        assert!(
+            CHECKBOX_STATUSES.contains(&status),
+            "CHECKBOX_STATUSES does not list {status:?}, so no checkbox row \
+             covers it"
+        );
+    }
+    assert_eq!(
+        CHECKBOX_STATUSES.len(),
+        all.len(),
+        "CHECKBOX_STATUSES must name each status exactly once"
+    );
+
+    // The mark's contrast pair covers only the checked half, because an
+    // unchecked box paints no mark. The two halves are required to partition
+    // the enum, so that half cannot shrink unnoticed.
+    for status in all {
+        let checked = CHECKBOX_CHECKED_STATUSES.contains(&status);
+        let unchecked = CHECKBOX_UNCHECKED_STATUSES.contains(&status);
+        assert!(
+            checked != unchecked,
+            "{status:?} is in {} of the two checkbox lists; each status \
+             belongs to exactly one",
+            if checked { "both" } else { "neither" }
+        );
+    }
+    assert_eq!(
+        CHECKBOX_CHECKED_STATUSES.len() + CHECKBOX_UNCHECKED_STATUSES.len(),
+        all.len(),
+        "the two checkbox lists must partition the statuses, naming each \
+         exactly once between them"
+    );
+
+    let all = [
+        radio::Status::Active { is_selected: false },
+        radio::Status::Active { is_selected: true },
+        radio::Status::Hovered { is_selected: false },
+        radio::Status::Hovered { is_selected: true },
+    ];
+    for status in all {
+        match status {
+            radio::Status::Active { is_selected: _ }
+            | radio::Status::Hovered { is_selected: _ } => {}
+        }
+        assert!(
+            RADIO_STATUSES.contains(&status),
+            "RADIO_STATUSES does not list {status:?}, so no radio row covers it"
+        );
+    }
+    assert_eq!(
+        RADIO_STATUSES.len(),
+        all.len(),
+        "RADIO_STATUSES must name each status exactly once"
+    );
+
+    for status in all {
+        let selected = RADIO_SELECTED_STATUSES.contains(&status);
+        let unselected = RADIO_UNSELECTED_STATUSES.contains(&status);
+        assert!(
+            selected != unselected,
+            "{status:?} is in {} of the two radio lists; each status belongs \
+             to exactly one",
+            if selected { "both" } else { "neither" }
+        );
+    }
+    assert_eq!(
+        RADIO_SELECTED_STATUSES.len() + RADIO_UNSELECTED_STATUSES.len(),
+        all.len(),
+        "the two radio lists must partition the statuses, naming each exactly \
+         once between them"
+    );
+
+    let all = [
+        toggler::Status::Active { is_toggled: false },
+        toggler::Status::Active { is_toggled: true },
+        toggler::Status::Hovered { is_toggled: false },
+        toggler::Status::Hovered { is_toggled: true },
+        toggler::Status::Disabled { is_toggled: false },
+        toggler::Status::Disabled { is_toggled: true },
+    ];
+    for status in all {
+        match status {
+            toggler::Status::Active { is_toggled: _ }
+            | toggler::Status::Hovered { is_toggled: _ }
+            | toggler::Status::Disabled { is_toggled: _ } => {}
+        }
+        assert!(
+            TOGGLER_STATUSES.contains(&status),
+            "TOGGLER_STATUSES does not list {status:?}, so no toggler row \
+             covers it"
+        );
+    }
+    assert_eq!(
+        TOGGLER_STATUSES.len(),
+        all.len(),
+        "TOGGLER_STATUSES must name each status exactly once"
+    );
+
+    let all = [
+        pick_list::Status::Active,
+        pick_list::Status::Hovered,
+        pick_list::Status::Opened { is_hovered: false },
+        pick_list::Status::Opened { is_hovered: true },
+    ];
+    for status in all {
+        match status {
+            pick_list::Status::Active
+            | pick_list::Status::Hovered
+            | pick_list::Status::Opened { is_hovered: _ } => {}
+        }
+        assert!(
+            PICK_LIST_STATUSES.contains(&status),
+            "PICK_LIST_STATUSES does not list {status:?}, so no pick list row \
+             covers it"
+        );
+    }
+    assert_eq!(
+        PICK_LIST_STATUSES.len(),
+        all.len(),
+        "PICK_LIST_STATUSES must name each status exactly once"
+    );
+
+    // A menu has no status of its own; its rows hold the unit value once.
+    assert_eq!(
+        MENU_STATUSES,
+        &[()],
+        "a menu takes no status, so its rows hold the unit value exactly once"
+    );
+
+    let all = [
+        slider::Status::Active,
+        slider::Status::Hovered,
+        slider::Status::Dragged,
+    ];
+    for status in all {
+        match status {
+            slider::Status::Active | slider::Status::Hovered | slider::Status::Dragged => {}
+        }
+        assert!(
+            SLIDER_STATUSES.contains(&status),
+            "SLIDER_STATUSES does not list {status:?}, so no slider row covers it"
+        );
+    }
+    assert_eq!(
+        SLIDER_STATUSES.len(),
+        all.len(),
+        "SLIDER_STATUSES must name each status exactly once"
+    );
+
+    // The handle splits the same enum in two, as a class button's fill does:
+    // the statuses whose thumb color the model states, and the dragged one it
+    // does not.
+    for status in all {
+        let native = SLIDER_NATIVE_HANDLE_STATUSES.contains(&status);
+        let from_iced = SLIDER_ICED_HANDLE_STATUSES.contains(&status);
+        assert!(
+            native != from_iced,
+            "{status:?} is in {} of the two slider handle lists; each status \
+             belongs to exactly one",
+            if native { "both" } else { "neither" }
+        );
+    }
+    assert_eq!(
+        SLIDER_NATIVE_HANDLE_STATUSES.len() + SLIDER_ICED_HANDLE_STATUSES.len(),
+        all.len(),
+        "the two slider handle lists must partition the statuses, naming each \
+         exactly once between them"
+    );
 }
 
 #[cfg(feature = "widgets")]
@@ -2272,6 +3479,45 @@ fn a_class_button_takes_its_hovered_and_pressed_states_from_iced() -> native_the
     assert!(
         failures.is_empty(),
         "{} of {checks} class-button states differ from iced's own class:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_dragged_slider_handle_comes_from_iced() -> native_theme::Result<()> {
+    // `SliderTheme` states a thumb color and a hovered thumb color and no
+    // variant for a handle being dragged, so that one state follows spec
+    // section 3.2's no-source rule and is iced's own, read at run time. The
+    // rows cover only `SLIDER_NATIVE_HANDLE_STATUSES`, so the claim about the
+    // third status is asserted here.
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    let mut checks = 0;
+
+    for c in &combinations {
+        for &status in SLIDER_ICED_HANDLE_STATUSES {
+            let emitted = styles::slider(&c.resolved)(&c.theme, status);
+            let iced = slider::default(&c.theme, status);
+            checks += 1;
+            if emitted.handle.background != iced.handle.background {
+                failures.push(format!(
+                    "{}: styles::slider.handle.background ({status:?}) is {:?}, \
+                     iced's own default gives {:?}",
+                    c.label(),
+                    emitted.handle.background,
+                    iced.handle.background
+                ));
+            }
+        }
+    }
+
+    println!("dragged slider handle vs iced's own default: {checks} field checks");
+    assert!(
+        failures.is_empty(),
+        "{} of {checks} dragged handles differ from iced's own default:\n{}",
         failures.len(),
         failures.join("\n")
     );
@@ -2383,6 +3629,22 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut failures,
         &mut ran,
     );
+    check_style_rows(CHECKBOX_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(CHECKBOX_BORDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(RADIO_ROWS, &combinations, &mut failures, &mut ran);
+    check_scalar_rows(RADIO_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(TOGGLER_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(PICK_LIST_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        PICK_LIST_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_style_rows(MENU_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(MENU_BORDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(SLIDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_scalar_rows(SLIDER_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
 
     // The calls above are a second hand-maintained list beside
     // `style_row_fields`, and only that one is read by the coverage tripwire:
@@ -2471,6 +3733,12 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
         &mut below_aa,
         &mut ran,
     );
+    check_style_pairs(CHECKBOX_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(RADIO_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(TOGGLER_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(PICK_LIST_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(MENU_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(SLIDER_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
 
     // A pair list declared and never checked here asserts nothing, and the
     // tripwire cannot notice -- it walks `Style` fields, and whether a pair

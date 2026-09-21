@@ -427,3 +427,412 @@ pub fn text_editor(
         }
     }
 }
+
+/// The platform's own checkbox, for `checkbox(..).style(..)`.
+///
+/// Replaces `iced_widget::checkbox::primary` (`checkbox.rs:569`), the class a
+/// `Checkbox` gets with no `.style(..)`: it paints the palette's background
+/// family and takes the check mark from `primary.base.text`.
+///
+/// The box has two fills, `checkbox.checked_background` and
+/// `.unchecked_background`, and the `Status` says which one it is showing. The
+/// check mark is `checkbox.indicator_color` -- the model has no `check_color`.
+/// `.hover_background` is a layer over whichever fill the box shows (C17);
+/// `.disabled_background` replaces it, as given. An unchecked box may state a
+/// border color of its own, `.unchecked_border_color`.
+///
+/// Nothing here comes from iced: every field of `checkbox::Style` has a native
+/// source. The label stays `checkbox.font.color` in every status -- the model
+/// states a `.disabled_text_color`, but spec section 3.3 does not map it here,
+/// and iced's own class does not dim a disabled label either.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn checkbox(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::checkbox::Status) -> iced_widget::checkbox::Style + use<> {
+    use iced_widget::checkbox::{Status, Style};
+
+    let c = &resolved.checkbox;
+
+    let checked = to_color(c.checked_background);
+    // Both soft options copy the checkbox's own fill: the platform saying the
+    // box looks no different unchecked, or under the pointer.
+    let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
+    let hover_layer = to_color(c.hover_background.unwrap_or(c.background_color));
+    let hovered_checked = composite_over(hover_layer, checked);
+    let hovered_unchecked = composite_over(hover_layer, unchecked);
+    // A translucent disabled fill replaces the idle one, so it is as given.
+    let disabled = to_color(c.disabled_background.unwrap_or(c.background_color));
+
+    let mark = to_color(c.indicator_color);
+    let label = to_color(c.font.color);
+
+    let checked_border = to_color(c.border.color);
+    let unchecked_border = to_color(c.unchecked_border_color.unwrap_or(c.border.color));
+    let border_width = c.border.line_width;
+    let border_radius = Radius::new(c.border.corner_radius);
+
+    move |_theme, status| {
+        let (background, border_color) = match status {
+            Status::Active { is_checked } => {
+                if is_checked {
+                    (checked, checked_border)
+                } else {
+                    (unchecked, unchecked_border)
+                }
+            }
+            Status::Hovered { is_checked } => {
+                if is_checked {
+                    (hovered_checked, checked_border)
+                } else {
+                    (hovered_unchecked, unchecked_border)
+                }
+            }
+            // The platform states one disabled fill for both, and the box
+            // keeps the outline that says whether it is checked.
+            Status::Disabled { is_checked } => (
+                disabled,
+                if is_checked {
+                    checked_border
+                } else {
+                    unchecked_border
+                },
+            ),
+        };
+        Style {
+            background: Background::Color(background),
+            icon_color: mark,
+            border: Border {
+                color: border_color,
+                width: border_width,
+                radius: border_radius,
+            },
+            text_color: Some(label),
+        }
+    }
+}
+
+/// The platform's own radio button, for `radio(..).style(..)`.
+///
+/// Replaces `iced_widget::radio::default` (`radio.rs:532`), which paints a
+/// transparent circle outlined in the palette's primary family.
+///
+/// The model states one `CheckboxTheme` for both controls
+/// (`widgets/mod.rs:138-140`), so this reads exactly the sources [`checkbox`]
+/// reads, with `is_selected` where the checkbox has `is_checked` and the check
+/// mark serving as the dot. `radio::Status` has no disabled variant
+/// (`radio.rs:474-487`), so the model's disabled fields have no receiver here.
+///
+/// `radio::Style` carries its border as a width and a color rather than as an
+/// iced `Border`, so there is no corner radius to give it.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn radio(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + use<> {
+    use iced_widget::radio::{Status, Style};
+
+    let c = &resolved.checkbox;
+
+    let selected = to_color(c.checked_background);
+    let unselected = to_color(c.unchecked_background.unwrap_or(c.background_color));
+    let hover_layer = to_color(c.hover_background.unwrap_or(c.background_color));
+    let hovered_selected = composite_over(hover_layer, selected);
+    let hovered_unselected = composite_over(hover_layer, unselected);
+
+    let dot = to_color(c.indicator_color);
+    let label = to_color(c.font.color);
+
+    let selected_border = to_color(c.border.color);
+    let unselected_border = to_color(c.unchecked_border_color.unwrap_or(c.border.color));
+    let border_width = c.border.line_width;
+
+    move |_theme, status| {
+        let (background, border_color) = match status {
+            Status::Active { is_selected } => {
+                if is_selected {
+                    (selected, selected_border)
+                } else {
+                    (unselected, unselected_border)
+                }
+            }
+            Status::Hovered { is_selected } => {
+                if is_selected {
+                    (hovered_selected, selected_border)
+                } else {
+                    (hovered_unselected, unselected_border)
+                }
+            }
+        };
+        Style {
+            background: Background::Color(background),
+            dot_color: dot,
+            border_width,
+            border_color,
+            text_color: Some(label),
+        }
+    }
+}
+
+/// The platform's own switch, for `toggler(..).style(..)`.
+///
+/// Replaces `iced_widget::toggler::default` (`toggler.rs:561`), which paints
+/// the track from the palette's primary family and, hovered and toggled,
+/// halves the alpha of the thumb.
+///
+/// The track is `switch.checked_background` or `.unchecked_background` by
+/// `is_toggled`, with `.hover_*` layered over it (C17) and `.disabled_*`
+/// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
+/// so emitted as given in every state, and `.disabled_thumb_color` when the
+/// switch is off.
+///
+/// Six fields have no native source and come from `toggler::default(theme,
+/// status)`: `SwitchTheme` carries neither border nor thumb inset, so both
+/// border widths, both border colors, `border_radius` and `padding_ratio` are
+/// iced's. So is `text_color`: the model states no font for a switch, and
+/// iced's `None` inherits the surrounding one.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn toggler(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + use<> {
+    use iced_widget::toggler::{Status, Style};
+
+    let s = &resolved.switch;
+
+    let checked = to_color(s.checked_background);
+    let unchecked = to_color(s.unchecked_background);
+    // Each hover layer is a soft option copying the track it covers.
+    let hovered_checked = composite_over(
+        to_color(s.hover_checked_background.unwrap_or(s.checked_background)),
+        checked,
+    );
+    let hovered_unchecked = composite_over(
+        to_color(
+            s.hover_unchecked_background
+                .unwrap_or(s.unchecked_background),
+        ),
+        unchecked,
+    );
+    let disabled_checked = to_color(
+        s.disabled_checked_background
+            .unwrap_or(s.checked_background),
+    );
+    let disabled_unchecked = to_color(
+        s.disabled_unchecked_background
+            .unwrap_or(s.unchecked_background),
+    );
+
+    let thumb = to_color(s.thumb_background);
+    let disabled_thumb = to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background));
+
+    move |theme, status| {
+        let iced = iced_widget::toggler::default(theme, status);
+        let (background, foreground) = match status {
+            Status::Active { is_toggled } => {
+                if is_toggled {
+                    (checked, thumb)
+                } else {
+                    (unchecked, thumb)
+                }
+            }
+            Status::Hovered { is_toggled } => {
+                if is_toggled {
+                    (hovered_checked, thumb)
+                } else {
+                    (hovered_unchecked, thumb)
+                }
+            }
+            Status::Disabled { is_toggled } => {
+                if is_toggled {
+                    (disabled_checked, disabled_thumb)
+                } else {
+                    (disabled_unchecked, disabled_thumb)
+                }
+            }
+        };
+        Style {
+            background: Background::Color(background),
+            background_border_width: iced.background_border_width,
+            background_border_color: iced.background_border_color,
+            foreground: Background::Color(foreground),
+            foreground_border_width: iced.foreground_border_width,
+            foreground_border_color: iced.foreground_border_color,
+            text_color: iced.text_color,
+            border_radius: iced.border_radius,
+            padding_ratio: iced.padding_ratio,
+        }
+    }
+}
+
+/// The platform's own drop-down field, for `pick_list(..).style(..)`.
+///
+/// Replaces `iced_widget::pick_list::default` (`pick_list.rs:904`), which
+/// paints the field in the palette's weak background and outlines it in the
+/// primary family once it is hovered or open.
+///
+/// The field is `combo_box.background_color` with `.hover_background` layered
+/// over it (C17), its label is `combo_box.font.color` and its border is
+/// `combo_box.border.*`. The placeholder is `input.placeholder_color`: the
+/// model states it once, for every field that has one.
+///
+/// `pick_list::Status::Opened` carries whether the pointer is on the field
+/// (`pick_list.rs:838-849`), and that is what decides the fill here -- the
+/// model states no separate open appearance. `handle_color` has no native
+/// source, `ComboBoxTheme` carrying the arrow's sizes but not its color, so it
+/// comes from `pick_list::default(theme, status)`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn pick_list(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::pick_list::Status) -> iced_widget::pick_list::Style + use<> {
+    use iced_widget::pick_list::{Status, Style};
+
+    let c = &resolved.combo_box;
+
+    let idle = to_color(c.background_color);
+    let hovered = composite_over(
+        to_color(c.hover_background.unwrap_or(c.background_color)),
+        idle,
+    );
+
+    let label = to_color(c.font.color);
+    let placeholder = to_color(resolved.input.placeholder_color);
+
+    let border = Border {
+        color: to_color(c.border.color),
+        width: c.border.line_width,
+        radius: Radius::new(c.border.corner_radius),
+    };
+
+    move |theme, status| {
+        let iced = iced_widget::pick_list::default(theme, status);
+        let background = match status {
+            Status::Active => idle,
+            Status::Hovered => hovered,
+            Status::Opened { is_hovered } => {
+                if is_hovered {
+                    hovered
+                } else {
+                    idle
+                }
+            }
+        };
+        Style {
+            text_color: label,
+            placeholder_color: placeholder,
+            handle_color: iced.handle_color,
+            background: Background::Color(background),
+            border,
+        }
+    }
+}
+
+/// The platform's own menu, for `.menu_style(..)` on a `PickList` or a
+/// `ComboBox`.
+///
+/// Replaces `iced_widget::overlay::menu::default` (`overlay/menu.rs:646`),
+/// which paints the list in the palette's weak background and its selected row
+/// in the primary family. This is the one function of shape C: a menu has no
+/// `Status`, so the closure takes the theme alone.
+///
+/// Every color is `menu.*`: the panel, its border, the label, and the selected
+/// row's label and fill. A selected row is a row highlight, painted over a
+/// panel the widget also paints, so it is emitted as given rather than
+/// composited (spec section 3.2).
+///
+/// `shadow` has no native source -- the model has `defaults.shadow_color` but
+/// no offset or blur -- and comes from `overlay::menu::default(theme)`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn menu(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::overlay::menu::Style + use<> {
+    use iced_widget::overlay::menu::Style;
+
+    let m = &resolved.menu;
+
+    let background = to_color(m.background_color);
+    let label = to_color(m.font.color);
+    let selected_label = to_color(m.hover_text_color);
+    let selected_background = to_color(m.hover_background);
+
+    let border = Border {
+        color: to_color(m.border.color),
+        width: m.border.line_width,
+        radius: Radius::new(m.border.corner_radius),
+    };
+
+    move |theme| {
+        let iced = iced_widget::overlay::menu::default(theme);
+        Style {
+            background: Background::Color(background),
+            border,
+            text_color: label,
+            selected_text_color: selected_label,
+            selected_background: Background::Color(selected_background),
+            shadow: iced.shadow,
+        }
+    }
+}
+
+/// The platform's own slider, for `slider(..).style(..)` and for
+/// `vertical_slider(..).style(..)` -- the vertical widget re-exports this one's
+/// `Style` and `Status` (`vertical_slider.rs:33-35`).
+///
+/// Replaces `iced_widget::slider::default` (`slider.rs:676`), which paints
+/// both the filled rail and the handle from the palette's primary family and
+/// the remaining rail from the strong background.
+///
+/// The rail's two backgrounds are `slider.fill_color` and `.track_color`, and
+/// its width is `slider.track_height`. The handle is `slider.thumb_color`,
+/// with `.thumb_hover_color` under the pointer -- a thumb, so emitted as given
+/// -- and its size is `slider.thumb_diameter`, halved because iced states a
+/// circular handle by its radius.
+///
+/// Two things have no native source. The model states no dragged thumb color,
+/// so that one state's handle is `slider::default(theme, Status::Dragged)`'s,
+/// as a status button's hovered fill is iced's (spec section 3.2); it is
+/// asserted against iced's own by
+/// `a_dragged_slider_handle_comes_from_iced`. And `SliderTheme` carries no
+/// border, so the rail's border and the handle's border width and color are
+/// iced's too.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn slider(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + use<> {
+    use iced_widget::slider::{Handle, HandleShape, Rail, Status, Style};
+
+    let s = &resolved.slider;
+
+    let filled = to_color(s.fill_color);
+    let remaining = to_color(s.track_color);
+    let rail_width = s.track_height;
+
+    let thumb = to_color(s.thumb_color);
+    // A soft option: `None` is the platform saying the thumb does not change
+    // under the pointer, so it copies the thumb's own color.
+    let hovered_thumb = to_color(s.thumb_hover_color.unwrap_or(s.thumb_color));
+    // The model states the thumb's diameter; iced states a circular handle by
+    // its radius.
+    let handle_radius = s.thumb_diameter / 2.0;
+
+    move |theme, status| {
+        let iced = iced_widget::slider::default(theme, status);
+        let handle_background = match status {
+            Status::Active => Background::Color(thumb),
+            Status::Hovered => Background::Color(hovered_thumb),
+            Status::Dragged => iced.handle.background,
+        };
+        Style {
+            rail: Rail {
+                backgrounds: (Background::Color(filled), Background::Color(remaining)),
+                width: rail_width,
+                border: iced.rail.border,
+            },
+            handle: Handle {
+                shape: HandleShape::Circle {
+                    radius: handle_radius,
+                },
+                background: handle_background,
+                border_width: iced.handle.border_width,
+                border_color: iced.handle.border_color,
+            },
+        }
+    }
+}
