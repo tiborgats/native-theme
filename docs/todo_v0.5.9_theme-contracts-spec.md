@@ -211,7 +211,8 @@ The fields this release knows have no native source:
 |---|---|
 | `button::Style.snap`, `container::Style.snap` | a renderer setting, `cfg!(feature = "crisp")` (`button.rs:517`) — a literal `false` would switch crisp rendering off for a consumer who enabled it |
 | `button::Style.shadow`, `container::Style.shadow`, `menu::Style.shadow` | the model has `defaults.shadow_color` and `border.shadow_enabled` but no offset or blur, so an iced `Shadow` cannot be built without inventing geometry |
-| `scrollable::Style.gap`, `.auto_scroll` | no native counterpart |
+| `scrollable::Style.gap`, `.auto_scroll`, and every field of its nested `.container` | no native counterpart: `ScrollbarTheme` states the bars, not the scrolled surface. iced's own default leaves the container transparent so the content shows through, and `container::Style` has a `Default`, so the function still names every one of its fields (the compiler would not notice an added one) |
+| `slider` `handle.background` in `Status::Dragged` | `SliderTheme` has `thumb_color` and `thumb_hover_color` and no pressed thumb colour; the shape and the rail stay native |
 | `toggler::Style`'s four border fields and `.text_color` | `SwitchTheme` carries no border and no font. (`border_radius` and `padding_ratio` **do** have sources — `switch.track_radius`, and the inset `track_height` and `thumb_diameter` state between them — an earlier draft of this row listed both here in error) |
 | `slider` `rail.border`, `handle.border_width`, `handle.border_color`; the scrollable rails' `border` | `SliderTheme` and `ScrollbarTheme` carry no border |
 | `text_input::Style.icon` | the model has no input-icon colour |
