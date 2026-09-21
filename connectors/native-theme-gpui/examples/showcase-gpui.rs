@@ -264,6 +264,19 @@ const TAB_ROOT: &str = "tab-root";
 /// reaches under the bar.
 const CONTENT_SCROLL: &str = "content-scroll";
 
+/// The debug selector the sidebar column carries. Its bottom edge is where the
+/// Widget Info panel has to reach, which is what
+/// `the_widget_info_panel_fills_the_sidebar` measures.
+const SIDEBAR_COLUMN: &str = "sidebar-column";
+
+/// The debug selector the Widget Info panel's root carries.
+const WIDGET_INFO: &str = "widget-info";
+
+/// The debug selector the box that holds the Widget Info textarea carries. It
+/// is the element the textarea fills, so its height is the height the text has
+/// before the textarea scrolls its own content.
+const WIDGET_INFO_TEXT: &str = "widget-info-text";
+
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------
@@ -1309,18 +1322,33 @@ impl Render for WidgetInfoPanel {
             });
         }
 
+        // The panel is the sidebar column's only growing child, so it takes
+        // every pixel the controls above it leave -- at any window size, and
+        // without a height of its own. `min_h_0` is what lets it shrink past
+        // the text it holds: the textarea then scrolls its own content instead
+        // of pushing the panel out of the column.
         v_flex()
             .p_3()
             .w_full()
+            .flex_1()
+            .min_h_0()
+            .debug_selector(|| WIDGET_INFO.into())
             .child(
                 Label::new("Widget Info")
                     .text_size(px(13.0))
                     .font_semibold(),
             )
             .child(
-                Textarea::new(&self.input_state)
-                    .appearance(false)
-                    .text_size(px(11.0)),
+                v_flex()
+                    .flex_1()
+                    .min_h_0()
+                    .debug_selector(|| WIDGET_INFO_TEXT.into())
+                    .child(
+                        Textarea::new(&self.input_state)
+                            .appearance(false)
+                            .text_size(px(11.0))
+                            .h_full(),
+                    ),
             )
     }
 }
@@ -2437,7 +2465,11 @@ impl Showcase {
             animated_static_sources: Vec::new(),
             widget_info_panel: {
                 let info_input = cx.new(|cx| {
-                    let mut state = TextareaState::new(window, cx).auto_grow(4, 30);
+                    // No `auto_grow`: the panel's height comes from the
+                    // sidebar column, not from the text, and an auto-grown
+                    // textarea carries a minimum height of its row count that
+                    // would push the panel out of the column again.
+                    let mut state = TextareaState::new(window, cx);
                     state.set_placeholder("Hover over any widget…", window, cx);
                     state
                 });
@@ -2687,7 +2719,7 @@ impl Showcase {
             .paragraph_gap(rems(0.3))
             .heading_font_size(|_level, _base| px(13.0));
 
-        v_flex().p_3().w_full().child(
+        v_flex().p_3().w_full().flex_shrink_0().child(
             TextView::markdown("config-inspector", SharedString::from(md))
                 .selectable(true)
                 .style(style)
@@ -7989,10 +8021,15 @@ impl Render for Showcase {
             .border_r_1()
             .border_color(theme.sidebar_border)
             .overflow_y_scroll()
+            .debug_selector(|| SIDEBAR_COLUMN.into())
+            // The two control blocks and the config inspector keep their
+            // natural height; the Widget Info panel below them is the child
+            // that grows into what is left (`WidgetInfoPanel::render`).
             .child(
                 v_flex()
                     .p_3()
                     .gap_3()
+                    .flex_shrink_0()
                     .child(
                         Label::new("Theme Selector")
                             .text_size(px(13.0))
@@ -8015,6 +8052,7 @@ impl Render for Showcase {
                 v_flex()
                     .p_3()
                     .gap_3()
+                    .flex_shrink_0()
                     .child(Label::new("Icon Theme").text_size(px(13.0)).font_semibold())
                     .child(
                         refined(Select::new(&self.icon_set_select), select_style.as_ref())
@@ -8945,6 +8983,75 @@ mod tests {
                  leaves {gutter:?} free for a {groove:?} scrollbar",
                 tab.right(),
                 content.right(),
+            );
+        }
+    }
+
+    /// A Widget Info text long enough to overflow whatever room the sidebar
+    /// has, so the panel cannot be as tall as its content and has to scroll.
+    fn long_info() -> String {
+        (1..=200)
+            .map(|line| format!("line {line}: a themed property and where it comes from\n"))
+            .collect()
+    }
+
+    /// Drive the Widget Info panel the way a hover does.
+    fn set_info(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, text: String) {
+        cx.update(|_window, cx| {
+            let panel = showcase.read(cx).widget_info_panel.clone();
+            panel.update(cx, |p, cx| p.set_text(text, cx));
+        });
+        cx.run_until_parked();
+        draw(cx);
+    }
+
+    /// The Widget Info panel takes every pixel the sidebar column has left
+    /// under the controls above it, whatever the window size.
+    ///
+    /// The panel is the last child of the sidebar column and the only one that
+    /// grows, so its bottom edge is the column's; the box that holds the
+    /// textarea then reaches the panel's bottom padding, which is the panel's
+    /// top padding read off the frame rather than a number typed out again.
+    /// A text far taller than the window is used, because a panel that sized
+    /// itself to its content would pass a short one.
+    #[gpui::test]
+    fn the_widget_info_panel_fills_the_sidebar(cx: &mut TestAppContext) {
+        for height in [WINDOW_SIZE.height, WINDOW_SIZE.height + px(400.)] {
+            let (showcase, _root, mut cx) = open(cx, size(WINDOW_SIZE.width, height));
+            use_preset(&mut cx, &showcase, "kde-breeze");
+            set_info(&mut cx, &showcase, long_info());
+
+            let sidebar = bounds_of(&mut cx, SIDEBAR_COLUMN);
+            let panel = bounds_of(&mut cx, WIDGET_INFO);
+            let text = bounds_of(&mut cx, WIDGET_INFO_TEXT);
+            assert!(
+                panel.size.height > px(0.),
+                "{height:?}: the sidebar left the panel no room at all"
+            );
+            assert_eq!(
+                panel.bottom(),
+                sidebar.bottom(),
+                "{height:?}: the sidebar column ends at {:?} and the panel at {:?}, \
+                 so {:?} of it is unused",
+                sidebar.bottom(),
+                panel.bottom(),
+                sidebar.bottom() - panel.bottom(),
+            );
+            // The panel's padding is uniform, so the gap its left edge leaves
+            // is the gap its bottom edge has to leave.
+            let padding = text.left() - panel.left();
+            assert!(
+                padding > px(0.),
+                "{height:?}: the panel has no padding, so this step measures nothing"
+            );
+            assert_eq!(
+                text.bottom(),
+                panel.bottom() - padding,
+                "{height:?}: the text box ends at {:?} and the panel's bottom padding at {:?}, \
+                 so the textarea is {:?} shorter than the room it has",
+                text.bottom(),
+                panel.bottom() - padding,
+                panel.bottom() - padding - text.bottom(),
             );
         }
     }
