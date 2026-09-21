@@ -149,12 +149,17 @@ heights grow only when scaled text would no longer fit:
 `max(theme height, ceil(font size × factor × line height) + 2 × vertical padding)`.
 
 A builder sets a text colour only where upstream labels the widget with a token
-of its own before applying the caller's refinement, and that token is not the
-colour the platform states: `status_bar` (upstream's `muted_foreground`),
-`dialog_description` (the same) and `tooltip` (`popover_foreground`). The other
-builders set size and weight, and leave the colour to the token — including
-`title_bar`, whose text inherits `foreground`, the colour every preset states
-for a title bar anyway.
+of its own before applying the caller's refinement. Eight do. Three displace a
+visibly different colour: `status_bar` and `dialog_description` displace
+upstream's `muted_foreground`, `tooltip` displaces `popover_foreground`. Five
+displace `foreground`: `list_item`, `checkbox`, `radio`, `select` and
+`combobox`. Those five change no pixel under any bundled preset — a widget that
+states no `font.color` inherits the window's, and `foreground` is fed from that
+same field — but they carry it so that a preset which *does* state, say, a
+checkbox label colour is honoured instead of silently overridden. The remaining
+builders set size and weight only and leave the colour to the token, including
+`title_bar`: upstream sets no text colour on the bar at all, and its text
+inherits `foreground`, the colour every preset states for a title bar anyway.
 
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|

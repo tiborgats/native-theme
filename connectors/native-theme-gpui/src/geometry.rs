@@ -19,11 +19,19 @@
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
 //! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]).
 //!
-//! Geometry, with one exception that is not geometry: [`status_bar`],
-//! [`dialog_description`] and [`tooltip`] also carry the platform's text
-//! colour, because upstream labels those three with a token of its own one
-//! line before it applies this refinement and no `ThemeColor` field holds the
-//! colour the platform states.
+//! Geometry, with one exception that is not geometry: eight builders also
+//! carry the platform's text colour, because upstream labels their widget with
+//! a token of its own one refinement earlier and no `ThemeColor` field holds
+//! the colour the platform states. Three of them displace a visibly different
+//! colour today — [`status_bar`] and [`dialog_description`] displace
+//! `muted_foreground`, [`tooltip`] displaces `popover_foreground` — and five
+//! displace `foreground`: [`list_item`], [`checkbox`], [`radio`], [`select`]
+//! and [`combobox`]. Those five change no pixel over the bundled presets,
+//! because a widget that states no `font.color` inherits the window's
+//! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
+//! field; they carry it so a preset that does state one is honoured rather
+//! than silently overridden. [`title_bar`] needs none: upstream sets no text
+//! colour on the bar at all.
 //!
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
 //! [`progress`] are verified against real gpui-component widgets in
@@ -142,10 +150,16 @@ pub fn menu_item(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `ListItem` (`src/list/list_item.rs:185-187` → `:193`).
+///
+/// The colour is carried because upstream labels the row with `foreground`
+/// (`:189`) one line before it applies this refinement. Today
+/// `list.item_font.color` is the window's text colour in every bundled preset,
+/// so this changes no pixel; it is what honours a preset that states a row
+/// colour of its own.
 #[must_use]
 pub fn list_item(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.list;
-    with_text(
+    with_coloured_text(
         StyleRefinement::default()
             .h(control_height(l.row_height, &l.item_font, &l.border, n))
             .px(px(l.border.padding_horizontal))
@@ -298,25 +312,35 @@ pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `Checkbox` (`src/checkbox.rs:271` → `:286`); the indicator is inner, Tier U.
+///
+/// The colour is carried for the same reason as [`list_item`]: upstream labels
+/// the row with `foreground` (`:274`) before applying this refinement.
 #[must_use]
 pub fn checkbox(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.checkbox;
-    with_text(StyleRefinement::default().gap(px(c.label_gap)), &c.font, n)
+    with_coloured_text(StyleRefinement::default().gap(px(c.label_gap)), &c.font, n)
 }
 
 /// `Radio` (`src/radio.rs:211` → `:226`). platform-facts §2.5 defines radio
 /// metrics as the checkbox's with a circular indicator, so this is a fact,
-/// not a substitution (rationale D18).
+/// not a substitution (rationale D18). Upstream labels the row with
+/// `foreground` at `:212`, so the colour [`checkbox`] carries is needed here
+/// too.
 #[must_use]
 pub fn radio(n: Native<'_>) -> StyleRefinement {
     checkbox(n)
 }
 
 /// `Select` (`src/select.rs:535-542` → `:546`); the arrow is inner, Tier U.
+///
+/// The colour is carried for the same reason as [`list_item`]: upstream labels
+/// the trigger with `foreground` through `input_style`
+/// (`src/input/input.rs:105`, applied at `select.rs:539`) before applying this
+/// refinement.
 #[must_use]
 pub fn select(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
-    with_text(
+    with_coloured_text(
         StyleRefinement::default()
             .min_h(control_height(c.min_height, &c.font, &c.border, n))
             .min_w(px(c.min_width))
@@ -326,7 +350,8 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Combobox` (`src/combobox.rs:986-993` → `:997`): same sources as [`select`].
+/// `Combobox` (`src/combobox.rs:986-993` → `:997`): same sources as [`select`],
+/// and the same `foreground` at `:990` for the colour to displace.
 #[must_use]
 pub fn combobox(n: Native<'_>) -> StyleRefinement {
     select(n)
@@ -603,10 +628,21 @@ mod tests {
     /// platform's text colour has, so it carries it -- over every preset in
     /// both modes, not just the two `CASES` names.
     ///
-    /// The second half is the reason the first exists: each of these three
-    /// native colours differs from the token upstream would otherwise paint,
-    /// so leaving the colour out left the widget labelled with a colour the
-    /// platform did not state.
+    /// The `assert_ne!`s below are the reason the first three exist: each of
+    /// those native colours differs from the token upstream would otherwise
+    /// paint, so leaving the colour out left the widget labelled with a colour
+    /// the platform did not state.
+    ///
+    /// The other five -- `list_item`, `checkbox`, `radio`, `select`,
+    /// `combobox` -- get no such `assert_ne!`, and deliberately: their native
+    /// font colour equals `defaults.text_color` in all 32 combinations today,
+    /// because a preset that states no `font.color` for a widget inherits the
+    /// window's (docs/inheritance-rules.toml:115-136), and `foreground` is fed
+    /// from `defaults.text_color`. The colour is carried anyway because the
+    /// mechanism is identical -- upstream labels each of them with
+    /// `foreground` one refinement earlier -- so the day a preset states
+    /// `checkbox.font.color` the widget is painted with it instead of
+    /// silently keeping the window's.
     #[test]
     fn text_colour_is_the_platforms_wherever_upstream_would_override_it() {
         let mut tooltip_differs = 0usize;
@@ -642,6 +678,37 @@ mod tests {
                     dialog_description(n).text.color,
                     Some(rgba_to_hsla(r.dialog.body_font.color)),
                     "{at}: dialog description text"
+                );
+
+                // The same mechanism, upstream's `foreground` one refinement
+                // earlier: `list/list_item.rs:189` -> `:193`,
+                // `checkbox.rs:274` -> `:286`, `radio.rs:212` -> `:226`,
+                // `select.rs:539` -> `:546` and `combobox.rs:990` -> `:997`
+                // (both through `input_style`, `input/input.rs:105`).
+                assert_eq!(
+                    list_item(n).text.color,
+                    Some(rgba_to_hsla(r.list.item_font.color)),
+                    "{at}: list item text"
+                );
+                assert_eq!(
+                    checkbox(n).text.color,
+                    Some(rgba_to_hsla(r.checkbox.font.color)),
+                    "{at}: checkbox label text"
+                );
+                assert_eq!(
+                    radio(n).text.color,
+                    Some(rgba_to_hsla(r.checkbox.font.color)),
+                    "{at}: radio label text (platform-facts §2.5: the checkbox's)"
+                );
+                assert_eq!(
+                    select(n).text.color,
+                    Some(rgba_to_hsla(r.combo_box.font.color)),
+                    "{at}: select text"
+                );
+                assert_eq!(
+                    combobox(n).text.color,
+                    Some(rgba_to_hsla(r.combo_box.font.color)),
+                    "{at}: combobox text"
                 );
 
                 // What upstream paints without the refinement: muted_foreground
