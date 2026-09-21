@@ -470,14 +470,25 @@ pub fn text_editor(
 /// family and takes the check mark from `primary.base.text`.
 ///
 /// The box has two fills, `checkbox.checked_background` and
-/// `.unchecked_background`, and the `Status` says which one it is showing. The
-/// check mark is `checkbox.indicator_color` -- the model has no `check_color`.
+/// `.unchecked_background`, and the `Status` says which one it is showing.
 /// `.hover_background` is the hover of the *unchecked* box, and is composited
 /// as a layer over its fill; the model states no hover for a checked one, and
 /// a state the platform does not state has no distinct appearance, so a
 /// hovered checked box is exactly the checked box. `.disabled_background`
 /// replaces the fill, as given. An unchecked box may state a border color of
 /// its own, `.unchecked_border_color`.
+///
+/// The check mark is `checkbox.indicator_color` -- the model has no
+/// `check_color` -- in every status but `Disabled`. `indicator_color` is the
+/// colour the platform states for a foreground **on the accent**
+/// (`platform-facts.md` §2.5: macOS white, Fluent
+/// `TextOnAccentFillColorPrimary`, KDE `[Colors:Selection] ForegroundNormal`,
+/// Adwaita white), and the mark sits on `checked_background`, which is the
+/// accent. A disabled box does not show the accent: `.disabled_background`
+/// replaces it for the checked and the unchecked state alike. So there the
+/// mark takes `checkbox.disabled_text_color`, the one foreground the platform
+/// states for everything it dims -- the same field the disabled label takes,
+/// and a value the model states rather than one derived here.
 ///
 /// Nothing here comes from iced: every field of `checkbox::Style` has a native
 /// source. The label is `checkbox.font.color`, and `.disabled_text_color` when
@@ -518,23 +529,27 @@ pub fn checkbox(
     let border_radius = Radius::new(c.border.corner_radius);
 
     move |_theme, status| {
-        let (background, border_color, text_color) = match status {
+        let (background, border_color, text_color, icon_color) = match status {
             Status::Active { is_checked } => {
                 if is_checked {
-                    (checked, checked_border, label)
+                    (checked, checked_border, label, mark)
                 } else {
-                    (unchecked, unchecked_border, label)
+                    (unchecked, unchecked_border, label, mark)
                 }
             }
             Status::Hovered { is_checked } => {
                 if is_checked {
-                    (checked, checked_border, label)
+                    (checked, checked_border, label, mark)
                 } else {
-                    (hovered_unchecked, unchecked_border, label)
+                    (hovered_unchecked, unchecked_border, label, mark)
                 }
             }
             // The platform states one disabled fill for both, and the box
-            // keeps the outline that says whether it is checked.
+            // keeps the outline that says whether it is checked. The mark
+            // leaves the accent with the fill: `indicator_color` is the
+            // on-accent color, and a disabled box no longer shows the accent,
+            // so the mark takes the one foreground the platform states for
+            // everything it dims -- the same field the disabled label takes.
             Status::Disabled { is_checked } => (
                 disabled,
                 if is_checked {
@@ -543,11 +558,12 @@ pub fn checkbox(
                     unchecked_border
                 },
                 disabled_label,
+                disabled_label,
             ),
         };
         Style {
             background: Background::Color(background),
-            icon_color: mark,
+            icon_color,
             border: Border {
                 color: border_color,
                 width: border_width,

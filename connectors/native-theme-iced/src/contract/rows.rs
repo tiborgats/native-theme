@@ -612,6 +612,23 @@ pub(super) fn native_checkbox_label(r: &ResolvedTheme, status: checkbox::Status)
     })
 }
 
+/// The mark the native fields give a checkbox in `status`.
+///
+/// `indicator_color` is the on-accent colour, and it is on the accent that the
+/// mark is drawn -- except when the box is disabled, where the platform
+/// replaces the accent fill with `disabled_background` and states one
+/// foreground for everything it dims, `disabled_text_color`. That is the same
+/// field the disabled label takes.
+#[cfg(feature = "widgets")]
+pub(super) fn native_checkbox_mark(r: &ResolvedTheme, status: checkbox::Status) -> Color {
+    let c = &r.checkbox;
+    to_color(match status {
+        checkbox::Status::Active { is_checked: _ }
+        | checkbox::Status::Hovered { is_checked: _ } => c.indicator_color,
+        checkbox::Status::Disabled { is_checked: _ } => c.disabled_text_color,
+    })
+}
+
 #[cfg(feature = "widgets")]
 fn native_checkbox_border(r: &ResolvedTheme, status: checkbox::Status) -> Color {
     match status {
@@ -634,7 +651,7 @@ pub(super) const CHECKBOX_ROWS: &[StyleRow<checkbox::Status>] = &[
     StyleRow {
         field: "styles::checkbox.icon_color",
         statuses: CHECKBOX_STATUSES,
-        native: |r, _| to_color(r.checkbox.indicator_color),
+        native: native_checkbox_mark,
         get: |t, r, s| Ok(styles::checkbox(r)(t, s).icon_color),
     },
     StyleRow {

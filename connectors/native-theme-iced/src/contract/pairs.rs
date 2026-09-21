@@ -330,7 +330,7 @@ pub(super) const CHECKBOX_PAIRS: &[StylePair<checkbox::Status>] = &[
         },
         native: |r, s| {
             (
-                to_color(r.checkbox.indicator_color),
+                native_checkbox_mark(r, s),
                 native_checkbox_fill(r, s),
                 to_color(r.defaults.background_color),
             )
