@@ -439,10 +439,11 @@ struct ResizableGroup {
     panels: &'static [ResizablePanelSpec],
 }
 
-/// The line width of the box a resizable group sits in. It is inside the box's
-/// measured size, so `resizable_groups_have_room_to_drag` takes it off both
-/// edges before it compares what is left with `PANEL_MIN_SIZE`.
-const RESIZABLE_BORDER: f32 = 1.0;
+// The line width of the box a resizable group sits in is the platform's
+// (`demo_frame`), so `resizable_groups_have_room_to_drag` asks
+// `demo_border_width` for it rather than naming a number: it is inside the
+// box's measured size and has to come off both edges before what is left is
+// compared with `PANEL_MIN_SIZE`.
 
 /// The Layout tab's resizable groups.
 ///
@@ -660,8 +661,39 @@ trait NativeStyled: Styled + Sized {
     fn native(self, cx: &App, build: fn(Native<'_>) -> StyleRefinement) -> Self {
         refined(self, native_geometry(cx, build).as_ref())
     }
+
+    /// `.demo_frame(cx)`: the one frame this showcase draws around a
+    /// demonstration.
+    ///
+    /// Every card, box and bordered row the showcase draws for its own
+    /// purposes goes through this, so they agree with one another and follow
+    /// the selected theme instead of a number someone typed once: the colour
+    /// is `Theme::border` (the connector fills it from
+    /// `defaults.border.color`), the radius is `Theme::radius` (from
+    /// `defaults.border.corner_radius`), and the line width is the platform's
+    /// `defaults.border.line_width` — 0.5 px on macOS and iOS, 1 px
+    /// elsewhere. It clips, because a child that paints its own background to
+    /// the edge would otherwise show through the rounded corners.
+    ///
+    /// A box that stands for a widget takes that widget's border instead —
+    /// the List and the Tree take `geometry::list`.
+    fn demo_frame(self, cx: &App) -> Self {
+        let theme = cx.theme();
+        let (colour, radius) = (theme.border, theme.radius);
+        self.border(demo_border_width(cx))
+            .border_color(colour)
+            .rounded(radius)
+            .overflow_hidden()
+    }
 }
 impl<W: Styled> NativeStyled for W {}
+
+/// The line width of a frame the showcase draws: the platform's own, or the
+/// 1 px `border_1()` asks for where no native theme is installed yet. The
+/// fallback is gpui's own width, never a theme value.
+fn demo_border_width(cx: &App) -> Pixels {
+    native_value(cx, |n| px(n.resolved.defaults.border.line_width)).unwrap_or(px(1.0))
+}
 
 /// Hand the images a cache is about to replace back to gpui.
 ///
@@ -768,20 +800,16 @@ fn native_group_box(cx: &App) -> GroupBox {
     }
 }
 
-fn color_swatch(name: &str, color: Hsla) -> impl IntoElement {
+/// `frame` is the showcase's own `demo_frame`, built once by the caller: the
+/// fill is the datum this swatch exists to show, and everything around it is
+/// the same box every other demonstration in the showcase sits in.
+fn color_swatch(name: &str, color: Hsla, frame: &StyleRefinement) -> Div {
     let hex = hsla_to_hex(color);
     let label_text: SharedString = format!("{} {}", name, hex).into();
     h_flex()
         .gap_2()
         .items_center()
-        .child(
-            div()
-                .size(px(16.0))
-                .rounded(px(2.0))
-                .bg(color)
-                .border_1()
-                .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3)),
-        )
+        .child(refined(div().size(px(16.0)).bg(color), Some(frame)))
         .child(Label::new(label_text).text_sm())
 }
 
@@ -4262,9 +4290,7 @@ impl Showcase {
                             .child(
                                 div()
                                     .h(px(240.0))
-                                    .border_1()
-                                    .border_color(t.border)
-                                    .rounded(t.radius)
+                                    .demo_frame(cx)
                                     .child({
                                         // The data stays with the caller; the
                                         // state owns only the virtual list's
@@ -4685,10 +4711,13 @@ impl Showcase {
                         v_flex()
                             .gap_2()
                             .w(px(360.0))
-                            .child(Skeleton::new().h(px(12.0)).w(px(200.0)).rounded(px(4.0)))
-                            .child(Skeleton::new().h(px(8.0)).w(px(300.0)).rounded(px(4.0)))
-                            .child(Skeleton::new().h(px(8.0)).w(px(250.0)).rounded(px(4.0)))
-                            .child(Skeleton::new().secondary().h(px(60.0)).rounded(px(6.0))),
+                            // The placeholder's rounding is the theme's, not a
+                            // number of its own; the block keeps the larger of
+                            // the two roundings this section always had.
+                            .child(Skeleton::new().h(px(12.0)).w(px(200.0)).rounded(t.radius))
+                            .child(Skeleton::new().h(px(8.0)).w(px(300.0)).rounded(t.radius))
+                            .child(Skeleton::new().h(px(8.0)).w(px(250.0)).rounded(t.radius))
+                            .child(Skeleton::new().secondary().h(px(60.0)).rounded(t.radius_lg)),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -5436,6 +5465,7 @@ impl Showcase {
         group: &'static ResizableGroup,
         fi: &str,
         t: &Theme,
+        cx: &App,
     ) -> impl IntoElement {
         let panels = group.panels.iter().map(|panel| {
             let body = v_flex()
@@ -5456,8 +5486,7 @@ impl Showcase {
             .id(group.id)
             .debug_selector(|| group.id.into())
             .h(px(group.height))
-            .border(px(RESIZABLE_BORDER))
-            .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+            .demo_frame(cx)
             .child(panel_group.children(panels))
             .on_hover(self.hover_info(
                 fi,
@@ -5600,8 +5629,7 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-title-bar")
-                    .border_1()
-                    .border_color(t.border)
+                    .demo_frame(cx)
                     .child(
                         TitleBar::new()
                             .native(cx, geometry::title_bar)
@@ -5679,8 +5707,7 @@ impl Showcase {
                         )
                         .items_center()
                         .bg(t.tab_bar)
-                        .border_1()
-                        .border_color(t.border)
+                        .demo_frame(cx)
                         .child(native_icon(cx, IconName::Search, geometry::icon_size_toolbar))
                         .child(native_icon(cx, IconName::Copy, geometry::icon_size_toolbar))
                         .child(native_icon(cx, IconName::Settings, geometry::icon_size_toolbar))
@@ -5713,8 +5740,7 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-status-bar")
-                    .border_1()
-                    .border_color(t.border)
+                    .demo_frame(cx)
                     .child(
                         StatusBar::new()
                             .native(cx, geometry::status_bar)
@@ -5750,7 +5776,7 @@ impl Showcase {
                     .child(
                         with_padding(
                             with_gap(
-                                v_flex().border_1().border_color(t.border),
+                                v_flex().demo_frame(cx),
                                 section_gap,
                             ),
                             window_margin,
@@ -5758,7 +5784,7 @@ impl Showcase {
                         .child(
                             with_padding(
                                 with_gap(
-                                    h_flex().border_1().border_color(t.border),
+                                    h_flex().demo_frame(cx),
                                     widget_gap,
                                 ),
                                 container_margin,
@@ -5785,7 +5811,7 @@ impl Showcase {
                 v_flex()
                     .gap_5()
                     .child(section(group.heading))
-                    .child(self.render_resizable_group(group, &fi, &t))
+                    .child(self.render_resizable_group(group, &fi, &t, cx))
             }))
             // Dividers
             .child(section("Separator (solid / dashed / labeled)"))
@@ -5861,8 +5887,7 @@ impl Showcase {
                             .id("scroll-demo-outer")
                             .h(px(150.0))
                             .w_full()
-                            .border_1()
-                            .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                            .demo_frame(cx)
                             .overflow_y_scrollbar()
                             .native(cx, geometry::scrollbar_gutter)
                             .child(v_flex().gap_2().p_3().children((0..20).map(|i| {
@@ -6328,9 +6353,7 @@ impl Showcase {
                     .id("tt-sidebar")
                     .h(px(240.0))
                     .w(px(280.0))
-                    .border_1()
-                    .border_color(t.border)
-                    .overflow_hidden()
+                    .demo_frame(cx)
                     .child(
                         // A sidebar is the panel `defaults.icon_sizes.panel`
                         // names, and `SidebarMenuItem` keeps the icon it is
@@ -6389,8 +6412,7 @@ impl Showcase {
                     .h(px(320.0))
                     .w_full()
                     .occlude()
-                    .border_1()
-                    .border_color(t.border)
+                    .demo_frame(cx)
                     .overflow_y_scroll()
                     .child(
                         Settings::new("settings-demo")
@@ -6492,8 +6514,7 @@ impl Showcase {
                 div()
                     .id("tt-app-menu-bar")
                     .w_full()
-                    .border_1()
-                    .border_color(t.border)
+                    .demo_frame(cx)
                     .child(self.app_menu_bar.clone())
                     .on_hover(self.hover_info(
                         &fi,
@@ -6824,9 +6845,7 @@ impl Showcase {
                             .id("ctx-menu-area")
                             .p_6()
                             .w_full()
-                            .rounded(px(6.0))
-                            .border_1()
-                            .border_color(t.border)
+                            .demo_frame(cx)
                             .bg(t.secondary)
                             .child(
                                 Label::new("Right-click anywhere in this area")
@@ -6920,9 +6939,7 @@ impl Showcase {
                             .w(px(220.0))
                             .bg(t.popover)
                             .text_color(t.popover_foreground)
-                            .border_1()
-                            .border_color(t.border)
-                            .rounded(t.radius)
+                            .demo_frame(cx)
                             .child(row("mi-cut", IconName::Delete, "Cut"))
                             .child(row("mi-copy", IconName::Copy, "Copy"))
                             .child(row("mi-paste", IconName::Inbox, "Paste"))
@@ -7237,7 +7254,7 @@ impl Showcase {
     }
 
     /// Build the "Animated Icons" section for the Icons tab.
-    fn render_animated_icons_section(&self) -> impl IntoElement {
+    fn render_animated_icons_section(&self, cx: &App) -> impl IntoElement {
         let mut cards: Vec<AnyElement> = Vec::new();
 
         if self.reduced_motion {
@@ -7250,9 +7267,7 @@ impl Showcase {
                         .items_center()
                         .gap_2()
                         .p_4()
-                        .rounded_md()
-                        .border_1()
-                        .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                        .demo_frame(cx)
                         .child(gpui::img(source.clone()).size(px(32.)))
                         .child(Label::new(label_text).text_xs())
                         .into_any_element(),
@@ -7272,9 +7287,7 @@ impl Showcase {
                             .items_center()
                             .gap_2()
                             .p_4()
-                            .rounded_md()
-                            .border_1()
-                            .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                            .demo_frame(cx)
                             .child(gpui::img(source.clone()).size(px(32.)))
                             .child(Label::new(label_text).text_xs())
                             .into_any_element(),
@@ -7295,9 +7308,7 @@ impl Showcase {
                         .items_center()
                         .gap_2()
                         .p_4()
-                        .rounded_md()
-                        .border_1()
-                        .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                        .demo_frame(cx)
                         .child(
                             div()
                                 .size(px(32.))
@@ -7327,7 +7338,7 @@ impl Showcase {
             section_el = section_el.child(
                 Label::new("(prefers-reduced-motion: showing static frames)")
                     .text_xs()
-                    .text_color(gpui::hsla(0.0, 0.0, 0.5, 1.0)),
+                    .text_color(cx.theme().muted_foreground),
             );
         }
 
@@ -7337,7 +7348,7 @@ impl Showcase {
             section_el = section_el.child(
                 Label::new("No animated icons available for current icon sets")
                     .text_xs()
-                    .text_color(gpui::hsla(0.0, 0.0, 0.5, 1.0)),
+                    .text_color(cx.theme().muted_foreground),
             );
         }
 
@@ -7347,8 +7358,9 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Icons
     // -----------------------------------------------------------------------
-    fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement + InteractiveElement {
+    fn render_icons_tab(&self, cx: &mut Context<Self>) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
+        let t = cx.theme().clone();
 
         // --- Native Theme Icons section ---
         let fallback_label = if !is_native_icon_set(&self.icon_set_name) {
@@ -7418,8 +7430,8 @@ impl Showcase {
                         div()
                             .w(px(20.0))
                             .h(px(20.0))
-                            .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
-                            .rounded(px(2.0))
+                            .bg(t.skeleton)
+                            .rounded(t.radius)
                     }
                 } else if let Some(img_source) =
                     self.loaded_icon_sources.get(i).and_then(|s| s.clone())
@@ -7427,11 +7439,13 @@ impl Showcase {
                     div().child(gpui::img(img_source).w(px(20.0)).h(px(20.0)))
                 } else {
                     // No icon data -- gray placeholder
+                    // A missing icon leaves the placeholder the theme names
+                    // for one, at the theme's own rounding.
                     div()
                         .w(px(20.0))
                         .h(px(20.0))
-                        .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
-                        .rounded(px(2.0))
+                        .bg(t.skeleton)
+                        .rounded(t.radius)
                 };
 
                 // Build tooltip text with origin info
@@ -7507,11 +7521,13 @@ impl Showcase {
                     div().child(gpui::img(img_source).w(px(20.0)).h(px(20.0)))
                 } else {
                     // Gray placeholder — no fallback to a different icon set
+                    // A missing icon leaves the placeholder the theme names
+                    // for one, at the theme's own rounding.
                     div()
                         .w(px(20.0))
                         .h(px(20.0))
-                        .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
-                        .rounded(px(2.0))
+                        .bg(t.skeleton)
+                        .rounded(t.radius)
                 };
 
                 let tooltip_name = name.to_string();
@@ -7578,7 +7594,7 @@ impl Showcase {
             .gap_3()
             .p_4()
             // Animated Icons section
-            .child(self.render_animated_icons_section())
+            .child(self.render_animated_icons_section(cx))
             .child(Separator::horizontal())
             // Native Theme Icons section
             .child(section(native_section_title))
@@ -7624,6 +7640,11 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let _fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
+        // Built once and shadowed onto the name the swatches below already
+        // call, so every swatch sits in the showcase's one frame without the
+        // theme being reached for a hundred and forty times.
+        let swatch_frame = StyleRefinement::default().demo_frame(cx);
+        let color_swatch = |name: &str, color: Hsla| color_swatch(name, color, &swatch_frame);
 
         v_flex()
             .gap_4()
@@ -8105,8 +8126,8 @@ impl Render for Showcase {
                     .id("error-banner")
                     .px_4()
                     .py_2()
-                    .bg(gpui::hsla(0.0, 0.7, 0.2, 1.0))
-                    .text_color(gpui::hsla(0.0, 0.0, 1.0, 1.0))
+                    .bg(theme.danger)
+                    .text_color(theme.danger_foreground)
                     .child(Label::new(msg.clone()).text_size(px(12.0))),
             );
         }
@@ -9240,7 +9261,8 @@ mod tests {
                 Axis::Horizontal => bounds.size.width,
                 Axis::Vertical => bounds.size.height,
             };
-            let room = outer - px(2.0 * RESIZABLE_BORDER);
+            let border = cx.update(|_w, cx| demo_border_width(cx));
+            let room = outer - border * 2.;
             let needed = PANEL_MIN_SIZE * group.panels.len() as f32;
             assert!(
                 room > needed,

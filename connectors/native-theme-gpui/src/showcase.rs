@@ -45,12 +45,17 @@ fn public_fns(source: &str) -> Vec<&str> {
 }
 
 /// `source` with its `//` line comments and its string literals removed, the
-/// code around them untouched.
+/// code around them untouched and its line breaks kept.
 ///
 /// Scanning has to know where a string begins and ends either way: the
 /// showcase holds URLs and a raw string of Rust source with doc comments in
 /// it, and a `//` inside either is not a comment -- dropping the rest of those
 /// lines would hide the code that follows them.
+///
+/// A removed span leaves its newlines behind, so a line number in the result
+/// is a line number in the file: `the_showcase_hardcodes_no_style_values`
+/// names the line it found something on, and the showcase holds a multi-line
+/// raw string.
 fn without_comments_or_strings(source: &str) -> String {
     let mut out = String::with_capacity(source.len());
     let mut rest = source;
@@ -68,14 +73,18 @@ fn without_comments_or_strings(source: &str) -> String {
             out.push_str(&from[..len]);
             rest = &from[len..];
         } else if let Some(body) = from.strip_prefix('"') {
-            rest = &body[end_of_string(body, "\"")..];
+            let end = end_of_string(body, "\"");
+            push_newlines_of(&mut out, &body[..end]);
+            rest = &body[end..];
         } else if let Some(hashes) = raw_string_hashes(from) {
             let open = hashes + 2;
             let close = format!("\"{}", "#".repeat(hashes));
-            rest = match from[open..].find(&close) {
-                Some(ix) => &from[open + ix + close.len()..],
-                None => "",
+            let end = match from[open..].find(&close) {
+                Some(ix) => open + ix + close.len(),
+                None => from.len(),
             };
+            push_newlines_of(&mut out, &from[..end]);
+            rest = &from[end..];
         } else {
             let end = char_len(from);
             out.push_str(&from[..end]);
@@ -84,6 +93,12 @@ fn without_comments_or_strings(source: &str) -> String {
     }
     out.push_str(rest);
     out
+}
+
+/// Keep the line breaks of a span that is being removed, so what follows it
+/// stays on the line it is written on.
+fn push_newlines_of(out: &mut String, removed: &str) {
+    out.extend(removed.chars().filter(|c| *c == '\n'));
 }
 
 /// The number of `#`s of a raw string starting at `from`, or `None` if `from`
@@ -190,6 +205,213 @@ fn the_showcase_exercises_every_builder() {
          so nothing demonstrates them: {}",
         missing.len(),
         missing.join(", ")
+    );
+}
+
+// ---------------------------------------------------------------------------
+// No hardcoded style values in the showcase
+// ---------------------------------------------------------------------------
+//
+// Spec §6a: a showcase demonstrates the theme, so every radius and every
+// colour it paints has to come from the theme. The call shapes below are the
+// ways a literal reaches a pixel: a tailwind radius helper, a radius setter
+// given a number, and a colour setter given a colour constructor. Line widths
+// (`border_1()` and friends) are not listed -- gpui offers no other way to ask
+// for a border, and the width the platform states arrives through
+// `demo_frame`, which every frame in the showcase goes through.
+
+/// Radius helpers that carry a number of their own.
+const RADIUS_HELPERS: &[&str] = &[
+    "rounded_sm",
+    "rounded_md",
+    "rounded_lg",
+    "rounded_xl",
+    "rounded_2xl",
+    "rounded_3xl",
+    "rounded_full",
+];
+
+/// Radius setters, which take a length: a literal one is the finding.
+const RADIUS_SETTERS: &[&str] = &[
+    "rounded",
+    "rounded_t",
+    "rounded_b",
+    "rounded_l",
+    "rounded_r",
+    "rounded_tl",
+    "rounded_tr",
+    "rounded_bl",
+    "rounded_br",
+];
+
+/// Colour setters, which take an `Hsla`: a literal one is the finding.
+const COLOUR_SETTERS: &[&str] = &["bg", "border_color", "text_color"];
+
+/// The ways gpui spells a colour out in source.
+const COLOUR_LITERALS: &[&str] = &[
+    "hsla(",
+    "rgb(",
+    "rgba(",
+    "rgbf(",
+    "black()",
+    "white()",
+    "red()",
+    "green()",
+    "blue()",
+    "yellow()",
+    "transparent_black()",
+    "transparent_white()",
+    "opaque_grey(",
+];
+
+/// The sites the rule does not reach, by the name of the `fn` they are in,
+/// with the reason.
+///
+/// Keyed on the enclosing function, not on a marker comment: the source is
+/// read with its comments removed, so a `// swatch:` note beside the call
+/// would be invisible here. A colour that IS the datum on display -- a swatch
+/// of a named colour, a chart series -- belongs on this list; a colour that
+/// merely paints a box does not.
+const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[(
+    "the_detector_reads_the_call_and_not_the_line",
+    "the detector's own sample source",
+)];
+
+/// What the showcase hardcodes, as `line: what, in fn`.
+///
+/// `source` is read as written, so the line numbers are the file's; the
+/// scan is over the same text with comments and strings removed, which is
+/// where a mention of a call is told from the call itself.
+fn hardcoded_style_values(source: &str, allowed: &[(&str, &str)]) -> Vec<String> {
+    let stripped = without_comments_or_strings(source);
+    let mut found = Vec::new();
+    let mut in_fn = "";
+    for (ix, line) in stripped.lines().enumerate() {
+        if let Some(name) = fn_name_on(line) {
+            in_fn = name;
+        }
+        if allowed.iter().any(|(f, _)| *f == in_fn) {
+            continue;
+        }
+        let mut report =
+            |what: String| found.push(format!("{}: {what} in {in_fn} — {}", ix + 1, line.trim()));
+        for helper in RADIUS_HELPERS {
+            if line.contains(&format!(".{helper}()")) {
+                report(format!(".{helper}()"));
+            }
+        }
+        for setter in RADIUS_SETTERS {
+            let call = format!(".{setter}(");
+            for (at, _) in line.match_indices(&call) {
+                let arg = argument_at(line, at + call.len());
+                if starts_with_number_literal(arg) {
+                    report(format!(".{setter}(px(…))"));
+                }
+            }
+        }
+        for setter in COLOUR_SETTERS {
+            let call = format!(".{setter}(");
+            for (at, _) in line.match_indices(&call) {
+                let arg = argument_at(line, at + call.len());
+                if let Some(lit) = COLOUR_LITERALS.iter().find(|lit| arg.starts_with(**lit)) {
+                    report(format!(".{setter}({lit}…)"));
+                }
+            }
+        }
+    }
+    found
+}
+
+/// The name of the function `line` declares, if it declares one.
+fn fn_name_on(line: &str) -> Option<&str> {
+    let after = line.split_once("fn ")?.1;
+    let end = after.find(|c: char| !c.is_alphanumeric() && c != '_')?;
+    let name = after.get(..end)?;
+    (!name.is_empty()).then_some(name)
+}
+
+/// The argument written at `at`, with a `gpui::`, `px(` or `gpui::px(`
+/// wrapper stepped over, so `.rounded(gpui::px(4.0))` reads as `4.0))`.
+fn argument_at(line: &str, at: usize) -> &str {
+    let mut arg = line.get(at..).unwrap_or("").trim_start();
+    for prefix in ["gpui::", "px(", "gpui::px("] {
+        if let Some(rest) = arg.strip_prefix(prefix) {
+            arg = rest.trim_start();
+        }
+    }
+    arg
+}
+
+/// Whether `arg` opens with a number written out.
+fn starts_with_number_literal(arg: &str) -> bool {
+    arg.starts_with(|c: char| c.is_ascii_digit())
+}
+
+/// Spec §6a: no showcase paints a radius or a colour of its own invention.
+#[test]
+fn the_showcase_hardcodes_no_style_values() {
+    let found = hardcoded_style_values(SHOWCASE, ALLOWED_STYLE_LITERALS);
+    assert!(
+        found.is_empty(),
+        "examples/showcase-gpui.rs paints {} value(s) the theme did not give it; \
+         a frame goes through `demo_frame`, a widget radius through its \
+         `geometry` builder, and a colour that IS the datum goes on \
+         ALLOWED_STYLE_LITERALS with its reason:\n{}",
+        found.len(),
+        found.join("\n")
+    );
+}
+
+/// The detector has to read the call, not the line, and the allow-list has to
+/// be the only way past it.
+#[test]
+fn the_detector_reads_the_call_and_not_the_line() {
+    let source = "fn painted() {\n\
+                  div().rounded_md();\n\
+                  div().rounded(px(4.0));\n\
+                  div().rounded_tl(gpui::px(8.));\n\
+                  div().bg(gpui::hsla(0.0, 0.0, 0.5, 0.2));\n\
+                  div().border_color(rgb(0x112233));\n\
+                  div().text_color(gpui::white());\n\
+                  }\n";
+    let found = hardcoded_style_values(source, &[]);
+    assert_eq!(
+        found.len(),
+        6,
+        "one finding per painted literal was expected: {found:?}"
+    );
+    assert!(
+        found.iter().all(|f| f.contains("in painted")),
+        "the enclosing fn was not carried into the finding: {found:?}"
+    );
+    assert!(
+        found.iter().any(|f| f.starts_with("2: .rounded_md()")),
+        "the line number is not the file's: {found:?}"
+    );
+
+    // The theme's own values, a comment and a string are not findings.
+    let clean = "fn themed() {\n\
+                 // div().rounded_md();\n\
+                 let note = \"div().bg(hsla(0.0, 0.0, 0.5, 0.2))\";\n\
+                 div().rounded(t.radius).bg(t.muted).border_color(theme.border);\n\
+                 div().rounded(theme.radius_lg).text_color(t.muted_foreground);\n\
+                 }\n";
+    assert_eq!(hardcoded_style_values(clean, &[]), Vec::<String>::new());
+
+    // A line number still points at the file after a multi-line raw string.
+    let after_raw = "fn spanning() {\n\
+                     let code = r#\"one\ntwo\nthree\"#;\n\
+                     div().rounded_full();\n\
+                     }\n";
+    assert_eq!(
+        hardcoded_style_values(after_raw, &[]),
+        vec!["5: .rounded_full() in spanning — div().rounded_full();".to_string()]
+    );
+
+    // The allow-list is keyed on the enclosing fn.
+    assert_eq!(
+        hardcoded_style_values(source, &[("painted", "a sample")]),
+        Vec::<String>::new()
     );
 }
 
