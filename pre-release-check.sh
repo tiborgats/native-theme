@@ -482,6 +482,24 @@ for crate in $WORKSPACE_CRATES; do
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: iced connector configurations
+#
+# The per-crate loops above run the connector with its default features only.
+# Its other two supported configurations are gated here: `--no-default-features`
+# (no icon support) and `--features iced_aw`, the optional widget set the
+# showcase's `iced_aw` tab renders. Same hard class as the connector's default
+# test and clippy checks. .github/workflows/ci.yml runs the same two commands,
+# so no configuration reaches a release that CI never saw.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "iced connector configurations"
+run_tests "test (native-theme-iced, no features)" \
+    cargo test -p native-theme-iced --no-default-features
+run_tests "test (native-theme-iced, iced_aw)" \
+    cargo test -p native-theme-iced --features iced_aw
+run_check "clippy (native-theme-iced, iced_aw)" \
+    cargo clippy -p native-theme-iced --all-targets --features iced_aw -- -D warnings
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section: examples (only crates with an examples/ directory)
 # ─────────────────────────────────────────────────────────────────────────────
 EXAMPLES_PRINTED=0
@@ -502,6 +520,31 @@ for crate in $WORKSPACE_CRATES; do
         run_check "examples ($crate)" cargo build -p "$crate" --examples
     fi
 done
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: widget coverage
+#
+# scripts/check-widget-coverage.py reads the toolkits' own sources through
+# `cargo metadata` (the iced manifest with `--features iced_aw`, so the
+# optional dependency is in the graph) and fails when an upstream release adds
+# a widget that neither showcase renders nor docs/showcase-exceptions.toml
+# excepts, or when an exception has gone stale. Its `tomllib` import puts the
+# floor at Python 3.11: a missing or older interpreter fails the check rather
+# than skipping it, since a gate nobody runs is not a gate. CI and the nightly
+# dependency canary run the same script.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Widget coverage"
+if ! command -v python3 &>/dev/null; then
+    print_fail "python3 not found — scripts/check-widget-coverage.py needs Python 3.11+"
+    exit 1
+fi
+if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then
+    PYTHON_VERSION=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
+    print_fail "python3 is $PYTHON_VERSION — scripts/check-widget-coverage.py needs 3.11+ (tomllib)"
+    exit 1
+fi
+run_check "widget coverage (gpui · iced_widget · iced_aw)" \
+    python3 scripts/check-widget-coverage.py
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
