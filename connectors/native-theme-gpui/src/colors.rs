@@ -322,12 +322,18 @@ fn assign_buttons(tc: &mut ThemeColor) {
     // Ordinary push button = secondary; native themes do not distinguish a
     // "default" from a "secondary" button, so both groups take the same values.
     tc.button = tc.secondary;
-    tc.button_hover = tc.secondary_hover;
-    tc.button_active = tc.secondary_active;
+    // A filled button paints its own fill and upstream replaces that fill per
+    // state, while the platform *layers* its hover and pressed colours over it
+    // (spec §3.2, C17). So the layer is composited over the idle fill; for an
+    // opaque value `blend` is the identity, so there is no branch. Windows 11
+    // is the one preset where it shows: 4% black over `#fdfdfd` is `#f3f3f3`,
+    // not 4% black over whatever is behind the button.
+    tc.button_hover = tc.button.blend(tc.secondary_hover);
+    tc.button_active = tc.button.blend(tc.secondary_active);
     tc.button_foreground = tc.secondary_foreground;
     tc.button_secondary = tc.secondary;
-    tc.button_secondary_hover = tc.secondary_hover;
-    tc.button_secondary_active = tc.secondary_active;
+    tc.button_secondary_hover = tc.button_secondary.blend(tc.secondary_hover);
+    tc.button_secondary_active = tc.button_secondary.blend(tc.secondary_active);
     tc.button_secondary_foreground = tc.secondary_foreground;
 
     tc.button_primary = tc.primary;
@@ -851,12 +857,18 @@ mod tests {
             "danger_hover should differ from danger"
         );
 
-        // Phase 54: secondary_hover and list_hover now come from resolved theme
+        // C17: a filled button replaces its fill per state, so the platform's
+        // hover layer is composited over that fill; `secondary_hover` keeps it
+        // raw for its transparent-idle readers, which
+        // `direct_theme_reads_match_resolved_fields` covers. Over all sixteen
+        // presets both claims are contract rows.
         assert_eq!(
-            tc.secondary_hover,
-            rgba_to_hsla(resolved.button.hover_background),
-            "secondary_hover should match resolved.button.hover_background"
+            tc.button_hover,
+            rgba_to_hsla(resolved.button.background_color)
+                .blend(rgba_to_hsla(resolved.button.hover_background)),
+            "button_hover should composite button.hover_background over the button's own fill"
         );
+        // Phase 54: list_hover comes from the resolved theme
         assert_eq!(
             tc.list_hover,
             rgba_to_hsla(resolved.list.hover_background),

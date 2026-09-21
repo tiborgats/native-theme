@@ -206,12 +206,6 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     Row {
-        slot: "button_hover",
-        native: |r| r.button.hover_background,
-        get: |tc| tc.button_hover,
-        exceptions: &[],
-    },
-    Row {
         slot: "button_secondary",
         native: |r| r.button.background_color,
         get: |tc| tc.button_secondary,
@@ -221,12 +215,6 @@ const ROWS: &[Row] = &[
         slot: "button_secondary_foreground",
         native: |r| r.button.font.color,
         get: |tc| tc.button_secondary_foreground,
-        exceptions: &[],
-    },
-    Row {
-        slot: "button_secondary_hover",
-        native: |r| r.button.hover_background,
-        get: |tc| tc.button_secondary_hover,
         exceptions: &[],
     },
     Row {
@@ -585,6 +573,60 @@ const ROWS: &[Row] = &[
     },
 ];
 
+/// Composite `layer` over `base`: straight-alpha source-over, so a row's
+/// expected value is what the screen shows rather than the layer alone.
+///
+/// Written here rather than taken from `Hsla::blend`, which the connector
+/// calls: an expectation computed with the code under test would agree with
+/// anything. The two agree bit for bit where `base` is opaque -- the same two
+/// products, added in the same order -- and
+/// `every_preset_states_an_opaque_button_fill` shows that is every
+/// combination, so the translucent-base arm is the general rule rather than a
+/// tolerance introduced to make a row pass.
+fn over(layer: Hsla, base: Hsla) -> Hsla {
+    if layer.a >= 1.0 {
+        return layer;
+    }
+    if layer.a <= 0.0 {
+        return base;
+    }
+    let (l, b) = (gpui::Rgba::from(layer), gpui::Rgba::from(base));
+    if b.a >= 1.0 {
+        let mix = |l: f32, b: f32| (b * (1.0 - layer.a)) + (l * layer.a);
+        return gpui::Rgba {
+            r: mix(l.r, b.r),
+            g: mix(l.g, b.g),
+            b: mix(l.b, b.b),
+            a: b.a,
+        }
+        .into();
+    }
+    let under = b.a * (1.0 - layer.a);
+    let alpha = layer.a + under;
+    if alpha <= 0.0 {
+        return gpui::Rgba {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 0.0,
+        }
+        .into();
+    }
+    let mix = |l: f32, b: f32| ((l * layer.a) + (b * under)) / alpha;
+    gpui::Rgba {
+        r: mix(l.r, b.r),
+        g: mix(l.g, b.g),
+        b: mix(l.b, b.b),
+        a: alpha,
+    }
+    .into()
+}
+
+/// The idle fill a filled button paints, which its state layers sit on.
+fn native_button_fill(r: &ResolvedTheme) -> Hsla {
+    rgba_to_hsla(r.button.background_color)
+}
+
 /// The pressed fill the platform gives an ordinary button.
 ///
 /// `button.active_background` is a soft option: where the platform states
@@ -610,17 +652,46 @@ const COMPUTED_ROWS: &[ComputedRow] = &[
         get: |tc| tc.secondary_active,
         exceptions: &[],
     },
+    // The four filled-button tokens: a `Default` or `Secondary` button paints
+    // its own fill and upstream replaces that fill per state, so the
+    // platform's hover and pressed layers are composited over it (C17).
+    // Windows 11 is the one preset where the layer is translucent and the
+    // compositing is therefore visible; everywhere else it is the identity.
+    ComputedRow {
+        slot: "button_hover",
+        source: "button.hover_background over button.background_color",
+        native: |r, _| {
+            over(
+                rgba_to_hsla(r.button.hover_background),
+                native_button_fill(r),
+            )
+        },
+        get: |tc| tc.button_hover,
+        exceptions: &[],
+    },
+    ComputedRow {
+        slot: "button_secondary_hover",
+        source: "button.hover_background over button.background_color",
+        native: |r, _| {
+            over(
+                rgba_to_hsla(r.button.hover_background),
+                native_button_fill(r),
+            )
+        },
+        get: |tc| tc.button_secondary_hover,
+        exceptions: &[],
+    },
     ComputedRow {
         slot: "button_active",
-        source: "the pressed fill of `secondary_active`",
-        native: native_pressed_fill,
+        source: "the pressed fill of `secondary_active` over button.background_color",
+        native: |r, is_dark| over(native_pressed_fill(r, is_dark), native_button_fill(r)),
         get: |tc| tc.button_active,
         exceptions: &[],
     },
     ComputedRow {
         slot: "button_secondary_active",
-        source: "the pressed fill of `secondary_active`",
-        native: native_pressed_fill,
+        source: "the pressed fill of `secondary_active` over button.background_color",
+        native: |r, is_dark| over(native_pressed_fill(r, is_dark), native_button_fill(r)),
         get: |tc| tc.button_secondary_active,
         exceptions: &[],
     },
@@ -820,6 +891,31 @@ fn the_contract_covers_sixteen_presets_in_both_modes() -> crate::Result<()> {
         32,
         "the contract asserts over 16 presets x 2 modes; a shrinking preset \
          list must not silently narrow it"
+    );
+    Ok(())
+}
+
+/// Every preset paints its buttons on an opaque fill.
+///
+/// `over` keeps the base's alpha where the base is opaque, which is the arm
+/// the four filled-button rows take and the only one that agrees bit for bit
+/// with the `Hsla::blend` the connector calls. A translucent idle fill would
+/// move those rows onto the general arm, where agreement is no longer exact,
+/// so the assumption is asserted rather than remembered.
+#[test]
+fn every_preset_states_an_opaque_button_fill() -> crate::Result<()> {
+    let combinations = combinations()?;
+    let translucent: Vec<String> = combinations
+        .iter()
+        .filter(|c| native_button_fill(&c.resolved).a < 1.0)
+        .map(|c| format!("{}: {}", c.label(), show(native_button_fill(&c.resolved))))
+        .collect();
+    assert!(
+        translucent.is_empty(),
+        "{} combination(s) state a translucent button fill, which the \
+         filled-button rows composite onto:\n{}",
+        translucent.len(),
+        translucent.join("\n")
     );
     Ok(())
 }
