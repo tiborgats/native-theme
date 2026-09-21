@@ -58,7 +58,7 @@
 //! | Target | Fields | Source |
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
-//! | `Extended` overrides (8) | secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
+//! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
 //! | Widget metrics | button/input padding, border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
@@ -98,8 +98,9 @@ pub use native_theme::detect::LinuxDesktop;
 ///
 /// Builds a custom theme using `Theme::custom_with_fn()`, which:
 /// 1. Maps the 6 Palette fields from resolved theme colors via [`palette::to_palette()`]
-/// 2. Generates an Extended palette, then overrides secondary, background.weak,
-///    and status-family `.base.text` entries via `extended::apply_overrides()`
+/// 2. Generates an Extended palette, then overrides `background.base.text`,
+///    secondary, background.weak and the status-family `.base.text` entries
+///    via `extended::apply_overrides()`
 ///
 /// The resulting theme carries the mapped Palette and Extended palette. iced's
 /// built-in Catalog trait implementations for all 8 core widgets (Button,

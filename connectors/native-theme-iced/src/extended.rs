@@ -60,6 +60,7 @@ pub(crate) fn contrast_ratio(a: iced_core::Color, b: iced_core::Color) -> f32 {
 /// Override auto-generated Extended palette entries with resolved theme fields.
 ///
 /// Always applies these overrides (all fields guaranteed populated):
+/// - `background.base.text` <- foreground text color
 /// - `secondary.base` <- placeholder color, labelled by the window's text
 /// - `secondary.strong` <- a copy of `secondary.base`
 /// - `background.weak.color` <- surface color
@@ -73,14 +74,21 @@ pub(crate) fn contrast_ratio(a: iced_core::Color, b: iced_core::Color) -> f32 {
 /// redundant because `Extended::generate()` already sets them correctly
 /// from the base palette. Only the `.base.text` fields need overriding
 /// because the auto-generation uses `defaults.text_color` instead of the
-/// per-status foreground colors.
+/// per-status foreground colors. `background.base.text` is overridden for a
+/// different reason: the auto-generation does start from `defaults.text_color`
+/// there, but passes it through `readable()`, which swaps it for one of its own
+/// whenever the platform's pair falls below iced's contrast threshold.
 pub(crate) fn apply_overrides(
     extended: &mut iced_core::theme::palette::Extended,
     colors: &OverrideColors,
 ) {
-    // Ordering: the label is read from `background.base.text` as iced
-    // generated it, so an override of that slot would have to be written
-    // above this line to reach it.
+    // What iced paints inherited text with: `Base::base` reads this slot for
+    // every widget that states no color of its own, and `Extended::generate`
+    // passes the platform's text color through `readable()`, which substitutes
+    // another whenever the contrast falls below its own threshold.
+    extended.background.base.text = to_color(colors.foreground);
+    // Ordering: the label is read from `background.base.text`, which the line
+    // above has just set to the platform's, so the pair is labelled natively.
     extended.secondary.base =
         Pair::new(to_color(colors.placeholder), extended.background.base.text);
     // A hovered `button::secondary` keeps the base label and swaps only the
@@ -164,6 +172,20 @@ mod tests {
         assert_eq!(
             extended.secondary.strong, extended.secondary.base,
             "secondary.strong should be a copy of secondary.base, label included"
+        );
+    }
+
+    #[test]
+    fn apply_overrides_sets_background_base_text() {
+        let mut extended = make_extended();
+        let resolved = make_resolved(false);
+
+        apply_from_resolved(&mut extended, &resolved);
+
+        let expected = to_color(resolved.defaults.text_color);
+        assert_eq!(
+            extended.background.base.text, expected,
+            "background.base.text should match resolved.defaults.text_color"
         );
     }
 

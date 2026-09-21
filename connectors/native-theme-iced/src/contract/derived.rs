@@ -10,9 +10,13 @@
 /// neither -- that is the whole of the tripwire (section 5.2).
 pub(super) const DERIVED: &[(&str, &str)] = &[
     (
+        "extended.background.base.color",
+        "iced: Extended::generate(palette).background.base.color, from palette.background",
+    ),
+    (
         "extended.secondary.base.text",
         "Pair::new(input.placeholder_color, extended.background.base.text) -- \
-         the label iced already chose for the window",
+         the window's own label, which the connector sets from defaults.text_color",
     ),
     (
         "extended.secondary.strong.text",

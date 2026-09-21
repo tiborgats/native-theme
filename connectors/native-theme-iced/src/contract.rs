@@ -1034,6 +1034,12 @@ fn written_extended_fields(extended: &Extended) -> Vec<&'static str> {
     );
     leaves!(
         out,
+        extended.background.base,
+        "extended.background.base",
+        Pair { color, text }
+    );
+    leaves!(
+        out,
         extended.background.weak,
         "extended.background.weak",
         Pair { color, text }

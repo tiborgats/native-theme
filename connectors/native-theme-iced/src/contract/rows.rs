@@ -67,6 +67,14 @@ pub(super) const ROWS: &[Row] = &[
         exceptions: &[],
     },
     Row {
+        // What iced paints inherited text with: `Base::base` reads this slot
+        // for every widget that does not state a color of its own.
+        slot: "extended.background.base.text",
+        native: |r| r.defaults.text_color,
+        get: |t, _| t.extended_palette().background.base.text,
+        exceptions: &[],
+    },
+    Row {
         slot: "extended.background.weak.color",
         native: |r| r.defaults.surface_color,
         get: |t, _| t.extended_palette().background.weak.color,
