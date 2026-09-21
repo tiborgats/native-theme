@@ -329,21 +329,24 @@ exists to repair.
 It is therefore off by default, and it implies `widgets`, because `iced_aw`
 itself depends on `iced_widget ^0.14.2`. See §4.2 for the full feature table.
 
-Six widgets, from eight `iced_aw` features: `tabs` is the tabbed container
-built on `tab_bar` (its feature literally is `tabs = ["tab_bar"]`), and
-`context_menu` is the same `menu` styling applied to a right-click overlay, so
-each pair shares one `styles::aw::*` function. All eight feature names were
-checked against the published feature table on 2026-09-21.
+Six functions, from eight `iced_aw` features. `tabs` is the tabbed container
+built on `tab_bar` (its feature literally is `tabs = ["tab_bar"]`), so the two
+share one function. `context_menu` needs none: an earlier draft said it shares
+`menu`'s styling, and the source says otherwise — `ContextMenu` has its own
+`Style` with one field, the backdrop scrim (`style/context_menu.rs:9-22`), its
+default class already emits alpha 0, platforms paint no scrim, and the popup's
+content is the consumer's own element. All eight feature names were checked
+against the published feature table on 2026-09-21.
 
 Covered widgets, each from the native theme that models it:
 
 | `styles::aw::*` | `iced_aw` widget | Native source |
 |---|---|---|
 | `card` | `Card` | `card.background_color`, `.border.*`; head/body/foot from `card` and `defaults` — `CardTheme` carries only `background_color` and `border`, so the rest comes from `defaults` |
-| `menu` | `Menu`, `ContextMenu` | `menu.background_color`, `.hover_background`, `.hover_text_color`, `.border.*`, `.font.color` |
+| `menu` | `Menu` / `MenuBar` | `menu.background_color`, `.hover_background`, `.border.*`. `menu_bar::Style` has **no** text colour, so `menu.hover_text_color` and `.font.color` have no receiver here (the items are the consumer's own elements) |
 | `tab_bar` | `TabBar`, `Tabs` | `tab.background_color`, `.active_background`, `.active_text_color`, `.hover_background`, `.bar_background` |
 | `sidebar` | `Sidebar` | `sidebar.background_color`, `.selection_background`, `.selection_text_color`, `.hover_background` |
-| `spinner` | `Spinner` | `spinner.diameter`, `.min_diameter`, `.stroke_width`, `.fill_color` (there is no `spinner.color`) |
+| `spinner` | a `Container` wrapping `Spinner` | `spinner.fill_color` → the container's `text_color`. `iced_aw` 0.14.1's `Spinner` has no `Style`, no `Catalog` and no style setter: it paints with the renderer's inherited text colour (`spinner.rs:151`), which a wrapping container supplies. So the function is a `container::Style` (shape B), used as `container(Spinner::new()).style(styles::aw::spinner(&resolved))`. The geometry fields have builder receivers and are the consumer's (there is no `spinner.color`) |
 | `selection_list` | `SelectionList` | `list.background_color`, `.selection_background`, `.selection_text_color`, `.hover_background`, `.row_height` |
 
 Not covered, because native-theme models no equivalent and inventing one is
