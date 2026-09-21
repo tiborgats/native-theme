@@ -36,6 +36,12 @@ use iced::widget::{
     text, text_editor, text_input, toggler, tooltip, vertical_slider,
 };
 use iced::{Color, Element, Fill, Length, Padding, Theme};
+#[cfg(feature = "iced_aw")]
+use iced_aw::menu::{Item, Menu, MenuBar};
+#[cfg(feature = "iced_aw")]
+use iced_aw::sidebar::Sidebar;
+#[cfg(feature = "iced_aw")]
+use iced_aw::{Card, ContextMenu, SelectionList, Spinner, TabBar, TabLabel, Tabs};
 
 use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
@@ -162,6 +168,8 @@ impl CliArgs {
             "display" => Some(Tab::Display),
             "layout" => Some(Tab::Layout),
             "graphics" => Some(Tab::Graphics),
+            #[cfg(feature = "iced_aw")]
+            "extra" => Some(Tab::Extra),
             "icons" => Some(Tab::Icons),
             "theme-map" | "thememap" => Some(Tab::ThemeMap),
             _ => None,
@@ -182,6 +190,10 @@ enum Tab {
     Display,
     Layout,
     Graphics,
+    /// The `iced_aw` widgets. Only when the connector's `iced_aw` feature is
+    /// on, because `styles::aw` and the widgets themselves are behind it.
+    #[cfg(feature = "iced_aw")]
+    Extra,
     Icons,
     ThemeMap,
 }
@@ -195,6 +207,8 @@ impl Tab {
         Tab::Display,
         Tab::Layout,
         Tab::Graphics,
+        #[cfg(feature = "iced_aw")]
+        Tab::Extra,
         Tab::Icons,
         Tab::ThemeMap,
     ];
@@ -208,6 +222,8 @@ impl Tab {
             Tab::Display => "Display",
             Tab::Layout => "Layout",
             Tab::Graphics => "Graphics",
+            #[cfg(feature = "iced_aw")]
+            Tab::Extra => "Extra widgets (iced_aw)",
             Tab::Icons => "Icons",
             Tab::ThemeMap => "Theme Map",
         }
@@ -604,6 +620,29 @@ struct State {
     /// which the section then says instead of showing a code.
     qr_data: Option<qr_code::Data>,
 
+    // Extra widgets tab (iced_aw)
+    /// The selected tab of the stand-alone `TabBar`.
+    #[cfg(feature = "iced_aw")]
+    aw_tab_bar_active: usize,
+    /// The selected tab of the `Tabs` container, which owns its content.
+    #[cfg(feature = "iced_aw")]
+    aw_tabs_active: usize,
+    /// The selected item of the `Sidebar`.
+    #[cfg(feature = "iced_aw")]
+    aw_sidebar_active: usize,
+    /// The `SelectionList`'s options. It borrows them, so they live here.
+    #[cfg(feature = "iced_aw")]
+    aw_list_options: Vec<String>,
+    /// The index the `SelectionList` has selected, if any.
+    #[cfg(feature = "iced_aw")]
+    aw_list_selected: Option<usize>,
+    /// Whether the `Card` is on screen; its close button clears this.
+    #[cfg(feature = "iced_aw")]
+    aw_card_open: bool,
+    /// The last menu or context-menu entry chosen, echoed in the tab.
+    #[cfg(feature = "iced_aw")]
+    aw_last_action: String,
+
     // Icons tab
     icon_set_choice: IconSetChoice,
     icon_set_choices: Vec<IconSetChoice>,
@@ -793,6 +832,29 @@ impl Default for State {
             markdown_content: markdown::Content::parse(MARKDOWN_SAMPLE),
             markdown_link: None,
             qr_data: qr_code::Data::new(QR_PAYLOAD).ok(),
+            #[cfg(feature = "iced_aw")]
+            aw_tab_bar_active: 0,
+            #[cfg(feature = "iced_aw")]
+            aw_tabs_active: 0,
+            #[cfg(feature = "iced_aw")]
+            aw_sidebar_active: 0,
+            #[cfg(feature = "iced_aw")]
+            aw_list_options: vec![
+                "Adwaita".to_string(),
+                "Breeze".to_string(),
+                "Catppuccin".to_string(),
+                "Dracula".to_string(),
+                "Gruvbox".to_string(),
+                "Nord".to_string(),
+                "Solarized".to_string(),
+                "Tokyo Night".to_string(),
+            ],
+            #[cfg(feature = "iced_aw")]
+            aw_list_selected: Some(0),
+            #[cfg(feature = "iced_aw")]
+            aw_card_open: true,
+            #[cfg(feature = "iced_aw")]
+            aw_last_action: String::new(),
             icon_set_choice,
             icon_set_choices,
             loaded_icons,
@@ -1031,6 +1093,20 @@ enum Message {
 
     // Graphics tab
     MarkdownLinkClicked(markdown::Uri),
+
+    // Extra widgets tab (iced_aw)
+    #[cfg(feature = "iced_aw")]
+    AwTabBarSelected(usize),
+    #[cfg(feature = "iced_aw")]
+    AwTabsSelected(usize),
+    #[cfg(feature = "iced_aw")]
+    AwSidebarSelected(usize),
+    #[cfg(feature = "iced_aw")]
+    AwListSelected(usize, String),
+    #[cfg(feature = "iced_aw")]
+    AwCardToggled,
+    #[cfg(feature = "iced_aw")]
+    AwActionChosen(String),
 
     // Icons tab
     IconSetSelected(IconSetChoice),
@@ -1348,6 +1424,21 @@ fn update_inner(state: &mut State, message: Message) {
             }
         }
         Message::MarkdownLinkClicked(uri) => state.markdown_link = Some(uri),
+        #[cfg(feature = "iced_aw")]
+        Message::AwTabBarSelected(i) => state.aw_tab_bar_active = i,
+        #[cfg(feature = "iced_aw")]
+        Message::AwTabsSelected(i) => state.aw_tabs_active = i,
+        #[cfg(feature = "iced_aw")]
+        Message::AwSidebarSelected(i) => state.aw_sidebar_active = i,
+        #[cfg(feature = "iced_aw")]
+        Message::AwListSelected(index, value) => {
+            state.aw_list_selected = Some(index);
+            state.aw_last_action = format!("SelectionList: {value}");
+        }
+        #[cfg(feature = "iced_aw")]
+        Message::AwCardToggled => state.aw_card_open = !state.aw_card_open,
+        #[cfg(feature = "iced_aw")]
+        Message::AwActionChosen(what) => state.aw_last_action = what,
         Message::IconSetSelected(choice) => {
             state.loaded_icons =
                 load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
@@ -1559,6 +1650,8 @@ fn view(state: &State) -> Element<'_, Message> {
         Tab::Display => view_display(state),
         Tab::Layout => view_layout(state),
         Tab::Graphics => view_graphics(state),
+        #[cfg(feature = "iced_aw")]
+        Tab::Extra => view_extra(state),
         Tab::Icons => view_icons(state),
         Tab::ThemeMap => view_theme_map(state),
     };
@@ -3396,6 +3489,538 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         qr_section,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         markdown_demo,
+    ]
+    .spacing(sp.xl)
+    .width(Fill)
+    .into()
+}
+
+// ---------------------------------------------------------------------------
+// Tab: Extra widgets (iced_aw)
+// ---------------------------------------------------------------------------
+
+/// How wide a drop-down menu of the `MenuBar` is allowed to grow.
+///
+/// `MenuTheme` states no menu width, so this is the showcase's own layout
+/// number, like the sidebar's 210px.
+#[cfg(feature = "iced_aw")]
+const AW_MENU_WIDTH: f32 = 220.0;
+
+/// A drop-down of the `MenuBar`, with the gap `iced_aw` leaves around it.
+#[cfg(feature = "iced_aw")]
+fn aw_menu<'a>(
+    items: Vec<Item<'a, Message, Theme, iced::Renderer>>,
+    gap: f32,
+) -> Menu<'a, Message, Theme, iced::Renderer> {
+    Menu::new(items)
+        .max_width(AW_MENU_WIDTH)
+        .offset(gap)
+        .spacing(gap)
+}
+
+/// The six `styles::aw::*` functions, on the eight `iced_aw` widgets the
+/// connector's feature enables.
+#[cfg(feature = "iced_aw")]
+fn view_extra(state: &State) -> Element<'_, Message> {
+    use iced_aw::style::Status;
+    use std::rc::Rc;
+
+    let sp = &SP;
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let sep = &resolved.separator;
+    let card_t = &resolved.card;
+    let menu_t = &resolved.menu;
+    let tab_t = &resolved.tab;
+    let side_t = &resolved.sidebar;
+    let list_t = &resolved.list;
+    let spin_t = &resolved.spinner;
+
+    let header = section_header(
+        "Extra widgets (iced_aw)",
+        "The six styles::aw functions, each through the setter its widget offers",
+        resolved,
+        ts,
+        sp,
+    );
+
+    // ---- Card ----
+
+    let card_section: Element<'_, Message> = if state.aw_card_open {
+        Card::new(
+            text("Card").size(ts.dialog_title.size),
+            column![
+                text(
+                    "CardTheme states one fill and one border, so the head, the body \
+                     and the foot are the same surface, and the three labels are \
+                     defaults.text_color."
+                )
+                .size(ts.caption.size),
+            ]
+            .spacing(sp.xs),
+        )
+        .foot(Element::from(
+            row![
+                button(text("Dismiss").size(ts.caption.size))
+                    .on_press(Message::AwCardToggled)
+                    .style(styles::button(resolved))
+                    .padding(Padding::from([sp.xxs, sp.s])),
+            ]
+            .spacing(sp.xs),
+        ))
+        .on_close(Message::AwCardToggled)
+        .close_size(resolved.defaults.icon_sizes.small)
+        .padding_head(Padding::from(sp.s))
+        .padding_body(Padding::from(sp.s))
+        .padding_foot(Padding::from(sp.s))
+        .width(Length::Fixed(420.0))
+        .style(styles::aw::card(resolved))
+        .into()
+    } else {
+        button(text("Show the card again").size(ts.caption.size))
+            .on_press(Message::AwCardToggled)
+            .style(styles::button_primary(resolved))
+            .padding(Padding::from([sp.xs, sp.s]))
+            .into()
+    };
+
+    let card_demo = hoverable(
+        widget_tooltip(
+            "Card",
+            &[
+                (
+                    "surface",
+                    "card.background_color",
+                    to_color(card_t.background_color),
+                ),
+                ("border", "card.border.color", to_color(card_t.border.color)),
+                (
+                    "labels",
+                    "defaults.text_color",
+                    to_color(resolved.defaults.text_color),
+                ),
+            ],
+            &[
+                ("close icon", "defaults.icon_sizes.small"),
+                ("radius", "card.border.corner_radius"),
+            ],
+            &[(
+                "section padding",
+                "the showcase's own scale — CardTheme states none",
+            )],
+        ),
+        column![text("Card").size(ts.dialog_title.size), card_section,]
+            .spacing(sp.s)
+            .into(),
+    );
+
+    // ---- MenuBar and Menu ----
+
+    let menu_entry = |label: &'static str| -> Element<'_, Message> {
+        button(text(label).size(menu_t.font.size))
+            .on_press(Message::AwActionChosen(format!("Menu: {label}")))
+            .style(styles::button(resolved))
+            .width(Fill)
+            .height(Length::Fixed(menu_t.row_height))
+            .padding(Padding::from([0.0, sp.s]))
+            .into()
+    };
+    let menu_root = |label: &'static str| {
+        button(text(label).size(menu_t.font.size))
+            .on_press(Message::AwActionChosen(format!("Menu: {label}")))
+            .style(styles::button(resolved))
+            .padding(Padding::from([sp.xxs, sp.s]))
+    };
+    let drop = |items| aw_menu(items, sp.xxs);
+
+    let menu_bar = MenuBar::new(vec![
+        Item::with_menu(
+            menu_root("File"),
+            drop(vec![
+                Item::new(menu_entry("New window")),
+                Item::new(menu_entry("Open preset")),
+                Item::with_menu(
+                    menu_entry("Recent"),
+                    drop(vec![
+                        Item::new(menu_entry("adwaita.toml")),
+                        Item::new(menu_entry("kde-breeze.toml")),
+                    ]),
+                ),
+            ]),
+        ),
+        Item::with_menu(
+            menu_root("View"),
+            drop(vec![
+                Item::new(menu_entry("Light")),
+                Item::new(menu_entry("Dark")),
+                Item::new(menu_entry("Follow the system")),
+            ]),
+        ),
+    ])
+    .padding(Padding::from(sp.xxs))
+    .spacing(sp.xs)
+    .style(styles::aw::menu(resolved));
+
+    let menu_demo = hoverable(
+        widget_tooltip(
+            "MenuBar / Menu",
+            &[
+                (
+                    "bar and panel",
+                    "menu.background_color",
+                    to_color(menu_t.background_color),
+                ),
+                (
+                    "open path",
+                    "menu.hover_background",
+                    to_color(menu_t.hover_background),
+                ),
+                ("border", "menu.border.color", to_color(menu_t.border.color)),
+            ],
+            &[
+                ("item height", "menu.row_height, on the item button"),
+                ("item label size", "menu.font.size"),
+            ],
+            &[
+                (
+                    "label colour",
+                    "menu_bar::Style has no text colour; the items are our own \
+                     widgets, so they take styles::button",
+                ),
+                (
+                    "shadows",
+                    "the model has no shadow geometry — iced_aw's own",
+                ),
+                ("menu width", "MenuTheme states none — the showcase's own"),
+            ],
+        ),
+        column![
+            text("MenuBar and its Menus").size(ts.dialog_title.size),
+            menu_bar,
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- ContextMenu ----
+
+    let context_underlay = container(
+        column![
+            text("Right-click inside this panel").size(ts.section_heading.size),
+            text(
+                "ContextMenu gets no styles::aw function: its own Style is a one-field \
+                 backdrop scrim and its default class already emits alpha 0 \
+                 (style/context_menu.rs:48-59). The popup below is our own element."
+            )
+            .size(ts.caption.size),
+        ]
+        .spacing(sp.xs),
+    )
+    .padding(Padding::from(sp.l))
+    .style(styles::container_card(resolved))
+    .width(Fill);
+
+    let context_demo = ContextMenu::new(context_underlay, move || {
+        let entry = |label: &'static str| -> Element<'_, Message> {
+            button(text(label).size(ts.caption.size))
+                .on_press(Message::AwActionChosen(format!("Context menu: {label}")))
+                .style(styles::button(resolved))
+                .width(Fill)
+                .padding(Padding::from([sp.xxs, sp.s]))
+                .into()
+        };
+        container(column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(sp.xxs))
+            .padding(Padding::from(sp.xs))
+            .style(styles::container_card(resolved))
+            .width(Length::Fixed(180.0))
+            .into()
+    });
+
+    // ---- TabBar and Tabs ----
+
+    let tab_bar = TabBar::new(Message::AwTabBarSelected)
+        .push(0usize, TabLabel::Text("Overview".to_string()))
+        .push(1usize, TabLabel::Text("Details".to_string()))
+        .push(2usize, TabLabel::Text("About".to_string()))
+        .set_active_tab(&state.aw_tab_bar_active)
+        .text_size(tab_t.font.size)
+        .tab_width(Length::Fixed(tab_t.min_width))
+        .height(Length::Fixed(tab_t.min_height))
+        .spacing(sp.xxs);
+
+    let tab_bar_body = text(match state.aw_tab_bar_active {
+        0 => "A stand-alone TabBar reports the selection and shows nothing itself.",
+        1 => "The second tab. Its label colour is tab.active_text_color.",
+        _ => "An unselected tab is Status::Disabled to iced_aw, not a dead one.",
+    })
+    .size(ts.caption.size);
+
+    let tabs = Tabs::new(Message::AwTabsSelected)
+        .push(
+            0usize,
+            TabLabel::Text("Colours".to_string()),
+            container(
+                text("Tabs owns its content and forwards the bar's style to the TabBar it holds.")
+                    .size(ts.caption.size),
+            )
+            .padding(Padding::from(sp.s)),
+        )
+        .push(
+            1usize,
+            TabLabel::Text("Sizes".to_string()),
+            container(
+                text(format!(
+                    "tab.min_width {:.0}px · tab.min_height {:.0}px",
+                    tab_t.min_width, tab_t.min_height
+                ))
+                .size(ts.caption.size),
+            )
+            .padding(Padding::from(sp.s)),
+        )
+        .set_active_tab(&state.aw_tabs_active)
+        .text_size(tab_t.font.size)
+        .tab_bar_height(Length::Fixed(tab_t.min_height))
+        .tab_bar_style(styles::aw::tab_bar(resolved))
+        .height(Length::Shrink);
+
+    let tab_demo = hoverable(
+        widget_tooltip(
+            "TabBar / Tabs",
+            &[
+                (
+                    "strip",
+                    "tab.bar_background",
+                    to_color(tab_t.bar_background),
+                ),
+                (
+                    "selected tab",
+                    "tab.active_background",
+                    to_color(tab_t.active_background),
+                ),
+                (
+                    "selected label",
+                    "tab.active_text_color",
+                    to_color(tab_t.active_text_color),
+                ),
+                (
+                    "hovered tab",
+                    "tab.hover_background",
+                    to_color(tab_t.hover_background.unwrap_or(tab_t.background_color)),
+                ),
+            ],
+            &[
+                ("label size", "tab.font.size"),
+                ("tab width", "tab.min_width"),
+                ("bar height", "tab.min_height"),
+            ],
+            &[(
+                "min_width / min_height",
+                "the platform states minima and iced_aw takes fixed lengths, so a \
+                 tab here is exactly its minimum",
+            )],
+        ),
+        column![
+            text("TabBar (stand-alone) and Tabs (with content)").size(ts.dialog_title.size),
+            tab_bar.style(styles::aw::tab_bar(resolved)),
+            tab_bar_body,
+            tabs,
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- Sidebar ----
+
+    let side_bar = Sidebar::new(Message::AwSidebarSelected)
+        // A `Sidebar` declares a `TabLabel` of its own (sidebar/sidebar.rs:51).
+        .push(
+            0usize,
+            iced_aw::sidebar::TabLabel::Text("General".to_string()),
+        )
+        .push(
+            1usize,
+            iced_aw::sidebar::TabLabel::Text("Appearance".to_string()),
+        )
+        .push(
+            2usize,
+            iced_aw::sidebar::TabLabel::Text("Icons".to_string()),
+        )
+        .set_active_tab(&state.aw_sidebar_active)
+        .text_size(side_t.font.size)
+        .width(Length::Fixed(200.0))
+        .height(Length::Shrink)
+        .style(styles::aw::sidebar(resolved));
+
+    let side_demo = hoverable(
+        widget_tooltip(
+            "Sidebar",
+            &[
+                (
+                    "panel",
+                    "sidebar.background_color",
+                    to_color(side_t.background_color),
+                ),
+                (
+                    "selected item",
+                    "sidebar.selection_background",
+                    to_color(side_t.selection_background),
+                ),
+                (
+                    "selected label",
+                    "sidebar.selection_text_color",
+                    to_color(side_t.selection_text_color),
+                ),
+                (
+                    "hovered item",
+                    "sidebar.hover_background",
+                    to_color(side_t.hover_background),
+                ),
+            ],
+            &[("label size", "sidebar.font.size")],
+            &[(
+                "corner radius",
+                "sidebar::Style carries none but the close icon's; iced_aw rounds \
+                 the panel with a hardcoded 0",
+            )],
+        ),
+        column![
+            text("Sidebar").size(ts.dialog_title.size),
+            row![
+                side_bar,
+                container(
+                    text(match state.aw_sidebar_active {
+                        0 =>
+                            "General: an unselected item shows the panel itself — the \
+                              platform states no fill of its own for one.",
+                        1 => "Appearance: the selected item is sidebar.selection_background.",
+                        _ => "Icons: hovering an item paints sidebar.hover_background.",
+                    })
+                    .size(ts.caption.size),
+                )
+                .padding(Padding::from(sp.l))
+                .style(styles::container_card(resolved))
+                .width(Fill),
+            ]
+            .spacing(sp.s),
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- Spinner ----
+
+    let spinner_demo = hoverable(
+        widget_tooltip(
+            "Spinner",
+            &[("arc", "spinner.fill_color", to_color(spin_t.fill_color))],
+            &[("diameter", "spinner.diameter")],
+            &[
+                (
+                    "Style",
+                    "iced_aw 0.14.1 gives Spinner none at all: it paints in the \
+                     inherited text colour, which the wrapping container states",
+                ),
+                (
+                    "stroke width",
+                    "spinner.stroke_width has no receiver; circle_radius sizes the \
+                     orbiting dot, not an arc",
+                ),
+            ],
+        ),
+        column![
+            text("Spinner (styled through its container)").size(ts.dialog_title.size),
+            container(
+                Spinner::new()
+                    .width(Length::Fixed(spin_t.diameter))
+                    .height(Length::Fixed(spin_t.diameter)),
+            )
+            .style(styles::aw::spinner(resolved)),
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- SelectionList ----
+
+    // `SelectionList::new_with` is the only constructor that gives the rows a
+    // class as well as the list, and it demands a `Clone` style function; the
+    // connector's returns an opaque type that is not known to be `Clone`, so
+    // an `Rc` carries it.
+    let list_style = Rc::new(styles::aw::selection_list(resolved));
+    let selection_list = SelectionList::new_with(
+        &state.aw_list_options,
+        Message::AwListSelected,
+        list_t.item_font.size,
+        Padding::from(sp.xs),
+        move |theme: &Theme, status: Status| list_style(theme, status),
+        state.aw_list_selected,
+        iced::Font::DEFAULT,
+    )
+    .width(Length::Fixed(260.0))
+    .height(Length::Fixed(180.0));
+
+    let list_demo = hoverable(
+        widget_tooltip(
+            "SelectionList",
+            &[
+                (
+                    "list",
+                    "list.background_color",
+                    to_color(list_t.background_color),
+                ),
+                (
+                    "selected row",
+                    "list.selection_background",
+                    to_color(list_t.selection_background),
+                ),
+                (
+                    "hovered row",
+                    "list.hover_background",
+                    to_color(list_t.hover_background),
+                ),
+                (
+                    "row label",
+                    "list.item_font.color",
+                    to_color(list_t.item_font.color),
+                ),
+            ],
+            &[("row label size", "list.item_font.size")],
+            &[(
+                "list.row_height",
+                "no receiver in iced_aw 0.14.1: a row is text_size + padding \
+                 (selection_list/list.rs:209), and there is no item_height setter",
+            )],
+        ),
+        column![
+            text("SelectionList").size(ts.dialog_title.size),
+            selection_list,
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    let action_line = if state.aw_last_action.is_empty() {
+        "Nothing chosen yet. Use the menu bar, the context menu or the list.".to_string()
+    } else {
+        state.aw_last_action.clone()
+    };
+
+    column![
+        header,
+        text(action_line).size(ts.caption.size),
+        card_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        menu_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        column![text("ContextMenu").size(ts.dialog_title.size), context_demo,].spacing(sp.s),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        tab_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        side_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        spinner_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        list_demo,
     ]
     .spacing(sp.xl)
     .width(Fill)
