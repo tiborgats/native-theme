@@ -24,6 +24,7 @@ default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-ras
 
 # Which iced crates this connector covers. Additive, never subtractive.
 widgets = ["dep:iced_widget"]            # enables `styles`
+iced_aw = ["widgets", "dep:iced_aw"]     # enables `styles::aw`
 
 material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
@@ -34,6 +35,16 @@ svg-rasterize = ["native-theme/svg-rasterize"]
 native-theme.workspace = true
 iced_core = "0.14"
 iced_widget = { version = "0.14", optional = true }
+iced_aw = { version = "0.14", optional = true, default-features = false, features = [
+    "card",
+    "menu",
+    "context_menu",
+    "tab_bar",
+    "tabs",
+    "sidebar",
+    "spinner",
+    "selection_list",
+] }
 
 [[example]]
 name = "showcase-iced"

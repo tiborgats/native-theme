@@ -13,6 +13,9 @@
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
 
+#[cfg(feature = "iced_aw")]
+pub mod aw;
+
 use crate::palette::to_color;
 use iced_core::border::Radius;
 use iced_core::theme::Theme;

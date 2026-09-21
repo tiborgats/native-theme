@@ -33,6 +33,12 @@ use iced_widget::{
     text_editor, text_input, toggler,
 };
 
+// `styles::aw` and its rows are gated on `iced_aw`, which implies `widgets`.
+#[cfg(feature = "iced_aw")]
+use iced_aw::style::Status as AwStatus;
+#[cfg(feature = "iced_aw")]
+use iced_aw::style::{card, menu_bar, selection_list, sidebar, tab_bar};
+
 /// One row of the mapping contract: a palette slot, the native field it must
 /// equal, and the presets where it may legitimately differ.
 ///
@@ -1871,6 +1877,415 @@ const CONTAINER_CARD_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::container_card(r)(t).border,
 }];
 
+// ---- `styles::aw`: the six `iced_aw` widgets (section 3a) ----
+
+/// Every value of `iced_aw`'s shared `Status`, which each of its widgets
+/// requests only the values it has a meaning for (`style/status.rs:5-18`).
+#[cfg(feature = "iced_aw")]
+const AW_STATUSES: &[AwStatus] = &[
+    AwStatus::Active,
+    AwStatus::Hovered,
+    AwStatus::Pressed,
+    AwStatus::Disabled,
+    AwStatus::Focused,
+    AwStatus::Selected,
+];
+
+/// A card and a menu bar look the same in every status -- the model states one
+/// appearance for each, and `iced_aw`'s own classes ignore the status too
+/// (`style/card.rs:92`, `style/menu_bar.rs:83`) -- so their rows cover every
+/// value of the enum.
+#[cfg(feature = "iced_aw")]
+const AW_CARD_STATUSES: &[AwStatus] = AW_STATUSES;
+
+#[cfg(feature = "iced_aw")]
+const AW_MENU_STATUSES: &[AwStatus] = AW_STATUSES;
+
+/// The three statuses a `TabBar` asks for, and the only ones its label rows
+/// cover: `Hovered` is the tab under the pointer, `Active` the selected tab,
+/// `Disabled` a tab that is merely not selected (`tab_bar.rs:588-594`).
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR_NATIVE_STATUSES: &[AwStatus] =
+    &[AwStatus::Active, AwStatus::Hovered, AwStatus::Disabled];
+
+/// The three a `TabBar` never asks for, whose labels are `iced_aw`'s own.
+/// Asserted by `an_aw_widget_takes_the_statuses_it_never_receives_from_iced_aw`.
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR_ICED_STATUSES: &[AwStatus] =
+    &[AwStatus::Pressed, AwStatus::Focused, AwStatus::Selected];
+
+/// The same three for a `Sidebar`, which reads the enum the way a `TabBar`
+/// does (`sidebar/sidebar.rs:979-985`).
+#[cfg(feature = "iced_aw")]
+const AW_SIDEBAR_NATIVE_STATUSES: &[AwStatus] = AW_TAB_BAR_NATIVE_STATUSES;
+
+#[cfg(feature = "iced_aw")]
+const AW_SIDEBAR_ICED_STATUSES: &[AwStatus] = AW_TAB_BAR_ICED_STATUSES;
+
+/// A `SelectionList` asks for `Active`, `Hovered` and `Selected`
+/// (`selection_list.rs:302`, `selection_list/list.rs:241-258`); `Disabled` is
+/// a row the model does describe, through `list.disabled_text_color`.
+#[cfg(feature = "iced_aw")]
+const AW_SELECTION_LIST_NATIVE_STATUSES: &[AwStatus] = &[
+    AwStatus::Active,
+    AwStatus::Hovered,
+    AwStatus::Selected,
+    AwStatus::Disabled,
+];
+
+#[cfg(feature = "iced_aw")]
+const AW_SELECTION_LIST_ICED_STATUSES: &[AwStatus] = &[AwStatus::Pressed, AwStatus::Focused];
+
+/// Every color field of `styles::aw::card`. The card is one surface, so its
+/// three sections carry the same fill, and its labels are the platform's own
+/// text color -- `CardTheme` carries no font.
+#[cfg(feature = "iced_aw")]
+const AW_CARD_ROWS: &[StyleRow<AwStatus>] = &[
+    StyleRow {
+        field: "styles::aw::card.background",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.card.background_color),
+        get: |t, r, s| fill(styles::aw::card(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::aw::card.border_color",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.card.border.color),
+        get: |t, r, s| Ok(styles::aw::card(r)(t, s).border_color),
+    },
+    StyleRow {
+        field: "styles::aw::card.head_background",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.card.background_color),
+        get: |t, r, s| fill(styles::aw::card(r)(t, s).head_background),
+    },
+    StyleRow {
+        field: "styles::aw::card.head_text_color",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.defaults.text_color),
+        get: |t, r, s| Ok(styles::aw::card(r)(t, s).head_text_color),
+    },
+    StyleRow {
+        field: "styles::aw::card.body_background",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.card.background_color),
+        get: |t, r, s| fill(styles::aw::card(r)(t, s).body_background),
+    },
+    StyleRow {
+        field: "styles::aw::card.body_text_color",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.defaults.text_color),
+        get: |t, r, s| Ok(styles::aw::card(r)(t, s).body_text_color),
+    },
+    StyleRow {
+        field: "styles::aw::card.foot_background",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.card.background_color),
+        get: |t, r, s| fill(styles::aw::card(r)(t, s).foot_background),
+    },
+    StyleRow {
+        field: "styles::aw::card.foot_text_color",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.defaults.text_color),
+        get: |t, r, s| Ok(styles::aw::card(r)(t, s).foot_text_color),
+    },
+    StyleRow {
+        field: "styles::aw::card.close_color",
+        statuses: AW_CARD_STATUSES,
+        native: |r, _| to_color(r.defaults.text_color),
+        get: |t, r, s| Ok(styles::aw::card(r)(t, s).close_color),
+    },
+];
+
+/// A card's border is three bare fields rather than an iced `Border`, as a
+/// radio's is, so its two lengths are scalar rows.
+#[cfg(feature = "iced_aw")]
+const AW_CARD_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[
+    ScalarRow {
+        field: "styles::aw::card.border_width",
+        statuses: AW_CARD_STATUSES,
+        native: |_, r, _| r.card.border.line_width,
+        get: |t, r, s| Ok(styles::aw::card(r)(t, s).border_width),
+    },
+    ScalarRow {
+        field: "styles::aw::card.border_radius",
+        statuses: AW_CARD_STATUSES,
+        native: |_, r, _| r.card.border.corner_radius,
+        get: |t, r, s| Ok(styles::aw::card(r)(t, s).border_radius),
+    },
+];
+
+/// Every color field of `styles::aw::menu`: the bar and the menus share the
+/// one panel the model states, and the open path is the menu's hover fill.
+#[cfg(feature = "iced_aw")]
+const AW_MENU_ROWS: &[StyleRow<AwStatus>] = &[
+    StyleRow {
+        field: "styles::aw::menu.bar_background",
+        statuses: AW_MENU_STATUSES,
+        native: |r, _| to_color(r.menu.background_color),
+        get: |t, r, s| fill(styles::aw::menu(r)(t, s).bar_background),
+    },
+    StyleRow {
+        field: "styles::aw::menu.menu_background",
+        statuses: AW_MENU_STATUSES,
+        native: |r, _| to_color(r.menu.background_color),
+        get: |t, r, s| fill(styles::aw::menu(r)(t, s).menu_background),
+    },
+    StyleRow {
+        field: "styles::aw::menu.path",
+        statuses: AW_MENU_STATUSES,
+        native: |r, _| to_color(r.menu.hover_background),
+        get: |t, r, s| fill(styles::aw::menu(r)(t, s).path),
+    },
+];
+
+/// The menu's own border, worn by the bar and by the menus alike. The third
+/// border of the struct, `path_border`, has no native source and is in
+/// `DERIVED`.
+#[cfg(feature = "iced_aw")]
+const AW_MENU_BORDER_ROWS: &[BorderRow<AwStatus>] = &[
+    BorderRow {
+        field: "styles::aw::menu.bar",
+        statuses: AW_MENU_STATUSES,
+        native: |r, _| native_aw_menu_border(r),
+        get: |t, r, s| styles::aw::menu(r)(t, s).bar_border,
+    },
+    BorderRow {
+        field: "styles::aw::menu.menu",
+        statuses: AW_MENU_STATUSES,
+        native: |r, _| native_aw_menu_border(r),
+        get: |t, r, s| styles::aw::menu(r)(t, s).menu_border,
+    },
+];
+
+/// The one border `MenuTheme` states.
+#[cfg(feature = "iced_aw")]
+fn native_aw_menu_border(r: &ResolvedTheme) -> NativeBorder {
+    NativeBorder {
+        color: to_color(r.menu.border.color),
+        width: r.menu.border.line_width,
+        radius: r.menu.border.corner_radius,
+    }
+}
+
+/// The fill the native fields give a tab in `status`.
+///
+/// The match has no catch-all, but only `AW_TAB_BAR_NATIVE_STATUSES` reaches a
+/// row: in the other three the fill is `iced_aw`'s own. Their arm still has to
+/// name a color, and the idle one is the least surprising -- if a status is
+/// ever moved between the two lists, the row compares it against that and
+/// fails rather than passing quietly.
+#[cfg(feature = "iced_aw")]
+fn native_aw_tab_fill(r: &ResolvedTheme, status: AwStatus) -> Color {
+    let t = &r.tab;
+    to_color(match status {
+        AwStatus::Active => t.active_background,
+        // A tab's hover fill is a soft option, and a row highlight: emitted as
+        // given, over the strip this same function fills (C17).
+        AwStatus::Hovered => t.hover_background.unwrap_or(t.background_color),
+        AwStatus::Disabled | AwStatus::Pressed | AwStatus::Focused | AwStatus::Selected => {
+            t.background_color
+        }
+    })
+}
+
+/// The label color the native fields give a tab in `status`.
+#[cfg(feature = "iced_aw")]
+fn native_aw_tab_label(r: &ResolvedTheme, status: AwStatus) -> Color {
+    let t = &r.tab;
+    to_color(match status {
+        AwStatus::Active => t.active_text_color,
+        AwStatus::Hovered => t.hover_text_color,
+        AwStatus::Disabled | AwStatus::Pressed | AwStatus::Focused | AwStatus::Selected => {
+            t.font.color
+        }
+    })
+}
+
+/// Every color field of `styles::aw::tab_bar`.
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR_ROWS: &[StyleRow<AwStatus>] = &[
+    StyleRow {
+        field: "styles::aw::tab_bar.background",
+        statuses: AW_STATUSES,
+        native: |r, _| to_color(r.tab.bar_background),
+        get: |t, r, s| flat(styles::aw::tab_bar(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::aw::tab_bar.tab_label_border_color",
+        statuses: AW_STATUSES,
+        native: |r, _| to_color(r.tab.border.color),
+        get: |t, r, s| Ok(styles::aw::tab_bar(r)(t, s).tab_label_border_color),
+    },
+    StyleRow {
+        field: "styles::aw::tab_bar.tab_label_background",
+        statuses: AW_TAB_BAR_NATIVE_STATUSES,
+        native: native_aw_tab_fill,
+        get: |t, r, s| fill(styles::aw::tab_bar(r)(t, s).tab_label_background),
+    },
+    StyleRow {
+        field: "styles::aw::tab_bar.text_color",
+        statuses: AW_TAB_BAR_NATIVE_STATUSES,
+        native: native_aw_tab_label,
+        get: |t, r, s| Ok(styles::aw::tab_bar(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::aw::tab_bar.icon_color",
+        statuses: AW_TAB_BAR_NATIVE_STATUSES,
+        native: native_aw_tab_label,
+        get: |t, r, s| Ok(styles::aw::tab_bar(r)(t, s).icon_color),
+    },
+];
+
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[ScalarRow {
+    field: "styles::aw::tab_bar.tab_label_border_width",
+    statuses: AW_STATUSES,
+    native: |_, r, _| r.tab.border.line_width,
+    get: |t, r, s| Ok(styles::aw::tab_bar(r)(t, s).tab_label_border_width),
+}];
+
+/// A tab's corner radius is a whole `Radius` rather than part of a `Border`,
+/// as a toggler's is.
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR_RADIUS_ROWS: &[RadiusRow<AwStatus>] = &[RadiusRow {
+    field: "styles::aw::tab_bar.tab_border_radius",
+    statuses: AW_STATUSES,
+    native: |r, _| r.tab.border.corner_radius,
+    get: |t, r, s| Ok(styles::aw::tab_bar(r)(t, s).tab_border_radius),
+}];
+
+/// The fill the native fields give a sidebar item in `status`. The unreached
+/// arm is the panel's own fill, for the reason `native_aw_tab_fill` gives.
+#[cfg(feature = "iced_aw")]
+fn native_aw_sidebar_fill(r: &ResolvedTheme, status: AwStatus) -> Color {
+    let s = &r.sidebar;
+    to_color(match status {
+        AwStatus::Active => s.selection_background,
+        AwStatus::Hovered => s.hover_background,
+        AwStatus::Disabled | AwStatus::Pressed | AwStatus::Focused | AwStatus::Selected => {
+            s.background_color
+        }
+    })
+}
+
+/// The label color the native fields give a sidebar item in `status`.
+/// `SidebarTheme` states no hovered label, so a hovered item keeps the
+/// sidebar's own.
+#[cfg(feature = "iced_aw")]
+fn native_aw_sidebar_label(r: &ResolvedTheme, status: AwStatus) -> Color {
+    let s = &r.sidebar;
+    to_color(match status {
+        AwStatus::Active => s.selection_text_color,
+        AwStatus::Hovered
+        | AwStatus::Disabled
+        | AwStatus::Pressed
+        | AwStatus::Focused
+        | AwStatus::Selected => s.font.color,
+    })
+}
+
+/// Every color field of `styles::aw::sidebar`.
+#[cfg(feature = "iced_aw")]
+const AW_SIDEBAR_ROWS: &[StyleRow<AwStatus>] = &[
+    StyleRow {
+        field: "styles::aw::sidebar.background",
+        statuses: AW_STATUSES,
+        native: |r, _| to_color(r.sidebar.background_color),
+        get: |t, r, s| flat(styles::aw::sidebar(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::aw::sidebar.border_color",
+        statuses: AW_STATUSES,
+        native: |r, _| to_color(r.sidebar.border.color),
+        get: |t, r, s| stated(styles::aw::sidebar(r)(t, s).border_color),
+    },
+    StyleRow {
+        field: "styles::aw::sidebar.tab_label_background",
+        statuses: AW_SIDEBAR_NATIVE_STATUSES,
+        native: native_aw_sidebar_fill,
+        get: |t, r, s| fill(styles::aw::sidebar(r)(t, s).tab_label_background),
+    },
+    StyleRow {
+        field: "styles::aw::sidebar.text_color",
+        statuses: AW_SIDEBAR_NATIVE_STATUSES,
+        native: native_aw_sidebar_label,
+        get: |t, r, s| Ok(styles::aw::sidebar(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::aw::sidebar.icon_color",
+        statuses: AW_SIDEBAR_NATIVE_STATUSES,
+        native: native_aw_sidebar_label,
+        get: |t, r, s| Ok(styles::aw::sidebar(r)(t, s).icon_color),
+    },
+];
+
+#[cfg(feature = "iced_aw")]
+const AW_SIDEBAR_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[ScalarRow {
+    field: "styles::aw::sidebar.border_width",
+    statuses: AW_STATUSES,
+    native: |_, r, _| r.sidebar.border.line_width,
+    get: |t, r, s| Ok(styles::aw::sidebar(r)(t, s).border_width),
+}];
+
+/// The fill the native fields give a selection list row in `status`. The
+/// unreached arm is the list's own fill, for the reason `native_aw_tab_fill`
+/// gives.
+#[cfg(feature = "iced_aw")]
+fn native_aw_list_fill(r: &ResolvedTheme, status: AwStatus) -> Color {
+    let l = &r.list;
+    to_color(match status {
+        AwStatus::Hovered => l.hover_background,
+        AwStatus::Selected => l.selection_background,
+        AwStatus::Active | AwStatus::Disabled | AwStatus::Pressed | AwStatus::Focused => {
+            l.background_color
+        }
+    })
+}
+
+/// The label color the native fields give a selection list row in `status`.
+#[cfg(feature = "iced_aw")]
+fn native_aw_list_label(r: &ResolvedTheme, status: AwStatus) -> Color {
+    let l = &r.list;
+    to_color(match status {
+        AwStatus::Hovered => l.hover_text_color,
+        AwStatus::Selected => l.selection_text_color,
+        AwStatus::Disabled => l.disabled_text_color,
+        AwStatus::Active | AwStatus::Pressed | AwStatus::Focused => l.item_font.color,
+    })
+}
+
+/// Every color field of `styles::aw::selection_list`.
+#[cfg(feature = "iced_aw")]
+const AW_SELECTION_LIST_ROWS: &[StyleRow<AwStatus>] = &[
+    StyleRow {
+        field: "styles::aw::selection_list.background",
+        statuses: AW_SELECTION_LIST_NATIVE_STATUSES,
+        native: native_aw_list_fill,
+        get: |t, r, s| fill(styles::aw::selection_list(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::aw::selection_list.text_color",
+        statuses: AW_SELECTION_LIST_NATIVE_STATUSES,
+        native: native_aw_list_label,
+        get: |t, r, s| Ok(styles::aw::selection_list(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::aw::selection_list.border_color",
+        statuses: AW_STATUSES,
+        native: |r, _| to_color(r.list.border.color),
+        get: |t, r, s| Ok(styles::aw::selection_list(r)(t, s).border_color),
+    },
+];
+
+#[cfg(feature = "iced_aw")]
+const AW_SELECTION_LIST_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[ScalarRow {
+    field: "styles::aw::selection_list.border_width",
+    statuses: AW_STATUSES,
+    native: |_, r, _| r.list.border.line_width,
+    get: |t, r, s| Ok(styles::aw::selection_list(r)(t, s).border_width),
+}];
+
 /// The `field` of every style row, from every function's consts.
 ///
 /// One line per function; the coverage tripwire reads it, and `rows_claiming`
@@ -1916,6 +2331,43 @@ fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(PROGRESS_BAR_BORDER_ROWS));
     out.extend(border_row_fields(TOOLTIP_BORDER_ROWS));
     out.extend(border_row_fields(CONTAINER_CARD_BORDER_ROWS));
+    // `styles::aw`, gated on the feature that declares it: its rows, its
+    // `check_*` calls, its walkers and its pairs all carry the same gate, so
+    // the two directions of `Checked::covers` agree in every configuration.
+    #[cfg(feature = "iced_aw")]
+    {
+        out.extend(AW_CARD_ROWS.iter().map(|row| row.field.to_string()));
+        out.extend(AW_CARD_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
+        out.extend(AW_MENU_ROWS.iter().map(|row| row.field.to_string()));
+        out.extend(AW_TAB_BAR_ROWS.iter().map(|row| row.field.to_string()));
+        out.extend(
+            AW_TAB_BAR_SCALAR_ROWS
+                .iter()
+                .map(|row| row.field.to_string()),
+        );
+        out.extend(
+            AW_TAB_BAR_RADIUS_ROWS
+                .iter()
+                .map(|row| row.field.to_string()),
+        );
+        out.extend(AW_SIDEBAR_ROWS.iter().map(|row| row.field.to_string()));
+        out.extend(
+            AW_SIDEBAR_SCALAR_ROWS
+                .iter()
+                .map(|row| row.field.to_string()),
+        );
+        out.extend(
+            AW_SELECTION_LIST_ROWS
+                .iter()
+                .map(|row| row.field.to_string()),
+        );
+        out.extend(
+            AW_SELECTION_LIST_SCALAR_ROWS
+                .iter()
+                .map(|row| row.field.to_string()),
+        );
+        out.extend(border_row_fields(AW_MENU_BORDER_ROWS));
+    }
     out
 }
 
@@ -2620,6 +3072,95 @@ const DERIVED: &[(&str, &str)] = &[
         "iced default: container::Style::default().snap -- a renderer setting, \
          cfg!(feature = \"crisp\")",
     ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.bar_shadow",
+        "iced_aw default: menu_bar::primary(..).bar_shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.menu_shadow",
+        "iced_aw default: menu_bar::primary(..).menu_shadow -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.path.border.color",
+        "iced_aw default: menu_bar::primary(..).path_border -- the model's one \
+         menu border is the panel's, and drawing it around a highlighted row \
+         would outline something the platform does not",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.path.border.width",
+        "iced_aw default: menu_bar::primary(..).path_border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.path.border.radius.top_left",
+        "iced_aw default: menu_bar::primary(..).path_border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.path.border.radius.top_right",
+        "iced_aw default: menu_bar::primary(..).path_border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.path.border.radius.bottom_right",
+        "iced_aw default: menu_bar::primary(..).path_border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::menu.path.border.radius.bottom_left",
+        "iced_aw default: menu_bar::primary(..).path_border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::tab_bar.border_color",
+        "iced_aw default: tab_bar::primary(..).border_color -- TabTheme states \
+         one border and it is the tab's, not the strip's",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::tab_bar.border_width",
+        "iced_aw default: tab_bar::primary(..).border_width -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::tab_bar.icon_background",
+        "iced_aw default: tab_bar::primary(..).icon_background -- the model \
+         states no fill behind a tab's close icon",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::tab_bar.icon_border_radius",
+        "iced_aw default: tab_bar::primary(..).icon_border_radius -- the model \
+         states no close icon at all, so nothing states its rounding",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::sidebar.tab_label_border_color",
+        "iced_aw default: sidebar::primary(..).tab_label_border_color -- \
+         SidebarTheme states one border and it is the panel's, not the item's",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::sidebar.tab_label_border_width",
+        "iced_aw default: sidebar::primary(..).tab_label_border_width -- the \
+         same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::sidebar.icon_background",
+        "iced_aw default: sidebar::primary(..).icon_background -- the model \
+         states no fill behind a sidebar item's close icon",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::sidebar.icon_border_radius",
+        "iced_aw default: sidebar::primary(..).icon_border_radius -- the same",
+    ),
 ];
 
 /// Native values iced 0.14 has no receiver for, each with its evidence.
@@ -3321,6 +3862,166 @@ const TOOLTIP_PAIRS: &[StylePair<()>] = &[StylePair {
 // on it to be inherited (`text_color: None`), so the connector does not
 // control both sides of anything either one paints (section 7).
 
+/// An `iced_aw` card states a label for each of its three sections and the
+/// fill under it, so all three are pairs, and so is the close icon on the head.
+#[cfg(feature = "iced_aw")]
+const AW_CARD_PAIRS: &[StylePair<AwStatus>] = &[
+    StylePair {
+        what: "aw card head label",
+        indicator: false,
+        statuses: AW_CARD_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::aw::card(r)(t, s);
+            // A card floats on the window, so that is what a translucent fill
+            // shows through to.
+            fill(style.head_background).map(|head| {
+                (
+                    style.head_text_color,
+                    head,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, _| {
+            (
+                to_color(r.defaults.text_color),
+                to_color(r.card.background_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "aw card body label",
+        indicator: false,
+        statuses: AW_CARD_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::aw::card(r)(t, s);
+            fill(style.body_background).map(|body| {
+                (
+                    style.body_text_color,
+                    body,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, _| {
+            (
+                to_color(r.defaults.text_color),
+                to_color(r.card.background_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "aw card foot label",
+        indicator: false,
+        statuses: AW_CARD_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::aw::card(r)(t, s);
+            fill(style.foot_background).map(|foot| {
+                (
+                    style.foot_text_color,
+                    foot,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, _| {
+            (
+                to_color(r.defaults.text_color),
+                to_color(r.card.background_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "aw card close icon",
+        indicator: true,
+        statuses: AW_CARD_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::aw::card(r)(t, s);
+            fill(style.head_background).map(|head| {
+                (
+                    style.close_color,
+                    head,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, _| {
+            (
+                to_color(r.defaults.text_color),
+                to_color(r.card.background_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+];
+
+// `styles::aw::menu` has no pair: `menu_bar::Style` states no text color at
+// all -- an `iced_aw` menu's items are the consumer's own widgets -- so the
+// connector controls one side of nothing it paints (section 7).
+
+/// A tab's label on the tab, in the three statuses whose label this function
+/// decides. The tab is painted over the strip, which this function also fills.
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR_PAIRS: &[StylePair<AwStatus>] = &[StylePair {
+    what: "aw tab label",
+    indicator: false,
+    statuses: AW_TAB_BAR_NATIVE_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::aw::tab_bar(r)(t, s);
+        fill(style.tab_label_background)
+            .map(|tab| (style.text_color, tab, to_color(r.tab.bar_background)))
+    },
+    native: |r, s| {
+        (
+            native_aw_tab_label(r, s),
+            native_aw_tab_fill(r, s),
+            to_color(r.tab.bar_background),
+        )
+    },
+}];
+
+/// A sidebar item's label on the item, over the panel this function fills.
+#[cfg(feature = "iced_aw")]
+const AW_SIDEBAR_PAIRS: &[StylePair<AwStatus>] = &[StylePair {
+    what: "aw sidebar item label",
+    indicator: false,
+    statuses: AW_SIDEBAR_NATIVE_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::aw::sidebar(r)(t, s);
+        fill(style.tab_label_background)
+            .map(|item| (style.text_color, item, to_color(r.sidebar.background_color)))
+    },
+    native: |r, s| {
+        (
+            native_aw_sidebar_label(r, s),
+            native_aw_sidebar_fill(r, s),
+            to_color(r.sidebar.background_color),
+        )
+    },
+}];
+
+/// A selection list row's label on the row, over the list this function fills.
+#[cfg(feature = "iced_aw")]
+const AW_SELECTION_LIST_PAIRS: &[StylePair<AwStatus>] = &[StylePair {
+    what: "aw selection list row label",
+    indicator: false,
+    statuses: AW_SELECTION_LIST_NATIVE_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::aw::selection_list(r)(t, s);
+        fill(style.background).map(|row| (style.text_color, row, to_color(r.list.background_color)))
+    },
+    native: |r, s| {
+        (
+            native_aw_list_label(r, s),
+            native_aw_list_fill(r, s),
+            to_color(r.list.background_color),
+        )
+    },
+}];
+
 /// The `what` of every contrast pair this file declares.
 ///
 /// The coverage tripwire has nothing to say about pairs -- whether a
@@ -3349,6 +4050,13 @@ fn style_pair_names() -> Vec<String> {
     out.extend(SCROLLABLE_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(PROGRESS_BAR_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(TOOLTIP_PAIRS.iter().map(|p| p.what.to_string()));
+    #[cfg(feature = "iced_aw")]
+    {
+        out.extend(AW_CARD_PAIRS.iter().map(|p| p.what.to_string()));
+        out.extend(AW_TAB_BAR_PAIRS.iter().map(|p| p.what.to_string()));
+        out.extend(AW_SIDEBAR_PAIRS.iter().map(|p| p.what.to_string()));
+        out.extend(AW_SELECTION_LIST_PAIRS.iter().map(|p| p.what.to_string()));
+    }
     out
 }
 
@@ -4049,6 +4757,121 @@ fn rule_style_fields(style: &rule::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `card::Style` the connector emits. A card's border is
+/// three bare fields rather than an iced `Border`, so there is nothing to walk.
+#[cfg(feature = "iced_aw")]
+fn aw_card_style_fields(style: &card::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::aw::card",
+        card::Style {
+            background,
+            border_radius,
+            border_width,
+            border_color,
+            head_background,
+            head_text_color,
+            body_background,
+            body_text_color,
+            foot_background,
+            foot_text_color,
+            close_color
+        }
+    );
+    out
+}
+
+/// Every field of the `menu_bar::Style` the connector emits.
+///
+/// The struct spells its three borders as `bar_border`, `menu_border` and
+/// `path_border`; their leaves are named `bar.border.*`, `menu.border.*` and
+/// `path.border.*` so that one `BorderRow` claims the six of each, as it does
+/// for every other function.
+#[cfg(feature = "iced_aw")]
+fn aw_menu_style_fields(style: &menu_bar::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::aw::menu", menu_bar::Style {
+        bar_background, bar_shadow, menu_background, menu_shadow, path,
+        @nested bar_border, menu_border, path_border
+    });
+    out.extend(border_fields(bar_border, "styles::aw::menu.bar.border"));
+    out.extend(border_fields(menu_border, "styles::aw::menu.menu.border"));
+    out.extend(border_fields(path_border, "styles::aw::menu.path.border"));
+    out
+}
+
+/// Every field of the `tab_bar::Style` the connector emits. Its two radii are
+/// whole `Radius` values rather than parts of a `Border`, and are walked as
+/// the one leaf each is.
+#[cfg(feature = "iced_aw")]
+fn aw_tab_bar_style_fields(style: &tab_bar::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::aw::tab_bar",
+        tab_bar::Style {
+            background,
+            border_color,
+            border_width,
+            tab_border_radius,
+            tab_label_background,
+            tab_label_border_color,
+            tab_label_border_width,
+            icon_color,
+            icon_background,
+            icon_border_radius,
+            text_color
+        }
+    );
+    out
+}
+
+/// Every field of the `sidebar::Style` the connector emits. It is the tab
+/// bar's without the tab radius.
+#[cfg(feature = "iced_aw")]
+fn aw_sidebar_style_fields(style: &sidebar::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::aw::sidebar",
+        sidebar::Style {
+            background,
+            border_color,
+            border_width,
+            tab_label_background,
+            tab_label_border_color,
+            tab_label_border_width,
+            icon_color,
+            icon_background,
+            icon_border_radius,
+            text_color
+        }
+    );
+    out
+}
+
+/// Every field of the `selection_list::Style` the connector emits.
+#[cfg(feature = "iced_aw")]
+fn aw_selection_list_style_fields(style: &selection_list::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::aw::selection_list",
+        selection_list::Style {
+            text_color,
+            background,
+            border_width,
+            border_color
+        }
+    );
+    out
+}
+
 /// Every field the tripwire walks: the palette inputs, the extended slots the
 /// connector writes, and each `styles::*` output's fields.
 #[cfg_attr(not(feature = "widgets"), allow(unused_variables))]
@@ -4142,6 +4965,30 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             &styles::container_card(resolved)(theme),
             "styles::container_card",
         ));
+    }
+    #[cfg(feature = "iced_aw")]
+    {
+        out.extend(aw_card_style_fields(&styles::aw::card(resolved)(
+            theme,
+            AwStatus::Active,
+        )));
+        out.extend(aw_menu_style_fields(&styles::aw::menu(resolved)(
+            theme,
+            AwStatus::Active,
+        )));
+        out.extend(aw_tab_bar_style_fields(&styles::aw::tab_bar(resolved)(
+            theme,
+            AwStatus::Active,
+        )));
+        out.extend(aw_sidebar_style_fields(&styles::aw::sidebar(resolved)(
+            theme,
+            AwStatus::Active,
+        )));
+        out.extend(aw_selection_list_style_fields(&styles::aw::selection_list(
+            resolved,
+        )(
+            theme, AwStatus::Active
+        )));
     }
     out
 }
@@ -4700,6 +5547,76 @@ fn every_status_list_names_each_status_once() {
              value exactly once"
         );
     }
+
+    // `iced_aw` states one `Status` for all of its widgets, and each widget
+    // requests a subset of it. `AW_STATUSES` is the root of trust for the
+    // whole enum; the three widgets whose appearance depends on the status
+    // split it in two, as a class button splits iced's.
+    #[cfg(feature = "iced_aw")]
+    {
+        let all = [
+            AwStatus::Active,
+            AwStatus::Hovered,
+            AwStatus::Pressed,
+            AwStatus::Disabled,
+            AwStatus::Focused,
+            AwStatus::Selected,
+        ];
+        for status in all {
+            match status {
+                AwStatus::Active
+                | AwStatus::Hovered
+                | AwStatus::Pressed
+                | AwStatus::Disabled
+                | AwStatus::Focused
+                | AwStatus::Selected => {}
+            }
+            assert!(
+                AW_STATUSES.contains(&status),
+                "AW_STATUSES does not list {status:?}, so no iced_aw row covers it"
+            );
+        }
+        assert_eq!(
+            AW_STATUSES.len(),
+            all.len(),
+            "AW_STATUSES must name each status exactly once"
+        );
+
+        for (what, native_statuses, iced_statuses) in [
+            (
+                "tab bar",
+                AW_TAB_BAR_NATIVE_STATUSES,
+                AW_TAB_BAR_ICED_STATUSES,
+            ),
+            (
+                "sidebar",
+                AW_SIDEBAR_NATIVE_STATUSES,
+                AW_SIDEBAR_ICED_STATUSES,
+            ),
+            (
+                "selection list",
+                AW_SELECTION_LIST_NATIVE_STATUSES,
+                AW_SELECTION_LIST_ICED_STATUSES,
+            ),
+        ] {
+            for status in all {
+                let native = native_statuses.contains(&status);
+                let from_iced = iced_statuses.contains(&status);
+                assert!(
+                    native != from_iced,
+                    "{status:?} is in {} of the two {what} lists; each status \
+                     belongs to exactly one",
+                    if native { "both" } else { "neither" }
+                );
+            }
+            assert_eq!(
+                native_statuses.len() + iced_statuses.len(),
+                all.len(),
+                "the two {what} lists must partition the statuses, naming each \
+                 exactly once between them"
+            );
+        }
+    }
 }
 
 #[cfg(feature = "widgets")]
@@ -4767,6 +5684,94 @@ fn a_class_button_takes_its_hovered_and_pressed_states_from_iced() -> native_the
     assert!(
         failures.is_empty(),
         "{} of {checks} class-button states differ from iced's own class:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[cfg(feature = "iced_aw")]
+#[test]
+fn an_aw_widget_takes_the_statuses_it_never_receives_from_iced_aw() -> native_theme::Result<()> {
+    // A tab bar, a sidebar and a selection list each read a subset of
+    // `iced_aw`'s shared `Status`, and the model describes no tab, item or row
+    // in the rest. Those are `iced_aw`'s own answer, read at run time (spec
+    // section 3.2). That is a claim about the emitted value, so it is asserted
+    // here rather than left to the rows, which cover only the native statuses.
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    let mut checks = 0;
+
+    for c in &combinations {
+        let (t, r) = (&c.theme, &c.resolved);
+        for &status in AW_TAB_BAR_ICED_STATUSES {
+            let ours = styles::aw::tab_bar(r)(t, status);
+            let theirs = iced_aw::style::tab_bar::primary(t, status);
+            for (field, emitted, iced) in [
+                (
+                    "tab_label_background",
+                    fill(ours.tab_label_background),
+                    fill(theirs.tab_label_background),
+                ),
+                ("text_color", Ok(ours.text_color), Ok(theirs.text_color)),
+                ("icon_color", Ok(ours.icon_color), Ok(theirs.icon_color)),
+            ] {
+                checks += 1;
+                if emitted != iced {
+                    failures.push(format!(
+                        "{}: styles::aw::tab_bar.{field} ({status:?}) is {emitted:?}, \
+                         iced_aw's own class gives {iced:?}",
+                        c.label()
+                    ));
+                }
+            }
+        }
+        for &status in AW_SIDEBAR_ICED_STATUSES {
+            let ours = styles::aw::sidebar(r)(t, status);
+            let theirs = iced_aw::style::sidebar::primary(t, status);
+            for (field, emitted, iced) in [
+                (
+                    "tab_label_background",
+                    fill(ours.tab_label_background),
+                    fill(theirs.tab_label_background),
+                ),
+                ("text_color", Ok(ours.text_color), Ok(theirs.text_color)),
+                ("icon_color", Ok(ours.icon_color), Ok(theirs.icon_color)),
+            ] {
+                checks += 1;
+                if emitted != iced {
+                    failures.push(format!(
+                        "{}: styles::aw::sidebar.{field} ({status:?}) is {emitted:?}, \
+                         iced_aw's own class gives {iced:?}",
+                        c.label()
+                    ));
+                }
+            }
+        }
+        for &status in AW_SELECTION_LIST_ICED_STATUSES {
+            let ours = styles::aw::selection_list(r)(t, status);
+            let theirs = iced_aw::style::selection_list::primary(t, status);
+            for (field, emitted, iced) in [
+                ("background", fill(ours.background), fill(theirs.background)),
+                ("text_color", Ok(ours.text_color), Ok(theirs.text_color)),
+            ] {
+                checks += 1;
+                if emitted != iced {
+                    failures.push(format!(
+                        "{}: styles::aw::selection_list.{field} ({status:?}) is \
+                         {emitted:?}, iced_aw's own class gives {iced:?}",
+                        c.label()
+                    ));
+                }
+            }
+        }
+    }
+
+    println!("iced_aw widgets vs iced_aw's own classes: {checks} field checks");
+    assert!(
+        failures.is_empty(),
+        "{} of {checks} unrequested iced_aw states differ from iced_aw's own \
+         class:\n{}",
         failures.len(),
         failures.join("\n")
     );
@@ -5193,6 +6198,45 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut failures,
         &mut ran,
     );
+    #[cfg(feature = "iced_aw")]
+    {
+        check_style_rows(AW_CARD_ROWS, &combinations, &mut failures, &mut ran);
+        check_scalar_rows(AW_CARD_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
+        check_style_rows(AW_MENU_ROWS, &combinations, &mut failures, &mut ran);
+        check_border_rows(AW_MENU_BORDER_ROWS, &combinations, &mut failures, &mut ran);
+        check_style_rows(AW_TAB_BAR_ROWS, &combinations, &mut failures, &mut ran);
+        check_scalar_rows(
+            AW_TAB_BAR_SCALAR_ROWS,
+            &combinations,
+            &mut failures,
+            &mut ran,
+        );
+        check_radius_rows(
+            AW_TAB_BAR_RADIUS_ROWS,
+            &combinations,
+            &mut failures,
+            &mut ran,
+        );
+        check_style_rows(AW_SIDEBAR_ROWS, &combinations, &mut failures, &mut ran);
+        check_scalar_rows(
+            AW_SIDEBAR_SCALAR_ROWS,
+            &combinations,
+            &mut failures,
+            &mut ran,
+        );
+        check_style_rows(
+            AW_SELECTION_LIST_ROWS,
+            &combinations,
+            &mut failures,
+            &mut ran,
+        );
+        check_scalar_rows(
+            AW_SELECTION_LIST_SCALAR_ROWS,
+            &combinations,
+            &mut failures,
+            &mut ran,
+        );
+    }
 
     // The calls above are a second hand-maintained list beside
     // `style_row_fields`, and only that one is read by the coverage tripwire:
@@ -5302,6 +6346,31 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
         &mut ran,
     );
     check_style_pairs(TOOLTIP_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    #[cfg(feature = "iced_aw")]
+    {
+        check_style_pairs(AW_CARD_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+        check_style_pairs(
+            AW_TAB_BAR_PAIRS,
+            all,
+            &mut failures,
+            &mut below_aa,
+            &mut ran,
+        );
+        check_style_pairs(
+            AW_SIDEBAR_PAIRS,
+            all,
+            &mut failures,
+            &mut below_aa,
+            &mut ran,
+        );
+        check_style_pairs(
+            AW_SELECTION_LIST_PAIRS,
+            all,
+            &mut failures,
+            &mut below_aa,
+            &mut ran,
+        );
+    }
 
     // A pair list declared and never checked here asserts nothing, and the
     // tripwire cannot notice -- it walks `Style` fields, and whether a pair
@@ -5479,6 +6548,14 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         "this preset no longer states all twelve soft options, so clearing \
          them proves nothing"
     );
+    // The thirteenth belongs to `styles::aw::tab_bar` and is read only when
+    // that feature is on.
+    #[cfg(feature = "iced_aw")]
+    assert!(
+        resolved.tab.hover_background.is_some(),
+        "this preset no longer states tab.hover_background, so clearing it \
+         proves nothing"
+    );
     resolved.checkbox.hover_background = None;
     resolved.checkbox.disabled_background = None;
     resolved.checkbox.unchecked_background = None;
@@ -5491,6 +6568,10 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     resolved.combo_box.hover_background = None;
     resolved.slider.thumb_hover_color = None;
     resolved.scrollbar.thumb_active_color = None;
+    #[cfg(feature = "iced_aw")]
+    {
+        resolved.tab.hover_background = None;
+    }
 
     let theme = crate::to_theme(&resolved, "windows-11");
     let boxes = styles::checkbox(&resolved);
@@ -5512,6 +6593,10 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let field_fill = to_color(resolved.combo_box.background_color);
     let handle = to_color(resolved.slider.thumb_color);
     let hovered_scroller = to_color(resolved.scrollbar.thumb_hover_color);
+    #[cfg(feature = "iced_aw")]
+    let tabs = styles::aw::tab_bar(&resolved);
+    #[cfg(feature = "iced_aw")]
+    let tab_fill = to_color(resolved.tab.background_color);
 
     // One entry per read site, not per model field: two functions reading the
     // same option have two `unwrap_or` expressions.
@@ -5600,6 +6685,14 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             ),
             hovered_scroller,
         ),
+        // A hovered tab is a row highlight, emitted as given rather than
+        // composited, so a cleared option is a plain copy of the idle fill.
+        #[cfg(feature = "iced_aw")]
+        (
+            "tab.hover_background -> tab.background_color",
+            fill(tabs(&theme, AwStatus::Hovered).tab_label_background),
+            tab_fill,
+        ),
     ];
 
     let sites = read_sites.len();
@@ -5623,6 +6716,39 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
          value:\n{}",
         failures.len(),
         failures.join("\n")
+    );
+    Ok(())
+}
+
+#[cfg(feature = "iced_aw")]
+#[test]
+fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> {
+    // The entry in the table above runs on windows-11, where `tab` states the
+    // same color for an idle and for a selected tab, so a fallback onto the
+    // wrong one of the two would pass it. `material` is the one bundled preset
+    // that states them differently (measured 2026-09-21 over all 32
+    // combinations), so the copy is proved here instead.
+    let mut resolved = native_theme::theme::Theme::preset("material")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let idle = to_color(resolved.tab.background_color);
+    let selected = to_color(resolved.tab.active_background);
+    assert!(
+        resolved.tab.hover_background.is_some() && idle != selected,
+        "this preset no longer states a hover option, or no longer tells an \
+         idle tab from a selected one, so clearing the option proves nothing: \
+         idle {}, selected {}",
+        show(idle),
+        show(selected)
+    );
+
+    resolved.tab.hover_background = None;
+    let theme = crate::to_theme(&resolved, "material");
+    assert_eq!(
+        fill(styles::aw::tab_bar(&resolved)(&theme, AwStatus::Hovered).tab_label_background),
+        Ok(idle),
+        "a cleared tab hover_background copies the idle tab's fill, not the \
+         selected tab's"
     );
     Ok(())
 }
