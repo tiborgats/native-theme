@@ -213,14 +213,11 @@ struct StyleRow<S: 'static> {
     get: fn(&Theme, &ResolvedTheme, S) -> Result<Color, String>,
 }
 
-/// The same, for a `Style` field that is a length rather than a color.
-#[cfg(feature = "widgets")]
-struct ScalarRow<S: 'static> {
-    field: &'static str,
-    statuses: &'static [S],
-    native: fn(&ResolvedTheme, S) -> f32,
-    get: fn(&Theme, &ResolvedTheme, S) -> f32,
-}
+// A row kind for a `Style` field that is a length rather than a color lived
+// here until `BorderRow` arrived: its only five users were a border's width
+// and its four radius corners, which one border row now covers. A function
+// with a scalar field outside a border -- `toggler::Style.padding_ratio`,
+// `scrollable::Style.gap` -- brings it back; `git show e2e2eaf` has it.
 
 /// The flat color of an emitted `Background`, or the reason it is not one.
 #[cfg(feature = "widgets")]
@@ -241,9 +238,162 @@ fn fill(background: Background) -> Result<Color, String> {
     flat(Some(background))
 }
 
+/// `leaves!` with a prefix that is a value rather than a literal, pushing
+/// `String`s.
+///
+/// The one identifier list still becomes both the no-`..` destructure and the
+/// names, so an upstream field cannot be silenced out of the tripwire; what it
+/// buys is a prefix a caller can pass, which is what lets one `Border` walker
+/// serve every function instead of two `leaves!` invocations per function.
+/// `leaves!` itself is unchanged and still serves the palette enumerators,
+/// whose names are `&'static str`.
+#[cfg(feature = "widgets")]
+macro_rules! leaves_under {
+    (
+        $out:ident, $value:expr, $prefix:expr,
+        $($ty:ident)::+ { $($leaf:ident),* $(,)? $(@nested $($nested:ident),+ $(,)?)? }
+    ) => {
+        let $($ty)::+ { $($leaf: _,)* $($($nested,)+)? } = $value;
+        $($out.push(format!("{}.{}", $prefix, stringify!($leaf)));)*
+    };
+}
+
+/// Every leaf of an iced `Border` under `prefix`, destructured with no `..`.
+///
+/// One walker for all of them: a `Border` is the same six leaves wherever it
+/// appears, so an upstream addition fails to compile here once rather than
+/// once per function.
+#[cfg(feature = "widgets")]
+fn border_fields(border: &Border, prefix: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, border, prefix, Border { color, width, @nested radius });
+    leaves_under!(
+        out,
+        radius,
+        format!("{prefix}.radius"),
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
+/// How many leaves a `Border` has. `check_border_rows` compares exactly this
+/// many, so the two are held together by an assertion rather than by memory.
+#[cfg(feature = "widgets")]
+const BORDER_LEAVES: usize = 6;
+
+/// The native values an iced `Border` needs: a color, a width, and one corner
+/// radius the four corners share.
+#[cfg(feature = "widgets")]
+struct NativeBorder {
+    color: Color,
+    width: f32,
+    radius: f32,
+}
+
+/// One row for a whole `Border`: six leaves, one native source, one entry.
+///
+/// A `Border` is six `Style` fields with three native values behind them, so
+/// nine of this file's functions would otherwise repeat the same six rows.
+/// This row claims all six names for the coverage tripwire and checks all six,
+/// naming the exact leaf and status when one differs. `field` is the
+/// function's dotted prefix -- `"styles::button"` -- and the leaves it claims
+/// are `<field>.border.color`, `.border.width` and the four
+/// `.border.radius.*`.
+#[cfg(feature = "widgets")]
+struct BorderRow<S: 'static> {
+    field: &'static str,
+    statuses: &'static [S],
+    native: fn(&ResolvedTheme, S) -> NativeBorder,
+    get: fn(&Theme, &ResolvedTheme, S) -> Border,
+}
+
+/// The six leaf names of every border row, for the tripwire and for
+/// `rows_claiming`.
+#[cfg(feature = "widgets")]
+fn border_row_fields<S>(rows: &[BorderRow<S>]) -> Vec<String> {
+    rows.iter()
+        .flat_map(|row| border_fields(&Border::default(), &format!("{}.border", row.field)))
+        .collect()
+}
+
+/// Assert one function's border rows over every combination and status, leaf
+/// by leaf.
+#[cfg(feature = "widgets")]
+fn check_border_rows<S: Copy + std::fmt::Debug>(
+    rows: &[BorderRow<S>],
+    combinations: &[Combination],
+    failures: &mut Vec<String>,
+) -> usize {
+    let mut checks = 0;
+    for c in combinations {
+        for row in rows {
+            for &status in row.statuses {
+                let expected = (row.native)(&c.resolved, status);
+                let actual = (row.get)(&c.theme, &c.resolved, status);
+
+                checks += 1;
+                if actual.color != expected.color {
+                    failures.push(format!(
+                        "{}: {}.border.color ({status:?}) is {}, native gives {}",
+                        c.label(),
+                        row.field,
+                        show(actual.color),
+                        show(expected.color)
+                    ));
+                }
+
+                checks += 1;
+                if actual.width != expected.width {
+                    failures.push(format!(
+                        "{}: {}.border.width ({status:?}) is {}, native gives {}",
+                        c.label(),
+                        row.field,
+                        actual.width,
+                        expected.width
+                    ));
+                }
+
+                for (leaf, corner) in [
+                    ("top_left", actual.radius.top_left),
+                    ("top_right", actual.radius.top_right),
+                    ("bottom_right", actual.radius.bottom_right),
+                    ("bottom_left", actual.radius.bottom_left),
+                ] {
+                    checks += 1;
+                    if corner != expected.radius {
+                        failures.push(format!(
+                            "{}: {}.border.radius.{leaf} ({status:?}) is {corner}, \
+                             native gives {}",
+                            c.label(),
+                            row.field,
+                            expected.radius
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    checks
+}
+
+/// The border every button function wears: the button's own, in every status.
+#[cfg(feature = "widgets")]
+fn native_button_border(r: &ResolvedTheme) -> NativeBorder {
+    NativeBorder {
+        color: to_color(r.button.border.color),
+        width: r.button.border.line_width,
+        radius: r.button.border.corner_radius,
+    }
+}
+
 /// Every color field of `styles::button`, and the native value it carries.
 ///
-/// One such const per function; read with `BUTTON_SCALAR_ROWS` and `DERIVED`
+/// One such const per function; read with `BUTTON_BORDER_ROWS` and `DERIVED`
 /// together, they name every field of the `Style` it emits.
 #[cfg(feature = "widgets")]
 const BUTTON_ROWS: &[StyleRow<button::Status>] = &[
@@ -259,165 +409,39 @@ const BUTTON_ROWS: &[StyleRow<button::Status>] = &[
         native: native_button_label,
         get: |t, r, s| Ok(styles::button(r)(t, s).text_color),
     },
-    StyleRow {
-        field: "styles::button.border.color",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| to_color(r.button.border.color),
-        get: |t, r, s| Ok(styles::button(r)(t, s).border.color),
-    },
 ];
 
 #[cfg(feature = "widgets")]
-const BUTTON_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
-    ScalarRow {
-        field: "styles::button.border.width",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.line_width,
-        get: |t, r, s| styles::button(r)(t, s).border.width,
-    },
-    ScalarRow {
-        field: "styles::button.border.radius.top_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button(r)(t, s).border.radius.top_left,
-    },
-    ScalarRow {
-        field: "styles::button.border.radius.top_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button(r)(t, s).border.radius.top_right,
-    },
-    ScalarRow {
-        field: "styles::button.border.radius.bottom_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button(r)(t, s).border.radius.bottom_right,
-    },
-    ScalarRow {
-        field: "styles::button.border.radius.bottom_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button(r)(t, s).border.radius.bottom_left,
-    },
-];
+const BUTTON_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow {
+    field: "styles::button",
+    statuses: BUTTON_STATUSES,
+    native: |r, _| native_button_border(r),
+    get: |t, r, s| styles::button(r)(t, s).border,
+}];
 
-/// The fill the native fields give a primary button in `status`.
-///
-/// The same states as `native_button_fill`, over the accent fill the platform
-/// states for this class rather than over the neutral one.
-#[cfg(feature = "widgets")]
-fn native_button_primary_fill(r: &ResolvedTheme, status: button::Status) -> Color {
-    let base = to_color(r.button.primary_background);
-    match status {
-        button::Status::Active => base,
-        button::Status::Hovered => over(to_color(r.button.hover_background), base),
-        button::Status::Pressed => over(
-            to_color(
-                r.button
-                    .active_background
-                    .unwrap_or(r.button.hover_background),
-            ),
-            base,
-        ),
-        button::Status::Disabled => to_color(
-            r.button
-                .disabled_background
-                .unwrap_or(r.button.background_color),
-        ),
-    }
-}
-
-/// The label color the native fields give a primary button in `status`.
-#[cfg(feature = "widgets")]
-fn native_button_primary_label(r: &ResolvedTheme, status: button::Status) -> Color {
-    to_color(match status {
-        button::Status::Active => r.button.primary_text_color,
-        button::Status::Hovered => r.button.hover_text_color,
-        button::Status::Pressed => r.button.active_text_color,
-        button::Status::Disabled => r.button.disabled_text_color,
-    })
-}
-
-/// Every color field of `styles::button_primary`.
-#[cfg(feature = "widgets")]
-const BUTTON_PRIMARY_ROWS: &[StyleRow<button::Status>] = &[
-    StyleRow {
-        field: "styles::button_primary.background",
-        statuses: BUTTON_STATUSES,
-        native: native_button_primary_fill,
-        get: |t, r, s| flat(styles::button_primary(r)(t, s).background),
-    },
-    StyleRow {
-        field: "styles::button_primary.text_color",
-        statuses: BUTTON_STATUSES,
-        native: native_button_primary_label,
-        get: |t, r, s| Ok(styles::button_primary(r)(t, s).text_color),
-    },
-    StyleRow {
-        field: "styles::button_primary.border.color",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| to_color(r.button.border.color),
-        get: |t, r, s| Ok(styles::button_primary(r)(t, s).border.color),
-    },
-];
-
-#[cfg(feature = "widgets")]
-const BUTTON_PRIMARY_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
-    ScalarRow {
-        field: "styles::button_primary.border.width",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.line_width,
-        get: |t, r, s| styles::button_primary(r)(t, s).border.width,
-    },
-    ScalarRow {
-        field: "styles::button_primary.border.radius.top_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.top_left,
-    },
-    ScalarRow {
-        field: "styles::button_primary.border.radius.top_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.top_right,
-    },
-    ScalarRow {
-        field: "styles::button_primary.border.radius.bottom_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.bottom_right,
-    },
-    ScalarRow {
-        field: "styles::button_primary.border.radius.bottom_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.bottom_left,
-    },
-];
-
-/// The statuses of a status button whose fill and label the function itself
+/// The statuses of a class button whose fill and label the function itself
 /// decides, and so the only ones its rows and its contrast pair cover.
 #[cfg(feature = "widgets")]
-const STATUS_BUTTON_NATIVE_STATUSES: &[button::Status] =
+const CLASS_BUTTON_NATIVE_STATUSES: &[button::Status] =
     &[button::Status::Active, button::Status::Disabled];
 
-/// The statuses a status button takes whole from iced's own class, because the
-/// model states no hovered and no pressed variant of a status color
-/// (spec section 3.3). Asserted by
-/// `a_status_button_takes_its_hovered_and_pressed_states_from_iced`.
+/// The statuses a class button takes whole from iced's own class, because the
+/// model states no hovered and no pressed variant of an accent or a status
+/// color (spec section 3.3). Asserted by
+/// `a_class_button_takes_its_hovered_and_pressed_states_from_iced`.
 #[cfg(feature = "widgets")]
-const STATUS_BUTTON_ICED_STATUSES: &[button::Status] =
+const CLASS_BUTTON_ICED_STATUSES: &[button::Status] =
     &[button::Status::Hovered, button::Status::Pressed];
 
-/// The fill the native fields give a status button painted `idle`.
+/// The fill the native fields give a class button painted `idle`.
 ///
 /// The match has no catch-all, but only the two statuses of
-/// `STATUS_BUTTON_NATIVE_STATUSES` ever reach a row: the other two are iced's
+/// `CLASS_BUTTON_NATIVE_STATUSES` ever reach a row: the other two are iced's
 /// on both sides. Their arm still has to name a color, and the idle one is the
 /// least surprising -- if a status is ever moved between the two lists, the row
 /// compares it against that and fails rather than passing quietly.
 #[cfg(feature = "widgets")]
-fn native_status_button_fill(r: &ResolvedTheme, status: button::Status, idle: Rgba) -> Color {
+fn native_class_button_fill(r: &ResolvedTheme, status: button::Status, idle: Rgba) -> Color {
     match status {
         button::Status::Active | button::Status::Hovered | button::Status::Pressed => {
             to_color(idle)
@@ -430,185 +454,139 @@ fn native_status_button_fill(r: &ResolvedTheme, status: button::Status, idle: Rg
     }
 }
 
-/// The label the native fields give a status button whose own label is `idle`.
+/// The label the native fields give a class button whose own label is `idle`.
 #[cfg(feature = "widgets")]
-fn native_status_button_label(r: &ResolvedTheme, status: button::Status, idle: Rgba) -> Color {
+fn native_class_button_label(r: &ResolvedTheme, status: button::Status, idle: Rgba) -> Color {
     to_color(match status {
         button::Status::Active | button::Status::Hovered | button::Status::Pressed => idle,
         button::Status::Disabled => r.button.disabled_text_color,
     })
 }
 
-/// Every color field of `styles::button_danger`.
-#[cfg(feature = "widgets")]
-const BUTTON_DANGER_ROWS: &[StyleRow<button::Status>] = &[
-    StyleRow {
-        field: "styles::button_danger.background",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        native: |r, s| native_status_button_fill(r, s, r.defaults.danger_color),
-        get: |t, r, s| flat(styles::button_danger(r)(t, s).background),
-    },
-    StyleRow {
-        field: "styles::button_danger.text_color",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        native: |r, s| native_status_button_label(r, s, r.defaults.danger_text_color),
-        get: |t, r, s| Ok(styles::button_danger(r)(t, s).text_color),
-    },
-    StyleRow {
-        field: "styles::button_danger.border.color",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| to_color(r.button.border.color),
-        get: |t, r, s| Ok(styles::button_danger(r)(t, s).border.color),
-    },
-];
+/// Declare the whole contract of one class button: its two color rows, its
+/// border row, its contrast pair and its field enumerator.
+///
+/// `styles::button_primary`, `button_danger`, `button_success` and
+/// `button_warning` are the same function four times over -- they differ only
+/// in the idle pair they paint and in which of iced's own classes fills their
+/// hovered and pressed states -- so their contract is written once here and
+/// instantiated four times. `$fill` and `$label` are accessors of the idle
+/// pair, `fn(&ResolvedTheme) -> Rgba`.
+macro_rules! class_button_contract {
+    (
+        $rows:ident, $borders:ident, $pairs:ident, $fields:ident,
+        $prefix:literal, $style:path, $what:literal, $fill:expr, $label:expr
+    ) => {
+        #[cfg(feature = "widgets")]
+        const $rows: &[StyleRow<button::Status>] = &[
+            StyleRow {
+                field: concat!($prefix, ".background"),
+                statuses: CLASS_BUTTON_NATIVE_STATUSES,
+                native: |r, s| native_class_button_fill(r, s, ($fill)(r)),
+                get: |t, r, s| flat($style(r)(t, s).background),
+            },
+            StyleRow {
+                field: concat!($prefix, ".text_color"),
+                statuses: CLASS_BUTTON_NATIVE_STATUSES,
+                native: |r, s| native_class_button_label(r, s, ($label)(r)),
+                get: |t, r, s| Ok($style(r)(t, s).text_color),
+            },
+        ];
 
-#[cfg(feature = "widgets")]
-const BUTTON_DANGER_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
-    ScalarRow {
-        field: "styles::button_danger.border.width",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.line_width,
-        get: |t, r, s| styles::button_danger(r)(t, s).border.width,
-    },
-    ScalarRow {
-        field: "styles::button_danger.border.radius.top_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.top_left,
-    },
-    ScalarRow {
-        field: "styles::button_danger.border.radius.top_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.top_right,
-    },
-    ScalarRow {
-        field: "styles::button_danger.border.radius.bottom_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.bottom_right,
-    },
-    ScalarRow {
-        field: "styles::button_danger.border.radius.bottom_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.bottom_left,
-    },
-];
+        #[cfg(feature = "widgets")]
+        const $borders: &[BorderRow<button::Status>] = &[BorderRow {
+            field: $prefix,
+            statuses: BUTTON_STATUSES,
+            native: |r, _| native_button_border(r),
+            get: |t, r, s| $style(r)(t, s).border,
+        }];
 
-/// Every color field of `styles::button_success`.
-#[cfg(feature = "widgets")]
-const BUTTON_SUCCESS_ROWS: &[StyleRow<button::Status>] = &[
-    StyleRow {
-        field: "styles::button_success.background",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        native: |r, s| native_status_button_fill(r, s, r.defaults.success_color),
-        get: |t, r, s| flat(styles::button_success(r)(t, s).background),
-    },
-    StyleRow {
-        field: "styles::button_success.text_color",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        native: |r, s| native_status_button_label(r, s, r.defaults.success_text_color),
-        get: |t, r, s| Ok(styles::button_success(r)(t, s).text_color),
-    },
-    StyleRow {
-        field: "styles::button_success.border.color",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| to_color(r.button.border.color),
-        get: |t, r, s| Ok(styles::button_success(r)(t, s).border.color),
-    },
-];
+        /// Only `CLASS_BUTTON_NATIVE_STATUSES`: in the other two the function
+        /// decides neither the fill nor the label -- both are iced's own class
+        /// -- so there is no native pair to compare against and section 7's
+        /// rule has nothing to say.
+        #[cfg(feature = "widgets")]
+        const $pairs: &[StylePair<button::Status>] = &[StylePair {
+            what: $what,
+            statuses: CLASS_BUTTON_NATIVE_STATUSES,
+            emitted: |t, r, s| {
+                let style = $style(r)(t, s);
+                flat(style.background).map(|background| {
+                    (
+                        style.text_color,
+                        background,
+                        to_color(r.defaults.background_color),
+                    )
+                })
+            },
+            native: |r, s| {
+                (
+                    native_class_button_label(r, s, ($label)(r)),
+                    native_class_button_fill(r, s, ($fill)(r)),
+                    to_color(r.defaults.background_color),
+                )
+            },
+        }];
 
-#[cfg(feature = "widgets")]
-const BUTTON_SUCCESS_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
-    ScalarRow {
-        field: "styles::button_success.border.width",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.line_width,
-        get: |t, r, s| styles::button_success(r)(t, s).border.width,
-    },
-    ScalarRow {
-        field: "styles::button_success.border.radius.top_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_success(r)(t, s).border.radius.top_left,
-    },
-    ScalarRow {
-        field: "styles::button_success.border.radius.top_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_success(r)(t, s).border.radius.top_right,
-    },
-    ScalarRow {
-        field: "styles::button_success.border.radius.bottom_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_success(r)(t, s).border.radius.bottom_right,
-    },
-    ScalarRow {
-        field: "styles::button_success.border.radius.bottom_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_success(r)(t, s).border.radius.bottom_left,
-    },
-];
+        #[cfg(feature = "widgets")]
+        fn $fields(style: &button::Style) -> Vec<String> {
+            let mut out = Vec::new();
+            leaves_under!(out, style, $prefix, button::Style {
+                background, text_color, shadow, snap, @nested border
+            });
+            out.extend(border_fields(border, concat!($prefix, ".border")));
+            out
+        }
+    };
+}
 
-/// Every color field of `styles::button_warning`.
-#[cfg(feature = "widgets")]
-const BUTTON_WARNING_ROWS: &[StyleRow<button::Status>] = &[
-    StyleRow {
-        field: "styles::button_warning.background",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        native: |r, s| native_status_button_fill(r, s, r.defaults.warning_color),
-        get: |t, r, s| flat(styles::button_warning(r)(t, s).background),
-    },
-    StyleRow {
-        field: "styles::button_warning.text_color",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        native: |r, s| native_status_button_label(r, s, r.defaults.warning_text_color),
-        get: |t, r, s| Ok(styles::button_warning(r)(t, s).text_color),
-    },
-    StyleRow {
-        field: "styles::button_warning.border.color",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| to_color(r.button.border.color),
-        get: |t, r, s| Ok(styles::button_warning(r)(t, s).border.color),
-    },
-];
+class_button_contract!(
+    BUTTON_PRIMARY_ROWS,
+    BUTTON_PRIMARY_BORDER_ROWS,
+    BUTTON_PRIMARY_PAIRS,
+    button_primary_style_fields,
+    "styles::button_primary",
+    styles::button_primary,
+    "primary button label",
+    |r: &ResolvedTheme| r.button.primary_background,
+    |r: &ResolvedTheme| r.button.primary_text_color
+);
 
-#[cfg(feature = "widgets")]
-const BUTTON_WARNING_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
-    ScalarRow {
-        field: "styles::button_warning.border.width",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.line_width,
-        get: |t, r, s| styles::button_warning(r)(t, s).border.width,
-    },
-    ScalarRow {
-        field: "styles::button_warning.border.radius.top_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.top_left,
-    },
-    ScalarRow {
-        field: "styles::button_warning.border.radius.top_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.top_right,
-    },
-    ScalarRow {
-        field: "styles::button_warning.border.radius.bottom_right",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.bottom_right,
-    },
-    ScalarRow {
-        field: "styles::button_warning.border.radius.bottom_left",
-        statuses: BUTTON_STATUSES,
-        native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.bottom_left,
-    },
-];
+class_button_contract!(
+    BUTTON_DANGER_ROWS,
+    BUTTON_DANGER_BORDER_ROWS,
+    BUTTON_DANGER_PAIRS,
+    button_danger_style_fields,
+    "styles::button_danger",
+    styles::button_danger,
+    "danger button label",
+    |r: &ResolvedTheme| r.defaults.danger_color,
+    |r: &ResolvedTheme| r.defaults.danger_text_color
+);
+
+class_button_contract!(
+    BUTTON_SUCCESS_ROWS,
+    BUTTON_SUCCESS_BORDER_ROWS,
+    BUTTON_SUCCESS_PAIRS,
+    button_success_style_fields,
+    "styles::button_success",
+    styles::button_success,
+    "success button label",
+    |r: &ResolvedTheme| r.defaults.success_color,
+    |r: &ResolvedTheme| r.defaults.success_text_color
+);
+
+class_button_contract!(
+    BUTTON_WARNING_ROWS,
+    BUTTON_WARNING_BORDER_ROWS,
+    BUTTON_WARNING_PAIRS,
+    button_warning_style_fields,
+    "styles::button_warning",
+    styles::button_warning,
+    "warning button label",
+    |r: &ResolvedTheme| r.defaults.warning_color,
+    |r: &ResolvedTheme| r.defaults.warning_text_color
+);
 
 /// The fill the native fields give a link button in `status`.
 #[cfg(feature = "widgets")]
@@ -750,12 +728,6 @@ const TEXT_INPUT_ROWS: &[StyleRow<text_input::Status>] = &[
         get: |t, r, s| fill(styles::text_input(r)(t, s).background),
     },
     StyleRow {
-        field: "styles::text_input.border.color",
-        statuses: TEXT_INPUT_STATUSES,
-        native: native_text_input_border,
-        get: |t, r, s| Ok(styles::text_input(r)(t, s).border.color),
-    },
-    StyleRow {
         field: "styles::text_input.placeholder",
         statuses: TEXT_INPUT_STATUSES,
         native: |r, _| to_color(r.input.placeholder_color),
@@ -775,39 +747,19 @@ const TEXT_INPUT_ROWS: &[StyleRow<text_input::Status>] = &[
     },
 ];
 
+/// The input's border: its width and radius are status-independent, its color
+/// is not.
 #[cfg(feature = "widgets")]
-const TEXT_INPUT_SCALAR_ROWS: &[ScalarRow<text_input::Status>] = &[
-    ScalarRow {
-        field: "styles::text_input.border.width",
-        statuses: TEXT_INPUT_STATUSES,
-        native: |r, _| r.input.border.line_width,
-        get: |t, r, s| styles::text_input(r)(t, s).border.width,
+const TEXT_INPUT_BORDER_ROWS: &[BorderRow<text_input::Status>] = &[BorderRow {
+    field: "styles::text_input",
+    statuses: TEXT_INPUT_STATUSES,
+    native: |r, s| NativeBorder {
+        color: native_text_input_border(r, s),
+        width: r.input.border.line_width,
+        radius: r.input.border.corner_radius,
     },
-    ScalarRow {
-        field: "styles::text_input.border.radius.top_left",
-        statuses: TEXT_INPUT_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_input(r)(t, s).border.radius.top_left,
-    },
-    ScalarRow {
-        field: "styles::text_input.border.radius.top_right",
-        statuses: TEXT_INPUT_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_input(r)(t, s).border.radius.top_right,
-    },
-    ScalarRow {
-        field: "styles::text_input.border.radius.bottom_right",
-        statuses: TEXT_INPUT_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_input(r)(t, s).border.radius.bottom_right,
-    },
-    ScalarRow {
-        field: "styles::text_input.border.radius.bottom_left",
-        statuses: TEXT_INPUT_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_input(r)(t, s).border.radius.bottom_left,
-    },
-];
+    get: |t, r, s| styles::text_input(r)(t, s).border,
+}];
 
 /// Every value of `text_editor::Status`; `Focused` carries a `bool` there too
 /// (`text_editor.rs:1409-1421`).
@@ -865,12 +817,6 @@ const TEXT_EDITOR_ROWS: &[StyleRow<text_editor::Status>] = &[
         get: |t, r, s| fill(styles::text_editor(r)(t, s).background),
     },
     StyleRow {
-        field: "styles::text_editor.border.color",
-        statuses: TEXT_EDITOR_STATUSES,
-        native: native_text_editor_border,
-        get: |t, r, s| Ok(styles::text_editor(r)(t, s).border.color),
-    },
-    StyleRow {
         field: "styles::text_editor.placeholder",
         statuses: TEXT_EDITOR_STATUSES,
         native: |r, _| to_color(r.input.placeholder_color),
@@ -890,62 +836,43 @@ const TEXT_EDITOR_ROWS: &[StyleRow<text_editor::Status>] = &[
     },
 ];
 
+/// The same border, through the editor's own `Status`.
 #[cfg(feature = "widgets")]
-const TEXT_EDITOR_SCALAR_ROWS: &[ScalarRow<text_editor::Status>] = &[
-    ScalarRow {
-        field: "styles::text_editor.border.width",
-        statuses: TEXT_EDITOR_STATUSES,
-        native: |r, _| r.input.border.line_width,
-        get: |t, r, s| styles::text_editor(r)(t, s).border.width,
+const TEXT_EDITOR_BORDER_ROWS: &[BorderRow<text_editor::Status>] = &[BorderRow {
+    field: "styles::text_editor",
+    statuses: TEXT_EDITOR_STATUSES,
+    native: |r, s| NativeBorder {
+        color: native_text_editor_border(r, s),
+        width: r.input.border.line_width,
+        radius: r.input.border.corner_radius,
     },
-    ScalarRow {
-        field: "styles::text_editor.border.radius.top_left",
-        statuses: TEXT_EDITOR_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.top_left,
-    },
-    ScalarRow {
-        field: "styles::text_editor.border.radius.top_right",
-        statuses: TEXT_EDITOR_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.top_right,
-    },
-    ScalarRow {
-        field: "styles::text_editor.border.radius.bottom_right",
-        statuses: TEXT_EDITOR_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.bottom_right,
-    },
-    ScalarRow {
-        field: "styles::text_editor.border.radius.bottom_left",
-        statuses: TEXT_EDITOR_STATUSES,
-        native: |r, _| r.input.border.corner_radius,
-        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.bottom_left,
-    },
-];
+    get: |t, r, s| styles::text_editor(r)(t, s).border,
+}];
 
 /// The `field` of every style row, from every function's consts.
 ///
 /// One line per function; the coverage tripwire reads it, and `rows_claiming`
 /// counts in it.
 #[cfg(feature = "widgets")]
-fn style_row_fields() -> Vec<&'static str> {
-    let mut out = Vec::new();
-    out.extend(BUTTON_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_SCALAR_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_PRIMARY_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_PRIMARY_SCALAR_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_DANGER_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_DANGER_SCALAR_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_SUCCESS_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_SUCCESS_SCALAR_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_WARNING_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_WARNING_SCALAR_ROWS.iter().map(|row| row.field));
-    out.extend(BUTTON_LINK_ROWS.iter().map(|row| row.field));
-    out.extend(TEXT_INPUT_ROWS.iter().map(|row| row.field));
-    out.extend(TEXT_INPUT_SCALAR_ROWS.iter().map(|row| row.field));
-    out.extend(TEXT_EDITOR_ROWS.iter().map(|row| row.field));
-    out.extend(TEXT_EDITOR_SCALAR_ROWS.iter().map(|row| row.field));
+fn style_row_fields() -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    out.extend(BUTTON_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_PRIMARY_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_DANGER_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_SUCCESS_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_WARNING_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(BUTTON_LINK_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TEXT_INPUT_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TEXT_EDITOR_ROWS.iter().map(|row| row.field.to_string()));
+    // One border row claims six leaves, so its names are built rather than
+    // written -- by the same walker the tripwire uses.
+    out.extend(border_row_fields(BUTTON_BORDER_ROWS));
+    out.extend(border_row_fields(BUTTON_PRIMARY_BORDER_ROWS));
+    out.extend(border_row_fields(BUTTON_DANGER_BORDER_ROWS));
+    out.extend(border_row_fields(BUTTON_SUCCESS_BORDER_ROWS));
+    out.extend(border_row_fields(BUTTON_WARNING_BORDER_ROWS));
+    out.extend(border_row_fields(TEXT_INPUT_BORDER_ROWS));
+    out.extend(border_row_fields(TEXT_EDITOR_BORDER_ROWS));
     out
 }
 
@@ -983,32 +910,8 @@ fn check_style_rows<S: Copy + std::fmt::Debug>(
     checks
 }
 
-/// The same for one function's scalar rows.
-#[cfg(feature = "widgets")]
-fn check_scalar_rows<S: Copy + std::fmt::Debug>(
-    rows: &[ScalarRow<S>],
-    combinations: &[Combination],
-    failures: &mut Vec<String>,
-) -> usize {
-    let mut checks = 0;
-    for c in combinations {
-        for row in rows {
-            for &status in row.statuses {
-                checks += 1;
-                let expected = (row.native)(&c.resolved, status);
-                let actual = (row.get)(&c.theme, &c.resolved, status);
-                if actual != expected {
-                    failures.push(format!(
-                        "{}: {} ({status:?}) is {actual}, native gives {expected}",
-                        c.label(),
-                        row.field
-                    ));
-                }
-            }
-        }
-    }
-    checks
-}
+// `check_scalar_rows` went with `ScalarRow`; `check_border_rows` above is what
+// covers the five fields it used to.
 
 /// Every field the tripwire walks that no row claims, with the derivation that
 /// fills it instead. A field is in the rows or here, never both and never
@@ -1054,14 +957,14 @@ const DERIVED: &[(&str, &str)] = &[
     #[cfg(feature = "widgets")]
     (
         "styles::button_primary.shadow",
-        "iced default: button::Style::default().shadow -- the model has a \
-         shadow color but no offset or blur",
+        "iced default: button::primary(theme, status).shadow -- the model has \
+         a shadow color but no offset or blur",
     ),
     #[cfg(feature = "widgets")]
     (
         "styles::button_primary.snap",
-        "iced default: button::Style::default().snap -- a renderer setting, \
-         cfg!(feature = \"crisp\")",
+        "iced default: button::primary(theme, status).snap -- a renderer \
+         setting, cfg!(feature = \"crisp\")",
     ),
     #[cfg(feature = "widgets")]
     (
@@ -1349,101 +1252,9 @@ const BUTTON_PAIRS: &[StylePair<button::Status>] = &[StylePair {
     },
 }];
 
-/// The `styles::button_primary` pairs the assertion covers.
-#[cfg(feature = "widgets")]
-const BUTTON_PRIMARY_PAIRS: &[StylePair<button::Status>] = &[StylePair {
-    what: "primary button label",
-    statuses: BUTTON_STATUSES,
-    emitted: |t, r, s| {
-        let style = styles::button_primary(r)(t, s);
-        flat(style.background).map(|fill| {
-            (
-                style.text_color,
-                fill,
-                to_color(r.defaults.background_color),
-            )
-        })
-    },
-    native: |r, s| {
-        (
-            native_button_primary_label(r, s),
-            native_button_primary_fill(r, s),
-            to_color(r.defaults.background_color),
-        )
-    },
-}];
-
-/// The status-button pairs the assertion covers.
-///
-/// Only `STATUS_BUTTON_NATIVE_STATUSES`: in the other two the function decides
-/// neither the fill nor the label -- both are iced's own class -- so there is
-/// no native pair to compare against and section 7's rule has nothing to say.
-#[cfg(feature = "widgets")]
-const STATUS_BUTTON_PAIRS: &[StylePair<button::Status>] = &[
-    StylePair {
-        what: "danger button label",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        emitted: |t, r, s| {
-            let style = styles::button_danger(r)(t, s);
-            flat(style.background).map(|fill| {
-                (
-                    style.text_color,
-                    fill,
-                    to_color(r.defaults.background_color),
-                )
-            })
-        },
-        native: |r, s| {
-            (
-                native_status_button_label(r, s, r.defaults.danger_text_color),
-                native_status_button_fill(r, s, r.defaults.danger_color),
-                to_color(r.defaults.background_color),
-            )
-        },
-    },
-    StylePair {
-        what: "success button label",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        emitted: |t, r, s| {
-            let style = styles::button_success(r)(t, s);
-            flat(style.background).map(|fill| {
-                (
-                    style.text_color,
-                    fill,
-                    to_color(r.defaults.background_color),
-                )
-            })
-        },
-        native: |r, s| {
-            (
-                native_status_button_label(r, s, r.defaults.success_text_color),
-                native_status_button_fill(r, s, r.defaults.success_color),
-                to_color(r.defaults.background_color),
-            )
-        },
-    },
-    StylePair {
-        what: "warning button label",
-        statuses: STATUS_BUTTON_NATIVE_STATUSES,
-        emitted: |t, r, s| {
-            let style = styles::button_warning(r)(t, s);
-            flat(style.background).map(|fill| {
-                (
-                    style.text_color,
-                    fill,
-                    to_color(r.defaults.background_color),
-                )
-            })
-        },
-        native: |r, s| {
-            (
-                native_status_button_label(r, s, r.defaults.warning_text_color),
-                native_status_button_fill(r, s, r.defaults.warning_color),
-                to_color(r.defaults.background_color),
-            )
-        },
-    },
-];
+// The four class buttons' pairs -- `BUTTON_PRIMARY_PAIRS`,
+// `BUTTON_DANGER_PAIRS`, `BUTTON_SUCCESS_PAIRS`, `BUTTON_WARNING_PAIRS` --
+// are declared by `class_button_contract!` above, beside their rows.
 
 /// The `styles::button_link` pairs the assertion covers.
 #[cfg(feature = "widgets")]
@@ -1970,187 +1781,68 @@ fn extended_slots(extended: &Extended) -> Vec<(String, Color)> {
 }
 
 /// Every field of the `button::Style` the connector emits.
+///
+/// The four class buttons' enumerators -- `button_primary_style_fields` and
+/// friends -- are declared by `class_button_contract!`, which walks the same
+/// `button::Style` under its own prefix.
 #[cfg(feature = "widgets")]
-fn button_style_fields(style: &button::Style) -> Vec<&'static str> {
+fn button_style_fields(style: &button::Style) -> Vec<String> {
     let mut out = Vec::new();
-    leaves!(out, style, "styles::button", button::Style {
+    leaves_under!(out, style, "styles::button", button::Style {
         background, text_color, shadow, snap, @nested border
     });
-    leaves!(out, border, "styles::button.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::button.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
-    out
-}
-
-/// Every field of the `button::Style` `styles::button_primary` emits.
-#[cfg(feature = "widgets")]
-fn button_primary_style_fields(style: &button::Style) -> Vec<&'static str> {
-    let mut out = Vec::new();
-    leaves!(out, style, "styles::button_primary", button::Style {
-        background, text_color, shadow, snap, @nested border
-    });
-    leaves!(out, border, "styles::button_primary.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::button_primary.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
-    out
-}
-
-/// Every field of the `button::Style` `styles::button_danger` emits.
-#[cfg(feature = "widgets")]
-fn button_danger_style_fields(style: &button::Style) -> Vec<&'static str> {
-    let mut out = Vec::new();
-    leaves!(out, style, "styles::button_danger", button::Style {
-        background, text_color, shadow, snap, @nested border
-    });
-    leaves!(out, border, "styles::button_danger.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::button_danger.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
-    out
-}
-
-/// Every field of the `button::Style` `styles::button_success` emits.
-#[cfg(feature = "widgets")]
-fn button_success_style_fields(style: &button::Style) -> Vec<&'static str> {
-    let mut out = Vec::new();
-    leaves!(out, style, "styles::button_success", button::Style {
-        background, text_color, shadow, snap, @nested border
-    });
-    leaves!(out, border, "styles::button_success.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::button_success.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
-    out
-}
-
-/// Every field of the `button::Style` `styles::button_warning` emits.
-#[cfg(feature = "widgets")]
-fn button_warning_style_fields(style: &button::Style) -> Vec<&'static str> {
-    let mut out = Vec::new();
-    leaves!(out, style, "styles::button_warning", button::Style {
-        background, text_color, shadow, snap, @nested border
-    });
-    leaves!(out, border, "styles::button_warning.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::button_warning.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
+    out.extend(border_fields(border, "styles::button.border"));
     out
 }
 
 /// Every field of the `button::Style` `styles::button_link` emits.
 #[cfg(feature = "widgets")]
-fn button_link_style_fields(style: &button::Style) -> Vec<&'static str> {
+fn button_link_style_fields(style: &button::Style) -> Vec<String> {
     let mut out = Vec::new();
-    leaves!(out, style, "styles::button_link", button::Style {
+    leaves_under!(out, style, "styles::button_link", button::Style {
         background, text_color, shadow, snap, @nested border
     });
-    leaves!(out, border, "styles::button_link.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::button_link.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
+    out.extend(border_fields(border, "styles::button_link.border"));
     out
 }
 
 /// Every field of the `text_input::Style` the connector emits.
 #[cfg(feature = "widgets")]
-fn text_input_style_fields(style: &text_input::Style) -> Vec<&'static str> {
+fn text_input_style_fields(style: &text_input::Style) -> Vec<String> {
     let mut out = Vec::new();
-    leaves!(out, style, "styles::text_input", text_input::Style {
+    leaves_under!(out, style, "styles::text_input", text_input::Style {
         background, icon, placeholder, value, selection, @nested border
     });
-    leaves!(out, border, "styles::text_input.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::text_input.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
+    out.extend(border_fields(border, "styles::text_input.border"));
     out
 }
 
 /// Every field of the `text_editor::Style` the connector emits.
 #[cfg(feature = "widgets")]
-fn text_editor_style_fields(style: &text_editor::Style) -> Vec<&'static str> {
+fn text_editor_style_fields(style: &text_editor::Style) -> Vec<String> {
     let mut out = Vec::new();
-    leaves!(out, style, "styles::text_editor", text_editor::Style {
+    leaves_under!(out, style, "styles::text_editor", text_editor::Style {
         background, placeholder, value, selection, @nested border
     });
-    leaves!(out, border, "styles::text_editor.border", Border { color, width, @nested radius });
-    leaves!(
-        out,
-        radius,
-        "styles::text_editor.border.radius",
-        Radius {
-            top_left,
-            top_right,
-            bottom_right,
-            bottom_left
-        }
-    );
+    out.extend(border_fields(border, "styles::text_editor.border"));
     out
 }
 
 /// Every field the tripwire walks: the palette inputs, the extended slots the
 /// connector writes, and each `styles::*` output's fields.
 #[cfg_attr(not(feature = "widgets"), allow(unused_variables))]
-fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<&'static str> {
-    let mut out = palette_fields(&theme.palette());
-    out.extend(written_extended_fields(theme.extended_palette()));
+fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
+    // The palette enumerators name `&'static str`s built by `leaves!`; the
+    // style ones build theirs under a prefix, so both arrive as `String`.
+    let mut out: Vec<String> = palette_fields(&theme.palette())
+        .into_iter()
+        .map(String::from)
+        .collect();
+    out.extend(
+        written_extended_fields(theme.extended_palette())
+            .into_iter()
+            .map(String::from),
+    );
     #[cfg(feature = "widgets")]
     {
         out.extend(button_style_fields(&styles::button(resolved)(
@@ -2200,7 +1892,10 @@ fn rows_claiming(field: &str) -> usize {
     let mut count = ROWS.iter().filter(|row| row.slot == field).count();
     #[cfg(feature = "widgets")]
     {
-        count += style_row_fields().iter().filter(|f| **f == field).count();
+        count += style_row_fields()
+            .iter()
+            .filter(|f| f.as_str() == field)
+            .count();
     }
     count
 }
@@ -2223,7 +1918,7 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
 
     for c in &combinations {
         for field in named_fields(&c.theme, &c.resolved) {
-            let rows = rows_claiming(field);
+            let rows = rows_claiming(&field);
             let derived = DERIVED.iter().filter(|(name, _)| *name == field).count();
             match (rows, derived) {
                 (1, 0) | (0, 1) => {}
@@ -2343,23 +2038,23 @@ fn every_status_list_names_each_status_once() {
         "BUTTON_STATUSES must name each status exactly once"
     );
 
-    // A status button splits the same enum in two: the statuses it decides
+    // A class button splits the same enum in two: the statuses it decides
     // itself and the two it takes whole from iced's class. Neither list alone
     // may name every status, so the pair is checked as a partition instead.
     for status in all {
-        let native = STATUS_BUTTON_NATIVE_STATUSES.contains(&status);
-        let from_iced = STATUS_BUTTON_ICED_STATUSES.contains(&status);
+        let native = CLASS_BUTTON_NATIVE_STATUSES.contains(&status);
+        let from_iced = CLASS_BUTTON_ICED_STATUSES.contains(&status);
         assert!(
             native != from_iced,
-            "{status:?} is in {} of the two status-button lists; each status \
+            "{status:?} is in {} of the two class-button lists; each status \
              belongs to exactly one",
             if native { "both" } else { "neither" }
         );
     }
     assert_eq!(
-        STATUS_BUTTON_NATIVE_STATUSES.len() + STATUS_BUTTON_ICED_STATUSES.len(),
+        CLASS_BUTTON_NATIVE_STATUSES.len() + CLASS_BUTTON_ICED_STATUSES.len(),
         all.len(),
-        "the two status-button lists must partition the statuses, naming each \
+        "the two class-button lists must partition the statuses, naming each \
          exactly once between them"
     );
 
@@ -2418,12 +2113,12 @@ fn every_status_list_names_each_status_once() {
 
 #[cfg(feature = "widgets")]
 #[test]
-fn a_status_button_takes_its_hovered_and_pressed_states_from_iced() -> native_theme::Result<()> {
-    // The model states a status color and its label and no variant of either
-    // for a hovered or a pressed button, so those two states are iced's own
-    // class, read at run time (spec section 3.3). That is a claim about the
-    // emitted value, so it is asserted rather than left to the rows, which
-    // cover only `STATUS_BUTTON_NATIVE_STATUSES`.
+fn a_class_button_takes_its_hovered_and_pressed_states_from_iced() -> native_theme::Result<()> {
+    // The model states an accent or a status color and its label and no
+    // variant of either for a hovered or a pressed button, so those two states
+    // are iced's own class, read at run time (spec section 3.3). That is a
+    // claim about the emitted value, so it is asserted rather than left to the
+    // rows, which cover only `CLASS_BUTTON_NATIVE_STATUSES`.
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut checks = 0;
@@ -2431,10 +2126,15 @@ fn a_status_button_takes_its_hovered_and_pressed_states_from_iced() -> native_th
     for c in &combinations {
         for (what, ours, theirs) in [
             (
-                "styles::button_danger",
-                &styles::button_danger(&c.resolved)
+                "styles::button_primary",
+                &styles::button_primary(&c.resolved)
                     as &dyn Fn(&Theme, button::Status) -> button::Style,
-                button::danger as fn(&Theme, button::Status) -> button::Style,
+                button::primary as fn(&Theme, button::Status) -> button::Style,
+            ),
+            (
+                "styles::button_danger",
+                &styles::button_danger(&c.resolved),
+                button::danger,
             ),
             (
                 "styles::button_success",
@@ -2447,10 +2147,10 @@ fn a_status_button_takes_its_hovered_and_pressed_states_from_iced() -> native_th
                 button::warning,
             ),
         ] {
-            for &status in STATUS_BUTTON_ICED_STATUSES {
-                checks += 1;
+            for &status in CLASS_BUTTON_ICED_STATUSES {
                 let emitted = ours(&c.theme, status);
                 let iced = theirs(&c.theme, status);
+                checks += 1;
                 if emitted.background != iced.background {
                     failures.push(format!(
                         "{}: {what}.background ({status:?}) is {:?}, iced's own class gives {:?}",
@@ -2459,6 +2159,7 @@ fn a_status_button_takes_its_hovered_and_pressed_states_from_iced() -> native_th
                         iced.background
                     ));
                 }
+                checks += 1;
                 if emitted.text_color != iced.text_color {
                     failures.push(format!(
                         "{}: {what}.text_color ({status:?}) is {}, iced's own class gives {}",
@@ -2471,9 +2172,61 @@ fn a_status_button_takes_its_hovered_and_pressed_states_from_iced() -> native_th
         }
     }
 
+    println!("class buttons vs iced's own classes: {checks} field checks");
     assert!(
         failures.is_empty(),
-        "{} of {checks} status-button states differ from iced's own class:\n{}",
+        "{} of {checks} class-button states differ from iced's own class:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn the_primary_pair_is_the_accent_pair() -> native_theme::Result<()> {
+    // `styles::button_primary` paints `button.primary_background` at rest and
+    // hands its hovered and pressed states to `button::primary`, which
+    // strengthens `palette.primary` -- that is, `defaults.accent_color`. The
+    // two are the same color in every bundled preset, which is what makes the
+    // handover sound: iced's derivation starts from the fill the function
+    // itself painted. This pins that premise, because nothing else would
+    // notice if a preset broke it.
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    let mut checks = 0;
+
+    for c in &combinations {
+        let r = &c.resolved;
+        for (what, ours, accent) in [
+            (
+                "button.primary_background vs defaults.accent_color",
+                r.button.primary_background,
+                r.defaults.accent_color,
+            ),
+            (
+                "button.primary_text_color vs defaults.accent_text_color",
+                r.button.primary_text_color,
+                r.defaults.accent_text_color,
+            ),
+        ] {
+            checks += 1;
+            if ours != accent {
+                failures.push(format!(
+                    "{}: {what} -- {} and {}, so a hovered primary button would \
+                     belong to a different color than its idle fill: iced \
+                     strengthens the palette slot, which carries the accent",
+                    c.label(),
+                    show(to_color(ours)),
+                    show(to_color(accent))
+                ));
+            }
+        }
+    }
+
+    assert!(
+        failures.is_empty(),
+        "{} of {checks} primary/accent pairs differ:\n{}",
         failures.len(),
         failures.join("\n")
     );
@@ -2486,22 +2239,33 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut failures = Vec::new();
 
-    // One line per function.
+    // One line per function, plus one per border.
     let checks = check_style_rows(BUTTON_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(BUTTON_SCALAR_ROWS, &combinations, &mut failures)
         + check_style_rows(BUTTON_PRIMARY_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(BUTTON_PRIMARY_SCALAR_ROWS, &combinations, &mut failures)
         + check_style_rows(BUTTON_DANGER_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(BUTTON_DANGER_SCALAR_ROWS, &combinations, &mut failures)
         + check_style_rows(BUTTON_SUCCESS_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(BUTTON_SUCCESS_SCALAR_ROWS, &combinations, &mut failures)
         + check_style_rows(BUTTON_WARNING_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(BUTTON_WARNING_SCALAR_ROWS, &combinations, &mut failures)
         + check_style_rows(BUTTON_LINK_ROWS, &combinations, &mut failures)
         + check_style_rows(TEXT_INPUT_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(TEXT_INPUT_SCALAR_ROWS, &combinations, &mut failures)
         + check_style_rows(TEXT_EDITOR_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(TEXT_EDITOR_SCALAR_ROWS, &combinations, &mut failures);
+        + check_border_rows(BUTTON_BORDER_ROWS, &combinations, &mut failures)
+        + check_border_rows(BUTTON_PRIMARY_BORDER_ROWS, &combinations, &mut failures)
+        + check_border_rows(BUTTON_DANGER_BORDER_ROWS, &combinations, &mut failures)
+        + check_border_rows(BUTTON_SUCCESS_BORDER_ROWS, &combinations, &mut failures)
+        + check_border_rows(BUTTON_WARNING_BORDER_ROWS, &combinations, &mut failures)
+        + check_border_rows(TEXT_INPUT_BORDER_ROWS, &combinations, &mut failures)
+        + check_border_rows(TEXT_EDITOR_BORDER_ROWS, &combinations, &mut failures);
+
+    // `check_border_rows` compares six leaves. If upstream adds a seventh,
+    // `border_fields` grows -- and claims it for the tripwire -- while the
+    // check would quietly ignore it, so the two are held together here.
+    assert_eq!(
+        border_fields(&Border::default(), "x").len(),
+        BORDER_LEAVES,
+        "an iced `Border` no longer has {BORDER_LEAVES} leaves; \
+         `check_border_rows` compares that many and must be extended first"
+    );
+    println!("style rows: {checks} field checks");
 
     assert!(
         failures.is_empty(),
@@ -2528,7 +2292,19 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
             &mut below_aa,
         )
         + check_style_pairs(
-            STATUS_BUTTON_PAIRS,
+            BUTTON_DANGER_PAIRS,
+            &combinations,
+            &mut failures,
+            &mut below_aa,
+        )
+        + check_style_pairs(
+            BUTTON_SUCCESS_PAIRS,
+            &combinations,
+            &mut failures,
+            &mut below_aa,
+        )
+        + check_style_pairs(
+            BUTTON_WARNING_PAIRS,
             &combinations,
             &mut failures,
             &mut below_aa,

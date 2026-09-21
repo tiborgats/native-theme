@@ -131,79 +131,23 @@ pub fn button(
     }
 }
 
-/// The platform's own primary button, for `button(..).style(..)`.
+/// A button class the platform names but does not describe in every state:
+/// `fill` and `label` are the idle pair it states, `class` is the iced class
+/// this replaces.
 ///
-/// Replaces `iced_widget::button::primary`, which is also iced's *default*
-/// class (`button.rs:588-590`): it paints the palette's `primary` family and
-/// derives its hovered fill by strengthening that slot.
+/// The model gives the accent and the three status colors a fill and a label
+/// and nothing else -- no hovered and no pressed variant of either -- and the
+/// neutral `button.hover_background` is not theirs to borrow: it is an opaque
+/// grey on fifteen of the sixteen presets, which would turn a hovered accent
+/// button grey. So those two states follow the no-source rule and come from
+/// `class` at run time, which derives them from the same color through the
+/// palette (spec section 3.3).
 ///
-/// The idle state is the platform's accent pair, `button.primary_background`
-/// and `.primary_text_color`. Every other state is the button's own, because
-/// the model states one set of state colors for every button class: the hover
-/// and pressed layers composite over the primary fill (C17), and the disabled
-/// fill replaces it.
-///
-/// `shadow` and `snap` have no native source and come from
-/// `button::Style::default()`, as in [`button`].
-#[must_use = "this returns the style function; it does not apply it"]
-pub fn button_primary(
-    resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
-    use iced_widget::button::{Status, Style};
-
-    let b = &resolved.button;
-
-    let idle = to_color(b.primary_background);
-    let hovered = composite_over(to_color(b.hover_background), idle);
-    let pressed = composite_over(
-        to_color(b.active_background.unwrap_or(b.hover_background)),
-        idle,
-    );
-    // The soft option's fallback is the field spec section 3.2 names, which is
-    // the neutral fill: the platform dims every button class the same way.
-    let disabled = to_color(b.disabled_background.unwrap_or(b.background_color));
-
-    let label = to_color(b.primary_text_color);
-    let hovered_label = to_color(b.hover_text_color);
-    let pressed_label = to_color(b.active_text_color);
-    let disabled_label = to_color(b.disabled_text_color);
-
-    let border = Border {
-        color: to_color(b.border.color),
-        width: b.border.line_width,
-        radius: Radius::new(b.border.corner_radius),
-    };
-
-    move |_theme, status| {
-        let iced = Style::default();
-        let (background, text_color) = match status {
-            Status::Active => (idle, label),
-            Status::Hovered => (hovered, hovered_label),
-            Status::Pressed => (pressed, pressed_label),
-            Status::Disabled => (disabled, disabled_label),
-        };
-        Style {
-            background: Some(Background::Color(background)),
-            text_color,
-            border,
-            shadow: iced.shadow,
-            snap: iced.snap,
-        }
-    }
-}
-
-/// One of the three status buttons: `fill` and `label` are the platform's own
-/// status pair, `class` is the iced class this replaces.
-///
-/// The model states a status color and its label and nothing else about a
-/// button wearing them -- no hovered and no pressed variant -- so those two
-/// states come from `class` at run time, which derives them from the same
-/// status color through the palette (spec section 3.3). The border is the
-/// button's, not iced's `border::rounded(2)` (`button.rs:739`), so a status
-/// button sits beside a native one instead of beside a differently rounded
-/// one. Disabled is the button's disabled pair: the platform dims every
-/// button class the same way.
-fn status_button(
+/// The border is the button's, not iced's `border::rounded(2)`
+/// (`button.rs:739`), so such a button sits beside a native one instead of
+/// beside a differently rounded one. Disabled is the button's disabled pair:
+/// the platform dims every button class the same way.
+fn class_button(
     resolved: &ResolvedTheme,
     fill: Rgba,
     label: Rgba,
@@ -243,17 +187,41 @@ fn status_button(
     }
 }
 
+/// The platform's own primary button, for `button(..).style(..)`.
+///
+/// Replaces `iced_widget::button::primary`, which is also iced's *default*
+/// class (`button.rs:588-590`): it paints the palette's `primary` family and
+/// derives its hovered fill by strengthening that slot.
+///
+/// The idle pair is the platform's accent pair, `button.primary_background`
+/// and `.primary_text_color`; see [`class_button`] for what the other states
+/// are and why. That derivation starts from the idle fill itself: the palette
+/// slot iced strengthens is `defaults.accent_color`, which every bundled
+/// preset also states as `button.primary_background` -- pinned by the contract
+/// (`the_primary_pair_is_the_accent_pair`).
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn button_primary(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+    class_button(
+        resolved,
+        resolved.button.primary_background,
+        resolved.button.primary_text_color,
+        iced_widget::button::primary,
+    )
+}
+
 /// The platform's own destructive button, for `button(..).style(..)`.
 ///
 /// Replaces `iced_widget::button::danger`, which paints the palette's `danger`
 /// family on a hardcoded `border::rounded(2)`. The idle fill and label are
-/// `defaults.danger_color` and `.danger_text_color`; see [`status_button`] for
+/// `defaults.danger_color` and `.danger_text_color`; see [`class_button`] for
 /// what the other states are and why.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_danger(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
-    status_button(
+    class_button(
         resolved,
         resolved.defaults.danger_color,
         resolved.defaults.danger_text_color,
@@ -264,13 +232,13 @@ pub fn button_danger(
 /// The platform's own confirming button, for `button(..).style(..)`.
 ///
 /// Replaces `iced_widget::button::success`. The idle fill and label are
-/// `defaults.success_color` and `.success_text_color`; see [`status_button`]
+/// `defaults.success_color` and `.success_text_color`; see [`class_button`]
 /// for what the other states are and why.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_success(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
-    status_button(
+    class_button(
         resolved,
         resolved.defaults.success_color,
         resolved.defaults.success_text_color,
@@ -281,13 +249,13 @@ pub fn button_success(
 /// The platform's own risky-action button, for `button(..).style(..)`.
 ///
 /// Replaces `iced_widget::button::warning`. The idle fill and label are
-/// `defaults.warning_color` and `.warning_text_color`; see [`status_button`]
+/// `defaults.warning_color` and `.warning_text_color`; see [`class_button`]
 /// for what the other states are and why.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_warning(
     resolved: &ResolvedTheme,
 ) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
-    status_button(
+    class_button(
         resolved,
         resolved.defaults.warning_color,
         resolved.defaults.warning_text_color,
