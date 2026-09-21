@@ -40,7 +40,12 @@ unchanged. "§N (0.5.8)" refers to that document.
   `tests/` files may use `expect` in test functions.
 - Two public items are added: the module `variants` with `ghost_button`
   (§8c), and `geometry::input_group_button` (rationale §1.4n, E21).
-  Nothing is removed or re-typed. Two behaviour changes: reduced motion (§5)
+  Nothing is removed or re-typed. (The theme-contracts work adds no public
+  item to this crate either — `git diff` over `src/` shows no added or removed
+  `pub` line — but changes behaviour: six `geometry` builders carry the
+  platform's text colour, and the link, table-header, segmented-track and
+  filled-button state tokens take corrected sources; see
+  `todo_v0.5.9_theme-contracts-spec.md` and the CHANGELOG.) Two behaviour changes here: reduced motion (§5)
   and the source of the `accent` and `sidebar_accent` pairs (rationale §1.4n,
   E20; two tests in `src/colors.rs` on the presets where old and new differ).
 - No release action (tag, upload, GitHub release) without the maintainer's
@@ -614,7 +619,7 @@ listed so the plan can cite them:
 ## 10 -- Acceptance
 
 - [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings` clean on the 0.6.4 lockfile.
-- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire, the two §8c variant tests and the six §6 tests: 200 in the library and 6 in `tests/seams.rs`.
+- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire, the two §8c variant tests and the six §6 tests: 200 in the library and 6 in `tests/seams.rs`. (Those are this document's own counts. The theme-contracts work that shares the release adds the mapping contract, the builder-coverage test and the geometry colour tests, and gives the showcase example its own tests: measured 2026-09-22 at the end of that work, `cargo test -p native-theme-gpui` runs **209** library tests, **6** seam tests and **3** showcase tests.)
 - [ ] `cargo +1.95.0 check -p native-theme-gpui --lib --locked` passes.
 - [ ] `cargo audit` exits 0 (the six allowed warnings for unmaintained crates remain; `RUSTSEC-2026-0285` is gone, E19).
 - [ ] `grep -rn 'max_h' connectors/native-theme-gpui/src/geometry.rs` still finds the dialog line, and its doc comment says the value does not reach upstream's `Dialog` (E18).

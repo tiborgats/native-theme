@@ -780,6 +780,44 @@ compositing, so the tests composite before calling them.
 
 ---
 
+## 8a -- As built: where the implementation corrected this document
+
+Measured or read from the vendored sources during implementation
+(2026-09-21/22). The sections above are left as they were argued; where they
+disagree with this list, this list is what was built. Corrections already made
+in place (§3.2's no-source table, §3.3's `button_primary`, `toggler`,
+`checkbox`, `radio`, `text_input` and `scrollbar` rows, §3a's `menu`,
+`spinner` and `context_menu`) are not repeated.
+
+| Section | Said | Built |
+|---|---|---|
+| §2 | the palette correction is `secondary.base` / `.strong` and the status labels | also `background.base.text` ← `defaults.text_color`: iced's `readable()` replaces a text colour below 6.0:1, so on solarized (both modes) and tokyo-night light the window text was not the platform's. Same class as C19 — an enforcement overriding the platform's pair, iced's rather than ours. `secondary.base.text` stays iced's `readable()` result against the placeholder fill: measured, it is a substitute on 31 of 32 (ios light the exception), and a contract test holds that count |
+| §3.1 | three closure shapes | every closure is also `+ Clone`: an `impl Trait` return leaks only auto traits, and `iced_aw::SelectionList::new_with` requires `Clone` |
+| §3.3 | — | native geometry with a *builder* receiver is the consumer's, named in each function's doc comment: `Checkbox::size` / `Radio::size` ← `checkbox.indicator_width` (the indicator's side length or diameter, `platform-facts.md:969`), `::spacing` ← `label_gap`, `Toggler::size` ← `switch.track_height`, `ProgressBar::girth` ← `progress_bar.track_height` |
+| §5.2 | the iced file "does the same" | palette: every slot the connector writes is found by diffing against `Extended::generate` and must be a row or a `DERIVED` entry; styles: every `Style` leaf is enumerated by exhaustive destructuring (a new upstream field fails to compile) and must be claimed exactly once; and every declared row and pair is proven to have been *checked* (declared == checked), which the gpui file does too |
+| §6.1 | three gpui tests | built as specified, against the real view in the real `Root`. They found two showcase defects: the dialog, sheet and notification layers were never mounted (gpui-component's `Root::render` does not mount them), and the mode selector did nothing when no theme could be read. They run in the fallback environment CI has (no desktop at all) as well as on a configured desktop; the mode assertion is relative for that reason |
+| §6.2 | "a button with no `on_press` … its click fails" | inaccurate for `iced_test` 0.14: `Simulator::click` errs only on not-found / not-visible. The test asserts the correct, stronger form — the click resolves, no message is emitted, the state is unchanged. `snapshot()` has no failure path either, so `every_tab_renders` catches a panic in view, layout or draw, plus text laid out at 0×0 — which is how it found the Layout tab's `Grid::height` defect |
+| §6.2 | `styles_cover_every_widget_shown` counts | it lexes the showcase (comments, strings and character literals stripped), matches each constructor *expression* to its style call — 95 sites — and also requires the secondary styles (`styles::menu` on pick lists and combo boxes, `styles::scrollbar` on scrollables) and a call site for every public `styles::*` / `styles::aw::*` function |
+| §6a.1 | 19 of 34 builders unused | 34 of 34 `geometry` builders and the one `variants` builder are used, held by a test that derives the names from the modules' `pub fn` lines |
+| §6a.2 | twenty gpui widgets to add | the script measured 19: `DescriptionList` was already shown. `StatusBar`, `TitleBar`, `Combobox` came with the builders (Task 7), the declarative `Table` with `geometry::table` (`DataTable` is not `Styled`), and sixteen in Task 8. `WindowBorder` is not constructed a second time: `Root` installs one (`root.rs:117`, `:605`), and the section reads `window.client_inset()`, which only `WindowBorder::render` writes |
+| §6a.3 | five iced modules | six: `grid` was missing too (the first measurement was a substring match that `grid_rows` satisfied). `iced_aw` adds eight widgets behind `#[cfg(feature = "iced_aw")]`; `typed_input` and `custom_layout` are excepted with reasons verified in the source |
+| §6a.4 | one matcher | the iced half strips string literals (measured: it costs no iced match); the gpui half cannot, because eight gpui widgets are built through differently named constructors and are identified by their section label — the script's docstring names them |
+| §7 | gpui: two named exceptions | built with one rule for every pair — the emitted side is what upstream really renders, the native side is the platform's own pair, the assertion is no-degradation. A pair that is worse somewhere *and* has no `ThemeColor` token to fix it is **reported** with the reason (status bar, title bar, selected row, selected text), and a reported pair that stops being worse fails the test until it is promoted. Pairs over tokens nothing reads in 0.6.4 are marked inert and not counted as coverage; the summary prints how many asserted pairs can bite on today's presets (two) |
+| §7 | — | no window-text pair exists in the iced report: the contract row pins `background.base.text` to `defaults.text_color`, so such a pair would be equal by construction |
+| §4.2 | — | the showcase example declares `required-features = ["widgets"]`: a default `cargo test` builds and tests it, `--no-default-features` skips it. A self dev-dependency was measured and rejected — feature unification pulled `default` and `iced_aw` into the `--no-default-features` build |
+
+Shipped defects this work found and fixed in the gpui connector, beyond those
+the plan named: `link_hover` / `link_active` held a fill and an arithmetic
+derivation where upstream reads link *text*; `list_head`, `table_head` and
+`table_head_foreground` took the window's defaults where the model states
+`list.header_background` / `header_font`; `tab_bar_segmented` ignored
+`SegmentedControlTheme`; six `geometry` builders dropped the platform's text
+colour (rationale of the narrowed rule: a builder carries it only where it
+reaches the text *and* upstream's state colours still win — `checkbox` and
+`combobox` therefore carry none, with guard tests).
+
+---
+
 ## 9 -- Acceptance
 
 - [ ] `cargo test --workspace --all-features` passes, including the contract
