@@ -905,7 +905,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "segmented_control.active_background",
         native: |r| r.segmented_control.active_background,
         evidence: "the selected segment of a `TabVariant::Segmented` bar is \
-                   filled with `tokens.background` (`tab/tab.rs:248`, and \
+                   filled with `tokens.background` (`tab/tab.rs:249`, and \
                    `:201` while hovered) -- the window token, not one of its \
                    own -- so a platform that tints the active segment has \
                    nowhere to put the tint. `tab_bar_segmented` takes the \
@@ -915,10 +915,29 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "segmented_control.active_text_color",
         native: |r| r.segmented_control.active_text_color,
         evidence: "the selected segment's label is `tab_active_foreground` \
-                   (`tab/tab.rs:245`), the token the `tab_active_foreground` \
+                   (`tab/tab.rs:247`), the token the `tab_active_foreground` \
                    row gives `tab.active_text_color`; upstream has no \
                    segmented-specific text token, so the segmented control's \
                    own label colour cannot reach it.",
+    },
+    NoReceiver {
+        field: "segmented_control.font.color",
+        native: |r| r.segmented_control.font.color,
+        evidence: "a `TabBar` labels every segment from the tab family -- \
+                   `tab_foreground` on the bar (`tab/tab_bar.rs:499`) and on \
+                   an idle segment (`tab/tab.rs:154`), `tab_active_foreground` \
+                   on the selected one (`:247`) -- and those two tokens are \
+                   `tab.font.color` and `tab.active_text_color` by their rows. \
+                   The segmented control's own label colour has nowhere to go.",
+    },
+    NoReceiver {
+        field: "segmented_control.border.color",
+        native: |r| r.segmented_control.border.color,
+        evidence: "a segmented `TabBar` paints no border at all: the bottom \
+                   rule is drawn only for the `Underline` and `Tab` variants \
+                   and takes the shared `border` token \
+                   (`tab/tab_bar.rs:500-513`), which the `border` row gives \
+                   `defaults.border.color`.",
     },
     NoReceiver {
         field: "switch.checked_background",
@@ -1308,10 +1327,18 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
                             (menu/popup_menu.rs:1476) and the platform's menu \
                             background differs from its popover background";
 
-/// The asserted pairs: both emitted colours are tokens upstream really paints
-/// for that surface, and each is pinned by a contract row to the very native
-/// field the pair's native side reads. Where either half fails, the pair is in
-/// `REPORTED` instead.
+/// The asserted pairs.
+///
+/// Every pair here and in `REPORTED` is built the same way: the emitted side
+/// is what upstream really renders for that surface, out of the tokens this
+/// connector writes (the upstream line is in the comment), and the native side
+/// is the platform's own pair for the same surface. The two need not read the
+/// same native fields -- `hovered button label` keeps `button_foreground` on
+/// `button_hover` where the platform states `hover_text_color` on
+/// `hover_background` -- and where they differ is exactly where a degradation
+/// could appear, which is why such a pair is asserted rather than excused.
+///
+/// A pair leaves this list only for the reason `REPORTED` states.
 const PAIRS: &[Pair] = &[
     Pair {
         what: "window text on the window",
@@ -1499,6 +1526,24 @@ const PAIRS: &[Pair] = &[
         },
         exceptions: &[],
     },
+    // An idle tab paints `transparent` in every variant (`tab/tab.rs:132,
+    // 143, 150, 155, 160`), so its label lands on the bar -- a live surface
+    // (`tab/tab_bar.rs:369`, `tab/tab.rs:309`), which is what the emitted side
+    // measures. The platform puts the same label on its own tab fill, and the
+    // two surfaces differing is exactly what this pair is for. `tokens.tab`,
+    // which nothing in 0.6.4 reads, keeps its row but takes no part here.
+    Pair {
+        what: "tab label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.tab.font.color),
+                rgba_to_hsla(r.tab.background_color),
+                rgba_to_hsla(r.tab.bar_background),
+            )
+        },
+        emitted: |tc| (tc.tab_foreground, tc.tab_bar, tc.tab_bar),
+        exceptions: &[],
+    },
     Pair {
         what: "active tab label",
         native: |r, _| {
@@ -1584,16 +1629,17 @@ const PAIRS: &[Pair] = &[
 
 /// A pair whose two ratios are printed and not asserted, with the reason.
 ///
-/// Spec section 7 asserts where the connector controls both colours and
-/// reports where it does not, and the line between the two is: a pair is
-/// asserted only where both emitted colours are tokens upstream really paints
-/// for that surface *and* each is pinned by a contract row to the very native
-/// field the pair's native side reads. Everything here fails the second half
-/// -- upstream has no token for the colour the platform states, so the emitted
-/// side is whatever upstream does paint instead, and the two sides are not
-/// comparable as an assertion. Each is still measured on every run, printed
-/// with both ratios and with the count of combinations where ours is the
-/// worse, so none of them can go quiet.
+/// This is a pair-wide named exception, not a second kind of pair: both sides
+/// are built exactly as `PAIRS`'s are. An entry belongs here only when the
+/// emitted pair is worse than the platform's somewhere *and* the connector
+/// cannot fix it, because `ThemeColor` has no token for the colour the
+/// platform states -- Tier U material, with the upstream evidence in `why`.
+///
+/// Like the two combination-level exceptions, each entry is checked in both
+/// directions: one that is no longer worse anywhere has stopped being an
+/// exception and fails the test, which says to promote it to `PAIRS`. Each is
+/// measured on every run and printed with both ratios and the count of
+/// combinations where ours is the worse, so none of them can go quiet.
 struct Reported {
     what: &'static str,
     why: &'static str,
@@ -1635,16 +1681,16 @@ const REPORTED: &[Reported] = &[
     },
     // Upstream paints a status bar's text with `muted_foreground`
     // (`status_bar.rs:95`) on `tokens.status_bar` (`:93`). The connector's own
-    // `geometry::status_bar` builder does not carry the colour either: it sets
-    // the platform's text size and weight and nothing else
-    // (`geometry.rs:49-52`, `:163-170`).
+    // `geometry::status_bar` builder carries no colour either -- it sets the
+    // bar's padding and, through `with_text`, the platform's text size and
+    // weight (`geometry.rs:163-170`, `:49-52`).
     Reported {
         what: "status bar text",
         why: "ThemeColor has no status-bar foreground: upstream labels the bar \
               with muted_foreground (status_bar.rs:95), which the connector \
               feeds from defaults.muted_color, while the platform states \
               status_bar.font.color -- a colour that reaches nothing, since \
-              geometry::status_bar carries only size and weight (Tier U)",
+              geometry::status_bar carries no colour (Tier U)",
         native: |r| {
             (
                 rgba_to_hsla(r.status_bar.font.color),
@@ -1667,7 +1713,7 @@ const REPORTED: &[Reported] = &[
               and background to title_bar (:21-35, :339) -- measured at the \
               worse end -- while the platform states window.title_bar_font, a \
               colour that reaches nothing, since geometry::title_bar carries \
-              only size and weight (Tier U)",
+              no colour (Tier U)",
         native: |r| {
             (
                 rgba_to_hsla(r.window.title_bar_font.color),
@@ -1682,25 +1728,6 @@ const REPORTED: &[Reported] = &[
                 tc.background,
             )
         },
-    },
-    // An idle tab is `transparent` in every variant (`tab/tab.rs:132, 146,
-    // 153, 158`) and `tokens.tab` has no reader at all in 0.6.4, so upstream
-    // renders the label on the bar; the platform renders it on the tab's own
-    // fill. The row for `tab` stays: it is still the truth about the mapping
-    // if upstream starts reading the token.
-    Reported {
-        what: "tab label",
-        why: "upstream paints an idle tab transparent (tab/tab.rs:132) and \
-              nothing reads tokens.tab, so the label lands on tab_bar, while \
-              the platform pairs tab.font.color with tab.background_color",
-        native: |r| {
-            (
-                rgba_to_hsla(r.tab.font.color),
-                rgba_to_hsla(r.tab.background_color),
-                rgba_to_hsla(r.tab.bar_background),
-            )
-        },
-        emitted: |tc| (tc.tab_foreground, tc.tab_bar, tc.tab_bar),
     },
 ];
 
@@ -1860,6 +1887,9 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     // The pairs section 7 reports rather than asserts: printed with both
     // ratios, and with the count of combinations where ours is the worse, so
     // the record says how large each one is rather than only that it exists.
+    // Each is a pair-wide exception, so it is checked the way the
+    // combination-level ones are: one that is worse nowhere is no longer an
+    // exception and belongs in `PAIRS`.
     let mut reported = Vec::new();
     for pair in REPORTED {
         let mut worse = 0usize;
@@ -1884,6 +1914,16 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
                 c.label()
             ));
         }
+        if worse == 0 {
+            stale.push(format!(
+                "{} is reported rather than asserted ({}) yet is worse than \
+                 the platform's own in 0 of {} combinations -- it is no longer \
+                 an exception: move it from REPORTED to PAIRS",
+                pair.what,
+                pair.why,
+                combinations.len()
+            ));
+        }
         reported.push(format!(
             "{} -- {}\n  worse than the platform's own in {worse} of {} \
              combinations\n{}",
@@ -1899,8 +1939,11 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
          paints nowhere, not counted as coverage: {} surfaces covered) x {} \
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \
-         combinations and cannot fail as the presets stand ({:?}); {} can bite \
-         ---\n--- inert surfaces ---\n{}\n--- reported, not asserted ---\n{}",
+         combinations and so cannot fail as the presets stand -- a value \
+         coincidence of today's sixteen presets, not a structural guarantee, \
+         and a preset that states one of the two fields differently would make \
+         them bite ({:?}); the other {} can bite ---\n--- inert surfaces \
+         ---\n{}\n--- reported, not asserted ---\n{}",
         PAIRS.len(),
         inert.len(),
         PAIRS.len() - inert.len(),

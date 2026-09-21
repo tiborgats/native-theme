@@ -153,7 +153,7 @@ pub fn to_theme_color(
     let d = &resolved.defaults;
     // The window's own fill, which the model states and which inherits
     // `defaults.background_color`; upstream's `background` token is the window
-    // surface (`title_bar.rs:341`, `tab/tab.rs:248`).
+    // surface (`title_bar.rs:341`, `tab/tab.rs:249`).
     let bg = rgba_to_hsla(resolved.window.background_color);
     let fg = rgba_to_hsla(d.text_color);
 
@@ -422,7 +422,7 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     // `SegmentedControlTheme` is the model's struct for exactly this control,
     // so the token takes its background (Issue 42). The active segment is not
     // reachable: upstream fills it with `tokens.background`
-    // (`tab/tab.rs:248`) and labels it `tab_active_foreground` (`:245`).
+    // (`tab/tab.rs:249`) and labels it `tab_active_foreground` (`:247`).
     tc.tab_bar_segmented = c.segmented_bg;
     tc.tab_foreground = c.tab_fg;
 
