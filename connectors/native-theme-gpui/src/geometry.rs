@@ -332,6 +332,31 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
     with_coloured_text(StyleRefinement::default(), &n.resolved.dialog.body_font, n)
 }
 
+/// The frame of a list view: `list.border`'s line width, colour and radius,
+/// and a clip to that radius.
+///
+/// Neither `List` (`src/list/list.rs`, `RenderOnce for List<D>`) nor `Tree`
+/// (`src/tree.rs`, `RenderOnce for Tree`) paints a border of its own: each
+/// refines a plain `div()` and leaves the frame to the application, where
+/// `DataTable` draws one from `Theme::radius` and `Theme::border` when it is
+/// `bordered` (`src/table/data_table.rs:167-171`). Apply this to a `List` or a
+/// `Tree` — both are `Styled` and the refinement lands on that outer `div` —
+/// or to the box an application draws around one, and the three agree. There
+/// is no tree theme in the model: a tree is a list view, and reads
+/// `resolved.list`.
+///
+/// The clip is part of the frame, not decoration: a row's selected or hovered
+/// fill is a square that would otherwise show through the rounded corners.
+#[must_use]
+pub fn list(n: Native<'_>) -> StyleRefinement {
+    let b = &n.resolved.list.border;
+    StyleRefinement::default()
+        .border(px(b.line_width))
+        .border_color(rgba_to_hsla(b.color))
+        .rounded(px(b.corner_radius.max(0.0)))
+        .overflow_hidden()
+}
+
 /// Declarative `Table` (`src/table/table.rs:111` → `:114`); rows are inner, Tier U.
 #[must_use]
 pub fn table(n: Native<'_>) -> StyleRefinement {

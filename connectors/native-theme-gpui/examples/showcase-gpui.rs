@@ -4041,8 +4041,10 @@ impl Showcase {
                     .id("tt-list")
                     .h(px(200.0))
                     .w(px(260.0))
-                    .border_1()
-                    .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                    // Upstream's List paints no frame of its own, so this box
+                    // is the list's frame and shows the list theme's border --
+                    // the same one the DataTable above draws for itself.
+                    .native(cx, geometry::list)
                     // gpui's scroll listeners run in the bubble phase and stop
                     // at no one, so without this the page under the List
                     // scrolls by the same delta (div.rs, paint_scroll_listener;
@@ -4061,7 +4063,10 @@ impl Showcase {
                             ("even", "list_even", t.list_even),
                         ],
                         &[],
-                        &[("item height", "hardcoded per Size")],
+                        &[
+                            ("item height", "hardcoded per Size"),
+                            ("geometry", "geometry::list on the box around it: list.border line width, colour and corner radius, and a clip to that radius. List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's"),
+                        ],
                     )),
             )
             // Tree
@@ -4071,8 +4076,9 @@ impl Showcase {
                     .id("tt-tree")
                     .h(px(200.0))
                     .w(px(260.0))
-                    .border_1()
-                    .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                    // A tree is a list view: the model gives it no theme of
+                    // its own, so its frame is the list's (geometry::list).
+                    .native(cx, geometry::list)
                     .occlude()
                     .debug_selector(|| TREE_DEMO.into())
                     .child(Tree::new(
@@ -4096,6 +4102,7 @@ impl Showcase {
                         &[
                             ("indent", "per depth level"),
                             ("expand icon", "hardcoded ChevronRight"),
+                            ("geometry", "geometry::list on the box around it: a tree is a list view and the model gives it no theme of its own, so its frame is the list's"),
                         ],
                     )),
             )
@@ -9144,6 +9151,73 @@ mod tests {
                 page_after, page_before,
                 "{selector}: the wheel moved the page from {page_before:?} to {page_after:?} \
                  while the widget under the pointer still had room to scroll"
+            );
+        }
+    }
+
+    /// Table, List and Tree are framed alike, and by the list theme.
+    ///
+    /// The `DataTable` draws a frame of its own from `Theme::radius` and
+    /// `Theme::border` (gpui-component `src/table/data_table.rs:167-171`); the
+    /// `List` and the `Tree` draw none — both only refine a plain `div()`
+    /// (`src/list/list.rs`, `RenderOnce for List<D>`; `src/tree.rs`,
+    /// `RenderOnce for Tree`) — so the box around them is the showcase's own
+    /// and has to carry the same border.
+    ///
+    /// gpui's test API reports bounds, not corner radii, so the radius is
+    /// asserted where it is built rather than where it is painted: on the
+    /// refinement the showcase puts on both boxes. Two presets, because a
+    /// radius that came from nowhere would still match one of them. None of
+    /// the bundled presets states a zero radius, so the square-cornered end of
+    /// the range is windows-11's 4px.
+    #[gpui::test]
+    fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
+        let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+        for preset in ["material", "windows-11"] {
+            use_preset(&mut cx, &showcase, preset);
+            let native = read(&mut cx, &showcase, |_this, cx| {
+                let b = |f: fn(&native_theme::theme::ResolvedBorderSpec) -> f32| {
+                    native_value(cx, |n| px(f(&n.resolved.list.border)))
+                };
+                b(|b| b.corner_radius).zip(b(|b| b.line_width))
+            });
+            let frame = cx.update(|_w, cx| native_geometry(cx, geometry::list));
+            assert!(
+                native.is_some() && frame.is_some(),
+                "{preset}: no native theme is installed, so nothing was measured"
+            );
+            let (Some((radius, width)), Some(frame)) = (native, frame) else {
+                continue;
+            };
+
+            let theme = cx.update(|_w, cx| Theme::global(cx).clone());
+            assert_eq!(
+                theme.radius, radius,
+                "{preset}: the DataTable rounds itself to {:?} and the list theme states {radius:?}",
+                theme.radius
+            );
+            for (corner, got) in [
+                ("top left", frame.corner_radii.top_left),
+                ("top right", frame.corner_radii.top_right),
+                ("bottom left", frame.corner_radii.bottom_left),
+                ("bottom right", frame.corner_radii.bottom_right),
+            ] {
+                assert_eq!(
+                    got,
+                    Some(gpui::AbsoluteLength::Pixels(radius)),
+                    "{preset}: the List and Tree frame's {corner} corner is {got:?}, \
+                     not the list theme's {radius:?}"
+                );
+            }
+            assert_eq!(
+                frame.border_widths.top,
+                Some(gpui::AbsoluteLength::Pixels(width)),
+                "{preset}: the frame's line width is not the list theme's {width:?}"
+            );
+            assert_eq!(
+                frame.border_color,
+                Some(theme.border),
+                "{preset}: the frame's colour is not the one the DataTable's frame takes"
             );
         }
     }
