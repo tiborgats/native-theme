@@ -43,10 +43,14 @@ use native_theme::icons::{
     FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
     SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
-use native_theme::theme::{AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation};
+use native_theme::theme::{
+    AnimatedIcon, IconData, IconRole, IconSet, ResolvedTheme, TransformAnimation,
+};
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
 };
+use native_theme_iced::palette::to_color;
+use native_theme_iced::styles;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
@@ -1309,10 +1313,11 @@ fn update_inner(state: &mut State, message: Message) {
 // ---------------------------------------------------------------------------
 
 fn view(state: &State) -> Element<'_, Message> {
-    let radius = native_theme_iced::border_radius(&state.current_resolved);
-    let sb_width = native_theme_iced::scrollbar_width(&state.current_resolved);
-    let btn_pad = native_theme_iced::button_padding(&state.current_resolved);
-    let inp_pad = native_theme_iced::input_padding(&state.current_resolved);
+    let resolved = &state.current_resolved;
+    let radius = native_theme_iced::border_radius(resolved);
+    let sb_width = native_theme_iced::scrollbar_width(resolved);
+    let btn_pad = native_theme_iced::button_padding(resolved);
+    let inp_pad = native_theme_iced::input_padding(resolved);
 
     // ---- Left sidebar ----
     let sidebar = {
@@ -1330,6 +1335,9 @@ fn view(state: &State) -> Element<'_, Message> {
                 Some(&state.current_choice),
                 Message::ThemeSelected,
             )
+            .handle(arrow_handle(resolved))
+            .style(styles::pick_list(resolved))
+            .menu_style(styles::menu(resolved))
             .width(Fill),
         ]
         .spacing(sp.xs);
@@ -1342,6 +1350,9 @@ fn view(state: &State) -> Element<'_, Message> {
                 Some(&state.color_mode),
                 Message::ColorModeSelected,
             )
+            .handle(arrow_handle(resolved))
+            .style(styles::pick_list(resolved))
+            .menu_style(styles::menu(resolved))
             .width(Fill),
         ]
         .spacing(sp.xs);
@@ -1354,6 +1365,9 @@ fn view(state: &State) -> Element<'_, Message> {
                 Some(&state.icon_set_choice),
                 Message::IconSetSelected,
             )
+            .handle(arrow_handle(resolved))
+            .style(styles::pick_list(resolved))
+            .menu_style(styles::menu(resolved))
             .width(Fill),
         ]
         .spacing(sp.xs);
@@ -1390,13 +1404,13 @@ fn view(state: &State) -> Element<'_, Message> {
             };
             column![
                 text("Widget Info").size(ts.caption.size),
-                container(scrollable(text(info_text).size(ts.caption.size)).direction(
-                    scrollable::Direction::Vertical(
-                        scrollable::Scrollbar::new().width(4).scroller_width(4),
-                    )
-                ),)
+                container(
+                    scrollable(text(info_text).size(ts.caption.size))
+                        .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+                        .style(styles::scrollable(resolved)),
+                )
                 .padding(Padding::from(sp.s))
-                .style(container::rounded_box)
+                .style(styles::container_card(resolved))
                 .width(Fill)
                 .height(Fill),
             ]
@@ -1409,25 +1423,24 @@ fn view(state: &State) -> Element<'_, Message> {
                 column![
                     title,
                     subtitle,
-                    rule::horizontal(1),
+                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                     theme_section,
                     color_mode_section,
-                    rule::horizontal(1),
+                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                     icon_theme_section,
-                    rule::horizontal(1),
+                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                     metrics_info,
-                    rule::horizontal(1),
+                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                     widget_info_panel,
                 ]
                 .spacing(sp.s)
                 .padding(Padding::from(sp.m))
                 .width(Length::Fixed(210.0)),
             )
-            .direction(scrollable::Direction::Vertical(
-                scrollable::Scrollbar::new().width(4).scroller_width(4),
-            )),
+            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+            .style(styles::scrollable(resolved)),
         )
-        .style(container::rounded_box)
+        .style(styles::container_card(resolved))
         .height(Fill)
     };
 
@@ -1440,10 +1453,11 @@ fn view(state: &State) -> Element<'_, Message> {
             .map(|&tab| {
                 let label = tab.label();
                 let btn = button(text(label).size(ts.caption.size));
+                // The open tab is the call to action; the rest are plain.
                 let btn = if tab == state.active_tab {
-                    btn.style(button::primary)
+                    btn.style(styles::button_primary(resolved))
                 } else {
-                    btn.style(button::secondary)
+                    btn.style(styles::button(resolved))
                 };
                 btn.on_press(Message::TabSelected(tab))
                     .padding(Padding::from([sp.xs, sp.m]))
@@ -1456,10 +1470,10 @@ fn view(state: &State) -> Element<'_, Message> {
     // ---- Tab content ----
     let tab_content: Element<'_, Message> = match state.active_tab {
         Tab::Buttons => view_buttons(state, btn_pad),
-        Tab::TextInputs => view_text_inputs(state, radius, inp_pad),
+        Tab::TextInputs => view_text_inputs(state, inp_pad),
         Tab::Selection => view_selection(state),
         Tab::Range => view_range(state),
-        Tab::Display => view_display(state, radius),
+        Tab::Display => view_display(state),
         Tab::Icons => view_icons(state),
         Tab::ThemeMap => view_theme_map(state),
     };
@@ -1493,15 +1507,12 @@ fn view(state: &State) -> Element<'_, Message> {
             // Tab bar
             container(tab_bar).padding(tab_padding),
         )
-        .push(rule::horizontal(1))
+        .push(rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)))
         .push(
             // Scrollable content
             scrollable(container(tab_content).padding(content_padding).width(Fill))
-                .direction(scrollable::Direction::Vertical(
-                    scrollable::Scrollbar::new()
-                        .width(sb_width)
-                        .scroller_width(sb_width),
-                ))
+                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+                .style(styles::scrollable(resolved))
                 .height(Fill),
         );
 
@@ -1595,18 +1606,18 @@ fn widget_tooltip_themed(
 
 fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
-    let palette = state.current_theme.palette();
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
     let ext = state.current_theme.extended_palette();
-    let radius = native_theme_iced::border_radius(&state.current_resolved);
-    let radius_s = format!("{radius:.0}px");
+    let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
 
     let apply_pad =
         |b: button::Button<'a, Message>| -> button::Button<'a, Message> { b.padding(btn_pad) };
 
     let header = section_header(
         "Buttons",
-        "Interactive button styles from the theme palette",
+        "Interactive button styles from the resolved theme",
+        resolved,
         ts,
         sp,
     );
@@ -1616,13 +1627,25 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             state,
             "Button (Primary)",
             &[
-                ("bg", "primary", palette.primary),
-                ("text", "primary.base.text", ext.primary.base.text),
-                ("hover bg", "primary.strong", ext.primary.strong.color),
+                (
+                    "bg",
+                    "button.primary_background",
+                    to_color(resolved.button.primary_background),
+                ),
+                (
+                    "text",
+                    "button.primary_text_color",
+                    to_color(resolved.button.primary_text_color),
+                ),
+                (
+                    "hover bg",
+                    "iced's primary.strong",
+                    ext.primary.strong.color,
+                ),
             ],
             &[
                 ("border-radius", &radius_s),
-                ("shadow", if state.is_dark { "none" } else { "subtle" }),
+                ("shadow", "iced's own — the model has no shadow geometry"),
             ],
             &[
                 ("padding", "set by iced per widget instance"),
@@ -1636,27 +1659,27 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
                 apply_pad(
                     button("Primary")
                         .on_press(Message::ButtonPressed)
-                        .style(button::primary)
+                        .style(styles::button_primary(resolved))
                 ),
                 apply_pad(
                     button("Secondary")
                         .on_press(Message::ButtonPressed)
-                        .style(button::secondary)
+                        .style(styles::button(resolved))
                 ),
                 apply_pad(
                     button("Success")
                         .on_press(Message::ButtonPressed)
-                        .style(button::success)
+                        .style(styles::button_success(resolved))
                 ),
                 apply_pad(
                     button("Danger")
                         .on_press(Message::ButtonPressed)
-                        .style(button::danger)
+                        .style(styles::button_danger(resolved))
                 ),
                 apply_pad(
                     button("Text Style")
                         .on_press(Message::ButtonPressed)
-                        .style(button::text)
+                        .style(styles::button_link(resolved))
                 ),
             ]
             .spacing(sp.s),
@@ -1668,12 +1691,27 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let disabled_row = hoverable(
         widget_tooltip(
             "Disabled Buttons",
-            &[],
+            &[
+                (
+                    "bg",
+                    "button.disabled_background",
+                    to_color(
+                        resolved
+                            .button
+                            .disabled_background
+                            .unwrap_or(resolved.button.background_color),
+                    ),
+                ),
+                (
+                    "text",
+                    "button.disabled_text_color",
+                    to_color(resolved.button.disabled_text_color),
+                ),
+            ],
             &[],
             &[
-                ("opacity", "reduced when disabled (no on_press)"),
                 ("cursor", "not interactive"),
-                ("theme", "same variant colors at reduced opacity"),
+                ("theme", "one disabled pair for every button class"),
             ],
         ),
         column![
@@ -1681,9 +1719,9 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             text("Buttons without on_press are rendered as disabled:")
                 .size(ts.section_heading.size),
             row![
-                apply_pad(button("Disabled Primary").style(button::primary)),
-                apply_pad(button("Disabled Secondary").style(button::secondary)),
-                apply_pad(button("Disabled Danger").style(button::danger)),
+                apply_pad(button("Disabled Primary").style(styles::button_primary(resolved))),
+                apply_pad(button("Disabled Secondary").style(styles::button(resolved))),
+                apply_pad(button("Disabled Danger").style(styles::button_danger(resolved))),
             ]
             .spacing(sp.s),
         ]
@@ -1699,7 +1737,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             apply_pad(
                 button(text("Click me!").size(ts.section_heading.size))
                     .on_press(Message::ButtonPressed)
-                    .style(button::primary)
+                    .style(styles::button_primary(resolved))
             ),
             text(counter_text).size(ts.section_heading.size),
         ]
@@ -1711,9 +1749,9 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     column![
         header,
         primary_row,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         disabled_row,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         interactive,
     ]
     .spacing(sp.xl)
@@ -1725,23 +1763,26 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 // Tab: Text Inputs
 // ---------------------------------------------------------------------------
 
-fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Element<'a, Message> {
+fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
-    let palette = state.current_theme.palette();
-    let ext = state.current_theme.extended_palette();
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let i = &resolved.input;
+    let radius = i.border.corner_radius;
     let radius_s = format!("{radius:.0}px");
 
     let header = section_header(
         "Text Inputs",
         "Single-line TextInput and multi-line TextEditor",
+        resolved,
         ts,
         sp,
     );
 
     let single_line = {
         let mut input = text_input("Type something here...", &state.text_input_value)
-            .on_input(Message::TextInputChanged);
+            .on_input(Message::TextInputChanged)
+            .style(styles::text_input(resolved));
         {
             input = input.padding(inp_pad);
         }
@@ -1751,26 +1792,32 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
                 state,
                 "TextInput",
                 &[
-                    ("border", "background.strong", ext.background.strong.color),
-                    ("bg", "background", palette.background),
-                    ("text", "text", palette.text),
+                    ("border", "input.border.color", to_color(i.border.color)),
+                    ("bg", "input.background_color", to_color(i.background_color)),
+                    ("text", "input.font.color", to_color(i.font.color)),
                     (
                         "placeholder",
-                        "background.strong.text",
-                        ext.background.strong.text,
+                        "input.placeholder_color",
+                        to_color(i.placeholder_color),
+                    ),
+                    (
+                        "selection",
+                        "input.selection_background",
+                        to_color(i.selection_background),
                     ),
                 ],
                 &[("border-radius", &radius_s)],
                 &[
                     ("padding", "set per widget instance"),
                     ("height", "set by iced"),
+                    ("icon color", "no native source — iced's own"),
                 ],
             ),
             column![
                 text("TextInput (single line)").size(ts.dialog_title.size),
                 input,
                 text(format!(
-                    "Characters: {}  |  Border radius from theme: {radius:.0}px",
+                    "Characters: {}  |  input.border.corner_radius: {radius:.0}px",
                     state.text_input_value.len()
                 ))
                 .size(ts.caption.size),
@@ -1783,7 +1830,8 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
     let secure_input = {
         let mut input = text_input("Password field...", &state.text_input_value)
             .on_input(Message::TextInputChanged)
-            .secure(true);
+            .secure(true)
+            .style(styles::text_input(resolved));
         {
             input = input.padding(inp_pad);
         }
@@ -1792,8 +1840,8 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
             widget_tooltip(
                 "TextInput (secure)",
                 &[
-                    ("border", "background.strong", ext.background.strong.color),
-                    ("bg", "background", palette.background),
+                    ("border", "input.border.color", to_color(i.border.color)),
+                    ("bg", "input.background_color", to_color(i.background_color)),
                 ],
                 &[("border-radius", &radius_s)],
                 &[("mode", "password / secure — dots replace chars")],
@@ -1812,9 +1860,13 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
             state,
             "TextEditor (multi-line)",
             &[
-                ("bg", "background", palette.background),
-                ("text", "text", palette.text),
-                ("selection", "primary.weak", ext.primary.weak.color),
+                ("bg", "input.background_color", to_color(i.background_color)),
+                ("text", "input.font.color", to_color(i.font.color)),
+                (
+                    "selection",
+                    "input.selection_background",
+                    to_color(i.selection_background),
+                ),
             ],
             &[("border-radius", &radius_s)],
             &[
@@ -1826,6 +1878,7 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
             text("TextEditor (multi-line)").size(ts.dialog_title.size),
             text_editor(&state.text_editor_content)
                 .on_action(Message::EditorAction)
+                .style(styles::text_editor(resolved))
                 .height(Length::Fixed(180.0)),
             text("Supports multi-line editing, selection, and scrolling").size(ts.caption.size),
         ]
@@ -1836,9 +1889,9 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
     column![
         header,
         single_line,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         secure_input,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         multi_line,
     ]
     .spacing(sp.xl)
@@ -1852,15 +1905,24 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
 
 fn view_selection(state: &State) -> Element<'_, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
-    let palette = state.current_theme.palette();
-    let ext = state.current_theme.extended_palette();
-    let radius = native_theme_iced::border_radius(&state.current_resolved);
-    let radius_s = format!("{radius:.0}px");
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let c = &resolved.checkbox;
+    let sw = &resolved.switch;
+    let cb = &resolved.combo_box;
+    let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
+    let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
+    let label_gap_s = format!("{:.0}px", c.label_gap);
+    let track_radius_s = format!("{:.0}px", sw.track_radius);
+    let track_height_s = format!("{:.0}px", sw.track_height);
+    let thumb_diameter_s = format!("{:.0}px", sw.thumb_diameter);
+    let arrow_size_s = format!("{:.0}px", cb.arrow_icon_size);
+    let input_radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
 
     let header = section_header(
         "Selection Widgets",
         "Checkbox, Radio, Toggler, PickList, and ComboBox",
+        resolved,
         ts,
         sp,
     );
@@ -1869,31 +1931,52 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Checkbox",
             &[
-                ("checked bg", "primary", palette.primary),
-                ("checkmark", "primary.base.text", ext.primary.base.text),
+                (
+                    "checked bg",
+                    "checkbox.checked_background",
+                    to_color(c.checked_background),
+                ),
+                (
+                    "checkmark",
+                    "checkbox.indicator_color",
+                    to_color(c.indicator_color),
+                ),
                 (
                     "unchecked border",
-                    "background.strong",
-                    ext.background.strong.color,
+                    "checkbox.unchecked_border_color",
+                    to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
                 ),
-                ("bg", "background", palette.background),
+                (
+                    "bg",
+                    "checkbox.unchecked_background",
+                    to_color(c.unchecked_background.unwrap_or(c.background_color)),
+                ),
             ],
-            &[("border-radius", &radius_s)],
+            &[
+                ("border-radius", &checkbox_radius_s),
+                ("label gap", &label_gap_s),
+            ],
             &[
                 ("size", "hardcoded by iced"),
-                ("indicator size", "hardcoded"),
+                ("indicator size", "checkbox.indicator_width has no receiver"),
             ],
         ),
         column![
             text("Checkboxes").size(ts.dialog_title.size),
             checkbox(state.checkbox_a)
                 .label("Enable notifications")
+                .spacing(c.label_gap)
+                .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxAToggled),
             checkbox(state.checkbox_b)
                 .label("Dark mode auto-detect")
+                .spacing(c.label_gap)
+                .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxBToggled),
             checkbox(state.checkbox_c)
                 .label("Remember preferences")
+                .spacing(c.label_gap)
+                .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxCToggled),
             text(format!(
                 "Checked: {}",
@@ -1918,16 +2001,33 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Radio",
             &[
-                ("selected", "primary", palette.primary),
+                (
+                    "selected",
+                    "checkbox.checked_background",
+                    to_color(c.checked_background),
+                ),
+                (
+                    "dot",
+                    "checkbox.indicator_color",
+                    to_color(c.indicator_color),
+                ),
                 (
                     "unselected border",
-                    "background.strong",
-                    ext.background.strong.color,
+                    "checkbox.unchecked_border_color",
+                    to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
                 ),
-                ("bg", "background", palette.background),
+                (
+                    "bg",
+                    "checkbox.unchecked_background",
+                    to_color(c.unchecked_background.unwrap_or(c.background_color)),
+                ),
             ],
-            &[("border-radius", &radius_s)],
-            &[("size", "hardcoded"), ("indicator size", "hardcoded")],
+            &[("label gap", &label_gap_s)],
+            &[
+                ("size", "hardcoded"),
+                ("border-radius", "radio::Style carries no corner radius"),
+                ("disabled", "radio::Status has no disabled value"),
+            ],
         ),
         column![
             text("Radio Buttons").size(ts.dialog_title.size),
@@ -1936,19 +2036,25 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 Fruit::Apple,
                 state.selected_fruit,
                 Message::FruitSelected
-            ),
+            )
+            .spacing(c.label_gap)
+            .style(styles::radio(resolved)),
             radio(
                 "Banana",
                 Fruit::Banana,
                 state.selected_fruit,
                 Message::FruitSelected
-            ),
+            )
+            .spacing(c.label_gap)
+            .style(styles::radio(resolved)),
             radio(
                 "Cherry",
                 Fruit::Cherry,
                 state.selected_fruit,
                 Message::FruitSelected
-            ),
+            )
+            .spacing(c.label_gap)
+            .style(styles::radio(resolved)),
             text(format!(
                 "Selected: {}",
                 state
@@ -1966,21 +2072,39 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Toggler (Switch)",
             &[
-                ("active track", "primary", palette.primary),
+                (
+                    "active track",
+                    "switch.checked_background",
+                    to_color(sw.checked_background),
+                ),
                 (
                     "inactive track",
-                    "background.strong",
-                    ext.background.strong.color,
+                    "switch.unchecked_background",
+                    to_color(sw.unchecked_background),
                 ),
-                ("thumb", "background.base", ext.background.base.color),
+                (
+                    "thumb",
+                    "switch.thumb_background",
+                    to_color(sw.thumb_background),
+                ),
             ],
-            &[("border-radius", "pill (fully rounded)")],
-            &[("size", "hardcoded"), ("animation timing", "hardcoded")],
+            &[
+                ("border-radius", &track_radius_s),
+                ("track height", &track_height_s),
+                ("thumb diameter", &thumb_diameter_s),
+            ],
+            &[
+                ("track width", "iced lays the track out as 2 x its height"),
+                ("border", "SwitchTheme carries none — iced's own"),
+                ("animation timing", "hardcoded"),
+            ],
         ),
         column![
             text("Toggler (Switch)").size(ts.dialog_title.size),
             toggler(state.toggler_enabled)
                 .label("Feature flag enabled")
+                .size(sw.track_height)
+                .style(styles::toggler(resolved))
                 .on_toggle(Message::TogglerToggled),
             text(format!(
                 "State: {}",
@@ -2010,13 +2134,37 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "PickList (dropdown)",
             &[
-                ("bg", "background", palette.background),
-                ("text", "text", palette.text),
-                ("border", "background.strong", ext.background.strong.color),
-                ("selected", "primary", palette.primary),
+                (
+                    "bg",
+                    "combo_box.background_color",
+                    to_color(cb.background_color),
+                ),
+                ("text", "combo_box.font.color", to_color(cb.font.color)),
+                (
+                    "border",
+                    "combo_box.border.color",
+                    to_color(cb.border.color),
+                ),
+                (
+                    "menu bg",
+                    "menu.background_color",
+                    to_color(resolved.menu.background_color),
+                ),
+                (
+                    "menu selected",
+                    "menu.hover_background",
+                    to_color(resolved.menu.hover_background),
+                ),
             ],
-            &[("border-radius", &radius_s)],
-            &[("dropdown arrow", "hardcoded chevron")],
+            &[
+                ("border-radius", &combo_radius_s),
+                ("arrow size", &arrow_size_s),
+            ],
+            &[
+                ("dropdown arrow", "iced's own chevron glyph"),
+                ("arrow color", "ComboBoxTheme carries no arrow color"),
+                ("arrow area width", "no receiver in iced"),
+            ],
         ),
         column![
             text("PickList (dropdown)").size(ts.dialog_title.size),
@@ -2025,6 +2173,9 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 state.pick_list_selected.as_ref(),
                 Message::PickListSelected,
             )
+            .handle(arrow_handle(resolved))
+            .style(styles::pick_list(resolved))
+            .menu_style(styles::menu(resolved))
             .width(Length::Fixed(250.0)),
             text(format!(
                 "Selected: {}",
@@ -2040,12 +2191,32 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "ComboBox (searchable dropdown)",
             &[
-                ("bg", "background", palette.background),
-                ("text", "text", palette.text),
-                ("border", "background.strong", ext.background.strong.color),
+                (
+                    "bg",
+                    "input.background_color",
+                    to_color(resolved.input.background_color),
+                ),
+                (
+                    "text",
+                    "input.font.color",
+                    to_color(resolved.input.font.color),
+                ),
+                (
+                    "border",
+                    "input.border.color",
+                    to_color(resolved.input.border.color),
+                ),
+                (
+                    "menu bg",
+                    "menu.background_color",
+                    to_color(resolved.menu.background_color),
+                ),
             ],
-            &[("border-radius", &radius_s)],
-            &[("search", "built-in text filter")],
+            &[("border-radius", &input_radius_s)],
+            &[
+                ("search", "built-in text filter"),
+                ("field style", "a ComboBox takes a text_input style"),
+            ],
         ),
         column![
             text("ComboBox (searchable dropdown)").size(ts.dialog_title.size),
@@ -2055,6 +2226,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 state.combo_selected.as_ref(),
                 Message::ComboBoxSelected,
             )
+            .input_style(styles::text_input(resolved))
+            .menu_style(styles::menu(resolved))
             .width(Length::Fixed(250.0)),
             text(format!(
                 "Selected: {}",
@@ -2069,15 +2242,19 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     column![
         header,
         row![
-            column![checkboxes, rule::horizontal(1), togglers,]
-                .spacing(sp.xl)
-                .width(Fill),
-            rule::vertical(1),
+            column![
+                checkboxes,
+                rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+                togglers,
+            ]
+            .spacing(sp.xl)
+            .width(Fill),
+            rule::vertical(resolved.separator.line_width).style(styles::rule(resolved)),
             column![
                 radios,
-                rule::horizontal(1),
+                rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                 pickers,
-                rule::horizontal(1),
+                rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                 combos,
             ]
             .spacing(sp.xl)
@@ -2096,13 +2273,18 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 
 fn view_range(state: &State) -> Element<'_, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
-    let palette = state.current_theme.palette();
-    let ext = state.current_theme.extended_palette();
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let sl = &resolved.slider;
+    let pb = &resolved.progress_bar;
+    let rail_s = format!("{:.0}px", sl.track_height);
+    let thumb_s = format!("{:.0}px", sl.thumb_diameter);
+    let bar_girth_s = format!("{:.0}px", pb.track_height);
 
     let header = section_header(
         "Range Widgets",
         "Slider, VerticalSlider, and ProgressBar",
+        resolved,
         ts,
         sp,
     );
@@ -2111,21 +2293,31 @@ fn view_range(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Horizontal Slider",
             &[
-                ("active track", "primary", palette.primary),
+                ("active track", "slider.fill_color", to_color(sl.fill_color)),
                 (
                     "inactive track",
-                    "background.strong",
-                    ext.background.strong.color,
+                    "slider.track_color",
+                    to_color(sl.track_color),
                 ),
-                ("handle", "primary.strong", ext.primary.strong.color),
+                ("handle", "slider.thumb_color", to_color(sl.thumb_color)),
+                (
+                    "hovered handle",
+                    "slider.thumb_hover_color",
+                    to_color(sl.thumb_hover_color.unwrap_or(sl.thumb_color)),
+                ),
             ],
-            &[],
-            &[("track height", "hardcoded"), ("thumb size", "hardcoded")],
+            &[("rail width", &rail_s), ("thumb diameter", &thumb_s)],
+            &[
+                ("widget height", "no native source — iced's own"),
+                ("dragged handle fill", "no native source — iced's own"),
+            ],
         ),
         column![
             text("Horizontal Slider").size(ts.dialog_title.size),
             row![
-                slider(0.0..=100.0, state.slider_value, Message::SliderChanged).width(Fill),
+                slider(0.0..=100.0, state.slider_value, Message::SliderChanged)
+                    .style(styles::slider(resolved))
+                    .width(Fill),
                 text(format!("{:.1}", state.slider_value))
                     .size(ts.section_heading.size)
                     .width(Length::Fixed(50.0)),
@@ -2142,7 +2334,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     let step_slider = hoverable(
         widget_tooltip(
             "Slider (stepped)",
-            &[("track", "primary", palette.primary)],
+            &[("track", "slider.fill_color", to_color(sl.fill_color))],
             &[("step", "5.0")],
             &[("snap behavior", "hardcoded step increments")],
         ),
@@ -2151,6 +2343,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             row![
                 slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
                     .step(5.0_f32)
+                    .style(styles::slider(resolved))
                     .width(Fill),
                 text(format!("{:.0}", state.slider_step))
                     .size(ts.section_heading.size)
@@ -2166,15 +2359,20 @@ fn view_range(state: &State) -> Element<'_, Message> {
     let vert_slider = hoverable(
         widget_tooltip(
             "Vertical Slider",
-            &[("track", "primary", palette.primary)],
-            &[("orientation", "vertical")],
-            &[("track width", "hardcoded"), ("thumb size", "hardcoded")],
+            &[("track", "slider.fill_color", to_color(sl.fill_color))],
+            &[
+                ("orientation", "vertical"),
+                ("rail width", &rail_s),
+                ("thumb diameter", &thumb_s),
+            ],
+            &[("widget width", "no native source — iced's own")],
         ),
         column![
             text("Vertical Slider").size(ts.dialog_title.size),
             row![
                 container(
                     vertical_slider(0.0..=100.0, state.vslider_value, Message::VSliderChanged)
+                        .style(styles::slider(resolved))
                         .height(Length::Fixed(200.0))
                 )
                 .center_x(Length::Fixed(60.0)),
@@ -2197,27 +2395,45 @@ fn view_range(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Progress Bar",
             &[
-                ("fill", "primary", palette.primary),
-                ("track bg", "background.strong", ext.background.strong.color),
+                ("fill", "progress_bar.fill_color", to_color(pb.fill_color)),
+                (
+                    "track bg",
+                    "progress_bar.track_color",
+                    to_color(pb.track_color),
+                ),
+                (
+                    "border",
+                    "progress_bar.border.color",
+                    to_color(pb.border.color),
+                ),
             ],
-            &[],
-            &[("height", "hardcoded"), ("animation", "none — immediate")],
+            &[("girth", &bar_girth_s)],
+            &[
+                ("min width", "progress_bar.min_width has no receiver"),
+                ("animation", "none — immediate"),
+            ],
         ),
         column![
             text("Progress Bars").size(ts.dialog_title.size),
             text("Driven by horizontal slider value:").size(ts.section_heading.size),
-            progress_bar(0.0..=100.0, state.slider_value),
+            progress_bar(0.0..=100.0, state.slider_value)
+                .girth(Length::Fixed(pb.track_height))
+                .style(styles::progress_bar(resolved)),
             space().height(Length::Fixed(4.0)),
             text("Separate progress control:").size(ts.section_heading.size),
             row![
-                slider(0.0..=100.0, state.progress_value, Message::ProgressChanged).width(Fill),
+                slider(0.0..=100.0, state.progress_value, Message::ProgressChanged)
+                    .style(styles::slider(resolved))
+                    .width(Fill),
                 text(format!("{:.0}%", state.progress_value))
                     .size(ts.section_heading.size)
                     .width(Length::Fixed(50.0)),
             ]
             .spacing(sp.m)
             .align_y(iced::Center),
-            progress_bar(0.0..=100.0, state.progress_value),
+            progress_bar(0.0..=100.0, state.progress_value)
+                .girth(Length::Fixed(pb.track_height))
+                .style(styles::progress_bar(resolved)),
         ]
         .spacing(sp.s)
         .into(),
@@ -2226,11 +2442,11 @@ fn view_range(state: &State) -> Element<'_, Message> {
     column![
         header,
         horiz_slider,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         step_slider,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         vert_slider,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         progress,
     ]
     .spacing(sp.xl)
@@ -2242,55 +2458,68 @@ fn view_range(state: &State) -> Element<'_, Message> {
 // Tab: Display
 // ---------------------------------------------------------------------------
 
-fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
+fn view_display(state: &State) -> Element<'_, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
-    let ext = state.current_theme.extended_palette();
-    let radius_s = format!("{radius:.0}px");
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let card = &resolved.card;
+    let tip = &resolved.tooltip;
+    let sep = &resolved.separator;
+    let card_radius = card.border.corner_radius;
+    let card_radius_s = format!("{card_radius:.0}px");
+    let tip_radius_s = format!("{:.0}px", tip.border.corner_radius);
+    let line_width_s = format!("{:.0}px", sep.line_width);
 
     let header = section_header(
         "Display Widgets",
         "Container, Rule, Tooltip, and layout helpers",
+        resolved,
         ts,
         sp,
     );
 
     let containers = hoverable(
         widget_tooltip(
-            "Styled Containers (rounded_box)",
+            "Styled Containers (card)",
             &[
-                ("bg", "background.weak", ext.background.weak.color),
-                ("text", "background.weak.text", ext.background.weak.text),
-                ("border", "background.strong", ext.background.strong.color),
+                (
+                    "bg",
+                    "card.background_color",
+                    to_color(card.background_color),
+                ),
+                ("border", "card.border.color", to_color(card.border.color)),
             ],
-            &[("border-radius", &radius_s)],
-            &[("padding", "set per widget instance")],
+            &[("border-radius", &card_radius_s)],
+            &[
+                ("padding", "set per widget instance"),
+                ("text", "CardTheme carries no font — the label is inherited"),
+            ],
         ),
         column![
             text("Styled Containers").size(ts.dialog_title.size),
             container(
                 column![
-                    text("Rounded Box Container").size(ts.section_heading.size),
+                    text("Container (card fill)").size(ts.section_heading.size),
                     text(format!(
-                        "This container uses the theme's rounded_box style. \
-                         Border radius from theme metrics: {radius:.0}px."
+                        "This container uses styles::container_card. \
+                         card.border.corner_radius: {card_radius:.0}px."
                     ))
                     .size(ts.caption.size),
                 ]
                 .spacing(sp.xs),
             )
             .padding(Padding::from(sp.l))
-            .style(container::rounded_box)
+            .style(styles::container_card(resolved))
             .width(Fill),
             container(
                 text(
-                    "A secondary container with different padding. Containers adapt their \
-                      background and border colors from the active theme palette."
+                    "A secondary container with different padding. Containers take their \
+                      background and border from the resolved card theme."
                 )
                 .size(ts.caption.size),
             )
             .padding(Padding::from([sp.m, sp.xl]))
-            .style(container::rounded_box)
+            .style(styles::container_card(resolved))
             .width(Fill),
         ]
         .spacing(sp.m)
@@ -2299,12 +2528,17 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
 
     let rules = column![
         text("Divider Rules").size(ts.dialog_title.size),
-        text("Horizontal rules at various thicknesses:").size(ts.section_heading.size),
-        rule::horizontal(1),
-        text("1px above, 2px below").size(ts.caption.size),
-        rule::horizontal(2),
-        text("2px above, 4px below").size(ts.caption.size),
-        rule::horizontal(4),
+        text(format!(
+            "iced takes a rule's thickness as the constructor's argument; \
+             the platform states one, separator.line_width ({line_width_s}):"
+        ))
+        .size(ts.section_heading.size),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        text("The line color is separator.line_color.").size(ts.caption.size),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        text("Its radius and fill mode have no native source — they are iced's.")
+            .size(ts.caption.size),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
     ]
     .spacing(sp.s);
 
@@ -2312,12 +2546,23 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
         widget_tooltip(
             "Tooltip",
             &[
-                ("bg", "background.weak", ext.background.weak.color),
-                ("text", "background.weak.text", ext.background.weak.text),
-                ("border", "background.strong", ext.background.strong.color),
+                (
+                    "bg",
+                    "tooltip.background_color",
+                    to_color(tip.background_color),
+                ),
+                ("text", "tooltip.font.color", to_color(tip.font.color)),
+                ("border", "tooltip.border.color", to_color(tip.border.color)),
             ],
-            &[("positions", "Top / Bottom / Left / Right")],
-            &[("gap", "set per widget instance"), ("delay", "none")],
+            &[
+                ("positions", "Top / Bottom / Left / Right"),
+                ("border-radius", &tip_radius_s),
+            ],
+            &[
+                ("gap", "set per widget instance"),
+                ("delay", "none"),
+                ("max width", "iced wraps the tip's own content element"),
+            ],
         ),
         column![
             text("Tooltips").size(ts.dialog_title.size),
@@ -2325,39 +2570,39 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
                 tooltip(
                     button("Hover: Top")
                         .on_press(Message::ButtonPressed)
-                        .style(button::primary),
+                        .style(styles::button_primary(resolved)),
                     text("Tooltip on top!"),
                     tooltip::Position::Top,
                 )
                 .gap(sp.xs)
-                .style(container::rounded_box),
+                .style(styles::tooltip(resolved)),
                 tooltip(
                     button("Hover: Bottom")
                         .on_press(Message::ButtonPressed)
-                        .style(button::secondary),
+                        .style(styles::button(resolved)),
                     text("Tooltip on bottom!"),
                     tooltip::Position::Bottom,
                 )
                 .gap(sp.xs)
-                .style(container::rounded_box),
+                .style(styles::tooltip(resolved)),
                 tooltip(
                     button("Hover: Left")
                         .on_press(Message::ButtonPressed)
-                        .style(button::success),
+                        .style(styles::button_success(resolved)),
                     text("Tooltip on left!"),
                     tooltip::Position::Left,
                 )
                 .gap(sp.xs)
-                .style(container::rounded_box),
+                .style(styles::tooltip(resolved)),
                 tooltip(
                     button("Hover: Right")
                         .on_press(Message::ButtonPressed)
-                        .style(button::danger),
+                        .style(styles::button_danger(resolved)),
                     text("Tooltip on right!"),
                     tooltip::Position::Right,
                 )
                 .gap(sp.xs)
-                .style(container::rounded_box),
+                .style(styles::tooltip(resolved)),
             ]
             .spacing(sp.m),
         ]
@@ -2399,7 +2644,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
         .spacing(sp.xs),
     )
     .padding(Padding::from(sp.l))
-    .style(container::rounded_box)
+    .style(styles::container_card(resolved))
     .width(Fill);
 
     let spacing_demo = column![
@@ -2407,23 +2652,23 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
         row![
             container(text("A").size(ts.section_heading.size))
                 .padding(Padding::from(sp.m))
-                .style(container::rounded_box)
+                .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             container(text("B").size(ts.section_heading.size))
                 .padding(Padding::from(sp.m))
-                .style(container::rounded_box)
+                .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             container(text("C").size(ts.section_heading.size))
                 .padding(Padding::from(sp.m))
-                .style(container::rounded_box)
+                .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             space().width(Fill),
             container(text("Right-aligned").size(ts.caption.size))
                 .padding(Padding::from(sp.m))
-                .style(container::rounded_box),
+                .style(styles::container_card(resolved)),
         ]
         .spacing(sp.s)
         .align_y(iced::Center),
@@ -2433,13 +2678,13 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
     column![
         header,
         containers,
-        rule::horizontal(1),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         rules,
-        rule::horizontal(1),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         tooltips,
-        rule::horizontal(1),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         spacing_demo,
-        rule::horizontal(1),
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         info_box,
     ]
     .spacing(sp.xl)
@@ -2453,7 +2698,8 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
 
 fn view_icons(state: &State) -> Element<'_, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
     let loaded_count = state
         .loaded_icons
         .iter()
@@ -2478,7 +2724,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
              {loaded_count} loaded, {system_count} system, {fallback_count} fallback"
         ))
         .size(ts.section_heading.size),
-        rule::horizontal(2),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
     ]
     .spacing(sp.xs);
 
@@ -2506,6 +2752,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
             .map(|loaded| {
                 build_icon_cell(
                     loaded,
+                    resolved,
                     fg_color,
                     ts.caption.size,
                     ts.section_heading.size,
@@ -2521,9 +2768,9 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     let mut content = column![
         header,
         icon_set_info,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         animated_section,
-        rule::horizontal(1)
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved))
     ]
     .spacing(sp.l);
     for r in grid_rows {
@@ -2535,9 +2782,11 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 
 fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let icon_px = resolved.defaults.icon_sizes.large;
     let section_title = text("Animated Icons").size(ts.display.size);
-    let divider = rule::horizontal(2);
+    let divider = rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved));
 
     // Collect spinner columns into a row
     let mut spinners: Vec<Element<'a, Message>> = Vec::new();
@@ -2546,8 +2795,8 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         // Reduced motion: show static first-frame for each animated icon
         for (set_name, handle) in &state.animated_static {
             let icon = svg(handle.clone())
-                .width(Length::Fixed(32.0))
-                .height(Length::Fixed(32.0))
+                .width(Length::Fixed(icon_px))
+                .height(Length::Fixed(icon_px))
                 .style(move |_theme, _status| iced::widget::svg::Style {
                     color: Some(fg_color),
                 });
@@ -2565,8 +2814,8 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         for (i, (set_name, anim_handles)) in state.animated_frames.iter().enumerate() {
             let frame_idx = state.animated_frame_indices[i];
             let icon = svg(anim_handles.handles[frame_idx].clone())
-                .width(Length::Fixed(32.0))
-                .height(Length::Fixed(32.0))
+                .width(Length::Fixed(icon_px))
+                .height(Length::Fixed(icon_px))
                 .style(move |_theme, _status| iced::widget::svg::Style {
                     color: Some(fg_color),
                 });
@@ -2589,8 +2838,8 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         for (set_name, handle, duration_ms) in &state.animated_spins {
             let angle = spin_rotation_radians(state.animation_start.elapsed(), *duration_ms);
             let icon = svg(handle.clone())
-                .width(Length::Fixed(32.0))
-                .height(Length::Fixed(32.0))
+                .width(Length::Fixed(icon_px))
+                .height(Length::Fixed(icon_px))
                 .rotation(iced::Rotation::Floating(angle))
                 .style(move |_theme, _status| iced::widget::svg::Style {
                     color: Some(fg_color),
@@ -2626,6 +2875,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
 
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
+    resolved: &ResolvedTheme,
     fg_color: Color,
     caption_size: f32,
     heading_size: f32,
@@ -2634,6 +2884,8 @@ fn build_icon_cell<'a>(
     let role_name = format!("{:?}", loaded.role);
     let icon_name_str = loaded.name.unwrap_or("(unmapped)");
     let source_label = loaded.source.label();
+    let icon_px = resolved.defaults.icon_sizes.toolbar;
+    let cell_px = resolved.defaults.icon_sizes.large;
 
     let icon_element: Element<'a, Message> = match &loaded.data {
         Some(data @ IconData::Svg(_)) => {
@@ -2641,32 +2893,32 @@ fn build_icon_cell<'a>(
                 // System icons: render as-is without colorization
                 match native_theme_iced::icons::to_svg_handle(data, None) {
                     Some(handle) => svg(handle)
-                        .width(Length::Fixed(24.0))
-                        .height(Length::Fixed(24.0))
+                        .width(Length::Fixed(icon_px))
+                        .height(Length::Fixed(icon_px))
                         .into(),
-                    None => placeholder_icon(heading_size),
+                    None => placeholder_icon(heading_size, icon_px),
                 }
             } else {
                 // Bundled/fallback: colorize with theme foreground
                 match native_theme_iced::icons::to_svg_handle(data, Some(fg_color)) {
                     Some(handle) => svg(handle)
-                        .width(Length::Fixed(24.0))
-                        .height(Length::Fixed(24.0))
+                        .width(Length::Fixed(icon_px))
+                        .height(Length::Fixed(icon_px))
                         .into(),
-                    None => placeholder_icon(heading_size),
+                    None => placeholder_icon(heading_size, icon_px),
                 }
             }
         }
         Some(data @ IconData::Rgba { .. }) => {
             match native_theme_iced::icons::to_image_handle(data) {
                 Some(handle) => iced::widget::image(handle)
-                    .width(Length::Fixed(24.0))
-                    .height(Length::Fixed(24.0))
+                    .width(Length::Fixed(icon_px))
+                    .height(Length::Fixed(icon_px))
                     .into(),
-                None => placeholder_icon(heading_size),
+                None => placeholder_icon(heading_size, icon_px),
             }
         }
-        _ => placeholder_icon(heading_size),
+        _ => placeholder_icon(heading_size, icon_px),
     };
 
     let info = format!("{role_name}\nicon: {icon_name_str}\nsource: {source_label}");
@@ -2676,16 +2928,16 @@ fn build_icon_cell<'a>(
         container(
             column![
                 container(icon_element)
-                    .center_x(Length::Fixed(32.0))
-                    .center_y(Length::Fixed(32.0)),
+                    .center_x(Length::Fixed(cell_px))
+                    .center_y(Length::Fixed(cell_px)),
                 text(role_name.clone()).size(caption_size),
                 text(source_label).size(caption_size),
             ]
             .spacing(xxs_spacing)
             .align_x(iced::Center),
         )
-        .padding(Padding::from(6))
-        .style(container::rounded_box)
+        .padding(Padding::from(SP.xs))
+        .style(styles::container_card(resolved))
         .width(Length::Fixed(100.0)),
     )
     .on_enter(Message::WidgetHovered(info))
@@ -2693,10 +2945,10 @@ fn build_icon_cell<'a>(
     .into()
 }
 
-fn placeholder_icon<'a>(size: f32) -> Element<'a, Message> {
+fn placeholder_icon<'a>(size: f32, box_size: f32) -> Element<'a, Message> {
     container(text("?").size(size))
-        .center_x(Length::Fixed(24.0))
-        .center_y(Length::Fixed(24.0))
+        .center_x(Length::Fixed(box_size))
+        .center_y(Length::Fixed(box_size))
         .into()
 }
 
@@ -2706,10 +2958,12 @@ fn placeholder_icon<'a>(size: f32) -> Element<'a, Message> {
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
     let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
     let header = section_header(
         "Theme Map",
         "All palette and extended palette colors from the current theme",
+        resolved,
         ts,
         sp,
     );
@@ -2900,19 +3154,19 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     column![
         header,
         base_palette,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         ext_background,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         ext_primary,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         ext_secondary,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         ext_success,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         ext_warning,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         ext_danger,
-        rule::horizontal(1),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         native_colors,
     ]
     .spacing(sp.xl)
@@ -3060,16 +3314,29 @@ fn hoverable_ext_section<'a>(
     hoverable(info, content)
 }
 
+/// The drop-down arrow at the platform's own icon size.
+///
+/// `combo_box.arrow_icon_size` is not a `pick_list::Style` field: iced carries
+/// the arrow in the `Handle` the widget is built with
+/// (`pick_list.rs:794-801`), so it is set here rather than in
+/// `styles::pick_list`.
+fn arrow_handle(resolved: &ResolvedTheme) -> pick_list::Handle<iced::Font> {
+    pick_list::Handle::Arrow {
+        size: Some(resolved.combo_box.arrow_icon_size.into()),
+    }
+}
+
 fn section_header<'a>(
     title: &'a str,
     description: &'a str,
+    resolved: &ResolvedTheme,
     ts: &native_theme::theme::ResolvedTextScale,
     sp: &Spacing,
 ) -> Element<'a, Message> {
     column![
         text(title).size(ts.display.size),
         text(description).size(ts.section_heading.size),
-        rule::horizontal(2),
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
     ]
     .spacing(sp.xs)
     .into()
