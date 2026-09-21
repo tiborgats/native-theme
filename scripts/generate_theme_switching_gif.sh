@@ -45,7 +45,7 @@ echo "=== Generating iced theme-switching GIF ==="
 echo ""
 
 echo "--- Building iced showcase binary (release mode) ---"
-cargo build -p native-theme-iced --example showcase-iced --release
+cargo build -p native-theme-iced --example showcase-iced --release --features iced_aw
 echo ""
 
 # Clean up showcase process on exit
@@ -57,7 +57,7 @@ for i in "${!THEMES[@]}"; do
     frame_file="$ICED_FRAME_DIR/frame-$(printf '%02d' "$i").png"
     echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
 
-    cargo run -p native-theme-iced --example showcase-iced --release -- \
+    cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
         --tab buttons &
     PID=$!

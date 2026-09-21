@@ -49,6 +49,9 @@ it to render, then captures the active window.
 
 On macOS/Windows, use the showcase's built-in `--screenshot` flag instead.
 
+Builds and runs the showcase with `--features iced_aw`, so the captures show
+the same widget set the coverage check gates.
+
 Requires: spectacle (KDE)
 
 ```sh
@@ -126,6 +129,25 @@ uncommitted changes; `hash` prints the current value.
 
 ```sh
 ./scripts/asset-stamp.sh check
+```
+
+## check-widget-coverage.py
+
+Checks that every widget the toolkits offer is rendered by the matching
+showcase. Discovers the widgets from the dependencies' own sources through
+`cargo metadata` (the iced manifest with `--features iced_aw`, so the optional
+dependency is in the graph), then requires each one to be either shown in the
+showcase or listed with a reason in `docs/showcase-exceptions.toml`. Exits 0
+when clean, 1 on a missing widget or a stale exception, 2 when a toolkit's
+package is absent from the metadata. `pre-release-check.sh`, `ci.yml` and
+`dependency-canary.yml` run it, so an upstream release that adds a widget is
+reported the evening it appears.
+
+Requires Python 3.11+ (for `tomllib`); no network of its own once the registry
+is populated.
+
+```sh
+python3 scripts/check-widget-coverage.py
 ```
 
 ## refresh-icons.sh

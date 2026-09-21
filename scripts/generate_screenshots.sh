@@ -8,7 +8,7 @@ set -euo pipefail
 # window decorations (title bar, buttons, borders) in screenshots.
 #
 # NOTE: On macOS/Windows, you can use the showcase's built-in self-capture:
-#   cargo run -p native-theme-iced --example showcase-iced --release -- \
+#   cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
 #     --theme material --variant dark --icon-set material \
 #     --screenshot connectors/native-theme-iced/docs/assets/macos-material-dark.png
 # This script uses spectacle for Linux (KDE Wayland) local captures.
@@ -37,7 +37,7 @@ echo ""
 # Pre-build showcase binary to avoid compile delays during capture loop
 echo "--- Building showcase binary (release mode) ---"
 cd "$PROJECT_ROOT"
-cargo build -p native-theme-iced --example showcase-iced --release
+cargo build -p native-theme-iced --example showcase-iced --release --features iced_aw
 echo ""
 
 # Ensure output directory exists
@@ -62,7 +62,7 @@ for entry in "${THEMES[@]}"; do
     count=$((count + 1))
     echo "[$count/$total] Capturing: $theme $variant (icons: $icon_set) -> $(basename "$output_file")"
 
-    cargo run -p native-theme-iced --example showcase-iced --release -- \
+    cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
         --tab buttons &
     PID=$!
