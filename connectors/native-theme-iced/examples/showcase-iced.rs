@@ -31,9 +31,9 @@
 //! sections.
 
 use iced::widget::{
-    button, checkbox, column, combo_box, container, mouse_area, pick_list, progress_bar, radio,
-    row, rule, scrollable, slider, space, svg, text, text_editor, text_input, toggler, tooltip,
-    vertical_slider,
+    button, checkbox, column, combo_box, container, grid, mouse_area, pane_grid, pick_list,
+    progress_bar, radio, row, rule, scrollable, slider, space, svg, table, text, text_editor,
+    text_input, toggler, tooltip, vertical_slider,
 };
 use iced::{Color, Element, Fill, Length, Padding, Theme};
 
@@ -160,6 +160,7 @@ impl CliArgs {
             "selection" => Some(Tab::Selection),
             "range" => Some(Tab::Range),
             "display" => Some(Tab::Display),
+            "layout" => Some(Tab::Layout),
             "icons" => Some(Tab::Icons),
             "theme-map" | "thememap" => Some(Tab::ThemeMap),
             _ => None,
@@ -178,6 +179,7 @@ enum Tab {
     Selection,
     Range,
     Display,
+    Layout,
     Icons,
     ThemeMap,
 }
@@ -189,6 +191,7 @@ impl Tab {
         Tab::Selection,
         Tab::Range,
         Tab::Display,
+        Tab::Layout,
         Tab::Icons,
         Tab::ThemeMap,
     ];
@@ -200,6 +203,7 @@ impl Tab {
             Tab::Selection => "Selection",
             Tab::Range => "Range",
             Tab::Display => "Display",
+            Tab::Layout => "Layout",
             Tab::Icons => "Icons",
             Tab::ThemeMap => "Theme Map",
         }
@@ -579,6 +583,14 @@ struct State {
     vslider_value: f32,
     progress_value: f32,
 
+    // Layout tab
+    /// The `pane_grid`'s own layout state: splits, ratios and pane order.
+    panes: pane_grid::State<usize>,
+    /// The number the next pane created by a split is labelled with.
+    pane_count: usize,
+    /// The pane last clicked, dragged or created.
+    focused_pane: Option<pane_grid::Pane>,
+
     // Icons tab
     icon_set_choice: IconSetChoice,
     icon_set_choices: Vec<IconSetChoice>,
@@ -706,6 +718,18 @@ impl Default for State {
 
         let default_label = format!("default ({})", system_preset);
 
+        // Two panes to start with, so the vertical split between them is
+        // there to be dragged before anything is clicked.
+        let (mut panes, first_pane) = pane_grid::State::new(1);
+        let pane_count = if panes
+            .split(pane_grid::Axis::Vertical, first_pane, 2)
+            .is_some()
+        {
+            2
+        } else {
+            1
+        };
+
         // Start theme watcher for runtime dark/light toggle detection.
         // Skip in screenshot mode — the watcher's background thread cleanup
         // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
@@ -750,6 +774,9 @@ impl Default for State {
             slider_step: 25.0,
             vslider_value: 50.0,
             progress_value: 72.0,
+            panes,
+            pane_count,
+            focused_pane: Some(first_pane),
             icon_set_choice,
             icon_set_choices,
             loaded_icons,
@@ -978,6 +1005,13 @@ enum Message {
     StepSliderChanged(f32),
     VSliderChanged(f32),
     ProgressChanged(f32),
+
+    // Layout tab
+    PaneClicked(pane_grid::Pane),
+    PaneDragged(pane_grid::DragEvent),
+    PaneResized(pane_grid::ResizeEvent),
+    PaneSplit(pane_grid::Axis, pane_grid::Pane),
+    PaneClosed(pane_grid::Pane),
 
     // Icons tab
     IconSetSelected(IconSetChoice),
@@ -1272,6 +1306,28 @@ fn update_inner(state: &mut State, message: Message) {
         Message::StepSliderChanged(v) => state.slider_step = v,
         Message::VSliderChanged(v) => state.vslider_value = v,
         Message::ProgressChanged(v) => state.progress_value = v,
+        Message::PaneClicked(pane) => state.focused_pane = Some(pane),
+        Message::PaneDragged(pane_grid::DragEvent::Dropped { pane, target }) => {
+            state.panes.drop(pane, target);
+            state.focused_pane = Some(pane);
+        }
+        // Picked and Canceled leave the layout as it was.
+        Message::PaneDragged(_) => {}
+        Message::PaneResized(pane_grid::ResizeEvent { split, ratio }) => {
+            state.panes.resize(split, ratio);
+        }
+        Message::PaneSplit(axis, pane) => {
+            let label = state.pane_count.saturating_add(1);
+            if let Some((new_pane, _)) = state.panes.split(axis, pane, label) {
+                state.pane_count = label;
+                state.focused_pane = Some(new_pane);
+            }
+        }
+        Message::PaneClosed(pane) => {
+            if let Some((_, sibling)) = state.panes.close(pane) {
+                state.focused_pane = Some(sibling);
+            }
+        }
         Message::IconSetSelected(choice) => {
             state.loaded_icons =
                 load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
@@ -1464,7 +1520,14 @@ fn view(state: &State) -> Element<'_, Message> {
                     .into()
             })
             .collect();
-        row(tabs).spacing(sp.xs).into()
+        // More tabs than the window is wide: the strip scrolls sideways rather
+        // than clipping the last ones.
+        scrollable(row(tabs).spacing(sp.xs))
+            .direction(scrollable::Direction::Horizontal(styles::scrollbar(
+                resolved,
+            )))
+            .style(styles::scrollable(resolved))
+            .into()
     };
 
     // ---- Tab content ----
@@ -1474,6 +1537,7 @@ fn view(state: &State) -> Element<'_, Message> {
         Tab::Selection => view_selection(state),
         Tab::Range => view_range(state),
         Tab::Display => view_display(state),
+        Tab::Layout => view_layout(state),
         Tab::Icons => view_icons(state),
         Tab::ThemeMap => view_theme_map(state),
     };
@@ -2686,6 +2750,325 @@ fn view_display(state: &State) -> Element<'_, Message> {
         spacing_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         info_box,
+    ]
+    .spacing(sp.xl)
+    .width(Fill)
+    .into()
+}
+
+// ---------------------------------------------------------------------------
+// Tab: Layout
+// ---------------------------------------------------------------------------
+
+/// One row of the text-scale `table`: role, size, weight, line height.
+///
+/// `table::column`'s view function takes its row by value, so the row type is
+/// `Clone` and carries the formatted strings rather than a borrow.
+type ScaleRow = (&'static str, String, String, String);
+
+/// Grid, PaneGrid and Table: the three `iced_widget` modules that arrange
+/// other widgets rather than paint a control.
+fn view_layout(state: &State) -> Element<'_, Message> {
+    let sp = &SP;
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let sep = &resolved.separator;
+    let sp_th = &resolved.splitter;
+    let line_width_s = format!("{:.0}px", sep.line_width);
+    let divider_width_s = format!("{:.0}px", sp_th.divider_width);
+
+    let header = section_header(
+        "Layout Widgets",
+        "Grid, PaneGrid and Table: the modules that arrange other widgets",
+        resolved,
+        ts,
+        sp,
+    );
+
+    // ---- Grid: the platform's own colors, four to a row ----
+
+    let swatch_border = native_theme_iced::border_color(resolved);
+    let swatch_bw = resolved.defaults.border.line_width;
+    let swatch_r = native_theme_iced::border_radius(resolved);
+    let caption_sz = ts.caption.size;
+    let xxs_sp = sp.xxs;
+    let cell = |label: &'static str, color: Color| -> Element<'_, Message> {
+        color_swatch(
+            label,
+            color,
+            swatch_border,
+            swatch_bw,
+            swatch_r,
+            caption_sz,
+            xxs_sp,
+        )
+    };
+    let d = &resolved.defaults;
+
+    let grid_demo = hoverable(
+        widget_tooltip(
+            "Grid",
+            &[
+                (
+                    "cell fill",
+                    "each cell's own color",
+                    to_color(d.accent_color),
+                ),
+                (
+                    "cell border",
+                    "defaults.border.color",
+                    to_color(d.border.color),
+                ),
+            ],
+            &[
+                ("columns", "4"),
+                ("cell radius", "defaults.border.corner_radius"),
+            ],
+            &[
+                (
+                    "Style",
+                    "grid has no Catalog and no Style — it only places its children \
+                     (grid.rs:13-19)",
+                ),
+                ("spacing", "the showcase's own scale"),
+            ],
+        ),
+        column![
+            text("Grid (cells in columns)").size(ts.dialog_title.size),
+            text(
+                "iced_widget::grid distributes its children over a fixed number of \
+                 columns. Here: the eight colors ResolvedDefaults names."
+            )
+            .size(ts.section_heading.size),
+            grid([
+                cell("accent_color", to_color(d.accent_color)),
+                cell("danger_color", to_color(d.danger_color)),
+                cell("warning_color", to_color(d.warning_color)),
+                cell("success_color", to_color(d.success_color)),
+                cell("info_color", to_color(d.info_color)),
+                cell("link_color", to_color(d.link_color)),
+                cell("muted_color", to_color(d.muted_color)),
+                cell("surface_color", to_color(d.surface_color)),
+            ])
+            .columns(4)
+            .spacing(sp.s)
+            .height(Length::Fixed(64.0)),
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- PaneGrid: splits the platform's splitter theme paints ----
+
+    let pane_style = {
+        let hovered = to_color(sp_th.hover_color);
+        let divider_width = sp_th.divider_width;
+        move |theme: &Theme| {
+            let iced = pane_grid::default(theme);
+            pane_grid::Style {
+                // The model states no drop-target highlight, so the region
+                // iced paints under a dragged pane stays iced's own.
+                hovered_region: iced.hovered_region,
+                // A picked split is a split being dragged; SplitterTheme
+                // states an idle and a hovered color and no dragged one, so
+                // that one line is iced's (spec §3.2).
+                picked_split: pane_grid::Line {
+                    color: iced.picked_split.color,
+                    width: divider_width,
+                },
+                hovered_split: pane_grid::Line {
+                    color: hovered,
+                    width: divider_width,
+                },
+            }
+        }
+    };
+
+    let panes = pane_grid(&state.panes, |pane, label, _is_maximized| {
+        let focused = state.focused_pane == Some(pane);
+        let title = format!("Pane {label}");
+        let controls = row![
+            button(text("split |").size(ts.caption.size))
+                .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
+                .style(styles::button(resolved))
+                .padding(Padding::from([sp.xxs, sp.xs])),
+            button(text("split —").size(ts.caption.size))
+                .on_press(Message::PaneSplit(pane_grid::Axis::Horizontal, pane))
+                .style(styles::button(resolved))
+                .padding(Padding::from([sp.xxs, sp.xs])),
+            button(text("close").size(ts.caption.size))
+                .on_press(Message::PaneClosed(pane))
+                .style(styles::button_danger(resolved))
+                .padding(Padding::from([sp.xxs, sp.xs])),
+        ]
+        .spacing(sp.xs);
+
+        let title_bar = pane_grid::TitleBar::new(text(title).size(ts.section_heading.size))
+            .controls(Element::from(controls))
+            .always_show_controls()
+            .padding(Padding::from([sp.xs, sp.s]))
+            .style(styles::container_card(resolved));
+
+        let body = column![
+            text(if focused {
+                "Focused. Drag the title bar onto another pane to move it."
+            } else {
+                "Drag the split between the panes to resize."
+            })
+            .size(ts.caption.size),
+        ]
+        .spacing(sp.xs)
+        .padding(Padding::from(sp.s));
+
+        pane_grid::Content::new(body)
+            .title_bar(title_bar)
+            .style(styles::container_card(resolved))
+    })
+    .width(Fill)
+    .height(Length::Fixed(220.0))
+    .spacing(sp_th.divider_width)
+    .on_click(Message::PaneClicked)
+    .on_drag(Message::PaneDragged)
+    .on_resize(sp_th.divider_width, Message::PaneResized)
+    .style(pane_style);
+
+    let pane_demo = hoverable(
+        widget_tooltip(
+            "PaneGrid",
+            &[(
+                "hovered split",
+                "splitter.hover_color",
+                to_color(sp_th.hover_color),
+            )],
+            &[
+                ("split width", &divider_width_s),
+                ("pane surface", "styles::container_card"),
+                ("title bar", "styles::container_card"),
+            ],
+            &[
+                (
+                    "drop region",
+                    "the model states no drop-target highlight — iced's own",
+                ),
+                (
+                    "picked split",
+                    "SplitterTheme states no dragged color — iced's own, at the \
+                     platform's width",
+                ),
+                (
+                    "splitter.divider_color",
+                    "no receiver: iced leaves an idle split unpainted",
+                ),
+            ],
+        ),
+        column![
+            text("PaneGrid (split, drag and resize)").size(ts.dialog_title.size),
+            text(
+                "Split a pane, drag its title bar onto another one, or drag the \
+                 divider between two panes."
+            )
+            .size(ts.section_heading.size),
+            panes,
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    // ---- Table: the resolved text scale, as data ----
+
+    let scale_rows: Vec<ScaleRow> = vec![
+        (
+            "caption",
+            format!("{:.0}px", ts.caption.size),
+            format!("{}", ts.caption.weight),
+            format!("{:.1}px", ts.caption.line_height),
+        ),
+        (
+            "section_heading",
+            format!("{:.0}px", ts.section_heading.size),
+            format!("{}", ts.section_heading.weight),
+            format!("{:.1}px", ts.section_heading.line_height),
+        ),
+        (
+            "dialog_title",
+            format!("{:.0}px", ts.dialog_title.size),
+            format!("{}", ts.dialog_title.weight),
+            format!("{:.1}px", ts.dialog_title.line_height),
+        ),
+        (
+            "display",
+            format!("{:.0}px", ts.display.size),
+            format!("{}", ts.display.weight),
+            format!("{:.1}px", ts.display.line_height),
+        ),
+    ];
+
+    let scale_table = table(
+        [
+            table::column(text("text_scale role").size(ts.section_heading.size), {
+                let size = ts.caption.size;
+                move |r: ScaleRow| text(r.0).size(size)
+            })
+            .width(Length::Fixed(160.0)),
+            table::column(text("size").size(ts.section_heading.size), {
+                let size = ts.caption.size;
+                move |r: ScaleRow| text(r.1).size(size)
+            })
+            .width(Length::Fixed(90.0)),
+            table::column(text("weight").size(ts.section_heading.size), {
+                let size = ts.caption.size;
+                move |r: ScaleRow| text(r.2).size(size)
+            })
+            .width(Length::Fixed(90.0)),
+            table::column(text("line height").size(ts.section_heading.size), {
+                let size = ts.caption.size;
+                move |r: ScaleRow| text(r.3).size(size)
+            })
+            .width(Length::Fixed(110.0)),
+        ],
+        scale_rows,
+    )
+    .padding_x(sp.s)
+    .padding_y(sp.xs)
+    .separator_x(sep.line_width)
+    .separator_y(sep.line_width)
+    .width(Fill);
+
+    let table_demo = hoverable(
+        widget_tooltip(
+            "Table",
+            &[(
+                "separators",
+                "iced's own — see below",
+                to_color(sep.line_color),
+            )],
+            &[
+                ("separator_x / separator_y", &line_width_s),
+                ("cell padding", "the showcase's own scale"),
+            ],
+            &[(
+                "Style",
+                "iced_widget 0.14.2 gives Table a Catalog and a Style but no \
+                 `.style(..)` or `.class(..)` setter (table.rs:149-196), so its \
+                 separator colors stay table::default(theme)",
+            )],
+        ),
+        column![
+            text("Table (columns and rows)").size(ts.dialog_title.size),
+            text("The four typographic roles this theme resolves:").size(ts.section_heading.size),
+            scale_table,
+        ]
+        .spacing(sp.s)
+        .into(),
+    );
+
+    column![
+        header,
+        grid_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        pane_demo,
+        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        table_demo,
     ]
     .spacing(sp.xl)
     .width(Fill)
