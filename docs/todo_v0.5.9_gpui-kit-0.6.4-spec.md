@@ -619,7 +619,7 @@ listed so the plan can cite them:
 ## 10 -- Acceptance
 
 - [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings` clean on the 0.6.4 lockfile.
-- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire, the two §8c variant tests and the six §6 tests: 200 in the library and 6 in `tests/seams.rs`. (Those are this document's own counts. The theme-contracts work that shares the release adds the mapping contract, the builder-coverage test and the geometry colour tests, and gives the showcase example its own tests: measured 2026-09-22 at the end of that work, `cargo test -p native-theme-gpui` runs **209** library tests, **6** seam tests and **3** showcase tests.)
+- [ ] `cargo test -p native-theme-gpui --all-features`: all pass, including the three re-numbered tripwires, the three §5.3 tests, the §3a shape tripwire, the two §8c variant tests and the six §6 tests: 200 in the library and 6 in `tests/seams.rs`. (Those are this document's own counts. The theme-contracts work that shares the release adds the mapping contract, the builder-coverage test and the geometry colour tests, and gives the showcase example its own tests: measured 2026-09-21 at the end of that work, `cargo test -p native-theme-gpui` runs **209** library tests, **6** seam tests and **3** showcase tests.)
 - [ ] `cargo +1.95.0 check -p native-theme-gpui --lib --locked` passes.
 - [ ] `cargo audit` exits 0 (the six allowed warnings for unmaintained crates remain; `RUSTSEC-2026-0285` is gone, E19).
 - [ ] `grep -rn 'max_h' connectors/native-theme-gpui/src/geometry.rs` still finds the dialog line, and its doc comment says the value does not reach upstream's `Dialog` (E18).

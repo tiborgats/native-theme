@@ -783,7 +783,7 @@ compositing, so the tests composite before calling them.
 ## 8a -- As built: where the implementation corrected this document
 
 Measured or read from the vendored sources during implementation
-(2026-09-21/22). The sections above are left as they were argued; where they
+(2026-09-21). The sections above are left as they were argued; where they
 disagree with this list, this list is what was built. Corrections already made
 in place (§3.2's no-source table, §3.3's `button_primary`, `toggler`,
 `checkbox`, `radio`, `text_input` and `scrollbar` rows, §3a's `menu`,
