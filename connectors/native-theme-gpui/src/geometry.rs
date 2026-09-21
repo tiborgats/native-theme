@@ -19,6 +19,12 @@
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
 //! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]).
 //!
+//! Geometry, with one exception that is not geometry: [`status_bar`],
+//! [`dialog_description`] and [`tooltip`] also carry the platform's text
+//! colour, because upstream labels those three with a token of its own one
+//! line before it applies this refinement and no `ThemeColor` field holds the
+//! colour the platform states.
+//!
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
 //! [`progress`] are verified against real gpui-component widgets in
 //! `tests/seams.rs`, which lays each one out headlessly with and without the
@@ -49,6 +55,22 @@ fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
 fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> StyleRefinement {
     r.text_size(scaled_text_size(font, n))
         .font_weight(weight_of(font))
+}
+
+/// Text size, weight and colour from a font spec.
+///
+/// For the widgets upstream labels with a token of its own *before* applying
+/// the caller's refinement: there the refinement is the only carrier the
+/// platform's own text colour has, because no `ThemeColor` field maps to it
+/// and upstream's token would otherwise stand. Widgets that set no text colour
+/// take [`with_text`], so a builder never hands an element a colour upstream
+/// did not leave a place for.
+fn with_coloured_text(
+    r: StyleRefinement,
+    font: &ResolvedFontSpec,
+    n: Native<'_>,
+) -> StyleRefinement {
+    with_text(r, font, n).text_color(rgba_to_hsla(font.color))
 }
 
 /// Control height (spec §9.4, rationale §5.3):
@@ -134,10 +156,15 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 }
 
 /// Application-built `Tooltip::new` (`src/tooltip.rs:120-125` → `:126`).
+///
+/// The colour is carried because upstream labels a tooltip with
+/// `popover_foreground` (`:115`), which this connector fills from
+/// `popover.font.color`; half of the presets state a different colour for a
+/// tooltip than for a popover.
 #[must_use]
 pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
-    with_text(
+    with_coloured_text(
         StyleRefinement::default()
             .max_w(px(t.max_width))
             .px(px(t.border.padding_horizontal))
@@ -159,10 +186,15 @@ pub fn popover(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
+///
+/// The colour is carried because upstream labels the bar with
+/// `muted_foreground` (`:95`), one line before it applies this refinement, and
+/// every preset states a status-bar colour of its own that `ThemeColor` has no
+/// field for.
 #[must_use]
 pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     let s = &n.resolved.status_bar;
-    with_text(
+    with_coloured_text(
         StyleRefinement::default()
             .px(px(s.border.padding_horizontal))
             .py(px(s.border.padding_vertical)),
@@ -221,9 +253,13 @@ pub fn dialog_title(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `DialogDescription` (`src/dialog/description.rs:49` → `:51`).
+///
+/// The colour is carried because upstream labels the description with
+/// `muted_foreground` (`:50`), and every preset states a dialog body colour
+/// that is not the window's muted colour.
 #[must_use]
 pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
-    with_text(StyleRefinement::default(), &n.resolved.dialog.body_font, n)
+    with_coloured_text(StyleRefinement::default(), &n.resolved.dialog.body_font, n)
 }
 
 /// Declarative `Table` (`src/table/table.rs:111` → `:114`); rows are inner, Tier U.
@@ -560,6 +596,104 @@ mod tests {
             assert_eq!(out.padding.top, def(sb.border.padding_vertical));
             assert_text(&out, &sb.font, s);
         });
+    }
+
+    /// Where upstream labels a widget with a token of its own and applies the
+    /// caller's refinement afterwards, the builder is the only carrier the
+    /// platform's text colour has, so it carries it -- over every preset in
+    /// both modes, not just the two `CASES` names.
+    ///
+    /// The second half is the reason the first exists: each of these three
+    /// native colours differs from the token upstream would otherwise paint,
+    /// so leaving the colour out left the widget labelled with a colour the
+    /// platform did not state.
+    #[test]
+    fn text_colour_is_the_platforms_wherever_upstream_would_override_it() {
+        let mut tooltip_differs = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let prefs = scaled(1.0);
+                let n = Native {
+                    resolved: &r,
+                    accessibility: &prefs,
+                };
+                let at = format!(
+                    "{}/{}",
+                    info.key,
+                    if mode == ColorMode::Dark {
+                        "dark"
+                    } else {
+                        "light"
+                    }
+                );
+
+                assert_eq!(
+                    status_bar(n).text.color,
+                    Some(rgba_to_hsla(r.status_bar.font.color)),
+                    "{at}: status bar text"
+                );
+                assert_eq!(
+                    tooltip(n).text.color,
+                    Some(rgba_to_hsla(r.tooltip.font.color)),
+                    "{at}: tooltip text"
+                );
+                assert_eq!(
+                    dialog_description(n).text.color,
+                    Some(rgba_to_hsla(r.dialog.body_font.color)),
+                    "{at}: dialog description text"
+                );
+
+                // What upstream paints without the refinement: muted_foreground
+                // on the status bar (`status_bar.rs:95`) and on a dialog's
+                // description (`dialog/description.rs:50`), popover_foreground
+                // on a tooltip (`tooltip.rs:115`).
+                assert_ne!(
+                    r.status_bar.font.color, r.defaults.muted_color,
+                    "{at}: status bar colour no longer differs from upstream's \
+                     muted_foreground, so this builder's colour proves nothing"
+                );
+                assert_ne!(
+                    r.dialog.body_font.color, r.defaults.muted_color,
+                    "{at}: dialog body colour no longer differs from upstream's \
+                     muted_foreground"
+                );
+                if r.tooltip.font.color != r.popover.font.color {
+                    tooltip_differs += 1;
+                }
+            }
+        }
+        assert!(
+            tooltip_differs > 0,
+            "no preset states a tooltip colour of its own any more, so the \
+             tooltip builder's colour proves nothing"
+        );
+    }
+
+    /// `geometry::title_bar` carries no colour, and the run says why: upstream
+    /// sets no text colour on the bar at all (`title_bar.rs:328-343` paints the
+    /// fill and refines, nothing more), so its children inherit `foreground` --
+    /// which every preset states as the title bar's own colour anyway.
+    #[test]
+    fn title_bar_needs_no_colour_because_the_platform_states_the_inherited_one() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                assert_eq!(
+                    r.window.title_bar_font.color, r.defaults.text_color,
+                    "{}: the title bar font colour is no longer the window's, \
+                     so inheriting `foreground` no longer delivers it and \
+                     geometry::title_bar must carry it",
+                    info.key
+                );
+                let prefs = scaled(1.0);
+                let n = Native {
+                    resolved: &r,
+                    accessibility: &prefs,
+                };
+                assert_eq!(title_bar(n).text.color, None);
+            }
+        }
     }
 
     #[test]

@@ -24,7 +24,9 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   the splitter colours, and keeps them installed across upstream rebuilds.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
   the native heights, paddings, radii, borders and text sizes for the widgets
-  where gpui-component applies the caller's style after its own.
+  where gpui-component applies the caller's style after its own — and the
+  native text colour for the three whose label upstream would otherwise paint
+  with a token of its own.
 - **Accessibility**: the platform's text-scaling factor scales the theme's
   fonts (and, through GPUI's rem, every rem-relative size in gpui-component);
   reduce-motion is forwarded to GPUI; reduce-transparency keeps the overlay
@@ -145,6 +147,14 @@ Text sizes carry the accessibility text-scaling factor; widths, paddings,
 radii and icon sizes do not (that is what the platform toolkit does). Control
 heights grow only when scaled text would no longer fit:
 `max(theme height, ceil(font size × factor × line height) + 2 × vertical padding)`.
+
+A builder sets a text colour only where upstream labels the widget with a token
+of its own before applying the caller's refinement, and that token is not the
+colour the platform states: `status_bar` (upstream's `muted_foreground`),
+`dialog_description` (the same) and `tooltip` (`popover_foreground`). The other
+builders set size and weight, and leave the colour to the token — including
+`title_bar`, whose text inherits `foreground`, the colour every preset states
+for a title bar anyway.
 
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|

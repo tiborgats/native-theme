@@ -1685,17 +1685,20 @@ const REPORTED: &[Reported] = &[
         emitted: |tc| (tc.foreground, tc.selection, tc.background),
     },
     // Upstream paints a status bar's text with `muted_foreground`
-    // (`status_bar.rs:95`) on `tokens.status_bar` (`:93`). The connector's own
-    // `geometry::status_bar` builder carries no colour either -- it sets the
-    // bar's padding and, through `with_text`, the platform's text size and
-    // weight (`geometry.rs:163-170`, `:49-52`).
+    // (`status_bar.rs:95`) on `tokens.status_bar` (`:93`), and refines one line
+    // later (`:96`), so `geometry::status_bar` -- which does carry
+    // `status_bar.font.color` -- wins for an application that applies it. The
+    // pair is measured over the tokens regardless, because that is what this
+    // contract is about: an application that installs the theme and no builder
+    // gets the ratios below.
     Reported {
         what: "status bar text",
         why: "ThemeColor has no status-bar foreground: upstream labels the bar \
               with muted_foreground (status_bar.rs:95), which the connector \
               feeds from defaults.muted_color, while the platform states \
-              status_bar.font.color -- a colour that reaches nothing, since \
-              geometry::status_bar carries no colour (Tier U)",
+              status_bar.font.color -- a colour no token carries, so it reaches \
+              the bar only through geometry::status_bar, whose refinement \
+              upstream applies after its own (:96)",
         native: |r| {
             (
                 rgba_to_hsla(r.status_bar.font.color),
@@ -1709,16 +1712,19 @@ const REPORTED: &[Reported] = &[
     // inherit, and the one thing it paints itself -- the window controls --
     // takes `foreground` (`title_bar.rs:217`). Its fill is a gradient, not a
     // flat `title_bar` (`:21-35`, applied at `:339`), so the emitted side is
-    // measured against whichever end is the worse of the two.
+    // measured against whichever end is the worse of the two, and that fill is
+    // the whole of the degradation: `geometry::title_bar` carries no colour
+    // because it needs none, every preset stating the window's own text colour
+    // for the title bar (`geometry.rs`, `title_bar_needs_no_colour_...`).
     Reported {
         what: "title bar text",
         why: "ThemeColor has no title-bar foreground: upstream inherits \
               `foreground` into the bar and paints its window controls with it \
               (title_bar.rs:217) over a gradient from a 55/45 mix of title_bar \
               and background to title_bar (:21-35, :339) -- measured at the \
-              worse end -- while the platform states window.title_bar_font, a \
-              colour that reaches nothing, since geometry::title_bar carries \
-              no colour (Tier U)",
+              worse end. window.title_bar_font.color is the window's own text \
+              colour in all 32 combinations, so the inherited token delivers \
+              the platform's colour and what degrades here is the fill",
         native: |r| {
             (
                 rgba_to_hsla(r.window.title_bar_font.color),
