@@ -19,19 +19,29 @@
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
 //! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]).
 //!
-//! Geometry, with one exception that is not geometry: eight builders also
-//! carry the platform's text colour, because upstream labels their widget with
-//! a token of its own one refinement earlier and no `ThemeColor` field holds
-//! the colour the platform states. Three of them displace a visibly different
-//! colour today — [`status_bar`] and [`dialog_description`] displace
-//! `muted_foreground`, [`tooltip`] displaces `popover_foreground` — and five
-//! displace `foreground`: [`list_item`], [`checkbox`], [`radio`], [`select`]
-//! and [`combobox`]. Those five change no pixel over the bundled presets,
-//! because a widget that states no `font.color` inherits the window's
+//! Geometry, with one exception that is not geometry: six builders also carry
+//! the platform's text colour. A builder carries it only where upstream labels
+//! the very element the refinement lands on with a token of its own one
+//! refinement earlier — so the carried colour actually reaches the text — and
+//! upstream's state colours (disabled, muted) still win, because it applies
+//! them after the refinement or on a child. Three of the six displace a
+//! visibly different colour today — [`status_bar`] and [`dialog_description`]
+//! displace `muted_foreground`, [`tooltip`] displaces `popover_foreground` —
+//! and three displace `foreground`: [`list_item`], [`radio`] and [`select`].
+//! Those three change no pixel over the bundled presets, because a widget that
+//! states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
 //! field; they carry it so a preset that does state one is honoured rather
-//! than silently overridden. [`title_bar`] needs none: upstream sets no text
-//! colour on the bar at all.
+//! than silently overridden.
+//!
+//! [`checkbox`] and [`combobox`] are the two upstream paints from `foreground`
+//! that still take no colour, because the second half of the rule fails for
+//! them: a `Checkbox::label` is re-coloured by its own wrapper and both apply
+//! their disabled colour before the refinement, so a carried colour would
+//! either never arrive or displace the disabled one (`checkbox.rs:334-339` and
+//! `:252-256`, `input/input.rs:99-103` through `combobox.rs:997`).
+//! [`title_bar`] needs none for a third reason: upstream sets no text colour
+//! on the bar at all.
 //!
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
 //! [`progress`] are verified against real gpui-component widgets in
@@ -68,11 +78,13 @@ fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> Styl
 /// Text size, weight and colour from a font spec.
 ///
 /// For the widgets upstream labels with a token of its own *before* applying
-/// the caller's refinement: there the refinement is the only carrier the
+/// the caller's refinement, on the very element the refinement lands on, and
+/// whose state colours (disabled, muted) still win because upstream sets them
+/// after it or on a child: there the refinement is the only carrier the
 /// platform's own text colour has, because no `ThemeColor` field maps to it
-/// and upstream's token would otherwise stand. Widgets that set no text colour
-/// take [`with_text`], so a builder never hands an element a colour upstream
-/// did not leave a place for.
+/// and upstream's token would otherwise stand. Every other widget takes
+/// [`with_text`], so a builder never hands an element a colour upstream did
+/// not leave a place for, and never displaces a disabled colour.
 fn with_coloured_text(
     r: StyleRefinement,
     font: &ResolvedFontSpec,
@@ -311,50 +323,76 @@ pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().h(px(n.resolved.expander.header_height))
 }
 
-/// `Checkbox` (`src/checkbox.rs:271` → `:286`); the indicator is inner, Tier U.
+/// The metrics `Checkbox` and `Radio` share; platform-facts §2.5 defines radio
+/// metrics as the checkbox's with a circular indicator, so this is a fact, not
+/// a substitution (rationale D18). Only the text colour separates the two.
+fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
+    StyleRefinement::default().gap(px(n.resolved.checkbox.label_gap))
+}
+
+/// `Checkbox` (`src/checkbox.rs:270-285` → `:286`); the indicator is inner,
+/// Tier U.
 ///
-/// The colour is carried for the same reason as [`list_item`]: upstream labels
-/// the row with `foreground` (`:274`) before applying this refinement.
+/// No colour, although upstream does label the row with `foreground` (`:274`)
+/// before this refinement: a `Checkbox::label` is wrapped in a div that sets
+/// `foreground` itself (`:334-339`), so a carried colour would never reach it,
+/// and the disabled hook applies `muted_foreground` and only *then* the
+/// refinement (`:252-256`), so a carried colour would displace the disabled
+/// colour of custom children. [`radio`], whose label child sets no colour of
+/// its own, carries it.
 #[must_use]
 pub fn checkbox(n: Native<'_>) -> StyleRefinement {
-    let c = &n.resolved.checkbox;
-    with_coloured_text(StyleRefinement::default().gap(px(c.label_gap)), &c.font, n)
+    with_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
 }
 
-/// `Radio` (`src/radio.rs:211` → `:226`). platform-facts §2.5 defines radio
-/// metrics as the checkbox's with a circular indicator, so this is a fact,
-/// not a substitution (rationale D18). Upstream labels the row with
-/// `foreground` at `:212`, so the colour [`checkbox`] carries is needed here
-/// too.
+/// `Radio` (`src/radio.rs:210-225` → `:226`): [`checkbox`]'s metrics, and the
+/// colour [`checkbox`] cannot take.
+///
+/// The colour is carried for the same reason as [`list_item`]: upstream labels
+/// the row with `foreground` (`:212`) before applying this refinement, and its
+/// disabled muting is on the label child (`:256-257`), which wins over
+/// whatever the row carries.
 #[must_use]
 pub fn radio(n: Native<'_>) -> StyleRefinement {
-    checkbox(n)
+    with_coloured_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
 }
 
-/// `Select` (`src/select.rs:535-542` → `:546`); the arrow is inner, Tier U.
+/// The metrics `Select` and `Combobox` share; only the text colour separates
+/// the two.
+fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
+    let c = &n.resolved.combo_box;
+    StyleRefinement::default()
+        .min_h(control_height(c.min_height, &c.font, &c.border, n))
+        .min_w(px(c.min_width))
+        .rounded(px(c.border.corner_radius.max(0.0)))
+}
+
+/// `Select` (`src/select.rs:535-545` → `:546`); the arrow is inner, Tier U.
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the trigger with `foreground` through `input_style`
 /// (`src/input/input.rs:105`, applied at `select.rs:539`) before applying this
-/// refinement.
+/// refinement. It is safe here although the same helper's disabled branch
+/// returns `muted_foreground` before the refinement too
+/// (`src/input/input.rs:99-103`), because `Select` re-mutes its title *child*
+/// when disabled (`select.rs:477-479`) and a child wins over the trigger.
 #[must_use]
 pub fn select(n: Native<'_>) -> StyleRefinement {
-    let c = &n.resolved.combo_box;
-    with_coloured_text(
-        StyleRefinement::default()
-            .min_h(control_height(c.min_height, &c.font, &c.border, n))
-            .min_w(px(c.min_width))
-            .rounded(px(c.border.corner_radius.max(0.0))),
-        &c.font,
-        n,
-    )
+    with_coloured_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
 }
 
-/// `Combobox` (`src/combobox.rs:986-993` → `:997`): same sources as [`select`],
-/// and the same `foreground` at `:990` for the colour to displace.
+/// `Combobox` (`src/combobox.rs:980-996` → `:997`): [`select`]'s metrics, and
+/// the colour [`select`] can take but this cannot.
+///
+/// Upstream labels the trigger with the same `input_style` `foreground`
+/// (`:990`), but its disabled branch (`src/input/input.rs:99-103`) delivers
+/// `muted_foreground` through that same call, before the refinement at `:997`,
+/// and the selected-title child (`:584-590`) sets no colour to re-mute with —
+/// so a carried colour would beat the disabled colour instead of yielding to
+/// it.
 #[must_use]
 pub fn combobox(n: Native<'_>) -> StyleRefinement {
-    select(n)
+    with_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
 }
 
 /// `TitleBar` (`src/title_bar.rs:335` → `:343`); the height has no theme field.
@@ -623,26 +661,31 @@ mod tests {
         });
     }
 
-    /// Where upstream labels a widget with a token of its own and applies the
-    /// caller's refinement afterwards, the builder is the only carrier the
-    /// platform's text colour has, so it carries it -- over every preset in
-    /// both modes, not just the two `CASES` names.
+    /// A builder carries the platform's text colour only where upstream sets a
+    /// token of its own on the very element the refinement lands on *and* its
+    /// state colours still win afterwards. Six do, over every preset in both
+    /// modes, not just the two `CASES` names.
     ///
     /// The `assert_ne!`s below are the reason the first three exist: each of
     /// those native colours differs from the token upstream would otherwise
     /// paint, so leaving the colour out left the widget labelled with a colour
     /// the platform did not state.
     ///
-    /// The other five -- `list_item`, `checkbox`, `radio`, `select`,
-    /// `combobox` -- get no such `assert_ne!`, and deliberately: their native
-    /// font colour equals `defaults.text_color` in all 32 combinations today,
-    /// because a preset that states no `font.color` for a widget inherits the
-    /// window's (docs/inheritance-rules.toml:115-136), and `foreground` is fed
-    /// from `defaults.text_color`. The colour is carried anyway because the
+    /// The other three -- `list_item`, `radio`, `select` -- get no such
+    /// `assert_ne!`, and deliberately: their native font colour equals
+    /// `defaults.text_color` in all 32 combinations today, because a preset
+    /// that states no `font.color` for a widget inherits the window's
+    /// (docs/inheritance-rules.toml:115-136), and `foreground` is fed from
+    /// `defaults.text_color`. The colour is carried anyway because the
     /// mechanism is identical -- upstream labels each of them with
-    /// `foreground` one refinement earlier -- so the day a preset states
-    /// `checkbox.font.color` the widget is painted with it instead of
-    /// silently keeping the window's.
+    /// `foreground` one refinement earlier and mutes the disabled state on a
+    /// child afterwards -- so the day a preset states `list.item_font.color`
+    /// the widget is painted with it instead of silently keeping the window's.
+    ///
+    /// `checkbox` and `combobox` do not carry it although upstream paints them
+    /// from `foreground` too: the route is blocked at the other end, which
+    /// `checkbox_and_combobox_carry_no_colour_because_upstream_leaves_no_route`
+    /// spells out.
     #[test]
     fn text_colour_is_the_platforms_wherever_upstream_would_override_it() {
         let mut tooltip_differs = 0usize;
@@ -681,19 +724,15 @@ mod tests {
                 );
 
                 // The same mechanism, upstream's `foreground` one refinement
-                // earlier: `list/list_item.rs:189` -> `:193`,
-                // `checkbox.rs:274` -> `:286`, `radio.rs:212` -> `:226`,
-                // `select.rs:539` -> `:546` and `combobox.rs:990` -> `:997`
-                // (both through `input_style`, `input/input.rs:105`).
+                // earlier and its disabled colour on a child afterwards:
+                // `list/list_item.rs:189` -> `:193`, `radio.rs:212` -> `:226`
+                // (child muted at `:256-257`) and `select.rs:539` -> `:546`
+                // (through `input_style`, `input/input.rs:105`; the title child
+                // re-mutes at `:477-479`).
                 assert_eq!(
                     list_item(n).text.color,
                     Some(rgba_to_hsla(r.list.item_font.color)),
                     "{at}: list item text"
-                );
-                assert_eq!(
-                    checkbox(n).text.color,
-                    Some(rgba_to_hsla(r.checkbox.font.color)),
-                    "{at}: checkbox label text"
                 );
                 assert_eq!(
                     radio(n).text.color,
@@ -705,10 +744,17 @@ mod tests {
                     Some(rgba_to_hsla(r.combo_box.font.color)),
                     "{at}: select text"
                 );
+
+                // The two the route is blocked for; the guard below says why.
+                assert_eq!(
+                    checkbox(n).text.color,
+                    None,
+                    "{at}: checkbox label text must stay upstream's"
+                );
                 assert_eq!(
                     combobox(n).text.color,
-                    Some(rgba_to_hsla(r.combo_box.font.color)),
-                    "{at}: combobox text"
+                    None,
+                    "{at}: combobox text must stay upstream's"
                 );
 
                 // What upstream paints without the refinement: muted_foreground
@@ -735,6 +781,76 @@ mod tests {
             "no preset states a tooltip colour of its own any more, so the \
              tooltip builder's colour proves nothing"
         );
+    }
+
+    /// `geometry::checkbox` and `geometry::combobox` carry no colour although
+    /// upstream paints both from `foreground`: the route is blocked past the
+    /// element the refinement lands on. A `Checkbox::label` sits in a wrapper
+    /// that sets `foreground` itself (`checkbox.rs:334-339`), so a carried
+    /// colour never reaches it; and both widgets apply their disabled colour
+    /// *before* the refinement (`checkbox.rs:252-256`, and
+    /// `input_style(disabled, ..)` at `input/input.rs:99-103` feeding
+    /// `combobox.rs:990` -> `:997`, whose selected-title branch `:584-590` sets
+    /// no colour to re-mute with), so a carried colour would displace it.
+    ///
+    /// The run therefore also guards the preconditions: every preset states
+    /// for both widgets exactly the colour upstream already paints there
+    /// (`defaults.text_color` -> `foreground`), so the two builders lose
+    /// nothing today.
+    #[test]
+    fn checkbox_and_combobox_carry_no_colour_because_upstream_leaves_no_route() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!(
+                    "{}/{}",
+                    info.key,
+                    if mode == ColorMode::Dark {
+                        "dark"
+                    } else {
+                        "light"
+                    }
+                );
+                let prefs = scaled(1.0);
+                let n = Native {
+                    resolved: &r,
+                    accessibility: &prefs,
+                };
+                assert_eq!(
+                    checkbox(n).text.color,
+                    None,
+                    "{at}: geometry::checkbox set a text colour; upstream's \
+                     label wrapper paints `foreground` itself \
+                     (checkbox.rs:334-339) so it cannot arrive, and the \
+                     disabled hook (checkbox.rs:252-256) would take it instead \
+                     of `muted_foreground`"
+                );
+                assert_eq!(
+                    combobox(n).text.color,
+                    None,
+                    "{at}: geometry::combobox set a text colour; upstream \
+                     applies the disabled `muted_foreground` before this \
+                     refinement (input/input.rs:99-103 -> combobox.rs:990 -> \
+                     :997), so it would displace the disabled colour"
+                );
+                assert_eq!(
+                    r.checkbox.font.color, r.defaults.text_color,
+                    "{at}: this preset states a checkbox label text colour \
+                     that gpui-component 0.6.4 gives no route for \
+                     (checkbox.rs:334-339) -- record it as a Tier U candidate; \
+                     do NOT carry it in the builder, it would displace the \
+                     disabled colour (checkbox.rs:252-256)"
+                );
+                assert_eq!(
+                    r.combo_box.font.color, r.defaults.text_color,
+                    "{at}: this preset states a combo box text colour that \
+                     gpui-component 0.6.4 gives no route for \
+                     (combobox.rs:990 -> :997) -- record it as a Tier U \
+                     candidate; do NOT carry it in the builder, it would \
+                     displace the disabled colour (input/input.rs:99-103)"
+                );
+            }
+        }
     }
 
     /// `geometry::title_bar` carries no colour, and the run says why: upstream

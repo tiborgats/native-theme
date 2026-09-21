@@ -187,7 +187,8 @@ seam!(
     geometry::select,
     min_size.height
 );
-// Same refinement as `select`, but a different upstream seam (`combobox.rs`).
+// `select`'s metrics on a different upstream seam (`combobox.rs`); only the
+// text colour separates the two builders, and the height is what is measured.
 seam!(
     combobox_takes_the_native_min_height,
     "adwaita",
