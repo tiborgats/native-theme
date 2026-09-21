@@ -296,7 +296,7 @@ fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 
 /// The status colours and their labels, as the platform states them.
 ///
-/// C19: a label below 4.5:1 used to be replaced with white or black, chosen on
+/// A label below 4.5:1 used to be replaced with white or black, chosen on
 /// a 0.5 lightness threshold that is not where the two cross over in contrast.
 /// On the real platforms the replacement was the colour the platform already
 /// had, and on the community presets it sometimes made the label *worse* than
@@ -342,6 +342,15 @@ fn assign_buttons(tc: &mut ThemeColor) {
     // opaque value `blend` is the identity, so there is no branch. Windows 11
     // is the one preset where it shows: 4% black over `#fdfdfd` is `#f3f3f3`,
     // not 4% black over whatever is behind the button.
+    //
+    // `Hsla::blend` is not quite source-over: it lerps the channels by the
+    // layer's alpha and keeps the *base's* alpha (`gpui-pre` color.rs:58-70,
+    // reached through `:580-593`), where source-over would give the result
+    // `layer.a + base.a * (1 - layer.a)`. The two agree exactly whenever the
+    // base is opaque, and every base here is: no bundled preset states a
+    // translucent `button.background_color` or `defaults.background_color`,
+    // and the Windows reader builds its `COLOR_BTNFACE` with `Rgba::rgb`,
+    // which is alpha 255.
     tc.button_hover = tc.button.blend(tc.secondary_hover);
     tc.button_active = tc.button.blend(tc.secondary_active);
     tc.button_foreground = tc.secondary_foreground;
@@ -1329,7 +1338,7 @@ mod tests {
         );
     }
 
-    /// C19: a status label is the platform's own, never a colour of ours.
+    /// A status label is the platform's own, never a colour of ours.
     ///
     /// catppuccin-latte light is one of the combinations where the removed
     /// enforcement replaced the platform's danger label; white and black are

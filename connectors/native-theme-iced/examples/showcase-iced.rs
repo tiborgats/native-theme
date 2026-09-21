@@ -3627,7 +3627,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             &[("payload", QR_PAYLOAD)],
             &[(
                 "cell size",
-                "no native source — iced's own DEFAULT_CELL_SIZE (qr_code.rs:35)",
+                "no native source — iced's own DEFAULT_CELL_SIZE (qr_code.rs)",
             )],
         ),
         column![

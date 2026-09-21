@@ -188,8 +188,8 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 ///
 /// The colour is carried because upstream labels a tooltip with
 /// `popover_foreground` (`:115`), which this connector fills from
-/// `popover.font.color`; half of the presets state a different colour for a
-/// tooltip than for a popover.
+/// `popover.font.color`; 16 of the 32 bundled preset/mode combinations state a
+/// different colour for a tooltip than for a popover.
 #[must_use]
 pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;

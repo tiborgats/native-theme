@@ -15,11 +15,20 @@
 //! which `Clone` is not one, so each signature has to say `+ Clone` for a
 //! caller to see it. At least one real setter requires it:
 //! `iced_aw::SelectionList::new_with` (see `aw::selection_list`, which the
-//! `iced_aw` feature adds).
-//! `every_style_closure_is_clone` in the contract module holds the line.
+//! `iced_aw` feature adds). A test in the crate's own suite holds the line: it
+//! passes every one of these closures to a `Clone`-bounded function, so a
+//! signature that lost `+ Clone` would stop compiling.
 //!
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
+//! That read happens while the widget is being drawn, from the `&Theme` in
+//! effect, so twelve of these functions -- `button_primary`, `button_danger`,
+//! `button_success`, `button_warning`, `button_link`, `text_input`,
+//! `toggler`, `pick_list`, `menu`, `slider`, `scrollable` and `rule` --
+//! assume that theme is the one `to_theme(resolved)` built from the same
+//! `ResolvedTheme`. Under any other theme the borrowed fields are derived from
+//! a different palette: the hover of `button_primary`, for one, is then
+//! strengthened from a primary that is not its own idle fill.
 //!
 //! Two of iced's own classes are left alone on purpose: `container::bordered_box`
 //! (`container.rs:595-607`) and `button::subtle` (`button.rs:713-715`) paint
@@ -28,6 +37,9 @@
 //! connector neither writes that slot nor offers a replacement for either class.
 //! A surface that should be the platform's is [`container_card`], which paints
 //! `card.background_color`.
+//!
+//! Upstream citations in this module are read at iced_widget 0.14.2 and
+//! iced_core 0.14.0.
 
 #[cfg(feature = "iced_aw")]
 pub mod aw;
@@ -48,7 +60,7 @@ use native_theme::theme::ResolvedTheme;
 ///
 /// The platform states a widget's hover and pressed colors as layers it paints
 /// over that widget's own fill, while iced replaces the fill outright, so the
-/// layer is flattened onto the fill before it is emitted (C17).
+/// layer is flattened onto the fill before it is emitted.
 ///
 /// `base` is not assumed opaque, because it often is not: every preset states
 /// `link.background_color = "#00000000"`, and a tint over nothing must stay
@@ -59,9 +71,9 @@ use native_theme::theme::ResolvedTheme;
 ///
 /// The blend is deliberately in sRGB rather than in linear light. It is not a
 /// physical mix of two lights: it reproduces the composite the platform itself
-/// performed when it measured the value the preset records (spec section 3.2),
-/// and platform compositors -- and iced's own renderer -- blend in sRGB. A
-/// linear-light blend here would give a color the platform never shows.
+/// performed when it measured the value the preset records, and platform
+/// compositors -- and iced's own renderer -- blend in sRGB. A linear-light
+/// blend here would give a color the platform never shows.
 pub(crate) fn composite_over(layer: Color, base: Color) -> Color {
     // How much of `base` reaches the result, in the composite's own alpha.
     let under = base.a * (1.0 - layer.a);
@@ -160,7 +172,7 @@ pub fn button(
 /// grey on fifteen of the sixteen presets, which would turn a hovered accent
 /// button grey. So those two states follow the no-source rule and come from
 /// `class` at run time, which derives them from the same color through the
-/// palette (spec section 3.3).
+/// palette.
 ///
 /// The border is the button's, not iced's `border::rounded(2)`
 /// (`button.rs:739`), so such a button sits beside a native one instead of
@@ -288,11 +300,12 @@ pub fn button_warning(
 /// and dims it to 80 % alpha on hover. The platform states its link colors
 /// instead: `link.font.color`, `.hover_text_color`, `.active_text_color` and
 /// `.disabled_text_color` on `link.background_color`, with `.hover_background`
-/// layered over that fill (C17) -- and every preset states the fill as fully
+/// layered over that fill -- and every preset states the fill as fully
 /// transparent, which is the case that layering was made general for.
 ///
 /// `LinkTheme` states no pressed and no disabled fill, so both keep the idle
-/// one: the copy rule of spec section 3.2. It carries no border either, and
+/// one: a state the platform does not state has no distinct appearance. It
+/// carries no border either, and
 /// no shadow geometry, so `border`, `shadow` and `snap` are iced's own for a
 /// text button.
 #[must_use = "this returns the style function; it does not apply it"]
@@ -340,7 +353,7 @@ pub fn button_link(
 /// colors, the placeholder, the value and the selection. The disabled state is
 /// the platform's disabled fill and disabled text color, both of which the
 /// model states. `icon` has no native source -- the model carries no
-/// input-icon color (spec section 3.2) -- and comes from
+/// input-icon color -- and comes from
 /// `text_input::default(theme, status)`.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn text_input(
@@ -375,7 +388,8 @@ pub fn text_input(
             Status::Active => (idle, idle_border, text),
             Status::Hovered => (idle, hover_border, text),
             // A field that is focused *and* hovered takes the focus border,
-            // as iced's own default does (`text_input.rs:1787`).
+            // as iced's own default does: its `Focused` arm ignores
+            // `is_hovered` (`text_input.rs:1783-1789`).
             Status::Focused { is_hovered: _ } => (idle, focus_border, text),
             Status::Disabled => (disabled, idle_border, disabled_text),
         };
@@ -620,7 +634,7 @@ pub fn radio(
 /// halves the alpha of the thumb.
 ///
 /// The track is `switch.checked_background` or `.unchecked_background` by
-/// `is_toggled`, with `.hover_*` layered over it (C17) and `.disabled_*`
+/// `is_toggled`, with `.hover_*` layered over it and `.disabled_*`
 /// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
 /// so emitted as given in every state, and `.disabled_thumb_color` whenever
 /// the switch is disabled -- toggled or not.
@@ -638,6 +652,12 @@ pub fn radio(
 /// `(track_height - thumb_diameter) / (2 * track_height)`. A preset that
 /// states no track height, or a thumb taller than its track, would ask for a
 /// division by zero or a negative inset; there the ratio is iced's own instead.
+///
+/// One native field is the consumer's builder geometry rather than a `Style`
+/// field: `switch.track_height` belongs to `Toggler::size(..)`
+/// (`toggler.rs:171`), which is the track's *height* -- iced lays the track
+/// out as `2 × size` by `size` (`:287`), so the platform's track width follows
+/// from it and has no separate receiver.
 ///
 /// Five fields have no native source and come from `toggler::default(theme,
 /// status)`: `SwitchTheme` carries no border, so both border widths and both
@@ -734,7 +754,7 @@ pub fn toggler(
 /// primary family once it is hovered or open.
 ///
 /// The field is `combo_box.background_color` with `.hover_background` layered
-/// over it (C17), its label is `combo_box.font.color` and its border is
+/// over it, its label is `combo_box.font.color` and its border is
 /// `combo_box.border.*`. The placeholder is `input.placeholder_color`: the
 /// model states it once, for every field that has one.
 ///
@@ -743,6 +763,13 @@ pub fn toggler(
 /// model states no separate open appearance. `handle_color` has no native
 /// source, `ComboBoxTheme` carrying the arrow's sizes but not its color, so it
 /// comes from `pick_list::default(theme, status)`.
+///
+/// One native field is the consumer's builder geometry rather than a `Style`
+/// field: `combo_box.arrow_icon_size` belongs to
+/// `PickList::handle(..)` (`pick_list.rs:269`) as
+/// `pick_list::Handle::Arrow { size }` (`:798-801`), which iced uses as the
+/// font size of the arrow glyph (`:600-606`); the default is `None`, iced's
+/// own.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn pick_list(
     resolved: &ResolvedTheme,
@@ -801,7 +828,7 @@ pub fn pick_list(
 /// Every color is `menu.*`: the panel, its border, the label, and the selected
 /// row's label and fill. A selected row is a row highlight, painted over a
 /// panel the widget also paints, so it is emitted as given rather than
-/// composited (spec section 3.2).
+/// composited: the platform measured that fill as it shows, not as a layer.
 ///
 /// `shadow` has no native source -- the model has `defaults.shadow_color` but
 /// no offset or blur -- and comes from `overlay::menu::default(theme)`.
@@ -854,7 +881,7 @@ pub fn menu(
 /// Two things have no native source. The model states no dragged thumb color,
 /// so in that one status the handle's **fill** -- and nothing else about it --
 /// is `slider::default(theme, Status::Dragged).handle.background`, as a status
-/// button's hovered fill is iced's (spec section 3.2); its shape stays the
+/// button's hovered fill is iced's; its shape stays the
 /// platform's thumb diameter, and so does the rail under it. That one field is
 /// asserted against iced's own by
 /// `a_dragged_slider_handle_takes_its_fill_from_iced`. And `SliderTheme`
@@ -915,7 +942,7 @@ pub fn slider(
 /// Each rail is `scrollbar.track_color`, and each scroller is
 /// `scrollbar.thumb_color`, `.thumb_hover_color` under the pointer and
 /// `.thumb_active_color` while it is dragged. All three are thumbs, so they are
-/// emitted as given rather than composited (spec section 3.2): iced paints them
+/// emitted as given rather than composited: iced paints them
 /// over a rail it also paints.
 ///
 /// iced states the two axes separately, and its `Status` carries which one the
@@ -1035,7 +1062,7 @@ pub fn scrollable(
 /// `scrollable(..).direction(Direction::Vertical(..))` and its horizontal and
 /// two-axis siblings.
 ///
-/// Not a closure and not a `Style` (C14): a scrollbar's geometry is built into
+/// Not a closure and not a `Style`: a scrollbar's geometry is built into
 /// the `Scrollbar` a `Direction` carries, so it cannot travel with
 /// [`scrollable`]. Pass the result to
 /// `scrollable(..).direction(Direction::Vertical(..))`, or to

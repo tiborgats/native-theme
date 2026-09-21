@@ -66,7 +66,7 @@
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
 //! | `list` | 7 of 13 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
-//! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver (see `contract::NO_RECEIVER`) |
+//! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 138 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover via `base_layer::resizable_theme`; width upstream |
 //!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes

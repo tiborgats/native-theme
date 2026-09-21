@@ -7,7 +7,7 @@
 //! `.style(..)` setter on the widget. So these functions follow the same rules
 //! as [`crate::styles`] -- every field named, native values captured by value,
 //! and a field the model does not carry read from `iced_aw`'s own default class
-//! rather than written as a literal (spec section 3.2). Every closure here is
+//! rather than written as a literal. Every closure here is
 //! `Clone`, as [`crate::styles`]' are, because `SelectionList::new_with`
 //! demands it.
 //!
@@ -21,6 +21,9 @@
 //! container a consumer wraps it in. `ContextMenu` gets no function: its
 //! `Style` is a one-field backdrop scrim (`style/context_menu.rs:9-14`) rather
 //! than the menu styling, and no platform paints one.
+//!
+//! Upstream citations in this module are read at iced_aw 0.14.1, with
+//! iced_widget 0.14.2 and iced_core 0.14.0 beneath it.
 
 use crate::palette::to_color;
 use iced_aw::style::Status;
@@ -92,7 +95,7 @@ pub fn card(
 /// because `MenuTheme` states one menu panel. `path` -- the highlight under the
 /// item the pointer is on -- is `menu.hover_background`, emitted as given: it
 /// is a row highlight painted over a panel the widget also paints, so the
-/// platform's layering happens by itself (spec section 3.2).
+/// platform's layering happens by itself.
 ///
 /// Three fields have no native source and come from
 /// `menu_bar::primary(theme, status)`: the two shadows, because the model
@@ -157,7 +160,7 @@ pub fn menu(
 /// `hover_background` is a soft option: `None` is the platform saying a hovered
 /// tab has no fill of its own, so it copies the idle one. All three are
 /// emitted as given -- a tab label is painted over the strip this same function
-/// fills, so the platform's layering happens by itself (spec section 3.2).
+/// fills, so the platform's layering happens by itself.
 ///
 /// The strip is `tab.bar_background`, and `tab.border.*` is the tab's own
 /// border: its color and width outline the labels and its corner radius rounds
@@ -248,7 +251,7 @@ pub fn tab_bar(
 /// unselected item, so what shows there is the panel. `SidebarTheme` states no
 /// hovered label either, so a hovered item keeps `sidebar.font.color`. The
 /// fills are emitted as given: an item is painted over the panel this same
-/// function fills (spec section 3.2).
+/// function fills.
 ///
 /// The panel is `sidebar.background_color` with `sidebar.border.*`, the one
 /// border the model states for a sidebar -- its color and its width, because
@@ -338,7 +341,7 @@ pub fn sidebar(
 /// does describe but that nothing paints today, because `iced_aw` 0.14.1 asks
 /// a row only for `Selected`, `Hovered` and `Active`
 /// (`selection_list/list.rs:241-258`). The row fills are emitted as given: a
-/// row is painted over the list this same function fills (spec section 3.2).
+/// row is painted over the list this same function fills.
 ///
 /// The outline is `list.border.*` -- its color and its width, because
 /// `list.border.corner_radius` has no receiver: `selection_list::Style` carries

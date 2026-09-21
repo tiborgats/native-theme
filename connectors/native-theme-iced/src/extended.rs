@@ -61,7 +61,9 @@ pub(crate) fn contrast_ratio(a: iced_core::Color, b: iced_core::Color) -> f32 {
 ///
 /// Always applies these overrides (all fields guaranteed populated):
 /// - `background.base.text` <- foreground text color
-/// - `secondary.base` <- placeholder color, labelled by the window's text
+/// - `secondary.base` <- placeholder color, paired with the window's text
+///   through `Pair::new`, which runs `readable()` and substitutes a label of
+///   iced's own on 31 of the 32 bundled preset/mode combinations
 /// - `secondary.strong` <- a copy of `secondary.base`
 /// - `background.weak.color` <- surface color
 /// - `background.weak.text` <- foreground text color
@@ -88,7 +90,12 @@ pub(crate) fn apply_overrides(
     // another whenever the contrast falls below its own threshold.
     extended.background.base.text = to_color(colors.foreground);
     // Ordering: the label is read from `background.base.text`, which the line
-    // above has just set to the platform's, so the pair is labelled natively.
+    // above has just set to the platform's, so what `Pair::new` is offered is
+    // the platform's colour. It is not what comes out: `Pair::new` runs
+    // `readable()` against the placeholder fill, and placeholder grey and
+    // window text are close by construction -- exactly the pair `readable()`
+    // rejects -- so 31 of the 32 bundled combinations emit a substitute of
+    // iced's own (the contract's `derived.rs` counts them on every run).
     extended.secondary.base =
         Pair::new(to_color(colors.placeholder), extended.background.base.text);
     // A hovered `button::secondary` keeps the base label and swaps only the

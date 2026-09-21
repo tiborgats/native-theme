@@ -14,7 +14,8 @@ use super::*;
 ///
 /// The six base-palette slots come from `palette::to_palette()`, the
 /// `extended.*` slots from `extended::apply_overrides()`. The `styles::*`
-/// fields are in `STYLE_ROWS` and `SCALAR_ROWS`.
+/// fields are in the per-widget tables below -- `<WIDGET>_ROWS` for the colors
+/// and `_BORDER_ROWS`, `_SCALAR_ROWS`, `_RADIUS_ROWS` for the rest.
 pub(super) const ROWS: &[Row] = &[
     Row {
         slot: "palette.background",
