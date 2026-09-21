@@ -98,6 +98,8 @@ mod contract;
 pub(crate) mod derive;
 pub mod geometry;
 pub mod icons;
+#[cfg(test)]
+mod showcase;
 pub mod variants;
 
 // Re-export native-theme types that appear in public signatures so downstream

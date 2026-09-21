@@ -32,12 +32,13 @@
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Bounds, ClipboardItem, Context, Entity, Hsla,
-    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
-    StyleRefinement, Styled, Task, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems,
-    size,
+    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Pixels, Render,
+    SharedString, StyleRefinement, Styled, Task, Window, WindowBounds, WindowOptions, div,
+    prelude::*, px, rems, size,
 };
 use gpui_component::{
-    ActiveTheme, Disableable, Icon, IconName, Placement, Root, Sizable, Size, StyledExt, WindowExt,
+    ActiveTheme, Disableable, Icon, IconName, IndexPath, Placement, Root, Sizable, Size, StyledExt,
+    TitleBar, WindowExt,
     accordion::{Accordion, AccordionItem},
     alert::Alert,
     avatar::{Avatar, AvatarGroup},
@@ -53,8 +54,9 @@ use gpui_component::{
     clipboard::Clipboard,
     collapsible::Collapsible,
     color_picker::{ColorPicker, ColorPickerState},
+    combobox::{Combobox, ComboboxState},
     description_list::DescriptionList,
-    dialog::{DialogClose, DialogFooter, DialogTitle},
+    dialog::{DialogClose, DialogDescription, DialogFooter, DialogTitle},
     empty::{
         Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
         EmptyTitle,
@@ -75,9 +77,10 @@ use gpui_component::{
     notification::Notification,
     popover::Popover,
     progress::Progress,
-    radio::RadioGroup,
+    radio::{Radio, RadioGroup},
     resizable::{h_resizable, resizable_panel, v_resizable},
     scroll::ScrollableElement,
+    searchable_list::{SearchableListDelegate, SearchableListItem},
     select::{SearchableVec, Select, SelectEvent, SelectState},
     separator::Separator,
     setting::{SettingField, SettingGroup, SettingItem, SettingPage, Settings},
@@ -85,12 +88,17 @@ use gpui_component::{
     skeleton::Skeleton,
     slider::{Slider, SliderEvent, SliderState},
     spinner::Spinner,
+    status_bar::StatusBar,
     switch::Switch,
     tab::TabBar,
-    table::{Column, DataTable, TableDelegate, TableState},
+    table::{
+        Column, DataTable, Table, TableBody, TableCell, TableDelegate, TableHead, TableHeader,
+        TableRow, TableState,
+    },
     tag::Tag,
     text::{TextView, TextViewStyle},
     theme::Theme,
+    tooltip::Tooltip,
     tree::{Tree, TreeItem, TreeState},
     v_flex,
 };
@@ -332,6 +340,57 @@ fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> W {
     match style {
         Some(s) => widget.refine_style(s),
         None => widget,
+    }
+}
+
+/// The value a size or length builder gives for the installed native theme,
+/// or `None` before `apply` ran (spec §9.3, §9.4).
+fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) -> Option<T> {
+    cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
+}
+
+/// An icon at the platform's size for the role the builder names; upstream's
+/// own size before `apply` ran.
+fn native_icon(cx: &App, name: IconName, role: fn(Native<'_>) -> Size) -> Icon {
+    let icon = Icon::new(name);
+    match native_value(cx, role) {
+        Some(size) => icon.with_size(size),
+        None => icon,
+    }
+}
+
+/// The height a platform button occupies, for the rows the showcase draws with
+/// its own elements — a toolbar has no gpui-component widget to take a
+/// refinement, so [`geometry::control_height`] is called directly.
+fn native_control_height(cx: &App) -> Option<Pixels> {
+    native_value(cx, |n| {
+        let b = &n.resolved.button;
+        geometry::control_height(b.min_height, &b.font, &b.border, n)
+    })
+}
+
+/// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
+/// wherever the platform specifies nothing (platform-facts §2.20). The
+/// fallback is whatever the caller already used.
+fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
+    match gap {
+        Some(g) => widget.gap(g),
+        None => widget,
+    }
+}
+
+fn with_padding<W: Styled>(widget: W, padding: Option<Pixels>) -> W {
+    match padding {
+        Some(p) => widget.p(p),
+        None => widget,
+    }
+}
+
+/// How a layout accessor's value reads in the showcase's own labels.
+fn layout_value(value: Option<Pixels>) -> String {
+    match value {
+        Some(v) => format!("{}px", v.as_f32()),
+        None => "unspecified by the platform".into(),
     }
 }
 
@@ -1051,6 +1110,94 @@ impl ListDelegate for SampleListDelegate {
 }
 
 // ---------------------------------------------------------------------------
+// Sample Combobox Delegate (for Inputs tab)
+// ---------------------------------------------------------------------------
+
+/// One row of the Combobox: a bundled preset, by key and display name.
+#[derive(Clone)]
+struct PresetItem {
+    key: SharedString,
+    display_name: SharedString,
+}
+
+impl SearchableListItem for PresetItem {
+    type Value = SharedString;
+
+    fn title(&self) -> SharedString {
+        self.display_name.clone()
+    }
+
+    fn value(&self) -> &Self::Value {
+        &self.key
+    }
+
+    /// The key is searchable too, so typing `kde` finds "KDE Breeze".
+    fn matches(&self, query: &str) -> bool {
+        let query = query.to_lowercase();
+        self.display_name.to_lowercase().contains(&query)
+            || self.key.to_lowercase().contains(&query)
+    }
+}
+
+/// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:749`),
+/// so showing one takes a delegate: the bundled presets, filtered as the user
+/// types. It selects nothing — the sidebar's `Select` is what switches the
+/// theme; this one demonstrates the widget and its geometry builder.
+struct PresetDelegate {
+    items: Vec<PresetItem>,
+    matched: Vec<PresetItem>,
+}
+
+impl PresetDelegate {
+    fn new() -> Self {
+        let items: Vec<PresetItem> = native_theme::theme::Theme::list_presets()
+            .iter()
+            .map(|info| PresetItem {
+                key: info.key.into(),
+                display_name: info.display_name.into(),
+            })
+            .collect();
+        Self {
+            matched: items.clone(),
+            items,
+        }
+    }
+}
+
+impl SearchableListDelegate for PresetDelegate {
+    type Item = PresetItem;
+
+    fn items_count(&self, _section: usize) -> usize {
+        self.matched.len()
+    }
+
+    fn item(&self, ix: IndexPath) -> Option<&Self::Item> {
+        self.matched.get(ix.row)
+    }
+
+    fn position<V>(&self, value: &V) -> Option<IndexPath>
+    where
+        Self::Item: SearchableListItem<Value = V>,
+        V: PartialEq,
+    {
+        self.matched
+            .iter()
+            .position(|item| item.value() == value)
+            .map(|row| IndexPath::default().row(row))
+    }
+
+    fn perform_search(&mut self, query: &str, _window: &mut Window, _cx: &mut App) -> Task<()> {
+        self.matched = self
+            .items
+            .iter()
+            .filter(|item| item.matches(query))
+            .cloned()
+            .collect();
+        Task::ready(())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main view
 // ---------------------------------------------------------------------------
 
@@ -1069,8 +1216,16 @@ struct Showcase {
 
     active_tab: usize,
 
+    /// Layout spacing of the installed theme. It lives on the model, not on
+    /// `ResolvedTheme`, so the geometry accessors take it from here rather
+    /// than from `cx.native_theme()`.
+    layout: native_theme::theme::LayoutTheme,
+
     // Inputs tab
     input_state: Entity<InputState>,
+    /// The field sized by `geometry::input_height` alone.
+    input_height_state: Entity<InputState>,
+    combobox_state: Entity<ComboboxState<PresetDelegate>>,
     input_group_state: Entity<InputState>,
     input_group_button_state: Entity<InputState>,
     input_group_textarea_state: Entity<TextareaState>,
@@ -1428,6 +1583,16 @@ impl Showcase {
             state
         });
 
+        let input_height_state = cx.new(|cx| {
+            let mut state = InputState::new(window, cx);
+            state.set_placeholder("Height only", window, cx);
+            state
+        });
+
+        let combobox_state = cx.new(|cx| {
+            ComboboxState::new(PresetDelegate::new(), Vec::new(), window, cx).searchable(true)
+        });
+
         let input_group_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
             state.set_placeholder("Search the palette…", window, cx);
@@ -1504,6 +1669,7 @@ impl Showcase {
             initial_icon_theme,
             initial_icon_set,
             initial_has_toml_icon_theme,
+            initial_layout,
             initial_error,
         ) = match native_theme::SystemTheme::from_system() {
             Ok(system) => {
@@ -1516,6 +1682,7 @@ impl Showcase {
                 let mono_font = resolved.defaults.mono_font.clone();
                 let icon_theme = system.icon_theme.clone().into_owned();
                 let icon_set = system.icon_set;
+                let layout = system.layout.clone();
                 // Install the OS theme with both variants stored; the showcase's own
                 // light/dark choice then goes through upstream's mode switch, which
                 // reproduces the native palette from the installed configs (D34).
@@ -1525,7 +1692,9 @@ impl Showcase {
                 }
                 let label = format!("default ({})", system.preset);
                 // Platform presets always specify icon_theme
-                (font, mono_font, label, icon_theme, icon_set, true, None)
+                (
+                    font, mono_font, label, icon_theme, icon_set, true, layout, None,
+                )
             }
             Err(e) => {
                 // Fall back to gpui-component built-in theme so the window still renders
@@ -1555,6 +1724,9 @@ impl Showcase {
                     icon_theme,
                     icon_set,
                     false,
+                    // Nothing was read, so nothing is claimed: every key stays
+                    // `None` and the layout accessors report it as such.
+                    native_theme::theme::LayoutTheme::default(),
                     Some(format!("Failed to load OS theme: {e}")),
                 )
             }
@@ -1824,7 +1996,10 @@ impl Showcase {
             original_font,
             original_mono_font,
             active_tab: TAB_BUTTONS,
+            layout: initial_layout,
             input_state,
+            input_height_state,
+            combobox_state,
             input_group_state,
             input_group_button_state,
             input_group_textarea_state,
@@ -1913,6 +2088,7 @@ impl Showcase {
                     self.original_mono_font = resolved.defaults.mono_font.clone();
                     self.current_icon_theme = system.icon_theme.clone().into_owned();
                     self.current_icon_set = system.icon_set;
+                    self.layout = system.layout.clone();
                     // Platform presets always specify icon_theme
                     self.has_toml_icon_theme = true;
                     native_theme_gpui::apply_system_theme(&system, cx);
@@ -1934,6 +2110,7 @@ impl Showcase {
                     return;
                 }
             };
+            self.layout = nt.layout.clone();
 
             let mode = if self.is_dark {
                 native_theme_gpui::ColorMode::Dark
@@ -2674,12 +2851,30 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-input")
-                    .child(refined(
-                        Input::new(&self.input_state)
-                            .with_size(Size::Medium)
-                            .w(px(360.0)),
-                        native_geometry(cx, geometry::input).as_ref(),
-                    ))
+                    .child(
+                        v_flex()
+                            .gap_3()
+                            .child(refined(
+                                Input::new(&self.input_state)
+                                    .with_size(Size::Medium)
+                                    .w(px(360.0)),
+                                native_geometry(cx, geometry::input).as_ref(),
+                            ))
+                            // The same control height without the rest of the
+                            // refinement: what `geometry::input_height` is for
+                            // (`Input::h`, input/input.rs:257), and a field
+                            // that must line up with the one above without
+                            // taking its border or text size.
+                            .child({
+                                let input = Input::new(&self.input_height_state)
+                                    .with_size(Size::Medium)
+                                    .w(px(360.0));
+                                match native_value(cx, geometry::input_height) {
+                                    Some(height) => input.h(height),
+                                    None => input,
+                                }
+                            }),
+                    )
                     .on_hover(self.hover_info(
                         &fi,
                         "Input",
@@ -2696,6 +2891,7 @@ impl Showcase {
                         ],
                         &[
                             ("geometry", "geometry::input: input.min_height (control height), border.corner_radius, line_width, input.font"),
+                            ("second field", "geometry::input_height alone: the same control height, nothing else"),
                             ("padding", "inner editor (Tier U)"),
                         ],
                     )),
@@ -2895,10 +3091,27 @@ impl Showcase {
                 div()
                     .id("tt-radio")
                     .child(
+                        // `RadioGroup` takes `impl Into<Radio>`, so a `&str`
+                        // child would build a `Radio` with no refinement;
+                        // built here instead, each row carries the platform's
+                        // label gap and font. The group overwrites the id
+                        // (`radio.rs:406`), not the style.
                         RadioGroup::horizontal("rg-1")
-                            .child("Option A")
-                            .child("Option B")
-                            .child("Option C")
+                            .child(
+                                Radio::new("rg-a")
+                                    .native(cx, geometry::radio)
+                                    .label("Option A"),
+                            )
+                            .child(
+                                Radio::new("rg-b")
+                                    .native(cx, geometry::radio)
+                                    .label("Option B"),
+                            )
+                            .child(
+                                Radio::new("rg-c")
+                                    .native(cx, geometry::radio)
+                                    .label("Option C"),
+                            )
                             .selected_index(radio_index)
                             .on_click(cx.listener(|this, ix: &usize, _w, _cx| {
                                 this.radio_index = Some(*ix);
@@ -2916,7 +3129,10 @@ impl Showcase {
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
                         ],
-                        &[("size", "hardcoded"), ("indicator size", "hardcoded")],
+                        &[
+                            ("geometry", "geometry::radio: checkbox.label_gap, checkbox.font (platform-facts §2.5: radio metrics are the checkbox's)"),
+                            ("indicator size", "hardcoded"),
+                        ],
                     )),
             )
             // Switch
@@ -2989,6 +3205,38 @@ impl Showcase {
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[("digit count", "configurable"), ("groups", "2")],
+                    )),
+            )
+            // Combobox
+            .child(section("Combobox (searchable, over the bundled presets)"))
+            .child(
+                div()
+                    .id("tt-combobox")
+                    .child(
+                        Combobox::new(&self.combobox_state)
+                            .native(cx, geometry::combobox)
+                            .placeholder("Pick a preset…")
+                            .search_placeholder("Filter by name or key…")
+                            .menu_width(px(260.0))
+                            .w(px(260.0)),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Combobox",
+                        &[
+                            ("trigger bg", "background", t.background),
+                            ("trigger border", "input", t.input),
+                            ("text", "foreground", t.foreground),
+                            ("popup bg", "popover", t.popover),
+                            ("row hover", "list_hover", t.list_hover),
+                            ("focus ring", "ring", t.ring),
+                        ],
+                        &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                        &[
+                            ("geometry", "geometry::combobox: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font"),
+                            ("delegate", "SearchableListDelegate, implemented in this showcase (combobox.rs:749)"),
+                            ("caret", "inner element (Tier U)"),
+                        ],
                     )),
             )
             // Color Picker
@@ -3129,7 +3377,75 @@ impl Showcase {
                             ("border", "table_row_border", t.table_row_border),
                         ],
                         &[],
-                        &[("row height", "hardcoded per Size")],
+                        &[
+                            ("row height", "hardcoded per Size"),
+                            (
+                                "geometry",
+                                "DataTable is not Styled (table/data_table.rs:91-145); \
+                                 geometry::table goes to the declarative Table below",
+                            ),
+                        ],
+                    )),
+            )
+            // The other table: rows written out instead of driven by a
+            // delegate. This one is `Styled` (`table/table.rs:84`), so it is
+            // the receiver `geometry::table` documents.
+            .child(section("Table (declarative)"))
+            .child(
+                div()
+                    .id("tt-table-declarative")
+                    .child(
+                        Table::new()
+                            .native(cx, geometry::table)
+                            .accessibility_label("Theme sources")
+                            .child(
+                                TableHeader::new().child(
+                                    TableRow::new()
+                                        .child(TableHead::new().child("Field"))
+                                        .child(TableHead::new().child("Source")),
+                                ),
+                            )
+                            .child(
+                                TableBody::new()
+                                    .child(
+                                        TableRow::new()
+                                            .child(TableCell::new().child("radius"))
+                                            .child(TableCell::new().child(
+                                                "defaults.border.corner_radius",
+                                            )),
+                                    )
+                                    .child(
+                                        TableRow::new()
+                                            .child(TableCell::new().child("font"))
+                                            .child(
+                                                TableCell::new().child("defaults.font.family"),
+                                            ),
+                                    )
+                                    .child(
+                                        TableRow::new()
+                                            .child(TableCell::new().child("row text"))
+                                            .child(TableCell::new().child("list.item_font")),
+                                    ),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Table (declarative)",
+                        &[
+                            ("bg", "table", t.table),
+                            ("header bg", "table_head", t.table_head),
+                            (
+                                "header text",
+                                "table_head_foreground",
+                                t.table_head_foreground,
+                            ),
+                            ("row border", "table_row_border", t.table_row_border),
+                        ],
+                        &[],
+                        &[
+                            ("geometry", "geometry::table: list.item_font on the table root (table/table.rs:111 → :114)"),
+                            ("cell padding", "inner (Tier U)"),
+                        ],
                     )),
             )
             // List
@@ -3471,7 +3787,15 @@ impl Showcase {
                                     .media(
                                         EmptyMedia::new()
                                             .with_variant(EmptyMediaVariant::Icon)
-                                            .child(Icon::new(IconName::Inbox)),
+                                            // An empty state's icon is the
+                                            // large one; `EmptyMedia` takes it
+                                            // as a plain child, so the size
+                                            // survives.
+                                            .child(native_icon(
+                                                cx,
+                                                IconName::Inbox,
+                                                geometry::icon_size_large,
+                                            )),
                                     )
                                     .title(EmptyTitle::new().child("No notifications"))
                                     .description(EmptyDescription::new().child(
@@ -3498,6 +3822,7 @@ impl Showcase {
                             format!("radius_tokens().xl: {}px", t.radius_tokens().xl.as_f32()),
                         )],
                         &[
+                            ("icon size", "geometry::icon_size_large: defaults.icon_sizes.large"),
                             ("border style", "hardcoded dashed"),
                             ("media frame", "hardcoded 2rem square"),
                         ],
@@ -3582,7 +3907,34 @@ impl Showcase {
                                 Button::new("tooltip-2").native(cx, geometry::button)
                                     .label("With tooltip")
                                     .tooltip("Save file (Cmd+S)"),
-                            ),
+                            )
+                            // `Button::tooltip` takes a string and builds the
+                            // tooltip itself (`button/button.rs:389`), so the
+                            // only way to a refined one is to build it: that
+                            // is what `geometry::tooltip` documents, and the
+                            // one place the platform's tooltip padding, radius
+                            // and text colour reach the popup.
+                            .child({
+                                let style = native_geometry(cx, geometry::tooltip);
+                                div()
+                                    .id("tooltip-built")
+                                    .child(
+                                        Button::new("tooltip-3")
+                                            .native(cx, geometry::button)
+                                            .label("Built by the application"),
+                                    )
+                                    .tooltip(move |window, cx| {
+                                        refined(
+                                            Tooltip::new(
+                                                "This popup carries geometry::tooltip: the \
+                                                 platform's max width, padding, radius, text \
+                                                 size and text colour.",
+                                            ),
+                                            style.as_ref(),
+                                        )
+                                        .build(window, cx)
+                                    })
+                            }),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -3592,7 +3944,11 @@ impl Showcase {
                             ("text", "popover_foreground", t.popover_foreground),
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                        &[("delay", "hardcoded"), ("position", "auto")],
+                        &[
+                            ("geometry", "geometry::tooltip on an application-built Tooltip: tooltip.max_width, border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs:115, :126)"),
+                            ("delay", "hardcoded"),
+                            ("position", "auto"),
+                        ],
                     )),
             )
             // Notification
@@ -4040,10 +4396,183 @@ impl Showcase {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let collapsible_open = self.collapsible_open;
+        // The four layout accessors. `None` where the platform specifies
+        // nothing (platform-facts §2.20), and then the showcase's own spacing
+        // stands — nothing is invented to fill the gap.
+        let widget_gap = geometry::widget_gap(&self.layout);
+        let container_margin = geometry::container_margin(&self.layout);
+        let window_margin = geometry::window_margin(&self.layout);
+        let section_gap = geometry::section_gap(&self.layout);
+        let spacing_summary = format!(
+            "widget_gap {} · container_margin {} · window_margin {} · section_gap {}",
+            layout_value(widget_gap),
+            layout_value(container_margin),
+            layout_value(window_margin),
+            layout_value(section_gap),
+        );
         v_flex()
             .gap_5()
             .p_4()
             .flex_1()
+            // Window chrome, stacked the way a window stacks it: the title bar
+            // above, a toolbar the application draws itself, the status bar
+            // below. Each is bounded in its own section like every other
+            // widget here — and the title bar is a real one, so it carries
+            // upstream's window handlers with it.
+            .child(section("TitleBar (a real one: dragging it moves the window)"))
+            .child(
+                div()
+                    .id("tt-title-bar")
+                    .border_1()
+                    .border_color(t.border)
+                    .child(
+                        TitleBar::new()
+                            .native(cx, geometry::title_bar)
+                            // Linux only (`title_bar.rs:95-101`), and the reason
+                            // this bar can be shown at all: without a handler
+                            // the X calls `window.remove_window()` (`:237`),
+                            // which would close the showcase. Upstream's other
+                            // handlers — drag to move, double click to zoom —
+                            // are the widget, and stay.
+                            .on_close_window(cx.listener(|_this, _ev, window, cx| {
+                                window.push_notification(
+                                    Notification::info(
+                                        "A nested title bar for the geometry builder; \
+                                         its close button is deliberately inert.",
+                                    )
+                                    .title("TitleBar")
+                                    .autohide(true),
+                                    cx,
+                                );
+                            }))
+                            .child(Label::new("native-theme showcase").text_sm()),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "TitleBar",
+                        &[
+                            ("bg", "title_bar", t.title_bar),
+                            ("border", "title_bar_border", t.title_bar_border),
+                            ("text", "foreground", t.foreground),
+                            ("control hover", "secondary_hover", t.secondary_hover),
+                            ("close hover", "danger", t.danger),
+                        ],
+                        &[],
+                        &[
+                            ("geometry", "geometry::title_bar: window.title_bar_font size and weight; the colour is the inherited foreground, which every preset states as the title bar's own"),
+                            ("height", "TITLE_BAR_HEIGHT = 34px (title_bar.rs:15)"),
+                            ("fill", "a gradient between title_bar and background (title_bar.rs:21-35)"),
+                        ],
+                    )),
+            )
+            .child(section("Toolbar (no widget upstream: the application draws it)"))
+            .child(
+                div()
+                    .id("tt-toolbar")
+                    .child({
+                        let row = h_flex()
+                            .px_2()
+                            .gap_2()
+                            .items_center()
+                            .bg(t.tab_bar)
+                            .border_1()
+                            .border_color(t.border)
+                            .child(native_icon(cx, IconName::Search, geometry::icon_size_toolbar))
+                            .child(native_icon(cx, IconName::Copy, geometry::icon_size_toolbar))
+                            .child(native_icon(cx, IconName::Settings, geometry::icon_size_toolbar))
+                            .child(Separator::vertical())
+                            .child(Label::new("Toolbar icons at the platform's toolbar size").text_sm());
+                        // gpui-component has no toolbar widget, so there is no
+                        // refinement to apply: the row's own height is
+                        // `geometry::control_height` of the platform's button,
+                        // the same derivation `geometry::button` uses.
+                        match native_control_height(cx) {
+                            Some(height) => row.h(height),
+                            None => row,
+                        }
+                    })
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Toolbar (application-drawn)",
+                        &[("bg", "tab_bar", t.tab_bar), ("border", "border", t.border)],
+                        &[],
+                        &[
+                            ("height", "geometry::control_height(button.min_height, button.font, button.border)"),
+                            ("icon size", "geometry::icon_size_toolbar: defaults.icon_sizes.toolbar"),
+                        ],
+                    )),
+            )
+            .child(section("StatusBar"))
+            .child(
+                div()
+                    .id("tt-status-bar")
+                    .border_1()
+                    .border_color(t.border)
+                    .child(
+                        StatusBar::new()
+                            .native(cx, geometry::status_bar)
+                            .left(native_icon(cx, IconName::Inbox, geometry::icon_size_small))
+                            .left("6 items")
+                            .child("native-theme showcase")
+                            .right("UTF-8"),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "StatusBar",
+                        &[
+                            ("bg", "status_bar", t.status_bar),
+                            ("border", "status_bar_border", t.status_bar_border),
+                            ("upstream text", "muted_foreground", t.muted_foreground),
+                        ],
+                        &[],
+                        &[
+                            ("geometry", "geometry::status_bar: status_bar.border.padding_*, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs:95-96)"),
+                            ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
+                            ("region gap", "hardcoded gap_2 (status_bar.rs:84)"),
+                        ],
+                    )),
+            )
+            // The four layout accessors, applied rather than printed: the outer
+            // box takes the platform's window margin, the row inside it the
+            // container margin and the widget gap, and the two rows are
+            // separated by the section gap.
+            .child(section("Layout spacing (the four LayoutTheme accessors)"))
+            .child(
+                div()
+                    .id("tt-layout-spacing")
+                    .child(
+                        with_padding(
+                            with_gap(
+                                v_flex().border_1().border_color(t.border),
+                                section_gap,
+                            ),
+                            window_margin,
+                        )
+                        .child(
+                            with_padding(
+                                with_gap(
+                                    h_flex().border_1().border_color(t.border),
+                                    widget_gap,
+                                ),
+                                container_margin,
+                            )
+                            .child(Button::new("ls-a").native(cx, geometry::button).label("One"))
+                            .child(Button::new("ls-b").native(cx, geometry::button).label("Two"))
+                            .child(Button::new("ls-c").native(cx, geometry::button).label("Three")),
+                        )
+                        .child(Label::new(SharedString::from(spacing_summary)).text_sm()),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Layout spacing",
+                        &[("border", "border", t.border)],
+                        &[],
+                        &[(
+                            "receivers",
+                            "no gpui-component widget reads the gpui-base spacing tokens, so these four are the application's to apply (geometry.rs §9.5)",
+                        )],
+                    )),
+            )
             // Horizontal resizable
             .child(section("Resizable Panels (horizontal)"))
             .child(
@@ -4549,16 +5078,35 @@ impl Showcase {
                     .border_color(t.border)
                     .overflow_hidden()
                     .child(
+                        // A sidebar is the panel `defaults.icon_sizes.panel`
+                        // names, and `SidebarMenuItem` keeps the icon it is
+                        // given (`sidebar/menu.rs:300`), so the size arrives.
                         Sidebar::new("layout-sidebar").collapsible(false).child(
                             SidebarMenu::new()
                                 .child(
                                     SidebarMenuItem::new("Dashboard")
-                                        .icon(IconName::LayoutDashboard)
+                                        .icon(native_icon(
+                                            cx,
+                                            IconName::LayoutDashboard,
+                                            geometry::icon_size_panel,
+                                        ))
                                         .active(true),
                                 )
-                                .child(SidebarMenuItem::new("Settings").icon(IconName::Settings))
-                                .child(SidebarMenuItem::new("Inbox").icon(IconName::Inbox))
-                                .child(SidebarMenuItem::new("Calendar").icon(IconName::Calendar)),
+                                .child(SidebarMenuItem::new("Settings").icon(native_icon(
+                                    cx,
+                                    IconName::Settings,
+                                    geometry::icon_size_panel,
+                                )))
+                                .child(SidebarMenuItem::new("Inbox").icon(native_icon(
+                                    cx,
+                                    IconName::Inbox,
+                                    geometry::icon_size_panel,
+                                )))
+                                .child(SidebarMenuItem::new("Calendar").icon(native_icon(
+                                    cx,
+                                    IconName::Calendar,
+                                    geometry::icon_size_panel,
+                                ))),
                         ),
                     )
                     .on_hover(self.hover_info(
@@ -4724,6 +5272,33 @@ impl Showcase {
                                                 None => DialogTitle::new().child("Confirm Action"),
                                             })
                                             .w(px(400.0))
+                                            // The description is where the
+                                            // platform's dialog body font and
+                                            // its dialog icon size land;
+                                            // upstream would paint the text
+                                            // with `muted_foreground`
+                                            // (`dialog/description.rs:50-51`).
+                                            .content(move |content, _w, cx| {
+                                                content.child(
+                                                    h_flex()
+                                                        .gap_3()
+                                                        .items_start()
+                                                        .child(native_icon(
+                                                            cx,
+                                                            IconName::CircleX,
+                                                            geometry::icon_size_dialog,
+                                                        ))
+                                                        .child(refined(
+                                                            DialogDescription::new()
+                                                                .child("This cannot be undone."),
+                                                            native_geometry(
+                                                                cx,
+                                                                geometry::dialog_description,
+                                                            )
+                                                            .as_ref(),
+                                                        )),
+                                                )
+                                            })
                                             .footer(
                                                 match n {
                                                     Some(n) => DialogFooter::new()
@@ -4918,6 +5493,56 @@ impl Showcase {
                         &[
                             ("separator", "horizontal line"),
                             ("shortcut", "optional Kbd"),
+                            ("rows", "PopupMenu builds its own; geometry::menu_item has no receiver here (geometry.rs, menu/menu_item.rs:10-11)"),
+                        ],
+                    )),
+            )
+            // The menu rows an application draws itself. Upstream's
+            // `MenuItemElement` is crate-private and `PopupMenu` builds its
+            // own rows, so `geometry::menu_item` has no widget to refine —
+            // these rows are the receiver it documents.
+            .child(section("Menu rows (drawn by the application)"))
+            .child(
+                div()
+                    .id("tt-menu-rows")
+                    .child({
+                        let row_style = native_geometry(cx, geometry::menu_item);
+                        let row = |id: &'static str, icon: IconName, label: &'static str| {
+                            refined(
+                                div()
+                                    .id(id)
+                                    .flex()
+                                    .items_center()
+                                    .hover(|this| this.bg(t.accent))
+                                    .child(native_icon(cx, icon, geometry::icon_size_small))
+                                    .child(Label::new(label).text_sm()),
+                                row_style.as_ref(),
+                            )
+                        };
+                        v_flex()
+                            .w(px(220.0))
+                            .bg(t.popover)
+                            .text_color(t.popover_foreground)
+                            .border_1()
+                            .border_color(t.border)
+                            .rounded(t.radius)
+                            .child(row("mi-cut", IconName::Delete, "Cut"))
+                            .child(row("mi-copy", IconName::Copy, "Copy"))
+                            .child(row("mi-paste", IconName::Inbox, "Paste"))
+                    })
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Menu row (application-drawn)",
+                        &[
+                            ("bg", "popover", t.popover),
+                            ("hover", "accent", t.accent),
+                            ("text", "popover_foreground", t.popover_foreground),
+                            ("border", "border", t.border),
+                        ],
+                        &[],
+                        &[
+                            ("geometry", "geometry::menu_item: menu.row_height (control height), menu.border.padding_*, menu.icon_text_gap, menu.font"),
+                            ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                         ],
                     )),
             )
