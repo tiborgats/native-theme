@@ -28,7 +28,10 @@ use iced_core::{Background, Border, border::Radius};
 #[cfg(feature = "widgets")]
 use iced_widget::overlay::menu;
 #[cfg(feature = "widgets")]
-use iced_widget::{button, checkbox, pick_list, radio, slider, text_editor, text_input, toggler};
+use iced_widget::{
+    button, checkbox, container, pick_list, progress_bar, radio, rule, scrollable, slider,
+    text_editor, text_input, toggler,
+};
 
 /// One row of the mapping contract: a palette slot, the native field it must
 /// equal, and the presets where it may legitimately differ.
@@ -313,6 +316,24 @@ fn border_fields(border: &Border, prefix: &str) -> Vec<String> {
             bottom_left
         }
     );
+    out
+}
+
+/// Every leaf of an iced `container::Style` under `prefix`, destructured with
+/// no `..`.
+///
+/// One walker for the three places one appears -- `styles::tooltip`,
+/// `styles::container_card` and the `container` a `scrollable::Style` nests --
+/// so an upstream addition fails to compile here once rather than three times.
+/// It is one of the two structs with a `Default`, so without this nothing
+/// would notice the addition at all (section 3.2).
+#[cfg(feature = "widgets")]
+fn container_fields(style: &container::Style, prefix: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, prefix, container::Style {
+        text_color, background, shadow, snap, @nested border
+    });
+    out.extend(border_fields(border, &format!("{prefix}.border")));
     out
 }
 
@@ -1543,6 +1564,312 @@ const SLIDER_SCALAR_ROWS: &[ScalarRow<slider::Status>] = &[
     },
 ];
 
+/// One `scrollable::Status::Active` value, from the two booleans it carries,
+/// in their declaration order (`scrollable.rs:2239-2244`): the horizontal
+/// scrollbar's disabled flag, then the vertical one's.
+#[cfg(feature = "widgets")]
+const fn scrollable_active(horizontal_off: bool, vertical_off: bool) -> scrollable::Status {
+    scrollable::Status::Active {
+        is_horizontal_scrollbar_disabled: horizontal_off,
+        is_vertical_scrollbar_disabled: vertical_off,
+    }
+}
+
+/// One `scrollable::Status::Hovered` value, from the four booleans it carries,
+/// in their declaration order (`scrollable.rs:2246-2255`): horizontal hovered,
+/// vertical hovered, horizontal disabled, vertical disabled.
+#[cfg(feature = "widgets")]
+const fn scrollable_hovered(
+    horizontal: bool,
+    vertical: bool,
+    horizontal_off: bool,
+    vertical_off: bool,
+) -> scrollable::Status {
+    scrollable::Status::Hovered {
+        is_horizontal_scrollbar_hovered: horizontal,
+        is_vertical_scrollbar_hovered: vertical,
+        is_horizontal_scrollbar_disabled: horizontal_off,
+        is_vertical_scrollbar_disabled: vertical_off,
+    }
+}
+
+/// One `scrollable::Status::Dragged` value, from the four booleans it carries,
+/// in their declaration order (`scrollable.rs:2257-2266`): horizontal dragged,
+/// vertical dragged, horizontal disabled, vertical disabled.
+#[cfg(feature = "widgets")]
+const fn scrollable_dragged(
+    horizontal: bool,
+    vertical: bool,
+    horizontal_off: bool,
+    vertical_off: bool,
+) -> scrollable::Status {
+    scrollable::Status::Dragged {
+        is_horizontal_scrollbar_dragged: horizontal,
+        is_vertical_scrollbar_dragged: vertical,
+        is_horizontal_scrollbar_disabled: horizontal_off,
+        is_vertical_scrollbar_disabled: vertical_off,
+    }
+}
+
+/// Every value of `scrollable::Status` (`scrollable.rs:2237-2267`).
+///
+/// This is the one status enum whose values are a *product* rather than a
+/// short list: `Active` carries two independent booleans and the other two
+/// variants carry four each, so the value space is `2^2 + 2^4 + 2^4 = 36`.
+/// Writing thirty-six struct literals here would hide what the list is, so
+/// each value is built by the small constructor for its variant -- which names
+/// the fields once -- and the product is spelled out in the order the booleans
+/// count up. `every_status_list_names_each_status_once` builds the same
+/// thirty-six from nested loops and requires the two to agree, so a value
+/// dropped from this list fails there.
+#[cfg(feature = "widgets")]
+const SCROLLABLE_STATUSES: &[scrollable::Status] = &[
+    scrollable_active(false, false),
+    scrollable_active(false, true),
+    scrollable_active(true, false),
+    scrollable_active(true, true),
+    scrollable_hovered(false, false, false, false),
+    scrollable_hovered(false, false, false, true),
+    scrollable_hovered(false, false, true, false),
+    scrollable_hovered(false, false, true, true),
+    scrollable_hovered(false, true, false, false),
+    scrollable_hovered(false, true, false, true),
+    scrollable_hovered(false, true, true, false),
+    scrollable_hovered(false, true, true, true),
+    scrollable_hovered(true, false, false, false),
+    scrollable_hovered(true, false, false, true),
+    scrollable_hovered(true, false, true, false),
+    scrollable_hovered(true, false, true, true),
+    scrollable_hovered(true, true, false, false),
+    scrollable_hovered(true, true, false, true),
+    scrollable_hovered(true, true, true, false),
+    scrollable_hovered(true, true, true, true),
+    scrollable_dragged(false, false, false, false),
+    scrollable_dragged(false, false, false, true),
+    scrollable_dragged(false, false, true, false),
+    scrollable_dragged(false, false, true, true),
+    scrollable_dragged(false, true, false, false),
+    scrollable_dragged(false, true, false, true),
+    scrollable_dragged(false, true, true, false),
+    scrollable_dragged(false, true, true, true),
+    scrollable_dragged(true, false, false, false),
+    scrollable_dragged(true, false, false, true),
+    scrollable_dragged(true, false, true, false),
+    scrollable_dragged(true, false, true, true),
+    scrollable_dragged(true, true, false, false),
+    scrollable_dragged(true, true, false, true),
+    scrollable_dragged(true, true, true, false),
+    scrollable_dragged(true, true, true, true),
+];
+
+/// How many values `scrollable::Status` has: the product above, written as the
+/// product so that a fifth boolean upstream is a changed number here rather
+/// than a silently smaller list.
+#[cfg(feature = "widgets")]
+const SCROLLABLE_STATUS_VALUES: usize = 2 * 2 + 2 * 2 * 2 * 2 + 2 * 2 * 2 * 2;
+
+/// The scroller fill the native fields give one axis of a scrollable in
+/// `status`.
+///
+/// `vertical` picks the axis, because iced states the two rails separately and
+/// the status says which one the pointer is on: the other stays idle. The
+/// disabled flags are not read -- the model states no appearance for a
+/// scrollbar whose content does not overflow.
+#[cfg(feature = "widgets")]
+fn native_scroller(r: &ResolvedTheme, status: scrollable::Status, vertical: bool) -> Color {
+    let s = &r.scrollbar;
+    to_color(match status {
+        scrollable::Status::Active {
+            is_horizontal_scrollbar_disabled: _,
+            is_vertical_scrollbar_disabled: _,
+        } => s.thumb_color,
+        scrollable::Status::Hovered {
+            is_horizontal_scrollbar_hovered,
+            is_vertical_scrollbar_hovered,
+            is_horizontal_scrollbar_disabled: _,
+            is_vertical_scrollbar_disabled: _,
+        } => {
+            if vertical && is_vertical_scrollbar_hovered
+                || !vertical && is_horizontal_scrollbar_hovered
+            {
+                s.thumb_hover_color
+            } else {
+                s.thumb_color
+            }
+        }
+        scrollable::Status::Dragged {
+            is_horizontal_scrollbar_dragged,
+            is_vertical_scrollbar_dragged,
+            is_horizontal_scrollbar_disabled: _,
+            is_vertical_scrollbar_disabled: _,
+        } => {
+            if vertical && is_vertical_scrollbar_dragged
+                || !vertical && is_horizontal_scrollbar_dragged
+            {
+                // A soft option, copying the hovered scroller's color.
+                s.thumb_active_color.unwrap_or(s.thumb_hover_color)
+            } else {
+                s.thumb_color
+            }
+        }
+    })
+}
+
+/// Every color field of `styles::scrollable`: each rail's own fill and the
+/// scroller on it. Everything else the struct carries is iced's.
+#[cfg(feature = "widgets")]
+const SCROLLABLE_ROWS: &[StyleRow<scrollable::Status>] = &[
+    StyleRow {
+        field: "styles::scrollable.vertical_rail.background",
+        statuses: SCROLLABLE_STATUSES,
+        native: |r, _| to_color(r.scrollbar.track_color),
+        get: |t, r, s| flat(styles::scrollable(r)(t, s).vertical_rail.background),
+    },
+    StyleRow {
+        // A thumb, so emitted as given rather than composited: iced paints it
+        // over a rail it also paints.
+        field: "styles::scrollable.vertical_rail.scroller.background",
+        statuses: SCROLLABLE_STATUSES,
+        native: |r, s| native_scroller(r, s, true),
+        get: |t, r, s| {
+            fill(
+                styles::scrollable(r)(t, s)
+                    .vertical_rail
+                    .scroller
+                    .background,
+            )
+        },
+    },
+    StyleRow {
+        field: "styles::scrollable.horizontal_rail.background",
+        statuses: SCROLLABLE_STATUSES,
+        native: |r, _| to_color(r.scrollbar.track_color),
+        get: |t, r, s| flat(styles::scrollable(r)(t, s).horizontal_rail.background),
+    },
+    StyleRow {
+        field: "styles::scrollable.horizontal_rail.scroller.background",
+        statuses: SCROLLABLE_STATUSES,
+        native: |r, s| native_scroller(r, s, false),
+        get: |t, r, s| {
+            fill(
+                styles::scrollable(r)(t, s)
+                    .horizontal_rail
+                    .scroller
+                    .background,
+            )
+        },
+    },
+];
+
+/// A progress bar has no `Status` (shape B), so its rows hold the unit value,
+/// as a menu's do.
+#[cfg(feature = "widgets")]
+const PROGRESS_BAR_STATUSES: &[()] = &[()];
+
+/// Every color field of `styles::progress_bar`. Nothing here is iced's: the
+/// struct is a track, a bar and a border, and the model states all three.
+#[cfg(feature = "widgets")]
+const PROGRESS_BAR_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::progress_bar.background",
+        statuses: PROGRESS_BAR_STATUSES,
+        native: |r, ()| to_color(r.progress_bar.track_color),
+        get: |t, r, ()| fill(styles::progress_bar(r)(t).background),
+    },
+    StyleRow {
+        field: "styles::progress_bar.bar",
+        statuses: PROGRESS_BAR_STATUSES,
+        native: |r, ()| to_color(r.progress_bar.fill_color),
+        get: |t, r, ()| fill(styles::progress_bar(r)(t).bar),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const PROGRESS_BAR_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::progress_bar",
+    statuses: PROGRESS_BAR_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.progress_bar.border.color),
+        width: r.progress_bar.border.line_width,
+        radius: r.progress_bar.border.corner_radius,
+    },
+    get: |t, r, ()| styles::progress_bar(r)(t).border,
+}];
+
+/// A rule has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+const RULE_STATUSES: &[()] = &[()];
+
+/// The one color field of `styles::rule`; its other three are iced's.
+#[cfg(feature = "widgets")]
+const RULE_ROWS: &[StyleRow<()>] = &[StyleRow {
+    field: "styles::rule.color",
+    statuses: RULE_STATUSES,
+    native: |r, ()| to_color(r.separator.line_color),
+    get: |t, r, ()| Ok(styles::rule(r)(t).color),
+}];
+
+/// A tooltip has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+const TOOLTIP_STATUSES: &[()] = &[()];
+
+/// Every color field of `styles::tooltip`. It emits a `container::Style`, so
+/// its label is an `Option<Color>` the model does fill -- a `None` would be a
+/// tip that inherits a label color from whatever it floats over.
+#[cfg(feature = "widgets")]
+const TOOLTIP_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::tooltip.text_color",
+        statuses: TOOLTIP_STATUSES,
+        native: |r, ()| to_color(r.tooltip.font.color),
+        get: |t, r, ()| stated(styles::tooltip(r)(t).text_color),
+    },
+    StyleRow {
+        field: "styles::tooltip.background",
+        statuses: TOOLTIP_STATUSES,
+        native: |r, ()| to_color(r.tooltip.background_color),
+        get: |t, r, ()| flat(styles::tooltip(r)(t).background),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const TOOLTIP_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::tooltip",
+    statuses: TOOLTIP_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.tooltip.border.color),
+        width: r.tooltip.border.line_width,
+        radius: r.tooltip.border.corner_radius,
+    },
+    get: |t, r, ()| styles::tooltip(r)(t).border,
+}];
+
+/// A card has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+const CONTAINER_CARD_STATUSES: &[()] = &[()];
+
+/// The one color field of `styles::container_card`: `CardTheme` is a fill and
+/// a border, and the label inside a card is inherited rather than set.
+#[cfg(feature = "widgets")]
+const CONTAINER_CARD_ROWS: &[StyleRow<()>] = &[StyleRow {
+    field: "styles::container_card.background",
+    statuses: CONTAINER_CARD_STATUSES,
+    native: |r, ()| to_color(r.card.background_color),
+    get: |t, r, ()| flat(styles::container_card(r)(t).background),
+}];
+
+#[cfg(feature = "widgets")]
+const CONTAINER_CARD_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::container_card",
+    statuses: CONTAINER_CARD_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.card.border.color),
+        width: r.card.border.line_width,
+        radius: r.card.border.corner_radius,
+    },
+    get: |t, r, ()| styles::container_card(r)(t).border,
+}];
+
 /// The `field` of every style row, from every function's consts.
 ///
 /// One line per function; the coverage tripwire reads it, and `rows_claiming`
@@ -1568,6 +1895,11 @@ fn style_row_fields() -> Vec<String> {
     out.extend(MENU_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(SLIDER_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(SLIDER_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(SCROLLABLE_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(PROGRESS_BAR_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(RULE_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TOOLTIP_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
     // One border row claims six leaves, so its names are built rather than
     // written -- by the same walker the tripwire uses.
     out.extend(border_row_fields(BUTTON_BORDER_ROWS));
@@ -1580,6 +1912,9 @@ fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(CHECKBOX_BORDER_ROWS));
     out.extend(border_row_fields(PICK_LIST_BORDER_ROWS));
     out.extend(border_row_fields(MENU_BORDER_ROWS));
+    out.extend(border_row_fields(PROGRESS_BAR_BORDER_ROWS));
+    out.extend(border_row_fields(TOOLTIP_BORDER_ROWS));
+    out.extend(border_row_fields(CONTAINER_CARD_BORDER_ROWS));
     out
 }
 
@@ -1949,14 +2284,352 @@ const DERIVED: &[(&str, &str)] = &[
         "iced default: slider::default(theme, status).handle.border_color -- \
          SliderTheme carries no border",
     ),
+    // `scrollable::Style` nests a whole `container::Style`, two `Rail`s with a
+    // `Scroller` each, and the autoscroll overlay. `ScrollbarTheme` states two
+    // rail colors and three thumb colors and nothing else, so everything below
+    // is iced's own, read from `scrollable::default(theme, status)`.
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.text_color",
+        "iced default: scrollable::default(theme, status).container.text_color \
+         -- ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.background",
+        "iced default: scrollable::default(theme, status).container.background \
+         -- ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.border.color",
+        "iced default: scrollable::default(theme, status).container.border -- \
+         ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.border.width",
+        "iced default: scrollable::default(theme, status).container.border -- \
+         ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.border.radius.top_left",
+        "iced default: scrollable::default(theme, status).container.border -- \
+         ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.border.radius.top_right",
+        "iced default: scrollable::default(theme, status).container.border -- \
+         ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.border.radius.bottom_right",
+        "iced default: scrollable::default(theme, status).container.border -- \
+         ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.border.radius.bottom_left",
+        "iced default: scrollable::default(theme, status).container.border -- \
+         ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.shadow",
+        "iced default: scrollable::default(theme, status).container.shadow -- \
+         ScrollbarTheme states nothing about the scrolled container",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.container.snap",
+        "iced default: scrollable::default(theme, status).container.snap -- a \
+         renderer setting, cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.border.color",
+        "iced default: scrollable::default(theme, status).vertical_rail.border \
+         -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.border.width",
+        "iced default: scrollable::default(theme, status).vertical_rail.border \
+         -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.border.radius.top_left",
+        "iced default: scrollable::default(theme, status).vertical_rail.border \
+         -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.border.radius.top_right",
+        "iced default: scrollable::default(theme, status).vertical_rail.border \
+         -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.border.radius.bottom_right",
+        "iced default: scrollable::default(theme, status).vertical_rail.border \
+         -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.border.radius.bottom_left",
+        "iced default: scrollable::default(theme, status).vertical_rail.border \
+         -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.scroller.border.color",
+        "iced default: scrollable::default(theme, \
+         status).vertical_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.scroller.border.width",
+        "iced default: scrollable::default(theme, \
+         status).vertical_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.scroller.border.radius.top_left",
+        "iced default: scrollable::default(theme, \
+         status).vertical_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.scroller.border.radius.top_right",
+        "iced default: scrollable::default(theme, \
+         status).vertical_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.scroller.border.radius.bottom_right",
+        "iced default: scrollable::default(theme, \
+         status).vertical_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.vertical_rail.scroller.border.radius.bottom_left",
+        "iced default: scrollable::default(theme, \
+         status).vertical_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.border.color",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.border -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.border.width",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.border -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.border.radius.top_left",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.border -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.border.radius.top_right",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.border -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.border.radius.bottom_right",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.border -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.border.radius.bottom_left",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.border -- ScrollbarTheme carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.scroller.border.color",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.scroller.border.width",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.scroller.border.radius.top_left",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.scroller.border.radius.top_right",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.scroller.border.radius.bottom_right",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.horizontal_rail.scroller.border.radius.bottom_left",
+        "iced default: scrollable::default(theme, \
+         status).horizontal_rail.scroller.border -- ScrollbarTheme carries no \
+         border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.gap",
+        "iced default: scrollable::default(theme, status).gap -- the fill \
+         between a horizontal and a vertical scrollbar has no native \
+         counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.background",
+        "iced default: scrollable::default(theme, \
+         status).auto_scroll.background -- the autoscroll overlay has no \
+         native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.border.color",
+        "iced default: scrollable::default(theme, status).auto_scroll.border \
+         -- the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.border.width",
+        "iced default: scrollable::default(theme, status).auto_scroll.border \
+         -- the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.border.radius.top_left",
+        "iced default: scrollable::default(theme, status).auto_scroll.border \
+         -- the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.border.radius.top_right",
+        "iced default: scrollable::default(theme, status).auto_scroll.border \
+         -- the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.border.radius.bottom_right",
+        "iced default: scrollable::default(theme, status).auto_scroll.border \
+         -- the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.border.radius.bottom_left",
+        "iced default: scrollable::default(theme, status).auto_scroll.border \
+         -- the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.shadow",
+        "iced default: scrollable::default(theme, status).auto_scroll.shadow \
+         -- the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::scrollable.auto_scroll.icon",
+        "iced default: scrollable::default(theme, status).auto_scroll.icon -- \
+         the autoscroll overlay has no native counterpart",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::rule.radius",
+        "iced default: rule::default(theme).radius -- SeparatorTheme is a line \
+         color and a line width",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::rule.fill_mode",
+        "iced default: rule::default(theme).fill_mode -- how much of its \
+         container a separator spans is the consumer's layout, and \
+         SeparatorTheme states nothing about it",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::rule.snap",
+        "iced default: rule::default(theme).snap -- a renderer setting",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::tooltip.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::tooltip.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::container_card.text_color",
+        "iced default: container::Style::default().text_color -- CardTheme \
+         carries no font, and iced's None inherits the label color of \
+         whatever the card sits in",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::container_card.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::container_card.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
 ];
 
 /// Native values iced 0.14 has no receiver for, each with its evidence.
 ///
 /// Not a way out of a row: an entry here says the toolkit cannot carry the
-/// value at all, so approximating it would state something untrue. Empty until
-/// `styles::scrollbar` lands, whose `scrollbar.min_thumb_length` is the one
-/// entry this release knows of (section 3.3).
+/// value at all, so approximating it would state something untrue. One entry
+/// this release (section 3.3).
+///
+/// The list is part of the accounting rather than beside it:
+/// `every_named_field_has_exactly_one_declared_source` requires an unreachable
+/// name to be claimed by no row *and* no `DERIVED` entry, so a value cannot be
+/// called unreachable and mapped at the same time, and
+/// `the_unreachable_native_value_is_stated_by_every_preset` reads the field
+/// itself, so an entry about a value the model no longer carries fails to
+/// compile.
 ///
 /// What does *not* belong here is native geometry whose only iced receiver is
 /// a **builder method** rather than a `Style` field -- `Checkbox::spacing` for
@@ -1967,7 +2640,15 @@ const DERIVED: &[(&str, &str)] = &[
 /// `styles::*` returns a `Style`. They are neither unreachable nor a gap in
 /// the contract, and the tripwire never sees them because it walks emitted
 /// `Style` fields.
-const UNREACHABLE: &[(&str, &str)] = &[];
+const UNREACHABLE: &[(&str, &str)] = &[(
+    "scrollbar.min_thumb_length",
+    "iced sizes the scroller itself and exposes no minimum: \
+     `let scroller_length = (scrollbar_bounds.width * ratio).max(2.0);` \
+     (`scrollable.rs:2068` horizontally, `:1997-1998` vertically), a hardcoded \
+     floor under its own comment \"min width for easier grabbing\". `Scrollbar` \
+     takes a width, a margin, a scroller width, an anchor and a spacing \
+     (`scrollable.rs:342-387`) and no length at all",
+)];
 
 /// One pair of the contrast report: the two colors iced ends up painting, and
 /// the pair the platform itself gives for the same thing.
@@ -2540,6 +3221,101 @@ const SLIDER_PAIRS: &[StylePair<slider::Status>] = &[
     },
 ];
 
+/// Each scroller on the rail it slides along -- both are the function's own,
+/// in every status. An indicator pair, like the slider's handle: a scroller is
+/// a shape, not text.
+///
+/// The surface under the rail is the window: iced draws a scrollbar over the
+/// scrolled content, whose color is the application's, so the window is the
+/// nearest thing the connector states -- the same choice every other pair
+/// makes for a widget that floats over content.
+#[cfg(feature = "widgets")]
+const SCROLLABLE_PAIRS: &[StylePair<scrollable::Status>] = &[
+    StylePair {
+        what: "scrollable vertical scroller on its rail",
+        indicator: true,
+        statuses: SCROLLABLE_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::scrollable(r)(t, s);
+            let scroller = fill(style.vertical_rail.scroller.background)?;
+            flat(style.vertical_rail.background)
+                .map(|rail| (scroller, rail, to_color(r.defaults.background_color)))
+        },
+        native: |r, s| {
+            (
+                native_scroller(r, s, true),
+                to_color(r.scrollbar.track_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "scrollable horizontal scroller on its rail",
+        indicator: true,
+        statuses: SCROLLABLE_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::scrollable(r)(t, s);
+            let scroller = fill(style.horizontal_rail.scroller.background)?;
+            flat(style.horizontal_rail.background)
+                .map(|rail| (scroller, rail, to_color(r.defaults.background_color)))
+        },
+        native: |r, s| {
+            (
+                native_scroller(r, s, false),
+                to_color(r.scrollbar.track_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+];
+
+/// The filled bar on the track it runs along. An indicator pair: the bar is a
+/// shape, not text, and it is the one thing a progress bar says.
+#[cfg(feature = "widgets")]
+const PROGRESS_BAR_PAIRS: &[StylePair<()>] = &[StylePair {
+    what: "progress bar fill on its track",
+    indicator: true,
+    statuses: PROGRESS_BAR_STATUSES,
+    emitted: |t, r, ()| {
+        let style = styles::progress_bar(r)(t);
+        let bar = fill(style.bar)?;
+        fill(style.background).map(|track| (bar, track, to_color(r.defaults.background_color)))
+    },
+    native: |r, ()| {
+        (
+            to_color(r.progress_bar.fill_color),
+            to_color(r.progress_bar.track_color),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+/// A tooltip's label on its panel. The panel floats over whatever is beneath
+/// it, so a translucent one shows through to the window.
+#[cfg(feature = "widgets")]
+const TOOLTIP_PAIRS: &[StylePair<()>] = &[StylePair {
+    what: "tooltip label",
+    indicator: false,
+    statuses: TOOLTIP_STATUSES,
+    emitted: |t, r, ()| {
+        let style = styles::tooltip(r)(t);
+        let label = stated(style.text_color)?;
+        flat(style.background).map(|panel| (label, panel, to_color(r.defaults.background_color)))
+    },
+    native: |r, ()| {
+        (
+            to_color(r.tooltip.font.color),
+            to_color(r.tooltip.background_color),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+// `styles::rule` and `styles::container_card` have no pair. A separator is one
+// color with no fill of its own, and a card paints a fill but leaves the label
+// on it to be inherited (`text_color: None`), so the connector does not
+// control both sides of anything either one paints (section 7).
+
 /// The `what` of every contrast pair this file declares.
 ///
 /// The coverage tripwire has nothing to say about pairs -- whether a
@@ -2565,6 +3341,9 @@ fn style_pair_names() -> Vec<String> {
     out.extend(PICK_LIST_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(MENU_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(SLIDER_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(SCROLLABLE_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(PROGRESS_BAR_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(TOOLTIP_PAIRS.iter().map(|p| p.what.to_string()));
     out
 }
 
@@ -3128,6 +3907,88 @@ fn slider_style_fields(style: &slider::Style) -> Vec<String> {
     out
 }
 
+/// Every leaf of one `scrollable::Rail` under `prefix`: its own fill and
+/// border, and the `Scroller` that slides along it with a border of its own.
+#[cfg(feature = "widgets")]
+fn rail_fields(rail: &scrollable::Rail, prefix: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, rail, prefix, scrollable::Rail {
+        background, @nested border, scroller
+    });
+    out.extend(border_fields(border, &format!("{prefix}.border")));
+    leaves_under!(out, scroller, format!("{prefix}.scroller"), scrollable::Scroller {
+        background, @nested border
+    });
+    out.extend(border_fields(border, &format!("{prefix}.scroller.border")));
+    out
+}
+
+/// Every field of the `scrollable::Style` the connector emits, through its
+/// four nested structs.
+#[cfg(feature = "widgets")]
+fn scrollable_style_fields(style: &scrollable::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::scrollable", scrollable::Style {
+        gap, @nested container, vertical_rail, horizontal_rail, auto_scroll
+    });
+    out.extend(container_fields(container, "styles::scrollable.container"));
+    out.extend(rail_fields(
+        vertical_rail,
+        "styles::scrollable.vertical_rail",
+    ));
+    out.extend(rail_fields(
+        horizontal_rail,
+        "styles::scrollable.horizontal_rail",
+    ));
+    leaves_under!(
+        out,
+        auto_scroll,
+        "styles::scrollable.auto_scroll",
+        scrollable::AutoScroll {
+            background,
+            shadow,
+            icon,
+            @nested border
+        }
+    );
+    out.extend(border_fields(
+        border,
+        "styles::scrollable.auto_scroll.border",
+    ));
+    out
+}
+
+/// Every field of the `progress_bar::Style` the connector emits.
+#[cfg(feature = "widgets")]
+fn progress_bar_style_fields(style: &progress_bar::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::progress_bar", progress_bar::Style {
+        background, bar, @nested border
+    });
+    out.extend(border_fields(border, "styles::progress_bar.border"));
+    out
+}
+
+/// Every field of the `rule::Style` the connector emits. Its `radius` is a
+/// whole `Radius` rather than part of a `Border`, and it is walked as the one
+/// leaf it is -- as `toggler::Style.border_radius` is.
+#[cfg(feature = "widgets")]
+fn rule_style_fields(style: &rule::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::rule",
+        rule::Style {
+            color,
+            radius,
+            fill_mode,
+            snap
+        }
+    );
+    out
+}
+
 /// Every field the tripwire walks: the palette inputs, the extended slots the
 /// connector writes, and each `styles::*` output's fields.
 #[cfg_attr(not(feature = "widgets"), allow(unused_variables))]
@@ -3203,6 +4064,24 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             theme,
             slider::Status::Active,
         )));
+        out.extend(scrollable_style_fields(&styles::scrollable(resolved)(
+            theme,
+            scrollable_active(false, false),
+        )));
+        out.extend(progress_bar_style_fields(&styles::progress_bar(resolved)(
+            theme,
+        )));
+        out.extend(rule_style_fields(&styles::rule(resolved)(theme)));
+        // Two functions emit a `container::Style`, so the one walker runs
+        // twice under two prefixes.
+        out.extend(container_fields(
+            &styles::tooltip(resolved)(theme),
+            "styles::tooltip",
+        ));
+        out.extend(container_fields(
+            &styles::container_card(resolved)(theme),
+            "styles::container_card",
+        ));
     }
     out
 }
@@ -3268,7 +4147,55 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
             0,
             "{field} is listed as unreachable ({evidence}) yet a row maps it"
         );
+        assert!(
+            !DERIVED.iter().any(|(name, _)| name == field),
+            "{field} is listed as unreachable ({evidence}) yet DERIVED also \
+             accounts for it; a value is mapped, derived or unreachable, never \
+             two of the three"
+        );
     }
+    Ok(())
+}
+
+/// The one native value iced 0.14 has no receiver for is a value the presets
+/// actually state.
+///
+/// `UNREACHABLE` is a claim about a native field, not about an emitted one, so
+/// the coverage tripwire cannot see it: it walks what `styles::*` returns. What
+/// can be checked is that the entry is about something real -- the field is
+/// read here, so removing it from the model breaks this file, and its value is
+/// printed for every combination so the record says what was dropped rather
+/// than only that something was.
+#[cfg(feature = "widgets")]
+#[test]
+fn the_unreachable_native_value_is_stated_by_every_preset() -> native_theme::Result<()> {
+    let combinations = combinations()?;
+    let mut missing = Vec::new();
+    let mut stated = Vec::new();
+
+    for c in &combinations {
+        let length = c.resolved.scrollbar.min_thumb_length;
+        if length > 0.0 {
+            stated.push(format!("{}: {length}", c.label()));
+        } else {
+            missing.push(format!("{}: {length}", c.label()));
+        }
+    }
+
+    println!(
+        "scrollbar.min_thumb_length, which iced 0.14 cannot take, stated by \
+         {} of {} combinations:\n{}",
+        stated.len(),
+        combinations.len(),
+        stated.join("\n")
+    );
+    assert!(
+        missing.is_empty(),
+        "{} combination(s) state no minimum thumb length, so the UNREACHABLE \
+         entry no longer describes a value the platform gives:\n{}",
+        missing.len(),
+        missing.join("\n")
+    );
     Ok(())
 }
 
@@ -3613,6 +4540,99 @@ fn every_status_list_names_each_status_once() {
         "the two slider handle-fill lists must partition the statuses, naming \
          each exactly once between them"
     );
+
+    // `scrollable::Status` is the one enum whose values are a product: two
+    // booleans on `Active` and four on each of the other two variants. Writing
+    // thirty-six literals twice over would say less than the product does, so
+    // `all` is built by counting the booleans up -- the same order
+    // `SCROLLABLE_STATUSES` is written in -- and the two lists are then held
+    // against each other. The exhaustive match still names every field of
+    // every variant, so a fifth boolean upstream fails to compile here.
+    let mut all = Vec::new();
+    for horizontal_off in [false, true] {
+        for vertical_off in [false, true] {
+            all.push(scrollable_active(horizontal_off, vertical_off));
+        }
+    }
+    for horizontal in [false, true] {
+        for vertical in [false, true] {
+            for horizontal_off in [false, true] {
+                for vertical_off in [false, true] {
+                    all.push(scrollable_hovered(
+                        horizontal,
+                        vertical,
+                        horizontal_off,
+                        vertical_off,
+                    ));
+                }
+            }
+        }
+    }
+    for horizontal in [false, true] {
+        for vertical in [false, true] {
+            for horizontal_off in [false, true] {
+                for vertical_off in [false, true] {
+                    all.push(scrollable_dragged(
+                        horizontal,
+                        vertical,
+                        horizontal_off,
+                        vertical_off,
+                    ));
+                }
+            }
+        }
+    }
+    assert_eq!(
+        all.len(),
+        SCROLLABLE_STATUS_VALUES,
+        "the product above must build every value of scrollable::Status"
+    );
+    for status in &all {
+        match status {
+            scrollable::Status::Active {
+                is_horizontal_scrollbar_disabled: _,
+                is_vertical_scrollbar_disabled: _,
+            }
+            | scrollable::Status::Hovered {
+                is_horizontal_scrollbar_hovered: _,
+                is_vertical_scrollbar_hovered: _,
+                is_horizontal_scrollbar_disabled: _,
+                is_vertical_scrollbar_disabled: _,
+            }
+            | scrollable::Status::Dragged {
+                is_horizontal_scrollbar_dragged: _,
+                is_vertical_scrollbar_dragged: _,
+                is_horizontal_scrollbar_disabled: _,
+                is_vertical_scrollbar_disabled: _,
+            } => {}
+        }
+        assert!(
+            SCROLLABLE_STATUSES.contains(status),
+            "SCROLLABLE_STATUSES does not list {status:?}, so no scrollable \
+             row covers it"
+        );
+    }
+    assert_eq!(
+        SCROLLABLE_STATUSES.len(),
+        all.len(),
+        "SCROLLABLE_STATUSES must name each status exactly once"
+    );
+
+    // The four shape-B widgets take no status either, so their rows hold the
+    // unit value once, as a menu's do.
+    for (what, statuses) in [
+        ("PROGRESS_BAR_STATUSES", PROGRESS_BAR_STATUSES),
+        ("RULE_STATUSES", RULE_STATUSES),
+        ("TOOLTIP_STATUSES", TOOLTIP_STATUSES),
+        ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
+    ] {
+        assert_eq!(
+            statuses,
+            &[()],
+            "{what}: the widget takes no status, so its rows hold the unit \
+             value exactly once"
+        );
+    }
 }
 
 #[cfg(feature = "widgets")]
@@ -3865,6 +4885,79 @@ fn the_primary_pair_is_the_accent_pair() -> native_theme::Result<()> {
     Ok(())
 }
 
+/// `styles::scrollbar`'s two widths are the platform's, as far as iced 0.14
+/// lets them be read.
+///
+/// There is no row for this function, and not for want of trying:
+/// `scrollable::Scrollbar` keeps all five of its fields private and offers no
+/// getters (`scrollable.rs:322-328`), so a `StyleRow` -- whose `get` must
+/// *read* the emitted value -- cannot be written. The one handle iced leaves
+/// is the `PartialEq` it derives, so the expected value is built here from the
+/// resolved theme, independently of `styles::scrollbar`, and the two values
+/// are compared whole. `Debug` appears only in the failure message; it is not
+/// what is asserted.
+///
+/// That comparison catches a wrong width and it catches the two setters being
+/// swapped -- but the swap only where the two lengths differ, so the
+/// combinations that can see one are counted and printed, and the day every
+/// preset states a single width the test says so instead of quietly asserting
+/// less.
+#[cfg(feature = "widgets")]
+#[test]
+fn the_scrollbars_two_widths_are_the_platforms() -> native_theme::Result<()> {
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    let mut distinguishing = Vec::new();
+
+    for c in &combinations {
+        let s = &c.resolved.scrollbar;
+        let expected = scrollable::Scrollbar::new()
+            .width(s.groove_width)
+            .scroller_width(s.thumb_width);
+        let actual = styles::scrollbar(&c.resolved);
+        if actual != expected {
+            failures.push(format!(
+                "{}: {actual:?}, native gives {expected:?}",
+                c.label()
+            ));
+        }
+
+        let swapped = scrollable::Scrollbar::new()
+            .width(s.thumb_width)
+            .scroller_width(s.groove_width);
+        if swapped != expected {
+            distinguishing.push(format!(
+                "{}: groove {} thumb {}",
+                c.label(),
+                s.groove_width,
+                s.thumb_width
+            ));
+        }
+    }
+
+    println!(
+        "scrollbar widths: {} of {} combinations state a groove and a thumb of \
+         different widths, which is what makes the two setters \
+         distinguishable:\n{}",
+        distinguishing.len(),
+        combinations.len(),
+        distinguishing.join("\n")
+    );
+    assert!(
+        !distinguishing.is_empty(),
+        "every combination now states one width for both, so this test can no \
+         longer tell `width` from `scroller_width`"
+    );
+    assert!(
+        failures.is_empty(),
+        "{} of {} scrollbars are not the platform's:\n{}",
+        failures.len(),
+        combinations.len(),
+        failures.join("\n")
+    );
+    Ok(())
+}
+
 #[cfg(feature = "widgets")]
 #[test]
 fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
@@ -3936,6 +5029,24 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     check_border_rows(MENU_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(SLIDER_ROWS, &combinations, &mut failures, &mut ran);
     check_scalar_rows(SLIDER_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(SCROLLABLE_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(PROGRESS_BAR_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        PROGRESS_BAR_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_style_rows(RULE_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(TOOLTIP_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(TOOLTIP_BORDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(CONTAINER_CARD_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        CONTAINER_CARD_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
 
     // The calls above are a second hand-maintained list beside
     // `style_row_fields`, and only that one is read by the coverage tripwire:
@@ -4030,6 +5141,21 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     check_style_pairs(PICK_LIST_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     check_style_pairs(MENU_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     check_style_pairs(SLIDER_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(
+        SCROLLABLE_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        PROGRESS_BAR_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(TOOLTIP_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
 
     // A pair list declared and never checked here asserts nothing, and the
     // tripwire cannot notice -- it walks `Style` fields, and whether a pair
@@ -4179,9 +5305,10 @@ fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Re
 #[cfg(feature = "widgets")]
 #[test]
 fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
-    // The eleven soft options batch 2's functions read: four `checkbox.*`
+    // The twelve soft options the widget functions read: four `checkbox.*`
     // (three of which `styles::radio` reads again through its own
-    // expressions), five `switch.*`, one `combo_box.*` and one `slider.*`. No
+    // expressions), five `switch.*`, one `combo_box.*`, one `slider.*` and
+    // one `scrollbar.*`. No
     // bundled preset leaves any of them `None` after resolution, so the rows
     // cannot tell a right base-state field from a wrong one; the fallbacks are
     // reached by clearing them here (section 3.2).
@@ -4199,8 +5326,9 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             && resolved.switch.disabled_unchecked_background.is_some()
             && resolved.switch.disabled_thumb_color.is_some()
             && resolved.combo_box.hover_background.is_some()
-            && resolved.slider.thumb_hover_color.is_some(),
-        "this preset no longer states all eleven soft options, so clearing \
+            && resolved.slider.thumb_hover_color.is_some()
+            && resolved.scrollbar.thumb_active_color.is_some(),
+        "this preset no longer states all twelve soft options, so clearing \
          them proves nothing"
     );
     resolved.checkbox.hover_background = None;
@@ -4214,6 +5342,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     resolved.switch.disabled_thumb_color = None;
     resolved.combo_box.hover_background = None;
     resolved.slider.thumb_hover_color = None;
+    resolved.scrollbar.thumb_active_color = None;
 
     let theme = crate::to_theme(&resolved, "windows-11");
     let boxes = styles::checkbox(&resolved);
@@ -4221,6 +5350,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let switches = styles::toggler(&resolved);
     let fields = styles::pick_list(&resolved);
     let rails = styles::slider(&resolved);
+    let scrollbars = styles::scrollable(&resolved);
 
     // Every base-state value of section 3.2's table, read straight from the
     // model. A hover layer copies the base state and is then composited over
@@ -4233,6 +5363,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let thumb = to_color(resolved.switch.thumb_background);
     let field_fill = to_color(resolved.combo_box.background_color);
     let handle = to_color(resolved.slider.thumb_color);
+    let hovered_scroller = to_color(resolved.scrollbar.thumb_hover_color);
 
     let mut failures = Vec::new();
     for (soft_option, actual, expected) in [
@@ -4310,6 +5441,16 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             fill(rails(&theme, slider::Status::Hovered).handle.background),
             handle,
         ),
+        (
+            "scrollbar.thumb_active_color -> scrollbar.thumb_hover_color",
+            fill(
+                scrollbars(&theme, scrollable_dragged(false, true, false, false))
+                    .vertical_rail
+                    .scroller
+                    .background,
+            ),
+            hovered_scroller,
+        ),
     ] {
         match actual {
             Ok(emitted) if emitted == expected => {}
@@ -4325,7 +5466,7 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
 
     assert!(
         failures.is_empty(),
-        "{} of 14 cleared soft options do not copy their base-state value:\n{}",
+        "{} of 15 cleared soft options do not copy their base-state value:\n{}",
         failures.len(),
         failures.join("\n")
     );

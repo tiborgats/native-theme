@@ -194,7 +194,7 @@ fn class_button(
 /// derives its hovered fill by strengthening that slot.
 ///
 /// The idle pair is the platform's accent pair, `button.primary_background`
-/// and `.primary_text_color`; see [`class_button`] for what the other states
+/// and `.primary_text_color`; see `class_button` for what the other states
 /// are and why. That derivation starts from the idle fill itself: the palette
 /// slot iced strengthens is `defaults.accent_color`, which every bundled
 /// preset also states as `button.primary_background` -- pinned by the contract
@@ -215,7 +215,7 @@ pub fn button_primary(
 ///
 /// Replaces `iced_widget::button::danger`, which paints the palette's `danger`
 /// family on a hardcoded `border::rounded(2)`. The idle fill and label are
-/// `defaults.danger_color` and `.danger_text_color`; see [`class_button`] for
+/// `defaults.danger_color` and `.danger_text_color`; see `class_button` for
 /// what the other states are and why.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_danger(
@@ -232,7 +232,7 @@ pub fn button_danger(
 /// The platform's own confirming button, for `button(..).style(..)`.
 ///
 /// Replaces `iced_widget::button::success`. The idle fill and label are
-/// `defaults.success_color` and `.success_text_color`; see [`class_button`]
+/// `defaults.success_color` and `.success_text_color`; see `class_button`
 /// for what the other states are and why.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_success(
@@ -249,7 +249,7 @@ pub fn button_success(
 /// The platform's own risky-action button, for `button(..).style(..)`.
 ///
 /// Replaces `iced_widget::button::warning`. The idle fill and label are
-/// `defaults.warning_color` and `.warning_text_color`; see [`class_button`]
+/// `defaults.warning_color` and `.warning_text_color`; see `class_button`
 /// for what the other states are and why.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_warning(
@@ -861,6 +861,316 @@ pub fn slider(
                 border_width: iced.handle.border_width,
                 border_color: iced.handle.border_color,
             },
+        }
+    }
+}
+
+/// The platform's own scrollbars, for `scrollable(..).style(..)`.
+///
+/// Replaces `iced_widget::scrollable::default` (`scrollable.rs:2345`), which
+/// paints both rails in the palette's weak background and takes their scrollers
+/// from the strongest background, or from the primary family once one is
+/// hovered or dragged.
+///
+/// Each rail is `scrollbar.track_color`, and each scroller is
+/// `scrollbar.thumb_color`, `.thumb_hover_color` under the pointer and
+/// `.thumb_active_color` while it is dragged. All three are thumbs, so they are
+/// emitted as given rather than composited (spec section 3.2): iced paints them
+/// over a rail it also paints.
+///
+/// iced states the two axes separately, and its `Status` carries which one the
+/// pointer is on (`scrollable.rs:2237-2267`), so a hovered vertical scrollbar
+/// leaves the horizontal one idle -- as iced's own default does. The `Status`
+/// also says whether either scrollbar is *disabled*, meaning its content does
+/// not overflow; the model states no appearance for that, so those two
+/// booleans change nothing here.
+///
+/// Everything else has no native source and comes from
+/// `scrollable::default(theme, status)`: `ScrollbarTheme` carries no border,
+/// nothing about the scrolled container, no fill for the gap between the two
+/// rails and nothing about the autoscroll overlay. The nested
+/// `container::Style` has a `Default` of its own, so the compiler cannot
+/// enforce naming its fields; they are named anyway, and the contract claims
+/// each by name.
+///
+/// The two widths are not `Style` fields at all: they are built into the
+/// `Scrollbar` that [`scrollbar`] returns.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn scrollable(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + use<> {
+    use iced_widget::scrollable::{AutoScroll, Rail, Scroller, Status, Style};
+
+    let s = &resolved.scrollbar;
+
+    let track = to_color(s.track_color);
+    let thumb = to_color(s.thumb_color);
+    let hovered_thumb = to_color(s.thumb_hover_color);
+    // A soft option: `None` is the platform saying a dragged scroller looks no
+    // different from a hovered one, so it copies that color.
+    let dragged_thumb = to_color(s.thumb_active_color.unwrap_or(s.thumb_hover_color));
+
+    move |theme, status| {
+        let iced = iced_widget::scrollable::default(theme, status);
+        // Which scroller the pointer is on decides that axis alone. The
+        // disabled flags are named and ignored: an upstream addition to the
+        // status then fails to compile here rather than falling into a `..`.
+        let (vertical, horizontal) = match status {
+            Status::Active {
+                is_horizontal_scrollbar_disabled: _,
+                is_vertical_scrollbar_disabled: _,
+            } => (thumb, thumb),
+            Status::Hovered {
+                is_horizontal_scrollbar_hovered,
+                is_vertical_scrollbar_hovered,
+                is_horizontal_scrollbar_disabled: _,
+                is_vertical_scrollbar_disabled: _,
+            } => (
+                if is_vertical_scrollbar_hovered {
+                    hovered_thumb
+                } else {
+                    thumb
+                },
+                if is_horizontal_scrollbar_hovered {
+                    hovered_thumb
+                } else {
+                    thumb
+                },
+            ),
+            Status::Dragged {
+                is_horizontal_scrollbar_dragged,
+                is_vertical_scrollbar_dragged,
+                is_horizontal_scrollbar_disabled: _,
+                is_vertical_scrollbar_disabled: _,
+            } => (
+                if is_vertical_scrollbar_dragged {
+                    dragged_thumb
+                } else {
+                    thumb
+                },
+                if is_horizontal_scrollbar_dragged {
+                    dragged_thumb
+                } else {
+                    thumb
+                },
+            ),
+        };
+        Style {
+            container: iced_widget::container::Style {
+                text_color: iced.container.text_color,
+                background: iced.container.background,
+                border: iced.container.border,
+                shadow: iced.container.shadow,
+                snap: iced.container.snap,
+            },
+            vertical_rail: Rail {
+                background: Some(Background::Color(track)),
+                border: iced.vertical_rail.border,
+                scroller: Scroller {
+                    background: Background::Color(vertical),
+                    border: iced.vertical_rail.scroller.border,
+                },
+            },
+            horizontal_rail: Rail {
+                background: Some(Background::Color(track)),
+                border: iced.horizontal_rail.border,
+                scroller: Scroller {
+                    background: Background::Color(horizontal),
+                    border: iced.horizontal_rail.scroller.border,
+                },
+            },
+            gap: iced.gap,
+            auto_scroll: AutoScroll {
+                background: iced.auto_scroll.background,
+                border: iced.auto_scroll.border,
+                shadow: iced.auto_scroll.shadow,
+                icon: iced.auto_scroll.icon,
+            },
+        }
+    }
+}
+
+/// The platform's own scrollbar geometry, for
+/// `scrollable(..).direction(Direction::Vertical(..))` and its horizontal and
+/// two-axis siblings.
+///
+/// Not a closure and not a `Style` (C14): a scrollbar's two widths are values
+/// built into the `Scrollbar` a `Direction` carries, set through
+/// `Scrollbar::width` (`scrollable.rs:355`) and `Scrollbar::scroller_width`
+/// (`:367`), so they cannot travel with [`scrollable`]. The rail is
+/// `scrollbar.groove_width` wide and the scroller `scrollbar.thumb_width`.
+///
+/// Everything else stays `Scrollbar::new()`'s own: the model states no margin
+/// between a scrollbar and its edge, no anchor, and no spacing -- and a
+/// spacing is what would make the scrollbar *embedded* rather than floating
+/// (`scrollable.rs:378-386`), which is what `scrollbar.overlay_mode`
+/// describes; iced takes a length there and the model states none, so that
+/// field is left to the consumer rather than guessed at.
+///
+/// `scrollbar.min_thumb_length` has no receiver in iced 0.14 at all: iced
+/// sizes the scroller itself, `(bounds * ratio).max(2.0)` (`scrollable.rs:2068`),
+/// and exposes no minimum. It is recorded in the contract file's unreachable
+/// list rather than approximated.
+#[must_use = "this returns the configured scrollbar; it does not apply it"]
+pub fn scrollbar(resolved: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar {
+    let s = &resolved.scrollbar;
+
+    iced_widget::scrollable::Scrollbar::new()
+        .width(s.groove_width)
+        .scroller_width(s.thumb_width)
+}
+
+/// The platform's own progress bar, for `progress_bar(..).style(..)`.
+///
+/// Replaces `iced_widget::progress_bar::primary` (`progress_bar.rs:287`), the
+/// class a `ProgressBar` gets with no `.style(..)`: it paints the track in the
+/// palette's strong background and the bar in the primary family.
+///
+/// Every field of `progress_bar::Style` is a native one: the track is
+/// `progress_bar.track_color`, the filled bar is `.fill_color`, and the border
+/// is `.border.*`. A progress bar has no `Status`, so the closure takes the
+/// theme alone and nothing here comes from iced.
+///
+/// The bar's thickness is not a `Style` field: `progress_bar.track_height` is
+/// the argument of `ProgressBar::girth(..)` (`progress_bar.rs:97`), set where
+/// the widget is built.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn progress_bar(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::progress_bar::Style + use<> {
+    use iced_widget::progress_bar::Style;
+
+    let p = &resolved.progress_bar;
+
+    let track = to_color(p.track_color);
+    let filled = to_color(p.fill_color);
+
+    let border = Border {
+        color: to_color(p.border.color),
+        width: p.border.line_width,
+        radius: Radius::new(p.border.corner_radius),
+    };
+
+    move |_theme| Style {
+        background: Background::Color(track),
+        bar: Background::Color(filled),
+        border,
+    }
+}
+
+/// The platform's own separator, for `rule::horizontal(..).style(..)` and
+/// `rule::vertical(..).style(..)`.
+///
+/// Replaces `iced_widget::rule::default` (`rule.rs:304`), which paints the
+/// line in the palette's strong background.
+///
+/// The color is `separator.line_color`. The line's *thickness* is not a
+/// `Style` field either: it is the constructor's argument, so a consumer
+/// writes `rule::horizontal(resolved.separator.line_width)`.
+///
+/// `SeparatorTheme` is that color and that width and nothing else, so the
+/// remaining three fields have no native source and come from
+/// `rule::default(theme)`: the corner `radius` of the line, the `fill_mode`
+/// that decides how much of the container it spans, and `snap`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn rule(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::Style + use<> {
+    use iced_widget::rule::Style;
+
+    let line = to_color(resolved.separator.line_color);
+
+    move |theme| {
+        let iced = iced_widget::rule::default(theme);
+        Style {
+            color: line,
+            radius: iced.radius,
+            fill_mode: iced.fill_mode,
+            snap: iced.snap,
+        }
+    }
+}
+
+/// The platform's own tooltip, for `Tooltip::style(..)`.
+///
+/// A tooltip is styled as a container (`tooltip.rs:139-148`), so this returns a
+/// `container::Style` and replaces `iced_widget::container::transparent`
+/// (`container.rs:573`) -- the class a `Tooltip` gets with no `.style(..)`,
+/// which paints nothing at all and leaves the tip floating over whatever is
+/// under it.
+///
+/// The panel is `tooltip.background_color`, its label `tooltip.font.color` and
+/// its outline `tooltip.border.*`. `shadow` and `snap` have no native source
+/// and come from `container::Style::default()`: the model carries a shadow
+/// color but no offset or blur, and `snap` is a renderer setting.
+///
+/// `tooltip.max_width` is not a `Style` field: iced wraps the tip's own
+/// content element, so a consumer gives that element the width.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn tooltip(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + use<> {
+    use iced_widget::container::Style;
+
+    let t = &resolved.tooltip;
+
+    let panel = to_color(t.background_color);
+    let label = to_color(t.font.color);
+
+    let border = Border {
+        color: to_color(t.border.color),
+        width: t.border.line_width,
+        radius: Radius::new(t.border.corner_radius),
+    };
+
+    move |_theme| {
+        let iced = Style::default();
+        Style {
+            text_color: Some(label),
+            background: Some(Background::Color(panel)),
+            border,
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}
+
+/// The platform's own card, for `container(..).style(..)`.
+///
+/// Replaces `iced_widget::container::transparent` (`container.rs:573`), the
+/// class a `Container` gets with no `.style(..)`, and the `rounded_box` a
+/// consumer reaches for instead, which paints the palette's weak background on
+/// a hardcoded radius.
+///
+/// The fill is `card.background_color` and the outline is `card.border.*`.
+///
+/// `text_color` stays `None`, which is iced's own value and means *inherit*:
+/// `CardTheme` carries no font, so a card does not recolor the text inside it
+/// -- the surrounding label color, which the palette already states, goes on
+/// showing through. `shadow` and `snap` are iced's for the same reasons they
+/// are on a button.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn container_card(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + use<> {
+    use iced_widget::container::Style;
+
+    let c = &resolved.card;
+
+    let panel = to_color(c.background_color);
+
+    let border = Border {
+        color: to_color(c.border.color),
+        width: c.border.line_width,
+        radius: Radius::new(c.border.corner_radius),
+    };
+
+    move |_theme| {
+        let iced = Style::default();
+        Style {
+            text_color: iced.text_color,
+            background: Some(Background::Color(panel)),
+            border,
+            shadow: iced.shadow,
+            snap: iced.snap,
         }
     }
 }
