@@ -46,8 +46,8 @@ use gpui_component::{
     breadcrumb::{Breadcrumb, BreadcrumbItem},
     button::{Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup},
     carousel::{
-        Carousel, CarouselContent, CarouselItem, CarouselPagination, CarouselPaginationItem,
-        CarouselState,
+        Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPagination,
+        CarouselPaginationItem, CarouselPrevious, CarouselState,
     },
     chart::{AreaChart, BarChart, CandlestickChart, LineChart, PieChart},
     checkbox::Checkbox,
@@ -75,20 +75,23 @@ use gpui_component::{
     list::{ListDelegate, ListItem, ListState},
     menu::{AppMenuBar, ContextMenuExt},
     notification::Notification,
+    pagination::Pagination,
     popover::Popover,
     progress::Progress,
     radio::{Radio, RadioGroup},
+    rating::Rating,
     resizable::{h_resizable, resizable_panel, v_resizable},
     scroll::ScrollableElement,
     searchable_list::{SearchableListDelegate, SearchableListItem},
     select::{SearchableVec, Select, SelectEvent, SelectState},
     separator::Separator,
     setting::{SettingField, SettingGroup, SettingItem, SettingPage, Settings},
-    sidebar::{Sidebar, SidebarMenu, SidebarMenuItem},
+    sidebar::{Sidebar, SidebarMenu, SidebarMenuItem, SidebarToggleButton},
     skeleton::Skeleton,
     slider::{Slider, SliderEvent, SliderState},
     spinner::Spinner,
     status_bar::StatusBar,
+    stepper::{Stepper, StepperItem},
     switch::Switch,
     tab::TabBar,
     table::{
@@ -169,6 +172,16 @@ const CAROUSEL_SLIDES: &[(&str, &str)] = &[
         "Native icons",
         "IconRole maps to the desktop icon theme; sets are never mixed.",
     ),
+];
+
+/// How many pages the Data tab's `Pagination` navigates, at ten rows each.
+const PAGE_COUNT: usize = 12;
+
+/// The steps the Layout tab's `Stepper` walks through.
+const STEPPER_STEPS: &[(&str, IconName)] = &[
+    ("Read the OS", IconName::Search),
+    ("Resolve the theme", IconName::Settings),
+    ("Apply to gpui", IconName::CircleCheck),
 ];
 
 /// The source the code editor holds — the connector's own install sequence.
@@ -1245,10 +1258,17 @@ struct Showcase {
     switch_on: bool,
     radio_index: Option<usize>,
     slider_value: f32,
+    /// Stars the `Rating` currently shows; its `on_click` writes here.
+    rating_value: usize,
 
     // Layout tab
     collapsible_open: bool,
     carousel_state: Entity<CarouselState>,
+    /// The `Stepper`'s current step, written by its `on_click`.
+    step: usize,
+    /// Whether the Layout tab's `Sidebar` is collapsed; the
+    /// `SidebarToggleButton` flips it.
+    sidebar_collapsed: bool,
 
     // Typography tab
     editor_state: Entity<EditorState>,
@@ -1257,6 +1277,8 @@ struct Showcase {
     table_state: Entity<TableState<SampleTableDelegate>>,
     list_state: Entity<ListState<SampleListDelegate>>,
     tree_state: Entity<TreeState>,
+    /// The page the `Pagination` is on, written by its `on_click`.
+    page: usize,
 
     // Buttons tab
     toggle_bold: bool,
@@ -2017,12 +2039,16 @@ impl Showcase {
             switch_on: false,
             radio_index: Some(0),
             slider_value: 65.0,
+            rating_value: 3,
             collapsible_open: true,
             carousel_state,
+            step: 1,
+            sidebar_collapsed: false,
             editor_state,
             table_state,
             list_state,
             tree_state,
+            page: 5,
             toggle_bold: false,
             toggle_italic: false,
             app_menu_bar,
@@ -3188,6 +3214,60 @@ impl Showcase {
                         &[("track height", "hardcoded"), ("thumb size", "hardcoded")],
                     )),
             )
+            // Rating
+            .child(section(format!(
+                "Rating ({} of 5 stars)",
+                self.rating_value
+            )))
+            .child(
+                div()
+                    .id("tt-rating")
+                    .child(
+                        h_flex()
+                            .gap_4()
+                            .items_center()
+                            .child({
+                                // The stars are inline icons, so the platform's
+                                // small icon size is what they take; `Rating`
+                                // has no geometry builder of its own.
+                                let rating = Rating::new("rating-1")
+                                    .value(self.rating_value)
+                                    .on_click(cx.listener(
+                                        |this, value: &usize, _w, cx| {
+                                            this.rating_value = *value;
+                                            cx.notify();
+                                        },
+                                    ));
+                                match native_value(cx, geometry::icon_size_small) {
+                                    Some(size) => rating.with_size(size),
+                                    None => rating,
+                                }
+                            })
+                            .child(
+                                Label::new(SharedString::from(format!(
+                                    "value: {}",
+                                    self.rating_value
+                                )))
+                                .text_sm()
+                                .text_color(t.muted_foreground),
+                            )
+                            .child(Rating::new("rating-disabled").value(2).disabled(true)),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Rating",
+                        &[
+                            ("active star", "yellow", t.yellow),
+                            ("inactive star", "muted_foreground", t.muted_foreground),
+                        ],
+                        &[],
+                        &[
+                            ("star size", "geometry::icon_size_small: defaults.icon_sizes.small"),
+                            ("active colour", "cx.theme().yellow unless Rating::color overrides it (rating.rs:120)"),
+                            ("hover preview", "upstream keeps its own hovered value (rating.rs:104-106)"),
+                        ],
+                    )),
+            )
             // OTP Input
             .child(section("OTP Input (6 digits)"))
             .child(
@@ -3311,6 +3391,7 @@ impl Showcase {
     fn render_data_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
+        let widget_gap = geometry::widget_gap(&self.layout);
         v_flex()
             .gap_5()
             .p_4()
@@ -3445,6 +3526,66 @@ impl Showcase {
                         &[
                             ("geometry", "geometry::table: list.item_font on the table root (table/table.rs:111 → :114)"),
                             ("cell padding", "inner (Tier U)"),
+                        ],
+                    )),
+            )
+            // Pagination
+            .child(section(format!(
+                "Pagination (page {} of {})",
+                self.page, PAGE_COUNT
+            )))
+            .child(
+                div()
+                    .id("tt-pagination")
+                    .child(
+                        v_flex()
+                            .gap_2()
+                            .child(with_gap(
+                                Pagination::new("pagination-1")
+                                    .current_page(self.page)
+                                    .total_pages(PAGE_COUNT)
+                                    .on_click(cx.listener(|this, page: &usize, _w, cx| {
+                                        this.page = *page;
+                                        cx.notify();
+                                    })),
+                                widget_gap,
+                            ))
+                            .child(
+                                Label::new(SharedString::from(format!(
+                                    "Rows {}–{} of {}",
+                                    (self.page - 1) * 10 + 1,
+                                    self.page * 10,
+                                    PAGE_COUNT * 10
+                                )))
+                                .text_sm()
+                                .text_color(t.muted_foreground),
+                            )
+                            .child(
+                                Pagination::new("pagination-compact")
+                                    .compact()
+                                    .current_page(self.page)
+                                    .total_pages(PAGE_COUNT)
+                                    .on_click(cx.listener(|this, page: &usize, _w, cx| {
+                                        this.page = *page;
+                                        cx.notify();
+                                    })),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Pagination",
+                        &[
+                            ("current page", "background", t.background),
+                            ("current border", "border", t.border),
+                            ("other pages", "transparent until hover", t.transparent),
+                            ("hover", "secondary_hover", t.secondary_hover),
+                            ("text", "foreground", t.foreground),
+                        ],
+                        &[],
+                        &[
+                            ("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs:176)"),
+                            ("buttons", "built by the widget as ghost/outline Button (pagination.rs:187-195); no refinement reaches them"),
+                            ("ellipsis", "a dropdown over the hidden pages"),
                         ],
                     )),
             )
@@ -4809,9 +4950,12 @@ impl Showcase {
                                 with_accordion_title_style(item, &accordion_title_style)
                                     .title("How many presets?")
                                     .child(
-                                        Label::new(
-                                            "17 built-in theme presets covering major OS styles.",
-                                        )
+                                        // Counted from the list itself, so the
+                                        // answer cannot go stale again.
+                                        Label::new(SharedString::from(format!(
+                                            "{} built-in theme presets covering major OS styles.",
+                                            native_theme::theme::Theme::list_presets().len()
+                                        )))
                                         .text_sm(),
                                     )
                             }),
@@ -4881,6 +5025,9 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-carousel")
+                    // The slide controls are positioned outside the frame, so
+                    // the section leaves a button's width on either side.
+                    .px_16()
                     .child(
                         Carousel::new("carousel", &self.carousel_state)
                             .w(px(360.0))
@@ -4921,7 +5068,14 @@ impl Showcase {
                                     )
                                     .child(SharedString::from((ix + 1).to_string()))
                                 }),
-                            )),
+                            ))
+                            // The carousel's own slide controls. They take the
+                            // same state as the viewport and position
+                            // themselves outside the frame
+                            // (`carousel/carousel.rs:754-765`), so they belong
+                            // to the carousel rather than beside it.
+                            .child(CarouselPrevious::new(&self.carousel_state))
+                            .child(CarouselNext::new(&self.carousel_state)),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -4936,6 +5090,7 @@ impl Showcase {
                         &[
                             ("snap motion", "Theme::motion spring_move; ResolvedTheme has no motion field"),
                             ("reduced motion", "gpui's App::reduce_motion, forwarded by apply_system_theme — the snap becomes instant"),
+                            ("slide controls", "outline Buttons the widget builds itself, disabled at the ends (carousel/carousel.rs:745-751)"),
                         ],
                     )),
             )
@@ -5028,6 +5183,70 @@ impl Showcase {
                         ],
                     )),
             )
+            // Stepper
+            .child(section(format!(
+                "Stepper (step {} of {}: one completed, one current, one pending)",
+                self.step + 1,
+                STEPPER_STEPS.len()
+            )))
+            .child(
+                div()
+                    .id("tt-stepper")
+                    .child(
+                        v_flex()
+                            .gap_4()
+                            .w(px(480.0))
+                            .child(
+                                Stepper::new("stepper-1")
+                                    .selected_index(self.step)
+                                    .items(STEPPER_STEPS.iter().map(|(label, icon)| {
+                                        // The indicator is a circle around the
+                                        // icon it is given, which keeps its
+                                        // size (stepper/trigger.rs:136-144).
+                                        StepperItem::new()
+                                            .icon(native_icon(
+                                                cx,
+                                                icon.clone(),
+                                                geometry::icon_size_small,
+                                            ))
+                                            .child(Label::new(*label).text_sm())
+                                    }))
+                                    .on_click(cx.listener(|this, step: &usize, _w, cx| {
+                                        this.step = *step;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(
+                                Stepper::new("stepper-vertical")
+                                    .vertical()
+                                    .selected_index(self.step)
+                                    .items(STEPPER_STEPS.iter().map(|(label, _)| {
+                                        StepperItem::new().child(Label::new(*label).text_sm())
+                                    }))
+                                    .on_click(cx.listener(|this, step: &usize, _w, cx| {
+                                        this.step = *step;
+                                        cx.notify();
+                                    })),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Stepper",
+                        &[
+                            ("completed / current", "primary", t.primary),
+                            ("completed text", "primary_foreground", t.primary_foreground),
+                            ("pending", "secondary", t.secondary),
+                            ("pending text", "secondary_foreground", t.secondary_foreground),
+                            ("pending hover", "secondary_hover", t.secondary_hover),
+                        ],
+                        &[],
+                        &[
+                            ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
+                            ("indicator size", "24px for Size::Medium (stepper/item.rs:118-123)"),
+                            ("separator", "drawn by the item, absolute (stepper/item.rs:155-163)"),
+                        ],
+                    )),
+            )
             // Form / Field
             .child(section("Form / Field (horizontal layout)"))
             .child(
@@ -5068,7 +5287,53 @@ impl Showcase {
                     )),
             )
             // Sidebar
-            .child(section("Sidebar (mini navigation)"))
+            .child(section(
+                "Sidebar (mini navigation; the toggle button collapses it)",
+            ))
+            .child(
+                div()
+                    .id("tt-sidebar-toggle")
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .items_center()
+                            // `SidebarToggleButton` owns no collapsed state of
+                            // its own (`sidebar/mod.rs:302-307`): the flag it
+                            // draws and the flag the sidebar reads are the
+                            // same one, here.
+                            .child(
+                                SidebarToggleButton::new()
+                                    .collapsed(self.sidebar_collapsed)
+                                    .on_click(cx.listener(|this, _ev, _w, cx| {
+                                        this.sidebar_collapsed = !this.sidebar_collapsed;
+                                        cx.notify();
+                                    })),
+                            )
+                            .child(
+                                Label::new(if self.sidebar_collapsed {
+                                    "collapsed"
+                                } else {
+                                    "expanded"
+                                })
+                                .text_sm()
+                                .text_color(t.muted_foreground),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "SidebarToggleButton",
+                        &[
+                            ("bg", "transparent until hover", t.transparent),
+                            ("hover", "secondary_hover", t.secondary_hover),
+                            ("icon", "foreground", t.foreground),
+                        ],
+                        &[],
+                        &[
+                            ("button", "a ghost, small Button built by the widget (sidebar/mod.rs:312)"),
+                            ("icon", "PanelLeftOpen / PanelLeftClose, at a hardcoded size_4 (sidebar/mod.rs:367)"),
+                        ],
+                    )),
+            )
             .child(
                 div()
                     .id("tt-sidebar")
@@ -5081,7 +5346,9 @@ impl Showcase {
                         // A sidebar is the panel `defaults.icon_sizes.panel`
                         // names, and `SidebarMenuItem` keeps the icon it is
                         // given (`sidebar/menu.rs:300`), so the size arrives.
-                        Sidebar::new("layout-sidebar").collapsible(false).child(
+                        Sidebar::new("layout-sidebar")
+                            .collapsed(self.sidebar_collapsed)
+                            .child(
                             SidebarMenu::new()
                                 .child(
                                     SidebarMenuItem::new("Dashboard")

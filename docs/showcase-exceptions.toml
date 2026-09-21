@@ -44,7 +44,6 @@ MessageHeader = "the header slot of a `Message` (message.rs:276)"
 SearchableListItemElement = "the row `Select`, `Combobox` and `MultiCombobox` dropdowns render (searchable_list/item.rs:11-18)"
 SidebarFooter = "the footer of a `Sidebar` (sidebar/footer.rs:8-10)"
 SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
-StepperItem = "a step within a `Stepper` (stepper/item.rs:13-15)"
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
 
