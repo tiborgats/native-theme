@@ -336,15 +336,21 @@ pub fn sidebar(
 /// `SelectionList` never asks for and the model describes no row in, come from
 /// `selection_list::primary(theme, status)`.
 ///
-/// `list.row_height` has **no receiver at all** in `iced_aw` 0.14.1: there is
-/// no `item_height` setter anywhere in the crate, and a row's height is the
-/// sum `text_size + padding.y()` of the two arguments `new_with` takes
-/// (`selection_list/list.rs:118`, `:209`, `:223`, `:294`). A consumer can set
-/// `list.item_font.size` as `text_size` and nothing faithfully as the
-/// padding, so the stated row height cannot be reproduced without inventing
-/// the difference. Neither have `list.alternate_row_background`,
-/// `.header_background`, `.header_font` or `.grid_color` a receiver -- a
-/// selection list has no striping, no column header and no grid.
+/// `list.row_height` is reachable **only indirectly**: `iced_aw` 0.14.1 has no
+/// `item_height` setter anywhere, and a row's height is the sum
+/// `text_size + padding.y()` of two of the arguments `new_with` takes
+/// (`selection_list/list.rs:118`, `:209`, `:223`, `:294`). So a consumer
+/// passes `list.item_font.size` as `text_size` and, as the padding, the
+/// vertical remainder the label leaves -- `row_height - item_font.size`, split
+/// between top and bottom -- guarding the case where a theme states a row no
+/// taller than its own label. Nothing horizontal is implied: the label is
+/// drawn at the row's own `bounds.x` (`selection_list/list.rs:273`), while the
+/// list's intrinsic width does read `padding.x()` (`selection_list.rs:237`,
+/// `:244`).
+///
+/// `list.alternate_row_background`, `.header_background`, `.header_font` and
+/// `.grid_color` have no receiver at all -- a selection list has no striping,
+/// no column header and no grid.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn selection_list(
     resolved: &ResolvedTheme,

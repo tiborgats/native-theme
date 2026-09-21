@@ -457,6 +457,13 @@ pub fn text_editor(
 /// source. The label is `checkbox.font.color`, and `.disabled_text_color` when
 /// the box is disabled -- the platform dims it, where iced's own class leaves
 /// the label to be inherited whole.
+///
+/// Two native fields are the consumer's builder geometry rather than `Style`
+/// fields: `checkbox.indicator_width` is the indicator's side length
+/// (`platform-facts.md:969`) and belongs to `Checkbox::size(..)`
+/// (`checkbox.rs:176`), which lays the box out as a square of exactly that
+/// (`:287`); `checkbox.label_gap` belongs to `Checkbox::spacing(..)`
+/// (`checkbox.rs:188`).
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn checkbox(
     resolved: &ResolvedTheme,
@@ -539,6 +546,11 @@ pub fn checkbox(
 ///
 /// `radio::Style` carries its border as a width and a color rather than as an
 /// iced `Border`, so there is no corner radius to give it.
+///
+/// The same two native fields are builder geometry here as on a checkbox:
+/// `checkbox.indicator_width` is the dot's diameter (`platform-facts.md:969`)
+/// and belongs to `Radio::size(..)` (`radio.rs:200`, laid out at `:300`), and
+/// `checkbox.label_gap` to `Radio::spacing(..)` (`radio.rs:212`).
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn radio(
     resolved: &ResolvedTheme,

@@ -1726,10 +1726,12 @@ fn view(state: &State) -> Element<'_, Message> {
     // ---- Right panel (tabs + content) ----
     let sp = &SP;
     let ts = &state.current_resolved.text_scale;
+    // The strip sits against the window's own edges, so all three sides are
+    // the window margin.
     let tab_padding = Padding::ZERO
         .left(gap.window)
         .right(gap.window)
-        .top(gap.widget);
+        .top(gap.window);
     let content_padding = Padding::from(gap.window);
     let panel_spacing = sp.xs;
     let mut right_panel = column![].spacing(panel_spacing).width(Fill).height(Fill);
@@ -2171,6 +2173,11 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
     let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
     let label_gap_s = format!("{:.0}px", c.label_gap);
+    // `checkbox.indicator_width` is the indicator's side length, square for a
+    // checkbox and a diameter for a radio (platform-facts.md:969), and both
+    // `Checkbox::size` (checkbox.rs:176, laid out at :287) and `Radio::size`
+    // (radio.rs:200, :300) take exactly that.
+    let indicator_width_s = format!("{:.0}px", c.indicator_width);
     let track_radius_s = format!("{:.0}px", sw.track_radius);
     let track_height_s = format!("{:.0}px", sw.track_height);
     let thumb_diameter_s = format!("{:.0}px", sw.thumb_diameter);
@@ -2213,33 +2220,32 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[
                 ("border-radius", &checkbox_radius_s),
                 ("label gap", &label_gap_s),
+                ("box size", &indicator_width_s),
             ],
-            &[
-                ("size", "hardcoded by iced"),
-                (
-                    "checkbox.indicator_width",
-                    "the model documents a stroke width, and iced has no receiver \
-                     for one: Checkbox::icon takes an Icon whose `size` is the \
-                     glyph's point size (checkbox.rs:229, :493-504), not the \
-                     thickness of its strokes",
-                ),
-            ],
+            &[(
+                "check mark",
+                "Checkbox::icon takes an Icon — a font glyph — so the mark's own \
+                 shape is the font's, not the theme's (checkbox.rs:229, :493-504)",
+            )],
         ),
         column![
             text("Checkboxes").size(ts.dialog_title.size),
             checkbox(state.checkbox_a)
                 .label("Enable notifications")
                 .spacing(c.label_gap)
+                .size(c.indicator_width)
                 .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxAToggled),
             checkbox(state.checkbox_b)
                 .label("Dark mode auto-detect")
                 .spacing(c.label_gap)
+                .size(c.indicator_width)
                 .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxBToggled),
             checkbox(state.checkbox_c)
                 .label("Remember preferences")
                 .spacing(c.label_gap)
+                .size(c.indicator_width)
                 .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxCToggled),
             text(format!(
@@ -2286,9 +2292,11 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     to_color(c.unchecked_background.unwrap_or(c.background_color)),
                 ),
             ],
-            &[("label gap", &label_gap_s)],
             &[
-                ("size", "hardcoded"),
+                ("label gap", &label_gap_s),
+                ("dot diameter", &indicator_width_s),
+            ],
+            &[
                 ("border-radius", "radio::Style carries no corner radius"),
                 ("disabled", "radio::Status has no disabled value"),
             ],
@@ -2302,6 +2310,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 Message::FruitSelected
             )
             .spacing(c.label_gap)
+            .size(c.indicator_width)
             .style(styles::radio(resolved)),
             radio(
                 "Banana",
@@ -2310,6 +2319,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 Message::FruitSelected
             )
             .spacing(c.label_gap)
+            .size(c.indicator_width)
             .style(styles::radio(resolved)),
             radio(
                 "Cherry",
@@ -2318,6 +2328,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 Message::FruitSelected
             )
             .spacing(c.label_gap)
+            .size(c.indicator_width)
             .style(styles::radio(resolved)),
             text(format!(
                 "Selected: {}",
@@ -3244,19 +3255,32 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             "Table",
             &[(
                 "separators",
-                "iced's own — see below",
-                to_color(sep.line_color),
+                "iced's background.strong, read live",
+                state
+                    .current_theme
+                    .extended_palette()
+                    .background
+                    .strong
+                    .color,
             )],
             &[
                 ("separator_x / separator_y", &line_width_s),
                 ("cell padding", "the showcase's own scale"),
             ],
-            &[(
-                "Style",
-                "iced_widget 0.14.2 gives Table a Catalog and a Style but no \
-                 `.style(..)` or `.class(..)` setter (table.rs:149-196), so its \
-                 separator colors stay table::default(theme)",
-            )],
+            &[
+                (
+                    "Style",
+                    "iced_widget 0.14.2 gives Table a Catalog and a Style but no \
+                     `.style(..)` or `.class(..)` setter (table.rs:149-196), so its \
+                     separator colors stay table::default(theme), which reads \
+                     palette.background.strong (table.rs:717-724)",
+                ),
+                (
+                    "separator.line_color",
+                    "has no receiver here; the hex above is the one on screen, not \
+                     the platform's separator colour",
+                ),
+            ],
         ),
         column![
             text("Table (columns and rows)").size(ts.dialog_title.size),
@@ -3529,9 +3553,11 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                     "link.font.color",
                     to_color(resolved.link.font.color),
                 ),
-                ("text", "inherited from the surrounding container", {
-                    to_color(d.text_color)
-                }),
+                (
+                    "text",
+                    "palette.text, set from defaults.text_color",
+                    state.current_theme.palette().text,
+                ),
             ],
             &[
                 ("base size", "defaults.font.size"),
@@ -3545,6 +3571,14 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                 (
                     "h4 / h5 / h6",
                     "the model names four typographic roles, not six — iced's own",
+                ),
+                (
+                    "block spacing",
+                    "Settings::spacing is iced's own, derived from the native base \
+                     size. It is not layout.widget_gap: iced reuses the one number \
+                     as the gap between blocks, as 0.6 and 0.75 of itself inside \
+                     lists, and as a list's horizontal indent (markdown.rs:1230, \
+                     :1364-1374)",
                 ),
                 (
                     "inline code chip",
@@ -4002,8 +4036,12 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let spinner_demo = hoverable(
         widget_tooltip(
             "Spinner",
-            &[("arc", "spinner.fill_color", to_color(spin_t.fill_color))],
-            &[("diameter", "spinner.diameter")],
+            &[(
+                "orbiting dot",
+                "spinner.fill_color",
+                to_color(spin_t.fill_color),
+            )],
+            &[("orbit diameter", "spinner.diameter")],
             &[
                 (
                     "Style",
@@ -4011,9 +4049,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                      inherited text colour, which the wrapping container states",
                 ),
                 (
-                    "stroke width",
-                    "spinner.stroke_width has no receiver; circle_radius sizes the \
-                     orbiting dot, not an arc",
+                    "spinner.stroke_width",
+                    "no receiver: iced_aw paints no ring to stroke — one dot \
+                     circling the centre (spinner.rs:151), whose radius is \
+                     circle_radius, not a stroke width",
                 ),
             ],
         ),
@@ -4032,6 +4071,29 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     // ---- SelectionList ----
 
+    // `iced_aw` lays a row out as `text_size + padding.y()`
+    // (`selection_list/list.rs:118`, `:209`), so `list.row_height` is reachable
+    // after all -- not through a setter of its own, but as the vertical padding
+    // that makes the sum come out. `padding.y()` is top plus bottom, so each
+    // side takes half of what the label leaves. A theme whose row height does
+    // not clear its own label size leaves the showcase's own padding standing,
+    // rather than a negative inset.
+    let row_height_s = format!("{:.0}px", list_t.row_height);
+    let row_inset = list_t.row_height - list_t.item_font.size;
+    let list_padding = if row_inset > 0.0 {
+        // Only the vertical half is the platform's: the label is drawn at the
+        // row's own `bounds.x` (`selection_list/list.rs:273`), so horizontal
+        // padding never reaches it, and the list's intrinsic width does read
+        // `padding.x()` (`selection_list.rs:237`, `:244`).
+        Padding::ZERO
+            .top(row_inset / 2.0)
+            .bottom(row_inset / 2.0)
+            .left(sp.xs)
+            .right(sp.xs)
+    } else {
+        Padding::from(sp.xs)
+    };
+
     // `SelectionList::new_with` is the only constructor that gives the rows a
     // class as well as the list, and it demands a `Clone` style function --
     // which every `styles::aw::*` closure is.
@@ -4039,7 +4101,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         &state.aw_list_options,
         Message::AwListSelected,
         list_t.item_font.size,
-        Padding::from(sp.xs),
+        list_padding,
         styles::aw::selection_list(resolved),
         state.aw_list_selected,
         iced::Font::DEFAULT,
@@ -4072,11 +4134,16 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     to_color(list_t.item_font.color),
                 ),
             ],
-            &[("row label size", "list.item_font.size")],
+            &[
+                ("row label size", "list.item_font.size"),
+                ("row height", &row_height_s),
+            ],
             &[(
                 "list.row_height",
-                "no receiver in iced_aw 0.14.1: a row is text_size + padding \
-                 (selection_list/list.rs:209), and there is no item_height setter",
+                "reachable only indirectly: iced_aw has no item_height setter, so \
+                 a row is text_size + padding.y() (selection_list/list.rs:118, \
+                 :209) and the showcase gives new_with the padding that makes the \
+                 sum the platform's height",
             )],
         ),
         column![
@@ -4292,7 +4359,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
             text("No animated icons available for this configuration.").size(ts.caption.size),
         );
     } else {
-        content = content.push(row(spinners).spacing(gap.section));
+        content = content.push(row(spinners).spacing(gap.widget));
     }
 
     content.into()
