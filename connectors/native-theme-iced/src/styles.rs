@@ -583,19 +583,27 @@ pub fn radio(
 /// The track is `switch.checked_background` or `.unchecked_background` by
 /// `is_toggled`, with `.hover_*` layered over it (C17) and `.disabled_*`
 /// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
-/// so emitted as given in every state, and `.disabled_thumb_color` when the
-/// switch is off.
+/// so emitted as given in every state, and `.disabled_thumb_color` whenever
+/// the switch is disabled -- toggled or not.
 ///
 /// `border_radius` is `switch.track_radius`, and it shapes the whole widget:
 /// iced paints the track and the thumb as two quads with the *same* radius
 /// (`toggler.rs:435`, `:461`), and its own `None` would make both perfectly
 /// round (`toggler.rs:427-429`) whatever the platform states.
 ///
-/// Six fields have no native source and come from `toggler::default(theme,
-/// status)`: `SwitchTheme` carries neither border nor thumb inset, so both
-/// border widths, both border colors and `padding_ratio` are iced's. So is
-/// `text_color`: the model states no font for a switch, and iced's `None`
-/// inherits the surrounding one.
+/// `padding_ratio` is the inset `switch.track_height` and `.thumb_diameter`
+/// state between them, in the unit iced's receiver takes: it multiplies the
+/// ratio by the track's height to get the padding on each side
+/// (`toggler.rs:444`) and gives the thumb what is left
+/// (`toggler.rs:453-454`), so the ratio is
+/// `(track_height - thumb_diameter) / (2 * track_height)`. A preset that
+/// states no track height, or a thumb taller than its track, would ask for a
+/// division by zero or a negative inset; there the ratio is iced's own instead.
+///
+/// Five fields have no native source and come from `toggler::default(theme,
+/// status)`: `SwitchTheme` carries no border, so both border widths and both
+/// border colors are iced's, and so is `text_color` -- the model states no
+/// font for a switch, and iced's `None` inherits the surrounding one.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn toggler(
     resolved: &ResolvedTheme,
@@ -631,6 +639,15 @@ pub fn toggler(
     let disabled_thumb = to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background));
 
     let track_radius = Radius::new(s.track_radius);
+    // Guarded so that a track with no height, or a thumb taller than its
+    // track, falls back to iced's own ratio rather than dividing by zero or
+    // insetting the thumb by a negative length.
+    let padding_ratio =
+        if s.track_height > 0.0 && s.thumb_diameter >= 0.0 && s.thumb_diameter <= s.track_height {
+            Some((s.track_height - s.thumb_diameter) / (2.0 * s.track_height))
+        } else {
+            None
+        };
 
     move |theme, status| {
         let iced = iced_widget::toggler::default(theme, status);
@@ -666,7 +683,7 @@ pub fn toggler(
             foreground_border_color: iced.foreground_border_color,
             text_color: iced.text_color,
             border_radius: Some(track_radius),
-            padding_ratio: iced.padding_ratio,
+            padding_ratio: padding_ratio.unwrap_or(iced.padding_ratio),
         }
     }
 }
@@ -795,12 +812,14 @@ pub fn menu(
 /// circular handle by its radius.
 ///
 /// Two things have no native source. The model states no dragged thumb color,
-/// so that one state's handle is `slider::default(theme, Status::Dragged)`'s,
-/// as a status button's hovered fill is iced's (spec section 3.2); it is
+/// so in that one status the handle's **fill** -- and nothing else about it --
+/// is `slider::default(theme, Status::Dragged).handle.background`, as a status
+/// button's hovered fill is iced's (spec section 3.2); its shape stays the
+/// platform's thumb diameter, and so does the rail under it. That one field is
 /// asserted against iced's own by
-/// `a_dragged_slider_handle_comes_from_iced`. And `SliderTheme` carries no
-/// border, so the rail's border and the handle's border width and color are
-/// iced's too.
+/// `a_dragged_slider_handle_takes_its_fill_from_iced`. And `SliderTheme`
+/// carries no border, so the rail's border and the handle's border width and
+/// color are iced's too.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn slider(
     resolved: &ResolvedTheme,
