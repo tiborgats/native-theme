@@ -31,8 +31,8 @@
 //! sections.
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Bounds, ClipboardItem, Context, Entity, Hsla,
-    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Pixels, Render,
+    Animation, AnimationExt, AnyElement, App, Axis, Bounds, ClipboardItem, Context, Div, Entity,
+    Hsla, ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Pixels, Render,
     SharedString, StyleRefinement, Styled, Task, Window, WindowBounds, WindowOptions, div,
     prelude::*, px, rems, size,
 };
@@ -155,18 +155,135 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
 }
 
 // ---------------------------------------------------------------------------
-// Tab indices
+// Tabs
 // ---------------------------------------------------------------------------
-const TAB_BUTTONS: usize = 0;
-const TAB_INPUTS: usize = 1;
-const TAB_DATA: usize = 2;
-const TAB_FEEDBACK: usize = 3;
-const TAB_TYPOGRAPHY: usize = 4;
-const TAB_LAYOUT: usize = 5;
-const TAB_OVERLAYS: usize = 6;
-const TAB_CHARTS: usize = 7;
-const TAB_ICONS: usize = 8;
-const TAB_THEME_MAP: usize = 9;
+
+/// The content area's tabs.
+///
+/// `Showcase::render` matches on this, so a new variant cannot be added without
+/// the compiler asking what it renders, and the bar's labels, the `--tab` names
+/// and the layout self-test all read [`Tab::ALL`].
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Tab {
+    Buttons,
+    Inputs,
+    Data,
+    Feedback,
+    Typography,
+    Layout,
+    Overlays,
+    Charts,
+    Icons,
+    ThemeMap,
+}
+
+impl Tab {
+    /// Every tab, in the order the bar shows them.
+    ///
+    /// A new variant forces an arm in [`Tab::index`] and [`Tab::label`], whose
+    /// matches are exhaustive, and the index it is given there has to be its
+    /// position in this array — the `const` block below rejects the build
+    /// otherwise. The one thing neither the compiler nor that block can see is
+    /// a variant added to the enum and to both matches but not to this list:
+    /// it would take an index the array does not have, and the assertion fires.
+    const ALL: [Self; 10] = [
+        Self::Buttons,
+        Self::Inputs,
+        Self::Data,
+        Self::Feedback,
+        Self::Typography,
+        Self::Layout,
+        Self::Overlays,
+        Self::Charts,
+        Self::Icons,
+        Self::ThemeMap,
+    ];
+
+    /// The tab's position in the bar, which is what `TabBar` counts in.
+    const fn index(self) -> usize {
+        match self {
+            Self::Buttons => 0,
+            Self::Inputs => 1,
+            Self::Data => 2,
+            Self::Feedback => 3,
+            Self::Typography => 4,
+            Self::Layout => 5,
+            Self::Overlays => 6,
+            Self::Charts => 7,
+            Self::Icons => 8,
+            Self::ThemeMap => 9,
+        }
+    }
+
+    /// The tab at a bar position; `None` past the end.
+    fn at(index: usize) -> Option<Self> {
+        Self::ALL.get(index).copied()
+    }
+
+    /// The label the bar shows.
+    const fn label(self) -> &'static str {
+        match self {
+            Self::Buttons => "Buttons",
+            Self::Inputs => "Inputs",
+            Self::Data => "Data",
+            Self::Feedback => "Feedback",
+            Self::Typography => "Typography",
+            Self::Layout => "Layout",
+            Self::Overlays => "Overlays",
+            Self::Charts => "Charts",
+            Self::Icons => "Icons",
+            Self::ThemeMap => "Theme Map",
+        }
+    }
+}
+
+/// `Tab::ALL` is in bar order and holds each tab once.
+const _: () = {
+    let mut i = 0;
+    while i < Tab::ALL.len() {
+        assert!(
+            Tab::ALL[i].index() == i,
+            "Tab::ALL is not the tabs in bar order"
+        );
+        i += 1;
+    }
+};
+
+/// The window the showcase opens. The self-tests lay the interface out at this
+/// width, so a measurement they take is a measurement of the real thing.
+const WINDOW_SIZE: gpui::Size<Pixels> = size(px(1100.), px(850.));
+
+/// The debug selector the active tab's root carries, so `every_tab_lays_out`
+/// can find the tab it switched to.
+const TAB_ROOT: &str = "tab-root";
+
+// ---------------------------------------------------------------------------
+// Debug selectors for the interactive controls
+// ---------------------------------------------------------------------------
+//
+// `interactive_controls_respond` clicks each of these and asks the model what
+// changed. A control that carries one is a control the self-test drives; the
+// name is shared by the render code and the test, so neither can drift onto an
+// element the other does not mean.
+const PROBE_RATING: &str = "probe-rating";
+const PROBE_COMBOBOX: &str = "probe-combobox";
+const PROBE_CLIPBOARD: &str = "probe-clipboard";
+const PROBE_PAGINATION: &str = "probe-pagination";
+const PROBE_ATTACHMENT: &str = "probe-attachment";
+const PROBE_CHAT_SEND: &str = "probe-chat-send";
+const PROBE_STEPPER: &str = "probe-stepper";
+const PROBE_SIDEBAR_TOGGLE: &str = "probe-sidebar-toggle";
+const PROBE_CAROUSEL_LAST: &str = "probe-carousel-last";
+const PROBE_ALERT_DIALOG: &str = "probe-alert-dialog";
+const PROBE_NOTIFICATION: &str = "probe-notification";
+const PROBE_COLOR_MODE: &str = "probe-color-mode";
+
+/// Tag a control with a debug selector, so the self-test can find what it has
+/// to click. The wrapper is a plain box around the control and leaves the
+/// layout to it.
+fn probe(selector: &'static str, control: impl IntoElement) -> Div {
+    div().debug_selector(move || selector.into()).child(control)
+}
 
 // ---------------------------------------------------------------------------
 // Sample content (Carousel slides, code editor, Markdown)
@@ -273,6 +390,86 @@ const STEPPER_STEPS: &[(&str, IconName)] = &[
     ("Read the OS", IconName::Search),
     ("Resolve the theme", IconName::Settings),
     ("Apply to gpui", IconName::CircleCheck),
+];
+
+/// One panel of a resizable group: the title it carries, the line under that
+/// title if it has one, and the size it asks the group for — `None` for the
+/// panel that takes whatever the others leave.
+struct ResizablePanelSpec {
+    title: &'static str,
+    caption: Option<&'static str>,
+    size: Option<f32>,
+}
+
+/// One of the Layout tab's resizable groups: the element id and debug selector
+/// of the fixed-height box it sits in, its heading, the axis its divider
+/// travels on, the box's height, and its panels.
+struct ResizableGroup {
+    id: &'static str,
+    group_id: &'static str,
+    heading: &'static str,
+    axis: Axis,
+    height: f32,
+    panels: &'static [ResizablePanelSpec],
+}
+
+/// The line width of the box a resizable group sits in. It is inside the box's
+/// measured size, so `resizable_groups_have_room_to_drag` takes it off both
+/// edges before it compares what is left with `PANEL_MIN_SIZE`.
+const RESIZABLE_BORDER: f32 = 1.0;
+
+/// The Layout tab's resizable groups.
+///
+/// The box's size along the divider's axis is what makes a group draggable:
+/// gpui-base clamps every panel to `PANEL_MIN_SIZE` (gpui-base
+/// resizable/mod.rs, `PANEL_MIN_SIZE`), so a two-panel group needs more than
+/// twice that plus its border before the divider has anywhere to go. The
+/// vertical group stood at 200px once, with both panels clamped to 99px and the
+/// divider unable to move at all. `resizable_groups_have_room_to_drag` is that
+/// finding as a rule, and it measures the boxes this list builds.
+const RESIZABLE_GROUPS: &[ResizableGroup] = &[
+    ResizableGroup {
+        id: "tt-resizable-h",
+        group_id: "resize-h",
+        heading: "Resizable Panels (horizontal)",
+        axis: Axis::Horizontal,
+        // Cross-axis here: the width the divider travels on comes from the
+        // content area, so only the laid-out bounds can report it.
+        height: 160.0,
+        panels: &[
+            ResizablePanelSpec {
+                title: "Left Panel",
+                caption: Some("Drag the divider to resize"),
+                size: Some(250.0),
+            },
+            ResizablePanelSpec {
+                title: "Right Panel",
+                caption: Some("This panel fills remaining space"),
+                size: None,
+            },
+        ],
+    },
+    ResizableGroup {
+        id: "tt-resizable-v",
+        group_id: "resize-v",
+        heading: "Resizable Panels (vertical)",
+        axis: Axis::Vertical,
+        height: 300.0,
+        panels: &[
+            ResizablePanelSpec {
+                title: "Top Panel",
+                caption: None,
+                // Above PANEL_MIN_SIZE, so the request survives the clamp;
+                // travel is 100px..198px.
+                size: Some(130.0),
+            },
+            ResizablePanelSpec {
+                title: "Bottom Panel",
+                caption: None,
+                size: None,
+            },
+        ],
+    },
 ];
 
 /// The source the code editor holds — the connector's own install sequence.
@@ -1320,7 +1517,7 @@ struct Showcase {
     /// Original native-theme mono font spec, for display purposes.
     original_mono_font: native_theme::theme::ResolvedFontSpec,
 
-    active_tab: usize,
+    active_tab: Tab,
 
     /// Layout spacing of the installed theme. It lives on the model, not on
     /// `ResolvedTheme`, so the geometry accessors take it from here rather
@@ -2122,7 +2319,7 @@ impl Showcase {
             dark_mode_select,
             original_font,
             original_mono_font,
-            active_tab: TAB_BUTTONS,
+            active_tab: Tab::Buttons,
             layout: initial_layout,
             input_state,
             input_height_state,
@@ -2430,7 +2627,11 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Buttons
     // -----------------------------------------------------------------------
-    fn render_buttons_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_buttons_tab(
+        &self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + InteractiveElement {
         // One refinement per section (spec §9.1); `None` before `apply` ran.
         let button_style = native_geometry(cx, geometry::button);
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
@@ -2947,7 +3148,10 @@ impl Showcase {
                     .child(
                         h_flex()
                             .gap_4()
-                            .child(Clipboard::new("clip-1").value("cargo add native-theme"))
+                            .child(probe(
+                                PROBE_CLIPBOARD,
+                                Clipboard::new("clip-1").value("cargo add native-theme"),
+                            ))
                             .child(Clipboard::new("clip-2").value("npm install native-theme")),
                     )
                     .on_hover(self.hover_info(
@@ -2967,7 +3171,11 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Inputs
     // -----------------------------------------------------------------------
-    fn render_inputs_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_inputs_tab(
+        &self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
@@ -3335,7 +3543,7 @@ impl Showcase {
                     .child(
                         with_gap(h_flex(), widget_gap)
                             .items_center()
-                            .child({
+                            .child(probe(PROBE_RATING, {
                                 // The stars are inline icons, so the platform's
                                 // small icon size is what they take; `Rating`
                                 // has no geometry builder of its own.
@@ -3351,7 +3559,7 @@ impl Showcase {
                                     Some(size) => rating.with_size(size),
                                     None => rating,
                                 }
-                            })
+                            }))
                             .child(
                                 Label::new(SharedString::from(format!(
                                     "value: {}",
@@ -3407,14 +3615,15 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-combobox")
-                    .child(
+                    .child(probe(
+                        PROBE_COMBOBOX,
                         Combobox::new(&self.combobox_state)
                             .native(cx, geometry::combobox)
                             .placeholder("Pick a preset…")
                             .search_placeholder("Filter by name or key…")
                             .menu_width(px(260.0))
                             .w(px(260.0)),
-                    )
+                    ))
                     .on_hover(self.hover_info(
                         &fi,
                         "Combobox",
@@ -3504,7 +3713,11 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Data
     // -----------------------------------------------------------------------
-    fn render_data_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_data_tab(
+        &self,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
@@ -3656,15 +3869,18 @@ impl Showcase {
                     .id("tt-pagination")
                     .child(
                         with_gap(v_flex(), widget_gap)
-                            .child(with_gap(
-                                Pagination::new("pagination-1")
+                            .child(probe(
+                                PROBE_PAGINATION,
+                                with_gap(
+                                    Pagination::new("pagination-1")
                                     .current_page(self.page)
                                     .total_pages(PAGE_COUNT)
                                     .on_click(cx.listener(|this, page: &usize, _w, cx| {
                                         this.page = *page;
                                         cx.notify();
                                     })),
-                                widget_gap,
+                                    widget_gap,
+                                ),
                             ))
                             .child(
                                 Label::new(SharedString::from(format!(
@@ -3938,7 +4154,8 @@ impl Showcase {
                                         .size_full()
                                     }),
                             )
-                            .child(
+                            .child(probe(
+                                PROBE_CHAT_SEND,
                                 Button::new("chat-send")
                                     .native(cx, geometry::button)
                                     .label("Send a reply")
@@ -3953,7 +4170,7 @@ impl Showcase {
                                         });
                                         cx.notify();
                                     })),
-                            ),
+                            )),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -4016,7 +4233,8 @@ impl Showcase {
                             )
                             // The whole card is the click target, so the
                             // status it is in is the status a click advances.
-                            .child(
+                            .child(probe(
+                                PROBE_ATTACHMENT,
                                 Attachment::new()
                                     .id("attachment-cycle")
                                     .status(self.attachment_status)
@@ -4043,7 +4261,7 @@ impl Showcase {
                                             next_attachment_status(this.attachment_status);
                                         cx.notify();
                                     })),
-                            ),
+                            )),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -4076,7 +4294,7 @@ impl Showcase {
         &self,
         _window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> impl IntoElement {
+    ) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
@@ -4634,7 +4852,8 @@ impl Showcase {
                     .child(
                         h_flex()
                             .gap_3()
-                            .child(
+                            .child(probe(
+                                PROBE_NOTIFICATION,
                                 Button::new("notify-info").native(cx, geometry::button)
                                     .label("Info")
                                     .on_click(cx.listener(|_this, _ev, window, cx| {
@@ -4645,7 +4864,7 @@ impl Showcase {
                                             cx,
                                         );
                                     })),
-                            )
+                            ))
                             .child(Button::new("notify-success").native(cx, geometry::button).label("Success").on_click(
                                 cx.listener(|_this, _ev, window, cx| {
                                     window.push_notification(
@@ -4697,7 +4916,10 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Typography
     // -----------------------------------------------------------------------
-    fn render_typography_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_typography_tab(
+        &self,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
@@ -5063,10 +5285,60 @@ impl Showcase {
             )
     }
 
+    /// One resizable group of the Layout tab, from its [`RESIZABLE_GROUPS`]
+    /// entry. The box carries its own id as a debug selector so
+    /// `resizable_groups_have_room_to_drag` can measure what was laid out.
+    fn render_resizable_group(
+        &self,
+        group: &'static ResizableGroup,
+        fi: &str,
+        t: &Theme,
+    ) -> impl IntoElement {
+        let panels = group.panels.iter().map(|panel| {
+            let body = v_flex()
+                .p_3()
+                .size_full()
+                .child(Label::new(panel.title).font_semibold())
+                .children(panel.caption.map(|c| Label::new(c).text_sm()));
+            match panel.size {
+                Some(size) => resizable_panel().size(px(size)).child(body),
+                None => resizable_panel().child(body),
+            }
+        });
+        let panel_group = match group.axis {
+            Axis::Horizontal => h_resizable(group.group_id),
+            Axis::Vertical => v_resizable(group.group_id),
+        };
+        div()
+            .id(group.id)
+            .debug_selector(|| group.id.into())
+            .h(px(group.height))
+            .border(px(RESIZABLE_BORDER))
+            .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+            .child(panel_group.children(panels))
+            .on_hover(self.hover_info(
+                fi,
+                "Resizable",
+                &[
+                    ("dragging border", "drag_border", t.drag_border),
+                    ("idle border", "border", t.border),
+                ],
+                &[],
+                &[(
+                    "min panel size",
+                    "PANEL_MIN_SIZE = 100px (gpui-base resizable/mod.rs, PANEL_MIN_SIZE)",
+                )],
+            ))
+    }
+
     // -----------------------------------------------------------------------
     // Tab: Layout
     // -----------------------------------------------------------------------
-    fn render_layout_tab(&self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_layout_tab(
+        &self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + InteractiveElement {
         let accordion_title_style = native_geometry(cx, geometry::accordion_title);
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
@@ -5365,101 +5637,13 @@ impl Showcase {
                         )],
                     )),
             )
-            // Horizontal resizable
-            .child(section("Resizable Panels (horizontal)"))
-            .child(
-                div()
-                    .id("tt-resizable-h")
-                    .h(px(160.0))
-                    .border_1()
-                    .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
-                    .child(
-                        h_resizable("resize-h")
-                            .child(
-                                resizable_panel().size(px(250.0)).child(
-                                    v_flex()
-                                        .p_3()
-                                        .size_full()
-                                        .child(Label::new("Left Panel").font_semibold())
-                                        .child(Label::new("Drag the divider to resize").text_sm()),
-                                ),
-                            )
-                            .child(
-                                resizable_panel().child(
-                                    v_flex()
-                                        .p_3()
-                                        .size_full()
-                                        .child(Label::new("Right Panel").font_semibold())
-                                        .child(
-                                            Label::new("This panel fills remaining space")
-                                                .text_sm(),
-                                        ),
-                                ),
-                            ),
-                    )
-                    .on_hover(self.hover_info(
-                        &fi,
-                        "Resizable",
-                        &[
-                            ("dragging border", "drag_border", t.drag_border),
-                            ("idle border", "border", t.border),
-                        ],
-                        &[],
-                        &[(
-                            "min panel size",
-                            "PANEL_MIN_SIZE = 100px (gpui-base resizable/mod.rs, PANEL_MIN_SIZE)",
-                        )],
-                    )),
-            )
-            // Vertical resizable.
-            //
-            // The height is what makes this draggable: gpui-base clamps every
-            // panel to PANEL_MIN_SIZE = 100px (`src/resizable/mod.rs:14`), so a
-            // two-panel group needs more than 200px plus the border before the
-            // divider has anywhere to go. At 200px both panels sat at 99px,
-            // already under the minimum, and the divider could not move at all.
-            .child(section("Resizable Panels (vertical)"))
-            .child(
-                div()
-                    .id("tt-resizable-v")
-                    .h(px(300.0))
-                    .border_1()
-                    .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
-                    .child(
-                        v_resizable("resize-v")
-                            .child(
-                                // Above PANEL_MIN_SIZE, so the request survives
-                                // the clamp; travel is 100px..198px.
-                                resizable_panel().size(px(130.0)).child(
-                                    v_flex()
-                                        .p_3()
-                                        .size_full()
-                                        .child(Label::new("Top Panel").font_semibold()),
-                                ),
-                            )
-                            .child(
-                                resizable_panel().child(
-                                    v_flex()
-                                        .p_3()
-                                        .size_full()
-                                        .child(Label::new("Bottom Panel").font_semibold()),
-                                ),
-                            ),
-                    )
-                    .on_hover(self.hover_info(
-                        &fi,
-                        "Resizable (vertical)",
-                        &[
-                            ("dragging border", "drag_border", t.drag_border),
-                            ("idle border", "border", t.border),
-                        ],
-                        &[],
-                        &[(
-                            "min panel size",
-                            "PANEL_MIN_SIZE = 100px (gpui-base resizable/mod.rs, PANEL_MIN_SIZE)",
-                        )],
-                    )),
-            )
+            // The resizable groups, each from its entry in RESIZABLE_GROUPS.
+            .children(RESIZABLE_GROUPS.iter().map(|group| {
+                v_flex()
+                    .gap_5()
+                    .child(section(group.heading))
+                    .child(self.render_resizable_group(group, &fi, &t))
+            }))
             // Dividers
             .child(section("Separator (solid / dashed / labeled)"))
             .child(
@@ -5712,12 +5896,21 @@ impl Showcase {
                             )
                             .child(CarouselPagination::new().children(
                                 (0..CAROUSEL_SLIDES.len()).map(|ix| {
-                                    CarouselPaginationItem::new(
+                                    let dot = CarouselPaginationItem::new(
                                         ("carousel-page", ix),
                                         ix,
                                         &self.carousel_state,
                                     )
-                                    .child(SharedString::from((ix + 1).to_string()))
+                                    .child(SharedString::from((ix + 1).to_string()));
+                                    // The last dot is the self-test's way into
+                                    // the carousel: the prev/next controls
+                                    // place themselves absolutely outside the
+                                    // frame, so a wrapper around one of those
+                                    // would take it out of the flow.
+                                    match ix == CAROUSEL_SLIDES.len() - 1 {
+                                        true => probe(PROBE_CAROUSEL_LAST, dot).into_any_element(),
+                                        false => dot.into_any_element(),
+                                    }
                                 }),
                             ))
                             // The carousel's own slide controls. They take the
@@ -5796,22 +5989,22 @@ impl Showcase {
                         Breadcrumb::new()
                             .child(BreadcrumbItem::new("Buttons").on_click(cx.listener(
                                 |this, _ev, _w, _cx| {
-                                    this.active_tab = TAB_BUTTONS;
+                                    this.active_tab = Tab::Buttons;
                                 },
                             )))
                             .child(BreadcrumbItem::new("Inputs").on_click(cx.listener(
                                 |this, _ev, _w, _cx| {
-                                    this.active_tab = TAB_INPUTS;
+                                    this.active_tab = Tab::Inputs;
                                 },
                             )))
                             .child(BreadcrumbItem::new("Data").on_click(cx.listener(
                                 |this, _ev, _w, _cx| {
-                                    this.active_tab = TAB_DATA;
+                                    this.active_tab = Tab::Data;
                                 },
                             )))
                             .child(BreadcrumbItem::new("Feedback").on_click(cx.listener(
                                 |this, _ev, _w, _cx| {
-                                    this.active_tab = TAB_FEEDBACK;
+                                    this.active_tab = Tab::Feedback;
                                 },
                             )))
                             .child(BreadcrumbItem::new("Layout")),
@@ -5846,7 +6039,8 @@ impl Showcase {
                     .child(
                         with_gap(v_flex(), widget_gap)
                             .w(px(480.0))
-                            .child(
+                            .child(probe(
+                                PROBE_STEPPER,
                                 Stepper::new("stepper-1")
                                     .selected_index(self.step)
                                     .items(STEPPER_STEPS.iter().map(|(label, icon)| {
@@ -5866,7 +6060,7 @@ impl Showcase {
                                         this.step = *step;
                                         cx.notify();
                                     })),
-                            )
+                            ))
                             .child(
                                 Stepper::new("stepper-vertical")
                                     .vertical()
@@ -5951,14 +6145,15 @@ impl Showcase {
                             // its own (`sidebar/mod.rs:302-307`): the flag it
                             // draws and the flag the sidebar reads are the
                             // same one, here.
-                            .child(
+                            .child(probe(
+                                PROBE_SIDEBAR_TOGGLE,
                                 SidebarToggleButton::new()
                                     .collapsed(self.sidebar_collapsed)
                                     .on_click(cx.listener(|this, _ev, _w, cx| {
                                         this.sidebar_collapsed = !this.sidebar_collapsed;
                                         cx.notify();
                                     })),
-                            )
+                            ))
                             .child(
                                 Label::new(if self.sidebar_collapsed {
                                     "collapsed"
@@ -6137,7 +6332,7 @@ impl Showcase {
         &self,
         _window: &mut Window,
         cx: &mut Context<Self>,
-    ) -> impl IntoElement {
+    ) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
@@ -6258,7 +6453,8 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-alert-dialog")
-                    .child(
+                    .child(probe(
+                        PROBE_ALERT_DIALOG,
                         Button::new("open-alert-dialog")
                             .native(cx, geometry::button)
                             .danger()
@@ -6311,7 +6507,7 @@ impl Showcase {
                                     }
                                 });
                             })),
-                    )
+                    ))
                     .on_hover(self.hover_info(
                         &fi,
                         "AlertDialog",
@@ -6607,7 +6803,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Charts
     // -----------------------------------------------------------------------
-    fn render_charts_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_charts_tab(&self, cx: &mut Context<Self>) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
 
@@ -7006,7 +7202,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Icons
     // -----------------------------------------------------------------------
-    fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement + InteractiveElement {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
 
         // --- Native Theme Icons section ---
@@ -7277,7 +7473,10 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Theme Map
     // -----------------------------------------------------------------------
-    fn render_theme_map_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_theme_map_tab(
+        &self,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement + InteractiveElement {
         let _fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
 
@@ -7721,11 +7920,12 @@ impl Render for Showcase {
                             .with_size(Size::Small)
                             .w_full(),
                     )
-                    .child(
+                    .child(probe(
+                        PROBE_COLOR_MODE,
                         refined(Select::new(&self.dark_mode_select), select_style.as_ref())
                             .with_size(Size::Small)
                             .w_full(),
-                    )
+                    ))
                     .child(Separator::horizontal()),
             )
             .child(
@@ -7770,19 +7970,12 @@ impl Render for Showcase {
                             TabBar::new("nav")
                                 .underline()
                                 .with_size(Size::Small)
-                                .child("Buttons")
-                                .child("Inputs")
-                                .child("Data")
-                                .child("Feedback")
-                                .child("Typography")
-                                .child("Layout")
-                                .child("Overlays")
-                                .child("Charts")
-                                .child("Icons")
-                                .child("Theme Map")
-                                .selected_index(active_tab)
+                                .children(Tab::ALL.map(Tab::label))
+                                .selected_index(active_tab.index())
                                 .on_click(cx.listener(|this, ix: &usize, _window, _cx| {
-                                    this.active_tab = *ix;
+                                    if let Some(tab) = Tab::at(*ix) {
+                                        this.active_tab = tab;
+                                    }
                                 })),
                         )
                         .on_hover(self.hover_info(
@@ -7815,28 +8008,67 @@ impl Render for Showcase {
                     .id("content-scroll-outer")
                     .flex_1()
                     .overflow_y_scrollbar()
+                    // TAB_ROOT is what `every_tab_lays_out` looks the tab up
+                    // by, so every arm carries it.
                     .child(match active_tab {
-                        TAB_BUTTONS => self.render_buttons_tab(window, cx).into_any_element(),
-                        TAB_INPUTS => self.render_inputs_tab(window, cx).into_any_element(),
-                        TAB_DATA => self.render_data_tab(window, cx).into_any_element(),
-                        TAB_FEEDBACK => self.render_feedback_tab(window, cx).into_any_element(),
-                        TAB_TYPOGRAPHY => self.render_typography_tab(cx).into_any_element(),
-                        TAB_LAYOUT => self.render_layout_tab(window, cx).into_any_element(),
-                        TAB_OVERLAYS => self.render_overlays_tab(window, cx).into_any_element(),
-                        TAB_CHARTS => self.render_charts_tab(cx).into_any_element(),
-                        TAB_ICONS => self.render_icons_tab(cx).into_any_element(),
-                        TAB_THEME_MAP => self.render_theme_map_tab(cx).into_any_element(),
-                        _ => self.render_buttons_tab(window, cx).into_any_element(),
+                        Tab::Buttons => self
+                            .render_buttons_tab(window, cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Inputs => self
+                            .render_inputs_tab(window, cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Data => self
+                            .render_data_tab(window, cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Feedback => self
+                            .render_feedback_tab(window, cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Typography => self
+                            .render_typography_tab(cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Layout => self
+                            .render_layout_tab(window, cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Overlays => self
+                            .render_overlays_tab(window, cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Charts => self
+                            .render_charts_tab(cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::Icons => self
+                            .render_icons_tab(cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
+                        Tab::ThemeMap => self
+                            .render_theme_map_tab(cx)
+                            .debug_selector(|| TAB_ROOT.into())
+                            .into_any_element(),
                     }),
             );
 
-        // Main layout: horizontal split with sidebar + content
-        h_flex()
+        // Main layout: horizontal split with sidebar + content, and above it
+        // the three layers `Root` keeps but does not draw. `Root::render`
+        // renders only the view it was given (root.rs, Root::render), so a
+        // dialog, a sheet or a notification the showcase pushes reaches the
+        // screen only because these three are here -- upstream's own dialog
+        // test builds its host the same way (dialog/dialog.rs, DialogHost).
+        div()
+            .relative()
             .size_full()
             .bg(theme.background)
             .text_color(theme.foreground)
-            .child(sidebar)
-            .child(content)
+            .child(h_flex().size_full().child(sidebar).child(content))
+            .children(Root::render_sheet_layer(window, cx))
+            .children(Root::render_dialog_layer(window, cx))
+            .children(Root::render_notification_layer(window, cx))
     }
 }
 
@@ -7908,19 +8140,19 @@ impl CliArgs {
         args
     }
 
-    /// Map a tab name string to the corresponding tab index constant.
-    fn tab_index(name: &str) -> Option<usize> {
+    /// Map a `--tab` name to the tab it names.
+    fn tab(name: &str) -> Option<Tab> {
         match name {
-            "buttons" => Some(TAB_BUTTONS),
-            "inputs" | "text-inputs" => Some(TAB_INPUTS),
-            "data" => Some(TAB_DATA),
-            "feedback" => Some(TAB_FEEDBACK),
-            "typography" => Some(TAB_TYPOGRAPHY),
-            "layout" => Some(TAB_LAYOUT),
-            "overlays" => Some(TAB_OVERLAYS),
-            "charts" => Some(TAB_CHARTS),
-            "icons" => Some(TAB_ICONS),
-            "theme-map" => Some(TAB_THEME_MAP),
+            "buttons" => Some(Tab::Buttons),
+            "inputs" | "text-inputs" => Some(Tab::Inputs),
+            "data" => Some(Tab::Data),
+            "feedback" => Some(Tab::Feedback),
+            "typography" => Some(Tab::Typography),
+            "layout" => Some(Tab::Layout),
+            "overlays" => Some(Tab::Overlays),
+            "charts" => Some(Tab::Charts),
+            "icons" => Some(Tab::Icons),
+            "theme-map" => Some(Tab::ThemeMap),
             _ => None,
         }
     }
@@ -8222,7 +8454,7 @@ fn main() {
             // theme is resolved with the correct light/dark setting.
             let variant_override = cli_args.variant.as_deref().map(|v| v == "dark");
 
-            let bounds = Bounds::centered(None, size(px(1100.), px(850.)), cx);
+            let bounds = Bounds::centered(None, WINDOW_SIZE, cx);
             let window_handle = cx.open_window(
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
@@ -8261,9 +8493,9 @@ fn main() {
 
                         // Override tab if --tab was specified
                         if let Some(ref tab_name) = cli_args.tab
-                            && let Some(idx) = CliArgs::tab_index(tab_name)
+                            && let Some(tab) = CliArgs::tab(tab_name)
                         {
-                            s.active_tab = idx;
+                            s.active_tab = tab;
                         }
 
                         // Override icon theme if --icon-theme was specified
@@ -8419,4 +8651,317 @@ fn main() {
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 fn main() {
     eprintln!("gpui showcase is not supported on this platform");
+}
+
+// ---------------------------------------------------------------------------
+// Showcase self-tests (spec v0.5.9 §6.1)
+// ---------------------------------------------------------------------------
+//
+// `test = true` on the example target (Cargo.toml) puts these under a plain
+// `cargo test`, so CI and the nightly dependency canary run them with no
+// workflow change. They build the real `Showcase` on GPUI's headless test
+// platform — the same view, the same `Root`, the same window width `main`
+// opens — and drive it with real input.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gpui::{Modifiers, Point, TestAppContext, VisualTestContext, point};
+    use gpui_base::PANEL_MIN_SIZE;
+    use std::cell::RefCell;
+    use std::ops::Deref as _;
+    use std::rc::Rc;
+
+    /// The window the self-tests lay the showcase out in.
+    ///
+    /// The width is the showcase's own, so the horizontal resizable group is
+    /// measured at the width the application gives it. The height is not: a tab
+    /// is one long scrolling column, and an element scrolled out of the
+    /// viewport is clipped out of the frame and cannot be clicked, so the
+    /// window is made tall enough to hold the longest tab whole.
+    const TEST_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
+
+    /// Build the showcase the way `main` does — `gpui_kit::init`, the view, and
+    /// the `Root` that owns the dialog and notification layers — in a test
+    /// window.
+    fn open(cx: &mut TestAppContext) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
+        cx.update(gpui_kit::init);
+        let view: Rc<RefCell<Option<Entity<Showcase>>>> = Rc::new(RefCell::new(None));
+        let handle = cx.open_window(TEST_WINDOW, {
+            let view = view.clone();
+            move |window, cx| {
+                let showcase = cx.new(|cx| Showcase::new(window, cx));
+                *view.borrow_mut() = Some(showcase.clone());
+                Root::new(showcase, window, cx)
+            }
+        });
+        let root = handle.root(cx).expect("the root view was built");
+        let showcase = view.borrow_mut().take().expect("the showcase was built");
+        let mut cx = VisualTestContext::from_window(*handle.deref(), cx);
+        cx.run_until_parked();
+        draw(&mut cx);
+        (showcase, root, cx)
+    }
+
+    /// Lay the window out and paint it, which is what fills `debug_bounds`.
+    fn draw(cx: &mut VisualTestContext) {
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+    }
+
+    /// Switch to `tab` and draw the frame that shows it.
+    fn show(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, tab: Tab) {
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.active_tab = tab;
+                cx.notify();
+            });
+        });
+        cx.run_until_parked();
+        draw(cx);
+    }
+
+    /// Where the element tagged `selector` was laid out.
+    fn bounds_of(cx: &mut VisualTestContext, selector: &'static str) -> Bounds<Pixels> {
+        cx.debug_bounds(selector)
+            .unwrap_or_else(|| panic!("{selector} was not laid out"))
+    }
+
+    /// Click `at`, let the click's work finish and draw the frame it produced.
+    fn click_at(cx: &mut VisualTestContext, at: Point<Pixels>) {
+        cx.simulate_click(at, Modifiers::default());
+        cx.run_until_parked();
+        draw(cx);
+    }
+
+    /// Click the leading edge of the element tagged `selector`.
+    ///
+    /// The leading edge, not the middle: a probe around a control in a block
+    /// container is as wide as the column, and the control it holds sits at the
+    /// left of it, so the middle of the probe can be empty space. Upstream's own
+    /// interaction tests click the same way (`tests/controlled_change_callbacks.rs`).
+    fn click(cx: &mut VisualTestContext, selector: &'static str) {
+        let bounds = bounds_of(cx, selector);
+        click_at(cx, point(bounds.left() + px(8.), bounds.center().y));
+    }
+
+    /// Read something off the showcase's model.
+    fn read<R>(
+        cx: &mut VisualTestContext,
+        showcase: &Entity<Showcase>,
+        f: impl FnOnce(&Showcase, &App) -> R,
+    ) -> R {
+        cx.update(|_window, cx| f(showcase.read(cx), cx))
+    }
+
+    /// Every tab lays out: the bar's ten tabs each render on the test platform,
+    /// each leaves a tab root behind, and that root has a size.
+    #[gpui::test]
+    fn every_tab_lays_out(cx: &mut TestAppContext) {
+        let (showcase, _root, mut cx) = open(cx);
+        assert_eq!(Tab::ALL.len(), 10, "the bar no longer has ten tabs");
+        for tab in Tab::ALL {
+            show(&mut cx, &showcase, tab);
+            assert_eq!(read(&mut cx, &showcase, |this, _| this.active_tab), tab);
+            let bounds = cx
+                .debug_bounds(TAB_ROOT)
+                .unwrap_or_else(|| panic!("{tab:?}: nothing was laid out under the tab bar"));
+            assert!(
+                bounds.size.width > px(0.) && bounds.size.height > px(0.),
+                "{tab:?}: the tab root laid out at {:?}",
+                bounds.size
+            );
+        }
+    }
+
+    /// Every resizable group has room to drag: rationale §1.1 as a rule.
+    ///
+    /// gpui-base clamps each panel to `PANEL_MIN_SIZE`, so a box narrower —
+    /// or shorter — than its panels' minimums put together holds a divider
+    /// that cannot move. The sizes come from the frame the showcase just drew
+    /// and the panel counts from the same `RESIZABLE_GROUPS` entries the render
+    /// code builds from, so neither is a number this test types out again.
+    #[gpui::test]
+    fn resizable_groups_have_room_to_drag(cx: &mut TestAppContext) {
+        let (showcase, _root, mut cx) = open(cx);
+        show(&mut cx, &showcase, Tab::Layout);
+        assert!(!RESIZABLE_GROUPS.is_empty());
+        for group in RESIZABLE_GROUPS {
+            let bounds = bounds_of(&mut cx, group.id);
+            let outer = match group.axis {
+                Axis::Horizontal => bounds.size.width,
+                Axis::Vertical => bounds.size.height,
+            };
+            let room = outer - px(2.0 * RESIZABLE_BORDER);
+            let needed = PANEL_MIN_SIZE * group.panels.len() as f32;
+            assert!(
+                room > needed,
+                "{}: {} panels need more than {needed:?} between the borders, the box leaves {room:?} — the divider cannot move",
+                group.id,
+                group.panels.len(),
+            );
+        }
+    }
+
+    /// Every control the showcase advertises as interactive answers a click.
+    ///
+    /// Each step drives the real widget through the test platform's mouse and
+    /// keyboard and then asks the model what changed, so a handler that stops
+    /// being wired up fails the step that names it.
+    #[gpui::test]
+    fn interactive_controls_respond(cx: &mut TestAppContext) {
+        let (showcase, root, mut cx) = open(cx);
+
+        // --- Buttons tab --------------------------------------------------
+        show(&mut cx, &showcase, Tab::Buttons);
+
+        // Clipboard: the card is one icon button, and the test platform holds
+        // a real in-memory clipboard.
+        click(&mut cx, PROBE_CLIPBOARD);
+        assert_eq!(
+            cx.read_from_clipboard().and_then(|item| item.text()),
+            Some("cargo add native-theme".to_string()),
+            "Clipboard: the Copy button wrote nothing"
+        );
+
+        // --- Inputs tab ---------------------------------------------------
+        show(&mut cx, &showcase, Tab::Inputs);
+
+        // Rating: clicking a star at or below the current value clears down to
+        // the one before it (rating.rs, Rating::render on_click), so the first
+        // star takes the three the showcase starts with to none.
+        click(&mut cx, PROBE_RATING);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.rating_value),
+            0,
+            "Rating: clicking the first star left the value alone"
+        );
+
+        // Combobox: the trigger opens the list, and Enter takes the row the
+        // list has under the cursor.
+        click(&mut cx, PROBE_COMBOBOX);
+        cx.simulate_keystrokes("down enter");
+        draw(&mut cx);
+        assert!(
+            read(&mut cx, &showcase, |this, cx| !this
+                .combobox_state
+                .read(cx)
+                .selection()
+                .is_empty()),
+            "Combobox: opening the list and confirming a row selected nothing"
+        );
+
+        // --- Data tab -----------------------------------------------------
+        show(&mut cx, &showcase, Tab::Data);
+
+        // Pagination: the leading end of the strip is the previous-page control.
+        let before = read(&mut cx, &showcase, |this, _| this.page);
+        click(&mut cx, PROBE_PAGINATION);
+        assert_ne!(
+            read(&mut cx, &showcase, |this, _| this.page),
+            before,
+            "Pagination: the page did not move"
+        );
+
+        // Attachment: the whole card advances its status.
+        let before = read(&mut cx, &showcase, |this, _| this.attachment_status);
+        click(&mut cx, PROBE_ATTACHMENT);
+        assert_ne!(
+            read(&mut cx, &showcase, |this, _| this.attachment_status),
+            before,
+            "Attachment: the status did not advance"
+        );
+
+        // MessageScroller: Send appends to the thread the scroller renders.
+        let before = read(&mut cx, &showcase, |this, _| this.chat_messages.len());
+        click(&mut cx, PROBE_CHAT_SEND);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.chat_messages.len()),
+            before + 1,
+            "MessageScroller: Send added no message"
+        );
+
+        // --- Layout tab ---------------------------------------------------
+        show(&mut cx, &showcase, Tab::Layout);
+
+        // Stepper: the steps run left to right, so the leading one is the first.
+        click(&mut cx, PROBE_STEPPER);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.step),
+            0,
+            "Stepper: clicking the first step left the selection alone"
+        );
+
+        // SidebarToggleButton: the flag it draws is the flag it flips.
+        click(&mut cx, PROBE_SIDEBAR_TOGGLE);
+        assert!(
+            read(&mut cx, &showcase, |this, _| this.sidebar_collapsed),
+            "SidebarToggleButton: the sidebar did not collapse"
+        );
+
+        // Carousel: the last pagination dot goes to the last slide.
+        click(&mut cx, PROBE_CAROUSEL_LAST);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, cx| this
+                .carousel_state
+                .read(cx)
+                .selected_index()),
+            Some(CAROUSEL_SLIDES.len() - 1),
+            "Carousel: the last pagination dot did not select the last slide"
+        );
+
+        // --- Overlays tab -------------------------------------------------
+        show(&mut cx, &showcase, Tab::Overlays);
+
+        // AlertDialog: opened by a click, then answered from the keyboard the
+        // dialog binds — Enter confirms, Escape cancels.
+        click(&mut cx, PROBE_ALERT_DIALOG);
+        assert!(
+            cx.debug_bounds("dialog-layer").is_some(),
+            "AlertDialog: the dialog layer never reached the screen"
+        );
+        cx.simulate_keystrokes("enter");
+        draw(&mut cx);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.alert_choice.clone()),
+            Some("Discard".into()),
+            "AlertDialog: confirming did not report a choice"
+        );
+        click(&mut cx, PROBE_ALERT_DIALOG);
+        cx.simulate_keystrokes("escape");
+        draw(&mut cx);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.alert_choice.clone()),
+            Some("Keep".into()),
+            "AlertDialog: cancelling did not report a choice"
+        );
+
+        // --- Feedback tab -------------------------------------------------
+        show(&mut cx, &showcase, Tab::Feedback);
+
+        // Notification: the button pushes one onto the Root's own layer.
+        let before = cx.update(|_w, cx| root.read(cx).notification.read(cx).notifications().len());
+        click(&mut cx, PROBE_NOTIFICATION);
+        assert_eq!(
+            cx.update(|_w, cx| root.read(cx).notification.read(cx).notifications().len()),
+            before + 1,
+            "Notification: nothing was pushed"
+        );
+
+        // --- The sidebar's colour mode switch -----------------------------
+        //
+        // The list opens under the trigger; the third row is Dark, and the
+        // mode the showcase installs is what the whole interface re-themes on.
+        click(&mut cx, PROBE_COLOR_MODE);
+        cx.simulate_keystrokes("down down enter");
+        draw(&mut cx);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.color_mode),
+            AppColorMode::Dark,
+            "the colour mode switch did not reach Dark"
+        );
+        assert!(
+            cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+            "the colour mode switch did not reach Theme::mode"
+        );
+    }
 }

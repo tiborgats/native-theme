@@ -79,3 +79,6 @@ windows = { version = "0.62.2", default-features = false, features = [
 
 [[example]]
 name = "showcase-gpui"
+# The showcase's own `#[cfg(test)]` module (spec §6.1) then runs under a plain
+# `cargo test`, so CI and the dependency canary pick it up unchanged.
+test = true
