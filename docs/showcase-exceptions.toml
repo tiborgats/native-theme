@@ -55,12 +55,15 @@ shader = "a custom shader widget for wgpu applications: it needs a rendering pip
 stack = "displays content on top of other content; it paints nothing of its own (stack.rs:1)"
 themer = "replaces the theme of a subtree; it paints nothing of its own (themer.rs)"
 
-# `iced_aw` widgets native-theme models no counterpart for (spec §3a), so
-# there is no style to give them and inventing one is forbidden. The
-# connector's `iced_aw` dependency enables none of these features, so they
-# are not compiled either.
+# `iced_aw` widgets the showcase does not render. The connector's `iced_aw`
+# dependency enables none of these features, so they are not compiled either.
+# Most are widgets native-theme models no counterpart for (spec §3a), so there
+# is no style to give them and inventing one is forbidden; the last two are
+# the wrappers §3a's table does not mention, each with the reason its own
+# source gives.
 [iced_aw]
 badge = "native-theme models no badge (spec §3a); the feature is not enabled"
+custom_layout = "a wrapper with no visual surface: it places its children with a caller-supplied closure and draws only them, never a quad of its own (widget/custom_layout.rs:22-27, :75-94); the feature is not enabled"
 color_picker = "native-theme models no colour picker (spec §3a); the feature is not enabled"
 date_picker = "native-theme models no date picker (spec §3a); the feature is not enabled"
 drop_down = "native-theme models no drop-down surface (spec §3a); the feature is not enabled"
@@ -69,4 +72,5 @@ number_input = "native-theme models no number input (spec §3a); the feature is 
 quad = "native-theme models no bare quad primitive (spec §3a); the feature is not enabled"
 slide_bar = "native-theme models no slide bar (spec §3a); the feature is not enabled"
 time_picker = "native-theme models no time picker (spec §3a); the feature is not enabled"
+typed_input = "a wrapper with no visual surface: it is a `TextInput` that parses its value into a type and delegates its whole `draw` to that input, which `styles::text_input` already covers (widget/typed_input.rs:38-46, :341-361); the feature is not enabled"
 wrap = "native-theme models no wrapping layout (spec §3a); the feature is not enabled"
