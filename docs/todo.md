@@ -515,6 +515,23 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] PR: expose checkbox/radio indicator size as theme token
 - [ ] PR: expose scrollbar dimensions as theme-configurable
 - [ ] PR: expose button min-height and icon spacing as theme tokens
+- [ ] PR: let a scroll container keep the wheel to itself. gpui dispatches
+      `ScrollWheelEvent` in the bubble phase to every scroller whose hitbox is
+      under the pointer and stops at none of them (gpui-pre-0.3.5
+      `src/elements/div.rs`, `Interactivity::paint_scroll_listener`, and
+      `HitboxId::should_handle_scroll`, `src/window.rs:810-812`), so a wheel
+      turned inside a nested widget scrolls the page behind it by the same
+      delta. None of gpui-component's scrolling widgets takes itself out of
+      that list: `List`/`ListState` (`src/list/list.rs`, `render_items`),
+      `Tree` (`src/tree.rs`, `RenderOnce for Tree`) and the `Scrollable`
+      wrapper (`src/scroll/scrollable.rs`, `RenderOnce for Scrollable<E>`)
+      render plain `div()`s with no `occlude`, which upstream uses only for
+      overlays (`src/popover.rs:282`, `src/dialog/dialog.rs:572`). A consumer
+      can work around it — `.occlude()` on the element that holds the
+      scroller, which is what the gpui showcase now does — at the price of
+      blocking hover and tooltips for everything behind that box; a consumer
+      cannot get scroll chaining (the page moving on once the inner scroller
+      reaches its end), because nothing reports that end to the ancestor.
 - [ ] Additional PRs as gaps are discovered during connector implementation
 
 ---
