@@ -41,9 +41,14 @@ use gpui_component::{
     TitleBar, WindowExt,
     accordion::{Accordion, AccordionItem},
     alert::Alert,
+    attachment::{
+        Attachment, AttachmentContent, AttachmentDescription, AttachmentMedia, AttachmentStatus,
+        AttachmentTitle,
+    },
     avatar::{Avatar, AvatarGroup},
     badge::Badge,
     breadcrumb::{Breadcrumb, BreadcrumbItem},
+    bubble::{Bubble, BubbleVariant},
     button::{
         Button, ButtonGroup, ButtonVariant, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
     },
@@ -80,6 +85,8 @@ use gpui_component::{
     list::{ListDelegate, ListItem, ListState},
     marker::{Marker, MarkerContent, MarkerIcon, MarkerLoadingStyle, MarkerVariant},
     menu::{AppMenuBar, ContextMenuExt},
+    message::{Message, MessageAlignment, MessageContent},
+    message_scroller::{MessageScroller, MessageScrollerState},
     notification::Notification,
     pagination::Pagination,
     popover::Popover,
@@ -183,6 +190,65 @@ const CAROUSEL_SLIDES: &[(&str, &str)] = &[
 
 /// How many pages the Data tab's `Pagination` navigates, at ten rows each.
 const PAGE_COUNT: usize = 12;
+
+/// One row of the Data tab's chat thread: who sent it and what it says.
+#[derive(Clone)]
+struct ChatMessage {
+    outgoing: bool,
+    sender: SharedString,
+    text: SharedString,
+}
+
+/// The thread the `MessageScroller` starts with; the Send button appends.
+fn initial_chat_messages() -> Vec<ChatMessage> {
+    [
+        (false, "Dana", "Does the palette follow the desktop?"),
+        (true, "You", "It does — kdeglobals is read on every change."),
+        (false, "Dana", "And the icons?"),
+        (
+            true,
+            "You",
+            "The icon theme the preset names, never a mixture of sets.",
+        ),
+        (false, "Dana", "Good. What about dark mode?"),
+    ]
+    .into_iter()
+    .map(|(outgoing, sender, text)| ChatMessage {
+        outgoing,
+        sender: sender.into(),
+        text: text.into(),
+    })
+    .collect()
+}
+
+/// One row of the thread, built the same way for the `Message` section and
+/// for every row the `MessageScroller` renders: the sender's avatar beside a
+/// bubble whose variant and alignment say which side sent it.
+fn chat_message(msg: &ChatMessage) -> Message {
+    let (alignment, variant) = if msg.outgoing {
+        (MessageAlignment::End, BubbleVariant::Filled)
+    } else {
+        (MessageAlignment::Start, BubbleVariant::Muted)
+    };
+    Message::new()
+        .alignment(alignment)
+        .avatar(Avatar::new().name(msg.sender.clone()))
+        .content(
+            MessageContent::new()
+                .bubble(Bubble::new().with_variant(variant).child(msg.text.clone())),
+        )
+}
+
+/// The next lifecycle state the Attachment card steps to when it is clicked.
+fn next_attachment_status(status: AttachmentStatus) -> AttachmentStatus {
+    match status {
+        AttachmentStatus::Pending => AttachmentStatus::Uploading,
+        AttachmentStatus::Uploading => AttachmentStatus::Processing,
+        AttachmentStatus::Processing => AttachmentStatus::Complete,
+        AttachmentStatus::Complete => AttachmentStatus::Failed,
+        AttachmentStatus::Failed => AttachmentStatus::Pending,
+    }
+}
 
 /// The steps the Layout tab's `Stepper` walks through.
 const STEPPER_STEPS: &[(&str, IconName)] = &[
@@ -1286,6 +1352,12 @@ struct Showcase {
     tree_state: Entity<TreeState>,
     /// The page the `Pagination` is on, written by its `on_click`.
     page: usize,
+    /// The chat thread the `MessageScroller` renders. The data stays with the
+    /// caller; the state below owns only the virtual list's bookkeeping.
+    chat_messages: Vec<ChatMessage>,
+    chat_scroller: Entity<MessageScrollerState>,
+    /// The status the third `Attachment` card is in; clicking it advances.
+    attachment_status: AttachmentStatus,
 
     // Buttons tab
     toggle_bold: bool,
@@ -1945,6 +2017,9 @@ impl Showcase {
 
         let carousel_state = cx.new(|_cx| CarouselState::new(CAROUSEL_SLIDES.len()));
 
+        let initial_chat = initial_chat_messages();
+        let chat_scroller = cx.new(|cx| MessageScrollerState::new(initial_chat.len(), cx));
+
         let editor_state = cx.new(|cx| {
             EditorState::new(window, cx)
                 .language("rust")
@@ -2059,6 +2134,9 @@ impl Showcase {
             list_state,
             tree_state,
             page: 5,
+            chat_messages: initial_chat,
+            chat_scroller,
+            attachment_status: AttachmentStatus::Uploading,
             toggle_bold: false,
             toggle_italic: false,
             app_menu_bar,
@@ -3697,6 +3775,269 @@ impl Showcase {
                         &[
                             ("size", "configurable via Size enum"),
                             ("limit overflow", "+N indicator"),
+                        ],
+                    )),
+            )
+            // Bubble
+            .child(section("Bubble (all 7 variants, incoming and outgoing)"))
+            .child(
+                div()
+                    .id("tt-bubble")
+                    .child(
+                        with_gap(v_flex().w(px(420.0)), widget_gap)
+                            .child(
+                                Bubble::new()
+                                    .alignment(MessageAlignment::Start)
+                                    .with_variant(BubbleVariant::Muted)
+                                    .child("Incoming, Muted"),
+                            )
+                            .child(
+                                Bubble::new()
+                                    .alignment(MessageAlignment::End)
+                                    .with_variant(BubbleVariant::Filled)
+                                    .child("Outgoing, Filled"),
+                            )
+                            .child(
+                                Bubble::new()
+                                    .alignment(MessageAlignment::Start)
+                                    .with_variant(BubbleVariant::Secondary)
+                                    .child("Secondary"),
+                            )
+                            .child(
+                                Bubble::new()
+                                    .alignment(MessageAlignment::End)
+                                    .with_variant(BubbleVariant::Tinted)
+                                    .child("Tinted"),
+                            )
+                            .child(
+                                Bubble::new()
+                                    .alignment(MessageAlignment::Start)
+                                    .with_variant(BubbleVariant::Outline)
+                                    .child("Outline"),
+                            )
+                            .child(
+                                Bubble::new()
+                                    .alignment(MessageAlignment::Start)
+                                    .with_variant(BubbleVariant::Ghost)
+                                    .child("Ghost: no surface, no padding"),
+                            )
+                            .child(
+                                Bubble::new()
+                                    .alignment(MessageAlignment::End)
+                                    .with_variant(BubbleVariant::Destructive)
+                                    .child("Destructive: this one failed to send"),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Bubble",
+                        &[
+                            ("filled bg", "primary", t.primary),
+                            ("filled text", "primary_foreground", t.primary_foreground),
+                            ("muted / secondary bg", "muted", t.muted),
+                            ("outline border", "border", t.border),
+                            ("destructive", "danger", t.danger),
+                        ],
+                        &[(
+                            "border-radius",
+                            format!("radius_2xl(): {}px", t.radius_2xl().as_f32()),
+                        )],
+                        &[
+                            ("stack gap", "geometry::widget_gap between the bubbles"),
+                            ("surface padding", "hardcoded px_3/py_2 (bubble.rs:200-201)"),
+                            ("max width", "80% of the row (bubble.rs:127)"),
+                        ],
+                    )),
+            )
+            // Message
+            .child(section("Message (avatar, bubble, both alignments)"))
+            .child(
+                div()
+                    .id("tt-message")
+                    .child(
+                        with_gap(v_flex().w(px(420.0)), widget_gap).children(
+                            self.chat_messages.iter().take(2).map(chat_message),
+                        ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Message",
+                        &[
+                            ("incoming bubble", "muted", t.muted),
+                            ("outgoing bubble", "primary", t.primary),
+                            ("avatar fallback", "secondary", t.secondary),
+                        ],
+                        &[],
+                        &[
+                            ("row gap", "geometry::widget_gap between the rows"),
+                            ("slot gap", "hardcoded rems(0.625) (message.rs:159)"),
+                            ("avatar baseline", "a shared size-8, kept flush with the bubble's bottom edge (message.rs:220-222)"),
+                        ],
+                    )),
+            )
+            // MessageScroller
+            .child(section(format!(
+                "MessageScroller (virtualised thread, {} messages)",
+                self.chat_messages.len()
+            )))
+            .child(
+                div()
+                    .id("tt-message-scroller")
+                    .child(
+                        v_flex()
+                            .gap_2()
+                            .w(px(460.0))
+                            .child(
+                                div()
+                                    .h(px(240.0))
+                                    .border_1()
+                                    .border_color(t.border)
+                                    .rounded(t.radius)
+                                    .child({
+                                        // The data stays with the caller; the
+                                        // state owns only the virtual list's
+                                        // bookkeeping (message_scroller.rs:22-25).
+                                        let messages = self.chat_messages.clone();
+                                        MessageScroller::new(
+                                            "chat-scroller",
+                                            self.chat_scroller.clone(),
+                                            move |ix, _w, _cx| match messages.get(ix) {
+                                                Some(msg) => {
+                                                    chat_message(msg).into_any_element()
+                                                }
+                                                None => div().into_any_element(),
+                                            },
+                                        )
+                                        .with_bottom_fade(t.background)
+                                        .size_full()
+                                    }),
+                            )
+                            .child(
+                                Button::new("chat-send")
+                                    .native(cx, geometry::button)
+                                    .label("Send a reply")
+                                    .on_click(cx.listener(|this, _ev, _w, cx| {
+                                        this.chat_messages.push(ChatMessage {
+                                            outgoing: true,
+                                            sender: "You".into(),
+                                            text: "Dark mode follows the desktop too.".into(),
+                                        });
+                                        this.chat_scroller.update(cx, |state, cx| {
+                                            state.append(1, cx);
+                                        });
+                                        cx.notify();
+                                    })),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "MessageScroller",
+                        &[
+                            ("bottom fade", "background", t.background),
+                            ("scrollbar", "scrollbar_thumb", t.scrollbar_thumb),
+                            ("jump button", "secondary", t.secondary),
+                        ],
+                        &[],
+                        &[
+                            ("rows", "the Message rows above, rendered on demand"),
+                            ("follow", "FollowMode::Tail: Send scrolls the thread to the new row (message_scroller.rs:38)"),
+                            ("jump button", "appears once the user scrolls away from the tail"),
+                        ],
+                    )),
+            )
+            // Attachment
+            .child(section(format!(
+                "Attachment (complete, uploading, and one at {:?} — click it)",
+                self.attachment_status
+            )))
+            .child(
+                div()
+                    .id("tt-attachment")
+                    .child(
+                        with_gap(h_flex().flex_wrap(), widget_gap)
+                            .child(
+                                Attachment::new()
+                                    .media(AttachmentMedia::new().child(native_icon(
+                                        cx,
+                                        IconName::Inbox,
+                                        geometry::icon_size_small,
+                                    )))
+                                    .content(
+                                        AttachmentContent::new()
+                                            .title(AttachmentTitle::new("platform-facts.md"))
+                                            .description(AttachmentDescription::new("48 KB")),
+                                    ),
+                            )
+                            .child(
+                                Attachment::new()
+                                    .status(AttachmentStatus::Uploading)
+                                    .media(AttachmentMedia::new().child(native_icon(
+                                        cx,
+                                        IconName::Copy,
+                                        geometry::icon_size_small,
+                                    )))
+                                    .content(
+                                        AttachmentContent::new()
+                                            .title(
+                                                AttachmentTitle::new("breeze-palette.png")
+                                                    .status(AttachmentStatus::Uploading),
+                                            )
+                                            .description(
+                                                AttachmentDescription::new("uploading…")
+                                                    .status(AttachmentStatus::Uploading),
+                                            ),
+                                    ),
+                            )
+                            // The whole card is the click target, so the
+                            // status it is in is the status a click advances.
+                            .child(
+                                Attachment::new()
+                                    .id("attachment-cycle")
+                                    .status(self.attachment_status)
+                                    .media(AttachmentMedia::new().child(native_icon(
+                                        cx,
+                                        IconName::Settings,
+                                        geometry::icon_size_small,
+                                    )))
+                                    .content(
+                                        AttachmentContent::new()
+                                            .title(
+                                                AttachmentTitle::new("kdeglobals")
+                                                    .status(self.attachment_status),
+                                            )
+                                            .description(
+                                                AttachmentDescription::new(SharedString::from(
+                                                    format!("{:?}", self.attachment_status),
+                                                ))
+                                                .status(self.attachment_status),
+                                            ),
+                                    )
+                                    .on_click(cx.listener(|this, _ev, _w, cx| {
+                                        this.attachment_status =
+                                            next_attachment_status(this.attachment_status);
+                                        cx.notify();
+                                    })),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Attachment",
+                        &[
+                            ("bg", "background", t.background),
+                            ("border", "border", t.border),
+                            ("media bg", "muted", t.muted),
+                            ("description", "muted_foreground", t.muted_foreground),
+                            ("failed", "danger", t.danger),
+                        ],
+                        &[(
+                            "border-radius",
+                            format!("radius_2xl(): {}px", t.radius_2xl().as_f32()),
+                        )],
+                        &[
+                            ("card gap", "geometry::widget_gap between the cards"),
+                            ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
+                            ("in-progress title", "the ShimmerText highlight, driven by the status (attachment.rs:533)"),
+                            ("pending", "a dashed border; failed tints the border with destructive (attachment.rs:196-200)"),
                         ],
                     )),
             )

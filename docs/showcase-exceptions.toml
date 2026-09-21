@@ -17,11 +17,7 @@
 # section in the showcase is where it becomes visible.
 [gpui]
 AttachmentActions = "a composition slot of `Attachment` for action buttons (attachment.rs:614)"
-AttachmentContent = "the metadata slot of `Attachment` (attachment.rs:399)"
-AttachmentDescription = "the single-line description slot of `Attachment` (attachment.rs:559)"
 AttachmentGroup = "the container `Attachment` values are grouped in, a scrollable row (attachment.rs:712)"
-AttachmentMedia = "the media slot of `Attachment` (attachment.rs:258)"
-AttachmentTitle = "the single-line title slot of `Attachment` (attachment.rs:496)"
 BubbleContent = "the visible surface inside a `Bubble` (bubble.rs:153)"
 BubbleGroup = "the container consecutive `Bubble` values from one sender are grouped in (bubble.rs:254)"
 BubbleReactions = "the reaction region positioned on a `Bubble` edge (bubble.rs:307)"
@@ -35,7 +31,6 @@ Dot = "the value dot of a chart tooltip, built only by the charts (plot/tooltip.
 DropdownMenuPopover = "built only by `DropdownMenu::dropdown_menu`, never by a consumer (menu/dropdown_menu.rs:30, :37)"
 ListSeparatorItem = "a `List` row variant; it renders a `ListItem` (list/separator_item.rs:6, :37)"
 MessageAvatar = "the sender identity slot beside a `Message` (message.rs:222)"
-MessageContent = "the body slot of a `Message` (message.rs:342)"
 MessageFooter = "the footer slot of a `Message` (message.rs:413)"
 MessageGroup = "the container consecutive `Message` values from one sender are grouped in (message.rs:20)"
 MessageHeader = "the header slot of a `Message` (message.rs:276)"
