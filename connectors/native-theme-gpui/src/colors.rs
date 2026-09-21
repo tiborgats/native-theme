@@ -114,7 +114,11 @@ struct ResolvedColors {
     button_active_bg: Option<Hsla>,
     list_hover_bg: Hsla,
     list_selection_bg: Hsla,
-    link_hover_bg: Hsla,
+    // Upstream's `link_hover` and `link_active` are link *text* colours
+    // (`theme_color.rs:178-179`), so these are the platform's hover and
+    // pressed link text, not its hover fill.
+    link_hover_fg: Hsla,
+    link_active_fg: Hsla,
 }
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
@@ -199,12 +203,13 @@ pub fn to_theme_color(
         button_active_bg: resolved.button.active_background.map(rgba_to_hsla),
         list_hover_bg: rgba_to_hsla(resolved.list.hover_background),
         list_selection_bg: rgba_to_hsla(resolved.list.selection_background),
-        link_hover_bg: rgba_to_hsla(resolved.link.hover_background),
+        link_hover_fg: rgba_to_hsla(resolved.link.hover_text_color),
+        link_active_fg: rgba_to_hsla(resolved.link.active_text_color),
     };
 
     let mut tc = ThemeColor::default();
 
-    assign_core(&mut tc, &c, is_dark);
+    assign_core(&mut tc, &c);
     assign_primary(&mut tc, &c, is_dark);
     assign_secondary(&mut tc, &c, is_dark);
     assign_status(&mut tc, &c, is_dark);
@@ -220,7 +225,7 @@ pub fn to_theme_color(
 
 // ---------- helper assignment functions ----------
 
-fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.background = c.bg;
     tc.foreground = c.fg;
     // `accent` is upstream's item highlight, not the platform's accent colour
@@ -238,8 +243,14 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.ring = c.ring;
     tc.selection = c.selection;
     tc.link = c.link;
-    tc.link_hover = c.link_hover_bg;
-    tc.link_active = active_color(c.link, is_dark);
+    // Both are text colours upstream, each the `fg` of a `Button::link` over
+    // the transparent fill that variant paints in every state
+    // (`button/button.rs:1139, 1215, 1257` against `:1133, 1210, 1250`), so
+    // they take the platform's hover and pressed link text. Feeding
+    // `link.hover_background` into `link_hover` painted a ~9 % alpha fill as
+    // a label.
+    tc.link_hover = c.link_hover_fg;
+    tc.link_active = c.link_active_fg;
 }
 
 fn assign_primary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
@@ -843,11 +854,12 @@ mod tests {
             "list_active must match resolved.list.selection_background"
         );
 
-        // 5. link_hover from link.hover_background
+        // 5. link_hover from link.hover_text_color -- upstream's `link_hover`
+        // is a link *text* colour, not a hover fill
         assert_eq!(
             tc.link_hover,
-            rgba_to_hsla(resolved.link.hover_background),
-            "link_hover must match resolved.link.hover_background"
+            rgba_to_hsla(resolved.link.hover_text_color),
+            "link_hover must match resolved.link.hover_text_color"
         );
     }
 
@@ -950,18 +962,42 @@ mod tests {
         );
     }
 
+    /// The hovered and pressed link colours are the platform's link *text*,
+    /// neither a fill nor a derivation.
+    ///
+    /// This was `link_hover_differs_from_link`, whose premise -- a hover state
+    /// must differ from its base -- was a property of the derivation it
+    /// checked, not of any platform: several presets give a hovered link the
+    /// colour an idle one has, catppuccin-mocha among them. What is true is
+    /// what the two tokens are, and that neither is what it was: `link_hover`
+    /// carried the hover *fill* and `link_active` a darkened copy of `link`.
     #[test]
-    fn link_hover_differs_from_link() {
+    fn link_states_are_the_platforms_link_text() {
         let resolved = test_resolved();
         let tc = to_theme_color(&resolved, true, false);
 
-        assert_ne!(
-            tc.link_hover, tc.link,
-            "link_hover should differ from link (uses hover_color)"
+        assert_eq!(
+            tc.link_hover,
+            rgba_to_hsla(resolved.link.hover_text_color),
+            "link_hover should be the platform's hovered link text"
+        );
+        // The discriminating fact: the token used to carry the hover *fill*,
+        // which every preset states at a fraction of full alpha.
+        assert!(
+            rgba_to_hsla(resolved.link.hover_background).a < tc.link_hover.a,
+            "catppuccin-mocha no longer discriminates: its link hover fill is \
+             as opaque as its hover text, so this cannot tell one from the other"
+        );
+
+        assert_eq!(
+            tc.link_active,
+            rgba_to_hsla(resolved.link.active_text_color),
+            "link_active should be the platform's pressed link text"
         );
         assert_ne!(
-            tc.link_active, tc.link,
-            "link_active should differ from link (uses active_color)"
+            tc.link_active,
+            active_color(tc.link, true),
+            "link_active should be read from the platform, not darkened from link"
         );
     }
 

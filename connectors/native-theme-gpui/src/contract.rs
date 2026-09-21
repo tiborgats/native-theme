@@ -114,10 +114,22 @@ const ROWS: &[Row] = &[
         get: |tc| tc.link,
         exceptions: &[],
     },
+    // `link_hover` and `link_active` are upstream's hovered and pressed link
+    // *text* colours ("Hover link text color", `theme_color.rs:178-179`), and
+    // their only reader takes each as the `fg` of a `Button::link`
+    // (`button/button.rs:1139, 1215, 1257`) over the transparent fill that
+    // variant paints in every state (`:1133, 1210, 1250`). Neither native
+    // field is a soft option, so both are plain rows.
     Row {
         slot: "link_hover",
-        native: |r| r.link.hover_background,
+        native: |r| r.link.hover_text_color,
         get: |tc| tc.link_hover,
+        exceptions: &[],
+    },
+    Row {
+        slot: "link_active",
+        native: |r| r.link.active_text_color,
+        get: |tc| tc.link_active,
         exceptions: &[],
     },
     Row {
@@ -758,7 +770,6 @@ const DERIVED: &[(&str, &str)] = &[
         "muted",
         "the foreground at a tenth alpha over the background",
     ),
-    ("link_active", "active_color(link, is_dark)"),
     ("primary_hover", "hover_color(primary, background)"),
     ("primary_active", "active_color(primary, is_dark)"),
     ("danger_hover", "hover_color(danger, background)"),
@@ -822,6 +833,44 @@ const DERIVED: &[(&str, &str)] = &[
         "a fixed hue carrying the info colour's saturation and lightness",
     ),
     ("cyan_light", "light_variant(background, cyan, is_dark)"),
+];
+
+/// Native colours `ThemeColor` has no field to receive, with the evidence.
+///
+/// A claim about a *native* field rather than an emitted one, so the coverage
+/// tripwire cannot see it: that walks what the connector produces. What is
+/// checked instead is that each entry is about something real -- the field is
+/// read here, so removing it from the model breaks this file, and
+/// `every_unreachable_native_colour_is_stated_by_every_preset` requires every
+/// preset to state it, so the record says what is dropped rather than only
+/// that something is.
+struct NoReceiver {
+    field: &'static str,
+    native: fn(&ResolvedTheme) -> Rgba,
+    evidence: &'static str,
+}
+
+const NO_RECEIVER: &[NoReceiver] = &[
+    NoReceiver {
+        field: "link.hover_background",
+        native: |r| r.link.hover_background,
+        evidence: "`ButtonVariant::Link` paints `theme.transparent` as its \
+                   background in every state (`button/button.rs:1133` hovered, \
+                   `:1210` pressed, `:1250` selected) and the `Link` widget \
+                   paints none at all (`link.rs:70-90`); `transparent` lives \
+                   on `Theme`, not on `ThemeColor`, and is not one of the 138. \
+                   `link_hover` and `link_active` are the link's hover and \
+                   pressed *text* (`theme_color.rs:178-179`), which is what \
+                   their rows give them.",
+    },
+    NoReceiver {
+        field: "switch.checked_background",
+        native: |r| r.switch.checked_background,
+        evidence: "`ThemeColor` has no checked-state field for a switch -- \
+                   only `switch` and `switch_thumb` -- and upstream paints a \
+                   checked one with `theme.primary` (`switch.rs:94`). Recorded \
+                   at `colors.rs`'s Issue 51 note as well.",
+    },
 ];
 
 /// One preset in one mode: the native values and the `ThemeColor` built from
@@ -923,6 +972,47 @@ fn the_contract_covers_sixteen_presets_in_both_modes() -> crate::Result<()> {
         32,
         "the contract asserts over 16 presets x 2 modes; a shrinking preset \
          list must not silently narrow it"
+    );
+    Ok(())
+}
+
+/// Each colour `NO_RECEIVER` records is one the presets really state.
+///
+/// A note about a value nothing receives is worth only as much as the value:
+/// if every preset left it empty there would be nothing to record. The values
+/// are printed so the record says what is dropped.
+#[test]
+fn every_unreachable_native_colour_is_stated_by_every_preset() -> crate::Result<()> {
+    let combinations = combinations()?;
+    let mut missing = Vec::new();
+
+    for entry in NO_RECEIVER {
+        let mut stated = Vec::new();
+        for c in &combinations {
+            let value = rgba_to_hsla((entry.native)(&c.resolved));
+            if value.a <= 0.0 {
+                missing.push(format!("{}: {}", c.label(), entry.field));
+            } else {
+                stated.push(format!("{}: {}", c.label(), show(value)));
+            }
+        }
+        println!(
+            "--- {}, which ThemeColor cannot take, stated by {} of {} \
+             combinations ---\n{}\n{}",
+            entry.field,
+            stated.len(),
+            combinations.len(),
+            entry.evidence,
+            stated.join("\n")
+        );
+    }
+
+    assert!(
+        missing.is_empty(),
+        "{} combination(s) leave a NO_RECEIVER colour fully transparent, so \
+         the note no longer describes a value the platform gives:\n{}",
+        missing.len(),
+        missing.join("\n")
     );
     Ok(())
 }
@@ -1440,6 +1530,27 @@ const PAIRS: &[Pair] = &[
         emitted: |tc| (tc.link, tc.background, tc.background),
         exceptions: &[],
     },
+    // A `Button::link` paints no fill in any state
+    // (`button/button.rs:1133, 1210, 1250`) and takes `link_hover` and
+    // `link_active` as its text, so both pairs are that colour on the window.
+    Pair {
+        what: "hovered link text",
+        native: |r, _| {
+            let bg = rgba_to_hsla(r.defaults.background_color);
+            (rgba_to_hsla(r.link.hover_text_color), bg, bg)
+        },
+        emitted: |tc| (tc.link_hover, tc.background, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "pressed link text",
+        native: |r, _| {
+            let bg = rgba_to_hsla(r.defaults.background_color);
+            (rgba_to_hsla(r.link.active_text_color), bg, bg)
+        },
+        emitted: |tc| (tc.link_active, tc.background, tc.background),
+        exceptions: &[],
+    },
 ];
 
 /// A pair whose two ratios are printed and not asserted, with the reason.
@@ -1455,22 +1566,6 @@ struct Reported {
     native: fn(&ResolvedTheme) -> (Hsla, Hsla, Hsla),
     emitted: fn(&ThemeColor) -> (Hsla, Hsla, Hsla),
 }
-
-/// **A finding, not an accepted difference.**
-///
-/// `ThemeColor::link_hover` is upstream's hovered-link *text* colour
-/// (`theme_color.rs:178`, and its only reader takes it as `fg` at
-/// `button/button.rs:1139`, over the transparent fill of `:1133`). The
-/// connector feeds it `link.hover_background`, a fill, which every preset
-/// states at about 9% alpha -- so a hovered link button's label is very nearly
-/// invisible, and the pair measures around 1.1:1 against the platform's 1.9:1
-/// to 10.3:1, in all 32 combinations. It is the defect class of spec section
-/// 1.2 in a field this release did not look at, and the fix is a mapping
-/// change with an iced sibling and a decision behind it, so it is reported
-/// here for the maintainer rather than made quietly.
-const LINK_HOVER_IS_A_FILL: &str = "FINDING: link_hover is upstream's hovered-link text colour \
-                                    and the connector maps a fill into it \
-                                    (link.hover_background, ~9% alpha); reported, not accepted";
 
 /// Pairs measured and printed, never asserted.
 const REPORTED: &[Reported] = &[
@@ -1503,15 +1598,6 @@ const REPORTED: &[Reported] = &[
             )
         },
         emitted: |tc| (tc.foreground, tc.selection, tc.background),
-    },
-    Reported {
-        what: "hovered link text",
-        why: LINK_HOVER_IS_A_FILL,
-        native: |r| {
-            let bg = rgba_to_hsla(r.defaults.background_color);
-            (rgba_to_hsla(r.link.hover_text_color), bg, bg)
-        },
-        emitted: |tc| (tc.link_hover, tc.background, tc.background),
     },
 ];
 
