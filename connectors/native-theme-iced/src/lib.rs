@@ -15,7 +15,7 @@
 //! ```rust,no_run
 //! use native_theme_iced::from_system;
 //!
-//! let (theme, resolved, is_dark) = from_system().unwrap();
+//! let (theme, resolved, is_dark, accessibility) = from_system().unwrap();
 //! ```
 //!
 //! # Manual Path
@@ -85,7 +85,7 @@ pub use native_theme::theme::{
     AnimatedIcon, ColorMode, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet,
     ResolvedTheme, Theme, ThemeMode, TransformAnimation,
 };
-pub use native_theme::{Result, SystemTheme};
+pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
@@ -166,9 +166,11 @@ pub fn from_preset(
 
 /// Detect the OS theme and convert it to an iced [`Theme`](iced_core::theme::Theme) in one call.
 ///
-/// Returns the iced theme, the resolved variant, and whether the system is in
-/// dark mode. The `is_dark` flag comes from the OS preference, not from
-/// background color analysis.
+/// Returns the iced theme, the resolved variant, whether the system is in
+/// dark mode, and the OS accessibility preferences. The `is_dark` flag comes
+/// from the OS preference, not from background color analysis. The
+/// preferences are returned because [`font_size()`] and [`mono_font_size()`]
+/// need them.
 ///
 /// # Errors
 ///
@@ -178,13 +180,15 @@ pub fn from_system() -> Result<(
     iced_core::theme::Theme,
     native_theme::theme::ResolvedTheme,
     bool,
+    AccessibilityPreferences,
 )> {
     let sys = native_theme::SystemTheme::from_system()?;
     let is_dark = sys.mode.is_dark();
     let name = sys.name;
+    let accessibility = sys.accessibility;
     let resolved = if is_dark { sys.dark } else { sys.light };
     let theme = to_theme(&resolved, &name);
-    Ok((theme, resolved, is_dark))
+    Ok((theme, resolved, is_dark, accessibility))
 }
 
 /// Extension trait for converting a [`SystemTheme`] to an iced theme.
@@ -251,13 +255,17 @@ pub fn font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
     &resolved.defaults.font.family
 }
 
-/// Returns the primary UI font size in logical pixels from the resolved theme.
+/// Returns the primary UI font size in logical pixels, scaled by the user's
+/// text-scaling preference.
 ///
 /// ResolvedFontSpec.size is in logical pixels (conversion from platform points
 /// is handled by the resolution step).
 #[must_use]
-pub fn font_size(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
-    resolved.defaults.font.size
+pub fn font_size(
+    resolved: &native_theme::theme::ResolvedTheme,
+    prefs: &AccessibilityPreferences,
+) -> f32 {
+    resolved.defaults.font.size * text_scale_factor(prefs)
 }
 
 /// Returns the monospace font family name from the resolved theme.
@@ -266,13 +274,24 @@ pub fn mono_font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
     &resolved.defaults.mono_font.family
 }
 
-/// Returns the monospace font size in logical pixels from the resolved theme.
+/// Returns the monospace font size in logical pixels, scaled by the user's
+/// text-scaling preference.
 ///
 /// ResolvedFontSpec.size is in logical pixels (conversion from platform points
 /// is handled by the resolution step).
 #[must_use]
-pub fn mono_font_size(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
-    resolved.defaults.mono_font.size
+pub fn mono_font_size(
+    resolved: &native_theme::theme::ResolvedTheme,
+    prefs: &AccessibilityPreferences,
+) -> f32 {
+    resolved.defaults.mono_font.size * text_scale_factor(prefs)
+}
+
+/// Text-scaling multiplier from the preferences: the factor when it is finite
+/// and positive, else `1.0` (spec §4.1).
+fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
+    let s = prefs.text_scaling_factor;
+    if s.is_finite() && s > 0.0 { s } else { 1.0 }
 }
 
 /// Returns the primary UI font weight (CSS 100-900) from the resolved theme.
@@ -357,7 +376,7 @@ pub fn icon_sizes(
 /// the primary UI font and monospace text.
 ///
 /// For absolute pixels (layout math), multiply by the appropriate
-/// font size: `line_height_multiplier(&r) * font_size(&r)`.
+/// font size: `line_height_multiplier(&r) * font_size(&r, &prefs)`.
 #[must_use]
 pub fn line_height_multiplier(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.defaults.line_height
@@ -413,6 +432,13 @@ mod tests {
 
     fn make_resolved(is_dark: bool) -> native_theme::theme::ResolvedTheme {
         make_resolved_preset("catppuccin-mocha", is_dark)
+    }
+
+    fn scaled_prefs(text_scaling_factor: f32) -> AccessibilityPreferences {
+        AccessibilityPreferences {
+            text_scaling_factor,
+            ..AccessibilityPreferences::default()
+        }
     }
 
     // === to_theme tests ===
@@ -635,7 +661,7 @@ mod tests {
     #[test]
     fn font_size_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let fs = font_size(&resolved);
+        let fs = font_size(&resolved, &AccessibilityPreferences::default());
         assert!(fs > 0.0, "font size should be > 0");
     }
 
@@ -649,8 +675,52 @@ mod tests {
     #[test]
     fn mono_font_size_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let ms = mono_font_size(&resolved);
+        let ms = mono_font_size(&resolved, &AccessibilityPreferences::default());
         assert!(ms > 0.0, "mono font size should be > 0");
+    }
+
+    #[test]
+    fn font_size_scales_by_the_text_scaling_factor() {
+        let resolved = make_resolved(false);
+        assert_eq!(
+            font_size(&resolved, &scaled_prefs(1.5)),
+            resolved.defaults.font.size * 1.5,
+            "font size should be multiplied by the factor"
+        );
+    }
+
+    #[test]
+    fn font_size_ignores_a_factor_that_is_not_finite_and_positive() {
+        let resolved = make_resolved(false);
+        for factor in [0.0, f32::NAN, -1.0] {
+            assert_eq!(
+                font_size(&resolved, &scaled_prefs(factor)),
+                resolved.defaults.font.size,
+                "factor {factor} should leave the size unscaled"
+            );
+        }
+    }
+
+    #[test]
+    fn mono_font_size_scales_by_the_text_scaling_factor() {
+        let resolved = make_resolved(false);
+        assert_eq!(
+            mono_font_size(&resolved, &scaled_prefs(1.5)),
+            resolved.defaults.mono_font.size * 1.5,
+            "mono font size should be multiplied by the factor"
+        );
+    }
+
+    #[test]
+    fn mono_font_size_ignores_a_factor_that_is_not_finite_and_positive() {
+        let resolved = make_resolved(false);
+        for factor in [0.0, f32::NAN, -1.0] {
+            assert_eq!(
+                mono_font_size(&resolved, &scaled_prefs(factor)),
+                resolved.defaults.mono_font.size,
+                "factor {factor} should leave the size unscaled"
+            );
+        }
     }
 
     #[test]
@@ -770,11 +840,12 @@ mod tests {
     }
 
     #[test]
-    fn from_system_returns_is_dark() {
-        // If system theme is available, verify it returns a triple
-        if let Ok((_theme, _resolved, is_dark)) = from_system() {
+    fn from_system_returns_is_dark_and_preferences() {
+        // If system theme is available, verify it returns a quadruple
+        if let Ok((_theme, _resolved, is_dark, accessibility)) = from_system() {
             // is_dark should be a valid bool (always true, but verify the return)
             let _ = is_dark;
+            let _ = accessibility.text_scaling_factor;
         }
     }
 

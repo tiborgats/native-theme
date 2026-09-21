@@ -19,6 +19,14 @@ targets = [
     "x86_64-pc-windows-msvc",
 ]
 
+[features]
+default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+
+material-icons = ["native-theme/material-icons"]
+lucide-icons = ["native-theme/lucide-icons"]
+system-icons = ["native-theme/system-icons"]
+svg-rasterize = ["native-theme/svg-rasterize"]
+
 [dependencies]
 native-theme.workspace = true
 iced_core = "0.14"

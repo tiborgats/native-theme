@@ -537,6 +537,8 @@ struct State {
     color_mode: AppColorMode,
     is_dark: bool,
     current_resolved: native_theme::theme::ResolvedTheme,
+    /// OS accessibility preferences (from SystemTheme, not ResolvedTheme).
+    accessibility: native_theme_iced::AccessibilityPreferences,
     /// Icon set for the current theme (from Theme or SystemTheme, not ResolvedTheme).
     current_icon_set: IconSet,
     /// Icon theme name for the current theme.
@@ -614,48 +616,57 @@ impl Default for State {
     fn default() -> Self {
         let color_mode = AppColorMode::System;
         let is_dark = color_mode.is_dark();
-        let (resolved, theme, initial_error, system_preset, init_icon_set, init_icon_theme) =
-            match native_theme::SystemTheme::from_system() {
-                Ok(system) => {
-                    let r = system
-                        .pick(if is_dark {
-                            native_theme_iced::ColorMode::Dark
-                        } else {
-                            native_theme_iced::ColorMode::Light
-                        })
-                        .clone();
-                    let t = native_theme_iced::to_theme(&r, &system.name);
-                    let preset = system.preset.clone();
-                    let is = system.icon_set;
-                    let it = system.icon_theme.into_owned();
-                    (r, t, None, preset, is, it)
-                }
-                Err(e) => {
-                    // Fallback: load adwaita preset through resolve pipeline
-                    match load_adwaita_fallback(is_dark) {
-                        Some((r, t)) => (
-                            r,
-                            t,
-                            Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
-                            "adwaita".to_string(),
-                            IconSet::Freedesktop,
-                            "Adwaita".to_string(),
-                        ),
-                        None => {
-                            // This is the only safe fallback when both OS theme
-                            // detection and the bundled adwaita preset fail.
-                            // With bundled data this case is near-impossible.
-                            // process::exit avoids constructing a dummy
-                            // ResolvedTheme (30+ required fields).
-                            eprintln!(
-                                "Fatal: OS theme failed ({e}) and adwaita fallback \
+        let (
+            resolved,
+            theme,
+            initial_error,
+            system_preset,
+            init_icon_set,
+            init_icon_theme,
+            accessibility,
+        ) = match native_theme::SystemTheme::from_system() {
+            Ok(system) => {
+                let r = system
+                    .pick(if is_dark {
+                        native_theme_iced::ColorMode::Dark
+                    } else {
+                        native_theme_iced::ColorMode::Light
+                    })
+                    .clone();
+                let t = native_theme_iced::to_theme(&r, &system.name);
+                let preset = system.preset.clone();
+                let is = system.icon_set;
+                let it = system.icon_theme.into_owned();
+                let acc = system.accessibility;
+                (r, t, None, preset, is, it, acc)
+            }
+            Err(e) => {
+                // Fallback: load adwaita preset through resolve pipeline
+                match load_adwaita_fallback(is_dark) {
+                    Some((r, t)) => (
+                        r,
+                        t,
+                        Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
+                        "adwaita".to_string(),
+                        IconSet::Freedesktop,
+                        "Adwaita".to_string(),
+                        native_theme_iced::AccessibilityPreferences::default(),
+                    ),
+                    None => {
+                        // This is the only safe fallback when both OS theme
+                        // detection and the bundled adwaita preset fail.
+                        // With bundled data this case is near-impossible.
+                        // process::exit avoids constructing a dummy
+                        // ResolvedTheme (30+ required fields).
+                        eprintln!(
+                            "Fatal: OS theme failed ({e}) and adwaita fallback \
                                  also failed. Cannot start."
-                            );
-                            std::process::exit(1);
-                        }
+                        );
+                        std::process::exit(1);
                     }
                 }
-            };
+            }
+        };
 
         let languages = vec![
             "Rust".to_string(),
@@ -712,6 +723,7 @@ impl Default for State {
             color_mode,
             is_dark,
             current_resolved: resolved,
+            accessibility,
             current_icon_set: init_icon_set,
             current_icon_theme: init_icon_theme,
             default_label,
@@ -826,6 +838,7 @@ impl State {
                     Ok(system) => {
                         // Platform presets always specify icon_theme.
                         self.current_icon_set = system.icon_set;
+                        self.accessibility = system.accessibility.clone();
                         self.current_icon_theme = system.icon_theme.clone().into_owned();
                         icon_theme_opt = Some(self.current_icon_theme.clone());
                         self.current_resolved = system
@@ -2362,12 +2375,12 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
         let ff = native_theme_iced::font_family(&state.current_resolved);
         let fs = format!(
             "{:.1}px",
-            native_theme_iced::font_size(&state.current_resolved)
+            native_theme_iced::font_size(&state.current_resolved, &state.accessibility)
         );
         let mf = native_theme_iced::mono_font_family(&state.current_resolved);
         let ms = format!(
             "{:.1}px",
-            native_theme_iced::mono_font_size(&state.current_resolved)
+            native_theme_iced::mono_font_size(&state.current_resolved, &state.accessibility)
         );
         format!("Font: {ff} @ {fs}  |  Mono: {mf} @ {ms}")
     };
