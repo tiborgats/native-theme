@@ -1,0 +1,86 @@
+# Widgets the showcases deliberately do not render.
+#
+# `scripts/check-widget-coverage.py` fails on a widget that is neither shown
+# in its showcase nor listed here, and on an entry that has gone stale: one
+# naming a widget the toolkit no longer offers, or one the showcase does show
+# after all. An exception is therefore a claim that has to stay true.
+#
+# A reason belongs to one of five kinds (spec §6a.4): a test harness, an
+# internal sub-part of a compound widget, a layout wrapper with no visual
+# surface, a widget needing a GPU pipeline the application supplies, or a
+# widget native-theme models no counterpart for. Each was read in the
+# vendored source on 2026-09-21 and cites the file and line it was read at:
+# gpui-component 0.6.4, iced_widget 0.14.2, iced_aw 0.14.1.
+
+# Composition slots and internal parts of gpui-component widgets. Each is a
+# piece of a parent widget, not a widget of its own, so the parent's own
+# section in the showcase is where it becomes visible.
+[gpui]
+AttachmentActions = "a composition slot of `Attachment` for action buttons (attachment.rs:614)"
+AttachmentContent = "the metadata slot of `Attachment` (attachment.rs:399)"
+AttachmentDescription = "the single-line description slot of `Attachment` (attachment.rs:559)"
+AttachmentGroup = "the container `Attachment` values are grouped in, a scrollable row (attachment.rs:712)"
+AttachmentMedia = "the media slot of `Attachment` (attachment.rs:258)"
+AttachmentTitle = "the single-line title slot of `Attachment` (attachment.rs:496)"
+BubbleContent = "the visible surface inside a `Bubble` (bubble.rs:153)"
+BubbleGroup = "the container consecutive `Bubble` values from one sender are grouped in (bubble.rs:254)"
+BubbleReactions = "the reaction region positioned on a `Bubble` edge (bubble.rs:307)"
+ButtonIcon = "`#[doc(hidden)]`; what `Button::icon` wraps its icon, spinner or progress in (button/button_icon.rs:5-7)"
+Caret = "the chevron a `Button`, `Select` or `Combobox` trigger draws; it renders an `Icon` and is built only by those (select.rs:39, button/button.rs, combobox.rs)"
+CrossLine = "the crosshair of a chart tooltip, built only by the charts (plot/tooltip.rs:33, chart/line_chart.rs)"
+DialogAction = "the click target inside a dialog footer; it renders a bare `div` around its children and dispatches `Confirm` (dialog/footer.rs:104-133)"
+DialogContent = "the content container of a `Dialog` (dialog/content.rs:9)"
+DialogDescription = "the description element of a `DialogHeader` (dialog/description.rs:18-20)"
+DialogHeader = "the header section of a `Dialog` (dialog/header.rs:8-17)"
+Dot = "the value dot of a chart tooltip, built only by the charts (plot/tooltip.rs:185, chart/line_chart.rs)"
+DropdownMenuPopover = "built only by `DropdownMenu::dropdown_menu`, never by a consumer (menu/dropdown_menu.rs:30, :37)"
+ListSeparatorItem = "a `List` row variant; it renders a `ListItem` (list/separator_item.rs:6, :37)"
+MarkerContent = "the text slot of a `Marker` (marker.rs:281)"
+MarkerIcon = "the icon slot of a `Marker` (marker.rs:234)"
+MessageAvatar = "the sender identity slot beside a `Message` (message.rs:222)"
+MessageContent = "the body slot of a `Message` (message.rs:342)"
+MessageFooter = "the footer slot of a `Message` (message.rs:413)"
+MessageGroup = "the container consecutive `Message` values from one sender are grouped in (message.rs:20)"
+MessageHeader = "the header slot of a `Message` (message.rs:276)"
+SearchableListItemElement = "the row `Select`, `Combobox` and `MultiCombobox` dropdowns render (searchable_list/item.rs:11-18)"
+SidebarFooter = "the footer of a `Sidebar` (sidebar/footer.rs:8-10)"
+SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
+StepperItem = "a step within a `Stepper` (stepper/item.rs:13-15)"
+TableBody = "the body section of a `Table` (table/table.rs:215)"
+TableCaption = "the caption below a `Table` (table/table.rs:610)"
+TableCell = "a data cell of a `TableRow` (table/table.rs:519)"
+TableFooter = "the footer section of a `Table` (table/table.rs:283)"
+TableHead = "a header cell of a `TableRow` (table/table.rs:428)"
+TableHeader = "the header section of a `Table` (table/table.rs:143)"
+TableRow = "a row of a `Table` (table/table.rs:356)"
+
+# Layout and utility wrappers with no visual surface of their own, and the
+# one widget that needs a GPU pipeline the application supplies (spec §6a.3).
+# "Paints nothing" was read as the absence of any `fill_quad` call.
+[iced_widget]
+float = "a positioning wrapper: it lifts its child and its only `Style` is a drop shadow the default class leaves fully transparent, so it paints nothing unless the application asks (float.rs:413-432, :163)"
+keyed = "`Column` with continuity hints for reconciliation; it paints nothing of its own (keyed.rs:1-40, keyed/column.rs)"
+lazy = "caches a view between updates; it paints nothing of its own (lazy.rs)"
+overlay = "declares only `pub mod menu` (overlay.rs:1-2); `overlay::menu::Menu` is the drop-down surface `pick_list` and `combo_box` open (pick_list.rs:711, combo_box.rs)"
+pin = "positions a child at fixed coordinates inside its bounds; it paints nothing of its own (pin.rs:1-3)"
+responsive = "calls a closure with the available size; it paints nothing of its own (responsive.rs)"
+sensor = "emits messages when content pops in and out of view; it paints nothing of its own (sensor.rs:1)"
+shader = "a custom shader widget for wgpu applications: it needs a rendering pipeline the application supplies (shader.rs:1)"
+stack = "displays content on top of other content; it paints nothing of its own (stack.rs:1)"
+themer = "replaces the theme of a subtree; it paints nothing of its own (themer.rs)"
+
+# `iced_aw` widgets native-theme models no counterpart for (spec §3a), so
+# there is no style to give them and inventing one is forbidden. The
+# connector's `iced_aw` dependency enables none of these features, so they
+# are not compiled either.
+[iced_aw]
+badge = "native-theme models no badge (spec §3a); the feature is not enabled"
+color_picker = "native-theme models no colour picker (spec §3a); the feature is not enabled"
+date_picker = "native-theme models no date picker (spec §3a); the feature is not enabled"
+drop_down = "native-theme models no drop-down surface (spec §3a); the feature is not enabled"
+labeled_frame = "native-theme models no labelled frame (spec §3a); the feature is not enabled"
+number_input = "native-theme models no number input (spec §3a); the feature is not enabled"
+quad = "native-theme models no bare quad primitive (spec §3a); the feature is not enabled"
+slide_bar = "native-theme models no slide bar (spec §3a); the feature is not enabled"
+time_picker = "native-theme models no time picker (spec §3a); the feature is not enabled"
+wrap = "native-theme models no wrapping layout (spec §3a); the feature is not enabled"
