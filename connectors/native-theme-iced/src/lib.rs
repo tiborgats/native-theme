@@ -31,6 +31,57 @@
 //! let theme = to_theme(&resolved, "My App");
 //! ```
 //!
+//! # Two layers of colour
+//!
+//! [`to_theme()`] builds an iced `Theme` whose `Palette` and `Extended`
+//! palette carry the platform's colours, so iced's built-in widget styles pick
+//! them up with no further code. That palette has six colours, though, and a
+//! widget state it has no slot for -- a button's pressed fill, an input's
+//! focus border, a switch's track -- is a value iced derives by lightening or
+//! darkening. The palette cannot correct that: the slot does not exist.
+//!
+//! The [`styles`] module does. It has one function per widget, each returning
+//! a closure for that widget's style setter, and every colour, border and
+//! radius it emits is a field of the resolved theme. A `Style` field the
+//! native model does not carry is read from iced's own default at run time,
+//! never written as a literal.
+//!
+//! ```rust,ignore
+//! use native_theme_iced::styles;
+//!
+//! button("Save").style(styles::button_primary(&resolved))
+//! ```
+//!
+//! Both layers are held to a mapping contract by this crate's tests: every
+//! palette slot and every `Style` field the connector writes is asserted equal
+//! to the native field it claims, over all bundled presets in both modes, and
+//! every foreground the style functions place on a fill is asserted to be no
+//! less readable than the platform's own pair.
+//!
+//! # Features
+//!
+//! | Feature | Default | Enables |
+//! |---------|---------|---------|
+//! | `widgets` | yes | [`styles`], through `iced_widget` |
+//! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
+//! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
+//!
+//! Every feature adds coverage. `default-features = false` leaves the palette
+//! and the metric helpers, which need `iced_core` only.
+//!
+//! # Accessibility
+//!
+//! [`from_system()`] returns the user's [`AccessibilityPreferences`] as its
+//! fourth value. [`font_size()`] and [`mono_font_size()`] take them and apply
+//! the OS text-scaling factor; a factor that is not finite and positive is
+//! ignored. With a preset there is no OS reading:
+//! `AccessibilityPreferences::default()` scales by one.
+//!
+//! The other two preferences, reduced transparency and reduced motion, have no
+//! receiver in iced: a `Theme` is a palette, with nothing for either to act
+//! on. An application reads them from the same struct where it draws
+//! translucent surfaces or animates.
+//!
 //! # Font Configuration
 //!
 //! Font family names use `Arc<str>`. For iced's `&'static str` requirement,
@@ -59,15 +110,19 @@
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
+//! | [`styles`] (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
 //! | Widget metrics | button/input padding, border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
-//! Per-widget geometry beyond padding/radius (e.g., min-width, disabled-opacity)
-//! is not mapped because iced applies these via inline widget configuration,
-//! not through the theme system. Users can read these directly from the
-//! `ResolvedTheme` they pass to [`to_theme()`].
+//! Per-widget geometry that is not a `Style` field (e.g. an indicator's size,
+//! a track's height, a label gap, a minimum width) is not mapped, because iced
+//! takes it through inline widget configuration rather than through the theme.
+//! Read it from the `ResolvedTheme` you pass to [`to_theme()`] and hand it to
+//! the widget's builder -- `Checkbox::size`, `Toggler::size`,
+//! `ProgressBar::girth`, the thickness argument of `rule::horizontal`. Where a
+//! widget has such a receiver, its [`styles`] function's doc comment names it.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
