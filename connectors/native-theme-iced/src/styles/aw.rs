@@ -14,18 +14,18 @@
 //! values it has a meaning for; each function's doc comment names them and
 //! says where the others come from.
 //!
-//! Two of the six widgets the specification lists are not here, because
-//! `iced_aw` 0.14.1 cannot take the values: `Spinner` has no `Style`, no
-//! `Catalog` and no style setter at all -- it paints itself in the renderer's
-//! inherited `text_color` (`spinner.rs:151`) -- and `ContextMenu`'s `Style` is
-//! a one-field backdrop scrim (`style/context_menu.rs:9-14`) rather than the
-//! menu styling, so `menu` cannot serve it.
+//! One of these functions does not style its widget directly: `Spinner` has no
+//! `Style`, no `Catalog` and no style setter at all, so `spinner` styles the
+//! container a consumer wraps it in. `ContextMenu` gets no function: its
+//! `Style` is a one-field backdrop scrim (`style/context_menu.rs:9-14`) rather
+//! than the menu styling, and no platform paints one.
 
 use crate::palette::to_color;
 use iced_aw::style::Status;
 use iced_core::border::Radius;
 use iced_core::theme::Theme;
 use iced_core::{Background, Border};
+use iced_widget::container;
 use native_theme::theme::ResolvedTheme;
 
 // Each function imports its own `Style` locally: `iced_aw`'s style modules
@@ -348,6 +348,48 @@ pub fn selection_list(
             background: fill,
             border_width,
             border_color,
+        }
+    }
+}
+
+/// The platform's own spinner, for the container a `Spinner` is wrapped in:
+/// `container(Spinner::new()).style(styles::aw::spinner(&resolved))`.
+///
+/// It styles a container because `iced_aw` 0.14.1 gives `Spinner` no `Style`,
+/// no `Catalog` and no style setter at all (`spinner.rs:16-66`): it paints its
+/// circle in the **inherited** color, `fill_circle(.., style.text_color)`
+/// where `style: &renderer::Style` (`spinner.rs:151`). A container is what
+/// states that inherited color for its children -- it draws them with
+/// `renderer::Style { text_color: style.text_color.unwrap_or(renderer_style
+/// .text_color) }` (`container.rs:354-362`) -- so a container carrying
+/// `spinner.fill_color` is how the platform's spinner color reaches the
+/// widget. Shape B: a spinner has no `Status`, so the closure takes the theme
+/// alone.
+///
+/// `text_color` is the only field with a native source. The rest come from
+/// `container::Style::default()`, which paints nothing: the wrapper exists to
+/// state a color, not to draw a panel behind the spinner.
+///
+/// The spinner's three other native fields are the consumer's, like any other
+/// builder geometry: `spinner.diameter` is `Spinner::width(..)` and
+/// `::height(..)` (`spinner.rs:47-58`), and `spinner.stroke_width` and
+/// `.min_diameter` have no receiver at all -- `Spinner::circle_radius(..)`
+/// (`:62-65`) sizes the orbiting dot rather than an arc's stroke, and iced_aw
+/// states no minimum anywhere.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn spinner(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style + use<> {
+    use iced_widget::container::Style;
+
+    let arc = to_color(resolved.spinner.fill_color);
+
+    move |_theme| {
+        let iced = Style::default();
+        Style {
+            text_color: Some(arc),
+            background: iced.background,
+            border: iced.border,
+            shadow: iced.shadow,
+            snap: iced.snap,
         }
     }
 }

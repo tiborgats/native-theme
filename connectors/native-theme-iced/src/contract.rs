@@ -2278,6 +2278,24 @@ const AW_SELECTION_LIST_ROWS: &[StyleRow<AwStatus>] = &[
     },
 ];
 
+/// `styles::aw::spinner` is shape B -- a spinner has no status, and the
+/// container it styles takes none either -- so its rows hold the unit value.
+#[cfg(feature = "iced_aw")]
+const AW_SPINNER_STATUSES: &[()] = &[()];
+
+/// The one field of the wrapping container that carries a native value. The
+/// spinner paints its circle in the color the container hands its children
+/// (`container.rs:354-362`), so that color is the whole mapping;
+/// `spinner.fill_color` is a required field after resolution, not a soft
+/// option, so there is no fallback to write.
+#[cfg(feature = "iced_aw")]
+const AW_SPINNER_ROWS: &[StyleRow<()>] = &[StyleRow {
+    field: "styles::aw::spinner.text_color",
+    statuses: AW_SPINNER_STATUSES,
+    native: |r, ()| to_color(r.spinner.fill_color),
+    get: |t, r, ()| stated(styles::aw::spinner(r)(t).text_color),
+}];
+
 #[cfg(feature = "iced_aw")]
 const AW_SELECTION_LIST_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[ScalarRow {
     field: "styles::aw::selection_list.border_width",
@@ -2366,6 +2384,7 @@ fn style_row_fields() -> Vec<String> {
                 .iter()
                 .map(|row| row.field.to_string()),
         );
+        out.extend(AW_SPINNER_ROWS.iter().map(|row| row.field.to_string()));
         out.extend(border_row_fields(AW_MENU_BORDER_ROWS));
     }
     out
@@ -3160,6 +3179,60 @@ const DERIVED: &[(&str, &str)] = &[
     (
         "styles::aw::sidebar.icon_border_radius",
         "iced_aw default: sidebar::primary(..).icon_border_radius -- the same",
+    ),
+    // The container `styles::aw::spinner` styles exists to state an inherited
+    // text color and nothing else, so every field but `text_color` is iced's
+    // own and paints nothing (`container.rs:442-445` draws no quad at all
+    // without a background, a border width or a shadow).
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.background",
+        "iced default: container::Style::default().background -- a spinner is \
+         painted on whatever the consumer puts it on, and the wrapper states \
+         a color rather than a panel",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.border.color",
+        "iced default: container::Style::default().border -- SpinnerTheme \
+         carries no border",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.border.width",
+        "iced default: container::Style::default().border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.border.radius.top_left",
+        "iced default: container::Style::default().border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.border.radius.top_right",
+        "iced default: container::Style::default().border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.border.radius.bottom_right",
+        "iced default: container::Style::default().border -- the same",
+    ),
+    #[cfg(feature = "iced_aw")]
+    (
+        "styles::aw::spinner.border.radius.bottom_left",
+        "iced default: container::Style::default().border -- the same",
     ),
 ];
 
@@ -4003,6 +4076,28 @@ const AW_SIDEBAR_PAIRS: &[StylePair<AwStatus>] = &[StylePair {
     },
 }];
 
+/// The spinner's circle on the window.
+///
+/// The connector states the circle's color and the window it is drawn on, so
+/// both sides are ours; the fill is read from the *theme* rather than from the
+/// resolved field it was built from, as the `checkbox label` pair's is, so
+/// that half of the pair can fail. A spinner sits on whatever surface the
+/// consumer puts it on, and the window is the one the connector can name.
+#[cfg(feature = "iced_aw")]
+const AW_SPINNER_PAIRS: &[StylePair<()>] = &[StylePair {
+    what: "aw spinner circle",
+    indicator: true,
+    statuses: AW_SPINNER_STATUSES,
+    emitted: |t, r, ()| {
+        let window = t.extended_palette().background.base.color;
+        stated(styles::aw::spinner(r)(t).text_color).map(|arc| (arc, window, window))
+    },
+    native: |r, ()| {
+        let window = to_color(r.defaults.background_color);
+        (to_color(r.spinner.fill_color), window, window)
+    },
+}];
+
 /// A selection list row's label on the row, over the list this function fills.
 #[cfg(feature = "iced_aw")]
 const AW_SELECTION_LIST_PAIRS: &[StylePair<AwStatus>] = &[StylePair {
@@ -4056,6 +4151,7 @@ fn style_pair_names() -> Vec<String> {
         out.extend(AW_TAB_BAR_PAIRS.iter().map(|p| p.what.to_string()));
         out.extend(AW_SIDEBAR_PAIRS.iter().map(|p| p.what.to_string()));
         out.extend(AW_SELECTION_LIST_PAIRS.iter().map(|p| p.what.to_string()));
+        out.extend(AW_SPINNER_PAIRS.iter().map(|p| p.what.to_string()));
     }
     out
 }
@@ -4989,6 +5085,12 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
         )(
             theme, AwStatus::Active
         )));
+        // The spinner's style is a `container::Style`, so the walker the two
+        // other container functions use serves it as well.
+        out.extend(container_fields(
+            &styles::aw::spinner(resolved)(theme),
+            "styles::aw::spinner",
+        ));
     }
     out
 }
@@ -5551,9 +5653,17 @@ fn every_status_list_names_each_status_once() {
     // `iced_aw` states one `Status` for all of its widgets, and each widget
     // requests a subset of it. `AW_STATUSES` is the root of trust for the
     // whole enum; the three widgets whose appearance depends on the status
-    // split it in two, as a class button splits iced's.
+    // split it in two, as a class button splits iced's. `styles::aw::spinner`
+    // styles a container and takes no status at all, so its list is the unit
+    // value, like every other shape-B function's.
     #[cfg(feature = "iced_aw")]
     {
+        assert_eq!(
+            AW_SPINNER_STATUSES,
+            &[()],
+            "AW_SPINNER_STATUSES: the wrapped spinner takes no status, so its \
+             rows hold the unit value exactly once"
+        );
         let all = [
             AwStatus::Active,
             AwStatus::Hovered,
@@ -6236,6 +6346,7 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
             &mut failures,
             &mut ran,
         );
+        check_style_rows(AW_SPINNER_ROWS, &combinations, &mut failures, &mut ran);
     }
 
     // The calls above are a second hand-maintained list beside
@@ -6365,6 +6476,13 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
         );
         check_style_pairs(
             AW_SELECTION_LIST_PAIRS,
+            all,
+            &mut failures,
+            &mut below_aa,
+            &mut ran,
+        );
+        check_style_pairs(
+            AW_SPINNER_PAIRS,
             all,
             &mut failures,
             &mut below_aa,
