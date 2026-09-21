@@ -3614,9 +3614,6 @@ fn aw_menu<'a>(
 /// connector's feature enables.
 #[cfg(feature = "iced_aw")]
 fn view_extra(state: &State) -> Element<'_, Message> {
-    use iced_aw::style::Status;
-    use std::rc::Rc;
-
     let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
@@ -4036,16 +4033,14 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // ---- SelectionList ----
 
     // `SelectionList::new_with` is the only constructor that gives the rows a
-    // class as well as the list, and it demands a `Clone` style function; the
-    // connector's returns an opaque type that is not known to be `Clone`, so
-    // an `Rc` carries it.
-    let list_style = Rc::new(styles::aw::selection_list(resolved));
+    // class as well as the list, and it demands a `Clone` style function --
+    // which every `styles::aw::*` closure is.
     let selection_list = SelectionList::new_with(
         &state.aw_list_options,
         Message::AwListSelected,
         list_t.item_font.size,
         Padding::from(sp.xs),
-        move |theme: &Theme, status: Status| list_style(theme, status),
+        styles::aw::selection_list(resolved),
         state.aw_list_selected,
         iced::Font::DEFAULT,
     )

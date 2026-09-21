@@ -3611,3 +3611,61 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
     );
     Ok(())
 }
+
+#[cfg(feature = "widgets")]
+#[test]
+fn every_style_closure_is_clone() -> native_theme::Result<()> {
+    // `iced_aw::SelectionList::new_with` takes `style: impl Fn(&Theme, Status)
+    // -> Style + 'a + Clone` (`selection_list.rs:100-110`), and it is the only
+    // constructor that gives the rows a class as well as the list, so a
+    // consumer who wants both themed has no way round it. An `impl Trait`
+    // return type leaks only auto traits and `Clone` is not one, so every
+    // closure has to say `+ Clone` itself.
+    //
+    // Nothing is asserted at run time: the bound is the test. A closure that
+    // stopped being `Clone` -- by capturing an `Arc<str>` family name, say --
+    // would fail to compile on its own line here.
+    fn assert_clone<T: Clone>(_: &T) {}
+
+    let resolved = native_theme::theme::Theme::preset("adwaita")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    let r = &resolved;
+
+    assert_clone(&styles::button(r));
+    assert_clone(&styles::button_primary(r));
+    assert_clone(&styles::button_danger(r));
+    assert_clone(&styles::button_success(r));
+    assert_clone(&styles::button_warning(r));
+    assert_clone(&styles::button_link(r));
+    assert_clone(&styles::text_input(r));
+    assert_clone(&styles::text_editor(r));
+    assert_clone(&styles::checkbox(r));
+    assert_clone(&styles::radio(r));
+    assert_clone(&styles::toggler(r));
+    assert_clone(&styles::pick_list(r));
+    assert_clone(&styles::menu(r));
+    assert_clone(&styles::slider(r));
+    assert_clone(&styles::scrollable(r));
+    assert_clone(&styles::progress_bar(r));
+    assert_clone(&styles::rule(r));
+    assert_clone(&styles::tooltip(r));
+    assert_clone(&styles::container_card(r));
+
+    // `styles::scrollbar` returns a value rather than a closure, and
+    // `iced_widget::scrollable::Scrollbar` derives `Clone` and `Copy`
+    // upstream, so it needs nothing from us.
+    assert_clone(&styles::scrollbar(r));
+
+    #[cfg(feature = "iced_aw")]
+    {
+        assert_clone(&styles::aw::card(r));
+        assert_clone(&styles::aw::menu(r));
+        assert_clone(&styles::aw::tab_bar(r));
+        assert_clone(&styles::aw::sidebar(r));
+        assert_clone(&styles::aw::selection_list(r));
+        assert_clone(&styles::aw::spinner(r));
+    }
+
+    Ok(())
+}

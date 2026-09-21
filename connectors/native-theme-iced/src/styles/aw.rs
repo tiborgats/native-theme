@@ -7,7 +7,9 @@
 //! `.style(..)` setter on the widget. So these functions follow the same rules
 //! as [`crate::styles`] -- every field named, native values captured by value,
 //! and a field the model does not carry read from `iced_aw`'s own default class
-//! rather than written as a literal (spec section 3.2).
+//! rather than written as a literal (spec section 3.2). Every closure here is
+//! `Clone`, as [`crate::styles`]' are, because `SelectionList::new_with`
+//! demands it.
 //!
 //! `iced_aw` states one `Status` enum for every widget
 //! (`iced_aw/src/style/status.rs`), of which each widget requests only the
@@ -52,7 +54,7 @@ use native_theme::theme::ResolvedTheme;
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn card(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, Status) -> iced_aw::style::card::Style + use<> {
+) -> impl Fn(&Theme, Status) -> iced_aw::style::card::Style + Clone + use<> {
     use iced_aw::style::card::Style;
 
     let c = &resolved.card;
@@ -105,7 +107,7 @@ pub fn card(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn menu(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, Status) -> iced_aw::style::menu_bar::Style + use<> {
+) -> impl Fn(&Theme, Status) -> iced_aw::style::menu_bar::Style + Clone + use<> {
     use iced_aw::style::menu_bar::Style;
 
     let m = &resolved.menu;
@@ -166,12 +168,17 @@ pub fn menu(
 /// label colors in `Pressed`, `Focused` and `Selected`, three statuses a
 /// `TabBar` never asks for and the model describes no tab in.
 ///
-/// `tab.min_width` and `.min_height` have no receiver in the `Style`: they are
-/// the consumer's layout, `TabBar::width(..)` and `::tab_width(..)`.
+/// `tab.min_width` and `.min_height` have no receiver in the `Style`, and no
+/// faithful one anywhere: they are **minima**, and every `iced_aw` receiver
+/// that could carry them takes a fixed extent -- `TabBar::tab_width(Length)`
+/// (`tab_bar.rs:309`), `::width(..)` (`:351`) and `::height(..)` (`:223`),
+/// none of which has a minimum form. A consumer who passes the platform's
+/// minimum to one of them gets a tab that is *exactly* its minimum rather
+/// than *at least* it, which is the closest iced_aw allows.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn tab_bar(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, Status) -> iced_aw::style::tab_bar::Style + use<> {
+) -> impl Fn(&Theme, Status) -> iced_aw::style::tab_bar::Style + Clone + use<> {
     use iced_aw::style::tab_bar::Style;
 
     let t = &resolved.tab;
@@ -215,8 +222,10 @@ pub fn tab_bar(
     }
 }
 
-/// The platform's own sidebar, for `Sidebar::style(..)` and
-/// `SidebarWithContent::style(..)`.
+/// The platform's own sidebar, for `Sidebar::style(..)`
+/// (`sidebar/sidebar.rs:361`) and for `SidebarWithContent::sidebar_style(..)`
+/// (`:1308`) -- the compound widget spells the setter differently and has no
+/// `style` of its own.
 ///
 /// Replaces `iced_aw::style::sidebar::primary` (`style/sidebar.rs:85`), which
 /// paints every item in the palette's primary family and leaves the panel
@@ -248,7 +257,7 @@ pub fn tab_bar(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn sidebar(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, Status) -> iced_aw::style::sidebar::Style + use<> {
+) -> impl Fn(&Theme, Status) -> iced_aw::style::sidebar::Style + Clone + use<> {
     use iced_aw::style::sidebar::Style;
 
     let s = &resolved.sidebar;
@@ -292,7 +301,17 @@ pub fn sidebar(
     }
 }
 
-/// The platform's own selection list, for `SelectionList::style(..)`.
+/// The platform's own selection list, for `SelectionList::style(..)` -- and
+/// for the `style` argument of `SelectionList::new_with(..)`, which is the
+/// one that reaches the rows.
+///
+/// `SelectionList::new` gives the outer list *and* the inner `List` that
+/// draws the rows `Catalog::default()`, and `.style(..)` replaces only the
+/// outer one (`selection_list.rs:72-97`, `:159-167`). A consumer who wants
+/// the rows themed too must pass this function as the fifth argument of
+/// `new_with` (`selection_list.rs:100-110`), which sets both. That argument
+/// is `impl Fn(&Theme, Status) -> Style + 'a + Clone`, which is why this
+/// function's return type says `+ Clone`.
 ///
 /// Replaces `iced_aw::style::selection_list::primary`
 /// (`style/selection_list.rs:47`), which paints the hovered and the selected
@@ -317,15 +336,19 @@ pub fn sidebar(
 /// `SelectionList` never asks for and the model describes no row in, come from
 /// `selection_list::primary(theme, status)`.
 ///
-/// `list.row_height` has no receiver in the `Style`: it is
-/// `SelectionList::item_height(..)`, set where the widget is built. Neither
-/// have `list.alternate_row_background`, `.header_background`, `.header_font`
-/// or `.grid_color` -- a selection list has no striping, no column header and
-/// no grid.
+/// `list.row_height` has **no receiver at all** in `iced_aw` 0.14.1: there is
+/// no `item_height` setter anywhere in the crate, and a row's height is the
+/// sum `text_size + padding.y()` of the two arguments `new_with` takes
+/// (`selection_list/list.rs:118`, `:209`, `:223`, `:294`). A consumer can set
+/// `list.item_font.size` as `text_size` and nothing faithfully as the
+/// padding, so the stated row height cannot be reproduced without inventing
+/// the difference. Neither have `list.alternate_row_background`,
+/// `.header_background`, `.header_font` or `.grid_color` a receiver -- a
+/// selection list has no striping, no column header and no grid.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn selection_list(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, Status) -> iced_aw::style::selection_list::Style + use<> {
+) -> impl Fn(&Theme, Status) -> iced_aw::style::selection_list::Style + Clone + use<> {
     use iced_aw::style::selection_list::Style;
 
     let l = &resolved.list;
@@ -385,7 +408,7 @@ pub fn selection_list(
 /// (`:62-65`) sizes the orbiting dot rather than an arc's stroke, and iced_aw
 /// states no minimum anywhere.
 #[must_use = "this returns the style function; it does not apply it"]
-pub fn spinner(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style + use<> {
+pub fn spinner(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
     let arc = to_color(resolved.spinner.fill_color);

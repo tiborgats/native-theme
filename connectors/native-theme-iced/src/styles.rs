@@ -10,6 +10,13 @@
 //! needs by value, and returns a `'static` closure a widget can store. Its doc
 //! comment names the iced default it replaces and the setter it is passed to.
 //!
+//! Every closure is `Clone`. It captures only colors and floats, so cloning
+//! is free -- and an `impl Trait` return type leaks only auto traits, of
+//! which `Clone` is not one, so each signature has to say `+ Clone` for a
+//! caller to see it. At least one real setter requires it:
+//! `iced_aw::SelectionList::new_with` (see [`aw::selection_list`]).
+//! `every_style_closure_is_clone` in the contract module holds the line.
+//!
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
 
@@ -88,7 +95,7 @@ pub(crate) fn composite_over(layer: Color, base: Color) -> Color {
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
     let b = &resolved.button;
@@ -155,7 +162,7 @@ fn class_button(
     fill: Rgba,
     label: Rgba,
     class: fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
     let b = &resolved.button;
@@ -205,7 +212,7 @@ fn class_button(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_primary(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         resolved,
         resolved.button.primary_background,
@@ -223,7 +230,7 @@ pub fn button_primary(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_danger(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         resolved,
         resolved.defaults.danger_color,
@@ -240,7 +247,7 @@ pub fn button_danger(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_success(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         resolved,
         resolved.defaults.success_color,
@@ -257,7 +264,7 @@ pub fn button_success(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_warning(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     class_button(
         resolved,
         resolved.defaults.warning_color,
@@ -282,7 +289,7 @@ pub fn button_warning(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn button_link(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
     use iced_widget::button::{Status, Style};
 
     let l = &resolved.link;
@@ -329,7 +336,8 @@ pub fn button_link(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn text_input(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::text_input::Status) -> iced_widget::text_input::Style + Clone + use<>
+{
     use iced_widget::text_input::{Status, Style};
 
     let i = &resolved.input;
@@ -389,7 +397,8 @@ pub fn text_input(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn text_editor(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::text_editor::Status) -> iced_widget::text_editor::Style + Clone + use<>
+{
     use iced_widget::text_editor::{Status, Style};
 
     let i = &resolved.input;
@@ -451,7 +460,8 @@ pub fn text_editor(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn checkbox(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::checkbox::Status) -> iced_widget::checkbox::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::checkbox::Status) -> iced_widget::checkbox::Style + Clone + use<>
+{
     use iced_widget::checkbox::{Status, Style};
 
     let c = &resolved.checkbox;
@@ -532,7 +542,7 @@ pub fn checkbox(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn radio(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::radio::Status) -> iced_widget::radio::Style + Clone + use<> {
     use iced_widget::radio::{Status, Style};
 
     let c = &resolved.checkbox;
@@ -610,7 +620,7 @@ pub fn radio(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn toggler(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + Clone + use<> {
     use iced_widget::toggler::{Status, Style};
 
     let s = &resolved.switch;
@@ -710,7 +720,8 @@ pub fn toggler(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn pick_list(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::pick_list::Status) -> iced_widget::pick_list::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::pick_list::Status) -> iced_widget::pick_list::Style + Clone + use<>
+{
     use iced_widget::pick_list::{Status, Style};
 
     let c = &resolved.combo_box;
@@ -771,7 +782,7 @@ pub fn pick_list(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn menu(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme) -> iced_widget::overlay::menu::Style + use<> {
+) -> impl Fn(&Theme) -> iced_widget::overlay::menu::Style + Clone + use<> {
     use iced_widget::overlay::menu::Style;
 
     let m = &resolved.menu;
@@ -826,7 +837,7 @@ pub fn menu(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn slider(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::slider::Status) -> iced_widget::slider::Style + Clone + use<> {
     use iced_widget::slider::{Handle, HandleShape, Rail, Status, Style};
 
     let s = &resolved.slider;
@@ -901,7 +912,8 @@ pub fn slider(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn scrollable(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + use<> {
+) -> impl Fn(&Theme, iced_widget::scrollable::Status) -> iced_widget::scrollable::Style + Clone + use<>
+{
     use iced_widget::scrollable::{AutoScroll, Rail, Scroller, Status, Style};
 
     let s = &resolved.scrollbar;
@@ -1059,7 +1071,7 @@ pub fn scrollbar(resolved: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn progress_bar(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme) -> iced_widget::progress_bar::Style + use<> {
+) -> impl Fn(&Theme) -> iced_widget::progress_bar::Style + Clone + use<> {
     use iced_widget::progress_bar::Style;
 
     let p = &resolved.progress_bar;
@@ -1095,7 +1107,9 @@ pub fn progress_bar(
 /// `rule::default(theme)`: the corner `radius` of the line, the `fill_mode`
 /// that decides how much of the container it spans, and `snap`.
 #[must_use = "this returns the style function; it does not apply it"]
-pub fn rule(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::Style + use<> {
+pub fn rule(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
     use iced_widget::rule::Style;
 
     let line = to_color(resolved.separator.line_color);
@@ -1129,7 +1143,7 @@ pub fn rule(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> iced_widget::rule::S
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn tooltip(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme) -> iced_widget::container::Style + use<> {
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
     let t = &resolved.tooltip;
@@ -1172,7 +1186,7 @@ pub fn tooltip(
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn container_card(
     resolved: &ResolvedTheme,
-) -> impl Fn(&Theme) -> iced_widget::container::Style + use<> {
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
     let c = &resolved.card;
