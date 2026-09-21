@@ -569,6 +569,33 @@ accent_color = "#00ff00"
     }
 
     #[test]
+    fn all_presets_indicator_color_inherits_accent_text_color() {
+        // platform-facts.md §2.5 records the check mark / radio dot as the
+        // on-accent colour on all four platforms, and it is painted on
+        // checkbox.checked_background <- defaults.accent_color.
+        for info in list_presets() {
+            let name = info.key;
+            let theme = preset(name).unwrap();
+            for (label, variant_opt) in
+                [("light", theme.light.clone()), ("dark", theme.dark.clone())]
+            {
+                let Some(mut variant) = variant_opt else {
+                    continue;
+                };
+                if variant.checkbox.indicator_color.is_some() {
+                    continue;
+                }
+                variant.resolve_all();
+                assert_eq!(
+                    variant.checkbox.indicator_color, variant.defaults.accent_text_color,
+                    "preset '{name}' {label}.checkbox.indicator_color should inherit \
+                     defaults.accent_text_color"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn resolve_fills_accent_derived_fields() {
         // Load a preset that only has accent set (not explicit widget accent-derived fields).
         // After resolve(), the accent-derived fields should be populated.

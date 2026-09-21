@@ -173,7 +173,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 # checkbox (§2.5)
 "checkbox.background_color"                  = "defaults.background_color"
 "checkbox.checked_background"                = "defaults.accent_color"
-"checkbox.indicator_color"                   = "defaults.text_color"
+"checkbox.indicator_color"                   = "defaults.accent_text_color"  # the mark sits on checked_background
 "checkbox.disabled_opacity"                  = "defaults.disabled_opacity"
 "checkbox.disabled_text_color"               = "defaults.disabled_text_color"
 

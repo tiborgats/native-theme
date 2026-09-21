@@ -151,7 +151,7 @@ pub struct CheckboxTheme {
     #[theme(inherit_from = "defaults.accent_color")]
     pub checked_background: Option<Rgba>,
     /// Indicator (check mark / radio dot) color.
-    #[theme(inherit_from = "defaults.text_color")]
+    #[theme(inherit_from = "defaults.accent_text_color")]
     pub indicator_color: Option<Rgba>,
     /// Indicator (check mark / radio dot) width in logical pixels.
     #[serde(rename = "indicator_width_px")]
