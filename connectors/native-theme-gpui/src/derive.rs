@@ -4,7 +4,8 @@
 //! reads directly from the resolved theme. This module is retained for:
 //! - `hover_color` / `active_color`: status color hover/active pairs (danger,
 //!   success, warning, info) and primary button states
-//! - `active_color`: link active fallback
+//! - `active_color`: the pressed fill an ordinary button falls back to where
+//!   the platform states no `button.active_background`
 //! - `light_variant`: chart `_light` color derivation
 //! - `contrast_ratio`: the contrast invariant of the theme contracts (spec §7)
 //!

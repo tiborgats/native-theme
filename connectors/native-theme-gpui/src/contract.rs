@@ -866,7 +866,8 @@ const DERIVED: &[(&str, &str)] = &[
     ("cyan_light", "light_variant(background, cyan, is_dark)"),
 ];
 
-/// Native colours `ThemeColor` has no field to receive, with the evidence.
+/// Native colours `ThemeColor` has no field to receive: the ones this release
+/// examined, with the evidence. Not an exhaustive census of the model.
 ///
 /// A claim about a *native* field rather than an emitted one, so the coverage
 /// tripwire cannot see it: that walks what the connector produces. What is
@@ -998,8 +999,10 @@ impl Checked {
         declared.sort_unstable();
         let duplicated: Vec<&str> = declared
             .windows(2)
-            .filter(|pair| pair[0] == pair[1])
-            .map(|pair| pair[0])
+            .filter_map(|pair| match pair {
+                [a, b] if a == b => Some(*a),
+                _ => None,
+            })
             .collect();
         declared.dedup();
 
@@ -1488,18 +1491,6 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     Pair {
-        what: "tab label",
-        native: |r, _| {
-            (
-                rgba_to_hsla(r.tab.font.color),
-                rgba_to_hsla(r.tab.background_color),
-                rgba_to_hsla(r.tab.bar_background),
-            )
-        },
-        emitted: |tc| (tc.tab_foreground, tc.tab, tc.tab_bar),
-        exceptions: &[],
-    },
-    Pair {
         what: "active tab label",
         native: |r, _| {
             (
@@ -1509,33 +1500,6 @@ const PAIRS: &[Pair] = &[
             )
         },
         emitted: |tc| (tc.tab_active_foreground, tc.tab_active, tc.tab_bar),
-        exceptions: &[],
-    },
-    // The model carries no title-bar or status-bar text colour of its own, so
-    // the platform's pair reads the window foreground on that bar -- exactly
-    // what upstream inherits into both.
-    Pair {
-        what: "title bar text",
-        native: |r, _| {
-            (
-                rgba_to_hsla(r.defaults.text_color),
-                rgba_to_hsla(r.window.title_bar_background),
-                native_window(r),
-            )
-        },
-        emitted: |tc| (tc.foreground, tc.title_bar, tc.background),
-        exceptions: &[],
-    },
-    Pair {
-        what: "status bar text",
-        native: |r, _| {
-            (
-                rgba_to_hsla(r.status_bar.font.color),
-                rgba_to_hsla(r.status_bar.background_color),
-                native_window(r),
-            )
-        },
-        emitted: |tc| (tc.foreground, tc.status_bar, tc.background),
         exceptions: &[],
     },
     // The header row upstream paints: `table_head_foreground` on
@@ -1612,10 +1576,15 @@ const PAIRS: &[Pair] = &[
 /// A pair whose two ratios are printed and not asserted, with the reason.
 ///
 /// Spec section 7 asserts where the connector controls both colours and
-/// reports where it does not. Two of these are upstream gaps -- a `ThemeColor`
-/// with no foreground token for a surface the platform pairs one with -- and
-/// the third is a finding this test made, recorded here rather than silenced:
-/// see `LINK_HOVER_IS_A_FILL`.
+/// reports where it does not, and the line between the two is: a pair is
+/// asserted only where both emitted colours are tokens upstream really paints
+/// for that surface *and* each is pinned by a contract row to the very native
+/// field the pair's native side reads. Everything here fails the second half
+/// -- upstream has no token for the colour the platform states, so the emitted
+/// side is whatever upstream does paint instead, and the two sides are not
+/// comparable as an assertion. Each is still measured on every run, printed
+/// with both ratios and with the count of combinations where ours is the
+/// worse, so none of them can go quiet.
 struct Reported {
     what: &'static str,
     why: &'static str,
@@ -1645,16 +1614,136 @@ const REPORTED: &[Reported] = &[
         why: "ThemeColor has no foreground for selected text: `selection` is a \
               highlight upstream paints under text that keeps its own colour \
               (input/input.rs:502), while the platform pairs \
-              selection_background with selection_text_color",
+              input.selection_background with input.selection_text_color",
         native: |r| {
             (
-                rgba_to_hsla(r.defaults.selection_text_color),
-                rgba_to_hsla(r.defaults.selection_background),
+                rgba_to_hsla(r.input.selection_text_color),
+                rgba_to_hsla(r.input.selection_background),
                 native_window(r),
             )
         },
         emitted: |tc| (tc.foreground, tc.selection, tc.background),
     },
+    // Upstream paints a status bar's text with `muted_foreground`
+    // (`status_bar.rs:95`) on `tokens.status_bar` (`:93`). The connector's own
+    // `geometry::status_bar` builder does not carry the colour either: it sets
+    // the platform's text size and weight and nothing else
+    // (`geometry.rs:49-52`, `:163-170`).
+    Reported {
+        what: "status bar text",
+        why: "ThemeColor has no status-bar foreground: upstream labels the bar \
+              with muted_foreground (status_bar.rs:95), which the connector \
+              feeds from defaults.muted_color, while the platform states \
+              status_bar.font.color -- a colour that reaches nothing, since \
+              geometry::status_bar carries only size and weight (Tier U)",
+        native: |r| {
+            (
+                rgba_to_hsla(r.status_bar.font.color),
+                rgba_to_hsla(r.status_bar.background_color),
+                native_window(r),
+            )
+        },
+        emitted: |tc| (tc.muted_foreground, tc.status_bar, tc.background),
+    },
+    // Upstream's title bar has no text colour of its own: its children
+    // inherit, and the one thing it paints itself -- the window controls --
+    // takes `foreground` (`title_bar.rs:217`). Its fill is a gradient, not a
+    // flat `title_bar` (`:21-35`, applied at `:339`), so the emitted side is
+    // measured against whichever end is the worse of the two.
+    Reported {
+        what: "title bar text",
+        why: "ThemeColor has no title-bar foreground: upstream inherits \
+              `foreground` into the bar and paints its window controls with it \
+              (title_bar.rs:217) over a gradient from a 55/45 mix of title_bar \
+              and background to title_bar (:21-35, :339) -- measured at the \
+              worse end -- while the platform states window.title_bar_font, a \
+              colour that reaches nothing, since geometry::title_bar carries \
+              only size and weight (Tier U)",
+        native: |r| {
+            (
+                rgba_to_hsla(r.window.title_bar_font.color),
+                rgba_to_hsla(r.window.title_bar_background),
+                native_window(r),
+            )
+        },
+        emitted: |tc| {
+            (
+                tc.foreground,
+                worse_title_bar_end(tc.foreground, tc.title_bar, tc.background),
+                tc.background,
+            )
+        },
+    },
+    // An idle tab is `transparent` in every variant (`tab/tab.rs:132, 146,
+    // 153, 158`) and `tokens.tab` has no reader at all in 0.6.4, so upstream
+    // renders the label on the bar; the platform renders it on the tab's own
+    // fill. The row for `tab` stays: it is still the truth about the mapping
+    // if upstream starts reading the token.
+    Reported {
+        what: "tab label",
+        why: "upstream paints an idle tab transparent (tab/tab.rs:132) and \
+              nothing reads tokens.tab, so the label lands on tab_bar, while \
+              the platform pairs tab.font.color with tab.background_color",
+        native: |r| {
+            (
+                rgba_to_hsla(r.tab.font.color),
+                rgba_to_hsla(r.tab.background_color),
+                rgba_to_hsla(r.tab.bar_background),
+            )
+        },
+        emitted: |tc| (tc.tab_foreground, tc.tab_bar, tc.tab_bar),
+    },
+];
+
+/// The end of upstream's title-bar gradient that contrasts worse with `fg`.
+///
+/// `TitleBar` fills itself with `default_title_bar_background(title_bar,
+/// background)` (`title_bar.rs:339`), a vertical gradient from a 55/45 mix of
+/// the two tokens to `title_bar` alone (`:21-35`). The mix is upstream's
+/// arithmetic, reproduced here with its own factors so the reported ratio is
+/// the one a user can actually read at the worse end of the bar.
+fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
+    let (t, b) = (gpui::Rgba::from(title_bar), gpui::Rgba::from(background));
+    let mix = |t: f32, b: f32| (t * 0.55) + (b * 0.45);
+    let mixed: Hsla = gpui::Rgba {
+        r: mix(t.r, b.r),
+        g: mix(t.g, b.g),
+        b: mix(t.b, b.b),
+        a: mix(t.a, b.a),
+    }
+    .into();
+    if pair_ratio(fg, mixed, background) <= pair_ratio(fg, title_bar, background) {
+        mixed
+    } else {
+        title_bar
+    }
+}
+
+/// Asserted pairs whose emitted side rests on a token 0.6.4 paints nowhere.
+///
+/// The row that maps such a token stays -- it is the truth about the mapping
+/// for the day upstream reads it -- but a contrast pair over it is a claim
+/// about a surface nothing draws, so it is named here with the evidence,
+/// printed, and left out of the coverage the summary counts. The names are
+/// checked against the pair list, so a renamed pair cannot leave a note
+/// pointing at nothing.
+const INERT_SURFACES: &[(&str, &str)] = &[
+    (
+        "list row text",
+        "nothing reads tokens.list: a ListItem paints no idle background \
+         (list/list_item.rs:209, 236-242) and the token survives only as a \
+         schema fallback (theme/schema.rs:967-968, 1002)",
+    ),
+    (
+        "hovered list row",
+        "the hover fill itself is painted (list/list_item.rs:209), but the \
+         surface under it is tokens.list, which nothing paints",
+    ),
+    (
+        "sidebar primary button label",
+        "neither sidebar_primary nor sidebar_primary_foreground has a reader \
+         outside theme/ in 0.6.4",
+    ),
 ];
 
 /// Contrast of `fg` on `bg`, with every layer composited first: `bg` over the
@@ -1727,6 +1816,37 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     let declared: Vec<&'static str> = PAIRS.iter().map(|pair| pair.what).collect();
     ran.covers(&declared, "the contrast pair list");
 
+    // A pair whose two sides are pinned to the same native fields emits the
+    // platform's own ratio in every combination and cannot fail: worth
+    // knowing, and derived here rather than claimed, so the figure cannot
+    // drift from the pairs.
+    let unbiting: Vec<&'static str> = PAIRS
+        .iter()
+        .filter(|pair| {
+            combinations.iter().all(|c| {
+                let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved, c.is_dark);
+                let (fg, bg, surface) = (pair.emitted)(&c.colors);
+                pair_ratio(fg, bg, surface) == pair_ratio(native_fg, native_bg, native_surface)
+            })
+        })
+        .map(|pair| pair.what)
+        .collect();
+    let dangling: Vec<&str> = INERT_SURFACES
+        .iter()
+        .map(|(what, _)| *what)
+        .filter(|what| !declared.contains(what))
+        .collect();
+    assert!(
+        dangling.is_empty(),
+        "{} inert-surface note(s) name a pair that is not in the list: {:?}",
+        dangling.len(),
+        dangling
+    );
+    let inert: Vec<String> = INERT_SURFACES
+        .iter()
+        .map(|(what, why)| format!("  {what} -- {why}"))
+        .collect();
+
     // The pairs section 7 reports rather than asserts: printed with both
     // ratios, and with the count of combinations where ours is the worse, so
     // the record says how large each one is rather than only that it exists.
@@ -1765,13 +1885,24 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     }
 
     println!(
-        "--- gpui contrast: {} asserted pairs x {} combinations = {} \
-         comparisons, {} below AA ---\n{}\n--- reported, not asserted ---\n{}",
+        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.6.4 \
+         paints nowhere, not counted as coverage: {} surfaces covered) x {} \
+         combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
+         asserted pairs, {} emit the platform's own ratio in all {} \
+         combinations and cannot fail as the presets stand ({:?}); {} can bite \
+         ---\n--- inert surfaces ---\n{}\n--- reported, not asserted ---\n{}",
         PAIRS.len(),
+        inert.len(),
+        PAIRS.len() - inert.len(),
         combinations.len(),
         ran.checks,
         below_aa.len(),
         below_aa.join("\n"),
+        unbiting.len(),
+        combinations.len(),
+        unbiting,
+        PAIRS.len() - unbiting.len(),
+        inert.join("\n"),
         reported.join("\n")
     );
     assert!(
