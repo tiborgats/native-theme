@@ -654,6 +654,33 @@ if [ "$CLEAN_STATUS" -ne 0 ]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: compatibility claims
+#
+# Each connector's README states the upstream set it has been verified
+# against. scripts/compat-check.sh run earns that line — it resolves the
+# newest upstream release on a throwaway lockfile, runs the connector's gates
+# on it and stamps docs/COMPATIBILITY.toml — and `check` says here whether the
+# connector's sources are still the ones that run covered. Same class as the
+# asset stamp above: a warning while the CHANGELOG entry for this version
+# still says "Unreleased" and a hard failure once it carries a date, because a
+# release must not state a compatibility nobody verified. `check` reads git
+# and the stamp, never the registry.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Compatibility claims"
+set +e
+COMPAT_MSG=$(bash scripts/compat-check.sh check 2>&1)
+COMPAT_STATUS=$?
+set -e
+if [ "$COMPAT_STATUS" -eq 0 ]; then
+    print_ok "$COMPAT_MSG"
+elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+    print_fail "$COMPAT_MSG"
+    printf "${DIM}    CHANGELOG.md dates %s: release tree, re-verify before tagging${NC}\n" "$CURRENT_VERSION"
+else
+    print_warn "$COMPAT_MSG"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Final summary
 # ─────────────────────────────────────────────────────────────────────────────
 TOTAL=$((PASS_COUNT + WARN_COUNT + FAIL_COUNT))
@@ -686,10 +713,11 @@ printf "${BOLD}═════════════════════�
 if [ "$FAIL_COUNT" -eq 0 ]; then
     printf "\n${BOLD}${BLUE}Next steps:${NC}\n"
     printf "   1. Review the changes once more\n"
-    printf "   2. Visual assets: if the check above warned, push, run ${DIM}./scripts/pre-release.sh${NC}\n"
-    printf "      and commit the assets together with docs/assets/PROVENANCE.toml\n"
+    printf "   2. Visual assets and compatibility: if either check above warned, push, run\n"
+    printf "      ${DIM}./scripts/pre-release.sh${NC} and commit the assets with docs/assets/PROVENANCE.toml,\n"
+    printf "      docs/COMPATIBILITY.toml and the connector READMEs it rewrote\n"
     printf "   3. Date the CHANGELOG entry, set its compare link, commit ${DIM}chore(release): v%s${NC}\n" "$CURRENT_VERSION"
-    printf "   4. Re-run this script on that commit (the asset check is hard once the entry is dated)\n"
+    printf "   4. Re-run this script on that commit (both stamp checks are hard once the entry is dated)\n"
     printf "   5. Fast-forward main to it and push; CI runs on the exact commit\n"
     printf "   6. Tag: ${DIM}git tag v%s${NC}\n" "$CURRENT_VERSION"
     printf "   7. Push: ${DIM}git push origin v%s${NC}\n" "$CURRENT_VERSION"

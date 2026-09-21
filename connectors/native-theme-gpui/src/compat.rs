@@ -21,6 +21,13 @@ const README: &str = include_str!("../README.md");
 const MANIFEST: &str = include_str!("../Cargo.toml");
 const WORKSPACE: &str = include_str!("../../../Cargo.toml");
 
+/// The stamp `scripts/compat-check.sh run` writes when every gate passed on
+/// the upstream set it resolved, and the name of the table that speaks for
+/// this crate -- the package's own, so a rename cannot leave the test looking
+/// at nothing.
+const STAMP: &str = include_str!("../../../docs/COMPATIBILITY.toml");
+const CRATE: &str = env!("CARGO_PKG_NAME");
+
 /// The upstream crates whose floor the README's Compatibility table states, by
 /// package name -- `gpui-pre` is named `gpui` in the manifest, and answers to
 /// its package name in both files.
@@ -204,6 +211,35 @@ fn backticked(cell: &str) -> Option<&str> {
     body.get(..end)
 }
 
+/// The sentence `scripts/compat-check.sh run` writes between the README's
+/// compat markers, rendered a second time from the stamp that same run wrote.
+///
+/// Rendering it again rather than storing it is what makes a README edited by
+/// hand a failure instead of a difference nobody looks for: the versions and
+/// the date have one source, and it is the run.
+fn verified_sentence(stamp: &str, crate_name: &str) -> Option<String> {
+    let generated = table_value(stamp, &format!("[{crate_name}]"), "generated")?;
+    let pairs: Vec<String> = section(stamp, &format!("[{crate_name}.verified]"))
+        .into_iter()
+        .filter_map(|line| line.split_once(" = "))
+        .filter_map(|(name, value)| Some(format!("{} {}", name.trim(), quoted(value)?)))
+        .collect();
+    let listed = match pairs.split_last()? {
+        (last, []) => last.clone(),
+        (last, rest) => format!("{} and {last}", rest.join(", ")),
+    };
+    Some(format!("Verified against {listed} on {generated}."))
+}
+
+/// The line the README carries between its compat markers, with its line
+/// number.
+fn verified_line(readme: &str) -> Option<(usize, &str)> {
+    let mut lines = readme.lines().enumerate();
+    lines.find(|(_, line)| line.trim_end() == "<!-- compat:begin -->")?;
+    let (ix, line) = lines.next()?;
+    (line.trim_end() != "<!-- compat:end -->").then_some((ix + 1, line))
+}
+
 /// The README's **Required** table states this crate's own floors, all of them
 /// and nothing else.
 #[test]
@@ -242,9 +278,84 @@ fn the_readme_states_the_manifest_floors() {
     );
 }
 
-/// Both halves of the test above have to be real: a manifest parser that found
-/// no versions, or a table parser that found no rows, would let a false floor
-/// through without a word.
+/// The README's **Verified** line is `docs/COMPATIBILITY.toml`'s entry for
+/// this crate, so a line written by hand -- or one left behind when the stamp
+/// moved on -- is a failure and not a quiet difference.
+#[test]
+fn the_verified_line_is_the_stamps() {
+    let expected = verified_sentence(STAMP, CRATE);
+    assert!(
+        expected.is_some(),
+        "docs/COMPATIBILITY.toml carries no `generated` date or no `[{CRATE}.verified]` \
+         versions for {CRATE}; `scripts/compat-check.sh run` writes both"
+    );
+    let found = verified_line(README);
+    assert!(
+        found.is_some(),
+        "the README carries no line between `<!-- compat:begin -->` and `<!-- compat:end -->`; \
+         `scripts/compat-check.sh run` writes it there"
+    );
+    if let (Some(expected), Some((line, stated))) = (expected, found) {
+        assert_eq!(
+            stated,
+            expected.as_str(),
+            "README.md:{line} states a verified set that is not docs/COMPATIBILITY.toml's; \
+             one run writes both, and neither is edited by hand"
+        );
+    }
+}
+
+/// Both halves of the test above have to be real: a stamp parser that found no
+/// versions, or a marker reader that found no line, would agree with any
+/// README at all.
+#[test]
+fn the_stamp_and_marker_parsers_do_their_jobs() {
+    let stamp = "[a-crate]\n\
+                 commit = \"0000000\"\n\
+                 generated = \"2026-09-21\"\n\
+                 sources = \"abc\"\n\
+                 \n\
+                 [a-crate.verified]\n\
+                 one = \"1.0\"\n\
+                 two = \"2.0\"\n\
+                 three = \"3.0\"\n\
+                 \n\
+                 [b-crate]\n\
+                 generated = \"2026-01-01\"\n\
+                 \n\
+                 [b-crate.verified]\n\
+                 only = \"9.9\"\n";
+    assert_eq!(
+        verified_sentence(stamp, "a-crate").as_deref(),
+        Some("Verified against one 1.0, two 2.0 and three 3.0 on 2026-09-21.")
+    );
+    // One version takes no "and", and a table belongs to the crate it is under.
+    assert_eq!(
+        verified_sentence(stamp, "b-crate").as_deref(),
+        Some("Verified against only 9.9 on 2026-01-01.")
+    );
+    assert_eq!(verified_sentence(stamp, "c-crate"), None);
+
+    let readme = "before\n\
+                  <!-- compat:begin -->\n\
+                  Verified against x 1.0 on 2026-09-21.\n\
+                  <!-- compat:end -->\n\
+                  after\n";
+    assert_eq!(
+        verified_line(readme),
+        Some((3, "Verified against x 1.0 on 2026-09-21."))
+    );
+    assert_eq!(verified_line("no markers here\n"), None);
+    assert_eq!(
+        verified_line("<!-- compat:begin -->\n<!-- compat:end -->\n"),
+        None,
+        "an empty marker pair states nothing, and nothing is not a claim to accept"
+    );
+}
+
+/// Both halves of the floors test have to be real: a manifest parser that
+/// found no versions, or a table parser that found no rows, would let a false
+/// floor through without a word.
 #[test]
 fn the_manifest_and_table_parsers_do_their_jobs() {
     let manifest = "[package]\n\

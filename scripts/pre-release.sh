@@ -193,6 +193,20 @@ info "Recording provenance..."
 bash "$SCRIPT_DIR/asset-stamp.sh" write
 ok "docs/assets/PROVENANCE.toml written for $EXPECTED_SHA"
 
+# ── Refresh the compatibility claim ──────────────────────────────────────
+
+# The connector READMEs state the upstream set each has been verified
+# against, and a release should not carry a set that was verified before the
+# sources it names. This resolves the newest upstream release on a throwaway
+# lockfile, runs each connector's gates on it, and rewrites
+# docs/COMPATIBILITY.toml and the two Verified lines from what it resolved;
+# the committed Cargo.lock keeps its floors either way. It fails the script if
+# a connector no longer passes on the newest set, which is the answer the
+# release needs before the tag, not after it.
+info "Verifying the connectors against the newest upstream releases..."
+bash "$SCRIPT_DIR/compat-check.sh" run
+ok "docs/COMPATIBILITY.toml and the connector READMEs refreshed"
+
 # ── Summary ──────────────────────────────────────────────────────────
 
 echo ""
@@ -209,4 +223,4 @@ for dir in "$ICED_DIR" "$GPUI_DIR" "$NT_DIR"; do
     echo ""
 done
 
-info "Review the assets, then commit: git add docs/assets/PROVENANCE.toml native-theme/docs/assets/ connectors/native-theme-*/docs/assets/ && git commit -m 'docs: regenerate visual assets'"
+info "Review the assets, then commit: git add docs/assets/PROVENANCE.toml docs/COMPATIBILITY.toml native-theme/docs/assets/ connectors/native-theme-*/docs/assets/ connectors/native-theme-*/README.md && git commit -m 'docs: regenerate visual assets and refresh the compatibility stamp'"
