@@ -393,20 +393,98 @@ fn check_border_rows<S: Copy + std::fmt::Debug>(
                     ));
                 }
 
-                for (leaf, corner) in [
-                    ("top_left", actual.radius.top_left),
-                    ("top_right", actual.radius.top_right),
-                    ("bottom_right", actual.radius.bottom_right),
-                    ("bottom_left", actual.radius.bottom_left),
-                ] {
-                    ran.checks += 1;
-                    if corner != expected.radius {
-                        failures.push(format!(
-                            "{}: {}.border.radius.{leaf} ({status:?}) is {corner}, \
-                             native gives {}",
-                            c.label(),
+                ran.checks += check_corners(
+                    actual.radius,
+                    expected.radius,
+                    &format!("{}.border.radius", row.field),
+                    &format!("{status:?}"),
+                    &c.label(),
+                    failures,
+                );
+            }
+        }
+    }
+}
+
+/// Compare the four corners of an emitted `Radius` against the one native
+/// value the model states for all of them, naming the exact corner. Returns
+/// how many comparisons it made.
+///
+/// The model states a corner radius as a single length, so the four corners
+/// are one native value four times over; a row that claims a `Radius` claims
+/// all four, and a failure has to say which one drifted.
+#[cfg(feature = "widgets")]
+fn check_corners(
+    actual: Radius,
+    expected: f32,
+    field: &str,
+    status: &str,
+    label: &str,
+    failures: &mut Vec<String>,
+) -> usize {
+    for (leaf, corner) in [
+        ("top_left", actual.top_left),
+        ("top_right", actual.top_right),
+        ("bottom_right", actual.bottom_right),
+        ("bottom_left", actual.bottom_left),
+    ] {
+        if corner != expected {
+            failures.push(format!(
+                "{label}: {field}.{leaf} ({status}) is {corner}, native gives {expected}"
+            ));
+        }
+    }
+    4
+}
+
+/// One row of the style contract for a `Style` field that is a whole `Radius`
+/// rather than part of a `Border`.
+///
+/// `toggler::Style.border_radius` is the one such field: an `Option<Radius>`
+/// whose `None` means "perfectly round, whatever the platform states", so a
+/// `None` where the model has a value is a failure of the row rather than
+/// something to unwrap. The row claims the one leaf name the tripwire walks,
+/// `styles::toggler.border_radius`, and checks all four corners under it.
+#[cfg(feature = "widgets")]
+struct RadiusRow<S: 'static> {
+    field: &'static str,
+    statuses: &'static [S],
+    native: fn(&ResolvedTheme, S) -> f32,
+    get: fn(&Theme, &ResolvedTheme, S) -> Result<Radius, String>,
+}
+
+/// Assert one function's radius rows over every combination and status.
+#[cfg(feature = "widgets")]
+fn check_radius_rows<S: Copy + std::fmt::Debug>(
+    rows: &[RadiusRow<S>],
+    combinations: &[Combination],
+    failures: &mut Vec<String>,
+    ran: &mut Checked,
+) {
+    for row in rows {
+        ran.ran(row.field, row.statuses);
+    }
+    for c in combinations {
+        for row in rows {
+            for &status in row.statuses {
+                let expected = (row.native)(&c.resolved, status);
+                match (row.get)(&c.theme, &c.resolved, status) {
+                    Ok(actual) => {
+                        ran.checks += check_corners(
+                            actual,
+                            expected,
                             row.field,
-                            expected.radius
+                            &format!("{status:?}"),
+                            &c.label(),
+                            failures,
+                        );
+                    }
+                    Err(why) => {
+                        ran.checks += 1;
+                        failures.push(format!(
+                            "{}: {} ({status:?}) is {why}",
+                            c.label(),
+                            row.field
                         ));
                     }
                 }
@@ -961,6 +1039,18 @@ fn native_checkbox_outline(r: &ResolvedTheme, is_checked: bool) -> Color {
     })
 }
 
+/// The label the native fields give a checkbox in `status`: the platform dims
+/// a disabled one, and states the color it dims it to.
+#[cfg(feature = "widgets")]
+fn native_checkbox_label(r: &ResolvedTheme, status: checkbox::Status) -> Color {
+    let c = &r.checkbox;
+    to_color(match status {
+        checkbox::Status::Active { is_checked: _ }
+        | checkbox::Status::Hovered { is_checked: _ } => c.font.color,
+        checkbox::Status::Disabled { is_checked: _ } => c.disabled_text_color,
+    })
+}
+
 #[cfg(feature = "widgets")]
 fn native_checkbox_border(r: &ResolvedTheme, status: checkbox::Status) -> Color {
     match status {
@@ -989,7 +1079,7 @@ const CHECKBOX_ROWS: &[StyleRow<checkbox::Status>] = &[
     StyleRow {
         field: "styles::checkbox.text_color",
         statuses: CHECKBOX_STATUSES,
-        native: |r, _| to_color(r.checkbox.font.color),
+        native: native_checkbox_label,
         get: |t, r, s| stated(styles::checkbox(r)(t, s).text_color),
     },
 ];
@@ -1177,6 +1267,23 @@ const TOGGLER_ROWS: &[StyleRow<toggler::Status>] = &[
         get: |t, r, s| fill(styles::toggler(r)(t, s).foreground),
     },
 ];
+
+/// The switch's corner radius, `switch.track_radius`. It shapes the thumb as
+/// well as the track: iced paints both quads with this one radius
+/// (`toggler.rs:435`, `:461`).
+#[cfg(feature = "widgets")]
+const TOGGLER_RADIUS_ROWS: &[RadiusRow<toggler::Status>] = &[RadiusRow {
+    field: "styles::toggler.border_radius",
+    statuses: TOGGLER_STATUSES,
+    native: |r, _| r.switch.track_radius,
+    get: |t, r, s| {
+        styles::toggler(r)(t, s).border_radius.ok_or_else(|| {
+            "no radius where the contract claims one; iced's None would make \
+             the switch perfectly round whatever the platform states"
+                .to_string()
+        })
+    },
+}];
 
 /// Every value of `pick_list::Status`: `Opened` carries whether the pointer is
 /// on the field (`pick_list.rs:838-849`), so there are four.
@@ -1406,6 +1513,7 @@ fn style_row_fields() -> Vec<String> {
     out.extend(RADIO_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(RADIO_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(TOGGLER_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TOGGLER_RADIUS_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(PICK_LIST_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(MENU_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(SLIDER_ROWS.iter().map(|row| row.field.to_string()));
@@ -1723,13 +1831,6 @@ const DERIVED: &[(&str, &str)] = &[
         "styles::toggler.foreground_border_color",
         "iced default: toggler::default(theme, status).foreground_border_color \
          -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.border_radius",
-        "iced default: toggler::default(theme, status).border_radius -- no \
-         native source per spec section 3.2, and iced's None means a \
-         perfectly round track",
     ),
     #[cfg(feature = "widgets")]
     (
@@ -2132,33 +2233,51 @@ const TEXT_EDITOR_PAIRS: &[StylePair<text_editor::Status>] = &[
 /// is the same as everywhere else -- that our ratio is not worse than the
 /// platform's own pair.
 ///
-/// The *label* of a checkbox or a radio button gets no pair: it is painted on
-/// the window, which this function does not emit. Its color is pinned exactly
-/// by its row instead.
+/// The *label* pair is a text pair, and the only one of these functions where
+/// the fill is not the function's own: a checkbox label sits beside the box,
+/// on the window. Both colors are still native and both are still pinned --
+/// the foreground by the row above, the window by the `palette.background`
+/// row -- so section 7's rule has two native colors to compare, which is what
+/// it asks for. It matters most in the disabled status, where the platform
+/// dims the label on purpose.
 #[cfg(feature = "widgets")]
-const CHECKBOX_PAIRS: &[StylePair<checkbox::Status>] = &[StylePair {
-    what: "checkbox mark",
-    statuses: CHECKBOX_CHECKED_STATUSES,
-    emitted: |t, r, s| {
-        let style = styles::checkbox(r)(t, s);
-        // The box is painted on the window, so that is what a translucent
-        // fill -- windows-11 states one -- shows through to.
-        fill(style.background).map(|background| {
+const CHECKBOX_PAIRS: &[StylePair<checkbox::Status>] = &[
+    StylePair {
+        what: "checkbox mark",
+        statuses: CHECKBOX_CHECKED_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::checkbox(r)(t, s);
+            // The box is painted on the window, so that is what a translucent
+            // fill -- windows-11 states one -- shows through to.
+            fill(style.background).map(|background| {
+                (
+                    style.icon_color,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
             (
-                style.icon_color,
-                background,
+                to_color(r.checkbox.indicator_color),
+                native_checkbox_fill(r, s),
                 to_color(r.defaults.background_color),
             )
-        })
+        },
     },
-    native: |r, s| {
-        (
-            to_color(r.checkbox.indicator_color),
-            native_checkbox_fill(r, s),
-            to_color(r.defaults.background_color),
-        )
+    StylePair {
+        what: "checkbox label",
+        statuses: CHECKBOX_STATUSES,
+        emitted: |t, r, s| {
+            let window = to_color(r.defaults.background_color);
+            stated(styles::checkbox(r)(t, s).text_color).map(|label| (label, window, window))
+        },
+        native: |r, s| {
+            let window = to_color(r.defaults.background_color);
+            (native_checkbox_label(r, s), window, window)
+        },
     },
-}];
+];
 
 #[cfg(feature = "widgets")]
 const RADIO_PAIRS: &[StylePair<radio::Status>] = &[StylePair {
@@ -3634,6 +3753,7 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     check_style_rows(RADIO_ROWS, &combinations, &mut failures, &mut ran);
     check_scalar_rows(RADIO_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(TOGGLER_ROWS, &combinations, &mut failures, &mut ran);
+    check_radius_rows(TOGGLER_RADIUS_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(PICK_LIST_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(
         PICK_LIST_BORDER_ROWS,

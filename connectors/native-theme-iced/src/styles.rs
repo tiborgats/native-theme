@@ -442,9 +442,9 @@ pub fn text_editor(
 /// border color of its own, `.unchecked_border_color`.
 ///
 /// Nothing here comes from iced: every field of `checkbox::Style` has a native
-/// source. The label stays `checkbox.font.color` in every status -- the model
-/// states a `.disabled_text_color`, but spec section 3.3 does not map it here,
-/// and iced's own class does not dim a disabled label either.
+/// source. The label is `checkbox.font.color`, and `.disabled_text_color` when
+/// the box is disabled -- the platform dims it, where iced's own class leaves
+/// the label to be inherited whole.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn checkbox(
     resolved: &ResolvedTheme,
@@ -465,6 +465,7 @@ pub fn checkbox(
 
     let mark = to_color(c.indicator_color);
     let label = to_color(c.font.color);
+    let disabled_label = to_color(c.disabled_text_color);
 
     let checked_border = to_color(c.border.color);
     let unchecked_border = to_color(c.unchecked_border_color.unwrap_or(c.border.color));
@@ -472,19 +473,19 @@ pub fn checkbox(
     let border_radius = Radius::new(c.border.corner_radius);
 
     move |_theme, status| {
-        let (background, border_color) = match status {
+        let (background, border_color, text_color) = match status {
             Status::Active { is_checked } => {
                 if is_checked {
-                    (checked, checked_border)
+                    (checked, checked_border, label)
                 } else {
-                    (unchecked, unchecked_border)
+                    (unchecked, unchecked_border, label)
                 }
             }
             Status::Hovered { is_checked } => {
                 if is_checked {
-                    (hovered_checked, checked_border)
+                    (hovered_checked, checked_border, label)
                 } else {
-                    (hovered_unchecked, unchecked_border)
+                    (hovered_unchecked, unchecked_border, label)
                 }
             }
             // The platform states one disabled fill for both, and the box
@@ -496,6 +497,7 @@ pub fn checkbox(
                 } else {
                     unchecked_border
                 },
+                disabled_label,
             ),
         };
         Style {
@@ -506,7 +508,7 @@ pub fn checkbox(
                 width: border_width,
                 radius: border_radius,
             },
-            text_color: Some(label),
+            text_color: Some(text_color),
         }
     }
 }
@@ -584,11 +586,16 @@ pub fn radio(
 /// so emitted as given in every state, and `.disabled_thumb_color` when the
 /// switch is off.
 ///
+/// `border_radius` is `switch.track_radius`, and it shapes the whole widget:
+/// iced paints the track and the thumb as two quads with the *same* radius
+/// (`toggler.rs:435`, `:461`), and its own `None` would make both perfectly
+/// round (`toggler.rs:427-429`) whatever the platform states.
+///
 /// Six fields have no native source and come from `toggler::default(theme,
 /// status)`: `SwitchTheme` carries neither border nor thumb inset, so both
-/// border widths, both border colors, `border_radius` and `padding_ratio` are
-/// iced's. So is `text_color`: the model states no font for a switch, and
-/// iced's `None` inherits the surrounding one.
+/// border widths, both border colors and `padding_ratio` are iced's. So is
+/// `text_color`: the model states no font for a switch, and iced's `None`
+/// inherits the surrounding one.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn toggler(
     resolved: &ResolvedTheme,
@@ -623,6 +630,8 @@ pub fn toggler(
     let thumb = to_color(s.thumb_background);
     let disabled_thumb = to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background));
 
+    let track_radius = Radius::new(s.track_radius);
+
     move |theme, status| {
         let iced = iced_widget::toggler::default(theme, status);
         let (background, foreground) = match status {
@@ -656,7 +665,7 @@ pub fn toggler(
             foreground_border_width: iced.foreground_border_width,
             foreground_border_color: iced.foreground_border_color,
             text_color: iced.text_color,
-            border_radius: iced.border_radius,
+            border_radius: Some(track_radius),
             padding_ratio: iced.padding_ratio,
         }
     }
