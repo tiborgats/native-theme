@@ -16,7 +16,18 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     (
         "extended.secondary.base.text",
         "Pair::new(input.placeholder_color, extended.background.base.text) -- \
-         the window's own label, which the connector sets from defaults.text_color",
+         the window's own label, which the connector sets from \
+         defaults.text_color. Pair::new does not emit that label as it is: it \
+         runs readable(color, text) against the placeholder fill \
+         (iced_core theme/palette.rs:440-445), and a label that is not \
+         readable on that fill is lightened, darkened, or replaced by black or \
+         white (palette.rs:692-720). So the emitted value is the platform's \
+         text colour only where it clears iced's contrast bar, and mostly it \
+         does not: measured 2026-09-21 over all 32 bundled preset/mode \
+         combinations, 31 of them emit a substitute of iced's own, ios light \
+         being the only one that does not. Placeholder grey and window text \
+         are close by construction, which is exactly the pair readable() \
+         rejects",
     ),
     (
         "extended.secondary.strong.text",

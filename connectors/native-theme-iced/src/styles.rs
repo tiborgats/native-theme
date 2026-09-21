@@ -19,6 +19,14 @@
 //!
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
+//!
+//! Two of iced's own classes are left alone on purpose: `container::bordered_box`
+//! (`container.rs:595-607`) and `button::subtle` (`button.rs:713-715`) paint
+//! `background.weakest`, a pair iced invents with `deviate(background, 0.03)`
+//! (`iced_core` theme/palette.rs:472, :482) and that no platform states, so the
+//! connector neither writes that slot nor offers a replacement for either class.
+//! A surface that should be the platform's is [`container_card`], which paints
+//! `card.background_color`.
 
 #[cfg(feature = "iced_aw")]
 pub mod aw;

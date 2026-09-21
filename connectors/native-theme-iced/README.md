@@ -140,7 +140,7 @@ the widget's layout box stays constant during rotation.
 | Module | Purpose |
 |--------|---------|
 | `palette` | Maps native-theme colors to iced's 6-field Palette |
-| `extended` | (internal) Overrides iced's Extended palette for secondary and `background.weak` |
+| `extended` | (internal) Overrides nine slots of iced's Extended palette: `background.base.text`, `background.weak.color`, `background.weak.text`, `secondary.base`, `secondary.strong`, and the `.base.text` of `primary`, `success`, `danger` and `warning`. `apply_overrides`' own doc comment says where each one comes from |
 | `icons` | Icon role mapping, SVG widget helpers, and animated icon playback |
 
 ## Showcase
