@@ -14,9 +14,20 @@
 //! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::theme::IconSet`] → [`ImageSource`] in one call |
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
+//!
+//! Every [`ImageSource`] this module builds is an `ImageSource::Render`: an
+//! image gpui draws from as it stands, in the frame that asks for it. The
+//! alternative, `ImageSource::Image`, hands gpui encoded bytes and is decoded
+//! in the background, so an element holding one paints nothing the first time
+//! it comes up (gpui-pre `src/elements/img.rs:534-553`) -- an animation
+//! flickers its way through its first pass, one blank frame at a time. A
+//! [`gpui::RenderImage`] the caller keeps holds a tile in the window's sprite
+//! atlas until it is handed to `App::drop_image`; see
+//! [`to_image_source`] for what that asks of an application that rebuilds its
+//! icons.
 
 use gpui::{
-    Animation, AnimationExt, Hsla, Image, ImageFormat, ImageSource, Svg, Transformation, percentage,
+    Animation, AnimationExt, Hsla, ImageSource, RenderImage, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
 #[cfg(all(test, target_os = "linux"))]
@@ -861,6 +872,17 @@ const MAX_ICON_SIZE: u32 = 512;
 ///   (2x HiDPI at 24px logical). Clamped to 1..=512 range. Pass
 ///   `logical_size * scale_factor` for DPI-correct rendering.
 ///
+/// # Memory
+///
+/// The returned source carries a decoded [`gpui::RenderImage`], which takes a
+/// tile in each window's sprite atlas from the first frame that draws it and
+/// keeps it until the image is handed to `App::drop_image` /
+/// `Window::drop_image` (gpui-pre `src/app.rs:2782-2792`,
+/// `src/window.rs:4894-4905`); nothing releases it on its own. An application
+/// that rebuilds its icons -- on an icon-theme change, or a colour change that
+/// re-colorizes them -- should drop each replaced source through `drop_image`
+/// before it lets go of it.
+///
 /// # Examples
 ///
 /// ```ignore
@@ -885,20 +907,16 @@ pub fn to_image_source(
         IconData::Svg(bytes) => {
             if let Some(c) = color {
                 let colored = colorize_svg(bytes, c);
-                svg_to_bmp_source(&colored, raster_size)
+                svg_to_render_source(&colored, raster_size)
             } else {
-                svg_to_bmp_source(bytes, raster_size)
+                svg_to_render_source(bytes, raster_size)
             }
         }
         IconData::Rgba {
             width,
             height,
             data,
-        } => {
-            let bmp = encode_rgba_as_bmp(*width, *height, data)?;
-            let image = Image::from_bytes(ImageFormat::Bmp, bmp);
-            Some(ImageSource::Image(Arc::new(image)))
-        }
+        } => rgba_to_render_source(*width, *height, data),
         _ => None,
     }
 }
@@ -1036,9 +1054,9 @@ fn svg_bytes_to_image_source(
     let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
     if let Some(c) = color {
         let colored = colorize_svg(svg_bytes, c);
-        svg_to_bmp_source(&colored, raster_size)
+        svg_to_render_source(&colored, raster_size)
     } else {
-        svg_to_bmp_source(svg_bytes, raster_size)
+        svg_to_render_source(svg_bytes, raster_size)
     }
 }
 
@@ -1142,14 +1160,10 @@ pub fn with_spin_animation(
     )
 }
 
-/// Rasterize SVG bytes and return as a BMP-backed [`ImageSource`].
+/// Rasterize SVG bytes and return them as a decoded [`ImageSource`].
 ///
 /// Returns `None` if rasterization fails (corrupt SVG, empty data).
-///
-/// Works around a gpui bug where `ImageFormat::Svg` in `Image::to_image_data`
-/// skips the RGBA→BGRA pixel conversion that all other formats perform,
-/// causing red and blue channels to be swapped.
-fn svg_to_bmp_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
+fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
     let Ok(IconData::Rgba {
         width,
         height,
@@ -1158,9 +1172,55 @@ fn svg_to_bmp_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
     else {
         return None;
     };
-    let bmp = encode_rgba_as_bmp(width, height, &data)?;
-    let image = Image::from_bytes(ImageFormat::Bmp, bmp);
-    Some(ImageSource::Image(Arc::new(image)))
+    rgba_to_render_source(width, height, &data)
+}
+
+/// Wrap RGBA pixels in a [`RenderImage`], which is what gpui draws from.
+///
+/// `ImageSource::Render` is answered from the value itself, in the frame that
+/// asks for it; `ImageSource::Image` goes through `window.use_asset`, which
+/// returns nothing until a background decode finishes, so an element holding
+/// one paints nothing the first time it comes up (gpui-pre
+/// `src/elements/img.rs:534-553`). An icon this connector has already
+/// rasterized has no reason to be encoded only for gpui to decode it again.
+///
+/// The pixels are converted the way gpui's own decoder converts them: it turns
+/// the decoded image into RGBA8 and then swaps each pixel's first and third
+/// byte, leaving a BGRA buffer, and premultiplies nothing (gpui-pre
+/// `src/platform.rs:2793-2807`, the `RenderImage` it builds at `:2906`).
+///
+/// Returns `None` for zero dimensions, for a buffer whose length is not
+/// `width × height × 4`, and for dimensions whose product overflows.
+///
+/// A [`RenderImage`] the caller keeps holds a tile in each window's sprite
+/// atlas from the first frame that draws it, and nothing releases that tile on
+/// its own: gpui frees one only through `App::drop_image` /
+/// `Window::drop_image` (gpui-pre `src/app.rs:2782-2792`,
+/// `src/window.rs:4894-4905`), which its own image cache calls when it evicts
+/// an entry (`src/elements/image_cache.rs:240, 269, 280`). An application that
+/// rebuilds its icons -- on an icon-theme change, or a colour change that
+/// re-colorizes them -- should hand each replaced source to `App::drop_image`
+/// before dropping it, or the old tiles stay for the life of the window.
+fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSource> {
+    if width == 0 || height == 0 {
+        return None;
+    }
+    let expected = (width as usize)
+        .checked_mul(height as usize)?
+        .checked_mul(4)?;
+    if rgba.len() != expected {
+        return None;
+    }
+    // `as_chunks_mut::<4>()` yields `[u8; 4]` pixels, so the destructuring is
+    // irrefutable and needs no indexing.
+    let mut pixels = rgba.to_vec();
+    for [r, _g, b, _a] in pixels.as_chunks_mut::<4>().0 {
+        std::mem::swap(r, b);
+    }
+    let buffer = image::RgbaImage::from_raw(width, height, pixels)?;
+    Some(ImageSource::Render(Arc::new(RenderImage::new([
+        image::Frame::new(buffer),
+    ]))))
 }
 
 /// Rewrite SVG bytes to use the given color for strokes and fills.
@@ -1255,94 +1315,6 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
 
     // SVG already has non-black fill and no currentColor -- return as-is
     svg_bytes.to_vec()
-}
-
-/// Encode RGBA pixel data as a BMP with BITMAPV4HEADER.
-///
-/// BMP with a V4 header supports 32-bit RGBA via channel masks.
-/// The pixel data is stored top-down (negative height in the BMP header)
-/// with no compression.
-///
-/// Returns `None` if dimensions are zero, the RGBA data length does not
-/// match `width * height * 4`, or the total file size exceeds `u32::MAX`.
-fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
-    if width == 0 || height == 0 {
-        return None;
-    }
-    let pixel_data_size = (width as usize)
-        .checked_mul(height as usize)?
-        .checked_mul(4)?;
-    if rgba.len() != pixel_data_size {
-        return None;
-    }
-    let header_size: usize = 14; // BITMAPFILEHEADER
-    let dib_header_size: usize = 108; // BITMAPV4HEADER
-    let total_header = header_size.checked_add(dib_header_size)?;
-    let file_size = u32::try_from(total_header.checked_add(pixel_data_size)?).ok()?;
-
-    let mut buf = Vec::with_capacity(file_size as usize);
-
-    let dib_header_u32 = dib_header_size as u32;
-    let pixel_data_u32 = pixel_data_size as u32;
-    let pixel_data_offset = u32::try_from(total_header).ok()?;
-
-    // BITMAPFILEHEADER (14 bytes)
-    buf.extend_from_slice(b"BM"); // signature
-    buf.extend_from_slice(&file_size.to_le_bytes()); // file size
-    buf.extend_from_slice(&0u16.to_le_bytes()); // reserved1
-    buf.extend_from_slice(&0u16.to_le_bytes()); // reserved2
-    buf.extend_from_slice(&pixel_data_offset.to_le_bytes()); // pixel data offset
-
-    // BITMAPV4HEADER (108 bytes)
-    buf.extend_from_slice(&dib_header_u32.to_le_bytes()); // header size
-    buf.extend_from_slice(&(width as i32).to_le_bytes()); // width
-    // Negative height = top-down (avoids flipping rows). Cap at i32::MAX so the
-    // `as i32` cast is lossless; wrapping_neg is safe for values <= i32::MAX.
-    if height > i32::MAX as u32 {
-        return None;
-    }
-    buf.extend_from_slice(&(height as i32).wrapping_neg().to_le_bytes()); // height (top-down)
-    buf.extend_from_slice(&1u16.to_le_bytes()); // planes
-    buf.extend_from_slice(&32u16.to_le_bytes()); // bits per pixel
-    buf.extend_from_slice(&3u32.to_le_bytes()); // compression = BI_BITFIELDS
-    buf.extend_from_slice(&pixel_data_u32.to_le_bytes()); // image size
-    buf.extend_from_slice(&2835u32.to_le_bytes()); // x pixels per meter (~72 DPI)
-    buf.extend_from_slice(&2835u32.to_le_bytes()); // y pixels per meter
-    buf.extend_from_slice(&0u32.to_le_bytes()); // colors used
-    buf.extend_from_slice(&0u32.to_le_bytes()); // important colors
-
-    // Issue 54: Channel masks for BI_BITFIELDS. Despite pixel data being
-    // written in BGRA order below, these masks tell the decoder that bit 16-23
-    // is red, 8-15 is green, 0-7 is blue, and 24-31 is alpha -- matching
-    // the BGRA byte layout in the pixel data section.
-    buf.extend_from_slice(&0x00FF0000u32.to_le_bytes()); // red mask   (byte 2)
-    buf.extend_from_slice(&0x0000FF00u32.to_le_bytes()); // green mask (byte 1)
-    buf.extend_from_slice(&0x000000FFu32.to_le_bytes()); // blue mask  (byte 0)
-    buf.extend_from_slice(&0xFF000000u32.to_le_bytes()); // alpha mask (byte 3)
-
-    // Color space type: LCS_sRGB
-    buf.extend_from_slice(&0x73524742u32.to_le_bytes()); // 'sRGB'
-
-    // CIEXYZTRIPLE endpoints (36 bytes of zeros)
-    buf.extend_from_slice(&[0u8; 36]);
-
-    // Gamma values (red, green, blue) - unused with sRGB
-    buf.extend_from_slice(&0u32.to_le_bytes());
-    buf.extend_from_slice(&0u32.to_le_bytes());
-    buf.extend_from_slice(&0u32.to_le_bytes());
-
-    // Pixel data: RGBA -> BGRA conversion for BMP. `as_chunks::<4>()` yields
-    // `[u8; 4]` pixels (a remainder shorter than one pixel is dropped), so the
-    // array destructuring is irrefutable and needs no indexing.
-    for pixel in rgba.as_chunks::<4>().0 {
-        let &[r, g, b, a] = pixel;
-        buf.push(b);
-        buf.push(g);
-        buf.push(r);
-        buf.push(a);
-    }
-
-    Some(buf)
 }
 
 #[cfg(test)]
@@ -1841,25 +1813,35 @@ mod tests {
 
     // --- to_image_source tests ---
 
-    #[test]
-    fn to_image_source_svg_returns_bmp_rasterized() {
-        // Valid SVG that resvg can parse
-        let svg = IconData::Svg(
-            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>"),
-        );
-        let source = to_image_source(&svg, None, None).expect("valid SVG should convert");
-        // SVGs are rasterized to BMP to work around gpui's RGBA/BGRA bug
+    /// The decoded image behind a source, or a failure naming the variant that
+    /// came instead. `ImageSource::Image` is the one that blinks: gpui decodes
+    /// it through `window.use_asset` and the element paints nothing until that
+    /// finishes (gpui-pre `src/elements/img.rs:534-553`).
+    fn rendered(source: ImageSource) -> std::sync::Arc<gpui::RenderImage> {
         match source {
-            ImageSource::Image(arc) => {
-                assert_eq!(arc.format, ImageFormat::Bmp);
-                assert!(arc.bytes.starts_with(b"BM"), "BMP should start with 'BM'");
-            }
-            _ => panic!("Expected ImageSource::Image for SVG data"),
+            ImageSource::Render(image) => image,
+            ImageSource::Image(_) => panic!("an icon was handed to gpui undecoded, as bytes"),
+            _ => panic!("an icon was handed to gpui as something other than a decoded image"),
         }
     }
 
     #[test]
-    fn to_image_source_rgba_returns_bmp_image_source() {
+    fn to_image_source_svg_returns_a_decoded_image() {
+        // Valid SVG that resvg can parse
+        let svg = IconData::Svg(
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>"),
+        );
+        let source = to_image_source(&svg, None, Some(8)).expect("valid SVG should convert");
+        let image = rendered(source);
+        assert_eq!(image.frame_count(), 1);
+        assert_eq!(
+            image.size(0),
+            gpui::size(gpui::DevicePixels(8), gpui::DevicePixels(8))
+        );
+    }
+
+    #[test]
+    fn to_image_source_rgba_returns_a_decoded_image_in_gpuis_channel_order() {
         let rgba = IconData::Rgba {
             width: 2,
             height: 2,
@@ -1871,14 +1853,23 @@ mod tests {
             ],
         };
         let source = to_image_source(&rgba, None, None).expect("RGBA should convert");
-        match source {
-            ImageSource::Image(arc) => {
-                assert_eq!(arc.format, ImageFormat::Bmp);
-                // BMP header starts with "BM"
-                assert_eq!(&arc.bytes[0..2], b"BM");
-            }
-            _ => panic!("Expected ImageSource::Image for RGBA data"),
-        }
+        let image = rendered(source);
+        assert_eq!(image.frame_count(), 1);
+        // A `RenderImage` holds BGRA, which is what gpui's own decoder leaves
+        // behind: it converts to RGBA8 and then swaps each pixel's first and
+        // third byte (gpui-pre `src/platform.rs:2801-2807`).
+        assert_eq!(
+            image.as_bytes(0),
+            Some(
+                [
+                    0, 0, 255, 255, // red
+                    0, 255, 0, 255, // green
+                    255, 0, 0, 255, // blue
+                    0, 255, 255, 255, // yellow
+                ]
+                .as_slice()
+            )
+        );
     }
 
     #[test]
@@ -1921,60 +1912,51 @@ mod tests {
         assert!(result.is_some(), "zero size should clamp to 1 and convert");
     }
 
-    // --- BMP encoding tests ---
+    // --- decoded-image tests ---
 
     #[test]
-    fn encode_rgba_as_bmp_correct_file_size() {
+    fn rgba_to_render_source_keeps_the_pixels_and_the_size() {
         let rgba = vec![0u8; 4 * 4 * 4]; // 4x4 image
-        let bmp = encode_rgba_as_bmp(4, 4, &rgba).expect("valid input");
-        let expected_size = 14 + 108 + (4 * 4 * 4); // header + dib + pixels
-        assert_eq!(bmp.len(), expected_size);
+        let image = rendered(rgba_to_render_source(4, 4, &rgba).expect("valid input"));
+        assert_eq!(
+            image.size(0),
+            gpui::size(gpui::DevicePixels(4), gpui::DevicePixels(4))
+        );
+        assert_eq!(image.as_bytes(0).map(<[u8]>::len), Some(rgba.len()));
     }
 
     #[test]
-    fn encode_rgba_as_bmp_starts_with_bm() {
-        let rgba = vec![0u8; 4]; // 1x1 image
-        let bmp = encode_rgba_as_bmp(1, 1, &rgba).expect("valid input");
-        assert_eq!(&bmp[0..2], b"BM");
-    }
-
-    #[test]
-    fn encode_rgba_as_bmp_pixel_order_is_bgra() {
+    fn rgba_to_render_source_pixel_order_is_bgra() {
         // Input RGBA: R=0xAA, G=0xBB, B=0xCC, A=0xDD
         let rgba = vec![0xAA, 0xBB, 0xCC, 0xDD];
-        let bmp = encode_rgba_as_bmp(1, 1, &rgba).expect("valid input");
-        let pixel_offset = (14 + 108) as usize;
-        // BMP stores as BGRA
-        assert_eq!(bmp[pixel_offset], 0xCC); // B
-        assert_eq!(bmp[pixel_offset + 1], 0xBB); // G
-        assert_eq!(bmp[pixel_offset + 2], 0xAA); // R
-        assert_eq!(bmp[pixel_offset + 3], 0xDD); // A
+        let image = rendered(rgba_to_render_source(1, 1, &rgba).expect("valid input"));
+        assert_eq!(image.as_bytes(0), Some([0xCC, 0xBB, 0xAA, 0xDD].as_slice()));
     }
 
     #[test]
-    fn encode_rgba_as_bmp_zero_width_returns_none() {
+    fn rgba_to_render_source_zero_width_returns_none() {
         let rgba = vec![0u8; 4];
-        assert!(encode_rgba_as_bmp(0, 1, &rgba).is_none());
+        assert!(rgba_to_render_source(0, 1, &rgba).is_none());
     }
 
     #[test]
-    fn encode_rgba_as_bmp_zero_height_returns_none() {
+    fn rgba_to_render_source_zero_height_returns_none() {
         let rgba = vec![0u8; 4];
-        assert!(encode_rgba_as_bmp(1, 0, &rgba).is_none());
+        assert!(rgba_to_render_source(1, 0, &rgba).is_none());
     }
 
     #[test]
-    fn encode_rgba_as_bmp_mismatched_length_returns_none() {
+    fn rgba_to_render_source_mismatched_length_returns_none() {
         // 2x2 image expects 16 bytes, provide 12
         let rgba = vec![0u8; 12];
-        assert!(encode_rgba_as_bmp(2, 2, &rgba).is_none());
+        assert!(rgba_to_render_source(2, 2, &rgba).is_none());
     }
 
     #[test]
-    fn encode_rgba_as_bmp_oversized_length_returns_none() {
+    fn rgba_to_render_source_oversized_length_returns_none() {
         // 2x2 image expects 16 bytes, provide 20
         let rgba = vec![0u8; 20];
-        assert!(encode_rgba_as_bmp(2, 2, &rgba).is_none());
+        assert!(rgba_to_render_source(2, 2, &rgba).is_none());
     }
     // --- colorize_svg tests ---
 
@@ -2328,8 +2310,11 @@ mod tests {
 
     // --- animated icon tests ---
 
+    /// Every frame arrives decoded. An undecoded one would be blank on the
+    /// first pass through the animation, which is what made an animated icon
+    /// flicker for its first few seconds.
     #[test]
-    fn animated_frames_returns_sources() {
+    fn animated_frames_returns_decoded_sources() {
         let anim = AnimatedIcon::frames(
             vec![
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>")),
@@ -2343,6 +2328,9 @@ mod tests {
         let ais = result.expect("Frames variant should return Some");
         assert_eq!(ais.sources.len(), 3);
         assert_eq!(ais.frame_duration_ms, 80);
+        for source in ais.sources {
+            assert_eq!(rendered(source).frame_count(), 1);
+        }
     }
 
     #[test]

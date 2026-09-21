@@ -43,6 +43,12 @@ gpui-component = "0.6.4"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
 # apply_system_reduce_motion (not re-exported).
 gpui-base = "0.6.4"
+# `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
+# gpui already decoded instead of as bytes gpui decodes again in the
+# background. Pinned to the version gpui-pre 0.3.5 resolves, because the two
+# have to be the same `image` for the `Frame` type to match; no default
+# features, since the connector encodes and decodes nothing itself.
+image = { version = "0.25.10", default-features = false }
 native-theme = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]

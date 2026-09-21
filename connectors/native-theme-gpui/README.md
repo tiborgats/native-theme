@@ -325,6 +325,18 @@ if let Some(anim) = MaterialLoader::load_indicator() {
 }
 ```
 
+Every `ImageSource` the `icons` module builds is an `ImageSource::Render`: an
+image gpui draws from as it stands. The other shape, `ImageSource::Image`,
+hands gpui encoded bytes it decodes in the background, and an element holding
+one paints nothing until that finishes — which makes an animation flicker its
+way through its first pass, one blank frame at a time. The price of the decoded
+shape is a tile in each window's sprite atlas per image, held from the first
+frame that draws it until the image is handed to `App::drop_image`, so an
+application that rebuilds its icons — on an icon-theme change, or a colour
+change that re-colorizes them — should drop each replaced source that way
+before letting go of it. `examples/showcase-gpui.rs` does it in
+`release_sources`.
+
 ## GPUI as `gpui-pre`
 
 gpui-component 0.6 depends on GPUI published as the **`gpui-pre`** package:
@@ -334,8 +346,9 @@ arrive as patch releases. This crate names the same package
 (`gpui = { package = "gpui-pre", version = "0.3.5" }`) so its `Hsla`, `Pixels`
 and `StyleRefinement` are gpui-component's types; its GPUI surface is small
 (`Hsla`, `hsla`, `Rgba`, `SharedString`, `px`, `Pixels`, `svg`, `img`,
-`ImageSource`, `ElementId`, `IntoElement`, `StyleRefinement`, `FontWeight`,
-`App`, `Global`, `Subscription`). To freeze a snapshot in an application, pin
+`ImageSource`, `RenderImage`, `ElementId`, `IntoElement`, `StyleRefinement`,
+`FontWeight`, `App`, `Global`, `Subscription`). To freeze a snapshot in an
+application, pin
 `gpui-pre = "=0.3.N"` there; a library must not, because an exact pin would
 conflict with any other dependency wanting a later snapshot.
 

@@ -644,6 +644,30 @@ trait NativeStyled: Styled + Sized {
 }
 impl<W: Styled> NativeStyled for W {}
 
+/// Hand the images a cache is about to replace back to gpui.
+///
+/// The connector returns decoded icons (`ImageSource::Render`), which is what
+/// keeps an animated icon from blinking through its first pass; the price is
+/// that each one holds a tile in the window's sprite atlas until it is dropped
+/// there, and nothing releases it on its own (`App::drop_image`, gpui-pre
+/// `src/app.rs:2782-2792`). The showcase rebuilds these caches on every
+/// icon-set change and on every colour change that re-colorizes the icons, so
+/// without this the atlas would grow for the life of the window. The other
+/// `ImageSource` variants are released through their own `remove_asset`, so a
+/// future source shape is handled too.
+fn release_sources(
+    sources: impl IntoIterator<Item = ImageSource>,
+    window: &mut Window,
+    cx: &mut App,
+) {
+    for source in sources {
+        match source {
+            ImageSource::Render(image) => cx.drop_image(image, Some(window)),
+            other => other.remove_asset(cx),
+        }
+    }
+}
+
 fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> W {
     match style {
         Some(s) => widget.refine_style(s),
@@ -1657,7 +1681,15 @@ impl Showcase {
     /// so that `render_icons_tab` can reuse the cached sources instead of
     /// re-creating `Image` + `Arc` allocations and re-colorizing SVGs on
     /// every frame.
-    fn rebuild_icon_caches(&mut self, fg: Hsla) {
+    fn rebuild_icon_caches(&mut self, fg: Hsla, window: &mut Window, cx: &mut App) {
+        release_sources(
+            std::mem::take(&mut self.loaded_icon_sources)
+                .into_iter()
+                .chain(std::mem::take(&mut self.gpui_icon_sources))
+                .flatten(),
+            window,
+            cx,
+        );
         self.icon_cache_fg = fg;
         self.loaded_icon_sources = self
             .loaded_icons
@@ -1692,11 +1724,25 @@ impl Showcase {
     /// Called at init and whenever the icon set changes so that animated icon
     /// rendering can use pre-built `ImageSource` objects without re-rasterizing
     /// SVGs on every frame tick.
-    fn rebuild_animation_caches(&mut self) {
-        self.animated_frame_sources.clear();
+    fn rebuild_animation_caches(&mut self, window: &mut Window, cx: &mut App) {
+        release_sources(
+            std::mem::take(&mut self.animated_frame_sources)
+                .into_iter()
+                .flat_map(|(_name, frames)| frames)
+                .chain(
+                    std::mem::take(&mut self.animated_spin_sources)
+                        .into_iter()
+                        .map(|(_name, source, _ms)| source),
+                )
+                .chain(
+                    std::mem::take(&mut self.animated_static_sources)
+                        .into_iter()
+                        .map(|(_name, source, _kind)| source),
+                ),
+            window,
+            cx,
+        );
         self.animated_frame_durations.clear();
-        self.animated_spin_sources.clear();
-        self.animated_static_sources.clear();
 
         let set_name = &self.icon_set_name;
         let fg = self.icon_cache_fg;
@@ -2129,7 +2175,7 @@ impl Showcase {
             |this: &mut Self,
              _entity,
              event: &SelectEvent<SearchableVec<SharedString>>,
-             _window,
+             window,
              cx| {
                 if let SelectEvent::Confirm(Some(value)) = event {
                     let display = value.to_string();
@@ -2164,8 +2210,8 @@ impl Showcase {
                         fg_rgb,
                     );
                     let fg = cx.theme().foreground;
-                    this.rebuild_icon_caches(fg);
-                    this.rebuild_animation_caches();
+                    this.rebuild_icon_caches(fg, window, cx);
+                    this.rebuild_animation_caches(window, cx);
                     this.start_animation_timer(cx);
                     cx.notify();
                 }
@@ -2406,8 +2452,8 @@ impl Showcase {
             _theme_watcher,
             pending_system_theme_change: false,
         };
-        showcase.rebuild_icon_caches(fg);
-        showcase.rebuild_animation_caches();
+        showcase.rebuild_icon_caches(fg, window, cx);
+        showcase.rebuild_animation_caches(window, cx);
         showcase.start_animation_timer(cx);
         showcase.start_theme_watcher(cx);
         showcase
@@ -2535,8 +2581,8 @@ impl Showcase {
                 load_gpui_icons(Some(effective), default_theme.as_deref(), cli_ref, fg_rgb);
         }
         let fg = cx.theme().foreground;
-        self.rebuild_icon_caches(fg);
-        self.rebuild_animation_caches();
+        self.rebuild_icon_caches(fg, window, cx);
+        self.rebuild_animation_caches(window, cx);
         self.start_animation_timer(cx);
     }
 
@@ -7928,7 +7974,7 @@ impl Render for Showcase {
 
         // Ensure icon image caches match the current foreground color
         if theme.foreground != self.icon_cache_fg {
-            self.rebuild_icon_caches(theme.foreground);
+            self.rebuild_icon_caches(theme.foreground, window, cx);
         }
 
         let active_tab = self.active_tab;
@@ -8582,8 +8628,8 @@ fn main() {
                                 fg_rgb,
                             );
                             let fg = cx.theme().foreground;
-                            s.rebuild_icon_caches(fg);
-                            s.rebuild_animation_caches();
+                            s.rebuild_icon_caches(fg, window, cx);
+                            s.rebuild_animation_caches(window, cx);
                             s.start_animation_timer(cx);
 
                             // Update the icon theme selector dropdown
