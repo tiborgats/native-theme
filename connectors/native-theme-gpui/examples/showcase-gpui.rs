@@ -2297,9 +2297,12 @@ impl Showcase {
         // Start theme watcher for runtime dark/light toggle detection.
         // Skip in screenshot mode — the watcher's background thread cleanup
         // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
+        // Skip under `cargo test` too: the watcher puts a file watch on the
+        // desktop's own configuration, and the self-tests below build this
+        // view for real. Nothing they assert depends on it.
         let theme_change_flag = Arc::new(AtomicBool::new(false));
-        let is_screenshot = std::env::args().any(|a| a == "--screenshot");
-        let _theme_watcher = if is_screenshot {
+        let no_watcher = cfg!(test) || std::env::args().any(|a| a == "--screenshot");
+        let _theme_watcher = if no_watcher {
             None
         } else {
             let flag_clone = theme_change_flag.clone();
@@ -2407,6 +2410,18 @@ impl Showcase {
         self.error_message = Some(msg.to_string());
     }
 
+    /// Install the light/dark choice into whatever theme is currently up.
+    ///
+    /// The three paths below that cannot read a theme reach this: they leave
+    /// the installed theme alone, which is right, but the user's light/dark
+    /// choice still has to land. `Showcase::new` falls back to
+    /// gpui-component's built-in theme when the OS read fails, and that theme
+    /// has both variants; without this the selector moved `is_dark` and
+    /// nothing else, and the interface stayed in the mode it started in.
+    fn apply_color_mode(&self, window: &mut Window, cx: &mut Context<Self>) {
+        Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
+    }
+
     fn apply_theme_by_name(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) {
         if name == "default" {
             match native_theme::SystemTheme::from_system() {
@@ -2432,6 +2447,7 @@ impl Showcase {
                 }
                 Err(e) => {
                     self.show_theme_error(&format!("Failed to load OS theme: {e}"));
+                    self.apply_color_mode(window, cx);
                 }
             }
         } else {
@@ -2439,6 +2455,7 @@ impl Showcase {
                 Ok(t) => t,
                 Err(e) => {
                     self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));
+                    self.apply_color_mode(window, cx);
                     return;
                 }
             };
@@ -2453,6 +2470,7 @@ impl Showcase {
                 Ok(r) => r,
                 Err(e) => {
                     self.show_theme_error(&format!("Theme '{name}' resolution failed: {e}"));
+                    self.apply_color_mode(window, cx);
                     return;
                 }
             };
@@ -8009,7 +8027,13 @@ impl Render for Showcase {
                     .flex_1()
                     .overflow_y_scrollbar()
                     // TAB_ROOT is what `every_tab_lays_out` looks the tab up
-                    // by, so every arm carries it.
+                    // by, and it goes on each arm rather than on one wrapper
+                    // around the match: the test asserts the tab's own root
+                    // has a size, and a wrapper would report this scroll
+                    // container's size for every tab -- including a tab that
+                    // rendered nothing. That is what makes the ten
+                    // `impl IntoElement + InteractiveElement` signatures worth
+                    // their noise.
                     .child(match active_tab {
                         Tab::Buttons => self
                             .render_buttons_tab(window, cx)
@@ -8672,22 +8696,35 @@ mod tests {
     use std::ops::Deref as _;
     use std::rc::Rc;
 
-    /// The window the self-tests lay the showcase out in.
+    /// The window the interaction test lays the showcase out in.
     ///
-    /// The width is the showcase's own, so the horizontal resizable group is
-    /// measured at the width the application gives it. The height is not: a tab
-    /// is one long scrolling column, and an element scrolled out of the
-    /// viewport is clipped out of the frame and cannot be clicked, so the
-    /// window is made tall enough to hold the longest tab whole.
-    const TEST_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
+    /// The width is the application's own, so the horizontal resizable group is
+    /// measured at the width it really gets. The height is not: a tab is one
+    /// long scrolling column, and an element scrolled out of the viewport is
+    /// clipped out of the frame and cannot be clicked, so this window is tall
+    /// enough to hold the longest tab whole. `every_tab_lays_out` uses
+    /// `WINDOW_SIZE` instead, which is what puts the scroll container to work.
+    const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 
     /// Build the showcase the way `main` does — `gpui_kit::init`, the view, and
-    /// the `Root` that owns the dialog and notification layers — in a test
-    /// window.
-    fn open(cx: &mut TestAppContext) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
+    /// the `Root` that owns the dialog and notification layers — in a window of
+    /// `window_size`.
+    ///
+    /// One thing `main` has that a test window cannot: the asset source.
+    /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
+    /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
+    /// and exposes no setter (`gpui-pre-0.3.5/src/app/test_context.rs:132-136`)
+    /// — so gpui-component's own `IconName` SVGs resolve to nothing. The tabs
+    /// still lay out, which is what these tests measure; the showcase's native
+    /// icons do not come from the asset source at all, they are decoded into
+    /// `ImageSource` by the connector.
+    fn open(
+        cx: &mut TestAppContext,
+        window_size: gpui::Size<Pixels>,
+    ) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
         cx.update(gpui_kit::init);
         let view: Rc<RefCell<Option<Entity<Showcase>>>> = Rc::new(RefCell::new(None));
-        let handle = cx.open_window(TEST_WINDOW, {
+        let handle = cx.open_window(window_size, {
             let view = view.clone();
             move |window, cx| {
                 let showcase = cx.new(|cx| Showcase::new(window, cx));
@@ -8757,7 +8794,7 @@ mod tests {
     /// each leaves a tab root behind, and that root has a size.
     #[gpui::test]
     fn every_tab_lays_out(cx: &mut TestAppContext) {
-        let (showcase, _root, mut cx) = open(cx);
+        let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
         assert_eq!(Tab::ALL.len(), 10, "the bar no longer has ten tabs");
         for tab in Tab::ALL {
             show(&mut cx, &showcase, tab);
@@ -8782,7 +8819,7 @@ mod tests {
     /// code builds from, so neither is a number this test types out again.
     #[gpui::test]
     fn resizable_groups_have_room_to_drag(cx: &mut TestAppContext) {
-        let (showcase, _root, mut cx) = open(cx);
+        let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
         show(&mut cx, &showcase, Tab::Layout);
         assert!(!RESIZABLE_GROUPS.is_empty());
         for group in RESIZABLE_GROUPS {
@@ -8809,7 +8846,7 @@ mod tests {
     /// being wired up fails the step that names it.
     #[gpui::test]
     fn interactive_controls_respond(cx: &mut TestAppContext) {
-        let (showcase, root, mut cx) = open(cx);
+        let (showcase, root, mut cx) = open(cx, TALL_WINDOW);
 
         // --- Buttons tab --------------------------------------------------
         show(&mut cx, &showcase, Tab::Buttons);
@@ -8949,18 +8986,26 @@ mod tests {
 
         // --- The sidebar's colour mode switch -----------------------------
         //
-        // The list opens under the trigger; the third row is Dark, and the
-        // mode the showcase installs is what the whole interface re-themes on.
+        // The list's rows are System, Light, Dark. Which one is asked for is
+        // decided from the mode this host's theme is actually in, so the step
+        // is always a change: a fixed "Dark" would assert nothing on a desktop
+        // that is already dark.
+        let was_dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
+        let (keystrokes, wanted) = match was_dark {
+            true => ("down enter", AppColorMode::Light),
+            false => ("down down enter", AppColorMode::Dark),
+        };
         click(&mut cx, PROBE_COLOR_MODE);
-        cx.simulate_keystrokes("down down enter");
+        cx.simulate_keystrokes(keystrokes);
         draw(&mut cx);
         assert_eq!(
             read(&mut cx, &showcase, |this, _| this.color_mode),
-            AppColorMode::Dark,
-            "the colour mode switch did not reach Dark"
+            wanted,
+            "the colour mode switch did not reach {wanted:?}"
         );
-        assert!(
+        assert_eq!(
             cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+            !was_dark,
             "the colour mode switch did not reach Theme::mode"
         );
     }
