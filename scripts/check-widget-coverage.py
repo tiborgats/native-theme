@@ -63,7 +63,9 @@ Matching
 
   * `//` line comments and `/* */` block comments are removed first, so a
     commented-out or merely mentioned widget does not count. The remover is
-    string-aware, so a `//` inside a string literal does not start a comment.
+    string-aware, so a `//` inside a string literal does not start a comment,
+    and char-literal-aware, so the `'"'` in the iced showcase does not open
+    one.
   * the name must then match at identifier boundaries, i.e. as an identifier
     or a path segment: `Pagination`, `Pagination::new`, `widget::pane_grid`,
     `pane_grid(`. `grid` does not match `grid_rows`, and `Table` does not
@@ -187,12 +189,21 @@ def strip_test_modules(src):
 
 
 def strip_string_literals(src):
-    """Replace every string literal with a space, comments already gone."""
+    """Replace every string literal with a space, comments already gone.
+
+    Char literals are kept whole, as `strip_comments` keeps them: `'"'` is a
+    double quote that does not open a string, and swallowing to the next `"`
+    would take the rest of the file's widgets with it. A lifetime (`'a`) does
+    not match the pattern and falls through unchanged.
+    """
     out = []
     i, n = 0, len(src)
     while i < n:
         c = src[i]
-        if c == "r" and (m := re.match(r'r(#*)"', src[i:])):
+        if c == "'" and (m := re.match(r"'(?:\\.|[^\\'])'", src[i:])):
+            out.append(m.group(0))
+            i += len(m.group(0))
+        elif c == "r" and (m := re.match(r'r(#*)"', src[i:])):
             close = '"' + m.group(1)
             end = src.find(close, i + len(m.group(0)))
             i = n if end < 0 else end + len(close)
@@ -221,8 +232,12 @@ def shows(haystack, name):
 def read_showcase(path, strip_literals=False):
     if not os.path.isfile(path):
         raise Failure(f"showcase not found: {path}")
-    with open(path, encoding="utf-8") as f:
-        text = strip_comments(f.read())
+    try:
+        with open(path, encoding="utf-8") as f:
+            source = f.read()
+    except OSError as err:
+        raise Failure(f"could not read the showcase {path}: {err}") from err
+    text = strip_comments(source)
     return strip_string_literals(text) if strip_literals else text
 
 
@@ -345,22 +360,46 @@ def aw_modules(src):
 
 
 def aw_enabled(meta, universe):
+    """The widget features the connector's own `iced_aw` dependency enables.
+
+    The connector declares `iced_aw` twice -- once as the optional normal
+    dependency the `iced_aw` feature turns on, once under `dev-dependencies`
+    for the showcase. Taking whichever came first would let the two drift
+    apart unnoticed, so the normal one is what counts and a dev entry that
+    enables a different set is an error rather than a silent choice.
+    """
+    entries = {}
     for dep in package(meta, "native-theme-iced").get("dependencies", []):
         if dep.get("name") == "iced_aw":
-            enabled = {f: universe[f] for f in sorted(dep.get("features", [])) if f in universe}
-            if not enabled:
-                raise Failure(
-                    "the connector's `iced_aw` dependency enables no widget feature"
-                )
-            return enabled
-    raise Failure("`native-theme-iced` declares no `iced_aw` dependency")
+            entries.setdefault(dep.get("kind") or "normal", set()).update(
+                dep.get("features", [])
+            )
+    if "normal" not in entries:
+        raise Failure("`native-theme-iced` declares no `iced_aw` dependency")
+    for kind, features in sorted(entries.items()):
+        if kind != "normal" and features != entries["normal"]:
+            raise Failure(
+                f"the connector's `{kind}` `iced_aw` dependency enables "
+                f"{sorted(features)}, its normal one {sorted(entries['normal'])}; "
+                "the showcase would then be built against a different widget "
+                "set than the one this check measures"
+            )
+    enabled = {f: universe[f] for f in sorted(entries["normal"]) if f in universe}
+    if not enabled:
+        raise Failure("the connector's `iced_aw` dependency enables no widget feature")
+    return enabled
 
 
 def load_exceptions():
     if not os.path.isfile(EXCEPTIONS):
         raise Failure(f"exception file not found: {EXCEPTIONS}")
-    with open(EXCEPTIONS, "rb") as f:
-        data = tomllib.load(f)
+    try:
+        with open(EXCEPTIONS, "rb") as f:
+            data = tomllib.load(f)
+    except OSError as err:
+        raise Failure(f"could not read {EXCEPTIONS}: {err}") from err
+    except tomllib.TOMLDecodeError as err:
+        raise Failure(f"{EXCEPTIONS} is not valid TOML: {err}") from err
     table = {}
     for section in ("gpui", "iced_widget", "iced_aw"):
         entries = data.get(section, {})

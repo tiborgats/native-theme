@@ -93,12 +93,19 @@ jobs:
       # script's `tomllib` import requires); the step prints the version so a
       # runner-image change that dropped below the floor is visible in the log
       # rather than silent.
+      #
+      # `if: always()` because this step and the one after it report on a
+      # different failure mode than Test does: an upstream release can add a
+      # widget and break a test in the same night, and the evening's report
+      # should name both rather than stop at the first.
       - name: Widget coverage
+        if: always()
         run: |
           python3 --version
           python3 scripts/check-widget-coverage.py
 
       - name: Documentation
+        if: always()
         env:
           RUSTDOCFLAGS: -Dwarnings
         run: |
