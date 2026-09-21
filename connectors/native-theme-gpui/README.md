@@ -177,7 +177,8 @@ test over every preset and mode says so.
 | `input`, `input_height` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `.padding_vertical`, `input.font`, `defaults.line_height` | `Input` (`Input::h` for the height alone) |
 | `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height`, `list.border.padding_*`, `list.item_font`, `defaults.line_height` | `ListItem` |
-| `tooltip` | `tooltip.max_width`, `tooltip.border.padding_*`, `.corner_radius`, `tooltip.font` | application-built `Tooltip::new` |
+| `tooltip` | `tooltip.border.padding_*`, `.corner_radius`, `tooltip.font` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
+| `tooltip_content` | `tooltip.max_width` less `tooltip.border.padding_horizontal` twice and upstream's 1 px border twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
 | `popover` | `popover.border.padding_*`, `.corner_radius` | `Popover` |
 | `status_bar` | `status_bar.border.padding_*`, `status_bar.font` | `StatusBar` |
 | `dialog`, `dialog_max_width` | `dialog.border.padding_*`, `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
@@ -195,7 +196,8 @@ test over every preset and mode says so.
 The `button`, `input`, `select`, `combobox`, `list_item` and `progress`
 builders are verified against real gpui-component widgets in `tests/seams.rs`,
 which lays each one out headlessly with and without the refinement and
-compares the measured height with the refinement's own field.
+compares the measured height with the refinement's own field. The same file
+lays a real `Tooltip` out and checks that its text keeps inside the bubble.
 
 ### Flat buttons
 

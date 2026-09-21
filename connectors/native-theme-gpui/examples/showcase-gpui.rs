@@ -4824,9 +4824,13 @@ impl Showcase {
                             // only way to a refined one is to build it: that
                             // is what `geometry::tooltip` documents, and the
                             // one place the platform's tooltip padding, radius
-                            // and text colour reach the popup.
+                            // and text colour reach the popup. The width is the
+                            // content element's, through `Tooltip::element`:
+                            // on the bubble it would clamp the bubble and not
+                            // the text, which then runs out of it.
                             .child({
                                 let style = native_geometry(cx, geometry::tooltip);
+                                let content = native_geometry(cx, geometry::tooltip_content);
                                 div()
                                     .id("tooltip-built")
                                     .child(
@@ -4835,12 +4839,20 @@ impl Showcase {
                                             .label("Built by the application"),
                                     )
                                     .tooltip(move |window, cx| {
+                                        let content = content.clone();
                                         refined(
-                                            Tooltip::new(
-                                                "This popup carries geometry::tooltip: the \
-                                                 platform's max width, padding, radius, text \
-                                                 size and text colour.",
-                                            ),
+                                            Tooltip::element(move |_window, _cx| {
+                                                refined(
+                                                    div().child(
+                                                        "This popup carries geometry::tooltip \
+                                                         and geometry::tooltip_content: the \
+                                                         platform's padding, radius, text size \
+                                                         and text colour, and the max width the \
+                                                         text wraps at.",
+                                                    ),
+                                                    content.as_ref(),
+                                                )
+                                            }),
                                             style.as_ref(),
                                         )
                                         .build(window, cx)
@@ -4856,7 +4868,7 @@ impl Showcase {
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
-                            ("geometry", "geometry::tooltip on an application-built Tooltip: tooltip.max_width, border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style)"),
+                            ("geometry", "geometry::tooltip on an application-built Tooltip: border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style). geometry::tooltip_content on the element passed to Tooltip::element carries tooltip.max_width, which the text wraps at"),
                             ("delay", "hardcoded"),
                             ("position", "auto"),
                         ],

@@ -19,9 +19,9 @@
 //! Every other builder rests on the source citation in its doc comment.
 
 use gpui::{
-    AbsoluteLength, AnyElement, AppContext as _, Context, DefiniteLength, InteractiveElement as _,
-    IntoElement, Length, ParentElement as _, Pixels, Render, SharedString, Size, StyleRefinement,
-    Styled as _, TestAppContext, Window, div, px,
+    AbsoluteLength, AnyElement, AppContext as _, Bounds, Context, DefiniteLength,
+    InteractiveElement as _, IntoElement, Length, ParentElement as _, Pixels, Render, SharedString,
+    Size, StyleRefinement, Styled as _, TestAppContext, Window, div, px,
 };
 use gpui_component::{
     StyledExt as _,
@@ -31,10 +31,11 @@ use gpui_component::{
     list::ListItem,
     progress::Progress,
     select::{SearchableVec, Select, SelectState},
+    tooltip::Tooltip,
 };
 use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext};
-use native_theme_gpui::{Native, apply, geometry, to_theme};
+use native_theme_gpui::{ActiveNativeTheme as _, Native, apply, geometry, to_theme};
 
 fn scaled() -> AccessibilityPreferences {
     AccessibilityPreferences {
@@ -86,12 +87,15 @@ fn native_style(preset: &str, build: fn(Native<'_>) -> StyleRefinement) -> Style
     })
 }
 
-fn measure(
+/// Install `preset` as the native theme, lay `build` out, and report where each
+/// of `selectors` landed.
+fn laid_out<const N: usize>(
     cx: &mut TestAppContext,
     preset: &str,
     style: Option<StyleRefinement>,
     build: Build,
-) -> Size<Pixels> {
+    selectors: [&'static str; N],
+) -> [Bounds<Pixels>; N] {
     let prefs = scaled();
     let resolved = resolved(preset);
     let theme = to_theme(&resolved, preset, false, &prefs);
@@ -101,7 +105,20 @@ fn measure(
     });
     let (_, cx) = cx.add_window_view(|_, _| Harness { style, build });
     cx.update(|window, cx| window.draw(cx).clear(cx));
-    cx.debug_bounds("probe").expect("probe was laid out").size
+    selectors.map(|s| {
+        cx.debug_bounds(s)
+            .unwrap_or_else(|| panic!("{s} was not laid out"))
+    })
+}
+
+fn measure(
+    cx: &mut TestAppContext,
+    preset: &str,
+    style: Option<StyleRefinement>,
+    build: Build,
+) -> Size<Pixels> {
+    let [probe] = laid_out(cx, preset, style, build, ["probe"]);
+    probe.size
 }
 
 fn px_of(length: Option<Length>) -> Pixels {
@@ -151,6 +168,64 @@ fn list_item(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harnes
 }
 fn progress(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harness>) -> AnyElement {
     styled(Progress::new("p"), s)
+}
+
+/// kde-breeze states a 300 px tooltip with a 3 px horizontal padding, so a
+/// sentence overruns it by a wide margin.
+const TOOLTIP_PRESET: &str = "kde-breeze";
+/// One line that no bundled preset's `tooltip.max_width` holds unwrapped.
+const LONG_TOOLTIP: &str = "This popup carries the platform's max width, padding, radius, text size \
+                            and text colour, and it is long enough to need more than one line.";
+/// Short enough to sit well inside the same width.
+const SHORT_TOOLTIP: &str = "Save";
+/// The debug selector on the element the application hands the tooltip.
+const TOOLTIP_TEXT: &str = "tooltip-text";
+/// Upstream draws the bubble with a one-pixel border on every side
+/// (`src/tooltip.rs:117`, `border_1()`), which the platform's outer width pays
+/// for along with the two paddings.
+const TOOLTIP_BORDER: f32 = 1.0;
+
+/// An application-built tooltip: `geometry::tooltip` on the bubble, and
+/// `geometry::tooltip_content` on the element the application itself passes to
+/// `Tooltip::element` — reached through the installed theme, the way an
+/// application reaches it (`geometry`'s module doc).
+fn tooltip_of(
+    text: &'static str,
+    style: Option<&StyleRefinement>,
+    window: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let content = cx
+        .native_theme()
+        .and_then(|nt| nt.native(cx))
+        .map(geometry::tooltip_content);
+    let tooltip = Tooltip::element(move |_, _| {
+        let body = div().debug_selector(|| TOOLTIP_TEXT.into()).child(text);
+        match &content {
+            Some(style) => body.refine_style(style),
+            None => body,
+        }
+    });
+    let tooltip = match style {
+        Some(style) => tooltip.refine_style(style),
+        None => tooltip,
+    };
+    tooltip.build(window, cx).into_any_element()
+}
+
+fn long_tooltip(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    tooltip_of(LONG_TOOLTIP, s, w, cx)
+}
+fn short_tooltip(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    tooltip_of(SHORT_TOOLTIP, s, w, cx)
 }
 
 macro_rules! seam {
@@ -210,3 +285,54 @@ seam!(
     geometry::progress,
     size.height
 );
+
+/// The tooltip's seam is a width, and the text has to keep to it.
+///
+/// A tooltip's text sits in a bare `div()` inside upstream's `h_flex()`
+/// (`src/tooltip.rs:126-132`), so it is a flex item with an automatic minimum
+/// size, and gpui measures text under `AvailableSpace::MinContent` without
+/// wrapping it — the wrap width is taken only from a *definite* available
+/// width (`gpui-pre-0.3.5/src/elements/text.rs:649-656`). The item's minimum is
+/// therefore the whole unwrapped line: a max width on the bubble alone clamps
+/// the bubble and not the text, and the text runs out of it.
+#[gpui::test]
+fn tooltip_text_keeps_inside_the_bubble(cx: &mut TestAppContext) {
+    let t = resolved(TOOLTIP_PRESET).tooltip;
+    let inner = px(t.max_width - 2.0 * t.border.padding_horizontal - 2.0 * TOOLTIP_BORDER);
+    let style = native_style(TOOLTIP_PRESET, geometry::tooltip);
+
+    let [text, probe] = laid_out(
+        cx,
+        TOOLTIP_PRESET,
+        Some(style.clone()),
+        long_tooltip,
+        [TOOLTIP_TEXT, "probe"],
+    );
+    assert!(
+        text.size.width <= inner,
+        "a long tooltip text laid out {:?} wide, past the {inner:?} the platform's \
+         {:?} max width leaves between the paddings and the border",
+        text.size.width,
+        px(t.max_width),
+    );
+    assert!(
+        text.right() <= probe.right(),
+        "the text ends at {:?}, past the {:?} the tooltip itself ends at",
+        text.right(),
+        probe.right(),
+    );
+
+    // The same width must not stretch a short tooltip: `max_w` is a ceiling.
+    let [short, _] = laid_out(
+        cx,
+        TOOLTIP_PRESET,
+        Some(style),
+        short_tooltip,
+        [TOOLTIP_TEXT, "probe"],
+    );
+    assert!(
+        short.size.width < text.size.width && short.size.width < inner,
+        "a short tooltip text was stretched to {:?}",
+        short.size.width,
+    );
+}

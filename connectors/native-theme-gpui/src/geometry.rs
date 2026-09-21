@@ -17,7 +17,9 @@
 //! cited upstream line, so the values here win. Text sizes carry the
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
-//! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]).
+//! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]), with
+//! one conversion the receiving widget forces: [`tooltip_content`] turns the
+//! platform's outer tooltip width into the inner box its text wraps in.
 //!
 //! Geometry, with one exception that is not geometry: seven builders also
 //! carry the platform's text colour. A builder carries it only where the
@@ -184,7 +186,14 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// Application-built `Tooltip::new` (`src/tooltip.rs:120-125` → `:126`).
+/// Application-built `Tooltip` (`src/tooltip.rs:120-125` → `:126`).
+///
+/// No width: `tooltip.max_width` is the bubble's outer width, and a bubble that
+/// states it clamps itself without clamping its text, which then runs out of
+/// it. [`tooltip_content`] carries the width to the element the application
+/// passes to `Tooltip::element`, where it makes the text wrap; a tooltip built
+/// from `Tooltip::new(text)` has no element to put it on and stays as wide as
+/// its text.
 ///
 /// The colour is carried because upstream labels a tooltip with
 /// `popover_foreground` (`:115`), which this connector fills from
@@ -195,13 +204,43 @@ pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
     with_coloured_text(
         StyleRefinement::default()
-            .max_w(px(t.max_width))
             .px(px(t.border.padding_horizontal))
             .py(px(t.border.padding_vertical))
             .rounded(px(t.border.corner_radius.max(0.0))),
         &t.font,
         n,
     )
+}
+
+/// Upstream draws the bubble with a one-pixel border on every side
+/// (`src/tooltip.rs:117`, `border_1()`), which the platform's outer width pays
+/// for along with the two paddings.
+const TOOLTIP_BORDER: f32 = 1.0;
+
+/// The element an application passes to `Tooltip::element`
+/// (`src/tooltip.rs:128-131`): `tooltip.max_width` less the bubble's own
+/// horizontal paddings and border, which is the inner box the text wraps in.
+///
+/// The width has to land here and not on the bubble. The tooltip's content
+/// sits in a bare `div()` inside upstream's `h_flex()`, so it is a flex item
+/// with an automatic minimum size, and gpui measures text under
+/// `AvailableSpace::MinContent` without wrapping it — a wrap width is taken
+/// only from a *definite* available width (gpui-pre
+/// `src/elements/text.rs:649-656`). The item's minimum is therefore the whole
+/// unwrapped line, which a max width on the bubble cannot shrink: the bubble
+/// stops at the platform's width and the text carries on past it. Given to the
+/// content instead, the same width is what the text wraps at, and the bubble
+/// grows to exactly `tooltip.max_width` around it.
+///
+/// Never negative: a platform that states a width narrower than its own
+/// paddings leaves nothing for the text rather than a width gpui would reject.
+///
+/// Verified against a real `Tooltip` in `tests/seams.rs`.
+#[must_use]
+pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
+    let t = &n.resolved.tooltip;
+    let inner = t.max_width - 2.0 * (t.border.padding_horizontal + TOOLTIP_BORDER);
+    StyleRefinement::default().max_w(px(inner.max(0.0)))
 }
 
 /// `Popover` (`src/popover.rs:284` → `:312`).
@@ -646,7 +685,13 @@ mod tests {
         for_each_case(|r, s, n| {
             let t = &r.tooltip;
             let out = tooltip(n);
-            assert_eq!(out.max_size.width, len(t.max_width));
+            // The width is the content element's, not the bubble's: a bubble
+            // that states it clamps itself and not its text.
+            assert_eq!(out.max_size.width, None);
+            assert_eq!(
+                tooltip_content(n).max_size.width,
+                len(t.max_width - 2.0 * (t.border.padding_horizontal + TOOLTIP_BORDER))
+            );
             assert_eq!(out.padding.left, def(t.border.padding_horizontal));
             assert_eq!(out.padding.top, def(t.border.padding_vertical));
             assert_eq!(
