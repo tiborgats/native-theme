@@ -135,6 +135,51 @@
       the two differ on 30 of the 32 preset/mode combinations (kde-breeze light:
       `#eff0f1` against `#ffffff`), so every menu is painted on the popover's
       surface. Found 2026-09-21 by running the contrast rule.
+- [ ] a foreground token for the status bar. `StatusBar` labels everything
+      with `muted_foreground` (`status_bar.rs:95`) over `tokens.status_bar`;
+      measured against the platform's own `status_bar.font.color` on its
+      `status_bar.background_color` that is worse on 32 of the 32 preset/mode
+      combinations (nord dark: 1.69 against 9.25). Since v0.5.9
+      `geometry::status_bar` carries the platform's colour — upstream applies
+      the caller's refinement after its own text colour, so it wins — but an
+      application that does not use the builder gets the muted label. The
+      gpui contract reports the token pair on every run.
+- [ ] foreground tokens for a selected list row and for selected text:
+      `ThemeColor` has `list_active` and `selection` fills and no label colour
+      for either, so a selected row keeps `foreground` where the platform pairs
+      `list.selection_background` with `list.selection_text_color`. Worse than
+      the platform on 21 of 32 each; reported by the gpui contract, not
+      asserted. The title bar is the same shape (no `title_bar_foreground`),
+      worse on 12 of 32 against the darker end of upstream's title-bar
+      gradient (`title_bar.rs:21-35`).
+- [ ] `Checkbox::label` sets `text_color(foreground)` on the label wrapper
+      unconditionally (`checkbox.rs:334-341`), so a platform
+      `checkbox.font.color` has no route; and both `Checkbox` and `Combobox`
+      apply the caller's refinement *after* their disabled colour
+      (`checkbox.rs:251-257`, `combobox.rs:990-997` with
+      `input/input.rs:99-103`), so a carried colour would displace it. For
+      that reason `geometry::checkbox` and `geometry::combobox` carry no text
+      colour; a guard test fails, saying so, the day a preset states one.
+- [ ] `WindowBorder`'s frame colour is a literal (`window_border.rs:152-166`)
+      and so is the shadow it draws below it in the same `render`; no theme
+      value reaches either.
+- [ ] a determinate `ProgressCircle` has no size receiver the theme can feed;
+      only the indeterminate one takes `geometry::spinner_size`.
+- [ ] `tokens.tab`, `tokens.list`, `sidebar_primary` and
+      `sidebar_primary_foreground` are read by nothing in 0.6.4 outside
+      `theme/` (an idle tab is `transparent`, `tab/tab.rs:132-160`). The
+      connector maps them anyway, and the contract marks pairs over them as
+      inert so they are not counted as coverage.
+- [ ] the segmented `TabBar` has receivers for the track only
+      (`tab/tab_bar.rs:391`): the selected segment is filled with
+      `tokens.background` and labelled `tab_active_foreground`
+      (`tab/tab.rs:247-249`), so `segmented_control.active_background`,
+      `.active_text_color`, `.font.color` and `.border.color` reach nothing.
+- [ ] `Button::icon` discards an `Icon`'s own size
+      (`button/button_icon.rs:116-131`); a nested `TitleBar`'s window controls
+      are hit-tested by the OS on Windows (`title_bar.rs:220-222`) and
+      `on_close_window` is Linux-only (`:99-101`), so a title bar shown inside
+      a window closes that window there.
 - [ ] `Checkbox` and `Radio` draw their unchecked border with `theme.input`
       (`checkbox.rs:238`, `radio.rs:188`), the *text input's* border colour.
       native-theme records `checkbox.unchecked_border_color` separately and the
@@ -200,7 +245,7 @@
       `From`. The connector-side follow-up is listed above.
 - [ ] public base-palette fields on `ThemeConfigColors` (`red` … `cyan_light`, `schema.rs:657-668`)
 
-#### native-theme-iced: the same audit (found 2026-09-20, scheduled into v0.5.9)
+#### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
 The gpui connector's state tokens were audited against the native field of the
 widget that reads them, and `accent` was wrong. The iced connector's output was
@@ -214,43 +259,90 @@ pre-1.0 release fixes the bugs found during it; the design is in
 `docs/todo_v0.5.9_theme-contracts-{rationale,spec}.md` and the citations stay
 here so the work is not re-derived.
 
-- [ ] Menu/pick-list highlight takes the platform accent: `Palette.primary`
+All nine are closed in v0.5.9. iced's palette has six colours, so most of them
+could not be fixed *in* the palette: the fix is `native_theme_iced::styles`, one
+function per widget, and the palette default stays what iced derives. An
+application that wants the platform's value for these roles passes the style
+function; the showcase does so for every widget it renders, and a source-level
+test (`styles_cover_every_widget_shown`) keeps it that way.
+
+- [x] (`styles::menu`: `selected_background` ← `menu.hover_background`.) Menu/pick-list highlight takes the platform accent: `Palette.primary`
       (`palette.rs:41`) feeds `overlay/menu.rs:658` `selected_background`,
       where the platform's field is `menu.hover_background`. Exactly the gpui
       defect. `primary.strong` is also read by focused-input border, radio dot,
       pick-list hover border, checkbox hover fill and scroll-thumb hover, so
       the fix is an explicit `menu::Style`, not an override of the token.
-- [ ] `button.background_color` is written into `secondary.base.color`
+- [x] (Palette: `secondary.base` ← `input.placeholder_color`, labelled by the window text, `secondary.strong` a copy of it; `styles::text_input`, `text_editor` and `pick_list` state the placeholder exactly.) `button.background_color` is written into `secondary.base.color`
       (`extended.rs:109`), which iced reads as *placeholder text*
       (`text_input.rs:1769`, `text_editor.rs:1476`, `pick_list.rs:910`). On
       adwaita light that is `#e8e8e8` on a `#fafafb` field — about 1.15:1, so
       the placeholder is invisible. `input.placeholder_color` exists and is
       never read.
-- [ ] Hovered/dragged scrollbar thumb takes the accent
+- [x] (`styles::scrollable`, per axis.) Hovered/dragged scrollbar thumb takes the accent
       (`scrollable.rs:2385, 2414`); `scrollbar.thumb_hover_color` and
       `thumb_active_color` exist and are never read.
-- [ ] `defaults.surface_color` drives nine unrelated roles
+- [x] (Each role has its own function: `scrollable`, `toggler`, `menu`, `pick_list`, `text_input`, `container_card`, `button`, `rule`, `checkbox`.) `defaults.surface_color` drives nine unrelated roles
       (`extended.rs:111`): scrollbar rail, unchecked switch track, menu panel,
       closed pick-list, disabled input, rounded box, button hover, rule,
       several checkbox states. Each has its own native field. An "off" switch
       is currently indistinguishable from the page on adwaita.
-- [ ] Text selection takes a 40% accent tint (`text_input.rs:1771`) rather
+- [x] (`styles::text_input` / `text_editor`: `selection` ← `input.selection_background`.) Text selection takes a 40% accent tint (`text_input.rs:1771`) rather
       than `input.selection_background`; the connector's own
       `selection_color()` helper is never used in `to_theme`.
-- [ ] Borders, dividers, rails and tracks come from a lightness deviation of
+- [x] (Every style function emits its widget's own `border.*`; `styles::rule` takes `separator.line_color`.) Borders, dividers, rails and tracks come from a lightness deviation of
       the window background, not from `defaults.border.color` /
       `input.border.color` / `checkbox.unchecked_border_color`; the
       connector's `border_color()` helper is never written into the theme.
-- [ ] `apply_overrides` writes only `.base` entries, so `.weak` / `.strong`
+- [x] (`secondary.strong` is now a copy of `secondary.base`; `styles::button` states hover and pressed from `button.hover_background` / `active_background`, composited over the idle fill.) `apply_overrides` writes only `.base` entries, so `.weak` / `.strong`
       keep values generated from the unoverridden palette: a button painted
       with the platform's surface jumps to an unrelated tone on hover, and
       `button.hover_background` is never read.
-- [ ] `to_theme` takes no `AccessibilityPreferences` (`iced/src/lib.rs:113`),
+- [x] (`font_size` and `mono_font_size` take the preferences and `from_system` returns them; `to_theme` does not, because a palette has nothing for them to act on — reduced transparency and reduced motion have no receiver in iced.) `to_theme` takes no `AccessibilityPreferences` (`iced/src/lib.rs:113`),
       so text scaling, reduced transparency and reduced motion never reach an
       iced application at all.
-- [ ] The iced connector declares no `[features]`, so a consumer depending on
+- [x] (`widgets`, `iced_aw` and the four icon features; the icon features are in `default`.) The iced connector declares no `[features]`, so a consumer depending on
       it alone gets `native_theme::icons::load_icon` returning `None` for every
       icon; the gpui connector forwards the four icon features.
+
+What is still open on the iced side:
+
+- [ ] The iced `geometry` gap stays: the connector has no counterpart of the
+      gpui connector's `geometry` module, because iced takes geometry through
+      builder methods on each widget. Native values with a builder receiver
+      (`Checkbox::size` / `Radio::size` ← `checkbox.indicator_width`,
+      `::spacing` ← `label_gap`, `Toggler::size` ← `switch.track_height`,
+      `ProgressBar::girth` ← `progress_bar.track_height`, the rule's thickness
+      ← `separator.line_width`, `pick_list::Handle::Arrow { size }` ←
+      `combo_box.arrow_icon_size`) are named in the style functions' doc
+      comments and applied by the showcase; spacing comes from the model's
+      `LayoutTheme`, which is public on `Theme` / `SystemTheme` and needs no
+      connector API. `scripts/check-widget-coverage.py` keeps *widget*
+      coverage visible; nothing mechanical yet lists native geometry fields
+      that no iced builder receives.
+- [ ] Unreachable in iced 0.14 / iced_aw 0.14.1, recorded so they are not
+      re-derived: `scrollbar.min_thumb_length` (iced computes the scroller
+      length itself, `scrollable.rs:1998, 2068`; the one entry of the
+      contract's `UNREACHABLE` list); `Table` has a `Catalog` and a `Style`
+      but no `.style()` / `.class()` setter (`table.rs:149-196`), so its
+      separators stay `palette.background.strong`; `splitter.divider_color`
+      (a `pane_grid` split line is drawn only while picked,
+      `pane_grid.rs:950-955`); `progress_bar.min_width`, `tooltip.max_width`
+      and `slider.tick_mark_length` (no receiver at all); a platform font
+      *family* (`Family::Name(&'static str)` against the model's `Arc<str>`);
+      `tab.min_width` / `min_height` (iced_aw takes fixed lengths, no minimum
+      form); `sidebar.border.corner_radius` and `list.border.corner_radius`
+      (both widgets hardcode radius 0); `menu.hover_text_color` and
+      `menu.font.color` on `MenuBar` (`menu_bar::Style` has no text colour);
+      `list.row_height` is reachable only indirectly, as the vertical padding
+      of `SelectionList::new_with`.
+- [ ] iced_aw 0.14.1 defects found by the showcase self-tests, worth filing:
+      `ContextMenu::operate` hands the open popup the underlay's layout
+      (`context_menu.rs:176-200`), which panics any `iced_test` selector
+      while a menu is open; `SelectionList::operate` reports its rows in
+      list-local coordinates (`selection_list/list.rs:280-310`);
+      `Tabs::operate` never visits its own tab bar (`tabs.rs:601-621`).
+      `Spinner` has no `Style`, `Catalog` or setter — `styles::aw::spinner`
+      styles a wrapping container instead.
 
 #### Research
 
@@ -265,6 +357,37 @@ here so the work is not re-derived.
       `input.placeholder_color` at 1.36 against the field. The contrast test
       added in v0.5.9 prints the whole list on every run, so it stays visible.
 
+- [ ] kde-breeze states `button.hover_background = "#93cee9"` in both modes
+      under a `#fcfcfc` label in dark mode: 1.67:1 (the pressed pair is 2.43
+      in light mode). platform-facts records the KDE source as "`[Colors:Button]
+      DecorationHover` **blend**" (`platform-facts.md:1168`), and `#93cee9` is
+      the raw `DecorationHover`, which Breeze paints as an outline — so the
+      preset may be recording the unblended colour as a fill. Found 2026-09-21
+      by the iced contrast report; for `preset-validator` to judge. The same
+      report shows `solarized` (both modes) and `tokyo-night` light with *idle*
+      button labels at 3.6–4.1:1.
+- [ ] `button.hover_text_color` and `button.active_text_color` equal
+      `button.font.color` in all 16 presets, so the per-status label rows of
+      both contracts cannot tell hover or pressed from idle today. Either the
+      platforms really keep the label, or the presets never recorded it.
+- [ ] The progress bar's fill on its track is below AA on 32 of 32 (kde-breeze
+      dark 1.05, adwaita light 1.21). It is the platform's own accent-on-muted
+      pair, emitted exactly — an indicator, not text — but it is the first
+      thing that looks like a bug when the showcase is opened.
+- [ ] No bundled preset states `segmented_control.background_color`, so it
+      inherits the window background — the colour gpui-component fills the
+      *selected* segment with. Since v0.5.9 maps the segmented track from that
+      field, track and selected segment are one colour until the presets state
+      the platform's track.
+- [ ] kde-breeze states `switch.thumb_diameter == switch.track_height` (18/18),
+      so `styles::toggler` emits a thumb inset of zero there. Breeze does draw
+      a handle as tall as its groove; confirm against Breeze's metrics.
+- [ ] Since v0.5.9 the iced connector writes `background.base.text` from
+      `defaults.text_color`, where iced's `readable()` used to substitute a
+      higher-contrast colour below 6.0:1. That now shows the platform's own
+      4.13 (solarized light), 4.75 (solarized dark) and 4.52 (tokyo-night
+      light) window text. If those are preset errors rather than the themes'
+      own values, the presets are where to correct them.
 - [ ] windows-11 light gives `button.disabled_background = "#f9f9f900"` — alpha
       zero, so a disabled button has no fill at all. Found 2026-09-21 while
       measuring translucent state colours; for `preset-validator` to judge
@@ -301,6 +424,28 @@ here so the work is not re-derived.
       0.6.0-era; four are known stale at 0.6.4 (`popup_menu.rs:749` — fixed in
       the gap analysis, `button.rs:360`, `switch.rs:136-146`,
       `checkbox.rs:195-199`).
+
+#### Follow-ups from the v0.5.9 showcase and contract work
+
+- [ ] Split the showcases into modules: `showcase-gpui.rs` and
+      `showcase-iced.rs` are several thousand lines each after gaining every
+      widget and their self-tests.
+- [ ] `scripts/check-widget-coverage.py` still accepts weak evidence of
+      "shown": for iced an import of the module is enough, and for gpui a
+      section label string is (stripping strings there would falsely fail
+      eight widgets that are built through differently named constructors —
+      the script's docstring names them). It also cannot see `cfg`, so the
+      `iced_aw` widgets count as shown in a build that omits them.
+- [ ] `text_scale_factor` (finite and positive, else 1) is written twice, once
+      per connector; a method on `AccessibilityPreferences` in the core crate
+      would state it once.
+- [ ] The repository's PreToolUse hook refuses `panic!` in files under
+      `examples/`, although the project's rule exempts examples and tests by
+      path; align the hook with the rule.
+- [ ] Run each showcase once with `XDG_CONFIG_HOME` pointing at an empty
+      directory before a release. Both defects the gpui self-tests found (the
+      overlay layers never mounted; the mode selector dead when no theme can
+      be read) sat on paths a configured desktop never takes.
 
 #### Upstream PR to gpui
 
