@@ -354,6 +354,8 @@ pub fn text_input(
         let (background, border_color, value) = match status {
             Status::Active => (idle, idle_border, text),
             Status::Hovered => (idle, hover_border, text),
+            // A field that is focused *and* hovered takes the focus border,
+            // as iced's own default does (`text_input.rs:1787`).
             Status::Focused { is_hovered: _ } => (idle, focus_border, text),
             Status::Disabled => (disabled, idle_border, disabled_text),
         };
@@ -407,6 +409,8 @@ pub fn text_editor(
         let (background, border_color, value) = match status {
             Status::Active => (idle, idle_border, text),
             Status::Hovered => (idle, hover_border, text),
+            // Focused and hovered takes the focus border here too, as iced's
+            // own default does (`text_editor.rs:1490`).
             Status::Focused { is_hovered: _ } => (idle, focus_border, text),
             Status::Disabled => (disabled, idle_border, disabled_text),
         };

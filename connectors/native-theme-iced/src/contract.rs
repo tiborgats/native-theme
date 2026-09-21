@@ -215,9 +215,11 @@ struct StyleRow<S: 'static> {
 
 // A row kind for a `Style` field that is a length rather than a color lived
 // here until `BorderRow` arrived: its only five users were a border's width
-// and its four radius corners, which one border row now covers. A function
-// with a scalar field outside a border -- `toggler::Style.padding_ratio`,
-// `scrollable::Style.gap` -- brings it back; `git show e2e2eaf` has it.
+// and its four radius corners, which one border row now covers. What brings it
+// back is a scalar field outside a border that the model does have a source
+// for -- `slider::Style`'s `rail.width`, from `slider.track_height` (section
+// 3.3); `toggler::Style`'s `padding_ratio` and `scrollable::Style`'s `gap`
+// have no native source and are derived instead. `git show e2e2eaf` has it.
 
 /// The flat color of an emitted `Background`, or the reason it is not one.
 #[cfg(feature = "widgets")]
@@ -328,15 +330,22 @@ fn check_border_rows<S: Copy + std::fmt::Debug>(
     rows: &[BorderRow<S>],
     combinations: &[Combination],
     failures: &mut Vec<String>,
-) -> usize {
-    let mut checks = 0;
+    ran: &mut Checked,
+) {
+    for row in rows {
+        // One border row claims six leaves, so it records all six -- the same
+        // names `style_row_fields` declares for it.
+        for leaf in border_fields(&Border::default(), &format!("{}.border", row.field)) {
+            ran.ran(&leaf, row.statuses);
+        }
+    }
     for c in combinations {
         for row in rows {
             for &status in row.statuses {
                 let expected = (row.native)(&c.resolved, status);
                 let actual = (row.get)(&c.theme, &c.resolved, status);
 
-                checks += 1;
+                ran.checks += 1;
                 if actual.color != expected.color {
                     failures.push(format!(
                         "{}: {}.border.color ({status:?}) is {}, native gives {}",
@@ -347,7 +356,7 @@ fn check_border_rows<S: Copy + std::fmt::Debug>(
                     ));
                 }
 
-                checks += 1;
+                ran.checks += 1;
                 if actual.width != expected.width {
                     failures.push(format!(
                         "{}: {}.border.width ({status:?}) is {}, native gives {}",
@@ -364,7 +373,7 @@ fn check_border_rows<S: Copy + std::fmt::Debug>(
                     ("bottom_right", actual.radius.bottom_right),
                     ("bottom_left", actual.radius.bottom_left),
                 ] {
-                    checks += 1;
+                    ran.checks += 1;
                     if corner != expected.radius {
                         failures.push(format!(
                             "{}: {}.border.radius.{leaf} ({status:?}) is {corner}, \
@@ -378,7 +387,6 @@ fn check_border_rows<S: Copy + std::fmt::Debug>(
             }
         }
     }
-    checks
 }
 
 /// The border every button function wears: the button's own, in every status.
@@ -876,18 +884,83 @@ fn style_row_fields() -> Vec<String> {
     out
 }
 
+/// What a run of the `check_*` helpers actually compared: the name of every
+/// row it ran, and how many single-value comparisons those rows made.
+///
+/// Registering a row in `style_row_fields` and handing it to a `check_*` call
+/// are two separate hand-maintained lists, and only the first is read by the
+/// coverage tripwire. A row in the first list but not the second is claimed
+/// and unasserted, and nothing says so -- the printed check count is simply
+/// smaller. So every helper records what it ran here, and `covers` compares
+/// the two lists in both directions.
+#[cfg(feature = "widgets")]
+#[derive(Default)]
+struct Checked {
+    names: Vec<String>,
+    checks: usize,
+}
+
+#[cfg(feature = "widgets")]
+impl Checked {
+    /// Record that a row named `name` was compared, for each of the statuses
+    /// it holds for: a row with an empty status list compares nothing and is
+    /// not recorded, so it is reported like an unchecked one.
+    fn ran<S>(&mut self, name: &str, statuses: &[S]) {
+        if !statuses.is_empty() {
+            self.names.push(name.to_string());
+        }
+    }
+
+    /// Require that the rows which ran are exactly the ones `declared` names.
+    ///
+    /// `what` names the declaration list, so a failure says which of the two
+    /// hand-maintained lists to fix.
+    fn covers(&self, declared: &[String], what: &str) {
+        let (ran, _) = sorted(&self.names);
+        let (declared, twice) = sorted(declared);
+
+        let missing: Vec<&&str> = declared.iter().filter(|n| !ran.contains(n)).collect();
+        let unexpected: Vec<&&str> = ran.iter().filter(|n| !declared.contains(n)).collect();
+        assert!(
+            missing.is_empty() && unexpected.is_empty() && twice.is_empty(),
+            "what ran and what {what} declares differ, so a declared entry may \
+             be asserting nothing:\n  declared but never checked: \
+             {missing:?}\n  checked but not declared: {unexpected:?}\n  \
+             declared twice: {twice:?}"
+        );
+    }
+}
+
+/// `names` sorted and deduplicated, with the ones that appeared more than once
+/// listed separately.
+#[cfg(feature = "widgets")]
+fn sorted(names: &[String]) -> (Vec<&str>, Vec<&str>) {
+    let mut names: Vec<&str> = names.iter().map(String::as_str).collect();
+    names.sort_unstable();
+    let duplicated: Vec<&str> = names
+        .windows(2)
+        .filter(|pair| pair[0] == pair[1])
+        .map(|pair| pair[0])
+        .collect();
+    names.dedup();
+    (names, duplicated)
+}
+
 /// Assert one function's color rows over every combination and status.
 #[cfg(feature = "widgets")]
 fn check_style_rows<S: Copy + std::fmt::Debug>(
     rows: &[StyleRow<S>],
     combinations: &[Combination],
     failures: &mut Vec<String>,
-) -> usize {
-    let mut checks = 0;
+    ran: &mut Checked,
+) {
+    for row in rows {
+        ran.ran(row.field, row.statuses);
+    }
     for c in combinations {
         for row in rows {
             for &status in row.statuses {
-                checks += 1;
+                ran.checks += 1;
                 let expected = (row.native)(&c.resolved, status);
                 match (row.get)(&c.theme, &c.resolved, status) {
                     Ok(actual) if actual == expected => {}
@@ -907,7 +980,6 @@ fn check_style_rows<S: Copy + std::fmt::Debug>(
             }
         }
     }
-    checks
 }
 
 // `check_scalar_rows` went with `ScalarRow`; `check_border_rows` above is what
@@ -1377,6 +1449,28 @@ const TEXT_EDITOR_PAIRS: &[StylePair<text_editor::Status>] = &[
     },
 ];
 
+/// The `what` of every contrast pair this file declares.
+///
+/// The coverage tripwire has nothing to say about pairs -- whether a
+/// foreground and its fill are both ours is a judgment per function (section
+/// 7) -- so there is no list that forces a pair to exist. What there is to
+/// enforce is that a pair once written is actually run: one line here and one
+/// `check_style_pairs` call are two hand-maintained lists, and
+/// `style_contrast_never_degrades_the_native_pair` requires them to agree.
+#[cfg(feature = "widgets")]
+fn style_pair_names() -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    out.extend(BUTTON_PAIRS.iter().map(|pair| pair.what.to_string()));
+    out.extend(BUTTON_PRIMARY_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(BUTTON_DANGER_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(BUTTON_SUCCESS_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(BUTTON_WARNING_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(BUTTON_LINK_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(TEXT_INPUT_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(TEXT_EDITOR_PAIRS.iter().map(|p| p.what.to_string()));
+    out
+}
+
 /// WCAG 2.1 AA for normal text. Only ever used to decide what to print.
 const AA: f32 = 4.5;
 
@@ -1389,12 +1483,15 @@ fn check_style_pairs<S: Copy + std::fmt::Debug>(
     combinations: &[Combination],
     failures: &mut Vec<String>,
     below_aa: &mut Vec<String>,
-) -> usize {
-    let mut checks = 0;
+    ran: &mut Checked,
+) {
+    for pair in pairs {
+        ran.ran(pair.what, pair.statuses);
+    }
     for c in combinations {
         for pair in pairs {
             for &status in pair.statuses {
-                checks += 1;
+                ran.checks += 1;
                 let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved, status);
                 let native = pair_ratio(native_fg, native_bg, native_surface);
                 match (pair.emitted)(&c.theme, &c.resolved, status) {
@@ -1427,7 +1524,6 @@ fn check_style_pairs<S: Copy + std::fmt::Debug>(
             }
         }
     }
-    checks
 }
 
 /// One preset in one mode: the native values and the theme built from them.
@@ -2224,6 +2320,7 @@ fn the_primary_pair_is_the_accent_pair() -> native_theme::Result<()> {
         }
     }
 
+    println!("primary pair vs accent pair: {checks} field checks");
     assert!(
         failures.is_empty(),
         "{} of {checks} primary/accent pairs differ:\n{}",
@@ -2240,21 +2337,58 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     let mut failures = Vec::new();
 
     // One line per function, plus one per border.
-    let checks = check_style_rows(BUTTON_ROWS, &combinations, &mut failures)
-        + check_style_rows(BUTTON_PRIMARY_ROWS, &combinations, &mut failures)
-        + check_style_rows(BUTTON_DANGER_ROWS, &combinations, &mut failures)
-        + check_style_rows(BUTTON_SUCCESS_ROWS, &combinations, &mut failures)
-        + check_style_rows(BUTTON_WARNING_ROWS, &combinations, &mut failures)
-        + check_style_rows(BUTTON_LINK_ROWS, &combinations, &mut failures)
-        + check_style_rows(TEXT_INPUT_ROWS, &combinations, &mut failures)
-        + check_style_rows(TEXT_EDITOR_ROWS, &combinations, &mut failures)
-        + check_border_rows(BUTTON_BORDER_ROWS, &combinations, &mut failures)
-        + check_border_rows(BUTTON_PRIMARY_BORDER_ROWS, &combinations, &mut failures)
-        + check_border_rows(BUTTON_DANGER_BORDER_ROWS, &combinations, &mut failures)
-        + check_border_rows(BUTTON_SUCCESS_BORDER_ROWS, &combinations, &mut failures)
-        + check_border_rows(BUTTON_WARNING_BORDER_ROWS, &combinations, &mut failures)
-        + check_border_rows(TEXT_INPUT_BORDER_ROWS, &combinations, &mut failures)
-        + check_border_rows(TEXT_EDITOR_BORDER_ROWS, &combinations, &mut failures);
+    let mut ran = Checked::default();
+    check_style_rows(BUTTON_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(BUTTON_PRIMARY_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(BUTTON_DANGER_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(BUTTON_SUCCESS_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(BUTTON_WARNING_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(BUTTON_LINK_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(TEXT_INPUT_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(TEXT_EDITOR_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(BUTTON_BORDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(
+        BUTTON_PRIMARY_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_border_rows(
+        BUTTON_DANGER_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_border_rows(
+        BUTTON_SUCCESS_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_border_rows(
+        BUTTON_WARNING_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_border_rows(
+        TEXT_INPUT_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_border_rows(
+        TEXT_EDITOR_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+
+    // The calls above are a second hand-maintained list beside
+    // `style_row_fields`, and only that one is read by the coverage tripwire:
+    // a row registered there but never checked here would leave its field
+    // claimed and unasserted.
+    ran.covers(&style_row_fields(), "style_row_fields()");
 
     // `check_border_rows` compares six leaves. If upstream adds a seventh,
     // `border_fields` grows -- and claims it for the tripwire -- while the
@@ -2265,12 +2399,13 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         "an iced `Border` no longer has {BORDER_LEAVES} leaves; \
          `check_border_rows` compares that many and must be extended first"
     );
-    println!("style rows: {checks} field checks");
+    println!("style rows: {} field checks", ran.checks);
 
     assert!(
         failures.is_empty(),
-        "{} of {checks} style contract checks failed:\n{}",
+        "{} of {} style contract checks failed:\n{}",
         failures.len(),
+        ran.checks,
         failures.join("\n")
     );
     Ok(())
@@ -2284,52 +2419,68 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     let mut below_aa = Vec::new();
 
     // One line per function.
-    let checks = check_style_pairs(BUTTON_PAIRS, &combinations, &mut failures, &mut below_aa)
-        + check_style_pairs(
-            BUTTON_PRIMARY_PAIRS,
-            &combinations,
-            &mut failures,
-            &mut below_aa,
-        )
-        + check_style_pairs(
-            BUTTON_DANGER_PAIRS,
-            &combinations,
-            &mut failures,
-            &mut below_aa,
-        )
-        + check_style_pairs(
-            BUTTON_SUCCESS_PAIRS,
-            &combinations,
-            &mut failures,
-            &mut below_aa,
-        )
-        + check_style_pairs(
-            BUTTON_WARNING_PAIRS,
-            &combinations,
-            &mut failures,
-            &mut below_aa,
-        )
-        + check_style_pairs(
-            BUTTON_LINK_PAIRS,
-            &combinations,
-            &mut failures,
-            &mut below_aa,
-        )
-        + check_style_pairs(
-            TEXT_INPUT_PAIRS,
-            &combinations,
-            &mut failures,
-            &mut below_aa,
-        )
-        + check_style_pairs(
-            TEXT_EDITOR_PAIRS,
-            &combinations,
-            &mut failures,
-            &mut below_aa,
-        );
+    let mut ran = Checked::default();
+    let all = &combinations;
+    check_style_pairs(BUTTON_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(
+        BUTTON_PRIMARY_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        BUTTON_DANGER_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        BUTTON_SUCCESS_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        BUTTON_WARNING_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        BUTTON_LINK_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        TEXT_INPUT_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+    check_style_pairs(
+        TEXT_EDITOR_PAIRS,
+        all,
+        &mut failures,
+        &mut below_aa,
+        &mut ran,
+    );
+
+    // A pair list declared and never checked here asserts nothing, and the
+    // tripwire cannot notice -- it walks `Style` fields, and whether a pair
+    // exists at all is a judgment per function (section 7). So the names that
+    // ran are held against the names declared.
+    ran.covers(&style_pair_names(), "style_pair_names()");
 
     println!(
-        "--- styles contrast: {checks} pairs, {} below AA (printed, not asserted) ---",
+        "--- styles contrast: {} pairs, {} below AA (printed, not asserted) ---",
+        ran.checks,
         below_aa.len()
     );
     for line in &below_aa {
@@ -2337,8 +2488,9 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     }
     assert!(
         failures.is_empty(),
-        "{} of {checks} style pairs are worse than the platform's own:\n{}",
+        "{} of {} style pairs are worse than the platform's own:\n{}",
         failures.len(),
+        ran.checks,
         failures.join("\n")
     );
     Ok(())
