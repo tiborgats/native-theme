@@ -20,7 +20,10 @@ targets = [
 ]
 
 [features]
-default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+
+# Which iced crates this connector covers. Additive, never subtractive.
+widgets = ["dep:iced_widget"]            # enables `styles`
 
 material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
@@ -30,6 +33,7 @@ svg-rasterize = ["native-theme/svg-rasterize"]
 [dependencies]
 native-theme.workspace = true
 iced_core = "0.14"
+iced_widget = { version = "0.14", optional = true }
 
 [[example]]
 name = "showcase-iced"

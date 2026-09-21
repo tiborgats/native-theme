@@ -79,6 +79,8 @@ mod contract;
 pub(crate) mod extended;
 pub mod icons;
 pub mod palette;
+#[cfg(feature = "widgets")]
+pub mod styles;
 
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::color::Rgba;

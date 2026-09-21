@@ -4936,6 +4936,7 @@ version = "0.5.9"
 dependencies = [
  "iced",
  "iced_core",
+ "iced_widget",
  "image",
  "native-theme",
  "objc2 0.6.4",
