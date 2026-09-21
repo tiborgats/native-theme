@@ -3300,7 +3300,6 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     // model. A hover layer copies the base state and is then composited over
     // the fill it covers, so the two cases are spelled out separately.
     let box_fill = to_color(resolved.checkbox.background_color);
-    let box_checked = to_color(resolved.checkbox.checked_background);
     let box_border = to_color(resolved.checkbox.border.color);
     let track_on = to_color(resolved.switch.checked_background);
     let track_off = to_color(resolved.switch.unchecked_background);
@@ -3323,8 +3322,8 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         ),
         (
             "checkbox.hover_background -> checkbox.background_color",
-            fill(boxes(&theme, checkbox::Status::Hovered { is_checked: true }).background),
-            over(box_fill, box_checked),
+            fill(boxes(&theme, checkbox::Status::Hovered { is_checked: false }).background),
+            over(box_fill, box_fill),
         ),
         (
             "checkbox.disabled_background -> checkbox.background_color",
@@ -3347,8 +3346,8 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
         ),
         (
             "radio: checkbox.hover_background -> checkbox.background_color",
-            fill(buttons(&theme, radio::Status::Hovered { is_selected: true }).background),
-            over(box_fill, box_checked),
+            fill(buttons(&theme, radio::Status::Hovered { is_selected: false }).background),
+            over(box_fill, box_fill),
         ),
         (
             "radio: checkbox.unchecked_border_color -> checkbox.border.color",

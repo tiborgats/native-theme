@@ -145,9 +145,13 @@ pub fn menu(
 /// behind them transparent.
 ///
 /// **A `TabBar` spells its three tab states in the shared `Status`
-/// unusually** (`tab_bar.rs:588-594`): `Hovered` is the tab under the pointer,
+/// unusually** (`tab_bar.rs:589-595`): `Hovered` is the tab under the pointer,
 /// `Active` is the *selected* tab, and `Disabled` is a tab that is merely not
-/// selected -- not a tab that cannot be clicked. So the three are
+/// selected -- not a tab that cannot be clicked. The pointer is tested first,
+/// so the *selected* tab under the pointer also arrives as `Hovered` and this
+/// function is not told it is the selected one: it shows the hover fill and
+/// label while the pointer is on it. `iced_aw` offers no way to tell the two
+/// apart. So the three are
 /// `tab.hover_background` with `.hover_text_color`, `tab.active_background`
 /// with `.active_text_color`, and `tab.background_color` with `tab.font.color`.
 /// `hover_background` is a soft option: `None` is the platform saying a hovered
@@ -232,8 +236,12 @@ pub fn tab_bar(
 /// behind them transparent.
 ///
 /// A `Sidebar` reads the shared `Status` the way a `TabBar` does
-/// (`sidebar/sidebar.rs:979-985`): `Hovered` is the item under the pointer,
-/// `Active` is the selected item, `Disabled` is an unselected one. So the three
+/// (`sidebar/sidebar.rs:980-986`): `Hovered` is the item under the pointer,
+/// `Active` is the selected item, `Disabled` is an unselected one. The pointer
+/// is tested first here too, so the *selected* item under the pointer also
+/// arrives as `Hovered` and this function cannot tell it apart from an
+/// unselected one: it shows the hover fill while the pointer is on it. So the
+/// three
 /// are `sidebar.hover_background`, `.selection_background` with
 /// `.selection_text_color`, and the panel's own `sidebar.background_color` with
 /// `sidebar.font.color` -- the platform states no separate fill for an
@@ -322,7 +330,10 @@ pub fn sidebar(
 /// the selected one (`selection_list.rs:302`,
 /// `selection_list/list.rs:241-258`), which are `list.background_color` with
 /// `list.item_font.color`, `list.hover_background` with `.hover_text_color`,
-/// and `.selection_background` with `.selection_text_color`. `Disabled` is
+/// and `.selection_background` with `.selection_text_color`. Selection wins
+/// over the pointer here (`list.rs:237-247`, `:251-256`), so a selected row
+/// keeps its selected look while hovered -- unlike a tab or a sidebar item,
+/// whose widgets test the pointer first. `Disabled` is
 /// `list.disabled_text_color` on the list's own fill -- a mapping the model
 /// does describe but that nothing paints today, because `iced_aw` 0.14.1 asks
 /// a row only for `Selected`, `Hovered` and `Active`

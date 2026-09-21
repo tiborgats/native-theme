@@ -571,10 +571,13 @@ pub(super) fn native_checkbox_fill(r: &ResolvedTheme, status: checkbox::Status) 
     let c = &r.checkbox;
     match status {
         checkbox::Status::Active { is_checked } => native_checkbox_idle(r, is_checked),
-        // The hover layer goes over whichever fill the box is showing (C17).
-        checkbox::Status::Hovered { is_checked } => over(
+        // `hover_background` is the hover of the *unchecked* box; the model
+        // states no hover for a checked one, and a state the platform does
+        // not state has no distinct appearance.
+        checkbox::Status::Hovered { is_checked: true } => native_checkbox_idle(r, true),
+        checkbox::Status::Hovered { is_checked: false } => over(
             to_color(c.hover_background.unwrap_or(c.background_color)),
-            native_checkbox_idle(r, is_checked),
+            native_checkbox_idle(r, false),
         ),
         // One disabled fill for both, replacing the idle one, as given.
         checkbox::Status::Disabled { is_checked: _ } => {
@@ -686,9 +689,10 @@ pub(super) fn native_radio_fill(r: &ResolvedTheme, status: radio::Status) -> Col
     let c = &r.checkbox;
     match status {
         radio::Status::Active { is_selected } => native_checkbox_idle(r, is_selected),
-        radio::Status::Hovered { is_selected } => over(
+        radio::Status::Hovered { is_selected: true } => native_checkbox_idle(r, true),
+        radio::Status::Hovered { is_selected: false } => over(
             to_color(c.hover_background.unwrap_or(c.background_color)),
-            native_checkbox_idle(r, is_selected),
+            native_checkbox_idle(r, false),
         ),
     }
 }

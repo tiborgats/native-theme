@@ -457,9 +457,12 @@ pub fn text_editor(
 /// The box has two fills, `checkbox.checked_background` and
 /// `.unchecked_background`, and the `Status` says which one it is showing. The
 /// check mark is `checkbox.indicator_color` -- the model has no `check_color`.
-/// `.hover_background` is a layer over whichever fill the box shows (C17);
-/// `.disabled_background` replaces it, as given. An unchecked box may state a
-/// border color of its own, `.unchecked_border_color`.
+/// `.hover_background` is the hover of the *unchecked* box, and is composited
+/// as a layer over its fill; the model states no hover for a checked one, and
+/// a state the platform does not state has no distinct appearance, so a
+/// hovered checked box is exactly the checked box. `.disabled_background`
+/// replaces the fill, as given. An unchecked box may state a border color of
+/// its own, `.unchecked_border_color`.
 ///
 /// Nothing here comes from iced: every field of `checkbox::Style` has a native
 /// source. The label is `checkbox.font.color`, and `.disabled_text_color` when
@@ -486,7 +489,6 @@ pub fn checkbox(
     // box looks no different unchecked, or under the pointer.
     let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
     let hover_layer = to_color(c.hover_background.unwrap_or(c.background_color));
-    let hovered_checked = composite_over(hover_layer, checked);
     let hovered_unchecked = composite_over(hover_layer, unchecked);
     // A translucent disabled fill replaces the idle one, so it is as given.
     let disabled = to_color(c.disabled_background.unwrap_or(c.background_color));
@@ -511,7 +513,7 @@ pub fn checkbox(
             }
             Status::Hovered { is_checked } => {
                 if is_checked {
-                    (hovered_checked, checked_border, label)
+                    (checked, checked_border, label)
                 } else {
                     (hovered_unchecked, unchecked_border, label)
                 }
@@ -549,7 +551,9 @@ pub fn checkbox(
 /// The model states one `CheckboxTheme` for both controls
 /// (`widgets/mod.rs:138-140`), so this reads exactly the sources [`checkbox`]
 /// reads, with `is_selected` where the checkbox has `is_checked` and the check
-/// mark serving as the dot. `radio::Status` has no disabled variant
+/// mark serving as the dot -- `checkbox.hover_background` included, which is
+/// the hover of the *unselected* circle only, so a hovered selected radio is
+/// exactly the selected radio. `radio::Status` has no disabled variant
 /// (`radio.rs:474-487`), so the model's disabled fields have no receiver here.
 ///
 /// `radio::Style` carries its border as a width and a color rather than as an
@@ -572,7 +576,6 @@ pub fn radio(
     let selected = to_color(c.checked_background);
     let unselected = to_color(c.unchecked_background.unwrap_or(c.background_color));
     let hover_layer = to_color(c.hover_background.unwrap_or(c.background_color));
-    let hovered_selected = composite_over(hover_layer, selected);
     let hovered_unselected = composite_over(hover_layer, unselected);
 
     let dot = to_color(c.indicator_color);
@@ -593,7 +596,7 @@ pub fn radio(
             }
             Status::Hovered { is_selected } => {
                 if is_selected {
-                    (hovered_selected, selected_border)
+                    (selected, selected_border)
                 } else {
                     (hovered_unselected, unselected_border)
                 }
