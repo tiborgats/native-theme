@@ -5115,6 +5115,23 @@ mod tests {
         }
     }
 
+    /// Opens the `pick_list` tagged `id` and chooses its `nth` option.
+    ///
+    /// A `pick_list` pads its menu with `button::DEFAULT_PADDING`
+    /// (`pick_list.rs:204`).
+    fn pick_list_option(ui: &mut Simulator<'_, Message>, id: &'static str, nth: usize) {
+        pick_option(ui, id, nth, iced::widget::button::DEFAULT_PADDING);
+    }
+
+    /// Opens the `combo_box` tagged `id` and chooses its `nth` option.
+    ///
+    /// A `combo_box` pads its menu with `text_input::DEFAULT_PADDING`
+    /// (`combo_box.rs:190`), which is as tall as a `pick_list`'s today but is
+    /// not the same constant and need not stay equal.
+    fn combo_box_option(ui: &mut Simulator<'_, Message>, id: &'static str, nth: usize) {
+        pick_option(ui, id, nth, iced::widget::text_input::DEFAULT_PADDING);
+    }
+
     /// Opens the picker tagged `id` and chooses its `nth` option, counting
     /// from the top of the menu.
     ///
@@ -5123,13 +5140,19 @@ mod tests {
     /// state publicly is where they are: the menu is laid out directly under
     /// the widget that opened it (`overlay/menu.rs:241-262`), one row per
     /// option, each `line_height + padding.y()` tall
-    /// (`overlay/menu.rs:375-397`). Both terms are read from iced's own
-    /// defaults, which the showcase overrides for none of its pickers, rather
-    /// than copied as numbers.
-    fn pick_option(ui: &mut Simulator<'_, Message>, id: &'static str, nth: usize) {
+    /// (`overlay/menu.rs:375-397`), where the padding is the one the picker
+    /// gives it. Both terms are read from iced's own defaults, which the
+    /// showcase overrides for none of its pickers, rather than copied as
+    /// numbers.
+    fn pick_option(
+        ui: &mut Simulator<'_, Message>,
+        id: &'static str,
+        nth: usize,
+        menu_padding: Padding,
+    ) {
         let text_size = Settings::default().default_text_size;
         let row = f32::from(iced_core::text::LineHeight::default().to_absolute(text_size))
-            + iced::widget::button::DEFAULT_PADDING.y();
+            + menu_padding.y();
         let field = probe_bounds(ui, id);
         let at = Point::new(
             field.center().x,
@@ -5170,11 +5193,17 @@ mod tests {
 
     /// Every tab lays out and draws, at the size the application opens.
     ///
+    /// What taking the snapshot catches is a panic in `view`, in layout or in
+    /// drawing. It has no failure path of its own: `Simulator::snapshot` in
+    /// `iced_test` 0.14.0 always returns `Ok` (`simulator.rs:199-241`), so the
+    /// `Err` arm below is unreachable today and is written out rather than
+    /// discarded so that the day it stops being so does not pass unnoticed.
+    ///
     /// The snapshot is deliberately not compared with a baseline — that is
     /// Layer 4 and out of scope (spec §6.2). What is compared is that no text
     /// the tab lays out was squeezed to nothing: a widget with no room left is
-    /// a widget nobody sees, which a snapshot that merely returns `Ok` would
-    /// not report.
+    /// a widget nobody sees, which a drawing pass that merely returns `Ok`
+    /// would not report.
     #[test]
     fn every_tab_renders() {
         for tab in Tab::ALL {
@@ -5247,6 +5276,13 @@ mod tests {
                 "{label}: the press did not reach the counter"
             );
         }
+        // Spec §6.2 words this as "its click fails". That is not what
+        // `iced_test` does: `click` errs only when the selector finds nothing
+        // (`simulator.rs:121-128`) or the target has no visible bounds
+        // (`:151-154`), and a disabled button is both found and visible. The
+        // click resolves; what says the button is disabled is that it
+        // published nothing and the counter did not move, which is the
+        // stronger claim.
         for label in ["Disabled Primary", "Disabled Secondary", "Disabled Danger"] {
             let messages = drive(&mut state, |ui| click_text(ui, label));
             assert!(
@@ -5346,7 +5382,7 @@ mod tests {
         // open, so the click that opens it and the click that picks an entry
         // share one simulator.
         assert_eq!(state.pick_list_selected.as_deref(), Some("Rust"));
-        let messages = drive(&mut state, |ui| pick_option(ui, probes::PICK_LIST, 1));
+        let messages = drive(&mut state, |ui| pick_list_option(ui, probes::PICK_LIST, 1));
         let picked = match messages.as_slice() {
             [Message::PickListSelected(value)] => value.clone(),
             other => panic!("pick_list: {other:?}"),
@@ -5359,7 +5395,7 @@ mod tests {
         );
 
         assert_eq!(state.combo_selected, None);
-        let messages = drive(&mut state, |ui| pick_option(ui, probes::COMBO_BOX, 1));
+        let messages = drive(&mut state, |ui| combo_box_option(ui, probes::COMBO_BOX, 1));
         let picked = match messages.as_slice() {
             [Message::ComboBoxSelected(value)] => value.clone(),
             other => panic!("combo_box: {other:?}"),
@@ -5623,7 +5659,7 @@ mod tests {
             Some(index) => index,
             None => panic!("{wanted} is not offered by the colour mode picker"),
         };
-        let messages = drive(state, |ui| pick_option(ui, probes::COLOR_MODE, nth));
+        let messages = drive(state, |ui| pick_list_option(ui, probes::COLOR_MODE, nth));
         assert!(
             matches!(messages.as_slice(), [Message::ColorModeSelected(mode)] if *mode == wanted),
             "colour mode: {messages:?}"
@@ -5663,7 +5699,7 @@ mod tests {
             None => panic!("no preset of this platform resolves to another background"),
         };
 
-        let messages = drive(state, |ui| pick_option(ui, probes::THEME, nth));
+        let messages = drive(state, |ui| pick_list_option(ui, probes::THEME, nth));
         assert!(
             matches!(messages.as_slice(), [Message::ThemeSelected(ThemeChoice::Preset(name))] if *name == preset),
             "theme preset: {messages:?}"
@@ -5750,7 +5786,11 @@ mod tests {
     /// `styles::*` functions that dress what it builds.
     struct Dressed {
         ctor: &'static str,
-        styles: &'static [&'static str],
+        /// One entry per style the constructor has to be given; a site clears
+        /// an entry by carrying any one of its alternatives. A widget with
+        /// two dressable parts — a picker and the menu it drops — therefore
+        /// has two entries, and losing either is a failure.
+        styles: &'static [&'static [&'static str]],
     }
 
     /// Every constructor in the showcase that has a `styles::*` function.
@@ -5762,70 +5802,70 @@ mod tests {
     const DRESSED: &[Dressed] = &[
         Dressed {
             ctor: "button",
-            styles: &[
+            styles: &[&[
                 "styles::button",
                 "styles::button_primary",
                 "styles::button_danger",
                 "styles::button_success",
                 "styles::button_warning",
                 "styles::button_link",
-            ],
+            ]],
         },
         Dressed {
             ctor: "text_input",
-            styles: &["styles::text_input"],
+            styles: &[&["styles::text_input"]],
         },
         Dressed {
             ctor: "text_editor",
-            styles: &["styles::text_editor"],
+            styles: &[&["styles::text_editor"]],
         },
         Dressed {
             ctor: "checkbox",
-            styles: &["styles::checkbox"],
+            styles: &[&["styles::checkbox"]],
         },
         Dressed {
             ctor: "radio",
-            styles: &["styles::radio"],
+            styles: &[&["styles::radio"]],
         },
         Dressed {
             ctor: "toggler",
-            styles: &["styles::toggler"],
+            styles: &[&["styles::toggler"]],
         },
         Dressed {
             ctor: "pick_list",
-            styles: &["styles::pick_list"],
+            styles: &[&["styles::pick_list"], &["styles::menu"]],
         },
         Dressed {
             ctor: "combo_box",
-            styles: &["styles::text_input"],
+            styles: &[&["styles::text_input"], &["styles::menu"]],
         },
         Dressed {
             ctor: "scrollable",
-            styles: &["styles::scrollable"],
+            styles: &[&["styles::scrollable"], &["styles::scrollbar"]],
         },
         Dressed {
             ctor: "slider",
-            styles: &["styles::slider"],
+            styles: &[&["styles::slider"]],
         },
         Dressed {
             ctor: "vertical_slider",
-            styles: &["styles::slider"],
+            styles: &[&["styles::slider"]],
         },
         Dressed {
             ctor: "progress_bar",
-            styles: &["styles::progress_bar"],
+            styles: &[&["styles::progress_bar"]],
         },
         Dressed {
             ctor: "tooltip",
-            styles: &["styles::tooltip"],
+            styles: &[&["styles::tooltip"]],
         },
         Dressed {
             ctor: "rule::horizontal",
-            styles: &["styles::rule"],
+            styles: &[&["styles::rule"]],
         },
         Dressed {
             ctor: "rule::vertical",
-            styles: &["styles::rule"],
+            styles: &[&["styles::rule"]],
         },
     ];
 
@@ -5862,20 +5902,30 @@ mod tests {
                 "{}( has no call site left in the showcase",
                 row.ctor
             );
+            // The invariant `call_sites` rests on: the showcase imports its
+            // constructors and calls them bare.
+            let qualified = format!("widget::{}(", row.ctor);
+            assert!(
+                !source.contains(&qualified),
+                "{qualified} is a call site this test cannot see; the showcase \
+                 calls its constructors by their imported names only"
+            );
             total += sites.len();
 
-            let bare: Vec<String> = sites
-                .iter()
-                .filter(|site| !is_dressed(&source, **site, row.styles))
-                .map(|site| format!("showcase-iced.rs:{}", line_at(&source, *site)))
-                .collect();
-            assert!(
-                bare.is_empty(),
-                "{}( is built with no {} at {}",
-                row.ctor,
-                row.styles.join(" / "),
-                bare.join(", ")
-            );
+            for required in row.styles {
+                let bare: Vec<String> = sites
+                    .iter()
+                    .filter(|site| !is_dressed(&source, **site, required))
+                    .map(|site| format!("showcase-iced.rs:{}", line_at(&source, *site)))
+                    .collect();
+                assert!(
+                    bare.is_empty(),
+                    "{}( is built with no {} at {}",
+                    row.ctor,
+                    required.join(" / "),
+                    bare.join(", ")
+                );
+            }
         }
         assert!(total > 0, "the coverage table found nothing");
 
@@ -5908,13 +5958,16 @@ mod tests {
             .collect()
     }
 
-    /// Rust source with `//` comments, `/* */` comments and string literals
-    /// removed, so that a widget named in prose is not counted as one built.
+    /// Rust source with `//` comments, `/* */` comments and string, raw
+    /// string and character literals removed, so that a widget named in prose
+    /// is not counted as one built.
     ///
-    /// The file carries no raw string, byte string or character literal — a
-    /// `'` in it is always a lifetime — so the three states below are all
-    /// there are. Every removed byte becomes a space, which keeps line
-    /// numbers and offsets the same as the original's.
+    /// A `'` opens a literal only when what follows it closes one; otherwise
+    /// it is a lifetime or a loop label (`'a`, `'_`, `'static`), which is code
+    /// and stays. Byte literals need no state of their own: `b` is an
+    /// identifier character, and what follows it is lexed like any other
+    /// string or character. Every removed character becomes a space, which
+    /// keeps line numbers and offsets the same as the original's.
     fn strip_comments_and_strings(source: &str) -> String {
         #[derive(Clone, Copy, PartialEq)]
         enum Mode {
@@ -5922,6 +5975,7 @@ mod tests {
             Line,
             Block(usize),
             Text,
+            Raw(usize),
         }
 
         let bytes: Vec<char> = source.chars().collect();
@@ -5939,9 +5993,19 @@ mod tests {
                     } else if c == '/' && next == Some('*') {
                         mode = Mode::Block(1);
                         out.push(' ');
+                    } else if let Some(hashes) = raw_string_open(&bytes, i) {
+                        mode = Mode::Raw(hashes);
+                        let opener = hashes + 2;
+                        out.extend(std::iter::repeat_n(' ', opener));
+                        i += opener;
+                        continue;
                     } else if c == '"' {
                         mode = Mode::Text;
                         out.push(' ');
+                    } else if let Some(len) = char_literal_len(&bytes, i) {
+                        out.extend(std::iter::repeat_n(' ', len));
+                        i += len;
+                        continue;
                     } else {
                         out.push(c);
                     }
@@ -5985,10 +6049,139 @@ mod tests {
                     }
                     out.push(if c == '\n' { c } else { ' ' });
                 }
+                Mode::Raw(hashes) => {
+                    if c == '"' && (1..=hashes).all(|k| bytes.get(i + k) == Some(&'#')) {
+                        mode = Mode::Code;
+                        let closer = hashes + 1;
+                        out.extend(std::iter::repeat_n(' ', closer));
+                        i += closer;
+                        continue;
+                    }
+                    out.push(if c == '\n' { c } else { ' ' });
+                }
             }
             i += 1;
         }
         out
+    }
+
+    /// The number of `#`s of the raw string opener at `at`, if one starts
+    /// there.
+    ///
+    /// `at` is the `r`; a `b` in front of it is a prefix of the same literal
+    /// and not the tail of an identifier, so `br"..."` is a raw string while
+    /// `str"` — which no Rust ever writes — is not.
+    fn raw_string_open(source: &[char], at: usize) -> Option<usize> {
+        if source.get(at) != Some(&'r') {
+            return None;
+        }
+        let before = at.checked_sub(1).and_then(|k| source.get(k)).copied();
+        let head = if before == Some('b') {
+            at.checked_sub(2).and_then(|k| source.get(k)).copied()
+        } else {
+            before
+        };
+        if head.is_some_and(|c| c.is_alphanumeric() || c == '_') {
+            return None;
+        }
+        let mut hashes = 0;
+        while source.get(at + 1 + hashes) == Some(&'#') {
+            hashes += 1;
+        }
+        (source.get(at + 1 + hashes) == Some(&'"')).then_some(hashes)
+    }
+
+    /// The length of the character literal at `at`, if one starts there.
+    ///
+    /// A `'` that opens no literal is a lifetime or a loop label, which the
+    /// stripper leaves alone. The escaped form is scanned to its closing
+    /// quote, which is at most twelve characters away — `'\u{10FFFF}'` is the
+    /// longest a character literal gets.
+    fn char_literal_len(source: &[char], at: usize) -> Option<usize> {
+        if source.get(at) != Some(&'\'') {
+            return None;
+        }
+        match source.get(at + 1)? {
+            '\\' => {
+                let end = (at + 3..(at + 12).min(source.len()))
+                    .find(|k| source.get(*k) == Some(&'\''))?;
+                Some(end + 1 - at)
+            }
+            _ => (source.get(at + 2) == Some(&'\'')).then_some(3),
+        }
+    }
+
+    /// The stripper, on a fixture of everything that has ever confused one.
+    ///
+    /// The fixture is a raw string, so the stripper's own source carries the
+    /// forms it is asked about; that a `thing(` inside it is *not* counted is
+    /// half of what this asserts.
+    #[test]
+    fn the_stripper_blanks_every_literal_and_keeps_every_lifetime() {
+        let fixture = r##"
+let quote = '"';
+let escaped = '\'';
+let slash = '\\';
+let newline = '\n';
+fn f<'a>(s: &'a str) -> &'a str { s }   // a " inside a line comment
+let text = "a // b /* c */ d";
+/* outer /* inner */ still a comment */
+'outer: loop { break 'outer; }
+let raw = r"first";
+let hashed = r#"a "quoted" thing(  "#;
+thing(0);
+"##;
+        let stripped = strip_comments_and_strings(fixture);
+
+        assert_eq!(
+            stripped.chars().count(),
+            fixture.chars().count(),
+            "a removed character must become a space, or offsets move"
+        );
+        assert_eq!(
+            stripped.lines().count(),
+            fixture.lines().count(),
+            "a removed newline moves every line number after it"
+        );
+
+        for code in [
+            "let quote =",
+            "let escaped =",
+            "let slash =",
+            "let newline =",
+            "fn f<'a>(s: &'a str) -> &'a str { s }",
+            "'outer: loop { break 'outer; }",
+            "let hashed =",
+        ] {
+            assert!(stripped.contains(code), "the stripper ate code: {code}");
+        }
+        assert_eq!(
+            stripped.matches('\'').count(),
+            5,
+            "the only quotes left are the three lifetimes and the two labels"
+        );
+
+        for gone in [
+            "\"",
+            "//",
+            "/*",
+            "*/",
+            "quoted",
+            "inside a line comment",
+            "still a comment",
+        ] {
+            assert!(
+                !stripped.contains(gone),
+                "the stripper left a literal or a comment behind: {gone}"
+            );
+        }
+
+        let sites = call_sites(&stripped, "thing");
+        assert_eq!(
+            sites.len(),
+            1,
+            "one `thing(` is code and one is inside a raw string, got {sites:?}"
+        );
     }
 
     /// Every place `name(` is called, as an offset into `source`.
@@ -5996,6 +6189,13 @@ mod tests {
     /// A call is only a call when nothing joins it to what precedes it, so
     /// `styles::slider(` is not a `slider(` site and `vertical_slider(` is not
     /// one either.
+    ///
+    /// That rule is what the coverage count rests on: a constructor is seen
+    /// only under its bare imported name, and a site written
+    /// `iced::widget::button(` would be counted by nothing.
+    /// `styles_cover_every_widget_shown` asserts that the showcase contains no
+    /// such qualified form, so the invariant fails loudly instead of quietly
+    /// shrinking the count.
     fn call_sites(source: &str, name: &str) -> Vec<usize> {
         let mut sites = Vec::new();
         for (at, _) in source.match_indices(name) {
