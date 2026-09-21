@@ -131,6 +131,8 @@
 #![deny(clippy::expect_used)]
 
 #[cfg(test)]
+mod compat;
+#[cfg(test)]
 mod contract;
 pub(crate) mod extended;
 pub mod icons;

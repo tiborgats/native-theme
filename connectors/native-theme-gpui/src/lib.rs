@@ -92,6 +92,8 @@
 
 pub mod base_layer;
 pub(crate) mod colors;
+#[cfg(test)]
+mod compat;
 pub(crate) mod config;
 #[cfg(test)]
 mod contract;

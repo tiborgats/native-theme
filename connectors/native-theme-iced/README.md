@@ -2,6 +2,9 @@
 
 [iced](https://iced.rs/) connector for [`native-theme`](https://crates.io/crates/native-theme).
 
+Compatibility: the versions this connector requires, and the set it has been
+verified against, are in [Compatibility](#compatibility).
+
 ## What it does
 
 Two layers, and you can stop after the first:
@@ -28,6 +31,36 @@ Unlike the GPUI connector, iced applies geometry (padding, sizes, spacing)
 via inline widget configuration, so the theme and the style functions carry
 **colours, borders and radii**, and the metric helpers read the rest off a
 `&ResolvedTheme` for you to pass into your widget builders.
+
+## Compatibility
+
+**Required** — the floors this crate's own `Cargo.toml` states:
+
+| Crate | Required |
+|---|---|
+| `iced_core` | 0.14 |
+| `iced_widget` (feature `widgets`, on by default) | 0.14 |
+| `iced_aw` (feature `iced_aw`, off by default) | 0.14 |
+| `iced` (dev-dependency: the showcase) | 0.14 |
+| `rust-version` | 1.88.0 |
+
+Each is a floor and nothing more, and deliberately not an open-ended range: a
+*patch* release of an upstream crate has broken a connector in this repository
+before, when gpui-component 0.6.2 removed a theme field the published
+native-theme-gpui 0.5.8 wrote and 0.5.8 stopped compiling.
+
+**Verified** — the versions `scripts/compat-check.sh run` last resolved and ran
+this connector's tests, in all three feature configurations, clippy, docs and
+the widget-coverage script against. The script writes the line; a hand-edited
+one fails a test:
+
+<!-- compat:begin -->
+Not verified yet; `scripts/compat-check.sh run` writes this line.
+<!-- compat:end -->
+
+**After that** — newer releases are tested nightly by the dependency canary
+(`.github/workflows/dependency-canary.yml`), and a break it finds is recorded in
+the CHANGELOG.
 
 ## Quick start
 

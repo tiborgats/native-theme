@@ -3,7 +3,8 @@
 [GPUI](https://gpui.rs/) + [gpui-component](https://crates.io/crates/gpui-component)
 connector for [`native-theme`](https://crates.io/crates/native-theme).
 
-Compatibility: gpui-component 0.6.x · gpui-base 0.6.x · GPUI as `gpui-pre` 0.3.x · MSRV 1.95.0.
+Compatibility: the versions this connector requires, and the set it has been
+verified against, are in [Compatibility](#compatibility).
 
 ## What it does
 
@@ -45,10 +46,34 @@ Depend on this crate — it pulls `native-theme` in transitively. The
 workspace-level README at the repo root has a diagram showing where each
 crate sits.
 
-The crate requires gpui-component 0.6 and GPUI published as `gpui-pre` 0.3;
-later 0.6.x and 0.3.x releases resolve in place without a new connector
-release, and a nightly CI job (`dependency-canary.yml`) checks the connector
-against the newest set.
+## Compatibility
+
+**Required** — the floors this crate's own `Cargo.toml` states:
+
+| Crate | Required |
+|---|---|
+| `gpui-component` | 0.6.4 |
+| `gpui-base` | 0.6.4 |
+| `gpui-pre` (GPUI, named `gpui` here) | 0.3.5 |
+| `gpui-kit` (dev-dependency: the showcase) | 0.6.4 |
+| `rust-version` | 1.95.0 |
+
+Each is a floor and nothing more. It is not an open-ended `0.6.x`, because a
+*patch* release of these crates has broken this connector before: gpui-component
+0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
+stopped compiling on a fresh dependency resolution.
+
+**Verified** — the versions `scripts/compat-check.sh run` last resolved and ran
+this connector's tests, clippy, docs and the widget-coverage script against. The
+script writes the line; a hand-edited one fails a test:
+
+<!-- compat:begin -->
+Not verified yet; `scripts/compat-check.sh run` writes this line.
+<!-- compat:end -->
+
+**After that** — newer releases are tested nightly by the dependency canary
+(`.github/workflows/dependency-canary.yml`), and a break it finds is recorded in
+the CHANGELOG.
 
 ## Quick start
 
@@ -56,7 +81,7 @@ against the newest set.
 [dependencies]
 native-theme = "0.5"
 native-theme-gpui = "0.5"
-gpui-kit = "0.6"          # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.6.4"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,ignore
