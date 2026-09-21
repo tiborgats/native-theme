@@ -14,7 +14,8 @@
 //! is free -- and an `impl Trait` return type leaks only auto traits, of
 //! which `Clone` is not one, so each signature has to say `+ Clone` for a
 //! caller to see it. At least one real setter requires it:
-//! `iced_aw::SelectionList::new_with` (see [`aw::selection_list`]).
+//! `iced_aw::SelectionList::new_with` (see `aw::selection_list`, which the
+//! `iced_aw` feature adds).
 //! `every_style_closure_is_clone` in the contract module holds the line.
 //!
 //! A `Style` field the native model does not carry is read from iced's own

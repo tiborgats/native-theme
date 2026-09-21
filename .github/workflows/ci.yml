@@ -133,6 +133,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo doc --workspace --no-deps
+      # docs.rs builds native-theme-iced with every feature, and a doc item
+      # behind a feature gate can only break in that configuration.
+      - run: cargo doc -p native-theme-iced --no-deps --all-features
 
   audit:
     name: Security audit

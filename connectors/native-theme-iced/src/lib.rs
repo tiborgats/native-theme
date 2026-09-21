@@ -40,7 +40,8 @@
 //! focus border, a switch's track -- is a value iced derives by lightening or
 //! darkening. The palette cannot correct that: the slot does not exist.
 //!
-//! The [`styles`] module does. It has one function per widget, each returning
+//! The `styles` module does (feature `widgets`, on by default). It has one
+//! function per widget, each returning
 //! a closure for that widget's style setter, and every colour, border and
 //! radius it emits is a field of the resolved theme. A `Style` field the
 //! native model does not carry is read from iced's own default at run time,
@@ -62,7 +63,7 @@
 //!
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
-//! | `widgets` | yes | [`styles`], through `iced_widget` |
+//! | `widgets` | yes | `styles`, through `iced_widget` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
 //!
@@ -110,7 +111,7 @@
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
-//! | [`styles`] (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
+//! | `styles` (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
 //! | Widget metrics | button/input padding, border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
@@ -122,7 +123,7 @@
 //! Read it from the `ResolvedTheme` you pass to [`to_theme()`] and hand it to
 //! the widget's builder -- `Checkbox::size`, `Toggler::size`,
 //! `ProgressBar::girth`, the thickness argument of `rule::horizontal`. Where a
-//! widget has such a receiver, its [`styles`] function's doc comment names it.
+//! widget has such a receiver, its `styles` function's doc comment names it.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]

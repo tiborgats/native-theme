@@ -550,13 +550,22 @@ run_check "widget coverage (gpui · iced_widget · iced_aw)" \
 # Section: docs
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Docs"
+# CI, the nightly canary and the publish gate all document with
+# RUSTDOCFLAGS=-Dwarnings, so this gate does too: without it a broken
+# intra-doc link is green here and red at tag time.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "docs ($crate)" cargo doc -p "$crate" --no-deps
+        run_check_soft "docs ($crate)" \
+            env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps
     else
-        run_check "docs ($crate)" cargo doc -p "$crate" --no-deps
+        run_check "docs ($crate)" \
+            env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps
     fi
 done
+# docs.rs builds native-theme-iced with every feature, and a doc item behind a
+# feature gate can only break there. No other gate documents that configuration.
+run_check "docs (native-theme-iced, all features)" \
+    env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-iced --no-deps --all-features
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: packaging
