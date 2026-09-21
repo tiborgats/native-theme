@@ -44,7 +44,9 @@ use gpui_component::{
     avatar::{Avatar, AvatarGroup},
     badge::Badge,
     breadcrumb::{Breadcrumb, BreadcrumbItem},
-    button::{Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup},
+    button::{
+        Button, ButtonGroup, ButtonVariant, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
+    },
     carousel::{
         Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPagination,
         CarouselPaginationItem, CarouselPrevious, CarouselState,
@@ -56,7 +58,9 @@ use gpui_component::{
     color_picker::{ColorPicker, ColorPickerState},
     combobox::{Combobox, ComboboxState},
     description_list::DescriptionList,
-    dialog::{DialogClose, DialogDescription, DialogFooter, DialogTitle},
+    dialog::{
+        AlertDialog, DialogButtonProps, DialogClose, DialogDescription, DialogFooter, DialogTitle,
+    },
     empty::{
         Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
         EmptyTitle,
@@ -64,6 +68,7 @@ use gpui_component::{
     form::{self, Field},
     group_box::{GroupBox, GroupBoxVariants},
     h_flex,
+    hover_card::HoverCard,
     input::{
         Editor, EditorState, Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment,
         InputGroupButton, InputGroupText, InputGroupTextarea, InputState, NumberInput,
@@ -73,11 +78,12 @@ use gpui_component::{
     label::Label,
     link::Link,
     list::{ListDelegate, ListItem, ListState},
+    marker::{Marker, MarkerContent, MarkerIcon, MarkerLoadingStyle, MarkerVariant},
     menu::{AppMenuBar, ContextMenuExt},
     notification::Notification,
     pagination::Pagination,
     popover::Popover,
-    progress::Progress,
+    progress::{Progress, ProgressCircle},
     radio::{Radio, RadioGroup},
     rating::Rating,
     resizable::{h_resizable, resizable_panel, v_resizable},
@@ -86,6 +92,7 @@ use gpui_component::{
     select::{SearchableVec, Select, SelectEvent, SelectState},
     separator::Separator,
     setting::{SettingField, SettingGroup, SettingItem, SettingPage, Settings},
+    shimmer::ShimmerText,
     sidebar::{Sidebar, SidebarMenu, SidebarMenuItem, SidebarToggleButton},
     skeleton::Skeleton,
     slider::{Slider, SliderEvent, SliderState},
@@ -103,7 +110,7 @@ use gpui_component::{
     theme::Theme,
     tooltip::Tooltip,
     tree::{Tree, TreeItem, TreeState},
-    v_flex,
+    v_flex, window_paddings,
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -1286,6 +1293,9 @@ struct Showcase {
 
     // Overlays tab
     app_menu_bar: Entity<AppMenuBar>,
+    /// What the last `AlertDialog` was answered with, written by its `on_ok`
+    /// and `on_cancel` so the section reports a real outcome.
+    alert_choice: Option<SharedString>,
 
     // Icon set selector state
     icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
@@ -2052,6 +2062,7 @@ impl Showcase {
             toggle_bold: false,
             toggle_italic: false,
             app_menu_bar,
+            alert_choice: None,
             icon_set_select,
             icon_set_name: initial_resolved_name,
             icon_set_enum: Some(initial_effective_set),
@@ -3847,6 +3858,65 @@ impl Showcase {
                         ],
                     )),
             )
+            // ProgressCircle
+            .child(section("ProgressCircle (determinate and indeterminate)"))
+            .child(
+                div()
+                    .id("tt-progress-circle")
+                    .child(
+                        h_flex()
+                            .gap_6()
+                            .items_center()
+                            .child(
+                                h_flex()
+                                    .gap_2()
+                                    .items_center()
+                                    .child(ProgressCircle::new("progress-circle-73").value(73.0))
+                                    .child(Label::new("73%").text_sm()),
+                            )
+                            .child(
+                                h_flex()
+                                    .gap_2()
+                                    .items_center()
+                                    .child(
+                                        ProgressCircle::new("progress-circle-100")
+                                            .value(100.0)
+                                            .with_size(Size::Large),
+                                    )
+                                    .child(Label::new("100%").text_sm()),
+                            )
+                            .child({
+                                // Indeterminate, it is a spinner drawn as an
+                                // arc, so the platform's spinner diameter is
+                                // the size it should take.
+                                let circle =
+                                    ProgressCircle::new("progress-circle-loading").loading(true);
+                                match native_value(cx, geometry::spinner_size) {
+                                    Some(size) => circle.with_size(size),
+                                    None => circle,
+                                }
+                            })
+                            .child(
+                                Label::new("indeterminate")
+                                    .text_sm()
+                                    .text_color(t.muted_foreground),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "ProgressCircle",
+                        &[
+                            ("arc", "progress_bar", t.progress_bar),
+                            ("track", "progress_bar at 20% (progress_circle.rs:110)", t.progress_bar),
+                        ],
+                        &[],
+                        &[
+                            ("indeterminate size", "geometry::spinner_size: spinner.diameter"),
+                            ("determinate size", "per Size enum; the model carries no circular-progress diameter"),
+                            ("stroke width", "15% of the diameter, capped at 5px (progress/progress_circle.rs:81)"),
+                        ],
+                    )),
+            )
             // Spinners
             .child(section("Spinner (3 sizes)"))
             .child(
@@ -3913,6 +3983,47 @@ impl Showcase {
                         &[("bg", "skeleton", t.skeleton)],
                         &[],
                         &[("animation", "hardcoded pulse")],
+                    )),
+            )
+            // ShimmerText
+            .child(section("ShimmerText (a highlight sweeping across the label)"))
+            .child(
+                div()
+                    .id("tt-shimmer-text")
+                    .child(
+                        v_flex()
+                            .gap_2()
+                            .w(px(360.0))
+                            // The highlight is mixed from the text colour, so
+                            // each of these shimmers in whatever colour the
+                            // native theme gave its own text.
+                            .child(ShimmerText::new("Reading the desktop configuration…"))
+                            .child(
+                                ShimmerText::new("Resolving the palette…")
+                                    .id("shimmer-slow")
+                                    .duration(Duration::from_secs(3))
+                                    .text_color(t.muted_foreground),
+                            )
+                            .child(
+                                ShimmerText::new("Applying to gpui…")
+                                    .id("shimmer-reverse")
+                                    .reverse(true)
+                                    .spread(0.5),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "ShimmerText",
+                        &[
+                            ("text", "foreground", t.foreground),
+                            ("second line", "muted_foreground", t.muted_foreground),
+                        ],
+                        &[],
+                        &[
+                            ("highlight", "the text colour mixed with background (light) or foreground (dark), at 75%/60% peak (shimmer.rs:452-468)"),
+                            ("reduced motion", "gpui's App::reduce_motion: the text renders once, unanimated (shimmer.rs:199)"),
+                            ("sweep", "2s by default; 3s and a reversed 0.5 spread here"),
+                        ],
                     )),
             )
             // Empty state
@@ -4029,6 +4140,66 @@ impl Showcase {
                         &[("bg", "red", t.red), ("text", "background", t.background)],
                         &[],
                         &[("size", "hardcoded"), ("padding", "hardcoded")],
+                    )),
+            )
+            // Marker
+            .child(section("Marker (3 variants, 2 loading styles)"))
+            .child(
+                div()
+                    .id("tt-marker")
+                    .child(
+                        v_flex()
+                            .gap_3()
+                            .w(px(360.0))
+                            .child(
+                                Marker::new()
+                                    .icon(MarkerIcon::new().child(native_icon(
+                                        cx,
+                                        IconName::CircleCheck,
+                                        geometry::icon_size_small,
+                                    )))
+                                    .content(MarkerContent::new().text("Theme applied")),
+                            )
+                            .child(
+                                Marker::new()
+                                    .with_variant(MarkerVariant::Separator)
+                                    .content(MarkerContent::new().text("Today")),
+                            )
+                            .child(
+                                Marker::new()
+                                    .with_variant(MarkerVariant::Border)
+                                    .content(MarkerContent::new().text("Unread from here")),
+                            )
+                            // Loading, with the spinner the marker adds for
+                            // itself when no icon slot is set.
+                            .child(
+                                Marker::new()
+                                    .id("marker-spinner")
+                                    .loading(true)
+                                    .content(MarkerContent::new().text("Reading the OS theme…")),
+                            )
+                            .child(
+                                Marker::new()
+                                    .id("marker-shimmer")
+                                    .loading(true)
+                                    .with_loading_style(MarkerLoadingStyle::Shimmer)
+                                    .content(MarkerContent::new().text("Resolving the palette…")),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Marker",
+                        &[
+                            ("text", "muted_foreground", t.muted_foreground),
+                            ("separator line", "border", t.border),
+                            ("bottom border", "border", t.border),
+                        ],
+                        &[],
+                        &[
+                            ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
+                            ("row gap", "hardcoded gap_2 (marker.rs:182)"),
+                            ("shimmer", "the loading highlight ShimmerText paints, on the content slot only (marker.rs:172-175)"),
+                        ],
                     )),
             )
             // Tooltip
@@ -4532,7 +4703,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Layout
     // -----------------------------------------------------------------------
-    fn render_layout_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_layout_tab(&self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let accordion_title_style = native_geometry(cx, geometry::accordion_title);
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
@@ -4551,10 +4722,61 @@ impl Showcase {
             layout_value(window_margin),
             layout_value(section_gap),
         );
+        // The frame this very window is inside. `Root::new` sets `bordered`
+        // (`root.rs:116`) and renders `window_border()` around everything it
+        // holds (`root.rs:605`), so the showcase's `WindowBorder` is the
+        // window's own edge; a second, nested one would set the client inset
+        // and lay down resize hit zones over the window a second time.
+        let decorations = window.window_decorations();
+        let frame_insets = window_paddings(window);
+        let window_border_summary = format!(
+            "{} · insets: top {}px, right {}px, bottom {}px, left {}px",
+            match decorations {
+                gpui::Decorations::Server => "server-side decorations: a pass-through".to_string(),
+                gpui::Decorations::Client { tiling } =>
+                    format!("client-side decorations, tiled {tiling:?}"),
+            },
+            frame_insets.top.as_f32(),
+            frame_insets.right.as_f32(),
+            frame_insets.bottom.as_f32(),
+            frame_insets.left.as_f32(),
+        );
         v_flex()
             .gap_5()
             .p_4()
             .flex_1()
+            .child(section("WindowBorder (this window's own frame)"))
+            .child(
+                div()
+                    .id("tt-window-border")
+                    .child(
+                        v_flex()
+                            .gap_1()
+                            .child(
+                                Label::new(SharedString::from(window_border_summary)).text_sm(),
+                            )
+                            .child(
+                                Label::new(
+                                    "Drag an edge of the window: the resize band is this \
+                                     widget's.",
+                                )
+                                .text_sm()
+                                .text_color(t.muted_foreground),
+                            ),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "WindowBorder",
+                        &[("window bg", "background", t.background)],
+                        &[],
+                        &[
+                            ("receiver", "Root::new installs it around the whole window (root.rs:116, :605); nesting a second one would call set_client_inset again (window_border.rs:143)"),
+                            ("frame colour", "hardcoded grey, l=0.2 dark / l=0.8 light (window_border.rs:150-163)"),
+                            ("shadow", "hardcoded two-layer box shadow (window_border.rs:225-252)"),
+                            ("server-side decorations", "nothing is drawn: the compositor owns the frame (window_border.rs:166-168)"),
+                        ],
+                    )),
+            )
             // Window chrome, stacked the way a window stacks it: the title bar
             // above, a toolbar the application draws itself, the status bar
             // below. Each is bounded in its own section like every other
@@ -5598,6 +5820,87 @@ impl Showcase {
                         &[("animation", "hardcoded scale+fade")],
                     )),
             )
+            // AlertDialog
+            .child(section(match &self.alert_choice {
+                Some(choice) => format!("AlertDialog (last answered: {choice})"),
+                None => "AlertDialog (not answered yet)".to_string(),
+            }))
+            .child(
+                div()
+                    .id("tt-alert-dialog")
+                    .child(
+                        Button::new("open-alert-dialog")
+                            .native(cx, geometry::button)
+                            .danger()
+                            .label("Discard changes…")
+                            .on_click(cx.listener(|_this, _ev, window, cx| {
+                                let this = cx.weak_entity();
+                                window.open_alert_dialog(cx, move |alert: AlertDialog, _w, cx| {
+                                    let n = cx.native_theme().and_then(|t| t.native(cx));
+                                    let ok = this.clone();
+                                    let cancel = this.clone();
+                                    let alert = alert
+                                        .icon(native_icon(
+                                            cx,
+                                            IconName::TriangleAlert,
+                                            geometry::icon_size_dialog,
+                                        ))
+                                        .title("Discard changes?")
+                                        .description(
+                                            "The edits made since the last save will be lost.",
+                                        )
+                                        .button_props(
+                                            DialogButtonProps::default()
+                                                .ok_text("Discard")
+                                                .ok_variant(ButtonVariant::Danger)
+                                                .cancel_text("Keep")
+                                                .show_cancel(true),
+                                        )
+                                        .on_ok(move |_ev, _w, cx| {
+                                            ok.update(cx, |this, cx| {
+                                                this.alert_choice = Some("Discard".into());
+                                                cx.notify();
+                                            })
+                                            .ok();
+                                            true
+                                        })
+                                        .on_cancel(move |_ev, _w, cx| {
+                                            cancel
+                                                .update(cx, |this, cx| {
+                                                    this.alert_choice = Some("Keep".into());
+                                                    cx.notify();
+                                                })
+                                                .ok();
+                                            true
+                                        });
+                                    match n {
+                                        Some(n) => alert
+                                            .refine_style(&geometry::dialog(n))
+                                            .max_w(geometry::dialog_max_width(n)),
+                                        None => alert,
+                                    }
+                                });
+                            })),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "AlertDialog",
+                        &[
+                            ("bg", "popover", t.popover),
+                            ("text", "popover_foreground", t.popover_foreground),
+                            ("description", "muted_foreground", t.muted_foreground),
+                            ("overlay", "overlay", t.overlay),
+                            ("confirm button", "danger", t.danger),
+                        ],
+                        &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                        &[
+                            ("geometry", "geometry::dialog and geometry::dialog_max_width, as the Dialog above"),
+                            ("icon size", "geometry::icon_size_dialog: defaults.icon_sizes.dialog"),
+                            ("footer", "centred, and built from button_props (dialog/alert_dialog.rs:296-310)"),
+                            ("dismissal", "no backdrop close by design (dialog/alert_dialog.rs:218)"),
+                        ],
+                    )),
+            )
             // Sheet
             .child(section("Sheet (slide-in panel)"))
             .child(
@@ -5685,6 +5988,53 @@ impl Showcase {
                         &[
                             ("trigger", "any Selectable element"),
                             ("anchor", "configurable Corner"),
+                        ],
+                    )),
+            )
+            // HoverCard
+            .child(section("HoverCard (hover the trigger, no click)"))
+            .child(
+                div()
+                    .id("tt-hover-card")
+                    .child(
+                        HoverCard::new("hover-card-1")
+                            .native(cx, geometry::popover)
+                            .trigger(
+                                Button::new("hover-card-trigger")
+                                    .native(cx, geometry::button)
+                                    .label("KDE Breeze")
+                                    .custom(variants::ghost_button(cx)),
+                            )
+                            .content(|_state, _w, cx| {
+                                v_flex()
+                                    .p_4()
+                                    .gap_2()
+                                    .w(px(260.0))
+                                    .child(Label::new("KDE Breeze").font_semibold())
+                                    .child(
+                                        Label::new(
+                                            "The Plasma preset: kdeglobals for the palette, \
+                                             Breeze for the icons.",
+                                        )
+                                        .text_sm()
+                                        .text_color(cx.theme().muted_foreground),
+                                    )
+                            }),
+                    )
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "HoverCard",
+                        &[
+                            ("bg", "popover", t.popover),
+                            ("text", "popover_foreground", t.popover_foreground),
+                            ("secondary text", "muted_foreground", t.muted_foreground),
+                            ("border", "border", t.border),
+                        ],
+                        &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                        &[
+                            ("geometry", "geometry::popover, which refines the card surface (hover_card.rs:134)"),
+                            ("trigger", "variants::ghost_button, the flat button's native state colours"),
+                            ("delays", "600ms to open, 300ms to close (hover_card.rs:46-47)"),
                         ],
                     )),
             )
