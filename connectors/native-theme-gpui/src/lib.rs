@@ -64,9 +64,9 @@
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 6 of 13 + geometry | background, alternate row, selection, hover, header background and header font colour; row height, padding, font via `geometry::list_item` |
+//! | `list` | 7 of 13 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
-//! | `link` | 2 of 8 | hover_text_color, active_text_color; `link.hover_background` has no receiver (see `contract::NO_RECEIVER`) |
+//! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver (see `contract::NO_RECEIVER`) |
 //! | `splitter` | colours | divider/hover via `base_layer::resizable_theme`; width upstream |
 //!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes

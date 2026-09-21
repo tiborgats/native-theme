@@ -91,6 +91,9 @@ struct ResolvedColors {
     popover: Hsla,
     popover_fg: Hsla,
     list_bg: Hsla,
+    // The line between rows and columns, which the model states separately
+    // from the generic border.
+    list_grid: Hsla,
     // The header row's own fill and text, which the model states separately
     // from the list body (`list.header_background`, `list.header_font`).
     list_header_bg: Hsla,
@@ -188,7 +191,9 @@ pub fn to_theme_color(
         // as `input.selection_background`; `defaults.selection_background` is
         // the row-selection colour `list_active` and `sidebar_accent` take.
         selection: rgba_to_hsla(resolved.input.selection_background),
-        link: rgba_to_hsla(d.link_color),
+        // The link's own text colour (`link.rs:76`), which inherits
+        // `defaults.link_color` rather than `defaults.font.color`.
+        link: rgba_to_hsla(resolved.link.font.color),
         ring: rgba_to_hsla(d.focus_ring_color),
         input: rgba_to_hsla(resolved.input.border.color),
         sidebar: rgba_to_hsla(resolved.sidebar.background_color),
@@ -196,6 +201,7 @@ pub fn to_theme_color(
         popover: rgba_to_hsla(resolved.popover.background_color),
         popover_fg: rgba_to_hsla(resolved.popover.font.color),
         list_bg: rgba_to_hsla(resolved.list.background_color),
+        list_grid: rgba_to_hsla(resolved.list.grid_color),
         list_header_bg: rgba_to_hsla(resolved.list.header_background),
         list_header_fg: rgba_to_hsla(resolved.list.header_font.color),
         alternate_row: rgba_to_hsla(resolved.list.alternate_row_background),
@@ -394,7 +400,9 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     // `table/state.rs:1769`): `list.header_font.color`, not the muted
     // foreground upstream falls back to (`theme/schema.rs:1007`).
     tc.table_head_foreground = c.list_header_fg;
-    tc.table_row_border = c.border;
+    // The grid line between rows and columns (`table/table.rs:203`,
+    // `table/state.rs:1424`), which the model states as `list.grid_color`.
+    tc.table_row_border = c.list_grid;
     // Derivation (spec §6.2): upstream paints a table footer
     // (`table/table.rs:340-341`) and the model states no footer colour of any
     // kind, so these stay the window's own background and muted text rather

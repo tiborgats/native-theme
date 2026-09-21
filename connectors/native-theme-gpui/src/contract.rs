@@ -120,9 +120,12 @@ const ROWS: &[Row] = &[
         get: |tc| tc.selection,
         exceptions: &[],
     },
+    // The link's own text (`link.rs:76`, `button/button.rs:993`), which the
+    // model states as `link.font.color` -- the one font colour that inherits
+    // `defaults.link_color` instead of `defaults.font.color`.
     Row {
         slot: "link",
-        native: |r| r.defaults.link_color,
+        native: |r| r.link.font.color,
         get: |tc| tc.link,
         exceptions: &[],
     },
@@ -404,9 +407,12 @@ const ROWS: &[Row] = &[
         get: |tc| tc.table_head_foreground,
         exceptions: &[],
     },
+    // The line between rows and columns (`table/table.rs:203, 343, 415`,
+    // `table/state.rs:1424, 1527, 1978, 2233`), which the model states as
+    // `list.grid_color` rather than as the generic border.
     Row {
         slot: "table_row_border",
-        native: |r| r.defaults.border.color,
+        native: |r| r.list.grid_color,
         get: |tc| tc.table_row_border,
         exceptions: &[],
     },
@@ -1545,7 +1551,7 @@ const PAIRS: &[Pair] = &[
         what: "link on the window",
         native: |r, _| {
             let bg = native_window(r);
-            (rgba_to_hsla(r.defaults.link_color), bg, bg)
+            (rgba_to_hsla(r.link.font.color), bg, bg)
         },
         emitted: |tc| (tc.link, tc.background, tc.background),
         exceptions: &[],
