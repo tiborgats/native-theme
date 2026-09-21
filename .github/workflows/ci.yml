@@ -44,6 +44,9 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy -p ${{ matrix.package }} --all-targets
+      - name: Clippy (iced connector, iced_aw)
+        if: matrix.package == 'native-theme-iced'
+        run: cargo clippy -p native-theme-iced --all-targets --features iced_aw
 
   test:
     name: Test ${{ matrix.name }}
@@ -99,6 +102,23 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p ${{ matrix.package }}
+      # The connector's other two supported configurations, gated by
+      # pre-release-check.sh as well so a release cannot pass on one CI never ran.
+      - name: Test the iced connector's other configurations
+        if: matrix.package == 'native-theme-iced'
+        run: |
+          cargo test -p native-theme-iced --no-default-features
+          cargo test -p native-theme-iced --features iced_aw
+      # Reads the toolkits' sources through `cargo metadata` and fails when an
+      # upstream release adds a widget that neither showcase renders nor
+      # docs/showcase-exceptions.toml excepts. Runs here because this leg already
+      # resolves the iced connector with `iced_aw`; ubuntu-latest ships Python
+      # 3.12, above the 3.11 the script's `tomllib` import requires.
+      - name: Widget coverage
+        if: matrix.package == 'native-theme-iced'
+        run: |
+          python3 --version
+          python3 scripts/check-widget-coverage.py
 
   doc:
     name: Documentation

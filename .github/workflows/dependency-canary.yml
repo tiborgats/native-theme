@@ -82,7 +82,21 @@ jobs:
           cargo test -p native-theme-build
           cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize
           cargo test -p native-theme-iced
+          cargo test -p native-theme-iced --features iced_aw
           cargo test -p native-theme-gpui
+
+      # On the updated lockfile, so an upstream release that adds a widget is
+      # reported the evening it appears rather than at the next release. The
+      # script reads the toolkits' sources through `cargo metadata` and needs
+      # no network of its own once the registry is populated, which the steps
+      # above have done. ubuntu-latest ships Python 3.12 (>= the 3.11 the
+      # script's `tomllib` import requires); the step prints the version so a
+      # runner-image change that dropped below the floor is visible in the log
+      # rather than silent.
+      - name: Widget coverage
+        run: |
+          python3 --version
+          python3 scripts/check-widget-coverage.py
 
       - name: Documentation
         env:
