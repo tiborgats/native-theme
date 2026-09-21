@@ -1308,7 +1308,10 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
                             (menu/popup_menu.rs:1476) and the platform's menu \
                             background differs from its popover background";
 
-/// Every pair the connector controls both colours of.
+/// The asserted pairs: both emitted colours are tokens upstream really paints
+/// for that surface, and each is pinned by a contract row to the very native
+/// field the pair's native side reads. Where either half fails, the pair is in
+/// `REPORTED` instead.
 const PAIRS: &[Pair] = &[
     Pair {
         what: "window text on the window",
@@ -1762,9 +1765,10 @@ fn pair_ratio(fg: Hsla, bg: Hsla, surface: Hsla) -> f32 {
 /// Spec section 7: for every pair the connector controls both colours of, the
 /// ratio it emits is not worse than the ratio the platform's own fields give.
 ///
-/// Not AA: 174 of the 512 pairs measured for this release sit below it, and
-/// they are not all errors -- macOS ships `#34c759` with white text at about
-/// 2.2:1 and Apple uses it. A connector that asserted AA would be asserting
+/// Not AA: a good many of the measured pairs sit below it -- the run prints
+/// how many and which -- and they are not all errors: macOS ships `#34c759`
+/// with white text at about 2.2:1 and Apple uses it. A connector that
+/// asserted AA would be asserting
 /// that every platform meets AA, and "fixing" the ones that do not would mean
 /// inventing values the platform did not give. Those pairs are printed
 /// instead, so they stay visible without being overridden.
