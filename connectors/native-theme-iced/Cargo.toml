@@ -53,6 +53,9 @@ iced_aw = { version = "0.14", optional = true, default-features = false, feature
 [[example]]
 name = "showcase-iced"
 required-features = ["widgets"]
+# The showcase's own `#[cfg(test)]` module (spec §6.2) then runs under a plain
+# `cargo test`, so CI and the dependency canary pick it up unchanged.
+test = true
 
 [dev-dependencies]
 iced = { version = "0.14", features = [
@@ -73,6 +76,8 @@ iced_aw = { version = "0.14", default-features = false, features = [
     "spinner",
     "selection_list",
 ] }
+# The showcase's self-tests (spec §6.2) drive the real `view` headlessly.
+iced_test = "0.14"
 native-theme = { workspace = true, features = [
     "material-icons",
     "lucide-icons",

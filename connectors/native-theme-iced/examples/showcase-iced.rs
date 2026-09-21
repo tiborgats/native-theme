@@ -94,6 +94,64 @@ impl Spacing {
 /// Showcase UI spacing constants.
 const SP: Spacing = Spacing::new();
 
+/// The window `main` opens, and the viewport `every_tab_renders` lays out in.
+const WINDOW_SIZE: (f32, f32) = (1060.0, 750.0);
+
+/// Tags a widget so the self-tests can find it, and does nothing otherwise.
+///
+/// `iced_selector` sees only the widgets that implement `Widget::operate`, and
+/// `slider`, `radio`, `toggler`, `pick_list`, `combo_box` and `text_editor`
+/// implement none, so no selector can reach them. `container` is the one
+/// widget in the showcase's set that carries a `widget::Id` and reports it
+/// with its own bounds (`container.rs:109`, `:280-283`), which is what
+/// `iced_test`'s `id` selector matches.
+///
+/// Outside `cargo test` the wrapper is not built at all, so the interface the
+/// showcase draws -- and the screenshots taken from it -- are exactly what
+/// they were.
+#[cfg(test)]
+fn probe<'a>(
+    id: &'static str,
+    width: Length,
+    content: impl Into<Element<'a, Message>>,
+) -> Element<'a, Message> {
+    container(content).id(id).width(width).into()
+}
+
+#[cfg(not(test))]
+fn probe<'a>(
+    _id: &'static str,
+    _width: Length,
+    content: impl Into<Element<'a, Message>>,
+) -> Element<'a, Message> {
+    content.into()
+}
+
+/// The [`probe`] tags, shared by the render code and by
+/// `interactive_controls_respond`.
+mod probes {
+    pub const THEME: &str = "probe-theme";
+    pub const COLOR_MODE: &str = "probe-color-mode";
+    pub const TEXT_EDITOR: &str = "probe-text-editor";
+    pub const RADIO_APPLE: &str = "probe-radio-apple";
+    pub const RADIO_BANANA: &str = "probe-radio-banana";
+    pub const RADIO_CHERRY: &str = "probe-radio-cherry";
+    pub const TOGGLER: &str = "probe-toggler";
+    pub const PICK_LIST: &str = "probe-pick-list";
+    pub const COMBO_BOX: &str = "probe-combo-box";
+    pub const SLIDER: &str = "probe-slider";
+    pub const VERTICAL_SLIDER: &str = "probe-vertical-slider";
+    #[cfg(feature = "iced_aw")]
+    pub const SELECTION_LIST: &str = "probe-selection-list";
+}
+
+/// The `widget::Id` of the single-line `text_input`.
+///
+/// `text_input` carries an id of its own (`text_input.rs:157`), so it needs no
+/// [`probe`]; the two inputs share one value, and this one is the one the
+/// self-tests type into.
+const TEXT_INPUT_ID: &str = "showcase-text-input";
+
 /// The four layout distances the platform itself states.
 ///
 /// `LayoutTheme` is the one theme struct that is not per-variant, so it lives
@@ -242,6 +300,14 @@ enum Tab {
 }
 
 impl Tab {
+    /// Every tab, in declaration order.
+    ///
+    /// `every_tab_renders` (spec §6.2) iterates this list, so a tab missing
+    /// from it is a tab nothing renders under test. The `const` block below
+    /// rejects a build where the list is out of order or stops short of the
+    /// last declared variant; what no stable construct catches is a variant
+    /// appended *after* `ThemeMap` and left out of the list, which `label` and
+    /// `view`'s exhaustive matches still force the author to write.
     const ALL: &[Tab] = &[
         Tab::Buttons,
         Tab::TextInputs,
@@ -272,6 +338,21 @@ impl Tab {
         }
     }
 }
+
+const _: () = {
+    assert!(
+        Tab::ALL.len() == Tab::ThemeMap as usize + 1,
+        "Tab::ALL is missing a variant"
+    );
+    let mut i = 0;
+    while i < Tab::ALL.len() {
+        assert!(
+            Tab::ALL[i] as usize == i,
+            "Tab::ALL must list the variants in declaration order"
+        );
+        i += 1;
+    }
+};
 
 // ---------------------------------------------------------------------------
 // ThemeChoice enum
@@ -837,9 +918,12 @@ impl Default for State {
         // Start theme watcher for runtime dark/light toggle detection.
         // Skip in screenshot mode — the watcher's background thread cleanup
         // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
+        // Skip under `cargo test` too: a file watch on the desktop's own
+        // configuration is host I/O, and nothing the self-tests assert
+        // depends on it.
         let theme_change_flag = Arc::new(AtomicBool::new(false));
         let is_screenshot = CLI_ARGS.get().is_some_and(|cli| cli.screenshot.is_some());
-        let _theme_watcher = if is_screenshot {
+        let _theme_watcher = if is_screenshot || cfg!(test) {
             None
         } else {
             let flag_clone = theme_change_flag.clone();
@@ -1554,30 +1638,38 @@ fn view(state: &State) -> Element<'_, Message> {
         // Theme selector
         let theme_section = column![
             text("Theme Selector").size(ts.caption.size),
-            pick_list(
-                theme_choices(&state.default_label),
-                Some(&state.current_choice),
-                Message::ThemeSelected,
-            )
-            .handle(arrow_handle(resolved))
-            .style(styles::pick_list(resolved))
-            .menu_style(styles::menu(resolved))
-            .width(Fill),
+            probe(
+                probes::THEME,
+                Fill,
+                pick_list(
+                    theme_choices(&state.default_label),
+                    Some(&state.current_choice),
+                    Message::ThemeSelected,
+                )
+                .handle(arrow_handle(resolved))
+                .style(styles::pick_list(resolved))
+                .menu_style(styles::menu(resolved))
+                .width(Fill),
+            ),
         ]
         .spacing(sp.xs);
 
         // Color mode selector (System / Light / Dark)
         let color_mode_section = column![
             text("Color Mode").size(ts.caption.size),
-            pick_list(
-                AppColorMode::ALL.to_vec(),
-                Some(&state.color_mode),
-                Message::ColorModeSelected,
-            )
-            .handle(arrow_handle(resolved))
-            .style(styles::pick_list(resolved))
-            .menu_style(styles::menu(resolved))
-            .width(Fill),
+            probe(
+                probes::COLOR_MODE,
+                Fill,
+                pick_list(
+                    AppColorMode::ALL.to_vec(),
+                    Some(&state.color_mode),
+                    Message::ColorModeSelected,
+                )
+                .handle(arrow_handle(resolved))
+                .style(styles::pick_list(resolved))
+                .menu_style(styles::menu(resolved))
+                .width(Fill),
+            ),
         ]
         .spacing(sp.xs);
 
@@ -2042,6 +2134,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
 
     let single_line = {
         let mut input = text_input("Type something here...", &state.text_input_value)
+            .id(TEXT_INPUT_ID)
             .on_input(Message::TextInputChanged)
             .style(styles::text_input(resolved));
         {
@@ -2137,10 +2230,14 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         ),
         column![
             text("TextEditor (multi-line)").size(ts.dialog_title.size),
-            text_editor(&state.text_editor_content)
-                .on_action(Message::EditorAction)
-                .style(styles::text_editor(resolved))
-                .height(Length::Fixed(180.0)),
+            probe(
+                probes::TEXT_EDITOR,
+                Fill,
+                text_editor(&state.text_editor_content)
+                    .on_action(Message::EditorAction)
+                    .style(styles::text_editor(resolved))
+                    .height(Length::Fixed(180.0)),
+            ),
             text("Supports multi-line editing, selection, and scrolling").size(ts.caption.size),
         ]
         .spacing(gap.widget)
@@ -2305,33 +2402,45 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         ),
         column![
             text("Radio Buttons").size(ts.dialog_title.size),
-            radio(
-                "Apple",
-                Fruit::Apple,
-                state.selected_fruit,
-                Message::FruitSelected
-            )
-            .spacing(c.label_gap)
-            .size(c.indicator_width)
-            .style(styles::radio(resolved)),
-            radio(
-                "Banana",
-                Fruit::Banana,
-                state.selected_fruit,
-                Message::FruitSelected
-            )
-            .spacing(c.label_gap)
-            .size(c.indicator_width)
-            .style(styles::radio(resolved)),
-            radio(
-                "Cherry",
-                Fruit::Cherry,
-                state.selected_fruit,
-                Message::FruitSelected
-            )
-            .spacing(c.label_gap)
-            .size(c.indicator_width)
-            .style(styles::radio(resolved)),
+            probe(
+                probes::RADIO_APPLE,
+                Length::Shrink,
+                radio(
+                    "Apple",
+                    Fruit::Apple,
+                    state.selected_fruit,
+                    Message::FruitSelected
+                )
+                .spacing(c.label_gap)
+                .size(c.indicator_width)
+                .style(styles::radio(resolved))
+            ),
+            probe(
+                probes::RADIO_BANANA,
+                Length::Shrink,
+                radio(
+                    "Banana",
+                    Fruit::Banana,
+                    state.selected_fruit,
+                    Message::FruitSelected
+                )
+                .spacing(c.label_gap)
+                .size(c.indicator_width)
+                .style(styles::radio(resolved))
+            ),
+            probe(
+                probes::RADIO_CHERRY,
+                Length::Shrink,
+                radio(
+                    "Cherry",
+                    Fruit::Cherry,
+                    state.selected_fruit,
+                    Message::FruitSelected
+                )
+                .spacing(c.label_gap)
+                .size(c.indicator_width)
+                .style(styles::radio(resolved))
+            ),
             text(format!(
                 "Selected: {}",
                 state
@@ -2378,11 +2487,15 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         ),
         column![
             text("Toggler (Switch)").size(ts.dialog_title.size),
-            toggler(state.toggler_enabled)
-                .label("Feature flag enabled")
-                .size(sw.track_height)
-                .style(styles::toggler(resolved))
-                .on_toggle(Message::TogglerToggled),
+            probe(
+                probes::TOGGLER,
+                Length::Shrink,
+                toggler(state.toggler_enabled)
+                    .label("Feature flag enabled")
+                    .size(sw.track_height)
+                    .style(styles::toggler(resolved))
+                    .on_toggle(Message::TogglerToggled)
+            ),
             text(format!(
                 "State: {}",
                 if state.toggler_enabled { "ON" } else { "OFF" }
@@ -2445,15 +2558,19 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         ),
         column![
             text("PickList (dropdown)").size(ts.dialog_title.size),
-            pick_list(
-                languages,
-                state.pick_list_selected.as_ref(),
-                Message::PickListSelected,
-            )
-            .handle(arrow_handle(resolved))
-            .style(styles::pick_list(resolved))
-            .menu_style(styles::menu(resolved))
-            .width(Length::Fixed(250.0)),
+            probe(
+                probes::PICK_LIST,
+                Length::Shrink,
+                pick_list(
+                    languages,
+                    state.pick_list_selected.as_ref(),
+                    Message::PickListSelected,
+                )
+                .handle(arrow_handle(resolved))
+                .style(styles::pick_list(resolved))
+                .menu_style(styles::menu(resolved))
+                .width(Length::Fixed(250.0))
+            ),
             text(format!(
                 "Selected: {}",
                 state.pick_list_selected.as_deref().unwrap_or("None")
@@ -2497,15 +2614,19 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         ),
         column![
             text("ComboBox (searchable dropdown)").size(ts.dialog_title.size),
-            combo_box(
-                &state.combo_state,
-                "Search a language...",
-                state.combo_selected.as_ref(),
-                Message::ComboBoxSelected,
-            )
-            .input_style(styles::text_input(resolved))
-            .menu_style(styles::menu(resolved))
-            .width(Length::Fixed(250.0)),
+            probe(
+                probes::COMBO_BOX,
+                Length::Shrink,
+                combo_box(
+                    &state.combo_state,
+                    "Search a language...",
+                    state.combo_selected.as_ref(),
+                    Message::ComboBoxSelected,
+                )
+                .input_style(styles::text_input(resolved))
+                .menu_style(styles::menu(resolved))
+                .width(Length::Fixed(250.0))
+            ),
             text(format!(
                 "Selected: {}",
                 state.combo_selected.as_deref().unwrap_or("None")
@@ -2593,9 +2714,13 @@ fn view_range(state: &State) -> Element<'_, Message> {
         column![
             text("Horizontal Slider").size(ts.dialog_title.size),
             row![
-                slider(0.0..=100.0, state.slider_value, Message::SliderChanged)
-                    .style(styles::slider(resolved))
-                    .width(Fill),
+                probe(
+                    probes::SLIDER,
+                    Fill,
+                    slider(0.0..=100.0, state.slider_value, Message::SliderChanged)
+                        .style(styles::slider(resolved))
+                        .width(Fill)
+                ),
                 text(format!("{:.1}", state.slider_value))
                     .size(ts.section_heading.size)
                     .width(Length::Fixed(50.0)),
@@ -2648,12 +2773,16 @@ fn view_range(state: &State) -> Element<'_, Message> {
         column![
             text("Vertical Slider").size(ts.dialog_title.size),
             row![
-                container(
-                    vertical_slider(0.0..=100.0, state.vslider_value, Message::VSliderChanged)
-                        .style(styles::slider(resolved))
-                        .height(Length::Fixed(200.0))
-                )
-                .center_x(Length::Fixed(60.0)),
+                probe(
+                    probes::VERTICAL_SLIDER,
+                    Length::Shrink,
+                    container(
+                        vertical_slider(0.0..=100.0, state.vslider_value, Message::VSliderChanged)
+                            .style(styles::slider(resolved))
+                            .height(Length::Fixed(200.0))
+                    )
+                    .center_x(Length::Fixed(60.0))
+                ),
                 column![
                     text(format!("Value: {:.1}", state.vslider_value))
                         .size(ts.section_heading.size),
@@ -4161,7 +4290,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         ),
         column![
             text("SelectionList").size(ts.dialog_title.size),
-            selection_list,
+            probe(probes::SELECTION_LIST, Length::Shrink, selection_list),
         ]
         .spacing(gap.widget)
         .into(),
@@ -4905,7 +5034,1110 @@ fn main() -> iced::Result {
         })
         .theme(theme)
         .subscription(subscription)
-        .window_size((1060.0, 750.0))
+        .window_size(WINDOW_SIZE)
         .centered()
         .run()
+}
+
+// ---------------------------------------------------------------------------
+// Self-tests (spec §6.2)
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use iced::mouse;
+    use iced::{Event, Point, Rectangle, Settings, Size};
+    use iced_test::Simulator;
+    use iced_test::selector::{self, Candidate};
+
+    /// The viewport the interaction test lays the interface out in.
+    ///
+    /// Not the window `main` opens: an element scrolled out of the content
+    /// `scrollable`'s viewport has no visible bounds and cannot be clicked,
+    /// and the tab strip scrolls sideways once the tabs are wider than the
+    /// panel. `every_tab_renders` uses the real [`WINDOW_SIZE`] instead, which
+    /// is what makes the scroll containers part of what it renders.
+    const TALL_WINDOW: Size = Size::new(1400.0, 6000.0);
+
+    /// The real interface, in [`TALL_WINDOW`].
+    ///
+    /// `Settings::default()` leaves the font as `Font::DEFAULT`, which the
+    /// simulator resolves to the Fira Sans it bundles
+    /// (`iced_test` `simulator.rs:67-70`), so text measures the same on every
+    /// host.
+    fn interface(state: &State) -> Simulator<'_, Message> {
+        Simulator::with_size(Settings::default(), TALL_WINDOW, view(state))
+    }
+
+    /// Builds the real interface, runs `interaction` on it, then feeds every
+    /// message the interaction produced through the real `update`.
+    ///
+    /// Every message reaches `update`; the ones handed back leave the Widget
+    /// Info panel's out. Pointing the cursor at a widget is what that panel
+    /// listens for, so any click no widget captures — a disabled button's,
+    /// say — also reports the hover, which says nothing about the control
+    /// under test.
+    fn drive(
+        state: &mut State,
+        interaction: impl FnOnce(&mut Simulator<'_, Message>),
+    ) -> Vec<Message> {
+        let messages: Vec<Message> = {
+            let mut ui = interface(state);
+            interaction(&mut ui);
+            ui.into_messages().collect()
+        };
+        for message in messages.iter().cloned() {
+            let _ = update(state, message);
+        }
+        messages
+            .into_iter()
+            .filter(|message| {
+                !matches!(
+                    message,
+                    Message::WidgetHovered(_) | Message::WidgetUnhovered
+                )
+            })
+            .collect()
+    }
+
+    /// Clicks the widget whose own text is `label`.
+    fn click_text(ui: &mut Simulator<'_, Message>, label: &str) {
+        if let Err(error) = ui.click(label) {
+            panic!("{label}: {error}");
+        }
+    }
+
+    /// Clicks the widget tagged with the given [`probe`] id.
+    fn click_probe(ui: &mut Simulator<'_, Message>, id: &'static str) {
+        if let Err(error) = ui.click(selector::id(id)) {
+            panic!("{id}: {error}");
+        }
+    }
+
+    /// Opens the picker tagged `id` and chooses its `nth` option, counting
+    /// from the top of the menu.
+    ///
+    /// The menu is an overlay whose list implements no `Widget::operate`
+    /// (`overlay/menu.rs`), so no selector reaches its rows. What iced does
+    /// state publicly is where they are: the menu is laid out directly under
+    /// the widget that opened it (`overlay/menu.rs:241-262`), one row per
+    /// option, each `line_height + padding.y()` tall
+    /// (`overlay/menu.rs:375-397`). Both terms are read from iced's own
+    /// defaults, which the showcase overrides for none of its pickers, rather
+    /// than copied as numbers.
+    fn pick_option(ui: &mut Simulator<'_, Message>, id: &'static str, nth: usize) {
+        let text_size = Settings::default().default_text_size;
+        let row = f32::from(iced_core::text::LineHeight::default().to_absolute(text_size))
+            + iced::widget::button::DEFAULT_PADDING.y();
+        let field = probe_bounds(ui, id);
+        let at = Point::new(
+            field.center().x,
+            field.y + field.height + row * (nth as f32 + 0.5),
+        );
+
+        click_probe(ui, id);
+        ui.point_at(at);
+        let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+        let _ = ui.simulate(iced_test::simulator::click());
+    }
+
+    /// The bounds of the widget tagged with the given [`probe`] id.
+    fn probe_bounds(ui: &mut Simulator<'_, Message>, id: &'static str) -> Rectangle {
+        match ui.find(selector::id(id)) {
+            Ok(target) => match target.visible_bounds() {
+                Some(bounds) => bounds,
+                None => panic!("{id}: found, but not visible"),
+            },
+            Err(error) => panic!("{id}: {error}"),
+        }
+    }
+
+    /// Clicks `label`, and asserts the one message it produced.
+    fn press(state: &mut State, label: &'static str, expected: &str) {
+        let messages = drive(state, |ui| click_text(ui, label));
+        let printed: Vec<String> = messages.iter().map(|m| format!("{m:?}")).collect();
+        assert_eq!(
+            printed,
+            vec![expected.to_string()],
+            "{label}: the click produced the wrong messages"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // every_tab_renders
+    // -----------------------------------------------------------------------
+
+    /// Every tab lays out and draws, at the size the application opens.
+    ///
+    /// The snapshot is deliberately not compared with a baseline — that is
+    /// Layer 4 and out of scope (spec §6.2). What is compared is that no text
+    /// the tab lays out was squeezed to nothing: a widget with no room left is
+    /// a widget nobody sees, which a snapshot that merely returns `Ok` would
+    /// not report.
+    #[test]
+    fn every_tab_renders() {
+        for tab in Tab::ALL {
+            let state = State {
+                active_tab: *tab,
+                ..State::default()
+            };
+            let theme = theme(&state);
+
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+
+            match ui.snapshot(&theme) {
+                Ok(_) => {}
+                Err(error) => panic!("{}: the interface did not draw: {error}", tab.label()),
+            }
+
+            let mut starved: Vec<String> = Vec::new();
+            {
+                let sink = &mut starved;
+                let _ = ui.find(move |candidate: Candidate<'_>| -> Option<()> {
+                    if let Candidate::Text {
+                        content, bounds, ..
+                    } = candidate
+                        && (bounds.width <= 0.0 || bounds.height <= 0.0)
+                    {
+                        sink.push(format!("{content:?} at {bounds:?}"));
+                    }
+                    None
+                });
+            }
+            assert!(
+                starved.is_empty(),
+                "{}: laid out with no room to draw: {starved:?}",
+                tab.label()
+            );
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // interactive_controls_respond
+    // -----------------------------------------------------------------------
+
+    /// Every control the showcase advertises answers a click, and the answer
+    /// reaches the state through the real `update`.
+    #[test]
+    fn interactive_controls_respond() {
+        let mut state = State::default();
+
+        // ---- the tab strip ----
+        assert_eq!(
+            state.active_tab,
+            Tab::Buttons,
+            "the showcase opens on Buttons"
+        );
+
+        // ---- Buttons tab: one message per class, and none from a disabled one ----
+        for (label, count) in [
+            ("Primary", 1),
+            ("Secondary", 2),
+            ("Success", 3),
+            ("Warning", 4),
+            ("Danger", 5),
+            ("Text Style", 6),
+            ("Click me!", 7),
+        ] {
+            press(&mut state, label, "ButtonPressed");
+            assert_eq!(
+                state.button_press_count, count,
+                "{label}: the press did not reach the counter"
+            );
+        }
+        for label in ["Disabled Primary", "Disabled Secondary", "Disabled Danger"] {
+            let messages = drive(&mut state, |ui| click_text(ui, label));
+            assert!(
+                messages.is_empty(),
+                "{label}: a button with no on_press must stay silent, got {messages:?}"
+            );
+            assert_eq!(state.button_press_count, 7, "{label}: the counter moved");
+        }
+
+        // ---- the tab strip carries the view to the next tab ----
+        let messages = drive(&mut state, |ui| click_text(ui, "Text Inputs"));
+        assert!(
+            matches!(messages.as_slice(), [Message::TabSelected(Tab::TextInputs)]),
+            "tab strip: {messages:?}"
+        );
+        assert_eq!(
+            state.active_tab,
+            Tab::TextInputs,
+            "the tab strip did not switch tabs"
+        );
+
+        // ---- TextInput: click to focus, then type ----
+        let messages = drive(&mut state, |ui| {
+            click_probe(ui, TEXT_INPUT_ID);
+            let _ = ui.typewrite("q");
+        });
+        assert!(
+            matches!(messages.as_slice(), [Message::TextInputChanged(value)] if value == "q"),
+            "text_input: {messages:?}"
+        );
+        assert_eq!(
+            state.text_input_value, "q",
+            "text_input: the value did not reach the state"
+        );
+
+        // ---- TextEditor: the same, through its own Content ----
+        let before = state.text_editor_content.text();
+        let messages = drive(&mut state, |ui| {
+            click_probe(ui, probes::TEXT_EDITOR);
+            let _ = ui.typewrite("q");
+        });
+        assert!(
+            messages
+                .iter()
+                .any(|m| matches!(m, Message::EditorAction(_))),
+            "text_editor: {messages:?}"
+        );
+        assert_ne!(
+            state.text_editor_content.text(),
+            before,
+            "text_editor: the action did not reach the document"
+        );
+
+        // ---- Selection tab ----
+        let _ = drive(&mut state, |ui| click_text(ui, "Selection"));
+        assert_eq!(state.active_tab, Tab::Selection);
+
+        assert!(state.checkbox_a, "the first checkbox starts checked");
+        let messages = drive(&mut state, |ui| click_text(ui, "Enable notifications"));
+        assert!(
+            matches!(messages.as_slice(), [Message::CheckboxAToggled(false)]),
+            "checkbox: {messages:?}"
+        );
+        assert!(
+            !state.checkbox_a,
+            "checkbox: the toggle did not reach the state"
+        );
+
+        assert_eq!(
+            state.selected_fruit,
+            Some(Fruit::Apple),
+            "the radios start on Apple"
+        );
+        let messages = drive(&mut state, |ui| click_probe(ui, probes::RADIO_BANANA));
+        assert!(
+            matches!(messages.as_slice(), [Message::FruitSelected(Fruit::Banana)]),
+            "radio: {messages:?}"
+        );
+        assert_eq!(
+            state.selected_fruit,
+            Some(Fruit::Banana),
+            "radio: the selection did not reach the state"
+        );
+
+        assert!(!state.toggler_enabled, "the toggler starts off");
+        let messages = drive(&mut state, |ui| click_probe(ui, probes::TOGGLER));
+        assert!(
+            matches!(messages.as_slice(), [Message::TogglerToggled(true)]),
+            "toggler: {messages:?}"
+        );
+        assert!(
+            state.toggler_enabled,
+            "toggler: the toggle did not reach the state"
+        );
+
+        // The menu is an overlay: it exists only while the same interface is
+        // open, so the click that opens it and the click that picks an entry
+        // share one simulator.
+        assert_eq!(state.pick_list_selected.as_deref(), Some("Rust"));
+        let messages = drive(&mut state, |ui| pick_option(ui, probes::PICK_LIST, 1));
+        let picked = match messages.as_slice() {
+            [Message::PickListSelected(value)] => value.clone(),
+            other => panic!("pick_list: {other:?}"),
+        };
+        assert_ne!(picked, "Rust", "pick_list: the second row is the first one");
+        assert_eq!(
+            state.pick_list_selected.as_deref(),
+            Some(picked.as_str()),
+            "pick_list: the choice did not reach the state"
+        );
+
+        assert_eq!(state.combo_selected, None);
+        let messages = drive(&mut state, |ui| pick_option(ui, probes::COMBO_BOX, 1));
+        let picked = match messages.as_slice() {
+            [Message::ComboBoxSelected(value)] => value.clone(),
+            other => panic!("combo_box: {other:?}"),
+        };
+        assert_eq!(
+            state.combo_selected.as_deref(),
+            Some(picked.as_str()),
+            "combo_box: the choice did not reach the state"
+        );
+
+        // ---- Range tab ----
+        let _ = drive(&mut state, |ui| click_text(ui, "Range"));
+        assert_eq!(state.active_tab, Tab::Range);
+
+        let before = state.slider_value;
+        let messages = drive(&mut state, |ui| click_probe(ui, probes::SLIDER));
+        let picked = match messages.as_slice() {
+            [Message::SliderChanged(value)] => *value,
+            other => panic!("slider: {other:?}"),
+        };
+        assert_ne!(
+            picked, before,
+            "slider: the click landed on the current value"
+        );
+        assert_eq!(
+            state.slider_value, picked,
+            "slider: the value did not reach the state"
+        );
+
+        // The middle of the vertical rail is the value the slider already
+        // holds, and a slider publishes nothing when the value does not move
+        // (`vertical_slider.rs`, `change`), so the click lands a quarter of
+        // the way down the rail instead of at its centre.
+        let before = state.vslider_value;
+        let messages = drive(&mut state, |ui| {
+            let rail = probe_bounds(ui, probes::VERTICAL_SLIDER);
+            let quarter = rail.y + rail.height / 4.0;
+            ui.point_at(Point::new(rail.center().x, quarter));
+            let _ = ui.simulate(iced_test::simulator::click());
+        });
+        let picked = match messages.as_slice() {
+            [Message::VSliderChanged(value)] => *value,
+            other => panic!("vertical_slider: {other:?}"),
+        };
+        assert_ne!(
+            picked, before,
+            "vertical_slider: the click landed on the current value"
+        );
+        assert_eq!(
+            state.vslider_value, picked,
+            "vertical_slider: the value did not reach the state"
+        );
+
+        // ---- Layout tab: the pane grid splits and closes ----
+        let _ = drive(&mut state, |ui| click_text(ui, "Layout"));
+        assert_eq!(state.active_tab, Tab::Layout);
+
+        // A click inside a pane focuses it as well as pressing the button
+        // under the cursor, so both messages are expected here.
+        let panes_before = state.panes.iter().count();
+        let messages = drive(&mut state, |ui| click_text(ui, "split |"));
+        assert!(
+            messages
+                .iter()
+                .any(|message| matches!(message, Message::PaneSplit(pane_grid::Axis::Vertical, _))),
+            "pane_grid split: {messages:?}"
+        );
+        assert_eq!(
+            state.panes.iter().count(),
+            panes_before + 1,
+            "pane_grid: the split did not add a pane"
+        );
+
+        let panes_before = state.panes.iter().count();
+        let messages = drive(&mut state, |ui| click_text(ui, "close"));
+        assert!(
+            messages
+                .iter()
+                .any(|message| matches!(message, Message::PaneClosed(_))),
+            "pane_grid close: {messages:?}"
+        );
+        assert_eq!(
+            state.panes.iter().count(),
+            panes_before - 1,
+            "pane_grid: the close did not remove a pane"
+        );
+
+        // ---- Graphics tab: the Markdown link ----
+        let _ = drive(&mut state, |ui| click_text(ui, "Graphics"));
+        assert_eq!(state.active_tab, Tab::Graphics);
+
+        let (nth_item, url) = markdown_link();
+        assert_eq!(state.markdown_link, None, "nothing has been clicked yet");
+        let messages = drive(&mut state, |ui| {
+            let bounds = markdown_item_bounds(ui, nth_item);
+            ui.point_at(bounds.center());
+            let _ = ui.simulate(iced_test::simulator::click());
+        });
+        assert!(
+            matches!(messages.as_slice(), [Message::MarkdownLinkClicked(uri)] if uri == url),
+            "markdown link: {messages:?}"
+        );
+        assert_eq!(
+            state.markdown_link.as_deref(),
+            Some(url),
+            "markdown link: the uri did not reach the state"
+        );
+
+        #[cfg(feature = "iced_aw")]
+        aw_controls_respond(&mut state);
+
+        // ---- The sidebar selectors, last: they replace the theme ----
+        theme_selectors_respond(&mut state);
+    }
+
+    /// The `iced_aw` widgets of the Extra tab.
+    #[cfg(feature = "iced_aw")]
+    fn aw_controls_respond(state: &mut State) {
+        let _ = drive(state, |ui| click_text(ui, "Extra widgets (iced_aw)"));
+        assert_eq!(state.active_tab, Tab::Extra);
+
+        // TabBar (stand-alone).
+        assert_eq!(state.aw_tab_bar_active, 0);
+        let messages = drive(state, |ui| click_text(ui, "Details"));
+        assert!(
+            matches!(messages.as_slice(), [Message::AwTabBarSelected(1)]),
+            "TabBar: {messages:?}"
+        );
+        assert_eq!(
+            state.aw_tab_bar_active, 1,
+            "TabBar: the selection did not reach the state"
+        );
+
+        // Sidebar.
+        assert_eq!(state.aw_sidebar_active, 0);
+        let messages = drive(state, |ui| click_text(ui, "Appearance"));
+        assert!(
+            matches!(messages.as_slice(), [Message::AwSidebarSelected(1)]),
+            "Sidebar: {messages:?}"
+        );
+        assert_eq!(
+            state.aw_sidebar_active, 1,
+            "Sidebar: the selection did not reach the state"
+        );
+
+        // MenuBar: a root item is one of our own buttons.
+        let messages = drive(state, |ui| click_text(ui, "File"));
+        assert!(
+            matches!(messages.as_slice(), [Message::AwActionChosen(what)] if what == "Menu: File"),
+            "MenuBar: {messages:?}"
+        );
+        assert_eq!(
+            state.aw_last_action, "Menu: File",
+            "MenuBar: the choice did not reach the state"
+        );
+
+        // ContextMenu: it opens on the right button only, and its popup is
+        // placed at the cursor (`overlay/context_menu.rs:84-105`). The entry
+        // is then clicked without looking it up: while the menu is open,
+        // `ContextMenu::operate` hands the popup the *underlay's* layout
+        // (`widget/context_menu.rs:186-192`), and every button in it panics on
+        // a layout node with no children (`button.rs:265-268`), so any
+        // selector run over that tab would take the whole test down. Clicking
+        // needs no selector -- `simulate` never calls `operate` -- and the
+        // point is the popup's own padding plus its first entry's.
+        let messages = drive(state, |ui| {
+            let underlay = match ui.find("Right-click inside this panel") {
+                Ok(target) => match target.visible_bounds() {
+                    Some(bounds) => bounds,
+                    None => panic!("ContextMenu: the underlay is not visible"),
+                },
+                Err(error) => panic!("ContextMenu: {error}"),
+            };
+            let at = underlay.center();
+            ui.point_at(at);
+            let _ = ui.simulate([
+                Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Right)),
+                Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Right)),
+            ]);
+            let entry = Point::new(at.x + SP.xs + SP.s, at.y + SP.xs + SP.xxs);
+            ui.point_at(entry);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: entry })]);
+            let _ = ui.simulate(iced_test::simulator::click());
+        });
+        assert!(
+            matches!(messages.as_slice(), [Message::AwActionChosen(what)] if what == "Context menu: Copy"),
+            "ContextMenu: {messages:?}"
+        );
+        assert_eq!(
+            state.aw_last_action, "Context menu: Copy",
+            "ContextMenu: the choice did not reach the state"
+        );
+
+        // SelectionList: `iced_aw` reports its rows in the list's own
+        // coordinates and with no visible bounds
+        // (`selection_list/list.rs:281-310`), so the click point is the
+        // list's own origin plus the row's offset inside it.
+        assert_eq!(
+            state.aw_list_selected,
+            Some(0),
+            "the list starts on its first row"
+        );
+        let messages = drive(state, |ui| {
+            let list = probe_bounds(ui, probes::SELECTION_LIST);
+            let row = match ui.find("Breeze") {
+                Ok(target) => target.bounds(),
+                Err(error) => panic!("SelectionList: {error}"),
+            };
+            ui.point_at(Point::new(list.x + row.center().x, list.y + row.center().y));
+            let _ = ui.simulate(iced_test::simulator::click());
+        });
+        assert!(
+            matches!(messages.as_slice(), [Message::AwListSelected(1, value)] if value == "Breeze"),
+            "SelectionList: {messages:?}"
+        );
+        assert_eq!(
+            state.aw_list_selected,
+            Some(1),
+            "SelectionList: the row did not reach the state"
+        );
+
+        // Card: its foot button closes it, and the button that replaces it
+        // brings it back.
+        assert!(state.aw_card_open, "the card starts open");
+        let messages = drive(state, |ui| click_text(ui, "Dismiss"));
+        assert!(
+            matches!(messages.as_slice(), [Message::AwCardToggled]),
+            "Card close: {messages:?}"
+        );
+        assert!(
+            !state.aw_card_open,
+            "Card: the close did not reach the state"
+        );
+
+        let messages = drive(state, |ui| click_text(ui, "Show the card again"));
+        assert!(
+            matches!(messages.as_slice(), [Message::AwCardToggled]),
+            "Card reopen: {messages:?}"
+        );
+        assert!(
+            state.aw_card_open,
+            "Card: the reopen did not reach the state"
+        );
+    }
+
+    /// The two sidebar selectors, asserted against what the state held before
+    /// the click rather than against this host's desktop.
+    fn theme_selectors_respond(state: &mut State) {
+        // Colour mode. `AppColorMode::System` resolves to whichever mode this
+        // desktop is in, so the test asks for the opposite of what is on
+        // screen and checks that both the flag and the installed palette
+        // followed.
+        let was_dark = state.is_dark;
+        let before = theme(state).extended_palette().background.base.color;
+        let wanted = if was_dark {
+            AppColorMode::Light
+        } else {
+            AppColorMode::Dark
+        };
+        let nth = match AppColorMode::ALL.iter().position(|mode| *mode == wanted) {
+            Some(index) => index,
+            None => panic!("{wanted} is not offered by the colour mode picker"),
+        };
+        let messages = drive(state, |ui| pick_option(ui, probes::COLOR_MODE, nth));
+        assert!(
+            matches!(messages.as_slice(), [Message::ColorModeSelected(mode)] if *mode == wanted),
+            "colour mode: {messages:?}"
+        );
+        assert_eq!(
+            state.is_dark, !was_dark,
+            "colour mode: the mode did not change"
+        );
+        assert_ne!(
+            theme(state).extended_palette().background.base.color,
+            before,
+            "colour mode: the installed theme did not follow the mode"
+        );
+
+        // Theme preset. The entry is the first preset this platform offers
+        // that would put a different background on screen, so the assertion
+        // is about the installed theme moving and not about which desktop
+        // this runs on.
+        let mode = if state.is_dark {
+            native_theme_iced::ColorMode::Dark
+        } else {
+            native_theme_iced::ColorMode::Light
+        };
+        let before = theme(state).extended_palette().background.base.color;
+        let chosen = native_theme::theme::Theme::list_presets_for_platform()
+            .iter()
+            .enumerate()
+            .find_map(|(index, info)| {
+                let native = native_theme::theme::Theme::preset(info.key).ok()?;
+                let resolved = native.resolve(mode).ok()?;
+                let built = native_theme_iced::to_theme(&resolved.variant, &native.name);
+                (built.extended_palette().background.base.color != before)
+                    .then(|| (index + 1, info.key.to_string(), built))
+            });
+        let (nth, preset, expected) = match chosen {
+            Some(chosen) => chosen,
+            None => panic!("no preset of this platform resolves to another background"),
+        };
+
+        let messages = drive(state, |ui| pick_option(ui, probes::THEME, nth));
+        assert!(
+            matches!(messages.as_slice(), [Message::ThemeSelected(ThemeChoice::Preset(name))] if *name == preset),
+            "theme preset: {messages:?}"
+        );
+        assert_eq!(
+            state.current_choice,
+            ThemeChoice::Preset(preset.clone()),
+            "theme preset: the choice did not reach the state"
+        );
+        assert!(
+            state.error_message.is_none(),
+            "theme preset: {:?}",
+            state.error_message
+        );
+        assert_eq!(
+            theme(state).to_string(),
+            expected.to_string(),
+            "theme preset: another theme is installed"
+        );
+        assert_eq!(
+            theme(state).extended_palette().background.base.color,
+            expected.extended_palette().background.base.color,
+            "theme preset: the installed theme did not follow the choice"
+        );
+    }
+
+    /// Which list item of [`MARKDOWN_SAMPLE`] holds the link, and where it
+    /// points — read from the document itself rather than copied out of it.
+    fn markdown_link() -> (usize, &'static str) {
+        let items: Vec<&'static str> = MARKDOWN_SAMPLE
+            .lines()
+            .filter(|line| line.starts_with("- "))
+            .collect();
+        let nth = match items.iter().position(|line| line.contains("](")) {
+            Some(index) => index + 1,
+            None => panic!("MARKDOWN_SAMPLE has no link in a list item"),
+        };
+        let line = items[nth - 1];
+        let (start, end) = match (line.find("]("), line.rfind(')')) {
+            (Some(start), Some(end)) => (start + 2, end),
+            _ => panic!("MARKDOWN_SAMPLE's link is not an inline link"),
+        };
+        (nth, &line[start..end])
+    }
+
+    /// The bounds of the `nth` list item `markdown::view` lays out.
+    ///
+    /// A link lives in a `rich_text` span, and `rich_text` implements no
+    /// `Widget::operate`, so no selector can see it. What `markdown` does
+    /// expose is the row it puts each list item in: a bullet `text` followed
+    /// by the item's own container. Counting the bullets picks the item out.
+    fn markdown_item_bounds(ui: &mut Simulator<'_, Message>, nth: usize) -> Rectangle {
+        let mut bullets = 0usize;
+        let found = ui.find(move |candidate: Candidate<'_>| -> Option<Rectangle> {
+            match candidate {
+                Candidate::Text {
+                    content: "\u{2022}",
+                    ..
+                } => {
+                    bullets += 1;
+                    None
+                }
+                Candidate::Container {
+                    visible_bounds: Some(bounds),
+                    ..
+                } if bullets == nth => Some(bounds),
+                _ => None,
+            }
+        });
+        match found {
+            Ok(bounds) => bounds,
+            Err(error) => panic!("markdown list item {nth}: {error}"),
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // styles_cover_every_widget_shown
+    // -----------------------------------------------------------------------
+
+    /// The showcase's own source, comments and string literals removed.
+    const SHOWCASE: &str = include_str!("showcase-iced.rs");
+
+    /// One row of the coverage table: a widget constructor, and the
+    /// `styles::*` functions that dress what it builds.
+    struct Dressed {
+        ctor: &'static str,
+        styles: &'static [&'static str],
+    }
+
+    /// Every constructor in the showcase that has a `styles::*` function.
+    ///
+    /// `container(` is deliberately absent (spec §6.2): most of them are
+    /// layout and carry no class at all. `styles::container_card`'s own call
+    /// sites are covered by the second half of the test, which asks every
+    /// public style function for at least one caller.
+    const DRESSED: &[Dressed] = &[
+        Dressed {
+            ctor: "button",
+            styles: &[
+                "styles::button",
+                "styles::button_primary",
+                "styles::button_danger",
+                "styles::button_success",
+                "styles::button_warning",
+                "styles::button_link",
+            ],
+        },
+        Dressed {
+            ctor: "text_input",
+            styles: &["styles::text_input"],
+        },
+        Dressed {
+            ctor: "text_editor",
+            styles: &["styles::text_editor"],
+        },
+        Dressed {
+            ctor: "checkbox",
+            styles: &["styles::checkbox"],
+        },
+        Dressed {
+            ctor: "radio",
+            styles: &["styles::radio"],
+        },
+        Dressed {
+            ctor: "toggler",
+            styles: &["styles::toggler"],
+        },
+        Dressed {
+            ctor: "pick_list",
+            styles: &["styles::pick_list"],
+        },
+        Dressed {
+            ctor: "combo_box",
+            styles: &["styles::text_input"],
+        },
+        Dressed {
+            ctor: "scrollable",
+            styles: &["styles::scrollable"],
+        },
+        Dressed {
+            ctor: "slider",
+            styles: &["styles::slider"],
+        },
+        Dressed {
+            ctor: "vertical_slider",
+            styles: &["styles::slider"],
+        },
+        Dressed {
+            ctor: "progress_bar",
+            styles: &["styles::progress_bar"],
+        },
+        Dressed {
+            ctor: "tooltip",
+            styles: &["styles::tooltip"],
+        },
+        Dressed {
+            ctor: "rule::horizontal",
+            styles: &["styles::rule"],
+        },
+        Dressed {
+            ctor: "rule::vertical",
+            styles: &["styles::rule"],
+        },
+    ];
+
+    /// The iced classes the connector replaces. A widget wearing one of these
+    /// is a widget the platform's theme never reached.
+    const REPLACED: &[&str] = &[
+        "button::primary",
+        "button::secondary",
+        "button::danger",
+        "button::success",
+        "button::text",
+        "container::rounded_box",
+    ];
+
+    /// Every widget the showcase renders wears the platform's own style.
+    #[test]
+    fn styles_cover_every_widget_shown() {
+        let source = strip_comments_and_strings(SHOWCASE);
+
+        for replaced in REPLACED {
+            if let Some(at) = source.find(replaced) {
+                panic!(
+                    "{replaced} is still used at showcase-iced.rs:{}",
+                    line_at(&source, at)
+                );
+            }
+        }
+
+        let mut total = 0usize;
+        for row in DRESSED {
+            let sites = call_sites(&source, row.ctor);
+            assert!(
+                !sites.is_empty(),
+                "{}( has no call site left in the showcase",
+                row.ctor
+            );
+            total += sites.len();
+
+            let bare: Vec<String> = sites
+                .iter()
+                .filter(|site| !is_dressed(&source, **site, row.styles))
+                .map(|site| format!("showcase-iced.rs:{}", line_at(&source, *site)))
+                .collect();
+            assert!(
+                bare.is_empty(),
+                "{}( is built with no {} at {}",
+                row.ctor,
+                row.styles.join(" / "),
+                bare.join(", ")
+            );
+        }
+        assert!(total > 0, "the coverage table found nothing");
+
+        // Every public style function the connector ships is demonstrated.
+        for function in public_functions(include_str!("../src/styles.rs")) {
+            let call = format!("styles::{function}");
+            assert!(
+                !call_sites(&source, &call).is_empty(),
+                "styles::{function} has no call site in the showcase"
+            );
+        }
+        if cfg!(feature = "iced_aw") {
+            for function in public_functions(include_str!("../src/styles/aw.rs")) {
+                let call = format!("styles::aw::{function}");
+                assert!(
+                    !call_sites(&source, &call).is_empty(),
+                    "styles::aw::{function} has no call site in the showcase"
+                );
+            }
+        }
+    }
+
+    /// The names of the `pub fn` items a module declares.
+    fn public_functions(source: &str) -> Vec<String> {
+        strip_comments_and_strings(source)
+            .lines()
+            .filter_map(|line| line.strip_prefix("pub fn "))
+            .filter_map(|rest| rest.split(['(', '<']).next())
+            .map(str::to_string)
+            .collect()
+    }
+
+    /// Rust source with `//` comments, `/* */` comments and string literals
+    /// removed, so that a widget named in prose is not counted as one built.
+    ///
+    /// The file carries no raw string, byte string or character literal — a
+    /// `'` in it is always a lifetime — so the three states below are all
+    /// there are. Every removed byte becomes a space, which keeps line
+    /// numbers and offsets the same as the original's.
+    fn strip_comments_and_strings(source: &str) -> String {
+        #[derive(Clone, Copy, PartialEq)]
+        enum Mode {
+            Code,
+            Line,
+            Block(usize),
+            Text,
+        }
+
+        let bytes: Vec<char> = source.chars().collect();
+        let mut out = String::with_capacity(source.len());
+        let mut mode = Mode::Code;
+        let mut i = 0;
+        while i < bytes.len() {
+            let c = bytes[i];
+            let next = bytes.get(i + 1).copied();
+            match mode {
+                Mode::Code => {
+                    if c == '/' && next == Some('/') {
+                        mode = Mode::Line;
+                        out.push(' ');
+                    } else if c == '/' && next == Some('*') {
+                        mode = Mode::Block(1);
+                        out.push(' ');
+                    } else if c == '"' {
+                        mode = Mode::Text;
+                        out.push(' ');
+                    } else {
+                        out.push(c);
+                    }
+                }
+                Mode::Line => {
+                    if c == '\n' {
+                        mode = Mode::Code;
+                        out.push(c);
+                    } else {
+                        out.push(' ');
+                    }
+                }
+                Mode::Block(depth) => {
+                    if c == '/' && next == Some('*') {
+                        mode = Mode::Block(depth + 1);
+                        out.push(' ');
+                        out.push(' ');
+                        i += 2;
+                        continue;
+                    } else if c == '*' && next == Some('/') {
+                        mode = if depth == 1 {
+                            Mode::Code
+                        } else {
+                            Mode::Block(depth - 1)
+                        };
+                        out.push(' ');
+                        out.push(' ');
+                        i += 2;
+                        continue;
+                    }
+                    out.push(if c == '\n' { c } else { ' ' });
+                }
+                Mode::Text => {
+                    if c == '\\' {
+                        out.push(' ');
+                        out.push(' ');
+                        i += 2;
+                        continue;
+                    } else if c == '"' {
+                        mode = Mode::Code;
+                    }
+                    out.push(if c == '\n' { c } else { ' ' });
+                }
+            }
+            i += 1;
+        }
+        out
+    }
+
+    /// Every place `name(` is called, as an offset into `source`.
+    ///
+    /// A call is only a call when nothing joins it to what precedes it, so
+    /// `styles::slider(` is not a `slider(` site and `vertical_slider(` is not
+    /// one either.
+    fn call_sites(source: &str, name: &str) -> Vec<usize> {
+        let mut sites = Vec::new();
+        for (at, _) in source.match_indices(name) {
+            let joined_before = source[..at]
+                .chars()
+                .next_back()
+                .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == ':' || c == '.');
+            if joined_before {
+                continue;
+            }
+            let rest = &source[at + name.len()..];
+            if rest.starts_with('(') {
+                sites.push(at);
+            }
+        }
+        sites
+    }
+
+    /// Does the widget built at `site` get one of `styles` put on it?
+    ///
+    /// The style normally sits in the method chain that follows the
+    /// constructor. The tab strip builds its button once and dresses it in the
+    /// two arms of an `if`, so a constructor bound to a name is followed
+    /// through that name as well — which is why a file-wide count of
+    /// `button(` against `styles::button*` does not balance (14 against 15)
+    /// while every one of the 14 is dressed.
+    fn is_dressed(source: &str, site: usize, styles: &[&str]) -> bool {
+        let after = match close_of_call(source, site) {
+            Some(end) => end,
+            None => return false,
+        };
+        if styles.iter().any(|style| {
+            method_chain(source, after)
+                .iter()
+                .any(|call| !call_sites(call, style).is_empty())
+        }) {
+            return true;
+        }
+        match binding_of(source, site) {
+            Some(name) => {
+                let block = &source[site..block_end(source, site)];
+                let handle = format!("{name}.");
+                block.match_indices(&handle).any(|(at, _)| {
+                    let window = &block[at..block.len().min(at + 200)];
+                    styles
+                        .iter()
+                        .any(|style| !call_sites(window, style).is_empty())
+                })
+            }
+            None => false,
+        }
+    }
+
+    /// The offset just past the `)` that closes the call starting at `site`.
+    fn close_of_call(source: &str, site: usize) -> Option<usize> {
+        let open = source[site..].find('(')? + site;
+        let mut depth = 0usize;
+        for (offset, c) in source[open..].char_indices() {
+            match c {
+                '(' | '[' | '{' => depth += 1,
+                ')' | ']' | '}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return Some(open + offset + 1);
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// The arguments of every `.method(..)` chained onto the value that ends
+    /// at `from`.
+    fn method_chain(source: &str, from: usize) -> Vec<&str> {
+        let mut calls = Vec::new();
+        let mut at = from;
+        loop {
+            let rest = &source[at..];
+            let skipped = rest.len() - rest.trim_start().len();
+            at += skipped;
+            if !source[at..].starts_with('.') {
+                return calls;
+            }
+            let name_start = at + 1;
+            let name_len = source[name_start..]
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '_')
+                .count();
+            let open = name_start + name_len;
+            if name_len == 0 || !source[open..].starts_with('(') {
+                return calls;
+            }
+            match close_of_call(source, open) {
+                Some(end) => {
+                    calls.push(&source[open..end]);
+                    at = end;
+                }
+                None => return calls,
+            }
+        }
+    }
+
+    /// The name a `let` binds the call at `site` to, if it binds one.
+    fn binding_of(source: &str, site: usize) -> Option<&str> {
+        let head = &source[..site];
+        let start = head.rfind(['{', '}', ';']).map(|at| at + 1).unwrap_or(0);
+        let statement = head[start..].trim_start();
+        let rest = statement.strip_prefix("let ")?;
+        let rest = rest.strip_prefix("mut ").unwrap_or(rest);
+        let name_len = rest
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == '_')
+            .count();
+        let name = &rest[..name_len];
+        let tail = rest[name_len..].trim_start();
+        if name.is_empty() || !tail.starts_with('=') {
+            return None;
+        }
+        Some(name)
+    }
+
+    /// Where the block that encloses `site` ends.
+    fn block_end(source: &str, site: usize) -> usize {
+        let mut depth = 0i32;
+        for (offset, c) in source[site..].char_indices() {
+            match c {
+                '{' => depth += 1,
+                '}' => {
+                    if depth == 0 {
+                        return site + offset;
+                    }
+                    depth -= 1;
+                }
+                _ => {}
+            }
+        }
+        source.len()
+    }
+
+    /// The 1-based line the given offset sits on.
+    fn line_at(source: &str, at: usize) -> usize {
+        source[..at].lines().count().max(1)
+    }
 }
