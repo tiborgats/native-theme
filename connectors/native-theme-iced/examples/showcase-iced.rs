@@ -3070,7 +3070,13 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             ])
             .columns(4)
             .spacing(gap.widget)
-            .height(Length::Fixed(64.0)),
+            // `Grid::height` sets the height of the whole grid, not of a cell
+            // (`grid.rs:78-84`, `Sizing::EvenlyDistribute`): a fixed number
+            // here divides that number between the rows, and the swatch plus
+            // its caption did not fit in the share. `Shrink` is the one
+            // `Sizing` that lets each row be as tall as its content
+            // (`grid.rs:207-211`).
+            .height(Length::Shrink),
         ]
         .spacing(gap.widget)
         .into(),
