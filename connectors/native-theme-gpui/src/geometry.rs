@@ -19,20 +19,25 @@
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
 //! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]).
 //!
-//! Geometry, with one exception that is not geometry: six builders also carry
-//! the platform's text colour. A builder carries it only where upstream labels
-//! the very element the refinement lands on with a token of its own one
-//! refinement earlier — so the carried colour actually reaches the text — and
-//! upstream's state colours (disabled, muted) still win, because it applies
-//! them after the refinement or on a child. Three of the six displace a
-//! visibly different colour today — [`status_bar`] and [`dialog_description`]
-//! displace `muted_foreground`, [`tooltip`] displaces `popover_foreground` —
-//! and three displace `foreground`: [`list_item`], [`radio`] and [`select`].
-//! Those three change no pixel over the bundled presets, because a widget that
-//! states no `font.color` inherits the window's
+//! Geometry, with one exception that is not geometry: seven builders also
+//! carry the platform's text colour. A builder carries it only where the
+//! carried colour actually reaches the text and upstream's state colours
+//! (disabled, muted) still win — either because upstream labels the very
+//! element the refinement lands on with a token of its own one refinement
+//! earlier and applies its state colours after the refinement or on a child,
+//! or because upstream sets no colour on that element at all, so there is
+//! nothing to displace. Three of the seven displace a visibly different colour
+//! today — [`status_bar`] and [`dialog_description`] displace
+//! `muted_foreground`, [`tooltip`] displaces `popover_foreground` — three
+//! displace `foreground`: [`list_item`], [`radio`] and [`select`], and
+//! [`title_bar`] displaces nothing (`title_bar.rs:328-343` paints the fill and
+//! the border, then refines). Those four change no pixel over the bundled
+//! presets, because a widget that states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
-//! field; they carry it so a preset that does state one is honoured rather
-//! than silently overridden.
+//! field; they carry it so a source that does state one is honoured rather
+//! than silently overridden — the KDE reader states
+//! `window.title_bar_font.color` from `[WM] activeForeground`, which a colour
+//! scheme may contrast with the window's own text.
 //!
 //! [`checkbox`] and [`combobox`] are the two upstream paints from `foreground`
 //! that still take no colour, because the second half of the rule fails for
@@ -40,8 +45,6 @@
 //! their disabled colour before the refinement, so a carried colour would
 //! either never arrive or displace the disabled one (`checkbox.rs:334-339` and
 //! `:252-256`, `input/input.rs:99-103` through `combobox.rs:997`).
-//! [`title_bar`] needs none for a third reason: upstream sets no text colour
-//! on the bar at all.
 //!
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
 //! [`progress`] are verified against real gpui-component widgets in
@@ -396,9 +399,15 @@ pub fn combobox(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `TitleBar` (`src/title_bar.rs:335` → `:343`); the height has no theme field.
+///
+/// Upstream sets no text colour on the bar (`:328-343` paints the fill and the
+/// border, then refines), so the route is open and the carried colour displaces
+/// nothing. It is worth carrying: the KDE reader states
+/// `window.title_bar_font.color` from `[WM] activeForeground`, which a colour
+/// scheme is free to contrast with the window's own text.
 #[must_use]
 pub fn title_bar(n: Native<'_>) -> StyleRefinement {
-    with_text(
+    with_coloured_text(
         StyleRefinement::default(),
         &n.resolved.window.title_bar_font,
         n,
@@ -661,9 +670,11 @@ mod tests {
         });
     }
 
-    /// A builder carries the platform's text colour only where upstream sets a
-    /// token of its own on the very element the refinement lands on *and* its
-    /// state colours still win afterwards. Six do, over every preset in both
+    /// A builder carries the platform's text colour only where the colour
+    /// reaches the text *and* upstream's state colours still win afterwards:
+    /// upstream either sets a token of its own on the very element the
+    /// refinement lands on and re-applies its state colours after it, or sets
+    /// no colour on that element at all. Seven do, over every preset in both
     /// modes, not just the two `CASES` names.
     ///
     /// The `assert_ne!`s below are the reason the first three exist: each of
@@ -671,16 +682,19 @@ mod tests {
     /// paint, so leaving the colour out left the widget labelled with a colour
     /// the platform did not state.
     ///
-    /// The other three -- `list_item`, `radio`, `select` -- get no such
-    /// `assert_ne!`, and deliberately: their native font colour equals
+    /// The other four -- `list_item`, `radio`, `select`, `title_bar` -- get no
+    /// such `assert_ne!`, and deliberately: their native font colour equals
     /// `defaults.text_color` in all 32 combinations today, because a preset
     /// that states no `font.color` for a widget inherits the window's
     /// (docs/inheritance-rules.toml:115-136), and `foreground` is fed from
-    /// `defaults.text_color`. The colour is carried anyway because the
-    /// mechanism is identical -- upstream labels each of them with
-    /// `foreground` one refinement earlier and mutes the disabled state on a
-    /// child afterwards -- so the day a preset states `list.item_font.color`
-    /// the widget is painted with it instead of silently keeping the window's.
+    /// `defaults.text_color`. The colour is carried anyway because nothing
+    /// stands in its way -- upstream labels the first three with `foreground`
+    /// one refinement earlier and mutes the disabled state on a child
+    /// afterwards, and it labels the title bar with nothing at all
+    /// (`title_bar.rs:328-343`) -- so the day a source states
+    /// `list.item_font.color`, or `window.title_bar_font.color` as the KDE
+    /// reader does from `[WM] activeForeground`, the element is painted with it
+    /// instead of silently keeping the window's.
     ///
     /// `checkbox` and `combobox` do not carry it although upstream paints them
     /// from `foreground` too: the route is blocked at the other end, which
@@ -743,6 +757,15 @@ mod tests {
                     select(n).text.color,
                     Some(rgba_to_hsla(r.combo_box.font.color)),
                     "{at}: select text"
+                );
+                // Upstream sets no colour on the bar at all
+                // (`title_bar.rs:328-343`), so the route is open and nothing
+                // is displaced -- and the KDE reader does state the field,
+                // from `[WM] activeForeground` (`native-theme/src/kde/colors.rs`).
+                assert_eq!(
+                    title_bar(n).text.color,
+                    Some(rgba_to_hsla(r.window.title_bar_font.color)),
+                    "{at}: title bar text"
                 );
 
                 // The two the route is blocked for; the guard below says why.
@@ -848,46 +871,6 @@ mod tests {
                      (combobox.rs:990 -> :997) -- record it as a Tier U \
                      candidate; do NOT carry it in the builder, it would \
                      displace the disabled colour (input/input.rs:99-103)"
-                );
-            }
-        }
-    }
-
-    /// `geometry::title_bar` carries no colour, and the run says why: upstream
-    /// sets no text colour on the bar at all (`title_bar.rs:328-343` paints the
-    /// fill and refines, nothing more), so its children inherit `foreground` --
-    /// which every preset states as the title bar's own colour anyway.
-    #[test]
-    fn title_bar_needs_no_colour_because_the_platform_states_the_inherited_one() {
-        for info in Theme::list_presets() {
-            for mode in [ColorMode::Light, ColorMode::Dark] {
-                let r = resolved(info.key, mode);
-                let at = format!(
-                    "{}/{}",
-                    info.key,
-                    if mode == ColorMode::Dark {
-                        "dark"
-                    } else {
-                        "light"
-                    }
-                );
-                assert_eq!(
-                    r.window.title_bar_font.color, r.defaults.text_color,
-                    "{at}: the title bar font colour is no longer the window's, \
-                     so inheriting `foreground` no longer delivers it and \
-                     geometry::title_bar must carry it"
-                );
-                let prefs = scaled(1.0);
-                let n = Native {
-                    resolved: &r,
-                    accessibility: &prefs,
-                };
-                assert_eq!(
-                    title_bar(n).text.color,
-                    None,
-                    "{at}: geometry::title_bar set a text colour; upstream sets \
-                     none on the bar (title_bar.rs:328-343), so there is \
-                     nothing here to displace"
                 );
             }
         }

@@ -1710,21 +1710,23 @@ const REPORTED: &[Reported] = &[
     },
     // Upstream's title bar has no text colour of its own: its children
     // inherit, and the one thing it paints itself -- the window controls --
-    // takes `foreground` (`title_bar.rs:217`). Its fill is a gradient, not a
+    // takes `foreground` on its own element (`title_bar.rs:217`), where a
+    // refinement on the bar cannot reach it. Its fill is a gradient, not a
     // flat `title_bar` (`:21-35`, applied at `:339`), so the emitted side is
-    // measured against whichever end is the worse of the two, and that fill is
-    // the whole of the degradation: `geometry::title_bar` carries no colour
-    // because it needs none, every preset stating the window's own text colour
-    // for the title bar (`geometry.rs`, `title_bar_needs_no_colour_...`).
+    // measured against whichever end is the worse of the two. The bar's own
+    // label is not what is reported here: `geometry::title_bar` carries
+    // `window.title_bar_font.color` onto the bar, and upstream sets nothing
+    // there to displace it (`:328-343`).
     Reported {
         what: "title bar text",
-        why: "ThemeColor has no title-bar foreground: upstream inherits \
-              `foreground` into the bar and paints its window controls with it \
-              (title_bar.rs:217) over a gradient from a 55/45 mix of title_bar \
-              and background to title_bar (:21-35, :339) -- measured at the \
-              worse end. window.title_bar_font.color is the window's own text \
-              colour in all 32 combinations, so the inherited token delivers \
-              the platform's colour and what degrades here is the fill",
+        why: "ThemeColor has no title-bar foreground: upstream paints the \
+              window controls with `foreground` set on their own element \
+              (title_bar.rs:217), out of reach of a refinement on the bar, \
+              over a gradient from a 55/45 mix of title_bar and background to \
+              title_bar (:21-35, :339) -- measured at the worse end. The bar's \
+              own label does reach the platform's colour: geometry::title_bar \
+              carries window.title_bar_font.color and upstream sets nothing \
+              there to displace it (:328-343)",
         native: |r| {
             (
                 rgba_to_hsla(r.window.title_bar_font.color),

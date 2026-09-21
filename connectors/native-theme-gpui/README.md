@@ -25,8 +25,8 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
   the native heights, paddings, radii, borders and text sizes for the widgets
   where gpui-component applies the caller's style after its own — and the
-  native text colour for the six whose label upstream would otherwise paint
-  with a token of its own.
+  native text colour for the seven whose label would otherwise be left to a
+  token of upstream's.
 - **Accessibility**: the platform's text-scaling factor scales the theme's
   fonts (and, through GPUI's rem, every rem-relative size in gpui-component);
   reduce-motion is forwarded to GPUI; reduce-transparency keeps the overlay
@@ -148,17 +148,20 @@ radii and icon sizes do not (that is what the platform toolkit does). Control
 heights grow only when scaled text would no longer fit:
 `max(theme height, ceil(font size × factor × line height) + 2 × vertical padding)`.
 
-A builder sets a text colour only where upstream labels the caller's own
-element with a token of its own before applying the refinement — so the colour
-reaches the text — *and* upstream's disabled colour still wins, because it is
-applied after the refinement or on a child. Six do. Three displace a visibly
-different colour: `status_bar` and `dialog_description` displace upstream's
-`muted_foreground`, `tooltip` displaces `popover_foreground`. Three displace
-`foreground`: `list_item`, `radio` and `select`. Those three change no pixel
-under any bundled preset — a widget that states no `font.color` inherits the
-window's, and `foreground` is fed from that same field — but they carry it so
-that a preset which *does* state, say, a list row colour is honoured instead of
-silently overridden.
+A builder sets a text colour only where the colour reaches the text *and*
+upstream's disabled colour still wins: either upstream labels the caller's own
+element with a token of its own before applying the refinement and re-applies
+its state colours after it or on a child, or upstream sets no colour on that
+element at all. Seven do. Three displace a visibly different colour:
+`status_bar` and `dialog_description` displace upstream's `muted_foreground`,
+`tooltip` displaces `popover_foreground`. Three displace `foreground`:
+`list_item`, `radio` and `select`. `title_bar` displaces nothing — upstream
+paints the bar's fill and border and sets no text colour. Those four change no
+pixel under any bundled preset — a widget that states no `font.color` inherits
+the window's, and `foreground` is fed from that same field — but they carry it
+so that a source which *does* state, say, a list row colour, or the title bar
+colour the KDE reader takes from `[WM] activeForeground`, is honoured instead
+of silently overridden.
 
 The remaining builders set size and weight only and leave the colour to the
 token. `checkbox` and `combobox` are the near misses: upstream paints both from
@@ -166,9 +169,7 @@ token. `checkbox` and `combobox` are the near misses: upstream paints both from
 apply their disabled colour *before* the refinement, so a carried colour would
 either never arrive or take the disabled state's place — a preset that states
 one of those two colours is a finding to record, not a builder to change, and a
-test over every preset and mode says so. `title_bar` needs none for a third
-reason: upstream sets no text colour on the bar at all, and its text inherits
-`foreground`, the colour every preset states for a title bar anyway.
+test over every preset and mode says so.
 
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|

@@ -5526,13 +5526,13 @@ impl Showcase {
                         &[
                             ("bg", "title_bar", t.title_bar),
                             ("border", "title_bar_border", t.title_bar_border),
-                            ("text", "foreground", t.foreground),
+                            ("window control text", "foreground", t.foreground),
                             ("control hover", "secondary_hover", t.secondary_hover),
                             ("close hover", "danger", t.danger),
                         ],
                         &[],
                         &[
-                            ("geometry", "geometry::title_bar: window.title_bar_font size and weight, carried by the label because nothing overrides it afterwards; the colour is the inherited foreground, which every preset states as the title bar's own"),
+                            ("geometry", "geometry::title_bar: window.title_bar_font size, weight and colour, carried by the label because nothing overrides it afterwards -- upstream sets no text colour on the bar, so the builder's displaces nothing. The window controls set foreground on their own elements, out of its reach"),
                             ("height", "TITLE_BAR_HEIGHT = 34px (title_bar.rs, TITLE_BAR_HEIGHT)"),
                             ("fill", "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)"),
                             ("window controls", TITLE_BAR_CONTROLS_NOTE),
