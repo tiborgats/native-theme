@@ -93,6 +93,8 @@
 pub mod base_layer;
 pub(crate) mod colors;
 pub(crate) mod config;
+#[cfg(test)]
+mod contract;
 pub(crate) mod derive;
 pub mod geometry;
 pub mod icons;
