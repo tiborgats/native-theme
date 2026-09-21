@@ -18,8 +18,10 @@
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
 //! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]), with
-//! one conversion the receiving widget forces: [`tooltip_content`] turns the
-//! platform's outer tooltip width into the inner box its text wraps in.
+//! two conversions the receiving widget forces: [`tooltip_content`] turns the
+//! platform's outer tooltip width into the inner box its text wraps in, and
+//! [`scrollbar_gutter`] turns the scrollbar groove width the base layer
+//! installs into the strip a non-overlay bar needs beside the content.
 //!
 //! Geometry, with one exception that is not geometry: seven builders also
 //! carry the platform's text colour. A builder carries it only where the
@@ -494,6 +496,36 @@ pub fn icon_size_panel(n: Native<'_>) -> Size {
     Size::Size(px(n.resolved.defaults.icon_sizes.panel))
 }
 
+// --- Scroll containers --------------------------------------------------------
+
+/// The strip a vertical scrollbar needs beside the content it scrolls: the
+/// platform's groove width as right padding where its scrollbars are not
+/// overlays, and nothing where they are.
+///
+/// gpui-component overlays its scrollbar on the scroll area whatever the
+/// platform does — `Scrollable` "renders the original element as the scroll
+/// area and overlays scrollbars" (`src/scroll/scrollable.rs`) — and gpui-base
+/// draws the vertical track flush with that area's right edge, at the track
+/// width this connector installed for it (gpui-base
+/// `src/scrollbar.rs:1408-1432`). Where `scrollbar.overlay_mode` is false —
+/// KDE and Windows — [`crate::apply`] also asks for an always-visible bar, so
+/// a content element that fills the scroll area runs underneath it. The width
+/// is read back from [`crate::base_layer::scrollbar_geometry`], the one that
+/// was written onto gpui-base, so the two cannot drift apart.
+///
+/// Apply it to the element the container scrolls, not around the container:
+/// `overflow_y_scrollbar` keeps the caller's own element as the scroll content
+/// (`src/scroll/scrollable.rs`, `Scrollable::render`), so padding on it is
+/// padding inside the scrolled box and the bar lands beside it.
+#[must_use]
+pub fn scrollbar_gutter(n: Native<'_>) -> StyleRefinement {
+    if n.resolved.scrollbar.overlay_mode {
+        return StyleRefinement::default();
+    }
+    let width = crate::base_layer::scrollbar_geometry(n.resolved).track_width;
+    StyleRefinement::default().pr(width)
+}
+
 // --- Builder helpers (spec §9.3) ----------------------------------------------
 
 /// For `Dialog::max_w` (`src/dialog/dialog.rs:419`).
@@ -715,6 +747,47 @@ mod tests {
             assert_eq!(out.padding.top, def(sb.border.padding_vertical));
             assert_text(&out, &sb.font, s);
         });
+    }
+
+    /// The gutter is the width the base layer installed, and only where the
+    /// platform's scrollbars are not overlays. Over every preset in both modes,
+    /// because the two `CASES` names are on one side of that line; both sides
+    /// have to occur, or the builder's condition is never exercised.
+    #[test]
+    fn the_scrollbar_gutter_is_the_installed_groove_where_bars_are_not_overlays() {
+        let (mut overlaid, mut embedded) = (0usize, 0usize);
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let prefs = scaled(1.0);
+                let n = Native {
+                    resolved: &r,
+                    accessibility: &prefs,
+                };
+                let at = format!("{}/{mode:?}", info.key);
+                let out = scrollbar_gutter(n);
+                if r.scrollbar.overlay_mode {
+                    overlaid += 1;
+                    assert_eq!(out.padding.right, None, "{at}: an overlay bar took width");
+                } else {
+                    embedded += 1;
+                    assert_eq!(
+                        out.padding.right,
+                        Some(crate::base_layer::scrollbar_geometry(&r).track_width.into()),
+                        "{at}: the gutter is not the track width the base layer installed"
+                    );
+                }
+                // Nothing else: the gutter is one edge, not a layout.
+                assert_eq!(out.padding.left, None, "{at}");
+                assert_eq!(out.padding.top, None, "{at}");
+                assert_eq!(out.padding.bottom, None, "{at}");
+            }
+        }
+        assert!(
+            overlaid > 0 && embedded > 0,
+            "every preset is on the same side of overlay_mode ({overlaid} overlaid, \
+             {embedded} embedded), so one arm of the builder is never reached"
+        );
     }
 
     /// A builder carries the platform's text colour only where the colour

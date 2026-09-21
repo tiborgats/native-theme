@@ -257,6 +257,13 @@ const WINDOW_SIZE: gpui::Size<Pixels> = size(px(1100.), px(850.));
 /// can find the tab it switched to.
 const TAB_ROOT: &str = "tab-root";
 
+/// The debug selector the content pane's scrolled element carries. Its right
+/// edge is the scroll area's, which is where a vertical scrollbar's track ends
+/// (gpui-base `src/scrollbar.rs:1408-1432`), so
+/// `a_non_overlay_scrollbar_keeps_off_the_content` can see whether the tab
+/// reaches under the bar.
+const CONTENT_SCROLL: &str = "content-scroll";
+
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------
@@ -5750,6 +5757,7 @@ impl Showcase {
                             .border_1()
                             .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
                             .overflow_y_scrollbar()
+                            .native(cx, geometry::scrollbar_gutter)
                             .child(v_flex().gap_2().p_3().children((0..20).map(|i| {
                                 Label::new(SharedString::from(format!(
                                     "Scrollable item #{} - demonstrates scrollbar theming",
@@ -5779,8 +5787,7 @@ impl Showcase {
                             ),
                         ],
                         &[
-                            ("width", "16px hardcoded"),
-                            ("min thumb length", "48px hardcoded"),
+                            ("geometry", "geometry::scrollbar_gutter on the element a scroll container scrolls: scrollbar.groove_width as right padding where scrollbar.overlay_mode is false, because gpui-component overlays the bar on the scroll area instead of putting it beside the content. The track width and the minimum thumb length are the platform's too, written onto gpui-base by base_layer::scrollbar_styles"),
                         ],
                     )),
             )
@@ -8038,6 +8045,11 @@ impl Render for Showcase {
                     .id("content-scroll-outer")
                     .flex_1()
                     .overflow_y_scrollbar()
+                    // The bar is drawn over the right edge of the scroll area,
+                    // so the tab keeps that width free; the tab roots' own
+                    // padding is untouched.
+                    .native(cx, geometry::scrollbar_gutter)
+                    .debug_selector(|| CONTENT_SCROLL.into())
                     // TAB_ROOT is what `every_tab_lays_out` looks the tab up
                     // by, and it goes on each arm rather than on one wrapper
                     // around the match: the test asserts the tab's own root
@@ -8818,6 +8830,75 @@ mod tests {
                 bounds.size.width > px(0.) && bounds.size.height > px(0.),
                 "{tab:?}: the tab root laid out at {:?}",
                 bounds.size
+            );
+        }
+    }
+
+    /// Install a bundled preset, so a measurement does not depend on the
+    /// desktop the test runs on.
+    fn use_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str) {
+        cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.apply_theme_by_name(preset, window, cx);
+                cx.notify();
+            });
+        });
+        cx.run_until_parked();
+        draw(cx);
+    }
+
+    /// The installed theme's scrollbar groove width, and whether the platform
+    /// draws its scrollbars as overlays; a zero width means no native theme is
+    /// installed, which the caller asserts against.
+    fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pixels, bool) {
+        read(cx, showcase, |_this, cx| {
+            match cx.native_theme().and_then(|nt| nt.native(cx)) {
+                Some(n) => (
+                    px(native_theme_gpui::scrollbar_width(n.resolved)),
+                    n.resolved.scrollbar.overlay_mode,
+                ),
+                None => (px(0.), false),
+            }
+        })
+    }
+
+    /// A scrollbar that is not an overlay keeps off the content.
+    ///
+    /// gpui-component overlays its scrollbar on the scroll area whatever the
+    /// platform does (`src/scroll/scrollable.rs`, `Scrollable`), and gpui-base
+    /// draws the vertical track flush with the area's right edge, at the width
+    /// the connector installed (gpui-base `src/scrollbar.rs:1408-1432`). Where
+    /// the platform's scrollbars are not overlays the connector also asks for
+    /// an always-visible bar (`src/lib.rs`, `scrollbar_mode`), so that width
+    /// has to be reserved beside the content or the bar sits on it.
+    #[gpui::test]
+    fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
+        let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+        // kde-breeze puts its groove beside the content; macOS overlays its
+        // own, and must not lose a strip of width to it.
+        for preset in ["kde-breeze", "macos-sonoma"] {
+            use_preset(&mut cx, &showcase, preset);
+            show(&mut cx, &showcase, Tab::Inputs);
+            let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+            assert!(
+                groove > px(0.),
+                "{preset}: no native theme is installed, so nothing was measured"
+            );
+            let content = bounds_of(&mut cx, CONTENT_SCROLL);
+            let tab = bounds_of(&mut cx, TAB_ROOT);
+            assert!(
+                tab.size.height > WINDOW_SIZE.height,
+                "{preset}: the tab is shorter than the whole window, so the pane may \
+                 not scroll at all and this step would prove nothing"
+            );
+            let gutter = if overlay { px(0.) } else { groove };
+            assert_eq!(
+                content.right() - tab.right(),
+                gutter,
+                "{preset}: the tab ends at {:?} and the scroll area at {:?}, which \
+                 leaves {gutter:?} free for a {groove:?} scrollbar",
+                tab.right(),
+                content.right(),
             );
         }
     }

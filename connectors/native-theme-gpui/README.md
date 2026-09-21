@@ -191,6 +191,7 @@ test over every preset and mode says so.
 | `select`, `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.corner_radius`, `.padding_vertical`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox` |
 | `title_bar` | `window.title_bar_font` | `TitleBar` |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `defaults.icon_sizes.*` | `Spinner::with_size`, `Icon::with_size` |
+| `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |
 
 The `button`, `input`, `select`, `combobox`, `list_item` and `progress`
