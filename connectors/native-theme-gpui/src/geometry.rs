@@ -327,8 +327,10 @@ pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
 }
 
 /// The metrics `Checkbox` and `Radio` share; platform-facts §2.5 defines radio
-/// metrics as the checkbox's with a circular indicator, so this is a fact, not
-/// a substitution (rationale D18). Only the text colour separates the two.
+/// metrics as the checkbox's with a circular indicator, so reading the
+/// checkbox's fields for a radio is what the platform states rather than one
+/// widget's value standing in for another's. Only the text colour separates
+/// the two.
 fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.checkbox.label_gap))
 }
