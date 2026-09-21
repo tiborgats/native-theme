@@ -26,7 +26,7 @@ use crate::styles;
 #[cfg(feature = "widgets")]
 use iced_core::{Background, Border, border::Radius};
 #[cfg(feature = "widgets")]
-use iced_widget::button;
+use iced_widget::{button, text_editor, text_input};
 
 /// One row of the mapping contract: a palette slot, the native field it must
 /// equal, and the presets where it may legitimately differ.
@@ -234,6 +234,13 @@ fn flat(background: Option<Background>) -> Result<Color, String> {
     }
 }
 
+/// The same, for a `Style` that carries its `Background` directly rather than
+/// as an `Option`.
+#[cfg(feature = "widgets")]
+fn fill(background: Background) -> Result<Color, String> {
+    flat(Some(background))
+}
+
 /// Every color field of `styles::button`, and the native value it carries.
 ///
 /// One such const per function; read with `BUTTON_SCALAR_ROWS` and `DERIVED`
@@ -294,6 +301,629 @@ const BUTTON_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
     },
 ];
 
+/// The fill the native fields give a primary button in `status`.
+///
+/// The same states as `native_button_fill`, over the accent fill the platform
+/// states for this class rather than over the neutral one.
+#[cfg(feature = "widgets")]
+fn native_button_primary_fill(r: &ResolvedTheme, status: button::Status) -> Color {
+    let base = to_color(r.button.primary_background);
+    match status {
+        button::Status::Active => base,
+        button::Status::Hovered => over(to_color(r.button.hover_background), base),
+        button::Status::Pressed => over(
+            to_color(
+                r.button
+                    .active_background
+                    .unwrap_or(r.button.hover_background),
+            ),
+            base,
+        ),
+        button::Status::Disabled => to_color(
+            r.button
+                .disabled_background
+                .unwrap_or(r.button.background_color),
+        ),
+    }
+}
+
+/// The label color the native fields give a primary button in `status`.
+#[cfg(feature = "widgets")]
+fn native_button_primary_label(r: &ResolvedTheme, status: button::Status) -> Color {
+    to_color(match status {
+        button::Status::Active => r.button.primary_text_color,
+        button::Status::Hovered => r.button.hover_text_color,
+        button::Status::Pressed => r.button.active_text_color,
+        button::Status::Disabled => r.button.disabled_text_color,
+    })
+}
+
+/// Every color field of `styles::button_primary`.
+#[cfg(feature = "widgets")]
+const BUTTON_PRIMARY_ROWS: &[StyleRow<button::Status>] = &[
+    StyleRow {
+        field: "styles::button_primary.background",
+        statuses: BUTTON_STATUSES,
+        native: native_button_primary_fill,
+        get: |t, r, s| flat(styles::button_primary(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::button_primary.text_color",
+        statuses: BUTTON_STATUSES,
+        native: native_button_primary_label,
+        get: |t, r, s| Ok(styles::button_primary(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::button_primary.border.color",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| to_color(r.button.border.color),
+        get: |t, r, s| Ok(styles::button_primary(r)(t, s).border.color),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const BUTTON_PRIMARY_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
+    ScalarRow {
+        field: "styles::button_primary.border.width",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.line_width,
+        get: |t, r, s| styles::button_primary(r)(t, s).border.width,
+    },
+    ScalarRow {
+        field: "styles::button_primary.border.radius.top_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.top_left,
+    },
+    ScalarRow {
+        field: "styles::button_primary.border.radius.top_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.top_right,
+    },
+    ScalarRow {
+        field: "styles::button_primary.border.radius.bottom_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.bottom_right,
+    },
+    ScalarRow {
+        field: "styles::button_primary.border.radius.bottom_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_primary(r)(t, s).border.radius.bottom_left,
+    },
+];
+
+/// The statuses of a status button whose fill and label the function itself
+/// decides, and so the only ones its rows and its contrast pair cover.
+#[cfg(feature = "widgets")]
+const STATUS_BUTTON_NATIVE_STATUSES: &[button::Status] =
+    &[button::Status::Active, button::Status::Disabled];
+
+/// The statuses a status button takes whole from iced's own class, because the
+/// model states no hovered and no pressed variant of a status color
+/// (spec section 3.3). Asserted by
+/// `a_status_button_takes_its_hovered_and_pressed_states_from_iced`.
+#[cfg(feature = "widgets")]
+const STATUS_BUTTON_ICED_STATUSES: &[button::Status] =
+    &[button::Status::Hovered, button::Status::Pressed];
+
+/// The fill the native fields give a status button painted `idle`.
+///
+/// The match has no catch-all, but only the two statuses of
+/// `STATUS_BUTTON_NATIVE_STATUSES` ever reach a row: the other two are iced's
+/// on both sides. Their arm still has to name a color, and the idle one is the
+/// least surprising -- if a status is ever moved between the two lists, the row
+/// compares it against that and fails rather than passing quietly.
+#[cfg(feature = "widgets")]
+fn native_status_button_fill(r: &ResolvedTheme, status: button::Status, idle: Rgba) -> Color {
+    match status {
+        button::Status::Active | button::Status::Hovered | button::Status::Pressed => {
+            to_color(idle)
+        }
+        button::Status::Disabled => to_color(
+            r.button
+                .disabled_background
+                .unwrap_or(r.button.background_color),
+        ),
+    }
+}
+
+/// The label the native fields give a status button whose own label is `idle`.
+#[cfg(feature = "widgets")]
+fn native_status_button_label(r: &ResolvedTheme, status: button::Status, idle: Rgba) -> Color {
+    to_color(match status {
+        button::Status::Active | button::Status::Hovered | button::Status::Pressed => idle,
+        button::Status::Disabled => r.button.disabled_text_color,
+    })
+}
+
+/// Every color field of `styles::button_danger`.
+#[cfg(feature = "widgets")]
+const BUTTON_DANGER_ROWS: &[StyleRow<button::Status>] = &[
+    StyleRow {
+        field: "styles::button_danger.background",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_status_button_fill(r, s, r.defaults.danger_color),
+        get: |t, r, s| flat(styles::button_danger(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::button_danger.text_color",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_status_button_label(r, s, r.defaults.danger_text_color),
+        get: |t, r, s| Ok(styles::button_danger(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::button_danger.border.color",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| to_color(r.button.border.color),
+        get: |t, r, s| Ok(styles::button_danger(r)(t, s).border.color),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const BUTTON_DANGER_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
+    ScalarRow {
+        field: "styles::button_danger.border.width",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.line_width,
+        get: |t, r, s| styles::button_danger(r)(t, s).border.width,
+    },
+    ScalarRow {
+        field: "styles::button_danger.border.radius.top_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.top_left,
+    },
+    ScalarRow {
+        field: "styles::button_danger.border.radius.top_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.top_right,
+    },
+    ScalarRow {
+        field: "styles::button_danger.border.radius.bottom_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.bottom_right,
+    },
+    ScalarRow {
+        field: "styles::button_danger.border.radius.bottom_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_danger(r)(t, s).border.radius.bottom_left,
+    },
+];
+
+/// Every color field of `styles::button_success`.
+#[cfg(feature = "widgets")]
+const BUTTON_SUCCESS_ROWS: &[StyleRow<button::Status>] = &[
+    StyleRow {
+        field: "styles::button_success.background",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_status_button_fill(r, s, r.defaults.success_color),
+        get: |t, r, s| flat(styles::button_success(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::button_success.text_color",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_status_button_label(r, s, r.defaults.success_text_color),
+        get: |t, r, s| Ok(styles::button_success(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::button_success.border.color",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| to_color(r.button.border.color),
+        get: |t, r, s| Ok(styles::button_success(r)(t, s).border.color),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const BUTTON_SUCCESS_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
+    ScalarRow {
+        field: "styles::button_success.border.width",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.line_width,
+        get: |t, r, s| styles::button_success(r)(t, s).border.width,
+    },
+    ScalarRow {
+        field: "styles::button_success.border.radius.top_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_success(r)(t, s).border.radius.top_left,
+    },
+    ScalarRow {
+        field: "styles::button_success.border.radius.top_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_success(r)(t, s).border.radius.top_right,
+    },
+    ScalarRow {
+        field: "styles::button_success.border.radius.bottom_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_success(r)(t, s).border.radius.bottom_right,
+    },
+    ScalarRow {
+        field: "styles::button_success.border.radius.bottom_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_success(r)(t, s).border.radius.bottom_left,
+    },
+];
+
+/// Every color field of `styles::button_warning`.
+#[cfg(feature = "widgets")]
+const BUTTON_WARNING_ROWS: &[StyleRow<button::Status>] = &[
+    StyleRow {
+        field: "styles::button_warning.background",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_status_button_fill(r, s, r.defaults.warning_color),
+        get: |t, r, s| flat(styles::button_warning(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::button_warning.text_color",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        native: |r, s| native_status_button_label(r, s, r.defaults.warning_text_color),
+        get: |t, r, s| Ok(styles::button_warning(r)(t, s).text_color),
+    },
+    StyleRow {
+        field: "styles::button_warning.border.color",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| to_color(r.button.border.color),
+        get: |t, r, s| Ok(styles::button_warning(r)(t, s).border.color),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const BUTTON_WARNING_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
+    ScalarRow {
+        field: "styles::button_warning.border.width",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.line_width,
+        get: |t, r, s| styles::button_warning(r)(t, s).border.width,
+    },
+    ScalarRow {
+        field: "styles::button_warning.border.radius.top_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.top_left,
+    },
+    ScalarRow {
+        field: "styles::button_warning.border.radius.top_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.top_right,
+    },
+    ScalarRow {
+        field: "styles::button_warning.border.radius.bottom_right",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.bottom_right,
+    },
+    ScalarRow {
+        field: "styles::button_warning.border.radius.bottom_left",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| r.button.border.corner_radius,
+        get: |t, r, s| styles::button_warning(r)(t, s).border.radius.bottom_left,
+    },
+];
+
+/// The fill the native fields give a link button in `status`.
+#[cfg(feature = "widgets")]
+fn native_button_link_fill(r: &ResolvedTheme, status: button::Status) -> Color {
+    let base = to_color(r.link.background_color);
+    match status {
+        // `LinkTheme` states no pressed and no disabled fill, so both keep the
+        // idle one.
+        button::Status::Active | button::Status::Pressed | button::Status::Disabled => base,
+        button::Status::Hovered => over(to_color(r.link.hover_background), base),
+    }
+}
+
+/// The label color the native fields give a link button in `status`.
+#[cfg(feature = "widgets")]
+fn native_button_link_label(r: &ResolvedTheme, status: button::Status) -> Color {
+    to_color(match status {
+        button::Status::Active => r.link.font.color,
+        button::Status::Hovered => r.link.hover_text_color,
+        button::Status::Pressed => r.link.active_text_color,
+        button::Status::Disabled => r.link.disabled_text_color,
+    })
+}
+
+/// Every color field of `styles::button_link`.
+///
+/// It has no scalar rows: `LinkTheme` carries no border, so all six border
+/// leaves are iced's own and sit in `DERIVED`.
+#[cfg(feature = "widgets")]
+const BUTTON_LINK_ROWS: &[StyleRow<button::Status>] = &[
+    StyleRow {
+        field: "styles::button_link.background",
+        statuses: BUTTON_STATUSES,
+        native: native_button_link_fill,
+        get: |t, r, s| flat(styles::button_link(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::button_link.text_color",
+        statuses: BUTTON_STATUSES,
+        native: native_button_link_label,
+        get: |t, r, s| Ok(styles::button_link(r)(t, s).text_color),
+    },
+];
+
+/// Every value of `text_input::Status`, not every variant: `Focused` carries a
+/// `bool`, so it stands for two statuses and both are listed
+/// (`text_input.rs:1697-1709`).
+#[cfg(feature = "widgets")]
+const TEXT_INPUT_STATUSES: &[text_input::Status] = &[
+    text_input::Status::Active,
+    text_input::Status::Hovered,
+    text_input::Status::Focused { is_hovered: false },
+    text_input::Status::Focused { is_hovered: true },
+    text_input::Status::Disabled,
+];
+
+/// The fill the native fields give a text input in `status`.
+#[cfg(feature = "widgets")]
+fn native_input_fill(r: &ResolvedTheme, disabled: bool) -> Color {
+    if disabled {
+        // A translucent disabled fill replaces the idle one, so it is emitted
+        // as given.
+        to_color(
+            r.input
+                .disabled_background
+                .unwrap_or(r.input.background_color),
+        )
+    } else {
+        to_color(r.input.background_color)
+    }
+}
+
+/// The border color the native fields give a text input, by state.
+///
+/// Both soft options copy the border's own color, the base-state value of
+/// spec section 3.2's table.
+#[cfg(feature = "widgets")]
+fn native_input_border(r: &ResolvedTheme, hovered: bool, focused: bool) -> Color {
+    let i = &r.input;
+    to_color(if focused {
+        i.focus_border_color.unwrap_or(i.border.color)
+    } else if hovered {
+        i.hover_border_color.unwrap_or(i.border.color)
+    } else {
+        i.border.color
+    })
+}
+
+/// The text color the native fields give a text input's value, by state.
+#[cfg(feature = "widgets")]
+fn native_input_value(r: &ResolvedTheme, disabled: bool) -> Color {
+    to_color(if disabled {
+        r.input.disabled_text_color
+    } else {
+        r.input.font.color
+    })
+}
+
+/// The three `input.*` values a `text_input::Status` selects, each matched
+/// exhaustively with no catch-all so an upstream variant fails to compile here.
+#[cfg(feature = "widgets")]
+fn native_text_input_fill(r: &ResolvedTheme, status: text_input::Status) -> Color {
+    match status {
+        text_input::Status::Active
+        | text_input::Status::Hovered
+        | text_input::Status::Focused { is_hovered: _ } => native_input_fill(r, false),
+        text_input::Status::Disabled => native_input_fill(r, true),
+    }
+}
+
+#[cfg(feature = "widgets")]
+fn native_text_input_border(r: &ResolvedTheme, status: text_input::Status) -> Color {
+    match status {
+        text_input::Status::Active | text_input::Status::Disabled => {
+            native_input_border(r, false, false)
+        }
+        text_input::Status::Hovered => native_input_border(r, true, false),
+        text_input::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
+    }
+}
+
+#[cfg(feature = "widgets")]
+fn native_text_input_value(r: &ResolvedTheme, status: text_input::Status) -> Color {
+    match status {
+        text_input::Status::Active
+        | text_input::Status::Hovered
+        | text_input::Status::Focused { is_hovered: _ } => native_input_value(r, false),
+        text_input::Status::Disabled => native_input_value(r, true),
+    }
+}
+
+/// Every color field of `styles::text_input`.
+#[cfg(feature = "widgets")]
+const TEXT_INPUT_ROWS: &[StyleRow<text_input::Status>] = &[
+    StyleRow {
+        field: "styles::text_input.background",
+        statuses: TEXT_INPUT_STATUSES,
+        native: native_text_input_fill,
+        get: |t, r, s| fill(styles::text_input(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::text_input.border.color",
+        statuses: TEXT_INPUT_STATUSES,
+        native: native_text_input_border,
+        get: |t, r, s| Ok(styles::text_input(r)(t, s).border.color),
+    },
+    StyleRow {
+        field: "styles::text_input.placeholder",
+        statuses: TEXT_INPUT_STATUSES,
+        native: |r, _| to_color(r.input.placeholder_color),
+        get: |t, r, s| Ok(styles::text_input(r)(t, s).placeholder),
+    },
+    StyleRow {
+        field: "styles::text_input.value",
+        statuses: TEXT_INPUT_STATUSES,
+        native: native_text_input_value,
+        get: |t, r, s| Ok(styles::text_input(r)(t, s).value),
+    },
+    StyleRow {
+        field: "styles::text_input.selection",
+        statuses: TEXT_INPUT_STATUSES,
+        native: |r, _| to_color(r.input.selection_background),
+        get: |t, r, s| Ok(styles::text_input(r)(t, s).selection),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const TEXT_INPUT_SCALAR_ROWS: &[ScalarRow<text_input::Status>] = &[
+    ScalarRow {
+        field: "styles::text_input.border.width",
+        statuses: TEXT_INPUT_STATUSES,
+        native: |r, _| r.input.border.line_width,
+        get: |t, r, s| styles::text_input(r)(t, s).border.width,
+    },
+    ScalarRow {
+        field: "styles::text_input.border.radius.top_left",
+        statuses: TEXT_INPUT_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_input(r)(t, s).border.radius.top_left,
+    },
+    ScalarRow {
+        field: "styles::text_input.border.radius.top_right",
+        statuses: TEXT_INPUT_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_input(r)(t, s).border.radius.top_right,
+    },
+    ScalarRow {
+        field: "styles::text_input.border.radius.bottom_right",
+        statuses: TEXT_INPUT_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_input(r)(t, s).border.radius.bottom_right,
+    },
+    ScalarRow {
+        field: "styles::text_input.border.radius.bottom_left",
+        statuses: TEXT_INPUT_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_input(r)(t, s).border.radius.bottom_left,
+    },
+];
+
+/// Every value of `text_editor::Status`; `Focused` carries a `bool` there too
+/// (`text_editor.rs:1409-1421`).
+#[cfg(feature = "widgets")]
+const TEXT_EDITOR_STATUSES: &[text_editor::Status] = &[
+    text_editor::Status::Active,
+    text_editor::Status::Hovered,
+    text_editor::Status::Focused { is_hovered: false },
+    text_editor::Status::Focused { is_hovered: true },
+    text_editor::Status::Disabled,
+];
+
+/// The same three `input.*` values, selected by a `text_editor::Status`. The
+/// enum is a separate type from `text_input`'s, so the match is written again
+/// rather than shared -- and again with no catch-all.
+#[cfg(feature = "widgets")]
+fn native_text_editor_fill(r: &ResolvedTheme, status: text_editor::Status) -> Color {
+    match status {
+        text_editor::Status::Active
+        | text_editor::Status::Hovered
+        | text_editor::Status::Focused { is_hovered: _ } => native_input_fill(r, false),
+        text_editor::Status::Disabled => native_input_fill(r, true),
+    }
+}
+
+#[cfg(feature = "widgets")]
+fn native_text_editor_border(r: &ResolvedTheme, status: text_editor::Status) -> Color {
+    match status {
+        text_editor::Status::Active | text_editor::Status::Disabled => {
+            native_input_border(r, false, false)
+        }
+        text_editor::Status::Hovered => native_input_border(r, true, false),
+        text_editor::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
+    }
+}
+
+#[cfg(feature = "widgets")]
+fn native_text_editor_value(r: &ResolvedTheme, status: text_editor::Status) -> Color {
+    match status {
+        text_editor::Status::Active
+        | text_editor::Status::Hovered
+        | text_editor::Status::Focused { is_hovered: _ } => native_input_value(r, false),
+        text_editor::Status::Disabled => native_input_value(r, true),
+    }
+}
+
+/// Every color field of `styles::text_editor`. There is no `DERIVED` entry for
+/// this function: `text_editor::Style` has no field the model cannot fill.
+#[cfg(feature = "widgets")]
+const TEXT_EDITOR_ROWS: &[StyleRow<text_editor::Status>] = &[
+    StyleRow {
+        field: "styles::text_editor.background",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: native_text_editor_fill,
+        get: |t, r, s| fill(styles::text_editor(r)(t, s).background),
+    },
+    StyleRow {
+        field: "styles::text_editor.border.color",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: native_text_editor_border,
+        get: |t, r, s| Ok(styles::text_editor(r)(t, s).border.color),
+    },
+    StyleRow {
+        field: "styles::text_editor.placeholder",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: |r, _| to_color(r.input.placeholder_color),
+        get: |t, r, s| Ok(styles::text_editor(r)(t, s).placeholder),
+    },
+    StyleRow {
+        field: "styles::text_editor.value",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: native_text_editor_value,
+        get: |t, r, s| Ok(styles::text_editor(r)(t, s).value),
+    },
+    StyleRow {
+        field: "styles::text_editor.selection",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: |r, _| to_color(r.input.selection_background),
+        get: |t, r, s| Ok(styles::text_editor(r)(t, s).selection),
+    },
+];
+
+#[cfg(feature = "widgets")]
+const TEXT_EDITOR_SCALAR_ROWS: &[ScalarRow<text_editor::Status>] = &[
+    ScalarRow {
+        field: "styles::text_editor.border.width",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: |r, _| r.input.border.line_width,
+        get: |t, r, s| styles::text_editor(r)(t, s).border.width,
+    },
+    ScalarRow {
+        field: "styles::text_editor.border.radius.top_left",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.top_left,
+    },
+    ScalarRow {
+        field: "styles::text_editor.border.radius.top_right",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.top_right,
+    },
+    ScalarRow {
+        field: "styles::text_editor.border.radius.bottom_right",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.bottom_right,
+    },
+    ScalarRow {
+        field: "styles::text_editor.border.radius.bottom_left",
+        statuses: TEXT_EDITOR_STATUSES,
+        native: |r, _| r.input.border.corner_radius,
+        get: |t, r, s| styles::text_editor(r)(t, s).border.radius.bottom_left,
+    },
+];
+
 /// The `field` of every style row, from every function's consts.
 ///
 /// One line per function; the coverage tripwire reads it, and `rows_claiming`
@@ -303,6 +933,19 @@ fn style_row_fields() -> Vec<&'static str> {
     let mut out = Vec::new();
     out.extend(BUTTON_ROWS.iter().map(|row| row.field));
     out.extend(BUTTON_SCALAR_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_PRIMARY_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_PRIMARY_SCALAR_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_DANGER_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_DANGER_SCALAR_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_SUCCESS_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_SUCCESS_SCALAR_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_WARNING_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_WARNING_SCALAR_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_LINK_ROWS.iter().map(|row| row.field));
+    out.extend(TEXT_INPUT_ROWS.iter().map(|row| row.field));
+    out.extend(TEXT_INPUT_SCALAR_ROWS.iter().map(|row| row.field));
+    out.extend(TEXT_EDITOR_ROWS.iter().map(|row| row.field));
+    out.extend(TEXT_EDITOR_SCALAR_ROWS.iter().map(|row| row.field));
     out
 }
 
@@ -407,6 +1050,108 @@ const DERIVED: &[(&str, &str)] = &[
         "styles::button.snap",
         "iced default: button::Style::default().snap -- a renderer setting, \
          cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_primary.shadow",
+        "iced default: button::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_primary.snap",
+        "iced default: button::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_danger.shadow",
+        "iced default: button::danger(theme, status).shadow -- the model has \
+         a shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_danger.snap",
+        "iced default: button::danger(theme, status).snap -- a renderer \
+         setting, cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_success.shadow",
+        "iced default: button::success(theme, status).shadow -- the model has \
+         a shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_success.snap",
+        "iced default: button::success(theme, status).snap -- a renderer \
+         setting, cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_warning.shadow",
+        "iced default: button::warning(theme, status).shadow -- the model has \
+         a shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_warning.snap",
+        "iced default: button::warning(theme, status).snap -- a renderer \
+         setting, cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.shadow",
+        "iced default: button::text(theme, status).shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.snap",
+        "iced default: button::text(theme, status).snap -- a renderer \
+         setting, cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.border.color",
+        "iced default: button::text(theme, status).border.color -- LinkTheme \
+         carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.border.width",
+        "iced default: button::text(theme, status).border.width -- LinkTheme \
+         carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.border.radius.top_left",
+        "iced default: button::text(theme, status).border.radius -- LinkTheme \
+         carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.border.radius.top_right",
+        "iced default: button::text(theme, status).border.radius -- LinkTheme \
+         carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.border.radius.bottom_right",
+        "iced default: button::text(theme, status).border.radius -- LinkTheme \
+         carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_link.border.radius.bottom_left",
+        "iced default: button::text(theme, status).border.radius -- LinkTheme \
+         carries no border",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::text_input.icon",
+        "iced default: text_input::default(theme, status).icon -- the model \
+         carries no input-icon color",
     ),
 ];
 
@@ -603,6 +1348,223 @@ const BUTTON_PAIRS: &[StylePair<button::Status>] = &[StylePair {
         )
     },
 }];
+
+/// The `styles::button_primary` pairs the assertion covers.
+#[cfg(feature = "widgets")]
+const BUTTON_PRIMARY_PAIRS: &[StylePair<button::Status>] = &[StylePair {
+    what: "primary button label",
+    statuses: BUTTON_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::button_primary(r)(t, s);
+        flat(style.background).map(|fill| {
+            (
+                style.text_color,
+                fill,
+                to_color(r.defaults.background_color),
+            )
+        })
+    },
+    native: |r, s| {
+        (
+            native_button_primary_label(r, s),
+            native_button_primary_fill(r, s),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+/// The status-button pairs the assertion covers.
+///
+/// Only `STATUS_BUTTON_NATIVE_STATUSES`: in the other two the function decides
+/// neither the fill nor the label -- both are iced's own class -- so there is
+/// no native pair to compare against and section 7's rule has nothing to say.
+#[cfg(feature = "widgets")]
+const STATUS_BUTTON_PAIRS: &[StylePair<button::Status>] = &[
+    StylePair {
+        what: "danger button label",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::button_danger(r)(t, s);
+            flat(style.background).map(|fill| {
+                (
+                    style.text_color,
+                    fill,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                native_status_button_label(r, s, r.defaults.danger_text_color),
+                native_status_button_fill(r, s, r.defaults.danger_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "success button label",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::button_success(r)(t, s);
+            flat(style.background).map(|fill| {
+                (
+                    style.text_color,
+                    fill,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                native_status_button_label(r, s, r.defaults.success_text_color),
+                native_status_button_fill(r, s, r.defaults.success_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "warning button label",
+        statuses: STATUS_BUTTON_NATIVE_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::button_warning(r)(t, s);
+            flat(style.background).map(|fill| {
+                (
+                    style.text_color,
+                    fill,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                native_status_button_label(r, s, r.defaults.warning_text_color),
+                native_status_button_fill(r, s, r.defaults.warning_color),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+];
+
+/// The `styles::button_link` pairs the assertion covers.
+#[cfg(feature = "widgets")]
+const BUTTON_LINK_PAIRS: &[StylePair<button::Status>] = &[StylePair {
+    what: "link button label",
+    statuses: BUTTON_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::button_link(r)(t, s);
+        flat(style.background).map(|fill| {
+            (
+                style.text_color,
+                fill,
+                to_color(r.defaults.background_color),
+            )
+        })
+    },
+    native: |r, s| {
+        (
+            native_button_link_label(r, s),
+            native_button_link_fill(r, s),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+/// The `styles::text_input` pairs the assertion covers: both texts the
+/// function paints, on the fill it paints them on.
+#[cfg(feature = "widgets")]
+const TEXT_INPUT_PAIRS: &[StylePair<text_input::Status>] = &[
+    StylePair {
+        what: "input value",
+        statuses: TEXT_INPUT_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::text_input(r)(t, s);
+            // A field is painted on the window, so that is what a translucent
+            // fill shows through to.
+            fill(style.background).map(|background| {
+                (
+                    style.value,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                native_text_input_value(r, s),
+                native_text_input_fill(r, s),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "input placeholder",
+        statuses: TEXT_INPUT_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::text_input(r)(t, s);
+            fill(style.background).map(|background| {
+                (
+                    style.placeholder,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                to_color(r.input.placeholder_color),
+                native_text_input_fill(r, s),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+];
+
+/// The `styles::text_editor` pairs the assertion covers.
+#[cfg(feature = "widgets")]
+const TEXT_EDITOR_PAIRS: &[StylePair<text_editor::Status>] = &[
+    StylePair {
+        what: "editor value",
+        statuses: TEXT_EDITOR_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::text_editor(r)(t, s);
+            fill(style.background).map(|background| {
+                (
+                    style.value,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                native_text_editor_value(r, s),
+                native_text_editor_fill(r, s),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+    StylePair {
+        what: "editor placeholder",
+        statuses: TEXT_EDITOR_STATUSES,
+        emitted: |t, r, s| {
+            let style = styles::text_editor(r)(t, s);
+            fill(style.background).map(|background| {
+                (
+                    style.placeholder,
+                    background,
+                    to_color(r.defaults.background_color),
+                )
+            })
+        },
+        native: |r, s| {
+            (
+                to_color(r.input.placeholder_color),
+                native_text_editor_fill(r, s),
+                to_color(r.defaults.background_color),
+            )
+        },
+    },
+];
 
 /// WCAG 2.1 AA for normal text. Only ever used to decide what to print.
 const AA: f32 = 4.5;
@@ -1029,6 +1991,160 @@ fn button_style_fields(style: &button::Style) -> Vec<&'static str> {
     out
 }
 
+/// Every field of the `button::Style` `styles::button_primary` emits.
+#[cfg(feature = "widgets")]
+fn button_primary_style_fields(style: &button::Style) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::button_primary", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    leaves!(out, border, "styles::button_primary.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
+        radius,
+        "styles::button_primary.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
+/// Every field of the `button::Style` `styles::button_danger` emits.
+#[cfg(feature = "widgets")]
+fn button_danger_style_fields(style: &button::Style) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::button_danger", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    leaves!(out, border, "styles::button_danger.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
+        radius,
+        "styles::button_danger.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
+/// Every field of the `button::Style` `styles::button_success` emits.
+#[cfg(feature = "widgets")]
+fn button_success_style_fields(style: &button::Style) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::button_success", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    leaves!(out, border, "styles::button_success.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
+        radius,
+        "styles::button_success.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
+/// Every field of the `button::Style` `styles::button_warning` emits.
+#[cfg(feature = "widgets")]
+fn button_warning_style_fields(style: &button::Style) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::button_warning", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    leaves!(out, border, "styles::button_warning.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
+        radius,
+        "styles::button_warning.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
+/// Every field of the `button::Style` `styles::button_link` emits.
+#[cfg(feature = "widgets")]
+fn button_link_style_fields(style: &button::Style) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::button_link", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    leaves!(out, border, "styles::button_link.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
+        radius,
+        "styles::button_link.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
+/// Every field of the `text_input::Style` the connector emits.
+#[cfg(feature = "widgets")]
+fn text_input_style_fields(style: &text_input::Style) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::text_input", text_input::Style {
+        background, icon, placeholder, value, selection, @nested border
+    });
+    leaves!(out, border, "styles::text_input.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
+        radius,
+        "styles::text_input.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
+/// Every field of the `text_editor::Style` the connector emits.
+#[cfg(feature = "widgets")]
+fn text_editor_style_fields(style: &text_editor::Style) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::text_editor", text_editor::Style {
+        background, placeholder, value, selection, @nested border
+    });
+    leaves!(out, border, "styles::text_editor.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
+        radius,
+        "styles::text_editor.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
+}
+
 /// Every field the tripwire walks: the palette inputs, the extended slots the
 /// connector writes, and each `styles::*` output's fields.
 #[cfg_attr(not(feature = "widgets"), allow(unused_variables))]
@@ -1036,10 +2152,45 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<&'static str> {
     let mut out = palette_fields(&theme.palette());
     out.extend(written_extended_fields(theme.extended_palette()));
     #[cfg(feature = "widgets")]
-    out.extend(button_style_fields(&styles::button(resolved)(
-        theme,
-        button::Status::Active,
-    )));
+    {
+        out.extend(button_style_fields(&styles::button(resolved)(
+            theme,
+            button::Status::Active,
+        )));
+        out.extend(button_primary_style_fields(&styles::button_primary(
+            resolved,
+        )(
+            theme,
+            button::Status::Active,
+        )));
+        out.extend(button_danger_style_fields(
+            &styles::button_danger(resolved)(theme, button::Status::Active),
+        ));
+        out.extend(button_success_style_fields(&styles::button_success(
+            resolved,
+        )(
+            theme,
+            button::Status::Active,
+        )));
+        out.extend(button_warning_style_fields(&styles::button_warning(
+            resolved,
+        )(
+            theme,
+            button::Status::Active,
+        )));
+        out.extend(button_link_style_fields(&styles::button_link(resolved)(
+            theme,
+            button::Status::Active,
+        )));
+        out.extend(text_input_style_fields(&styles::text_input(resolved)(
+            theme,
+            text_input::Status::Active,
+        )));
+        out.extend(text_editor_style_fields(&styles::text_editor(resolved)(
+            theme,
+            text_editor::Status::Active,
+        )));
+    }
     out
 }
 
@@ -1149,14 +2300,25 @@ fn no_extended_slot_is_written_without_a_declared_source() -> native_theme::Resu
     Ok(())
 }
 
+/// Every status list names each of its widget's statuses exactly once.
+///
+/// Generic rows close the fall-through hole a `&str` status had, but not this
+/// one: a status simply left out of a list makes the rows assert less without
+/// ever failing. So each list is checked against every value of its own enum
+/// here, and the match is exhaustive with no catch-all, so a variant added
+/// upstream fails to compile in this function first.
+///
+/// **The hand-written `all` list is the root of trust, and it is maintained by
+/// hand.** The match proves that `all` names no variant the enum does not have
+/// and that a new variant is noticed; it cannot prove the converse. A variant
+/// deleted from `all` *and* from the widget's list leaves both sides agreeing
+/// about a smaller enum, and nothing here fails. For a data-carrying status
+/// (`text_input::Status::Focused { is_hovered }`) the list holds every *value*,
+/// and no match can prove that either -- `Focused { is_hovered: _ }` is one arm
+/// whether the list names one of its values or both.
 #[cfg(feature = "widgets")]
 #[test]
 fn every_status_list_names_each_status_once() {
-    // Generic rows close the fall-through hole a `&str` status had, but not
-    // this one: a status simply left out of a list makes the rows assert less
-    // without ever failing. So each list is checked against every variant of
-    // its own enum here. The match is exhaustive with no catch-all, so a
-    // variant added upstream fails to compile in this function first.
     let all = [
         button::Status::Active,
         button::Status::Hovered,
@@ -1180,6 +2342,142 @@ fn every_status_list_names_each_status_once() {
         all.len(),
         "BUTTON_STATUSES must name each status exactly once"
     );
+
+    // A status button splits the same enum in two: the statuses it decides
+    // itself and the two it takes whole from iced's class. Neither list alone
+    // may name every status, so the pair is checked as a partition instead.
+    for status in all {
+        let native = STATUS_BUTTON_NATIVE_STATUSES.contains(&status);
+        let from_iced = STATUS_BUTTON_ICED_STATUSES.contains(&status);
+        assert!(
+            native != from_iced,
+            "{status:?} is in {} of the two status-button lists; each status \
+             belongs to exactly one",
+            if native { "both" } else { "neither" }
+        );
+    }
+    assert_eq!(
+        STATUS_BUTTON_NATIVE_STATUSES.len() + STATUS_BUTTON_ICED_STATUSES.len(),
+        all.len(),
+        "the two status-button lists must partition the statuses, naming each \
+         exactly once between them"
+    );
+
+    let all = [
+        text_input::Status::Active,
+        text_input::Status::Hovered,
+        text_input::Status::Focused { is_hovered: false },
+        text_input::Status::Focused { is_hovered: true },
+        text_input::Status::Disabled,
+    ];
+    for status in all {
+        match status {
+            text_input::Status::Active
+            | text_input::Status::Hovered
+            | text_input::Status::Focused { is_hovered: _ }
+            | text_input::Status::Disabled => {}
+        }
+        assert!(
+            TEXT_INPUT_STATUSES.contains(&status),
+            "TEXT_INPUT_STATUSES does not list {status:?}, so no text input \
+             row covers it"
+        );
+    }
+    assert_eq!(
+        TEXT_INPUT_STATUSES.len(),
+        all.len(),
+        "TEXT_INPUT_STATUSES must name each status exactly once"
+    );
+
+    let all = [
+        text_editor::Status::Active,
+        text_editor::Status::Hovered,
+        text_editor::Status::Focused { is_hovered: false },
+        text_editor::Status::Focused { is_hovered: true },
+        text_editor::Status::Disabled,
+    ];
+    for status in all {
+        match status {
+            text_editor::Status::Active
+            | text_editor::Status::Hovered
+            | text_editor::Status::Focused { is_hovered: _ }
+            | text_editor::Status::Disabled => {}
+        }
+        assert!(
+            TEXT_EDITOR_STATUSES.contains(&status),
+            "TEXT_EDITOR_STATUSES does not list {status:?}, so no text editor \
+             row covers it"
+        );
+    }
+    assert_eq!(
+        TEXT_EDITOR_STATUSES.len(),
+        all.len(),
+        "TEXT_EDITOR_STATUSES must name each status exactly once"
+    );
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn a_status_button_takes_its_hovered_and_pressed_states_from_iced() -> native_theme::Result<()> {
+    // The model states a status color and its label and no variant of either
+    // for a hovered or a pressed button, so those two states are iced's own
+    // class, read at run time (spec section 3.3). That is a claim about the
+    // emitted value, so it is asserted rather than left to the rows, which
+    // cover only `STATUS_BUTTON_NATIVE_STATUSES`.
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    let mut checks = 0;
+
+    for c in &combinations {
+        for (what, ours, theirs) in [
+            (
+                "styles::button_danger",
+                &styles::button_danger(&c.resolved)
+                    as &dyn Fn(&Theme, button::Status) -> button::Style,
+                button::danger as fn(&Theme, button::Status) -> button::Style,
+            ),
+            (
+                "styles::button_success",
+                &styles::button_success(&c.resolved),
+                button::success,
+            ),
+            (
+                "styles::button_warning",
+                &styles::button_warning(&c.resolved),
+                button::warning,
+            ),
+        ] {
+            for &status in STATUS_BUTTON_ICED_STATUSES {
+                checks += 1;
+                let emitted = ours(&c.theme, status);
+                let iced = theirs(&c.theme, status);
+                if emitted.background != iced.background {
+                    failures.push(format!(
+                        "{}: {what}.background ({status:?}) is {:?}, iced's own class gives {:?}",
+                        c.label(),
+                        emitted.background,
+                        iced.background
+                    ));
+                }
+                if emitted.text_color != iced.text_color {
+                    failures.push(format!(
+                        "{}: {what}.text_color ({status:?}) is {}, iced's own class gives {}",
+                        c.label(),
+                        show(emitted.text_color),
+                        show(iced.text_color)
+                    ));
+                }
+            }
+        }
+    }
+
+    assert!(
+        failures.is_empty(),
+        "{} of {checks} status-button states differ from iced's own class:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    Ok(())
 }
 
 #[cfg(feature = "widgets")]
@@ -1190,7 +2488,20 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
 
     // One line per function.
     let checks = check_style_rows(BUTTON_ROWS, &combinations, &mut failures)
-        + check_scalar_rows(BUTTON_SCALAR_ROWS, &combinations, &mut failures);
+        + check_scalar_rows(BUTTON_SCALAR_ROWS, &combinations, &mut failures)
+        + check_style_rows(BUTTON_PRIMARY_ROWS, &combinations, &mut failures)
+        + check_scalar_rows(BUTTON_PRIMARY_SCALAR_ROWS, &combinations, &mut failures)
+        + check_style_rows(BUTTON_DANGER_ROWS, &combinations, &mut failures)
+        + check_scalar_rows(BUTTON_DANGER_SCALAR_ROWS, &combinations, &mut failures)
+        + check_style_rows(BUTTON_SUCCESS_ROWS, &combinations, &mut failures)
+        + check_scalar_rows(BUTTON_SUCCESS_SCALAR_ROWS, &combinations, &mut failures)
+        + check_style_rows(BUTTON_WARNING_ROWS, &combinations, &mut failures)
+        + check_scalar_rows(BUTTON_WARNING_SCALAR_ROWS, &combinations, &mut failures)
+        + check_style_rows(BUTTON_LINK_ROWS, &combinations, &mut failures)
+        + check_style_rows(TEXT_INPUT_ROWS, &combinations, &mut failures)
+        + check_scalar_rows(TEXT_INPUT_SCALAR_ROWS, &combinations, &mut failures)
+        + check_style_rows(TEXT_EDITOR_ROWS, &combinations, &mut failures)
+        + check_scalar_rows(TEXT_EDITOR_SCALAR_ROWS, &combinations, &mut failures);
 
     assert!(
         failures.is_empty(),
@@ -1209,7 +2520,37 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     let mut below_aa = Vec::new();
 
     // One line per function.
-    let checks = check_style_pairs(BUTTON_PAIRS, &combinations, &mut failures, &mut below_aa);
+    let checks = check_style_pairs(BUTTON_PAIRS, &combinations, &mut failures, &mut below_aa)
+        + check_style_pairs(
+            BUTTON_PRIMARY_PAIRS,
+            &combinations,
+            &mut failures,
+            &mut below_aa,
+        )
+        + check_style_pairs(
+            STATUS_BUTTON_PAIRS,
+            &combinations,
+            &mut failures,
+            &mut below_aa,
+        )
+        + check_style_pairs(
+            BUTTON_LINK_PAIRS,
+            &combinations,
+            &mut failures,
+            &mut below_aa,
+        )
+        + check_style_pairs(
+            TEXT_INPUT_PAIRS,
+            &combinations,
+            &mut failures,
+            &mut below_aa,
+        )
+        + check_style_pairs(
+            TEXT_EDITOR_PAIRS,
+            &combinations,
+            &mut failures,
+            &mut below_aa,
+        );
 
     println!(
         "--- styles contrast: {checks} pairs, {} below AA (printed, not asserted) ---",
@@ -1293,10 +2634,95 @@ fn a_cleared_soft_option_copies_the_base_state_value() -> native_theme::Result<(
 
 #[cfg(feature = "widgets")]
 #[test]
-fn compositing_holds_its_three_properties_on_every_native_color() -> native_theme::Result<()> {
+fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
+    // The three `input.*` soft options, which `styles::text_input` and
+    // `styles::text_editor` share. No bundled preset leaves them `None` after
+    // resolution either, so they are cleared here.
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert!(
+        resolved.input.hover_border_color.is_some()
+            && resolved.input.focus_border_color.is_some()
+            && resolved.input.disabled_background.is_some(),
+        "this preset no longer states all three input soft options, so \
+         clearing them proves nothing"
+    );
+    resolved.input.hover_border_color = None;
+    resolved.input.focus_border_color = None;
+    resolved.input.disabled_background = None;
+    let theme = crate::to_theme(&resolved, "windows-11");
+
+    let border = to_color(resolved.input.border.color);
+    let background = to_color(resolved.input.background_color);
+    let input = styles::text_input(&resolved);
+    let editor = styles::text_editor(&resolved);
+
+    for status in TEXT_INPUT_STATUSES {
+        assert_eq!(
+            input(&theme, *status).border.color,
+            border,
+            "a cleared input border soft option copies the border's own color \
+             ({status:?})"
+        );
+    }
+    assert_eq!(
+        fill(input(&theme, text_input::Status::Disabled).background),
+        Ok(background),
+        "a cleared input disabled_background copies the idle fill, as given"
+    );
+
+    for status in TEXT_EDITOR_STATUSES {
+        assert_eq!(
+            editor(&theme, *status).border.color,
+            border,
+            "the editor reads the same soft options ({status:?})"
+        );
+    }
+    assert_eq!(
+        fill(editor(&theme, text_editor::Status::Disabled).background),
+        Ok(background),
+        "a cleared input disabled_background copies the idle fill for the \
+         editor too"
+    );
+    Ok(())
+}
+
+/// How far apart two orders of the same composite may land in f32.
+///
+/// `over(over(l, b), surface)` and `over(l, over(b, surface))` are the same
+/// number in exact arithmetic and differ only by rounding. One channel of one
+/// composite costs at most eight roundings -- `1 - a`, the two products, their
+/// sum, the alpha sum and the division -- and each order performs two
+/// composites, so at most sixteen roundings of at most half an ulp each. An
+/// ulp of the channel range `[0, 1]` is `f32::EPSILON` at its top end, which
+/// puts the bound at `16 * f32::EPSILON`, about `1.9e-6`.
+///
+/// This is a floating-point bound, not a perceptual one: it says nothing about
+/// how different two colors may look, only about how far apart two spellings
+/// of the same arithmetic may land.
+#[cfg(feature = "widgets")]
+const COMPOSITE_ULPS: f32 = 16.0 * f32::EPSILON;
+
+/// Whether two colors agree channel by channel to within `tolerance`.
+#[cfg(feature = "widgets")]
+fn within(a: Color, b: Color, tolerance: f32) -> bool {
+    (a.r - b.r).abs() <= tolerance
+        && (a.g - b.g).abs() <= tolerance
+        && (a.b - b.b).abs() <= tolerance
+        && (a.a - b.a).abs() <= tolerance
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut transparent_bases = 0usize;
+    let mut visible_layers = 0usize;
+    let mut opaque_bases = 0usize;
+    let mut opaque_layers = 0usize;
+    let mut interior_composites = 0usize;
 
     for c in &combinations {
         let r = &c.resolved;
@@ -1319,24 +2745,34 @@ fn compositing_holds_its_three_properties_on_every_native_color() -> native_them
         for (name, layer) in layers {
             let label = format!("{}: {name}", c.label());
 
-            // (a) a layer over nothing is the layer: the link case.
-            if styles::composite_over(layer, Color::TRANSPARENT) != layer {
-                failures.push(format!("{label}: over a transparent base is not the layer"));
-            }
-            if link_base.a == 0.0 {
-                transparent_bases += 1;
-                if styles::composite_over(layer, link_base) != layer {
+            // (a) a *visible* layer over nothing is the layer: the link case.
+            // A fully transparent layer is excluded, and the property is false
+            // for one: a composite with no alpha has no color left to
+            // un-premultiply, so `composite_over` returns `Color::TRANSPARENT`
+            // rather than the layer's own channels, and a colored layer at
+            // `a == 0.0` therefore comes back as (0, 0, 0, 0). Nothing is
+            // painted either way; only the discarded channels differ.
+            if layer.a > 0.0 {
+                visible_layers += 1;
+                if styles::composite_over(layer, Color::TRANSPARENT) != layer {
+                    failures.push(format!("{label}: over a transparent base is not the layer"));
+                }
+                if link_base.a == 0.0 && styles::composite_over(layer, link_base) != layer {
                     failures.push(format!(
                         "{label}: over link.background_color ({}) is not the layer",
                         show(link_base)
                     ));
                 }
             }
+            if link_base.a == 0.0 {
+                transparent_bases += 1;
+            }
 
             // (b) over an opaque base the result is opaque, and is the
             // simple mix this formula generalises -- computed here, not
             // copied from either implementation.
             if base.a == 1.0 {
+                opaque_bases += 1;
                 let out = styles::composite_over(layer, base);
                 let mix = |l: f32, b: f32| l * layer.a + b * (1.0 - layer.a);
                 let expected = Color {
@@ -1355,10 +2791,13 @@ fn compositing_holds_its_three_properties_on_every_native_color() -> native_them
             }
 
             // (c) an opaque layer hides whatever is under it.
-            if layer.a == 1.0 && styles::composite_over(layer, link_base) != layer {
-                failures.push(format!(
-                    "{label}: an opaque layer did not survive unchanged"
-                ));
+            if layer.a == 1.0 {
+                opaque_layers += 1;
+                if styles::composite_over(layer, link_base) != layer {
+                    failures.push(format!(
+                        "{label}: an opaque layer did not survive unchanged"
+                    ));
+                }
             }
 
             // The contract's own helper must agree with the one under test.
@@ -1368,14 +2807,86 @@ fn compositing_holds_its_three_properties_on_every_native_color() -> native_them
                 ));
             }
         }
+
+        // (d) the interior case associates. Properties (a) to (c) pin the
+        // edges -- a transparent base, an opaque base, an opaque layer -- and
+        // leave the one case the formula was rewritten for, a translucent
+        // layer over a translucent base, confirmed only by two helpers that
+        // compute it the same way. Source-over is associative, so stacking a
+        // layer on a base and then painting the pair on an opaque surface must
+        // give what painting the base on the surface and then the layer gives.
+        // Both colors are real: windows-11 states `checkbox.unchecked_background`
+        // as a translucent fill and `link.hover_background` as a translucent
+        // layer.
+        if let Some(unchecked) = r.checkbox.unchecked_background {
+            let b = to_color(unchecked);
+            let l = to_color(r.link.hover_background);
+            let surface = to_color(r.defaults.background_color);
+            let translucent = |x: Color| x.a > 0.0 && x.a < 1.0;
+            if translucent(b) && translucent(l) && surface.a == 1.0 {
+                interior_composites += 1;
+                for (what, composite) in [
+                    ("contract `over`", over as fn(Color, Color) -> Color),
+                    (
+                        "styles::composite_over",
+                        styles::composite_over as fn(Color, Color) -> Color,
+                    ),
+                ] {
+                    let stacked = composite(composite(l, b), surface);
+                    let painted = composite(l, composite(b, surface));
+                    if !within(stacked, painted, COMPOSITE_ULPS) {
+                        failures.push(format!(
+                            "{}: {what} does not associate: (l over b) over surface is {}, \
+                             l over (b over surface) is {}",
+                            c.label(),
+                            show(stacked),
+                            show(painted)
+                        ));
+                    }
+                }
+            }
+        }
     }
 
+    println!(
+        "compositing properties ran: (a) {visible_layers} / transparent bases \
+         {transparent_bases}, (b) {opaque_bases}, (c) {opaque_layers}, \
+         (d) {interior_composites}"
+    );
     assert_eq!(
         transparent_bases,
         combinations.len() * 4,
         "every preset is supposed to state link.background_color as fully \
          transparent; if that changed, property (a) is no longer covered by \
          real data"
+    );
+    assert_eq!(
+        visible_layers,
+        combinations.len() * 4,
+        "property (a) runs only on a layer with alpha above zero; if a preset \
+         starts stating one of these four colors as fully transparent, the \
+         count says so instead of the property quietly shrinking"
+    );
+    assert_eq!(
+        opaque_bases,
+        combinations.len() * 4,
+        "property (b) runs only over an opaque button.background_color, which \
+         every preset states as a six-digit hex; a translucent one would stop \
+         the property running"
+    );
+    assert!(
+        opaque_layers >= combinations.len() * 2,
+        "property (c) needs an opaque layer: button.background_color and \
+         defaults.text_color are opaque in every preset, so it must run at \
+         least twice per combination, not {opaque_layers} times over {}",
+        combinations.len()
+    );
+    assert!(
+        interior_composites >= 2,
+        "property (d) needs a translucent layer over a translucent base: \
+         windows-11 light and dark state both checkbox.unchecked_background \
+         and link.hover_background that way, so it must run at least twice, \
+         not {interior_composites} times"
     );
     assert!(
         failures.is_empty(),
