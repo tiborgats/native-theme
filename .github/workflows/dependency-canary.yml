@@ -113,4 +113,5 @@ jobs:
           cargo doc -p native-theme-build --no-deps
           cargo doc -p native-theme --no-deps
           cargo doc -p native-theme-iced --no-deps
+          cargo doc -p native-theme-iced --no-deps --all-features
           cargo doc -p native-theme-gpui --no-deps

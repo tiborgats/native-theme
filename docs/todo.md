@@ -343,6 +343,11 @@ What is still open on the iced side:
       `Tabs::operate` never visits its own tab bar (`tabs.rs:601-621`).
       `Spinner` has no `Style`, `Catalog` or setter — `styles::aw::spinner`
       styles a wrapping container instead.
+      `TabBar` and `Sidebar` test the pointer before the selection
+      (`tab_bar.rs:589-595`, `sidebar/sidebar.rs:980-986`) and `Status::Hovered`
+      carries no selected flag, so a hovered *selected* tab loses its selected
+      look and no style function can prevent it (`SelectionList` tests the
+      selection first and is fine).
 
 #### Research
 
@@ -388,6 +393,32 @@ What is still open on the iced side:
       4.13 (solarized light), 4.75 (solarized dark) and 4.52 (tokyo-night
       light) window text. If those are preset errors rather than the themes'
       own values, the presets are where to correct them.
+- [ ] How a platform draws a *disabled checked* checkbox is not modelled.
+      `platform-facts.md` §2.5 records no disabled indicator colour; the one
+      disabled mechanism it records for a checkbox is `disabled_opacity`
+      (dim the accent fill and the on-accent mark together). The model instead
+      gives one `checkbox.disabled_background` for checked and unchecked alike,
+      and `checkbox.disabled_opacity` has **no receiver** in native-theme-iced
+      (iced's `checkbox::Style` has no opacity; it would have to be multiplied
+      into the emitted alphas). Since v0.5.9 `styles::checkbox` paints the
+      disabled mark with `checkbox.disabled_text_color` on that fill — the
+      platform's own disabled pair, 1.17–2.71:1 over the 32 combinations, where
+      the on-accent mark on the neutral fill was worse than the platform's own
+      in 26. Decide whether the model should state a disabled *checked* fill
+      (or the connector apply `disabled_opacity`), then revisit that arm; it is
+      one match arm plus `native_checkbox_mark` in the contract.
+- [ ] `windows-11` states `checkbox.disabled_background = "#f9f9f900"` (alpha
+      zero) and `material` `#1c1b1f1f`, so on those four combinations a disabled
+      box is effectively absent — the same shape as the button item below.
+- [ ] `checkbox.indicator_color` inherited `defaults.text_color` until v0.5.9,
+      against `platform-facts.md` §2.5 (on-accent on all four platforms);
+      corrected to `defaults.accent_text_color`. The test that ties
+      `docs/inheritance-rules.toml` to the proc-macro attributes
+      (`uniform_rules_all_accounted_for`) checks that each key is *present* on
+      both sides and never compares the inheritance **target**, so the
+      published rule file can drift from the code with no test noticing. Add a
+      target-level assertion, then audit the other rules against
+      platform-facts the way this one was found.
 - [ ] windows-11 light gives `button.disabled_background = "#f9f9f900"` — alpha
       zero, so a disabled button has no fill at all. Found 2026-09-21 while
       measuring translucent state colours; for `preset-validator` to judge
