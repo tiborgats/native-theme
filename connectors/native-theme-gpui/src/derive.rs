@@ -6,7 +6,7 @@
 //!   success, warning, info) and primary button states
 //! - `active_color`: link active fallback
 //! - `light_variant`: chart `_light` color derivation
-//! - `contrast_ratio` / `ensure_status_contrast`: WCAG enforcement
+//! - `contrast_ratio`: the contrast invariant of the theme contracts (spec §7)
 //!
 //! Uses the [`Colorize`] trait from gpui-component for lightness adjustments.
 
@@ -51,6 +51,12 @@ pub fn active_color(base: Hsla, is_dark: bool) -> Hsla {
 ///
 /// Returns a value in [1.0, 21.0]. Ratios below 4.5 indicate insufficient
 /// contrast for normal text (AA), below 3.0 for large text.
+///
+/// Test-only since C19: the mapping contract's contrast invariant is its only
+/// reader -- nothing in the emitted `ThemeColor` is chosen by measuring
+/// contrast any more. The iced connector states the same of its own
+/// (`extended.rs:52`).
+#[cfg(test)]
 pub fn contrast_ratio(a: Hsla, b: Hsla) -> f32 {
     let la = relative_luminance(a);
     let lb = relative_luminance(b);
@@ -59,6 +65,7 @@ pub fn contrast_ratio(a: Hsla, b: Hsla) -> f32 {
 }
 
 /// WCAG 2.1 relative luminance from an Hsla color.
+#[cfg(test)]
 fn relative_luminance(c: Hsla) -> f32 {
     let rgba: gpui::Rgba = c.into();
     let linearize = |v: f32| -> f32 {

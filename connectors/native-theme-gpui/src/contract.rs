@@ -18,7 +18,7 @@ use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
 
 use crate::colors::{rgba_to_hsla, to_theme_color};
-use crate::derive::active_color;
+use crate::derive::{active_color, contrast_ratio};
 use crate::{ColorMode, ResolvedTheme, Rgba};
 
 /// One row of the mapping contract: a toolkit slot, the native field it must
@@ -160,10 +160,26 @@ const ROWS: &[Row] = &[
         get: |tc| tc.danger,
         exceptions: &[],
     },
+    // The status labels are the platform's own, never a colour of ours: a
+    // connector that replaced a sub-AA label would be overriding the
+    // platform's choice, and on the real platforms the replacement was the
+    // colour the platform already had (C19).
+    Row {
+        slot: "danger_foreground",
+        native: |r| r.defaults.danger_text_color,
+        get: |tc| tc.danger_foreground,
+        exceptions: &[],
+    },
     Row {
         slot: "success",
         native: |r| r.defaults.success_color,
         get: |tc| tc.success,
+        exceptions: &[],
+    },
+    Row {
+        slot: "success_foreground",
+        native: |r| r.defaults.success_text_color,
+        get: |tc| tc.success_foreground,
         exceptions: &[],
     },
     Row {
@@ -173,9 +189,21 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     Row {
+        slot: "warning_foreground",
+        native: |r| r.defaults.warning_text_color,
+        get: |tc| tc.warning_foreground,
+        exceptions: &[],
+    },
+    Row {
         slot: "info",
         native: |r| r.defaults.info_color,
         get: |tc| tc.info,
+        exceptions: &[],
+    },
+    Row {
+        slot: "info_foreground",
+        native: |r| r.defaults.info_text_color,
+        get: |tc| tc.info_foreground,
         exceptions: &[],
     },
     Row {
@@ -236,9 +264,21 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     Row {
+        slot: "button_danger_foreground",
+        native: |r| r.defaults.danger_text_color,
+        get: |tc| tc.button_danger_foreground,
+        exceptions: &[],
+    },
+    Row {
         slot: "button_info",
         native: |r| r.defaults.info_color,
         get: |tc| tc.button_info,
+        exceptions: &[],
+    },
+    Row {
+        slot: "button_info_foreground",
+        native: |r| r.defaults.info_text_color,
+        get: |tc| tc.button_info_foreground,
         exceptions: &[],
     },
     Row {
@@ -248,9 +288,21 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     Row {
+        slot: "button_success_foreground",
+        native: |r| r.defaults.success_text_color,
+        get: |tc| tc.button_success_foreground,
+        exceptions: &[],
+    },
+    Row {
         slot: "button_warning",
         native: |r| r.defaults.warning_color,
         get: |tc| tc.button_warning,
+        exceptions: &[],
+    },
+    Row {
+        slot: "button_warning_foreground",
+        native: |r| r.defaults.warning_text_color,
+        get: |tc| tc.button_warning_foreground,
         exceptions: &[],
     },
     Row {
@@ -717,36 +769,16 @@ const DERIVED: &[(&str, &str)] = &[
     ("warning_active", "active_color(warning, is_dark)"),
     ("info_hover", "hover_color(info, background)"),
     ("info_active", "active_color(info, is_dark)"),
-    (
-        "danger_foreground",
-        "ensure_status_contrast(defaults.danger_text_color, danger)",
-    ),
-    (
-        "success_foreground",
-        "ensure_status_contrast(defaults.success_text_color, success)",
-    ),
-    (
-        "warning_foreground",
-        "ensure_status_contrast(defaults.warning_text_color, warning)",
-    ),
-    (
-        "info_foreground",
-        "ensure_status_contrast(defaults.info_text_color, info)",
-    ),
     ("button_primary_hover", "a copy of primary_hover"),
     ("button_primary_active", "a copy of primary_active"),
     ("button_danger_hover", "a copy of danger_hover"),
     ("button_danger_active", "a copy of danger_active"),
-    ("button_danger_foreground", "a copy of danger_foreground"),
     ("button_info_hover", "a copy of info_hover"),
     ("button_info_active", "a copy of info_active"),
-    ("button_info_foreground", "a copy of info_foreground"),
     ("button_success_hover", "a copy of success_hover"),
     ("button_success_active", "a copy of success_active"),
-    ("button_success_foreground", "a copy of success_foreground"),
     ("button_warning_hover", "a copy of warning_hover"),
     ("button_warning_active", "a copy of warning_active"),
-    ("button_warning_foreground", "a copy of warning_foreground"),
     (
         "list_active_border",
         "the primary colour at 0.6 alpha over the background",
@@ -1082,6 +1114,536 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
          against {} fields",
         DERIVED.len(),
         fields.len()
+    );
+    Ok(())
+}
+
+// ---------- Layer 3: the contrast invariant (spec section 7) ----------
+
+/// WCAG AA for normal text. Nothing is asserted against it: it is the
+/// threshold the printed list uses, so a pair the platform itself puts below
+/// AA stays visible for `preset-validator` to judge.
+const AA: f32 = 4.5;
+
+/// One foreground-on-background pair `ThemeColor` carries, with the platform's
+/// own pair beside it.
+///
+/// Both sides come as three colours -- the text, the fill it sits on, and the
+/// surface that fill is painted over -- because a fill with alpha below 1
+/// shows the surface through, and a ratio measured before compositing is a
+/// ratio of something no one sees.
+struct Pair {
+    what: &'static str,
+    /// The pair the platform's own fields give. `is_dark` is the mode, which
+    /// a soft option's fallback needs.
+    native: fn(&ResolvedTheme, bool) -> (Hsla, Hsla, Hsla),
+    emitted: fn(&ThemeColor) -> (Hsla, Hsla, Hsla),
+    /// Combinations -- `preset/mode`, because the two this release knows are
+    /// one mode of their preset -- where the emitted pair is legitimately
+    /// worse than the platform's, each with its reason.
+    exceptions: &'static [(&'static str, &'static str)],
+}
+
+/// Upstream renders every popup menu on the `popover` token, so a menu's hover
+/// layer lands on a surface the platform did not put it on.
+///
+/// `PopupMenu::render` calls `.popover_style(cx)`, which is
+/// `bg(theme.popover)` (`gpui-component-0.6.4/src/menu/popup_menu.rs:1476`,
+/// `styled.rs:193-199`), and upstream has no menu-surface token. The connector
+/// feeds `popover` from `popover.background_color`, the token's documented
+/// meaning, but `menu.background_color` differs from it in 30 of the 32
+/// combinations. The call is hardcoded inside upstream's `render`, so there is
+/// no seam: it is on the Tier U list. It becomes measurable only where the
+/// hover layer is translucent, and both remaining pairs stay above 9:1.
+const MENU_SURFACE: &str = "upstream paints menus on the popover token \
+                            (menu/popup_menu.rs:1476) and the platform's menu \
+                            background differs from its popover background";
+
+/// Every pair the connector controls both colours of.
+const PAIRS: &[Pair] = &[
+    Pair {
+        what: "window text on the window",
+        native: |r, _| {
+            let bg = rgba_to_hsla(r.defaults.background_color);
+            (rgba_to_hsla(r.defaults.text_color), bg, bg)
+        },
+        emitted: |tc| (tc.foreground, tc.background, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "muted text on the window",
+        native: |r, _| {
+            let bg = rgba_to_hsla(r.defaults.background_color);
+            (rgba_to_hsla(r.defaults.muted_color), bg, bg)
+        },
+        emitted: |tc| (tc.muted_foreground, tc.background, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "primary button label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.button.primary_text_color),
+                rgba_to_hsla(r.button.primary_background),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.primary_foreground, tc.primary, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "ordinary button label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.button.font.color),
+                native_button_fill(r),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.secondary_foreground, tc.secondary, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "hovered button label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.button.hover_text_color),
+                over(
+                    rgba_to_hsla(r.button.hover_background),
+                    native_button_fill(r),
+                ),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.button_foreground, tc.button_hover, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "pressed button label",
+        native: |r, is_dark| {
+            (
+                rgba_to_hsla(r.button.active_text_color),
+                over(native_pressed_fill(r, is_dark), native_button_fill(r)),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.button_foreground, tc.button_active, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "hovered menu row",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.menu.hover_text_color),
+                rgba_to_hsla(r.menu.hover_background),
+                rgba_to_hsla(r.menu.background_color),
+            )
+        },
+        emitted: |tc| (tc.accent_foreground, tc.accent, tc.popover),
+        exceptions: &[
+            ("windows-11/dark", MENU_SURFACE),
+            ("material/dark", MENU_SURFACE),
+        ],
+    },
+    Pair {
+        what: "popover text",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.popover.font.color),
+                rgba_to_hsla(r.popover.background_color),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.popover_foreground, tc.popover, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "danger label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.defaults.danger_text_color),
+                rgba_to_hsla(r.defaults.danger_color),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.danger_foreground, tc.danger, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "success label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.defaults.success_text_color),
+                rgba_to_hsla(r.defaults.success_color),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.success_foreground, tc.success, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "warning label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.defaults.warning_text_color),
+                rgba_to_hsla(r.defaults.warning_color),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.warning_foreground, tc.warning, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "info label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.defaults.info_text_color),
+                rgba_to_hsla(r.defaults.info_color),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.info_foreground, tc.info, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "sidebar text",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.sidebar.font.color),
+                rgba_to_hsla(r.sidebar.background_color),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.sidebar_foreground, tc.sidebar, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "selected sidebar row",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.sidebar.selection_text_color),
+                rgba_to_hsla(r.sidebar.selection_background),
+                rgba_to_hsla(r.sidebar.background_color),
+            )
+        },
+        emitted: |tc| (tc.sidebar_accent_foreground, tc.sidebar_accent, tc.sidebar),
+        exceptions: &[],
+    },
+    Pair {
+        what: "sidebar primary button label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.button.primary_text_color),
+                rgba_to_hsla(r.button.primary_background),
+                rgba_to_hsla(r.sidebar.background_color),
+            )
+        },
+        emitted: |tc| {
+            (
+                tc.sidebar_primary_foreground,
+                tc.sidebar_primary,
+                tc.sidebar,
+            )
+        },
+        exceptions: &[],
+    },
+    Pair {
+        what: "tab label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.tab.font.color),
+                rgba_to_hsla(r.tab.background_color),
+                rgba_to_hsla(r.tab.bar_background),
+            )
+        },
+        emitted: |tc| (tc.tab_foreground, tc.tab, tc.tab_bar),
+        exceptions: &[],
+    },
+    Pair {
+        what: "active tab label",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.tab.active_text_color),
+                rgba_to_hsla(r.tab.active_background),
+                rgba_to_hsla(r.tab.bar_background),
+            )
+        },
+        emitted: |tc| (tc.tab_active_foreground, tc.tab_active, tc.tab_bar),
+        exceptions: &[],
+    },
+    // The model carries no title-bar or status-bar text colour of its own, so
+    // the platform's pair reads the window foreground on that bar -- exactly
+    // what upstream inherits into both.
+    Pair {
+        what: "title bar text",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.defaults.text_color),
+                rgba_to_hsla(r.window.title_bar_background),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.foreground, tc.title_bar, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "status bar text",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.status_bar.font.color),
+                rgba_to_hsla(r.status_bar.background_color),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.foreground, tc.status_bar, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "table header text",
+        native: |r, _| {
+            let bg = rgba_to_hsla(r.defaults.background_color);
+            (rgba_to_hsla(r.defaults.muted_color), bg, bg)
+        },
+        emitted: |tc| (tc.table_head_foreground, tc.table_head, tc.background),
+        exceptions: &[],
+    },
+    // A list row keeps the inherited text colour whatever its state
+    // (`list/list_item.rs:209, 237`), so the emitted foreground is the
+    // window's; for an idle and a hovered row the platform agrees.
+    Pair {
+        what: "list row text",
+        native: |r, _| {
+            let bg = rgba_to_hsla(r.list.background_color);
+            (rgba_to_hsla(r.list.item_font.color), bg, bg)
+        },
+        emitted: |tc| (tc.foreground, tc.list, tc.background),
+        exceptions: &[],
+    },
+    Pair {
+        what: "hovered list row",
+        native: |r, _| {
+            (
+                rgba_to_hsla(r.list.hover_text_color),
+                rgba_to_hsla(r.list.hover_background),
+                rgba_to_hsla(r.list.background_color),
+            )
+        },
+        emitted: |tc| (tc.foreground, tc.list_hover, tc.list),
+        exceptions: &[],
+    },
+    Pair {
+        what: "link on the window",
+        native: |r, _| {
+            let bg = rgba_to_hsla(r.defaults.background_color);
+            (rgba_to_hsla(r.defaults.link_color), bg, bg)
+        },
+        emitted: |tc| (tc.link, tc.background, tc.background),
+        exceptions: &[],
+    },
+];
+
+/// A pair whose two ratios are printed and not asserted, with the reason.
+///
+/// Spec section 7 asserts where the connector controls both colours and
+/// reports where it does not. Two of these are upstream gaps -- a `ThemeColor`
+/// with no foreground token for a surface the platform pairs one with -- and
+/// the third is a finding this test made, recorded here rather than silenced:
+/// see `LINK_HOVER_IS_A_FILL`.
+struct Reported {
+    what: &'static str,
+    why: &'static str,
+    native: fn(&ResolvedTheme) -> (Hsla, Hsla, Hsla),
+    emitted: fn(&ThemeColor) -> (Hsla, Hsla, Hsla),
+}
+
+/// **A finding, not an accepted difference.**
+///
+/// `ThemeColor::link_hover` is upstream's hovered-link *text* colour
+/// (`theme_color.rs:178`, and its only reader takes it as `fg` at
+/// `button/button.rs:1139`, over the transparent fill of `:1133`). The
+/// connector feeds it `link.hover_background`, a fill, which every preset
+/// states at about 9% alpha -- so a hovered link button's label is very nearly
+/// invisible, and the pair measures around 1.1:1 against the platform's 1.9:1
+/// to 10.3:1, in all 32 combinations. It is the defect class of spec section
+/// 1.2 in a field this release did not look at, and the fix is a mapping
+/// change with an iced sibling and a decision behind it, so it is reported
+/// here for the maintainer rather than made quietly.
+const LINK_HOVER_IS_A_FILL: &str = "FINDING: link_hover is upstream's hovered-link text colour \
+                                    and the connector maps a fill into it \
+                                    (link.hover_background, ~9% alpha); reported, not accepted";
+
+/// Pairs measured and printed, never asserted.
+const REPORTED: &[Reported] = &[
+    Reported {
+        what: "selected list row",
+        why: "ThemeColor has no foreground for a selected row: upstream paints \
+              list_active and lets the window foreground through \
+              (list/list_item.rs:237), while the platform pairs \
+              list.selection_background with list.selection_text_color",
+        native: |r| {
+            (
+                rgba_to_hsla(r.list.selection_text_color),
+                rgba_to_hsla(r.list.selection_background),
+                rgba_to_hsla(r.list.background_color),
+            )
+        },
+        emitted: |tc| (tc.foreground, tc.list_active, tc.list),
+    },
+    Reported {
+        what: "selected text",
+        why: "ThemeColor has no foreground for selected text: `selection` is a \
+              highlight upstream paints under text that keeps its own colour \
+              (input/input.rs:502), while the platform pairs \
+              selection_background with selection_text_color",
+        native: |r| {
+            (
+                rgba_to_hsla(r.defaults.selection_text_color),
+                rgba_to_hsla(r.defaults.selection_background),
+                rgba_to_hsla(r.defaults.background_color),
+            )
+        },
+        emitted: |tc| (tc.foreground, tc.selection, tc.background),
+    },
+    Reported {
+        what: "hovered link text",
+        why: LINK_HOVER_IS_A_FILL,
+        native: |r| {
+            let bg = rgba_to_hsla(r.defaults.background_color);
+            (rgba_to_hsla(r.link.hover_text_color), bg, bg)
+        },
+        emitted: |tc| (tc.link_hover, tc.background, tc.background),
+    },
+];
+
+/// Contrast of `fg` on `bg`, with every layer composited first: `bg` over the
+/// `surface` it is painted on, `fg` over the result.
+fn pair_ratio(fg: Hsla, bg: Hsla, surface: Hsla) -> f32 {
+    let bg = over(bg, surface);
+    contrast_ratio(over(fg, bg), bg)
+}
+
+/// Spec section 7: for every pair the connector controls both colours of, the
+/// ratio it emits is not worse than the ratio the platform's own fields give.
+///
+/// Not AA: 174 of the 512 pairs measured for this release sit below it, and
+/// they are not all errors -- macOS ships `#34c759` with white text at about
+/// 2.2:1 and Apple uses it. A connector that asserted AA would be asserting
+/// that every platform meets AA, and "fixing" the ones that do not would mean
+/// inventing values the platform did not give. Those pairs are printed
+/// instead, so they stay visible without being overridden.
+#[test]
+fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    let mut stale = Vec::new();
+    let mut below_aa = Vec::new();
+    let mut ran = Checked::default();
+
+    for c in &combinations {
+        let label = c.label();
+        for pair in PAIRS {
+            let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved, c.is_dark);
+            let native = pair_ratio(native_fg, native_bg, native_surface);
+            let (fg, bg, surface) = (pair.emitted)(&c.colors);
+            let emitted = pair_ratio(fg, bg, surface);
+            match pair.exceptions.iter().find(|(key, _)| *key == label) {
+                // An exception claims the pair degrades here, so it is checked
+                // too: one that no longer degrades is stale and says so.
+                Some((_, why)) => {
+                    if emitted >= native {
+                        stale.push(format!(
+                            "{label}: {} is excepted ({why}) yet emits {emitted:.4} \
+                             against the platform's {native:.4}",
+                            pair.what
+                        ));
+                    }
+                }
+                None => {
+                    ran.ran(pair.what);
+                    if emitted < native {
+                        failures.push(format!(
+                            "{label}: {} emitted {emitted:.4}, native {native:.4}; \
+                             emitted {} on {}, native {} on {}",
+                            pair.what,
+                            show(fg),
+                            show(bg),
+                            show(native_fg),
+                            show(native_bg)
+                        ));
+                    }
+                }
+            }
+            if emitted < AA {
+                below_aa.push(format!(
+                    "{label}: {} {emitted:.2} (native {native:.2})",
+                    pair.what
+                ));
+            }
+        }
+    }
+
+    let declared: Vec<&'static str> = PAIRS.iter().map(|pair| pair.what).collect();
+    ran.covers(&declared, "the contrast pair list");
+
+    // The pairs section 7 reports rather than asserts: printed with both
+    // ratios, and with the count of combinations where ours is the worse, so
+    // the record says how large each one is rather than only that it exists.
+    let mut reported = Vec::new();
+    for pair in REPORTED {
+        let mut worse = 0usize;
+        let mut lines = Vec::new();
+        for c in &combinations {
+            let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved);
+            let native = pair_ratio(native_fg, native_bg, native_surface);
+            let (fg, bg, surface) = (pair.emitted)(&c.colors);
+            let emitted = pair_ratio(fg, bg, surface);
+            if emitted < native {
+                worse += 1;
+            }
+            if emitted < AA {
+                below_aa.push(format!(
+                    "{}: {} {emitted:.2} (native {native:.2})  [reported]",
+                    c.label(),
+                    pair.what
+                ));
+            }
+            lines.push(format!(
+                "  {}: {emitted:.2} (native {native:.2})",
+                c.label()
+            ));
+        }
+        reported.push(format!(
+            "{} -- {}\n  worse than the platform's own in {worse} of {} \
+             combinations\n{}",
+            pair.what,
+            pair.why,
+            combinations.len(),
+            lines.join("\n")
+        ));
+    }
+
+    println!(
+        "--- gpui contrast: {} asserted pairs x {} combinations = {} \
+         comparisons, {} below AA ---\n{}\n--- reported, not asserted ---\n{}",
+        PAIRS.len(),
+        combinations.len(),
+        ran.checks,
+        below_aa.len(),
+        below_aa.join("\n"),
+        reported.join("\n")
+    );
+    assert!(
+        stale.is_empty(),
+        "{} contrast exception(s) no longer describe a degradation:\n{}",
+        stale.len(),
+        stale.join("\n")
+    );
+    assert!(
+        failures.is_empty(),
+        "{} of {} pairs contrast worse than the platform's own:\n{}",
+        failures.len(),
+        ran.checks,
+        failures.join("\n")
     );
     Ok(())
 }

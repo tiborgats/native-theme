@@ -12,7 +12,7 @@ use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
 use native_theme::theme::ResolvedTheme;
 
-use crate::derive::{active_color, contrast_ratio, hover_color, light_variant};
+use crate::derive::{active_color, hover_color, light_variant};
 
 /// Convert a `native_theme::color::Rgba` to `gpui::Hsla`.
 ///
@@ -44,34 +44,6 @@ pub(crate) fn hsla_to_hex(c: Hsla) -> String {
         format!("#{r:02x}{g:02x}{b:02x}")
     } else {
         format!("#{r:02x}{g:02x}{b:02x}{a:02x}")
-    }
-}
-
-/// Minimum WCAG contrast ratio for status foreground against its background.
-/// 4.5:1 is AA for normal text.
-const MIN_STATUS_CONTRAST: f32 = 4.5;
-
-/// Ensure a status foreground color has sufficient contrast against its background.
-///
-/// If the foreground has less than 4.5:1 contrast against the background,
-/// falls back to white (for dark backgrounds) or black (for light backgrounds).
-fn ensure_status_contrast(fg: Hsla, bg: Hsla) -> Hsla {
-    if contrast_ratio(fg, bg) >= MIN_STATUS_CONTRAST {
-        fg
-    } else if bg.l < 0.5 {
-        Hsla {
-            h: 0.0,
-            s: 0.0,
-            l: 1.0,
-            a: 1.0,
-        }
-    } else {
-        Hsla {
-            h: 0.0,
-            s: 0.0,
-            l: 0.0,
-            a: 1.0,
-        }
     }
 }
 
@@ -286,26 +258,32 @@ fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
         .unwrap_or_else(|| active_color(c.secondary, is_dark));
 }
 
+/// The status colours and their labels, as the platform states them.
+///
+/// C19: a label below 4.5:1 used to be replaced with white or black, chosen on
+/// a 0.5 lightness threshold that is not where the two cross over in contrast.
+/// On the real platforms the replacement was the colour the platform already
+/// had, and on the community presets it sometimes made the label *worse* than
+/// what the platform gave. A connector that overrode the platform's own choice
+/// here would be inventing a colour, so it emits the platform's.
 fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
-    // Issue 9: ensure status foreground colors have sufficient contrast
-    // against their respective status backgrounds.
     tc.danger = c.danger;
-    tc.danger_foreground = ensure_status_contrast(c.danger_fg, c.danger);
+    tc.danger_foreground = c.danger_fg;
     tc.danger_hover = hover_color(c.danger, c.bg);
     tc.danger_active = active_color(c.danger, is_dark);
 
     tc.success = c.success;
-    tc.success_foreground = ensure_status_contrast(c.success_fg, c.success);
+    tc.success_foreground = c.success_fg;
     tc.success_hover = hover_color(c.success, c.bg);
     tc.success_active = active_color(c.success, is_dark);
 
     tc.warning = c.warning;
-    tc.warning_foreground = ensure_status_contrast(c.warning_fg, c.warning);
+    tc.warning_foreground = c.warning_fg;
     tc.warning_hover = hover_color(c.warning, c.bg);
     tc.warning_active = active_color(c.warning, is_dark);
 
     tc.info = c.info;
-    tc.info_foreground = ensure_status_contrast(c.info_fg, c.info);
+    tc.info_foreground = c.info_fg;
     tc.info_hover = hover_color(c.info, c.bg);
     tc.info_active = active_color(c.info, is_dark);
 
@@ -675,55 +653,6 @@ mod tests {
             .expect("resolved preset must validate")
     }
 
-    /// gpui-component's `accent` is the item highlight ("hover background on
-    /// MenuItem, ListItem, etc.", 0.6.4 `src/theme/schema.rs:254-255`), so it
-    /// takes the platform's *menu* hover pair, not the platform's accent
-    /// colour. The two coincide on KDE and macOS, where a hovered menu item is
-    /// selection-coloured; on Adwaita and Windows 11 platform-facts §2.6
-    /// records a subtle fill with unchanged text, and the accent colour there
-    /// would paint every hovered menu row, completion row and calendar day
-    /// saturated blue. adwaita is the discriminating input.
-    #[test]
-    fn accent_is_the_platforms_menu_hover_pair() {
-        for mode in [ColorMode::Light, ColorMode::Dark] {
-            let r = resolved_preset("adwaita", mode);
-            let tc = to_theme_color(&r, matches!(mode, ColorMode::Dark), false);
-            assert_ne!(
-                rgba_to_hsla(r.menu.hover_background),
-                rgba_to_hsla(r.defaults.accent_color),
-                "adwaita no longer discriminates; pick another preset"
-            );
-            assert_eq!(tc.accent, rgba_to_hsla(r.menu.hover_background));
-            assert_eq!(tc.accent_foreground, rgba_to_hsla(r.menu.hover_text_color));
-        }
-        // Where the platform highlights menu rows with its selection colour,
-        // nothing changes.
-        let r = resolved_preset("kde-breeze", ColorMode::Light);
-        let tc = to_theme_color(&r, false, false);
-        assert_eq!(tc.accent, rgba_to_hsla(r.defaults.accent_color));
-    }
-
-    /// The sidebar's highlight pair comes from the sidebar's own selection
-    /// fields. windows-11 dark is where they differ from the accent pair.
-    #[test]
-    fn sidebar_accent_is_the_sidebars_selection_pair() {
-        let r = resolved_preset("windows-11", ColorMode::Dark);
-        let tc = to_theme_color(&r, true, false);
-        assert_ne!(
-            rgba_to_hsla(r.sidebar.selection_text_color),
-            rgba_to_hsla(r.defaults.accent_text_color),
-            "windows-11 dark no longer discriminates; pick another preset"
-        );
-        assert_eq!(
-            tc.sidebar_accent,
-            rgba_to_hsla(r.sidebar.selection_background)
-        );
-        assert_eq!(
-            tc.sidebar_accent_foreground,
-            rgba_to_hsla(r.sidebar.selection_text_color)
-        );
-    }
-
     #[test]
     fn rgba_to_hsla_converts_red() {
         let red = native_theme::color::Rgba::rgb(255, 0, 0);
@@ -987,9 +916,8 @@ mod tests {
         // foreground; it cannot tell either source from
         // `defaults.accent_text_color`, which both used to take, because
         // catppuccin-mocha gives all three the same white. The source itself
-        // is pinned by `accent_is_the_platforms_menu_hover_pair` (adwaita) and
-        // `sidebar_accent_is_the_sidebars_selection_pair` (windows-11 dark),
-        // on the presets where they differ.
+        // is pinned by the `accent_foreground` and `sidebar_accent_foreground`
+        // rows of the contract table, over the sixteen presets in both modes.
         assert_eq!(
             tc.accent_foreground,
             rgba_to_hsla(resolved.menu.hover_text_color),
@@ -1322,17 +1250,26 @@ mod tests {
         );
     }
 
-    // Issue 9: status foreground contrast check
+    /// C19: a status label is the platform's own, never a colour of ours.
+    ///
+    /// catppuccin-latte light is one of the combinations where the removed
+    /// enforcement replaced the platform's danger label; white and black are
+    /// all it could emit, so a label with any saturation left proves the
+    /// replacement is gone. The contract table asserts the same over all
+    /// sixteen presets in both modes.
     #[test]
-    fn status_foreground_has_sufficient_contrast() {
-        let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true, false);
-        // All status foregrounds should have at least 4.5:1 contrast
+    fn status_foreground_is_the_platforms_own() {
+        let resolved = resolved_preset("catppuccin-latte", ColorMode::Light);
+        let tc = to_theme_color(&resolved, false, false);
+        let native = rgba_to_hsla(resolved.defaults.warning_text_color);
         assert!(
-            contrast_ratio(tc.danger_foreground, tc.danger) >= MIN_STATUS_CONTRAST
-                || tc.danger_foreground.l == 0.0
-                || tc.danger_foreground.l == 1.0,
-            "danger_foreground should have sufficient contrast or be black/white"
+            native.s > 0.0,
+            "catppuccin-latte light no longer discriminates: its warning label \
+             is already greyscale, which is all the removed rule could emit"
+        );
+        assert_eq!(
+            tc.warning_foreground, native,
+            "warning_foreground should be the platform's warning_text_color"
         );
     }
 
