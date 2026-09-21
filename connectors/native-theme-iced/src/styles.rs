@@ -994,18 +994,29 @@ pub fn scrollable(
 /// `scrollable(..).direction(Direction::Vertical(..))` and its horizontal and
 /// two-axis siblings.
 ///
-/// Not a closure and not a `Style` (C14): a scrollbar's two widths are values
-/// built into the `Scrollbar` a `Direction` carries, set through
-/// `Scrollbar::width` (`scrollable.rs:355`) and `Scrollbar::scroller_width`
-/// (`:367`), so they cannot travel with [`scrollable`]. The rail is
-/// `scrollbar.groove_width` wide and the scroller `scrollbar.thumb_width`.
+/// Not a closure and not a `Style` (C14): a scrollbar's geometry is built into
+/// the `Scrollbar` a `Direction` carries, so it cannot travel with
+/// [`scrollable`]. Pass the result to
+/// `scrollable(..).direction(Direction::Vertical(..))`, or to
+/// `Direction::Horizontal(..)`, or to both fields of `Direction::Both`.
 ///
-/// Everything else stays `Scrollbar::new()`'s own: the model states no margin
-/// between a scrollbar and its edge, no anchor, and no spacing -- and a
-/// spacing is what would make the scrollbar *embedded* rather than floating
-/// (`scrollable.rs:378-386`), which is what `scrollbar.overlay_mode`
-/// describes; iced takes a length there and the model states none, so that
-/// field is left to the consumer rather than guessed at.
+/// Three native fields reach it:
+///
+/// - `scrollbar.groove_width` is the rail's width, through `Scrollbar::width`
+///   (`scrollable.rs:355`).
+/// - `scrollbar.thumb_width` is the scroller's, through
+///   `Scrollbar::scroller_width` (`:367`).
+/// - `scrollbar.overlay_mode` decides whether the scrollbar floats over the
+///   contents or sits beside them. iced's only switch is `Scrollbar::spacing`:
+///   a scrollbar with one "will always be displayed, will take layout space,
+///   and will not float over the contents" (`scrollable.rs:378-383`). So a
+///   platform that states `overlay_mode = false` gets `.spacing(0)` -- the
+///   model states no gap between the scrollbar and the contents, and zero is
+///   the absence of a gap rather than a length -- and one that states `true`
+///   keeps iced's floating default, which is no call at all.
+///
+/// The margin and the anchor stay `Scrollbar::new()`'s own: the model states
+/// neither.
 ///
 /// `scrollbar.min_thumb_length` has no receiver in iced 0.14 at all: iced
 /// sizes the scroller itself, `(bounds * ratio).max(2.0)` (`scrollable.rs:2068`),
@@ -1015,9 +1026,15 @@ pub fn scrollable(
 pub fn scrollbar(resolved: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar {
     let s = &resolved.scrollbar;
 
-    iced_widget::scrollable::Scrollbar::new()
+    let bar = iced_widget::scrollable::Scrollbar::new()
         .width(s.groove_width)
-        .scroller_width(s.thumb_width)
+        .scroller_width(s.thumb_width);
+
+    if s.overlay_mode {
+        bar
+    } else {
+        bar.spacing(0.0)
+    }
 }
 
 /// The platform's own progress bar, for `progress_bar(..).style(..)`.

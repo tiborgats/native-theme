@@ -1932,6 +1932,10 @@ fn style_row_fields() -> Vec<String> {
 struct Checked {
     names: Vec<String>,
     checks: usize,
+    /// How many of those comparisons were contrast pairs below AA. The printed
+    /// lines collapse the statuses that read alike, so the count of lines is
+    /// no longer the count of pairs, and the header prints both.
+    below_aa: usize,
 }
 
 #[cfg(feature = "widgets")]
@@ -3350,6 +3354,26 @@ fn style_pair_names() -> Vec<String> {
 /// WCAG 2.1 AA for normal text. Only ever used to decide what to print.
 const AA: f32 = 4.5;
 
+/// One below-AA line before it is printed: a pair, a combination, the two
+/// ratios, and every status that produced exactly those.
+///
+/// A widget whose status carries booleans reads the same for many of its
+/// values -- a scrollable has thirty-six statuses and three distinct scrollers
+/// -- so a line per status buried the list under its own repetitions. The
+/// grouping is on what the reader compares, and it is a **print** only: what
+/// is asserted, how many pairs ran and what `Checked` records are untouched,
+/// and the count of below-AA comparisons is kept separately so the header
+/// still says how many there were.
+#[cfg(feature = "widgets")]
+struct BelowAa {
+    what: &'static str,
+    label: String,
+    emitted: f32,
+    native: f32,
+    indicator: bool,
+    statuses: Vec<String>,
+}
+
 /// Assert one function's contrast pairs over every combination and status:
 /// section 7's no-degradation rule. Pairs below AA are collected for printing,
 /// never asserted.
@@ -3364,6 +3388,7 @@ fn check_style_pairs<S: Copy + std::fmt::Debug>(
     for pair in pairs {
         ran.ran(pair.what, pair.statuses);
     }
+    let mut collapsed: Vec<BelowAa> = Vec::new();
     for c in combinations {
         for pair in pairs {
             for &status in pair.statuses {
@@ -3386,12 +3411,28 @@ fn check_style_pairs<S: Copy + std::fmt::Debug>(
                             ));
                         }
                         if emitted < AA {
-                            below_aa.push(format!(
-                                "{}: {} ({status:?}) {emitted:.2}{}",
-                                c.label(),
-                                pair.what,
-                                if pair.indicator { "  [indicator]" } else { "" }
-                            ));
+                            ran.below_aa += 1;
+                            // One line per pair, combination and pair of
+                            // ratios: a status that reads exactly like an
+                            // earlier one joins that line instead of adding
+                            // another.
+                            let label = c.label();
+                            match collapsed.iter_mut().find(|line| {
+                                line.what == pair.what
+                                    && line.label == label
+                                    && line.emitted == emitted
+                                    && line.native == native
+                            }) {
+                                Some(line) => line.statuses.push(format!("{status:?}")),
+                                None => collapsed.push(BelowAa {
+                                    what: pair.what,
+                                    label,
+                                    emitted,
+                                    native,
+                                    indicator: pair.indicator,
+                                    statuses: vec![format!("{status:?}")],
+                                }),
+                            }
                         }
                     }
                     Err(why) => {
@@ -3400,6 +3441,24 @@ fn check_style_pairs<S: Copy + std::fmt::Debug>(
                 }
             }
         }
+    }
+
+    for line in collapsed {
+        // Few enough statuses to name them; otherwise their count, which is
+        // what a thirty-six-value status enum makes readable.
+        let which = if line.statuses.len() <= 4 {
+            line.statuses.join(", ")
+        } else {
+            format!("{} statuses", line.statuses.len())
+        };
+        below_aa.push(format!(
+            "{}: {} {:.2} (native {:.2}) -- {which}{}",
+            line.label,
+            line.what,
+            line.emitted,
+            line.native,
+            if line.indicator { "  [indicator]" } else { "" }
+        ));
     }
 }
 
@@ -4885,35 +4944,56 @@ fn the_primary_pair_is_the_accent_pair() -> native_theme::Result<()> {
     Ok(())
 }
 
-/// `styles::scrollbar`'s two widths are the platform's, as far as iced 0.14
-/// lets them be read.
+/// The `Scrollbar` the native fields ask for: two widths, and a spacing where
+/// the platform's scrollbar is not an overlay.
+///
+/// Built here independently of `styles::scrollbar`, as a row's `native` side
+/// is built independently of its `get`, and following section 3.3's rule
+/// rather than copying the function's expression.
+#[cfg(feature = "widgets")]
+fn native_scrollbar(r: &ResolvedTheme) -> scrollable::Scrollbar {
+    let s = &r.scrollbar;
+    let bar = scrollable::Scrollbar::new()
+        .width(s.groove_width)
+        .scroller_width(s.thumb_width);
+    if s.overlay_mode {
+        bar
+    } else {
+        bar.spacing(0.0)
+    }
+}
+
+/// `styles::scrollbar` is the platform's, as far as iced 0.14 lets it be read.
 ///
 /// There is no row for this function, and not for want of trying:
 /// `scrollable::Scrollbar` keeps all five of its fields private and offers no
 /// getters (`scrollable.rs:322-328`), so a `StyleRow` -- whose `get` must
 /// *read* the emitted value -- cannot be written. The one handle iced leaves
-/// is the `PartialEq` it derives, so the expected value is built here from the
-/// resolved theme, independently of `styles::scrollbar`, and the two values
-/// are compared whole. `Debug` appears only in the failure message; it is not
-/// what is asserted.
+/// is the `PartialEq` it derives, so the expected value is built by
+/// [`native_scrollbar`] from the resolved theme and the two values are
+/// compared whole. `Debug` appears only in the failure message; it is not what
+/// is asserted.
 ///
-/// That comparison catches a wrong width and it catches the two setters being
-/// swapped -- but the swap only where the two lengths differ, so the
-/// combinations that can see one are counted and printed, and the day every
-/// preset states a single width the test says so instead of quietly asserting
-/// less.
+/// That comparison catches a wrong width, a wrong overlay mode, and the two
+/// width setters being swapped -- but the swap only where the two lengths
+/// differ, so the combinations that can see one are counted and printed, and
+/// the day every preset states a single width the test says so instead of
+/// quietly asserting less. The same goes for the overlay flag: how many
+/// combinations take each branch is printed, and
+/// `a_scrollbar_that_is_not_an_overlay_is_embedded` drives both branches from
+/// one preset whatever the presets happen to state.
 #[cfg(feature = "widgets")]
 #[test]
-fn the_scrollbars_two_widths_are_the_platforms() -> native_theme::Result<()> {
+fn the_scrollbar_is_the_platforms() -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut distinguishing = Vec::new();
+    let mut embedded = Vec::new();
+    let mut floating = Vec::new();
 
     for c in &combinations {
         let s = &c.resolved.scrollbar;
-        let expected = scrollable::Scrollbar::new()
-            .width(s.groove_width)
-            .scroller_width(s.thumb_width);
+        let expected = native_scrollbar(&c.resolved);
         let actual = styles::scrollbar(&c.resolved);
         if actual != expected {
             failures.push(format!(
@@ -4933,6 +5013,12 @@ fn the_scrollbars_two_widths_are_the_platforms() -> native_theme::Result<()> {
                 s.thumb_width
             ));
         }
+
+        if s.overlay_mode {
+            floating.push(c.label());
+        } else {
+            embedded.push(c.label());
+        }
     }
 
     println!(
@@ -4942,6 +5028,16 @@ fn the_scrollbars_two_widths_are_the_platforms() -> native_theme::Result<()> {
         distinguishing.len(),
         combinations.len(),
         distinguishing.join("\n")
+    );
+    println!(
+        "scrollbar overlay mode: {} of {} combinations float over the contents \
+         and take iced's default, {} are embedded and take a spacing:\n  \
+         floating: {}\n  embedded: {}",
+        floating.len(),
+        combinations.len(),
+        embedded.len(),
+        floating.join(", "),
+        embedded.join(", ")
     );
     assert!(
         !distinguishing.is_empty(),
@@ -4954,6 +5050,48 @@ fn the_scrollbars_two_widths_are_the_platforms() -> native_theme::Result<()> {
         failures.len(),
         combinations.len(),
         failures.join("\n")
+    );
+    Ok(())
+}
+
+/// Both branches of the overlay flag, whatever the presets state.
+///
+/// The bundled presets may all agree on `overlay_mode`, and then the loop
+/// above exercises one branch and a function that ignored the flag would pass
+/// it. So one resolved theme is read, its flag asserted, then flipped, and the
+/// two answers are required to differ from each other and to be exactly what
+/// the rule gives: iced's own `Scrollbar` while it floats, and that same
+/// scrollbar with a spacing once it does not.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_scrollbar_that_is_not_an_overlay_is_embedded() -> native_theme::Result<()> {
+    let mut resolved = native_theme::theme::Theme::preset("windows-11")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+
+    let floating = scrollable::Scrollbar::new()
+        .width(resolved.scrollbar.groove_width)
+        .scroller_width(resolved.scrollbar.thumb_width);
+    let embedded = floating.spacing(0.0);
+    assert_ne!(
+        floating, embedded,
+        "a spacing no longer changes a `Scrollbar`, so this test proves nothing"
+    );
+
+    resolved.scrollbar.overlay_mode = true;
+    assert_eq!(
+        styles::scrollbar(&resolved),
+        floating,
+        "an overlay scrollbar keeps iced's floating default, which is no \
+         spacing at all"
+    );
+
+    resolved.scrollbar.overlay_mode = false;
+    assert_eq!(
+        styles::scrollbar(&resolved),
+        embedded,
+        "a scrollbar the platform does not overlay is embedded, which iced \
+         spells as a spacing (`scrollable.rs:378-383`)"
     );
     Ok(())
 }
@@ -5164,9 +5302,12 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     ran.covers(&style_pair_names(), "style_pair_names()");
 
     println!(
-        "--- styles contrast: {} pairs, {} below AA (printed, not asserted; \
-         an [indicator] line is a non-text pair, where WCAG asks 3:1) ---",
+        "--- styles contrast: {} pairs, {} below AA in {} lines (printed, not \
+         asserted; a line carries every status of one pair and combination \
+         that reads alike, named while there are at most four of them; an \
+         [indicator] line is a non-text pair, where WCAG asks 3:1) ---",
         ran.checks,
+        ran.below_aa,
         below_aa.len()
     );
     for line in &below_aa {
