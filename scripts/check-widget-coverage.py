@@ -69,10 +69,19 @@ Matching
     `pane_grid(`. `grid` does not match `grid_rows`, and `Table` does not
     match `TableDelegate`.
 
-String literals are kept in the haystack: both toolkits expose widgets
-through extension methods and module paths rather than the type name
-(`.tooltip(...)`, `menu::ContextMenuExt`), and the showcases label each
-section with the widget's name.
+String literals are removed from the **iced** showcase as well, so a section
+labelled `text("Card")` no longer proves that a `Card` is rendered — the
+widget has to be constructed in code. Measured on 2026-09-21 over the
+finished iced showcase: all 28 `iced_widget` modules and all 8 `iced_aw`
+widgets still match with the literals gone, so the rule costs nothing there.
+
+They are **kept** in the gpui showcase, where the same rule would report
+eight widgets as missing that the showcase does render through a
+differently-named constructor or extension method: `ContextMenu`, `Dialog`,
+`Loading`, `Scrollable`, `Sheet`, `Tab`, `Text` and `WindowBorder` (measured
+2026-09-21). Giving those eight per-widget constructor patterns is the way to
+tighten the gpui half; until that is done, keeping its literals is the choice
+that reports no false missing.
 """
 
 import argparse
@@ -177,15 +186,44 @@ def strip_test_modules(src):
     return src
 
 
+def strip_string_literals(src):
+    """Replace every string literal with a space, comments already gone."""
+    out = []
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        if c == "r" and (m := re.match(r'r(#*)"', src[i:])):
+            close = '"' + m.group(1)
+            end = src.find(close, i + len(m.group(0)))
+            i = n if end < 0 else end + len(close)
+            out.append(" ")
+        elif c == '"':
+            i += 1
+            while i < n:
+                if src[i] == "\\":
+                    i += 2
+                elif src[i] == '"':
+                    i += 1
+                    break
+                else:
+                    i += 1
+            out.append(" ")
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
 def shows(haystack, name):
     return re.search(r"(?<!\w)" + re.escape(name) + r"(?!\w)", haystack) is not None
 
 
-def read_showcase(path):
+def read_showcase(path, strip_literals=False):
     if not os.path.isfile(path):
         raise Failure(f"showcase not found: {path}")
     with open(path, encoding="utf-8") as f:
-        return strip_comments(f.read())
+        text = strip_comments(f.read())
+    return strip_string_literals(text) if strip_literals else text
 
 
 def cargo_metadata():
@@ -373,7 +411,7 @@ def main():
 
     meta = cargo_metadata()
     gpui_show = read_showcase(args.showcase_gpui)
-    iced_show = read_showcase(args.showcase_iced)
+    iced_show = read_showcase(args.showcase_iced, strip_literals=True)
     exceptions = load_exceptions()
 
     gpui = {w: [w] for w in gpui_widgets(source_dir(meta, "gpui-component"))}
