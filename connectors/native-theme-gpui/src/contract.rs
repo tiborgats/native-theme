@@ -434,11 +434,14 @@ const ROWS: &[Row] = &[
         get: |tc| tc.tab_bar,
         exceptions: &[],
     },
-    // `ResolvedTabTheme` has no segmented-specific colour; the ordinary button
-    // fill is the segmented indicator's nearest native source (Issue 42).
+    // The track a segmented tab bar paints itself with
+    // (`tab/tab_bar.rs:391`, the `TabVariant::Segmented` arm). The model
+    // states it in `SegmentedControlTheme`, a struct of its own -- the
+    // justification this row used to carry was about `ResolvedTabTheme`,
+    // which indeed has no segmented field, and stopped there.
     Row {
         slot: "tab_bar_segmented",
-        native: |r| r.button.background_color,
+        native: |r| r.segmented_control.background_color,
         get: |tc| tc.tab_bar_segmented,
         exceptions: &[],
     },
@@ -890,6 +893,25 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    `link_hover` and `link_active` are the link's hover and \
                    pressed *text* (`theme_color.rs:178-179`), which is what \
                    their rows give them.",
+    },
+    NoReceiver {
+        field: "segmented_control.active_background",
+        native: |r| r.segmented_control.active_background,
+        evidence: "the selected segment of a `TabVariant::Segmented` bar is \
+                   filled with `tokens.background` (`tab/tab.rs:248`, and \
+                   `:201` while hovered) -- the window token, not one of its \
+                   own -- so a platform that tints the active segment has \
+                   nowhere to put the tint. `tab_bar_segmented` takes the \
+                   track around it (`tab/tab_bar.rs:391`).",
+    },
+    NoReceiver {
+        field: "segmented_control.active_text_color",
+        native: |r| r.segmented_control.active_text_color,
+        evidence: "the selected segment's label is `tab_active_foreground` \
+                   (`tab/tab.rs:245`), the token the `tab_active_foreground` \
+                   row gives `tab.active_text_color`; upstream has no \
+                   segmented-specific text token, so the segmented control's \
+                   own label colour cannot reach it.",
     },
     NoReceiver {
         field: "switch.checked_background",

@@ -102,6 +102,9 @@ struct ResolvedColors {
     tab_active_bg: Hsla,
     tab_active_fg: Hsla,
     tab_bar_bg: Hsla,
+    // The segmented control's own track, which the model states in a struct
+    // of its own rather than in `TabTheme`.
+    segmented_bg: Hsla,
     tab_fg: Hsla,
     title_bar_bg: Hsla,
     window_border: Hsla,
@@ -201,6 +204,7 @@ pub fn to_theme_color(
         tab_active_bg: rgba_to_hsla(resolved.tab.active_background),
         tab_active_fg: rgba_to_hsla(resolved.tab.active_text_color),
         tab_bar_bg: rgba_to_hsla(resolved.tab.bar_background),
+        segmented_bg: rgba_to_hsla(resolved.segmented_control.background_color),
         tab_fg: rgba_to_hsla(resolved.tab.font.color),
         title_bar_bg: rgba_to_hsla(resolved.window.title_bar_background),
         window_border: rgba_to_hsla(resolved.window.border.color),
@@ -405,10 +409,13 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.tab_active = c.tab_active_bg;
     tc.tab_active_foreground = c.tab_active_fg;
     tc.tab_bar = c.tab_bar_bg;
-    // Issue 42: tab_bar_segmented uses secondary because native-theme's
-    // ResolvedTabTheme has no segmented-specific color. The secondary button
-    // color is the closest semantic match for the segmented tab indicator.
-    tc.tab_bar_segmented = c.secondary;
+    // The track a `TabBar` paints for its `Segmented` variant
+    // (`tab/tab_bar.rs:391`). `ResolvedTabTheme` has no segmented field, but
+    // `SegmentedControlTheme` is the model's struct for exactly this control,
+    // so the token takes its background (Issue 42). The active segment is not
+    // reachable: upstream fills it with `tokens.background`
+    // (`tab/tab.rs:248`) and labels it `tab_active_foreground` (`:245`).
+    tc.tab_bar_segmented = c.segmented_bg;
     tc.tab_foreground = c.tab_fg;
 
     tc.sidebar = c.sidebar;
