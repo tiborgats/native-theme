@@ -272,6 +272,12 @@ const SIDEBAR_COLUMN: &str = "sidebar-column";
 /// The debug selector the Widget Info panel's root carries.
 const WIDGET_INFO: &str = "widget-info";
 
+/// The debug selectors the List and the Tree demo boxes carry, so
+/// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside
+/// one and `the_three_list_frames_agree` can measure their frames.
+const LIST_DEMO: &str = "list-demo";
+const TREE_DEMO: &str = "tree-demo";
+
 /// The debug selector the box that holds the Widget Info textarea carries. It
 /// is the element the textarea fills, so its height is the height the text has
 /// before the textarea scrolls its own content.
@@ -1332,6 +1338,9 @@ impl Render for WidgetInfoPanel {
             .w_full()
             .flex_1()
             .min_h_0()
+            // The textarea inside scrolls; without this the sidebar column
+            // behind it scrolls by the same delta (see the List demo).
+            .occlude()
             .debug_selector(|| WIDGET_INFO.into())
             .child(
                 Label::new("Widget Info")
@@ -3868,6 +3877,7 @@ impl Showcase {
                 div()
                     .id("tt-table")
                     .h(px(220.0))
+                    .occlude()
                     .child(
                         DataTable::new(&self.table_state)
                             .stripe(true)
@@ -4033,6 +4043,13 @@ impl Showcase {
                     .w(px(260.0))
                     .border_1()
                     .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                    // gpui's scroll listeners run in the bubble phase and stop
+                    // at no one, so without this the page under the List
+                    // scrolls by the same delta (div.rs, paint_scroll_listener;
+                    // window.rs, HitboxBehavior::BlockMouse). Every demo box
+                    // that holds a scroller of its own carries it.
+                    .occlude()
+                    .debug_selector(|| LIST_DEMO.into())
                     .child(gpui_component::list::List::new(&self.list_state))
                     .on_hover(self.hover_info(
                         &fi,
@@ -4056,6 +4073,8 @@ impl Showcase {
                     .w(px(260.0))
                     .border_1()
                     .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                    .occlude()
+                    .debug_selector(|| TREE_DEMO.into())
                     .child(Tree::new(
                         &self.tree_state,
                         |ix, entry, selected, _w, cx| {
@@ -4229,6 +4248,7 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-message-scroller")
+                    .occlude()
                     .child(
                         with_gap(v_flex(), widget_gap)
                             .w(px(460.0))
@@ -5339,6 +5359,7 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-code-editor")
+                    .occlude()
                     .child(Editor::new(&self.editor_state).h(px(240.0)))
                     .on_hover(self.hover_info(
                         &fi,
@@ -5827,6 +5848,7 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-scrollbar")
+                    .occlude()
                     .child(
                         div()
                             .id("scroll-demo-outer")
@@ -6359,6 +6381,7 @@ impl Showcase {
                     .id("tt-settings")
                     .h(px(320.0))
                     .w_full()
+                    .occlude()
                     .border_1()
                     .border_color(t.border)
                     .overflow_y_scroll()
@@ -8799,7 +8822,7 @@ fn main() {
 mod tests {
     use super::*;
     use gpui::{Modifiers, Point, TestAppContext, VisualTestContext, point};
-    use gpui_base::PANEL_MIN_SIZE;
+    use gpui_base::{PANEL_MIN_SIZE, ScrollbarHandle as _};
     use std::cell::RefCell;
     use std::ops::Deref as _;
     use std::rc::Rc;
@@ -9052,6 +9075,75 @@ mod tests {
                 text.bottom(),
                 panel.bottom() - padding,
                 panel.bottom() - padding - text.bottom(),
+            );
+        }
+    }
+
+    /// Turn the wheel by `delta` pixels over `at`, and draw the frame it
+    /// produced. A negative delta is a scroll towards the end of the content.
+    fn scroll_at(cx: &mut VisualTestContext, at: Point<Pixels>, delta: Pixels) {
+        cx.simulate_event(gpui::ScrollWheelEvent {
+            position: at,
+            delta: gpui::ScrollDelta::Pixels(point(px(0.), delta)),
+            modifiers: Modifiers::default(),
+            touch_phase: gpui::TouchPhase::Moved,
+        });
+        cx.run_until_parked();
+        draw(cx);
+    }
+
+    /// A window tall enough to show the Data tab's List and Tree demos without
+    /// scrolling the page first, and still far shorter than that tab, so the
+    /// page has somewhere to scroll to.
+    const NESTED_SCROLL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(1500.));
+
+    /// A wheel turned inside the List or the Tree scrolls that widget, not the
+    /// page under it.
+    ///
+    /// gpui's scroll listener runs in the bubble phase and stops at no one:
+    /// every scroll container whose hitbox is under the pointer moves by the
+    /// same delta (gpui-pre `src/elements/div.rs`, `paint_scroll_listener`,
+    /// and `Hitbox::should_handle_scroll`). A nested scroller therefore has to
+    /// take the pointer out of the ancestors' hit test, which is what
+    /// `occlude` does (gpui-pre `src/window.rs`, `HitboxBehavior::BlockMouse`).
+    #[gpui::test]
+    fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
+        let (showcase, _root, mut cx) = open(cx, NESTED_SCROLL_WINDOW);
+        // material's list rows are the tallest of the bundled presets, so the
+        // six sample rows are certain to overflow the demo box.
+        use_preset(&mut cx, &showcase, "material");
+        show(&mut cx, &showcase, Tab::Data);
+        assert!(
+            bounds_of(&mut cx, TAB_ROOT).size.height > NESTED_SCROLL_WINDOW.height,
+            "the Data tab fits in the window, so the page could not scroll either way"
+        );
+
+        // How far each demo's own scroller has been scrolled, so the step can
+        // tell "the page stayed put because the list took the wheel" from
+        // "nothing moved at all".
+        type Offset = fn(&Showcase, &App) -> Pixels;
+        let list_offset: Offset = |this, cx| this.list_state.read(cx).scroll_handle().offset().y;
+        let tree_offset: Offset = |this, cx| this.tree_state.read(cx).scroll_handle().offset().y;
+
+        for (selector, inner) in [(LIST_DEMO, list_offset), (TREE_DEMO, tree_offset)] {
+            let demo = bounds_of(&mut cx, selector);
+            assert!(
+                demo.top() > px(0.) && demo.bottom() < NESTED_SCROLL_WINDOW.height,
+                "{selector}: is not on screen, it sits at {demo:?}"
+            );
+            let page_before = bounds_of(&mut cx, CONTENT_SCROLL).top();
+            let inner_before = read(&mut cx, &showcase, inner);
+            scroll_at(&mut cx, demo.center(), -demo.size.height / 4.);
+            let page_after = bounds_of(&mut cx, CONTENT_SCROLL).top();
+            let inner_after = read(&mut cx, &showcase, inner);
+            assert_ne!(
+                inner_after, inner_before,
+                "{selector}: its own scroller did not move, so this step proves nothing"
+            );
+            assert_eq!(
+                page_after, page_before,
+                "{selector}: the wheel moved the page from {page_before:?} to {page_after:?} \
+                 while the widget under the pointer still had room to scroll"
             );
         }
     }
