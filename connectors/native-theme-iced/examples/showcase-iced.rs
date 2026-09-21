@@ -50,7 +50,7 @@ use native_theme::icons::{
     SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, ResolvedTheme, TransformAnimation,
+    AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedTheme, TransformAnimation,
 };
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
@@ -93,6 +93,49 @@ impl Spacing {
 
 /// Showcase UI spacing constants.
 const SP: Spacing = Spacing::new();
+
+/// The four layout distances the platform itself states.
+///
+/// `LayoutTheme` is the one theme struct that is not per-variant, so it lives
+/// on the native `Theme` and on `SystemTheme` rather than on `ResolvedTheme`
+/// (`native-theme/src/model/widgets/mod.rs:884`). The showcase therefore keeps
+/// a copy of it beside the resolved theme and refreshes it whenever the theme
+/// is rebuilt.
+///
+/// Every field of `LayoutTheme` is an `Option`: `None` is the platform saying
+/// it states no such distance, and nothing is invented for it -- the
+/// showcase's own [`Spacing`] constant stands in, and the Theme Config
+/// Inspector says which of the two is on screen.
+struct Gaps {
+    /// Space between adjacent widgets, `layout.widget_gap`.
+    widget: f32,
+    /// Padding inside a container, `layout.container_margin`.
+    container: f32,
+    /// Padding inside the main window, `layout.window_margin`.
+    window: f32,
+    /// Space between major content sections, `layout.section_gap`.
+    section: f32,
+}
+
+impl Gaps {
+    fn from_layout(layout: &LayoutTheme) -> Self {
+        Self {
+            widget: layout.widget_gap.unwrap_or(SP.s),
+            container: layout.container_margin.unwrap_or(SP.l),
+            window: layout.window_margin.unwrap_or(SP.l),
+            section: layout.section_gap.unwrap_or(SP.xl),
+        }
+    }
+}
+
+/// How one layout distance reads in the Theme Config Inspector: the platform's
+/// value, or the showcase constant that stood in for it.
+fn layout_value(stated: Option<f32>, fallback: f32) -> String {
+    match stated {
+        Some(v) => format!("{v:.0}px"),
+        None => format!("{fallback:.0}px (showcase)"),
+    }
+}
 
 // ---------------------------------------------------------------------------
 // CLI argument parsing
@@ -266,7 +309,9 @@ impl Eq for ThemeChoice {}
 ///
 /// Returns `None` if any step fails (should not happen for bundled data,
 /// but we never panic).
-fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::theme::ResolvedTheme, Theme)> {
+fn load_adwaita_fallback(
+    is_dark: bool,
+) -> Option<(native_theme::theme::ResolvedTheme, Theme, LayoutTheme)> {
     let nt = native_theme::theme::Theme::preset("adwaita").ok()?;
     let variant = nt
         .pick_variant(if is_dark {
@@ -278,7 +323,7 @@ fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::theme::Resolved
         .clone();
     let r = variant.resolve_system().ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
-    Some((r, t))
+    Some((r, t, nt.layout.clone()))
 }
 
 fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
@@ -565,6 +610,10 @@ struct State {
     color_mode: AppColorMode,
     is_dark: bool,
     current_resolved: native_theme::theme::ResolvedTheme,
+    /// The current theme's layout spacing. Not part of `ResolvedTheme`: it is
+    /// shared between the light and the dark variant, so it sits on the
+    /// native `Theme` and on `SystemTheme` instead.
+    layout: LayoutTheme,
     /// OS accessibility preferences (from SystemTheme, not ResolvedTheme).
     accessibility: native_theme_iced::AccessibilityPreferences,
     /// Icon set for the current theme (from Theme or SystemTheme, not ResolvedTheme).
@@ -692,6 +741,7 @@ impl Default for State {
             init_icon_set,
             init_icon_theme,
             accessibility,
+            layout,
         ) = match native_theme::SystemTheme::from_system() {
             Ok(system) => {
                 let r = system
@@ -706,12 +756,13 @@ impl Default for State {
                 let is = system.icon_set;
                 let it = system.icon_theme.into_owned();
                 let acc = system.accessibility;
-                (r, t, None, preset, is, it, acc)
+                let lay = system.layout.clone();
+                (r, t, None, preset, is, it, acc, lay)
             }
             Err(e) => {
                 // Fallback: load adwaita preset through resolve pipeline
                 match load_adwaita_fallback(is_dark) {
-                    Some((r, t)) => (
+                    Some((r, t, lay)) => (
                         r,
                         t,
                         Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
@@ -719,6 +770,7 @@ impl Default for State {
                         IconSet::Freedesktop,
                         "Adwaita".to_string(),
                         native_theme_iced::AccessibilityPreferences::default(),
+                        lay,
                     ),
                     None => {
                         // This is the only safe fallback when both OS theme
@@ -803,6 +855,7 @@ impl Default for State {
             color_mode,
             is_dark,
             current_resolved: resolved,
+            layout,
             accessibility,
             current_icon_set: init_icon_set,
             current_icon_theme: init_icon_theme,
@@ -948,6 +1001,7 @@ impl State {
                         // Platform presets always specify icon_theme.
                         self.current_icon_set = system.icon_set;
                         self.accessibility = system.accessibility.clone();
+                        self.layout = system.layout.clone();
                         self.current_icon_theme = system.icon_theme.clone().into_owned();
                         icon_theme_opt = Some(self.current_icon_theme.clone());
                         self.current_resolved = system
@@ -965,12 +1019,13 @@ impl State {
                     Err(e) => {
                         self.error_message =
                             Some(format!("OS theme failed: {e}. Using adwaita fallback."));
-                        if let Some((r, t)) = load_adwaita_fallback(self.is_dark) {
+                        if let Some((r, t, lay)) = load_adwaita_fallback(self.is_dark) {
                             self.current_icon_set = IconSet::Freedesktop;
                             self.current_icon_theme = "Adwaita".to_string();
                             icon_theme_opt = Some("Adwaita".to_string());
                             self.current_resolved = r;
                             self.current_theme = t;
+                            self.layout = lay;
                         }
                     }
                 }
@@ -992,6 +1047,7 @@ impl State {
                             self.current_icon_set = r.icon_set;
                             self.current_icon_theme = icon_theme_string;
                             self.current_resolved = r.variant;
+                            self.layout = nt.layout.clone();
                             self.current_theme =
                                 native_theme_iced::to_theme(&self.current_resolved, &theme_name);
                             self.error_message = None;
@@ -1480,6 +1536,7 @@ fn update_inner(state: &mut State, message: Message) {
 // ---------------------------------------------------------------------------
 
 fn view(state: &State) -> Element<'_, Message> {
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let radius = native_theme_iced::border_radius(resolved);
     let sb_width = native_theme_iced::scrollbar_width(resolved);
@@ -1550,6 +1607,15 @@ fn view(state: &State) -> Element<'_, Message> {
             let sw = format!("scrollbar: {sb_width:.0}px");
             let bp = format!("btn pad: {:.0}\u{00d7}{:.0}", btn_pad.left, btn_pad.top);
             let ip = format!("input pad: {:.0}\u{00d7}{:.0}", inp_pad.left, inp_pad.top);
+            // The four LayoutTheme distances, and which of them the platform
+            // leaves to the showcase's own scale.
+            let lay = format!(
+                "widget gap: {}\ncontainer margin: {}\nwindow margin: {}\nsection gap: {}",
+                layout_value(state.layout.widget_gap, SP.s),
+                layout_value(state.layout.container_margin, SP.l),
+                layout_value(state.layout.window_margin, SP.l),
+                layout_value(state.layout.section_gap, SP.xl),
+            );
             column![
                 text("Theme Config Inspector").size(ts.caption.size),
                 text(r).size(ts.caption.size),
@@ -1557,6 +1623,7 @@ fn view(state: &State) -> Element<'_, Message> {
                 text(sw).size(ts.caption.size),
                 text(bp).size(ts.caption.size),
                 text(ip).size(ts.caption.size),
+                text(lay).size(ts.caption.size),
                 text(fi).size(ts.caption.size),
             ]
             .spacing(sp.xxs)
@@ -1600,7 +1667,7 @@ fn view(state: &State) -> Element<'_, Message> {
                     rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                     widget_info_panel,
                 ]
-                .spacing(sp.s)
+                .spacing(gap.widget)
                 .padding(Padding::from(sp.m))
                 .width(Length::Fixed(210.0)),
             )
@@ -1659,14 +1726,19 @@ fn view(state: &State) -> Element<'_, Message> {
     // ---- Right panel (tabs + content) ----
     let sp = &SP;
     let ts = &state.current_resolved.text_scale;
-    let tab_padding = Padding::ZERO.left(sp.l).right(sp.l).top(sp.s);
-    let content_padding = Padding::from(sp.l);
+    let tab_padding = Padding::ZERO
+        .left(gap.window)
+        .right(gap.window)
+        .top(gap.widget);
+    let content_padding = Padding::from(gap.window);
     let panel_spacing = sp.xs;
     let mut right_panel = column![].spacing(panel_spacing).width(Fill).height(Fill);
 
     // Error banner (if any)
     if let Some(ref msg) = state.error_message {
-        let danger = state.current_theme.palette().danger;
+        // The platform's own error colour, not the palette slot iced derives
+        // from it.
+        let danger = to_color(resolved.defaults.danger_color);
         right_panel = right_panel.push(
             container(text(msg.as_str()).color(danger).size(ts.caption.size))
                 .padding(
@@ -1784,6 +1856,7 @@ fn widget_tooltip_themed(
 
 fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let ext = state.current_theme.extended_palette();
@@ -1850,6 +1923,11 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
                         .style(styles::button_success(resolved))
                 ),
                 apply_pad(
+                    button("Warning")
+                        .on_press(Message::ButtonPressed)
+                        .style(styles::button_warning(resolved))
+                ),
+                apply_pad(
                     button("Danger")
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_danger(resolved))
@@ -1860,9 +1938,9 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
                         .style(styles::button_link(resolved))
                 ),
             ]
-            .spacing(sp.s),
+            .spacing(gap.widget),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -1901,9 +1979,9 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
                 apply_pad(button("Disabled Secondary").style(styles::button(resolved))),
                 apply_pad(button("Disabled Danger").style(styles::button_danger(resolved))),
             ]
-            .spacing(sp.s),
+            .spacing(gap.widget),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -1922,7 +2000,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
         .spacing(sp.m)
         .align_y(iced::Center),
     ]
-    .spacing(sp.s);
+    .spacing(gap.widget);
 
     column![
         header,
@@ -1932,7 +2010,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         interactive,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -1943,6 +2021,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 
 fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let i = &resolved.input;
@@ -2000,7 +2079,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 ))
                 .size(ts.caption.size),
             ]
-            .spacing(sp.s)
+            .spacing(gap.widget)
             .into(),
         )
     };
@@ -2028,7 +2107,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 text("TextInput (secure / password)").size(ts.dialog_title.size),
                 input,
             ]
-            .spacing(sp.s)
+            .spacing(gap.widget)
             .into(),
         )
     };
@@ -2060,7 +2139,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 .height(Length::Fixed(180.0)),
             text("Supports multi-line editing, selection, and scrolling").size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2072,7 +2151,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         multi_line,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -2083,6 +2162,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
 
 fn view_selection(state: &State) -> Element<'_, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let c = &resolved.checkbox;
@@ -2136,7 +2216,13 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
             &[
                 ("size", "hardcoded by iced"),
-                ("indicator size", "checkbox.indicator_width has no receiver"),
+                (
+                    "checkbox.indicator_width",
+                    "the model documents a stroke width, and iced has no receiver \
+                     for one: Checkbox::icon takes an Icon whose `size` is the \
+                     glyph's point size (checkbox.rs:229, :493-504), not the \
+                     thickness of its strokes",
+                ),
             ],
         ),
         column![
@@ -2171,7 +2257,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ))
             .size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2242,7 +2328,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ))
             .size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2290,7 +2376,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ))
             .size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2361,7 +2447,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ))
             .size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2413,7 +2499,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ))
             .size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2425,7 +2511,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                 togglers,
             ]
-            .spacing(sp.xl)
+            .spacing(gap.section)
             .width(Fill),
             rule::vertical(resolved.separator.line_width).style(styles::rule(resolved)),
             column![
@@ -2435,12 +2521,12 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
                 combos,
             ]
-            .spacing(sp.xl)
+            .spacing(gap.section)
             .width(Fill),
         ]
-        .spacing(sp.xl),
+        .spacing(gap.section),
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -2451,6 +2537,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 
 fn view_range(state: &State) -> Element<'_, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let sl = &resolved.slider;
@@ -2505,7 +2592,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             text("Drag to change value. This slider drives the first progress bar below.")
                 .size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2530,7 +2617,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             .spacing(sp.m)
             .align_y(iced::Center),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2563,9 +2650,9 @@ fn view_range(state: &State) -> Element<'_, Message> {
                 ]
                 .spacing(sp.xs),
             ]
-            .spacing(sp.l),
+            .spacing(gap.widget),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2613,7 +2700,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                 .girth(Length::Fixed(pb.track_height))
                 .style(styles::progress_bar(resolved)),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2627,7 +2714,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         progress,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -2638,6 +2725,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
 
 fn view_display(state: &State) -> Element<'_, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let card = &resolved.card;
@@ -2686,7 +2774,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 ]
                 .spacing(sp.xs),
             )
-            .padding(Padding::from(sp.l))
+            .padding(Padding::from(gap.container))
             .style(styles::container_card(resolved))
             .width(Fill),
             container(
@@ -2707,18 +2795,20 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let rules = column![
         text("Divider Rules").size(ts.dialog_title.size),
         text(format!(
-            "iced takes a rule's thickness as the constructor's argument; \
-             the platform states one, separator.line_width ({line_width_s}):"
+            "iced takes a rule's thickness as the constructor's argument, and the \
+             platform states exactly one: separator.line_width ({line_width_s}). \
+             Three rules at that width would be three copies of the same line, so \
+             here is the one:"
         ))
         .size(ts.section_heading.size),
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
-        text("The line color is separator.line_color.").size(ts.caption.size),
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
-        text("Its radius and fill mode have no native source — they are iced's.")
-            .size(ts.caption.size),
-        rule::horizontal(sep.line_width).style(styles::rule(resolved)),
+        text(
+            "Its colour is separator.line_color; its radius and its fill mode have \
+             no native source and are iced's own."
+        )
+        .size(ts.caption.size),
     ]
-    .spacing(sp.s);
+    .spacing(gap.widget);
 
     let tooltips = hoverable(
         widget_tooltip(
@@ -2784,7 +2874,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             ]
             .spacing(sp.m),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -2821,7 +2911,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
         ]
         .spacing(sp.xs),
     )
-    .padding(Padding::from(sp.l))
+    .padding(Padding::from(gap.container))
     .style(styles::container_card(resolved))
     .width(Fill);
 
@@ -2848,10 +2938,10 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 .padding(Padding::from(sp.m))
                 .style(styles::container_card(resolved)),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .align_y(iced::Center),
     ]
-    .spacing(sp.s);
+    .spacing(gap.widget);
 
     column![
         header,
@@ -2865,7 +2955,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         info_box,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -2884,6 +2974,7 @@ type ScaleRow = (&'static str, String, String, String);
 /// other widgets rather than paint a control.
 fn view_layout(state: &State) -> Element<'_, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
@@ -2965,10 +3056,10 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 cell("surface_color", to_color(d.surface_color)),
             ])
             .columns(4)
-            .spacing(sp.s)
+            .spacing(gap.widget)
             .height(Length::Fixed(64.0)),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3084,7 +3175,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             .size(ts.section_heading.size),
             panes,
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3172,7 +3263,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             text("The four typographic roles this theme resolves:").size(ts.section_heading.size),
             scale_table,
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3184,7 +3275,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         table_demo,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -3280,6 +3371,7 @@ impl<Message> canvas::Program<Message> for ThemeSketch {
 /// application supplies rather than a control.
 fn view_graphics(state: &State) -> Element<'_, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
@@ -3344,7 +3436,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                 .width(Length::Fixed(280.0))
                 .height(Length::Fixed(120.0)),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3383,7 +3475,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                 .size(ts.section_heading.size),
             qr_demo,
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3473,12 +3565,12 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                 markdown::view(state.markdown_content.items(), md_settings)
                     .map(Message::MarkdownLinkClicked)
             )
-            .padding(Padding::from(sp.l))
+            .padding(Padding::from(gap.container))
             .style(styles::container_card(resolved))
             .width(Fill),
             text(link_line).size(ts.caption.size),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3490,7 +3582,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         markdown_demo,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -3526,6 +3618,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     use std::rc::Rc;
 
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
@@ -3610,7 +3703,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             )],
         ),
         column![text("Card").size(ts.dialog_title.size), card_section,]
-            .spacing(sp.s)
+            .spacing(gap.widget)
             .into(),
     );
 
@@ -3698,7 +3791,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             text("MenuBar and its Menus").size(ts.dialog_title.size),
             menu_bar,
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3716,7 +3809,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         ]
         .spacing(sp.xs),
     )
-    .padding(Padding::from(sp.l))
+    .padding(Padding::from(gap.container))
     .style(styles::container_card(resolved))
     .width(Fill);
 
@@ -3825,7 +3918,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             tab_bar_body,
             tabs,
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3897,13 +3990,13 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     })
                     .size(ts.caption.size),
                 )
-                .padding(Padding::from(sp.l))
+                .padding(Padding::from(gap.container))
                 .style(styles::container_card(resolved))
                 .width(Fill),
             ]
-            .spacing(sp.s),
+            .spacing(gap.widget),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3936,7 +4029,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             )
             .style(styles::aw::spinner(resolved)),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -3995,7 +4088,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             text("SelectionList").size(ts.dialog_title.size),
             selection_list,
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -4012,7 +4105,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         menu_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
-        column![text("ContextMenu").size(ts.dialog_title.size), context_demo,].spacing(sp.s),
+        column![text("ContextMenu").size(ts.dialog_title.size), context_demo,].spacing(gap.widget),
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         tab_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
@@ -4022,7 +4115,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         list_demo,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
@@ -4033,6 +4126,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
 fn view_icons(state: &State) -> Element<'_, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let loaded_count = state
@@ -4095,7 +4189,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
                 )
             })
             .collect();
-        grid_rows.push(row(row_icons).spacing(sp.s).into());
+        grid_rows.push(row(row_icons).spacing(gap.widget).into());
         idx = end;
     }
 
@@ -4107,7 +4201,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         animated_section,
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved))
     ]
-    .spacing(sp.l);
+    .spacing(gap.section);
     for r in grid_rows {
         content = content.push(r);
     }
@@ -4117,6 +4211,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 
 fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let icon_px = resolved.defaults.icon_sizes.large;
@@ -4190,7 +4285,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         }
     }
 
-    let mut content = column![section_title, divider].spacing(sp.s);
+    let mut content = column![section_title, divider].spacing(gap.widget);
 
     if state.reduced_motion {
         content = content
@@ -4202,7 +4297,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
             text("No animated icons available for this configuration.").size(ts.caption.size),
         );
     } else {
-        content = content.push(row(spinners).spacing(sp.xl));
+        content = content.push(row(spinners).spacing(gap.section));
     }
 
     content.into()
@@ -4293,6 +4388,7 @@ fn placeholder_icon<'a>(size: f32, box_size: f32) -> Element<'a, Message> {
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
     let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let header = section_header(
@@ -4361,7 +4457,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             ]
             .spacing(sp.m),
         ]
-        .spacing(sp.s)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -4479,7 +4575,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         let mut col = column![
             text("Resolved Theme Colors (defaults + per-widget)").size(ts.dialog_title.size),
         ]
-        .spacing(sp.s);
+        .spacing(gap.widget);
         for r in rows {
             col = col.push(r);
         }
@@ -4504,7 +4600,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         native_colors,
     ]
-    .spacing(sp.xl)
+    .spacing(gap.section)
     .width(Fill)
     .into()
 }
