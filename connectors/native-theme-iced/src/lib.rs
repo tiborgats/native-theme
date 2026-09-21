@@ -692,7 +692,7 @@ mod tests {
     #[test]
     fn font_size_ignores_a_factor_that_is_not_finite_and_positive() {
         let resolved = make_resolved(false);
-        for factor in [0.0, f32::NAN, -1.0] {
+        for factor in [0.0, f32::NAN, -1.0, f32::INFINITY, f32::NEG_INFINITY] {
             assert_eq!(
                 font_size(&resolved, &scaled_prefs(factor)),
                 resolved.defaults.font.size,
@@ -714,7 +714,7 @@ mod tests {
     #[test]
     fn mono_font_size_ignores_a_factor_that_is_not_finite_and_positive() {
         let resolved = make_resolved(false);
-        for factor in [0.0, f32::NAN, -1.0] {
+        for factor in [0.0, f32::NAN, -1.0, f32::INFINITY, f32::NEG_INFINITY] {
             assert_eq!(
                 mono_font_size(&resolved, &scaled_prefs(factor)),
                 resolved.defaults.mono_font.size,

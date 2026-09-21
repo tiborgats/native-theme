@@ -1414,7 +1414,7 @@ pub(super) const AW_STATUSES: &[AwStatus] = &[
 
 /// A card and a menu bar look the same in every status -- the model states one
 /// appearance for each, and `iced_aw`'s own classes ignore the status too
-/// (`style/card.rs:92`, `style/menu_bar.rs:83`) -- so their rows cover every
+/// (`style/card.rs:89`, `style/menu_bar.rs:83`) -- so their rows cover every
 /// value of the enum.
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_CARD_STATUSES: &[AwStatus] = AW_STATUSES;
@@ -1800,6 +1800,14 @@ pub(super) const AW_SELECTION_LIST_ROWS: &[StyleRow<AwStatus>] = &[
     },
 ];
 
+#[cfg(feature = "iced_aw")]
+pub(super) const AW_SELECTION_LIST_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[ScalarRow {
+    field: "styles::aw::selection_list.border_width",
+    statuses: AW_STATUSES,
+    native: |_, r, _| r.list.border.line_width,
+    get: |t, r, s| Ok(styles::aw::selection_list(r)(t, s).border_width),
+}];
+
 /// `styles::aw::spinner` is shape B -- a spinner has no status, and the
 /// container it styles takes none either -- so its rows hold the unit value.
 #[cfg(feature = "iced_aw")]
@@ -1816,14 +1824,6 @@ pub(super) const AW_SPINNER_ROWS: &[StyleRow<()>] = &[StyleRow {
     statuses: AW_SPINNER_STATUSES,
     native: |r, ()| to_color(r.spinner.fill_color),
     get: |t, r, ()| stated(styles::aw::spinner(r)(t).text_color),
-}];
-
-#[cfg(feature = "iced_aw")]
-pub(super) const AW_SELECTION_LIST_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[ScalarRow {
-    field: "styles::aw::selection_list.border_width",
-    statuses: AW_STATUSES,
-    native: |_, r, _| r.list.border.line_width,
-    get: |t, r, s| Ok(styles::aw::selection_list(r)(t, s).border_width),
 }];
 
 /// The `field` of every style row, from every function's consts.

@@ -78,6 +78,9 @@ pub(crate) fn apply_overrides(
     extended: &mut iced_core::theme::palette::Extended,
     colors: &OverrideColors,
 ) {
+    // Ordering: the label is read from `background.base.text` as iced
+    // generated it, so an override of that slot would have to be written
+    // above this line to reach it.
     extended.secondary.base =
         Pair::new(to_color(colors.placeholder), extended.background.base.text);
     // A hovered `button::secondary` keeps the base label and swaps only the

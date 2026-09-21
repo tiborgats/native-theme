@@ -190,11 +190,12 @@ fn border_fields(border: &Border, prefix: &str) -> Vec<String> {
 /// Every leaf of an iced `container::Style` under `prefix`, destructured with
 /// no `..`.
 ///
-/// One walker for the three places one appears -- `styles::tooltip`,
-/// `styles::container_card` and the `container` a `scrollable::Style` nests --
-/// so an upstream addition fails to compile here once rather than three times.
-/// It is one of the two structs with a `Default`, so without this nothing
-/// would notice the addition at all (section 3.2).
+/// One walker for every place one appears -- `styles::tooltip`,
+/// `styles::container_card`, the `container` a `scrollable::Style` nests, and
+/// `styles::aw::spinner` where the `iced_aw` feature is on -- so an upstream
+/// addition fails to compile here once rather than once per caller. It is one
+/// of the two structs with a `Default`, so without this nothing would notice
+/// the addition at all (section 3.2).
 #[cfg(feature = "widgets")]
 fn container_fields(style: &container::Style, prefix: &str) -> Vec<String> {
     let mut out = Vec::new();
@@ -1682,10 +1683,11 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
 
     // These two cross-checks cannot fire while the naming convention holds: an
     // `UNREACHABLE` entry names a *native* field (`scrollbar.min_thumb_length`)
-    // and every row and `DERIVED` name is an emitted one, `styles::`-prefixed,
-    // so the two namespaces never meet. What they guard is the convention
-    // itself -- a row or a `DERIVED` entry written under a native name would be
-    // caught here. The live protection for the entry's own claim is
+    // and every row and `DERIVED` name is an emitted one -- `palette.*`,
+    // `extended.*` or `styles::*` -- so the two namespaces never meet. What
+    // they guard is the convention itself -- a row or a `DERIVED` entry
+    // written under a native name would be caught here. The live protection
+    // for the entry's own claim is
     // `the_unreachable_native_value_is_stated_by_every_preset`.
     for (field, evidence) in UNREACHABLE {
         assert_eq!(

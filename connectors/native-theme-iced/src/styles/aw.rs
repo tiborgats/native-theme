@@ -34,7 +34,7 @@ use native_theme::theme::ResolvedTheme;
 
 /// The platform's own card, for `Card::style(..)`.
 ///
-/// Replaces `iced_aw::style::card::primary` (`style/card.rs:92`), the class a
+/// Replaces `iced_aw::style::card::primary` (`style/card.rs:89`), the class a
 /// `Card` gets with no `.style(..)`: it paints the head in the crate's own
 /// `colors::PRIMARY` and labels it white, neither of which is a platform
 /// value.
@@ -98,10 +98,10 @@ pub fn card(
 /// because the model's only menu border is the panel's and drawing it around a
 /// highlighted row would outline something the platform does not.
 ///
-/// `menu.hover_text_color`, `menu.font.color`, `.separator_color`,
-/// `.row_height`, `.icon_size` and `.icon_text_gap` have no receiver:
-/// `menu_bar::Style` states no text color and no geometry, and an `iced_aw`
-/// menu's items are the consumer's own widgets.
+/// `menu.hover_text_color`, `menu.font.color`, `.disabled_text_color`,
+/// `.separator_color`, `.row_height`, `.icon_size` and `.icon_text_gap` have
+/// no receiver: `menu_bar::Style` states no text color and no geometry, and an
+/// `iced_aw` menu's items are the consumer's own widgets.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn menu(
     resolved: &ResolvedTheme,
@@ -234,8 +234,11 @@ pub fn tab_bar(
 /// function fills (spec section 3.2).
 ///
 /// The panel is `sidebar.background_color` with `sidebar.border.*`, the one
-/// border the model states for a sidebar. `icon_color` is the item's label
-/// color, as it is on a tab.
+/// border the model states for a sidebar -- its color and its width, because
+/// `sidebar.border.corner_radius` has no receiver: `sidebar::Style` carries no
+/// radius but the close icon's, and `iced_aw` rounds the panel and the items
+/// with a hardcoded `(0.0).into()` (`sidebar/sidebar.rs:616`, `:992`).
+/// `icon_color` is the item's label color, as it is on a tab.
 ///
 /// Five fields have no native source and come from
 /// `sidebar::primary(theme, status)`: the items' own `tab_label_border_color`
@@ -301,11 +304,16 @@ pub fn sidebar(
 /// `selection_list/list.rs:241-258`), which are `list.background_color` with
 /// `list.item_font.color`, `list.hover_background` with `.hover_text_color`,
 /// and `.selection_background` with `.selection_text_color`. `Disabled` is
-/// `list.disabled_text_color` on the list's own fill. The row fills are emitted
-/// as given: a row is painted over the list this same function fills (spec
-/// section 3.2).
+/// `list.disabled_text_color` on the list's own fill -- a mapping the model
+/// does describe but that nothing paints today, because `iced_aw` 0.14.1 asks
+/// a row only for `Selected`, `Hovered` and `Active`
+/// (`selection_list/list.rs:241-258`). The row fills are emitted as given: a
+/// row is painted over the list this same function fills (spec section 3.2).
 ///
-/// The outline is `list.border.*`. `Pressed` and `Focused`, which a
+/// The outline is `list.border.*` -- its color and its width, because
+/// `list.border.corner_radius` has no receiver: `selection_list::Style` carries
+/// no radius at all, and `iced_aw` outlines the list with a hardcoded
+/// `(0.0).into()` (`selection_list.rs:309`). `Pressed` and `Focused`, which a
 /// `SelectionList` never asks for and the model describes no row in, come from
 /// `selection_list::primary(theme, status)`.
 ///
