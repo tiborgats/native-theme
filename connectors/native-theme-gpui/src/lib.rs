@@ -57,16 +57,16 @@
 //! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
 //! | `sidebar` | 2 of 6 | background, font.color |
-//! | `window` | 2 of 6 | title_bar_background, border |
-//! | `input` | 2 of 13 colours + geometry | border, caret; height, radius, border, text via `geometry::input` |
+//! | `window` | 3 of 6 | background_color, title_bar_background, border |
+//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, radius, border, text via `geometry::input` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 2 of 3 | background, border |
-//! | `table` | head + foot | `table_foot*` mirror `table_head*` |
+//! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 3 of 13 colours + geometry | row height, padding, font via `geometry::list_item` |
+//! | `list` | 6 of 13 + geometry | background, alternate row, selection, hover, header background and header font colour; row height, padding, font via `geometry::list_item` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
-//! | `link` | 1 of 9 | hover_background |
+//! | `link` | 2 of 8 | hover_text_color, active_text_color; `link.hover_background` has no receiver (see `contract::NO_RECEIVER`) |
 //! | `splitter` | colours | divider/hover via `base_layer::resizable_theme`; width upstream |
 //!
 //! **Per-widget geometry.** Heights, paddings, radii, borders and text sizes

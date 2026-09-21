@@ -52,9 +52,13 @@ struct ComputedRow {
 /// `DERIVED`; the three lists partition the 138 fields, which
 /// `every_theme_color_field_has_a_declared_source` asserts.
 const ROWS: &[Row] = &[
+    // The model states the window's own fill, which inherits
+    // `defaults.background_color` and which no bundled preset overrides; the
+    // row names the field the token means rather than the one it happens to
+    // equal.
     Row {
         slot: "background",
-        native: |r| r.defaults.background_color,
+        native: |r| r.window.background_color,
         get: |tc| tc.background,
         exceptions: &[],
     },
@@ -102,9 +106,17 @@ const ROWS: &[Row] = &[
         get: |tc| tc.ring,
         exceptions: &[],
     },
+    // Upstream documents `selection` as the *input* selection background
+    // (`theme_color.rs:226`) and every reader is a text selection: the input
+    // editor style (`input/input.rs:502`), the text view (`text/mod.rs:51`)
+    // and the touch handle (`touch_selection/handle.rs:96`). The model's
+    // counterpart is therefore `input.selection_background`, which inherits
+    // `defaults.text_selection_background` and in turn
+    // `defaults.selection_background` -- the row-selection colour the
+    // `sidebar_accent` and `list_active` rows read.
     Row {
         slot: "selection",
-        native: |r| r.defaults.selection_background,
+        native: |r| r.input.selection_background,
         get: |tc| tc.selection,
         exceptions: &[],
     },
@@ -319,7 +331,7 @@ const ROWS: &[Row] = &[
     },
     Row {
         slot: "list",
-        native: |r| r.defaults.background_color,
+        native: |r| r.list.background_color,
         get: |tc| tc.list,
         exceptions: &[],
     },
@@ -341,15 +353,22 @@ const ROWS: &[Row] = &[
         get: |tc| tc.list_even,
         exceptions: &[],
     },
+    // The header row's own fill: the model states it
+    // (`list.header_background`, inheriting `defaults.surface_color`), and it
+    // differs from the window background in nearly every preset. Upstream
+    // paints `table_head` as the header row (`table/column.rs:278`,
+    // `table/state.rs:1528, :1768`, `table/table.rs:199`); `list_head` has no
+    // reader in 0.6.4 beyond a schema fallback (`theme/schema.rs:968, 1006`),
+    // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
-        native: |r| r.defaults.background_color,
+        native: |r| r.list.header_background,
         get: |tc| tc.list_head,
         exceptions: &[],
     },
     Row {
         slot: "table",
-        native: |r| r.defaults.background_color,
+        native: |r| r.list.background_color,
         get: |tc| tc.table,
         exceptions: &[],
     },
@@ -373,13 +392,15 @@ const ROWS: &[Row] = &[
     },
     Row {
         slot: "table_head",
-        native: |r| r.defaults.background_color,
+        native: |r| r.list.header_background,
         get: |tc| tc.table_head,
         exceptions: &[],
     },
+    // The header row's own text (`table/table.rs:200`,
+    // `table/state.rs:1769`), which the model states as `list.header_font`.
     Row {
         slot: "table_head_foreground",
-        native: |r| r.defaults.muted_color,
+        native: |r| r.list.header_font.color,
         get: |tc| tc.table_head_foreground,
         exceptions: &[],
     },
@@ -387,20 +408,6 @@ const ROWS: &[Row] = &[
         slot: "table_row_border",
         native: |r| r.defaults.border.color,
         get: |tc| tc.table_row_border,
-        exceptions: &[],
-    },
-    // The footer mirrors the header (`ListTheme` has no footer field), so it
-    // lands on the same two native values rather than on a derivation.
-    Row {
-        slot: "table_foot",
-        native: |r| r.defaults.background_color,
-        get: |tc| tc.table_foot,
-        exceptions: &[],
-    },
-    Row {
-        slot: "table_foot_foreground",
-        native: |r| r.defaults.muted_color,
-        get: |tc| tc.table_foot_foreground,
         exceptions: &[],
     },
     Row {
@@ -519,9 +526,12 @@ const ROWS: &[Row] = &[
         get: |tc| tc.popover_foreground,
         exceptions: &[],
     },
+    // The model has no accordion or expander fill -- `ExpanderTheme` states
+    // geometry and a soft hover only -- so the connector gives the panel the
+    // window's own fill, which is what this row names.
     Row {
         slot: "accordion",
-        native: |r| r.defaults.background_color,
+        native: |r| r.window.background_color,
         get: |tc| tc.accordion,
         exceptions: &[],
     },
@@ -691,6 +701,12 @@ fn native_button_fill(r: &ResolvedTheme) -> Hsla {
     rgba_to_hsla(r.button.background_color)
 }
 
+/// The window's own fill: the surface everything else is painted over, and the
+/// native field the `background` row pins `tokens.background` to.
+fn native_window(r: &ResolvedTheme) -> Hsla {
+    rgba_to_hsla(r.window.background_color)
+}
+
 /// The pressed fill the platform gives an ordinary button.
 ///
 /// `button.active_background` is a soft option: where the platform states
@@ -790,6 +806,18 @@ const DERIVED: &[(&str, &str)] = &[
     ("button_success_active", "a copy of success_active"),
     ("button_warning_hover", "a copy of warning_hover"),
     ("button_warning_active", "a copy of warning_active"),
+    // Upstream really does paint a table footer (`table/table.rs:340-341`),
+    // but the model carries no footer colour of any kind -- `ListTheme` states
+    // a header and rows and nothing below them -- so neither field can name a
+    // native source without inventing one.
+    (
+        "table_foot",
+        "no native footer colour; the window background",
+    ),
+    (
+        "table_foot_foreground",
+        "no native footer text colour; the muted foreground",
+    ),
     (
         "list_active_border",
         "the primary colour at 0.6 alpha over the background",
@@ -1254,7 +1282,7 @@ const PAIRS: &[Pair] = &[
     Pair {
         what: "window text on the window",
         native: |r, _| {
-            let bg = rgba_to_hsla(r.defaults.background_color);
+            let bg = native_window(r);
             (rgba_to_hsla(r.defaults.text_color), bg, bg)
         },
         emitted: |tc| (tc.foreground, tc.background, tc.background),
@@ -1263,7 +1291,7 @@ const PAIRS: &[Pair] = &[
     Pair {
         what: "muted text on the window",
         native: |r, _| {
-            let bg = rgba_to_hsla(r.defaults.background_color);
+            let bg = native_window(r);
             (rgba_to_hsla(r.defaults.muted_color), bg, bg)
         },
         emitted: |tc| (tc.muted_foreground, tc.background, tc.background),
@@ -1275,7 +1303,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.button.primary_text_color),
                 rgba_to_hsla(r.button.primary_background),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.primary_foreground, tc.primary, tc.background),
@@ -1287,7 +1315,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.button.font.color),
                 native_button_fill(r),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.secondary_foreground, tc.secondary, tc.background),
@@ -1302,7 +1330,7 @@ const PAIRS: &[Pair] = &[
                     rgba_to_hsla(r.button.hover_background),
                     native_button_fill(r),
                 ),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.button_foreground, tc.button_hover, tc.background),
@@ -1314,7 +1342,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.button.active_text_color),
                 over(native_pressed_fill(r, is_dark), native_button_fill(r)),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.button_foreground, tc.button_active, tc.background),
@@ -1341,7 +1369,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.popover.font.color),
                 rgba_to_hsla(r.popover.background_color),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.popover_foreground, tc.popover, tc.background),
@@ -1353,7 +1381,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.defaults.danger_text_color),
                 rgba_to_hsla(r.defaults.danger_color),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.danger_foreground, tc.danger, tc.background),
@@ -1365,7 +1393,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.defaults.success_text_color),
                 rgba_to_hsla(r.defaults.success_color),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.success_foreground, tc.success, tc.background),
@@ -1377,7 +1405,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.defaults.warning_text_color),
                 rgba_to_hsla(r.defaults.warning_color),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.warning_foreground, tc.warning, tc.background),
@@ -1389,7 +1417,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.defaults.info_text_color),
                 rgba_to_hsla(r.defaults.info_color),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.info_foreground, tc.info, tc.background),
@@ -1401,7 +1429,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.sidebar.font.color),
                 rgba_to_hsla(r.sidebar.background_color),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.sidebar_foreground, tc.sidebar, tc.background),
@@ -1470,7 +1498,7 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.defaults.text_color),
                 rgba_to_hsla(r.window.title_bar_background),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.foreground, tc.title_bar, tc.background),
@@ -1482,17 +1510,23 @@ const PAIRS: &[Pair] = &[
             (
                 rgba_to_hsla(r.status_bar.font.color),
                 rgba_to_hsla(r.status_bar.background_color),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.foreground, tc.status_bar, tc.background),
         exceptions: &[],
     },
+    // The header row upstream paints: `table_head_foreground` on
+    // `tokens.table_head` (`table/table.rs:199-200`,
+    // `table/state.rs:1768-1769`), over the window behind the table.
     Pair {
-        what: "table header text",
+        what: "table head text",
         native: |r, _| {
-            let bg = rgba_to_hsla(r.defaults.background_color);
-            (rgba_to_hsla(r.defaults.muted_color), bg, bg)
+            (
+                rgba_to_hsla(r.list.header_font.color),
+                rgba_to_hsla(r.list.header_background),
+                rgba_to_hsla(r.window.background_color),
+            )
         },
         emitted: |tc| (tc.table_head_foreground, tc.table_head, tc.background),
         exceptions: &[],
@@ -1524,7 +1558,7 @@ const PAIRS: &[Pair] = &[
     Pair {
         what: "link on the window",
         native: |r, _| {
-            let bg = rgba_to_hsla(r.defaults.background_color);
+            let bg = native_window(r);
             (rgba_to_hsla(r.defaults.link_color), bg, bg)
         },
         emitted: |tc| (tc.link, tc.background, tc.background),
@@ -1536,7 +1570,7 @@ const PAIRS: &[Pair] = &[
     Pair {
         what: "hovered link text",
         native: |r, _| {
-            let bg = rgba_to_hsla(r.defaults.background_color);
+            let bg = native_window(r);
             (rgba_to_hsla(r.link.hover_text_color), bg, bg)
         },
         emitted: |tc| (tc.link_hover, tc.background, tc.background),
@@ -1545,7 +1579,7 @@ const PAIRS: &[Pair] = &[
     Pair {
         what: "pressed link text",
         native: |r, _| {
-            let bg = rgba_to_hsla(r.defaults.background_color);
+            let bg = native_window(r);
             (rgba_to_hsla(r.link.active_text_color), bg, bg)
         },
         emitted: |tc| (tc.link_active, tc.background, tc.background),
@@ -1594,7 +1628,7 @@ const REPORTED: &[Reported] = &[
             (
                 rgba_to_hsla(r.defaults.selection_text_color),
                 rgba_to_hsla(r.defaults.selection_background),
-                rgba_to_hsla(r.defaults.background_color),
+                native_window(r),
             )
         },
         emitted: |tc| (tc.foreground, tc.selection, tc.background),

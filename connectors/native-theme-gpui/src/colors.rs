@@ -90,6 +90,11 @@ struct ResolvedColors {
     sidebar_fg: Hsla,
     popover: Hsla,
     popover_fg: Hsla,
+    list_bg: Hsla,
+    // The header row's own fill and text, which the model states separately
+    // from the list body (`list.header_background`, `list.header_font`).
+    list_header_bg: Hsla,
+    list_header_fg: Hsla,
     alternate_row: Hsla,
     // Issue 20: per-widget colors cached to avoid repeated rgba_to_hsla calls
     // in assign_tab_sidebar() and assign_misc().
@@ -140,7 +145,10 @@ pub fn to_theme_color(
     reduce_transparency: bool,
 ) -> ThemeColor {
     let d = &resolved.defaults;
-    let bg = rgba_to_hsla(d.background_color);
+    // The window's own fill, which the model states and which inherits
+    // `defaults.background_color`; upstream's `background` token is the window
+    // surface (`title_bar.rs:341`, `tab/tab.rs:248`).
+    let bg = rgba_to_hsla(resolved.window.background_color);
     let fg = rgba_to_hsla(d.text_color);
 
     // Issue 2: d.muted IS the muted foreground color (subdued text).
@@ -172,7 +180,11 @@ pub fn to_theme_color(
         warning_fg: rgba_to_hsla(d.warning_text_color),
         info: rgba_to_hsla(d.info_color),
         info_fg: rgba_to_hsla(d.info_text_color),
-        selection: rgba_to_hsla(d.selection_background),
+        // Upstream's `selection` is the *input* selection background
+        // (`theme_color.rs:226`, `input/input.rs:502`), which the model states
+        // as `input.selection_background`; `defaults.selection_background` is
+        // the row-selection colour `list_active` and `sidebar_accent` take.
+        selection: rgba_to_hsla(resolved.input.selection_background),
         link: rgba_to_hsla(d.link_color),
         ring: rgba_to_hsla(d.focus_ring_color),
         input: rgba_to_hsla(resolved.input.border.color),
@@ -180,6 +192,9 @@ pub fn to_theme_color(
         sidebar_fg: rgba_to_hsla(resolved.sidebar.font.color),
         popover: rgba_to_hsla(resolved.popover.background_color),
         popover_fg: rgba_to_hsla(resolved.popover.font.color),
+        list_bg: rgba_to_hsla(resolved.list.background_color),
+        list_header_bg: rgba_to_hsla(resolved.list.header_background),
+        list_header_fg: rgba_to_hsla(resolved.list.header_font.color),
         alternate_row: rgba_to_hsla(resolved.list.alternate_row_background),
         // Issue 20: per-widget colors
         tab_bg: rgba_to_hsla(resolved.tab.background_color),
@@ -352,26 +367,36 @@ fn assign_buttons(tc: &mut ThemeColor) {
 }
 
 fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
-    tc.list = c.bg;
+    tc.list = c.list_bg;
     tc.list_hover = c.list_hover_bg;
     tc.list_active = c.list_selection_bg;
     // List active border: 60% primary over background.
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
-    tc.list_head = c.bg;
+    // The column header's own fill, which upstream paints as the header row
+    // (`table/column.rs:278`, `table/state.rs:1528, :1768`,
+    // `table/table.rs:199`) and the model states as `list.header_background`.
+    // The window background it used to take is the surface the header sits
+    // on, not the header.
+    tc.list_head = c.list_header_bg;
 
-    tc.table = c.bg;
+    tc.table = c.list_bg;
     tc.table_hover = tc.list_hover;
     tc.table_active = tc.list_active;
     tc.table_active_border = tc.list_active_border;
     tc.table_even = tc.list_even;
-    tc.table_head = c.bg;
-    tc.table_head_foreground = c.muted_fg;
+    tc.table_head = c.list_header_bg;
+    // The header row's own text (`table/table.rs:200`,
+    // `table/state.rs:1769`): `list.header_font.color`, not the muted
+    // foreground upstream falls back to (`theme/schema.rs:1007`).
+    tc.table_head_foreground = c.list_header_fg;
     tc.table_row_border = c.border;
-    // Derivation (spec §6.2): the footer mirrors the header; ListTheme has no
-    // footer field and transparent black is not a colour.
-    tc.table_foot = tc.table_head;
-    tc.table_foot_foreground = tc.table_head_foreground;
+    // Derivation (spec §6.2): upstream paints a table footer
+    // (`table/table.rs:340-341`) and the model states no footer colour of any
+    // kind, so these stay the window's own background and muted text rather
+    // than naming a native footer value there is none of.
+    tc.table_foot = c.bg;
+    tc.table_foot_foreground = c.muted_fg;
 }
 
 fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
@@ -533,7 +558,8 @@ impl BasePaletteInputs {
     pub(crate) fn from_resolved(resolved: &ResolvedTheme) -> Self {
         let d = &resolved.defaults;
         Self {
-            bg: rgba_to_hsla(d.background_color),
+            // The window's own fill, as `to_theme_color` reads it.
+            bg: rgba_to_hsla(resolved.window.background_color),
             accent: rgba_to_hsla(d.accent_color),
             danger: rgba_to_hsla(d.danger_color),
             success: rgba_to_hsla(d.success_color),
@@ -1006,8 +1032,10 @@ mod tests {
         let resolved = test_resolved();
         let tc = to_theme_color(&resolved, true, false);
 
-        // The theme's selection color should be used as-is, not alpha-clamped to 0.3
-        let expected = rgba_to_hsla(resolved.defaults.selection_background);
+        // The theme's selection color should be used as-is, not alpha-clamped to 0.3.
+        // `selection` is upstream's *input* selection background
+        // (`theme_color.rs:226`), so the field is `input.selection_background`.
+        let expected = rgba_to_hsla(resolved.input.selection_background);
         assert_eq!(
             tc.selection, expected,
             "selection should use theme value without alpha clamping"
@@ -1476,7 +1504,8 @@ mod tests {
         let resolved = test_resolved();
         let tc = to_theme_color(&resolved, true, false);
 
-        let bg = rgba_to_hsla(resolved.defaults.background_color);
+        // The window's own fill, which is what the derivation blends onto.
+        let bg = rgba_to_hsla(resolved.window.background_color);
         let primary = rgba_to_hsla(resolved.button.primary_background);
         let expected_border = bg.blend(primary.opacity(0.6));
 
