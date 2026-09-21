@@ -474,8 +474,10 @@ fn native_control_height(cx: &App) -> Option<Pixels> {
 }
 
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
-/// wherever the platform specifies nothing (platform-facts §2.20). The
-/// fallback is whatever the caller already used.
+/// wherever the platform specifies nothing (platform-facts §2.20). All 16
+/// bundled presets state `layout.widget_gap`, so the `None` arm is reached
+/// only on the `from_system()` error branch; there the widget keeps gpui's own
+/// default gap, because nothing native is known to set.
 fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
     match gap {
         Some(g) => widget.gap(g),
@@ -3357,7 +3359,13 @@ impl Showcase {
                                 .text_sm()
                                 .text_color(t.muted_foreground),
                             )
-                            .child(Rating::new("rating-disabled").value(2).disabled(true)),
+                            .child({
+                                let disabled = Rating::new("rating-disabled").value(2).disabled(true);
+                                match native_value(cx, geometry::icon_size_small) {
+                                    Some(size) => disabled.with_size(size),
+                                    None => disabled,
+                                }
+                            }),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -3369,8 +3377,8 @@ impl Showcase {
                         &[],
                         &[
                             ("star size", "geometry::icon_size_small: defaults.icon_sizes.small"),
-                            ("active colour", "cx.theme().yellow unless Rating::color overrides it (rating.rs:120)"),
-                            ("hover preview", "upstream keeps its own hovered value (rating.rs:104-106)"),
+                            ("active colour", "cx.theme().yellow unless Rating::color overrides it (rating.rs, Rating::render active_color)"),
+                            ("hover preview", "upstream keeps its own hovered value (rating.rs, RaitingState::hovered_value)"),
                         ],
                     )),
             )
@@ -3420,7 +3428,7 @@ impl Showcase {
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
                             ("geometry", "geometry::combobox: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font"),
-                            ("delegate", "SearchableListDelegate, implemented in this showcase (combobox.rs:749)"),
+                            ("delegate", "SearchableListDelegate, implemented in this showcase (combobox.rs, Combobox<D>)"),
                             ("caret", "inner element (Tier U)"),
                         ],
                     )),
@@ -3568,7 +3576,8 @@ impl Showcase {
                             ("row height", "hardcoded per Size"),
                             (
                                 "geometry",
-                                "DataTable is not Styled (table/data_table.rs:91-145); \
+                                "DataTable is not Styled (table/data_table.rs: DataTable impls \
+                                 Sizable and RenderOnce, not Styled); \
                                  geometry::table goes to the declarative Table below",
                             ),
                         ],
@@ -3630,7 +3639,7 @@ impl Showcase {
                         ],
                         &[],
                         &[
-                            ("geometry", "geometry::table: list.item_font on the table root (table/table.rs:111 → :114)"),
+                            ("geometry", "geometry::table: list.item_font on the table root (table/table.rs, Table::render: text_sm then refine_style)"),
                             ("cell padding", "inner (Tier U)"),
                         ],
                     )),
@@ -3688,8 +3697,8 @@ impl Showcase {
                         ],
                         &[],
                         &[
-                            ("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs:176)"),
-                            ("buttons", "built by the widget as ghost/outline Button (pagination.rs:187-195); no refinement reaches them"),
+                            ("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs, Pagination::render)"),
+                            ("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them"),
                             ("ellipsis", "a dropdown over the hidden pages"),
                         ],
                     )),
@@ -3860,8 +3869,8 @@ impl Showcase {
                         )],
                         &[
                             ("stack gap", "geometry::widget_gap between the bubbles"),
-                            ("surface padding", "hardcoded px_3/py_2 (bubble.rs:200-201)"),
-                            ("max width", "80% of the row (bubble.rs:127)"),
+                            ("surface padding", "hardcoded px_3/py_2 (bubble.rs, the content surface's RenderOnce)"),
+                            ("max width", "80% of the row: max_w(relative(0.8)) (bubble.rs, Bubble::render)"),
                         ],
                     )),
             )
@@ -3886,8 +3895,8 @@ impl Showcase {
                         &[],
                         &[
                             ("row gap", "geometry::widget_gap between the rows"),
-                            ("slot gap", "hardcoded rems(0.625) (message.rs:159)"),
-                            ("avatar baseline", "a shared size-8, kept flush with the bubble's bottom edge (message.rs:220-222)"),
+                            ("slot gap", "hardcoded rems(0.625) (message.rs, Message::render)"),
+                            ("avatar baseline", "a shared size-8 minimum, kept flush with the bubble's bottom edge (message.rs, the avatar slot's RenderOnce: min_w_8, self_end)"),
                         ],
                     )),
             )
@@ -3955,7 +3964,7 @@ impl Showcase {
                         &[],
                         &[
                             ("rows", "the Message rows above, rendered on demand"),
-                            ("follow", "FollowMode::Tail: Send scrolls the thread to the new row (message_scroller.rs:38)"),
+                            ("follow", "FollowMode::Tail: Send scrolls the thread to the new row (message_scroller.rs, MessageScrollerState::new)"),
                             ("jump button", "appears once the user scrolls away from the tail"),
                         ],
                     )),
@@ -4051,8 +4060,8 @@ impl Showcase {
                         &[
                             ("card gap", "geometry::widget_gap between the cards"),
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
-                            ("in-progress title", "the ShimmerText highlight, driven by the status (attachment.rs:533)"),
-                            ("pending", "a dashed border; failed tints the border with destructive (attachment.rs:196-200)"),
+                            ("in-progress title", "the ShimmerText highlight, driven by the status (attachment.rs, AttachmentTitle::render)"),
+                            ("pending", "a dashed border; failed tints the border with destructive (attachment.rs, Attachment::render: border_dashed, destructive.opacity(0.3))"),
                         ],
                     )),
             )
@@ -4261,13 +4270,13 @@ impl Showcase {
                         "ProgressCircle",
                         &[
                             ("arc", "progress_bar", t.progress_bar),
-                            ("track", "progress_bar at 20% (progress_circle.rs:110)", t.progress_bar),
+                            ("track", "progress_bar at 20%: color.opacity(0.2) (progress/progress_circle.rs, ProgressCircle::render_circle)", t.progress_bar),
                         ],
                         &[],
                         &[
                             ("indeterminate size", "geometry::spinner_size: spinner.diameter"),
                             ("determinate size", "per Size enum; the model carries no circular-progress diameter"),
-                            ("stroke width", "15% of the diameter, capped at 5px (progress/progress_circle.rs:81)"),
+                            ("stroke width", "15% of the diameter, capped at 5px (progress/progress_circle.rs, ProgressCircle::render_circle stroke_width)"),
                         ],
                     )),
             )
@@ -4373,8 +4382,8 @@ impl Showcase {
                         ],
                         &[],
                         &[
-                            ("highlight", "the text colour mixed with background (light) or foreground (dark), at 75%/60% peak (shimmer.rs:452-468)"),
-                            ("reduced motion", "gpui's App::reduce_motion: the text renders once, unanimated (shimmer.rs:199)"),
+                            ("highlight", "the text colour mixed with background (light) or foreground (dark), at 75%/60% peak (shimmer.rs, shimmer_highlight_color)"),
+                            ("reduced motion", "gpui's App::reduce_motion: the text renders once, unanimated (shimmer.rs, ShimmerText::render)"),
                             ("sweep", "2s by default; 3s and a reversed 0.5 spread here"),
                         ],
                     )),
@@ -4549,8 +4558,8 @@ impl Showcase {
                         &[],
                         &[
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
-                            ("row gap", "hardcoded gap_2 (marker.rs:182)"),
-                            ("shimmer", "the loading highlight ShimmerText paints, on the content slot only (marker.rs:172-175)"),
+                            ("row gap", "hardcoded gap_2 (marker.rs, Marker::render)"),
+                            ("shimmer", "the loading highlight ShimmerText paints, on the content slot only (marker.rs, Marker::render MarkerChild::Content)"),
                         ],
                     )),
             )
@@ -4609,7 +4618,7 @@ impl Showcase {
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
-                            ("geometry", "geometry::tooltip on an application-built Tooltip: tooltip.max_width, border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs:115, :126)"),
+                            ("geometry", "geometry::tooltip on an application-built Tooltip: tooltip.max_width, border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style)"),
                             ("delay", "hardcoded"),
                             ("position", "auto"),
                         ],
@@ -5074,15 +5083,25 @@ impl Showcase {
             layout_value(window_margin),
             layout_value(section_gap),
         );
-        // The frame this very window is inside. `Root::new` sets `bordered`
-        // (`root.rs:116`) and renders `window_border()` around everything it
-        // holds (`root.rs:605`), so the showcase's `WindowBorder` is the
-        // window's own edge; a second, nested one would set the client inset
-        // and lay down resize hit zones over the window a second time.
+        // The frame this very window is inside. `Root::new` sets
+        // `bordered: true` (`root.rs:117`) and `Root::render` wraps everything
+        // it holds in `window_border()` (`root.rs:605`), so the showcase's
+        // `WindowBorder` is the window's own edge; a second, nested one would
+        // set the client inset and lay down resize hit zones over the window a
+        // second time.
+        //
+        // # shown-by: read, not constructed. `window_paddings` is
+        // gpui-component's own `window_border::window_paddings`, and it returns
+        // `window.client_inset()` (`window_border.rs:88-94`); the only writer of
+        // that inset is `WindowBorder::render` (`window_border.rs:147-149`). The
+        // `Some` the summary below reports is therefore live evidence that the
+        // widget rendered around this window -- and under server-side
+        // decorations, where upstream draws nothing, there is none.
         let decorations = window.window_decorations();
         let frame_insets = window_paddings(window);
+        let client_inset = window.client_inset();
         let window_border_summary = format!(
-            "{} · insets: top {}px, right {}px, bottom {}px, left {}px",
+            "{} · insets: top {}px, right {}px, bottom {}px, left {}px · {}",
             match decorations {
                 gpui::Decorations::Server => "server-side decorations: a pass-through".to_string(),
                 gpui::Decorations::Client { tiling } =>
@@ -5092,6 +5111,14 @@ impl Showcase {
             frame_insets.right.as_f32(),
             frame_insets.bottom.as_f32(),
             frame_insets.left.as_f32(),
+            match client_inset {
+                Some(inset) => format!(
+                    "client inset {}px: the WindowBorder that Root renders around this window \
+                     set it",
+                    inset.as_f32()
+                ),
+                None => "no client inset: nothing has called set_client_inset".to_string(),
+            },
         );
         v_flex()
             .gap_5()
@@ -5121,10 +5148,10 @@ impl Showcase {
                         &[("window bg", "background", t.background)],
                         &[],
                         &[
-                            ("receiver", "Root::new installs it around the whole window (root.rs:116, :605); nesting a second one would call set_client_inset again (window_border.rs:143)"),
-                            ("frame colour", "hardcoded grey, l=0.2 dark / l=0.8 light (window_border.rs:150-163)"),
-                            ("shadow", "hardcoded two-layer box shadow (window_border.rs:225-252)"),
-                            ("server-side decorations", "nothing is drawn: the compositor owns the frame (window_border.rs:166-168)"),
+                            ("receiver", "Root::new sets bordered and Root::render wraps the window in window_border() (root.rs); nesting a second one would call set_client_inset again (window_border.rs, WindowBorder::render)"),
+                            ("frame colour", "hardcoded grey, l=0.2 dark / l=0.8 light (window_border.rs, WindowBorder::render border_color)"),
+                            ("shadow", "hardcoded two-layer box shadow (window_border.rs, WindowBorder::render shadow(vec![..]))"),
+                            ("server-side decorations", "nothing is drawn: the compositor owns the frame (window_border.rs, WindowBorder::render Decorations::Server arm)"),
                         ],
                     )),
             )
@@ -5195,8 +5222,8 @@ impl Showcase {
                         &[],
                         &[
                             ("geometry", "geometry::title_bar: window.title_bar_font size and weight, carried by the label because nothing overrides it afterwards; the colour is the inherited foreground, which every preset states as the title bar's own"),
-                            ("height", "TITLE_BAR_HEIGHT = 34px (title_bar.rs:15)"),
-                            ("fill", "a gradient between title_bar and background (title_bar.rs:21-35)"),
+                            ("height", "TITLE_BAR_HEIGHT = 34px (title_bar.rs, TITLE_BAR_HEIGHT)"),
+                            ("fill", "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)"),
                             ("window controls", TITLE_BAR_CONTROLS_NOTE),
                         ],
                     )),
@@ -5270,9 +5297,9 @@ impl Showcase {
                         ],
                         &[],
                         &[
-                            ("geometry", "geometry::status_bar: status_bar.border.padding_*, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs:95-96)"),
+                            ("geometry", "geometry::status_bar: status_bar.border.padding_*, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style)"),
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
-                            ("region gap", "hardcoded gap_2 (status_bar.rs:84)"),
+                            ("region gap", "hardcoded gap_2 (status_bar.rs, StatusBar::render region)"),
                         ],
                     )),
             )
@@ -5675,7 +5702,7 @@ impl Showcase {
                             // The carousel's own slide controls. They take the
                             // same state as the viewport and position
                             // themselves outside the frame
-                            // (`carousel/carousel.rs:754-765`), so they belong
+                            // (`carousel/carousel.rs:757-768`), so they belong
                             // to the carousel rather than beside it.
                             .child(CarouselPrevious::new(&self.carousel_state))
                             .child(CarouselNext::new(&self.carousel_state)),
@@ -5693,7 +5720,7 @@ impl Showcase {
                         &[
                             ("snap motion", "Theme::motion spring_move; ResolvedTheme has no motion field"),
                             ("reduced motion", "gpui's App::reduce_motion, forwarded by apply_system_theme — the snap becomes instant"),
-                            ("slide controls", "outline Buttons the widget builds itself, disabled at the ends (carousel/carousel.rs:745-751)"),
+                            ("slide controls", "outline Buttons the widget builds itself, disabled at the ends (carousel/carousel.rs, carousel_control)"),
                         ],
                     )),
             )
@@ -5802,9 +5829,10 @@ impl Showcase {
                                 Stepper::new("stepper-1")
                                     .selected_index(self.step)
                                     .items(STEPPER_STEPS.iter().map(|(label, icon)| {
-                                        // The indicator is a circle around the
-                                        // icon it is given, which keeps its
-                                        // size (stepper/trigger.rs:136-144).
+                                        // The indicator is a circle
+                                        // (stepper/trigger.rs:118-123) around
+                                        // the icon it is given, which keeps its
+                                        // size (`:138-139`).
                                         StepperItem::new()
                                             .icon(native_icon(
                                                 cx,
@@ -5844,8 +5872,8 @@ impl Showcase {
                         &[],
                         &[
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
-                            ("indicator size", "24px for Size::Medium (stepper/item.rs:118-123)"),
-                            ("separator", "drawn by the item, absolute (stepper/item.rs:155-163)"),
+                            ("indicator size", "24px for Size::Medium (stepper/item.rs, StepperItem::render icon_size)"),
+                            ("separator", "drawn by the item, absolute (stepper/item.rs: StepperItem::render builds it, StepperSeparator::render positions it)"),
                         ],
                     )),
             )
@@ -5930,8 +5958,8 @@ impl Showcase {
                         ],
                         &[],
                         &[
-                            ("button", "a ghost, small Button built by the widget (sidebar/mod.rs:312)"),
-                            ("icon", "PanelLeftOpen / PanelLeftClose, at a hardcoded size_4 (sidebar/mod.rs:367)"),
+                            ("button", "a ghost, small Button built by the widget (sidebar/mod.rs, SidebarToggleButton::new)"),
+                            ("icon", "PanelLeftOpen / PanelLeftClose, at a hardcoded size_4 (sidebar/mod.rs, SidebarToggleButton::render)"),
                         ],
                     )),
             )
@@ -6277,8 +6305,8 @@ impl Showcase {
                         &[
                             ("geometry", "geometry::dialog and geometry::dialog_max_width, as the Dialog above"),
                             ("icon size", "geometry::icon_size_dialog: defaults.icon_sizes.dialog"),
-                            ("footer", "centred, and built from button_props (dialog/alert_dialog.rs:296-310)"),
-                            ("dismissal", "no backdrop close by design (dialog/alert_dialog.rs:218)"),
+                            ("footer", "right-aligned, and built from button_props when none is given (dialog/alert_dialog.rs, AlertDialog::build_surface; dialog/footer.rs, DialogFooter::render justify_end)"),
+                            ("dismissal", "no backdrop close by design (dialog/alert_dialog.rs, AlertDialog::overlay_closable, deprecated)"),
                         ],
                     )),
             )
@@ -6417,10 +6445,10 @@ impl Showcase {
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
-                            ("geometry", "geometry::popover, which refines the card surface (hover_card.rs:134)"),
+                            ("geometry", "geometry::popover, which refines the card surface (hover_card.rs, HoverCard::render refine_style)"),
                             ("card padding", "geometry::container_margin; gap: geometry::widget_gap"),
                             ("trigger", "variants::ghost_button, the flat button's native state colours"),
-                            ("delays", "600ms to open, 300ms to close (hover_card.rs:46-47)"),
+                            ("delays", "600ms to open, 300ms to close (hover_card.rs, HoverCard::new)"),
                         ],
                     )),
             )
@@ -6496,7 +6524,7 @@ impl Showcase {
                         &[
                             ("separator", "horizontal line"),
                             ("shortcut", "optional Kbd"),
-                            ("rows", "PopupMenu builds its own; geometry::menu_item has no receiver here (geometry.rs, menu/menu_item.rs:10-11)"),
+                            ("rows", "PopupMenu builds its own; geometry::menu_item has no receiver here (geometry.rs, menu/menu_item.rs: MenuItemElement is pub(crate))"),
                         ],
                     )),
             )
