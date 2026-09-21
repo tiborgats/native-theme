@@ -2627,7 +2627,7 @@ impl Showcase {
                                 &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                 &[
                                     ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
-                                    ("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button.rs:1125-1141), which is the menu selection colour, not a button hover"),
+                                    ("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu selection colour, not a button hover"),
                                     ("font-weight", "hardcoded"),
                                 ],
                             )),
@@ -3120,7 +3120,7 @@ impl Showcase {
                         &[
                             ("geometry", "geometry::input on the frame: input.min_height (single-line groups only), border.corner_radius, line_width, input.font"),
                             ("addon padding", "inner (Tier U)"),
-                            ("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs:544-583)"),
+                            ("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs, InputGroupButton::render_in_group)"),
                         ],
                     )),
             )
@@ -3216,6 +3216,7 @@ impl Showcase {
                         ],
                         &[
                             ("geometry", "geometry::checkbox: checkbox.label_gap, checkbox.font"),
+                            ("font colour", "carried as size and weight only. Upstream wraps a Checkbox label in a div that sets foreground itself and re-sets muted_foreground there when disabled (checkbox.rs, Checkbox::render), and the disabled hook applies muted_foreground before this refinement, so a carried colour would never reach the label and would displace the disabled colour of custom children (native-theme-gpui geometry.rs, geometry::checkbox)"),
                             ("indicator size", "inner element (Tier U)"),
                         ],
                     )),
@@ -3428,6 +3429,7 @@ impl Showcase {
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
                             ("geometry", "geometry::combobox: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font"),
+                            ("font colour", "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, ComboboxState::default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)"),
                             ("delegate", "SearchableListDelegate, implemented in this showcase (combobox.rs, Combobox<D>)"),
                             ("caret", "inner element (Tier U)"),
                         ],
@@ -5117,9 +5119,31 @@ impl Showcase {
                      set it",
                     inset.as_f32()
                 ),
-                None => "no client inset: nothing has called set_client_inset".to_string(),
+                // Under server-side decorations the widget did render; it just
+                // rendered as a pass-through, and only its client-side arm
+                // calls set_client_inset (`window_border.rs:147-148`).
+                None => match decorations {
+                    gpui::Decorations::Server =>
+                        "no client inset: the WindowBorder around this window rendered as a \
+                         pass-through, and only its client-side arm sets one"
+                            .to_string(),
+                    gpui::Decorations::Client { .. } =>
+                        "no client inset: nothing has called set_client_inset".to_string(),
+                },
             },
         );
+        // The resize band is the client-side arm's alone: the Server arm hands
+        // back the bare backdrop div (`window_border.rs:172`) and the
+        // compositor owns the edges.
+        let window_border_hint = match decorations {
+            gpui::Decorations::Server => {
+                "The compositor draws this window's frame and resizes it; the widget lays no \
+                 resize band of its own here."
+            }
+            gpui::Decorations::Client { .. } => {
+                "Drag an edge of the window: the resize band is this widget's."
+            }
+        };
         v_flex()
             .gap_5()
             .p_4()
@@ -5134,12 +5158,9 @@ impl Showcase {
                                 Label::new(SharedString::from(window_border_summary)).text_sm(),
                             )
                             .child(
-                                Label::new(
-                                    "Drag an edge of the window: the resize band is this \
-                                     widget's.",
-                                )
-                                .text_sm()
-                                .text_color(t.muted_foreground),
+                                Label::new(window_border_hint)
+                                    .text_sm()
+                                    .text_color(t.muted_foreground),
                             ),
                     )
                     .on_hover(self.hover_info(
@@ -5386,7 +5407,7 @@ impl Showcase {
                         &[],
                         &[(
                             "min panel size",
-                            "PANEL_MIN_SIZE = 100px, gpui-base src/resizable/mod.rs:14",
+                            "PANEL_MIN_SIZE = 100px (gpui-base resizable/mod.rs, PANEL_MIN_SIZE)",
                         )],
                     )),
             )
@@ -5435,7 +5456,7 @@ impl Showcase {
                         &[],
                         &[(
                             "min panel size",
-                            "PANEL_MIN_SIZE = 100px, gpui-base src/resizable/mod.rs:14",
+                            "PANEL_MIN_SIZE = 100px (gpui-base resizable/mod.rs, PANEL_MIN_SIZE)",
                         )],
                     )),
             )
