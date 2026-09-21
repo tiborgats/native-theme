@@ -139,38 +139,33 @@ const ROWS: &[Row] = &[
     },
 ];
 
-/// The four `button::Status` values, by the name the rows and the tripwire
-/// use for them. Every shape-A function declares its own such list.
-#[cfg(feature = "widgets")]
-const BUTTON_STATUSES: &[&str] = &["Active", "Hovered", "Pressed", "Disabled"];
-
-/// The style `styles::button` emits for the status named `status`.
+/// Every `button::Status`, as values rather than names.
 ///
-/// One such helper per function is what lets the rows below stay one line
-/// each: the status name travels through the table as a string, because the
-/// table spans widgets whose `Status` types are unrelated.
+/// Each function declares its own such list, of its own widget's `Status`. A
+/// shape-B or shape-C function, which takes no status, uses `&[()]`.
 #[cfg(feature = "widgets")]
-fn button_style(theme: &Theme, resolved: &ResolvedTheme, status: &str) -> button::Style {
-    let status = match status {
-        "Hovered" => button::Status::Hovered,
-        "Pressed" => button::Status::Pressed,
-        "Disabled" => button::Status::Disabled,
-        _ => button::Status::Active,
-    };
-    styles::button(resolved)(theme, status)
-}
+const BUTTON_STATUSES: &[button::Status] = &[
+    button::Status::Active,
+    button::Status::Hovered,
+    button::Status::Pressed,
+    button::Status::Disabled,
+];
 
 /// The fill the native fields give a button in `status`, computed here from
 /// the resolved theme alone -- never from the code under test.
+///
+/// The match has no catch-all arm, so a status added upstream fails to compile
+/// in the contract as well as in `styles`.
 #[cfg(feature = "widgets")]
-fn native_button_fill(r: &ResolvedTheme, status: &str) -> Color {
+fn native_button_fill(r: &ResolvedTheme, status: button::Status) -> Color {
     let base = to_color(r.button.background_color);
     match status {
+        button::Status::Active => base,
         // The platform layers its hover and pressed fills over the button's
         // own fill; iced replaces, so the layer is composited first (C17).
-        "Hovered" => over(to_color(r.button.hover_background), base),
+        button::Status::Hovered => over(to_color(r.button.hover_background), base),
         // `active_background` is a soft option: `None` copies the hover fill.
-        "Pressed" => over(
+        button::Status::Pressed => over(
             to_color(
                 r.button
                     .active_background
@@ -180,49 +175,51 @@ fn native_button_fill(r: &ResolvedTheme, status: &str) -> Color {
         ),
         // A translucent disabled fill replaces the idle one and lets the
         // window through, so it is emitted as given.
-        "Disabled" => to_color(
+        button::Status::Disabled => to_color(
             r.button
                 .disabled_background
                 .unwrap_or(r.button.background_color),
         ),
-        _ => base,
     }
 }
 
 /// The label color the native fields give a button in `status`.
 #[cfg(feature = "widgets")]
-fn native_button_label(r: &ResolvedTheme, status: &str) -> Color {
+fn native_button_label(r: &ResolvedTheme, status: button::Status) -> Color {
     to_color(match status {
-        "Hovered" => r.button.hover_text_color,
-        "Pressed" => r.button.active_text_color,
-        "Disabled" => r.button.disabled_text_color,
-        _ => r.button.font.color,
+        button::Status::Active => r.button.font.color,
+        button::Status::Hovered => r.button.hover_text_color,
+        button::Status::Pressed => r.button.active_text_color,
+        button::Status::Disabled => r.button.disabled_text_color,
     })
 }
 
 /// One row of the style contract: a field of one `styles::*` output, the
 /// native value it must equal, and the statuses it holds for.
 ///
-/// `field` is the path the coverage tripwire enumerates. The expected value is
-/// a `Color`, not an `Rgba`, because a state layer's expected value is two
-/// native colors composited (section 3.2).
+/// The row is generic over the widget's own `Status`, so both sides match on
+/// the real enum with no catch-all: a status the table forgets cannot fall
+/// through to the base state and pass while asserting nothing. `field` is the
+/// path the coverage tripwire enumerates. The expected value is a `Color`, not
+/// an `Rgba`, because a state layer's expected value is two native colors
+/// composited (section 3.2).
 #[cfg(feature = "widgets")]
-struct StyleRow {
+struct StyleRow<S: 'static> {
     field: &'static str,
-    statuses: &'static [&'static str],
-    native: fn(&ResolvedTheme, &str) -> Color,
+    statuses: &'static [S],
+    native: fn(&ResolvedTheme, S) -> Color,
     /// `Err` when the emitted field is not a flat color: a `None` or a
     /// gradient where the contract claims a color is a failure, not an unwrap.
-    get: fn(&Theme, &ResolvedTheme, &str) -> Result<Color, String>,
+    get: fn(&Theme, &ResolvedTheme, S) -> Result<Color, String>,
 }
 
 /// The same, for a `Style` field that is a length rather than a color.
 #[cfg(feature = "widgets")]
-struct ScalarRow {
+struct ScalarRow<S: 'static> {
     field: &'static str,
-    statuses: &'static [&'static str],
-    native: fn(&ResolvedTheme, &str) -> f32,
-    get: fn(&Theme, &ResolvedTheme, &str) -> f32,
+    statuses: &'static [S],
+    native: fn(&ResolvedTheme, S) -> f32,
+    get: fn(&Theme, &ResolvedTheme, S) -> f32,
 }
 
 /// The flat color of an emitted `Background`, or the reason it is not one.
@@ -237,64 +234,138 @@ fn flat(background: Option<Background>) -> Result<Color, String> {
     }
 }
 
-/// Every color field of every `styles::*` output, and the native value it
-/// carries. Read with `STYLE_ROWS` and `SCALAR_ROWS` together: between them
-/// and `DERIVED` they name every field of every `Style` this module emits.
+/// Every color field of `styles::button`, and the native value it carries.
+///
+/// One such const per function; read with `BUTTON_SCALAR_ROWS` and `DERIVED`
+/// together, they name every field of the `Style` it emits.
 #[cfg(feature = "widgets")]
-const STYLE_ROWS: &[StyleRow] = &[
+const BUTTON_ROWS: &[StyleRow<button::Status>] = &[
     StyleRow {
         field: "styles::button.background",
         statuses: BUTTON_STATUSES,
         native: native_button_fill,
-        get: |t, r, s| flat(button_style(t, r, s).background),
+        get: |t, r, s| flat(styles::button(r)(t, s).background),
     },
     StyleRow {
         field: "styles::button.text_color",
         statuses: BUTTON_STATUSES,
         native: native_button_label,
-        get: |t, r, s| Ok(button_style(t, r, s).text_color),
+        get: |t, r, s| Ok(styles::button(r)(t, s).text_color),
     },
     StyleRow {
         field: "styles::button.border.color",
         statuses: BUTTON_STATUSES,
         native: |r, _| to_color(r.button.border.color),
-        get: |t, r, s| Ok(button_style(t, r, s).border.color),
+        get: |t, r, s| Ok(styles::button(r)(t, s).border.color),
     },
 ];
 
 #[cfg(feature = "widgets")]
-const SCALAR_ROWS: &[ScalarRow] = &[
+const BUTTON_SCALAR_ROWS: &[ScalarRow<button::Status>] = &[
     ScalarRow {
         field: "styles::button.border.width",
         statuses: BUTTON_STATUSES,
         native: |r, _| r.button.border.line_width,
-        get: |t, r, s| button_style(t, r, s).border.width,
+        get: |t, r, s| styles::button(r)(t, s).border.width,
     },
     ScalarRow {
         field: "styles::button.border.radius.top_left",
         statuses: BUTTON_STATUSES,
         native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| button_style(t, r, s).border.radius.top_left,
+        get: |t, r, s| styles::button(r)(t, s).border.radius.top_left,
     },
     ScalarRow {
         field: "styles::button.border.radius.top_right",
         statuses: BUTTON_STATUSES,
         native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| button_style(t, r, s).border.radius.top_right,
+        get: |t, r, s| styles::button(r)(t, s).border.radius.top_right,
     },
     ScalarRow {
         field: "styles::button.border.radius.bottom_right",
         statuses: BUTTON_STATUSES,
         native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| button_style(t, r, s).border.radius.bottom_right,
+        get: |t, r, s| styles::button(r)(t, s).border.radius.bottom_right,
     },
     ScalarRow {
         field: "styles::button.border.radius.bottom_left",
         statuses: BUTTON_STATUSES,
         native: |r, _| r.button.border.corner_radius,
-        get: |t, r, s| button_style(t, r, s).border.radius.bottom_left,
+        get: |t, r, s| styles::button(r)(t, s).border.radius.bottom_left,
     },
 ];
+
+/// The `field` of every style row, from every function's consts.
+///
+/// One line per function; the coverage tripwire reads it, and `rows_claiming`
+/// counts in it.
+#[cfg(feature = "widgets")]
+fn style_row_fields() -> Vec<&'static str> {
+    let mut out = Vec::new();
+    out.extend(BUTTON_ROWS.iter().map(|row| row.field));
+    out.extend(BUTTON_SCALAR_ROWS.iter().map(|row| row.field));
+    out
+}
+
+/// Assert one function's color rows over every combination and status.
+#[cfg(feature = "widgets")]
+fn check_style_rows<S: Copy + std::fmt::Debug>(
+    rows: &[StyleRow<S>],
+    combinations: &[Combination],
+    failures: &mut Vec<String>,
+) -> usize {
+    let mut checks = 0;
+    for c in combinations {
+        for row in rows {
+            for &status in row.statuses {
+                checks += 1;
+                let expected = (row.native)(&c.resolved, status);
+                match (row.get)(&c.theme, &c.resolved, status) {
+                    Ok(actual) if actual == expected => {}
+                    Ok(actual) => failures.push(format!(
+                        "{}: {} ({status:?}) is {}, native gives {}",
+                        c.label(),
+                        row.field,
+                        show(actual),
+                        show(expected)
+                    )),
+                    Err(why) => failures.push(format!(
+                        "{}: {} ({status:?}) is {why}",
+                        c.label(),
+                        row.field
+                    )),
+                }
+            }
+        }
+    }
+    checks
+}
+
+/// The same for one function's scalar rows.
+#[cfg(feature = "widgets")]
+fn check_scalar_rows<S: Copy + std::fmt::Debug>(
+    rows: &[ScalarRow<S>],
+    combinations: &[Combination],
+    failures: &mut Vec<String>,
+) -> usize {
+    let mut checks = 0;
+    for c in combinations {
+        for row in rows {
+            for &status in row.statuses {
+                checks += 1;
+                let expected = (row.native)(&c.resolved, status);
+                let actual = (row.get)(&c.theme, &c.resolved, status);
+                if actual != expected {
+                    failures.push(format!(
+                        "{}: {} ({status:?}) is {actual}, native gives {expected}",
+                        c.label(),
+                        row.field
+                    ));
+                }
+            }
+        }
+    }
+    checks
+}
 
 /// Every field the tripwire walks that no row claims, with the derivation that
 /// fills it instead. A field is in the rows or here, never both and never
@@ -499,21 +570,21 @@ type Layers = (Color, Color, Color);
 /// fields. Here the connector controls both colors, so section 7's
 /// no-degradation rule is asserted rather than printed.
 #[cfg(feature = "widgets")]
-struct StylePair {
+struct StylePair<S: 'static> {
     what: &'static str,
-    statuses: &'static [&'static str],
-    emitted: fn(&Theme, &ResolvedTheme, &str) -> Result<Layers, String>,
+    statuses: &'static [S],
+    emitted: fn(&Theme, &ResolvedTheme, S) -> Result<Layers, String>,
     /// The same three, computed from the native fields alone.
-    native: fn(&ResolvedTheme, &str) -> Layers,
+    native: fn(&ResolvedTheme, S) -> Layers,
 }
 
-/// The `styles::*` pairs the assertion covers.
+/// The `styles::button` pairs the assertion covers.
 #[cfg(feature = "widgets")]
-const STYLE_PAIRS: &[StylePair] = &[StylePair {
+const BUTTON_PAIRS: &[StylePair<button::Status>] = &[StylePair {
     what: "button label",
     statuses: BUTTON_STATUSES,
     emitted: |t, r, s| {
-        let style = button_style(t, r, s);
+        let style = styles::button(r)(t, s);
         // A button is painted on the window, so that is what a translucent
         // fill shows through to.
         flat(style.background).map(|fill| {
@@ -535,6 +606,56 @@ const STYLE_PAIRS: &[StylePair] = &[StylePair {
 
 /// WCAG 2.1 AA for normal text. Only ever used to decide what to print.
 const AA: f32 = 4.5;
+
+/// Assert one function's contrast pairs over every combination and status:
+/// section 7's no-degradation rule. Pairs below AA are collected for printing,
+/// never asserted.
+#[cfg(feature = "widgets")]
+fn check_style_pairs<S: Copy + std::fmt::Debug>(
+    pairs: &[StylePair<S>],
+    combinations: &[Combination],
+    failures: &mut Vec<String>,
+    below_aa: &mut Vec<String>,
+) -> usize {
+    let mut checks = 0;
+    for c in combinations {
+        for pair in pairs {
+            for &status in pair.statuses {
+                checks += 1;
+                let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved, status);
+                let native = pair_ratio(native_fg, native_bg, native_surface);
+                match (pair.emitted)(&c.theme, &c.resolved, status) {
+                    Ok((fg, bg, surface)) => {
+                        let emitted = pair_ratio(fg, bg, surface);
+                        if emitted < native {
+                            failures.push(format!(
+                                "{}: {} ({status:?}) emitted {emitted:.4}, native {native:.4}; \
+                                 emitted {} on {}, native {} on {}",
+                                c.label(),
+                                pair.what,
+                                show(fg),
+                                show(bg),
+                                show(native_fg),
+                                show(native_bg)
+                            ));
+                        }
+                        if emitted < AA {
+                            below_aa.push(format!(
+                                "{}: {} ({status:?}) {emitted:.2}",
+                                c.label(),
+                                pair.what
+                            ));
+                        }
+                    }
+                    Err(why) => {
+                        failures.push(format!("{}: {} ({status:?}) {why}", c.label(), pair.what));
+                    }
+                }
+            }
+        }
+    }
+    checks
+}
 
 /// One preset in one mode: the native values and the theme built from them.
 struct Combination {
@@ -576,18 +697,31 @@ fn combinations() -> native_theme::Result<Vec<Combination>> {
     Ok(out)
 }
 
-/// Composite `top` over `bottom` when it carries alpha, so a ratio is
-/// measured on what the screen actually shows.
+/// Composite `top` over `bottom`: straight-alpha source-over, the general
+/// case, so a ratio is measured on what the screen actually shows.
+///
+/// `bottom` is not assumed opaque: a translucent layer over a translucent one
+/// -- `link.hover_background` over `link.background_color`, which every preset
+/// states as `#00000000` -- stays translucent rather than becoming opaque.
+/// Written independently of `styles::composite_over`, which it must agree
+/// with; the properties both are held to are asserted below.
 fn over(top: Color, bottom: Color) -> Color {
-    if top.a >= 1.0 {
+    let under = bottom.a * (1.0 - top.a);
+    let alpha = top.a + under;
+    if alpha <= 0.0 {
+        return Color::TRANSPARENT;
+    }
+    if under <= 0.0 {
+        // Nothing of `bottom` reaches the result; un-premultiplying would
+        // divide by `top.a` and move the color by a few ulps.
         return top;
     }
-    let blend = |t: f32, b: f32| t * top.a + b * (1.0 - top.a);
+    let blend = |t: f32, b: f32| (t * top.a + b * under) / alpha;
     Color {
         r: blend(top.r, bottom.r),
         g: blend(top.g, bottom.g),
         b: blend(top.b, bottom.b),
-        a: 1.0,
+        a: alpha,
     }
 }
 
@@ -704,43 +838,89 @@ fn palette_contrast_report() -> native_theme::Result<()> {
 // requires each name it yields to sit in exactly one of the rows and
 // `DERIVED`.
 
+/// Destructure `$value` with no `..` and push one dotted path per field into
+/// `$out`, from a single list of field names.
+///
+/// One list, two uses: the same identifiers become the pattern and the
+/// strings, so silencing the compile error an upstream field causes -- by
+/// adding it to the list -- cannot leave its name out of the tripwire. A field
+/// listed after `@nested` is bound to a variable of its own name instead of
+/// being discarded, so a second invocation can walk it under a longer prefix.
+macro_rules! leaves {
+    (
+        $out:ident, $value:expr, $prefix:literal,
+        $($ty:ident)::+ { $($leaf:ident),* $(,)? $(@nested $($nested:ident),+ $(,)?)? }
+    ) => {
+        let $($ty)::+ { $($leaf: _,)* $($($nested,)+)? } = $value;
+        $($out.push(concat!($prefix, ".", stringify!($leaf)));)*
+    };
+}
+
 /// The six `Palette` inputs.
 fn palette_fields(palette: &iced_core::theme::Palette) -> Vec<&'static str> {
-    let iced_core::theme::Palette {
-        background: _,
-        text: _,
-        primary: _,
-        success: _,
-        warning: _,
-        danger: _,
-    } = palette;
-    vec![
-        "palette.background",
-        "palette.text",
-        "palette.primary",
-        "palette.success",
-        "palette.warning",
-        "palette.danger",
-    ]
+    let mut out = Vec::new();
+    leaves!(
+        out,
+        palette,
+        "palette",
+        iced_core::theme::Palette {
+            background,
+            text,
+            primary,
+            success,
+            warning,
+            danger
+        }
+    );
+    out
 }
 
 /// Both fields of every `Pair` that `extended::apply_overrides` assigns, whole
 /// or in part.
-fn written_extended_fields(extended: &Extended) -> Vec<String> {
+fn written_extended_fields(extended: &Extended) -> Vec<&'static str> {
     let mut out = Vec::new();
-    for (path, pair) in [
-        ("extended.secondary.base", extended.secondary.base),
-        ("extended.secondary.strong", extended.secondary.strong),
-        ("extended.background.weak", extended.background.weak),
-        ("extended.primary.base", extended.primary.base),
-        ("extended.success.base", extended.success.base),
-        ("extended.danger.base", extended.danger.base),
-        ("extended.warning.base", extended.warning.base),
-    ] {
-        let Pair { color: _, text: _ } = pair;
-        out.push(format!("{path}.color"));
-        out.push(format!("{path}.text"));
-    }
+    leaves!(
+        out,
+        extended.secondary.base,
+        "extended.secondary.base",
+        Pair { color, text }
+    );
+    leaves!(
+        out,
+        extended.secondary.strong,
+        "extended.secondary.strong",
+        Pair { color, text }
+    );
+    leaves!(
+        out,
+        extended.background.weak,
+        "extended.background.weak",
+        Pair { color, text }
+    );
+    leaves!(
+        out,
+        extended.primary.base,
+        "extended.primary.base",
+        Pair { color, text }
+    );
+    leaves!(
+        out,
+        extended.success.base,
+        "extended.success.base",
+        Pair { color, text }
+    );
+    leaves!(
+        out,
+        extended.danger.base,
+        "extended.danger.base",
+        Pair { color, text }
+    );
+    leaves!(
+        out,
+        extended.warning.base,
+        "extended.warning.base",
+        Pair { color, text }
+    );
     out
 }
 
@@ -830,53 +1010,36 @@ fn extended_slots(extended: &Extended) -> Vec<(String, Color)> {
 /// Every field of the `button::Style` the connector emits.
 #[cfg(feature = "widgets")]
 fn button_style_fields(style: &button::Style) -> Vec<&'static str> {
-    let button::Style {
-        background: _,
-        text_color: _,
-        border,
-        shadow: _,
-        snap: _,
-    } = style;
-    let Border {
-        color: _,
-        width: _,
+    let mut out = Vec::new();
+    leaves!(out, style, "styles::button", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    leaves!(out, border, "styles::button.border", Border { color, width, @nested radius });
+    leaves!(
+        out,
         radius,
-    } = border;
-    let Radius {
-        top_left: _,
-        top_right: _,
-        bottom_right: _,
-        bottom_left: _,
-    } = radius;
-    vec![
-        "styles::button.background",
-        "styles::button.text_color",
-        "styles::button.border.color",
-        "styles::button.border.width",
-        "styles::button.border.radius.top_left",
-        "styles::button.border.radius.top_right",
-        "styles::button.border.radius.bottom_right",
-        "styles::button.border.radius.bottom_left",
-        "styles::button.shadow",
-        "styles::button.snap",
-    ]
+        "styles::button.border.radius",
+        Radius {
+            top_left,
+            top_right,
+            bottom_right,
+            bottom_left
+        }
+    );
+    out
 }
 
 /// Every field the tripwire walks: the palette inputs, the extended slots the
 /// connector writes, and each `styles::*` output's fields.
 #[cfg_attr(not(feature = "widgets"), allow(unused_variables))]
-fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
-    let mut out: Vec<String> = palette_fields(&theme.palette())
-        .into_iter()
-        .map(str::to_string)
-        .collect();
+fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<&'static str> {
+    let mut out = palette_fields(&theme.palette());
     out.extend(written_extended_fields(theme.extended_palette()));
     #[cfg(feature = "widgets")]
-    out.extend(
-        button_style_fields(&button_style(theme, resolved, "Active"))
-            .into_iter()
-            .map(str::to_string),
-    );
+    out.extend(button_style_fields(&styles::button(resolved)(
+        theme,
+        button::Status::Active,
+    )));
     out
 }
 
@@ -886,8 +1049,7 @@ fn rows_claiming(field: &str) -> usize {
     let mut count = ROWS.iter().filter(|row| row.slot == field).count();
     #[cfg(feature = "widgets")]
     {
-        count += STYLE_ROWS.iter().filter(|row| row.field == field).count();
-        count += SCALAR_ROWS.iter().filter(|row| row.field == field).count();
+        count += style_row_fields().iter().filter(|f| **f == field).count();
     }
     count
 }
@@ -910,14 +1072,16 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
 
     for c in &combinations {
         for field in named_fields(&c.theme, &c.resolved) {
-            let rows = rows_claiming(&field);
+            let rows = rows_claiming(field);
             let derived = DERIVED.iter().filter(|(name, _)| *name == field).count();
-            if rows > 0 && derived > 0 {
-                failures.push(format!("{field}: claimed by {rows} row(s) and by DERIVED"));
-            } else if rows == 0 && derived == 0 {
-                failures.push(format!("{field}: in neither the rows nor DERIVED"));
-            } else if derived > 1 {
-                failures.push(format!("{field}: {derived} DERIVED entries"));
+            match (rows, derived) {
+                (1, 0) | (0, 1) => {}
+                (0, 0) => failures.push(format!("{field}: in neither the rows nor DERIVED")),
+                (r, d) if r > 0 && d > 0 => {
+                    failures.push(format!("{field}: claimed by {r} row(s) and by {d} DERIVED"));
+                }
+                (r, _) if r > 1 => failures.push(format!("{field}: {r} rows claim it")),
+                (_, d) => failures.push(format!("{field}: {d} DERIVED entries")),
             }
         }
     }
@@ -987,46 +1151,46 @@ fn no_extended_slot_is_written_without_a_declared_source() -> native_theme::Resu
 
 #[cfg(feature = "widgets")]
 #[test]
+fn every_status_list_names_each_status_once() {
+    // Generic rows close the fall-through hole a `&str` status had, but not
+    // this one: a status simply left out of a list makes the rows assert less
+    // without ever failing. So each list is checked against every variant of
+    // its own enum here. The match is exhaustive with no catch-all, so a
+    // variant added upstream fails to compile in this function first.
+    let all = [
+        button::Status::Active,
+        button::Status::Hovered,
+        button::Status::Pressed,
+        button::Status::Disabled,
+    ];
+    for status in all {
+        match status {
+            button::Status::Active
+            | button::Status::Hovered
+            | button::Status::Pressed
+            | button::Status::Disabled => {}
+        }
+        assert!(
+            BUTTON_STATUSES.contains(&status),
+            "BUTTON_STATUSES does not list {status:?}, so no button row covers it"
+        );
+    }
+    assert_eq!(
+        BUTTON_STATUSES.len(),
+        all.len(),
+        "BUTTON_STATUSES must name each status exactly once"
+    );
+}
+
+#[cfg(feature = "widgets")]
+#[test]
 fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut failures = Vec::new();
-    let mut checks = 0usize;
 
-    for c in &combinations {
-        for row in STYLE_ROWS {
-            for status in row.statuses {
-                checks += 1;
-                let expected = (row.native)(&c.resolved, status);
-                match (row.get)(&c.theme, &c.resolved, status) {
-                    Ok(actual) if actual == expected => {}
-                    Ok(actual) => failures.push(format!(
-                        "{}: {}({status}) is {}, native gives {}",
-                        c.label(),
-                        row.field,
-                        show(actual),
-                        show(expected)
-                    )),
-                    Err(why) => {
-                        failures.push(format!("{}: {}({status}) is {why}", c.label(), row.field))
-                    }
-                }
-            }
-        }
-        for row in SCALAR_ROWS {
-            for status in row.statuses {
-                checks += 1;
-                let expected = (row.native)(&c.resolved, status);
-                let actual = (row.get)(&c.theme, &c.resolved, status);
-                if actual != expected {
-                    failures.push(format!(
-                        "{}: {}({status}) is {actual}, native gives {expected}",
-                        c.label(),
-                        row.field
-                    ));
-                }
-            }
-        }
-    }
+    // One line per function.
+    let checks = check_style_rows(BUTTON_ROWS, &combinations, &mut failures)
+        + check_scalar_rows(BUTTON_SCALAR_ROWS, &combinations, &mut failures);
 
     assert!(
         failures.is_empty(),
@@ -1043,44 +1207,9 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut failures = Vec::new();
     let mut below_aa = Vec::new();
-    let mut checks = 0usize;
 
-    for c in &combinations {
-        for pair in STYLE_PAIRS {
-            for status in pair.statuses {
-                checks += 1;
-                let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved, status);
-                let native = pair_ratio(native_fg, native_bg, native_surface);
-                match (pair.emitted)(&c.theme, &c.resolved, status) {
-                    Ok((fg, bg, surface)) => {
-                        let emitted = pair_ratio(fg, bg, surface);
-                        if emitted < native {
-                            failures.push(format!(
-                                "{}: {} ({status}) emitted {emitted:.4}, native {native:.4}; \
-                                 emitted {} on {}, native {} on {}",
-                                c.label(),
-                                pair.what,
-                                show(fg),
-                                show(bg),
-                                show(native_fg),
-                                show(native_bg)
-                            ));
-                        }
-                        if emitted < AA {
-                            below_aa.push(format!(
-                                "{}: {} ({status}) {emitted:.2}",
-                                c.label(),
-                                pair.what
-                            ));
-                        }
-                    }
-                    Err(why) => {
-                        failures.push(format!("{}: {} ({status}) {why}", c.label(), pair.what))
-                    }
-                }
-            }
-        }
-    }
+    // One line per function.
+    let checks = check_style_pairs(BUTTON_PAIRS, &combinations, &mut failures, &mut below_aa);
 
     println!(
         "--- styles contrast: {checks} pairs, {} below AA (printed, not asserted) ---",
@@ -1118,7 +1247,7 @@ fn a_hovered_button_composites_the_state_layer_over_its_idle_fill() -> native_th
         show(expected)
     );
     assert_eq!(
-        flat(button_style(&theme, &resolved, "Hovered").background),
+        flat(styles::button(&resolved)(&theme, button::Status::Hovered).background),
         Ok(expected),
         "the hovered fill must be the hover layer over the idle fill"
     );
@@ -1142,16 +1271,117 @@ fn a_cleared_soft_option_copies_the_base_state_value() -> native_theme::Result<(
     resolved.button.active_background = None;
     resolved.button.disabled_background = None;
     let theme = crate::to_theme(&resolved, "windows-11");
+    let style = styles::button(&resolved);
 
+    let pressed = flat(style(&theme, button::Status::Pressed).background);
+    let hovered = flat(style(&theme, button::Status::Hovered).background);
+    assert!(
+        pressed.is_ok() && hovered.is_ok(),
+        "a button fill must be a flat color: pressed {pressed:?}, hovered {hovered:?}"
+    );
     assert_eq!(
-        flat(button_style(&theme, &resolved, "Pressed").background),
-        flat(button_style(&theme, &resolved, "Hovered").background),
+        pressed, hovered,
         "a cleared active_background copies the hover fill, layer included"
     );
     assert_eq!(
-        flat(button_style(&theme, &resolved, "Disabled").background),
+        flat(style(&theme, button::Status::Disabled).background),
         Ok(to_color(resolved.button.background_color)),
         "a cleared disabled_background copies the idle fill, as given"
+    );
+    Ok(())
+}
+
+#[cfg(feature = "widgets")]
+#[test]
+fn compositing_holds_its_three_properties_on_every_native_color() -> native_theme::Result<()> {
+    let combinations = combinations()?;
+    let mut failures = Vec::new();
+    let mut transparent_bases = 0usize;
+
+    for c in &combinations {
+        let r = &c.resolved;
+        // Real layers and real fills, translucent and opaque.
+        let layers = [
+            ("link.hover_background", to_color(r.link.hover_background)),
+            (
+                "button.hover_background",
+                to_color(r.button.hover_background),
+            ),
+            (
+                "button.background_color",
+                to_color(r.button.background_color),
+            ),
+            ("defaults.text_color", to_color(r.defaults.text_color)),
+        ];
+        let base = to_color(r.button.background_color);
+        let link_base = to_color(r.link.background_color);
+
+        for (name, layer) in layers {
+            let label = format!("{}: {name}", c.label());
+
+            // (a) a layer over nothing is the layer: the link case.
+            if styles::composite_over(layer, Color::TRANSPARENT) != layer {
+                failures.push(format!("{label}: over a transparent base is not the layer"));
+            }
+            if link_base.a == 0.0 {
+                transparent_bases += 1;
+                if styles::composite_over(layer, link_base) != layer {
+                    failures.push(format!(
+                        "{label}: over link.background_color ({}) is not the layer",
+                        show(link_base)
+                    ));
+                }
+            }
+
+            // (b) over an opaque base the result is opaque, and is the
+            // simple mix this formula generalises -- computed here, not
+            // copied from either implementation.
+            if base.a == 1.0 {
+                let out = styles::composite_over(layer, base);
+                let mix = |l: f32, b: f32| l * layer.a + b * (1.0 - layer.a);
+                let expected = Color {
+                    r: mix(layer.r, base.r),
+                    g: mix(layer.g, base.g),
+                    b: mix(layer.b, base.b),
+                    a: 1.0,
+                };
+                if out != expected {
+                    failures.push(format!(
+                        "{label}: over an opaque base is {}, the simple mix gives {}",
+                        show(out),
+                        show(expected)
+                    ));
+                }
+            }
+
+            // (c) an opaque layer hides whatever is under it.
+            if layer.a == 1.0 && styles::composite_over(layer, link_base) != layer {
+                failures.push(format!(
+                    "{label}: an opaque layer did not survive unchanged"
+                ));
+            }
+
+            // The contract's own helper must agree with the one under test.
+            if over(layer, link_base) != styles::composite_over(layer, link_base) {
+                failures.push(format!(
+                    "{label}: contract `over` and `composite_over` disagree"
+                ));
+            }
+        }
+    }
+
+    assert_eq!(
+        transparent_bases,
+        combinations.len() * 4,
+        "every preset is supposed to state link.background_color as fully \
+         transparent; if that changed, property (a) is no longer covered by \
+         real data"
+    );
+    assert!(
+        failures.is_empty(),
+        "{} compositing propert(ies) failed:\n{}",
+        failures.len(),
+        failures.join("\n")
     );
     Ok(())
 }

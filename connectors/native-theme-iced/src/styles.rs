@@ -23,30 +23,58 @@ use native_theme::theme::ResolvedTheme;
 // function that builds that widget, and these functions share it too, so each
 // one imports its own `Status` and `Style` locally rather than the module.
 
-/// Composite `layer` over `base`, source-over, in RGB.
+/// Composite `layer` over `base`: straight-alpha source-over, the general
+/// case.
 ///
 /// The platform states a widget's hover and pressed colors as layers it paints
 /// over that widget's own fill, while iced replaces the fill outright, so the
-/// layer is flattened onto the fill before it is emitted (C17). For an opaque
-/// `layer` the result is `layer`, so there is no branch to get wrong.
+/// layer is flattened onto the fill before it is emitted (C17).
+///
+/// `base` is not assumed opaque, because it often is not: every preset states
+/// `link.background_color = "#00000000"`, and a tint over nothing must stay
+/// that tint rather than turn into an opaque near-black. So the result keeps
+/// the composite's own alpha, `la + ba * (1 - la)`, and its channels are
+/// un-premultiplied by it. A fully transparent result has no color to divide
+/// out and is returned as `Color::TRANSPARENT`.
+///
+/// The blend is deliberately in sRGB rather than in linear light. It is not a
+/// physical mix of two lights: it reproduces the composite the platform itself
+/// performed when it measured the value the preset records (spec section 3.2),
+/// and platform compositors -- and iced's own renderer -- blend in sRGB. A
+/// linear-light blend here would give a color the platform never shows.
 pub(crate) fn composite_over(layer: Color, base: Color) -> Color {
-    if layer.a >= 1.0 {
+    // How much of `base` reaches the result, in the composite's own alpha.
+    let under = base.a * (1.0 - layer.a);
+    let alpha = layer.a + under;
+    if alpha <= 0.0 {
+        return Color::TRANSPARENT;
+    }
+    if under <= 0.0 {
+        // Nothing of `base` reaches the result, so the composite is `layer`.
+        // Returning it is not a shortcut: un-premultiplying would divide by
+        // `layer.a` and give back a color a few ulps off, which a contract
+        // row compares exactly. This is the case a link hover takes, over a
+        // `link.background_color` every preset states as fully transparent.
         return layer;
     }
-    let blend = |layered: f32, under: f32| layered * layer.a + under * (1.0 - layer.a);
+    let blend = |layered: f32, beneath: f32| (layered * layer.a + beneath * under) / alpha;
     Color {
         r: blend(layer.r, base.r),
         g: blend(layer.g, base.g),
         b: blend(layer.b, base.b),
-        a: 1.0,
+        a: alpha,
     }
 }
 
 /// The platform's own plain button, for `button(..).style(..)`.
 ///
-/// Replaces `iced_widget::button::secondary`, which paints the palette's
-/// `secondary` family and derives its hovered fill by strengthening that
-/// slot. Here every state is a native field: `button.background_color`,
+/// This is the neutral class, so it replaces `iced_widget::button::secondary`,
+/// which paints the palette's `secondary` family and derives its hovered fill
+/// by strengthening that slot. It is not iced's *default* class: a `Button`
+/// with no `.style(..)` gets `button::primary` (`button.rs:588-590`), which
+/// `styles::button_primary` replaces.
+///
+/// Here every state is a native field: `button.background_color`,
 /// `.hover_background`, `.active_background`, `.disabled_background` and the
 /// matching label colors, with the button's own border.
 ///
