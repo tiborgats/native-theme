@@ -188,7 +188,7 @@ move |theme, status| {
         background: /* native */,
         // … every field named; the ones with no native source read `iced`:
         border_radius: /* native: switch.track_radius */,
-        padding_ratio: iced.padding_ratio,
+        padding_ratio: /* native: (track_height - thumb_diameter) / (2 * track_height) */,
     }
 }
 ```
@@ -212,7 +212,7 @@ The fields this release knows have no native source:
 | `button::Style.snap`, `container::Style.snap` | a renderer setting, `cfg!(feature = "crisp")` (`button.rs:517`) — a literal `false` would switch crisp rendering off for a consumer who enabled it |
 | `button::Style.shadow`, `container::Style.shadow`, `menu::Style.shadow` | the model has `defaults.shadow_color` and `border.shadow_enabled` but no offset or blur, so an iced `Shadow` cannot be built without inventing geometry |
 | `scrollable::Style.gap`, `.auto_scroll` | no native counterpart |
-| `toggler::Style.padding_ratio`, its four border fields, and `.text_color` | `SwitchTheme` carries no border, no thumb inset and no font. (`border_radius` **does** have a source, `switch.track_radius` — an earlier draft of this row listed it here in error) |
+| `toggler::Style`'s four border fields and `.text_color` | `SwitchTheme` carries no border and no font. (`border_radius` and `padding_ratio` **do** have sources — `switch.track_radius`, and the inset `track_height` and `thumb_diameter` state between them — an earlier draft of this row listed both here in error) |
 | `slider` `rail.border`, `handle.border_width`, `handle.border_color`; the scrollable rails' `border` | `SliderTheme` and `ScrollbarTheme` carry no border |
 | `text_input::Style.icon` | the model has no input-icon colour |
 | `container::Style.text_color` for `container_card` | `CardTheme` carries no font; iced's `None` inherits |
@@ -267,7 +267,7 @@ raw value in a replacing toolkit gives `#e9e9e9`.
 | `text_editor` | A | `background`, `border`, `placeholder`, `value`, `selection` | the `input.*` sources of `text_input`; the struct has no `icon` |
 | `checkbox` | A | `background`, `icon_color`, `border`, `text_color` | `checkbox.checked_background`, **`.indicator_color`** (the check mark; there is no `check_color`), `.unchecked_background`, `.unchecked_border_color`, `.border.*`, `.font.color`, and `.disabled_text_color` for a disabled label |
 | `radio` | A | `background`, `dot_color`, `border_width`, `border_color`, `text_color` | `CheckboxTheme`, which the model documents as shared by checkbox and radio (`widgets/mod.rs:138-140`): `checked_background` / `unchecked_background` by `is_selected`, `indicator_color`, `border.*` / `unchecked_border_color`, `font.color`. `radio::Status` has no disabled value (iced 0.14), so `disabled_text_color` has no receiver there |
-| `toggler` | A | `background`, `background_border_width`, `background_border_color`, `foreground`, `foreground_border_width`, `foreground_border_color`, `text_color`, `border_radius`, `padding_ratio` | `switch.unchecked_background`, `checked_background`, `thumb_background`, `hover_checked_background`, `hover_unchecked_background`, `disabled_*` per `Status`; `border_radius` from `switch.track_radius`; `padding_ratio`, the border fields and `text_color` from §3.2 |
+| `toggler` | A | `background`, `background_border_width`, `background_border_color`, `foreground`, `foreground_border_width`, `foreground_border_color`, `text_color`, `border_radius`, `padding_ratio` | `switch.unchecked_background`, `checked_background`, `thumb_background`, `hover_checked_background`, `hover_unchecked_background`, `disabled_*` per `Status`; `border_radius` from `switch.track_radius`; `padding_ratio` = `(track_height − thumb_diameter) / (2 × track_height)`, the unit conversion iced's receiver forces (`toggler.rs:445, 455`: `padding = ratio × height`, thumb side `= height − 2 × padding`) — emitted when `track_height > 0` and `0 ≤ thumb_diameter ≤ track_height`, iced's own value otherwise; the border fields and `text_color` from §3.2. Measured over the presets: 0.2 on windows-11, twice iced's 0.1; 0 on kde-breeze, whose thumb is as tall as its track |
 | `pick_list` | A | `text_color`, `placeholder_color`, `handle_color`, `background`, `border` | `combo_box.font.color`, `input.placeholder_color`, `combo_box.background_color`, `.border.*`, `hover_background` per `Status`; `handle_color` has no native source — `ComboBoxTheme` carries arrow *sizes* but no arrow colour — so it is iced's own (§3.2) |
 | `scrollable` | A | `container`, `vertical_rail`, `horizontal_rail`, `gap`, `auto_scroll` | `scrollbar.track_color` → each rail's `background`; `thumb_color`, `thumb_hover_color`, `thumb_active_color` → the `Scroller` background per `Status`; the last two fields from §3.2 |
 | `scrollbar` | D | — (a `Scrollbar`, not a `Style`) | `scrollbar.groove_width` → `.width(..)`, `scrollbar.thumb_width` → `.scroller_width(..)` |
