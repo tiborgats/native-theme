@@ -924,7 +924,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "segmented_control.font.color",
         native: |r| r.segmented_control.font.color,
         evidence: "a `TabBar` labels every segment from the tab family -- \
-                   `tab_foreground` on the bar (`tab/tab_bar.rs:499`) and on \
+                   `tab_foreground` on the bar (`tab/tab_bar.rs:500`) and on \
                    an idle segment (`tab/tab.rs:154`), `tab_active_foreground` \
                    on the selected one (`:247`) -- and those two tokens are \
                    `tab.font.color` and `tab.active_text_color` by their rows. \
@@ -936,7 +936,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         evidence: "a segmented `TabBar` paints no border at all: the bottom \
                    rule is drawn only for the `Underline` and `Tab` variants \
                    and takes the shared `border` token \
-                   (`tab/tab_bar.rs:500-513`), which the `border` row gives \
+                   (`tab/tab_bar.rs:501-515`), which the `border` row gives \
                    `defaults.border.color`.",
     },
     NoReceiver {
@@ -1331,8 +1331,13 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
 ///
 /// Every pair here and in `REPORTED` is built the same way: the emitted side
 /// is what upstream really renders for that surface, out of the tokens this
-/// connector writes (the upstream line is in the comment), and the native side
-/// is the platform's own pair for the same surface. The two need not read the
+/// connector writes, and the native side is the platform's own pair for the
+/// same surface. Where the emitted surface is not the plain reading of its
+/// tokens -- a label that lands on a fill other than its own, a fill upstream
+/// composes itself -- the pair carries a comment with the upstream line; not
+/// every pair can, because some tokens have many readers (`muted_foreground`
+/// alone has 78 sites outside `theme/` in 0.6.4) and the surfaces
+/// `INERT_SURFACES` names have no reader at all. The two need not read the
 /// same native fields -- `hovered button label` keeps `button_foreground` on
 /// `button_hover` where the platform states `hover_text_color` on
 /// `hover_background` -- and where they differ is exactly where a degradation
@@ -1853,9 +1858,14 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     let declared: Vec<&'static str> = PAIRS.iter().map(|pair| pair.what).collect();
     ran.covers(&declared, "the contrast pair list");
 
-    // A pair whose two sides are pinned to the same native fields emits the
-    // platform's own ratio in every combination and cannot fail: worth
-    // knowing, and derived here rather than claimed, so the figure cannot
+    // The pairs that emit exactly the platform's own ratio in every
+    // combination, and so cannot fail as the presets stand. The test is ratio
+    // equality, not a structural property: a pair whose two sides are pinned
+    // to the same native fields lands here by construction, and one whose
+    // sides read *different* fields lands here too whenever the two ratios
+    // come out equal in every combination -- `tab label` is the case, with
+    // `tab.background_color` on the native side and `tab.bar_background` on
+    // the emitted one. Derived here rather than claimed, so the figure cannot
     // drift from the pairs.
     let unbiting: Vec<&'static str> = PAIRS
         .iter()
@@ -1940,9 +1950,9 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \
          combinations and so cannot fail as the presets stand -- a value \
-         coincidence of today's sixteen presets, not a structural guarantee, \
-         and a preset that states one of the two fields differently would make \
-         them bite ({:?}); the other {} can bite ---\n--- inert surfaces \
+         coincidence of today's {} presets, not a structural guarantee, and a \
+         preset that states one of the two fields differently would make them \
+         bite ({:?}); the other {} can bite ---\n--- inert surfaces \
          ---\n{}\n--- reported, not asserted ---\n{}",
         PAIRS.len(),
         inert.len(),
@@ -1953,6 +1963,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
         below_aa.join("\n"),
         unbiting.len(),
         combinations.len(),
+        crate::Theme::list_presets().len(),
         unbiting,
         PAIRS.len() - unbiting.len(),
         inert.join("\n"),
