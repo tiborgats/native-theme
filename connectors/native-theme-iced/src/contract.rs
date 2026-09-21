@@ -1278,9 +1278,10 @@ fn native_toggler_thumb(r: &ResolvedTheme, status: toggler::Status) -> Color {
     })
 }
 
-/// Every color field of `styles::toggler`. The other six fields of
-/// `toggler::Style` are in `DERIVED`: `SwitchTheme` carries no border, no thumb
-/// inset and no font.
+/// Every color field of `styles::toggler`. Five of the remaining seven fields
+/// are in `DERIVED`: `SwitchTheme` carries no border and no font. The other two,
+/// `border_radius` and `padding_ratio`, are native (`switch.track_radius`, and
+/// the inset the track and thumb heights state between them).
 #[cfg(feature = "widgets")]
 const TOGGLER_ROWS: &[StyleRow<toggler::Status>] = &[
     StyleRow {
@@ -2625,7 +2626,7 @@ const DERIVED: &[(&str, &str)] = &[
 ///
 /// Not a way out of a row: an entry here says the toolkit cannot carry the
 /// value at all, so approximating it would state something untrue. One entry
-/// this release (section 3.3).
+/// this release, `scrollbar.min_thumb_length` (section 3.3).
 ///
 /// The list is part of the accounting rather than beside it:
 /// `every_named_field_has_exactly_one_declared_source` requires an unreachable
@@ -4200,6 +4201,13 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
         failures.join("\n")
     );
 
+    // These two cross-checks cannot fire while the naming convention holds: an
+    // `UNREACHABLE` entry names a *native* field (`scrollbar.min_thumb_length`)
+    // and every row and `DERIVED` name is an emitted one, `styles::`-prefixed,
+    // so the two namespaces never meet. What they guard is the convention
+    // itself -- a row or a `DERIVED` entry written under a native name would be
+    // caught here. The live protection for the entry's own claim is
+    // `the_unreachable_native_value_is_stated_by_every_preset`.
     for (field, evidence) in UNREACHABLE {
         assert_eq!(
             rows_claiming(field),
@@ -5448,11 +5456,10 @@ fn a_cleared_input_soft_option_copies_the_base_state_value() -> native_theme::Re
 fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::Result<()> {
     // The twelve soft options the widget functions read: four `checkbox.*`
     // (three of which `styles::radio` reads again through its own
-    // expressions), five `switch.*`, one `combo_box.*`, one `slider.*` and
-    // one `scrollbar.*`. No
-    // bundled preset leaves any of them `None` after resolution, so the rows
-    // cannot tell a right base-state field from a wrong one; the fallbacks are
-    // reached by clearing them here (section 3.2).
+    // expressions), five `switch.*`, one `combo_box.*`, one `slider.*` and one
+    // `scrollbar.*`. No bundled preset leaves any of them `None` after
+    // resolution, so the rows cannot tell a right base-state field from a
+    // wrong one; the fallbacks are reached by clearing them here (section 3.2).
     let mut resolved = native_theme::theme::Theme::preset("windows-11")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;
@@ -5506,8 +5513,9 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
     let handle = to_color(resolved.slider.thumb_color);
     let hovered_scroller = to_color(resolved.scrollbar.thumb_hover_color);
 
-    let mut failures = Vec::new();
-    for (soft_option, actual, expected) in [
+    // One entry per read site, not per model field: two functions reading the
+    // same option have two `unwrap_or` expressions.
+    let read_sites = [
         (
             "checkbox.unchecked_background -> checkbox.background_color",
             fill(boxes(&theme, checkbox::Status::Active { is_checked: false }).background),
@@ -5592,7 +5600,11 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             ),
             hovered_scroller,
         ),
-    ] {
+    ];
+
+    let sites = read_sites.len();
+    let mut failures = Vec::new();
+    for (soft_option, actual, expected) in read_sites {
         match actual {
             Ok(emitted) if emitted == expected => {}
             Ok(emitted) => failures.push(format!(
@@ -5607,7 +5619,8 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
 
     assert!(
         failures.is_empty(),
-        "{} of 15 cleared soft options do not copy their base-state value:\n{}",
+        "{} of {sites} cleared soft options do not copy their base-state \
+         value:\n{}",
         failures.len(),
         failures.join("\n")
     );

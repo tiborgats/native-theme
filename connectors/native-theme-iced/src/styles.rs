@@ -1050,7 +1050,9 @@ pub fn scrollbar(resolved: &ResolvedTheme) -> iced_widget::scrollable::Scrollbar
 ///
 /// The bar's thickness is not a `Style` field: `progress_bar.track_height` is
 /// the argument of `ProgressBar::girth(..)` (`progress_bar.rs:97`), set where
-/// the widget is built.
+/// the widget is built. `progress_bar.min_width` has no receiver at all:
+/// `ProgressBar::length(..)` (`progress_bar.rs:91`) takes the `Length` the
+/// consumer lays the bar out with, never a floor under it.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn progress_bar(
     resolved: &ResolvedTheme,
