@@ -46,11 +46,33 @@ iced_aw = { version = "0.14", optional = true, default-features = false, feature
     "selection_list",
 ] }
 
+# The showcase calls `styles::*`, which `widgets` gates. `widgets` is a default
+# feature, so `cargo test -p native-theme-iced` and the screenshot scripts build
+# the example as before; `--no-default-features` skips it, and the `iced_aw`
+# sections inside it are `#[cfg(feature = "iced_aw")]`.
 [[example]]
 name = "showcase-iced"
+required-features = ["widgets"]
 
 [dev-dependencies]
-iced = { version = "0.14", features = ["svg", "image", "tokio"] }
+iced = { version = "0.14", features = [
+    "svg",
+    "image",
+    "tokio",
+    "canvas",
+    "markdown",
+    "qr_code",
+] }
+iced_aw = { version = "0.14", default-features = false, features = [
+    "card",
+    "menu",
+    "context_menu",
+    "tab_bar",
+    "tabs",
+    "sidebar",
+    "spinner",
+    "selection_list",
+] }
 native-theme = { workspace = true, features = [
     "material-icons",
     "lucide-icons",
