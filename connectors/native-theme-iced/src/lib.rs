@@ -58,7 +58,7 @@
 //! | Target | Fields | Source |
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
-//! | `Extended` overrides (8) | secondary.base.color/text, background.weak.color/text, primary/success/danger/warning.base.text | button.bg/fg, defaults.surface/foreground, `*_foreground` |
+//! | `Extended` overrides (8) | secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
 //! | Widget metrics | button/input padding, border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
@@ -74,6 +74,8 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
+#[cfg(test)]
+mod contract;
 pub(crate) mod extended;
 pub mod icons;
 pub mod palette;
@@ -119,17 +121,13 @@ pub fn to_theme(
     // Capture only the Rgba values (Copy, 4 bytes each) instead of
     // cloning the entire ResolvedTheme (~2KB with heap data).
     let colors = extended::OverrideColors {
-        btn_bg: resolved.button.background_color,
-        btn_fg: resolved.button.font.color,
+        placeholder: resolved.input.placeholder_color,
         surface: resolved.defaults.surface_color,
         foreground: resolved.defaults.text_color,
         accent_fg: resolved.defaults.accent_text_color,
         success_fg: resolved.defaults.success_text_color,
         danger_fg: resolved.defaults.danger_text_color,
         warning_fg: resolved.defaults.warning_text_color,
-        success_bg: resolved.defaults.success_color,
-        danger_bg: resolved.defaults.danger_color,
-        warning_bg: resolved.defaults.warning_color,
     };
 
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {

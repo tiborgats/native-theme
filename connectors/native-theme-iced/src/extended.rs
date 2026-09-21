@@ -6,6 +6,7 @@
 //! overrides are always applied unconditionally.
 
 use crate::palette::to_color;
+use iced_core::theme::palette::Pair;
 use native_theme::color::Rgba;
 
 /// Captured color values for Extended palette overrides.
@@ -13,33 +14,22 @@ use native_theme::color::Rgba;
 /// Holds the `Rgba` values extracted from `ResolvedTheme` that
 /// `to_theme()` captures into its closure. Using a struct instead of
 /// individual parameters keeps the API clean.
-///
-/// The `success_bg`, `danger_bg`, and `warning_bg` fields are needed for
-/// WCAG contrast enforcement: we check each status foreground against its
-/// corresponding background to ensure 4.5:1 contrast.
 #[derive(Clone, Copy)]
 pub(crate) struct OverrideColors {
-    pub btn_bg: Rgba,
-    pub btn_fg: Rgba,
+    pub placeholder: Rgba,
     pub surface: Rgba,
     pub foreground: Rgba,
     pub accent_fg: Rgba,
     pub success_fg: Rgba,
     pub danger_fg: Rgba,
     pub warning_fg: Rgba,
-    pub success_bg: Rgba,
-    pub danger_bg: Rgba,
-    pub warning_bg: Rgba,
 }
-
-/// Minimum WCAG contrast ratio for status foreground against its background.
-/// 4.5:1 is AA for normal text.
-const MIN_STATUS_CONTRAST: f32 = 4.5;
 
 /// WCAG 2.1 relative luminance from an iced Color.
 ///
 /// Uses sRGB linearization and ITU-R BT.709 coefficients, matching the
 /// algorithm in the gpui connector's `derive::relative_luminance()`.
+#[cfg(test)]
 fn relative_luminance(c: iced_core::Color) -> f32 {
     let linearize = |v: f32| -> f32 {
         let v = v.clamp(0.0, 1.0);
@@ -56,46 +46,28 @@ fn relative_luminance(c: iced_core::Color) -> f32 {
 ///
 /// Returns a value in [1.0, 21.0]. Ratios below 4.5 indicate insufficient
 /// contrast for normal text (AA), below 3.0 for large text.
-fn contrast_ratio(a: iced_core::Color, b: iced_core::Color) -> f32 {
+///
+/// Test-only: the mapping contract's contrast report is its only reader --
+/// nothing in the emitted palette is chosen by measuring contrast.
+#[cfg(test)]
+pub(crate) fn contrast_ratio(a: iced_core::Color, b: iced_core::Color) -> f32 {
     let la = relative_luminance(a);
     let lb = relative_luminance(b);
     let (lighter, darker) = if la > lb { (la, lb) } else { (lb, la) };
     (lighter + 0.05) / (darker + 0.05)
 }
 
-/// Ensure a status foreground color has sufficient contrast against its background.
-///
-/// If the foreground has less than 4.5:1 contrast against the background,
-/// falls back to white (for dark backgrounds) or black (for light backgrounds).
-///
-/// Uses `relative_luminance(bg) < 0.5` instead of HSL lightness because iced
-/// `Color` has no `.l` field, and luminance is more perceptually accurate for
-/// determining whether a background is "dark" or "light".
-fn ensure_status_contrast(fg: iced_core::Color, bg: iced_core::Color) -> iced_core::Color {
-    if contrast_ratio(fg, bg) >= MIN_STATUS_CONTRAST {
-        fg
-    } else if relative_luminance(bg) < 0.5 {
-        iced_core::Color::WHITE
-    } else {
-        iced_core::Color::BLACK
-    }
-}
-
 /// Override auto-generated Extended palette entries with resolved theme fields.
 ///
 /// Always applies these overrides (all fields guaranteed populated):
-/// - `secondary.base.color` <- button background
-/// - `secondary.base.text` <- button foreground
+/// - `secondary.base` <- placeholder color, labelled by the window's text
+/// - `secondary.strong` <- a copy of `secondary.base`
 /// - `background.weak.color` <- surface color
 /// - `background.weak.text` <- foreground text color
 /// - `primary.base.text` <- accent foreground (text on accent bg)
-/// - `success.base.text` <- success foreground (text on success bg, contrast-enforced)
-/// - `danger.base.text` <- danger foreground (text on danger bg, contrast-enforced)
-/// - `warning.base.text` <- warning foreground (text on warning bg, contrast-enforced)
-///
-/// Status foreground colors (success, danger, warning) are passed through
-/// WCAG AA contrast enforcement: if the foreground has less than 4.5:1 contrast
-/// against its status background, it falls back to white or black.
+/// - `success.base.text` <- success foreground (text on success bg)
+/// - `danger.base.text` <- danger foreground (text on danger bg)
+/// - `warning.base.text` <- warning foreground (text on warning bg)
 ///
 /// Note: `.base.color` overrides for primary/success/danger/warning are
 /// redundant because `Extended::generate()` already sets them correctly
@@ -106,17 +78,17 @@ pub(crate) fn apply_overrides(
     extended: &mut iced_core::theme::palette::Extended,
     colors: &OverrideColors,
 ) {
-    extended.secondary.base.color = to_color(colors.btn_bg);
-    extended.secondary.base.text = to_color(colors.btn_fg);
+    extended.secondary.base =
+        Pair::new(to_color(colors.placeholder), extended.background.base.text);
+    // A hovered `button::secondary` keeps the base label and swaps only the
+    // fill, so the fill must be one that label was chosen for.
+    extended.secondary.strong = extended.secondary.base;
     extended.background.weak.color = to_color(colors.surface);
     extended.background.weak.text = to_color(colors.foreground);
     extended.primary.base.text = to_color(colors.accent_fg);
-    extended.success.base.text =
-        ensure_status_contrast(to_color(colors.success_fg), to_color(colors.success_bg));
-    extended.danger.base.text =
-        ensure_status_contrast(to_color(colors.danger_fg), to_color(colors.danger_bg));
-    extended.warning.base.text =
-        ensure_status_contrast(to_color(colors.warning_fg), to_color(colors.warning_bg));
+    extended.success.base.text = to_color(colors.success_fg);
+    extended.danger.base.text = to_color(colors.danger_fg);
+    extended.warning.base.text = to_color(colors.warning_fg);
 }
 
 #[cfg(test)]
@@ -151,17 +123,13 @@ mod tests {
 
     fn colors_from_resolved(r: &native_theme::theme::ResolvedTheme) -> OverrideColors {
         OverrideColors {
-            btn_bg: r.button.background_color,
-            btn_fg: r.button.font.color,
+            placeholder: r.input.placeholder_color,
             surface: r.defaults.surface_color,
             foreground: r.defaults.text_color,
             accent_fg: r.defaults.accent_text_color,
             success_fg: r.defaults.success_text_color,
             danger_fg: r.defaults.danger_text_color,
             warning_fg: r.defaults.warning_text_color,
-            success_bg: r.defaults.success_color,
-            danger_bg: r.defaults.danger_color,
-            warning_bg: r.defaults.warning_color,
         }
     }
 
@@ -176,24 +144,23 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.button.background_color);
+        let expected = to_color(resolved.input.placeholder_color);
         assert_eq!(
             extended.secondary.base.color, expected,
-            "secondary.base.color should match resolved.button.background"
+            "secondary.base.color should match resolved.input.placeholder"
         );
     }
 
     #[test]
-    fn apply_overrides_sets_secondary_base_text() {
+    fn apply_overrides_copies_secondary_base_into_strong() {
         let mut extended = make_extended();
         let resolved = make_resolved(false);
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.button.font.color);
         assert_eq!(
-            extended.secondary.base.text, expected,
-            "secondary.base.text should match resolved.button.foreground"
+            extended.secondary.strong, extended.secondary.base,
+            "secondary.strong should be a copy of secondary.base, label included"
         );
     }
 
@@ -246,13 +213,10 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = super::ensure_status_contrast(
-            to_color(resolved.defaults.success_text_color),
-            to_color(resolved.defaults.success_color),
-        );
+        let expected = to_color(resolved.defaults.success_text_color);
         assert_eq!(
             extended.success.base.text, expected,
-            "success.base.text should match contrast-enforced success foreground"
+            "success.base.text should match the native success foreground"
         );
     }
 
@@ -263,16 +227,10 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        // The raw danger foreground may be contrast-corrected if it has
-        // insufficient contrast against the danger background. Compute
-        // the expected value through the same enforcement path.
-        let expected = super::ensure_status_contrast(
-            to_color(resolved.defaults.danger_text_color),
-            to_color(resolved.defaults.danger_color),
-        );
+        let expected = to_color(resolved.defaults.danger_text_color);
         assert_eq!(
             extended.danger.base.text, expected,
-            "danger.base.text should match contrast-enforced danger foreground"
+            "danger.base.text should match the native danger foreground"
         );
     }
 
@@ -283,13 +241,10 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = super::ensure_status_contrast(
-            to_color(resolved.defaults.warning_text_color),
-            to_color(resolved.defaults.warning_color),
-        );
+        let expected = to_color(resolved.defaults.warning_text_color);
         assert_eq!(
             extended.warning.base.text, expected,
-            "warning.base.text should match contrast-enforced warning foreground"
+            "warning.base.text should match the native warning foreground"
         );
     }
 
@@ -300,7 +255,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.button.background_color);
+        let expected = to_color(resolved.input.placeholder_color);
         assert_eq!(
             extended.secondary.base.color, expected,
             "dark variant: secondary.base.color should match"
@@ -321,7 +276,7 @@ mod tests {
 
             assert_eq!(
                 extended.secondary.base.color,
-                to_color(resolved.button.background_color),
+                to_color(resolved.input.placeholder_color),
                 "{name}: secondary.base.color mismatch"
             );
         }
@@ -335,7 +290,7 @@ mod tests {
 
         assert_eq!(
             extended.secondary.base.color,
-            to_color(resolved.button.background_color),
+            to_color(resolved.input.placeholder_color),
             "adwaita: secondary.base.color mismatch"
         );
         assert_eq!(
@@ -343,31 +298,6 @@ mod tests {
             to_color(resolved.defaults.accent_text_color),
             "adwaita: primary.base.text mismatch"
         );
-    }
-
-    #[test]
-    fn ensure_status_contrast_corrects_low_contrast() {
-        // Dark background with dark foreground = low contrast
-        let dark_bg = iced_core::Color::from_rgb(0.1, 0.1, 0.1);
-        let dark_fg = iced_core::Color::from_rgb(0.15, 0.15, 0.15);
-        let result = super::ensure_status_contrast(dark_fg, dark_bg);
-        // Should fall back to white since bg is dark
-        assert_eq!(result, iced_core::Color::WHITE);
-
-        // Light background with light foreground = low contrast
-        let light_bg = iced_core::Color::from_rgb(0.9, 0.9, 0.9);
-        let light_fg = iced_core::Color::from_rgb(0.85, 0.85, 0.85);
-        let result = super::ensure_status_contrast(light_fg, light_bg);
-        // Should fall back to black since bg is light
-        assert_eq!(result, iced_core::Color::BLACK);
-    }
-
-    #[test]
-    fn ensure_status_contrast_preserves_sufficient() {
-        let bg = iced_core::Color::from_rgb(0.1, 0.1, 0.1);
-        let fg = iced_core::Color::WHITE;
-        let result = super::ensure_status_contrast(fg, bg);
-        assert_eq!(result, fg, "sufficient contrast should preserve original");
     }
 
     #[test]
