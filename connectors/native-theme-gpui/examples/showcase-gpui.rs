@@ -5708,7 +5708,9 @@ impl Showcase {
                     .w_full()
                     .demo_frame(cx)
                     .child(self.app_menu_bar.clone())
-                    .on_hover(self.hover_info(&fi, "AppMenuBar", &[("bg", "tab_bar", t.tab_bar, ""), ("text", "foreground", t.foreground, ""), ("hover", "secondary_hover", t.secondary_hover, ""), ("menu bg", "popover", t.popover, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "AppMenuBar", &[("item text", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("item hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("menu bg", "popover", t.popover, "gpui-component/styled.rs:197")], &[], &[
+                            ("fill", "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background -- the panel had claimed tab_bar, which nothing here touches"),
+                            ("items", "ghost Buttons, so they hover with accent rather than the button family, and their label is the Ghost variant's secondary_foreground"),
                             ("source", "cx.set_menus(Vec<Menu>)"),
                             ("reads", "cx.get_menus()"),
                         ])),
