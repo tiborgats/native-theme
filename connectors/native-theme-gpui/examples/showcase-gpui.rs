@@ -3198,7 +3198,7 @@ impl Showcase {
                                 }
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Input", &[("border", "input", t.input, ""), ("bg", "background", t.background, ""), ("text", "foreground", t.foreground, ""), ("placeholder", "muted_foreground", t.muted_foreground, ""), ("disabled bg", "muted", t.muted, "")], &[
+                    .on_hover(self.hover_info(&fi, "Input", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("bg", "background", t.background, ""), ("text", "foreground", t.foreground, ""), ("placeholder", "muted_foreground", t.muted_foreground, ""), ("disabled bg", "muted", t.muted, "")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
                         ], &[
@@ -3478,7 +3478,7 @@ impl Showcase {
                                 }
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Rating", &[("active star", "yellow", t.yellow, ""), ("inactive star", "muted_foreground", t.muted_foreground, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Rating", &[("active star", "yellow", t.yellow, ""), ("inactive star", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[], &[
                             ("star size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                             ("active colour", "cx.theme().yellow unless Rating::color overrides it (rating.rs, Rating::render active_color)"),
                             ("hover preview", "upstream keeps its own hovered value (rating.rs, RaitingState::hovered_value)"),
@@ -3593,7 +3593,7 @@ impl Showcase {
                             .stripe(true)
                             .bordered(true),
                     )
-                    .on_hover(self.hover_info(&fi, "Table", &[("header bg", "table_head", t.table_head, "gpui-component/table/table.rs:199"), ("header text", "table_head_foreground", t.table_head_foreground, "gpui-component/table/table.rs:200"), ("row bg", "table", t.table, ""), ("stripe", "table_even", t.table_even, ""), ("active row", "table_active", t.table_active, ""), ("hover", "table_hover", t.table_hover, "gpui-component/table/state.rs:1986"), ("border", "table_row_border", t.table_row_border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Table", &[("header bg", "table_head", t.table_head, "gpui-component/table/table.rs:199"), ("header text", "table_head_foreground", t.table_head_foreground, "gpui-component/table/table.rs:200"), ("row bg", "table", t.table, "gpui-component/table/data_table.rs:167"), ("stripe", "table_even", t.table_even, ""), ("active row", "table_active", t.table_active, ""), ("hover", "table_hover", t.table_hover, "gpui-component/table/state.rs:1986"), ("border", "table_row_border", t.table_row_border, "")], &[], &[
                             ("row height", "hardcoded per Size"),
                             (
                                 "geometry",
@@ -3693,7 +3693,7 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Pagination", &[("current page", "background", t.background, ""), ("current border", "border", t.border, ""), ("other pages", "transparent until hover", t.transparent, ""), ("hover", "secondary_hover", t.secondary_hover, ""), ("text", "foreground", t.foreground, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Pagination", &[("current page", "background", t.background, ""), ("current border", "border", t.border, ""), ("other pages", "transparent until hover", t.transparent, ""), ("hover", "secondary_hover", t.secondary_hover, ""), ("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
                             ("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs, Pagination::render)"),
                             ("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them"),
                             ("ellipsis", "a dropdown over the hidden pages"),
@@ -3912,7 +3912,7 @@ impl Showcase {
                                     })),
                             )),
                     )
-                    .on_hover(self.hover_info(&fi, "MessageScroller", &[("bottom fade", "background", t.background, ""), ("scrollbar", "scrollbar_thumb", t.scrollbar_thumb, ""), ("jump button", "secondary", t.secondary, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "MessageScroller", &[("bottom fade", "background", t.background, ""), ("scrollbar", "scrollbar_thumb", t.scrollbar_thumb, ""), ("jump button", "secondary", t.secondary, "gpui-component/button/button.rs:880")], &[], &[
                             ("rows", "the Message rows above, rendered on demand"),
                             ("follow", "FollowMode::Tail: Send scrolls the thread to the new row (message_scroller.rs, MessageScrollerState::new)"),
                             ("jump button", "appears once the user scrolls away from the tail"),
@@ -4157,7 +4157,7 @@ impl Showcase {
                                     .text_color(t.muted_foreground),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "ProgressCircle", &[("arc", "progress_bar", t.progress_bar, ""), ("track", "progress_bar at 20%: color.opacity(0.2) (progress/progress_circle.rs, ProgressCircle::render_circle)", t.progress_bar, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "ProgressCircle", &[("arc", "progress_bar", t.progress_bar, "gpui-component/progress/progress_circle.rs:176"), ("track", "progress_bar at 20%: color.opacity(0.2) (progress/progress_circle.rs, ProgressCircle::render_circle)", t.progress_bar, "")], &[], &[
                             ("indeterminate size", "geometry::spinner_size: spinner.diameter"),
                             ("determinate size", "per Size enum; the model carries no circular-progress diameter"),
                             ("stroke width", "15% of the diameter, capped at 5px (progress/progress_circle.rs, ProgressCircle::render_circle stroke_width)"),
@@ -4320,7 +4320,7 @@ impl Showcase {
                             .child(Tag::primary().outline().child("Primary Outline"))
                             .child(Tag::danger().outline().child("Danger Outline")),
                     )
-                    .on_hover(self.hover_info(&fi, "Tag (per variant)", &[("bg (primary)", "primary", t.primary, ""), ("text (primary)", "primary_foreground", t.primary_foreground, ""), ("border (outline)", "border", t.border, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "hardcoded per Size")])),
+                    .on_hover(self.hover_info(&fi, "Tag (per variant)", &[("bg (primary)", "primary", t.primary, ""), ("text (primary)", "primary_foreground", t.primary_foreground, "gpui-component/tag.rs:71"), ("border (outline)", "border", t.border, "gpui-component/tag.rs:49")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "hardcoded per Size")])),
             )
             // Badges
             .child(section("Badge"))
@@ -4692,7 +4692,7 @@ impl Showcase {
                             .child(Label::new("text_lg — Large").text_lg())
                             .child(Label::new("text_xl — Extra Large").text_xl()),
                     )
-                    .on_hover(self.hover_info(&fi, "Font Sizes", &[("text", "foreground", t.foreground, "")], &[("base", format!("font_size: {}px", t.font_size.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Font Sizes", &[("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[("base", format!("font_size: {}px", t.font_size.as_f32()))], &[
                             ("xs", "0.75rem"),
                             ("sm", "0.875rem"),
                             ("base", "1rem"),
@@ -5110,7 +5110,7 @@ impl Showcase {
                         )
                         .child(Label::new(SharedString::from(spacing_summary)).text_sm()),
                     )
-                    .on_hover(self.hover_info(&fi, "Layout spacing", &[("border", "border", t.border, "")], &[], &[(
+                    .on_hover(self.hover_info(&fi, "Layout spacing", &[("border", "border", t.border, "gpui-component/button/button.rs:1002")], &[], &[(
                             "receivers",
                             "no gpui-component widget reads the gpui-base spacing tokens, so these four are the application's to apply (geometry.rs §9.5)",
                         )])),
@@ -5162,7 +5162,7 @@ impl Showcase {
                                 ),
                         ),
                     )
-                    .on_hover(self.hover_info(&fi, "GroupBox (layout)", &[("fill bg", "group_box", t.group_box, ""), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("border", "border", t.border, ""), ("title", "muted_foreground", t.muted_foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
+                    .on_hover(self.hover_info(&fi, "GroupBox (layout)", &[("fill bg", "group_box", t.group_box, ""), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("border", "border", t.border, "gpui-component/button/button.rs:1002"), ("title", "muted_foreground", t.muted_foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
             )
             // Scrollable area demo
             .child(section("Scrollable Area (visible scrollbar)"))
@@ -5278,7 +5278,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Collapsible", &[("bg", "accordion", t.accordion, "gpui-component/accordion.rs:371"), ("border", "border", t.border, "")], &[], &[("animation", "hardcoded slide")])),
+                    .on_hover(self.hover_info(&fi, "Collapsible", &[("bg", "accordion", t.accordion, "gpui-component/accordion.rs:371"), ("border", "border", t.border, "gpui-component/button/button.rs:1002")], &[], &[("animation", "hardcoded slide")])),
             )
             // Carousel
             .child(section("Carousel"))
@@ -5346,7 +5346,7 @@ impl Showcase {
                             .child(CarouselPrevious::new(&self.carousel_state))
                             .child(CarouselNext::new(&self.carousel_state)),
                     )
-                    .on_hover(self.hover_info(&fi, "Carousel", &[("slide bg", "muted", t.muted, ""), ("slide text", "foreground", t.foreground, ""), ("slide caption", "muted_foreground", t.muted_foreground, ""), ("focus ring", "ring", t.ring, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Carousel", &[("slide bg", "muted", t.muted, ""), ("slide text", "foreground", t.foreground, "gpui-component/label.rs:207"), ("slide caption", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167"), ("focus ring", "ring", t.ring, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("snap motion", "Theme::motion spring_move; ResolvedTheme has no motion field"),
                             ("reduced motion", "gpui's App::reduce_motion, forwarded by apply_system_theme — the snap becomes instant"),
                             ("slide controls", "outline Buttons the widget builds itself, disabled at the ends (carousel/carousel.rs, carousel_control)"),
@@ -5381,7 +5381,7 @@ impl Showcase {
                                     .child(Label::new("Outlined border").text_sm()),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "GroupBox", &[("fill bg", "group_box", t.group_box, ""), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("border", "border", t.border, ""), ("title", "muted_foreground", t.muted_foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
+                    .on_hover(self.hover_info(&fi, "GroupBox", &[("fill bg", "group_box", t.group_box, ""), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("border", "border", t.border, ""), ("title", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
             )
             // Breadcrumb (with tab navigation)
             .child(section("Breadcrumb (click to navigate tabs)"))
@@ -5467,7 +5467,7 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Stepper", &[("completed / current", "primary", t.primary, ""), ("completed text", "primary_foreground", t.primary_foreground, ""), ("pending", "secondary", t.secondary, ""), ("pending text", "secondary_foreground", t.secondary_foreground, ""), ("pending hover", "secondary_hover", t.secondary_hover, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Stepper", &[("completed / current", "primary", t.primary, "gpui-component/stepper/item.rs:264"), ("completed text", "primary_foreground", t.primary_foreground, ""), ("pending", "secondary", t.secondary, ""), ("pending text", "secondary_foreground", t.secondary_foreground, ""), ("pending hover", "secondary_hover", t.secondary_hover, "")], &[], &[
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                             ("indicator size", "24px for Size::Medium (stepper/item.rs, StepperItem::render icon_size)"),
                             ("separator", "drawn by the item, absolute (stepper/item.rs: StepperItem::render builds it, StepperSeparator::render positions it)"),
@@ -5536,7 +5536,7 @@ impl Showcase {
                                 .text_color(t.muted_foreground),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("bg", "transparent until hover", t.transparent, ""), ("hover", "secondary_hover", t.secondary_hover, "gpui-component/button/button.rs:883"), ("icon", "foreground", t.foreground, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("bg", "transparent until hover", t.transparent, ""), ("hover", "secondary_hover", t.secondary_hover, "gpui-component/button/button.rs:883"), ("icon", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
                             ("button", "a ghost, small Button built by the widget (sidebar/mod.rs, SidebarToggleButton::new)"),
                             ("icon", "PanelLeftOpen / PanelLeftClose, at a hardcoded size_4 (sidebar/mod.rs, SidebarToggleButton::render)"),
                         ])),
@@ -5581,7 +5581,7 @@ impl Showcase {
                                 ))),
                         ),
                     )
-                    .on_hover(self.hover_info(&fi, "Sidebar", &[("bg", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("text", "sidebar_foreground", t.sidebar_foreground, ""), ("accent", "sidebar_accent", t.sidebar_accent, ""), ("border", "sidebar_border", t.sidebar_border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Sidebar", &[("bg", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("text", "sidebar_foreground", t.sidebar_foreground, "gpui-component/sidebar/mod.rs:414"), ("accent", "sidebar_accent", t.sidebar_accent, ""), ("border", "sidebar_border", t.sidebar_border, "")], &[], &[
                             ("icon size", "geometry::icon_size_panel: defaults.icon_sizes.panel, on each SidebarMenuItem icon"),
                             ("width", "255px default, 48px collapsed"),
                             ("children", "must impl Collapsible + IntoElement"),
@@ -5657,7 +5657,7 @@ impl Showcase {
                                     )),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Settings", &[("bg", "background", t.background, ""), ("sidebar", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("group", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("border", "border", t.border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Settings", &[("bg", "background", t.background, ""), ("sidebar", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("group", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("border", "border", t.border, "gpui-component/setting/page.rs:185")], &[], &[
                             ("fields", "switch/checkbox/input/dropdown/number_input"),
                             ("layout", "sidebar + pages"),
                         ])),
@@ -5830,7 +5830,7 @@ impl Showcase {
                                 });
                             })),
                     ))
-                    .on_hover(self.hover_info(&fi, "AlertDialog", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("description", "muted_foreground", t.muted_foreground, ""), ("overlay", "overlay", t.overlay, ""), ("confirm button", "danger", t.danger, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "AlertDialog", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("description", "muted_foreground", t.muted_foreground, "gpui-component/button/button.rs:1284"), ("overlay", "overlay", t.overlay, ""), ("confirm button", "danger", t.danger, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("geometry", "geometry::dialog and geometry::dialog_max_width, as the Dialog above"),
                             ("icon size", "geometry::icon_size_dialog: defaults.icon_sizes.dialog"),
                             ("footer", "right-aligned, and built from button_props when none is given (dialog/alert_dialog.rs, AlertDialog::build_surface; dialog/footer.rs, DialogFooter::render justify_end)"),
@@ -5952,7 +5952,7 @@ impl Showcase {
                                     )
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "HoverCard", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("secondary text", "muted_foreground", t.muted_foreground, ""), ("border", "border", t.border, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "HoverCard", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("secondary text", "muted_foreground", t.muted_foreground, ""), ("border", "border", t.border, "gpui-component/button/button.rs:1002")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("geometry", "geometry::popover, which refines the card surface (hover_card.rs, HoverCard::render refine_style)"),
                             ("card padding", "geometry::container_margin; gap: geometry::widget_gap"),
                             ("trigger", "variants::ghost_button, the flat button's native state colours"),
