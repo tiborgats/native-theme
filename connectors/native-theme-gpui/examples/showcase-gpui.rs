@@ -3147,7 +3147,7 @@ impl Showcase {
                                     }),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "DropdownButton", &[("dropdown border", "input", t.input, "gpui-component/button/button.rs:1001"), ("menu bg", "popover", t.popover, "gpui-component/tooltip.rs:114")], &[], &[("dropdown arrow", "hardcoded ChevronDown")])),
+                    .on_hover(self.hover_info(&fi, "DropdownButton", &[("dropdown border", "input", t.input, "gpui-component/button/button.rs:1001"), ("menu bg", "popover", t.popover, "gpui-component/tooltip.rs:114")], &[], &[("dropdown arrow", "a Caret, not an icon the caller passes: the right half is a Button::dropdown_caret and the glyph comes from select.rs, Caret. The shape is fixed, but its colour is not -- upstream paints it with the button variant's own text colour at 75% (button/button.rs, Button::render dropdown_caret), so it follows the platform through the same token the label does")])),
             )
             // Toggle & ToggleGroup
             .child(section("Toggle & ToggleGroup"))
@@ -3680,7 +3680,7 @@ impl Showcase {
                     .on_hover(self.hover_info(&fi, "Table", &[("header bg", "table_head", t.table_head, "gpui-component/table/table.rs:199"), ("header text", "table_head_foreground", t.table_head_foreground, "gpui-component/table/table.rs:200"), ("row bg", "table", t.table, "gpui-component/table/data_table.rs:167"), ("stripe", "table_even", t.table_even, "gpui-component/table/state.rs:1980"), ("active row", "table_active", t.table_active, "gpui-component/table/state.rs:1363"), ("hover", "table_hover", t.table_hover, "gpui-component/table/state.rs:1986"), ("border", "table_row_border", t.table_row_border, "gpui-component/table/table.rs:203")], &[("geometry", "DataTable is not Styled (table/data_table.rs: DataTable impls \
                                  Sizable and RenderOnce, not Styled); \
                                  geometry::table goes to the declarative Table below".to_string())], &[
-                            ("row height", "hardcoded per Size"),
+                            ("row height", "per Size, but Size::Size(px) is an escape hatch that returns the pixel value verbatim (sizing.rs, table_row_height) while table_cell_padding has no Size::Size arm and stays on the Medium edges this demo already uses -- so DataTable::with_size(Size::Size(px(list.row_height))) would carry the platform's row height and change nothing else. list.row_height is modelled; nothing applies it here yet"),
                         ])),
             )
             // The other table: rows written out instead of driven by a
@@ -3823,8 +3823,8 @@ impl Showcase {
                         },
                     ))
                     .on_hover(self.hover_info(&fi, "Tree", &[("bg", "list", t.colors.list, "gpui-component/list/list_item.rs:236"), ("active", "list_active", t.list_active, "gpui-component/list/list_item.rs:237"), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209")], &[("geometry", "geometry::list on the box around it: a tree is a list view and the model gives it no theme of its own, so its frame is the list's".to_string()), ("row geometry", "geometry::list_item on each row: list.row_height (control height), list.border.padding_*, and list.item_font including its colour -- upstream labels the row with foreground one line before applying it (list/list_item.rs, ListItem::render)".to_string())], &[
-                            ("indent", "per depth level"),
-                            ("expand icon", "hardcoded ChevronRight"),
+                            ("indent", "none here, and none upstream: Tree::new takes a render_item closure and tree.rs draws no row content of its own (tree.rs, Tree), so a row's indent is whatever the application's closure applies -- this demo's applies none"),
+                            ("disclosure icon", "the same: tree.rs contains no icon, so a chevron would be the closure's to draw. The panel used to claim a hardcoded ChevronRight, which is in neither this demo nor upstream"),
                         ])),
             )
             // Avatar & AvatarGroup
@@ -4106,7 +4106,7 @@ impl Showcase {
                     .on_hover(self.hover_info(&fi, "Alert (Info)", &[("color", "info", t.info, "gpui-component/alert.rs:29"), ("text", "info", t.info, "gpui-component/alert.rs:29"), ("border", "info", t.info, "gpui-component/alert.rs:49")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("tints", "the fill is the variant colour mixed toward white at 4% and the edge at 30%: one token, three strengths, so the swatches show the pure colour rather than what is painted (alert.rs, AlertVariant)"),
                             ("padding", "hardcoded per Size"),
-                            ("icon", "Info (hardcoded for variant)"),
+                            ("icon", "the Info variant's default, not a fixed glyph: Alert::icon replaces it with any Icon (alert.rs, Alert::icon), and an Icon takes a path or raw SVG bytes (icon.rs, Icon::path), so a platform icon from this connector's loader can be handed to it"),
                             ("icon size", "hardcoded"),
                         ])),
             )
@@ -4119,7 +4119,7 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "Alert (Success)", &[("color", "success", t.success, "gpui-component/alert.rs:30"), ("text", "success", t.success, "gpui-component/alert.rs:30"), ("border", "success", t.success, "gpui-component/alert.rs:50")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("padding", "hardcoded per Size"),
-                            ("icon", "CircleCheck (hardcoded)"),
+                            ("icon", "the Success variant's default; Alert::icon replaces it (alert.rs, Alert::icon)"),
                         ])),
             )
             .child(
@@ -4131,7 +4131,7 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "Alert (Warning)", &[("color", "warning", t.warning, "gpui-component/alert.rs:31"), ("text", "warning", t.warning, "gpui-component/alert.rs:31"), ("border", "warning", t.warning, "gpui-component/alert.rs:51")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("padding", "hardcoded per Size"),
-                            ("icon", "TriangleAlert (hardcoded)"),
+                            ("icon", "the Warning variant's default; Alert::icon replaces it (alert.rs, Alert::icon)"),
                         ])),
             )
             .child(
@@ -4143,7 +4143,7 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "Alert (Error)", &[("color", "danger", t.danger, "gpui-component/alert.rs:32"), ("text", "danger", t.danger, "gpui-component/alert.rs:32"), ("border", "danger", t.danger, "gpui-component/alert.rs:52")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("padding", "hardcoded per Size"),
-                            ("icon", "CircleX (hardcoded)"),
+                            ("icon", "the Error variant's default; Alert::icon replaces it (alert.rs, Alert::icon)"),
                         ])),
             )
             // Progress
@@ -4527,7 +4527,7 @@ impl Showcase {
                             }),
                     )
                     .on_hover(self.hover_info(&fi, "Tooltip", &[("bg", "popover", t.popover, "gpui-component/tooltip.rs:114"), ("text", "popover_foreground", t.popover_foreground, "gpui-component/tooltip.rs:115")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::tooltip on an application-built Tooltip: border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style). geometry::tooltip_content on the element passed to Tooltip::element carries tooltip.max_width, which the text wraps at".to_string())], &[
-                            ("delay", "hardcoded"),
+                            ("delay", "the application's, not the widget's: gpui takes it on the element that carries the tooltip (gpui-pre/elements/div.rs, tooltip_show_delay). native-theme states no hover delay, though the platforms do -- our model's gap"),
                             ("position", "auto"),
                         ])),
             )
@@ -5658,7 +5658,7 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "Sidebar", &[("bg", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("text", "sidebar_foreground", t.sidebar_foreground, "gpui-component/sidebar/mod.rs:414"), ("selected row", "sidebar_accent", t.sidebar_accent, "gpui-component/sidebar/header.rs:91"), ("border", "sidebar_border", t.sidebar_border, "gpui-component/sidebar/mod.rs:415")], &[("icon size", "geometry::icon_size_panel: defaults.icon_sizes.panel, on each SidebarMenuItem icon".to_string())], &[
                             ("selected row text", "sidebar_accent_foreground, beside the fill (sidebar/header.rs)"),
-                            ("width", "255px default, 48px collapsed"),
+                            ("width", "255px is only a fallback: the expanded width is read from the caller's own style and used whenever it is an absolute pixel length (sidebar/mod.rs, sidebar_expanded_width), so .w() carries it. Only the collapsed 48px is fixed. SidebarTheme models no width -- our model's gap"),
                             ("children", "must impl Collapsible + IntoElement"),
                         ])),
             )

@@ -519,7 +519,7 @@ What is still open on the iced side:
       (already in "inner geometry exposed" above) and the notes now say so
       rather than "hardcoded".
 
-      Twelve more checked 2026-09-22, and the largest single finding is a
+      Twenty-two more checked 2026-09-22, and the largest single finding is a
       **whole category the model is missing**: `Theme::motion` is a public,
       writable `MotionTokens` field (`gpui-component/theme/mod.rs:170`,
       `theme/motion.rs:8-20`: four durations, three easings, two springs, two
@@ -548,9 +548,83 @@ What is still open on the iced side:
       but there is no builder to apply, because `TabTheme` models no padding.
       The three `Link` notes became Tier U and an upstream PR candidate above.
 
+      Six more were wrong in the plainest way — they described upstream
+      inaccurately. A `Tree`'s "indent per depth level" and "hardcoded
+      ChevronRight" are in neither this demo nor upstream: `Tree::new` takes a
+      `render_item` closure and `tree.rs` draws no row content at all, so both
+      are the application's to draw and this demo draws neither. A
+      `DropdownButton`'s arrow is a `Caret` reached through
+      `Button::dropdown_caret`, and its colour is the button variant's own
+      text colour at 75% — themed, where the note said hardcoded. An `Alert`'s
+      variant icon is a default that `Alert::icon` replaces. A `Tooltip`'s
+      delay is the application's, set on the element that carries it. A
+      `Sidebar`'s 255px is a fallback the caller's own `.w()` displaces. And a
+      `DataTable`'s row height has an escape hatch. The five of those that
+      point at something we could do are listed below.
+
       The largest untouched groups are now `padding` (7 under modelled
       widgets), `label size` (6, all six Button variants, all already Tier U)
       and `icon size` (2 uncited).
+
+##### What the audit turned up that is ours to fix
+
+Each of these is a real route the connector or the model does not take. They
+are listed separately from the notes because correcting a note only records
+the gap — closing it is a change, and each wants its own decision.
+
+- [ ] **Model motion.** The big one, argued above: `Theme::motion` is a
+      writable field of twelve tokens that eighteen-plus widgets read, and
+      `apply` overwrites all of it with `Default::default()` because
+      native-theme states no motion. KDE has `AnimationDurationFactor`,
+      Windows has `SPI_GETCLIENTAREAANIMATION`, and
+      `detect::prefers_reduced_motion()` already exists. A `MotionSpec` on the
+      theme plus one line in `apply` would light up Checkbox, Switch, Slider,
+      Accordion, Collapsible, Progress, ProgressCircle, TabBar, TabPanel,
+      Carousel, the charts and the plot tooltip at once. Decide first whether
+      a *theme* should carry motion at all, or whether this belongs with the
+      accessibility preferences.
+- [ ] **A `DataTable` can take the platform's row height today.** `Size::Size(px)`
+      returns the pixel value verbatim from `table_row_height`
+      (`sizing.rs:57-65`), and `table_cell_padding` has *no* `Size::Size` arm
+      (`:67-95`), so it falls to the same Medium edges a default table already
+      uses — `DataTable::with_size(Size::Size(px(list.row_height)))` changes
+      the row height and nothing else. `list.row_height` is modelled and
+      `geometry::list_item` already applies it to `List` and `Tree` rows.
+      Caveat worth reading before using `Size::Size` more widely: `smaller()`
+      maps it to `v * 0.2` and the private `as_f32` returns the raw pixels
+      where the enum arms return 0..3, so anything ordering sizes numerically
+      misreads it.
+- [ ] **The showcase ignores its own `text_scale`.** `ResolvedTextScale` states
+      four typographic roles — `caption`, `section_heading`, `dialog_title`,
+      `display` — each with a size, a weight and a line height, and
+      `native_theme_gpui::text_scale()` is public (`lib.rs:412`). The Headings
+      demo draws a six-step rem ladder of its own instead, and there is no
+      `geometry::` builder for a text role, so an application that wants the
+      platform's scale has to reach past the builders. Four roles do not map
+      onto H1–H6, which is the honest reason this is a design question and not
+      a bug: decide the mapping (or that there is none) before adding a
+      builder. The showcase's "no hardcoded style values" test does not cover
+      text sizes, which is why the ladder passed.
+- [ ] **A sidebar width and a tooltip delay are missing from the model.** Both
+      have receivers: `Sidebar` reads the caller's own style width and falls
+      back to 255px only when none is set (`sidebar/mod.rs:195-201`), and gpui
+      takes a hover delay on the element carrying the tooltip
+      (`gpui-pre/elements/div.rs:735`). `SidebarTheme` and `TooltipTheme`
+      state neither, so both notes were "hardcoded" for something the
+      application can already set. Check `platform-facts.md` for what the four
+      platforms state — a hover delay at least is a documented system setting
+      on Windows (`SPI_GETMOUSEHOVERTIME`).
+- [ ] **Platform icons inside widgets: how far can it go?** `Icon` takes a path
+      or raw SVG bytes (`icon.rs:117-131`), and this connector already
+      rasterises the platform's icon theme, so the type is not the obstacle —
+      the per-widget setter is. `Alert::icon` exists (`alert.rs:124`), so an
+      Alert's variant glyph is a default and not a fixture; `Breadcrumb`
+      (`:143`), `Clipboard` (`:88-90`) and `Calendar` (`:107-110`) construct
+      theirs inline with no setter, and `Button::dropdown_caret` goes through
+      `Caret` (`select.rs:59`). Worth deciding whether the connector should
+      offer a "platform glyph" helper at all, and worth an upstream ask for
+      setters on the three that lack one. Note the standing rule: never
+      substitute across icon themes — a missing icon returns `None`.
 - [ ] `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
       The connector writes both on every `apply` and both have contract rows
       (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
