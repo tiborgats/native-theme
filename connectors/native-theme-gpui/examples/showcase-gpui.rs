@@ -3854,7 +3854,8 @@ impl Showcase {
                             self.chat_messages.iter().take(2).map(chat_message),
                         ),
                     )
-                    .on_hover(self.hover_info(&fi, "Message", &[("incoming bubble", "muted", t.muted, ""), ("outgoing bubble", "primary", t.primary, ""), ("avatar fallback", "secondary", t.secondary, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Message", &[("incoming bubble", "muted", t.muted, "gpui-component/bubble.rs:218"), ("outgoing bubble", "primary", t.primary, "gpui-component/bubble.rs:211"), ("avatar fallback", "secondary", t.secondary, "gpui-component/avatar/avatar.rs:123")], &[], &[
+                            ("bubbles", "a Message delegates its bubble to Bubble, so the two fills are Bubble's and the citations point there"),
                             ("row gap", "geometry::widget_gap between the rows"),
                             ("slot gap", "hardcoded rems(0.625) (message.rs, Message::render)"),
                             ("avatar baseline", "a shared size-8 minimum, kept flush with the bubble's bottom edge (message.rs, the avatar slot's RenderOnce: min_w_8, self_end)"),
@@ -3994,10 +3995,11 @@ impl Showcase {
                                     })),
                             )),
                     )
-                    .on_hover(self.hover_info(&fi, "Attachment", &[("bg", "background", t.background, ""), ("border", "border", t.border, ""), ("media bg", "muted", t.muted, ""), ("description", "muted_foreground", t.muted_foreground, ""), ("failed", "danger", t.danger, "")], &[(
+                    .on_hover(self.hover_info(&fi, "Attachment", &[("bg", "background", t.background, "gpui-component/attachment.rs:214"), ("border", "border", t.border, "gpui-component/attachment.rs:211"), ("media bg", "muted", t.muted, "gpui-component/attachment.rs:220"), ("description", "muted_foreground", t.muted_foreground, "gpui-component/attachment.rs:595"), ("failed", "danger", t.danger, "gpui-component/theme/mod.rs:428")], &[(
                             "border-radius",
                             format!("radius_2xl(): {}px", t.radius_2xl().as_f32()),
                         )], &[
+                            ("failed tint", "the semantic layer renames danger to destructive, and a failed card tints its border with it at 30% (theme/mod.rs, color_tokens; attachment.rs, Attachment::render)"),
                             ("card gap", "geometry::widget_gap between the cards"),
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                             ("in-progress title", "the ShimmerText highlight, driven by the status (attachment.rs, AttachmentTitle::render)"),
@@ -5469,7 +5471,7 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Stepper", &[("completed / current", "primary", t.primary, "gpui-component/stepper/item.rs:264"), ("completed text", "primary_foreground", t.primary_foreground, ""), ("pending", "secondary", t.secondary, ""), ("pending text", "secondary_foreground", t.secondary_foreground, ""), ("pending hover", "secondary_hover", t.secondary_hover, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Stepper", &[("completed / current", "primary", t.primary, "gpui-component/stepper/item.rs:264"), ("completed text", "primary_foreground", t.primary_foreground, ""), ("pending", "secondary", t.secondary, "gpui-component/stepper/trigger.rs:126"), ("pending text", "secondary_foreground", t.secondary_foreground, "gpui-component/stepper/trigger.rs:131"), ("pending hover", "secondary_hover", t.secondary_hover, "")], &[], &[
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                             ("indicator size", "24px for Size::Medium (stepper/item.rs, StepperItem::render icon_size)"),
                             ("separator", "drawn by the item, absolute (stepper/item.rs: StepperItem::render builds it, StepperSeparator::render positions it)"),
