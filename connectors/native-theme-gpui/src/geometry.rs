@@ -131,6 +131,17 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         .rounded(px(b.border.corner_radius.max(0.0)))
         .border(px(b.border.line_width))
         .border_color(rgba_to_hsla(b.border.color))
+        // The weight, and deliberately not the size. This refinement lands on
+        // the button's outer element (`button/button.rs:690`), and GPUI
+        // cascades text style to descendants: the label is a child that sets
+        // its own size from the `Size` enum (`button_text_size`,
+        // `sizing.rs:319-325`, which maps to `text_xs`/`text_sm`/`text_base`)
+        // and so would overrule a size from here -- but it sets no weight, and
+        // nothing else on that path does either, so the platform's weight
+        // arrives. A size set here would be shadowed on the label and still
+        // apply to anything else inside, which is worse than not setting it;
+        // that remainder is `content_style`, `pub(crate)` upstream (Tier U).
+        .font_weight(weight_of(&b.font))
 }
 
 /// `Input` root (`src/input/input.rs:704-714` → `:719`); padding is inner, Tier U.
@@ -684,6 +695,15 @@ mod tests {
             assert_eq!(
                 out.text.font_size, None,
                 "button label size is inner (Tier U), not set here"
+            );
+            // The weight is not inner: nothing on the label's path sets one,
+            // so this one cascades. The showcase's ten Button panels called it
+            // "hardcoded" for as long as the connector declined to carry it.
+            assert_eq!(
+                out.text.font_weight,
+                Some(FontWeight(f32::from(b.font.weight))),
+                "the platform states a button font weight and nothing upstream \
+                 overrides it, so the builder carries it"
             );
         });
     }

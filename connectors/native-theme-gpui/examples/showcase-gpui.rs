@@ -601,9 +601,18 @@ fn format_font_info(
     font: &native_theme::theme::ResolvedFontSpec,
     mono_font: &native_theme::theme::ResolvedFontSpec,
 ) -> String {
+    // The DPI as well as the sizes. `ResolvedFontSpec::size` is in logical
+    // pixels -- a platform that states points has already been converted by
+    // then (`size_pt * font_dpi / 72`), and the pixel value on its own hides
+    // both halves of that: 13.333333px says nothing about the 10pt the
+    // desktop was actually set to. The factor is not inferred from the size,
+    // because nothing here can tell a converted 10pt from a stated
+    // 13.333333px; it is read from the same public input the resolver used.
+    let dpi = native_theme::ResolutionContext::from_system().font_dpi;
     format!(
-        "\nTheme fonts:\n  Font: {} {}px\n  Mono: {} {}px",
-        font.family, font.size, mono_font.family, mono_font.size,
+        "\nTheme fonts:\n  Font: {} {}px\n  Mono: {} {}px\n  \
+         font_dpi: {} (a point size is px * 72 / font_dpi)",
+        font.family, font.size, mono_font.family, mono_font.size, dpi,
     )
 }
 
@@ -2830,7 +2839,7 @@ impl Showcase {
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                     ("label size", "inner element (Tier U)"),
                                 ])),
                     )
@@ -2845,7 +2854,7 @@ impl Showcase {
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                     ("label size", "inner element (Tier U)"),
                                 ])),
                     )
@@ -2860,7 +2869,7 @@ impl Showcase {
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                     ("label size", "inner element (Tier U)"),
                                 ])),
                     )
@@ -2875,7 +2884,7 @@ impl Showcase {
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                     ("label size", "inner element (Tier U)"),
                                 ])),
                     )
@@ -2890,7 +2899,7 @@ impl Showcase {
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                     ("label size", "inner element (Tier U)"),
                                 ])),
                     )
@@ -2905,7 +2914,7 @@ impl Showcase {
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                     ("label size", "inner element (Tier U)"),
                                 ])),
                     )
@@ -2920,7 +2929,7 @@ impl Showcase {
                             ))
                             .on_hover(self.hover_info(&fi, "Button (Ghost)", &[("text", "secondary_foreground", t.secondary_foreground, "native-theme-gpui/variants.rs:54"), ("hover bg", "secondary_hover", t.secondary_hover, "native-theme-gpui/variants.rs:55"), ("active bg", "secondary_active", t.secondary_active, "native-theme-gpui/variants.rs:56")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
                                     ("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu selection colour, not a button hover"),
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                 ])),
                     )
                     .child(
@@ -2930,7 +2939,7 @@ impl Showcase {
                                 Button::new("b-link").label("Link").link(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Link)", &[("text", "link", t.link, "button/button.rs:993"), ("hover text", "link_hover", t.link_hover, "button/button.rs:1139"), ("pressed text", "link_active", t.link_active, "button/button.rs:1215")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[ ("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"), ("underline", "always on for this variant (button/button.rs, ButtonVariant::underline)"), ("font-weight", "hardcoded")])),
+                            .on_hover(self.hover_info(&fi, "Button (Link)", &[("text", "link", t.link, "button/button.rs:993"), ("hover text", "link_hover", t.link_hover, "button/button.rs:1139"), ("pressed text", "link_active", t.link_active, "button/button.rs:1215")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[ ("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"), ("underline", "always on for this variant (button/button.rs, ButtonVariant::underline)"), ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")])),
                     )
                     .child(
                         div()
@@ -2939,7 +2948,7 @@ impl Showcase {
                                 Button::new("b-text").label("Text").text(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Text)", &[("text", "foreground", t.foreground, "button/button.rs:994"), ("hover text", "foreground", t.foreground, "button/button.rs:1140"), ("pressed text", "foreground", t.foreground, "button/button.rs:1216")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[ ("opacity", "the one variant that dims rather than recolours: foreground at 90% idle and 70% pressed, full strength on hover (button/button.rs, ButtonVariant::text_color, hovered, active). The swatches show foreground itself, since the model states no dimmed copy"), ("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"), ("font-weight", "hardcoded")])),
+                            .on_hover(self.hover_info(&fi, "Button (Text)", &[("text", "foreground", t.foreground, "button/button.rs:994"), ("hover text", "foreground", t.foreground, "button/button.rs:1140"), ("pressed text", "foreground", t.foreground, "button/button.rs:1216")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[ ("opacity", "the one variant that dims rather than recolours: foreground at 90% idle and 70% pressed, full strength on hover (button/button.rs, ButtonVariant::text_color, hovered, active). The swatches show foreground itself, since the model states no dimmed copy"), ("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"), ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")])),
                     )
                     .child(
                         div()
@@ -2952,7 +2961,7 @@ impl Showcase {
                                 button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(&fi, "Button (Primary Outline)", &[("fill", "primary", t.primary, "gpui-component/button/button.rs:871"), ("border", "primary", t.primary, "gpui-component/button/button.rs:1003"), ("text", "primary", t.primary, "gpui-component/button/button.rs:952"), ("hover bg", "primary_hover", t.primary_hover, "gpui-component/button/button.rs:874"), ("active bg", "primary_active", t.primary_active, "gpui-component/button/button.rs:877")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
-                                    ("font-weight", "hardcoded"),
+                                    ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
                                     ("outline fill opacity", "0.1 at rest, 0.2 hovered, 0.4 pressed -- three literals, so the platform sets the hue and gpui-component sets how far it is faded (button/button.rs, ButtonVariant::outline_background)"),
                                 ])),
                     ),
