@@ -5675,7 +5675,9 @@ impl Showcase {
                                     )),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Settings", &[("bg", "background", t.background, ""), ("sidebar", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("group", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("border", "border", t.border, "gpui-component/setting/page.rs:185")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Settings", &[("sidebar", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("group", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("border", "border", t.border, "gpui-component/setting/page.rs:185")], &[], &[
+                            ("fill", "none of its own: nothing under setting/ sets a background, so a Settings page shows the window's (gpui-component setting/)"),
+                            ("descriptions", "muted_foreground, set per item, group and page (setting/item.rs, setting/group.rs, setting/page.rs)"),
                             ("fields", "switch/checkbox/input/dropdown/number_input"),
                             ("layout", "sidebar + pages"),
                         ])),
