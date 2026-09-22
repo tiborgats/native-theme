@@ -3002,8 +3002,8 @@ impl Showcase {
                     .on_hover(self.hover_info(&fi, "Button Sizes", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("hover", "button_hover", t.button_hover, "gpui-component/button/button.rs:1079"), ("active", "button_active", t.button_active, "gpui-component/button/button.rs:1163")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("variant", "these take no variant, so they are ButtonVariant::Default -- the button family, not the secondary one the panel had named (button/button.rs)"),
                             ("size", "XSmall/Small/Medium/Large via Size enum"),
-                            ("padding", "varies per Size"),
-                            ("min-height", "varies per Size"),
+                            ("padding", "per Size only because this demo omits the refinement the other Button panels apply: upstream takes a copy of the caller's style before the Size arm sets its px_1/px_2/px_3 and re-applies that copy afterwards (button/button.rs, Button), so geometry::button's border.padding_* would win. Left bare on purpose -- this is the panel that shows the enum"),
+                            ("min-height", "the same: the Size arm's h_5/h_6/h_8 is overruled by a refinement, so button.min_height would arrive through geometry::button (button/button.rs, Button)"),
                         ])),
             )
             // Button group
@@ -3494,7 +3494,7 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Switch", &[("on track", "primary", t.primary, "gpui-component/switch.rs:139"), ("off track", "switch", t.switch, "gpui-component/switch.rs:140"), ("thumb", "switch_thumb", t.switch_thumb, "gpui-component/switch.rs:146"), ("disabled label", "muted_foreground", t.muted_foreground, "gpui-component/switch.rs:147")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("on track, overridden", "Switch::color replaces it; primary is only the default (gpui-component switch.rs, Switch::render checked_bg)"), ("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component switch.rs, Switch::render disabled_bg)"), ("size", "track and thumb per the Size enum, in px (gpui-component switch.rs, Switch::render)"), ("corner radius", "fully round unless the theme's radius is under 4px, in which case the theme's is used (gpui-component switch.rs, Switch::render radius)"), ("animation timing", "hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "Switch", &[("on track", "primary", t.primary, "gpui-component/switch.rs:139"), ("off track", "switch", t.switch, "gpui-component/switch.rs:140"), ("thumb", "switch_thumb", t.switch_thumb, "gpui-component/switch.rs:146"), ("disabled label", "muted_foreground", t.muted_foreground, "gpui-component/switch.rs:147")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("on track, overridden", "Switch::color replaces it; primary is only the default (gpui-component switch.rs, Switch::render checked_bg)"), ("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component switch.rs, Switch::render disabled_bg)"), ("size", "track and thumb per the Size enum, in px (gpui-component switch.rs, Switch::render)"), ("corner radius", "fully round unless the theme's radius is under 4px, in which case the theme's is used (gpui-component switch.rs, Switch::render radius)"), ("animation timing", "reads the theme's spring_move (switch.rs, Switch), the same writable Theme::motion the Accordion and Collapsible use; the connector leaves it at its default because native-theme models no motion")])),
             )
             // Slider
             .child(section(format!("Slider (value: {:.0})", slider_value)))
@@ -4187,7 +4187,7 @@ impl Showcase {
                             )),
                     )
                     .on_hover(self.hover_info(&fi, "Progress", &[("bar", "progress_bar", t.progress_bar, "gpui-component/progress/progress.rs:86")], &[("geometry", "geometry::progress: progress_bar.track_height, border.corner_radius, min_width".to_string())], &[
-                            ("animation", "hardcoded"),
+                            ("animation", "not hardcoded upstream: the fill transitions over the theme's duration_normal and easing_move (progress/progress.rs, Progress). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's"),
                         ])),
             )
             // ProgressCircle
@@ -4278,7 +4278,7 @@ impl Showcase {
                         &[],
                         &[("size", "Small/Large per Size enum; Medium via geometry::spinner_size (spinner.diameter)".to_string())],
                         &[
-                            ("animation speed", "hardcoded"),
+                            ("animation speed", "a 0.8s private field with no setter, and not one of the theme's motion tokens (spinner.rs, Spinner) -- nothing to write, upstream or here"),
                         ],
                     )),
             )
@@ -4299,7 +4299,7 @@ impl Showcase {
                             .child(Skeleton::new().h(px(8.0)).w(px(250.0)).rounded(t.radius))
                             .child(Skeleton::new().secondary().h(px(60.0)).rounded(t.radius_lg)),
                     )
-                    .on_hover(self.hover_info(&fi, "Skeleton", &[("bg", "skeleton", t.skeleton, "gpui-component/skeleton.rs:43")], &[], &[("animation", "hardcoded pulse")])),
+                    .on_hover(self.hover_info(&fi, "Skeleton", &[("bg", "skeleton", t.skeleton, "gpui-component/skeleton.rs:43")], &[], &[("animation", "a 2s literal, and unlike the Accordion's or the Switch's it is not one of the theme's motion tokens (skeleton.rs, Skeleton) -- nothing to write, upstream or here")])),
             )
             // ShimmerText
             .child(section("ShimmerText (a highlight sweeping across the label)"))
@@ -4583,7 +4583,7 @@ impl Showcase {
                                 }),
                             )),
                     )
-                    .on_hover(self.hover_info(&fi, "Notification", &[("bg", "popover", t.popover, "gpui-component/notification.rs:424"), ("border", "border", t.border, "gpui-component/notification.rs:423"), ("info icon", "info", t.info, "gpui-component/notification.rs:42"), ("success icon", "success", t.success, "gpui-component/notification.rs:43"), ("warning icon", "warning", t.warning, "gpui-component/notification.rs:44"), ("error icon", "danger", t.danger, "gpui-component/notification.rs:45")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("animation", "slide in/out"), ("autohide", "configurable")])),
+                    .on_hover(self.hover_info(&fi, "Notification", &[("bg", "popover", t.popover, "gpui-component/notification.rs:424"), ("border", "border", t.border, "gpui-component/notification.rs:423"), ("info icon", "info", t.info, "gpui-component/notification.rs:42"), ("success icon", "success", t.success, "gpui-component/notification.rs:43"), ("warning icon", "warning", t.warning, "gpui-component/notification.rs:44"), ("error icon", "danger", t.danger, "gpui-component/notification.rs:45")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("animation", "module consts, 400ms in and 200ms out, not the theme's motion tokens (notification.rs, Notification)"), ("autohide", "configurable")])),
             )
     }
 
@@ -4640,9 +4640,9 @@ impl Showcase {
                             ),
                     )
                     .on_hover(self.hover_info(&fi, "Link", &[("text+decoration", "link", t.link, "gpui-component/link.rs:76")], &[], &[
-                            ("underline style", "hardcoded"),
-                            ("hover opacity", "0.8"),
-                            ("active opacity", "0.6"),
+                            ("underline", "always on, and out of reach: the decoration is set on the base style before the caller's refinement merges into it (link.rs, Link), and a refinement whose `underline` is None leaves the base's `Some` standing -- `text_decoration_none` sets exactly that None, so it cannot switch one off. link.underline_enabled is modelled and has no receiver: Tier U"),
+                            ("hover text", "link at 0.8, computed from the one token (link.rs, Link). Upstream has a link_hover token, the connector writes it from link.hover_text_color, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U"),
+                            ("active text", "link at 0.6, the same story: link_active is written by the connector and read by the Button variant, not here (link.rs, Link)"),
                         ])),
             )
             // Headings
@@ -5321,7 +5321,7 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "Accordion", &[("bg", "accordion", t.accordion, "gpui-component/accordion.rs:371"), ("border", "border", t.border, "showcase"), ("text", "foreground", t.foreground, "gpui-component/accordion.rs:305"), ("secondary text", "muted_foreground", t.muted_foreground, "gpui-component/accordion.rs:329")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("header height", "geometry::accordion_title: expander.header_height".to_string())], &[
                             ("padding", "inner (Tier U)"),
-                            ("animation", "hardcoded"),
+                            ("animation", "reads the theme's spring_control (accordion.rs, Accordion). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's"),
                         ])),
             )
             // Collapsible
@@ -5356,7 +5356,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Collapsible", &[("bg", "accordion", t.accordion, "gpui-component/accordion.rs:371"), ("border", "border", t.border, "gpui-component/button/button.rs:1002")], &[], &[("animation", "hardcoded slide")])),
+                    .on_hover(self.hover_info(&fi, "Collapsible", &[("bg", "accordion", t.accordion, "gpui-component/accordion.rs:371"), ("border", "border", t.border, "gpui-component/button/button.rs:1002")], &[], &[("animation", "reads the theme's spring_control (collapsible.rs, Collapsible), the same writable Theme::motion the Accordion uses; the connector leaves it at its default because native-theme models no motion")])),
             )
             // Carousel
             .child(section("Carousel"))
@@ -5844,7 +5844,7 @@ impl Showcase {
                             ("corner radius", "radius_lg, the larger of the theme's two radii (dialog/dialog.rs, Dialog::render)"),
                             ("footer", "geometry::dialog_footer: dialog.button_gap between the buttons (dialog/footer.rs, DialogFooter::render)"),
                             ("icon size", "geometry::icon_size_dialog: defaults.icon_sizes.dialog"),
-                            ("animation", "hardcoded scale+fade"),
+                            ("animation", "a file-level duration and a literal curve, not the theme's motion tokens the Accordion and Switch read (dialog/dialog.rs, Dialog)"),
                         ])),
             )
             // AlertDialog
@@ -5954,7 +5954,7 @@ impl Showcase {
                             ("text", "none set: the panel inherits the window's text colour"),
                             ("overlay", "the same overlay_color a Dialog uses -- sheet.rs imports it from dialog (sheet.rs, use dialog::overlay_color)"),
                             ("top margin", "sheet.margin_top, the one sheet field the model states (sheet.rs, Sheet::render)"),
-                            ("animation", "slide in/out"),
+                            ("animation", "a 0.15s literal, not the theme's motion tokens (sheet.rs, Sheet)"),
                             ("placement", "Right / Bottom / Left / Top"),
                         ])),
             )
@@ -7424,7 +7424,7 @@ impl Render for Showcase {
                                 "border-radius",
                                 format!("radius: {}px", theme.radius.as_f32()),
                             )],
-                            &[("tab fill", "the tab token has no reader anywhere in gpui-component or gpui-base: an inactive tab is transparent, and the connector writes the slot from tab.background_color for nothing (Tier U)"), ("border and hover", "drawn by the bar, not from the border and secondary_hover the panel used to claim"), ("padding", "set per Size enum")],
+                            &[("tab fill", "the tab token has no reader anywhere in gpui-component or gpui-base: an inactive tab is transparent, and the connector writes the slot from tab.background_color for nothing (Tier U)"), ("border and hover", "drawn by the bar, not from the border and secondary_hover the panel used to claim"), ("padding", "set per Size, but not out of reach: TabBar is Styled and re-applies the caller's refinement after its own paddings (tab/tab_bar.rs, TabBar). There is no geometry::tab_bar to apply because TabTheme models min_width, min_height and a font but no padding -- our model's gap, not upstream's")],
                         )),
                 ),
             )
