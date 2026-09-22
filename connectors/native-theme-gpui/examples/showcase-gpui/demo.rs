@@ -1,12 +1,21 @@
 //! Demo helpers the pages share.
 
-use gpui::{App, Div, Entity, SharedString, Stateful, prelude::*};
-use gpui_component::{ActiveTheme, TitleBar, menu::AppMenuBar};
+use gpui::{Action, AnyElement, App, Div, Entity, SharedString, Stateful, prelude::*};
+use gpui_component::{
+    ActiveTheme, Disableable as _, IconName, TitleBar,
+    button::{Button, ButtonVariants as _, Toggle, ToggleGroup, ToggleVariants as _},
+    combobox::{Combobox, ComboboxState},
+    h_flex,
+    menu::AppMenuBar,
+    select::{SearchableVec, Select, SelectState},
+    separator::Separator,
+};
 use native_theme_gpui::geometry;
 
 use crate::CHROME_APP_MENU_BAR;
-use crate::app::Quit;
-use crate::info::{self, InfoExt as _, InfoRegistry, native_info};
+use crate::app::{AppColorMode, Quit, SetColorMode};
+use crate::info::{self, InfoExt, InfoRegistry, native_info};
+use crate::support::{PresetDelegate, native_icon, native_value};
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
 /// `app_menu_bar` where the platform has no menu bar of its own, and quitting
@@ -41,4 +50,164 @@ pub(crate) fn title_bar(
         )
     });
     bar.info(ui, "chrome-title-bar", bar_info)
+}
+
+/// The window's toolbar (spec §2.3): the application's own row, refined by
+/// `geometry::toolbar`, holding `items`.
+pub(crate) fn toolbar(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    items: impl IntoIterator<Item = AnyElement>,
+) -> Stateful<Div> {
+    let mut row_info = info::toolbar();
+    let row =
+        native_info(h_flex(), cx, geometry::toolbar, "toolbar", &mut row_info).children(items);
+    row.info(ui, "chrome-toolbar", row_info)
+}
+
+/// The preset switch: a searchable `Combobox` over `state`'s presets,
+/// refined by `geometry::combobox`.
+pub(crate) fn preset_combobox(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    state: &Entity<ComboboxState<PresetDelegate>>,
+) -> Stateful<Div> {
+    let mut combobox_info = info::preset_combobox(cx.theme());
+    let combobox = native_info(
+        Combobox::new(state)
+            .placeholder("Pick a preset…")
+            .search_placeholder("Filter by name or key…"),
+        cx,
+        geometry::combobox,
+        "combobox",
+        &mut combobox_info,
+    );
+    combobox.info(ui, "chrome-toolbar-preset", combobox_info)
+}
+
+/// The colour modes, in the order the switch shows them.
+const COLOR_MODES: [AppColorMode; 3] = [
+    AppColorMode::System,
+    AppColorMode::Light,
+    AppColorMode::Dark,
+];
+
+/// A System / Light / Dark `ToggleGroup` with `mode` checked; a click
+/// dispatches `SetColorMode` for the toggle clicked.
+pub(crate) fn color_mode_toggle_group(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    mode: AppColorMode,
+) -> Stateful<Div> {
+    let checked = COLOR_MODES.map(|m| m == mode);
+    let group = ToggleGroup::new("color-mode")
+        .outline()
+        .segmented()
+        .children(COLOR_MODES.map(|m| {
+            Toggle::new(SharedString::from(format!("color-mode-{m:?}")))
+                .label(m.label())
+                .checked(m == mode)
+        }))
+        // Upstream reports every toggle's state with the clicked one flipped
+        // (button/toggle.rs, ToggleGroup::render), so the toggle clicked is
+        // the one whose state differs from what was drawn.
+        .on_click(move |next: &Vec<bool>, window, cx| {
+            let clicked = next
+                .iter()
+                .zip(checked)
+                .position(|(now, was)| *now != was)
+                .and_then(|ix| COLOR_MODES.get(ix));
+            if let Some(&m) = clicked {
+                window.dispatch_action(Box::new(SetColorMode(m)), cx);
+            }
+        });
+    group.info(
+        ui,
+        "chrome-toolbar-color-mode",
+        info::color_mode_toggle_group(cx.theme()),
+    )
+}
+
+/// The icon-set `Select` over `state`, refined by `geometry::select`.
+pub(crate) fn icon_set_select(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    state: &Entity<SelectState<SearchableVec<SharedString>>>,
+) -> Stateful<Div> {
+    let mut select_info = info::icon_set_select(cx.theme());
+    let select = native_info(
+        Select::new(state),
+        cx,
+        geometry::select,
+        "select",
+        &mut select_info,
+    );
+    select.info(ui, "chrome-toolbar-icon-set", select_info)
+}
+
+/// A vertical `Separator` between toolbar items.
+pub(crate) fn toolbar_separator(ui: &Entity<InfoRegistry>, cx: &App) -> Stateful<Div> {
+    Separator::vertical()
+        .info(
+            ui,
+            "chrome-toolbar-separator",
+            info::toolbar_separator(cx.theme()),
+        )
+        // A vertical Separator is as tall as its parent (separator.rs,
+        // Separator::vertical), so the wrapper takes the row's height.
+        .self_stretch()
+}
+
+/// One of the toolbar's icon Buttons.
+pub(crate) struct ToolbarButton<'a> {
+    pub button_id: &'static str,
+    pub icon: IconName,
+    /// The tooltip's text; the action's key binding follows it.
+    pub tooltip: &'static str,
+    pub action: &'a dyn Action,
+    /// The info's "action" line: what the button is for.
+    pub about: &'static str,
+    /// Why the button is disabled, where nothing handles `action` yet.
+    pub disabled: Option<&'static str>,
+}
+
+/// A ghost icon `Button` for the toolbar, dispatching its action, its icon
+/// at `geometry::icon_size_toolbar` and its tooltip showing the action's key
+/// binding.
+///
+/// The icon is the Button's child, not its `icon`: `Button::icon` resizes
+/// whatever it is given to a size derived from the Button's own
+/// (button/button.rs:580-583, 713-717), and the size an `Icon` is given last
+/// wins over its style (icon.rs:181-187).
+pub(crate) fn toolbar_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    spec: ToolbarButton<'_>,
+) -> Stateful<Div> {
+    let ToolbarButton {
+        button_id: id,
+        icon,
+        tooltip,
+        action,
+        about,
+        disabled,
+    } = spec;
+    let mut button_info = info::toolbar_button(cx.theme(), about, disabled);
+    if native_value(cx, geometry::icon_size_toolbar).is_some() {
+        button_info = button_info.geometry("icon_size_toolbar");
+    }
+    let dispatched = action.boxed_clone();
+    let button = Button::new(id)
+        .ghost()
+        .tooltip_with_action(tooltip, action, None)
+        .disabled(disabled.is_some())
+        .child(native_icon(cx, icon, geometry::icon_size_toolbar))
+        .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    InfoExt::info(
+        button,
+        ui,
+        SharedString::from(format!("chrome-{id}")),
+        button_info,
+    )
 }

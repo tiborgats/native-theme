@@ -6,11 +6,11 @@ use gpui::{
     prelude::*, px, rems,
 };
 use gpui_component::{
-    ActiveTheme, GlobalState, Root, Sizable, Size, StyledExt,
+    ActiveTheme, GlobalState, Root, Sizable, Size,
     attachment::AttachmentStatus,
     carousel::CarouselState,
     color_picker::ColorPickerState,
-    combobox::ComboboxState,
+    combobox::{ComboboxEvent, ComboboxState},
     command::CommandState,
     h_flex,
     input::{EditorState, InputState, NumberInputEvent, OtpState, StepAction, TextareaState},
@@ -19,7 +19,7 @@ use gpui_component::{
     menu::AppMenuBar,
     message_scroller::MessageScrollerState,
     scroll::ScrollableElement,
-    select::{SearchableVec, Select, SelectEvent, SelectState},
+    select::{SearchableVec, SelectEvent, SelectState},
     separator::Separator,
     slider::{SliderEvent, SliderState},
     tab::TabBar,
@@ -52,10 +52,10 @@ use crate::inspector::WidgetInfoPanel;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
     PresetDelegate, SampleListDelegate, SampleTableDelegate, defined_size, format_font_info,
-    initial_chat_messages, load_all_icons, load_gpui_icons, native_geometry, parse_icon_set_choice,
-    refined, release_sources, theme_names, widget_tooltip_themed,
+    initial_chat_messages, load_all_icons, load_gpui_icons, parse_icon_set_choice, release_sources,
+    widget_tooltip_themed,
 };
-use crate::{CONTENT_SCROLL, PROBE_COLOR_MODE, SIDEBAR_COLUMN, TAB_ROOT, Tab, probe};
+use crate::{CONTENT_SCROLL, SIDEBAR_COLUMN, TAB_ROOT, Tab};
 
 /// gpui-component's mode for the showcase's light/dark flag.
 fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
@@ -95,7 +95,7 @@ actions!(
 #[action(namespace = showcase, no_json)]
 pub(crate) struct ShowPage(pub usize);
 
-/// Install a colour mode, as the colour-mode selector does.
+/// Install a colour mode, as the toolbar's colour-mode switch does.
 #[derive(Clone, PartialEq, Debug, Action)]
 #[action(namespace = showcase, no_json)]
 pub(crate) struct SetColorMode(pub AppColorMode);
@@ -137,7 +137,7 @@ impl AppColorMode {
         }
     }
 
-    /// Display label for the combobox, with system preference in parentheses.
+    /// Display label for the colour-mode switch, with system preference in parentheses.
     pub(crate) fn label(self) -> String {
         match self {
             AppColorMode::System => {
@@ -155,13 +155,13 @@ impl AppColorMode {
 // ---------------------------------------------------------------------------
 
 pub(crate) struct Showcase {
-    pub(crate) theme_select: Entity<SelectState<SearchableVec<SharedString>>>,
+    /// The toolbar's preset switch (spec §2.3).
+    pub(crate) preset_combobox: Entity<ComboboxState<PresetDelegate>>,
     pub(crate) current_theme_name: String,
     /// Dynamic label for the "default" theme entry, updated on color mode change.
     pub(crate) default_label: String,
     pub(crate) is_dark: bool,
     pub(crate) color_mode: AppColorMode,
-    pub(crate) dark_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
     /// Original native-theme font spec, for display purposes.
     pub(crate) original_font: native_theme::theme::ResolvedFontSpec,
     /// Original native-theme mono font spec, for display purposes.
@@ -196,9 +196,8 @@ pub(crate) struct Showcase {
     /// The multi-line field of the Textarea demo, beside the single-line
     /// `Input` it shares a surface with.
     pub(crate) textarea_demo: Entity<TextareaState>,
-    pub(crate) combobox_state: Entity<ComboboxState<PresetDelegate>>,
-    /// The `Select` shown beside the `Combobox`: the same trigger, with the
-    /// platform's font colour carried as well.
+    /// The Inputs page's `Select`: a Combobox's trigger, with the platform's
+    /// font colour carried as well.
     pub(crate) select_demo: Entity<SelectState<SearchableVec<SharedString>>>,
     pub(crate) input_group_state: Entity<InputState>,
     pub(crate) input_group_button_state: Entity<InputState>,
@@ -511,87 +510,35 @@ impl Showcase {
         names
     }
 
-    /// Convert a display name from the theme selector to the internal theme name.
-    fn theme_internal_name(display: &str) -> String {
-        if display.starts_with("default (") {
-            "default".to_string()
-        } else {
-            display.to_string()
-        }
-    }
-
     pub(crate) fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let names = theme_names();
-        let delegate = SearchableVec::new(names);
-
-        let theme_select = cx.new(|cx| {
-            SelectState::new(
-                delegate,
-                Some(gpui_component::IndexPath::default().row(0)),
+        let preset_combobox = cx.new(|cx| {
+            ComboboxState::new(
+                PresetDelegate::new(),
+                vec![gpui_component::IndexPath::default().row(0)],
                 window,
                 cx,
             )
+            .searchable(true)
         });
 
+        // `Change`, not `Confirm`: the Combobox confirms whenever its popup
+        // closes, chosen or not (combobox.rs, ComboboxState::toggle_menu).
         cx.subscribe_in(
-            &theme_select,
+            &preset_combobox,
             window,
-            |this: &mut Self,
-             _entity,
-             event: &SelectEvent<SearchableVec<SharedString>>,
-             window,
-             cx| {
-                if let SelectEvent::Confirm(Some(value)) = event {
-                    let name = Self::theme_internal_name(value.as_ref());
-                    this.current_theme_name = name.clone();
-                    this.apply_theme_by_name(&name, window, cx);
+            |this: &mut Self, _entity, event: &ComboboxEvent<PresetDelegate>, window, cx| {
+                if let ComboboxEvent::Change(values) = event
+                    && let Some(name) = values.first()
+                {
+                    this.current_theme_name = name.to_string();
+                    this.apply_theme_by_name(name, window, cx);
+                    cx.notify();
                 }
             },
         )
         .detach();
 
-        // Color mode selector (System / Light / Dark)
         let color_mode = AppColorMode::System;
-        let color_mode_labels: Vec<SharedString> = [
-            AppColorMode::System,
-            AppColorMode::Light,
-            AppColorMode::Dark,
-        ]
-        .iter()
-        .map(|m| SharedString::from(m.label()))
-        .collect();
-        let dark_mode_delegate = SearchableVec::new(color_mode_labels);
-        let dark_mode_select = cx.new(|cx| {
-            SelectState::new(
-                dark_mode_delegate,
-                Some(gpui_component::IndexPath::default().row(0)),
-                window,
-                cx,
-            )
-        });
-
-        cx.subscribe_in(
-            &dark_mode_select,
-            window,
-            |this: &mut Self,
-             _entity,
-             event: &SelectEvent<SearchableVec<SharedString>>,
-             window,
-             cx| {
-                if let SelectEvent::Confirm(Some(value)) = event {
-                    let val = value.to_string();
-                    let mode = if val.starts_with("System") {
-                        AppColorMode::System
-                    } else if val == "Light" {
-                        AppColorMode::Light
-                    } else {
-                        AppColorMode::Dark
-                    };
-                    this.set_color_mode(mode, window, cx);
-                }
-            },
-        )
-        .detach();
 
         let input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
@@ -606,10 +553,6 @@ impl Showcase {
         });
 
         let textarea_demo = cx.new(|cx| TextareaState::new(window, cx));
-
-        let combobox_state = cx.new(|cx| {
-            ComboboxState::new(PresetDelegate::new(), Vec::new(), window, cx).searchable(true)
-        });
 
         let select_demo = cx.new(|cx| {
             SelectState::new(
@@ -997,12 +940,11 @@ impl Showcase {
 
         let fg = cx.theme().foreground;
         let mut showcase = Self {
-            theme_select,
+            preset_combobox,
             current_theme_name: "default".into(),
             default_label: initial_default_label,
             is_dark,
             color_mode,
-            dark_mode_select,
             original_font,
             original_mono_font,
             active_tab: Tab::Buttons,
@@ -1014,7 +956,6 @@ impl Showcase {
             input_state,
             input_height_state,
             textarea_demo,
-            combobox_state,
             select_demo,
             input_group_state,
             input_group_button_state,
@@ -1274,26 +1215,6 @@ impl Showcase {
         self.is_dark = self.color_mode.is_dark();
         let name = self.current_theme_name.clone();
         self.apply_theme_by_name(&name, window, cx);
-        self.sync_color_mode_select(window, cx);
-    }
-
-    /// Rebuild the color mode dropdown items and selected value to reflect
-    /// the current state (e.g. "System (Dark)" → "System (Light)").
-    fn sync_color_mode_select(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        let labels: Vec<SharedString> = [
-            AppColorMode::System,
-            AppColorMode::Light,
-            AppColorMode::Dark,
-        ]
-        .iter()
-        .map(|m| SharedString::from(m.label()))
-        .collect();
-        let selected: SharedString = self.color_mode.label().into();
-        let delegate = SearchableVec::new(labels);
-        self.dark_mode_select.update(cx, |select, cx| {
-            select.set_items(delegate, window, cx);
-            select.set_selected_value(&selected, window, cx);
-        });
     }
 
     fn on_show_page(&mut self, action: &ShowPage, _: &mut Window, cx: &mut Context<Self>) {
@@ -1310,7 +1231,6 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) {
         self.set_color_mode(action.0, window, cx);
-        self.sync_color_mode_select(window, cx);
         cx.notify();
     }
 
@@ -1413,10 +1333,6 @@ impl Render for Showcase {
 
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let theme = cx.theme().clone();
-        // After the deferred system-theme change above, so the selects and the
-        // rest of the frame read the same installed theme.
-        let select_style = native_geometry(cx, geometry::select);
-
         // Ensure icon image caches match the current foreground color
         if theme.foreground != self.icon_cache_fg {
             self.rebuild_icon_caches(theme.foreground, window, cx);
@@ -1435,45 +1351,9 @@ impl Render for Showcase {
             .border_color(theme.sidebar_border)
             .overflow_y_scroll()
             .debug_selector(|| SIDEBAR_COLUMN.into())
-            // The two control blocks and the config inspector keep their
-            // natural height; the Widget Info panel below them is the child
-            // that grows into what is left (`WidgetInfoPanel::render`).
-            .child(
-                v_flex()
-                    .p_3()
-                    .gap_3()
-                    .flex_shrink_0()
-                    .child(
-                        Label::new("Theme Selector")
-                            .text_size(px(13.0))
-                            .font_semibold(),
-                    )
-                    .child(
-                        refined(Select::new(&self.theme_select), select_style.as_ref())
-                            .with_size(Size::Small)
-                            .w_full(),
-                    )
-                    .child(probe(
-                        PROBE_COLOR_MODE,
-                        refined(Select::new(&self.dark_mode_select), select_style.as_ref())
-                            .with_size(Size::Small)
-                            .w_full(),
-                    ))
-                    .child(Separator::horizontal()),
-            )
-            .child(
-                v_flex()
-                    .p_3()
-                    .gap_3()
-                    .flex_shrink_0()
-                    .child(Label::new("Icon Theme").text_size(px(13.0)).font_semibold())
-                    .child(
-                        refined(Select::new(&self.icon_set_select), select_style.as_ref())
-                            .with_size(Size::Small)
-                            .w_full(),
-                    )
-                    .child(Separator::horizontal()),
-            )
+            // The config inspector keeps its natural height; the Widget Info
+            // panel below it is the child that grows into what is left
+            // (`WidgetInfoPanel::render`).
             .child(self.render_sidebar(window, cx))
             .child(Separator::horizontal())
             .child(self.widget_info_panel.clone());
@@ -1606,6 +1486,7 @@ impl Render for Showcase {
                 v_flex()
                     .size_full()
                     .child(chrome::title_bar(self, cx))
+                    .child(chrome::toolbar(self, cx))
                     .child(
                         h_flex()
                             .w_full()

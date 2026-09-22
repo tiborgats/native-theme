@@ -13,7 +13,7 @@
 //!
 //! # What to look for
 //!
-//! - Sidebar on the left switches theme presets, color modes, and icon sets
+//! - The toolbar under the title bar switches theme presets, color modes and icon sets
 //!   without restarting the app. Watch how the entire widget tree re-themes
 //!   on each change — no manual rewiring per widget.
 //! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
@@ -159,6 +159,10 @@ pub(crate) const CHROME_TITLE_BAR: &str = "chrome-title-bar";
 
 /// The debug selector the AppMenuBar inside the title bar carries.
 pub(crate) const CHROME_APP_MENU_BAR: &str = "chrome-app-menu-bar";
+
+/// The debug selector the window's toolbar carries, so
+/// `the_toolbar_is_the_models_toolbar` can measure it.
+pub(crate) const CHROME_TOOLBAR: &str = "chrome-toolbar";
 
 /// The debug selector the active tab's root carries, so `every_tab_lays_out`
 /// can find the tab it switched to.
@@ -633,21 +637,16 @@ fn main() {
                         };
                         s.color_mode = mode;
                         s.is_dark = is_dark;
-                        // Update the color mode selector dropdown
-                        let label = SharedString::from(mode.label());
-                        s.dark_mode_select.update(cx, |select, cx| {
-                            select.set_selected_value(&label, window, cx);
-                        });
                     }
 
                     // Override theme if --theme was specified
                     if let Some(ref theme_name) = cli_args.theme {
                         s.current_theme_name = theme_name.clone();
                         s.apply_theme_by_name(theme_name, window, cx);
-                        // Update the theme selector dropdown to show the overridden theme
-                        let display = SharedString::from(theme_name.clone());
-                        s.theme_select.update(cx, |select, cx| {
-                            select.set_selected_value(&display, window, cx);
+                        // Show the overridden theme in the toolbar's preset switch
+                        let key = SharedString::from(theme_name.clone());
+                        s.preset_combobox.update(cx, |combobox, cx| {
+                            combobox.set_selected_values(&[key], window, cx);
                         });
                     }
 

@@ -9,7 +9,6 @@ use gpui_component::{
     button::ButtonVariants,
     checkbox::Checkbox,
     color_picker::ColorPicker,
-    combobox::Combobox,
     h_flex,
     input::{
         Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment, InputGroupButton,
@@ -31,7 +30,7 @@ use crate::app::Showcase;
 use crate::support::{
     NativeStyled, format_font_info, native_geometry, native_value, refined, section, with_gap,
 };
-use crate::{PROBE_COMBOBOX, PROBE_RATING, probe};
+use crate::{PROBE_RATING, probe};
 
 impl Showcase {
     // -----------------------------------------------------------------------
@@ -389,29 +388,8 @@ impl Showcase {
                     .on_hover(self.hover_info(&fi, "OtpInput", &[("border", "input", t.input, "gpui-component/input/otp_input.rs:117"), ("focus ring", "ring", t.ring, "gpui-component/input/otp_input.rs:121"), ("box fill", "background", t.background, "gpui-component/theme/mod.rs:383"), ("digit", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("caret", "caret", t.caret, "gpui-component/input/otp_input.rs:159")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("fill", "input_background(), as an Input's, and the digits take the Input's foreground. The secondary_foreground and muted_foreground the panel had named colour a masked asterisk, and this OtpState is not masked (input/otp_input.rs, OtpInput)"),
                             ("digit count", "configurable"), ("groups", "2")])),
             )
-            // Combobox
-            .child(section("Combobox (searchable, over the bundled presets)"))
-            .child(
-                div()
-                    .id("tt-combobox")
-                    .child(probe(
-                        PROBE_COMBOBOX,
-                        Combobox::new(&self.combobox_state)
-                            .native(cx, geometry::combobox)
-                            .placeholder("Pick a preset…")
-                            .search_placeholder("Filter by name or key…")
-                            .menu_width(px(260.0))
-                            .w(px(260.0)),
-                    ))
-                    .on_hover(self.hover_info(&fi, "Combobox", &[("trigger bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("trigger border", "input", t.input, "gpui-component/combobox.rs:992"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("popup bg", "popover", t.popover, "gpui-component/styled.rs:197"), ("row hover", "accent", t.accent, "gpui-component/searchable_list/item.rs:114"), ("focus ring", "ring", t.ring, "gpui-component/combobox.rs:999")], &[("geometry", "geometry::combobox: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font".to_string())], &[
-                            ("font colour", "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, ComboboxState::default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)"),
-                            ("delegate", "SearchableListDelegate, implemented in this showcase (combobox.rs, Combobox<D>)"),
-                            ("rows", "SearchableList's own, not ListItems: a hovered row is accent at 70% and a selected one accent in full (searchable_list/item.rs, SearchableListItemElement)"),
-                            ("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size"),
-                        ])),
-            )
             // Select
-            .child(section("Select (the same trigger, with the carried font colour)"))
+            .child(section("Select (a Combobox's trigger, with the carried font colour)"))
             .child(
                 div()
                     .id("tt-select")
@@ -423,7 +401,7 @@ impl Showcase {
                     ))
                     .on_hover(self.hover_info(&fi, "Select", &[("trigger bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("upstream trigger text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("trigger border", "input", t.input, "gpui-component/select.rs:541"), ("focus ring", "ring", t.ring, "gpui-component/select.rs:548"), ("placeholder", "muted_foreground", t.muted_foreground, "gpui-component/select.rs:445"), ("disabled text", "muted_foreground", t.muted_foreground, "gpui-component/select.rs:478")], &[
                         ("geometry", "geometry::select: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)".to_string())], &[
-                        ("carried colour", "the one difference from the Combobox above: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)"),
+                        ("carried colour", "the one difference from a Combobox, such as the toolbar's preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)"),
                         ("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size"),
                     ])),
             )

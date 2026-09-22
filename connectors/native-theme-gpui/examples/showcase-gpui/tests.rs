@@ -30,11 +30,11 @@ use crate::support::{
     CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_TITLE_BAR, CONTENT_SCROLL, LIST_DEMO, PROBE_ALERT_DIALOG,
-    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
-    PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW,
-    PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, SIDEBAR_COLUMN, TAB_ROOT, TREE_DEMO, Tab, WIDGET_INFO,
-    WIDGET_INFO_TEXT, WINDOW_SIZE,
+    CHROME_APP_MENU_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR, CONTENT_SCROLL, LIST_DEMO,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, SIDEBAR_COLUMN, TAB_ROOT, TREE_DEMO,
+    Tab, WIDGET_INFO, WIDGET_INFO_TEXT, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -526,20 +526,6 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Rating: clicking the first star left the value alone"
     );
 
-    // Combobox: the trigger opens the list, and Enter takes the row the
-    // list has under the cursor.
-    click(&mut cx, PROBE_COMBOBOX);
-    cx.simulate_keystrokes("down enter");
-    draw(&mut cx);
-    assert!(
-        read(&mut cx, &showcase, |this, cx| !this
-            .combobox_state
-            .read(cx)
-            .selection()
-            .is_empty()),
-        "Combobox: opening the list and confirming a row selected nothing"
-    );
-
     // --- Data tab -----------------------------------------------------
     show(&mut cx, &showcase, Tab::Data);
 
@@ -637,29 +623,37 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Notification: nothing was pushed"
     );
 
-    // --- The sidebar's colour mode switch -----------------------------
+    // --- The toolbar's colour mode switch -----------------------------
     //
-    // The list's rows are System, Light, Dark. Which one is asked for is
-    // decided from the mode this host's theme is actually in, so the step
-    // is always a change: a fixed "Dark" would assert nothing on a desktop
-    // that is already dark.
-    let was_dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
-    let (keystrokes, wanted) = match was_dark {
-        true => ("down enter", AppColorMode::Light),
-        false => ("down down enter", AppColorMode::Dark),
-    };
-    click(&mut cx, PROBE_COLOR_MODE);
-    cx.simulate_keystrokes(keystrokes);
-    draw(&mut cx);
+    // The group's toggles are System, Light, Dark, and a Toggle carries no
+    // selector of its own, so the step clicks the group's two ends: Dark,
+    // which the showcase does not start in, then System back.
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.color_mode),
-        wanted,
-        "the colour mode switch did not reach {wanted:?}"
+        AppColorMode::System,
+        "the showcase no longer starts in System, so choosing Dark may prove nothing"
+    );
+    let group = bounds_of(&mut cx, PROBE_COLOR_MODE);
+    click_at(&mut cx, point(group.right() - px(4.), group.center().y));
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.color_mode),
+        AppColorMode::Dark,
+        "the colour mode switch's Dark did not reach SetColorMode"
+    );
+    assert!(
+        cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        "the colour mode switch's Dark did not reach Theme::mode"
+    );
+    click_at(&mut cx, point(group.left() + px(4.), group.center().y));
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.color_mode),
+        AppColorMode::System,
+        "the colour mode switch's System did not reach SetColorMode"
     );
     assert_eq!(
         cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
-        !was_dark,
-        "the colour mode switch did not reach Theme::mode"
+        native_theme::detect::system_is_dark(),
+        "the colour mode switch's System did not install the desktop's mode"
     );
 }
 
@@ -714,6 +708,88 @@ fn the_title_bar_is_the_top_of_the_window(cx: &mut TestAppContext) {
             "the menu bar at {menus:?} is not inside the title bar at {bar:?}"
         );
     }
+}
+
+/// The toolbar is the model's toolbar (spec §2.3, §9): at least
+/// `toolbar.bar_height` tall, with `toolbar.item_gap` between its items.
+///
+/// kde-breeze states a 0px gap and adwaita a 6px one, so a row that kept a
+/// gap of its own fails one of the two.
+#[gpui::test]
+fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["kde-breeze", "adwaita"] {
+        use_preset(&mut cx, &showcase, preset);
+        let model = read(&mut cx, &showcase, |_this, cx| {
+            cx.native_theme()
+                .and_then(|nt| nt.native(cx))
+                .map(|n| (n.resolved.toolbar.bar_height, n.resolved.toolbar.item_gap))
+        });
+        assert!(
+            model.is_some(),
+            "{preset}: no native theme is installed, so nothing was measured"
+        );
+        let (bar_height, item_gap) = model.unwrap_or_default();
+        let bar = bounds_of(&mut cx, CHROME_TOOLBAR);
+        assert!(
+            bar.size.height >= px(bar_height),
+            "{preset}: the toolbar is {:?} tall, under toolbar.bar_height {bar_height}px",
+            bar.size.height
+        );
+        let title = bounds_of(&mut cx, CHROME_TITLE_BAR);
+        assert_eq!(
+            bar.top(),
+            title.bottom(),
+            "{preset}: the toolbar is not right under the title bar"
+        );
+        // The toolbar's first two children: the preset Combobox and the
+        // colour-mode ToggleGroup.
+        let first = bounds_of(&mut cx, PROBE_COMBOBOX);
+        let second = bounds_of(&mut cx, PROBE_COLOR_MODE);
+        assert!(
+            bar.contains(&first.origin) && bar.contains(&second.origin),
+            "{preset}: the Combobox at {first:?} or the ToggleGroup at {second:?} \
+             is not inside the toolbar at {bar:?}"
+        );
+        assert_eq!(
+            second.left() - first.right(),
+            px(item_gap),
+            "{preset}: the toolbar's first two items are {:?} apart, toolbar.item_gap is {item_gap}px",
+            second.left() - first.right()
+        );
+    }
+}
+
+/// The toolbar's Combobox is the real preset switch: choosing a preset in it
+/// installs that preset.
+#[gpui::test]
+fn the_toolbar_switches_the_preset(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_ne!(
+        read(&mut cx, &showcase, |this, _| this
+            .current_theme_name
+            .clone()),
+        "nord",
+        "the showcase starts on nord, so choosing it proves nothing"
+    );
+    // Typing filters the rows and puts the cursor on the first match
+    // (list/list.rs, ListState::start_search), which Enter takes. Nord lands
+    // in row 0, where `default` already is: the case a selection told apart
+    // by filtered row indices alone misses (support.rs, PresetDelegate).
+    click(&mut cx, PROBE_COMBOBOX);
+    cx.simulate_input("nord");
+    cx.run_until_parked();
+    draw(&mut cx);
+    cx.simulate_keystrokes("enter");
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this
+            .current_theme_name
+            .clone()),
+        "nord",
+        "choosing nord in the toolbar's Combobox did not install it"
+    );
 }
 
 /// The action a menu item named `item` in the menu named `menu` carries.

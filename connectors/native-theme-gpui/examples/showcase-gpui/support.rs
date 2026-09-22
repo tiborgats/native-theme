@@ -15,7 +15,7 @@ use gpui_component::{
     label::Label,
     list::{ListDelegate, ListItem, ListState},
     message::{Message, MessageAlignment, MessageContent},
-    searchable_list::{SearchableListDelegate, SearchableListItem},
+    searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
     table::{Column, TableDelegate, TableState},
 };
 use std::collections::HashMap;
@@ -358,18 +358,6 @@ pub(crate) fn widget_tooltip_themed(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-pub(crate) fn theme_names() -> Vec<SharedString> {
-    let preset = platform_preset_name();
-    let default_label = format!("default ({})", preset.name);
-    let mut names: Vec<SharedString> = vec![default_label.into()];
-    names.extend(
-        native_theme::theme::Theme::list_presets_for_platform()
-            .iter()
-            .map(|s| SharedString::from(s.key)),
-    );
-    names
-}
 
 pub(crate) fn section(title: impl Into<SharedString>) -> Label {
     Label::new(title).text_size(px(13.0)).font_semibold()
@@ -1134,10 +1122,10 @@ impl ListDelegate for SampleListDelegate {
 }
 
 // ---------------------------------------------------------------------------
-// Sample Combobox Delegate (for Inputs tab)
+// The toolbar's preset Combobox
 // ---------------------------------------------------------------------------
 
-/// One row of the Combobox: a bundled preset, by key and display name.
+/// One row of the preset Combobox: a preset, by key and display name.
 #[derive(Clone)]
 pub(crate) struct PresetItem {
     key: SharedString,
@@ -1164,9 +1152,9 @@ impl SearchableListItem for PresetItem {
 }
 
 /// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:749`),
-/// so showing one takes a delegate: the bundled presets, filtered as the user
-/// types. It selects nothing — the sidebar's `Select` is what switches the
-/// theme; this one demonstrates the widget and its geometry builder.
+/// so the toolbar's preset switch takes a delegate: the desktop's own theme,
+/// keyed `default` and labelled with the preset it builds on, then the
+/// presets meant for this platform, filtered as the user types.
 pub(crate) struct PresetDelegate {
     items: Vec<PresetItem>,
     matched: Vec<PresetItem>,
@@ -1174,12 +1162,19 @@ pub(crate) struct PresetDelegate {
 
 impl PresetDelegate {
     pub(crate) fn new() -> Self {
-        let items: Vec<PresetItem> = native_theme::theme::Theme::list_presets()
-            .iter()
-            .map(|info| PresetItem {
-                key: info.key.into(),
-                display_name: info.display_name.into(),
-            })
+        let default = PresetItem {
+            key: "default".into(),
+            display_name: format!("default ({})", platform_preset_name().name).into(),
+        };
+        let items: Vec<PresetItem> = std::iter::once(default)
+            .chain(
+                native_theme::theme::Theme::list_presets_for_platform()
+                    .iter()
+                    .map(|info| PresetItem {
+                        key: info.key.into(),
+                        display_name: info.display_name.into(),
+                    }),
+            )
             .collect();
         Self {
             matched: items.clone(),
@@ -1218,5 +1213,42 @@ impl SearchableListDelegate for PresetDelegate {
             .cloned()
             .collect();
         Task::ready(())
+    }
+
+    /// Records the chosen preset at its row in the unfiltered list.
+    ///
+    /// The Combobox tells a changed selection from an unchanged one by the
+    /// selection's row indices alone (combobox.rs, ComboboxState::new), and
+    /// the default hook records the row the item has in the list as filtered
+    /// (searchable_list/delegate.rs, SearchableListDelegate::on_will_change).
+    /// Typing "nord" puts Nord in row 0, where `default` already is, so the
+    /// choice would change nothing that upstream compares: no `Change`, and
+    /// the popup stays open. A preset's row in the full list is its own.
+    /// Single selection only, which is how the toolbar builds it.
+    fn on_will_change(
+        &mut self,
+        selection: &mut Vec<(IndexPath, Self::Item)>,
+        changes: &[SearchableListChange],
+    ) {
+        for change in changes {
+            match change {
+                SearchableListChange::Select { index } => {
+                    let Some(item) = self.matched.get(index.row).cloned() else {
+                        continue;
+                    };
+                    let Some(row) = self.items.iter().position(|i| i.key == item.key) else {
+                        continue;
+                    };
+                    if !selection.iter().any(|(_, s)| s.key == item.key) {
+                        selection.push((IndexPath::default().row(row), item));
+                    }
+                }
+                // Upstream deselects the current choice by the index this
+                // hook recorded for it (combobox.rs, selection_changes).
+                SearchableListChange::Deselect { index } => {
+                    selection.retain(|(at, _)| at != index);
+                }
+            }
+        }
     }
 }
