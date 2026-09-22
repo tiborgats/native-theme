@@ -467,6 +467,37 @@ What is still open on the iced side:
       The other three questions in that section answered themselves: the
       work landed on the v0.5.9 branch, the six Button variants' field names
       were corrected by the citation pass, and `Command` has a real demo.
+- [ ] **Finish auditing the Widget Info "Not themeable" entries for
+      *resolvability*.** 257 entries over 107 panels; 99 cite an upstream
+      symbol, 158 do not, and an uncited one is an assertion nobody checked.
+      The audit is not "is this sentence accurate" but "could the connector
+      do something about it" -- those are the same question, because "not
+      themeable" is itself a claim about resolvability.
+
+      Method, one entry at a time: (1) does native-theme model a field for
+      this property; (2) does a `geometry::` builder carry it; (3) does
+      upstream apply the caller's refinement to the element that would
+      receive it, or to an ancestor of it. A "no" at (3) with a "yes" at (1)
+      is Tier U, not an absence, and the note should say which.
+
+      Scoped by where the answer can differ: **70 of the 158 are under
+      widgets native-theme models no counterpart for at all** (Alert, Tag,
+      Badge, Kbd, the charts, Avatar, Breadcrumb, Skeleton, the text
+      samples) -- those claims are true, but because of *our* model rather
+      than upstream, so the note should say that and the fix is a model
+      addition. The other **88 sit under one of the 27 modelled widgets**
+      and are where a resolvable gap can hide.
+
+      Three done, and the hit rate justifies the rest: a Button's
+      `font-weight` was called hardcoded on ten panels and was simply not
+      carried -- fixed, `geometry::button` now applies it. A Separator's
+      thickness and a Slider's track height and thumb size are genuinely
+      unreachable, but the model carries all three, so they are Tier U
+      (already in "inner geometry exposed" above) and the notes now say so
+      rather than "hardcoded".
+
+      The largest untouched groups are `padding` (13), `animation` (7),
+      `label size` (6) and `icon size` (5).
 - [ ] `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
       The connector writes both on every `apply` and both have contract rows
       (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in

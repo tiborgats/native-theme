@@ -3498,7 +3498,7 @@ impl Showcase {
                 div()
                     .id("tt-slider")
                     .child(Slider::new(&self.slider_state).w(px(360.0)))
-                    .on_hover(self.hover_info(&fi, "Slider", &[("track", "slider_bar", t.slider_bar, "gpui-component/slider.rs:164"), ("thumb", "slider_thumb", t.slider_thumb, "gpui-component/slider.rs:170"), ("text", "foreground", t.foreground, "gpui-component/slider.rs:272")], &[("shadow", format!("{}", t.shadow))], &[("track height", "hardcoded"), ("thumb size", "hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "Slider", &[("track", "slider_bar", t.slider_bar, "gpui-component/slider.rs:164"), ("thumb", "slider_thumb", t.slider_thumb, "gpui-component/slider.rs:170"), ("text", "foreground", t.foreground, "gpui-component/slider.rs:272")], &[("shadow", format!("{}", t.shadow))], &[("track height", "Tier U, not an absence: slider.track_height is modelled and carried. Upstream sets h_1p5() on SliderIndicator, a child of the element the refinement lands on (slider.rs, Slider::render)"), ("thumb size", "Tier U, not an absence: slider.thumb_diameter is modelled and carried. The thumb is built by a closure inside the indicator, deeper still than the track (slider.rs, Slider::render)")])),
             )
             // Rating
             .child(section(format!(
@@ -5211,7 +5211,7 @@ impl Showcase {
                             .child(Separator::horizontal().label("Section Break"))
                             .child(Separator::horizontal_dashed()),
                     )
-                    .on_hover(self.hover_info(&fi, "Separator", &[("line", "border", t.border, "gpui-component/separator.rs:128"), ("label bg", "background", t.background, "gpui-component/separator.rs:149"), ("label text", "muted_foreground", t.muted_foreground, "gpui-component/separator.rs:150")], &[], &[("thickness", "1px hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "Separator", &[("line", "border", t.border, "gpui-component/separator.rs:128"), ("label bg", "background", t.background, "gpui-component/separator.rs:149"), ("label text", "muted_foreground", t.muted_foreground, "gpui-component/separator.rs:150")], &[], &[("thickness", "Tier U, not an absence: the platform states separator.line_width and the model carries it. Upstream draws the line on an inner absolutely-positioned div at px(1.) and applies the caller's refinement to the outer container instead, so nothing reaches the line (separator.rs, Separator::render_base)")])),
             )
             // GroupBox as container
             .child(section("GroupBox as Layout Container"))
