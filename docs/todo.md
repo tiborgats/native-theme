@@ -256,7 +256,7 @@ there. The last two items below are the ones the repository's own
 feature-table differences rather than slot semantics. All of it is scheduled
 into v0.5.9 by the standing rule that a
 pre-1.0 release fixes the bugs found during it; the design is in
-`docs/todo_v0.5.9_theme-contracts-{rationale,spec}.md` and the citations stay
+`docs/archive/todo_v0.5.9_theme-contracts-{rationale,spec}.md` and the citations stay
 here so the work is not re-derived.
 
 All nine are closed in v0.5.9. iced's palette has six colours, so most of them
@@ -458,6 +458,15 @@ What is still open on the iced side:
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
+- [ ] **Open question for the maintainer, carried out of the archived Widget
+      Info rationale (§6, question 2):** the panel displays the citation
+      beside the swatch — `text: link #2a7ab0 (button.rs:993)`. It is what
+      makes a claim checkable by a reader and not only by a test, but it is
+      also four widgets' worth of line numbers in a hover panel. Keep it, or
+      keep the citation in the source and show only `text: link #2a7ab0`?
+      The other three questions in that section answered themselves: the
+      work landed on the v0.5.9 branch, the six Button variants' field names
+      were corrected by the citation pass, and `Command` has a real demo.
 - [ ] `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
       The connector writes both on every `apply` and both have contract rows
       (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
