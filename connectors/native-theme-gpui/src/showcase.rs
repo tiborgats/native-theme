@@ -662,6 +662,519 @@ fn every_demo_names_the_builders_it_applies() {
 }
 
 // ---------------------------------------------------------------------------
+// A colour claim is read at the line it cites
+// ---------------------------------------------------------------------------
+//
+// Widget-info spec section 4. A panel says which theme field a widget reads,
+// which is a statement about a *dependency's* source: nothing in this crate
+// can keep it true on its own. Each claim therefore carries the line it was
+// read at, and this opens that line and requires the field to be there.
+//
+// A line and not a symbol, although `file.rs, Symbol` is the form the prose
+// notes use. `ButtonVariant::text_color` holds `Self::Link => link` and
+// `Self::Text => foreground.opacity(0.9)` two lines apart
+// (`button.rs:993-994`), so a symbol-scoped check finds `foreground` inside
+// that function and passes Button (Link)'s claim of it. Only a line separates
+// variants that share a function. The cost is drift -- an insertion earlier
+// in a file moves every later line -- so a failure prints what the cited line
+// *now* says, which is what tells "the field moved" from "the claim was
+// wrong".
+//
+// The vendored paths come from `cargo metadata`, run from the test rather
+// than from a build script: a test runs after the build, so it can simply ask
+// cargo, and a published crate does not gain a build script to locate a
+// *dev*-dependency's source.
+
+use std::path::{Path, PathBuf};
+
+/// The crates a citation may name, by package name.
+const CITED_CRATES: &[&str] = &["gpui-component", "gpui-base", "gpui-pre"];
+
+/// Set once the citation pass has finished, so an uncited claim fails too
+/// (spec section 6.6). Until then the count is reported.
+const REQUIRE_CITATIONS: bool = false;
+
+/// The arguments of the call whose `(` is at `open`, split at depth-0 commas.
+///
+/// Scans the source as written, because what matters here -- the field a
+/// claim names and the line it cites -- are string literals.
+fn call_args(raw: &str, open: usize) -> Option<Vec<&str>> {
+    let mut depth = 0usize;
+    let mut at = open;
+    let mut last = open + 1;
+    let mut out = Vec::new();
+    while at < raw.len() {
+        let rest = raw.get(at..)?;
+        if let Some(after) = rest.strip_prefix("//") {
+            at += 2 + after.find('\n').unwrap_or(after.len());
+            continue;
+        }
+        if let Some(len) = char_literal_len(rest) {
+            at += len;
+            continue;
+        }
+        if let Some(hashes) = raw_string_hashes(rest) {
+            let close = format!("\"{}", "#".repeat(hashes));
+            let from = hashes + 2;
+            at += match rest.get(from..).and_then(|t| t.find(&close)) {
+                Some(ix) => from + ix + close.len(),
+                None => rest.len(),
+            };
+            continue;
+        }
+        if let Some(body) = rest.strip_prefix('"') {
+            at += 1 + end_of_string(body, "\"");
+            continue;
+        }
+        match rest.chars().next() {
+            Some('(' | '[' | '{') => depth += 1,
+            Some(')' | ']' | '}') => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    // A trailing comma before the close leaves only
+                    // whitespace here; that is not an argument.
+                    let tail = raw.get(last..at)?;
+                    if !tail.trim().is_empty() {
+                        out.push(tail);
+                    }
+                    return Some(out);
+                }
+            }
+            Some(',') if depth == 1 => {
+                out.push(raw.get(last..at)?);
+                last = at + 1;
+            }
+            _ => {}
+        }
+        at += char_len(rest);
+    }
+    None
+}
+
+/// The contents of a Rust string literal, or `None` if `text` is not one.
+fn unquote(text: &str) -> Option<&str> {
+    text.trim().strip_prefix('"')?.strip_suffix('"')
+}
+
+/// The 1-based line that byte offset `at` falls on.
+fn line_at(starts: &[usize], at: usize) -> usize {
+    starts.partition_point(|&s| s <= at)
+}
+
+/// One colour claim of one panel.
+struct Claim<'a> {
+    line: usize,
+    widget: &'a str,
+    role: &'a str,
+    field: &'a str,
+    cited_at: &'a str,
+}
+
+/// Every colour claim, and every panel's prose argument with its line.
+fn panel_claims(raw: &str) -> (Vec<Claim<'_>>, Vec<(usize, &str, &str)>) {
+    let starts = line_offsets(raw);
+    let mut claims = Vec::new();
+    let mut prose = Vec::new();
+    let mut from = 0usize;
+    while let Some(ix) = raw.get(from..).and_then(|t| t.find(".hover_info(")) {
+        let call = from + ix;
+        from = call + ".hover_info(".len();
+        let Some(args) = call_args(raw, from - 1) else {
+            continue;
+        };
+        if args.len() != 5 {
+            continue;
+        }
+        let line = line_at(&starts, call);
+        let widget = unquote(args[1]).unwrap_or("?");
+        prose.push((line, widget, args[4]));
+
+        let trimmed = args[2].trim();
+        let Some(inner) = trimmed
+            .strip_prefix("&[")
+            .and_then(|t| t.trim_end().strip_suffix(']'))
+        else {
+            continue;
+        };
+        if inner.trim().is_empty() {
+            continue;
+        }
+        // Wrapped so the array's entries are one depth-1 group each.
+        let wrapped = format!("({inner})");
+        let Some(tuples) = call_args(&wrapped, 0) else {
+            continue;
+        };
+        for tup in tuples {
+            let t = tup.trim();
+            if !t.starts_with('(') {
+                continue;
+            }
+            let Some(parts) = call_args(t, 0) else {
+                continue;
+            };
+            if parts.len() != 4 {
+                continue;
+            }
+            // Re-borrow from `raw`: `wrapped` is a local copy.
+            let Some(field) = unquote(parts[1]).and_then(|f| find_in(raw, f)) else {
+                continue;
+            };
+            let cited = unquote(parts[3]).unwrap_or("");
+            let cited_at = if cited.is_empty() {
+                ""
+            } else {
+                find_in(raw, cited).unwrap_or("")
+            };
+            claims.push(Claim {
+                line,
+                widget,
+                role: unquote(parts[0])
+                    .and_then(|r| find_in(raw, r))
+                    .unwrap_or("?"),
+                field,
+                cited_at,
+            });
+        }
+    }
+    (claims, prose)
+}
+
+/// The same text, borrowed from `haystack` rather than from a temporary.
+fn find_in<'a>(haystack: &'a str, needle: &str) -> Option<&'a str> {
+    let at = haystack.find(needle)?;
+    haystack.get(at..at + needle.len())
+}
+
+/// A citation `<file>.rs:<line>` or `<file>.rs:<from>-<to>`.
+fn parse_citation(text: &str) -> Option<(&str, usize, usize)> {
+    let (path, span) = text.rsplit_once(':')?;
+    if !path.ends_with(".rs") {
+        return None;
+    }
+    match span.split_once('-') {
+        Some((a, b)) => Some((path, a.parse().ok()?, b.parse().ok()?)),
+        None => {
+            let n: usize = span.parse().ok()?;
+            Some((path, n, n))
+        }
+    }
+}
+
+/// Every file a citation could name, across the crates searched.
+///
+/// A citation gives a path, not a crate: `button.rs` is gpui-component's
+/// `button/button.rs`, `resizable/mod.rs` is gpui-base's, and `geometry.rs`
+/// names a file here *and* one in gpui-pre. Rather than guess, every
+/// candidate is returned and the claim holds if any bears it out.
+fn candidates(citation: &str, roots: &[PathBuf]) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for root in roots {
+        let direct = root.join(citation);
+        if direct.is_file() {
+            out.push(direct);
+        }
+    }
+    // Only when the path as written matches nothing: a citation that names
+    // its directory has said which file it means, and a basename sweep would
+    // drag the other crates' same-named files back in.
+    if out.is_empty() {
+        let base = citation.rsplit('/').next().unwrap_or(citation);
+        for root in roots {
+            collect_named(root, base, &mut out);
+        }
+    }
+    out
+}
+
+/// A path with everything above the crate directory dropped, for a message
+/// a reader can act on.
+fn shorten(path: &Path) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    for part in path.iter().rev().filter_map(|p| p.to_str()) {
+        parts.push(part);
+        if part.starts_with("gpui-") || part == "native-theme-gpui" {
+            break;
+        }
+    }
+    parts.reverse();
+    parts.join("/")
+}
+
+/// Every file under `dir` named `name`, appended to `out`.
+fn collect_named(dir: &Path, name: &str, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_named(&path, name, out);
+        } else if path.file_name().is_some_and(|f| f == name) && !out.contains(&path) {
+            out.push(path);
+        }
+    }
+}
+
+/// The `src` directory of each crate a citation may name, and this crate's.
+///
+/// From `cargo metadata` only -- never a registry path or a version literal,
+/// as `scripts/check-widget-coverage.py` also insists. A crate missing from
+/// the metadata fails the test rather than being skipped.
+fn cited_source_dirs() -> Result<Vec<PathBuf>, String> {
+    let out = std::process::Command::new(env!("CARGO"))
+        .args(["metadata", "--format-version", "1"])
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .output()
+        .map_err(|e| format!("could not run `cargo metadata`: {e}"))?;
+    if !out.status.success() {
+        return Err(format!("`cargo metadata` failed: {:?}", out.status));
+    }
+    let meta: serde_json::Value =
+        serde_json::from_slice(&out.stdout).map_err(|e| format!("metadata is not JSON: {e}"))?;
+    let packages = meta
+        .get("packages")
+        .and_then(serde_json::Value::as_array)
+        .ok_or_else(|| "cargo metadata has no packages array".to_string())?;
+
+    let mut roots = Vec::new();
+    for want in CITED_CRATES {
+        let manifest = packages
+            .iter()
+            .find(|p| p.get("name").and_then(serde_json::Value::as_str) == Some(want))
+            .and_then(|p| p.get("manifest_path"))
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| format!("`{want}` is not in the cargo metadata"))?;
+        let src = Path::new(manifest)
+            .parent()
+            .ok_or_else(|| format!("`{want}` has no manifest directory"))?
+            .join("src");
+        if !src.is_dir() {
+            return Err(format!("`{want}` has no src at {}", src.display()));
+        }
+        roots.push(src);
+    }
+    roots.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("src"));
+    Ok(roots)
+}
+
+/// Spec section 4.2: every colour claim's cited line reads the field it names.
+///
+/// A claim with no citation is counted, not failed: the citation pass runs
+/// page by page and each commit stays green while the count falls.
+#[test]
+fn every_colour_claim_is_read_at_the_line_it_cites() {
+    // A gate that silently skips is not a gate: if the sources cannot be
+    // located, the check has not run, and that is a failure.
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let (claims, _) = panel_claims(SHOWCASE);
+    assert!(
+        !claims.is_empty(),
+        "no colour claims found in the showcase, so this test would pass vacuously"
+    );
+
+    let mut wrong = Vec::new();
+    let mut uncited = 0usize;
+    for claim in &claims {
+        if claim.cited_at.is_empty() {
+            uncited += 1;
+            continue;
+        }
+        let Some((path, first, last)) = parse_citation(claim.cited_at) else {
+            wrong.push(format!(
+                "{} [{}] line {}: `{}` is not <file>.rs:<line>",
+                claim.widget, claim.role, claim.line, claim.cited_at
+            ));
+            continue;
+        };
+        let files = candidates(path, &roots);
+        if files.is_empty() {
+            wrong.push(format!(
+                "{} [{}] line {}: cites {path}, which does not exist",
+                claim.widget, claim.role, claim.line
+            ));
+            continue;
+        }
+        // A line number against the wrong file means nothing, and a bare
+        // name can match several crates -- `toggle.rs` is gpui-component's
+        // `button/toggle.rs` and gpui-base's `toggle.rs`. The author knows
+        // which one they read, so the citation has to say.
+        if files.len() > 1 {
+            wrong.push(format!(
+                "{} [{}] line {}: `{path}` is ambiguous; name the directory too. \
+                 It matches: {}",
+                claim.widget,
+                claim.role,
+                claim.line,
+                files
+                    .iter()
+                    .map(|f| shorten(f))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+            continue;
+        }
+        let Some(file) = files.first() else {
+            continue;
+        };
+        let Ok(text) = std::fs::read_to_string(file) else {
+            wrong.push(format!(
+                "{} [{}] line {}: cites {path}, which could not be read",
+                claim.widget, claim.role, claim.line
+            ));
+            continue;
+        };
+        let lines: Vec<&str> = text.lines().collect();
+        let span = if first == 0 || first > last || last > lines.len() {
+            None
+        } else {
+            lines.get(first - 1..last)
+        };
+        let Some(span) = span else {
+            wrong.push(format!(
+                "{} [{}] line {}: cites {}, but {} has {} lines",
+                claim.widget,
+                claim.role,
+                claim.line,
+                claim.cited_at,
+                shorten(file),
+                lines.len()
+            ));
+            continue;
+        };
+        if !mentions(&span.join("\n"), claim.field) {
+            let shown = span.first().map(|l| l.trim()).unwrap_or("(blank)");
+            wrong.push(format!(
+                "{} [{}] line {}: claims `{}` at {}\n      that line now reads: {}",
+                claim.widget, claim.role, claim.line, claim.field, claim.cited_at, shown
+            ));
+        }
+    }
+
+    assert!(
+        wrong.is_empty(),
+        "{} of {} colour claims are not read at the line they cite:\n  {}",
+        wrong.len(),
+        claims.len(),
+        wrong.join("\n  ")
+    );
+    assert!(
+        !REQUIRE_CITATIONS || uncited == 0,
+        "{uncited} of {} colour claims carry no citation",
+        claims.len()
+    );
+    if uncited > 0 {
+        println!(
+            "Widget Info citations: {} of {} cited, {uncited} to go",
+            claims.len() - uncited,
+            claims.len()
+        );
+    }
+}
+
+/// Every `file.rs, Symbol` in a panel's prose.
+fn prose_citations(text: &str) -> Vec<(&str, &str)> {
+    let mut out = Vec::new();
+    let mut from = 0usize;
+    while let Some(ix) = text.get(from..).and_then(|t| t.find(".rs,")) {
+        let dot = from + ix;
+        from = dot + ".rs,".len();
+        let Some(head) = text.get(..dot) else {
+            continue;
+        };
+        let start = match head
+            .rfind(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-'))
+        {
+            Some(i) => i + 1,
+            None => 0,
+        };
+        let Some(path) = text.get(start..dot + 3) else {
+            continue;
+        };
+        let Some(after) = text.get(from..) else {
+            continue;
+        };
+        let body = after.trim_start();
+        let end = body
+            .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':'))
+            .unwrap_or(body.len());
+        let Some(symbol) = body.get(..end).map(|s| s.trim_end_matches(':')) else {
+            continue;
+        };
+        if !symbol.is_empty() && symbol.starts_with(char::is_alphabetic) {
+            out.push((path, symbol));
+        }
+        from += (after.len() - body.len()) + end;
+    }
+    out
+}
+
+/// Spec section 4.6: a symbol a "Not themeable" note cites still exists.
+///
+/// Existence, never semantics. What a note *says* about upstream is a human's
+/// to keep true; a note pointing at something upstream has **deleted** is one
+/// a machine should catch, and this project has been bitten by exactly that
+/// when `ThemeColor::tiles` went away in a patch release.
+///
+/// A note with no citation is not required to gain one: many state an absence
+/// -- "the model carries no circular-progress diameter" -- with no symbol to
+/// point at, and demanding a citation there would invite an invented one.
+#[test]
+fn every_prose_citation_still_exists() {
+    // A gate that silently skips is not a gate: if the sources cannot be
+    // located, the check has not run, and that is a failure.
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let (_, prose) = panel_claims(SHOWCASE);
+
+    let mut missing = Vec::new();
+    let mut checked = 0usize;
+    for (line, widget, text) in &prose {
+        for (path, symbol) in prose_citations(text) {
+            checked += 1;
+            let files = candidates(path, &roots);
+            if files.is_empty() {
+                missing.push(format!(
+                    "{widget} line {line}: cites {path}, which does not exist"
+                ));
+                continue;
+            }
+            let leaf = symbol.rsplit("::").next().unwrap_or(symbol);
+            let found = files
+                .iter()
+                .any(|f| std::fs::read_to_string(f).is_ok_and(|t| mentions(&t, leaf)));
+            if !found {
+                missing.push(format!(
+                    "{widget} line {line}: cites {path}, {symbol} — `{leaf}` is in none of them"
+                ));
+            }
+        }
+    }
+
+    assert!(
+        checked > 0,
+        "no `file.rs, Symbol` citation found in any panel's prose, so this test \
+         would pass vacuously"
+    );
+    assert!(
+        missing.is_empty(),
+        "{} of {checked} prose citations point at something that is gone:\n  {}",
+        missing.len(),
+        missing.join("\n  ")
+    );
+}
+
+// ---------------------------------------------------------------------------
 // No hardcoded style values in the showcase
 // ---------------------------------------------------------------------------
 //

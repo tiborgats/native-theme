@@ -120,17 +120,6 @@ jobs:
           python3 --version
           python3 scripts/check-widget-coverage.py
 
-      # Every Widget Info colour claim names a theme field and the upstream
-      # line it was read at; this opens that line and requires the field to be
-      # there. It is the only gate on a claim about a dependency's source, so
-      # it runs in CI as well as in pre-release-check.sh -- the vendored path
-      # comes from `cargo metadata`, which a published crate should not gain a
-      # build script to learn. Runs on the gpui leg, whose manifest it reads.
-      - name: Widget Info citations
-        if: matrix.package == 'native-theme-gpui'
-        run: |
-          python3 --version
-          python3 scripts/check-widget-citations.py
 
   doc:
     name: Documentation

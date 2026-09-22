@@ -38,7 +38,7 @@ items, `src/showcase.rs` holds the lexical helpers and four tests, and
 - Every gate ships a discrimination proof (W8): a seeded defect must make it
   fail, and the failure must name the line.
 - **`native-theme-gpui` gains no public item.** `geometry` stays at 37. All
-  new code is tests, a script, and showcase edits.
+  new code is tests and showcase edits.
 
 ### 0.3 Out of scope
 
@@ -284,20 +284,25 @@ Button (Link): claims `link` at button.rs:993
 
 ### 4.4 Locating the crate source
 
-The source directory comes from `cargo metadata --format-version 1` only,
-never a registry path or a version literal, exactly as
-`check-widget-coverage.py` does. A dependency missing from the metadata is a
-hard error, never a skipped check. Because the check needs this at run time
-and `src/showcase.rs` is `include_str!`-based, there are two forms: a build
-script writes the path to `OUT_DIR` for a `#[test]`, or the check is a script.
+Each cited crate's `src` comes from `cargo metadata` only, never from a
+registry path or a version literal, exactly as `check-widget-coverage.py`
+does. A crate missing from the metadata fails the check, never skips it.
 
-**The criterion is not "simpler" but "as strong as its siblings".** The other
-two gates run under `cargo test`, so they fail on a developer's machine and
-in CI without anyone remembering to invoke them. The `#[test]` form is
-therefore preferred. If the build script proves impractical, the script form
-is acceptable **only** if it is wired into both `pre-release-check.sh` and
-the CI workflow — otherwise this layer would be the one gate that a
-contributor can skip. Record the choice, and the reason, in §9.
+**A `#[test]`, not a script.** The earlier objection -- that a test would
+need `cargo metadata` inside a `build.rs` -- was wrong: a test runs *after*
+the build, so it simply asks cargo itself through `env!("CARGO")`. Measured:
+`cargo metadata` resolves 1007 packages from inside `cargo test` in under a
+second, with no lock contention. `serde_json` is already a dev-dependency,
+`mod showcase` is already `#[cfg(test)]`, and CI already runs
+`cargo test -p native-theme-gpui` -- so the check runs for every contributor
+and on every CI leg **without being wired in anywhere**. That is strictly
+stronger than a script, which only runs where someone remembered to call it.
+
+**A citation must be unambiguous.** `toggle.rs` names gpui-component's
+`button/toggle.rs` *and* gpui-base's `toggle.rs`, and a line number against
+the wrong file means nothing. Where a path matches more than one candidate
+the check fails and lists them, so the author names the directory too. A
+path that matches exactly is not widened by a basename sweep.
 
 ### 4.5 Discrimination proofs (W8)
 
@@ -501,15 +506,18 @@ receiver there, and `AlertDialog`'s pointer to the Dialog above. Naming a
 builder a demo does *not* apply is how a panel says why it could not, so only
 unnamed **application** is a defect.
 
-**§4.4 — the citation check is a script, not a `#[test]`.** The `#[test]`
-form needs the vendored source path at run time, which means `cargo metadata`
-inside a `build.rs`. `native-theme-gpui` has none, and adding one to a
-published crate solely to locate a *dev*-dependency's source would run for
-every consumer, for a check that only ever concerns this repository;
-`cargo metadata` inside a build script is also recursion-prone. The condition
-this document set is met instead: the script is wired into **both**
-`pre-release-check.sh` and `.github/workflows/ci.yml`, which already runs
-`check-widget-coverage.py` the same way (`ci.yml:121`).
+**§4.4 — the citation check is a `#[test]`, and the reasoning that said
+otherwise was wrong.** This document assumed a test would need `cargo
+metadata` inside a `build.rs`. It does not: a test runs after the build and
+can call cargo itself. Measured, `cargo metadata` resolves 1007 packages from
+inside `cargo test` in under a second. It was first built as a Python script
+and then ported, which cost a round trip but produced the better answer --
+the test needs no wiring, so it cannot be skipped.
+
+**§4.2 — a citation must be unambiguous.** Not foreseen here. `toggle.rs`
+matches gpui-component's `button/toggle.rs` and gpui-base's `toggle.rs`, and
+a line number against the wrong file is meaningless. The check now fails on
+an ambiguous path and lists the candidates.
 
 **§6.1 — NumberInput's size claims were corrected in Task 2, not Task 4.**
 Adding its `geometry::input` note left "height: set per Size enum" directly
