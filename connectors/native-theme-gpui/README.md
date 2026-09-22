@@ -360,7 +360,7 @@ shape is a tile in each window's sprite atlas per image, held from the first
 frame that draws it until the image is handed to `App::drop_image`, so an
 application that rebuilds its icons — on an icon-theme change, or a colour
 change that re-colorizes them — should drop each replaced source that way
-before letting go of it. `examples/showcase-gpui.rs` does it in
+before letting go of it. `examples/showcase-gpui/support.rs` does it in
 `release_sources`.
 
 ## GPUI as `gpui-pre`
@@ -437,7 +437,7 @@ live theme switching, the geometry builders applied where they reach, a
 ## Links
 
 - [API reference on docs.rs](https://docs.rs/native-theme-gpui)
-- [Showcase source](examples/showcase-gpui.rs)
+- [Showcase source](examples/showcase-gpui/)
 - [CHANGELOG](https://github.com/tiborgats/native-theme/blob/main/CHANGELOG.md)
 
 ## License

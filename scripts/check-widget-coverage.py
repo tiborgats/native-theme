@@ -130,7 +130,7 @@ ICED_MANIFEST = os.path.join(
     PROJECT_ROOT, "connectors", "native-theme-iced", "Cargo.toml"
 )
 SHOWCASE_GPUI = os.path.join(
-    PROJECT_ROOT, "connectors", "native-theme-gpui", "examples", "showcase-gpui.rs"
+    PROJECT_ROOT, "connectors", "native-theme-gpui", "examples", "showcase-gpui"
 )
 SHOWCASE_ICED = os.path.join(
     PROJECT_ROOT, "connectors", "native-theme-iced", "examples", "showcase-iced.rs"
@@ -327,16 +327,41 @@ def shows_gpui(haystack, name, roots=None):
     return False
 
 
-def read_showcase(path, strip_literals=False):
-    if not os.path.isfile(path):
+def showcase_files(path):
+    """The source files of a showcase: `path` itself, or every `.rs` under it.
+
+    The gpui showcase is a module tree, and a widget one of its pages builds
+    is shown whichever file the page is in.
+    """
+    if os.path.isfile(path):
+        return [path]
+    if not os.path.isdir(path):
         raise Failure(f"showcase not found: {path}")
-    try:
-        with open(path, encoding="utf-8") as f:
-            source = f.read()
-    except OSError as err:
-        raise Failure(f"could not read the showcase {path}: {err}") from err
-    text = strip_comments(source)
-    return strip_string_literals(text) if strip_literals else text
+    files = sorted(
+        os.path.join(root, name)
+        for root, _, names in os.walk(path)
+        for name in names
+        if name.endswith(".rs")
+    )
+    if not files:
+        raise Failure(f"no .rs files in the showcase directory {path}")
+    return files
+
+
+def read_showcase(path, strip_literals=False):
+    texts = []
+    for file in showcase_files(path):
+        try:
+            with open(file, encoding="utf-8") as f:
+                source = f.read()
+        except OSError as err:
+            raise Failure(f"could not read the showcase {file}: {err}") from err
+        # Each file on its own: a literal or a comment never spans two, and
+        # stripping the concatenation would let an unclosed one in one file
+        # swallow the next.
+        text = strip_comments(source)
+        texts.append(strip_string_literals(text) if strip_literals else text)
+    return "\n".join(texts)
 
 
 def cargo_metadata():
@@ -540,7 +565,8 @@ def main():
     parser.add_argument(
         "--showcase-gpui",
         default=SHOWCASE_GPUI,
-        help="gpui showcase to read instead of the connector's own",
+        help="gpui showcase to read instead of the connector's own: a file, "
+        "or a directory whose .rs files are all read",
     )
     parser.add_argument(
         "--showcase-iced",

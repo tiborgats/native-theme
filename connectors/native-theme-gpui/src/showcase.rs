@@ -3,12 +3,14 @@
 //!
 //! Test-only. A builder nobody demonstrates is a builder nobody has looked at,
 //! which is how `geometry::dialog` carried a wrong radius and
-//! `geometry::menu_item` a wrong doc comment for two releases. The showcase is
-//! read with `include_str!` -- a path known at compile time, so no test has to
-//! find the file at run time -- and so are the two modules whose surface it
-//! must cover, because a list written out here would be one more thing to
-//! forget: the names come from the `pub fn` lines of `geometry.rs` and
-//! `variants.rs` themselves.
+//! `geometry::menu_item` a wrong doc comment for two releases. The showcase's
+//! files are read with `include_str!` -- paths known at compile time, so no
+//! test has to find a file at run time -- and so are the two modules whose
+//! surface it must cover, because a list written out here would be one more
+//! thing to forget: the names come from the `pub fn` lines of `geometry.rs`
+//! and `variants.rs` themselves. The list of showcase files *is* written out,
+//! because `include_str!` needs a literal; `the_gates_read_every_showcase_file`
+//! holds it to the directory.
 //!
 //! What counts as exercising a builder is a reference to it by path in code,
 //! with or without an argument list: the showcase passes several of them as
@@ -17,14 +19,143 @@
 //! showcase names builders in both -- every widget's hover note says which
 //! builder shaped it -- and a note about a builder is not a use of it. That is
 //! the opposite of what `scripts/check-widget-coverage.py` does with the same
-//! file, and for the opposite reason: a widget is often reached through an
+//! files, and for the opposite reason: a widget is often reached through an
 //! extension method and its name appears only in the section label, while a
 //! builder is always called by path.
 
-/// The showcase, and the two modules whose public surface it must cover.
-const SHOWCASE: &str = include_str!("../examples/showcase-gpui.rs");
+/// Every `.rs` file of the showcase, as (path under
+/// `examples/showcase-gpui/`, contents). Each gate reads them one at a time,
+/// so a line number it reports is a line number in the file it names.
+const SHOWCASE_FILES: &[(&str, &str)] = &[
+    ("app.rs", include_str!("../examples/showcase-gpui/app.rs")),
+    (
+        "chrome.rs",
+        include_str!("../examples/showcase-gpui/chrome.rs"),
+    ),
+    ("demo.rs", include_str!("../examples/showcase-gpui/demo.rs")),
+    (
+        "info/mod.rs",
+        include_str!("../examples/showcase-gpui/info/mod.rs"),
+    ),
+    (
+        "inspector.rs",
+        include_str!("../examples/showcase-gpui/inspector.rs"),
+    ),
+    ("main.rs", include_str!("../examples/showcase-gpui/main.rs")),
+    (
+        "pages/buttons.rs",
+        include_str!("../examples/showcase-gpui/pages/buttons.rs"),
+    ),
+    (
+        "pages/charts.rs",
+        include_str!("../examples/showcase-gpui/pages/charts.rs"),
+    ),
+    (
+        "pages/data.rs",
+        include_str!("../examples/showcase-gpui/pages/data.rs"),
+    ),
+    (
+        "pages/feedback.rs",
+        include_str!("../examples/showcase-gpui/pages/feedback.rs"),
+    ),
+    (
+        "pages/icons.rs",
+        include_str!("../examples/showcase-gpui/pages/icons.rs"),
+    ),
+    (
+        "pages/inputs.rs",
+        include_str!("../examples/showcase-gpui/pages/inputs.rs"),
+    ),
+    (
+        "pages/layout.rs",
+        include_str!("../examples/showcase-gpui/pages/layout.rs"),
+    ),
+    (
+        "pages/mod.rs",
+        include_str!("../examples/showcase-gpui/pages/mod.rs"),
+    ),
+    (
+        "pages/overlays.rs",
+        include_str!("../examples/showcase-gpui/pages/overlays.rs"),
+    ),
+    (
+        "pages/theme_map.rs",
+        include_str!("../examples/showcase-gpui/pages/theme_map.rs"),
+    ),
+    (
+        "pages/typography.rs",
+        include_str!("../examples/showcase-gpui/pages/typography.rs"),
+    ),
+    (
+        "support.rs",
+        include_str!("../examples/showcase-gpui/support.rs"),
+    ),
+    (
+        "tests.rs",
+        include_str!("../examples/showcase-gpui/tests.rs"),
+    ),
+];
+
+/// The showcase's own test module.
+///
+/// Everything in it is test code: it builds widgets and calls builders for
+/// reasons that have nothing to do with a demo, so the gates that measure
+/// demo blocks leave it out. The gates that ask what the showcase does *at
+/// all* -- which builders it calls, which colours it paints -- read it too.
+const TEST_MODULE: &str = "tests.rs";
+
+/// The showcase files that hold demos: every one but the test module.
+fn demo_files() -> impl Iterator<Item = (&'static str, &'static str)> {
+    SHOWCASE_FILES
+        .iter()
+        .copied()
+        .filter(|(path, _)| *path != TEST_MODULE)
+}
+
+/// The two modules whose public surface the showcase must cover.
 const GEOMETRY: &str = include_str!("geometry.rs");
 const VARIANTS: &str = include_str!("variants.rs");
+
+/// Every `.rs` file of the example is one the gates read.
+#[test]
+fn the_gates_read_every_showcase_file() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/showcase-gpui");
+    let mut on_disk = Vec::new();
+    collect_rs(&dir, &dir, &mut on_disk);
+    on_disk.sort();
+    let mut listed: Vec<String> = SHOWCASE_FILES
+        .iter()
+        .map(|(p, _)| (*p).to_string())
+        .collect();
+    listed.sort();
+    assert!(
+        !on_disk.is_empty(),
+        "no showcase files found under {}",
+        dir.display()
+    );
+    assert_eq!(
+        listed, on_disk,
+        "SHOWCASE_FILES and the example directory disagree"
+    );
+}
+
+/// Every `.rs` file under `dir`, as a path relative to `root` written with
+/// `/`, appended to `out`.
+fn collect_rs(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<String>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_rs(root, &path, out);
+        } else if path.extension().is_some_and(|e| e == "rs")
+            && let Ok(rel) = path.strip_prefix(root)
+        {
+            out.push(rel.to_string_lossy().replace('\\', "/"));
+        }
+    }
+}
 
 /// The names of a module's top-level `pub fn` items, in source order.
 ///
@@ -181,7 +312,10 @@ fn references(haystack: &str, module: &str, name: &str) -> bool {
 /// the showcase.
 #[test]
 fn the_showcase_exercises_every_builder() {
-    let source = without_comments_or_strings(SHOWCASE);
+    let sources: Vec<String> = SHOWCASE_FILES
+        .iter()
+        .map(|(_, text)| without_comments_or_strings(text))
+        .collect();
     let mut missing = Vec::new();
     let mut checked = 0usize;
     for (module, declared) in [
@@ -194,14 +328,17 @@ fn the_showcase_exercises_every_builder() {
         );
         for name in declared {
             checked += 1;
-            if !references(&source, module, name) {
+            if !sources
+                .iter()
+                .any(|source| references(source, module, name))
+            {
                 missing.push(format!("{module}::{name}"));
             }
         }
     }
     assert!(
         missing.is_empty(),
-        "{} of {checked} builders are never used in examples/showcase-gpui.rs, \
+        "{} of {checked} builders are never used in examples/showcase-gpui/, \
          so nothing demonstrates them: {}",
         missing.len(),
         missing.join(", ")
@@ -224,7 +361,7 @@ fn the_showcase_exercises_every_builder() {
 // the `geometry::scrollbar_gutter` on the content scroller beside it, which
 // is a sibling of the tab bar and not part of it.
 //
-// The boundaries are read from `SHOWCASE` itself and not from the stripped
+// The boundaries are read from the file as written and not from the stripped
 // copy: `without_comments_or_strings` removes string literals, and the id
 // *is* a string literal. The body is then checked in the stripped copy, so a
 // panel named inside a comment does not count as one. Both agree on line
@@ -355,16 +492,18 @@ fn demo_blocks(raw: &str, code: &str, methods: &[usize]) -> Vec<Block> {
 fn every_demo_id_is_a_tt_id() {
     let mut wrong = Vec::new();
     let mut checked = 0usize;
-    for (n, line) in SHOWCASE.lines().enumerate() {
-        let Some(rest) = line.trim_start().strip_prefix("id: \"") else {
-            continue;
-        };
-        let Some(id) = rest.split('"').next() else {
-            continue;
-        };
-        checked += 1;
-        if !id.starts_with("tt-") {
-            wrong.push(format!("{}: {id}", n + 1));
+    for (file, source) in SHOWCASE_FILES {
+        for (n, line) in source.lines().enumerate() {
+            let Some(rest) = line.trim_start().strip_prefix("id: \"") else {
+                continue;
+            };
+            let Some(id) = rest.split('"').next() else {
+                continue;
+            };
+            checked += 1;
+            if !id.starts_with("tt-") {
+                wrong.push(format!("{file}:{}: {id}", n + 1));
+            }
         }
     }
     assert!(
@@ -382,28 +521,31 @@ fn every_demo_id_is_a_tt_id() {
 /// Spec section 2.2: every `tt-` demo block carries a Widget Info panel.
 #[test]
 fn every_demo_block_has_a_widget_info_panel() {
-    let demos = showcase_demos(SHOWCASE);
-    let code = without_comments_or_strings(demos);
-    let blocks = demo_blocks(demos, &code, &method_starts(&code));
+    let mut total = 0usize;
+    let mut missing = Vec::new();
+    for (file, demos) in demo_files() {
+        let code = without_comments_or_strings(demos);
+        let blocks = demo_blocks(demos, &code, &method_starts(&code));
+        total += blocks.len();
+        missing.extend(
+            blocks
+                .iter()
+                .filter(|b| !b.has_panel)
+                .map(|b| format!("{file}:{}", b.start + 1)),
+        );
+    }
 
     assert!(
-        !blocks.is_empty(),
+        total > 0,
         "no `{BLOCK_ID}` found in the showcase, so this test would pass vacuously"
     );
 
-    let missing: Vec<usize> = blocks
-        .iter()
-        .filter(|b| !b.has_panel)
-        .map(|b| b.start + 1)
-        .collect();
-
     assert!(
         missing.is_empty(),
-        "{} of {} demo blocks in examples/showcase-gpui.rs carry no Widget Info \
-         panel, so hovering them says nothing; at lines: {:?}",
+        "{} of {total} demo blocks in examples/showcase-gpui/ carry no Widget \
+         Info panel, so hovering them says nothing; at: {}",
         missing.len(),
-        blocks.len(),
-        missing
+        missing.join(", ")
     );
 }
 
@@ -420,21 +562,6 @@ fn every_demo_block_has_a_widget_info_panel() {
 // named in the block, or bound once in the enclosing method and applied in
 // several blocks. Requiring the second to move would mean duplicating one
 // computation across the ten Button demos, so the binding is read instead.
-
-/// Where the showcase's own test module begins.
-///
-/// Everything from there on is test code: it builds widgets and calls
-/// builders for reasons that have nothing to do with a demo, and the last
-/// demo block would otherwise swallow all of it.
-const TEST_MODULE: &str = "\n#[cfg(test)]";
-
-/// The showcase up to its test module.
-fn showcase_demos(source: &str) -> &str {
-    match source.find(TEST_MODULE) {
-        Some(ix) => source.get(..ix).unwrap_or(source),
-        None => source,
-    }
-}
 
 /// `source` with everything **but** its string literals removed: literal
 /// bodies are kept, the code around them becomes blank, and line breaks are
@@ -548,11 +675,17 @@ fn geometry_bindings(code: &str) -> Vec<Binding<'_>> {
 /// The 0-based lines on which a method of the showcase's types begins.
 ///
 /// Four-space indent is the showcase's own shape for an `impl` method, and a
-/// binding shared by several demo blocks always sits in one.
+/// binding shared by several demo blocks always sits in one. A method another
+/// of the showcase's modules calls -- every page's `render_*_tab` -- is
+/// `pub(crate)`.
 fn method_starts(code: &str) -> Vec<usize> {
     code.lines()
         .enumerate()
-        .filter(|(_, l)| l.starts_with("    fn ") || l.starts_with("    pub fn "))
+        .filter(|(_, l)| {
+            l.starts_with("    fn ")
+                || l.starts_with("    pub fn ")
+                || l.starts_with("    pub(crate) fn ")
+        })
         .map(|(n, _)| n)
         .collect()
 }
@@ -591,17 +724,44 @@ const AMBIENT_BUILDERS: &[&str] = &[
 /// the Dialog above. Requiring set equality would delete both.
 #[test]
 fn every_demo_names_the_builders_it_applies() {
-    let demos = showcase_demos(SHOWCASE);
-    let code = without_comments_or_strings(demos);
-    let notes = string_literals_only(demos);
-    let code_lines: Vec<&str> = code.lines().collect();
-    let note_lines: Vec<&str> = notes.lines().collect();
-
     let builders = public_fns(GEOMETRY);
     assert!(
         !builders.is_empty(),
         "no `pub fn` found in geometry.rs, so this test would pass vacuously"
     );
+
+    let mut findings = Vec::new();
+    let mut total = 0usize;
+    for (file, demos) in demo_files() {
+        total += unnamed_builders(file, demos, &builders, &mut findings);
+    }
+
+    assert!(
+        findings.is_empty(),
+        "{} of {total} demo blocks in examples/showcase-gpui/ are shaped by a \
+         geometry builder their Widget Info panel never names, so hovering them \
+         hides what the native theme did:\n  {}",
+        findings.len(),
+        findings.join("\n  ")
+    );
+}
+
+/// The demo blocks of one showcase file whose panel leaves a builder that
+/// shaped them unnamed, appended to `findings` as `file:line: builders`.
+/// Returns how many demo blocks the file holds.
+///
+/// Per file, because a demo block never spans two: a block, the method
+/// around it and the bindings that method makes are all in the one file.
+fn unnamed_builders(
+    file: &str,
+    demos: &str,
+    builders: &[&str],
+    findings: &mut Vec<String>,
+) -> usize {
+    let code = without_comments_or_strings(demos);
+    let notes = string_literals_only(demos);
+    let code_lines: Vec<&str> = code.lines().collect();
+    let note_lines: Vec<&str> = notes.lines().collect();
 
     let methods = method_starts(&code);
     let blocks = demo_blocks(demos, &code, &methods);
@@ -610,7 +770,6 @@ fn every_demo_names_the_builders_it_applies() {
     let spans: Vec<(usize, usize)> = blocks.iter().map(|b| (b.start, b.end)).collect();
     let inside_a_block = |line: usize| spans.iter().any(|&(a, b)| a <= line && line < b);
 
-    let mut findings = Vec::new();
     for block in &blocks {
         let to = block.end.min(code_lines.len());
         let from = block.start.min(to);
@@ -646,19 +805,14 @@ fn every_demo_names_the_builders_it_applies() {
             .filter(|b| !references(&block_note, "geometry", b))
             .collect();
         if !unnamed.is_empty() {
-            findings.push(format!("line {}: {}", block.start + 1, unnamed.join(", ")));
+            findings.push(format!(
+                "{file}:{}: {}",
+                block.start + 1,
+                unnamed.join(", ")
+            ));
         }
     }
-
-    assert!(
-        findings.is_empty(),
-        "{} of {} demo blocks in examples/showcase-gpui.rs are shaped by a \
-         geometry builder their Widget Info panel never names, so hovering them \
-         hides what the native theme did:\n  {}",
-        findings.len(),
-        blocks.len(),
-        findings.join("\n  ")
-    );
+    blocks.len()
 }
 
 // ---------------------------------------------------------------------------
@@ -764,6 +918,7 @@ fn line_at(starts: &[usize], at: usize) -> usize {
 
 /// One colour claim of one panel.
 struct Claim<'a> {
+    file: &'a str,
     line: usize,
     widget: &'a str,
     role: &'a str,
@@ -795,12 +950,28 @@ fn panel_calls(raw: &str) -> Vec<(usize, &str, Vec<&str>)> {
     out
 }
 
-/// Every colour claim, and every panel's prose argument with its line.
-fn panel_claims(raw: &str) -> (Vec<Claim<'_>>, Vec<(usize, &str, &str)>) {
+/// A panel's prose argument: the file and line of its panel, the widget it
+/// names, and the text.
+type Prose<'a> = (&'a str, usize, &'a str, &'a str);
+
+/// Every colour claim of the showcase, and every panel's prose argument.
+fn showcase_claims() -> (Vec<Claim<'static>>, Vec<Prose<'static>>) {
+    let mut claims = Vec::new();
+    let mut prose = Vec::new();
+    for (file, raw) in SHOWCASE_FILES {
+        let (c, p) = panel_claims(file, raw);
+        claims.extend(c);
+        prose.extend(p);
+    }
+    (claims, prose)
+}
+
+/// Every colour claim of one showcase file, and every panel's prose argument.
+fn panel_claims<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>) {
     let mut claims = Vec::new();
     let mut prose = Vec::new();
     for (line, widget, args) in panel_calls(raw) {
-        prose.push((line, widget, args[4]));
+        prose.push((file, line, widget, args[4]));
 
         let trimmed = args[2].trim();
         let Some(inner) = trimmed
@@ -839,6 +1010,7 @@ fn panel_claims(raw: &str) -> (Vec<Claim<'_>>, Vec<(usize, &str, &str)>) {
                 find_in(raw, cited).unwrap_or("")
             };
             claims.push(Claim {
+                file,
                 line,
                 widget,
                 role: unquote(parts[0])
@@ -1009,11 +1181,18 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
         located.as_ref().err().cloned().unwrap_or_default()
     );
     let Ok(roots) = located else { return };
-    let (claims, _) = panel_claims(SHOWCASE);
+    let (claims, _) = showcase_claims();
     assert!(
         !claims.is_empty(),
         "no colour claims found in the showcase, so this test would pass vacuously"
     );
+    // Against the *code*, strings removed: the panel text names the field
+    // too, so searching the files as written would let a claim vouch for
+    // itself.
+    let code: Vec<String> = SHOWCASE_FILES
+        .iter()
+        .map(|(_, text)| without_comments_or_strings(text))
+        .collect();
 
     let mut wrong = Vec::new();
     let mut uncited = 0usize;
@@ -1024,35 +1203,32 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
         }
         // `showcase` with no line: the *application* chooses this colour, so
         // there is no upstream read to point at. A line would be worse than
-        // useless -- the showcase is the file being edited, so every edit
+        // useless -- the showcase is what is being edited, so every edit
         // above a self-citation silently invalidates it, which is exactly
         // what happened when this was first tried.
         if claim.cited_at == "showcase" {
-            // Against the *code*, strings removed: the panel text names the
-            // field too, so searching the file as written would let a claim
-            // vouch for itself.
-            if mentions(&without_comments_or_strings(SHOWCASE), claim.field) {
+            if code.iter().any(|text| mentions(text, claim.field)) {
                 continue;
             }
             wrong.push(format!(
-                "{} [{}] line {}: cited as the application's own, but the \
+                "{} [{}] {}:{}: cited as the application's own, but the \
                  showcase never sets `{}`",
-                claim.widget, claim.role, claim.line, claim.field
+                claim.widget, claim.role, claim.file, claim.line, claim.field
             ));
             continue;
         }
         let Some((path, first, last)) = parse_citation(claim.cited_at) else {
             wrong.push(format!(
-                "{} [{}] line {}: `{}` is not <file>.rs:<line>",
-                claim.widget, claim.role, claim.line, claim.cited_at
+                "{} [{}] {}:{}: `{}` is not <file>.rs:<line>",
+                claim.widget, claim.role, claim.file, claim.line, claim.cited_at
             ));
             continue;
         };
         let files = candidates(path, &roots);
         if files.is_empty() {
             wrong.push(format!(
-                "{} [{}] line {}: cites {path}, which does not exist",
-                claim.widget, claim.role, claim.line
+                "{} [{}] {}:{}: cites {path}, which does not exist",
+                claim.widget, claim.role, claim.file, claim.line
             ));
             continue;
         }
@@ -1062,10 +1238,11 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
         // which one they read, so the citation has to say.
         if files.len() > 1 {
             wrong.push(format!(
-                "{} [{}] line {}: `{path}` is ambiguous; name the directory too. \
+                "{} [{}] {}:{}: `{path}` is ambiguous; name the directory too. \
                  It matches: {}",
                 claim.widget,
                 claim.role,
+                claim.file,
                 claim.line,
                 files
                     .iter()
@@ -1080,8 +1257,8 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
         };
         let Ok(text) = std::fs::read_to_string(file) else {
             wrong.push(format!(
-                "{} [{}] line {}: cites {path}, which could not be read",
-                claim.widget, claim.role, claim.line
+                "{} [{}] {}:{}: cites {path}, which could not be read",
+                claim.widget, claim.role, claim.file, claim.line
             ));
             continue;
         };
@@ -1093,9 +1270,10 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
         };
         let Some(span) = span else {
             wrong.push(format!(
-                "{} [{}] line {}: cites {}, but {} has {} lines",
+                "{} [{}] {}:{}: cites {}, but {} has {} lines",
                 claim.widget,
                 claim.role,
+                claim.file,
                 claim.line,
                 claim.cited_at,
                 shorten(file),
@@ -1106,8 +1284,14 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
         if !mentions(&span.join("\n"), claim.field) {
             let shown = span.first().map(|l| l.trim()).unwrap_or("(blank)");
             wrong.push(format!(
-                "{} [{}] line {}: claims `{}` at {}\n      that line now reads: {}",
-                claim.widget, claim.role, claim.line, claim.field, claim.cited_at, shown
+                "{} [{}] {}:{}: claims `{}` at {}\n      that line now reads: {}",
+                claim.widget,
+                claim.role,
+                claim.file,
+                claim.line,
+                claim.field,
+                claim.cited_at,
+                shown
             ));
         }
     }
@@ -1189,13 +1373,16 @@ fn the_omission_report() {
         located.as_ref().err().cloned().unwrap_or_default()
     );
     let Ok(roots) = located else { return };
-    let calls = panel_calls(SHOWCASE);
+    let calls: Vec<(usize, &str, Vec<&str>)> = SHOWCASE_FILES
+        .iter()
+        .flat_map(|(_, raw)| panel_calls(raw))
+        .collect();
     assert!(
         !calls.is_empty(),
         "no Widget Info panels were found, so this report would be empty for \
          the wrong reason"
     );
-    let (claims, _) = panel_claims(SHOWCASE);
+    let (claims, _) = showcase_claims();
 
     // Every file a claim cites, with the panels that cite it. An ambiguous or
     // unparseable citation is left out here; the citation gate already fails
@@ -1325,17 +1512,17 @@ fn every_prose_citation_still_exists() {
         located.as_ref().err().cloned().unwrap_or_default()
     );
     let Ok(roots) = located else { return };
-    let (_, prose) = panel_claims(SHOWCASE);
+    let (_, prose) = showcase_claims();
 
     let mut missing = Vec::new();
     let mut checked = 0usize;
-    for (line, widget, text) in &prose {
+    for (file, line, widget, text) in &prose {
         for (path, symbol) in prose_citations(text) {
             checked += 1;
             let files = candidates(path, &roots);
             if files.is_empty() {
                 missing.push(format!(
-                    "{widget} line {line}: cites {path}, which does not exist"
+                    "{widget} {file}:{line}: cites {path}, which does not exist"
                 ));
                 continue;
             }
@@ -1345,7 +1532,7 @@ fn every_prose_citation_still_exists() {
                 .any(|f| std::fs::read_to_string(f).is_ok_and(|t| mentions(&t, leaf)));
             if !found {
                 missing.push(format!(
-                    "{widget} line {line}: cites {path}, {symbol} — `{leaf}` is in none of them"
+                    "{widget} {file}:{line}: cites {path}, {symbol} — `{leaf}` is in none of them"
                 ));
             }
         }
@@ -1506,10 +1693,17 @@ fn starts_with_number_literal(arg: &str) -> bool {
 /// Spec §6a: no showcase paints a radius or a colour of its own invention.
 #[test]
 fn the_showcase_hardcodes_no_style_values() {
-    let found = hardcoded_style_values(SHOWCASE, ALLOWED_STYLE_LITERALS);
+    let found: Vec<String> = SHOWCASE_FILES
+        .iter()
+        .flat_map(|(file, source)| {
+            hardcoded_style_values(source, ALLOWED_STYLE_LITERALS)
+                .into_iter()
+                .map(move |finding| format!("{file}:{finding}"))
+        })
+        .collect();
     assert!(
         found.is_empty(),
-        "examples/showcase-gpui.rs paints {} value(s) the theme did not give it; \
+        "examples/showcase-gpui/ paints {} value(s) the theme did not give it; \
          a frame goes through `demo_frame`, a widget radius through its \
          `geometry` builder, and a colour that IS the datum goes on \
          ALLOWED_STYLE_LITERALS with its reason:\n{}",
