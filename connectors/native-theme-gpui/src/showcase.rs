@@ -1009,6 +1009,25 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
             uncited += 1;
             continue;
         }
+        // `showcase` with no line: the *application* chooses this colour, so
+        // there is no upstream read to point at. A line would be worse than
+        // useless -- the showcase is the file being edited, so every edit
+        // above a self-citation silently invalidates it, which is exactly
+        // what happened when this was first tried.
+        if claim.cited_at == "showcase" {
+            // Against the *code*, strings removed: the panel text names the
+            // field too, so searching the file as written would let a claim
+            // vouch for itself.
+            if mentions(&without_comments_or_strings(SHOWCASE), claim.field) {
+                continue;
+            }
+            wrong.push(format!(
+                "{} [{}] line {}: cited as the application's own, but the \
+                 showcase never sets `{}`",
+                claim.widget, claim.role, claim.line, claim.field
+            ));
+            continue;
+        }
         let Some((path, first, last)) = parse_citation(claim.cited_at) else {
             wrong.push(format!(
                 "{} [{}] line {}: `{}` is not <file>.rs:<line>",

@@ -5598,8 +5598,9 @@ impl Showcase {
                                 ))),
                         ),
                     )
-                    .on_hover(self.hover_info(&fi, "Sidebar", &[("bg", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("text", "sidebar_foreground", t.sidebar_foreground, "gpui-component/sidebar/mod.rs:414"), ("accent", "sidebar_accent", t.sidebar_accent, ""), ("border", "sidebar_border", t.sidebar_border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Sidebar", &[("bg", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("text", "sidebar_foreground", t.sidebar_foreground, "gpui-component/sidebar/mod.rs:414"), ("selected row", "sidebar_accent", t.sidebar_accent, "gpui-component/sidebar/header.rs:91"), ("border", "sidebar_border", t.sidebar_border, "gpui-component/sidebar/mod.rs:415")], &[], &[
                             ("icon size", "geometry::icon_size_panel: defaults.icon_sizes.panel, on each SidebarMenuItem icon"),
+                            ("selected row text", "sidebar_accent_foreground, beside the fill (sidebar/header.rs)"),
                             ("width", "255px default, 48px collapsed"),
                             ("children", "must impl Collapsible + IntoElement"),
                         ])),
@@ -6074,7 +6075,7 @@ impl Showcase {
                             .child(row("mi-copy", IconName::Copy, "Copy"))
                             .child(row("mi-paste", IconName::Inbox, "Paste"))
                     })
-                    .on_hover(self.hover_info(&fi, "Menu row (application-drawn)", &[("bg", "popover", t.popover, "showcase/showcase-gpui.rs:6070"), ("row hover", "accent", t.accent, "showcase/showcase-gpui.rs:6058"), ("text", "popover_foreground", t.popover_foreground, "showcase/showcase-gpui.rs:6071")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Menu row (application-drawn)", &[("bg", "popover", t.popover, "showcase"), ("row hover", "accent", t.accent, "showcase"), ("text", "popover_foreground", t.popover_foreground, "showcase")], &[], &[
                             ("geometry", "geometry::menu_item: menu.row_height (control height), menu.border.padding_*, menu.icon_text_gap, menu.font — the label sets no size of its own, so the font arrives"),
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                         ])),
@@ -6247,7 +6248,7 @@ impl Showcase {
                         &fi,
                         "BarChart",
                         &[
-                            ("fill", "chart_1", t.chart_1, "showcase/showcase-gpui.rs:6224"),
+                            ("fill", "chart_1", t.chart_1, "showcase"),
                             ("axis", "muted_foreground", t.muted_foreground, ""),
                             ("grid", "border", t.border, ""),
                         ],
@@ -6277,7 +6278,7 @@ impl Showcase {
                         &fi,
                         "LineChart",
                         &[
-                            ("stroke", "chart_2", t.chart_2, "showcase/showcase-gpui.rs:6225"),
+                            ("stroke", "chart_2", t.chart_2, "showcase"),
                             (
                                 "axis",
                                 "muted_foreground",
@@ -6312,13 +6313,13 @@ impl Showcase {
                                 "stroke",
                                 "chart_3",
                                 t.chart_3,
-                                "showcase/showcase-gpui.rs:6226",
+                                "showcase",
                             ),
                             (
                                 "fill",
                                 "chart_3",
                                 t.chart_3,
-                                "showcase/showcase-gpui.rs:6227",
+                                "showcase",
                             ),
                             (
                                 "axis",
@@ -6350,9 +6351,9 @@ impl Showcase {
                         &fi,
                         "PieChart",
                         &[
-                            ("slice 1", "chart_1", t.chart_1, "showcase/showcase-gpui.rs:6210"),
-                            ("slice 2", "chart_2", t.chart_2, "showcase/showcase-gpui.rs:6215"),
-                            ("slice 3", "chart_3", t.chart_3, "showcase/showcase-gpui.rs:6220"),
+                            ("slice 1", "chart_1", t.chart_1, "showcase"),
+                            ("slice 2", "chart_2", t.chart_2, "showcase"),
+                            ("slice 3", "chart_3", t.chart_3, "showcase"),
                         ],
                         &[],
                         &[
