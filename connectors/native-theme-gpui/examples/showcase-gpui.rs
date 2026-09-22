@@ -3535,7 +3535,7 @@ impl Showcase {
                                 }
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Rating", &[("active star", "yellow", t.yellow, "gpui-component/rating.rs:120"), ("inactive star", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Rating", &[("active star", "yellow", t.yellow, "gpui-component/rating.rs:120"), ("inactive star", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:171")], &[], &[
                             ("star size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                             ("active colour", "cx.theme().yellow unless Rating::color overrides it (rating.rs, Rating::render active_color)"),
                             ("hover preview", "upstream keeps its own hovered value (rating.rs, RaitingState::hovered_value)"),
@@ -3767,7 +3767,7 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Pagination", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Pagination", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("text", "foreground", t.foreground, "gpui-component/label.rs:211")], &[], &[
                             ("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs, Pagination::render)"),
                             ("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them"),
                             ("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)"),
@@ -4621,7 +4621,7 @@ impl Showcase {
                             .child(Label::new("Label with secondary").secondary("(secondary text)"))
                             .child(Label::new("Masked label: secret123").masked(true)),
                     )
-                    .on_hover(self.hover_info(&fi, "Label", &[("text", "foreground", t.foreground, "gpui-component/label.rs:207"), ("secondary", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167"), ("highlights", "blue", t.blue, "gpui-component/label.rs:178")], &[
+                    .on_hover(self.hover_info(&fi, "Label", &[("text", "foreground", t.foreground, "gpui-component/label.rs:211"), ("secondary", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:171"), ("highlights", "blue", t.blue, "gpui-component/label.rs:182")], &[
                             ("font", format!("font_family: {}", t.font_family)),
                             (
                                 "size",
@@ -4771,7 +4771,7 @@ impl Showcase {
                             .child(Label::new("text_lg — Large").text_lg())
                             .child(Label::new("text_xl — Extra Large").text_xl()),
                     )
-                    .on_hover(self.hover_info(&fi, "Font Sizes", &[("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[("base", format!("font_size: {}px", t.font_size.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Font Sizes", &[("text", "foreground", t.foreground, "gpui-component/label.rs:211")], &[("base", format!("font_size: {}px", t.font_size.as_f32()))], &[
                             ("xs", "0.75rem"),
                             ("sm", "0.875rem"),
                             ("base", "1rem"),
@@ -4838,7 +4838,7 @@ impl Showcase {
                                     .child("Monospace text (code / technical content)"),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Muted & Mono", &[("muted", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167"), ("text", "foreground", t.foreground, "gpui-component/root.rs:596")], &[(
+                    .on_hover(self.hover_info(&fi, "Muted & Mono", &[("muted", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:171"), ("text", "foreground", t.foreground, "gpui-component/root.rs:596")], &[(
                             "mono font",
                             format!("mono_font_family: {}", t.mono_font_family),
                         )], &[])),
@@ -5439,7 +5439,7 @@ impl Showcase {
                             .child(CarouselPrevious::new(&self.carousel_state))
                             .child(CarouselNext::new(&self.carousel_state)),
                     )
-                    .on_hover(self.hover_info(&fi, "Carousel", &[("slide text", "foreground", t.foreground, "gpui-component/label.rs:207"), ("slide caption", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Carousel", &[("slide text", "foreground", t.foreground, "gpui-component/label.rs:211"), ("slide caption", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:171")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("slide fill and focus ring", "a Carousel reads neither: it sets a transparent border and a radius, and nothing else (carousel/carousel.rs). Both claims are dropped"),
                             ("snap motion", "Theme::motion spring_move; ResolvedTheme has no motion field"),
                             ("reduced motion", "gpui's App::reduce_motion, forwarded by apply_system_theme — the snap becomes instant"),
@@ -5475,7 +5475,7 @@ impl Showcase {
                                     .child(Label::new("Outlined border").text_sm()),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "GroupBox", &[("fill bg", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("title", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
+                    .on_hover(self.hover_info(&fi, "GroupBox", &[("fill bg", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("title", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:171")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
             )
             // Breadcrumb (with tab navigation)
             .child(section("Breadcrumb (click to navigate tabs)"))
@@ -5627,7 +5627,7 @@ impl Showcase {
                                 .text_color(t.muted_foreground),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
+                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "foreground", t.foreground, "gpui-component/label.rs:211")], &[], &[
                             ("button", "a ghost, small Button built by the widget (sidebar/mod.rs, SidebarToggleButton::new)"),
                             ("fill", "none until hovered: a ghost Button is transparent, and it hovers with accent rather than the button family -- the panel claimed secondary_hover, which no widget-built ghost reads"),
                             ("icon", "PanelLeftOpen / PanelLeftClose, at a hardcoded size_4 (sidebar/mod.rs, SidebarToggleButton::render)"),

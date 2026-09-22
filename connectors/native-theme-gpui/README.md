@@ -52,10 +52,10 @@ crate sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.6.4 |
-| `gpui-base` | 0.6.4 |
-| `gpui-pre` (GPUI, named `gpui` here) | 0.3.5 |
-| `gpui-kit` (dev-dependency: the showcase) | 0.6.4 |
+| `gpui-component` | 0.6.6 |
+| `gpui-base` | 0.6.6 |
+| `gpui-pre` (GPUI, named `gpui` here) | 0.3.6 |
+| `gpui-kit` (dev-dependency: the showcase) | 0.6.6 |
 | `rust-version` | 1.95.0 |
 
 Each is a floor and nothing more. It is not an open-ended `0.6.x`, because a

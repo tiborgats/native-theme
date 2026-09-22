@@ -31,21 +31,22 @@ system-icons = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
 
 [dependencies]
-# GPUI under the package name gpui-component uses, so both edges unify; 0.3.5
-# is the minimum gpui-component 0.6.4 accepts. gpui-component does not
+# GPUI under the package name gpui-component uses, so both edges unify.
+# gpui-component 0.6.6 depends on `gpui-pre = "=0.3.6"` (an exact pin), so
+# 0.3.6 is the only version that resolves with it. gpui-component does not
 # re-export gpui, so the connector names it. Caret: an exact pin in a library
 # would conflict with any consumer whose other dependencies want a later
 # snapshot.
-gpui = { package = "gpui-pre", version = "0.3.5" }
+gpui = { package = "gpui-pre", version = "0.3.6" }
 # A hard floor: 0.6.2 removed ThemeColor::tiles, which older connector code
 # wrote, and added the reduced-motion reader this crate cooperates with.
-gpui-component = "0.6.4"
+gpui-component = "0.6.6"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
 # apply_system_reduce_motion (not re-exported).
-gpui-base = "0.6.4"
+gpui-base = "0.6.6"
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the
-# background. Pinned to the version gpui-pre 0.3.5 resolves, because the two
+# background. Pinned to the version gpui-pre 0.3.6 resolves, because the two
 # have to be the same `image` for the `Frame` type to match; no default
 # features, since the connector encodes and decodes nothing itself.
 image = { version = "0.25.10", default-features = false }
@@ -62,11 +63,11 @@ native-theme = { workspace = true, features = ["windows"] }
 
 [dev-dependencies]
 # Headless App for the apply/observer tests (#[gpui::test], TestAppContext).
-gpui = { package = "gpui-pre", version = "0.3.5", features = ["test-support"] }
+gpui = { package = "gpui-pre", version = "0.3.6", features = ["test-support"] }
 # The showcase uses the facade an application would: application(), init(),
 # and the Lucide assets under gpui_kit::assets. tree-sitter-rust: the grammar
 # for the showcase's code editor section.
-gpui-kit = { version = "0.6.4", features = ["tree-sitter-rust"] }
+gpui-kit = { version = "0.6.6", features = ["tree-sitter-rust"] }
 native-theme = { workspace = true, features = ["watch"] }
 # Field-by-field completeness check of ThemeColor via its Serialize impl.
 serde_json = "1.0.151"
