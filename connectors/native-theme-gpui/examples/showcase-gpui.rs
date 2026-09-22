@@ -5959,9 +5959,11 @@ impl Showcase {
                                     )
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "HoverCard", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("secondary text", "muted_foreground", t.muted_foreground, ""), ("border", "border", t.border, "gpui-component/button/button.rs:1002")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "HoverCard", &[("bg", "popover", t.popover, "gpui-component/styled.rs:197"), ("text", "popover_foreground", t.popover_foreground, "gpui-component/styled.rs:198")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("geometry", "geometry::popover, which refines the card surface (hover_card.rs, HoverCard::render refine_style)"),
                             ("card padding", "geometry::container_margin; gap: geometry::widget_gap"),
+                            ("edge", "no border: the card is Popover::render_popover_content, whose popover_style draws a shadow ring instead (gpui-component popover.rs and styled.rs)"),
+                            ("secondary text", "muted_foreground, set by this showcase on its own content rather than by the widget"),
                             ("trigger", "variants::ghost_button, the flat button's native state colours"),
                             ("delays", "600ms to open, 300ms to close (hover_card.rs, HoverCard::new)"),
                         ])),
@@ -5991,9 +5993,11 @@ impl Showcase {
                                     .menu("Select All", Box::new(gpui::NoAction))
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "ContextMenu", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209"), ("border", "border", t.border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "ContextMenu", &[("bg", "popover", t.popover, "gpui-component/styled.rs:197"), ("text", "popover_foreground", t.popover_foreground, "gpui-component/menu/popup_menu.rs:1477"), ("row hover", "accent", t.accent, "gpui-component/menu/menu_item.rs:117"), ("row hover text", "accent_foreground", t.accent_foreground, "gpui-component/menu/menu_item.rs:118"), ("separator", "border", t.border, "gpui-component/menu/popup_menu.rs:1253")], &[], &[
                             ("trigger", "right-click (MouseButton::Right)"),
                             ("trait", "ContextMenuExt on any ParentElement+Styled"),
+                            ("surface", "a ContextMenu is a PopupMenu wrapper and reads no theme field itself (menu/context_menu.rs)"),
+                            ("edge", "no border: popover_style draws a shadow ring; the border token is the separator between items (menu/popup_menu.rs)"),
                         ])),
             )
             // DropdownMenu
@@ -6012,7 +6016,7 @@ impl Showcase {
                                     .menu("Select All", Box::new(gpui::NoAction))
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "PopupMenu / DropdownMenu", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, "gpui-component/menu/popup_menu.rs:1477"), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209"), ("border", "border", t.border, "gpui-component/menu/popup_menu.rs:1253")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "PopupMenu / DropdownMenu", &[("bg", "popover", t.popover, "gpui-component/styled.rs:197"), ("text", "popover_foreground", t.popover_foreground, "gpui-component/menu/popup_menu.rs:1477"), ("row hover", "accent", t.accent, "gpui-component/menu/menu_item.rs:117"), ("row hover text", "accent_foreground", t.accent_foreground, "gpui-component/menu/menu_item.rs:118"), ("separator", "border", t.border, "gpui-component/menu/popup_menu.rs:1253")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("separator", "horizontal line"),
                             ("shortcut", "optional Kbd"),
                             ("rows", "PopupMenu builds its own; geometry::menu_item has no receiver here (geometry.rs, menu/menu_item.rs: MenuItemElement is pub(crate))"),
