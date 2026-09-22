@@ -4845,8 +4845,18 @@ impl Showcase {
                 fi,
                 "Resizable",
                 &[
-                    ("dragging border", "drag_border", t.drag_border, ""),
-                    ("idle border", "border", t.border, ""),
+                    (
+                        "dragging handle",
+                        "drag_border",
+                        t.drag_border,
+                        "gpui-component/theme/mod.rs:344",
+                    ),
+                    (
+                        "idle handle",
+                        "border",
+                        t.border,
+                        "gpui-component/theme/mod.rs:343",
+                    ),
                 ],
                 &[],
                 &[(
@@ -5190,10 +5200,10 @@ impl Showcase {
                                 .text_sm()
                             }))),
                     )
-                    .on_hover(self.hover_info(&fi, "Scrollbar", &[("track", "scrollbar", t.scrollbar, ""), ("thumb", "scrollbar_thumb", t.scrollbar_thumb, ""), (
+                    .on_hover(self.hover_info(&fi, "Scrollbar", &[("track", "scrollbar", t.scrollbar, "gpui-component/theme/mod.rs:307"), ("thumb", "scrollbar_thumb", t.scrollbar_thumb, "gpui-component/theme/mod.rs:312"), (
                                 "thumb hover",
                                 "scrollbar_thumb_hover",
-                                t.scrollbar_thumb_hover, ""), ("border", "border", t.border, "")], &[
+                                t.scrollbar_thumb_hover, "gpui-component/theme/mod.rs:323")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             (
                                 "show mode",
