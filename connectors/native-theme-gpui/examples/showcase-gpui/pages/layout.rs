@@ -287,8 +287,8 @@ impl Showcase {
                             .child(Label::new("Toolbar icons at the platform's toolbar size")),
                     )
                     .on_hover(self.hover_info(&fi, "Toolbar (application-drawn)", &[("border", "border", t.border, "showcase")], &[("geometry", "geometry::toolbar: toolbar.bar_height (minimum height), item_gap, border.padding_*, background_color, font size and weight".to_string()), ("icon size", "geometry::icon_size_toolbar: toolbar.icon_size, which inherits defaults.icon_sizes.toolbar".to_string())], &[
-                            ("widget", "gpui-component has no toolbar widget, so this row is the application's own h_flex. Its border is the showcase's demo frame, which every demonstration box wears; the toolbar itself has none"),
-                            ("edge", "none from the model: platform-facts §2.13 states no toolbar border colour or width, so geometry::toolbar draws no edge -- an application that wants a rule draws a Separator"),
+                            ("widget", "gpui-component has no toolbar widget, so this row is the application's own h_flex. Its border is the showcase's demo frame (support.rs, demo_frame), not the toolbar's"),
+                            ("edge", "the model inherits toolbar.border.color and line_width from defaults.border, but platform-facts §2.13 states neither, so geometry::toolbar draws no edge -- an application that wants a rule draws a Separator"),
                         ])),
             )
             .child(section("StatusBar"))

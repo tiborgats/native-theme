@@ -520,7 +520,7 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 }
 
 /// `Icon::with_size` for toolbar icons: `toolbar.icon_size`, which inherits
-/// `defaults.icon_sizes.toolbar` where a platform states nothing narrower.
+/// `defaults.icon_sizes.toolbar` where a platform states no toolbar-specific size.
 #[must_use]
 pub fn icon_size_toolbar(n: Native<'_>) -> Size {
     Size::Size(px(n.resolved.toolbar.icon_size))
@@ -1236,15 +1236,18 @@ mod tests {
                 );
                 assert_text(&out, &t.font, 1.0);
                 assert_eq!(out.text.color, None, "{at}: no text colour");
-                assert_eq!(out.border_widths.top, None, "{at}: §2.13 states no edge");
-                assert_eq!(out.border_widths.bottom, None, "{at}: §2.13 states no edge");
+                assert_eq!(
+                    out.border_widths,
+                    StyleRefinement::default().border_widths,
+                    "{at}: §2.13 states no edge"
+                );
                 assert_eq!(out.border_color, None, "{at}: §2.13 states no edge");
             }
         }
     }
 
     /// `toolbar.icon_size` inherits `defaults.icon_sizes.toolbar`, so over the
-    /// bundled presets the two agree; the second half states a narrower one
+    /// bundled presets the two agree; the second half states a toolbar-specific one
     /// and checks the helper follows the toolbar, not the default.
     #[test]
     fn icon_size_toolbar_reads_the_toolbar() {
