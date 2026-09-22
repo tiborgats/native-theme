@@ -3693,9 +3693,10 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Pagination", &[("current page", "background", t.background, ""), ("current border", "border", t.border, ""), ("other pages", "transparent until hover", t.transparent, ""), ("hover", "secondary_hover", t.secondary_hover, ""), ("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Pagination", &[("current page", "background", t.background, ""), ("current border", "border", t.border, ""), ("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
                             ("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs, Pagination::render)"),
                             ("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them"),
+                            ("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)"),
                             ("ellipsis", "a dropdown over the hidden pages"),
                         ])),
             )
@@ -4157,9 +4158,10 @@ impl Showcase {
                                     .text_color(t.muted_foreground),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "ProgressCircle", &[("arc", "progress_bar", t.progress_bar, "gpui-component/progress/progress_circle.rs:176"), ("track", "progress_bar at 20%: color.opacity(0.2) (progress/progress_circle.rs, ProgressCircle::render_circle)", t.progress_bar, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "ProgressCircle", &[("arc", "progress_bar", t.progress_bar, "gpui-component/progress/progress_circle.rs:176"), ("track", "progress_bar", t.progress_bar, "gpui-component/progress/progress_circle.rs:176")], &[], &[
                             ("indeterminate size", "geometry::spinner_size: spinner.diameter"),
                             ("determinate size", "per Size enum; the model carries no circular-progress diameter"),
+                            ("track opacity", "the same progress_bar colour at 20%: the model states one bar colour, and the track is derived from it (progress/progress_circle.rs, ProgressCircle::render_circle)"),
                             ("stroke width", "15% of the diameter, capped at 5px (progress/progress_circle.rs, ProgressCircle::render_circle stroke_width)"),
                         ])),
             )
@@ -5536,8 +5538,9 @@ impl Showcase {
                                 .text_color(t.muted_foreground),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("bg", "transparent until hover", t.transparent, ""), ("hover", "secondary_hover", t.secondary_hover, "gpui-component/button/button.rs:883"), ("icon", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
+                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
                             ("button", "a ghost, small Button built by the widget (sidebar/mod.rs, SidebarToggleButton::new)"),
+                            ("fill", "none until hovered: a ghost Button is transparent, and it hovers with accent rather than the button family -- the panel claimed secondary_hover, which no widget-built ghost reads"),
                             ("icon", "PanelLeftOpen / PanelLeftClose, at a hardcoded size_4 (sidebar/mod.rs, SidebarToggleButton::render)"),
                         ])),
             )
