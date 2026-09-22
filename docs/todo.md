@@ -458,6 +458,22 @@ What is still open on the iced side:
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
+- [ ] Finish the Widget Info citation pass: 158 of 319 colour claims carry
+      the upstream line they were read at; the rest are listed by
+      `every_colour_claim_is_read_at_the_line_it_cites`, which counts them on
+      every `cargo test`. Set `REQUIRE_CITATIONS` in `src/showcase.rs` once
+      the count reaches zero, and the gate becomes hard.
+      Three things learned that the remaining work depends on:
+      a theme colour reaches a widget by at least **three** paths, not one --
+      `cx.theme().field`, `self.tokens.field` inside the `Theme` impl
+      (`theme/mod.rs`, the scrollbars), and `cx.theme().semantic_tokens()`
+      (`bubble.rs`), so a search for the first alone reports live fields as
+      dead. Several widgets read **nothing** and delegate entirely
+      (`clipboard.rs`, `hover_card.rs`, `menu/context_menu.rs`,
+      `popover.rs`), so the file that names the widget is not the file that
+      paints it. And a proposal from a crate-wide search has produced a
+      plausible-but-wrong citation four times out of four -- it is a lead to
+      read, never an answer to accept.
 - [ ] Port `scripts/check-widget-coverage.py` to a `#[test]`, as the Widget
       Info citation check was. A gate that has to be invoked can be skipped;
       one that runs under `cargo test` cannot, and the objection that a test
