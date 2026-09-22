@@ -36,9 +36,8 @@ use native_theme_gpui::geometry;
 use crate::app::Showcase;
 use crate::support::{
     CAROUSEL_SLIDES, NativeStyled, RESIZABLE_GROUPS, ResizableGroup, STEPPER_STEPS,
-    TITLE_BAR_CONTROLS_NOTE, format_font_info, layout_value, native_control_height,
-    native_geometry, native_group_box, native_icon, section, with_accordion_title_style, with_gap,
-    with_padding,
+    TITLE_BAR_CONTROLS_NOTE, format_font_info, layout_value, native_geometry, native_group_box,
+    native_icon, section, with_accordion_title_style, with_gap, with_padding,
 };
 use crate::{
     PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Tab, probe,
@@ -273,36 +272,23 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-toolbar")
-                    .child({
-                        // The row is drawn with the application's own
-                        // elements, so its spacing is the application's to
-                        // set: the platform's container padding inside it and
-                        // its widget gap between the icons.
-                        let row = with_padding(
-                            with_gap(h_flex(), widget_gap),
-                            container_margin,
-                        )
-                        .items_center()
-                        .bg(t.tab_bar)
-                        .demo_frame(cx)
-                        .child(native_icon(cx, IconName::Search, geometry::icon_size_toolbar))
-                        .child(native_icon(cx, IconName::Copy, geometry::icon_size_toolbar))
-                        .child(native_icon(cx, IconName::Settings, geometry::icon_size_toolbar))
-                        .child(Separator::vertical())
-                        .child(Label::new(
-                            "Toolbar icons at the platform's toolbar size",
-                        ));
-                        // gpui-component has no toolbar widget, so there is no
-                        // refinement to apply: the row's own height is
-                        // `geometry::control_height` of the platform's button,
-                        // the same derivation `geometry::button` uses.
-                        match native_control_height(cx) {
-                            Some(height) => row.h(height),
-                            None => row,
-                        }
-                    })
-                    .on_hover(self.hover_info(&fi, "Toolbar (application-drawn)", &[("bg", "tab_bar", t.tab_bar, "showcase"), ("border", "border", t.border, "showcase")], &[("height", "geometry::control_height(button.min_height, button.font, button.border)".to_string()), ("padding", "geometry::container_margin; gap: geometry::widget_gap".to_string()), ("icon size", "geometry::icon_size_toolbar: defaults.icon_sizes.toolbar".to_string())], &[
-                            ("toolbar model", "unread: the model states toolbar.bar_height, item_gap, font, border and background_color for exactly this row, and nothing in the connector reads them. There is no geometry::toolbar, so the row borrows the button's height, the generic gap and tab_bar -- our gap, since upstream has no toolbar at all"),
+                    .child(
+                        // gpui-component has no toolbar widget, so the row is
+                        // the application's own and `geometry::toolbar` is
+                        // the whole of its geometry: nothing after it sets a
+                        // height, padding, gap or fill that would override it.
+                        h_flex()
+                            .native(cx, geometry::toolbar)
+                            .demo_frame(cx)
+                            .child(native_icon(cx, IconName::Search, geometry::icon_size_toolbar))
+                            .child(native_icon(cx, IconName::Copy, geometry::icon_size_toolbar))
+                            .child(native_icon(cx, IconName::Settings, geometry::icon_size_toolbar))
+                            .child(Separator::vertical())
+                            .child(Label::new("Toolbar icons at the platform's toolbar size")),
+                    )
+                    .on_hover(self.hover_info(&fi, "Toolbar (application-drawn)", &[("border", "border", t.border, "showcase")], &[("geometry", "geometry::toolbar: toolbar.bar_height (minimum height), item_gap, border.padding_*, background_color, font size and weight".to_string()), ("icon size", "geometry::icon_size_toolbar: toolbar.icon_size, which inherits defaults.icon_sizes.toolbar".to_string())], &[
+                            ("widget", "gpui-component has no toolbar widget, so this row is the application's own h_flex. Its border is the showcase's demo frame, which every demonstration box wears; the toolbar itself has none"),
+                            ("edge", "none from the model: platform-facts §2.13 states no toolbar border colour or width, so geometry::toolbar draws no edge -- an application that wants a rule draws a Separator"),
                         ])),
             )
             .child(section("StatusBar"))

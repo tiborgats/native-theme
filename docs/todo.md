@@ -1013,6 +1013,42 @@ the gap — closing it is a change, and each wants its own decision.
       platform states a toolbar-specific size). A toolbar is the textbook
       application-drawn row, so this is the builder an application needs
       most. Found 2026-09-22.
+- [ ] **KDE's toolbar height has no source, and no preset states a toolbar
+      padding.** Checked 2026-09-22 against platform-facts §2.13 before
+      `geometry::toolbar` relied on the presets:
+      - `kde-breeze.toml:198`/`:478` and `kde-breeze-live.toml:113`/`:272`
+        state `bar_height_px = 40.0`, where §2.13's KDE column says
+        **(none)** -- sizes to content (`platform-facts.md:1340`). The value
+        has no source. It entered in e3ecee8 (2026-03-27, the per-widget
+        preset migration), which replaced KDE's `[widget_metrics.toolbar]`
+        -- `item_spacing = 0.0` and `padding = 6.0`, no height -- with a
+        `[toolbar]` table that added `height = 40.0`. 40 is the toolbar
+        height the removed generic `default.toml` and the community presets
+        carry; no comment in the preset, no platform-facts row and no reader
+        states it (`kde/metrics.rs:95` sets only `item_gap`). It survived the
+        renames in 1b97af1 and 51d44ea, and the v0.5.4 audit saw it and
+        passed it as "OK -- reasonable"
+        (`docs/archive/v0.5.4_native-theme.md:3474`). A preset has to state
+        something, because `ResolvedToolbarTheme::bar_height` is a plain
+        `f32`; so `geometry::toolbar` applies it as `min_h`, a floor the row
+        may grow past, not a fixed height. Whether the model should let KDE
+        leave it unstated is the open question.
+      - No preset states `toolbar.border.padding_*`, so it resolves to 0 on
+        every preset (a widget border's padding defaults to 0,
+        `resolve/validate_helpers.rs:337`) and `geometry::toolbar` pads the
+        row by 0. §2.13 states 6 for KDE (`ToolBar_ItemMargin`), 6 for GNOME,
+        8 (measured) for macOS and 4 left / 0 right for Windows. Every preset
+        had a `toolbar.padding` until 1b97af1 (2026-04-07, the schema rename
+        per property-registry.toml) dropped it without carrying it to
+        `[toolbar.border] padding_horizontal_px`.
+      - The Windows reader sets `toolbar.item_gap = 4.0`
+        (`windows.rs:240`, `:296`) where §2.13 and `windows-11.toml:217`
+        say 0.
+      The rest agrees with §2.13: bar height 38/47/48 (macOS, GNOME, Windows
+      compact), item gaps 8/6/0 (macOS, GNOME, Windows) and 0 (KDE), and the
+      toolbar icon size, which every preset leaves to
+      `defaults.icon_sizes.toolbar` (22 KDE, 16 GNOME, 20 Windows, 24 macOS
+      small mode). No preset value was changed.
 - [ ] **The code editor's background is a fixed colour.** `Theme::editor_background`
       returns the highlight theme's `editor.background` and falls back to
       `input_background()` only when that is unset (`theme/mod.rs:389-394`).

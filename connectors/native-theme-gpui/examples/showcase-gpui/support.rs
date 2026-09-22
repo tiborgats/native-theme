@@ -482,16 +482,6 @@ pub(crate) fn native_icon(cx: &App, name: IconName, role: fn(Native<'_>) -> Size
     }
 }
 
-/// The height a platform button occupies, for the rows the showcase draws with
-/// its own elements — a toolbar has no gpui-component widget to take a
-/// refinement, so [`geometry::control_height`] is called directly.
-pub(crate) fn native_control_height(cx: &App) -> Option<Pixels> {
-    native_value(cx, |n| {
-        let b = &n.resolved.button;
-        geometry::control_height(b.min_height, &b.font, &b.border, n)
-    })
-}
-
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
 /// wherever the platform specifies nothing (platform-facts §2.20). All 16
 /// bundled presets state `layout.widget_gap`, so the `None` arm is reached

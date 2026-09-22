@@ -5,8 +5,32 @@ use gpui::{
 };
 use gpui_component::{ActiveTheme, v_flex};
 
+use native_theme::theme::{ResolvedBorderSpec, ResolvedFontSpec};
+use native_theme_gpui::{Native, geometry};
+
 use crate::app::Showcase;
-use crate::support::{NativeStyled, color_swatch, format_font_info, section};
+use crate::support::{NativeStyled, color_swatch, format_font_info, native_value, section};
+
+/// What `geometry::control_height` computes for one widget of the installed
+/// theme, with the inputs it took.
+fn control_height_line(
+    widget: &str,
+    min_height: f32,
+    font: &ResolvedFontSpec,
+    border: &ResolvedBorderSpec,
+    n: Native<'_>,
+) -> String {
+    let height = geometry::control_height(min_height, font, border, n);
+    format!(
+        "{widget}: {}px from geometry::control_height -- the larger of \
+         {widget}.min_height {min_height}px and ceil({widget}.font.size {}px × text scale × \
+         line_height {}) + 2 × {widget}.border.padding_vertical {}px",
+        height.as_f32(),
+        font.size,
+        n.resolved.defaults.line_height,
+        border.padding_vertical,
+    )
+}
 
 impl Showcase {
     // -----------------------------------------------------------------------
@@ -23,6 +47,20 @@ impl Showcase {
         // theme being reached for a hundred and forty times.
         let swatch_frame = StyleRefinement::default().demo_frame(cx);
         let color_swatch = |name: &str, color: Hsla| color_swatch(name, color, &swatch_frame);
+        // Derived, not stored: the height the connector gives a control at the
+        // current text scale. Nothing is shown in its place before a native
+        // theme is installed.
+        let control_heights = [
+            native_value(cx, |n| {
+                let b = &n.resolved.button;
+                control_height_line("button", b.min_height, &b.font, &b.border, n)
+            }),
+            native_value(cx, |n| {
+                let i = &n.resolved.input;
+                control_height_line("input", i.min_height, &i.font, &i.border, n)
+            }),
+        ]
+        .map(|line| div().child(line.unwrap_or_else(|| "no native theme installed".into())));
 
         v_flex()
             .gap_4()
@@ -392,5 +430,7 @@ impl Showcase {
                     .child(color_swatch("cyan", t.cyan))
                     .child(color_swatch("cyan_light", t.cyan_light)),
             )
+            .child(section("Control height (derived by the connector)"))
+            .child(v_flex().children(control_heights))
     }
 }

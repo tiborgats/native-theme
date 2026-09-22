@@ -493,6 +493,23 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
+/// An application-drawn toolbar row (docs/platform-facts.md §2.13):
+/// `toolbar.bar_height` as its minimum height -- KDE's toolbar sizes to its
+/// content, so a fixed height would be an invention there --,
+/// `toolbar.item_gap` between items, `toolbar.border` padding,
+/// `toolbar.background_color`, and `toolbar.font` size and weight. No edge:
+/// §2.13 states none; an application that wants a rule draws a Separator.
+#[must_use]
+pub fn toolbar(n: Native<'_>) -> StyleRefinement {
+    let t = &n.resolved.toolbar;
+    with_text(StyleRefinement::default(), &t.font, n)
+        .min_h(px(t.bar_height))
+        .gap(px(t.item_gap))
+        .px(px(t.border.padding_horizontal))
+        .py(px(t.border.padding_vertical))
+        .bg(rgba_to_hsla(t.background_color))
+}
+
 // --- Size helpers (spec §9.3) -------------------------------------------------
 
 /// `Spinner::with_size` (`src/spinner.rs:53-65` → `Icon`, `src/icon.rs:182`;
@@ -502,10 +519,11 @@ pub fn spinner_size(n: Native<'_>) -> Size {
     Size::Size(px(n.resolved.spinner.diameter))
 }
 
-/// `Icon::with_size` for toolbar icons (`defaults.icon_sizes.toolbar`).
+/// `Icon::with_size` for toolbar icons: `toolbar.icon_size`, which inherits
+/// `defaults.icon_sizes.toolbar` where a platform states nothing narrower.
 #[must_use]
 pub fn icon_size_toolbar(n: Native<'_>) -> Size {
-    Size::Size(px(n.resolved.defaults.icon_sizes.toolbar))
+    Size::Size(px(n.resolved.toolbar.icon_size))
 }
 
 /// `Icon::with_size` for small icons (`defaults.icon_sizes.small`).
@@ -1164,12 +1182,89 @@ mod tests {
         for_each_case(|r, _s, n| {
             assert_eq!(spinner_size(n), Size::Size(px(r.spinner.diameter)));
             let is = &r.defaults.icon_sizes;
-            assert_eq!(icon_size_toolbar(n), Size::Size(px(is.toolbar)));
+            assert_eq!(icon_size_toolbar(n), Size::Size(px(r.toolbar.icon_size)));
             assert_eq!(icon_size_small(n), Size::Size(px(is.small)));
             assert_eq!(icon_size_large(n), Size::Size(px(is.large)));
             assert_eq!(icon_size_dialog(n), Size::Size(px(is.dialog)));
             assert_eq!(icon_size_panel(n), Size::Size(px(is.panel)));
         });
+    }
+
+    /// Over every preset in both modes: the row is the model's `toolbar`, with
+    /// the bar height as a floor rather than a fixed height (KDE's toolbar
+    /// sizes to its content, platform-facts §2.13) and no edge.
+    #[test]
+    fn toolbar_carries_the_models_toolbar() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let prefs = scaled(1.0);
+                let n = Native {
+                    resolved: &r,
+                    accessibility: &prefs,
+                };
+                let at = format!("{}/{mode:?}", info.key);
+                let t = &r.toolbar;
+                let out = toolbar(n);
+                assert_eq!(out.min_size.height, len(t.bar_height), "{at}: bar height");
+                assert_eq!(out.size.height, None, "{at}: the height is a floor");
+                assert_eq!(out.gap.width, def(t.item_gap), "{at}: item gap");
+                assert_eq!(
+                    out.padding.left,
+                    def(t.border.padding_horizontal),
+                    "{at}: padding"
+                );
+                assert_eq!(
+                    out.padding.right,
+                    def(t.border.padding_horizontal),
+                    "{at}: padding"
+                );
+                assert_eq!(
+                    out.padding.top,
+                    def(t.border.padding_vertical),
+                    "{at}: padding"
+                );
+                assert_eq!(
+                    out.padding.bottom,
+                    def(t.border.padding_vertical),
+                    "{at}: padding"
+                );
+                assert_eq!(
+                    out.background,
+                    Some(rgba_to_hsla(t.background_color).into()),
+                    "{at}: background"
+                );
+                assert_text(&out, &t.font, 1.0);
+                assert_eq!(out.text.color, None, "{at}: no text colour");
+                assert_eq!(out.border_widths.top, None, "{at}: §2.13 states no edge");
+                assert_eq!(out.border_widths.bottom, None, "{at}: §2.13 states no edge");
+                assert_eq!(out.border_color, None, "{at}: §2.13 states no edge");
+            }
+        }
+    }
+
+    /// `toolbar.icon_size` inherits `defaults.icon_sizes.toolbar`, so over the
+    /// bundled presets the two agree; the second half states a narrower one
+    /// and checks the helper follows the toolbar, not the default.
+    #[test]
+    fn icon_size_toolbar_reads_the_toolbar() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let mut r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                assert_eq!(
+                    icon_size_toolbar(Native::unscaled(&r)),
+                    Size::Size(px(r.toolbar.icon_size)),
+                    "{at}"
+                );
+                r.toolbar.icon_size = r.defaults.icon_sizes.toolbar + 8.0;
+                assert_eq!(
+                    icon_size_toolbar(Native::unscaled(&r)),
+                    Size::Size(px(r.toolbar.icon_size)),
+                    "{at}: a toolbar icon size of its own"
+                );
+            }
+        }
     }
 
     #[test]

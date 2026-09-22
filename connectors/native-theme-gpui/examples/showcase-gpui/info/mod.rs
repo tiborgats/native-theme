@@ -247,8 +247,15 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "title_bar",
         "window.title_bar_font size, weight and colour -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
     ),
+    (
+        "toolbar",
+        "toolbar.bar_height (minimum height), item_gap, border.padding_*, background_color, font size and weight",
+    ),
     ("spinner_size", "spinner.diameter"),
-    ("icon_size_toolbar", "defaults.icon_sizes.toolbar"),
+    (
+        "icon_size_toolbar",
+        "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
+    ),
     ("icon_size_small", "defaults.icon_sizes.small"),
     ("icon_size_large", "defaults.icon_sizes.large"),
     ("icon_size_dialog", "defaults.icon_sizes.dialog"),
