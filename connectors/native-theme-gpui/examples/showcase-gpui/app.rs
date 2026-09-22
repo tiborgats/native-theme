@@ -2,7 +2,8 @@
 
 use gpui::{
     Action, App, Context, Entity, FocusHandle, Hsla, ImageSource, IntoElement, KeyBinding, Menu,
-    ParentElement, Render, SharedString, Styled, Task, Window, actions, div, prelude::*, px, rems,
+    ParentElement, Render, SharedString, Styled, Subscription, Task, Window, actions, div,
+    prelude::*, px, rems,
 };
 use gpui_component::{
     ActiveTheme, GlobalState, Root, Sizable, Size, StyledExt,
@@ -177,6 +178,11 @@ pub(crate) struct Showcase {
     /// The view's focus, so an action dispatched with nothing else focused
     /// still reaches the handlers `render` puts on the view.
     focus_handle: FocusHandle,
+    /// Takes the focus back to the view when the focused element stops being
+    /// drawn -- a page's widget whose page was left keeps its handle, and
+    /// gpui would dispatch from the window's root instead (gpui-pre
+    /// window.rs:6244-6252), out of the view's handlers' reach.
+    _refocus: Subscription,
 
     /// Layout spacing of the installed theme. It lives on the model, not on
     /// `ResolvedTheme`, so the geometry accessors take it from here rather
@@ -967,6 +973,9 @@ impl Showcase {
         let menu_bar = AppMenuBar::new(cx);
         let focus_handle = cx.focus_handle();
         focus_handle.focus(window, cx);
+        let _refocus = cx.on_focus_lost(window, |this: &mut Self, window, cx| {
+            this.focus_handle.focus(window, cx)
+        });
 
         // Start theme watcher for runtime dark/light toggle detection.
         // Skip in screenshot mode — the watcher's background thread cleanup
@@ -1000,6 +1009,7 @@ impl Showcase {
             info_ui: cx.new(|_| InfoRegistry::new()),
             menu_bar,
             focus_handle,
+            _refocus,
             layout: initial_layout,
             input_state,
             input_height_state,

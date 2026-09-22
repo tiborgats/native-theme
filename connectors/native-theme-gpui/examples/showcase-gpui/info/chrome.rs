@@ -138,6 +138,6 @@ pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "menus",
-            "File, View, Theme and Help; each item runs a gpui action, the one its key binding runs too. An item whose action has no handler yet is disabled",
+            "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding, the binding runs the same action. An item whose action has no handler yet is disabled",
         )
 }

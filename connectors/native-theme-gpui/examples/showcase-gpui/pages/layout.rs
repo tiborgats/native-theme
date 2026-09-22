@@ -250,7 +250,7 @@ impl Showcase {
                                 );
                             }))
                             // No `.text_sm()`: `Label::render` applies its own
-                            // refinement last (`label.rs:208`), so a size set
+                            // refinement last (`label.rs:212`), so a size set
                             // here would cancel the one `geometry::title_bar`
                             // just supplied.
                             .child(Label::new("native-theme showcase")),

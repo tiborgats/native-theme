@@ -7,8 +7,8 @@
 //! opens — and drive it with real input.
 
 use gpui::{
-    App, Axis, Bounds, Entity, Modifiers, Pixels, Point, TestAppContext, VisualTestContext, point,
-    prelude::*, px, size,
+    App, Axis, Bounds, Entity, Focusable as _, Modifiers, Pixels, Point, TestAppContext,
+    VisualTestContext, point, prelude::*, px, size,
 };
 use gpui_base::{PANEL_MIN_SIZE, ScrollbarHandle as _};
 use gpui_component::{Root, theme::Theme};
@@ -735,6 +735,55 @@ fn run_menu_item(cx: &mut VisualTestContext, menu: &str, item: &str) {
     cx.update(|window, cx| window.dispatch_action(action, cx));
     cx.run_until_parked();
     draw(cx);
+}
+
+/// Run a menu item the way an `AppMenuBar` menu does: record the focus the
+/// menu interrupted when it opens, refocus it on confirm, then dispatch the
+/// item's action into the window (gpui-component menu/app_menu_bar.rs,
+/// AppMenuBar::set_selected_index; menu/popup_menu.rs,
+/// PopupMenu::dispatch_confirm_action).
+fn run_menu_item_from_focus(cx: &mut VisualTestContext, menu: &str, item: &str) {
+    let action = menu_action(menu, item);
+    cx.update(|window, cx| {
+        if let Some(context) = window.focused(cx) {
+            context.focus(window, cx);
+        }
+        window.dispatch_action(action, cx);
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// A menu still acts after the widget that had the focus left the screen.
+///
+/// A page's widget keeps its focus handle for the showcase's lifetime, so
+/// leaving its page leaves the window focused on a handle no element draws;
+/// gpui then dispatches from the root (gpui-pre window.rs,
+/// `focus_node_id_in_rendered_frame`), where the showcase's own action
+/// handlers are out of reach.
+#[gpui::test]
+fn a_menu_acts_after_the_focused_widget_left_the_page(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    show(&mut cx, &showcase, Tab::Inputs);
+    cx.update(|window, cx| {
+        let input = showcase.read(cx).input_state.clone();
+        input.read(cx).focus_handle(cx).focus(window, cx);
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+
+    run_menu_item_from_focus(&mut cx, "View", "Buttons");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_tab),
+        Tab::Buttons,
+        "View > Buttons did not leave the Inputs page"
+    );
+    run_menu_item_from_focus(&mut cx, "View", "Inputs");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_tab),
+        Tab::Inputs,
+        "View > Inputs did nothing once the focused input had left the screen"
+    );
 }
 
 /// The menus act (spec §2.2): a View menu page item shows that page, a Theme
