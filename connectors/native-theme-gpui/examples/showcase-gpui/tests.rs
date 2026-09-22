@@ -18,6 +18,7 @@ use std::ops::Deref as _;
 use std::rc::Rc;
 
 use crate::app::{AppColorMode, Showcase};
+use crate::info::{WidgetInfo, claim};
 use crate::support::{
     CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
 };
@@ -640,4 +641,48 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         !was_dark,
         "the colour mode switch did not reach Theme::mode"
     );
+}
+
+#[test]
+fn a_widget_info_titles_itself_by_kind_and_variant() {
+    let plain = WidgetInfo::new("Tag");
+    assert_eq!(plain.title(), "Tag");
+    let with = WidgetInfo::new("Tag").variant("Danger, outline");
+    assert_eq!(with.title(), "Tag · Danger, outline");
+}
+
+#[test]
+fn to_text_prints_the_four_sections_in_order() {
+    let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    let info = WidgetInfo::new("Tag")
+        .variant("Danger")
+        .color(claim("bg", "danger", red, "gpui-component/tag.rs:31"))
+        .config("border-radius", "radius: 4px")
+        .not_themeable("padding", "a rem literal")
+        .instance("label", "Danger");
+    let text = info.to_text();
+    let order: Vec<usize> = [
+        "Theme colors:",
+        "Theme config:",
+        "Not themeable:",
+        "This instance:",
+    ]
+    .iter()
+    .map(|h| text.find(h).unwrap_or(usize::MAX))
+    .collect();
+    assert!(
+        order.windows(2).all(|w| w[0] < w[1]),
+        "sections out of order:\n{text}"
+    );
+    assert!(text.starts_with("Tag · Danger\n"), "{text}");
+    assert!(
+        text.contains("  bg: danger #ff0000 (gpui-component/tag.rs:31)"),
+        "{text}"
+    );
+}
+
+#[test]
+fn an_empty_section_is_not_printed() {
+    let text = WidgetInfo::new("Label").to_text();
+    assert_eq!(text, "Label\n");
 }

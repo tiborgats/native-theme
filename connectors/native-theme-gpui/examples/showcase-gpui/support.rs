@@ -35,6 +35,8 @@ use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{ActiveNativeTheme, Native, geometry};
 
+pub use crate::info::hsla_to_hex;
+
 // ---------------------------------------------------------------------------
 // Sample content (Carousel slides, code editor, Markdown)
 // ---------------------------------------------------------------------------
@@ -266,16 +268,6 @@ apply_system_theme(&system, cx);
 // ---------------------------------------------------------------------------
 // Tooltip helpers
 // ---------------------------------------------------------------------------
-
-/// Convert Hsla to a #rrggbb hex string.
-fn hsla_to_hex(c: Hsla) -> String {
-    // Convert HSL to RGB through gpui's Rgba
-    let rgba: gpui::Rgba = c.into();
-    let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let g = (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!("#{:02x}{:02x}{:02x}", r, g, b)
-}
 
 /// Build a multi-line tooltip string for a widget.
 ///
