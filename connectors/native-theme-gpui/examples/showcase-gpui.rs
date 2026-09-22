@@ -3144,7 +3144,7 @@ impl Showcase {
                             ))
                             .child(Clipboard::new("clip-2").value("npm install native-theme")),
                     )
-                    .on_hover(self.hover_info(&fi, "Clipboard", &[("bg", "secondary", t.secondary, ""), ("text", "foreground", t.foreground, ""), ("icon", "muted_foreground", t.muted_foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("copy icon", "hardcoded Clipboard/ClipboardCheck")])),
+                    .on_hover(self.hover_info(&fi, "Clipboard", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground"), ("copy icon", "hardcoded Clipboard/ClipboardCheck")])),
             )
     }
 
@@ -3835,10 +3835,10 @@ impl Showcase {
                                     .child("Destructive: this one failed to send"),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Bubble", &[("filled bg", "primary", t.primary, ""), ("filled text", "primary_foreground", t.primary_foreground, ""), ("muted / secondary bg", "muted", t.muted, ""), ("outline border", "border", t.border, ""), ("destructive", "danger", t.danger, "")], &[(
+                    .on_hover(self.hover_info(&fi, "Bubble", &[("filled bg", "primary", t.primary, "gpui-component/bubble.rs:211"), ("filled text", "primary_foreground", t.primary_foreground, "gpui-component/bubble.rs:212"), ("muted bg", "muted", t.muted, "gpui-component/bubble.rs:218"), ("muted text", "secondary_foreground", t.secondary_foreground, "gpui-component/bubble.rs:219")], &[(
                             "border-radius",
                             format!("radius_2xl(): {}px", t.radius_2xl().as_f32()),
-                        )], &[
+                        )], &[("token path", "a Bubble reads cx.theme().semantic_tokens().colors, not the ThemeColor fields directly (bubble.rs, the content surface). The values are the same; the access path is a third one, beside cx.theme().field and the Theme impl's own self.tokens.field"), 
                             ("stack gap", "geometry::widget_gap between the bubbles"),
                             ("surface padding", "hardcoded px_3/py_2 (bubble.rs, the content surface's RenderOnce)"),
                             ("max width", "80% of the row: max_w(relative(0.8)) (bubble.rs, Bubble::render)"),
