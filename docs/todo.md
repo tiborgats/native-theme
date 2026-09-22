@@ -458,6 +458,20 @@ What is still open on the iced side:
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
+- [ ] Port `scripts/check-widget-coverage.py` to a `#[test]`, as the Widget
+      Info citation check was. A gate that has to be invoked can be skipped;
+      one that runs under `cargo test` cannot, and the objection that a test
+      cannot reach `cargo metadata` turned out to be false — a test runs
+      after the build and can call cargo itself (1007 packages resolved in
+      under a second, `src/showcase.rs`). Not a straight copy of that port:
+      this one reads **three** toolkits and needs the iced manifest with
+      `--features iced_aw`, so it does not belong in the gpui connector's
+      tests — it wants splitting per connector or a shared home. It also
+      parses TOML, so it needs a `toml` dev-dependency, which the citation
+      check did not. It works today, so this is tidying, not a fix.
+      `scripts/generate_gifs.py` is deliberately **not** included: it is
+      release tooling a human runs, not a gate, and nothing can silently
+      skip it because its output is the screenshots the asset stamp checks.
 - [ ] Split the showcases into modules: `showcase-gpui.rs` and
       `showcase-iced.rs` are several thousand lines each after gaining every
       widget and their self-tests.

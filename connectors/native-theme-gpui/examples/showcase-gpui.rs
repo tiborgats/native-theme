@@ -2797,7 +2797,7 @@ impl Showcase {
                                 Button::new("b-primary").label("Primary").primary(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Primary)", &[("bg", "primary", t.primary, ""), ("text", "primary_foreground", t.primary_foreground, ""), ("hover", "primary_hover", t.primary_hover, ""), ("active", "primary_active", t.primary_active, "")], &[
+                            .on_hover(self.hover_info(&fi, "Button (Primary)", &[("bg", "button_primary", t.button_primary, "button/button.rs:936"), ("text", "button_primary_foreground", t.button_primary_foreground, "button/button.rs:954"), ("hover", "button_primary_hover", t.button_primary_hover, "button/button.rs:1086"), ("active", "button_primary_active", t.button_primary_active, "button/button.rs:1170")], &[
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ], &[
@@ -2813,7 +2813,7 @@ impl Showcase {
                                 Button::new("b-secondary").label("Secondary"),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Secondary)", &[("bg", "secondary", t.secondary, ""), ("text", "secondary_foreground", t.secondary_foreground, ""), ("hover", "secondary_hover", t.secondary_hover, ""), ("active", "secondary_active", t.secondary_active, "")], &[
+                            .on_hover(self.hover_info(&fi, "Button (Secondary)", &[("bg", "button_secondary", t.button_secondary, "button/button.rs:937"), ("text", "button_secondary_foreground", t.button_secondary_foreground, "button/button.rs:961"), ("hover", "button_secondary_hover", t.button_secondary_hover, "button/button.rs:1093"), ("active", "button_secondary_active", t.button_secondary_active, "button/button.rs:1177")], &[
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ], &[
@@ -2829,7 +2829,7 @@ impl Showcase {
                                 Button::new("b-danger").label("Danger").danger(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Danger)", &[("bg", "danger", t.danger, ""), ("text", "danger_foreground", t.danger_foreground, ""), ("hover", "danger_hover", t.danger_hover, ""), ("active", "danger_active", t.danger_active, "")], &[
+                            .on_hover(self.hover_info(&fi, "Button (Danger)", &[("bg", "button_danger", t.button_danger, "button/button.rs:938"), ("text", "button_danger_foreground", t.button_danger_foreground, "button/button.rs:969"), ("hover", "button_danger_hover", t.button_danger_hover, "button/button.rs:1100"), ("active", "button_danger_active", t.button_danger_active, "button/button.rs:1185")], &[
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ], &[
@@ -2845,7 +2845,7 @@ impl Showcase {
                                 Button::new("b-success").label("Success").success(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Success)", &[("bg", "success", t.success, ""), ("text", "success_foreground", t.success_foreground, ""), ("hover", "success_hover", t.success_hover, ""), ("active", "success_active", t.success_active, "")], &[
+                            .on_hover(self.hover_info(&fi, "Button (Success)", &[("bg", "button_success", t.button_success, "button/button.rs:940"), ("text", "button_success_foreground", t.button_success_foreground, "button/button.rs:983"), ("hover", "button_success_hover", t.button_success_hover, "button/button.rs:1114"), ("active", "button_success_active", t.button_success_active, "button/button.rs:1199")], &[
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ], &[
@@ -2861,7 +2861,7 @@ impl Showcase {
                                 Button::new("b-warning").label("Warning").warning(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Warning)", &[("bg", "warning", t.warning, ""), ("text", "warning_foreground", t.warning_foreground, ""), ("hover", "warning_hover", t.warning_hover, ""), ("active", "warning_active", t.warning_active, "")], &[
+                            .on_hover(self.hover_info(&fi, "Button (Warning)", &[("bg", "button_warning", t.button_warning, "button/button.rs:939"), ("text", "button_warning_foreground", t.button_warning_foreground, "button/button.rs:976"), ("hover", "button_warning_hover", t.button_warning_hover, "button/button.rs:1107"), ("active", "button_warning_active", t.button_warning_active, "button/button.rs:1192")], &[
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ], &[
@@ -2877,7 +2877,7 @@ impl Showcase {
                                 Button::new("b-info").label("Info").info(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Info)", &[("bg", "info", t.info, ""), ("text", "info_foreground", t.info_foreground, ""), ("hover", "info_hover", t.info_hover, ""), ("active", "info_active", t.info_active, "")], &[
+                            .on_hover(self.hover_info(&fi, "Button (Info)", &[("bg", "button_info", t.button_info, "button/button.rs:941"), ("text", "button_info_foreground", t.button_info_foreground, "button/button.rs:990"), ("hover", "button_info_hover", t.button_info_hover, "button/button.rs:1121"), ("active", "button_info_active", t.button_info_active, "button/button.rs:1206")], &[
                                     ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                                     ("shadow", format!("{}", t.shadow)),
                                 ], &[
@@ -2908,10 +2908,7 @@ impl Showcase {
                                 Button::new("b-link").label("Link").link(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Link)", &[("text", "foreground", t.foreground, ""), ("hover-text", "muted_foreground", t.muted_foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
-                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
-                                    ("font-weight", "hardcoded"),
-                                ])),
+                            .on_hover(self.hover_info(&fi, "Button (Link)", &[("text", "link", t.link, "button/button.rs:993"), ("hover text", "link_hover", t.link_hover, "button/button.rs:1139"), ("pressed text", "link_active", t.link_active, "button/button.rs:1215")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"), ("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"), ("underline", "always on for this variant (button/button.rs, ButtonVariant::underline)"), ("font-weight", "hardcoded")])),
                     )
                     .child(
                         div()
@@ -2920,10 +2917,7 @@ impl Showcase {
                                 Button::new("b-text").label("Text").text(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Text)", &[("text", "foreground", t.foreground, ""), ("hover-text", "muted_foreground", t.muted_foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
-                                    ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
-                                    ("font-weight", "hardcoded"),
-                                ])),
+                            .on_hover(self.hover_info(&fi, "Button (Text)", &[("text", "foreground", t.foreground, "button/button.rs:994"), ("hover text", "foreground", t.foreground, "button/button.rs:1140"), ("pressed text", "foreground", t.foreground, "button/button.rs:1216")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"), ("opacity", "the one variant that dims rather than recolours: foreground at 90% idle and 70% pressed, full strength on hover (button/button.rs, ButtonVariant::text_color, hovered, active). The swatches show foreground itself, since the model states no dimmed copy"), ("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"), ("font-weight", "hardcoded")])),
                     )
                     .child(
                         div()
@@ -3134,10 +3128,7 @@ impl Showcase {
                                     .child(Toggle::new("tg-right").label("Right")),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Toggle / ToggleGroup", &[("checked bg", "secondary_active", t.secondary_active, ""), (
-                                "checked text",
-                                "secondary_foreground",
-                                t.secondary_foreground, ""), ("unchecked bg", "secondary", t.secondary, ""), ("hover", "secondary_hover", t.secondary_hover, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[])),
+                    .on_hover(self.hover_info(&fi, "Toggle / ToggleGroup", &[("checked bg", "accent", t.accent, "button/toggle.rs:155"), ("checked text", "accent_foreground", t.accent_foreground, "button/toggle.rs:156"), ("hover bg", "accent", t.accent, "button/toggle.rs:202"), ("hover text", "accent_foreground", t.accent_foreground, "button/toggle.rs:203")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("unchecked fill", "none: ToggleVariant defaults to Ghost (button/toggle.rs, ToggleVariant), which paints no background and no border; only .outline() fills"), ("accent is the menu highlight", "upstream reads the token a menu row uses for its hover, so a Toggle takes the platform's menu selection rather than its segmented-control colour. Adwaita, Windows 11 and Material would want segmented_control.active_background; the menu family has seven readers to this one and no value serves both, so this is Tier U (native-theme-gpui colors.rs, assign_core)"), ("size", "min width and height per the Size enum (button/toggle.rs, Toggle::render)")])),
             )
             // Clipboard
             .child(section("Clipboard"))
@@ -3405,13 +3396,10 @@ impl Showcase {
                                 this.radio_index = Some(*ix);
                             })),
                     )
-                    .on_hover(self.hover_info(&fi, "Radio", &[("selected", "primary", t.primary, ""), ("unselected border", "input", t.input, ""), ("bg", "background", t.background, "")], &[
+                    .on_hover(self.hover_info(&fi, "Radio", &[("selected fill and border", "primary", t.primary, "gpui-component/radio.rs:186"), ("unselected border", "input", t.input, "gpui-component/radio.rs:188"), ("unselected fill", "input", t.input, "gpui-component/radio.rs:188"), ("label", "foreground", t.foreground, "gpui-component/radio.rs:212")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
-                        ], &[
-                            ("geometry", "geometry::radio: checkbox.label_gap, checkbox.font (platform-facts §2.5: radio metrics are the checkbox's)"),
-                            ("indicator size", "hardcoded"),
-                        ])),
+                        ], &[("geometry", "geometry::radio: checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's)"), ("unselected fill opacity", "input at 50%, and disabled halves both fill and border again (gpui-component radio.rs, Radio::render)"), ("corner radius", "half the theme's: radius * 0.5 (gpui-component radio.rs, Radio::render), so the swatch above is twice what the indicator uses"), ("indicator size", "rems per the Size enum, so it follows the root font size rather than the theme's checkbox metrics (gpui-component radio.rs, Radio::render indicator_size)")])),
             )
             // Switch
             .child(section("Switch"))
@@ -3436,7 +3424,7 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Switch", &[("on track", "primary", t.primary, ""), ("off track", "switch", t.switch, ""), ("thumb", "switch_thumb", t.switch_thumb, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("size", "hardcoded"), ("animation timing", "hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "Switch", &[("on track", "primary", t.primary, "gpui-component/switch.rs:139"), ("off track", "switch", t.switch, "gpui-component/switch.rs:140"), ("thumb", "switch_thumb", t.switch_thumb, "gpui-component/switch.rs:146"), ("disabled label", "muted_foreground", t.muted_foreground, "gpui-component/switch.rs:147")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("on track, overridden", "Switch::color replaces it; primary is only the default (gpui-component switch.rs, Switch::render checked_bg)"), ("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component switch.rs, Switch::render disabled_bg)"), ("size", "track and thumb per the Size enum, in px (gpui-component switch.rs, Switch::render)"), ("corner radius", "fully round unless the theme's radius is under 4px, in which case the theme's is used (gpui-component switch.rs, Switch::render radius)"), ("animation timing", "hardcoded")])),
             )
             // Slider
             .child(section(format!("Slider (value: {:.0})", slider_value)))

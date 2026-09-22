@@ -866,9 +866,23 @@ fn parse_citation(text: &str) -> Option<(&str, usize, usize)> {
 /// `button/button.rs`, `resizable/mod.rs` is gpui-base's, and `geometry.rs`
 /// names a file here *and* one in gpui-pre. Rather than guess, every
 /// candidate is returned and the claim holds if any bears it out.
-fn candidates(citation: &str, roots: &[PathBuf]) -> Vec<PathBuf> {
+fn candidates(citation: &str, roots: &[(String, PathBuf)]) -> Vec<PathBuf> {
+    // A leading crate name picks one root: `radio.rs` sits at `src/radio.rs`
+    // in gpui-component *and* gpui-base, so no directory can tell them
+    // apart and the citation has to name the crate.
+    if let Some((head, tail)) = citation.split_once('/')
+        && let Some((_, root)) = roots.iter().find(|(name, _)| name == head)
+    {
+        let path = root.join(tail);
+        return if path.is_file() {
+            vec![path]
+        } else {
+            Vec::new()
+        };
+    }
+
     let mut out = Vec::new();
-    for root in roots {
+    for (_, root) in roots {
         let direct = root.join(citation);
         if direct.is_file() {
             out.push(direct);
@@ -879,7 +893,7 @@ fn candidates(citation: &str, roots: &[PathBuf]) -> Vec<PathBuf> {
     // drag the other crates' same-named files back in.
     if out.is_empty() {
         let base = citation.rsplit('/').next().unwrap_or(citation);
-        for root in roots {
+        for (_, root) in roots {
             collect_named(root, base, &mut out);
         }
     }
@@ -920,7 +934,7 @@ fn collect_named(dir: &Path, name: &str, out: &mut Vec<PathBuf>) {
 /// From `cargo metadata` only -- never a registry path or a version literal,
 /// as `scripts/check-widget-coverage.py` also insists. A crate missing from
 /// the metadata fails the test rather than being skipped.
-fn cited_source_dirs() -> Result<Vec<PathBuf>, String> {
+fn cited_source_dirs() -> Result<Vec<(String, PathBuf)>, String> {
     let out = std::process::Command::new(env!("CARGO"))
         .args(["metadata", "--format-version", "1"])
         .current_dir(env!("CARGO_MANIFEST_DIR"))
@@ -951,9 +965,12 @@ fn cited_source_dirs() -> Result<Vec<PathBuf>, String> {
         if !src.is_dir() {
             return Err(format!("`{want}` has no src at {}", src.display()));
         }
-        roots.push(src);
+        roots.push(((*want).to_string(), src));
     }
-    roots.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("src"));
+    roots.push((
+        "native-theme-gpui".to_string(),
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("src"),
+    ));
     Ok(roots)
 }
 
