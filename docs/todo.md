@@ -109,6 +109,15 @@
 
 ### native-theme-gpui connector
 
+- [ ] **v0.5.9: the showcase as an application** — real chrome (the
+      TitleBar as the window's title bar with menus, a toolbar sized by a new
+      `geometry::toolbar`, Sidebar navigation, draggable panels, an inspector,
+      a status bar) and Widget Info per widget instance, innermost wins.
+      Rationale, spec and plan:
+      [`todo_v0.5.9_showcase-app-rationale.md`](todo_v0.5.9_showcase-app-rationale.md),
+      [`-spec.md`](todo_v0.5.9_showcase-app-spec.md),
+      [`-plan.md`](todo_v0.5.9_showcase-app-plan.md). Written 2026-09-22 at
+      the maintainer's request, awaiting approval; nothing implemented.
 - [x] Map `WidgetMetrics` → gpui-component per-widget styling — done in
       v0.5.8 for every widget with a reachable seam (`geometry` module,
       `base_layer`); the inner-element remainder is the upstream PR list
