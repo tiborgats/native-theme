@@ -3468,6 +3468,7 @@ impl Showcase {
                         &[
                             ("geometry", "geometry::input on the frame: input.min_height (single-line groups only), border.corner_radius, line_width, input.font"),
                             ("addon padding", "inner (Tier U)"),
+                            ("addon radius", "geometry::input_group_button: button.border.corner_radius alone. gpui-component scales a control's radius with its size, so an in-group button would take radius/2 (input/group.rs, InputGroupButton::render_in_group), where the model records one radius per widget"),
                             ("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs, InputGroupButton::render_in_group)"),
                         ],
                     )),
@@ -3499,9 +3500,9 @@ impl Showcase {
                             ("shadow", format!("{}", t.shadow)),
                         ],
                         &[
-                            ("padding", "set per Size enum"),
-                            ("height", "set per Size enum"),
-                            ("step buttons", "hardcoded +/- icons"),
+                            ("geometry", "geometry::input on the field: input.min_height (control height), border.corner_radius, line_width, input.font -- the same builder the Input above takes"),
+                            ("padding", "inner editor (Tier U), as Input"),
+                            ("step buttons", "hardcoded +/- icons; the Size enum sets their min width (input/number_input.rs, NumberInput::render: min_w_6 / min_w_8), not the field's height"),
                         ],
                     )),
             )
@@ -4130,6 +4131,7 @@ impl Showcase {
                         &[
                             ("indent", "per depth level"),
                             ("expand icon", "hardcoded ChevronRight"),
+                            ("row geometry", "geometry::list_item on each row: list.row_height (control height), list.border.padding_*, and list.item_font including its colour -- upstream labels the row with foreground one line before applying it (list/list_item.rs, ListItem::render)"),
                             ("geometry", "geometry::list on the box around it: a tree is a list view and the model gives it no theme of its own, so its frame is the list's"),
                         ],
                     )),
@@ -6295,6 +6297,7 @@ impl Showcase {
                         ],
                         &[],
                         &[
+                            ("geometry", "geometry::input on each field's input: input.min_height (control height), border.corner_radius, line_width, input.font. The Field wrapper takes none -- the model has no form theme"),
                             ("layout", "horizontal/vertical"),
                             ("label width", "configurable"),
                         ],
@@ -6399,6 +6402,7 @@ impl Showcase {
                         ],
                         &[],
                         &[
+                            ("icon size", "geometry::icon_size_panel: defaults.icon_sizes.panel, on each SidebarMenuItem icon"),
                             ("width", "255px default, 48px collapsed"),
                             ("children", "must impl Collapsible + IntoElement"),
                         ],
@@ -6608,7 +6612,13 @@ impl Showcase {
                             ("border", "border", t.border),
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                        &[("animation", "hardcoded scale+fade")],
+                        &[
+                            ("geometry", "geometry::dialog on the surface: dialog.border.padding_*, min_height, max_height and border.corner_radius; geometry::dialog_max_width caps the width at dialog.max_width (dialog/dialog.rs, Dialog::max_w)"),
+                            ("title and body", "geometry::dialog_title: dialog.title_font; geometry::dialog_description: dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render)"),
+                            ("footer", "geometry::dialog_footer: dialog.button_gap between the buttons (dialog/footer.rs, DialogFooter::render)"),
+                            ("icon size", "geometry::icon_size_dialog: defaults.icon_sizes.dialog"),
+                            ("animation", "hardcoded scale+fade"),
+                        ],
                     )),
             )
             // AlertDialog
@@ -6778,6 +6788,7 @@ impl Showcase {
                         ],
                         &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                         &[
+                            ("geometry", "geometry::popover on the panel: popover.border.padding_* and corner_radius (popover.rs, Popover::render refine_style). The trigger is a Button, shaped by geometry::button"),
                             ("trigger", "any Selectable element"),
                             ("anchor", "configurable Corner"),
                         ],

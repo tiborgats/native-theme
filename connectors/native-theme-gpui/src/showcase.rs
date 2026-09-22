@@ -213,9 +213,16 @@ fn the_showcase_exercises_every_builder() {
 // ---------------------------------------------------------------------------
 //
 // Widget-info spec section 2.2. A demo block is the element chain rooted at
-// `div().id("tt-<slug>")`; it runs to the next such id, or to the end of the
-// file. A block with no `.on_hover(self.hover_info(` is a widget a reader can
-// hover and learn nothing from.
+// `div().id("tt-<slug>")`. A block with no `.on_hover(self.hover_info(` is a
+// widget a reader can hover and learn nothing from.
+//
+// A block **ends where its own panel's call ends**, not at the next id. The
+// showcase writes a demo as `div().id("tt-x").child(..).on_hover(..)`, so the
+// panel closes the chain, and everything after it belongs to the page and not
+// to the demo. Taking the next id as the end instead makes the last block of
+// a method swallow the rest of it: `tt-tabbar` would have been credited with
+// the `geometry::scrollbar_gutter` on the content scroller beside it, which
+// is a sibling of the tab bar and not part of it.
 //
 // The boundaries are read from `SHOWCASE` itself and not from the stripped
 // copy: `without_comments_or_strings` removes string literals, and the id
@@ -244,6 +251,98 @@ fn demo_block_starts(source: &str) -> Vec<usize> {
         .filter(|(_, line)| line.contains(BLOCK_ID) || line.contains(INDIRECT_BLOCK_ID))
         .map(|(n, _)| n)
         .collect()
+}
+
+/// A demo block: the line its id is on, the line after its last, and whether
+/// a Widget Info panel closes it.
+struct Block {
+    start: usize,
+    end: usize,
+    has_panel: bool,
+}
+
+/// The byte offset at which each line of `text` begins.
+fn line_offsets(text: &str) -> Vec<usize> {
+    let mut out = vec![0usize];
+    for (ix, ch) in text.char_indices() {
+        if ch == '\n' {
+            out.push(ix + 1);
+        }
+    }
+    out
+}
+
+/// The offset just past the `)` that closes the call whose `(` is at `open`.
+///
+/// `code` has had its strings and comments removed, so the only parentheses
+/// left are code -- except inside a char literal (`')'` is one in this
+/// showcase), which is stepped over rather than counted.
+fn end_of_call(code: &str, open: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    let mut at = open;
+    while at < code.len() {
+        let rest = code.get(at..)?;
+        if let Some(len) = char_literal_len(rest) {
+            at += len;
+            continue;
+        }
+        match rest.chars().next() {
+            Some('(') => depth += 1,
+            Some(')') => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return Some(at + 1);
+                }
+            }
+            _ => {}
+        }
+        at += char_len(rest);
+    }
+    None
+}
+
+/// Every demo block of the showcase, in source order.
+///
+/// `raw` supplies the ids (they are string literals) and `code` the panel
+/// call and its extent (parentheses must be code, not text). The two have the
+/// same line numbering.
+fn demo_blocks(raw: &str, code: &str, methods: &[usize]) -> Vec<Block> {
+    let starts = demo_block_starts(raw);
+    let offsets = line_offsets(code);
+    let total = code.lines().count();
+    let mut out = Vec::with_capacity(starts.len());
+    for (i, &start) in starts.iter().enumerate() {
+        // A block cannot outlive its method, nor reach the next demo.
+        let next_id = starts.get(i + 1).copied().unwrap_or(total);
+        let next_method = methods
+            .iter()
+            .find(|&&m| m > start)
+            .copied()
+            .unwrap_or(total);
+        let limit = next_id.min(next_method).min(total);
+
+        let from = offsets.get(start).copied().unwrap_or(code.len());
+        let to = offsets.get(limit).copied().unwrap_or(code.len());
+        let window = code.get(from..to).unwrap_or("");
+        let panel = window.find(PANEL_CALL).and_then(|ix| {
+            let open = from + ix + PANEL_CALL.len() - 1;
+            end_of_call(code, open)
+        });
+
+        match panel {
+            Some(close) => out.push(Block {
+                start,
+                end: code.get(..close).unwrap_or(code).lines().count(),
+                has_panel: true,
+            }),
+            None => out.push(Block {
+                start,
+                end: limit,
+                has_panel: false,
+            }),
+        }
+    }
+    out
 }
 
 /// Spec section 2.1: an id that reaches a demo block through a `const` table
@@ -283,31 +382,282 @@ fn every_demo_id_is_a_tt_id() {
 /// Spec section 2.2: every `tt-` demo block carries a Widget Info panel.
 #[test]
 fn every_demo_block_has_a_widget_info_panel() {
-    let stripped = without_comments_or_strings(SHOWCASE);
-    let body: Vec<&str> = stripped.lines().collect();
-    let starts = demo_block_starts(SHOWCASE);
+    let demos = showcase_demos(SHOWCASE);
+    let code = without_comments_or_strings(demos);
+    let blocks = demo_blocks(demos, &code, &method_starts(&code));
 
     assert!(
-        !starts.is_empty(),
+        !blocks.is_empty(),
         "no `{BLOCK_ID}` found in the showcase, so this test would pass vacuously"
     );
 
-    let mut missing = Vec::new();
-    for (i, &start) in starts.iter().enumerate() {
-        let end = starts.get(i + 1).copied().unwrap_or(body.len());
-        let (from, to) = (start.min(body.len()), end.min(body.len()));
-        if !body[from..to].iter().any(|l| l.contains(PANEL_CALL)) {
-            missing.push(start + 1);
-        }
-    }
+    let missing: Vec<usize> = blocks
+        .iter()
+        .filter(|b| !b.has_panel)
+        .map(|b| b.start + 1)
+        .collect();
 
     assert!(
         missing.is_empty(),
         "{} of {} demo blocks in examples/showcase-gpui.rs carry no Widget Info \
          panel, so hovering them says nothing; at lines: {:?}",
         missing.len(),
-        starts.len(),
+        blocks.len(),
         missing
+    );
+}
+
+// ---------------------------------------------------------------------------
+// A demo names the builders it applies
+// ---------------------------------------------------------------------------
+//
+// Widget-info spec section 3. A panel's geometry note is the only place a
+// reader learns that the native theme shaped a widget, and it is written by
+// hand beside code the compiler never relates it to. Seven panels had lost
+// that relation when this was written.
+//
+// A builder reaches a demo in two ways, and both count (spec section 2.1):
+// named in the block, or bound once in the enclosing method and applied in
+// several blocks. Requiring the second to move would mean duplicating one
+// computation across the ten Button demos, so the binding is read instead.
+
+/// Where the showcase's own test module begins.
+///
+/// Everything from there on is test code: it builds widgets and calls
+/// builders for reasons that have nothing to do with a demo, and the last
+/// demo block would otherwise swallow all of it.
+const TEST_MODULE: &str = "\n#[cfg(test)]";
+
+/// The showcase up to its test module.
+fn showcase_demos(source: &str) -> &str {
+    match source.find(TEST_MODULE) {
+        Some(ix) => source.get(..ix).unwrap_or(source),
+        None => source,
+    }
+}
+
+/// `source` with everything **but** its string literals removed: literal
+/// bodies are kept, the code around them becomes blank, and line breaks are
+/// preserved, so a line number in the result is a line number in the file.
+///
+/// The complement of [`without_comments_or_strings`], and the reason both
+/// exist: a builder a demo *applies* is code, a builder its panel *names* is
+/// a string. `every_demo_names_the_builders_it_applies` compares the two, so
+/// neither may see the other's half. Comments are dropped here too -- a note
+/// in a `//` comment is not what the panel shows a reader.
+fn string_literals_only(source: &str) -> String {
+    let mut out = String::with_capacity(source.len());
+    let mut rest = source;
+    while let Some(next) = rest.find(['/', '"', 'r', '\'']) {
+        let (before, from) = rest.split_at(next);
+        push_newlines_of(&mut out, before);
+        if let Some(after) = from.strip_prefix("//") {
+            rest = match after.find('\n') {
+                Some(ix) => &after[ix..],
+                None => "",
+            };
+        } else if let Some(len) = char_literal_len(from) {
+            rest = from.get(len..).unwrap_or("");
+        } else if let Some(body) = from.strip_prefix('"') {
+            let end = end_of_string(body, "\"");
+            out.push_str(body.get(..end).unwrap_or(body));
+            rest = body.get(end..).unwrap_or("");
+        } else if let Some(hashes) = raw_string_hashes(from) {
+            let open = hashes + 2;
+            let close = format!("\"{}", "#".repeat(hashes));
+            let end = match from.get(open..).and_then(|t| t.find(&close)) {
+                Some(ix) => open + ix + close.len(),
+                None => from.len(),
+            };
+            out.push_str(from.get(..end).unwrap_or(from));
+            rest = from.get(end..).unwrap_or("");
+        } else {
+            let end = char_len(from);
+            push_newlines_of(&mut out, from.get(..end).unwrap_or(""));
+            rest = from.get(end..).unwrap_or("");
+        }
+    }
+    push_newlines_of(&mut out, rest);
+    out
+}
+
+/// A `let` binding that holds a `geometry` builder's value: the line it is
+/// on, the variable it binds, and the builder it came from.
+struct Binding<'a> {
+    line: usize,
+    var: &'a str,
+    builder: &'a str,
+}
+
+/// The leading identifier of `s`, or `""`.
+fn leading_ident(s: &str) -> &str {
+    let end = s
+        .find(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .unwrap_or(s.len());
+    s.get(..end).unwrap_or("")
+}
+
+/// Whether `haystack` uses `ident` as an identifier of its own.
+fn mentions(haystack: &str, ident: &str) -> bool {
+    if ident.is_empty() {
+        return false;
+    }
+    let mut from = 0usize;
+    while let Some(ix) = haystack.get(from..).and_then(|t| t.find(ident)) {
+        let at = from + ix;
+        let before_ok = haystack
+            .get(..at)
+            .and_then(|t| t.chars().next_back())
+            .is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
+        let after_ok = haystack
+            .get(at + ident.len()..)
+            .and_then(|t| t.chars().next())
+            .is_none_or(|c| !(c.is_alphanumeric() || c == '_'));
+        if before_ok && after_ok {
+            return true;
+        }
+        from = at + ident.len();
+    }
+    false
+}
+
+/// Every `let <var> = … geometry::<builder> …` in `code`, in source order.
+fn geometry_bindings(code: &str) -> Vec<Binding<'_>> {
+    let mut out = Vec::new();
+    for (line, text) in code.lines().enumerate() {
+        let Some(after_let) = text.trim_start().strip_prefix("let ") else {
+            continue;
+        };
+        let after_let = after_let.strip_prefix("mut ").unwrap_or(after_let);
+        let var = leading_ident(after_let);
+        if var.is_empty() {
+            continue;
+        }
+        let mut rest = after_let;
+        while let Some(ix) = rest.find("geometry::") {
+            rest = rest.get(ix + "geometry::".len()..).unwrap_or("");
+            let builder = leading_ident(rest);
+            if !builder.is_empty() {
+                out.push(Binding { line, var, builder });
+            }
+        }
+    }
+    out
+}
+
+/// The 0-based lines on which a method of the showcase's types begins.
+///
+/// Four-space indent is the showcase's own shape for an `impl` method, and a
+/// binding shared by several demo blocks always sits in one.
+fn method_starts(code: &str) -> Vec<usize> {
+    code.lines()
+        .enumerate()
+        .filter(|(_, l)| l.starts_with("    fn ") || l.starts_with("    pub fn "))
+        .map(|(n, _)| n)
+        .collect()
+}
+
+/// The 0-based line where the method enclosing `line` begins, if any.
+///
+/// `None` for a line above the first method; two `None`s compare equal, which
+/// is what is wanted -- both are outside every method, so a binding there is
+/// in scope for a block there.
+fn enclosing_method(starts: &[usize], line: usize) -> Option<usize> {
+    starts.iter().rev().find(|&&s| s <= line).copied()
+}
+
+/// Builders that shape a demo's *scaffolding* rather than the widget it
+/// demonstrates, and so need no note in that widget's panel.
+///
+/// A demo opens a dialog from a `Button` and lays its parts out with the
+/// platform's spacing; neither is what the panel is about, and requiring a
+/// note would put the same two sentences on a dozen panels. Each of these
+/// has a panel of its own where it *is* the subject -- the ten Button demos
+/// and "Layout spacing" -- so nothing goes undescribed.
+const AMBIENT_BUILDERS: &[&str] = &[
+    "button",
+    "widget_gap",
+    "container_margin",
+    "window_margin",
+    "section_gap",
+];
+
+/// Spec section 3: a demo block names every `geometry::` builder that shaped
+/// it.
+///
+/// One direction only. Naming a builder a demo does *not* apply is how a
+/// panel says why it could not: `PopupMenu`'s note records that
+/// `geometry::menu_item` has no receiver there, and `AlertDialog`'s points at
+/// the Dialog above. Requiring set equality would delete both.
+#[test]
+fn every_demo_names_the_builders_it_applies() {
+    let demos = showcase_demos(SHOWCASE);
+    let code = without_comments_or_strings(demos);
+    let notes = string_literals_only(demos);
+    let code_lines: Vec<&str> = code.lines().collect();
+    let note_lines: Vec<&str> = notes.lines().collect();
+
+    let builders = public_fns(GEOMETRY);
+    assert!(
+        !builders.is_empty(),
+        "no `pub fn` found in geometry.rs, so this test would pass vacuously"
+    );
+
+    let methods = method_starts(&code);
+    let blocks = demo_blocks(demos, &code, &methods);
+    let bindings = geometry_bindings(&code);
+
+    let spans: Vec<(usize, usize)> = blocks.iter().map(|b| (b.start, b.end)).collect();
+    let inside_a_block = |line: usize| spans.iter().any(|&(a, b)| a <= line && line < b);
+
+    let mut findings = Vec::new();
+    for block in &blocks {
+        let to = block.end.min(code_lines.len());
+        let from = block.start.min(to);
+        let block_code = code_lines.get(from..to).unwrap_or(&[]).join("\n");
+        let note_to = block.end.min(note_lines.len());
+        let note_from = block.start.min(note_to);
+        let block_note = note_lines.get(note_from..note_to).unwrap_or(&[]).join("\n");
+        let method = enclosing_method(&methods, block.start);
+
+        let mut applied: Vec<&str> = builders
+            .iter()
+            .copied()
+            .filter(|b| references(&block_code, "geometry", b))
+            .collect();
+        for binding in &bindings {
+            // A binding inside a block belongs to that block; one outside
+            // every block is the method's, and is shared by its demos.
+            let reaches = if inside_a_block(binding.line) {
+                block.start <= binding.line && binding.line < block.end
+            } else {
+                enclosing_method(&methods, binding.line) == method
+            };
+            if reaches && mentions(&block_code, binding.var) && !applied.contains(&binding.builder)
+            {
+                applied.push(binding.builder);
+            }
+        }
+
+        let unnamed: Vec<&str> = applied
+            .iter()
+            .copied()
+            .filter(|b| !AMBIENT_BUILDERS.contains(b))
+            .filter(|b| !references(&block_note, "geometry", b))
+            .collect();
+        if !unnamed.is_empty() {
+            findings.push(format!("line {}: {}", block.start + 1, unnamed.join(", ")));
+        }
+    }
+
+    assert!(
+        findings.is_empty(),
+        "{} of {} demo blocks in examples/showcase-gpui.rs are shaped by a \
+         geometry builder their Widget Info panel never names, so hovering them \
+         hides what the native theme did:\n  {}",
+        findings.len(),
+        blocks.len(),
+        findings.join("\n  ")
     );
 }
 
