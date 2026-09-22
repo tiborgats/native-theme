@@ -458,22 +458,38 @@ What is still open on the iced side:
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
-- [ ] Finish the Widget Info citation pass: 158 of 319 colour claims carry
-      the upstream line they were read at; the rest are listed by
-      `every_colour_claim_is_read_at_the_line_it_cites`, which counts them on
-      every `cargo test`. Set `REQUIRE_CITATIONS` in `src/showcase.rs` once
-      the count reaches zero, and the gate becomes hard.
-      Three things learned that the remaining work depends on:
-      a theme colour reaches a widget by at least **three** paths, not one --
-      `cx.theme().field`, `self.tokens.field` inside the `Theme` impl
-      (`theme/mod.rs`, the scrollbars), and `cx.theme().semantic_tokens()`
-      (`bubble.rs`), so a search for the first alone reports live fields as
-      dead. Several widgets read **nothing** and delegate entirely
-      (`clipboard.rs`, `hover_card.rs`, `menu/context_menu.rs`,
-      `popover.rs`), so the file that names the widget is not the file that
-      paints it. And a proposal from a crate-wide search has produced a
-      plausible-but-wrong citation four times out of four -- it is a lead to
-      read, never an answer to accept.
+- [ ] `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
+      The connector writes both on every `apply` and both have contract rows
+      (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
+      gpui-component or gpui-base (declared `theme_color.rs:261`, defaulted
+      `schema.rs:996`), and `list_even` is read only as `table_even`'s
+      fallback (`schema.rs:1005`) — which never fires, because the connector
+      writes `table_even` too (`contract.rs:391`). Every gate is green on
+      both: they are written, so no coverage check notices, and they are read
+      nowhere, so no widget can disagree with them. Either upstream should be
+      asked to read them or the contract should record them as write-only.
+- [ ] **Reference — how a theme colour reaches a gpui-component widget.**
+      Eight routes, seven of which defeat a search for the field's own name,
+      and the thing the next audit of this kind will need first:
+      `cx.theme().field`; `self.tokens.field` inside the `Theme` impl
+      (`theme/mod.rs`, the scrollbars); `cx.theme().tokens.<group>` — a
+      *token group*, not a colour, so `tokens.button_hover.into()` and
+      `tokens.primary_hover.background` both carry `button_hover` and
+      `primary_hover` past a search for a flat field;
+      `cx.theme().semantic_tokens().colors.field` (`bubble.rs`); a rename in
+      the semantic layer (`danger` → `destructive`, `theme/mod.rs:428`); a
+      value written across to gpui-base as data (the scrollbar and resizable
+      settings); a mode-switching accessor (`input_background()`, which is
+      what `input_style` returns and why a "trigger bg" claim cites
+      `theme/mod.rs:383` and not `input/input.rs:105`); and plain
+      inheritance, where the widget sets nothing and takes `Root`'s.
+      Two corollaries, both paid for: several widgets read **nothing** and
+      delegate entirely (`clipboard.rs`, `hover_card.rs`,
+      `menu/context_menu.rs`, `popover.rs`, `text/text_view.rs`,
+      `menu/app_menu_bar.rs`, `dialog/alert_dialog.rs`, `pagination.rs`), so
+      the file that names the widget is not the file that paints it; and a
+      citation proposed from a crate-wide search was plausible-but-wrong five
+      times out of five — it is a lead to read, never an answer to accept.
 - [ ] Port `scripts/check-widget-coverage.py` to a `#[test]`, as the Widget
       Info citation check was. A gate that has to be invoked can be skipped;
       one that runs under `cargo test` cannot, and the objection that a test
@@ -492,11 +508,14 @@ What is still open on the iced side:
       `showcase-iced.rs` are several thousand lines each after gaining every
       widget and their self-tests.
 - [ ] `scripts/check-widget-coverage.py` still accepts weak evidence of
-      "shown": for iced an import of the module is enough, and for gpui a
-      section label string is (stripping strings there would falsely fail
-      eight widgets that are built through differently named constructors —
-      the script's docstring names them). It also cannot see `cfg`, so the
-      `iced_aw` widgets count as shown in a build that omits them.
+      "shown" on the **iced** side: an import of the module is enough. The
+      gpui side no longer does — `shows_gpui` requires a constructor, a call,
+      a struct literal or a named extension method, and rejects a name that
+      is a segment of somebody else's path. The same tightening for iced
+      wants per-module constructor patterns, since an iced widget is a
+      function (`text`, `button`) rather than a type. The script also cannot
+      see `cfg`, so the `iced_aw` widgets count as shown in a build that
+      omits them.
 - [ ] `text_scale_factor` (finite and positive, else 1) is written twice, once
       per connector; a method on `AccessibilityPreferences` in the core crate
       would state it once.

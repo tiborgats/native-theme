@@ -525,6 +525,48 @@ contradicting the line above it. `Size` sets the step buttons' `min_w`
 (`number_input.rs:148-150, 179-181`); the field's height comes from
 `input.min_height`.
 
+**§5 — the omission report's bar is "no panel names it", not "this panel
+names it".** The plan said to measure each panel against the files its own
+claims cite. Measured, that reports the other nine Button variants' tokens on
+every Button panel -- `button.rs` holds all ten -- and buries the report in
+noise the design already knew it would produce. The bar became: a field read
+by a cited file that **no panel anywhere** names. That is 28 fields over 102
+panels, small enough to read, and a field some other panel names is
+documented in the showcase even if not here. The trade-off is stated in the
+test's doc comment: an omission a *sibling* panel covers is not reported.
+
+**§5 — the report found eight defects every other gate was green on.** It was
+specified as a residual measure, not a defect finder. It found: a
+`Button::new("b-secondary").label("Secondary")` that never called
+`.secondary()`, so it rendered `ButtonVariant::Default` while its panel named
+the four `button_secondary*` tokens -- the citation gate passed, because the
+cited lines do read those fields, in an arm the demo never reaches; a section
+heading claiming a variant its buttons did not use; a `ColorPicker` panel
+calling the whole palette hardcoded when its featured row is twelve platform
+colours; an outlined Button whose fill and pressed fill were undocumented; a
+`TitleBar` missing the window controls' icon and pressed colours; and a "Tag
+(per variant)" panel documenting one of six variants, with its border claim
+labelled "(outline)" when `border` is the *Secondary* variant's and every Tag
+draws one. Thirty-eight claims were added and the report fell from 28 to 12.
+
+**§7 — the rule as specified would not have produced its own proof.** This
+document's first clause was `W::new`, which `std::process::Command::new`
+satisfies. The discrimination needs a rule the document did not state: a name
+that is a *segment of somebody else's path* is somebody else's type. Which
+paths are the toolkit's is read from the showcase's own `use` statements
+(`toolkit_roots`), not guessed -- otherwise `form::Form::horizontal()` is
+rejected too. The line reference also moved: `std::process::Command::new` is
+at `showcase-gpui.rs:7614`, not `:8460`.
+
+**§7 — the tightened rule found three widgets, not one.** `Command` was the
+predicted finding and got a real demo. The other two are exceptions, and
+each reason is a fact rather than a judgement: `Text` is not a text widget
+but `plot::label::Text`, a chart axis label built only by `AxisText`
+(`plot/axis.rs:99, :144`); `Loading` is in a **private** module
+(`list/mod.rs:5`) and is built only by `ListDelegate` and `TableDelegate`, so
+no consumer can render one. Both had been passing on a bare identifier match
+-- `Text` on the section heading "Text Decorations".
+
 *(Filled in by the implementation, as
 [`todo_v0.5.9_theme-contracts-spec.md`](todo_v0.5.9_theme-contracts-spec.md)
 §8a is. §4.4's choice is recorded here.)*
