@@ -717,8 +717,33 @@ What is still open on the iced side:
       described nothing on screen.
 
       Tally: 236 "Not themeable" entries audited, 64 wrong, 15 misfiled.
-      **Not yet audited**: the colour and config claims beyond the ~70 read
-      against the render path so far, of which about twenty were wrong.
+
+      **An eighth pass (2026-09-22) read every remaining colour claim
+      against the code that paints the demo**, not only the cited line. The
+      recurring error is a claim that names upstream's token where a
+      `geometry::` builder the demo applies has replaced it: ten builders set
+      a corner radius and seven a colour, and they land last. So the
+      "border-radius: radius" line on eighteen panels -- ten buttons,
+      Textarea, InputGroup, NumberInput, Combobox, Select, Radio, Dialog,
+      AlertDialog -- showed a radius the builder overrides, and is gone; a
+      Radio's and a Select's label colour is the platform's font colour, not
+      the `foreground` the claim named (both now say "upstream"). Four claims
+      described a variant the demo does not build: an icon badge, a `Label`'s
+      highlights, an outline `Kbd`'s edge, an empty `ColorPicker` swatch (the
+      demo's has a value, painted with itself). Three had no reader at all:
+      `ThemeColor::list` on List and Tree, and `group_box` on a Settings page,
+      whose groups are `GroupBoxVariant::Normal`. And the code `Editor`'s
+      edge is the Input frame's `input`, while the `border` it claimed paints
+      the indent guides. Fourteen more cited a line from another widget
+      (InputGroup, NumberInput, Combobox and DatePicker borrowed `Input`'s;
+      DataTable borrowed the declarative `Table`'s header and a column
+      selection line for its row selection).
+
+      Tally for the colour claims: 374 read, 30 wrong, 25 cited on a
+      borrowed line; for the config lines, 36 wrong (eleven `shadow`, twenty
+      radii, five others). The audit of the Widget Info panels is complete:
+      every "Not themeable" entry, colour claim and config line has now been
+      read against the source that paints it.
 
 ##### What the audit turned up that is ours to fix
 
@@ -899,6 +924,30 @@ the gap — closing it is a change, and each wants its own decision.
       offer a "platform glyph" helper at all, and worth an upstream ask for
       setters on the three that lack one. Note the standing rule: never
       substitute across icon themes — a missing icon returns `None`.
+- [ ] **`geometry::button` gives every variant a border, and hover takes it
+      back.** The builder sets `.border(button.border.line_width)` and
+      `.border_color(button.border.color)` (`geometry.rs:132-133`), and Button
+      applies it last (`button/button.rs:690`) -- so Primary, Secondary, the
+      filled variants, Ghost, Link and Text all get a platform-coloured edge
+      upstream draws only on Default and outline buttons. On hover and press
+      upstream's own hover style sets `border_color` again
+      (`button/button.rs:1136`, `:1213`), and gpui applies a hover style after
+      the base refinement (`gpui-pre elements/div.rs:3408-3432`), so the edge
+      turns `primary`, `border` or a `button_*` token -- or `transparent` on
+      Ghost, Link and Text, where it vanishes. Decide whether the builder
+      should set a border only for the variants that have one (a separate
+      `geometry::flat_button`, or a width-free variant), and note that the
+      hover colour itself is out of reach: a refinement cannot set a hover
+      style. Not checked visually. Found 2026-09-22.
+- [ ] **`geometry::list` could paint the list.** `ThemeColor::list` has no
+      reader (the contract says so at `contract.rs:1784`) and a `ListItem`
+      paints no idle background, so `list.background_color` reaches nothing.
+      On the bundled presets it falls back to the window background
+      (`resolve/inheritance.rs:143-144`), so nothing is lost there; on a live
+      KDE system it is `[Colors:View] BackgroundNormal` (`kde/colors.rs:91`),
+      the view background rather than the window's, and that is dropped. `geometry::list` lands on the element around the rows, which
+      is exactly where a fill belongs, and carries only the border
+      (`geometry.rs:362-369`). One `.bg()` would carry it. Found 2026-09-22.
 - [ ] **A `geometry::toggle`.** A `Toggle` applies the caller's refinement
       last (`button/toggle.rs:215`) *and* folds it into its checked style
       (`:207-212`, gpui-base `toggle.rs:91-101`), so `segmented_control`'s
