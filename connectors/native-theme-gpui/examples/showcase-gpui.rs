@@ -2858,7 +2858,7 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
                                     ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
-                                    ("label size", "inner element (Tier U)"),
+                                    ("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm"),
                                 ])),
                     )
                     .child(
@@ -2873,7 +2873,7 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
                                     ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
-                                    ("label size", "inner element (Tier U)"),
+                                    ("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm"),
                                 ])),
                     )
                     .child(
@@ -2888,7 +2888,7 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
                                     ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
-                                    ("label size", "inner element (Tier U)"),
+                                    ("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm"),
                                 ])),
                     )
                     .child(
@@ -2903,7 +2903,7 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
                                     ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
-                                    ("label size", "inner element (Tier U)"),
+                                    ("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm"),
                                 ])),
                     )
                     .child(
@@ -2918,7 +2918,7 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
                                     ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
-                                    ("label size", "inner element (Tier U)"),
+                                    ("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm"),
                                 ])),
                     )
                     .child(
@@ -2933,7 +2933,7 @@ impl Showcase {
                                     ("shadow", format!("{}", t.shadow)),
                                 ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)".to_string())], &[
                                     ("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)"),
-                                    ("label size", "inner element (Tier U)"),
+                                    ("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm"),
                                 ])),
                     )
                     .child(
@@ -3018,7 +3018,7 @@ impl Showcase {
                             .child(Button::new("bg-c").label("Right")),
                     )
                     .on_hover(self.hover_info(&fi, "ButtonGroup", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("hover", "button_hover", t.button_hover, "gpui-component/button/button.rs:1079"), ("active", "button_active", t.button_active, "gpui-component/button/button.rs:1163"), ("border", "input", t.input, "gpui-component/button/button.rs:1001")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("variant", "no variant given, so Default: its edge is input, not border"),
-                            ("gap", "hardcoded (0px, merged borders)")])),
+                            ("gap", "no gap to set: a ButtonGroup joins its buttons by turning edges off rather than by spacing them (button/button_group.rs, ButtonGroup)")])),
             )
             // Disabled + loading
             .child(section("Disabled State"))
@@ -3114,9 +3114,8 @@ impl Showcase {
                         &[],
                         &[],
                         &[
-                            ("icon color", "inherits button text color"),
                             ("icon position", "leading (before label)"),
-                            ("icon size", "matches button Size enum"),
+                            ("icon size", "size_3 / size_3p5 / size_4 / size_6 per the button's Size (icon.rs, Icon::into_svg) -- rems again, so it scales with the platform font, while defaults.icon_sizes is in absolute px and Button exposes no icon_size setter to take one"),
                         ],
                     )),
             )
@@ -3197,7 +3196,7 @@ impl Showcase {
                             ))
                             .child(Clipboard::new("clip-2").value("npm install native-theme")),
                     )
-                    .on_hover(self.hover_info(&fi, "Clipboard", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground"), ("copy icon", "hardcoded Clipboard/ClipboardCheck")])),
+                    .on_hover(self.hover_info(&fi, "Clipboard", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground"), ("copy icon", "Copy and Check, built inline with no setter to replace them (clipboard.rs, Clipboard)")])),
             )
     }
 
@@ -3431,7 +3430,7 @@ impl Showcase {
                         ("geometry", "geometry::checkbox: checkbox.label_gap, checkbox.font".to_string())], &[
                             ("font colour", "carried as size and weight only. Upstream wraps a Checkbox label in a div that sets foreground itself and re-sets muted_foreground there when disabled (checkbox.rs, Checkbox::render), and the disabled hook applies muted_foreground before this refinement, so a carried colour would never reach the label and would displace the disabled colour of custom children (native-theme-gpui geometry.rs, geometry::checkbox)"),
                             ("unchecked fill", "none: an unchecked box is drawn with its input-coloured edge and no background, so the panel's background claim is dropped (checkbox.rs, Checkbox::render)"),
-                            ("indicator size", "inner element (Tier U)"),
+                            ("indicator size", "rems(0.75 / 0.875 / 1 / 1.125) per Size (checkbox.rs, Checkbox::render indicator_size), so the box already scales with the platform font -- the rem is Theme::font_size. What has no route is checkbox.indicator_width, which the model states in absolute px: Size::Size falls into the same catch-all arm as Medium. Tier U for the px, not for the scaling"),
                         ])),
             )
             // Radio group
@@ -3579,7 +3578,7 @@ impl Showcase {
                     .on_hover(self.hover_info(&fi, "Combobox", &[("trigger bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("trigger border", "input", t.input, "gpui-component/input/input.rs:714"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("popup bg", "popover", t.popover, "gpui-component/styled.rs:197"), ("row hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209"), ("focus ring", "ring", t.ring, "gpui-component/input/input.rs:681")], &[("border-radius", format!("radius: {}px", t.radius.as_f32())), ("geometry", "geometry::combobox: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font".to_string())], &[
                             ("font colour", "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, ComboboxState::default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)"),
                             ("delegate", "SearchableListDelegate, implemented in this showcase (combobox.rs, Combobox<D>)"),
-                            ("caret", "inner element (Tier U)"),
+                            ("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size"),
                         ])),
             )
             // Select
@@ -3597,7 +3596,7 @@ impl Showcase {
                         ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                     ("geometry", "geometry::select: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)".to_string())], &[
                         ("carried colour", "the one difference from the Combobox above: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)"),
-                        ("caret", "inner element (Tier U)"),
+                        ("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size"),
                     ])),
             )
             // Color Picker
@@ -3618,7 +3617,7 @@ impl Showcase {
                             .placeholder("Select a date"),
                     )
                     .on_hover(self.hover_info(&fi, "DatePicker", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("popover", "popover", t.popover, "gpui-component/styled.rs:197"), ("selected day", "primary", t.primary, "gpui-component/time/calendar.rs:185")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
-                            ("calendar icon", "hardcoded"),
+                            ("calendar icon", "an IconName::Calendar built inline with no setter (time/date_picker.rs, DatePicker)"),
                             ("format", "default YYYY-MM-DD"),
                         ])),
             )
@@ -3630,7 +3629,7 @@ impl Showcase {
                     .child(gpui_component::calendar::Calendar::new(
                         &self.calendar_state,
                     ))
-                    .on_hover(self.hover_info(&fi, "Calendar", &[("bg", "popover", t.popover, "gpui-component/tooltip.rs:114"), ("selected day", "primary", t.primary, "gpui-component/time/calendar.rs:185"), ("today", "accent", t.accent, "gpui-component/time/calendar.rs:170"), ("text", "foreground", t.foreground, "gpui-component/time/calendar.rs:180")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("month navigation", "hardcoded arrows")])),
+                    .on_hover(self.hover_info(&fi, "Calendar", &[("bg", "popover", t.popover, "gpui-component/tooltip.rs:114"), ("selected day", "primary", t.primary, "gpui-component/time/calendar.rs:185"), ("today", "accent", t.accent, "gpui-component/time/calendar.rs:170"), ("text", "foreground", t.foreground, "gpui-component/time/calendar.rs:180")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("month navigation", "ChevronLeft and ChevronRight built inline with no setter (time/calendar.rs, Calendar)")])),
             )
     }
 
@@ -3663,7 +3662,7 @@ impl Showcase {
                             .item("Platforms", "Linux, macOS, Windows", 1)
                             .item("Description", "Universal theme abstraction layer", 2),
                     )
-                    .on_hover(self.hover_info(&fi, "DescriptionList", &[("label bg", "description_list_label", t.description_list_label, "gpui-component/description_list.rs:333"), ("label text", "description_list_label_foreground", t.description_list_label_foreground, "gpui-component/description_list.rs:317"), ("border", "border", t.border, "gpui-component/accordion.rs:110")], &[], &[("layout spacing", "hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "DescriptionList", &[("label bg", "description_list_label", t.description_list_label, "gpui-component/description_list.rs:333"), ("label text", "description_list_label_foreground", t.description_list_label_foreground, "gpui-component/description_list.rs:317"), ("border", "border", t.border, "gpui-component/accordion.rs:110")], &[], &[("layout spacing", "per Size, in literal px (description_list.rs, DescriptionList), and the label column defaults to 120px -- a width DescriptionList::label_width does take"),])),
             )
             // Table
             .child(section("Table (striped, 3 cols × 5 rows)"))
@@ -4370,7 +4369,7 @@ impl Showcase {
                             "border-radius",
                             format!("radius_tokens().xl: {}px", t.radius_tokens().xl.as_f32()),
                         ), ("icon size", "geometry::icon_size_large: defaults.icon_sizes.large".to_string())], &[
-                            ("border style", "hardcoded dashed"),
+                            ("border style", "border_dashed with no seam to change it (empty.rs, Empty)"),
                             ("media frame", "hardcoded 2rem square"),
                         ])),
             )
@@ -4690,7 +4689,7 @@ impl Showcase {
                                     .child("H6 — Fine Print"),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Headings", &[("text", "foreground", t.foreground, "gpui-component/root.rs:596")], &[("font", format!("font_family: {}", t.font_family))], &[("sizes", "30px / 24px / 20px / 18px / 16px / 14px")])),
+                    .on_hover(self.hover_info(&fi, "Headings", &[("text", "foreground", t.foreground, "gpui-component/root.rs:596")], &[("font", format!("font_family: {}", t.font_family))], &[("sizes", "a rem ladder of this showcase's own -- 1.875 / 1.5 / 1.25 / 1.125 / 1 / 0.875 -- so it follows the platform: gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from font.size. The px figures this note used to give were the ladder at a 16px rem, which no preset here produces. What is unused is text_scale: the model states four named roles, each with its own size, weight and line height, and this demo states six of its own")])),
             )
             // Font weights
             .child(section("Font Weights (Thin → Black)"))
@@ -4854,7 +4853,7 @@ impl Showcase {
                             ("bg", "highlight_theme's editor_background, else input_background()"),
                             ("syntax colors", "highlight_theme: default_light / default_dark per color mode; the grammar comes from the tree-sitter-rust dev feature"),
                             ("style block", "the editor takes one InputEditorStyle built in a single place (input/input.rs, set_editor_style), so all five colours cite the same block -- and its edge is border, not the input token the panel had named"),
-                            ("line height", "hardcoded 1.5 × mono_font_size"),
+                            ("line height", "1.5 is only what the widget sets first: Editor is Styled and applies the caller's refinement last, on purpose (input/editor.rs, Editor::render -- the comment there says a text style set on the editor refines over them). defaults.line_height is modelled (1.4 on the bundled defaults) and no builder carries it yet"),
                             ("line numbers / search", "on by default"),
                         ])),
             )
@@ -5492,7 +5491,7 @@ impl Showcase {
                             .child(BreadcrumbItem::new("Layout")),
                     )
                     .on_hover(self.hover_info(&fi, "Breadcrumb", &[("last item", "foreground", t.foreground, "gpui-component/breadcrumb.rs:102"), ("non-last + separators", "muted_foreground", t.muted_foreground, "gpui-component/breadcrumb.rs:101")], &[], &[
-                            ("separator icon", "hardcoded ChevronRight"),
+                            ("separator icon", "a ChevronRight built inline with no setter to replace it (breadcrumb.rs, Breadcrumb) -- unlike an Alert's icon, which Alert::icon takes"),
                             ("spacing", "hardcoded"),
                         ])),
             )

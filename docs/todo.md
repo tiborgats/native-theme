@@ -519,7 +519,7 @@ What is still open on the iced side:
       (already in "inner geometry exposed" above) and the notes now say so
       rather than "hardcoded".
 
-      Twenty-two more checked 2026-09-22, and the largest single finding is a
+      Forty more checked 2026-09-22, and the largest single finding is a
       **whole category the model is missing**: `Theme::motion` is a public,
       writable `MotionTokens` field (`gpui-component/theme/mod.rs:170`,
       `theme/motion.rs:8-20`: four durations, three easings, two springs, two
@@ -559,8 +559,36 @@ What is still open on the iced side:
       variant icon is a default that `Alert::icon` replaces. A `Tooltip`'s
       delay is the application's, set on the element that carries it. A
       `Sidebar`'s 255px is a fallback the caller's own `.w()` displaces. And a
-      `DataTable`'s row height has an escape hatch. The five of those that
-      point at something we could do are listed below.
+      `DataTable`'s row height has an escape hatch.
+
+      A third batch found the mistake behind several of the others at once:
+      **gpui-component sets the rem to `Theme::font_size`** (`root.rs:582`), so
+      a `rems()` or a `text_base()` upstream is already the platform's size.
+      Six Button panels had called their label size Tier U when it is
+      `button_text_size` — `text_xs`/`text_sm`/`text_base`, a fixed ratio of
+      the platform's body text. The `Headings` panel listed px figures that
+      were its rem ladder at a 16px rem, which no bundled preset produces. A
+      `Buttons with Icons` panel listed its icon colour as not themeable when
+      it follows the button's own text token, and its icon size is rems too.
+      And an `Editor`'s line height is only what the widget sets *first*:
+      upstream applies the caller's refinement last and says in a comment that
+      this is on purpose. Seven more were true and gained the citation that
+      proves it — Breadcrumb, Clipboard, Calendar and DatePicker glyphs built
+      inline with no setter, `DescriptionList` spacing, `Empty`'s dashed
+      border, and a `ButtonGroup` that has no gap to set because it joins its
+      buttons by turning edges off.
+
+      A fourth pass sharpened the three remaining `inner element (Tier U)`
+      notes that could be checked cheaply. All three are Tier U, but each was
+      hiding half the answer: a `Checkbox`'s indicator and a `Select`'s caret
+      are sized in rems and so already follow the platform's font, and the
+      caret's *colour* is themed. What is genuinely unreachable is the
+      absolute-px field the model states beside each -- `indicator_width`,
+      `arrow_icon_size` -- because both consumers fold `Size::Size` into the
+      catch-all arm.
+
+      Fifty-one entries audited, twenty-three wrong. The ones that point at
+      something we could do are listed below.
 
       The largest untouched groups are now `padding` (7 under modelled
       widgets), `label size` (6, all six Button variants, all already Tier U)
@@ -594,6 +622,14 @@ the gap — closing it is a change, and each wants its own decision.
       maps it to `v * 0.2` and the private `as_f32` returns the raw pixels
       where the enum arms return 0..3, so anything ordering sizes numerically
       misreads it.
+- [ ] **Carry `defaults.line_height` to the code editor.** `Editor` sets
+      `relative(1.5)` and then applies the caller's refinement last, with a
+      comment saying that is deliberate so a text style set on the editor
+      refines over it (`input/editor.rs:137-143`, `:159`).
+      `defaults.line_height` is modelled — 1.4 on the bundled defaults — and
+      `control_height` already uses it for control heights
+      (`geometry.rs:117`), so nothing new has to be modelled: it wants a
+      builder, or a line in an existing one.
 - [ ] **The showcase ignores its own `text_scale`.** `ResolvedTextScale` states
       four typographic roles — `caption`, `section_heading`, `dialog_title`,
       `display` — each with a size, a weight and a line height, and
@@ -604,7 +640,45 @@ the gap — closing it is a change, and each wants its own decision.
       onto H1–H6, which is the honest reason this is a design question and not
       a bug: decide the mapping (or that there is none) before adding a
       builder. The showcase's "no hardcoded style values" test does not cover
-      text sizes, which is why the ladder passed.
+      text sizes, which is why the ladder passed. Note what the ladder is *not*
+      doing wrong: **gpui-component sets the rem to `Theme::font_size`**
+      (`root.rs:582`), which the connector fills from the platform's
+      `font.size`, so every `rems()` and every `text_xs`/`text_sm`/`text_base`
+      in the toolkit is already proportional to the platform. What `text_scale`
+      would add is the *weight* and *line height* of each role, and sizes that
+      are the platform's rather than a ratio of its body text.
+
+      That one line in `root.rs` is worth remembering before writing another
+      note: a great many "hardcoded" sizes upstream are rems, and a rem here is
+      the platform's font size. Six Button panels called their label size
+      Tier U on exactly that mistake.
+- [ ] **`Size::Size(px)` is an escape hatch, but read the target first.** It is
+      the only way to hand a pixel value to a widget that sizes itself from the
+      `Size` enum, and the `geometry::` refinements being applied last means
+      its collateral effect on the *outer* box is overwritten anyway — so what
+      is left is its effect on inner elements, which is exactly the Tier U set.
+      It is not uniform, though, and each target has to be read: `table_row_height`
+      returns it verbatim, `table_cell_padding` has no `Size::Size` arm at all,
+      a `Button`'s icon takes `v * 0.75` (`button/button.rs:580`), and
+      `button_text_size` has no `Size::Size` arm either (`sizing.rs:319-325`),
+      so a button's label cannot be sized this way. Nor can a select caret
+      (`select.rs:60-63`, `Size::Size` folded into the `_` arm with `Medium`)
+      or a checkbox indicator (`checkbox.rs:219-224`, same shape) — which is
+      what makes `combo_box.arrow_icon_size` and `checkbox.indicator_width`
+      genuinely Tier U rather than merely unapplied. Worth a survey of every
+      `Size` consumer before leaning on it anywhere.
+- [ ] **Does an unnamed themed colour belong in a panel?** Two found while
+      auditing: a `Select`'s and a `Combobox`'s caret are painted with
+      `muted_foreground` (`select.rs:593`, `combobox.rs:655`), and a
+      `DropdownButton`'s with the button variant's own foreground at 75%
+      (`button/button.rs:732`). All three are theme reads no panel claims,
+      because a claim carries a swatch and these are parts of a widget rather
+      than the widget. The omission report does not catch them either — the
+      files are cited, so their fields count as named. Decide whether the
+      colours section should cover a widget's *parts*, and if so whether
+      `muted_foreground` on a caret is even right: the platform states
+      `combo_box.font.color` for the trigger, and a dimmed arrow is upstream's
+      choice, not the platform's.
 - [ ] **A sidebar width and a tooltip delay are missing from the model.** Both
       have receivers: `Sidebar` reads the caller's own style width and falls
       back to 255px only when none is set (`sidebar/mod.rs:195-201`), and gpui
