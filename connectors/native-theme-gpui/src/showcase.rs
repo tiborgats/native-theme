@@ -384,46 +384,67 @@ fn geometry_notes_source() -> &'static str {
 
 /// The builder each `GEOMETRY_NOTES` entry names, with the line it is on, and
 /// a line for every part of the table that could not be read.
+fn geometry_note_names(info: &str) -> (Vec<(usize, &str)>, Vec<String>) {
+    let (entries, unreadable) = geometry_note_entries(info);
+    let names = entries
+        .into_iter()
+        .map(|(line, name, _)| (line, name))
+        .collect();
+    (names, unreadable)
+}
+
+/// Every `GEOMETRY_NOTES` entry as the line it is on, the builder it names and
+/// its text as written, and a line for every part of the table that could not
+/// be read.
 ///
 /// An entry is read as a tuple whose first element is a string literal,
 /// wherever rustfmt breaks its lines; anything else in the array is reported,
-/// so an entry the parse cannot see is never silently missing.
-fn geometry_note_names(info: &str) -> (Vec<(usize, &str)>, Vec<String>) {
+/// so an entry the parse cannot see is never silently missing. The text is
+/// `""` for an entry that has none, which leaves nothing to cite.
+fn geometry_note_entries(info: &str) -> (Vec<(usize, &str, &str)>, Vec<String>) {
     let starts = line_offsets(info);
-    let mut names = Vec::new();
+    let mut entries = Vec::new();
     let mut unreadable = Vec::new();
     let Some(open) = info.find(GEOMETRY_NOTES_OPEN) else {
         unreadable.push(format!(
             "{GEOMETRY_NOTES_FILE}: no `{GEOMETRY_NOTES_OPEN}` found"
         ));
-        return (names, unreadable);
+        return (entries, unreadable);
     };
     let bracket = open + GEOMETRY_NOTES_OPEN.len() - 1;
-    let Some(entries) = call_args(info, bracket) else {
+    let Some(table) = call_args(info, bracket) else {
         unreadable.push(format!(
             "{GEOMETRY_NOTES_FILE}:{}: the table never closes",
             line_at(&starts, bracket)
         ));
-        return (names, unreadable);
+        return (entries, unreadable);
     };
-    for entry in entries {
+    for entry in table {
         let at = offset_in(info, entry) + (entry.len() - entry.trim_start().len());
         let line = line_at(&starts, at);
-        let name = info
+        let args = info
             .get(at..)
             .filter(|rest| rest.starts_with('('))
-            .and_then(|_| call_args(info, at))
+            .and_then(|_| call_args(info, at));
+        let name = args
+            .as_ref()
             .and_then(|args| args.first().copied())
             .and_then(unquote);
         match name {
-            Some(name) => names.push((line, name)),
+            Some(name) => {
+                let text = args
+                    .as_ref()
+                    .and_then(|args| args.get(1))
+                    .map_or("", |text| text.trim());
+                entries.push((line, name, text));
+            }
             None => unreadable.push(format!(
                 "{GEOMETRY_NOTES_FILE}:{line}: not a (\"builder\", \"what\") entry: {}",
                 entry.trim()
             )),
         }
     }
-    (names, unreadable)
+    (entries, unreadable)
 }
 
 /// The offset of the `(` of every call of the function `name` in `raw` that
@@ -570,12 +591,8 @@ fn native_info_names_the_builder_it_applies() {
 /// whose `name` `native_info_names_the_builder_it_applies` holds instead.
 fn geometry_line_calls(raw: &str) -> Vec<(usize, Option<&str>)> {
     let starts = line_offsets(raw);
-    code_calls(raw, "geometry")
+    method_calls(raw, "geometry")
         .into_iter()
-        .filter(|&open| {
-            raw.get(..open - "geometry".len())
-                .is_some_and(|before| before.trim_end().ends_with('.'))
-        })
         .map(|open| {
             let literal = call_args(raw, open)
                 .filter(|args| args.len() == 1)
@@ -1170,6 +1187,12 @@ fn unnamed_builders(
 // than from a build script: a test runs after the build, so it can simply ask
 // cargo, and a published crate does not gain a build script to locate a
 // *dev*-dependency's source.
+//
+// A claim is written in one of two forms while the pages migrate (showcase
+// spec §3.2 and §10.2): a tuple in a `hover_info` array, or a
+// `claim("role", "field", value, "cite")` call. Both are read into the same
+// `Claim`, and a panel's prose and a `.config`/`.not_themeable`/`.instance`
+// note into the same `Prose`, so each gate asks one question of both.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -1282,6 +1305,93 @@ fn panel_calls(raw: &str) -> Vec<(usize, &str, Vec<&str>)> {
     out
 }
 
+/// Every `claim(` call in `raw` that is code: the line it is on and its
+/// arguments.
+fn claim_calls(raw: &str) -> Vec<(usize, Vec<&str>)> {
+    let starts = line_offsets(raw);
+    code_calls(raw, "claim")
+        .into_iter()
+        .map(|open| {
+            (
+                line_at(&starts, open),
+                call_args(raw, open).unwrap_or_default(),
+            )
+        })
+        .collect()
+}
+
+/// A `claim(` call's role, field and citation, or `None` unless it has four
+/// arguments and those three are string literals -- the one shape spec §3.2
+/// allows, and the only one a gate can read. The value, `t.<field>`, is not
+/// read: what is checked is the field named against the line cited.
+fn claim_literals<'a>(args: &[&'a str]) -> Option<(&'a str, &'a str, &'a str)> {
+    let &[role, field, _, cited] = args else {
+        return None;
+    };
+    Some((unquote(role)?, unquote(field)?, unquote(cited)?))
+}
+
+/// The methods a note is written with (spec §3.2).
+const NOTE_METHODS: &[&str] = &["config", "not_themeable", "instance"];
+
+/// Every `.config(`, `.not_themeable(` and `.instance(` call in `raw` that is
+/// code and has two arguments, the first a string literal: the line its text
+/// starts on, the `what`, and the text as written.
+///
+/// The text is taken as written, not only when it is a literal: a note built
+/// with `format!` cites upstream just as well, and `prose_citations` finds a
+/// citation inside the literal either way.
+fn note_calls(raw: &str) -> Vec<(usize, &str, &str)> {
+    let starts = line_offsets(raw);
+    let mut out = Vec::new();
+    for name in NOTE_METHODS {
+        for open in method_calls(raw, name) {
+            let Some(args) = call_args(raw, open) else {
+                continue;
+            };
+            let &[what, text] = args.as_slice() else {
+                continue;
+            };
+            let Some(what) = unquote(what) else {
+                continue;
+            };
+            let text = text.trim();
+            out.push((line_at(&starts, offset_in(raw, text)), what, text));
+        }
+    }
+    out.sort_by_key(|(line, _, _)| *line);
+    out
+}
+
+/// The `(` of every call of the method `name` in `raw` that is code: a
+/// [`code_calls`] match with a `.` before it, wherever rustfmt breaks the
+/// chain.
+fn method_calls(raw: &str, name: &str) -> Vec<usize> {
+    code_calls(raw, name)
+        .into_iter()
+        .filter(|&open| {
+            raw.get(..open.saturating_sub(name.len()))
+                .is_some_and(|before| before.trim_end().ends_with('.'))
+        })
+        .collect()
+}
+
+/// The name of the last function declared above byte offset `at`, or `"?"`:
+/// what a message calls the widget a claim or a note belongs to, since each
+/// kind's claims sit in a function of its own (spec §3.4).
+fn enclosing_fn(raw: &str, at: usize) -> &str {
+    raw.get(..at)
+        .unwrap_or("")
+        .lines()
+        .rev()
+        .map(str::trim_start)
+        .filter(|l| {
+            l.starts_with("fn ") || l.starts_with("pub fn ") || l.starts_with("pub(crate) fn ")
+        })
+        .find_map(fn_name_on)
+        .unwrap_or("?")
+}
+
 /// A panel's prose argument: the file and line of its panel, the widget it
 /// names, and the text.
 type Prose<'a> = (&'a str, usize, &'a str, &'a str);
@@ -1291,17 +1401,41 @@ fn showcase_claims() -> (Vec<Claim<'static>>, Vec<Prose<'static>>) {
     let mut claims = Vec::new();
     let mut prose = Vec::new();
     for (file, raw) in SHOWCASE_FILES {
-        let (c, p) = panel_claims(file, raw);
+        let (c, p) = claims_in(file, raw);
         claims.extend(c);
         prose.extend(p);
     }
     (claims, prose)
 }
 
-/// Every colour claim of one showcase file, and every panel's prose argument.
-fn panel_claims<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>) {
+/// Every colour claim of one showcase file, in either form, and every prose
+/// text: a panel's prose argument and every note's text.
+///
+/// The test module is read too. Its claims are written to exercise the
+/// model, but a claim anywhere in the showcase is a statement about upstream
+/// and has to be as true as one on a page.
+fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>) {
     let mut claims = Vec::new();
     let mut prose = Vec::new();
+    for (line, args) in claim_calls(raw) {
+        let Some((role, field, cited_at)) = claim_literals(&args) else {
+            continue;
+        };
+        let widget = args
+            .first()
+            .map_or("?", |arg| enclosing_fn(raw, offset_in(raw, arg)));
+        claims.push(Claim {
+            file,
+            line,
+            widget,
+            role,
+            field,
+            cited_at,
+        });
+    }
+    for (line, _, text) in note_calls(raw) {
+        prose.push((file, line, enclosing_fn(raw, offset_in(raw, text)), text));
+    }
     for (line, widget, args) in panel_calls(raw) {
         prose.push((file, line, widget, args[4]));
 
@@ -1527,6 +1661,18 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
         .collect();
 
     let mut wrong = Vec::new();
+    // A `claim(` call in any other shape is one this gate cannot read, and a
+    // claim nothing reads is a claim nothing checks.
+    for (file, raw) in SHOWCASE_FILES {
+        for (line, args) in claim_calls(raw) {
+            if claim_literals(&args).is_none() {
+                wrong.push(format!(
+                    "{file}:{line}: not claim(\"role\", \"field\", value, \"cite\"), so \
+                     nothing can check it"
+                ));
+            }
+        }
+    }
     let mut uncited = 0usize;
     for claim in &claims {
         if claim.cited_at.is_empty() {
@@ -1718,9 +1864,11 @@ fn the_omission_report() {
 
     // Every file a claim cites, with the panels that cite it. An ambiguous or
     // unparseable citation is left out here; the citation gate already fails
-    // on both, so this report never has to speak about them.
+    // on both, so this report never has to speak about them. The test
+    // module's claims are left out too: they are checked, but they are not
+    // what the showcase tells its reader.
     let mut cited: BTreeMap<PathBuf, BTreeSet<&str>> = BTreeMap::new();
-    for claim in &claims {
+    for claim in claims.iter().filter(|c| c.file != TEST_MODULE) {
         let Some((path, _, _)) = parse_citation(claim.cited_at) else {
             continue;
         };
@@ -1741,11 +1889,22 @@ fn the_omission_report() {
 
     // What the panels say, all five arguments of all of them: a field named
     // in a config line or a not-themeable note is described just as much as
-    // one that carries a swatch.
-    let said: Vec<&str> = calls
+    // one that carries a swatch. In the newer form that is every argument of
+    // every `claim(` and note call, and the geometry lines' texts.
+    let mut said: Vec<&str> = calls
         .iter()
         .flat_map(|(_, _, args)| args.iter().copied())
         .collect();
+    for (_, raw) in demo_files() {
+        said.extend(claim_calls(raw).into_iter().flat_map(|(_, args)| args));
+        said.extend(
+            note_calls(raw)
+                .into_iter()
+                .flat_map(|(_, what, text)| [what, text]),
+        );
+    }
+    let (notes, _) = geometry_note_entries(geometry_notes_source());
+    said.extend(notes.into_iter().map(|(_, _, text)| text));
     let said = said.join("\n");
 
     let mut unnamed: BTreeMap<&str, BTreeSet<String>> = BTreeMap::new();
@@ -1825,6 +1984,11 @@ fn prose_citations(text: &str) -> Vec<(&str, &str)> {
 
 /// Spec section 4.6: a symbol a "Not themeable" note cites still exists.
 ///
+/// A note written as a call is read whichever section it fills -- a config
+/// line or an instance note citing upstream is as exposed to a deletion -- and
+/// so is every `GEOMETRY_NOTES` text, which reaches the inspector as a config
+/// line.
+///
 /// Existence, never semantics. What a note *says* about upstream is a human's
 /// to keep true; a note pointing at something upstream has **deleted** is one
 /// a machine should catch, and this project has been bitten by exactly that
@@ -1844,7 +2008,20 @@ fn every_prose_citation_still_exists() {
         located.as_ref().err().cloned().unwrap_or_default()
     );
     let Ok(roots) = located else { return };
-    let (_, prose) = showcase_claims();
+    let (_, mut prose) = showcase_claims();
+    // The geometry lines' texts, which a widget's info carries without a note
+    // call of its own (spec §3.3).
+    let info = geometry_notes_source();
+    let starts = line_offsets(info);
+    let (notes, _) = geometry_note_entries(info);
+    let geometry_citations: usize = notes
+        .iter()
+        .map(|(_, _, text)| prose_citations(text).len())
+        .sum();
+    for (_, name, text) in notes {
+        let line = line_at(&starts, offset_in(info, text));
+        prose.push((GEOMETRY_NOTES_FILE, line, name, text));
+    }
 
     let mut missing = Vec::new();
     let mut checked = 0usize;
@@ -1876,11 +2053,112 @@ fn every_prose_citation_still_exists() {
          would pass vacuously"
     );
     assert!(
+        geometry_citations > 0,
+        "no `file.rs, Symbol` citation found in GEOMETRY_NOTES, so its texts \
+         went unchecked"
+    );
+    assert!(
         missing.is_empty(),
         "{} of {checked} prose citations point at something that is gone:\n  {}",
         missing.len(),
         missing.join("\n  ")
     );
+}
+
+/// The claim and note parsers see what they are meant to: a `claim(` call in
+/// either of rustfmt's layouts and a note method with a literal `what`, but
+/// not a mention in a comment or a string, a longer name, a declaration, a
+/// free function named like a note method, or a call of another shape.
+#[test]
+fn the_claim_and_note_parsers_do_their_jobs() {
+    let source = r#"pub fn claim(role: &'static str) -> ColorClaim {}
+pub fn tag(t: &Theme) -> WidgetInfo {
+    // claim("bg", "primary", t.primary, "tag.rs:1")
+    let s = "claim(\"bg\", \"x\", v, \"y.rs:1\")";
+    my_claim("bg", "x", v, "y.rs:1");
+    WidgetInfo::new("Tag")
+        .color(claim("bg", "danger", t.danger, "gpui-component/tag.rs:31"))
+        .color(claim(
+            "text",
+            "danger_foreground",
+            t.danger_foreground,
+            "gpui-component/tag.rs:50",
+        ))
+        .color(claim(role, "x", v, "y.rs:1"))
+        .config("geometry", format!("see tag.rs, Tag"))
+        .not_themeable(
+            "padding",
+            "a rem literal (tag.rs, Tag::render)",
+        )
+        .instance(label, "not read")
+        .config("one argument")
+}
+fn config(self, what: &'static str, text: String) {}
+config("free", "fn, not a method");
+"#;
+    let calls: Vec<usize> = claim_calls(source).iter().map(|(line, _)| *line).collect();
+    assert_eq!(calls, vec![7, 8, 14]);
+    let readable: Vec<bool> = claim_calls(source)
+        .iter()
+        .map(|(_, args)| claim_literals(args).is_some())
+        .collect();
+    assert_eq!(readable, vec![true, true, false]);
+
+    let (claims, prose) = claims_in("t.rs", source);
+    let claims: Vec<_> = claims
+        .iter()
+        .map(|c| (c.file, c.line, c.widget, c.role, c.field, c.cited_at))
+        .collect();
+    assert_eq!(
+        claims,
+        vec![
+            ("t.rs", 7, "tag", "bg", "danger", "gpui-component/tag.rs:31"),
+            (
+                "t.rs",
+                8,
+                "tag",
+                "text",
+                "danger_foreground",
+                "gpui-component/tag.rs:50"
+            ),
+        ]
+    );
+    assert_eq!(
+        prose,
+        vec![
+            ("t.rs", 15, "tag", r#"format!("see tag.rs, Tag")"#),
+            (
+                "t.rs",
+                18,
+                "tag",
+                r#""a rem literal (tag.rs, Tag::render)""#
+            ),
+        ]
+    );
+    let cited: Vec<(&str, &str)> = prose
+        .iter()
+        .flat_map(|(_, _, _, text)| prose_citations(text))
+        .collect();
+    assert_eq!(cited, vec![("tag.rs", "Tag"), ("tag.rs", "Tag::render")]);
+
+    let table = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
+                 \x20   (\"button\", \"a (button.rs, Button)\"),\n\
+                 \x20   (\n\
+                 \x20       \"input\",\n\
+                 \x20       \"d\",\n\
+                 \x20   ),\n\
+                 \x20   (\"bare\"),\n\
+                 ];\n";
+    let (entries, unreadable) = geometry_note_entries(table);
+    assert_eq!(
+        entries,
+        vec![
+            (2, "button", "\"a (button.rs, Button)\""),
+            (3, "input", "\"d\""),
+            (7, "bare", "")
+        ]
+    );
+    assert!(unreadable.is_empty(), "{unreadable:?}");
 }
 
 // ---------------------------------------------------------------------------
