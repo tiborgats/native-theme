@@ -5759,7 +5759,10 @@ impl Showcase {
                                 });
                             })),
                     )
-                    .on_hover(self.hover_info(&fi, "Dialog", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("overlay", "overlay", t.overlay, ""), ("border", "border", t.border, "gpui-component/dialog/dialog.rs:615")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Dialog", &[("bg", "background", t.background, "gpui-component/dialog/dialog.rs:613"), ("overlay", "overlay", t.overlay, "gpui-component/dialog/dialog.rs:282"), ("border", "border", t.border, "gpui-component/dialog/dialog.rs:615")], &[("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32()))], &[
+                            ("fill", "the window's own background, not the popover colour: a dialog is a surface, not a popup, and reads background (dialog/dialog.rs, Dialog::render)"),
+                            ("text", "none set: the body inherits the window's text colour, and only the description is recoloured (dialog/description.rs, DialogDescription::render)"),
+                            ("corner radius", "radius_lg, the larger of the theme's two radii (dialog/dialog.rs, Dialog::render)"),
                             ("geometry", "geometry::dialog on the surface: dialog.border.padding_*, min_height, max_height and border.corner_radius; geometry::dialog_max_width caps the width at dialog.max_width (dialog/dialog.rs, Dialog::max_w)"),
                             ("title and body", "geometry::dialog_title: dialog.title_font; geometry::dialog_description: dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render)"),
                             ("footer", "geometry::dialog_footer: dialog.button_gap between the buttons (dialog/footer.rs, DialogFooter::render)"),
@@ -5870,7 +5873,11 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Sheet", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("overlay", "overlay", t.overlay, ""), ("border", "border", t.border, "gpui-component/sheet.rs:173")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Sheet", &[("bg", "background", t.background, "gpui-component/sheet.rs:172"), ("overlay", "overlay", t.overlay, "gpui-component/dialog/dialog.rs:282"), ("border", "border", t.border, "gpui-component/sheet.rs:173")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                            ("fill", "the window's own background, not the popover colour, as Dialog above (sheet.rs, Sheet::render)"),
+                            ("text", "none set: the panel inherits the window's text colour"),
+                            ("overlay", "the same overlay_color a Dialog uses -- sheet.rs imports it from dialog (sheet.rs, use dialog::overlay_color)"),
+                            ("top margin", "sheet.margin_top, the one sheet field the model states (sheet.rs, Sheet::render)"),
                             ("animation", "slide in/out"),
                             ("placement", "Right / Bottom / Left / Top"),
                         ])),
