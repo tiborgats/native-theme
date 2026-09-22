@@ -1,4 +1,4 @@
-//! The Charts tab.
+//! The Charts page.
 
 use gpui::{Context, Hsla, IntoElement, ParentElement, SharedString, Styled, div, prelude::*, px};
 use gpui_component::{
@@ -12,9 +12,9 @@ use crate::support::{format_font_info, section};
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Charts
+    // Page: Charts
     // -----------------------------------------------------------------------
-    pub(crate) fn render_charts_tab(
+    pub(crate) fn render_charts_page(
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {

@@ -1,21 +1,25 @@
 //! Demo helpers the pages share.
 
-use gpui::{Action, AnyElement, App, Div, Entity, SharedString, Stateful, prelude::*};
+use gpui::{
+    Action, AnyElement, App, Div, ElementId, Entity, SharedString, Stateful, Window, prelude::*,
+};
 use gpui_component::{
-    ActiveTheme, Disableable as _, IconName, TitleBar,
+    ActiveTheme, Collapsible, Disableable as _, IconName, Sizable as _, Size, TitleBar,
     button::{Button, ButtonVariants as _, Toggle, ToggleGroup, ToggleVariants as _},
     combobox::{Combobox, ComboboxState},
     h_flex,
     menu::AppMenuBar,
     select::{SearchableVec, Select, SelectState},
     separator::Separator,
+    sidebar::{Sidebar, SidebarItem, SidebarMenuItem, SidebarToggleButton},
+    tab::{Tab, TabBar},
 };
 use native_theme_gpui::geometry;
 
-use crate::CHROME_APP_MENU_BAR;
-use crate::app::{AppColorMode, Quit, SetColorMode};
+use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, native_info};
 use crate::support::{PresetDelegate, native_icon, native_value};
+use crate::{CHROME_APP_MENU_BAR, Page};
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
 /// `app_menu_bar` where the platform has no menu bar of its own, and quitting
@@ -210,4 +214,125 @@ pub(crate) fn toolbar_button(
         SharedString::from(format!("chrome-{id}")),
         button_info,
     )
+}
+
+/// The toolbar's `SidebarToggleButton`, drawn `collapsed` while the Sidebar
+/// is; a click dispatches `ToggleSidebar`.
+pub(crate) fn sidebar_toggle_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    collapsed: bool,
+) -> Stateful<Div> {
+    SidebarToggleButton::new()
+        .collapsed(collapsed)
+        .on_click(|_, window, cx| window.dispatch_action(Box::new(ToggleSidebar), cx))
+        .info(
+            ui,
+            "chrome-sidebar-toggle",
+            info::sidebar_toggle_button(cx.theme(), collapsed),
+        )
+}
+
+/// The window's `Sidebar` (spec §2.4): one item per page, the item of
+/// `active` marked active, collapsed to icons while `collapsed`.
+///
+/// Its width is its container's: a width that is not an absolute pixel
+/// length keeps upstream from animating it to a width of its own
+/// (sidebar/mod.rs, `sidebar_expanded_width`), so expanded it fills the
+/// resizable panel it is in, and collapsed it is upstream's icon rail.
+pub(crate) fn sidebar(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    active: Page,
+    collapsed: bool,
+) -> Stateful<Div> {
+    let items = Page::ALL.map(|page| NavItem {
+        ui: ui.clone(),
+        page,
+        active: page == active,
+        collapsed: false,
+    });
+    Sidebar::new("chrome-sidebar")
+        .collapsed(collapsed)
+        .w_full()
+        .children(items)
+        .info(ui, "chrome-sidebar", info::sidebar(cx.theme(), collapsed))
+        .h_full()
+        .when(!collapsed, |sidebar| sidebar.w_full())
+}
+
+/// A page's item in the window's Sidebar.
+///
+/// A `Sidebar` renders its items itself, as it lays out its list
+/// (sidebar/mod.rs, `RenderOnce for Sidebar`), so an item's info cannot be
+/// wrapped around it from outside; this item builds its `SidebarMenuItem`
+/// and wraps the info around what that renders.
+#[derive(Clone)]
+pub(crate) struct NavItem {
+    ui: Entity<InfoRegistry>,
+    page: Page,
+    active: bool,
+    collapsed: bool,
+}
+
+impl Collapsible for NavItem {
+    fn collapsed(mut self, collapsed: bool) -> Self {
+        self.collapsed = collapsed;
+        self
+    }
+    fn is_collapsed(&self) -> bool {
+        self.collapsed
+    }
+}
+
+impl SidebarItem for NavItem {
+    fn render(
+        self,
+        id: impl Into<ElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> impl IntoElement {
+        let page = self.page;
+        let mut item_info =
+            info::sidebar_item(cx.theme(), page.label(), self.active, self.collapsed);
+        // A sidebar is the panel `defaults.icon_sizes.panel` names, and
+        // `SidebarMenuItem` keeps the icon it is given (sidebar/menu.rs:300).
+        if native_value(cx, geometry::icon_size_panel).is_some() {
+            item_info = item_info.geometry("icon_size_panel");
+        }
+        let item = SidebarMenuItem::new(page.label())
+            .icon(native_icon(cx, page.icon(), geometry::icon_size_panel))
+            .active(self.active)
+            .collapsed(self.collapsed)
+            .on_click(move |_, window, cx| {
+                window.dispatch_action(Box::new(ShowPage(page.index())), cx)
+            });
+        SidebarItem::render(item, id, window, cx)
+            .info(&self.ui, page.nav_item(), item_info)
+            .w_full()
+            .debug_selector(move || page.nav_item().into())
+    }
+}
+
+/// The inspector's `TabBar` (spec §2.6): Underline at `Size::Small`, `labels`
+/// its tabs, `selected` the one shown; a click hands `on_click` the index of
+/// the tab clicked.
+pub(crate) fn tab_bar(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    labels: impl IntoIterator<Item = &'static str>,
+    selected: usize,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    TabBar::new("inspector-tabs")
+        .underline()
+        .with_size(Size::Small)
+        .children(labels.into_iter().map(|label| Tab::new().label(label)))
+        .selected_index(selected)
+        .on_click(on_click)
+        .info(
+            ui,
+            "chrome-inspector-tabs",
+            info::inspector_tab_bar(cx.theme()),
+        )
 }

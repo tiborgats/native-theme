@@ -1,4 +1,4 @@
-//! The Data tab.
+//! The Data page.
 
 use gpui::{
     Context, IntoElement, ParentElement, SharedString, Styled, Window, div, prelude::*, px,
@@ -35,9 +35,9 @@ use crate::{LIST_DEMO, PROBE_ATTACHMENT, PROBE_CHAT_SEND, PROBE_PAGINATION, TREE
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Data
+    // Page: Data
     // -----------------------------------------------------------------------
-    pub(crate) fn render_data_tab(
+    pub(crate) fn render_data_page(
         &self,
         _window: &mut Window,
         cx: &mut Context<Self>,

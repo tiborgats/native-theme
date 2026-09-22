@@ -1,4 +1,4 @@
-//! The Feedback tab.
+//! The Feedback page.
 
 use gpui::{Context, IntoElement, ParentElement, Styled, Window, div, prelude::*, px};
 use gpui_component::{
@@ -35,9 +35,9 @@ use crate::{PROBE_NOTIFICATION, probe};
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Feedback
+    // Page: Feedback
     // -----------------------------------------------------------------------
-    pub(crate) fn render_feedback_tab(
+    pub(crate) fn render_feedback_page(
         &self,
         _window: &mut Window,
         cx: &mut Context<Self>,

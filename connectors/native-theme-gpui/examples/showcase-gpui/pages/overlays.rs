@@ -1,4 +1,4 @@
-//! The Overlays tab.
+//! The Overlays page.
 
 use gpui::{Context, IntoElement, ParentElement, Styled, Window, div, prelude::*, px};
 use gpui_component::{
@@ -27,9 +27,9 @@ use crate::{PROBE_ALERT_DIALOG, probe};
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Overlays
+    // Page: Overlays
     // -----------------------------------------------------------------------
-    pub(crate) fn render_overlays_tab(
+    pub(crate) fn render_overlays_page(
         &self,
         _window: &mut Window,
         cx: &mut Context<Self>,

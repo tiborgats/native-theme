@@ -1,4 +1,4 @@
-//! The Typography tab.
+//! The Typography page.
 
 use gpui::{Context, IntoElement, Keystroke, ParentElement, Styled, div, prelude::*, px, rems};
 use gpui_component::{
@@ -10,9 +10,9 @@ use crate::support::{MARKDOWN_SAMPLE, format_font_info, section};
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Typography
+    // Page: Typography
     // -----------------------------------------------------------------------
-    pub(crate) fn render_typography_tab(
+    pub(crate) fn render_typography_page(
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {

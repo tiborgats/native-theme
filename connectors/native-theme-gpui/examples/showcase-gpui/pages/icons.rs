@@ -1,4 +1,4 @@
-//! The Icons tab.
+//! The Icons page.
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Context, IntoElement, ParentElement, SharedString,
@@ -132,9 +132,9 @@ impl Showcase {
     }
 
     // -----------------------------------------------------------------------
-    // Tab: Icons
+    // Page: Icons
     // -----------------------------------------------------------------------
-    pub(crate) fn render_icons_tab(
+    pub(crate) fn render_icons_page(
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
@@ -387,7 +387,7 @@ impl Showcase {
                     ], &[
                         ("icon pixels", "the icon theme's own files. A symbolic SVG is rasterised with the platform's font colour, which the showcase passes to the loader; a raster or multi-colour icon keeps the colours it ships with (showcase-gpui/support.rs, load_all_icons)"),
                         ("fallback", "a system icon set that has no icon for a role resolves to the bundled Material SVG instead, which the showcase detects by comparing the bytes it got back with Material's own and counts in the heading above (showcase-gpui/support.rs, load_all_icons)"),
-                        ("per-icon origin", "each cell carries its own hover — the role, the icon set, the icon name the set uses, and which of the four origins it came from (showcase-gpui/pages/icons.rs, render_icons_tab)"),
+                        ("per-icon origin", "each cell carries its own hover — the role, the icon set, the icon name the set uses, and which of the four origins it came from (showcase-gpui/pages/icons.rs, render_icons_page)"),
                         ("geometry", "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout"),
                     ])),
             )

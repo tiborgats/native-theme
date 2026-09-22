@@ -3,28 +3,26 @@
 use gpui::{
     Action, App, Context, Entity, FocusHandle, Hsla, ImageSource, IntoElement, KeyBinding, Menu,
     ParentElement, Render, SharedString, Styled, Subscription, Task, Window, actions, div,
-    prelude::*, px, rems,
+    prelude::*, px,
 };
 use gpui_component::{
-    ActiveTheme, GlobalState, Root, Sizable, Size,
+    ActiveTheme, GlobalState, ResizableState, Root,
     attachment::AttachmentStatus,
     carousel::CarouselState,
     color_picker::ColorPickerState,
     combobox::{ComboboxEvent, ComboboxState},
     command::CommandState,
-    h_flex,
+    h_flex, h_resizable,
     input::{EditorState, InputState, NumberInputEvent, OtpState, StepAction, TextareaState},
     label::Label,
     list::ListState,
     menu::AppMenuBar,
     message_scroller::MessageScrollerState,
+    resizable_panel,
     scroll::ScrollableElement,
     select::{SearchableVec, SelectEvent, SelectState},
-    separator::Separator,
     slider::{SliderEvent, SliderState},
-    tab::TabBar,
     table::{Column, TableState},
-    text::{TextView, TextViewStyle},
     theme::Theme,
     tree::{TreeItem, TreeState},
     v_flex,
@@ -48,14 +46,13 @@ use native_theme_gpui::{AccessibilityPreferences, geometry};
 
 use crate::chrome;
 use crate::info::{InfoRegistry, epoch_marker};
-use crate::inspector::WidgetInfoPanel;
+use crate::inspector::Inspector;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
-    PresetDelegate, SampleListDelegate, SampleTableDelegate, defined_size, format_font_info,
-    initial_chat_messages, load_all_icons, load_gpui_icons, parse_icon_set_choice, release_sources,
-    widget_tooltip_themed,
+    PresetDelegate, SampleListDelegate, SampleTableDelegate, initial_chat_messages, load_all_icons,
+    load_gpui_icons, parse_icon_set_choice, release_sources, widget_tooltip_themed,
 };
-use crate::{CONTENT_SCROLL, SIDEBAR_COLUMN, TAB_ROOT, Tab};
+use crate::{CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_WIDTH, NAV_WIDTH, PAGE_ROOT, Page};
 
 /// gpui-component's mode for the showcase's light/dark flag.
 fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
@@ -86,7 +83,7 @@ actions!(
     ]
 );
 
-/// Show the page at this position of [`Tab::ALL`].
+/// Show the page at this position of [`Page::ALL`].
 ///
 /// `no_json`: gpui builds an action from JSON only for a keymap file, which
 /// the showcase does not read; its menus and key bindings hold the value
@@ -167,10 +164,26 @@ pub(crate) struct Showcase {
     /// Original native-theme mono font spec, for display purposes.
     pub(crate) original_mono_font: native_theme::theme::ResolvedFontSpec,
 
-    pub(crate) active_tab: Tab,
+    pub(crate) active_page: Page,
+    /// Whether the Sidebar is collapsed to its icons (spec §2.4).
+    pub(crate) nav_collapsed: bool,
+    /// Whether the inspector's panel is shown (spec §1.1, §2.6).
+    pub(crate) inspector_visible: bool,
+    /// The panel sizes of the window's resizable group, one state for each
+    /// arrangement of it: with and without the Sidebar's panel, with and
+    /// without the inspector's. A state keeps its sizes by panel position
+    /// (gpui-base resizable/mod.rs, `ResizableState::sync_panels_count`), so
+    /// in a shared one a panel leaving the group would hand its width to the
+    /// next; and a panel kept but hidden (`ResizablePanel::visible`) keeps
+    /// bounds that a drag of another handle still counts in
+    /// (`ResizableState::resize_panel_at_handle`). So each arrangement has
+    /// its own.
+    body_layouts: [Entity<ResizableState>; 4],
 
     /// Where the showcase's widgets report their info (spec §4).
     pub(crate) info_ui: Entity<InfoRegistry>,
+    /// The inspector panel, which shows the info the registry settles on.
+    pub(crate) inspector: Entity<Inspector>,
     /// The title bar's menus. Its own entity, apart from the Overlays page's
     /// sample: an `AppMenuBar` keeps which menu is open, and one entity drawn
     /// twice would open both.
@@ -189,7 +202,7 @@ pub(crate) struct Showcase {
     /// than from `cx.native_theme()`.
     pub(crate) layout: native_theme::theme::LayoutTheme,
 
-    // Inputs tab
+    // Inputs page
     pub(crate) input_state: Entity<InputState>,
     /// The field sized by `geometry::input_height` alone.
     pub(crate) input_height_state: Entity<InputState>,
@@ -221,19 +234,19 @@ pub(crate) struct Showcase {
     /// Stars the `Rating` currently shows; its `on_click` writes here.
     pub(crate) rating_value: usize,
 
-    // Layout tab
+    // Layout page
     pub(crate) collapsible_open: bool,
     pub(crate) carousel_state: Entity<CarouselState>,
     /// The `Stepper`'s current step, written by its `on_click`.
     pub(crate) step: usize,
-    /// Whether the Layout tab's `Sidebar` is collapsed; the
+    /// Whether the Layout page's `Sidebar` is collapsed; its
     /// `SidebarToggleButton` flips it.
     pub(crate) sidebar_collapsed: bool,
 
-    // Typography tab
+    // Typography page
     pub(crate) editor_state: Entity<EditorState>,
 
-    // Data tab
+    // Data page
     pub(crate) table_state: Entity<TableState<SampleTableDelegate>>,
     pub(crate) list_state: Entity<ListState<SampleListDelegate>>,
     pub(crate) tree_state: Entity<TreeState>,
@@ -246,11 +259,11 @@ pub(crate) struct Showcase {
     /// The status the third `Attachment` card is in; clicking it advances.
     pub(crate) attachment_status: AttachmentStatus,
 
-    // Buttons tab
+    // Buttons page
     pub(crate) toggle_bold: bool,
     pub(crate) toggle_italic: bool,
 
-    // Overlays tab
+    // Overlays page
     pub(crate) app_menu_bar: Entity<AppMenuBar>,
     /// What the last `AlertDialog` was answered with, written by its `on_ok`
     /// and `on_cancel` so the section reports a real outcome.
@@ -299,9 +312,6 @@ pub(crate) struct Showcase {
     pub(crate) reduced_motion: bool,
     /// Static first-frame ImageSources for reduced motion display (set name, source, anim type label).
     pub(crate) animated_static_sources: Vec<(String, ImageSource, &'static str)>,
-
-    /// Widget Info sidebar panel (separate Entity for independent re-render).
-    pub(crate) widget_info_panel: Entity<WidgetInfoPanel>,
 
     /// Error message from theme loading, displayed as a banner in the UI.
     pub(crate) error_message: Option<String>,
@@ -938,6 +948,13 @@ impl Showcase {
             .ok()
         };
 
+        let info_ui = cx.new(|_| InfoRegistry::new());
+        let inspector = {
+            let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
+            cx.new(|cx| Inspector::new(ui, showcase, cx))
+        };
+        let body_layouts = [(); 4].map(|()| cx.new(|_| ResizableState::default()));
+
         let fg = cx.theme().foreground;
         let mut showcase = Self {
             preset_combobox,
@@ -947,8 +964,12 @@ impl Showcase {
             color_mode,
             original_font,
             original_mono_font,
-            active_tab: Tab::Buttons,
-            info_ui: cx.new(|_| InfoRegistry::new()),
+            active_page: Page::Buttons,
+            nav_collapsed: false,
+            inspector_visible: true,
+            body_layouts,
+            info_ui,
+            inspector,
             menu_bar,
             focus_handle,
             _refocus,
@@ -1013,22 +1034,6 @@ impl Showcase {
             animation_timer: None,
             reduced_motion: false,
             animated_static_sources: Vec::new(),
-            widget_info_panel: {
-                let info_input = cx.new(|cx| {
-                    // No `auto_grow`: the panel's height comes from the
-                    // sidebar column, not from the text, and an auto-grown
-                    // textarea carries a minimum height of its row count that
-                    // would push the panel out of the column again.
-                    let mut state = TextareaState::new(window, cx);
-                    state.set_placeholder("Hover over any widget…", window, cx);
-                    state
-                });
-                cx.new(|_cx| WidgetInfoPanel {
-                    text: String::new(),
-                    input_state: info_input,
-                    needs_sync: false,
-                })
-            },
             error_message: initial_error,
             theme_change_flag,
             _theme_watcher,
@@ -1217,11 +1222,33 @@ impl Showcase {
         self.apply_theme_by_name(&name, window, cx);
     }
 
-    fn on_show_page(&mut self, action: &ShowPage, _: &mut Window, cx: &mut Context<Self>) {
-        if let Some(tab) = Tab::at(action.0) {
-            self.active_tab = tab;
-            cx.notify();
+    /// Show `page`. Every way to a page -- the Sidebar, the View menu, the
+    /// Layout page's Breadcrumb -- goes through here, so the info of what
+    /// the page change takes off the screen does not stay on show (spec
+    /// §4.3.4).
+    pub(crate) fn show_page(&mut self, page: Page, cx: &mut Context<Self>) {
+        if self.active_page != page {
+            self.active_page = page;
+            self.info_ui.update(cx, |r, _| r.page_changed());
+            self.inspector.update(cx, |i, cx| i.clear_legacy(cx));
         }
+        cx.notify();
+    }
+
+    fn on_show_page(&mut self, action: &ShowPage, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some(page) = Page::at(action.0) {
+            self.show_page(page, cx);
+        }
+    }
+
+    fn on_toggle_sidebar(&mut self, _: &ToggleSidebar, _: &mut Window, cx: &mut Context<Self>) {
+        self.nav_collapsed = !self.nav_collapsed;
+        cx.notify();
+    }
+
+    fn on_toggle_inspector(&mut self, _: &ToggleInspector, _: &mut Window, cx: &mut Context<Self>) {
+        self.inspector_visible = !self.inspector_visible;
+        cx.notify();
     }
 
     fn on_set_color_mode(
@@ -1239,18 +1266,17 @@ impl Showcase {
         cx.notify();
     }
 
-    /// Create a hover handler that updates the Widget Info panel.
+    /// Create a hover handler that shows a page's text panel in the
+    /// inspector, until the page reports its instances (plan Tasks 14-23).
     ///
-    /// Captures a clone of the `WidgetInfoPanel` entity handle and updates it
-    /// directly — the Showcase entity is never entered so it does **not**
-    /// re-render, keeping hover updates cheap.
+    /// The registry forgets what it showed, so an info hovered again after
+    /// the text panel settles anew and replaces it.
     pub(crate) fn set_info(&self, info: String) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
-        let panel = self.widget_info_panel.clone();
+        let (ui, inspector) = (self.info_ui.clone(), self.inspector.clone());
         move |hovered: &bool, _window: &mut Window, cx: &mut App| {
             if *hovered {
-                panel.update(cx, |p, cx| {
-                    p.set_text(info.clone(), cx);
-                });
+                ui.update(cx, |r, _| r.forget_shown());
+                inspector.update(cx, |i, cx| i.set_legacy(info.clone(), cx));
             }
         }
     }
@@ -1267,55 +1293,6 @@ impl Showcase {
         let info = widget_tooltip_themed(fi, name, colors, config, not_themeable);
         self.set_info(info)
     }
-
-    // -----------------------------------------------------------------------
-    // Left sidebar: theme config inspector
-    // -----------------------------------------------------------------------
-    fn render_sidebar(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let theme = cx.theme().clone();
-        let radius_str = format!("{}px", theme.radius.as_f32());
-        let radius_lg_str = format!("{}px", theme.radius_lg.as_f32());
-        let font_family_str = self.original_font.family.clone();
-        // In the unit the platform stated, like the hover panels: this row is
-        // reporting the theme's own definition, not the pixel value gpui
-        // happens to lay out with.
-        let font_size_str = defined_size(&self.original_font);
-        let mono_family_str = self.original_mono_font.family.clone();
-        let mono_size_str = defined_size(&self.original_mono_font);
-        let shadow_str = if theme.shadow { "true" } else { "false" };
-        let scrollbar_str = format!("{:?}", theme.scrollbar_mode);
-
-        let md = format!(
-            "### Theme Config Inspector\n\n\
-             **radius:** {}\n\
-             **radius_lg:** {}\n\
-             **font_family:** {}\n\
-             **font_size:** {}\n\
-             **mono_font_family:** {}\n\
-             **mono_font_size:** {}\n\
-             **shadow:** {}\n\
-             **scrollbar_mode:** {}",
-            radius_str,
-            radius_lg_str,
-            font_family_str,
-            font_size_str,
-            mono_family_str,
-            mono_size_str,
-            shadow_str,
-            scrollbar_str,
-        );
-
-        let style = TextViewStyle::default()
-            .paragraph_gap(rems(0.3))
-            .heading_font_size(|_level, _base| px(13.0));
-
-        v_flex().p_3().w_full().flex_shrink_0().child(
-            TextView::markdown("config-inspector", SharedString::from(md))
-                .selectable(true)
-                .style(style)
-                .text_xs(),
-        )
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1331,35 +1308,19 @@ impl Render for Showcase {
             self.reload_system_theme(window, cx);
         }
 
-        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let theme = cx.theme().clone();
         // Ensure icon image caches match the current foreground color
         if theme.foreground != self.icon_cache_fg {
             self.rebuild_icon_caches(theme.foreground, window, cx);
         }
 
-        let active_tab = self.active_tab;
+        let active_page = self.active_page;
 
-        // Build the sidebar content
-        let sidebar = v_flex()
-            .id("sidebar")
-            .w(px(220.0))
-            .min_w(px(220.0))
-            .h_full()
-            .bg(theme.sidebar)
-            .border_r_1()
-            .border_color(theme.sidebar_border)
-            .overflow_y_scroll()
-            .debug_selector(|| SIDEBAR_COLUMN.into())
-            // The config inspector keeps its natural height; the Widget Info
-            // panel below it is the child that grows into what is left
-            // (`WidgetInfoPanel::render`).
-            .child(self.render_sidebar(window, cx))
-            .child(Separator::horizontal())
-            .child(self.widget_info_panel.clone());
-
-        // Build the content area
-        let mut content = v_flex().flex_1().h_full().overflow_hidden();
+        // The content panel: the error banner, then the page, scrolling.
+        let mut content = v_flex()
+            .size_full()
+            .overflow_hidden()
+            .debug_selector(|| CONTENT_PANEL.into());
 
         // Error banner (if any)
         if let Some(ref msg) = self.error_message {
@@ -1374,102 +1335,107 @@ impl Render for Showcase {
             );
         }
 
-        // Tab bar
-        let content = content
-            .child(
-                v_flex().px_4().pt_3().pb_2().child(
-                    div()
-                        .id("tt-tabbar")
-                        .child(
-                            TabBar::new("nav")
-                                .underline()
-                                .with_size(Size::Small)
-                                .children(Tab::ALL.map(Tab::label))
-                                .selected_index(active_tab.index())
-                                .on_click(cx.listener(|this, ix: &usize, _window, _cx| {
-                                    if let Some(tab) = Tab::at(*ix) {
-                                        this.active_tab = tab;
-                                    }
-                                })),
-                        )
-                        .on_hover(self.hover_info(
-                            &fi,
-                            "TabBar",
-                            &[("text", "tab_foreground", theme.tab_foreground, "gpui-component/tab/tab.rs:159"), ("hover text", "tab_active_foreground", theme.tab_active_foreground, "gpui-component/tab/tab.rs:208"), ("active text", "tab_active_foreground", theme.tab_active_foreground, "gpui-component/tab/tab.rs:254"), ("active underline", "primary", theme.primary, "gpui-component/tab/tab.rs:260"), ("bottom rule", "border", theme.border, "gpui-component/tab/tab_bar.rs:512")],
-                            &[],
-                            &[("tab fill", "the tab token has no reader anywhere in gpui-component or gpui-base: an inactive tab is transparent, and the connector writes the slot from tab.background_color for nothing (Tier U)"), ("fill", "none, on the bar or on a tab: an Underline bar is transparent and marks the active tab with a primary underline. tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)"), ("corners", "square: an Underline bar and its tabs take no radius, whatever the theme's (tab/tab.rs, TabVariant::radius)"), ("spacing", "a per-Size gap between the tabs, on an inner row the bar's refinement does not reach; an Underline tab has no horizontal padding at all (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::inner_paddings). TabTheme states no spacing either"), ("height", "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.min_height a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)")],
-                        )),
-                ),
-            )
-            // Content with scrollbar
-            .child(
-                div()
-                    .id("content-scroll-outer")
-                    .flex_1()
-                    .overflow_y_scrollbar()
-                    // The bar is drawn over the right edge of the scroll area,
-                    // so the tab keeps that width free; the tab roots' own
-                    // padding is untouched.
-                    .native(cx, geometry::scrollbar_gutter)
-                    .debug_selector(|| CONTENT_SCROLL.into())
-                    // TAB_ROOT is what `every_tab_lays_out` looks the tab up
-                    // by, and it goes on each arm rather than on one wrapper
-                    // around the match: the test asserts the tab's own root
-                    // has a size, and a wrapper would report this scroll
-                    // container's size for every tab -- including a tab that
-                    // rendered nothing. That is what makes the ten
-                    // `impl IntoElement + InteractiveElement` signatures worth
-                    // their noise.
-                    .child(match active_tab {
-                        Tab::Buttons => self
-                            .render_buttons_tab(window, cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Inputs => self
-                            .render_inputs_tab(window, cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Data => self
-                            .render_data_tab(window, cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Feedback => self
-                            .render_feedback_tab(window, cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Typography => self
-                            .render_typography_tab(cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Layout => self
-                            .render_layout_tab(window, cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Overlays => self
-                            .render_overlays_tab(window, cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Charts => self
-                            .render_charts_tab(cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::Icons => self
-                            .render_icons_tab(cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                        Tab::ThemeMap => self
-                            .render_theme_map_tab(cx)
-                            .debug_selector(|| TAB_ROOT.into())
-                            .into_any_element(),
-                    }),
-            );
+        let content = content.child(
+            div()
+                .id("content-scroll-outer")
+                .flex_1()
+                .overflow_y_scrollbar()
+                // The bar is drawn over the right edge of the scroll area,
+                // so the page keeps that width free; the page roots' own
+                // padding is untouched.
+                .native(cx, geometry::scrollbar_gutter)
+                .debug_selector(|| CONTENT_SCROLL.into())
+                // PAGE_ROOT is what `every_page_lays_out` looks the page up
+                // by, and it goes on each arm rather than on one wrapper
+                // around the match: the test asserts the page's own root
+                // has a size, and a wrapper would report this scroll
+                // container's size for every page -- including a page that
+                // rendered nothing. That is what makes the ten
+                // `impl IntoElement + InteractiveElement` signatures worth
+                // their noise.
+                .child(match active_page {
+                    Page::Buttons => self
+                        .render_buttons_page(window, cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Inputs => self
+                        .render_inputs_page(window, cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Data => self
+                        .render_data_page(window, cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Feedback => self
+                        .render_feedback_page(window, cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Typography => self
+                        .render_typography_page(cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Layout => self
+                        .render_layout_page(window, cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Overlays => self
+                        .render_overlays_page(window, cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Charts => self
+                        .render_charts_page(cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::Icons => self
+                        .render_icons_page(cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                    Page::ThemeMap => self
+                        .render_theme_map_page(cx)
+                        .debug_selector(|| PAGE_ROOT.into())
+                        .into_any_element(),
+                }),
+        );
 
-        // Main layout: horizontal split with sidebar + content, and above it
-        // the three layers `Root` keeps but does not draw. `Root::render`
-        // renders only the view it was given (root.rs, Root::render), so a
-        // dialog, a sheet or a notification the showcase pushes reaches the
-        // screen only because these three are here -- upstream's own dialog
-        // test builds its host the same way (dialog/dialog.rs, DialogHost).
+        // The body: Sidebar | content | inspector, one resizable group
+        // (spec §1.1). A collapsed Sidebar is an icon rail beside the group
+        // rather than a panel in it: upstream's rail has a fixed width
+        // (sidebar/mod.rs, `COLLAPSED_WIDTH`) that no panel size can name.
+        let nav = chrome::sidebar(self, cx).into_any_element();
+        let (rail, nav_panel) = if self.nav_collapsed {
+            (Some(nav), None)
+        } else {
+            (
+                None,
+                Some(resizable_panel().size(NAV_WIDTH).flex_none().child(nav)),
+            )
+        };
+        let inspector_panel = self.inspector_visible.then(|| {
+            resizable_panel()
+                .size(INSPECTOR_WIDTH)
+                .flex_none()
+                .child(self.inspector.clone())
+        });
+        let arrangement =
+            usize::from(nav_panel.is_some()) | (usize::from(inspector_panel.is_some()) << 1);
+        let panels: Vec<_> = nav_panel
+            .into_iter()
+            .chain([resizable_panel().child(content)])
+            .chain(inspector_panel)
+            .collect();
+        let body = h_resizable("body").children(panels);
+        let body = match self.body_layouts.get(arrangement) {
+            Some(state) => body.with_state(state),
+            None => body,
+        };
+
+        // Main layout: the title bar, the toolbar and the body, and above
+        // them the three layers `Root` keeps but does not draw.
+        // `Root::render` renders only the view it was given (root.rs,
+        // Root::render), so a dialog, a sheet or a notification the showcase
+        // pushes reaches the screen only because these three are here --
+        // upstream's own dialog test builds its host the same way
+        // (dialog/dialog.rs, DialogHost).
         div()
             .relative()
             .size_full()
@@ -1479,6 +1445,8 @@ impl Render for Showcase {
             .on_action(cx.listener(Self::on_show_page))
             .on_action(cx.listener(Self::on_set_color_mode))
             .on_action(cx.listener(Self::on_reload_theme))
+            .on_action(cx.listener(Self::on_toggle_sidebar))
+            .on_action(cx.listener(Self::on_toggle_inspector))
             // First, so its prepaint opens the frame for every target
             // (info/registry.rs, epoch_marker).
             .child(epoch_marker(&self.info_ui))
@@ -1495,8 +1463,8 @@ impl Render for Showcase {
                             // unless it clips; the body has to fit under the
                             // title bar, not push the window taller.
                             .overflow_hidden()
-                            .child(sidebar)
-                            .child(content),
+                            .children(rail)
+                            .child(div().flex_1().min_w_0().h_full().child(body)),
                     ),
             )
             .children(Root::render_sheet_layer(window, cx))

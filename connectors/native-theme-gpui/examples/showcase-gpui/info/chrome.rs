@@ -156,7 +156,232 @@ pub fn toolbar() -> WidgetInfo {
         )
         .instance(
             "items",
-            "the preset Combobox, the colour-mode ToggleGroup, the icon-set Select, a vertical Separator, and icon Buttons for the command palette, a theme reload and the inspector",
+            "the SidebarToggleButton, the preset Combobox, the colour-mode ToggleGroup, the icon-set Select, a vertical Separator, and icon Buttons for the command palette, a theme reload and the inspector",
+        )
+}
+
+/// The toolbar's `SidebarToggleButton` (spec §2.3, §2.4), drawn `collapsed`
+/// while the Sidebar is.
+pub fn sidebar_toggle_button(t: &Theme, collapsed: bool) -> WidgetInfo {
+    WidgetInfo::new("SidebarToggleButton")
+        .color(claim(
+            "icon",
+            "secondary_foreground",
+            t.secondary_foreground,
+            "gpui-component/button/button.rs:964",
+        ))
+        .color(claim(
+            "hover",
+            "accent",
+            t.accent,
+            "gpui-component/button/button.rs:1126",
+        ))
+        .color(claim(
+            "icon on hover",
+            "accent_foreground",
+            t.accent_foreground,
+            "gpui-component/button/button.rs:1141",
+        ))
+        .not_themeable(
+            "button",
+            "a ghost, small Button the widget builds and keeps to itself: nothing outside it refines, disables or gives a tooltip to it (sidebar/mod.rs, SidebarToggleButton)",
+        )
+        .not_themeable(
+            "fill",
+            "none until hovered: a ghost Button is transparent, and it hovers with accent rather than the button family",
+        )
+        .not_themeable(
+            "icon",
+            "PanelLeftClose, or PanelLeftOpen while collapsed, at size_4 -- 1rem, so the platform's font size. toolbar.icon_size does not reach it: the widget gives its Button the icon as it renders (sidebar/mod.rs, SidebarToggleButton)",
+        )
+        .instance(
+            "action",
+            "dispatches ToggleSidebar, the action View > Toggle Sidebar and Ctrl+B run: the Sidebar collapses to its icons, or expands again",
+        )
+        .instance(
+            "state",
+            if collapsed {
+                "the Sidebar is collapsed"
+            } else {
+                "the Sidebar is expanded"
+            },
+        )
+}
+
+/// The window's `Sidebar` (spec §2.4), which navigates between the pages.
+pub fn sidebar(t: &Theme, collapsed: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("Sidebar")
+        .color(claim(
+            "bg",
+            "sidebar",
+            t.sidebar,
+            "gpui-component/sidebar/mod.rs:413",
+        ))
+        .color(claim(
+            "text",
+            "sidebar_foreground",
+            t.sidebar_foreground,
+            "gpui-component/sidebar/mod.rs:414",
+        ))
+        .color(claim(
+            "border",
+            "sidebar_border",
+            t.sidebar_border,
+            "gpui-component/sidebar/mod.rs:415",
+        ))
+        .not_themeable(
+            "width",
+            "SidebarTheme states no width -- our model's gap. A width that is not an absolute pixel length leaves the Sidebar without its animated wrapper (sidebar/mod.rs, sidebar_expanded_width), so expanded it fills its resizable panel, and collapsed it is upstream's fixed 48px (sidebar/mod.rs, COLLAPSED_WIDTH)",
+        )
+        .not_themeable(
+            "padding",
+            "px_3 around the items, p_2 while collapsed -- rems, so the platform's font -- and not settable: upstream drops the caller's padding before it lays the Sidebar out (sidebar/mod.rs, RenderOnce for Sidebar)",
+        )
+        .instance(
+            "pages",
+            "one SidebarMenuItem per page with the page's icon; the shown page's item is active, and a click dispatches ShowPage, the action the View menu's page items run",
+        );
+    if collapsed {
+        info.instance(
+            "collapsed",
+            "to its icons, by the toolbar's SidebarToggleButton, View > Toggle Sidebar or Ctrl+B. An icon rail is out of the resizable group, so no handle resizes it",
+        )
+    } else {
+        info.instance(
+            "width",
+            "the first panel of the window's resizable group: NAV_WIDTH, the showcase's own default, until its handle is dragged",
+        )
+    }
+}
+
+/// The Sidebar's item for the page labelled `page`, `active` while that page
+/// is shown and `collapsed` while the Sidebar is. Its icon-size line is
+/// recorded where the item is built.
+pub fn sidebar_item(t: &Theme, page: &'static str, active: bool, collapsed: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("SidebarMenuItem").variant(if active {
+        format!("{page}, active")
+    } else {
+        page.to_string()
+    });
+    let info = if active {
+        info.color(claim(
+            "bg",
+            "sidebar_accent",
+            t.sidebar_accent,
+            "gpui-component/sidebar/menu.rs:297",
+        ))
+        .color(claim(
+            "text",
+            "sidebar_accent_foreground",
+            t.sidebar_accent_foreground,
+            "gpui-component/sidebar/menu.rs:298",
+        ))
+    } else {
+        info.color(claim(
+            "text (the Sidebar's)",
+            "sidebar_foreground",
+            t.sidebar_foreground,
+            "gpui-component/sidebar/mod.rs:414",
+        ))
+        .color(claim(
+            "hover bg, at 80%",
+            "sidebar_accent",
+            t.sidebar_accent.opacity(0.8),
+            "gpui-component/sidebar/menu.rs:291",
+        ))
+        .color(claim(
+            "hover text",
+            "sidebar_accent_foreground",
+            t.sidebar_accent_foreground,
+            "gpui-component/sidebar/menu.rs:292",
+        ))
+    };
+    let info = info
+        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .not_themeable(
+            "hover",
+            "sidebar_accent at 80%, the selection colour: the model's sidebar.hover_background reaches no slot, because the connector reads it nowhere (sidebar/menu.rs, SidebarMenuItem)",
+        )
+        .not_themeable(
+            "font",
+            "text_sm, and font_medium while active -- sidebar.font's size and weight have no route, as no geometry:: builder carries them (sidebar/menu.rs, SidebarMenuItem)",
+        )
+        .not_themeable(
+            "height",
+            "h_7 while expanded, set after the caller's refinement, so nothing reaches it -- rems, so the platform's font. SidebarTheme states no row height (sidebar/menu.rs, SidebarMenuItem)",
+        )
+        .instance(
+            "page",
+            format!("a click dispatches ShowPage for the {page} page, the action View > {page} runs"),
+        );
+    if collapsed {
+        info.instance(
+            "collapsed",
+            "only the icon shows, and the label becomes a tooltip at its right (sidebar/menu.rs, collapsed_tooltip)",
+        )
+    } else {
+        info
+    }
+}
+
+/// The inspector's TabBar (spec §2.6, §4.4): chrome, so it reports itself,
+/// unlike the content below it.
+pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("TabBar")
+        .variant("Underline, small")
+        .color(claim(
+            "text",
+            "tab_foreground",
+            t.tab_foreground,
+            "gpui-component/tab/tab.rs:159",
+        ))
+        .color(claim(
+            "hover text",
+            "tab_active_foreground",
+            t.tab_active_foreground,
+            "gpui-component/tab/tab.rs:208",
+        ))
+        .color(claim(
+            "active text",
+            "tab_active_foreground",
+            t.tab_active_foreground,
+            "gpui-component/tab/tab.rs:254",
+        ))
+        .color(claim(
+            "active underline",
+            "primary",
+            t.primary,
+            "gpui-component/tab/tab.rs:260",
+        ))
+        .color(claim(
+            "bottom rule",
+            "border",
+            t.border,
+            "gpui-component/tab/tab_bar.rs:512",
+        ))
+        .not_themeable(
+            "tab fill",
+            "the tab token has no reader anywhere in gpui-component or gpui-base: an inactive tab is transparent, and the connector writes the slot from tab.background_color for nothing (Tier U)",
+        )
+        .not_themeable(
+            "fill",
+            "none, on the bar or on a tab: an Underline bar is transparent and marks the active tab with a primary underline. tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
+        )
+        .not_themeable(
+            "corners",
+            "square: an Underline bar and its tabs take no radius, whatever the theme's (tab/tab.rs, TabVariant::radius)",
+        )
+        .not_themeable(
+            "spacing",
+            "a per-Size gap between the tabs, on an inner row the bar's refinement does not reach; an Underline tab has no horizontal padding at all (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::inner_paddings). TabTheme states no spacing either",
+        )
+        .not_themeable(
+            "height",
+            "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.min_height a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)",
+        )
+        .instance(
+            "tabs",
+            "Widget, the info the pointer settled on, and Theme, what the theme and the window set that no widget carries",
         )
 }
 

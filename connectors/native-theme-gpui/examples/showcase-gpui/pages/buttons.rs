@@ -1,4 +1,4 @@
-//! The Buttons tab.
+//! The Buttons page.
 
 use gpui::{Context, IntoElement, ParentElement, Styled, Window, div, prelude::*};
 use gpui_component::{
@@ -16,9 +16,9 @@ use crate::{PROBE_CLIPBOARD, probe};
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Buttons
+    // Page: Buttons
     // -----------------------------------------------------------------------
-    pub(crate) fn render_buttons_tab(
+    pub(crate) fn render_buttons_page(
         &self,
         _window: &mut Window,
         cx: &mut Context<Self>,

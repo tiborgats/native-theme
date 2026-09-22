@@ -1,4 +1,4 @@
-//! One module per tab of the content area.
+//! One module per page of the content area.
 
 mod buttons;
 mod charts;

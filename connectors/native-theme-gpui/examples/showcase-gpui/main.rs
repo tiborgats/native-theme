@@ -18,20 +18,22 @@
 //!   on each change — no manual rewiring per widget.
 //! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
 //!   drive its appearance.
-//! - The Color Map tab exposes the full 138-field `ThemeColor` palette that
+//! - The Theme Map page exposes the full 138-field `ThemeColor` palette that
 //!   gpui-component exposes, with each field's current value and the
 //!   `native-theme` field it was derived from.
-//! - The Icons tab demonstrates `IconRole` mapping across Material, Lucide,
+//! - The Icons page demonstrates `IconRole` mapping across Material, Lucide,
 //!   and freedesktop sets, plus animated spinner playback.
 //!
 //! # How the source is organised
 //!
 //! `main.rs` holds the entry point, the command line and the screenshot
 //! capture; `app.rs` the `Showcase` view, its state and theme switching;
-//! `pages/` one module per tab; `inspector.rs` the Widget Info panel; and
+//! `pages/` one module per page; `chrome.rs` and `demo.rs` the window's
+//! chrome and the helpers that build a widget with its info; `info/` what
+//! each widget reports; `inspector.rs` the inspector panel; and
 //! `support.rs` the sample content, helpers, icon loading and delegates
 //! the pages share. Within a file, section-divider blocks (`// ─────`)
-//! separate one widget category, tab or view from the next.
+//! separate one widget category, page or view from the next.
 
 mod app;
 mod chrome;
@@ -45,7 +47,7 @@ use gpui::{
     App, Bounds, Div, IntoElement, ParentElement, Pixels, SharedString, WindowBounds,
     WindowDecorations, WindowOptions, div, prelude::*, px, size,
 };
-use gpui_component::{ActiveTheme, Root, TitleBar, select::SearchableVec};
+use gpui_component::{ActiveTheme, IconName, Root, TitleBar, select::SearchableVec};
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use {gpui::Window, std::time::Duration};
 
@@ -55,16 +57,16 @@ use crate::app::{AppColorMode, Showcase};
 use crate::support::{load_all_icons, load_gpui_icons};
 
 // ---------------------------------------------------------------------------
-// Tabs
+// Pages
 // ---------------------------------------------------------------------------
 
-/// The content area's tabs.
+/// The pages the Sidebar navigates between (spec §2.4).
 ///
 /// `Showcase::render` matches on this, so a new variant cannot be added without
-/// the compiler asking what it renders, and the bar's labels, the `--tab` names
-/// and the layout self-test all read [`Tab::ALL`].
+/// the compiler asking what it renders, and the Sidebar's items, the View
+/// menu, the `--tab` names and the layout self-test all read [`Page::ALL`].
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Tab {
+pub(crate) enum Page {
     Buttons,
     Inputs,
     Data,
@@ -77,15 +79,16 @@ pub(crate) enum Tab {
     ThemeMap,
 }
 
-impl Tab {
-    /// Every tab, in the order the bar shows them.
+impl Page {
+    /// Every page, in the order the Sidebar lists them.
     ///
-    /// A new variant forces an arm in [`Tab::index`] and [`Tab::label`], whose
-    /// matches are exhaustive, and the index it is given there has to be its
-    /// position in this array — the `const` block below rejects the build
-    /// otherwise. The one thing neither the compiler nor that block can see is
-    /// a variant added to the enum and to both matches but not to this list:
-    /// it would take an index the array does not have, and the assertion fires.
+    /// A new variant forces an arm in [`Page::index`], [`Page::label`],
+    /// [`Page::icon`] and [`Page::nav_item`], whose matches are exhaustive,
+    /// and the index it is given there has to be its position in this array
+    /// — the `const` block below rejects the build otherwise. The one thing
+    /// neither the compiler nor that block can see is a variant added to the
+    /// enum and to the matches but not to this list: it would take an index
+    /// the array does not have, and the assertion fires.
     const ALL: [Self; 10] = [
         Self::Buttons,
         Self::Inputs,
@@ -99,7 +102,7 @@ impl Tab {
         Self::ThemeMap,
     ];
 
-    /// The tab's position in the bar, which is what `TabBar` counts in.
+    /// The page's position in the Sidebar, which is what `ShowPage` carries.
     const fn index(self) -> usize {
         match self {
             Self::Buttons => 0,
@@ -115,12 +118,12 @@ impl Tab {
         }
     }
 
-    /// The tab at a bar position; `None` past the end.
+    /// The page at a Sidebar position; `None` past the end.
     fn at(index: usize) -> Option<Self> {
         Self::ALL.get(index).copied()
     }
 
-    /// The label the bar shows.
+    /// The label the Sidebar and the View menu show.
     const fn label(self) -> &'static str {
         match self {
             Self::Buttons => "Buttons",
@@ -135,15 +138,48 @@ impl Tab {
             Self::ThemeMap => "Theme Map",
         }
     }
+
+    /// The icon the page's Sidebar item shows.
+    const fn icon(self) -> IconName {
+        match self {
+            Self::Buttons => IconName::CircleCheck,
+            Self::Inputs => IconName::ALargeSmall,
+            Self::Data => IconName::Inbox,
+            Self::Feedback => IconName::Bell,
+            Self::Typography => IconName::CaseSensitive,
+            Self::Layout => IconName::LayoutDashboard,
+            Self::Overlays => IconName::GalleryVerticalEnd,
+            Self::Charts => IconName::ChartPie,
+            Self::Icons => IconName::Star,
+            Self::ThemeMap => IconName::Palette,
+        }
+    }
+
+    /// The id and debug selector of the page's Sidebar item, so
+    /// `the_sidebar_navigates` can click the item the render code built.
+    const fn nav_item(self) -> &'static str {
+        match self {
+            Self::Buttons => "chrome-nav-buttons",
+            Self::Inputs => "chrome-nav-inputs",
+            Self::Data => "chrome-nav-data",
+            Self::Feedback => "chrome-nav-feedback",
+            Self::Typography => "chrome-nav-typography",
+            Self::Layout => "chrome-nav-layout",
+            Self::Overlays => "chrome-nav-overlays",
+            Self::Charts => "chrome-nav-charts",
+            Self::Icons => "chrome-nav-icons",
+            Self::ThemeMap => "chrome-nav-theme-map",
+        }
+    }
 }
 
-/// `Tab::ALL` is in bar order and holds each tab once.
+/// `Page::ALL` is in Sidebar order and holds each page once.
 const _: () = {
     let mut i = 0;
-    while i < Tab::ALL.len() {
+    while i < Page::ALL.len() {
         assert!(
-            Tab::ALL[i].index() == i,
-            "Tab::ALL is not the tabs in bar order"
+            Page::ALL[i].index() == i,
+            "Page::ALL is not the pages in Sidebar order"
         );
         i += 1;
     }
@@ -164,35 +200,57 @@ pub(crate) const CHROME_APP_MENU_BAR: &str = "chrome-app-menu-bar";
 /// `the_toolbar_is_the_models_toolbar` can measure it.
 pub(crate) const CHROME_TOOLBAR: &str = "chrome-toolbar";
 
-/// The debug selector the active tab's root carries, so `every_tab_lays_out`
-/// can find the tab it switched to.
-pub(crate) const TAB_ROOT: &str = "tab-root";
+/// The debug selector the Sidebar carries, so the toggle test can measure it.
+pub(crate) const CHROME_SIDEBAR: &str = "chrome-sidebar";
+
+/// The debug selector the toolbar's SidebarToggleButton carries, the
+/// toolbar's first item.
+pub(crate) const CHROME_SIDEBAR_TOGGLE: &str = "chrome-sidebar-toggle";
+
+/// The initial width of the Sidebar's panel. The model states no such value:
+/// `SidebarTheme` has no width (spec §1.3), so this is the showcase's own
+/// layout default, and dragging the panel's handle changes it.
+pub(crate) const NAV_WIDTH: Pixels = px(200.);
+
+/// The initial width of the inspector's panel. The model states no such
+/// value: it has no inspector at all (spec §1.3), so this is the showcase's
+/// own layout default, and dragging the panel's handle changes it.
+pub(crate) const INSPECTOR_WIDTH: Pixels = px(300.);
+
+/// The debug selector the active page's root carries, so `every_page_lays_out`
+/// can find the page it switched to.
+pub(crate) const PAGE_ROOT: &str = "page-root";
 
 /// The debug selector the content pane's scrolled element carries. Its right
 /// edge is the scroll area's, which is where a vertical scrollbar's track ends
 /// (gpui-base `src/scrollbar.rs:1408-1432`), so
-/// `a_non_overlay_scrollbar_keeps_off_the_content` can see whether the tab
+/// `a_non_overlay_scrollbar_keeps_off_the_content` can see whether the page
 /// reaches under the bar.
 pub(crate) const CONTENT_SCROLL: &str = "content-scroll";
 
-/// The debug selector the sidebar column carries. Its bottom edge is where the
-/// Widget Info panel has to reach, which is what
-/// `the_widget_info_panel_fills_the_sidebar` measures.
-pub(crate) const SIDEBAR_COLUMN: &str = "sidebar-column";
+/// The debug selectors the content column and the inspector carry, each as
+/// wide as its resizable panel, so `dragging_a_handle_resizes_its_neighbours`
+/// can measure both panels.
+pub(crate) const CONTENT_PANEL: &str = "content-panel";
+pub(crate) const INSPECTOR_PANEL: &str = "inspector-panel";
 
-/// The debug selector the Widget Info panel's root carries.
-pub(crate) const WIDGET_INFO: &str = "widget-info";
+/// The debug selector the label with the shown info's title carries.
+pub(crate) const INSPECTOR_TITLE: &str = "inspector-title";
+
+/// The debug selector the inspector's TabBar carries.
+pub(crate) const INSPECTOR_TABS: &str = "inspector-tabs";
+
+/// The debug selector the inspector's Copy button carries.
+pub(crate) const INSPECTOR_COPY: &str = "inspector-copy";
+
+/// The debug selector the toolbar's Toggle Inspector button carries.
+pub(crate) const CHROME_TOOLBAR_INSPECTOR: &str = "chrome-toolbar-inspector";
 
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside
 /// one and `the_three_list_frames_agree` can measure their frames.
 pub(crate) const LIST_DEMO: &str = "list-demo";
 pub(crate) const TREE_DEMO: &str = "tree-demo";
-
-/// The debug selector the box that holds the Widget Info textarea carries. It
-/// is the element the textarea fills, so its height is the height the text has
-/// before the textarea scrolls its own content.
-pub(crate) const WIDGET_INFO_TEXT: &str = "widget-info-text";
 
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
@@ -311,19 +369,20 @@ impl CliArgs {
         args
     }
 
-    /// Map a `--tab` name to the tab it names.
-    fn tab(name: &str) -> Option<Tab> {
+    /// Map a `--tab` name to the page it names. The flag keeps its name:
+    /// the screenshot scripts pass it.
+    fn page(name: &str) -> Option<Page> {
         match name {
-            "buttons" => Some(Tab::Buttons),
-            "inputs" | "text-inputs" => Some(Tab::Inputs),
-            "data" => Some(Tab::Data),
-            "feedback" => Some(Tab::Feedback),
-            "typography" => Some(Tab::Typography),
-            "layout" => Some(Tab::Layout),
-            "overlays" => Some(Tab::Overlays),
-            "charts" => Some(Tab::Charts),
-            "icons" => Some(Tab::Icons),
-            "theme-map" => Some(Tab::ThemeMap),
+            "buttons" => Some(Page::Buttons),
+            "inputs" | "text-inputs" => Some(Page::Inputs),
+            "data" => Some(Page::Data),
+            "feedback" => Some(Page::Feedback),
+            "typography" => Some(Page::Typography),
+            "layout" => Some(Page::Layout),
+            "overlays" => Some(Page::Overlays),
+            "charts" => Some(Page::Charts),
+            "icons" => Some(Page::Icons),
+            "theme-map" => Some(Page::ThemeMap),
             _ => None,
         }
     }
@@ -653,11 +712,11 @@ fn main() {
                         });
                     }
 
-                    // Override tab if --tab was specified
-                    if let Some(ref tab_name) = cli_args.tab
-                        && let Some(tab) = CliArgs::tab(tab_name)
+                    // Override the page if --tab was specified
+                    if let Some(ref page_name) = cli_args.tab
+                        && let Some(page) = CliArgs::page(page_name)
                     {
-                        s.active_tab = tab;
+                        s.active_page = page;
                     }
 
                     // Override icon theme if --icon-theme was specified

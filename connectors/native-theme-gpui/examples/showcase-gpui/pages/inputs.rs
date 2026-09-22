@@ -1,4 +1,4 @@
-//! The Inputs tab.
+//! The Inputs page.
 
 use gpui::{
     ClipboardItem, Context, IntoElement, ParentElement, SharedString, Styled, Window, div,
@@ -34,9 +34,9 @@ use crate::{PROBE_RATING, probe};
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Inputs
+    // Page: Inputs
     // -----------------------------------------------------------------------
-    pub(crate) fn render_inputs_tab(
+    pub(crate) fn render_inputs_page(
         &self,
         _window: &mut Window,
         cx: &mut Context<Self>,

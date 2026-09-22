@@ -7,8 +7,8 @@
 //! opens — and drive it with real input.
 
 use gpui::{
-    App, Axis, Bounds, Entity, Focusable as _, Modifiers, Pixels, Point, TestAppContext,
-    VisualTestContext, point, prelude::*, px, size,
+    App, Axis, Bounds, Entity, Focusable as _, Modifiers, MouseButton, Pixels, Point,
+    TestAppContext, VisualTestContext, point, prelude::*, px, size,
 };
 use gpui_base::{PANEL_MIN_SIZE, ScrollbarHandle as _};
 use gpui_component::{Root, theme::Theme};
@@ -24,26 +24,28 @@ use crate::app::{
 use crate::chrome::menus;
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
-    native_info,
+    hsla_to_hex, native_info,
 };
+use crate::inspector::InspectorTab;
 use crate::support::{
     CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR, CONTENT_SCROLL, LIST_DEMO,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, SIDEBAR_COLUMN, TAB_ROOT, TREE_DEMO,
-    Tab, WIDGET_INFO, WIDGET_INFO_TEXT, WINDOW_SIZE,
+    CHROME_APP_MENU_BAR, CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_TOOLBAR_INSPECTOR, CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL,
+    INSPECTOR_TABS, INSPECTOR_TITLE, LIST_DEMO, PAGE_ROOT, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT,
+    PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
+    PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE,
+    PROBE_STEPPER, Page, TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
 ///
 /// The width is the application's own, so the horizontal resizable group is
-/// measured at the width it really gets. The height is not: a tab is one
+/// measured at the width it really gets. The height is not: a page is one
 /// long scrolling column, and an element scrolled out of the viewport is
 /// clipped out of the frame and cannot be clicked, so this window is tall
-/// enough to hold the longest tab whole. `every_tab_lays_out` uses
+/// enough to hold the longest page whole. `every_page_lays_out` uses
 /// `WINDOW_SIZE` instead, which is what puts the scroll container to work.
 const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 
@@ -56,7 +58,7 @@ const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
 /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
 /// and exposes no setter (`gpui-pre-0.3.5/src/app/test_context.rs:132-136`)
-/// — so gpui-component's own `IconName` SVGs resolve to nothing. The tabs
+/// — so gpui-component's own `IconName` SVGs resolve to nothing. The pages
 /// still lay out, which is what these tests measure; the showcase's native
 /// icons do not come from the asset source at all, they are decoded into
 /// `ImageSource` by the connector.
@@ -98,13 +100,10 @@ fn draw(cx: &mut VisualTestContext) {
     cx.update(|window, cx| window.draw(cx).clear(cx));
 }
 
-/// Switch to `tab` and draw the frame that shows it.
-fn show(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, tab: Tab) {
+/// Switch to `page` and draw the frame that shows it.
+fn show(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, page: Page) {
     cx.update(|_window, cx| {
-        showcase.update(cx, |this, cx| {
-            this.active_tab = tab;
-            cx.notify();
-        });
+        showcase.update(cx, |this, cx| this.show_page(page, cx));
     });
     cx.run_until_parked();
     draw(cx);
@@ -143,21 +142,21 @@ fn read<R>(
     cx.update(|_window, cx| f(showcase.read(cx), cx))
 }
 
-/// Every tab lays out: the bar's ten tabs each render on the test platform,
-/// each leaves a tab root behind, and that root has a size.
+/// Every page lays out: the Sidebar's ten pages each render on the test
+/// platform, each leaves a page root behind, and that root has a size.
 #[gpui::test]
-fn every_tab_lays_out(cx: &mut TestAppContext) {
+fn every_page_lays_out(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    assert_eq!(Tab::ALL.len(), 10, "the bar no longer has ten tabs");
-    for tab in Tab::ALL {
-        show(&mut cx, &showcase, tab);
-        assert_eq!(read(&mut cx, &showcase, |this, _| this.active_tab), tab);
+    assert_eq!(Page::ALL.len(), 10, "the Sidebar no longer has ten pages");
+    for page in Page::ALL {
+        show(&mut cx, &showcase, page);
+        assert_eq!(read(&mut cx, &showcase, |this, _| this.active_page), page);
         let bounds = cx
-            .debug_bounds(TAB_ROOT)
-            .unwrap_or_else(|| panic!("{tab:?}: nothing was laid out under the tab bar"));
+            .debug_bounds(PAGE_ROOT)
+            .unwrap_or_else(|| panic!("{page:?}: nothing was laid out in the content panel"));
         assert!(
             bounds.size.width > px(0.) && bounds.size.height > px(0.),
-            "{tab:?}: the tab root laid out at {:?}",
+            "{page:?}: the page root laid out at {:?}",
             bounds.size
         );
     }
@@ -207,26 +206,26 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
     // own, and must not lose a strip of width to it.
     for preset in ["kde-breeze", "macos-sonoma"] {
         use_preset(&mut cx, &showcase, preset);
-        show(&mut cx, &showcase, Tab::Inputs);
+        show(&mut cx, &showcase, Page::Inputs);
         let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
         assert!(
             groove > px(0.),
             "{preset}: no native theme is installed, so nothing was measured"
         );
         let content = bounds_of(&mut cx, CONTENT_SCROLL);
-        let tab = bounds_of(&mut cx, TAB_ROOT);
+        let page = bounds_of(&mut cx, PAGE_ROOT);
         assert!(
-            tab.size.height > WINDOW_SIZE.height,
-            "{preset}: the tab is shorter than the whole window, so the pane may \
+            page.size.height > WINDOW_SIZE.height,
+            "{preset}: the page is shorter than the whole window, so the pane may \
                  not scroll at all and this step would prove nothing"
         );
         let gutter = if overlay { px(0.) } else { groove };
         assert_eq!(
-            content.right() - tab.right(),
+            content.right() - page.right(),
             gutter,
-            "{preset}: the tab ends at {:?} and the scroll area at {:?}, which \
+            "{preset}: the page ends at {:?} and the scroll area at {:?}, which \
                  leaves {gutter:?} free for a {groove:?} scrollbar",
-            tab.right(),
+            page.right(),
             content.right(),
         );
     }
@@ -242,7 +241,7 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
 fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    show(&mut cx, &showcase, Tab::Layout);
+    show(&mut cx, &showcase, Page::Layout);
     let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
     assert!(
         !overlay && groove > px(0.),
@@ -255,75 +254,6 @@ fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
         "the row ends {:?} before the frame's right edge; a {groove:?} groove covers it",
         frame.right() - row.right()
     );
-}
-
-/// A Widget Info text long enough to overflow whatever room the sidebar
-/// has, so the panel cannot be as tall as its content and has to scroll.
-fn long_info() -> String {
-    (1..=200)
-        .map(|line| format!("line {line}: a themed property and where it comes from\n"))
-        .collect()
-}
-
-/// Drive the Widget Info panel the way a hover does.
-fn set_info(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, text: String) {
-    cx.update(|_window, cx| {
-        let panel = showcase.read(cx).widget_info_panel.clone();
-        panel.update(cx, |p, cx| p.set_text(text, cx));
-    });
-    cx.run_until_parked();
-    draw(cx);
-}
-
-/// The Widget Info panel takes every pixel the sidebar column has left
-/// under the controls above it, whatever the window size.
-///
-/// The panel is the last child of the sidebar column and the only one that
-/// grows, so its bottom edge is the column's; the box that holds the
-/// textarea then reaches the panel's bottom padding, which is the panel's
-/// top padding read off the frame rather than a number typed out again.
-/// A text far taller than the window is used, because a panel that sized
-/// itself to its content would pass a short one.
-#[gpui::test]
-fn the_widget_info_panel_fills_the_sidebar(cx: &mut TestAppContext) {
-    for height in [WINDOW_SIZE.height, WINDOW_SIZE.height + px(400.)] {
-        let (showcase, _root, mut cx) = open(cx, size(WINDOW_SIZE.width, height));
-        use_preset(&mut cx, &showcase, "kde-breeze");
-        set_info(&mut cx, &showcase, long_info());
-
-        let sidebar = bounds_of(&mut cx, SIDEBAR_COLUMN);
-        let panel = bounds_of(&mut cx, WIDGET_INFO);
-        let text = bounds_of(&mut cx, WIDGET_INFO_TEXT);
-        assert!(
-            panel.size.height > px(0.),
-            "{height:?}: the sidebar left the panel no room at all"
-        );
-        assert_eq!(
-            panel.bottom(),
-            sidebar.bottom(),
-            "{height:?}: the sidebar column ends at {:?} and the panel at {:?}, \
-                 so {:?} of it is unused",
-            sidebar.bottom(),
-            panel.bottom(),
-            sidebar.bottom() - panel.bottom(),
-        );
-        // The panel's padding is uniform, so the gap its left edge leaves
-        // is the gap its bottom edge has to leave.
-        let padding = text.left() - panel.left();
-        assert!(
-            padding > px(0.),
-            "{height:?}: the panel has no padding, so this step measures nothing"
-        );
-        assert_eq!(
-            text.bottom(),
-            panel.bottom() - padding,
-            "{height:?}: the text box ends at {:?} and the panel's bottom padding at {:?}, \
-                 so the textarea is {:?} shorter than the room it has",
-            text.bottom(),
-            panel.bottom() - padding,
-            panel.bottom() - padding - text.bottom(),
-        );
-    }
 }
 
 /// Turn the wheel by `delta` pixels over `at`, and draw the frame it
@@ -339,8 +269,8 @@ fn scroll_at(cx: &mut VisualTestContext, at: Point<Pixels>, delta: Pixels) {
     draw(cx);
 }
 
-/// A window tall enough to show the Data tab's List and Tree demos without
-/// scrolling the page first, and still far shorter than that tab, so the
+/// A window tall enough to show the Data page's List and Tree demos without
+/// scrolling the page first, and still far shorter than that page, so the
 /// page has somewhere to scroll to.
 const NESTED_SCROLL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(1500.));
 
@@ -359,10 +289,10 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
     // material's list rows are the tallest of the bundled presets, so the
     // six sample rows are certain to overflow the demo box.
     use_preset(&mut cx, &showcase, "material");
-    show(&mut cx, &showcase, Tab::Data);
+    show(&mut cx, &showcase, Page::Data);
     assert!(
-        bounds_of(&mut cx, TAB_ROOT).size.height > NESTED_SCROLL_WINDOW.height,
-        "the Data tab fits in the window, so the page could not scroll either way"
+        bounds_of(&mut cx, PAGE_ROOT).size.height > NESTED_SCROLL_WINDOW.height,
+        "the Data page fits in the window, so the page could not scroll either way"
     );
 
     // How far each demo's own scroller has been scrolled, so the step can
@@ -472,7 +402,7 @@ fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
 #[gpui::test]
 fn resizable_groups_have_room_to_drag(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Tab::Layout);
+    show(&mut cx, &showcase, Page::Layout);
     assert!(!RESIZABLE_GROUPS.is_empty());
     for group in RESIZABLE_GROUPS {
         let bounds = bounds_of(&mut cx, group.id);
@@ -501,8 +431,8 @@ fn resizable_groups_have_room_to_drag(cx: &mut TestAppContext) {
 fn interactive_controls_respond(cx: &mut TestAppContext) {
     let (showcase, root, mut cx) = open(cx, TALL_WINDOW);
 
-    // --- Buttons tab --------------------------------------------------
-    show(&mut cx, &showcase, Tab::Buttons);
+    // --- Buttons page -------------------------------------------------
+    show(&mut cx, &showcase, Page::Buttons);
 
     // Clipboard: the card is one icon button, and the test platform holds
     // a real in-memory clipboard.
@@ -513,8 +443,8 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Clipboard: the Copy button wrote nothing"
     );
 
-    // --- Inputs tab ---------------------------------------------------
-    show(&mut cx, &showcase, Tab::Inputs);
+    // --- Inputs page --------------------------------------------------
+    show(&mut cx, &showcase, Page::Inputs);
 
     // Rating: clicking a star at or below the current value clears down to
     // the one before it (rating.rs, Rating::render on_click), so the first
@@ -526,8 +456,8 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Rating: clicking the first star left the value alone"
     );
 
-    // --- Data tab -----------------------------------------------------
-    show(&mut cx, &showcase, Tab::Data);
+    // --- Data page ----------------------------------------------------
+    show(&mut cx, &showcase, Page::Data);
 
     // Pagination: the leading end of the strip is the previous-page control.
     let before = read(&mut cx, &showcase, |this, _| this.page);
@@ -556,8 +486,8 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "MessageScroller: Send added no message"
     );
 
-    // --- Layout tab ---------------------------------------------------
-    show(&mut cx, &showcase, Tab::Layout);
+    // --- Layout page --------------------------------------------------
+    show(&mut cx, &showcase, Page::Layout);
 
     // Stepper: the steps run left to right, so the leading one is the first.
     click(&mut cx, PROBE_STEPPER);
@@ -585,8 +515,8 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Carousel: the last pagination dot did not select the last slide"
     );
 
-    // --- Overlays tab -------------------------------------------------
-    show(&mut cx, &showcase, Tab::Overlays);
+    // --- Overlays page ------------------------------------------------
+    show(&mut cx, &showcase, Page::Overlays);
 
     // AlertDialog: opened by a click, then answered from the keyboard the
     // dialog binds — Enter confirms, Escape cancels.
@@ -611,8 +541,8 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "AlertDialog: cancelling did not report a choice"
     );
 
-    // --- Feedback tab -------------------------------------------------
-    show(&mut cx, &showcase, Tab::Feedback);
+    // --- Feedback page ------------------------------------------------
+    show(&mut cx, &showcase, Page::Feedback);
 
     // Notification: the button pushes one onto the Root's own layer.
     let before = cx.update(|_w, cx| root.read(cx).notification.read(cx).notifications().len());
@@ -751,13 +681,13 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
             title.bottom(),
             "{preset}: the toolbar is not right under the title bar"
         );
-        // The toolbar's first two children: the preset Combobox and the
-        // colour-mode ToggleGroup.
-        let first = bounds_of(&mut cx, PROBE_COMBOBOX);
-        let second = bounds_of(&mut cx, PROBE_COLOR_MODE);
+        // The toolbar's first two children: the SidebarToggleButton and the
+        // preset Combobox.
+        let first = bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE);
+        let second = bounds_of(&mut cx, PROBE_COMBOBOX);
         assert!(
             bar.contains(&first.origin) && bar.contains(&second.origin),
-            "{preset}: the Combobox at {first:?} or the ToggleGroup at {second:?} \
+            "{preset}: the SidebarToggleButton at {first:?} or the Combobox at {second:?} \
              is not inside the toolbar at {bar:?}"
         );
         assert_eq!(
@@ -849,7 +779,7 @@ fn run_menu_item_from_focus(cx: &mut VisualTestContext, menu: &str, item: &str) 
 #[gpui::test]
 fn a_menu_acts_after_the_focused_widget_left_the_page(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    show(&mut cx, &showcase, Tab::Inputs);
+    show(&mut cx, &showcase, Page::Inputs);
     cx.update(|window, cx| {
         let input = showcase.read(cx).input_state.clone();
         input.read(cx).focus_handle(cx).focus(window, cx);
@@ -859,14 +789,14 @@ fn a_menu_acts_after_the_focused_widget_left_the_page(cx: &mut TestAppContext) {
 
     run_menu_item_from_focus(&mut cx, "View", "Buttons");
     assert_eq!(
-        read(&mut cx, &showcase, |this, _| this.active_tab),
-        Tab::Buttons,
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Buttons,
         "View > Buttons did not leave the Inputs page"
     );
     run_menu_item_from_focus(&mut cx, "View", "Inputs");
     assert_eq!(
-        read(&mut cx, &showcase, |this, _| this.active_tab),
-        Tab::Inputs,
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Inputs,
         "View > Inputs did nothing once the focused input had left the screen"
     );
 }
@@ -879,8 +809,8 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
 
     assert_ne!(
-        read(&mut cx, &showcase, |this, _| this.active_tab),
-        Tab::Feedback,
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Feedback,
         "the showcase starts on Feedback, so showing it proves nothing"
     );
     assert!(
@@ -889,8 +819,8 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
     );
     run_menu_item(&mut cx, "View", "Feedback");
     assert_eq!(
-        read(&mut cx, &showcase, |this, _| this.active_tab),
-        Tab::Feedback,
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Feedback,
         "View > Feedback did not show the Feedback page"
     );
 
@@ -944,6 +874,361 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
     }
 }
 
+/// Whether the menu item named `item` in the menu named `menu` is disabled.
+fn menu_item_disabled(menu: &str, item: &str) -> bool {
+    menus()
+        .into_iter()
+        .filter(|m| m.name.as_ref() == menu)
+        .flat_map(|m| m.items)
+        .find_map(|i| match i {
+            gpui::MenuItem::Action { name, disabled, .. } if name.as_ref() == item => {
+                Some(disabled)
+            }
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no {menu} > {item} menu item"))
+}
+
+/// Dragging the handle between the content and the inspector moves their
+/// boundary by the distance dragged (spec §1.1, §10.3).
+///
+/// The handle is the inspector panel's, laid over its left edge (gpui-base
+/// resizable/panel.rs, `ResizablePanel::render`), and a drag puts the content
+/// panel's right edge where the pointer is (`ResizePanelGroupElement::paint`),
+/// so pressing on the boundary itself makes the distance dragged the distance
+/// moved. The first move starts the drag; the second is the one measured.
+#[gpui::test]
+fn dragging_a_handle_resizes_its_neighbours(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL);
+    assert_eq!(
+        content.right(),
+        inspector.left(),
+        "the content panel ends at {:?} and the inspector starts at {:?}",
+        content.right(),
+        inspector.left()
+    );
+    let (from, y) = (inspector.left(), inspector.center().y);
+    let dragged = px(40.);
+    cx.simulate_mouse_down(point(from, y), MouseButton::Left, Modifiers::default());
+    cx.simulate_mouse_move(
+        point(from - px(10.), y),
+        Some(MouseButton::Left),
+        Modifiers::default(),
+    );
+    cx.simulate_mouse_move(
+        point(from - dragged, y),
+        Some(MouseButton::Left),
+        Modifiers::default(),
+    );
+    cx.simulate_mouse_up(
+        point(from - dragged, y),
+        MouseButton::Left,
+        Modifiers::default(),
+    );
+    cx.run_until_parked();
+    draw(&mut cx);
+
+    let content_after = bounds_of(&mut cx, CONTENT_PANEL);
+    let inspector_after = bounds_of(&mut cx, INSPECTOR_PANEL);
+    let grew = inspector_after.size.width - inspector.size.width;
+    let shrank = content.size.width - content_after.size.width;
+    assert!(
+        (grew - dragged).abs() <= px(1.),
+        "dragging the handle {dragged:?} left widened the inspector by {grew:?}"
+    );
+    assert!(
+        (shrank - dragged).abs() <= px(1.),
+        "dragging the handle {dragged:?} left narrowed the content by {shrank:?}"
+    );
+}
+
+/// Clicking a Sidebar item shows its page (spec §2.4).
+#[gpui::test]
+fn the_sidebar_navigates(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_ne!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Charts,
+        "the showcase starts on Charts, so showing it proves nothing"
+    );
+    click(&mut cx, Page::Charts.nav_item());
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Charts,
+        "clicking the Sidebar's Charts item did not show the Charts page"
+    );
+    let page = bounds_of(&mut cx, PAGE_ROOT);
+    assert!(
+        page.size.width > px(0.) && page.size.height > px(0.),
+        "the Charts page laid out at {:?}",
+        page.size
+    );
+}
+
+/// The title of the info the inspector drew in the last frame, and whether
+/// the label that shows it was laid out.
+fn inspector_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Option<String> {
+    let title = read(cx, showcase, |this, cx| {
+        this.inspector.read(cx).title_drawn.clone()
+    });
+    let label = cx.debug_bounds(INSPECTOR_TITLE);
+    assert_eq!(
+        title.is_some(),
+        label.is_some(),
+        "the inspector drew {title:?}, and its title label was laid out at {label:?}"
+    );
+    title.map(|t| t.to_string())
+}
+
+/// The inspector shows the info the pointer has settled on (spec §2.6, §4.2).
+///
+/// A Sidebar item is hovered: the pages report only their text panels until
+/// they are migrated (plan Tasks 14-23), and chrome carries its info already.
+#[gpui::test]
+fn the_inspector_shows_the_settled_info(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase),
+        None,
+        "the inspector shows an info before anything was hovered"
+    );
+    let item = bounds_of(&mut cx, Page::Charts.nav_item());
+    hover(&mut cx, item.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("SidebarMenuItem · Charts"),
+        "the inspector does not show the Sidebar item the pointer settled on"
+    );
+}
+
+/// The inspector's Copy button puts the shown info's text on the clipboard
+/// (spec §2.6).
+#[gpui::test]
+fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let item = bounds_of(&mut cx, Page::Charts.nav_item());
+    hover(&mut cx, item.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    let shown = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().map(|info| info.to_text())
+    });
+    assert!(
+        shown.is_some(),
+        "nothing is shown, so nothing can be copied"
+    );
+    click(&mut cx, INSPECTOR_COPY);
+    assert_eq!(
+        cx.read_from_clipboard().and_then(|item| item.text()),
+        shown,
+        "the Copy button did not put the shown info on the clipboard"
+    );
+}
+
+/// A page change keeps an info whose target is still drawn, as chrome is
+/// (spec §4.3.4 as ruled: only what left the screen is cleared).
+#[gpui::test]
+fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let item = bounds_of(&mut cx, Page::Charts.nav_item());
+    hover(&mut cx, item.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    let before = inspector_title(&mut cx, &showcase);
+    assert!(
+        before.is_some(),
+        "nothing was shown before the page changed"
+    );
+    run_menu_item(&mut cx, "View", "Typography");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Typography
+    );
+    assert_eq!(
+        inspector_title(&mut cx, &showcase),
+        before,
+        "the page change cleared the info of a Sidebar item that is still drawn"
+    );
+}
+
+/// A page change clears an info whose target the new frame no longer draws
+/// (spec §4.3.4 as ruled), through every route to a page: here the View
+/// menu. The inspector's own TabBar is the target, taken off the screen by
+/// hiding the inspector, which no hover end reports.
+#[gpui::test]
+fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let tabs = bounds_of(&mut cx, INSPECTOR_TABS);
+    hover(&mut cx, point(tabs.left() + px(4.), tabs.center().y));
+    settle(&mut cx);
+    let shown = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().map(|info| info.title())
+        })
+    };
+    assert_eq!(
+        shown(&mut cx).as_deref(),
+        Some("TabBar · Underline, small"),
+        "the inspector's TabBar did not report itself"
+    );
+    run_menu_item(&mut cx, "View", "Toggle Inspector");
+    settle(&mut cx);
+    assert_eq!(
+        shown(&mut cx).as_deref(),
+        Some("TabBar · Underline, small"),
+        "hiding the inspector alone already cleared the info: leaving keeps it"
+    );
+    run_menu_item(&mut cx, "View", "Charts");
+    settle(&mut cx);
+    assert_eq!(
+        shown(&mut cx),
+        None,
+        "after the page change the info of a TabBar no longer drawn is still shown"
+    );
+}
+
+/// A page that does not report its instances yet (plan Tasks 14-23) still
+/// shows its text panel in the inspector, and an info that settles replaces
+/// it, as the text panel replaces the info in turn; a page change takes the
+/// text panel away.
+#[gpui::test]
+fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let clipboard = bounds_of(&mut cx, PROBE_CLIPBOARD).center();
+    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
+    hover(&mut cx, clipboard);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("Clipboard"),
+        "the Clipboard block's text panel is not shown"
+    );
+    hover(&mut cx, item);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("SidebarMenuItem · Charts"),
+        "a settled info did not replace the text panel"
+    );
+    hover(&mut cx, clipboard);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("Clipboard"),
+        "the text panel did not replace the settled info"
+    );
+    show(&mut cx, &showcase, Page::Inputs);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase),
+        None,
+        "the Buttons page's text panel stayed after the page changed"
+    );
+}
+
+/// The inspector's Theme tab lays out the theme's and the window's facts in
+/// place of the Widget tab.
+#[gpui::test]
+fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
+    hover(&mut cx, item);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert!(cx.debug_bounds(INSPECTOR_TITLE).is_some());
+    cx.update(|_window, cx| {
+        let inspector = showcase.read(cx).inspector.clone();
+        inspector.update(cx, |i, cx| {
+            i.tab = InspectorTab::Theme;
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        cx.debug_bounds(INSPECTOR_TITLE),
+        None,
+        "the Theme tab still shows the Widget tab's title"
+    );
+    let panel = bounds_of(&mut cx, INSPECTOR_PANEL);
+    assert!(panel.size.width > px(0.) && panel.size.height > px(0.));
+}
+
+/// The toolbar's SidebarToggleButton collapses the Sidebar to its icons and
+/// expands it again (spec §2.4), through `ToggleSidebar`.
+#[gpui::test]
+fn the_sidebar_toggle_collapses_the_sidebar(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert!(
+        !menu_item_disabled("View", "Toggle Sidebar"),
+        "View > Toggle Sidebar is still disabled"
+    );
+    let expanded = bounds_of(&mut cx, CHROME_SIDEBAR);
+    click(&mut cx, CHROME_SIDEBAR_TOGGLE);
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.nav_collapsed),
+        "the SidebarToggleButton did not collapse the Sidebar"
+    );
+    let collapsed = bounds_of(&mut cx, CHROME_SIDEBAR);
+    assert!(
+        collapsed.size.width < expanded.size.width,
+        "the collapsed Sidebar is {:?} wide, the expanded one {:?}",
+        collapsed.size.width,
+        expanded.size.width
+    );
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    assert_eq!(
+        content.left(),
+        collapsed.right(),
+        "the content does not take the room the collapsed Sidebar gave up"
+    );
+    run_menu_item(&mut cx, "View", "Toggle Sidebar");
+    assert_eq!(
+        bounds_of(&mut cx, CHROME_SIDEBAR).size.width,
+        expanded.size.width,
+        "View > Toggle Sidebar did not expand the Sidebar to its width again"
+    );
+}
+
+/// `ToggleInspector` hides the inspector's panel and shows it again, from the
+/// View menu and from the toolbar's button (spec §1.1, §2.2, §2.6).
+#[gpui::test]
+fn the_inspector_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert!(
+        !menu_item_disabled("View", "Toggle Inspector"),
+        "View > Toggle Inspector is still disabled"
+    );
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    run_menu_item(&mut cx, "View", "Toggle Inspector");
+    assert!(
+        !read(&mut cx, &showcase, |this, _| this.inspector_visible),
+        "View > Toggle Inspector did not hide the inspector"
+    );
+    assert_eq!(
+        cx.debug_bounds(INSPECTOR_PANEL),
+        None,
+        "the hidden inspector was still laid out"
+    );
+    assert!(
+        bounds_of(&mut cx, CONTENT_PANEL).size.width > content.size.width,
+        "the content did not take the room the inspector gave up"
+    );
+    click(&mut cx, CHROME_TOOLBAR_INSPECTOR);
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.inspector_visible),
+        "the toolbar's Inspector button did not show the inspector again"
+    );
+    assert!(
+        cx.debug_bounds(INSPECTOR_PANEL).is_some(),
+        "the shown inspector was not laid out"
+    );
+}
+
 #[test]
 fn a_widget_info_titles_itself_by_kind_and_variant() {
     let plain = WidgetInfo::new("Tag");
@@ -980,6 +1265,17 @@ fn to_text_prints_the_four_sections_in_order() {
         text.contains("  bg: danger #ff0000 (gpui-component/tag.rs:31)"),
         "{text}"
     );
+}
+
+/// An opaque colour prints as `#rrggbb`, and a translucent one carries its
+/// alpha as `#rrggbbaa`: a swatch whose alpha was dropped would claim an
+/// opaque colour the widget never paints.
+#[test]
+fn a_translucent_colour_prints_its_alpha() {
+    let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    assert_eq!(hsla_to_hex(red), "#ff0000");
+    assert_eq!(hsla_to_hex(red.opacity(0.8)), "#ff0000cc");
+    assert_eq!(hsla_to_hex(gpui::hsla(0.0, 0.0, 0.0, 0.0)), "#00000000");
 }
 
 #[test]
@@ -1186,4 +1482,50 @@ fn a_target_drawn_again_away_from_the_pointer_does_not_win(cx: &mut TestAppConte
     show_inner(cx, &view, true);
     settle(cx);
     assert_eq!(shown(cx, &ui).as_deref(), Some("Outer"));
+}
+
+/// Draw the frame after a page change: the registry is told, and the inner
+/// target is shown or hidden, as a new page draws its own targets.
+fn change_page(
+    cx: &mut VisualTestContext,
+    view: &Entity<Nested>,
+    ui: &Entity<InfoRegistry>,
+    show: bool,
+) {
+    cx.update(|_window, cx| ui.update(cx, |r, _| r.page_changed()));
+    show_inner(cx, view, show);
+}
+
+/// After a page change, an info whose target the new frame did not draw is
+/// cleared back to the hint (spec §4.3.4 as ruled), even with the pointer
+/// away from every target, where leaving would otherwise keep it (§4.3.3).
+#[gpui::test]
+fn a_page_change_clears_an_info_no_longer_drawn(cx: &mut TestAppContext) {
+    let (view, ui, cx) = open_nested(cx);
+    hover(cx, INNER);
+    settle(cx);
+    hover(cx, OUTSIDE);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+    // No page change: a target that stops being drawn is kept, as leaving it
+    // keeps it.
+    show_inner(cx, &view, false);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+    change_page(cx, &view, &ui, false);
+    settle(cx);
+    assert_eq!(shown(cx, &ui), None);
+}
+
+/// After a page change, an info whose target is still drawn stays.
+#[gpui::test]
+fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
+    let (view, ui, cx) = open_nested(cx);
+    hover(cx, INNER);
+    settle(cx);
+    hover(cx, OUTSIDE);
+    settle(cx);
+    change_page(cx, &view, &ui, true);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
 }

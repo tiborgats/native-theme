@@ -3,12 +3,15 @@
 use gpui::{App, InteractiveElement as _, IntoElement, Menu, MenuItem};
 use gpui_component::IconName;
 
-use crate::Tab;
+use crate::Page;
 use crate::app::{
     AppColorMode, OpenAbout, OpenCommandPalette, OpenPreferences, Quit, ReloadTheme, SetColorMode,
     ShowPage, Showcase, ToggleInspector, ToggleSidebar,
 };
-use crate::{CHROME_TITLE_BAR, CHROME_TOOLBAR, PROBE_COLOR_MODE, PROBE_COMBOBOX, demo};
+use crate::{
+    CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_TOOLBAR_INSPECTOR, PROBE_COLOR_MODE, PROBE_COMBOBOX, demo,
+};
 
 /// The showcase's application menus (spec §2.2), built fresh for each
 /// consumer: gpui's `Menu` is handed over by value, and the platform bar and
@@ -21,15 +24,14 @@ pub(crate) fn menus() -> Vec<Menu> {
     vec![
         Menu::new("File").items([MenuItem::action("Quit", Quit)]),
         Menu::new("View").items(
-            Tab::ALL
-                .map(|tab| MenuItem::action(tab.label(), ShowPage(tab.index())))
+            Page::ALL
+                .map(|page| MenuItem::action(page.label(), ShowPage(page.index())))
                 .into_iter()
                 .chain([
                     MenuItem::separator(),
-                    // The sidebar and the inspector are Task 10's, the
-                    // command palette Task 12's.
-                    MenuItem::action("Toggle Sidebar", ToggleSidebar).disabled(true),
-                    MenuItem::action("Toggle Inspector", ToggleInspector).disabled(true),
+                    MenuItem::action("Toggle Sidebar", ToggleSidebar),
+                    MenuItem::action("Toggle Inspector", ToggleInspector),
+                    // The command palette is Task 12's.
                     MenuItem::action("Command Palette", OpenCommandPalette).disabled(true),
                 ]),
         ),
@@ -66,8 +68,9 @@ pub(crate) fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
     .debug_selector(|| CHROME_TITLE_BAR.into())
 }
 
-/// The window's toolbar (spec §2.3), under the title bar: the preset switch,
-/// the colour mode, the icon set, and buttons for three of the actions.
+/// The window's toolbar (spec §2.3), under the title bar: the Sidebar's
+/// toggle, the preset switch, the colour mode, the icon set, and buttons for
+/// three of the actions.
 ///
 /// A button whose action nothing handles yet is disabled, as its menu item
 /// is, and says why.
@@ -77,8 +80,9 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
         ui,
         cx,
         [
-            // Task 10 adds the SidebarToggleButton here, first, with the
-            // Sidebar it collapses (spec §2.4).
+            demo::sidebar_toggle_button(ui, cx, app.nav_collapsed)
+                .debug_selector(|| CHROME_SIDEBAR_TOGGLE.into())
+                .into_any_element(),
             demo::preset_combobox(ui, cx, &app.preset_combobox)
                 .debug_selector(|| PROBE_COMBOBOX.into())
                 .into_any_element(),
@@ -123,14 +127,19 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                     icon: IconName::Inspector,
                     tooltip: "Toggle Inspector",
                     action: &ToggleInspector,
-                    about: "ToggleInspector's button: the action behind View > Toggle Inspector and Ctrl+I",
-                    disabled: Some(
-                        "disabled in this build: nothing handles ToggleInspector yet, and a button that did nothing when pressed would misstate what the showcase does",
-                    ),
+                    about: "dispatches ToggleInspector, the action View > Toggle Inspector and Ctrl+I run: the inspector's panel is hidden, or shown again",
+                    disabled: None,
                 },
             )
+            .debug_selector(|| CHROME_TOOLBAR_INSPECTOR.into())
             .into_any_element(),
         ],
     )
     .debug_selector(|| CHROME_TOOLBAR.into())
+}
+
+/// The window's Sidebar (spec §2.4): the pages, the shown one active.
+pub(crate) fn sidebar(app: &Showcase, cx: &App) -> impl IntoElement {
+    demo::sidebar(&app.info_ui, cx, app.active_page, app.nav_collapsed)
+        .debug_selector(|| CHROME_SIDEBAR.into())
 }

@@ -25,6 +25,8 @@ pub struct InfoRegistry {
     /// The choice waiting out `INFO_SETTLE`, and the ticket of its timer.
     pending: Option<(ElementId, u64)>,
     tickets: u64,
+    /// The active page changed since the last frame was drawn.
+    page_changed: bool,
 }
 
 impl InfoRegistry {
@@ -36,6 +38,21 @@ impl InfoRegistry {
     }
     pub fn shown(&self) -> Option<&Rc<WidgetInfo>> {
         self.shown.as_ref().map(|(_, info)| info)
+    }
+    /// The active page changed. Once the frame that draws the new page is
+    /// drawn, what is shown goes back to the hint unless that frame drew its
+    /// target too, as it draws the chrome's: no instance of the previous page
+    /// stays on show (spec §4.3.4), and the pointer leaving a target still
+    /// keeps it (§4.3.3).
+    pub fn page_changed(&mut self) {
+        self.page_changed = true;
+    }
+    /// Show nothing, for a page whose text panel the inspector shows instead
+    /// until the page reports its instances (plan Tasks 14-23): a target
+    /// hovered again afterwards is a new choice, and settles as one.
+    pub fn forget_shown(&mut self) {
+        self.shown = None;
+        self.pending = None;
     }
     fn record_bounds(&mut self, id: ElementId, bounds: Bounds<Pixels>) {
         self.bounds.insert(id, (bounds, self.epoch));
@@ -77,8 +94,14 @@ impl InfoRegistry {
     /// target away send any hover change, so the choice is revisited here.
     fn frame_drawn(&mut self, cx: &mut Context<Self>) {
         let (bounds, epoch) = (&self.bounds, self.epoch);
-        self.hovered
-            .retain(|(id, _)| bounds.get(id).is_some_and(|(_, e)| *e == epoch));
+        let drawn = |id: &ElementId| bounds.get(id).is_some_and(|(_, e)| *e == epoch);
+        self.hovered.retain(|(id, _)| drawn(id));
+        if std::mem::take(&mut self.page_changed)
+            && self.shown.as_ref().is_some_and(|(id, _)| !drawn(id))
+        {
+            self.shown = None;
+            cx.notify();
+        }
         self.reconsider(cx);
     }
     /// Start the settle timer for a new choice. A choice already waiting

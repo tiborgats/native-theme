@@ -1,16 +1,5 @@
 //! What the inspector shows for one widget instance (spec §3).
 
-// Only the chrome's title bar reports itself until the showcase is wired to
-// the inspector (Task 10 of docs/todo_v0.5.9_showcase-app-plan.md); `expect`,
-// not `allow`, so the wiring has to remove this.
-#![cfg_attr(
-    not(test),
-    expect(
-        dead_code,
-        reason = "the showcase is wired to the inspector in Task 10"
-    )
-)]
-
 use gpui::{App, Hsla, StyleRefinement, Styled};
 use native_theme_gpui::Native;
 
@@ -296,12 +285,17 @@ pub fn native_info<W: Styled>(
     refined(w, style.as_ref())
 }
 
-/// Convert Hsla to a #rrggbb hex string.
+/// `c` as `#rrggbb`, or as `#rrggbbaa` where it is not opaque: a colour
+/// painted at 80% printed without its alpha would claim a fill the widget
+/// never paints.
 pub fn hsla_to_hex(c: Hsla) -> String {
     // Convert HSL to RGB through gpui's Rgba
     let rgba: gpui::Rgba = c.into();
-    let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let g = (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!("#{:02x}{:02x}{:02x}", r, g, b)
+    let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let (r, g, b) = (byte(rgba.r), byte(rgba.g), byte(rgba.b));
+    if rgba.a < 1.0 {
+        format!("#{r:02x}{g:02x}{b:02x}{:02x}", byte(rgba.a))
+    } else {
+        format!("#{r:02x}{g:02x}{b:02x}")
+    }
 }

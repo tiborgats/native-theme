@@ -1,4 +1,4 @@
-//! The Theme Map tab.
+//! The Theme Map page.
 
 use gpui::{
     Context, Hsla, IntoElement, ParentElement, StyleRefinement, Styled, div, prelude::*, px,
@@ -34,9 +34,9 @@ fn control_height_line(
 
 impl Showcase {
     // -----------------------------------------------------------------------
-    // Tab: Theme Map
+    // Page: Theme Map
     // -----------------------------------------------------------------------
-    pub(crate) fn render_theme_map_tab(
+    pub(crate) fn render_theme_map_page(
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {

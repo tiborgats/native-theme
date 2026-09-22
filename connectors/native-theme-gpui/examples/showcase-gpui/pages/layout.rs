@@ -1,4 +1,4 @@
-//! The Layout tab.
+//! The Layout page.
 
 use gpui::{
     App, Axis, Context, IntoElement, ParentElement, SharedString, Styled, Window, div, prelude::*,
@@ -40,7 +40,7 @@ use crate::support::{
     native_icon, section, with_accordion_title_style, with_gap, with_padding,
 };
 use crate::{
-    PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Tab, probe,
+    PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, probe,
 };
 
 impl Showcase {
@@ -98,9 +98,9 @@ impl Showcase {
     }
 
     // -----------------------------------------------------------------------
-    // Tab: Layout
+    // Page: Layout
     // -----------------------------------------------------------------------
-    pub(crate) fn render_layout_tab(
+    pub(crate) fn render_layout_page(
         &self,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -607,32 +607,24 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "GroupBox", &[("fill bg", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("title", "muted_foreground", t.muted_foreground, "gpui-component/group_box.rs:147")], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color -- refined last, so the radius and the edge drawn are the card's, not upstream's radius (group_box.rs, GroupBox)".to_string())], &[])),
             )
-            // Breadcrumb (with tab navigation)
-            .child(section("Breadcrumb (click to navigate tabs)"))
+            // Breadcrumb (with page navigation)
+            .child(section("Breadcrumb (click to navigate pages)"))
             .child(
                 div()
                     .id("tt-breadcrumb")
                     .child(
                         Breadcrumb::new()
                             .child(BreadcrumbItem::new("Buttons").on_click(cx.listener(
-                                |this, _ev, _w, _cx| {
-                                    this.active_tab = Tab::Buttons;
-                                },
+                                |this, _ev, _w, cx| this.show_page(Page::Buttons, cx),
                             )))
                             .child(BreadcrumbItem::new("Inputs").on_click(cx.listener(
-                                |this, _ev, _w, _cx| {
-                                    this.active_tab = Tab::Inputs;
-                                },
+                                |this, _ev, _w, cx| this.show_page(Page::Inputs, cx),
                             )))
                             .child(BreadcrumbItem::new("Data").on_click(cx.listener(
-                                |this, _ev, _w, _cx| {
-                                    this.active_tab = Tab::Data;
-                                },
+                                |this, _ev, _w, cx| this.show_page(Page::Data, cx),
                             )))
                             .child(BreadcrumbItem::new("Feedback").on_click(cx.listener(
-                                |this, _ev, _w, _cx| {
-                                    this.active_tab = Tab::Feedback;
-                                },
+                                |this, _ev, _w, cx| this.show_page(Page::Feedback, cx),
                             )))
                             .child(BreadcrumbItem::new("Layout")),
                     )
