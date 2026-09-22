@@ -18,7 +18,7 @@ use std::ops::Deref as _;
 use std::rc::Rc;
 
 use crate::app::{AppColorMode, Showcase};
-use crate::info::{WidgetInfo, claim};
+use crate::info::{INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker};
 use crate::support::{
     CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
 };
@@ -685,4 +685,153 @@ fn to_text_prints_the_four_sections_in_order() {
 fn an_empty_section_is_not_printed() {
     let text = WidgetInfo::new("Label").to_text();
     assert_eq!(text, "Label\n");
+}
+
+/// Two targets for the registry's tests, one inside the other: an outer
+/// 200×200 target at (20, 20) and, while `show_inner` holds, a 40×40 target
+/// centred in it at (120, 120).
+struct Nested {
+    ui: Entity<InfoRegistry>,
+    show_inner: bool,
+}
+
+impl Render for Nested {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        let inner = self.show_inner.then(|| {
+            gpui::div()
+                .info(&self.ui, "inner", WidgetInfo::new("Inner"))
+                .absolute()
+                .left(px(80.))
+                .top(px(80.))
+                .size(px(40.))
+        });
+        gpui::div()
+            .relative()
+            .size_full()
+            .child(epoch_marker(&self.ui))
+            .child(
+                gpui::div()
+                    .relative()
+                    .size_full()
+                    .children(inner)
+                    .info(&self.ui, "outer", WidgetInfo::new("Outer"))
+                    .absolute()
+                    .left(px(20.))
+                    .top(px(20.))
+                    .size(px(200.)),
+            )
+    }
+}
+
+/// Draw the frame that shows or hides the inner target.
+fn show_inner(cx: &mut VisualTestContext, view: &Entity<Nested>, show: bool) {
+    cx.update(|_window, cx| {
+        view.update(cx, |this, cx| {
+            this.show_inner = show;
+            cx.notify();
+        })
+    });
+    draw(cx);
+}
+
+const INNER: Point<Pixels> = point(px(120.), px(120.));
+const OUTER_ONLY: Point<Pixels> = point(px(30.), px(30.));
+const OUTSIDE: Point<Pixels> = point(px(500.), px(500.));
+
+fn open_nested(
+    cx: &mut TestAppContext,
+) -> (Entity<Nested>, Entity<InfoRegistry>, &mut VisualTestContext) {
+    let (view, cx) = cx.add_window_view(|_window, cx| Nested {
+        ui: cx.new(|_| InfoRegistry::new()),
+        show_inner: true,
+    });
+    let ui = cx.update(|_window, cx| view.read(cx).ui.clone());
+    draw(cx);
+    (view, ui, cx)
+}
+
+/// Move the pointer to `at` and let the hover handlers run.
+fn hover(cx: &mut VisualTestContext, at: Point<Pixels>) {
+    cx.simulate_mouse_move(at, None, Modifiers::default());
+    cx.run_until_parked();
+}
+
+/// Let the current choice stay the choice for `INFO_SETTLE`.
+fn settle(cx: &mut VisualTestContext) {
+    cx.executor().advance_clock(INFO_SETTLE);
+    cx.run_until_parked();
+}
+
+/// The title of the info the registry shows.
+fn shown(cx: &mut VisualTestContext, ui: &Entity<InfoRegistry>) -> Option<String> {
+    cx.update(|_window, cx| ui.read(cx).shown().map(|info| info.title()))
+}
+
+#[gpui::test]
+fn the_innermost_hovered_target_wins(cx: &mut TestAppContext) {
+    let (_view, ui, cx) = open_nested(cx);
+    hover(cx, INNER);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+    hover(cx, OUTER_ONLY);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Outer"));
+}
+
+#[gpui::test]
+fn leaving_every_target_keeps_what_is_shown(cx: &mut TestAppContext) {
+    let (_view, ui, cx) = open_nested(cx);
+    hover(cx, INNER);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+    hover(cx, OUTSIDE);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+}
+
+#[gpui::test]
+fn crossing_is_not_hovering(cx: &mut TestAppContext) {
+    let (_view, ui, cx) = open_nested(cx);
+    hover(cx, OUTER_ONLY);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Outer"));
+    hover(cx, INNER);
+    cx.executor().advance_clock(INFO_SETTLE / 2);
+    cx.run_until_parked();
+    hover(cx, OUTSIDE);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Outer"));
+}
+
+#[gpui::test]
+fn a_target_no_longer_drawn_never_wins(cx: &mut TestAppContext) {
+    let (view, ui, cx) = open_nested(cx);
+    hover(cx, INNER);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+    show_inner(cx, &view, false);
+    hover(cx, INNER);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Outer"));
+}
+
+/// A target that stopped being drawn while hovered gets no hover end from
+/// gpui, so drawing it again away from the pointer must not bring it back.
+#[gpui::test]
+fn a_target_drawn_again_away_from_the_pointer_does_not_win(cx: &mut TestAppContext) {
+    let (view, ui, cx) = open_nested(cx);
+    hover(cx, INNER);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+    show_inner(cx, &view, false);
+    hover(cx, OUTER_ONLY);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Outer"));
+    show_inner(cx, &view, true);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Outer"));
 }

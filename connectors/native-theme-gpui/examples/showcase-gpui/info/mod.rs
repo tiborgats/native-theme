@@ -1,9 +1,21 @@
 //! What the inspector shows for one widget instance (spec §3).
 
-// Used from Task 4 on (the registry).
-#![allow(dead_code)]
+// Only the tests read the model and the registry until the showcase is wired
+// to them (Task 10 of docs/todo_v0.5.9_showcase-app-plan.md); `expect`, not
+// `allow`, so the wiring has to remove this.
+#![cfg_attr(
+    not(test),
+    expect(
+        dead_code,
+        unused_imports,
+        reason = "the showcase is wired to the registry in Task 10"
+    )
+)]
 
 use gpui::Hsla;
+
+pub mod registry;
+pub use registry::*;
 
 /// One colour a widget paints, the token it reads, and where upstream reads it.
 #[derive(Clone, Debug, PartialEq)]

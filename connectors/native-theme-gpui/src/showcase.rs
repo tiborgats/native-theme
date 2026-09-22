@@ -38,6 +38,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
         include_str!("../examples/showcase-gpui/info/mod.rs"),
     ),
     (
+        "info/registry.rs",
+        include_str!("../examples/showcase-gpui/info/registry.rs"),
+    ),
+    (
         "inspector.rs",
         include_str!("../examples/showcase-gpui/inspector.rs"),
     ),
