@@ -3495,7 +3495,8 @@ impl Showcase {
                 div()
                     .id("tt-otp")
                     .child(OtpInput::new(&self.otp_state).groups(2))
-                    .on_hover(self.hover_info(&fi, "OtpInput", &[("bg", "input", t.input, ""), ("border", "border", t.border, "gpui-component/input/input.rs:501"), ("focus", "ring", t.ring, ""), ("text", "foreground", t.foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("digit count", "configurable"), ("groups", "2")])),
+                    .on_hover(self.hover_info(&fi, "OtpInput", &[("border", "input", t.input, "gpui-component/input/otp_input.rs:117"), ("focus ring", "ring", t.ring, "gpui-component/input/otp_input.rs:121"), ("digit", "secondary_foreground", t.secondary_foreground, "gpui-component/input/otp_input.rs:143"), ("empty digit", "muted_foreground", t.muted_foreground, "gpui-component/input/otp_input.rs:145"), ("caret", "caret", t.caret, "gpui-component/input/otp_input.rs:159")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("fill", "none: the boxes are outlined, not filled, and the input token the panel called a background is that outline (input/otp_input.rs)"),
+                            ("digit count", "configurable"), ("groups", "2")])),
             )
             // Combobox
             .child(section("Combobox (searchable, over the bundled presets)"))
@@ -3511,7 +3512,7 @@ impl Showcase {
                             .menu_width(px(260.0))
                             .w(px(260.0)),
                     ))
-                    .on_hover(self.hover_info(&fi, "Combobox", &[("trigger bg", "background", t.background, ""), ("trigger border", "input", t.input, ""), ("text", "foreground", t.foreground, ""), ("popup bg", "popover", t.popover, ""), ("row hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209"), ("focus ring", "ring", t.ring, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Combobox", &[("trigger bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("trigger border", "input", t.input, "gpui-component/input/input.rs:714"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("popup bg", "popover", t.popover, "gpui-component/styled.rs:197"), ("row hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209"), ("focus ring", "ring", t.ring, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("geometry", "geometry::combobox: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font"),
                             ("font colour", "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, ComboboxState::default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)"),
                             ("delegate", "SearchableListDelegate, implemented in this showcase (combobox.rs, Combobox<D>)"),
@@ -3535,7 +3536,7 @@ impl Showcase {
                         gpui_component::date_picker::DatePicker::new(&self.date_picker_state)
                             .placeholder("Select a date"),
                     )
-                    .on_hover(self.hover_info(&fi, "DatePicker", &[("bg", "input", t.input, ""), ("border", "border", t.border, "gpui-component/input/input.rs:501"), ("popover", "popover", t.popover, ""), ("selected", "primary", t.primary, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "DatePicker", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("popover", "popover", t.popover, "gpui-component/styled.rs:197"), ("selected day", "primary", t.primary, "gpui-component/time/calendar.rs:185")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("calendar icon", "hardcoded"),
                             ("format", "default YYYY-MM-DD"),
                         ])),
