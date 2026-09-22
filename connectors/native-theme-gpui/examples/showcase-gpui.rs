@@ -3519,7 +3519,7 @@ impl Showcase {
                 div()
                     .id("tt-colorpicker")
                     .child(ColorPicker::new(&self.color_picker_state).label("Pick a color"))
-                    .on_hover(self.hover_info(&fi, "ColorPicker", &[("bg", "input", t.input, ""), ("border", "border", t.border, ""), ("popover", "popover", t.popover, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("palette", "hardcoded HSL picker")])),
+                    .on_hover(self.hover_info(&fi, "ColorPicker", &[("swatch bg", "background", t.background, "gpui-component/color_picker.rs:627"), ("swatch border", "input", t.input, "gpui-component/color_picker.rs:629"), ("popover", "popover", t.popover, "gpui-component/styled.rs:197")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("palette", "hardcoded HSL picker")])),
             )
             // Date Picker
             .child(section("DatePicker"))
@@ -3776,10 +3776,9 @@ impl Showcase {
                                     .limit(3),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Avatar / AvatarGroup", &[("fallback bg", "secondary", t.secondary, ""), (
-                                "fallback text",
-                                "secondary_foreground",
-                                t.secondary_foreground, ""), ("border", "background", t.background, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Avatar / AvatarGroup", &[("fallback bg", "secondary", t.secondary, "gpui-component/avatar/avatar.rs:123"), ("fallback text", "background", t.background, "gpui-component/avatar/avatar.rs:124"), ("border", "border", t.border, "gpui-component/avatar/avatar.rs:97")], &[], &[
+                            ("fallback text", "the window background, so the initials read as a cut-out of the fallback fill rather than as text on it (avatar/avatar.rs, Avatar::render)"),
+                            ("border, overridden", "an Avatar given an identity takes that identity's border instead of the theme's (avatar/avatar.rs, Avatar::render border_color)"),
                             ("size", "configurable via Size enum"),
                             ("limit overflow", "+N indicator"),
                         ])),
@@ -4346,7 +4345,7 @@ impl Showcase {
                                     .child(Button::new("badge-3").native(cx, geometry::button).label("Updates")),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Badge", &[("bg", "red", t.red, "gpui-component/badge.rs:125"), ("text", "background", t.background, "")], &[], &[("size", "hardcoded"), ("padding", "hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "Badge", &[("dot fill", "red", t.red, "gpui-component/badge.rs:125"), ("icon-badge ring", "background", t.background, "gpui-component/badge.rs:159")], &[], &[("text", "hardcoded white(), not a theme field, so a light accent leaves the count unreadable (badge.rs, Badge::render)"), ("dot fill, overridden", "Badge::color replaces it; red is only the default"), ("size", "hardcoded"), ("padding", "hardcoded")])),
             )
             // Marker
             .child(section("Marker (3 variants, 2 loading styles)"))
