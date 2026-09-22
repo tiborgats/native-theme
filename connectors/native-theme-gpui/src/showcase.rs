@@ -971,6 +971,13 @@ fn cited_source_dirs() -> Result<Vec<(String, PathBuf)>, String> {
         "native-theme-gpui".to_string(),
         Path::new(env!("CARGO_MANIFEST_DIR")).join("src"),
     ));
+    // The showcase itself: a colour the *application* chooses -- a chart
+    // series, say -- has no upstream line to cite, and saying so is more
+    // useful than leaving the claim bare.
+    roots.push((
+        "showcase".to_string(),
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("examples"),
+    ));
     Ok(roots)
 }
 

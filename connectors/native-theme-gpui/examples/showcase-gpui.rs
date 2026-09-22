@@ -6247,12 +6247,13 @@ impl Showcase {
                         &fi,
                         "BarChart",
                         &[
-                            ("fill", "chart_1", t.chart_1, ""),
+                            ("fill", "chart_1", t.chart_1, "showcase/showcase-gpui.rs:6224"),
                             ("axis", "muted_foreground", t.muted_foreground, ""),
                             ("grid", "border", t.border, ""),
                         ],
                         &[],
                         &[
+                            ("colour source", "this demo picks the series colours; every chart widget defaults to chart_2 on its own (chart/bar_chart.rs, chart/line_chart.rs, chart/area_chart.rs, chart/pie_chart.rs), so chart_1 and chart_3 reach a pixel only because an application asks for them"),
                             ("bar width", "auto-scaled"),
                             ("tick_margin", "configurable"),
                         ],
@@ -6276,7 +6277,7 @@ impl Showcase {
                         &fi,
                         "LineChart",
                         &[
-                            ("stroke", "chart_2", t.chart_2, ""),
+                            ("stroke", "chart_2", t.chart_2, "showcase/showcase-gpui.rs:6225"),
                             (
                                 "axis",
                                 "muted_foreground",
@@ -6307,8 +6308,18 @@ impl Showcase {
                         &fi,
                         "AreaChart",
                         &[
-                            ("stroke", "chart_3", t.chart_3, ""),
-                            ("fill", "chart_3 (0.3 opacity)", t.chart_3, ""),
+                            (
+                                "stroke",
+                                "chart_3",
+                                t.chart_3,
+                                "showcase/showcase-gpui.rs:6226",
+                            ),
+                            (
+                                "fill",
+                                "chart_3",
+                                t.chart_3,
+                                "showcase/showcase-gpui.rs:6227",
+                            ),
                             (
                                 "axis",
                                 "muted_foreground",
@@ -6339,9 +6350,9 @@ impl Showcase {
                         &fi,
                         "PieChart",
                         &[
-                            ("slice 1", "chart_1", t.chart_1, ""),
-                            ("slice 2", "chart_2", t.chart_2, ""),
-                            ("slice 3", "chart_3", t.chart_3, ""),
+                            ("slice 1", "chart_1", t.chart_1, "showcase/showcase-gpui.rs:6210"),
+                            ("slice 2", "chart_2", t.chart_2, "showcase/showcase-gpui.rs:6215"),
+                            ("slice 3", "chart_3", t.chart_3, "showcase/showcase-gpui.rs:6220"),
                         ],
                         &[],
                         &[
