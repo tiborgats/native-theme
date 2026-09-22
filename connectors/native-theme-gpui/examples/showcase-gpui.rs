@@ -2783,9 +2783,12 @@ impl Showcase {
         let radius_str = format!("{}px", theme.radius.as_f32());
         let radius_lg_str = format!("{}px", theme.radius_lg.as_f32());
         let font_family_str = self.original_font.family.clone();
-        let font_size_str = format!("{}px", self.original_font.size);
+        // In the unit the platform stated, like the hover panels: this row is
+        // reporting the theme's own definition, not the pixel value gpui
+        // happens to lay out with.
+        let font_size_str = defined_size(&self.original_font);
         let mono_family_str = self.original_mono_font.family.clone();
-        let mono_size_str = format!("{}px", self.original_mono_font.size);
+        let mono_size_str = defined_size(&self.original_mono_font);
         let shadow_str = if theme.shadow { "true" } else { "false" };
         let scrollbar_str = format!("{:?}", theme.scrollbar_mode);
 
@@ -3049,9 +3052,10 @@ impl Showcase {
                         &[],
                         &[],
                         &[
-                            ("opacity", "hardcoded 0.5 when disabled"),
+                            ("fill", "the variant's own token at 0.15, a literal -- not 0.5, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
+                            ("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.disabled_text_color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)"),
+                            ("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence"),
                             ("cursor", "not-allowed"),
-                            ("theme", "same variant colors at reduced opacity"),
                         ],
                     )),
             )
@@ -3793,9 +3797,8 @@ impl Showcase {
                     .occlude()
                     .debug_selector(|| LIST_DEMO.into())
                     .child(gpui_component::list::List::new(&self.list_state))
-                    .on_hover(self.hover_info(&fi, "List", &[("bg", "list", t.colors.list, "gpui-component/list/list_item.rs:236"), ("active", "list_active", t.list_active, "gpui-component/list/list_item.rs:237"), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209")], &[("geometry", "geometry::list on the box around it: list.border line width, colour and corner radius, and a clip to that radius. List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's".to_string())], &[
+                    .on_hover(self.hover_info(&fi, "List", &[("bg", "list", t.colors.list, "gpui-component/list/list_item.rs:236"), ("active", "list_active", t.list_active, "gpui-component/list/list_item.rs:237"), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209")], &[("geometry", "geometry::list on the box around it: list.border line width, colour and corner radius, and a clip to that radius. List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's".to_string()), ("row geometry", "geometry::list_item on each row: list.row_height (control height), list.border.padding_*, and list.item_font including its colour. Applied in the delegate rather than in the demo block, which is why the builder-coverage test cannot see it here (showcase-gpui.rs, SampleListDelegate::render_item)".to_string())], &[
                             ("even rows", "the list_even token has no reader anywhere in gpui-component or gpui-base: a List paints every row the same, and the connector writes the slot for nothing (Tier U)"),
-                            ("item height", "hardcoded per Size"),
                         ])),
             )
             // Tree
@@ -4613,7 +4616,7 @@ impl Showcase {
                             ("font", format!("font_family: {}", t.font_family)),
                             (
                                 "size",
-                                format!("font_size: {}px (renders)", t.font_size.as_f32()),
+                                format!("font_size: {}px (gpui renders)", t.font_size.as_f32()),
                             ),
                         ], &[("font weights", "hardcoded")])),
             )
@@ -4759,7 +4762,7 @@ impl Showcase {
                             .child(Label::new("text_lg — Large").text_lg())
                             .child(Label::new("text_xl — Extra Large").text_xl()),
                     )
-                    .on_hover(self.hover_info(&fi, "Font Sizes", &[("text", "foreground", t.foreground, "gpui-component/label.rs:211")], &[("base", format!("font_size: {}px", t.font_size.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Font Sizes", &[("text", "foreground", t.foreground, "gpui-component/label.rs:211")], &[("base", format!("font_size: {}px (gpui renders)", t.font_size.as_f32()))], &[
                             ("xs", "0.75rem"),
                             ("sm", "0.875rem"),
                             ("base", "1rem"),
@@ -4845,7 +4848,7 @@ impl Showcase {
                             ),
                             (
                                 "mono size",
-                                format!("mono_font_size: {}px", t.mono_font_size.as_f32()),
+                                format!("mono_font_size: {}px (gpui renders)", t.mono_font_size.as_f32()),
                             ),
                         ], &[
                             ("bg", "highlight_theme's editor_background, else input_background()"),
