@@ -2895,7 +2895,7 @@ impl Showcase {
                                     .custom(variants::ghost_button(cx)),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Ghost)", &[("text", "secondary_foreground", t.secondary_foreground, ""), ("hover bg", "secondary_hover", t.secondary_hover, ""), ("active bg", "secondary_active", t.secondary_active, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                            .on_hover(self.hover_info(&fi, "Button (Ghost)", &[("text", "secondary_foreground", t.secondary_foreground, "native-theme-gpui/variants.rs:54"), ("hover bg", "secondary_hover", t.secondary_hover, "native-theme-gpui/variants.rs:55"), ("active bg", "secondary_active", t.secondary_active, "native-theme-gpui/variants.rs:56")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                                     ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu selection colour, not a button hover"),
                                     ("font-weight", "hardcoded"),
@@ -2929,7 +2929,7 @@ impl Showcase {
                                     .outline(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Primary Outline)", &[("border", "primary", t.primary, ""), ("text", "primary", t.primary, ""), ("hover bg", "primary_hover", t.primary_hover, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                            .on_hover(self.hover_info(&fi, "Button (Primary Outline)", &[("border", "primary", t.primary, "gpui-component/button/button.rs:1003"), ("text", "primary", t.primary, "gpui-component/button/button.rs:952"), ("hover bg", "primary_hover", t.primary_hover, "gpui-component/button/button.rs:874")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                                     ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
                                 ])),
@@ -2949,7 +2949,8 @@ impl Showcase {
                             .child(Button::new("s-md").label("Medium").with_size(Size::Medium))
                             .child(Button::new("s-lg").label("Large").with_size(Size::Large)),
                     )
-                    .on_hover(self.hover_info(&fi, "Button Sizes", &[("bg", "secondary", t.secondary, ""), ("text", "secondary_foreground", t.secondary_foreground, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Button Sizes", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                            ("variant", "these take no variant, so they are ButtonVariant::Default -- the button family, not the secondary one the panel had named (button/button.rs)"),
                             ("size", "XSmall/Small/Medium/Large via Size enum"),
                             ("padding", "varies per Size"),
                             ("min-height", "varies per Size"),
@@ -2966,7 +2967,8 @@ impl Showcase {
                             .child(Button::new("bg-b").label("Center"))
                             .child(Button::new("bg-c").label("Right")),
                     )
-                    .on_hover(self.hover_info(&fi, "ButtonGroup", &[("bg", "secondary", t.secondary, ""), ("text", "secondary_foreground", t.secondary_foreground, ""), ("border", "border", t.border, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("gap", "hardcoded (0px, merged borders)")])),
+                    .on_hover(self.hover_info(&fi, "ButtonGroup", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("border", "input", t.input, "gpui-component/button/button.rs:1001")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("variant", "no variant given, so Default: its edge is input, not border"),
+                            ("gap", "hardcoded (0px, merged borders)")])),
             )
             // Disabled + loading
             .child(section("Disabled State"))
