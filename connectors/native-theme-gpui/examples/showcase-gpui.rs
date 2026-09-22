@@ -3360,12 +3360,13 @@ impl Showcase {
                                 .disabled(true),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Checkbox", &[("checked bg", "primary", t.primary, "gpui-component/checkbox.rs:307"), ("checkmark", "primary_foreground", t.primary_foreground, "gpui-component/checkbox.rs:195"), ("unchecked border", "input", t.input, "gpui-component/checkbox.rs:238"), ("bg", "background", t.background, "")], &[
+                    .on_hover(self.hover_info(&fi, "Checkbox", &[("checked bg", "primary", t.primary, "gpui-component/checkbox.rs:307"), ("checkmark", "primary_foreground", t.primary_foreground, "gpui-component/checkbox.rs:195"), ("unchecked border", "input", t.input, "gpui-component/checkbox.rs:238")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
                         ], &[
                             ("geometry", "geometry::checkbox: checkbox.label_gap, checkbox.font"),
                             ("font colour", "carried as size and weight only. Upstream wraps a Checkbox label in a div that sets foreground itself and re-sets muted_foreground there when disabled (checkbox.rs, Checkbox::render), and the disabled hook applies muted_foreground before this refinement, so a carried colour would never reach the label and would displace the disabled colour of custom children (native-theme-gpui geometry.rs, geometry::checkbox)"),
+                            ("unchecked fill", "none: an unchecked box is drawn with its input-coloured edge and no background, so the panel's background claim is dropped (checkbox.rs, Checkbox::render)"),
                             ("indicator size", "inner element (Tier U)"),
                         ])),
             )
@@ -3917,7 +3918,7 @@ impl Showcase {
                                     })),
                             )),
                     )
-                    .on_hover(self.hover_info(&fi, "MessageScroller", &[("bottom fade", "background", t.background, ""), ("scrollbar", "scrollbar_thumb", t.scrollbar_thumb, ""), ("jump button", "secondary", t.secondary, "gpui-component/button/button.rs:880")], &[], &[
+                    .on_hover(self.hover_info(&fi, "MessageScroller", &[("bottom fade", "background", t.background, "gpui-component/message_scroller.rs:433"), ("scrollbar", "scrollbar_thumb", t.scrollbar_thumb, ""), ("jump button", "secondary", t.secondary, "gpui-component/button/button.rs:880")], &[], &[
                             ("rows", "the Message rows above, rendered on demand"),
                             ("follow", "FollowMode::Tail: Send scrolls the thread to the new row (message_scroller.rs, MessageScrollerState::new)"),
                             ("jump button", "appears once the user scrolls away from the tail"),
@@ -4261,7 +4262,7 @@ impl Showcase {
                                     .spread(0.5),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "ShimmerText", &[("text", "foreground", t.foreground, "gpui-component/root.rs:596"), ("second line", "muted_foreground", t.muted_foreground, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "ShimmerText", &[("text", "foreground", t.foreground, "gpui-component/root.rs:596"), ("second line", "muted_foreground", t.muted_foreground, "gpui-component/marker.rs:185")], &[], &[
                             ("highlight", "the text colour mixed with background (light) or foreground (dark), at 75%/60% peak (shimmer.rs, shimmer_highlight_color)"),
                             ("reduced motion", "gpui's App::reduce_motion: the text renders once, unanimated (shimmer.rs, ShimmerText::render)"),
                             ("sweep", "2s by default; 3s and a reversed 0.5 spread here"),
@@ -4399,7 +4400,7 @@ impl Showcase {
                                     .content(MarkerContent::new().text("Resolving the palette…")),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Marker", &[("text", "muted_foreground", t.muted_foreground, ""), ("separator line", "border", t.border, "gpui-component/plot/tooltip.rs:120"), ("bottom border", "border", t.border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Marker", &[("text", "muted_foreground", t.muted_foreground, "gpui-component/marker.rs:185"), ("separator line", "border", t.border, "gpui-component/plot/tooltip.rs:120"), ("bottom border", "border", t.border, "gpui-component/marker.rs:191")], &[], &[
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                             ("row gap", "hardcoded gap_2 (marker.rs, Marker::render)"),
                             ("shimmer", "the loading highlight ShimmerText paints, on the content slot only (marker.rs, Marker::render MarkerChild::Content)"),
@@ -5037,7 +5038,7 @@ impl Showcase {
                             t.muted_foreground
                         },
                     ))
-                    .on_hover(self.hover_info(&fi, "TitleBar", &[("bg", "title_bar", t.title_bar, "gpui-component/title_bar.rs:340"), ("border", "title_bar_border", t.title_bar_border, "gpui-component/title_bar.rs:338"), ("window control text", "foreground", t.foreground, "gpui-component/title_bar.rs:217"), ("control hover", "secondary_hover", t.secondary_hover, ""), ("close hover", "danger", t.danger, "gpui-component/title_bar.rs:179")], &[], &[
+                    .on_hover(self.hover_info(&fi, "TitleBar", &[("bg", "title_bar", t.title_bar, "gpui-component/title_bar.rs:340"), ("border", "title_bar_border", t.title_bar_border, "gpui-component/title_bar.rs:338"), ("window control text", "foreground", t.foreground, "gpui-component/title_bar.rs:217"), ("control hover", "secondary_hover", t.secondary_hover, "gpui-component/title_bar.rs:181"), ("close hover", "danger", t.danger, "gpui-component/title_bar.rs:179")], &[], &[
                             ("geometry", "geometry::title_bar: window.title_bar_font size, weight and colour, carried by the label because nothing overrides it afterwards -- upstream sets no text colour on the bar, so the builder's displaces nothing. The window controls set foreground on their own elements, out of its reach"),
                             ("height", "TITLE_BAR_HEIGHT = 34px (title_bar.rs, TITLE_BAR_HEIGHT)"),
                             ("fill", "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)"),
