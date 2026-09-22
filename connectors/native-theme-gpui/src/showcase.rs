@@ -685,6 +685,7 @@ fn every_demo_names_the_builders_it_applies() {
 // cargo, and a published crate does not gain a build script to locate a
 // *dev*-dependency's source.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 /// The crates a citation may name, by package name.
@@ -770,11 +771,14 @@ struct Claim<'a> {
     cited_at: &'a str,
 }
 
-/// Every colour claim, and every panel's prose argument with its line.
-fn panel_claims(raw: &str) -> (Vec<Claim<'_>>, Vec<(usize, &str, &str)>) {
+/// Every `hover_info` call: the line it sits on, the widget it names, and its
+/// five arguments.
+///
+/// Shared by the citation gate and the omission report, which ask different
+/// questions of the same five arguments.
+fn panel_calls(raw: &str) -> Vec<(usize, &str, Vec<&str>)> {
     let starts = line_offsets(raw);
-    let mut claims = Vec::new();
-    let mut prose = Vec::new();
+    let mut out = Vec::new();
     let mut from = 0usize;
     while let Some(ix) = raw.get(from..).and_then(|t| t.find(".hover_info(")) {
         let call = from + ix;
@@ -785,8 +789,17 @@ fn panel_claims(raw: &str) -> (Vec<Claim<'_>>, Vec<(usize, &str, &str)>) {
         if args.len() != 5 {
             continue;
         }
-        let line = line_at(&starts, call);
         let widget = unquote(args[1]).unwrap_or("?");
+        out.push((line_at(&starts, call), widget, args));
+    }
+    out
+}
+
+/// Every colour claim, and every panel's prose argument with its line.
+fn panel_claims(raw: &str) -> (Vec<Claim<'_>>, Vec<(usize, &str, &str)>) {
+    let mut claims = Vec::new();
+    let mut prose = Vec::new();
+    for (line, widget, args) in panel_calls(raw) {
         prose.push((line, widget, args[4]));
 
         let trimmed = args[2].trim();
@@ -1117,6 +1130,140 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
             claims.len() - uncited,
             claims.len()
         );
+    }
+}
+
+/// Every `theme().<field>` and `theme().tokens.<field>` read in `text`.
+///
+/// A field, not a method: `theme().is_dark()` asks something *about* the
+/// theme rather than naming a colour a widget paints, so an identifier
+/// followed by `(` is skipped.
+fn theme_reads(text: &str) -> BTreeSet<&str> {
+    const OPEN: &str = "theme().";
+    let mut out = BTreeSet::new();
+    let mut from = 0usize;
+    while let Some(ix) = text.get(from..).and_then(|t| t.find(OPEN)) {
+        let at = from + ix + OPEN.len();
+        from = at;
+        let mut rest = text.get(at..).unwrap_or("");
+        if let Some(after) = rest.strip_prefix("tokens.") {
+            rest = after;
+        }
+        let ident = leading_ident(rest);
+        if ident.is_empty() || rest.get(ident.len()..).is_some_and(|t| t.starts_with('(')) {
+            continue;
+        }
+        out.insert(ident);
+    }
+    out
+}
+
+/// Spec section 5: the theme fields the cited files read that no panel names.
+///
+/// The plan ordered this after the citation pass for a reason -- once every
+/// claim carries a citation, the widget-to-file mapping is exact rather than
+/// guessed: **the files a panel cites are the files its widget is implemented
+/// in**. So the scope of this report is the union of those files, and no new
+/// guesser is needed.
+///
+/// The bar is *no panel anywhere names it*, not *this panel names it*.
+/// `button.rs` holds ten Button variants; measuring each Button panel against
+/// the whole file would report the other nine's tokens as omissions and bury
+/// the report in noise it was already known to produce. A field some other
+/// panel names is documented in the showcase, just not here.
+///
+/// Printed, never failed (W6). A panel legitimately says nothing about states
+/// and variants its demo does not show, and turning that into a gate would
+/// need an exception per unshown state across a hundred widgets -- the sprawl
+/// this design exists to avoid. The residual is a number someone chose: it is
+/// recorded in the CHANGELOG.
+///
+/// Run it with `cargo test -p native-theme-gpui --lib the_omission_report --
+/// --nocapture`.
+#[test]
+fn the_omission_report() {
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was measured: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let calls = panel_calls(SHOWCASE);
+    assert!(
+        !calls.is_empty(),
+        "no Widget Info panels were found, so this report would be empty for \
+         the wrong reason"
+    );
+    let (claims, _) = panel_claims(SHOWCASE);
+
+    // Every file a claim cites, with the panels that cite it. An ambiguous or
+    // unparseable citation is left out here; the citation gate already fails
+    // on both, so this report never has to speak about them.
+    let mut cited: BTreeMap<PathBuf, BTreeSet<&str>> = BTreeMap::new();
+    for claim in &claims {
+        let Some((path, _, _)) = parse_citation(claim.cited_at) else {
+            continue;
+        };
+        let found = candidates(path, &roots);
+        if found.len() != 1 {
+            continue;
+        }
+        let Some(file) = found.first() else {
+            continue;
+        };
+        cited.entry(file.clone()).or_default().insert(claim.widget);
+    }
+    assert!(
+        !cited.is_empty(),
+        "no cited file could be located, so this report would be empty for \
+         the wrong reason"
+    );
+
+    // What the panels say, all five arguments of all of them: a field named
+    // in a config line or a not-themeable note is described just as much as
+    // one that carries a swatch.
+    let said: Vec<&str> = calls
+        .iter()
+        .flat_map(|(_, _, args)| args.iter().copied())
+        .collect();
+    let said = said.join("\n");
+
+    let mut unnamed: BTreeMap<&str, BTreeSet<String>> = BTreeMap::new();
+    let mut texts: Vec<(PathBuf, String)> = Vec::new();
+    for file in cited.keys() {
+        let Ok(text) = std::fs::read_to_string(file) else {
+            continue;
+        };
+        texts.push((file.clone(), text));
+    }
+    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    for (file, text) in &texts {
+        for field in theme_reads(text) {
+            seen.insert(field);
+            if mentions(&said, field) {
+                continue;
+            }
+            unnamed.entry(field).or_default().insert(shorten(file));
+        }
+    }
+
+    println!(
+        "\nWidget Info omission report\n  {} panels cite {} files, which read \
+         {} distinct theme fields.\n  {} of those are named by no panel:",
+        calls.len(),
+        cited.len(),
+        seen.len(),
+        unnamed.len()
+    );
+    for (field, files) in &unnamed {
+        println!(
+            "    {field:<28} {}",
+            files.iter().cloned().collect::<Vec<_>>().join(", ")
+        );
+    }
+    if unnamed.is_empty() {
+        println!("    (none)");
     }
 }
 

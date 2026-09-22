@@ -62,6 +62,7 @@ use gpui_component::{
     collapsible::Collapsible,
     color_picker::{ColorPicker, ColorPickerState},
     combobox::{Combobox, ComboboxState},
+    command::{Command, CommandGroup, CommandItem, CommandState},
     description_list::DescriptionList,
     dialog::{
         AlertDialog, DialogButtonProps, DialogClose, DialogDescription, DialogFooter, DialogTitle,
@@ -1628,7 +1629,13 @@ struct Showcase {
     input_state: Entity<InputState>,
     /// The field sized by `geometry::input_height` alone.
     input_height_state: Entity<InputState>,
+    /// The multi-line field of the Textarea demo, beside the single-line
+    /// `Input` it shares a surface with.
+    textarea_demo: Entity<TextareaState>,
     combobox_state: Entity<ComboboxState<PresetDelegate>>,
+    /// The `Select` shown beside the `Combobox`: the same trigger, with the
+    /// platform's font colour carried as well.
+    select_demo: Entity<SelectState<SearchableVec<SharedString>>>,
     input_group_state: Entity<InputState>,
     input_group_button_state: Entity<InputState>,
     input_group_textarea_state: Entity<TextareaState>,
@@ -1685,6 +1692,8 @@ struct Showcase {
     /// What the last `AlertDialog` was answered with, written by its `on_ok`
     /// and `on_cancel` so the section reports a real outcome.
     alert_choice: Option<SharedString>,
+    /// The command palette's query and highlighted row.
+    command_state: Entity<CommandState>,
 
     // Icon set selector state
     icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
@@ -2032,9 +2041,26 @@ impl Showcase {
             state
         });
 
+        let textarea_demo = cx.new(|cx| TextareaState::new(window, cx));
+
         let combobox_state = cx.new(|cx| {
             ComboboxState::new(PresetDelegate::new(), Vec::new(), window, cx).searchable(true)
         });
+
+        let select_demo = cx.new(|cx| {
+            SelectState::new(
+                SearchableVec::new(vec![
+                    SharedString::from("Adwaita"),
+                    SharedString::from("Breeze"),
+                    SharedString::from("Yaru"),
+                ]),
+                None,
+                window,
+                cx,
+            )
+        });
+
+        let command_state = cx.new(|cx| CommandState::new(window, cx));
 
         let input_group_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
@@ -2448,7 +2474,9 @@ impl Showcase {
             layout: initial_layout,
             input_state,
             input_height_state,
+            textarea_demo,
             combobox_state,
+            select_demo,
             input_group_state,
             input_group_button_state,
             input_group_textarea_state,
@@ -2483,6 +2511,7 @@ impl Showcase {
             toggle_italic: false,
             app_menu_bar,
             alert_choice: None,
+            command_state,
             icon_set_select,
             icon_set_name: initial_resolved_name,
             icon_set_enum: Some(initial_effective_set),
@@ -2810,7 +2839,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-secondary")
                             .child(refined(
-                                Button::new("b-secondary").label("Secondary"),
+                                Button::new("b-secondary").label("Secondary").secondary(),
                                 button_style.as_ref(),
                             ))
                             .on_hover(self.hover_info(&fi, "Button (Secondary)", &[("bg", "button_secondary", t.button_secondary, "button/button.rs:937"), ("text", "button_secondary_foreground", t.button_secondary_foreground, "button/button.rs:961"), ("hover", "button_secondary_hover", t.button_secondary_hover, "button/button.rs:1093"), ("active", "button_secondary_active", t.button_secondary_active, "button/button.rs:1177")], &[
@@ -2929,14 +2958,16 @@ impl Showcase {
                                     .outline(),
                                 button_style.as_ref(),
                             ))
-                            .on_hover(self.hover_info(&fi, "Button (Primary Outline)", &[("border", "primary", t.primary, "gpui-component/button/button.rs:1003"), ("text", "primary", t.primary, "gpui-component/button/button.rs:952"), ("hover bg", "primary_hover", t.primary_hover, "gpui-component/button/button.rs:874")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                            .on_hover(self.hover_info(&fi, "Button (Primary Outline)", &[("fill", "primary", t.primary, "gpui-component/button/button.rs:871"), ("border", "primary", t.primary, "gpui-component/button/button.rs:1003"), ("text", "primary", t.primary, "gpui-component/button/button.rs:952"), ("hover bg", "primary_hover", t.primary_hover, "gpui-component/button/button.rs:874"), ("active bg", "primary_active", t.primary_active, "gpui-component/button/button.rs:877")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                                     ("geometry", "geometry::button: button.min_height/min_width, border.padding_*, corner_radius, line_width, color (spec §9.2)"),
                                     ("font-weight", "hardcoded"),
+                                    ("outline fill opacity", "0.1 at rest, 0.2 hovered, 0.4 pressed -- three literals, so the platform sets the hue and gpui-component sets how far it is faded (button/button.rs, ButtonVariant::outline_background)"),
                                 ])),
                     ),
             )
-            // Button sizes (using secondary for readability)
-            .child(section("Button Sizes (Secondary for readability)"))
+            // Button sizes: no variant method, so these are ButtonVariant::Default
+            // and the panel's `button` pair is what paints them.
+            .child(section("Button Sizes"))
             .child(
                 div()
                     .id("tt-btn-sizes")
@@ -2949,7 +2980,7 @@ impl Showcase {
                             .child(Button::new("s-md").label("Medium").with_size(Size::Medium))
                             .child(Button::new("s-lg").label("Large").with_size(Size::Large)),
                     )
-                    .on_hover(self.hover_info(&fi, "Button Sizes", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Button Sizes", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("hover", "button_hover", t.button_hover, "gpui-component/button/button.rs:1079"), ("active", "button_active", t.button_active, "gpui-component/button/button.rs:1163")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("variant", "these take no variant, so they are ButtonVariant::Default -- the button family, not the secondary one the panel had named (button/button.rs)"),
                             ("size", "XSmall/Small/Medium/Large via Size enum"),
                             ("padding", "varies per Size"),
@@ -2967,7 +2998,7 @@ impl Showcase {
                             .child(Button::new("bg-b").label("Center"))
                             .child(Button::new("bg-c").label("Right")),
                     )
-                    .on_hover(self.hover_info(&fi, "ButtonGroup", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("border", "input", t.input, "gpui-component/button/button.rs:1001")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("variant", "no variant given, so Default: its edge is input, not border"),
+                    .on_hover(self.hover_info(&fi, "ButtonGroup", &[("bg", "button", t.button, "gpui-component/button/button.rs:935"), ("text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("hover", "button_hover", t.button_hover, "gpui-component/button/button.rs:1079"), ("active", "button_active", t.button_active, "gpui-component/button/button.rs:1163"), ("border", "input", t.input, "gpui-component/button/button.rs:1001")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("variant", "no variant given, so Default: its edge is input, not border"),
                             ("gap", "hardcoded (0px, merged borders)")])),
             )
             // Disabled + loading
@@ -3203,14 +3234,34 @@ impl Showcase {
                     .on_hover(self.hover_info(&fi, "Input", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("disabled text", "muted_foreground", t.muted_foreground, "gpui-component/input/input.rs:102"), ("disabled bg", "input", t.input, "gpui-component/input/input.rs:101")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
+                            ("focus_ring", format!("{}", t.focus_ring)),
                         ], &[
                             ("fill", "input_background(): the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs)"),
+                            ("focus ring drawn at all", "a switch, not a colour: the connector sets Theme::focus_ring from the platform's focus_ring_width, and upstream drops the ring entirely where it is off (styled.rs, FocusableExt::focus_ring_style). The ring's colour is `ring`, shown on the InputGroup and OtpInput panels"),
                             ("disabled fill", "input mixed toward transparent, not muted as the panel had claimed (input/input.rs, input_style)"),
                             ("placeholder", "drawn by gpui-base's editor, not from a ThemeColor field here"),
                             ("geometry", "geometry::input: input.min_height (control height), border.corner_radius, line_width, input.font"),
                             ("second field", "geometry::input_height alone: the same control height, nothing else"),
                             ("padding", "inner editor (Tier U)"),
                         ])),
+            )
+            // Textarea
+            .child(section("Textarea (multi-line, the same input surface)"))
+            .child(
+                div()
+                    .id("tt-textarea")
+                    .child(refined(
+                        Textarea::new(&self.textarea_demo)
+                            .h(px(90.0))
+                            .w(px(360.0)),
+                        native_geometry(cx, geometry::input).as_ref(),
+                    ))
+                    .on_hover(self.hover_info(&fi, "Textarea", &[("bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("border", "input", t.input, "gpui-component/input/input.rs:714"), ("focus ring", "ring", t.ring, "gpui-component/input/input.rs:681"), ("disabled text", "muted_foreground", t.muted_foreground, "gpui-component/input/input.rs:102")], &[
+                        ("border-radius", format!("radius: {}px", t.radius.as_f32())),
+                    ], &[
+                        ("geometry", "geometry::input: input.min_height as the control height, border.corner_radius, border.line_width, input.font -- the same refinement the single-line Input above takes, because a Textarea renders as one (input/textarea.rs, Textarea::into_input)"),
+                        ("row height", "the line height of the resolved font; auto_grow is not used here (input/textarea.rs, Textarea::h)"),
+                    ])),
             )
             // InputGroup
             .child(section("InputGroup"))
@@ -3520,13 +3571,32 @@ impl Showcase {
                             ("caret", "inner element (Tier U)"),
                         ])),
             )
+            // Select
+            .child(section("Select (the same trigger, with the carried font colour)"))
+            .child(
+                div()
+                    .id("tt-select")
+                    .child(refined(
+                        Select::new(&self.select_demo)
+                            .placeholder("Pick an icon theme…")
+                            .w(px(260.0)),
+                        native_geometry(cx, geometry::select).as_ref(),
+                    ))
+                    .on_hover(self.hover_info(&fi, "Select", &[("trigger bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("trigger text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("trigger border", "input", t.input, "gpui-component/select.rs:541"), ("focus ring", "ring", t.ring, "gpui-component/select.rs:548"), ("placeholder", "muted_foreground", t.muted_foreground, "gpui-component/select.rs:445"), ("disabled text", "muted_foreground", t.muted_foreground, "gpui-component/select.rs:478")], &[
+                        ("border-radius", format!("radius: {}px", t.radius.as_f32())),
+                    ], &[
+                        ("geometry", "geometry::select: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)"),
+                        ("carried colour", "the one difference from the Combobox above: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)"),
+                        ("caret", "inner element (Tier U)"),
+                    ])),
+            )
             // Color Picker
             .child(section("ColorPicker"))
             .child(
                 div()
                     .id("tt-colorpicker")
                     .child(ColorPicker::new(&self.color_picker_state).label("Pick a color"))
-                    .on_hover(self.hover_info(&fi, "ColorPicker", &[("swatch bg", "background", t.background, "gpui-component/color_picker.rs:627"), ("swatch border", "input", t.input, "gpui-component/color_picker.rs:629"), ("popover", "popover", t.popover, "gpui-component/styled.rs:197")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("palette", "hardcoded HSL picker")])),
+                    .on_hover(self.hover_info(&fi, "ColorPicker", &[("swatch bg", "background", t.background, "gpui-component/color_picker.rs:627"), ("swatch border", "input", t.input, "gpui-component/color_picker.rs:629"), ("popover", "popover", t.popover, "gpui-component/styled.rs:197"), ("featured red", "red", t.red, "gpui-component/color_picker.rs:205"), ("featured red light", "red_light", t.red_light, "gpui-component/color_picker.rs:206"), ("featured blue", "blue", t.blue, "gpui-component/color_picker.rs:207"), ("featured blue light", "blue_light", t.blue_light, "gpui-component/color_picker.rs:208"), ("featured green", "green", t.green, "gpui-component/color_picker.rs:209"), ("featured green light", "green_light", t.green_light, "gpui-component/color_picker.rs:210"), ("featured yellow", "yellow", t.yellow, "gpui-component/color_picker.rs:211"), ("featured yellow light", "yellow_light", t.yellow_light, "gpui-component/color_picker.rs:212"), ("featured cyan", "cyan", t.cyan, "gpui-component/color_picker.rs:213"), ("featured cyan light", "cyan_light", t.cyan_light, "gpui-component/color_picker.rs:214"), ("featured magenta", "magenta", t.magenta, "gpui-component/color_picker.rs:215"), ("featured magenta light", "magenta_light", t.magenta_light, "gpui-component/color_picker.rs:216")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("palette grid", "the rows under the featured swatches are gpui-component's own colour scales, not the platform's (color_picker.rs, color_palettes)")])),
             )
             // Date Picker
             .child(section("DatePicker"))
@@ -4329,7 +4399,7 @@ impl Showcase {
                             .child(Tag::primary().outline().child("Primary Outline"))
                             .child(Tag::danger().outline().child("Danger Outline")),
                     )
-                    .on_hover(self.hover_info(&fi, "Tag (per variant)", &[("bg (primary)", "primary", t.primary, "gpui-component/tag.rs:29"), ("text (primary)", "primary_foreground", t.primary_foreground, "gpui-component/tag.rs:71"), ("border (outline)", "border", t.border, "gpui-component/tag.rs:49")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "hardcoded per Size")])),
+                    .on_hover(self.hover_info(&fi, "Tag (per variant)", &[("bg (primary)", "primary", t.primary, "gpui-component/tag.rs:29"), ("bg (secondary)", "secondary", t.secondary, "gpui-component/tag.rs:30"), ("bg (danger)", "danger", t.danger, "gpui-component/tag.rs:31"), ("bg (success)", "success", t.success, "gpui-component/tag.rs:32"), ("bg (warning)", "warning", t.warning, "gpui-component/tag.rs:33"), ("bg (info)", "info", t.info, "gpui-component/tag.rs:34"), ("text (primary)", "primary_foreground", t.primary_foreground, "gpui-component/tag.rs:71"), ("text (secondary)", "secondary_foreground", t.secondary_foreground, "gpui-component/tag.rs:78"), ("text (danger)", "danger_foreground", t.danger_foreground, "gpui-component/tag.rs:85"), ("text (success)", "success_foreground", t.success_foreground, "gpui-component/tag.rs:92"), ("text (warning)", "warning_foreground", t.warning_foreground, "gpui-component/tag.rs:99"), ("text (info)", "info_foreground", t.info_foreground, "gpui-component/tag.rs:106"), ("border (primary)", "primary", t.primary, "gpui-component/tag.rs:48"), ("border (secondary)", "border", t.border, "gpui-component/tag.rs:49"), ("border (danger)", "danger", t.danger, "gpui-component/tag.rs:50"), ("border (success)", "success", t.success, "gpui-component/tag.rs:51"), ("border (warning)", "warning", t.warning, "gpui-component/tag.rs:52"), ("border (info)", "info", t.info, "gpui-component/tag.rs:53"), ("outlined text (primary)", "primary", t.primary, "gpui-component/tag.rs:69"), ("outlined text (danger)", "danger", t.danger, "gpui-component/tag.rs:83")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "hardcoded per Size"), ("outlined fill", "transparent_white(), a literal: an outlined Tag drops its variant background entirely, keeping only the border and the text (tag.rs, Tag::render)")])),
             )
             // Badges
             .child(section("Badge"))
@@ -5039,7 +5109,7 @@ impl Showcase {
                             t.muted_foreground
                         },
                     ))
-                    .on_hover(self.hover_info(&fi, "TitleBar", &[("bg", "title_bar", t.title_bar, "gpui-component/title_bar.rs:340"), ("border", "title_bar_border", t.title_bar_border, "gpui-component/title_bar.rs:338"), ("window control text", "foreground", t.foreground, "gpui-component/title_bar.rs:217"), ("control hover", "secondary_hover", t.secondary_hover, "gpui-component/title_bar.rs:181"), ("close hover", "danger", t.danger, "gpui-component/title_bar.rs:179")], &[], &[
+                    .on_hover(self.hover_info(&fi, "TitleBar", &[("bg", "title_bar", t.title_bar, "gpui-component/title_bar.rs:340"), ("border", "title_bar_border", t.title_bar_border, "gpui-component/title_bar.rs:338"), ("window control text", "foreground", t.foreground, "gpui-component/title_bar.rs:217"), ("control hover", "secondary_hover", t.secondary_hover, "gpui-component/title_bar.rs:181"), ("control hover icon", "secondary_foreground", t.secondary_foreground, "gpui-component/title_bar.rs:172"), ("control pressed", "secondary_active", t.secondary_active, "gpui-component/title_bar.rs:190"), ("close hover", "danger", t.danger, "gpui-component/title_bar.rs:179"), ("close hover icon", "danger_foreground", t.danger_foreground, "gpui-component/title_bar.rs:170"), ("close pressed", "danger_active", t.danger_active, "gpui-component/title_bar.rs:188")], &[], &[
                             ("geometry", "geometry::title_bar: window.title_bar_font size, weight and colour, carried by the label because nothing overrides it afterwards -- upstream sets no text colour on the bar, so the builder's displaces nothing. The window controls set foreground on their own elements, out of its reach"),
                             ("height", "TITLE_BAR_HEIGHT = 34px (title_bar.rs, TITLE_BAR_HEIGHT)"),
                             ("fill", "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)"),
@@ -6028,6 +6098,41 @@ impl Showcase {
                             ("edge", "no border: popover_style draws a shadow ring; the border token is the separator between items (menu/popup_menu.rs)"),
                         ])),
             )
+            // Command palette
+            .child(section("Command (a search field over a filtered list)"))
+            .child(
+                div()
+                    .id("tt-command")
+                    .w(px(360.0))
+                    .child(
+                        Command::new(&self.command_state)
+                            .placeholder("Type a command or search…")
+                            .group(
+                                CommandGroup::new().label("Suggestions").item(
+                                    CommandItem::new()
+                                        .label("Calendar")
+                                        .icon(IconName::Calendar),
+                                ),
+                            )
+                            .group(
+                                CommandGroup::new().label("Settings").items([
+                                    CommandItem::new()
+                                        .label("Profile")
+                                        .icon(IconName::User),
+                                    CommandItem::new()
+                                        .label("Search")
+                                        .icon(IconName::Search),
+                                ]),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi, "Command", &[("surface bg", "popover", t.popover, "gpui-component/command/state.rs:830"), ("surface text", "popover_foreground", t.popover_foreground, "gpui-component/command/state.rs:831"), ("border", "border", t.border, "gpui-component/command/state.rs:835"), ("search divider", "border", t.border, "gpui-component/command/state.rs:847"), ("search icon", "muted_foreground", t.muted_foreground, "gpui-component/command/state.rs:852"), ("group label", "muted_foreground", t.muted_foreground, "gpui-component/command/state.rs:685"), ("separator", "border", t.border, "gpui-component/command/state.rs:695"), ("selected row", "accent", t.accent, "gpui-component/command/state.rs:673"), ("selected row text", "accent_foreground", t.accent_foreground, "gpui-component/command/state.rs:674"), ("empty text", "muted_foreground", t.muted_foreground, "gpui-component/command/state.rs:785")], &[
+                        ("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32())),
+                    ], &[
+                        ("geometry", "none: no geometry:: builder is applied. The palette sizes itself from its own text sizes and a max height of 18.75rem (command/command.rs, CommandOptions::default)"),
+                        ("accent is the menu highlight", "the highlighted row takes the same token a menu row's hover does, so the palette follows the platform's menu selection rather than a list selection (native-theme-gpui colors.rs, assign_core)"),
+                        ("query field", "an Input with appearance(false): it draws no background and no border of its own, so the surface shows through (command/state.rs, CommandState::render)"),
+                    ])),
+            )
             // DropdownMenu
             .child(section("DropdownMenu"))
             .child(
@@ -6508,15 +6613,29 @@ impl Showcase {
             );
         }
 
-        if has_items {
-            section_el = section_el.child(h_flex().gap_6().flex_wrap().children(cards));
+        let body = if has_items {
+            div().child(h_flex().gap_6().flex_wrap().children(cards))
         } else {
-            section_el = section_el.child(
+            div().child(
                 Label::new("No animated icons available for current icon sets")
                     .text_xs()
                     .text_color(cx.theme().muted_foreground),
-            );
-        }
+            )
+        };
+        let t = cx.theme().clone();
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
+        section_el = section_el.child(
+            body.id("tt-animated-icons")
+                .on_hover(self.hover_info(&fi, "Animated Icons", &[("card border", "border", t.border, "showcase"), ("reduced-motion note", "muted_foreground", t.muted_foreground, "showcase")], &[
+                    ("animations", format!("{} frame-based, {} spin", self.animated_frame_sources.len(), self.animated_spin_sources.len())),
+                    ("reduced motion", format!("{}", self.reduced_motion)),
+                ], &[
+                    ("frame pixels", "the icon set's own indicator artwork. A symbolic frame is rasterised with the platform's font colour; nothing else about a frame is themeable (showcase-gpui.rs, render_animated_icons_section)"),
+                    ("frame duration", "stated by the icon set that ships the animation, not by the theme — native-theme carries no animation timing (showcase-gpui.rs, render_animated_icons_section)"),
+                    ("reduced motion", "prefers-reduced-motion replaces the animation with its own first frame and labels the section; the platform states the preference and the showcase honours it, because gpui has no motion switch an icon reads (showcase-gpui.rs, render_animated_icons_section)"),
+                    ("geometry", "none: each card takes the showcase's own frame, which reads Theme::border, Theme::radius and the platform's defaults.border.line_width (showcase-gpui.rs, demo_frame)"),
+                ])),
+        );
 
         section_el
     }
@@ -6766,8 +6885,17 @@ impl Showcase {
             .child(section(native_section_title))
             .child(
                 div()
-                    .id("native-icons-grid")
-                    .child(div().flex().flex_wrap().gap_2().children(native_icon_cells)),
+                    .id("tt-native-icons")
+                    .child(div().flex().flex_wrap().gap_2().children(native_icon_cells))
+                    .on_hover(self.hover_info(&fi, "Native Theme Icons", &[("missing-icon placeholder", "skeleton", t.skeleton, "showcase")], &[
+                        ("icon set", self.icon_set_name.clone()),
+                        ("placeholder radius", format!("radius: {}px", t.radius.as_f32())),
+                    ], &[
+                        ("icon pixels", "the icon theme's own files. A symbolic SVG is rasterised with the platform's font colour, which the showcase passes to the loader; a raster or multi-colour icon keeps the colours it ships with (showcase-gpui.rs, load_all_icons)"),
+                        ("fallback", "a system icon set that has no icon for a role resolves to the bundled Material SVG instead, which the showcase detects by comparing the bytes it got back with Material's own and counts in the heading above (showcase-gpui.rs, load_all_icons)"),
+                        ("per-icon origin", "each cell carries its own hover — the role, the icon set, the icon name the set uses, and which of the four origins it came from (showcase-gpui.rs, render_icons_tab)"),
+                        ("geometry", "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout"),
+                    ])),
             )
             .child(Separator::horizontal())
             // gpui-component IconName gallery
