@@ -163,8 +163,21 @@
 - [ ] `WindowBorder`'s frame colour is a literal (`window_border.rs:152-166`)
       and so is the shadow it draws below it in the same `render`; no theme
       value reaches either.
-- [ ] a determinate `ProgressCircle` has no size receiver the theme can feed;
-      only the indeterminate one takes `geometry::spinner_size`.
+- [x] ~~a determinate `ProgressCircle` has no size receiver the theme can
+      feed~~ -- wrong, found 2026-09-22: `ProgressCircle` applies the caller's
+      refinement after its per-Size arm (`progress/progress_circle.rs:187-194`),
+      so a `.size()` reaches it. What is missing is a model value for a
+      determinate circle's diameter, which is ours, not upstream's.
+- [ ] a placeholder colour for `Input`. `Input::render` rebuilds the editor
+      style from the theme on every frame and hands it `muted_foreground`
+      (`input/input.rs:496-499`), which gpui-base paints the placeholder with
+      (`input/base/element.rs:1825`); there is no setter. native-theme states
+      `input.placeholder_color` from each platform's own placeholder colour
+      (`placeholderTextColor`, `[Colors:View] ForegroundInactive`, ...), and
+      `docs/inheritance-rules.toml` lists falling back to `muted_color` as a
+      wrong safety net -- macOS's placeholder is about half the alpha of its
+      secondary label. A `placeholder` token, or a setter on `Input`. Found
+      2026-09-22 from a panel that said the placeholder read no theme field.
 - [ ] `tokens.tab`, `tokens.list`, `sidebar_primary` and
       `sidebar_primary_foreground` are read by nothing in 0.6.4 outside
       `theme/` (an idle tab is `transparent`, `tab/tab.rs:132-160`). The
@@ -544,8 +557,11 @@ What is still open on the iced side:
       "varies per Size" where upstream copies the caller's style *before* the
       Size arm and re-applies it after (`button/button.rs:576`, `:690`), so a
       refinement wins — that demo simply omits it on purpose, and the note now
-      says so. `TabBar`'s padding is the same shape (`tab/tab_bar.rs:517-518`)
-      but there is no builder to apply, because `TabTheme` models no padding.
+      says so. `TabBar`'s padding looked like the same shape
+      (`tab/tab_bar.rs:517-518`), and that was wrong for the bar in question:
+      the showcase's `TabBar` is an Underline one, whose bar and tabs have no
+      horizontal padding at all, and its spacing is a per-Size gap on an inner
+      row the refinement never reaches (corrected in the sixth pass below).
       The three `Link` notes became Tier U and an upstream PR candidate above.
 
       Six more were wrong in the plainest way — they described upstream
@@ -557,7 +573,9 @@ What is still open on the iced side:
       `Button::dropdown_caret`, and its colour is the button variant's own
       text colour at 75% — themed, where the note said hardcoded. An `Alert`'s
       variant icon is a default that `Alert::icon` replaces. A `Tooltip`'s
-      delay is the application's, set on the element that carries it. A
+      delay is the application's only for a tooltip set on an element: a
+      `Button`'s goes through `Root`'s overlay, whose 500ms is a module const
+      (corrected in the sixth pass). A
       `Sidebar`'s 255px is a fallback the caller's own `.w()` displaces. And a
       `DataTable`'s row height has an escape hatch.
 
@@ -588,23 +606,80 @@ What is still open on the iced side:
       catch-all arm.
 
       A fifth pass took the "unmodelled widget" bucket, and it collapsed:
-      Alert, Tag, Badge, Kbd and Breadcrumb are each `Styled` and apply the
-      caller's refinement after their own paddings, so "hardcoded" was wrong
-      about every one of them -- what is absent is a model, not a receiver.
+      Alert, Tag, Kbd and Breadcrumb are each `Styled` and apply the caller's
+      refinement after their own paddings, so "hardcoded" was wrong about
+      every one of them -- what is absent is a model, not a receiver. That
+      pass put `Badge` in the same list, and the sixth pass found it does not
+      belong there: `Badge::render` applies the refinement to the wrapper
+      around the badged element (`badge.rs:116`), and the pill is an absolute
+      child built after it with its own literals, so nothing reaches it.
       Two outright falsehoods fell out with it: a `Kbd` was said to use a
       monospace font, and `kbd.rs` sets no family at all, so it inherits the
       window's platform UI font; and a `Label`'s "font weights: hardcoded"
       turned out to be the opposite -- nothing sets a weight anywhere, which
       is now its own item above.
 
-      Sixty-three entries audited, thirty-one wrong. What is left is either
-      an API fact no theme could set (a `ContextMenu`'s right-click trigger,
-      a `PieChart`'s `inner_radius`) or already carries a citation. The ones
-      that point at something we could do are listed below.
+      After five passes: sixty-three entries audited, thirty-one wrong. The
+      73 left uncited were set aside as "API facts no theme could set" --
+      and that label was itself unchecked.
 
-      The largest untouched groups are now `padding` (7 under modelled
-      widgets), `label size` (6, all six Button variants, all already Tier U)
-      and `icon size` (2 uncited).
+      **A sixth pass (2026-09-22) read all 73: sixteen were wrong, and four more were themed facts filed under the wrong heading.** A
+      disabled `Button`'s cursor is the default arrow, not `not-allowed`. The
+      `Loading Button` demo showed no spinner at all, because a `Button` draws
+      its spinner *in place of its icon* and that one had none (the demo now
+      has one). An `Input`'s placeholder is painted with `muted_foreground`,
+      a theme field, where the note said it was not -- and the model states
+      `input.placeholder_color` from each platform's own placeholder colour, so
+      that is Tier U. A `DatePicker` defaults to `%Y/%m/%d`, not `YYYY-MM-DD`.
+      An `AvatarGroup` drops the fourth avatar with no marker, because its
+      overflow marker is a `⋯` avatar, not a `+N` count, and only
+      `.ellipsis()` adds it. `Empty`'s "hardcoded 2rem" is rems and settable.
+      Markdown headings are sized from a **fixed 14px**, not from the base
+      font. The code `Editor`'s background is a fixed `#0a0a0a`/`#ffffff`,
+      because the highlight theme the connector installs sets one and the
+      `input_background()` fallback is never reached. A `Popover`'s anchor is
+      an `Anchor`, not a `Corner`; a `Sidebar`'s children implement
+      `SidebarItem`; a `ContextMenu` needs `InteractiveElement` too; a
+      candlestick's colours are `chart_bullish`/`chart_bearish`, not green and
+      red. And the **`AppMenuBar` was empty**: it reads gpui-base's
+      `GlobalState` menus, which only `set_app_menus` fills, and the showcase
+      only called `cx.set_menus` (fixed: it now fills both).
+
+      Fifteen entries in all were themed facts filed under "Not themeable":
+      those four -- the icon sizes and paddings the `Attachment`, `Toolbar` and
+      `Dialog` demos apply themselves -- the `Dialog`'s footer gap, and the ten
+      Button panels' font-weight, carried by `geometry::button` since the
+      first pass. They are config lines now.
+
+      Re-reading found three of this audit's own corrections wrong -- the
+      `Badge` padding (above), the `Tooltip` delay and the `TabBar` padding --
+      and three more cited entries: the `Badge`'s text and size notes, and a
+      `SidebarToggleButton` icon called hardcoded that is 1rem.
+
+      **The colour claims have the same failure, and the gate cannot see
+      it.** The citation gate checks that the cited line reads the named
+      token -- not that the line is on this widget's path, in this demo's
+      variant. Ten claims named the wrong token and passed: the navigation
+      `TabBar` is an Underline bar, and its "active bg `tab_active`" and "bar
+      bg `tab_bar`" are the `Tab` variant's (an Underline bar has no fill and
+      marks the active tab with a `primary` underline); a `Calendar` has no
+      `popover` fill; a `Collapsible` paints neither the `accordion` fill nor
+      the `border` it was given; a `Rating`'s empty star, a `Pagination`'s
+      page numbers and a `SidebarToggleButton`'s icon are not `foreground`;
+      a `Combobox` row hovers with `accent`, not `list_hover`; and a
+      `GroupBox`'s edge is the card's, through `geometry::group_box_content`.
+      Nine more had the right token at a line borrowed from another widget,
+      and five config lines were wrong (three `radius` lines the builders
+      override or the variant ignores, a `Calendar` that is `radius_lg`, and
+      a `ProgressCircle` that draws `spinner.diameter` at 75%).
+
+      Tally: 136 "Not themeable" entries audited, 47 wrong, 15 misfiled
+      across the section, and three of the corrections themselves wrong.
+      **Not yet audited**: the ~120 "Not themeable" entries that already
+      carried a citation when the audit began (the prose gate holds their
+      symbols to existing ones, nothing holds their meaning), and the colour
+      and config claims beyond the ~45 this pass read against the render
+      path. The rate so far says both are worth doing.
 
 ##### What the audit turned up that is ours to fix
 
@@ -652,13 +727,16 @@ the gap — closing it is a change, and each wants its own decision.
       included. Decide whether the connector should offer that as a root
       helper. Found 2026-09-22 from a `Label` panel that called its font
       weight hardcoded when in fact nothing sets one.
-- [ ] **Model the widgets the panels keep apologising for.** Alert, Tag, Badge,
-      Kbd and Breadcrumb all turn out to have the *same* answer: each is
-      `Styled` and applies the caller's refinement after its own paddings
-      (`alert.rs:204`, `tag.rs:266`, `badge.rs:116`, `breadcrumb.rs:175`), so
+- [ ] **Model the widgets the panels keep apologising for.** Alert, Tag, Kbd
+      and Breadcrumb all turn out to have the *same* answer: each is `Styled`
+      and applies the caller's refinement after its own paddings
+      (`alert.rs:204`, `tag.rs:266`, `kbd.rs:253`, `breadcrumb.rs:175`), so
       upstream is not the obstacle — native-theme simply states no such
-      widget, so there is nothing to carry. That is the whole 70-entry
-      "unmodelled widget" bucket answered by one mechanism. Worth checking
+      widget, so there is nothing to carry. `Badge` is the exception, and an
+      earlier version of this item listed it wrongly: its refinement lands on
+      the wrapper around the badged element (`badge.rs:116`), and the pill is
+      an absolute child built after it, so a badge model would also need an
+      upstream receiver. Worth checking
       `platform-facts.md` for what the four platforms state about each before
       deciding; several (a KDE/Adwaita "tag" or "badge") may have no platform
       source at all, which would be the honest reason not to model them.
@@ -705,8 +783,13 @@ the gap — closing it is a change, and each wants its own decision.
       (`select.rs:60-63`, `Size::Size` folded into the `_` arm with `Medium`)
       or a checkbox indicator (`checkbox.rs:219-224`, same shape) — which is
       what makes `combo_box.arrow_icon_size` and `checkbox.indicator_width`
-      genuinely Tier U rather than merely unapplied. Worth a survey of every
-      `Size` consumer before leaning on it anywhere.
+      genuinely Tier U rather than merely unapplied. And a `ProgressCircle`
+      draws `Size::Size(s)` at `s * 0.75` (`progress/progress_circle.rs:193`)
+      where a `Spinner` takes it whole (`icon.rs:182`), so the showcase's
+      `geometry::spinner_size` on its indeterminate circle draws 75% of
+      `spinner.diameter` -- the circle applies the caller's refinement last,
+      so a `.size()` from the model would reach it exactly. Worth a survey of
+      every `Size` consumer before leaning on it anywhere.
 - [ ] **A gate the audit broke, and what that says about the others.** Writing
       `(select.rs, Caret::render)` into a note made `Caret` a "shown" widget
       in `check-widget-coverage.py`, because the gpui side read string
@@ -721,8 +804,8 @@ the gap — closing it is a change, and each wants its own decision.
       so they are clean; the citation gate reads only string literals by
       design. This one was the outlier, but nothing checked that.
 - [ ] **"Not themeable" has become a bucket, and that is the volume complaint.**
-      Of its 256 entries, 183 now carry an upstream citation, a Tier U verdict
-      or a named model gap — the audit's output. The other **73 are not
+      Of its 247 entries, 207 now carry an upstream citation, a Tier U verdict
+      or a named model gap — the audit's output. The other **40 are not
       resolvability claims at all**: they are API and demo facts that no theme
       on any platform could set. A `ContextMenu`'s trigger is right-click, a
       `PieChart` takes an `inner_radius`, an `OtpInput` has two groups, a
@@ -755,9 +838,12 @@ the gap — closing it is a change, and each wants its own decision.
       have receivers: `Sidebar` reads the caller's own style width and falls
       back to 255px only when none is set (`sidebar/mod.rs:195-201`), and gpui
       takes a hover delay on the element carrying the tooltip
-      (`gpui-pre/elements/div.rs:735`). `SidebarTheme` and `TooltipTheme`
-      state neither, so both notes were "hardcoded" for something the
-      application can already set. Check `platform-facts.md` for what the four
+      (`gpui-pre/elements/div.rs:735`) -- but only on a tooltip set on an
+      element: `Button::tooltip` goes through `Root`'s overlay, whose 500ms
+      `SHOW_DELAY` is a module const (`gpui-base/tooltip.rs:14`), so for a
+      button the delay has no receiver at all. `SidebarTheme` and
+      `TooltipTheme` state neither, so both notes were "hardcoded" for
+      something the application can partly set already. Check `platform-facts.md` for what the four
       platforms state — a hover delay at least is a documented system setting
       on Windows (`SPI_GETMOUSEHOVERTIME`).
 - [ ] **Platform icons inside widgets: how far can it go?** `Icon` takes a path
@@ -771,6 +857,71 @@ the gap — closing it is a change, and each wants its own decision.
       offer a "platform glyph" helper at all, and worth an upstream ask for
       setters on the three that lack one. Note the standing rule: never
       substitute across icon themes — a missing icon returns `None`.
+- [ ] **The model's toolbar is read by nothing.** `ToolbarTheme` states
+      `bar_height`, `item_gap`, `icon_size`, `font`, `border` and
+      `background_color`, every bundled preset states the first two (KDE 40px
+      and 0, Adwaita 47px and 6, iOS 44px and 8), and the KDE reader fills
+      `toolbar.font` from `toolBarFont` -- and no line in either connector
+      reads any of them. There is no `geometry::toolbar`, so the showcase's
+      application-drawn toolbar borrows the button's control height, the
+      generic `widget_gap` (6px on KDE, where the platform says 0), the
+      `container_margin` and gpui-component's `tab_bar` colour, and
+      `icon_size_toolbar` reads `defaults.icon_sizes.toolbar` rather than
+      `toolbar.icon_size` (which inherits it, so they only differ where a
+      platform states a toolbar-specific size). A toolbar is the textbook
+      application-drawn row, so this is the builder an application needs
+      most. Found 2026-09-22.
+- [ ] **The code editor's background is a fixed colour.** `Theme::editor_background`
+      returns the highlight theme's `editor.background` and falls back to
+      `input_background()` only when that is unset (`theme/mod.rs:389-394`).
+      The connector installs `HighlightTheme::default_dark/light()`
+      (`lib.rs:192-196`), whose `editor.background` is `#0a0a0a` and `#ffffff`
+      (`theme/default-theme.json:314`, `:114`), so the fallback never fires
+      and every code editor -- the `Editor` widget and any `Input` in code
+      mode (`input/input.rs:640-641`), gutter included -- paints a fixed
+      near-black or white whatever the platform. Every `HighlightThemeStyle`
+      field is public, so the connector can clone the default and clear
+      `editor_background` (letting upstream fall back to the platform's input
+      background) or set it, and the same goes for `editor_active_line`, the
+      gutter and the line-number colours. The syntax colours themselves are a
+      separate question: native-theme models none. Found 2026-09-22.
+- [ ] **Markdown headings are sized from a fixed 14px.** gpui-base draws a
+      heading at `rems(2.)`..`rems(1.)` resolved against `heading_base_font_size`
+      (`gpui-base text/node.rs:2891-2901`), which defaults to `px(14.)`
+      (`gpui-base text/style.rs:88`), and gpui-component's
+      `base_text_view_style` never sets it (`text/mod.rs:34-61`) -- so an H1 is
+      28px on every platform while the body text around it follows the
+      platform font. `TextViewStyle::with_heading_base_font_size` and
+      `with_heading_font_size` are public; find out whether an application can
+      install its own `TextViewDefaults` without upstream overwriting them on
+      the next theme change, and then whether the platform's `text_scale`
+      roles should drive the heading sizes. Found 2026-09-22.
+- [ ] **A tab's `min_height` has a receiver nobody uses.** A `Tab` takes the
+      caller's style first and then sets its own per-Size `.h()`, text size and
+      colours over it (`tab/tab.rs:780-810`), but it never sets `min_h`, and
+      the layout honours a minimum over a height. So `tab.min_height` (and
+      `min_width`, and a font weight, which the tab sets nowhere either) would
+      reach a tab the application builds -- there is simply no `geometry::tab`.
+      The showcase builds its tabs from strings, so it would need to build
+      `Tab`s to use one. Found 2026-09-22.
+- [ ] **An empty state's icon outgrows its frame.** `EmptyMedia` is a 2rem
+      square (`empty.rs:217`), and the showcase puts
+      `defaults.icon_sizes.large` in it -- 32px on most presets and 48px on
+      KDE -- which fits only where 2rem reaches the icon, i.e. a 16px body
+      font (24px for KDE's 48). `EmptyMedia` applies the caller's refinement
+      last, so the frame can be sized to its icon; decide whether the
+      showcase should, or use a smaller icon role. Not checked visually.
+- [ ] **The colour gate cannot tell whose line it is.**
+      `every_colour_claim_is_read_at_the_line_it_cites` checks that the cited
+      line reads the named token -- not that the line runs for *this* widget,
+      in *this* demo's variant. Ten wrong claims passed it (the navigation
+      TabBar's two `Tab`-variant fills, a Calendar's non-existent `popover`
+      fill, a Collapsible's `accordion` fill and border, and five claims
+      borrowed from a `Label`, `ListItem` or `Button` line for widgets that
+      paint something else). A mechanical fix is hard -- it
+      would need the render path -- but the audit of the remaining claims is
+      not, and the rate says it is due: of the ~45 claims this pass read, ten
+      named the wrong token.
 - [ ] `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
       The connector writes both on every `apply` and both have contract rows
       (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
