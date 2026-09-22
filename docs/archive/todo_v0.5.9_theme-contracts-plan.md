@@ -59,7 +59,7 @@ E1–E21). This plan assumes that state and does not repeat it.
   default, `--no-default-features`, and `--features iced_aw`.
 - No `Co-Authored-By` or other AI attribution in commits.
 - Never tag, push a tag, publish or create a release. Task 13 stops before it.
-- Work continues on branch `v0.5.9-gpui-kit-0.6.4`. The name predates this half
+- Work continues on branch `v0.5.9-gpui-kit-0.6.6`. The name predates this half
   of the release; it is not renamed mid-flight.
 - If a step's expected output does not appear, stop and report.
 

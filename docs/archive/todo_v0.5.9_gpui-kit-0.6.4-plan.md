@@ -22,7 +22,7 @@
 - Every command in this plan runs from the **repository root**, and every path is written from there. No step changes directory.
 - The repository's PreToolUse panic hook (`.claude/hooks/no-runtime-panics.sh:47`) lets an edit through only when the text being written contains `#[test]`, `#[cfg(test)]` or `#[allow(clippy::unwrap_used` — `#[gpui::test]` does **not** match. An edit that adds `.expect(` to a file under `src/` must therefore carry one of those markers in the same edited region (`tests/` files are exempt by path, `:39`).
 - Never tag, push a tag, publish or create a release. Task 8 stops before that.
-- Work on branch `v0.5.9-gpui-kit-0.6.4`, created from `main`.
+- Work on branch `v0.5.9-gpui-kit-0.6.6`, created from `main`.
 - If a step's expected output does not appear, stop and report; do not improvise around it.
 
 ## File map
@@ -56,7 +56,7 @@ One task because none of the three compiles without the other two.
 - [ ] **Step 1: Branch**
 
 ```bash
-git switch -c v0.5.9-gpui-kit-0.6.4
+git switch -c v0.5.9-gpui-kit-0.6.6
 ```
 
 - [ ] **Step 2: Manifest.** Replace the three blocks with the text of spec §2 (the `rust-version` comment, the `[dependencies]` gpui / gpui-component / gpui-base block with its comments, the `gpui` and `gpui-kit` `[dev-dependencies]` entries with their comments). Keep every other line.
@@ -658,7 +658,7 @@ Expected: no failures, and one warning from the "Visual assets" section: the ass
 
 - [ ] **Step 3: Spec §10 acceptance list** — run each command, paste each result into the hand-over message.
 
-- [ ] **Step 4: Hand over to the maintainer.** Push the branch (`git push -u origin v0.5.9-gpui-kit-0.6.4`) and open a PR only when the maintainer says so — hand-over step 2 needs the branch pushed. Report: test counts, any citation finding from Task 4, anything Task 5 could not build, and the remaining maintainer-only steps in order:
+- [ ] **Step 4: Hand over to the maintainer.** Push the branch (`git push -u origin v0.5.9-gpui-kit-0.6.6`) and open a PR only when the maintainer says so — hand-over step 2 needs the branch pushed. Report: test counts, any citation finding from Task 4, anything Task 5 could not build, and the remaining maintainer-only steps in order:
   1. run the showcase on the KDE desktop and look at it (`cargo run -p native-theme-gpui --example showcase-gpui`): scrollbars, resize handles, a mode switch, the icon gallery, and the five new sections — which no screenshot captures, every capture being `--tab buttons` (rationale §2.11). Then **ghost-button hover**: the "Button Variants" row, a dialog's close button, the tab bar, an `InputGroup` addon button. 0.6.4 paints the fill *and* the label from the accent pair, so the question is whether a selection-coloured pill is acceptable (rationale §2.10, §1.4g);
   2. push the branch (`scripts/pre-release.sh` refuses to run unless HEAD equals `@{u}`, and it triggers the screenshot workflow with `--ref <branch>`), then `./scripts/pre-release.sh` (screenshots + `docs/assets/PROVENANCE.toml`), commit;
   3. release commit `chore(release): v0.5.9`: rename `## [Unreleased]` to `## [0.5.9] - <date>` under a fresh empty `## [Unreleased]`, add `[0.5.9]: …/compare/v0.5.8...v0.5.9` above `CHANGELOG.md:998`; `./pre-release-check.sh` fully green on it (the asset check is hard now);
