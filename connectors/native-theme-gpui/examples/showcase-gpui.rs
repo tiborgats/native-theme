@@ -4104,9 +4104,9 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "Alert (Info)", &[("color", "info", t.info, "gpui-component/alert.rs:29"), ("text", "info", t.info, "gpui-component/alert.rs:29"), ("border", "info", t.info, "gpui-component/alert.rs:49")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("tints", "the fill is the variant colour mixed toward white at 4% and the edge at 30%: one token, three strengths, so the swatches show the pure colour rather than what is painted (alert.rs, AlertVariant)"),
-                            ("padding", "hardcoded per Size"),
+                            ("padding", "px literals per Size, but reachable: Alert is Styled and applies the caller's refinement after its own paddings (alert.rs, Alert::render). Its corner radius already comes from the theme (alert.rs, Alert::render radius). What is missing is a model -- native-theme states no alert widget, so there is nothing to carry. Our gap, not upstream's"),
                             ("icon", "the Info variant's default, not a fixed glyph: Alert::icon replaces it with any Icon (alert.rs, Alert::icon), and an Icon takes a path or raw SVG bytes (icon.rs, Icon::path), so a platform icon from this connector's loader can be handed to it"),
-                            ("icon size", "hardcoded"),
+                            ("icon size", "size_4 / size_5 per Size (alert.rs, Alert::render) -- rems, so it follows the platform font. defaults.icon_sizes is in absolute px and there is no alert in the model to hang it on"),
                         ])),
             )
             .child(
@@ -4117,7 +4117,7 @@ impl Showcase {
                             .title("Success"),
                     )
                     .on_hover(self.hover_info(&fi, "Alert (Success)", &[("color", "success", t.success, "gpui-component/alert.rs:30"), ("text", "success", t.success, "gpui-component/alert.rs:30"), ("border", "success", t.success, "gpui-component/alert.rs:50")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
-                            ("padding", "hardcoded per Size"),
+                            ("padding", "px literals per Size, but reachable: Alert is Styled and applies the caller's refinement after its own paddings (alert.rs, Alert::render). Its corner radius already comes from the theme (alert.rs, Alert::render radius). What is missing is a model -- native-theme states no alert widget, so there is nothing to carry. Our gap, not upstream's"),
                             ("icon", "the Success variant's default; Alert::icon replaces it (alert.rs, Alert::icon)"),
                         ])),
             )
@@ -4129,7 +4129,7 @@ impl Showcase {
                             .title("Warning"),
                     )
                     .on_hover(self.hover_info(&fi, "Alert (Warning)", &[("color", "warning", t.warning, "gpui-component/alert.rs:31"), ("text", "warning", t.warning, "gpui-component/alert.rs:31"), ("border", "warning", t.warning, "gpui-component/alert.rs:51")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
-                            ("padding", "hardcoded per Size"),
+                            ("padding", "px literals per Size, but reachable: Alert is Styled and applies the caller's refinement after its own paddings (alert.rs, Alert::render). Its corner radius already comes from the theme (alert.rs, Alert::render radius). What is missing is a model -- native-theme states no alert widget, so there is nothing to carry. Our gap, not upstream's"),
                             ("icon", "the Warning variant's default; Alert::icon replaces it (alert.rs, Alert::icon)"),
                         ])),
             )
@@ -4141,7 +4141,7 @@ impl Showcase {
                             .title("Error"),
                     )
                     .on_hover(self.hover_info(&fi, "Alert (Error)", &[("color", "danger", t.danger, "gpui-component/alert.rs:32"), ("text", "danger", t.danger, "gpui-component/alert.rs:32"), ("border", "danger", t.danger, "gpui-component/alert.rs:52")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
-                            ("padding", "hardcoded per Size"),
+                            ("padding", "px literals per Size, but reachable: Alert is Styled and applies the caller's refinement after its own paddings (alert.rs, Alert::render). Its corner radius already comes from the theme (alert.rs, Alert::render radius). What is missing is a model -- native-theme states no alert widget, so there is nothing to carry. Our gap, not upstream's"),
                             ("icon", "the Error variant's default; Alert::icon replaces it (alert.rs, Alert::icon)"),
                         ])),
             )
@@ -4391,7 +4391,7 @@ impl Showcase {
                             .child(Tag::primary().outline().child("Primary Outline"))
                             .child(Tag::danger().outline().child("Danger Outline")),
                     )
-                    .on_hover(self.hover_info(&fi, "Tag (per variant)", &[("bg (primary)", "primary", t.primary, "gpui-component/tag.rs:29"), ("bg (secondary)", "secondary", t.secondary, "gpui-component/tag.rs:30"), ("bg (danger)", "danger", t.danger, "gpui-component/tag.rs:31"), ("bg (success)", "success", t.success, "gpui-component/tag.rs:32"), ("bg (warning)", "warning", t.warning, "gpui-component/tag.rs:33"), ("bg (info)", "info", t.info, "gpui-component/tag.rs:34"), ("text (primary)", "primary_foreground", t.primary_foreground, "gpui-component/tag.rs:71"), ("text (secondary)", "secondary_foreground", t.secondary_foreground, "gpui-component/tag.rs:78"), ("text (danger)", "danger_foreground", t.danger_foreground, "gpui-component/tag.rs:85"), ("text (success)", "success_foreground", t.success_foreground, "gpui-component/tag.rs:92"), ("text (warning)", "warning_foreground", t.warning_foreground, "gpui-component/tag.rs:99"), ("text (info)", "info_foreground", t.info_foreground, "gpui-component/tag.rs:106"), ("border (primary)", "primary", t.primary, "gpui-component/tag.rs:48"), ("border (secondary)", "border", t.border, "gpui-component/tag.rs:49"), ("border (danger)", "danger", t.danger, "gpui-component/tag.rs:50"), ("border (success)", "success", t.success, "gpui-component/tag.rs:51"), ("border (warning)", "warning", t.warning, "gpui-component/tag.rs:52"), ("border (info)", "info", t.info, "gpui-component/tag.rs:53"), ("outlined text (primary)", "primary", t.primary, "gpui-component/tag.rs:69"), ("outlined text (danger)", "danger", t.danger, "gpui-component/tag.rs:83")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "hardcoded per Size"), ("outlined fill", "transparent_white(), a literal: an outlined Tag drops its variant background entirely, keeping only the border and the text (tag.rs, Tag::render)")])),
+                    .on_hover(self.hover_info(&fi, "Tag (per variant)", &[("bg (primary)", "primary", t.primary, "gpui-component/tag.rs:29"), ("bg (secondary)", "secondary", t.secondary, "gpui-component/tag.rs:30"), ("bg (danger)", "danger", t.danger, "gpui-component/tag.rs:31"), ("bg (success)", "success", t.success, "gpui-component/tag.rs:32"), ("bg (warning)", "warning", t.warning, "gpui-component/tag.rs:33"), ("bg (info)", "info", t.info, "gpui-component/tag.rs:34"), ("text (primary)", "primary_foreground", t.primary_foreground, "gpui-component/tag.rs:71"), ("text (secondary)", "secondary_foreground", t.secondary_foreground, "gpui-component/tag.rs:78"), ("text (danger)", "danger_foreground", t.danger_foreground, "gpui-component/tag.rs:85"), ("text (success)", "success_foreground", t.success_foreground, "gpui-component/tag.rs:92"), ("text (warning)", "warning_foreground", t.warning_foreground, "gpui-component/tag.rs:99"), ("text (info)", "info_foreground", t.info_foreground, "gpui-component/tag.rs:106"), ("border (primary)", "primary", t.primary, "gpui-component/tag.rs:48"), ("border (secondary)", "border", t.border, "gpui-component/tag.rs:49"), ("border (danger)", "danger", t.danger, "gpui-component/tag.rs:50"), ("border (success)", "success", t.success, "gpui-component/tag.rs:51"), ("border (warning)", "warning", t.warning, "gpui-component/tag.rs:52"), ("border (info)", "info", t.info, "gpui-component/tag.rs:53"), ("outlined text (primary)", "primary", t.primary, "gpui-component/tag.rs:69"), ("outlined text (danger)", "danger", t.danger, "gpui-component/tag.rs:83")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "px_1p5/py_0p5 and px_2p5/py_1 per Size (tag.rs, Tag::render) -- rems, so already proportional to the platform font -- and Tag applies the caller's refinement after them anyway. native-theme states no tag widget, so there is nothing to carry. Our gap"), ("outlined fill", "transparent_white(), a literal: an outlined Tag drops its variant background entirely, keeping only the border and the text (tag.rs, Tag::render)")])),
             )
             // Badges
             .child(section("Badge"))
@@ -4417,7 +4417,7 @@ impl Showcase {
                                     .child(Button::new("badge-3").native(cx, geometry::button).label("Updates")),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Badge", &[("dot fill", "red", t.red, "gpui-component/badge.rs:125"), ("icon-badge ring", "background", t.background, "gpui-component/badge.rs:159")], &[], &[("text", "hardcoded white(), not a theme field, so a light accent leaves the count unreadable (badge.rs, Badge::render)"), ("dot fill, overridden", "Badge::color replaces it; red is only the default"), ("size", "hardcoded"), ("padding", "hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "Badge", &[("dot fill", "red", t.red, "gpui-component/badge.rs:125"), ("icon-badge ring", "background", t.background, "gpui-component/badge.rs:159")], &[], &[("text", "hardcoded white(), not a theme field, so a light accent leaves the count unreadable (badge.rs, Badge::render)"), ("dot fill, overridden", "Badge::color replaces it; red is only the default"), ("size", "px(10) / px(16) / px(24) per Size (badge.rs, Badge::render)"), ("padding", "px literals per Size (badge.rs, Badge::render), applied before the caller's refinement (badge.rs, Badge::render). native-theme states no badge widget, so there is nothing to carry. Our gap")])),
             )
             // Marker
             .child(section("Marker (3 variants, 2 loading styles)"))
@@ -4617,7 +4617,7 @@ impl Showcase {
                                 "size",
                                 format!("font_size: {}px (gpui renders)", t.font_size.as_f32()),
                             ),
-                        ], &[("font weights", "hardcoded")])),
+                        ], &[("font weight", "ambient, and the ambient weight is not the platform's: label.rs states no weight, no family and no size, gpui-component's Theme has no font-weight field, and Root::render sets the family, the rem size and the foreground but no weight (root.rs, Root). The geometry:: builders that carry a font spec do carry font.weight with it -- input, list_item, tooltip, status_bar, checkbox and the rest through with_text, and button since v0.5.9 -- so a Label outside one, like these, renders at gpui's default instead. The panel used to call that hardcoded, which is the reverse: nothing sets it")])),
             )
             // Link
             .child(section("Link"))
@@ -4807,7 +4807,7 @@ impl Showcase {
                                 .map(Kbd::new),
                         ),
                     )
-                    .on_hover(self.hover_info(&fi, "Kbd", &[("bg", "muted", t.muted, "gpui-component/kbd.rs:238"), ("text", "muted_foreground", t.muted_foreground, "gpui-component/kbd.rs:237"), ("border", "border", t.border, "gpui-component/kbd.rs:241")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "hardcoded"), ("font", "monospace")])),
+                    .on_hover(self.hover_info(&fi, "Kbd", &[("bg", "muted", t.muted, "gpui-component/kbd.rs:238"), ("text", "muted_foreground", t.muted_foreground, "gpui-component/kbd.rs:237"), ("border", "border", t.border, "gpui-component/kbd.rs:241")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("padding", "py_0p5 and px_1 (kbd.rs, Kbd) -- rems, so already proportional to the platform font"), ("font", "not monospace, and not set at all: kbd.rs states a text size and a colour and no family (kbd.rs, Kbd), so a Kbd inherits the window's -- the platform UI font Root::render applies. The panel claimed a family nothing produces")])),
             )
             // Muted / mono text
             .child(section("Muted & Monospace Text"))
@@ -5492,7 +5492,7 @@ impl Showcase {
                     )
                     .on_hover(self.hover_info(&fi, "Breadcrumb", &[("last item", "foreground", t.foreground, "gpui-component/breadcrumb.rs:102"), ("non-last + separators", "muted_foreground", t.muted_foreground, "gpui-component/breadcrumb.rs:101")], &[], &[
                             ("separator icon", "a ChevronRight built inline with no setter to replace it (breadcrumb.rs, Breadcrumb) -- unlike an Alert's icon, which Alert::icon takes"),
-                            ("spacing", "hardcoded"),
+                            ("spacing", "gap_1p5 (breadcrumb.rs, Breadcrumb) -- rems again -- and applied before the caller's refinement. native-theme states no breadcrumb widget. Our gap"),
                         ])),
             )
             // Stepper

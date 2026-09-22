@@ -587,8 +587,20 @@ What is still open on the iced side:
       `arrow_icon_size` -- because both consumers fold `Size::Size` into the
       catch-all arm.
 
-      Fifty-one entries audited, twenty-three wrong. The ones that point at
-      something we could do are listed below.
+      A fifth pass took the "unmodelled widget" bucket, and it collapsed:
+      Alert, Tag, Badge, Kbd and Breadcrumb are each `Styled` and apply the
+      caller's refinement after their own paddings, so "hardcoded" was wrong
+      about every one of them -- what is absent is a model, not a receiver.
+      Two outright falsehoods fell out with it: a `Kbd` was said to use a
+      monospace font, and `kbd.rs` sets no family at all, so it inherits the
+      window's platform UI font; and a `Label`'s "font weights: hardcoded"
+      turned out to be the opposite -- nothing sets a weight anywhere, which
+      is now its own item above.
+
+      Sixty-three entries audited, thirty-one wrong. What is left is either
+      an API fact no theme could set (a `ContextMenu`'s right-click trigger,
+      a `PieChart`'s `inner_radius`) or already carries a citation. The ones
+      that point at something we could do are listed below.
 
       The largest untouched groups are now `padding` (7 under modelled
       widgets), `label size` (6, all six Button variants, all already Tier U)
@@ -622,6 +634,34 @@ the gap — closing it is a change, and each wants its own decision.
       maps it to `v * 0.2` and the private `as_f32` returns the raw pixels
       where the enum arms return 0..3, so anything ordering sizes numerically
       misreads it.
+- [ ] **There is no ambient `font.weight`.** The `geometry::` builders that
+      carry a font spec already carry the weight with it — `with_text` sets
+      `font_weight` alongside the size (`geometry.rs:80-83`), which covers
+      `input`, `menu_item`, `list_item`, `tooltip`, `status_bar`,
+      `dialog_title`, `dialog_description`, `table`, `checkbox` and the rest,
+      plus `button` since v0.5.9. What has no weight is everything *outside*
+      a builder-styled element: gpui-component's `Theme` has no font-weight
+      field, and `Root::render` sets the family, the rem size and the
+      foreground but not a weight (`root.rs:582-596`), so a plain `Label`, a
+      heading or any text an application draws in a `div()` renders at gpui's
+      default rather than the platform's. **The route is cheap**: `Root` is
+      `Styled` and applies the caller's refinement last (`root.rs:574-578`,
+      `:596`), and an application constructs it — the showcase does, at
+      `Root::new(showcase, window, cx)` — so one `.font_weight()` there
+      cascades the platform's body weight to the whole window, builders
+      included. Decide whether the connector should offer that as a root
+      helper. Found 2026-09-22 from a `Label` panel that called its font
+      weight hardcoded when in fact nothing sets one.
+- [ ] **Model the widgets the panels keep apologising for.** Alert, Tag, Badge,
+      Kbd and Breadcrumb all turn out to have the *same* answer: each is
+      `Styled` and applies the caller's refinement after its own paddings
+      (`alert.rs:204`, `tag.rs:266`, `badge.rs:116`, `breadcrumb.rs:175`), so
+      upstream is not the obstacle — native-theme simply states no such
+      widget, so there is nothing to carry. That is the whole 70-entry
+      "unmodelled widget" bucket answered by one mechanism. Worth checking
+      `platform-facts.md` for what the four platforms state about each before
+      deciding; several (a KDE/Adwaita "tag" or "badge") may have no platform
+      source at all, which would be the honest reason not to model them.
 - [ ] **Carry `defaults.line_height` to the code editor.** `Editor` sets
       `relative(1.5)` and then applies the caller's refinement last, with a
       comment saying that is deliberate so a text style set on the editor
@@ -667,7 +707,39 @@ the gap — closing it is a change, and each wants its own decision.
       what makes `combo_box.arrow_icon_size` and `checkbox.indicator_width`
       genuinely Tier U rather than merely unapplied. Worth a survey of every
       `Size` consumer before leaning on it anywhere.
-- [ ] **Does an unnamed themed colour belong in a panel?** Two found while
+- [ ] **A gate the audit broke, and what that says about the others.** Writing
+      `(select.rs, Caret::render)` into a note made `Caret` a "shown" widget
+      in `check-widget-coverage.py`, because the gpui side read string
+      literals as code — on the explicit reasoning, written into its own
+      docstring, that the tightened match made literals harmless. It did not:
+      the audit's citations have exactly the matched shape. Fixed by stripping
+      literals on both sides, which then revealed that `Dialog`, `AlertDialog`
+      and `Sheet` had been passing on prose mentions too. Worth asking of
+      every other gate here: **which of them reads prose as evidence?** The
+      builder-coverage and omission tests in `showcase.rs` already separate
+      code from notes (`without_comments_or_strings`, `string_literals_only`),
+      so they are clean; the citation gate reads only string literals by
+      design. This one was the outlier, but nothing checked that.
+- [ ] **"Not themeable" has become a bucket, and that is the volume complaint.**
+      Of its 256 entries, 183 now carry an upstream citation, a Tier U verdict
+      or a named model gap — the audit's output. The other **73 are not
+      resolvability claims at all**: they are API and demo facts that no theme
+      on any platform could set. A `ContextMenu`'s trigger is right-click, a
+      `PieChart` takes an `inner_radius`, an `OtpInput` has two groups, a
+      `Sheet` can be placed on any of four edges, the chart panels list nine
+      such options between them. Every one is true and every one is filed
+      under a heading that says the theme cannot set it — which is also true,
+      and useless: a reader scanning for *what the native theme did* has to
+      step over them.
+
+      The fix is a fourth section, not a deletion — that information is worth
+      having, just not under that heading. `widget_tooltip` and
+      `widget_tooltip_themed` would take one more slice and `hover_info` a
+      sixth argument, across 107 call sites: mechanical, and large enough that
+      it wants a decision first. Proposed heading: **"This demo:"**, leaving
+      "Not themeable" for what the audit actually produced. Decide before the
+      next pass, because every note corrected in the meantime is a note that
+      may have to move. Two found while
       auditing: a `Select`'s and a `Combobox`'s caret are painted with
       `muted_foreground` (`select.rs:593`, `combobox.rs:655`), and a
       `DropdownButton`'s with the button variant's own foreground at 75%

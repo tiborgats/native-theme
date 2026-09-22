@@ -98,10 +98,20 @@ statements (`toolkit_roots`), not guessed: `form::Form::horizontal()` is
 gpui-component's `Form` because `form` came from
 `use gpui_component::{…, form::{self, Field}, …}`.
 
-Keeping the literals therefore costs nothing now: a string can no longer be
-followed by `::`, `(` or `{` in a way that proves anything, so the section
-heading "Text Decorations" stopped standing in for the `Text` widget — which
-is a chart axis label, and is an exception entry rather than a demo.
+The tightened rule was once thought to make the string literals harmless —
+"a string can no longer be followed by `::`, `(` or `{` in a way that proves
+anything" — and that was wrong. The gpui showcase's Widget Info panels are
+prose that names upstream types on purpose, and the resolvability audit
+filled them with citations of exactly the matched shape: `(select.rs,
+Caret::render)` inside a note read as a call, so `Caret` was reported shown
+by a showcase that never builds one. Both sides now strip literals. A panel
+arguing *about* a widget is not a demo of it.
+
+Stripping them also removed the accident that had been covering three real
+demos: `Dialog`, `AlertDialog` and `Sheet` are opened through `WindowExt`
+methods that hand the widget to a builder closure, so an application never
+names the type. Those are `GPUI_VIA` entries now, which is what they always
+should have been.
 """
 
 import argparse
@@ -257,6 +267,14 @@ GPUI_VIA = {
     # `ScrollableElement::overflow_scrollbar` and its two axis forms each
     # return `Scrollable<Self>` (scroll/scrollable.rs:46, 53, 60).
     "Scrollable": r"\.overflow(?:_[xy])?_scrollbar\s*\(",
+    # The three `WindowExt` openers hand the widget itself to a builder
+    # closure -- `Fn(Dialog, …) -> Dialog` (window_ext.rs:30-32),
+    # `Fn(AlertDialog, …) -> AlertDialog` (:51-53), `Fn(Sheet, …) -> Sheet`
+    # (:14-16, and `open_sheet_at` at :19-20) -- so an application never names
+    # the type to render one.
+    "Dialog": r"\.open_dialog\s*\(",
+    "AlertDialog": r"\.open_alert_dialog\s*\(",
+    "Sheet": r"\.open_sheet(?:_at)?\s*\(",
 }
 
 # The `\w+::` run immediately before a name, i.e. the path it is a segment of.
@@ -532,7 +550,12 @@ def main():
     args = parser.parse_args()
 
     meta = cargo_metadata()
-    gpui_show = read_showcase(args.showcase_gpui)
+    # Both sides strip literals. The gpui showcase did not, and its Widget
+    # Info panels are written in prose that names upstream types on purpose --
+    # `(select.rs, Caret::render)` in a note read as a call, and `Caret` was
+    # reported as shown by a showcase that never builds one. A panel arguing
+    # *about* a widget is not a demo of it.
+    gpui_show = read_showcase(args.showcase_gpui, strip_literals=True)
     iced_show = read_showcase(args.showcase_iced, strip_literals=True)
     exceptions = load_exceptions()
 
