@@ -6074,7 +6074,7 @@ impl Showcase {
                             .child(row("mi-copy", IconName::Copy, "Copy"))
                             .child(row("mi-paste", IconName::Inbox, "Paste"))
                     })
-                    .on_hover(self.hover_info(&fi, "Menu row (application-drawn)", &[("bg", "popover", t.popover, ""), ("hover", "accent", t.accent, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("border", "border", t.border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Menu row (application-drawn)", &[("bg", "popover", t.popover, "showcase/showcase-gpui.rs:6070"), ("row hover", "accent", t.accent, "showcase/showcase-gpui.rs:6058"), ("text", "popover_foreground", t.popover_foreground, "showcase/showcase-gpui.rs:6071")], &[], &[
                             ("geometry", "geometry::menu_item: menu.row_height (control height), menu.border.padding_*, menu.icon_text_gap, menu.font — the label sets no size of its own, so the font arrives"),
                             ("icon size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                         ])),
