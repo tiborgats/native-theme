@@ -3200,10 +3200,13 @@ impl Showcase {
                                 }
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Input", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("bg", "background", t.background, ""), ("text", "foreground", t.foreground, ""), ("placeholder", "muted_foreground", t.muted_foreground, ""), ("disabled bg", "muted", t.muted, "")], &[
+                    .on_hover(self.hover_info(&fi, "Input", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("disabled text", "muted_foreground", t.muted_foreground, "gpui-component/input/input.rs:102"), ("disabled bg", "input", t.input, "gpui-component/input/input.rs:101")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
                         ], &[
+                            ("fill", "input_background(): the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs)"),
+                            ("disabled fill", "input mixed toward transparent, not muted as the panel had claimed (input/input.rs, input_style)"),
+                            ("placeholder", "drawn by gpui-base's editor, not from a ThemeColor field here"),
                             ("geometry", "geometry::input: input.min_height (control height), border.corner_radius, line_width, input.font"),
                             ("second field", "geometry::input_height alone: the same control height, nothing else"),
                             ("padding", "inner editor (Tier U)"),
@@ -3304,7 +3307,7 @@ impl Showcase {
                             .with_size(Size::Medium)
                             .w(px(200.0)),
                     )
-                    .on_hover(self.hover_info(&fi, "NumberInput", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("bg", "background", t.background, ""), ("text", "foreground", t.foreground, ""), ("placeholder", "muted_foreground", t.muted_foreground, ""), ("disabled bg", "muted", t.muted, "")], &[
+                    .on_hover(self.hover_info(&fi, "NumberInput", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("disabled text", "muted_foreground", t.muted_foreground, "gpui-component/input/input.rs:102"), ("disabled bg", "input", t.input, "gpui-component/input/input.rs:101")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
                         ], &[
