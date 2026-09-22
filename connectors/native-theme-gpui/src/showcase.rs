@@ -373,6 +373,15 @@ fn offset_in(outer: &str, inner: &str) -> usize {
     (inner.as_ptr() as usize).saturating_sub(outer.as_ptr() as usize)
 }
 
+/// The text of the file that holds `GEOMETRY_NOTES`, or nothing if
+/// `SHOWCASE_FILES` has lost it -- which `geometry_note_names` reports.
+fn geometry_notes_source() -> &'static str {
+    SHOWCASE_FILES
+        .iter()
+        .find(|(path, _)| *path == GEOMETRY_NOTES_FILE)
+        .map_or("", |(_, text)| *text)
+}
+
 /// The builder each `GEOMETRY_NOTES` entry names, with the line it is on, and
 /// a line for every part of the table that could not be read.
 ///
@@ -479,11 +488,7 @@ fn every_geometry_builder_has_a_note() {
         !builders.is_empty(),
         "no `pub fn` found in geometry.rs, so this test would pass vacuously"
     );
-    let info = SHOWCASE_FILES
-        .iter()
-        .find(|(path, _)| *path == GEOMETRY_NOTES_FILE)
-        .map_or("", |(_, text)| *text);
-    let (noted, mut findings) = geometry_note_names(info);
+    let (noted, mut findings) = geometry_note_names(geometry_notes_source());
 
     for builder in &builders {
         if !noted.iter().any(|(_, name)| name == builder) {
@@ -556,9 +561,73 @@ fn native_info_names_the_builder_it_applies() {
     );
 }
 
-/// The two parsers above have to see what they are meant to: a table entry
-/// in either of rustfmt's layouts, and a call that is code but not one that is
-/// text, a comment, a longer name or the declaration.
+/// Every `.geometry(` method call in `raw` that is code, as the line it is on
+/// and its argument when that is a single string literal.
+///
+/// A method call only: the path `geometry::x` and the declaration
+/// `fn geometry(` are not calls of it. A call whose argument is not a literal
+/// yields `None`; the one such call is `native_info`'s own `.geometry(name)`,
+/// whose `name` `native_info_names_the_builder_it_applies` holds instead.
+fn geometry_line_calls(raw: &str) -> Vec<(usize, Option<&str>)> {
+    let starts = line_offsets(raw);
+    code_calls(raw, "geometry")
+        .into_iter()
+        .filter(|&open| {
+            raw.get(..open - "geometry".len())
+                .is_some_and(|before| before.trim_end().ends_with('.'))
+        })
+        .map(|open| {
+            let literal = call_args(raw, open)
+                .filter(|args| args.len() == 1)
+                .and_then(|args| args.first().copied())
+                .and_then(unquote);
+            (line_at(&starts, open), literal)
+        })
+        .collect()
+}
+
+/// Spec §3.3: a builder named straight to `.geometry("x")` -- the way a value
+/// builder such as `icon_size_small` or `widget_gap` is recorded, since only a
+/// refinement can go through `native_info` -- names a `GEOMETRY_NOTES` entry,
+/// so "(no GEOMETRY_NOTES entry)" never reaches the inspector.
+///
+/// The test module is left out: it names a builder that does not exist on
+/// purpose, to see that line. No page records a builder yet (they migrate in
+/// Tasks 14-23), so zero calls is a pass here;
+/// `the_geometry_note_parsers_do_their_jobs` is what shows the parser finds
+/// the calls it must.
+#[test]
+fn every_recorded_builder_has_a_note() {
+    let (noted, unreadable) = geometry_note_names(geometry_notes_source());
+    assert!(
+        unreadable.is_empty() && !noted.is_empty(),
+        "GEOMETRY_NOTES could not be read, so no recorded builder can be checked \
+         against it:\n  {}",
+        unreadable.join("\n  ")
+    );
+    let mut findings = Vec::new();
+    for (file, raw) in demo_files() {
+        for (line, literal) in geometry_line_calls(raw) {
+            if let Some(name) = literal
+                && !noted.iter().any(|(_, noted)| *noted == name)
+            {
+                findings.push(format!(
+                    "{file}:{line}: .geometry(\"{name}\") names no GEOMETRY_NOTES entry"
+                ));
+            }
+        }
+    }
+    assert!(
+        findings.is_empty(),
+        "a widget records a builder GEOMETRY_NOTES does not describe, so its \
+         geometry line reads \"(no GEOMETRY_NOTES entry)\":\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// The parsers above have to see what they are meant to: a table entry in
+/// either of rustfmt's layouts, and a call that is code but not one that is
+/// text, a comment, a longer name, a path or the declaration.
 #[test]
 fn the_geometry_note_parsers_do_their_jobs() {
     let table = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
@@ -586,6 +655,26 @@ fn the_geometry_note_parsers_do_their_jobs() {
     let starts = line_offsets(source);
     let lines: Vec<usize> = calls.iter().map(|&at| line_at(&starts, at)).collect();
     assert_eq!(lines, vec![6]);
+
+    let recorded = "pub fn geometry(self, builder: &'static str) -> Self {\n\
+                    \x20   *info = std::mem::take(info).geometry(name);\n\
+                    }\n\
+                    // info.geometry(\"commented\")\n\
+                    let s = \".geometry(\\\"quoted\\\")\";\n\
+                    let r = geometry::button(n);\n\
+                    let a = WidgetInfo::new(\"Icon\").geometry(\"icon_size_small\");\n\
+                    let b = WidgetInfo::new(\"Icon\")\n\
+                    \x20   .geometry(\n\
+                    \x20       \"icon_size_smal\",\n\
+                    \x20   );\n";
+    assert_eq!(
+        geometry_line_calls(recorded),
+        vec![
+            (2, None),
+            (7, Some("icon_size_small")),
+            (9, Some("icon_size_smal"))
+        ]
+    );
 }
 
 // ---------------------------------------------------------------------------
