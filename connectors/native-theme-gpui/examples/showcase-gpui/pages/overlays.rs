@@ -43,7 +43,7 @@ impl Showcase {
             .p_4()
             .flex_1()
             // AppMenuBar
-            .child(section("AppMenuBar (File / Edit / View / Help)"))
+            .child(section("AppMenuBar (File / View / Theme / Help)"))
             .child(
                 div()
                     .id("tt-app-menu-bar")

@@ -17,7 +17,11 @@ use std::cell::RefCell;
 use std::ops::Deref as _;
 use std::rc::Rc;
 
-use crate::app::{AppColorMode, Showcase};
+use crate::app::{
+    AppColorMode, OpenCommandPalette, OpenPreferences, Quit, SetColorMode, ShowPage, Showcase,
+    ToggleInspector, ToggleSidebar,
+};
+use crate::chrome::menus;
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
     native_info,
@@ -26,10 +30,11 @@ use crate::support::{
     CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
 };
 use crate::{
-    CONTENT_SCROLL, LIST_DEMO, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
-    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER,
-    SIDEBAR_COLUMN, TAB_ROOT, TREE_DEMO, Tab, WIDGET_INFO, WIDGET_INFO_TEXT, WINDOW_SIZE,
+    CHROME_APP_MENU_BAR, CHROME_TITLE_BAR, CONTENT_SCROLL, LIST_DEMO, PROBE_ALERT_DIALOG,
+    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
+    PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW,
+    PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, SIDEBAR_COLUMN, TAB_ROOT, TREE_DEMO, Tab, WIDGET_INFO,
+    WIDGET_INFO_TEXT, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -42,8 +47,9 @@ use crate::{
 /// `WINDOW_SIZE` instead, which is what puts the scroll container to work.
 const TALL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(9000.));
 
-/// Build the showcase the way `main` does — `gpui_kit::init`, the view, and
-/// the `Root` that owns the dialog and notification layers — in a window of
+/// Build the showcase the way `main` does — `gpui_kit::init`, the showcase's
+/// actions and key bindings, the window options, the view, and the `Root`
+/// that owns the dialog and notification layers — in a window of
 /// `window_size`.
 ///
 /// One thing `main` has that a test window cannot: the asset source.
@@ -58,16 +64,27 @@ fn open(
     cx: &mut TestAppContext,
     window_size: gpui::Size<Pixels>,
 ) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
-    cx.update(gpui_kit::init);
-    let view: Rc<RefCell<Option<Entity<Showcase>>>> = Rc::new(RefCell::new(None));
-    let handle = cx.open_window(window_size, {
-        let view = view.clone();
-        move |window, cx| {
-            let showcase = cx.new(|cx| Showcase::new(window, cx));
-            *view.borrow_mut() = Some(showcase.clone());
-            Root::new(showcase, window, cx)
-        }
+    cx.update(|cx| {
+        gpui_kit::init(cx);
+        crate::app::init(cx);
     });
+    let view: Rc<RefCell<Option<Entity<Showcase>>>> = Rc::new(RefCell::new(None));
+    let options = crate::window_options(Bounds {
+        origin: Point::default(),
+        size: window_size,
+    });
+    let handle = cx
+        .update(|cx| {
+            cx.open_window(options, {
+                let view = view.clone();
+                move |window, cx| {
+                    let showcase = cx.new(|cx| Showcase::new(window, cx));
+                    *view.borrow_mut() = Some(showcase.clone());
+                    cx.new(|cx| Root::new(showcase, window, cx))
+                }
+            })
+        })
+        .expect("the window opened");
     let root = handle.root(cx).expect("the root view was built");
     let showcase = view.borrow_mut().take().expect("the showcase was built");
     let mut cx = VisualTestContext::from_window(*handle.deref(), cx);
@@ -644,6 +661,153 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         !was_dark,
         "the colour mode switch did not reach Theme::mode"
     );
+}
+
+/// The TitleBar is the window's own title bar (spec §1.2, §2.1): the first
+/// thing in the window, across its whole width, with the AppMenuBar inside it
+/// where the platform has no menu bar of its own.
+///
+/// The test platform's window is server-decorated whatever it is asked for
+/// (gpui-pre `platform.rs`, `PlatformWindow::window_decorations`), so `Root`'s
+/// `window_border` adds no inset here and the bar's top is the window's.
+#[gpui::test]
+fn the_title_bar_is_the_top_of_the_window(cx: &mut TestAppContext) {
+    let options = crate::window_options(Bounds {
+        origin: Point::default(),
+        size: WINDOW_SIZE,
+    });
+    assert_eq!(
+        options.window_decorations,
+        Some(gpui::WindowDecorations::Client),
+        "the window does not ask to draw its own decorations"
+    );
+    assert!(
+        options.app_owns_titlebar_drag,
+        "the window options are not TitleBar::window_options"
+    );
+
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
+    assert_eq!(bar.top(), px(0.), "the title bar starts at {:?}", bar.top());
+    assert_eq!(
+        bar.left(),
+        px(0.),
+        "the title bar starts at {:?}",
+        bar.left()
+    );
+    assert_eq!(
+        bar.size.width, WINDOW_SIZE.width,
+        "the title bar is {:?} wide in a {:?} window",
+        bar.size.width, WINDOW_SIZE.width
+    );
+    assert!(bar.size.height > px(0.), "the title bar has no height");
+
+    if cfg!(not(target_os = "macos")) {
+        let menus = bounds_of(&mut cx, CHROME_APP_MENU_BAR);
+        assert!(
+            menus.size.width > px(0.) && menus.size.height > px(0.),
+            "the menu bar laid out at {:?}",
+            menus.size
+        );
+        assert!(
+            bar.contains(&menus.origin) && menus.bottom() <= bar.bottom(),
+            "the menu bar at {menus:?} is not inside the title bar at {bar:?}"
+        );
+    }
+}
+
+/// The action a menu item named `item` in the menu named `menu` carries.
+fn menu_action(menu: &str, item: &str) -> Box<dyn gpui::Action> {
+    menus()
+        .into_iter()
+        .filter(|m| m.name.as_ref() == menu)
+        .flat_map(|m| m.items)
+        .find_map(|i| match i {
+            gpui::MenuItem::Action { name, action, .. } if name.as_ref() == item => Some(action),
+            _ => None,
+        })
+        .unwrap_or_else(|| panic!("no {menu} > {item} menu item"))
+}
+
+/// Run a menu item the way a menu does: dispatch its action into the window.
+fn run_menu_item(cx: &mut VisualTestContext, menu: &str, item: &str) {
+    let action = menu_action(menu, item);
+    cx.update(|window, cx| window.dispatch_action(action, cx));
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// The menus act (spec §2.2): a View menu page item shows that page, a Theme
+/// menu colour mode installs it, and each shortcut of the table is bound to
+/// its action.
+#[gpui::test]
+fn the_menus_run_actions(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+
+    assert_ne!(
+        read(&mut cx, &showcase, |this, _| this.active_tab),
+        Tab::Feedback,
+        "the showcase starts on Feedback, so showing it proves nothing"
+    );
+    assert!(
+        menu_action("View", "Feedback").partial_eq(&ShowPage(3)),
+        "View > Feedback does not carry ShowPage(3)"
+    );
+    run_menu_item(&mut cx, "View", "Feedback");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_tab),
+        Tab::Feedback,
+        "View > Feedback did not show the Feedback page"
+    );
+
+    // Whichever mode the host is in, ask for the other one.
+    let was_dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
+    let (item, wanted) = match was_dark {
+        true => ("Light", AppColorMode::Light),
+        false => ("Dark", AppColorMode::Dark),
+    };
+    assert!(
+        menu_action("Theme", item).partial_eq(&SetColorMode(wanted)),
+        "Theme > {item} does not carry SetColorMode({wanted:?})"
+    );
+    run_menu_item(&mut cx, "Theme", item);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.color_mode),
+        wanted,
+        "Theme > {item} did not set the colour mode"
+    );
+    assert_eq!(
+        cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        !was_dark,
+        "Theme > {item} did not reach Theme::mode"
+    );
+
+    let bound: [(&str, &dyn gpui::Action); 5] = [
+        ("ctrl-q", &Quit),
+        ("ctrl-b", &ToggleSidebar),
+        ("ctrl-i", &ToggleInspector),
+        ("ctrl-k", &OpenCommandPalette),
+        ("ctrl-,", &OpenPreferences),
+    ];
+    for (keys, action) in bound {
+        let got = cx.update(|window, _cx| {
+            window
+                .highest_precedence_binding_for_action(action)
+                .map(|b| {
+                    b.keystrokes()
+                        .iter()
+                        .map(|k| k.unparse())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                })
+        });
+        assert_eq!(
+            got.as_deref(),
+            Some(keys),
+            "{} is not bound to {keys}",
+            action.name()
+        );
+    }
 }
 
 #[test]

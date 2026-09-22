@@ -1,8 +1,8 @@
 //! The showcase's state, theme switching, and the view that renders it.
 
 use gpui::{
-    App, Context, Entity, Hsla, ImageSource, IntoElement, Menu, ParentElement, Render,
-    SharedString, Styled, Task, Window, div, prelude::*, px, rems,
+    Action, App, Context, Entity, FocusHandle, Hsla, ImageSource, IntoElement, KeyBinding, Menu,
+    ParentElement, Render, SharedString, Styled, Task, Window, actions, div, prelude::*, px, rems,
 };
 use gpui_component::{
     ActiveTheme, GlobalState, Root, Sizable, Size, StyledExt,
@@ -45,6 +45,8 @@ use native_theme_gpui::icons::{animated_frames_to_image_sources, to_image_source
 use native_theme_gpui::to_theme;
 use native_theme_gpui::{AccessibilityPreferences, geometry};
 
+use crate::chrome;
+use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::WidgetInfoPanel;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
@@ -52,9 +54,7 @@ use crate::support::{
     initial_chat_messages, load_all_icons, load_gpui_icons, native_geometry, parse_icon_set_choice,
     refined, release_sources, theme_names, widget_tooltip_themed,
 };
-use crate::{
-    CONTENT_SCROLL, PROBE_COLOR_MODE, SIDEBAR_COLUMN, TAB_ROOT, Tab, probe, showcase_menus,
-};
+use crate::{CONTENT_SCROLL, PROBE_COLOR_MODE, SIDEBAR_COLUMN, TAB_ROOT, Tab, probe};
 
 /// gpui-component's mode for the showcase's light/dark flag.
 fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
@@ -66,6 +66,55 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
 }
 
 // ---------------------------------------------------------------------------
+// Actions (spec §2.2)
+// ---------------------------------------------------------------------------
+//
+// One action backs a menu item, its key binding and, from later tasks, a
+// toolbar button and a command-palette entry.
+
+actions!(
+    showcase,
+    [
+        Quit,
+        ToggleSidebar,
+        ToggleInspector,
+        OpenCommandPalette,
+        ReloadTheme,
+        OpenPreferences,
+        OpenAbout
+    ]
+);
+
+/// Show the page at this position of [`Tab::ALL`].
+///
+/// `no_json`: gpui builds an action from JSON only for a keymap file, which
+/// the showcase does not read; its menus and key bindings hold the value
+/// itself (gpui-pre action.rs, `Action`).
+#[derive(Clone, PartialEq, Debug, Action)]
+#[action(namespace = showcase, no_json)]
+pub(crate) struct ShowPage(pub usize);
+
+/// Install a colour mode, as the colour-mode selector does.
+#[derive(Clone, PartialEq, Debug, Action)]
+#[action(namespace = showcase, no_json)]
+pub(crate) struct SetColorMode(pub AppColorMode);
+
+/// Bind the showcase's keys (spec §2.2) and quit on [`Quit`].
+///
+/// `Quit` is handled here, for the whole application, so it quits whatever
+/// has the focus; the actions that change the showcase are handled on its
+/// view (`Showcase::render`).
+pub(crate) fn init(cx: &mut App) {
+    cx.bind_keys([
+        KeyBinding::new("ctrl-q", Quit, None),
+        KeyBinding::new("ctrl-b", ToggleSidebar, None),
+        KeyBinding::new("ctrl-i", ToggleInspector, None),
+        KeyBinding::new("ctrl-k", OpenCommandPalette, None),
+        KeyBinding::new("ctrl-,", OpenPreferences, None),
+    ]);
+    cx.on_action(|_: &Quit, cx| cx.quit());
+}
+
 // ---------------------------------------------------------------------------
 // Color mode (light / dark / system)
 // ---------------------------------------------------------------------------
@@ -118,6 +167,16 @@ pub(crate) struct Showcase {
     pub(crate) original_mono_font: native_theme::theme::ResolvedFontSpec,
 
     pub(crate) active_tab: Tab,
+
+    /// Where the showcase's widgets report their info (spec §4).
+    pub(crate) info_ui: Entity<InfoRegistry>,
+    /// The title bar's menus. Its own entity, apart from the Overlays page's
+    /// sample: an `AppMenuBar` keeps which menu is open, and one entity drawn
+    /// twice would open both.
+    pub(crate) menu_bar: Entity<AppMenuBar>,
+    /// The view's focus, so an action dispatched with nothing else focused
+    /// still reaches the handlers `render` puts on the view.
+    focus_handle: FocusHandle,
 
     /// Layout spacing of the installed theme. It lives on the model, not on
     /// `ResolvedTheme`, so the geometry accessors take it from here rather
@@ -899,12 +958,15 @@ impl Showcase {
         // reads gpui-base's `GlobalState` list, which only
         // `set_app_menus` fills (`menu/app_menu_bar.rs:49-50`), so the
         // same menus go there too, before the bar is built and reads them.
-        cx.set_menus(showcase_menus());
+        cx.set_menus(chrome::menus());
         if cx.has_global::<GlobalState>() {
             GlobalState::global_mut(cx)
-                .set_app_menus(showcase_menus().into_iter().map(Menu::owned).collect());
+                .set_app_menus(chrome::menus().into_iter().map(Menu::owned).collect());
         }
         let app_menu_bar = AppMenuBar::new(cx);
+        let menu_bar = AppMenuBar::new(cx);
+        let focus_handle = cx.focus_handle();
+        focus_handle.focus(window, cx);
 
         // Start theme watcher for runtime dark/light toggle detection.
         // Skip in screenshot mode — the watcher's background thread cleanup
@@ -935,6 +997,9 @@ impl Showcase {
             original_font,
             original_mono_font,
             active_tab: Tab::Buttons,
+            info_ui: cx.new(|_| InfoRegistry::new()),
+            menu_bar,
+            focus_handle,
             layout: initial_layout,
             input_state,
             input_height_state,
@@ -1191,6 +1256,59 @@ impl Showcase {
         self.apply_theme_by_name(&name, window, cx);
     }
 
+    /// Read the desktop's settings again and re-install the current theme
+    /// from them: what the theme watcher does when the OS theme changes, and
+    /// what `ReloadTheme` asks for.
+    fn reload_system_theme(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        native_theme::detect::invalidate_caches();
+        self.is_dark = self.color_mode.is_dark();
+        let name = self.current_theme_name.clone();
+        self.apply_theme_by_name(&name, window, cx);
+        self.sync_color_mode_select(window, cx);
+    }
+
+    /// Rebuild the color mode dropdown items and selected value to reflect
+    /// the current state (e.g. "System (Dark)" → "System (Light)").
+    fn sync_color_mode_select(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let labels: Vec<SharedString> = [
+            AppColorMode::System,
+            AppColorMode::Light,
+            AppColorMode::Dark,
+        ]
+        .iter()
+        .map(|m| SharedString::from(m.label()))
+        .collect();
+        let selected: SharedString = self.color_mode.label().into();
+        let delegate = SearchableVec::new(labels);
+        self.dark_mode_select.update(cx, |select, cx| {
+            select.set_items(delegate, window, cx);
+            select.set_selected_value(&selected, window, cx);
+        });
+    }
+
+    fn on_show_page(&mut self, action: &ShowPage, _: &mut Window, cx: &mut Context<Self>) {
+        if let Some(tab) = Tab::at(action.0) {
+            self.active_tab = tab;
+            cx.notify();
+        }
+    }
+
+    fn on_set_color_mode(
+        &mut self,
+        action: &SetColorMode,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.set_color_mode(action.0, window, cx);
+        self.sync_color_mode_select(window, cx);
+        cx.notify();
+    }
+
+    fn on_reload_theme(&mut self, _: &ReloadTheme, window: &mut Window, cx: &mut Context<Self>) {
+        self.reload_system_theme(window, cx);
+        cx.notify();
+    }
+
     /// Create a hover handler that updates the Widget Info panel.
     ///
     /// Captures a clone of the `WidgetInfoPanel` entity handle and updates it
@@ -1280,26 +1398,7 @@ impl Render for Showcase {
         // Done here because apply_theme_by_name needs window access.
         if self.pending_system_theme_change {
             self.pending_system_theme_change = false;
-            native_theme::detect::invalidate_caches();
-            self.is_dark = AppColorMode::System.is_dark();
-            let name = self.current_theme_name.clone();
-            self.apply_theme_by_name(&name, window, cx);
-            // Rebuild the color mode dropdown items and selected value to
-            // reflect the new state (e.g. "System (Dark)" → "System (Light)").
-            let labels: Vec<SharedString> = [
-                AppColorMode::System,
-                AppColorMode::Light,
-                AppColorMode::Dark,
-            ]
-            .iter()
-            .map(|m| SharedString::from(m.label()))
-            .collect();
-            let selected: SharedString = self.color_mode.label().into();
-            let delegate = SearchableVec::new(labels);
-            self.dark_mode_select.update(cx, |select, cx| {
-                select.set_items(delegate, window, cx);
-                select.set_selected_value(&selected, window, cx);
-            });
+            self.reload_system_theme(window, cx);
         }
 
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
@@ -1486,7 +1585,29 @@ impl Render for Showcase {
             .size_full()
             .bg(theme.background)
             .text_color(theme.foreground)
-            .child(h_flex().size_full().child(sidebar).child(content))
+            .track_focus(&self.focus_handle)
+            .on_action(cx.listener(Self::on_show_page))
+            .on_action(cx.listener(Self::on_set_color_mode))
+            .on_action(cx.listener(Self::on_reload_theme))
+            // First, so its prepaint opens the frame for every target
+            // (info/registry.rs, epoch_marker).
+            .child(epoch_marker(&self.info_ui))
+            .child(
+                v_flex()
+                    .size_full()
+                    .child(chrome::title_bar(self, cx))
+                    .child(
+                        h_flex()
+                            .w_full()
+                            .flex_1()
+                            // A flex item's minimum height is its content's
+                            // unless it clips; the body has to fit under the
+                            // title bar, not push the window taller.
+                            .overflow_hidden()
+                            .child(sidebar)
+                            .child(content),
+                    ),
+            )
             .children(Root::render_sheet_layer(window, cx))
             .children(Root::render_dialog_layer(window, cx))
             .children(Root::render_notification_layer(window, cx))

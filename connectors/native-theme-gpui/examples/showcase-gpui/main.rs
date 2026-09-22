@@ -42,10 +42,10 @@ mod pages;
 mod support;
 
 use gpui::{
-    App, Bounds, Div, IntoElement, Menu, MenuItem, ParentElement, Pixels, SharedString,
-    WindowBounds, WindowOptions, div, prelude::*, px, size,
+    App, Bounds, Div, IntoElement, ParentElement, Pixels, SharedString, WindowBounds,
+    WindowDecorations, WindowOptions, div, prelude::*, px, size,
 };
-use gpui_component::{ActiveTheme, Root, select::SearchableVec};
+use gpui_component::{ActiveTheme, Root, TitleBar, select::SearchableVec};
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use {gpui::Window, std::time::Duration};
 
@@ -153,6 +153,13 @@ const _: () = {
 /// width, so a measurement they take is a measurement of the real thing.
 pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> = size(px(1100.), px(850.));
 
+/// The debug selector the window's title bar carries, so
+/// `the_title_bar_is_the_top_of_the_window` can see where it was laid out.
+pub(crate) const CHROME_TITLE_BAR: &str = "chrome-title-bar";
+
+/// The debug selector the AppMenuBar inside the title bar carries.
+pub(crate) const CHROME_APP_MENU_BAR: &str = "chrome-app-menu-bar";
+
 /// The debug selector the active tab's root carries, so `every_tab_lays_out`
 /// can find the tab it switched to.
 pub(crate) const TAB_ROOT: &str = "tab-root";
@@ -217,58 +224,16 @@ pub(crate) fn probe(selector: &'static str, control: impl IntoElement) -> Div {
     div().debug_selector(move || selector.into()).child(control)
 }
 
-/// The showcase's application menus, built fresh for each consumer: gpui's
-/// `Menu` is handed over by value, and the platform bar and `AppMenuBar`
-/// each take their own copy.
-pub(crate) fn showcase_menus() -> Vec<Menu> {
-    vec![
-        Menu {
-            name: "File".into(),
-            disabled: false,
-            items: vec![
-                MenuItem::action("New", gpui::NoAction),
-                MenuItem::action("Open", gpui::NoAction),
-                MenuItem::separator(),
-                MenuItem::action("Save", gpui::NoAction),
-                MenuItem::action("Save As…", gpui::NoAction),
-                MenuItem::separator(),
-                MenuItem::action("Quit", gpui::NoAction),
-            ],
-        },
-        Menu {
-            name: "Edit".into(),
-            disabled: false,
-            items: vec![
-                MenuItem::action("Undo", gpui::NoAction),
-                MenuItem::action("Redo", gpui::NoAction),
-                MenuItem::separator(),
-                MenuItem::action("Cut", gpui::NoAction),
-                MenuItem::action("Copy", gpui::NoAction),
-                MenuItem::action("Paste", gpui::NoAction),
-                MenuItem::separator(),
-                MenuItem::action("Select All", gpui::NoAction),
-            ],
-        },
-        Menu {
-            name: "View".into(),
-            disabled: false,
-            items: vec![
-                MenuItem::action("Zoom In", gpui::NoAction),
-                MenuItem::action("Zoom Out", gpui::NoAction),
-                MenuItem::separator(),
-                MenuItem::action("Toggle Sidebar", gpui::NoAction),
-                MenuItem::action("Toggle Full Screen", gpui::NoAction),
-            ],
-        },
-        Menu {
-            name: "Help".into(),
-            disabled: false,
-            items: vec![
-                MenuItem::action("Documentation", gpui::NoAction),
-                MenuItem::action("About", gpui::NoAction),
-            ],
-        },
-    ]
+/// The window the showcase opens at `bounds`: upstream's options for a
+/// window that renders a `TitleBar` (title_bar.rs, `TitleBar::window_options`),
+/// asking to draw its own decorations, so the `TitleBar` is the window's title
+/// bar (spec §1.2). The self-tests open their windows with it too.
+pub(crate) fn window_options(bounds: Bounds<Pixels>) -> WindowOptions {
+    WindowOptions {
+        window_bounds: Some(WindowBounds::Windowed(bounds)),
+        window_decorations: Some(WindowDecorations::Client),
+        ..TitleBar::window_options()
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -648,114 +613,104 @@ fn main() {
         .with_assets(gpui_kit::assets::Assets)
         .run(move |cx: &mut App| {
             gpui_kit::init(cx);
+            app::init(cx);
 
             // Apply CLI variant override before window opens so the initial
             // theme is resolved with the correct light/dark setting.
             let variant_override = cli_args.variant.as_deref().map(|v| v == "dark");
 
             let bounds = Bounds::centered(None, WINDOW_SIZE, cx);
-            let window_handle = cx.open_window(
-                WindowOptions {
-                    window_bounds: Some(WindowBounds::Windowed(bounds)),
-                    ..Default::default()
-                },
-                |window, cx| {
-                    let showcase = cx.new(|cx| {
-                        let mut s = Showcase::new(window, cx);
+            let window_handle = cx.open_window(window_options(bounds), |window, cx| {
+                let showcase = cx.new(|cx| {
+                    let mut s = Showcase::new(window, cx);
 
-                        // Override color mode if --variant was specified
-                        if let Some(is_dark) = variant_override {
-                            let mode = if is_dark {
-                                AppColorMode::Dark
-                            } else {
-                                AppColorMode::Light
-                            };
-                            s.color_mode = mode;
-                            s.is_dark = is_dark;
-                            // Update the color mode selector dropdown
-                            let label = SharedString::from(mode.label());
-                            s.dark_mode_select.update(cx, |select, cx| {
-                                select.set_selected_value(&label, window, cx);
-                            });
+                    // Override color mode if --variant was specified
+                    if let Some(is_dark) = variant_override {
+                        let mode = if is_dark {
+                            AppColorMode::Dark
+                        } else {
+                            AppColorMode::Light
+                        };
+                        s.color_mode = mode;
+                        s.is_dark = is_dark;
+                        // Update the color mode selector dropdown
+                        let label = SharedString::from(mode.label());
+                        s.dark_mode_select.update(cx, |select, cx| {
+                            select.set_selected_value(&label, window, cx);
+                        });
+                    }
+
+                    // Override theme if --theme was specified
+                    if let Some(ref theme_name) = cli_args.theme {
+                        s.current_theme_name = theme_name.clone();
+                        s.apply_theme_by_name(theme_name, window, cx);
+                        // Update the theme selector dropdown to show the overridden theme
+                        let display = SharedString::from(theme_name.clone());
+                        s.theme_select.update(cx, |select, cx| {
+                            select.set_selected_value(&display, window, cx);
+                        });
+                    }
+
+                    // Override tab if --tab was specified
+                    if let Some(ref tab_name) = cli_args.tab
+                        && let Some(tab) = CliArgs::tab(tab_name)
+                    {
+                        s.active_tab = tab;
+                    }
+
+                    // Override icon theme if --icon-theme was specified
+                    if let Some(ref theme_name) = cli_args.icon_theme {
+                        s.icon_theme_override = Some(theme_name.clone());
+                    }
+
+                    // Override icon set if --icon-set was specified
+                    if let Some(ref set_name) = cli_args.icon_set {
+                        // Map CLI set name to an IconSetChoice
+                        s.icon_set_choice = match set_name.as_str() {
+                            "material" => IconSetChoice::Material,
+                            "lucide" => IconSetChoice::Lucide,
+                            "freedesktop" => IconSetChoice::System,
+                            _ => IconSetChoice::System,
+                        };
+                        let effective = s.icon_set_choice.effective_icon_set(s.current_icon_set);
+                        let default_theme =
+                            s.icon_set_choice.freedesktop_theme().map(|t| t.to_string());
+                        s.icon_set_name = effective.name().to_string();
+                        s.icon_set_enum = Some(effective);
+                        let cli_ref = s.icon_theme_override.as_deref();
+                        let fc = s.original_font.color;
+                        let fg_rgb = Some([fc.r, fc.g, fc.b]);
+                        s.loaded_icons =
+                            load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
+                        s.gpui_icons = load_gpui_icons(
+                            Some(effective),
+                            default_theme.as_deref(),
+                            cli_ref,
+                            fg_rgb,
+                        );
+                        let fg = cx.theme().foreground;
+                        s.rebuild_icon_caches(fg, window, cx);
+                        s.rebuild_animation_caches(window, cx);
+                        s.start_animation_timer(cx);
+
+                        // Update the icon theme selector dropdown
+                        let icon_display: SharedString = s.icon_set_choice.to_string().into();
+                        let mut icon_names = s.icon_set_dropdown_names();
+                        // Add the override display name if not already in list
+                        if !icon_names.contains(&icon_display) {
+                            icon_names.push(icon_display.clone());
                         }
+                        let new_delegate = SearchableVec::new(icon_names);
+                        s.icon_set_select.update(cx, |select, cx| {
+                            select.set_items(new_delegate, window, cx);
+                            select.set_selected_value(&icon_display, window, cx);
+                        });
+                    }
 
-                        // Override theme if --theme was specified
-                        if let Some(ref theme_name) = cli_args.theme {
-                            s.current_theme_name = theme_name.clone();
-                            s.apply_theme_by_name(theme_name, window, cx);
-                            // Update the theme selector dropdown to show the overridden theme
-                            let display = SharedString::from(theme_name.clone());
-                            s.theme_select.update(cx, |select, cx| {
-                                select.set_selected_value(&display, window, cx);
-                            });
-                        }
-
-                        // Override tab if --tab was specified
-                        if let Some(ref tab_name) = cli_args.tab
-                            && let Some(tab) = CliArgs::tab(tab_name)
-                        {
-                            s.active_tab = tab;
-                        }
-
-                        // Override icon theme if --icon-theme was specified
-                        if let Some(ref theme_name) = cli_args.icon_theme {
-                            s.icon_theme_override = Some(theme_name.clone());
-                        }
-
-                        // Override icon set if --icon-set was specified
-                        if let Some(ref set_name) = cli_args.icon_set {
-                            // Map CLI set name to an IconSetChoice
-                            s.icon_set_choice = match set_name.as_str() {
-                                "material" => IconSetChoice::Material,
-                                "lucide" => IconSetChoice::Lucide,
-                                "freedesktop" => IconSetChoice::System,
-                                _ => IconSetChoice::System,
-                            };
-                            let effective =
-                                s.icon_set_choice.effective_icon_set(s.current_icon_set);
-                            let default_theme =
-                                s.icon_set_choice.freedesktop_theme().map(|t| t.to_string());
-                            s.icon_set_name = effective.name().to_string();
-                            s.icon_set_enum = Some(effective);
-                            let cli_ref = s.icon_theme_override.as_deref();
-                            let fc = s.original_font.color;
-                            let fg_rgb = Some([fc.r, fc.g, fc.b]);
-                            s.loaded_icons = load_all_icons(
-                                effective,
-                                default_theme.as_deref(),
-                                cli_ref,
-                                fg_rgb,
-                            );
-                            s.gpui_icons = load_gpui_icons(
-                                Some(effective),
-                                default_theme.as_deref(),
-                                cli_ref,
-                                fg_rgb,
-                            );
-                            let fg = cx.theme().foreground;
-                            s.rebuild_icon_caches(fg, window, cx);
-                            s.rebuild_animation_caches(window, cx);
-                            s.start_animation_timer(cx);
-
-                            // Update the icon theme selector dropdown
-                            let icon_display: SharedString = s.icon_set_choice.to_string().into();
-                            let mut icon_names = s.icon_set_dropdown_names();
-                            // Add the override display name if not already in list
-                            if !icon_names.contains(&icon_display) {
-                                icon_names.push(icon_display.clone());
-                            }
-                            let new_delegate = SearchableVec::new(icon_names);
-                            s.icon_set_select.update(cx, |select, cx| {
-                                select.set_items(new_delegate, window, cx);
-                                select.set_selected_value(&icon_display, window, cx);
-                            });
-                        }
-
-                        s
-                    });
-                    cx.new(|cx| Root::new(showcase, window, cx))
-                },
-            );
+                    s
+                });
+                cx.new(|cx| Root::new(showcase, window, cx))
+            });
             let Ok(window_handle) = window_handle else {
                 eprintln!("Fatal: failed to open main application window");
                 cx.quit();
