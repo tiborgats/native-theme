@@ -198,11 +198,14 @@ pub(crate) const WIDGET_INFO_TEXT: &str = "widget-info-text";
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------
 //
-// `interactive_controls_respond` clicks each of these and asks the model what
-// changed. A control that carries one is a control the self-test drives; the
-// name is shared by the render code and the test, so neither can drift onto an
-// element the other does not mean.
+// `interactive_controls_respond` clicks each of these but `PROBE_COMBOBOX`
+// and asks the model what changed. A control that carries one is a control
+// the self-tests drive; the name is shared by the render code and the tests,
+// so neither can drift onto an element the other does not mean.
 pub(crate) const PROBE_RATING: &str = "probe-rating";
+/// The toolbar's preset Combobox, which `the_toolbar_switches_the_preset`
+/// drives and `the_toolbar_is_the_models_toolbar` measures (the latter with
+/// `PROBE_COLOR_MODE`).
 pub(crate) const PROBE_COMBOBOX: &str = "probe-combobox";
 pub(crate) const PROBE_CLIPBOARD: &str = "probe-clipboard";
 pub(crate) const PROBE_PAGINATION: &str = "probe-pagination";

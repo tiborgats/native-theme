@@ -2,7 +2,7 @@
 
 use gpui_component::theme::Theme;
 
-use super::{WidgetInfo, claim};
+use super::{ColorClaim, WidgetInfo, claim};
 
 /// The window's `TitleBar` (spec §2.1). Its geometry line is recorded by
 /// `native_info` where `demo::title_bar` applies the builder.
@@ -160,16 +160,32 @@ pub fn toolbar() -> WidgetInfo {
         )
 }
 
-/// The toolbar's preset Combobox (spec §2.3), the showcase's preset switch.
-pub fn preset_combobox(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Combobox")
-        .variant("searchable")
-        .color(claim(
+/// What an input-styled trigger is filled with: upstream's input_style
+/// (input/input.rs:105) takes `input_background()`, which reads a different
+/// field in each mode (theme/mod.rs:379-384).
+fn trigger_fill(t: &Theme) -> ColorClaim {
+    if t.is_dark() {
+        claim(
+            "trigger bg (input mixed toward transparent)",
+            "input",
+            t.input,
+            "gpui-component/theme/mod.rs:381",
+        )
+    } else {
+        claim(
             "trigger bg",
             "background",
             t.background,
             "gpui-component/theme/mod.rs:383",
-        ))
+        )
+    }
+}
+
+/// The toolbar's preset Combobox (spec §2.3), the showcase's preset switch.
+pub fn preset_combobox(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Combobox")
+        .variant("searchable")
+        .color(trigger_fill(t))
         .color(claim(
             "trigger border",
             "input",
@@ -200,6 +216,10 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
             t.ring,
             "gpui-component/combobox.rs:999",
         ))
+        .not_themeable(
+            "fill",
+            "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)",
+        )
         .not_themeable(
             "font colour",
             "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)",
@@ -283,12 +303,7 @@ pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
 /// The toolbar's icon-set Select (spec §2.3).
 pub fn icon_set_select(t: &Theme) -> WidgetInfo {
     WidgetInfo::new("Select")
-        .color(claim(
-            "trigger bg",
-            "background",
-            t.background,
-            "gpui-component/theme/mod.rs:383",
-        ))
+        .color(trigger_fill(t))
         .color(claim(
             "upstream trigger text",
             "foreground",
@@ -307,6 +322,10 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
             t.ring,
             "gpui-component/select.rs:548",
         ))
+        .not_themeable(
+            "fill",
+            "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)",
+        )
         .not_themeable(
             "caret",
             "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all. Tier U for the size",
@@ -407,7 +426,7 @@ pub fn toolbar_button(
         )
         .not_themeable(
             "tooltip",
-            "upstream's Tooltip, built inside the Button (button/button.rs, Button::tooltip_with_action), so geometry::tooltip cannot reach it; it shows the action's key binding where one is bound (tooltip.rs, Tooltip::action)",
+            "upstream's Tooltip, which the Button builds as it renders from the text and action tooltip_with_action stored (button/button.rs, RenderOnce for Button). The only way to hand a Button a Tooltip of one's own is its tooltip_builder, which has no public setter (button/button.rs, Button), so geometry::tooltip cannot reach it; it shows the action's key binding where one is bound (tooltip.rs, Tooltip::action)",
         )
         .instance("action", action);
     match disabled {

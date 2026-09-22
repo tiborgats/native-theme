@@ -626,12 +626,21 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
     // --- The toolbar's colour mode switch -----------------------------
     //
     // The group's toggles are System, Light, Dark, and a Toggle carries no
-    // selector of its own, so the step clicks the group's two ends: Dark,
-    // which the showcase does not start in, then System back.
+    // selector of its own, so the step clicks the group's two ends. Dark is
+    // clicked from light, so the theme's mode always has to change: on a
+    // dark desktop, System already is dark, and the Theme menu's Light sets
+    // the start. Then System, back from Dark.
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.color_mode),
         AppColorMode::System,
         "the showcase no longer starts in System, so choosing Dark may prove nothing"
+    );
+    if native_theme::detect::system_is_dark() {
+        run_menu_item(&mut cx, "Theme", "Light");
+    }
+    assert!(
+        !cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        "the step does not start from light, so choosing Dark may change nothing"
     );
     let group = bounds_of(&mut cx, PROBE_COLOR_MODE);
     click_at(&mut cx, point(group.right() - px(4.), group.center().y));

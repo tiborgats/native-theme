@@ -389,7 +389,7 @@ impl Showcase {
                             ("digit count", "configurable"), ("groups", "2")])),
             )
             // Select
-            .child(section("Select (a Combobox's trigger, with the carried font colour)"))
+            .child(section("Select (the same trigger as a Combobox, with the carried font colour)"))
             .child(
                 div()
                     .id("tt-select")
@@ -401,6 +401,7 @@ impl Showcase {
                     ))
                     .on_hover(self.hover_info(&fi, "Select", &[("trigger bg", "background", t.background, "gpui-component/theme/mod.rs:383"), ("upstream trigger text", "foreground", t.foreground, "gpui-component/input/input.rs:105"), ("trigger border", "input", t.input, "gpui-component/select.rs:541"), ("focus ring", "ring", t.ring, "gpui-component/select.rs:548"), ("placeholder", "muted_foreground", t.muted_foreground, "gpui-component/select.rs:445"), ("disabled text", "muted_foreground", t.muted_foreground, "gpui-component/select.rs:478")], &[
                         ("geometry", "geometry::select: combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)".to_string())], &[
+                        ("fill", "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)"),
                         ("carried colour", "the one difference from a Combobox, such as the toolbar's preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)"),
                         ("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size"),
                     ])),

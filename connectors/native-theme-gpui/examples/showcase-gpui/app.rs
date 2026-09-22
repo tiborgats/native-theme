@@ -196,8 +196,8 @@ pub(crate) struct Showcase {
     /// The multi-line field of the Textarea demo, beside the single-line
     /// `Input` it shares a surface with.
     pub(crate) textarea_demo: Entity<TextareaState>,
-    /// The Inputs page's `Select`: a Combobox's trigger, with the platform's
-    /// font colour carried as well.
+    /// The Inputs page's `Select`: the same trigger as a Combobox, with the
+    /// platform's font colour carried as well.
     pub(crate) select_demo: Entity<SelectState<SearchableVec<SharedString>>>,
     pub(crate) input_group_state: Entity<InputState>,
     pub(crate) input_group_button_state: Entity<InputState>,
