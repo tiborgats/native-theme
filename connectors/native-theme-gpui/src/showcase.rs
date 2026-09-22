@@ -1336,14 +1336,19 @@ const NOTE_METHODS: &[&str] = &["config", "not_themeable", "instance"];
 
 /// Every `.config(`, `.not_themeable(` and `.instance(` call in `raw` that is
 /// code and has two arguments, the first a string literal: the line its text
-/// starts on, the `what`, and the text as written.
+/// starts on, the `what`, and the text as written. And the line of every
+/// two-argument call whose `what` is not a literal -- a note in a shape
+/// spec §3.2 does not allow, which the prose gate reports rather than skips,
+/// since a note nothing reads is a citation nothing checks.
 ///
 /// The text is taken as written, not only when it is a literal: a note built
 /// with `format!` cites upstream just as well, and `prose_citations` finds a
-/// citation inside the literal either way.
-fn note_calls(raw: &str) -> Vec<(usize, &str, &str)> {
+/// citation inside the literal either way. A call with another number of
+/// arguments is some other type's method of the same name, not a note.
+fn note_calls(raw: &str) -> (Vec<(usize, &str, &str)>, Vec<usize>) {
     let starts = line_offsets(raw);
     let mut out = Vec::new();
+    let mut unreadable = Vec::new();
     for name in NOTE_METHODS {
         for open in method_calls(raw, name) {
             let Some(args) = call_args(raw, open) else {
@@ -1353,6 +1358,7 @@ fn note_calls(raw: &str) -> Vec<(usize, &str, &str)> {
                 continue;
             };
             let Some(what) = unquote(what) else {
+                unreadable.push(line_at(&starts, open));
                 continue;
             };
             let text = text.trim();
@@ -1360,7 +1366,8 @@ fn note_calls(raw: &str) -> Vec<(usize, &str, &str)> {
         }
     }
     out.sort_by_key(|(line, _, _)| *line);
-    out
+    unreadable.sort_unstable();
+    (out, unreadable)
 }
 
 /// The `(` of every call of the method `name` in `raw` that is code: a
@@ -1433,7 +1440,7 @@ fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>
             cited_at,
         });
     }
-    for (line, _, text) in note_calls(raw) {
+    for (line, _, text) in note_calls(raw).0 {
         prose.push((file, line, enclosing_fn(raw, offset_in(raw, text)), text));
     }
     for (line, widget, args) in panel_calls(raw) {
@@ -1899,6 +1906,7 @@ fn the_omission_report() {
         said.extend(claim_calls(raw).into_iter().flat_map(|(_, args)| args));
         said.extend(
             note_calls(raw)
+                .0
                 .into_iter()
                 .flat_map(|(_, what, text)| [what, text]),
         );
@@ -2023,6 +2031,23 @@ fn every_prose_citation_still_exists() {
         prose.push((GEOMETRY_NOTES_FILE, line, name, text));
     }
 
+    let unreadable: Vec<String> = SHOWCASE_FILES
+        .iter()
+        .flat_map(|(file, raw)| {
+            note_calls(raw)
+                .1
+                .into_iter()
+                .map(move |line| format!("{file}:{line}"))
+        })
+        .collect();
+    assert!(
+        unreadable.is_empty(),
+        "{} note calls have a `what` that is not a string literal, so nothing \
+         reads their text or checks what it cites (spec §3.2):\n  {}",
+        unreadable.len(),
+        unreadable.join("\n  ")
+    );
+
     let mut missing = Vec::new();
     let mut checked = 0usize;
     for (file, line, widget, text) in &prose {
@@ -2068,7 +2093,8 @@ fn every_prose_citation_still_exists() {
 /// The claim and note parsers see what they are meant to: a `claim(` call in
 /// either of rustfmt's layouts and a note method with a literal `what`, but
 /// not a mention in a comment or a string, a longer name, a declaration, a
-/// free function named like a note method, or a call of another shape.
+/// free function named like a note method, or a call of another arity -- and
+/// a claim or a note whose literals are not literals is reported, not read.
 #[test]
 fn the_claim_and_note_parsers_do_their_jobs() {
     let source = r#"pub fn claim(role: &'static str) -> ColorClaim {}
@@ -2090,7 +2116,7 @@ pub fn tag(t: &Theme) -> WidgetInfo {
             "padding",
             "a rem literal (tag.rs, Tag::render)",
         )
-        .instance(label, "not read")
+        .instance(label, "reported, not read")
         .config("one argument")
 }
 fn config(self, what: &'static str, text: String) {}
@@ -2135,6 +2161,7 @@ config("free", "fn, not a method");
             ),
         ]
     );
+    assert_eq!(note_calls(source).1, vec![20]);
     let cited: Vec<(&str, &str)> = prose
         .iter()
         .flat_map(|(_, _, _, text)| prose_citations(text))
