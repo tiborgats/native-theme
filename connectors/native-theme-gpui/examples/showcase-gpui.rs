@@ -3360,7 +3360,7 @@ impl Showcase {
                                 .disabled(true),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Checkbox", &[("checked bg", "primary", t.primary, "gpui-component/checkbox.rs:307"), ("checkmark", "primary_foreground", t.primary_foreground, ""), ("unchecked border", "input", t.input, ""), ("bg", "background", t.background, "")], &[
+                    .on_hover(self.hover_info(&fi, "Checkbox", &[("checked bg", "primary", t.primary, "gpui-component/checkbox.rs:307"), ("checkmark", "primary_foreground", t.primary_foreground, ""), ("unchecked border", "input", t.input, "gpui-component/checkbox.rs:238"), ("bg", "background", t.background, "")], &[
                             ("border-radius", format!("radius: {}px", t.radius.as_f32())),
                             ("shadow", format!("{}", t.shadow)),
                         ], &[
@@ -3437,7 +3437,7 @@ impl Showcase {
                 div()
                     .id("tt-slider")
                     .child(Slider::new(&self.slider_state).w(px(360.0)))
-                    .on_hover(self.hover_info(&fi, "Slider", &[("track", "slider_bar", t.slider_bar, ""), ("thumb", "slider_thumb", t.slider_thumb, ""), ("text", "foreground", t.foreground, "gpui-component/slider.rs:272")], &[("shadow", format!("{}", t.shadow))], &[("track height", "hardcoded"), ("thumb size", "hardcoded")])),
+                    .on_hover(self.hover_info(&fi, "Slider", &[("track", "slider_bar", t.slider_bar, "gpui-component/slider.rs:164"), ("thumb", "slider_thumb", t.slider_thumb, "gpui-component/slider.rs:170"), ("text", "foreground", t.foreground, "gpui-component/slider.rs:272")], &[("shadow", format!("{}", t.shadow))], &[("track height", "hardcoded"), ("thumb size", "hardcoded")])),
             )
             // Rating
             .child(section(format!(
@@ -3483,7 +3483,7 @@ impl Showcase {
                                 }
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Rating", &[("active star", "yellow", t.yellow, ""), ("inactive star", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Rating", &[("active star", "yellow", t.yellow, "gpui-component/rating.rs:120"), ("inactive star", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[], &[
                             ("star size", "geometry::icon_size_small: defaults.icon_sizes.small"),
                             ("active colour", "cx.theme().yellow unless Rating::color overrides it (rating.rs, Rating::render active_color)"),
                             ("hover preview", "upstream keeps its own hovered value (rating.rs, RaitingState::hovered_value)"),
@@ -3650,7 +3650,7 @@ impl Showcase {
                                     ),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Table (declarative)", &[("bg", "table", t.table, "gpui-component/table/table.rs:113"), ("header bg", "table_head", t.table_head, "gpui-component/table/table.rs:199"), ("header text", "table_head_foreground", t.table_head_foreground, "gpui-component/table/table.rs:200"), ("row border", "table_row_border", t.table_row_border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Table (declarative)", &[("bg", "table", t.table, "gpui-component/table/table.rs:113"), ("header bg", "table_head", t.table_head, "gpui-component/table/table.rs:199"), ("header text", "table_head_foreground", t.table_head_foreground, "gpui-component/table/table.rs:200"), ("row border", "table_row_border", t.table_row_border, "gpui-component/table/table.rs:203")], &[], &[
                             ("geometry", "geometry::table: list.item_font on the table root (table/table.rs, Table::render: text_sm then refine_style)"),
                             ("cell padding", "inner (Tier U)"),
                         ])),
@@ -3752,7 +3752,7 @@ impl Showcase {
                                 .selected(selected)
                         },
                     ))
-                    .on_hover(self.hover_info(&fi, "Tree", &[("bg", "list", t.colors.list, ""), ("active", "list_active", t.list_active, ""), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Tree", &[("bg", "list", t.colors.list, "gpui-component/list/list_item.rs:236"), ("active", "list_active", t.list_active, "gpui-component/list/list_item.rs:237"), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209")], &[], &[
                             ("indent", "per depth level"),
                             ("expand icon", "hardcoded ChevronRight"),
                             ("row geometry", "geometry::list_item on each row: list.row_height (control height), list.border.padding_*, and list.item_font including its colour -- upstream labels the row with foreground one line before applying it (list/list_item.rs, ListItem::render)"),
@@ -4038,7 +4038,8 @@ impl Showcase {
                         Alert::info("alert-info", "This is an informational message.")
                             .title("Info"),
                     )
-                    .on_hover(self.hover_info(&fi, "Alert (Info)", &[("color", "info", t.info, ""), ("text", "info", t.info, ""), ("border", "info", t.info, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Alert (Info)", &[("color", "info", t.info, "gpui-component/alert.rs:29"), ("text", "info", t.info, "gpui-component/alert.rs:29"), ("border", "info", t.info, "gpui-component/alert.rs:49")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                            ("tints", "the fill is the variant colour mixed toward white at 4% and the edge at 30%: one token, three strengths, so the swatches show the pure colour rather than what is painted (alert.rs, AlertVariant)"),
                             ("padding", "hardcoded per Size"),
                             ("icon", "Info (hardcoded for variant)"),
                             ("icon size", "hardcoded"),
@@ -4051,7 +4052,7 @@ impl Showcase {
                         Alert::success("alert-ok", "Operation completed successfully.")
                             .title("Success"),
                     )
-                    .on_hover(self.hover_info(&fi, "Alert (Success)", &[("color", "success", t.success, ""), ("text", "success", t.success, ""), ("border", "success", t.success, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Alert (Success)", &[("color", "success", t.success, "gpui-component/alert.rs:30"), ("text", "success", t.success, "gpui-component/alert.rs:30"), ("border", "success", t.success, "gpui-component/alert.rs:50")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("padding", "hardcoded per Size"),
                             ("icon", "CircleCheck (hardcoded)"),
                         ])),
@@ -4063,7 +4064,7 @@ impl Showcase {
                         Alert::warning("alert-warn", "Please review before proceeding.")
                             .title("Warning"),
                     )
-                    .on_hover(self.hover_info(&fi, "Alert (Warning)", &[("color", "warning", t.warning, ""), ("text", "warning", t.warning, ""), ("border", "warning", t.warning, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Alert (Warning)", &[("color", "warning", t.warning, "gpui-component/alert.rs:31"), ("text", "warning", t.warning, "gpui-component/alert.rs:31"), ("border", "warning", t.warning, "gpui-component/alert.rs:51")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("padding", "hardcoded per Size"),
                             ("icon", "TriangleAlert (hardcoded)"),
                         ])),
@@ -4075,7 +4076,7 @@ impl Showcase {
                         Alert::error("alert-err", "Something went wrong. Please try again.")
                             .title("Error"),
                     )
-                    .on_hover(self.hover_info(&fi, "Alert (Error)", &[("color", "danger", t.danger, ""), ("text", "danger", t.danger, ""), ("border", "danger", t.danger, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Alert (Error)", &[("color", "danger", t.danger, "gpui-component/alert.rs:32"), ("text", "danger", t.danger, "gpui-component/alert.rs:32"), ("border", "danger", t.danger, "gpui-component/alert.rs:52")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("padding", "hardcoded per Size"),
                             ("icon", "CircleX (hardcoded)"),
                         ])),
