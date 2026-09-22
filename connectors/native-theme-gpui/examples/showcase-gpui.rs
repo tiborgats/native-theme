@@ -4797,7 +4797,7 @@ impl Showcase {
                 div()
                     .id("tt-markdown")
                     .child(TextView::markdown("markdown-sample", MARKDOWN_SAMPLE).selectable(true))
-                    .on_hover(self.hover_info(&fi, "Markdown (TextView)", &[("text", "foreground", t.foreground, ""), ("link", "link", t.link, ""), ("code block bg", "muted", t.muted, ""), ("inline code bg", "accent", t.accent, ""), ("table border", "border", t.border, ""), ("table head", "table_head", t.table_head, "")], &[
+                    .on_hover(self.hover_info(&fi, "Markdown (TextView)", &[("text", "foreground", t.foreground, "gpui-component/text/mod.rs:48"), ("link", "link", t.link, "gpui-component/text/mod.rs:50"), ("code block bg", "muted", t.muted, "gpui-component/text/mod.rs:52"), ("inline code bg", "accent", t.accent, "gpui-component/text/mod.rs:58"), ("table border", "border", t.border, "gpui-component/text/mod.rs:53"), ("table head", "table_head", t.table_head, "gpui-component/text/mod.rs:44"), ("table head text", "table_head_foreground", t.table_head_foreground, "gpui-component/text/mod.rs:45")], &[
                             (
                                 "border-radius",
                                 format!("radius: {}px", t.radius.as_f32()),
@@ -4806,7 +4806,9 @@ impl Showcase {
                                 "mono font",
                                 format!("mono_font_family: {}", t.mono_font_family),
                             ),
-                        ], &[("heading sizes", "derived from the base font size")])),
+                        ], &[("style source", "a TextView reads no theme field itself: gpui-component builds a TextViewStyle from the theme once and the view takes it (text/mod.rs)"),
+                            ("inline code", "accent again -- the menu highlight, shared with menu rows, Toggle and a hovered ghost button (Tier U)"),
+                            ("heading sizes", "derived from the base font size")])),
             )
     }
 
