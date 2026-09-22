@@ -215,28 +215,36 @@ git commit -m "fix(showcase): the panels state the fields their widgets read"
 
 ---
 
-### Task 5: The omission report
+### Task 5: The omission report — **after** Task 6, not before
 
 **Files:**
-- Create: `scripts/panel-omissions.py`
-- Modify: `pre-release-check.sh`
+- Modify: `connectors/native-theme-gpui/src/showcase.rs`
 
-- [ ] **Step 1: Write the script**
+This task was ordered before the citation pass, and that was wrong. The
+report has to know **which upstream file implements each widget**, and the
+plan never said where that mapping comes from. Guessing it from the panel's
+name (`Popover` → `popover.rs`) is fuzzy and would make the report's misses
+indistinguishable from its mistakes.
 
-Per panel, list theme fields read in the widget's own upstream file that the panel never names. Source directory from `cargo metadata` only. Advisory (**W6**) — it prints a count, it never fails the build.
+Once Task 6 has run, the mapping is free and exact: **the files a panel cites
+are the files its widget is implemented in**. So the report becomes a few
+lines over machinery that already exists — `panel_claims`, `candidates`,
+`mentions` — instead of a new widget-to-file guesser.
 
-- [ ] **Step 2: Run it and record the findings**
+- [ ] **Step 1: For each panel, scan the files its own claims cite**
 
-Write the full list to the task report. It feeds Task 6's triage.
+Collect every `cx.theme().<field>` and `cx.theme().tokens.<field>` in those
+files; report the ones the panel never names.
 
-- [ ] **Step 3: Print its count in `pre-release-check.sh` as information**
+- [ ] **Step 2: Print, do not fail (W6)**
 
-- [ ] **Step 4: Commit**
+A panel legitimately omits fields belonging to states and variants its demo
+does not show. Making this a gate would need an exception per unshown state
+across ~100 widgets, which is the sprawl this design exists to avoid.
 
-```bash
-git add scripts/panel-omissions.py pre-release-check.sh
-git commit -m "feat(scripts): report what each Widget Info panel omits"
-```
+- [ ] **Step 3: Record the count in the CHANGELOG**
+
+So the residual is a number someone chose, not one nobody looked at.
 
 ---
 

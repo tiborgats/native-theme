@@ -5910,11 +5910,22 @@ impl Showcase {
                                     )
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Popover", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("border", "border", t.border, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(
+                        &fi,
+                        "Popover",
+                        &[
+                            ("bg", "popover", t.popover, "gpui-component/styled.rs:197"),
+                            ("text", "popover_foreground", t.popover_foreground, "gpui-component/styled.rs:198"),
+                        ],
+                        &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                        &[
                             ("geometry", "geometry::popover on the panel: popover.border.padding_* and corner_radius (popover.rs, Popover::render refine_style). The trigger is a Button, shaped by geometry::button"),
+                            ("edge", "no border token: the surface is painted by popover_style, whose edge is a 1px shadow ring of foreground at low alpha. That is how the shadow shows through it, and it is why popover.border.color has no receiver here (gpui-component styled.rs, popover_style and popover_ring)"),
+                            ("corner radius", "set by popover_style from the theme radius, before geometry::popover refines it (gpui-component styled.rs, popover_style)"),
                             ("trigger", "any Selectable element"),
                             ("anchor", "configurable Corner"),
-                        ])),
+                        ],
+                    )),
             )
             // HoverCard
             .child(section("HoverCard (hover the trigger, no click)"))
