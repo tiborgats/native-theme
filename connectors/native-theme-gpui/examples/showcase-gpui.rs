@@ -3096,7 +3096,7 @@ impl Showcase {
                                     }),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "DropdownButton", &[("bg", "primary/secondary", t.primary, ""), ("dropdown border", "border", t.border, ""), ("menu bg", "popover", t.popover, "gpui-component/tooltip.rs:114")], &[], &[("dropdown arrow", "hardcoded ChevronDown")])),
+                    .on_hover(self.hover_info(&fi, "DropdownButton", &[("dropdown border", "input", t.input, "gpui-component/button/button.rs:1001"), ("menu bg", "popover", t.popover, "gpui-component/tooltip.rs:114")], &[], &[("dropdown arrow", "hardcoded ChevronDown")])),
             )
             // Toggle & ToggleGroup
             .child(section("Toggle & ToggleGroup"))
@@ -3288,7 +3288,7 @@ impl Showcase {
                                     ),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "InputGroup", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("focus ring", "ring", t.ring, "gpui-component/input/input.rs:681"), ("addon text", "muted_foreground", t.muted_foreground, "gpui-component/input/input.rs:102"), ("addon button hover", "secondary_hover", t.secondary_hover, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "InputGroup", &[("border", "input", t.input, "gpui-component/input/input.rs:714"), ("focus ring", "ring", t.ring, "gpui-component/input/input.rs:681"), ("addon text", "muted_foreground", t.muted_foreground, "gpui-component/input/input.rs:102"), ("addon button hover", "secondary_hover", t.secondary_hover, "native-theme-gpui/variants.rs:55")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("geometry", "geometry::input on the frame: input.min_height (single-line groups only), border.corner_radius, line_width, input.font"),
                             ("addon padding", "inner (Tier U)"),
                             ("addon radius", "geometry::input_group_button: button.border.corner_radius alone. gpui-component scales a control's radius with its size, so an in-group button would take radius/2 (input/group.rs, InputGroupButton::render_in_group), where the model records one radius per widget"),
@@ -3550,7 +3550,7 @@ impl Showcase {
                     .child(gpui_component::calendar::Calendar::new(
                         &self.calendar_state,
                     ))
-                    .on_hover(self.hover_info(&fi, "Calendar", &[("bg", "popover", t.popover, "gpui-component/tooltip.rs:114"), ("selected day", "primary", t.primary, "gpui-component/time/calendar.rs:185"), ("today", "secondary", t.secondary, ""), ("text", "foreground", t.foreground, "gpui-component/time/calendar.rs:180")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("month navigation", "hardcoded arrows")])),
+                    .on_hover(self.hover_info(&fi, "Calendar", &[("bg", "popover", t.popover, "gpui-component/tooltip.rs:114"), ("selected day", "primary", t.primary, "gpui-component/time/calendar.rs:185"), ("today", "accent", t.accent, "gpui-component/time/calendar.rs:170"), ("text", "foreground", t.foreground, "gpui-component/time/calendar.rs:180")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("month navigation", "hardcoded arrows")])),
             )
     }
 
@@ -3697,7 +3697,7 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Pagination", &[("current page", "background", t.background, ""), ("current border", "border", t.border, ""), ("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Pagination", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("text", "foreground", t.foreground, "gpui-component/label.rs:207")], &[], &[
                             ("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs, Pagination::render)"),
                             ("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them"),
                             ("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)"),
@@ -3918,7 +3918,7 @@ impl Showcase {
                                     })),
                             )),
                     )
-                    .on_hover(self.hover_info(&fi, "MessageScroller", &[("bottom fade", "background", t.background, "gpui-component/message_scroller.rs:433"), ("scrollbar", "scrollbar_thumb", t.scrollbar_thumb, ""), ("jump button", "secondary", t.secondary, "gpui-component/button/button.rs:880")], &[], &[
+                    .on_hover(self.hover_info(&fi, "MessageScroller", &[("bottom fade", "background", t.background, "gpui-component/message_scroller.rs:433"), ("scrollbar", "scrollbar_thumb", t.scrollbar_thumb, "gpui-component/theme/mod.rs:312"), ("jump button", "secondary", t.secondary, "gpui-component/button/button.rs:880")], &[], &[
                             ("rows", "the Message rows above, rendered on demand"),
                             ("follow", "FollowMode::Tail: Send scrolls the thread to the new row (message_scroller.rs, MessageScrollerState::new)"),
                             ("jump button", "appears once the user scrolls away from the tail"),
@@ -4464,7 +4464,7 @@ impl Showcase {
                                     })
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Tooltip", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, "gpui-component/tooltip.rs:115")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Tooltip", &[("bg", "popover", t.popover, "gpui-component/tooltip.rs:114"), ("text", "popover_foreground", t.popover_foreground, "gpui-component/tooltip.rs:115")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("geometry", "geometry::tooltip on an application-built Tooltip: border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style). geometry::tooltip_content on the element passed to Tooltip::element carries tooltip.max_width, which the text wraps at"),
                             ("delay", "hardcoded"),
                             ("position", "auto"),
@@ -4978,8 +4978,9 @@ impl Showcase {
                                     .text_color(t.muted_foreground),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "WindowBorder", &[("window bg", "background", t.background, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "WindowBorder", &[], &[], &[
                             ("receiver", "Root::new sets bordered and Root::render wraps the window in window_border() (root.rs); nesting a second one would call set_client_inset again (window_border.rs, WindowBorder::render)"),
+                            ("window fill", "the border draws no window background: the claim is dropped (window_border.rs)"),
                             ("frame colour", "hardcoded grey, l=0.2 dark / l=0.8 light (window_border.rs, WindowBorder::render border_color)"),
                             ("shadow", "hardcoded two-layer box shadow (window_border.rs, WindowBorder::render shadow(vec![..]))"),
                             ("server-side decorations", "nothing is drawn: the compositor owns the frame (window_border.rs, WindowBorder::render Decorations::Server arm)"),
@@ -5077,7 +5078,7 @@ impl Showcase {
                             None => row,
                         }
                     })
-                    .on_hover(self.hover_info(&fi, "Toolbar (application-drawn)", &[("bg", "tab_bar", t.tab_bar, ""), ("border", "border", t.border, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "Toolbar (application-drawn)", &[("bg", "tab_bar", t.tab_bar, "showcase"), ("border", "border", t.border, "showcase")], &[], &[
                             ("height", "geometry::control_height(button.min_height, button.font, button.border)"),
                             ("padding", "geometry::container_margin; gap: geometry::widget_gap"),
                             ("icon size", "geometry::icon_size_toolbar: defaults.icon_sizes.toolbar"),
@@ -5262,7 +5263,7 @@ impl Showcase {
                                     )
                             }),
                     )
-                    .on_hover(self.hover_info(&fi, "Accordion", &[("bg", "accordion", t.accordion, "gpui-component/accordion.rs:371"), ("border", "border", t.border, ""), ("text", "foreground", t.foreground, "gpui-component/accordion.rs:305"), ("secondary text", "muted_foreground", t.muted_foreground, "gpui-component/accordion.rs:329")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Accordion", &[("bg", "accordion", t.accordion, "gpui-component/accordion.rs:371"), ("border", "border", t.border, "showcase"), ("text", "foreground", t.foreground, "gpui-component/accordion.rs:305"), ("secondary text", "muted_foreground", t.muted_foreground, "gpui-component/accordion.rs:329")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("header height", "geometry::accordion_title: expander.header_height"),
                             ("padding", "inner (Tier U)"),
                             ("animation", "hardcoded"),
@@ -5368,7 +5369,8 @@ impl Showcase {
                             .child(CarouselPrevious::new(&self.carousel_state))
                             .child(CarouselNext::new(&self.carousel_state)),
                     )
-                    .on_hover(self.hover_info(&fi, "Carousel", &[("slide bg", "muted", t.muted, ""), ("slide text", "foreground", t.foreground, "gpui-component/label.rs:207"), ("slide caption", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167"), ("focus ring", "ring", t.ring, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "Carousel", &[("slide text", "foreground", t.foreground, "gpui-component/label.rs:207"), ("slide caption", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                            ("slide fill and focus ring", "a Carousel reads neither: it sets a transparent border and a radius, and nothing else (carousel/carousel.rs). Both claims are dropped"),
                             ("snap motion", "Theme::motion spring_move; ResolvedTheme has no motion field"),
                             ("reduced motion", "gpui's App::reduce_motion, forwarded by apply_system_theme — the snap becomes instant"),
                             ("slide controls", "outline Buttons the widget builds itself, disabled at the ends (carousel/carousel.rs, carousel_control)"),
@@ -5403,7 +5405,7 @@ impl Showcase {
                                     .child(Label::new("Outlined border").text_sm()),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "GroupBox", &[("fill bg", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("border", "border", t.border, ""), ("title", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
+                    .on_hover(self.hover_info(&fi, "GroupBox", &[("fill bg", "group_box", t.group_box, "gpui-component/group_box.rs:134"), ("text", "group_box_foreground", t.group_box_foreground, "gpui-component/group_box.rs:157"), ("title", "muted_foreground", t.muted_foreground, "gpui-component/label.rs:167")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("geometry", "geometry::group_box_content: card.border.padding_*, corner_radius, line_width, color")])),
             )
             // Breadcrumb (with tab navigation)
             .child(section("Breadcrumb (click to navigate tabs)"))

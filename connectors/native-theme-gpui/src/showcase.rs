@@ -692,7 +692,7 @@ const CITED_CRATES: &[&str] = &["gpui-component", "gpui-base", "gpui-pre"];
 
 /// Set once the citation pass has finished, so an uncited claim fails too
 /// (spec section 6.6). Until then the count is reported.
-const REQUIRE_CITATIONS: bool = false;
+const REQUIRE_CITATIONS: bool = true;
 
 /// The arguments of the call whose `(` is at `open`, split at depth-0 commas.
 ///
