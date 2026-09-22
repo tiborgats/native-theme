@@ -9,8 +9,10 @@
 # internal sub-part of a compound widget, a layout wrapper with no visual
 # surface, a widget needing a GPU pipeline the application supplies, or a
 # widget native-theme models no counterpart for. Each was read in the
-# vendored source on 2026-09-21 and cites the file and line it was read at:
-# gpui-component 0.6.4, iced_widget 0.14.2, iced_aw 0.14.1.
+# vendored source on 2026-09-21 -- `Loading` and `Text` on 2026-09-22, when
+# the gpui matching rule stopped accepting a bare path segment and reported
+# them -- and cites the file and line it was read at: gpui-component 0.6.4,
+# iced_widget 0.14.2, iced_aw 0.14.1.
 
 # Composition slots and internal parts of gpui-component widgets. Each is a
 # piece of a parent widget, not a widget of its own, so the parent's own
@@ -30,6 +32,7 @@ DialogHeader = "the header section of a `Dialog` (dialog/header.rs:8-17)"
 Dot = "the value dot of a chart tooltip, built only by the charts (plot/tooltip.rs:185, chart/line_chart.rs)"
 DropdownMenuPopover = "built only by `DropdownMenu::dropdown_menu`, never by a consumer (menu/dropdown_menu.rs:30, :37)"
 ListSeparatorItem = "a `List` row variant; it renders a `ListItem` (list/separator_item.rs:6, :37)"
+Loading = "the skeleton rows a `List` or a `Table` draws while its delegate reports loading; `list::loading` and `table::loading` are private modules, so no consumer can build one (list/loading.rs:6, list/mod.rs:5, list/delegate.rs:5, table/delegate.rs:11)"
 MessageAvatar = "the sender identity slot beside a `Message` (message.rs:222)"
 MessageFooter = "the footer slot of a `Message` (message.rs:413)"
 MessageGroup = "the container consecutive `Message` values from one sender are grouped in (message.rs:20)"
@@ -39,6 +42,7 @@ SidebarFooter = "the footer of a `Sidebar` (sidebar/footer.rs:8-10)"
 SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
+Text = "not a text widget but a chart axis label: `plot::label::Text` is built only by `AxisText`, which the charts build for every tick (plot/label.rs:95, plot/axis.rs:99, :144, chart/mod.rs:83)"
 
 # Layout and utility wrappers with no visual surface of their own, and the
 # one widget that needs a GPU pipeline the application supplies (spec §6a.3).

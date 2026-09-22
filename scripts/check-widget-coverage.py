@@ -77,13 +77,31 @@ widget has to be constructed in code. Measured on 2026-09-21 over the
 finished iced showcase: all 28 `iced_widget` modules and all 8 `iced_aw`
 widgets still match with the literals gone, so the rule costs nothing there.
 
-They are **kept** in the gpui showcase, where the same rule would report
-eight widgets as missing that the showcase does render through a
-differently-named constructor or extension method: `ContextMenu`, `Dialog`,
-`Loading`, `Scrollable`, `Sheet`, `Tab`, `Text` and `WindowBorder` (measured
-2026-09-21). Giving those eight per-widget constructor patterns is the way to
-tighten the gpui half; until that is done, keeping its literals is the choice
-that reports no false missing.
+The gpui half keeps its literals and asks a stronger question instead
+(`shows_gpui`): not "is the name here" but "is the widget *constructed*
+here". Three things count and nothing else —
+
+  * an associated item, `W::new` or `W::horizontal`;
+  * a call or a struct literal, `W(` or `W {`;
+  * for a widget no call site names, the extension method that builds one:
+    `ContextMenuExt::context_menu` returns a `ContextMenu`
+    (menu/context_menu.rs:35) and `ScrollableElement::overflow_*_scrollbar`
+    returns a `Scrollable` (scroll/scrollable.rs:46, :53, :60). These live in
+    `GPUI_VIA`, one verified pattern each.
+
+A name that is a segment of somebody else's path is somebody else's type.
+`std::process::Command::new` used to satisfy gpui-component's `Command`
+widget — a command palette the showcase did not render at all, and which
+every gate passed green on for as long as the rule was a bare identifier
+match. Which paths are the toolkit's is read from the showcase's own `use`
+statements (`toolkit_roots`), not guessed: `form::Form::horizontal()` is
+gpui-component's `Form` because `form` came from
+`use gpui_component::{…, form::{self, Field}, …}`.
+
+Keeping the literals therefore costs nothing now: a string can no longer be
+followed by `::`, `(` or `{` in a way that proves anything, so the section
+heading "Text Decorations" stopped standing in for the `Text` widget — which
+is a chart axis label, and is an exception entry rather than a demo.
 """
 
 import argparse
@@ -227,6 +245,68 @@ def strip_string_literals(src):
 
 def shows(haystack, name):
     return re.search(r"(?<!\w)" + re.escape(name) + r"(?!\w)", haystack) is not None
+
+
+# gpui widgets the showcase renders without ever naming their type: an
+# extension method builds one from the element it is called on. Each pattern is
+# that call, so the proof stays as specific as a constructor would be.
+GPUI_VIA = {
+    # `ContextMenuExt::context_menu` -> `ContextMenu::new(id, self).menu(f)`
+    # (menu/context_menu.rs:35).
+    "ContextMenu": r"\.context_menu\s*\(",
+    # `ScrollableElement::overflow_scrollbar` and its two axis forms each
+    # return `Scrollable<Self>` (scroll/scrollable.rs:46, 53, 60).
+    "Scrollable": r"\.overflow(?:_[xy])?_scrollbar\s*\(",
+}
+
+# The `\w+::` run immediately before a name, i.e. the path it is a segment of.
+PATH_TAIL = re.compile(r"((?:\w+::)+)$")
+
+
+def toolkit_roots(src):
+    """The identifiers a `use gpui_component::…` / `gpui_kit::…` brings in.
+
+    A path-qualified name belongs to the toolkit when its *root* resolves
+    there, and the showcase's `use` statements are what say so:
+    `form::Form::horizontal()` is gpui-component's `Form` because `form` came
+    from `use gpui_component::{…, form::{self, Field}, …}`, while
+    `std::process::Command::new` is not gpui-component's `Command`.
+    """
+    roots = {"gpui_component", "gpui_kit"}
+    for m in re.finditer(r"\buse\s+(?:gpui_component|gpui_kit)\s*::", src):
+        end = src.find(";", m.end())
+        if end < 0:
+            continue
+        roots.update(re.findall(r"\b[a-z_][a-z0-9_]*\b", src[m.end() : end]))
+    roots.difference_update({"self", "as", "crate", "super"})
+    return roots
+
+
+def shows_gpui(haystack, name, roots=None):
+    """Whether the gpui showcase *constructs* `name`, rather than mentioning it.
+
+    A bare path segment is not enough. `std::process::Command::new` names a
+    `Command`, and until this rule existed it satisfied gpui-component's
+    `Command` widget -- which the showcase does not render at all.
+
+    Three things count, and nothing else: an associated item (`W::new`), a
+    call or a struct literal (`W(`, `W {`), and, for a widget no call site
+    names, the extension method that builds it.
+    """
+    if roots is None:
+        roots = {"gpui_component", "gpui_kit"}
+    pattern = GPUI_VIA.get(name)
+    if pattern and re.search(pattern, haystack):
+        return True
+    for m in re.finditer(r"(?<!\w)" + re.escape(name) + r"(?!\w)", haystack):
+        before, after = haystack[: m.start()], haystack[m.end() :]
+        tail = PATH_TAIL.search(before)
+        # A segment of somebody else's path is somebody else's type.
+        if tail and tail.group(1).split("::")[0] not in roots:
+            continue
+        if after.startswith("::") or after.startswith("(") or after.lstrip(" ").startswith("{"):
+            return True
+    return False
 
 
 def read_showcase(path, strip_literals=False):
@@ -412,20 +492,23 @@ def load_exceptions():
     return table
 
 
-def check(section, discovered, universe, showcase, exceptions, report):
+def check(section, discovered, universe, showcase, exceptions, report, matches=shows):
     """Compare one toolkit and return its missing and stale names.
 
     `discovered` and `universe` map a widget's name to the identifiers that
-    prove the showcase renders it.
+    prove the showcase renders it. `matches` is the toolkit's own rule for
+    what counts as proof.
     """
     excepted = exceptions.get(section, {})
-    shown = [w for w, aliases in discovered.items() if any(shows(showcase, a) for a in aliases)]
+    shown = [
+        w for w, aliases in discovered.items() if any(matches(showcase, a) for a in aliases)
+    ]
     missing = [w for w in discovered if w not in shown and w not in excepted]
     stale = []
     for name in sorted(excepted):
         if name not in universe:
             stale.append(f"{name}: excepted, but no longer offered upstream")
-        elif any(shows(showcase, a) for a in universe[name]):
+        elif any(matches(showcase, a) for a in universe[name]):
             stale.append(f"{name}: excepted, but the showcase shows it")
     report.append(
         f"{section:12s} discovered {len(discovered):3d}   shown {len(shown):3d}   "
@@ -458,14 +541,19 @@ def main():
     aw_all = aw_modules(source_dir(meta, "iced_aw"))
     aw = aw_enabled(meta, aw_all)
 
+    gpui_roots = toolkit_roots(gpui_show)
+
+    def shows_in_gpui(haystack, name):
+        return shows_gpui(haystack, name, gpui_roots)
+
     report, missing, stale = [], [], []
-    for section, discovered, universe, showcase in (
-        ("gpui", gpui, gpui, gpui_show),
-        ("iced_widget", iced, iced, iced_show),
-        ("iced_aw", aw, aw_all, iced_show),
+    for section, discovered, universe, showcase, matches in (
+        ("gpui", gpui, gpui, gpui_show, shows_in_gpui),
+        ("iced_widget", iced, iced, iced_show, shows),
+        ("iced_aw", aw, aw_all, iced_show, shows),
     ):
         part, rot = check(
-            section, discovered, universe, showcase, exceptions, report
+            section, discovered, universe, showcase, exceptions, report, matches
         )
         missing += [f"{section}: {name}" for name in part]
         stale += [f"{section}: {line}" for line in rot]
