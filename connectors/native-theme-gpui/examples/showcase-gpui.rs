@@ -3718,7 +3718,8 @@ impl Showcase {
                     .occlude()
                     .debug_selector(|| LIST_DEMO.into())
                     .child(gpui_component::list::List::new(&self.list_state))
-                    .on_hover(self.hover_info(&fi, "List", &[("bg", "list", t.colors.list, ""), ("active", "list_active", t.list_active, ""), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209"), ("even", "list_even", t.list_even, "")], &[], &[
+                    .on_hover(self.hover_info(&fi, "List", &[("bg", "list", t.colors.list, "gpui-component/list/list_item.rs:236"), ("active", "list_active", t.list_active, "gpui-component/list/list_item.rs:237"), ("hover", "list_hover", t.list_hover, "gpui-component/list/list_item.rs:209")], &[], &[
+                            ("even rows", "the list_even token has no reader anywhere in gpui-component or gpui-base: a List paints every row the same, and the connector writes the slot for nothing (Tier U)"),
                             ("item height", "hardcoded per Size"),
                             ("geometry", "geometry::list on the box around it: list.border line width, colour and corner radius, and a clip to that radius. List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's"),
                         ])),
@@ -7279,25 +7280,12 @@ impl Render for Showcase {
                         .on_hover(self.hover_info(
                             &fi,
                             "TabBar",
-                            &[
-                                ("bg", "tab", theme.tab, ""),
-                                ("active bg", "tab_active", theme.tab_active, ""),
-                                (
-                                    "active text",
-                                    "tab_active_foreground",
-                                    theme.tab_active_foreground,
-                                    "",
-                                ),
-                                ("bar bg", "tab_bar", theme.tab_bar, ""),
-                                ("text", "tab_foreground", theme.tab_foreground, ""),
-                                ("border", "border", theme.border, ""),
-                                ("hover", "secondary_hover", theme.secondary_hover, ""),
-                            ],
+                            &[("active bg", "tab_active", theme.tab_active, "gpui-component/tab/tab.rs:225"), ("active text", "tab_active_foreground", theme.tab_active_foreground, "gpui-component/tab/tab.rs:175"), ("bar bg", "tab_bar", theme.tab_bar, "gpui-component/dock/tab_panel.rs:479"), ("text", "tab_foreground", theme.tab_foreground, "gpui-component/tab/tab_bar.rs:500")],
                             &[(
                                 "border-radius",
                                 format!("radius: {}px", theme.radius.as_f32()),
                             )],
-                            &[("padding", "set per Size enum")],
+                            &[("tab fill", "the tab token has no reader anywhere in gpui-component or gpui-base: an inactive tab is transparent, and the connector writes the slot from tab.background_color for nothing (Tier U)"), ("border and hover", "drawn by the bar, not from the border and secondary_hover the panel used to claim"), ("padding", "set per Size enum")],
                         )),
                 ),
             )
