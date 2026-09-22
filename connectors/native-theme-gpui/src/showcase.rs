@@ -350,6 +350,245 @@ fn the_showcase_exercises_every_builder() {
 }
 
 // ---------------------------------------------------------------------------
+// Geometry lines come from one table
+// ---------------------------------------------------------------------------
+//
+// Showcase spec §3.3 and §5.2. A widget's "geometry" line is not written by
+// hand: `WidgetInfo::geometry` takes it from `GEOMETRY_NOTES` in
+// `info/mod.rs`, which says what each builder carries, and `native_info`
+// applies a builder and records it in one call. Two things can still drift.
+// The table can fall behind geometry.rs -- a builder added there has no line,
+// one renamed or removed leaves a line about nothing -- and a `native_info`
+// call takes the builder it applies and the name it records as two separate
+// arguments, which nothing but this ties together.
+
+/// The showcase file that holds `GEOMETRY_NOTES`.
+const GEOMETRY_NOTES_FILE: &str = "info/mod.rs";
+
+/// The table's declaration, up to the `[` its entries follow.
+const GEOMETRY_NOTES_OPEN: &str = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[";
+
+/// The byte offset of `inner` in `outer`, which it is a slice of.
+fn offset_in(outer: &str, inner: &str) -> usize {
+    (inner.as_ptr() as usize).saturating_sub(outer.as_ptr() as usize)
+}
+
+/// The builder each `GEOMETRY_NOTES` entry names, with the line it is on, and
+/// a line for every part of the table that could not be read.
+///
+/// An entry is read as a tuple whose first element is a string literal,
+/// wherever rustfmt breaks its lines; anything else in the array is reported,
+/// so an entry the parse cannot see is never silently missing.
+fn geometry_note_names(info: &str) -> (Vec<(usize, &str)>, Vec<String>) {
+    let starts = line_offsets(info);
+    let mut names = Vec::new();
+    let mut unreadable = Vec::new();
+    let Some(open) = info.find(GEOMETRY_NOTES_OPEN) else {
+        unreadable.push(format!(
+            "{GEOMETRY_NOTES_FILE}: no `{GEOMETRY_NOTES_OPEN}` found"
+        ));
+        return (names, unreadable);
+    };
+    let bracket = open + GEOMETRY_NOTES_OPEN.len() - 1;
+    let Some(entries) = call_args(info, bracket) else {
+        unreadable.push(format!(
+            "{GEOMETRY_NOTES_FILE}:{}: the table never closes",
+            line_at(&starts, bracket)
+        ));
+        return (names, unreadable);
+    };
+    for entry in entries {
+        let at = offset_in(info, entry) + (entry.len() - entry.trim_start().len());
+        let line = line_at(&starts, at);
+        let name = info
+            .get(at..)
+            .filter(|rest| rest.starts_with('('))
+            .and_then(|_| call_args(info, at))
+            .and_then(|args| args.first().copied())
+            .and_then(unquote);
+        match name {
+            Some(name) => names.push((line, name)),
+            None => unreadable.push(format!(
+                "{GEOMETRY_NOTES_FILE}:{line}: not a (\"builder\", \"what\") entry: {}",
+                entry.trim()
+            )),
+        }
+    }
+    (names, unreadable)
+}
+
+/// The offset of the `(` of every call of the function `name` in `raw` that
+/// is code: not inside a comment or a string, not the tail of a longer
+/// identifier, and not the function's own declaration.
+fn code_calls(raw: &str, name: &str) -> Vec<usize> {
+    let mut out = Vec::new();
+    let mut at = 0usize;
+    while at < raw.len() {
+        let Some(rest) = raw.get(at..) else {
+            break;
+        };
+        if let Some(after) = rest.strip_prefix("//") {
+            at += 2 + after.find('\n').unwrap_or(after.len());
+            continue;
+        }
+        if let Some(len) = char_literal_len(rest) {
+            at += len;
+            continue;
+        }
+        if let Some(hashes) = raw_string_hashes(rest) {
+            let close = format!("\"{}", "#".repeat(hashes));
+            let from = hashes + 2;
+            at += match rest.get(from..).and_then(|t| t.find(&close)) {
+                Some(ix) => from + ix + close.len(),
+                None => rest.len(),
+            };
+            continue;
+        }
+        if let Some(body) = rest.strip_prefix('"') {
+            at += 1 + end_of_string(body, "\"");
+            continue;
+        }
+        let before = raw.get(..at).unwrap_or("");
+        let starts_a_name = before
+            .chars()
+            .next_back()
+            .is_none_or(|c| !c.is_alphanumeric() && c != '_');
+        if starts_a_name
+            && rest
+                .strip_prefix(name)
+                .is_some_and(|after| after.starts_with('('))
+            && !before.trim_end().ends_with("fn")
+        {
+            out.push(at + name.len());
+            at += name.len();
+            continue;
+        }
+        at += char_len(rest);
+    }
+    out
+}
+
+/// Spec §3.3: `GEOMETRY_NOTES` has one entry for every `pub fn` of
+/// geometry.rs and none for anything else -- the value builders as well as
+/// the refinements, because an icon size or a gap is recorded with
+/// `.geometry(name)` too.
+#[test]
+fn every_geometry_builder_has_a_note() {
+    let builders = public_fns(GEOMETRY);
+    assert!(
+        !builders.is_empty(),
+        "no `pub fn` found in geometry.rs, so this test would pass vacuously"
+    );
+    let info = SHOWCASE_FILES
+        .iter()
+        .find(|(path, _)| *path == GEOMETRY_NOTES_FILE)
+        .map_or("", |(_, text)| *text);
+    let (noted, mut findings) = geometry_note_names(info);
+
+    for builder in &builders {
+        if !noted.iter().any(|(_, name)| name == builder) {
+            let at = GEOMETRY
+                .lines()
+                .position(|l| {
+                    l.strip_prefix("pub fn ")
+                        .and_then(|rest| rest.strip_prefix(builder))
+                        .is_some_and(|rest| rest.starts_with(['(', '<']))
+                })
+                .map_or_else(
+                    || "geometry.rs".to_string(),
+                    |ix| format!("geometry.rs:{}", ix + 1),
+                );
+            findings.push(format!(
+                "{at}: geometry::{builder} has no GEOMETRY_NOTES entry"
+            ));
+        }
+    }
+    for (ix, (line, name)) in noted.iter().enumerate() {
+        if !builders.contains(name) {
+            findings.push(format!(
+                "{GEOMETRY_NOTES_FILE}:{line}: an entry for geometry::{name}, which \
+                 geometry.rs does not declare"
+            ));
+        } else if noted.iter().take(ix).any(|(_, earlier)| earlier == name) {
+            findings.push(format!(
+                "{GEOMETRY_NOTES_FILE}:{line}: a second entry for geometry::{name}"
+            ));
+        }
+    }
+
+    assert!(
+        findings.is_empty(),
+        "GEOMETRY_NOTES and geometry.rs disagree, so a widget's geometry line \
+         would describe the wrong builder or none:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// Spec §5.2: every `native_info(w, cx, geometry::X, "Y", info)` records the
+/// builder it applies, `X == Y`.
+#[test]
+fn native_info_names_the_builder_it_applies() {
+    let mut findings = Vec::new();
+    for (file, raw) in SHOWCASE_FILES {
+        let starts = line_offsets(raw);
+        for open in code_calls(raw, "native_info") {
+            let args = call_args(raw, open).unwrap_or_default();
+            let applied = args.get(2).map(|a| a.trim());
+            let recorded = args.get(3).map(|a| a.trim());
+            let builder = applied
+                .and_then(|a| a.rsplit_once("geometry::"))
+                .map(|(_, builder)| builder);
+            if builder.is_none() || builder != recorded.and_then(unquote) {
+                findings.push(format!(
+                    "{file}:{}: applies {} but records {}",
+                    line_at(&starts, open),
+                    applied.unwrap_or("?"),
+                    recorded.unwrap_or("?")
+                ));
+            }
+        }
+    }
+    assert!(
+        findings.is_empty(),
+        "a native_info call records a builder other than the one it applies, so \
+         its geometry line describes a refinement the widget did not take:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// The two parsers above have to see what they are meant to: a table entry
+/// in either of rustfmt's layouts, and a call that is code but not one that is
+/// text, a comment, a longer name or the declaration.
+#[test]
+fn the_geometry_note_parsers_do_their_jobs() {
+    let table = "pub const GEOMETRY_NOTES: &[(&str, &str)] = &[\n\
+                 \x20   (\"button\", \"a, b (c)\"),\n\
+                 \x20   (\n\
+                 \x20       \"input\",\n\
+                 \x20       \"d\",\n\
+                 \x20   ),\n\
+                 \x20   \"stray\",\n\
+                 ];\n";
+    let (names, unreadable) = geometry_note_names(table);
+    assert_eq!(names, vec![(2, "button"), (3, "input")]);
+    assert_eq!(
+        unreadable,
+        vec!["info/mod.rs:7: not a (\"builder\", \"what\") entry: \"stray\"".to_string()]
+    );
+
+    let source = "pub fn native_info<W>(w: W) -> W { w }\n\
+                  fn native_info(w: W) -> W { w }\n\
+                  // native_info(w, cx, geometry::button, \"input\", info)\n\
+                  let s = \"native_info(w)\";\n\
+                  my_native_info(w);\n\
+                  let w = native_info(w, cx, geometry::button, \"button\", &mut info);\n";
+    let calls = code_calls(source, "native_info");
+    let starts = line_offsets(source);
+    let lines: Vec<usize> = calls.iter().map(|&at| line_at(&starts, at)).collect();
+    assert_eq!(lines, vec![6]);
+}
+
+// ---------------------------------------------------------------------------
 // Every demo block carries a Widget Info panel
 // ---------------------------------------------------------------------------
 //

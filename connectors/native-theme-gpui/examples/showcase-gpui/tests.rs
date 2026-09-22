@@ -18,7 +18,10 @@ use std::ops::Deref as _;
 use std::rc::Rc;
 
 use crate::app::{AppColorMode, Showcase};
-use crate::info::{INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker};
+use crate::info::{
+    GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
+    native_info,
+};
 use crate::support::{
     CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
 };
@@ -685,6 +688,57 @@ fn to_text_prints_the_four_sections_in_order() {
 fn an_empty_section_is_not_printed() {
     let text = WidgetInfo::new("Label").to_text();
     assert_eq!(text, "Label\n");
+}
+
+#[test]
+fn a_geometry_line_comes_from_the_table() {
+    let what = GEOMETRY_NOTES
+        .iter()
+        .find(|(name, _)| *name == "button")
+        .map(|(_, what)| *what);
+    assert!(what.is_some(), "GEOMETRY_NOTES has no entry for button");
+    let text = WidgetInfo::new("Button").geometry("button").to_text();
+    assert_eq!(
+        text,
+        format!(
+            "Button\n\nTheme config:\n  geometry: geometry::button: {}\n",
+            what.unwrap_or_default()
+        )
+    );
+}
+
+#[test]
+fn a_builder_the_table_lacks_says_so() {
+    let text = WidgetInfo::new("Button")
+        .geometry("no_such_builder")
+        .to_text();
+    assert!(
+        text.contains("  geometry: geometry::no_such_builder: (no GEOMETRY_NOTES entry)\n"),
+        "{text}"
+    );
+}
+
+/// `native_info` records a builder exactly when it applies it: before a
+/// native theme is installed the widget keeps upstream's geometry and its info
+/// names no builder; after, the widget takes the builder's refinement and its
+/// info carries the builder's line.
+#[gpui::test]
+fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppContext) {
+    let mut bare = WidgetInfo::new("Button");
+    let mut unstyled =
+        cx.update(|cx| native_info(gpui::div(), cx, geometry::button, "button", &mut bare));
+    assert_eq!(bare, WidgetInfo::new("Button"));
+    assert_eq!(unstyled.style().clone(), gpui::StyleRefinement::default());
+
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let mut info = WidgetInfo::new("Button");
+    let expected = cx.update(|_w, cx| native_geometry(cx, geometry::button));
+    let mut styled =
+        cx.update(|_w, cx| native_info(gpui::div(), cx, geometry::button, "button", &mut info));
+    assert!(expected.is_some(), "no native theme is installed");
+    assert_eq!(Some(styled.style().clone()), expected);
+    assert_eq!(info, WidgetInfo::new("Button").geometry("button"));
 }
 
 /// Two targets for the registry's tests, one inside the other: an outer
