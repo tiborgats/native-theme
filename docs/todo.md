@@ -294,6 +294,19 @@
       compatibility enum (same set as 0.6.0) that converts into it via
       `From`. The connector-side follow-up is listed above.
 - [ ] public base-palette fields on `ThemeConfigColors` (`red` … `cyan_light`, `schema.rs:657-668`)
+- [ ] internal scrollbars reserve no gutter where the platform's scrollbars
+      are not overlays. Each of these attaches `.vertical_scrollbar` or
+      `.overflow_y_scrollbar`, which lays a `ScrollbarLayer` over the scroll
+      area's right edge (`scroll/scrollable.rs:19-29`): the Settings page body
+      (`setting/page.rs:248`, which reserves only its own `px_4`), `Dialog`
+      (`dialog/dialog.rs:669`), `Sheet` (`sheet.rs:215`), `PopupMenu`
+      (`menu/popup_menu.rs:1504`), `MessageScroller`
+      (`message_scroller.rs:394`), `Sidebar` (`sidebar/mod.rs:470`) and `Tree`
+      (`tree.rs:111`). kde-breeze's always-visible groove is 21px, so it covers
+      content there. The showcase pads each `SettingGroup` by the groove width
+      (`geometry::scrollbar_gutter`), which works only because a group applies
+      the caller's refinement last (`setting/group.rs:112`); the page body
+      takes no refinement.
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 

@@ -305,6 +305,12 @@ const PROBE_ALERT_DIALOG: &str = "probe-alert-dialog";
 const PROBE_NOTIFICATION: &str = "probe-notification";
 const PROBE_COLOR_MODE: &str = "probe-color-mode";
 
+/// The debug selector a full-width item in the Settings demo's first group
+/// carries. Nothing clicks it: its right edge is where a Settings row ends,
+/// which `a_settings_row_keeps_off_the_page_scrollbar` measures against the
+/// page's scrollbar.
+const PROBE_SETTINGS_ROW: &str = "probe-settings-row";
+
 /// Tag a control with a debug selector, so the self-test can find what it has
 /// to click. The wrapper is a plain box around the control and leaves the
 /// layout to it.
@@ -5657,6 +5663,7 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-settings")
+                    .debug_selector(|| "settings-frame".into())
                     .h(px(320.0))
                     .w_full()
                     .occlude()
@@ -5671,6 +5678,7 @@ impl Showcase {
                                     .default_open(true)
                                     .group(
                                         SettingGroup::new()
+                                            .native(cx, geometry::scrollbar_gutter)
                                             .title("Theme")
                                             .item(
                                                 SettingItem::new(
@@ -5682,6 +5690,16 @@ impl Showcase {
                                                 )
                                                 .description("Toggle dark appearance"),
                                             )
+                                            // The row probe is a whole-row item
+                                            // (setting/item.rs, SettingItem::render):
+                                            // a field's slot is only as wide as its
+                                            // content, so it would not span the row.
+                                            .item(SettingItem::render(|_, _, _| {
+                                                div()
+                                                    .w_full()
+                                                    .h(px(1.))
+                                                    .debug_selector(|| PROBE_SETTINGS_ROW.into())
+                                            }))
                                             .item(SettingItem::new(
                                                 "Accent Color",
                                                 SettingField::dropdown(
@@ -5697,6 +5715,7 @@ impl Showcase {
                                     )
                                     .group(
                                         SettingGroup::new()
+                                            .native(cx, geometry::scrollbar_gutter)
                                             .title("Editor")
                                             .item(SettingItem::new(
                                                 "Font Size",
@@ -5714,19 +5733,23 @@ impl Showcase {
                             .page(
                                 SettingPage::new("Keyboard")
                                     .description("Keyboard shortcuts and input")
-                                    .group(SettingGroup::new().title("Shortcuts").item(
-                                        SettingItem::new(
-                                            "Vim Mode",
-                                            SettingField::switch(|_cx| false, |_val, _cx| {}),
-                                        ),
-                                    )),
+                                    .group(
+                                        SettingGroup::new()
+                                            .native(cx, geometry::scrollbar_gutter)
+                                            .title("Shortcuts")
+                                            .item(SettingItem::new(
+                                                "Vim Mode",
+                                                SettingField::switch(|_cx| false, |_val, _cx| {}),
+                                            )),
+                                    ),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Settings", &[("sidebar", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("border", "border", t.border, "gpui-component/setting/page.rs:185")], &[], &[("groups", "no fill and no edge: a Settings page uses GroupBoxVariant::Normal unless Settings::with_group_variant picks Fill or Outline, so group_box paints nothing here (setting/settings.rs, with_group_variant)"), 
+                    .on_hover(self.hover_info(&fi, "Settings", &[("sidebar", "sidebar", t.sidebar, "gpui-component/sidebar/mod.rs:413"), ("border", "border", t.border, "gpui-component/setting/page.rs:185")], &[("geometry", "geometry::scrollbar_gutter on each SettingGroup: scrollbar.groove_width as right padding where scrollbar.overlay_mode is false, so the page's own scrollbar, laid over the body's right edge, does not cover the rows".to_string())], &[("groups", "no fill and no edge: a Settings page uses GroupBoxVariant::Normal unless Settings::with_group_variant picks Fill or Outline, so group_box paints nothing here (setting/settings.rs, with_group_variant)"), 
                             ("fill", "none of its own: nothing under setting/ sets a background, so a Settings page shows the window's (gpui-component setting/)"),
                             ("descriptions", "muted_foreground, set per item, group and page (setting/item.rs, setting/group.rs, setting/page.rs)"),
                             ("fields", "switch, checkbox, input, number input, dropdown, or an element of the application's own (setting/fields/mod.rs, SettingFieldType)"),
                             ("layout", "sidebar + pages"),
+                            ("scrollbar", "gpui-component lays the page's scrollbar over the body's right edge (setting/page.rs, SettingPage) and reserves only 1rem; this demo pads each group by the platform's groove width instead (setting/group.rs, SettingGroup). The page body takes no refinement -- Tier U"),
                         ])),
             )
     }
@@ -8274,6 +8297,31 @@ mod tests {
                 content.right(),
             );
         }
+    }
+
+    /// A Settings row keeps off the page's scrollbar.
+    ///
+    /// The page body lays gpui-component's `ScrollbarLayer` over its right edge
+    /// (setting/page.rs:222-248, scroll/scrollable.rs:19-29) and reserves only its
+    /// own `px_4`; kde-breeze's groove is 21px, wider than that, so without a
+    /// gutter on the group the bar covers the rows.
+    #[gpui::test]
+    fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
+        let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+        use_preset(&mut cx, &showcase, "kde-breeze");
+        show(&mut cx, &showcase, Tab::Layout);
+        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        assert!(
+            !overlay && groove > px(0.),
+            "kde-breeze must draw a non-overlay groove"
+        );
+        let frame = bounds_of(&mut cx, "settings-frame");
+        let row = bounds_of(&mut cx, PROBE_SETTINGS_ROW);
+        assert!(
+            frame.right() - row.right() >= groove,
+            "the row ends {:?} before the frame's right edge; a {groove:?} groove covers it",
+            frame.right() - row.right()
+        );
     }
 
     /// A Widget Info text long enough to overflow whatever room the sidebar
