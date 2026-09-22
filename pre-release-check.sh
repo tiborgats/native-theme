@@ -546,6 +546,20 @@ fi
 run_check "widget coverage (gpui · iced_widget · iced_aw)" \
     python3 scripts/check-widget-coverage.py
 
+# scripts/check-widget-citations.py opens the upstream line each Widget Info
+# colour claim cites and requires the field it names to be there. It is the
+# only gate on a statement about a dependency's source, so it runs here and in
+# CI rather than as a `cargo test`: the path to the vendored source comes from
+# `cargo metadata`, which a published crate should not gain a build script to
+# learn (widget-info spec section 4.4).
+#
+# While the citation pass is under way the count of uncited claims is reported
+# and does not fail; a wrong citation fails from the first day. Adding
+# --require-citations makes an uncited claim a failure too, and that is the
+# last step of the pass, once the count has actually reached zero.
+run_check "Widget Info citations" \
+    python3 scripts/check-widget-citations.py
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
 # ─────────────────────────────────────────────────────────────────────────────

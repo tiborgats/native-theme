@@ -462,6 +462,61 @@ gate reports it missing until §6.4 resolves.
 
 ## 9 -- As built
 
+Every place the implementation corrected this document.
+
+**§2.1, F9 — the block convention was already complete, and F9 was wrong.**
+It recorded Resizable as the one panel without a `tt-` id. It has two:
+`RESIZABLE_GROUPS` holds `tt-resizable-h` and `tt-resizable-v`
+(`showcase-gpui.rs:459, :480`) and reaches `.id()` as `.id(group.id)`
+(`:5486`), which a literal-only detector cannot see. Blocks and panels are
+**102 to 102**, not 101 to 102. The detector gained that second marker, and
+`every_demo_id_is_a_tt_id` guards it: an id reaching a block through a
+`const` must still start with `tt-`, or the marker could come to stand for a
+non-demo.
+
+**§2.1 — bindings do not move, and no exceptions file was created.** The
+first draft had page-level bindings move into their block or be declared in
+`docs/widget-info-exceptions.toml`. Measured, that was wrong work:
+`button_style` (`:2776`) serves all ten Button demos and `widget_gap` is
+bound separately in six page methods, so moving meant either duplicating a
+refinement ten times or maintaining a block-to-binding table. §3's
+attribution rule reads the binding instead. **No exceptions file exists.**
+
+**§3 — three corrections, each measured.** A block ends at its own panel's
+call, not at the next id: the panel closes the chain, and the next-id rule
+let the last block of a method swallow the rest of it, crediting `tt-tabbar`
+with the `scrollbar_gutter` on the content scroller beside it (`:8186`,
+outside the tab bar's div which closes at `:8175`). A binding inside a block
+belongs to that block, because generic names collide — `let content =
+native_geometry(cx, geometry::tooltip_content)` otherwise credited every
+block mentioning a `content`. And five **ambient** builders are exempt
+(`button` and the four `LayoutTheme` spacing helpers): they shape a demo's
+scaffolding, not the widget it demonstrates, and each has a panel where it is
+the subject. Without these the check reported 38 blocks; with them, exactly
+the 7 real omissions.
+
+**§3 — the check is one-directional.** This document required set equality.
+That would have deleted `PopupMenu`'s note that `geometry::menu_item` has no
+receiver there, and `AlertDialog`'s pointer to the Dialog above. Naming a
+builder a demo does *not* apply is how a panel says why it could not, so only
+unnamed **application** is a defect.
+
+**§4.4 — the citation check is a script, not a `#[test]`.** The `#[test]`
+form needs the vendored source path at run time, which means `cargo metadata`
+inside a `build.rs`. `native-theme-gpui` has none, and adding one to a
+published crate solely to locate a *dev*-dependency's source would run for
+every consumer, for a check that only ever concerns this repository;
+`cargo metadata` inside a build script is also recursion-prone. The condition
+this document set is met instead: the script is wired into **both**
+`pre-release-check.sh` and `.github/workflows/ci.yml`, which already runs
+`check-widget-coverage.py` the same way (`ci.yml:121`).
+
+**§6.1 — NumberInput's size claims were corrected in Task 2, not Task 4.**
+Adding its `geometry::input` note left "height: set per Size enum" directly
+contradicting the line above it. `Size` sets the step buttons' `min_w`
+(`number_input.rs:148-150, 179-181`); the field's height comes from
+`input.min_height`.
+
 *(Filled in by the implementation, as
 [`todo_v0.5.9_theme-contracts-spec.md`](todo_v0.5.9_theme-contracts-spec.md)
 §8a is. §4.4's choice is recorded here.)*
