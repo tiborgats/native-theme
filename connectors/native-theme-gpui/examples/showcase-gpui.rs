@@ -600,38 +600,30 @@ fn widget_tooltip(
 fn format_font_info(
     font: &native_theme::theme::ResolvedFontSpec,
     mono_font: &native_theme::theme::ResolvedFontSpec,
-    font_dpi: f32,
 ) -> String {
-    // Both units. `ResolvedFontSpec::size` is in logical pixels, which is
-    // what the toolkit lays out with, but a point size is what an application
-    // author sizes its own elements in if they are to match on a screen with
-    // a different DPI. The conversion is exact arithmetic on a value already
-    // in hand, not a guess about what the platform originally stated.
     format!(
-        "\nTheme fonts:\n  Font: {} {}px ({}pt)\n  Mono: {} {}px ({}pt)",
+        "\nTheme fonts:\n  Font: {} {}\n  Mono: {} {}",
         font.family,
-        font.size,
-        points(font.size, font_dpi),
+        defined_size(font),
         mono_font.family,
-        mono_font.size,
-        points(mono_font.size, font_dpi),
+        defined_size(mono_font),
     )
 }
 
-/// A logical-pixel size in points, to two decimals with trailing zeros gone.
+/// A font size in the unit its source stated, never converted.
 ///
-/// Rounded because the arithmetic does not round-trip in `f32`: a 10pt
-/// setting is stored as 13.333333px, which converts back to 9.9999998, and a
-/// panel that printed that would be reporting noise as data.
-fn points(px_size: f32, font_dpi: f32) -> String {
-    if font_dpi <= 0.0 {
-        return "?".to_string();
-    }
-    let pt = px_size * 72.0 / font_dpi;
-    let text = format!("{pt:.2}");
-    match text.trim_end_matches('0').trim_end_matches('.') {
-        "" => "0".to_string(),
-        trimmed => trimmed.to_string(),
+/// A platform that reports points (KDE, GNOME, Windows) and a preset written
+/// in pixels both resolve to logical pixels, and 10.5pt at 96 DPI is exactly
+/// 14px -- so dividing the resolved size by the DPI would print "10.5pt" for
+/// a preset whose author wrote `size_px = 14`. `ResolvedFontSpec::defined_size`
+/// carries what the source actually said, so this converts nothing.
+fn defined_size(font: &native_theme::theme::ResolvedFontSpec) -> String {
+    match font.defined_size {
+        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
+        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
+        // Validation records a missing size rather than inventing one; say so
+        // instead of presenting the resolved fallback as a definition.
+        None => "(size not stated)".to_string(),
     }
 }
 
@@ -1643,8 +1635,6 @@ struct Showcase {
     dark_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
     /// Original native-theme font spec, for display purposes.
     original_font: native_theme::theme::ResolvedFontSpec,
-    /// Screen font DPI, for showing a size in points as well as pixels.
-    font_dpi: f32,
     /// Original native-theme mono font spec, for display purposes.
     original_mono_font: native_theme::theme::ResolvedFontSpec,
 
@@ -2201,6 +2191,8 @@ impl Showcase {
                 let font = native_theme::theme::ResolvedFontSpec {
                     family: "(default)".into(),
                     size: 0.0,
+                    // No theme could be read, so no source stated a size.
+                    defined_size: None,
                     weight: 400,
                     style: native_theme::theme::FontStyle::Normal,
                     color: native_theme::color::Rgba::TRANSPARENT,
@@ -2208,6 +2200,8 @@ impl Showcase {
                 let mono_font = native_theme::theme::ResolvedFontSpec {
                     family: "(default)".into(),
                     size: 0.0,
+                    // No theme could be read, so no source stated a size.
+                    defined_size: None,
                     weight: 400,
                     style: native_theme::theme::FontStyle::Normal,
                     color: native_theme::color::Rgba::TRANSPARENT,
@@ -2490,10 +2484,6 @@ impl Showcase {
             .ok()
         };
 
-        // Read once: the screen's DPI is a property of the session, not of a
-        // widget, and probing it on every render would be a system call per
-        // frame. Refreshed wherever `original_font` is.
-        let font_dpi = native_theme::ResolutionContext::from_system().font_dpi;
         let fg = cx.theme().foreground;
         let mut showcase = Self {
             theme_select,
@@ -2503,7 +2493,6 @@ impl Showcase {
             color_mode,
             dark_mode_select,
             original_font,
-            font_dpi,
             original_mono_font,
             active_tab: Tab::Buttons,
             layout: initial_layout,
@@ -2622,7 +2611,6 @@ impl Showcase {
                         native_theme_gpui::ColorMode::Light
                     });
                     self.original_font = resolved.defaults.font.clone();
-                    self.font_dpi = native_theme::ResolutionContext::from_system().font_dpi;
                     self.original_mono_font = resolved.defaults.mono_font.clone();
                     self.current_icon_theme = system.icon_theme.clone().into_owned();
                     self.current_icon_set = system.icon_set;
@@ -2669,7 +2657,6 @@ impl Showcase {
             self.current_icon_set = r.icon_set;
             self.current_icon_theme = r.icon_theme.into_owned();
             self.original_font = r.variant.defaults.font.clone();
-            self.font_dpi = native_theme::ResolutionContext::from_system().font_dpi;
             self.original_mono_font = r.variant.defaults.mono_font.clone();
             // Preset path: accessibility is orthogonal to the theme choice, so the
             // OS preferences are honoured under a preset too (spec §7.1).
@@ -2844,7 +2831,7 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         // One refinement per section (spec §9.1); `None` before `apply` ran.
         let button_style = native_geometry(cx, geometry::button);
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
             .gap_5()
@@ -3218,7 +3205,7 @@ impl Showcase {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
         let checkbox_a = self.checkbox_a;
@@ -3651,7 +3638,7 @@ impl Showcase {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
         v_flex()
@@ -4097,7 +4084,7 @@ impl Showcase {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
         v_flex()
@@ -4604,7 +4591,7 @@ impl Showcase {
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
             .gap_5()
@@ -4954,7 +4941,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let accordion_title_style = native_geometry(cx, geometry::accordion_title);
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let collapsible_open = self.collapsible_open;
         // The four layout accessors. `None` where the platform specifies
@@ -5759,7 +5746,7 @@ impl Showcase {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let widget_gap = geometry::widget_gap(&self.layout);
         let container_margin = geometry::container_margin(&self.layout);
@@ -6183,7 +6170,7 @@ impl Showcase {
     // Tab: Charts
     // -----------------------------------------------------------------------
     fn render_charts_tab(&self, cx: &mut Context<Self>) -> impl IntoElement + InteractiveElement {
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
 
         // Sample data structs for charts
@@ -6605,7 +6592,7 @@ impl Showcase {
             )
         };
         let t = cx.theme().clone();
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         section_el = section_el.child(
             body.id("tt-animated-icons")
                 .on_hover(self.hover_info(&fi, "Animated Icons", &[("card border", "border", t.border, "showcase"), ("reduced-motion note", "muted_foreground", t.muted_foreground, "showcase")], &[
@@ -6626,7 +6613,7 @@ impl Showcase {
     // Tab: Icons
     // -----------------------------------------------------------------------
     fn render_icons_tab(&self, cx: &mut Context<Self>) -> impl IntoElement + InteractiveElement {
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
 
         // --- Native Theme Icons section ---
@@ -6914,7 +6901,7 @@ impl Showcase {
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        let _fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let _fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         // Built once and shadowed onto the name the swatches below already
         // call, so every swatch sits in the showcase's one frame without the
@@ -7325,7 +7312,7 @@ impl Render for Showcase {
             });
         }
 
-        let fi = format_font_info(&self.original_font, &self.original_mono_font, self.font_dpi);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let theme = cx.theme().clone();
         // After the deferred system-theme change above, so the selects and the
         // rest of the frame read the same installed theme.

@@ -34,6 +34,7 @@ fn resolved_font_spec_sentinel() -> ResolvedFontSpec {
     ResolvedFontSpec {
         family: empty_arc_str(),
         size: 0.0,
+        defined_size: None,
         weight: 0,
         style: FontStyle::Normal,
         color: Rgba::TRANSPARENT,
@@ -122,6 +123,7 @@ pub(crate) fn require_font(
     ResolvedFontSpec {
         family,
         size,
+        defined_size: font.size,
         weight,
         // `style` is inherently optional: `FontStyle::Normal` is the universally-safe
         // default when a theme omits italic/oblique. Unlike `family`, `size`, `weight`,
@@ -173,6 +175,7 @@ pub(crate) fn require_font_opt(
             ResolvedFontSpec {
                 family,
                 size,
+                defined_size: f.size,
                 weight,
                 // `style` is inherently optional: `FontStyle::Normal` is the universally-safe
                 // default when a theme omits italic/oblique (see require_font for full rationale).

@@ -247,6 +247,41 @@ const TEST_DPI_STANDARD: f32 = 96.0;
 const TEST_DPI_APPLE: f32 = 72.0;
 
 #[test]
+fn the_resolved_font_keeps_the_unit_its_source_stated() {
+    // The reason this field exists: 10.5pt at 96 DPI and 14px resolve to the
+    // same 14.0 logical pixels, so nothing downstream can tell them apart
+    // from `size` alone. A panel that divided `size` by the DPI would label
+    // the pixel-defined one as points -- a unit no source ever stated.
+    let mut in_points = fully_populated_variant();
+    in_points.defaults.font.size = Some(FontSize::Pt(10.5));
+    let points = in_points
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("should validate");
+
+    let mut in_pixels = fully_populated_variant();
+    in_pixels.defaults.font.size = Some(FontSize::Px(14.0));
+    let pixels = in_pixels
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("should validate");
+
+    assert_eq!(
+        points.defaults.font.size, pixels.defaults.font.size,
+        "the two should be indistinguishable in logical pixels, or this test \
+         is not testing what it claims"
+    );
+    assert_eq!(
+        points.defaults.font.defined_size,
+        Some(FontSize::Pt(10.5)),
+        "a source stating points keeps its points"
+    );
+    assert_eq!(
+        pixels.defaults.font.defined_size,
+        Some(FontSize::Px(14.0)),
+        "a source stating pixels keeps its pixels"
+    );
+}
+
+#[test]
 fn validate_converts_pt_to_logical_px_at_96_dpi() {
     // 10pt at 96 DPI -> 10 * 96/72 = 13.333...px
     let mut v = fully_populated_variant();

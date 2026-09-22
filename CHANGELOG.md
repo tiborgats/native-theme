@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking Changes
 
+#### native-theme
+
+- `ResolvedFontSpec` gains `defined_size: Option<FontSize>` — the size as its source stated it, in the unit it stated. `size` is unchanged and is still always logical pixels. Until now resolution converted and then *discarded* the unit: `FontSize::Pt(10.5)` at 96 DPI and `FontSize::Px(14.0)` both became `14.0`, and nothing downstream could tell them apart. Anything that shows a size to a person needs that difference — a UI author sizing custom elements to match the platform's needs the number the platform actually gave, and back-converting `size` by the DPI would label a preset written in `size_px` as points, a unit no source ever stated. `None` only where the source stated no size and validation recorded the omission. `FontSize` also gains `Serialize`/`Deserialize` so the field can travel with the struct, and `defined_size` is `#[serde(default)]` so older serialized themes still deserialize. Code that constructs a `ResolvedFontSpec` literally adds the field; code that reads one is unaffected.
+
 #### native-theme-gpui
 
 - Reduced motion is a *request*, not a write: `reduce_motion: false` no longer clears a flag the connector did not set, so gpui-base's own OS reader (new in 0.6.2) and the application keep control; `true` followed by `false` undoes only the connector's own switch and then asks gpui-base to re-read the system. Callers that relied on `apply(.., &AccessibilityPreferences::default(), ..)` to switch motion back on call `cx.set_reduce_motion(false)` themselves.

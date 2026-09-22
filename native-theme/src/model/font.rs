@@ -75,7 +75,7 @@ pub enum FontStyle {
 ///
 /// During validation, all `FontSize` values are converted to logical pixels
 /// via `FontSize::to_logical_px(dpi)`, producing a plain `f32` for the resolved model.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum FontSize {
     /// Typographic points (1/72 inch). Used by platform presets where the OS
     /// reports font sizes in points (KDE, GNOME, Windows).
@@ -242,6 +242,23 @@ pub struct ResolvedFontSpec {
     /// Font size in logical pixels. Converted from platform points during
     /// resolution if `font_dpi` was set on the source `ThemeDefaults`.
     pub size: f32,
+    /// The size as its source stated it, before conversion.
+    ///
+    /// [`size`](Self::size) is always logical pixels, which is what a toolkit
+    /// lays out with. This is the unit and number the preset or the platform
+    /// reader actually gave: KDE, GNOME and Windows state points, and
+    /// hand-authored presets state pixels.
+    ///
+    /// Anything that shows a size to a person should show **this**. The two
+    /// cannot be told apart after conversion -- a 14px preset and a 10.5pt
+    /// one at 96 DPI both resolve to 14.0 -- so a display that divides
+    /// `size` by the DPI would label the first as points, which no source
+    /// ever said.
+    ///
+    /// `None` only where the source stated no size at all and validation
+    /// recorded the omission.
+    #[serde(default)]
+    pub defined_size: Option<FontSize>,
     /// CSS font weight (100–900).
     pub weight: u16,
     /// Font style (normal, italic, oblique).
@@ -620,6 +637,7 @@ mod tests {
         let font = ResolvedFontSpec {
             family: Arc::from("Inter"),
             size: 14.0,
+            defined_size: Some(FontSize::Px(14.0)),
             weight: 400,
             style: FontStyle::Normal,
             color: crate::Rgba::rgb(0, 0, 0),

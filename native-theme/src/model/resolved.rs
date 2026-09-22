@@ -279,6 +279,7 @@ mod tests {
         ResolvedFontSpec {
             family: "Inter".into(),
             size: 14.0,
+            defined_size: Some(crate::model::font::FontSize::Px(14.0)),
             weight: 400,
             style: FontStyle::Normal,
             color: Rgba::rgb(128, 128, 128),
@@ -324,6 +325,7 @@ mod tests {
             mono_font: ResolvedFontSpec {
                 family: "JetBrains Mono".into(),
                 size: 12.0,
+                defined_size: Some(crate::model::font::FontSize::Px(12.0)),
                 weight: 400,
                 style: FontStyle::Normal,
                 color: Rgba::rgb(128, 128, 128),

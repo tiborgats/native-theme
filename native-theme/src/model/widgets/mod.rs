@@ -931,6 +931,7 @@ mod tests {
         let rfs = ResolvedFontSpec {
             family: "Inter".into(),
             size: 14.0,
+            defined_size: Some(crate::model::font::FontSize::Px(14.0)),
             weight: 400,
             style: crate::model::font::FontStyle::Normal,
             color: crate::Rgba::rgb(0, 0, 0),
@@ -984,6 +985,7 @@ mod tests {
             font: ResolvedFontSpec {
                 family: "Inter".into(),
                 size: 14.0,
+                defined_size: Some(crate::model::font::FontSize::Px(14.0)),
                 weight: 400,
                 style: crate::model::font::FontStyle::Normal,
                 color: crate::Rgba::rgb(0, 0, 0),
