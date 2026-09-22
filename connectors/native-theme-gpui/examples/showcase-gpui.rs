@@ -4775,7 +4775,7 @@ impl Showcase {
                     .id("tt-code-editor")
                     .occlude()
                     .child(Editor::new(&self.editor_state).h(px(240.0)))
-                    .on_hover(self.hover_info(&fi, "Editor", &[("border", "input", t.input, ""), ("text", "foreground", t.foreground, ""), ("caret", "caret", t.caret, ""), ("selection", "selection", t.selection, ""), ("line numbers", "muted_foreground", t.muted_foreground, "")], &[
+                    .on_hover(self.hover_info(&fi, "Editor", &[("border", "border", t.border, "gpui-component/input/input.rs:501"), ("text", "foreground", t.foreground, "gpui-component/input/input.rs:498"), ("caret", "caret", t.caret, "gpui-component/input/input.rs:503"), ("selection", "selection", t.selection, "gpui-component/input/input.rs:502"), ("line numbers", "muted_foreground", t.muted_foreground, "gpui-component/input/input.rs:499")], &[
                             (
                                 "mono font",
                                 format!("mono_font_family: {}", t.mono_font_family),
@@ -4787,6 +4787,7 @@ impl Showcase {
                         ], &[
                             ("bg", "highlight_theme's editor_background, else input_background()"),
                             ("syntax colors", "highlight_theme: default_light / default_dark per color mode; the grammar comes from the tree-sitter-rust dev feature"),
+                            ("style block", "the editor takes one InputEditorStyle built in a single place (input/input.rs, set_editor_style), so all five colours cite the same block -- and its edge is border, not the input token the panel had named"),
                             ("line height", "hardcoded 1.5 × mono_font_size"),
                             ("line numbers / search", "on by default"),
                         ])),
