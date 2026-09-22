@@ -5863,8 +5863,9 @@ impl Showcase {
                                 });
                             })),
                     ))
-                    .on_hover(self.hover_info(&fi, "AlertDialog", &[("bg", "popover", t.popover, ""), ("text", "popover_foreground", t.popover_foreground, ""), ("description", "muted_foreground", t.muted_foreground, "gpui-component/button/button.rs:1284"), ("overlay", "overlay", t.overlay, ""), ("confirm button", "danger", t.danger, "")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
+                    .on_hover(self.hover_info(&fi, "AlertDialog", &[("bg", "background", t.background, "gpui-component/dialog/dialog.rs:613"), ("overlay", "overlay", t.overlay, "gpui-component/dialog/dialog.rs:282"), ("border", "border", t.border, "gpui-component/dialog/dialog.rs:615"), ("description", "muted_foreground", t.muted_foreground, "gpui-component/dialog/description.rs:50"), ("confirm button", "button_danger", t.button_danger, "gpui-component/button/button.rs:938")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[
                             ("geometry", "geometry::dialog and geometry::dialog_max_width, as the Dialog above"),
+                            ("surface", "an AlertDialog reads no theme field of its own (dialog/alert_dialog.rs): it is a Dialog, so its fill is background and not the popover colour the panel had claimed"),
                             ("icon size", "geometry::icon_size_dialog: defaults.icon_sizes.dialog"),
                             ("footer", "right-aligned, and built from button_props when none is given (dialog/alert_dialog.rs, AlertDialog::build_surface; dialog/footer.rs, DialogFooter::render justify_end)"),
                             ("dismissal", "no backdrop close by design (dialog/alert_dialog.rs, AlertDialog::overlay_closable, deprecated)"),
@@ -6261,8 +6262,8 @@ impl Showcase {
                         "BarChart",
                         &[
                             ("fill", "chart_1", t.chart_1, "showcase"),
-                            ("axis", "muted_foreground", t.muted_foreground, ""),
-                            ("grid", "border", t.border, ""),
+                            ("axis", "muted_foreground", t.muted_foreground, "gpui-component/chart/bar_chart.rs:518"),
+                            ("grid", "border", t.border, "gpui-component/chart/bar_chart.rs:490"),
                         ],
                         &[],
                         &[
@@ -6297,7 +6298,7 @@ impl Showcase {
                                 t.muted_foreground,
                                 "gpui-component/chart/line_chart.rs:196",
                             ),
-                            ("grid", "border", t.border, ""),
+                            ("grid", "border", t.border, "gpui-component/chart/bar_chart.rs:490"),
                         ],
                         &[],
                         &[("style", "natural/linear/step_after"), ("dot", "optional")],
