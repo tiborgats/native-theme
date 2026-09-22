@@ -579,9 +579,11 @@ pub fn input_height(n: Native<'_>) -> Pixels {
 
 // --- Layout accessors (spec §9.5) ---------------------------------------------
 // The input is `Theme::layout` on the preset path and `SystemTheme.layout` on
-// the system path. No gpui-component widget reads the gpui-base spacing
-// tokens, so there is no receiver to map these into; `None` means the
-// platform specifies nothing (platform-facts §2.20).
+// the system path. There is no receiver to map these into: gpui-component's
+// `Theme::spacing_tokens()` returns `SpacingTokens::default()` with no field
+// behind it (`theme/mod.rs:482-484`), so its one reader, a `Dialog`'s viewport
+// margin (`dialog/dialog.rs:528`), gets that default whatever a theme says.
+// `None` means the platform specifies nothing (platform-facts §2.20).
 
 /// Space between adjacent widgets.
 #[must_use]

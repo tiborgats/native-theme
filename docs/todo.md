@@ -178,6 +178,11 @@
       wrong safety net -- macOS's placeholder is about half the alpha of its
       secondary label. A `placeholder` token, or a setter on `Input`. Found
       2026-09-22 from a panel that said the placeholder read no theme field.
+- [ ] the focus ring's width. `focus_ring_style` draws the ring 3px wide at
+      half the `ring` colour's alpha from two module consts
+      (`styled.rs:11-12`), so the platform's `focus_ring_width` -- modelled,
+      and used by the connector only to switch the ring on or off
+      (`lib.rs:180`) -- has no receiver. A `Theme::focus_ring_width`.
 - [ ] `tokens.tab`, `tokens.list`, `sidebar_primary` and
       `sidebar_primary_foreground` are read by nothing in 0.6.4 outside
       `theme/` (an idle tab is `transparent`, `tab/tab.rs:132-160`). The
@@ -673,13 +678,47 @@ What is still open on the iced side:
       override or the variant ignores, a `Calendar` that is `radius_lg`, and
       a `ProgressCircle` that draws `spinner.diameter` at 75%).
 
-      Tally: 136 "Not themeable" entries audited, 47 wrong, 15 misfiled
-      across the section, and three of the corrections themselves wrong.
-      **Not yet audited**: the ~120 "Not themeable" entries that already
-      carried a citation when the audit began (the prose gate holds their
-      symbols to existing ones, nothing holds their meaning), and the colour
-      and config claims beyond the ~45 this pass read against the render
-      path. The rate so far says both are worth doing.
+      Tally after six passes: 136 "Not themeable" entries audited, 47
+      wrong, 15 misfiled across the section, and three of the corrections
+      themselves wrong.
+
+      **A seventh pass (2026-09-22) read the 100 entries that already
+      carried a citation when the audit began** and had not changed since
+      -- the prose gate held their symbols, nothing held their meaning.
+      Seventeen were wrong and nine more were true but hid the resolvable
+      half. The wrong ones repeat the earlier shapes. "Hardcoded" said of
+      rems a refinement reaches: a `Bubble`'s padding, a `Message`'s slot
+      gap, a `Marker`'s row gap, a `TitleBar`'s 34px (settable; the model
+      states no title-bar height). Fills called absent that are painted: an
+      unchecked `Checkbox`, a `Radio` and an `OtpInput` box are all
+      `input_background()`, and a `Carousel` does draw a `ring` focus ring.
+      And plain misreadings: a `Radio`'s indicator is a circle, not half the
+      theme radius; a `Textarea`'s rows are Input's 1.25rem, not the font's
+      line height; an `Alert`'s tints are its colour faded into transparent
+      white, not mixed toward white; `sheet.margin_top` is gpui-component's
+      own setting, not a native-theme field; gpui *does* have a motion switch
+      and `with_animation` honours it; the spacing tokens have a reader (a
+      `Dialog`'s viewport margin), they just have no field behind them. Two
+      Tier U verdicts were wrong the other way: a `Toggle` folds the caller's
+      refinement into its *checked* style, so `segmented_control`'s active
+      colours reach a checked toggle, and its size is settable too.
+
+      The colour claims beside them had the same rate. **A named `Avatar`
+      takes no theme colour at all** -- fill, initials and edge are OKLCH
+      literals hashed from the initials, twelve hues -- so the three claims
+      on that panel and one on `Message` described an anonymous avatar the
+      demo does not show. An `OtpInput`'s digits are `foreground`, not the
+      `secondary_foreground` of a masked asterisk. `MessageScroller`'s jump
+      button is refined to `background`/`border`/`foreground` over its
+      `secondary` variant. And **the theme's `shadow` flag has one reader**:
+      `ButtonVariant::shadow` is `false` for every variant but `Custom`
+      (`button/button.rs:1050-1055`), so the "shadow" config line on eleven
+      panels -- six buttons, Input, NumberInput, Checkbox, Radio, Slider --
+      described nothing on screen.
+
+      Tally: 236 "Not themeable" entries audited, 64 wrong, 15 misfiled.
+      **Not yet audited**: the colour and config claims beyond the ~70 read
+      against the render path so far, of which about twenty were wrong.
 
 ##### What the audit turned up that is ours to fix
 
@@ -747,7 +786,10 @@ the gap — closing it is a change, and each wants its own decision.
       `defaults.line_height` is modelled — 1.4 on the bundled defaults — and
       `control_height` already uses it for control heights
       (`geometry.rs:117`), so nothing new has to be modelled: it wants a
-      builder, or a line in an existing one.
+      builder, or a line in an existing one. The same goes for every `Input`
+      and `Textarea`: their rows are a `1.25rem` literal (`input/input.rs:489`,
+      `:699`) set before the caller's refinement (`:719`), and `with_text`
+      carries size and weight but no line height (`geometry.rs:80-83`).
 - [ ] **The showcase ignores its own `text_scale`.** `ResolvedTextScale` states
       four typographic roles — `caption`, `section_heading`, `dialog_title`,
       `display` — each with a size, a weight and a line height, and
@@ -857,6 +899,35 @@ the gap — closing it is a change, and each wants its own decision.
       offer a "platform glyph" helper at all, and worth an upstream ask for
       setters on the three that lack one. Note the standing rule: never
       substitute across icon themes — a missing icon returns `None`.
+- [ ] **A `geometry::toggle`.** A `Toggle` applies the caller's refinement
+      last (`button/toggle.rs:215`) *and* folds it into its checked style
+      (`:207-212`, gpui-base `toggle.rs:91-101`), so `segmented_control`'s
+      `segment_height`, padding, font and -- on a checked toggle --
+      `active_background` and `active_text_color` all have a receiver. Only
+      an unchecked toggle's hover is out of reach (Tier U: it is set with
+      `.hover()` on the base element). Found 2026-09-22 from a panel that
+      called the whole thing Tier U.
+- [ ] **`Switch::color` is a receiver nothing feeds.** `switch.checked_background`
+      is modelled and every preset states it; `ThemeColor` has no field for
+      it, which is what `colors.rs`'s Issue 51 note and the contract's
+      `NoReceiver` entry record -- but `Switch::color` (`switch.rs:95`) takes
+      it per instance. A helper, or a `variants::` function like
+      `ghost_button`, would reach every switch an application builds. Found
+      2026-09-22.
+- [ ] **`Theme::shadow` has one reader.** The connector sets it from
+      `border.shadow_enabled` (`lib.rs:176`); gpui-component reads it only at
+      `button/button.rs:612`, for a `ButtonVariant::Custom` built with
+      `.shadow(true)`. The semantic shadow tokens it feeds have no reader
+      outside `theme/`. So the platform's shadow preference reaches nothing
+      an application builds by default. Found 2026-09-22 from eleven panels
+      that listed it as theme config.
+- [ ] **The showcase's animated icons read the platform, not gpui's switch.**
+      The frame timer checks `detect::prefers_reduced_motion()`
+      (`showcase-gpui.rs:1947`), while the spinning icons go through
+      `with_animation`, which honours `App::reduce_motion`
+      (`gpui-pre elements/animation.rs:74-80`) -- the switch `apply_system_theme`
+      forwards the platform's preference into, and one an application can
+      also set itself. Reading `cx.reduce_motion()` would make the two agree.
 - [ ] **The model's toolbar is read by nothing.** `ToolbarTheme` states
       `bar_height`, `item_gap`, `icon_size`, `font`, `border` and
       `background_color`, every bundled preset states the first two (KDE 40px

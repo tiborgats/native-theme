@@ -944,8 +944,10 @@ const NO_RECEIVER: &[NoReceiver] = &[
         native: |r| r.switch.checked_background,
         evidence: "`ThemeColor` has no checked-state field for a switch -- \
                    only `switch` and `switch_thumb` -- and upstream paints a \
-                   checked one with `theme.primary` (`switch.rs:94`). Recorded \
-                   at `colors.rs`'s Issue 51 note as well.",
+                   checked one with `tokens.primary` (`switch.rs:136-139`). \
+                   `Switch::color` is a per-instance receiver (`switch.rs:95`), \
+                   which an application can feed and the connector does not. \
+                   Recorded at `colors.rs`'s Issue 51 note as well.",
     },
 ];
 
