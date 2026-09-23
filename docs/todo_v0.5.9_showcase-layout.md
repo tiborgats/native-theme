@@ -94,6 +94,34 @@ The panel is a plain element, not a `Sidebar`, because a `Sidebar`'s children mu
 - Texts that name the model's `IconSet` keep "icon set".
 - Code identifiers may keep their names.
 
+### S8. The window manager draws the frame where it will
+
+The maintainer's question was why the window buttons and corners don't look native. The showcase requests client-side decorations (`main.rs` `window_options`), so gpui-component draws them:
+- the controls come from `TitleBar` with gpui-component's own icons (title_bar.rs:148-151);
+- the frame is square by design, `BORDER_RADIUS = 0` (window_border.rs:18-22);
+- the shadow is its own, `SHADOW_SIZE` 20 (:14).
+
+A native KDE app gets KWin's decoration instead. gpui can request server-side decorations over xdg-decoration and reports what the compositor grants (gpui-pre-linux 0.3.6 `wayland/window.rs:1150-1161`).
+
+**Request.** The showcase requests `WindowDecorations::Server`.
+
+**Render.** It renders by what it was granted, `window.window_decorations()`:
+- **`Decorations::Server`:** no `TitleBar`. The OS draws the title bar, controls, corners and shadow; `Root`'s border draws nothing in that arm (window_border.rs). The application's menus sit in a menu-bar row at the top of the window, as KDE applications place them. On macOS they stay in the system menu bar, and there is no row. The toolbar follows.
+- **`Decorations::Client`**, where a compositor refuses (GNOME's Mutter draws no decorations for Wayland clients): today's `TitleBar` with the menus, unchanged.
+
+**Title.** The OS title is `WINDOW_TITLE`, already set (main.rs `set_window_title`).
+
+**Keep what the frame change touches truthful:**
+- The `TitleBar` is still demonstrated: the Layout page shows it as a sample when the window's own frame is server-drawn. The coverage gate stays honest.
+- The inspector's Theme tab "Window" section states what is drawn in each mode: the OS frame, or `Root`'s client frame.
+- Tests cover both arms, opening the test window once with each request.
+
+Check upstream for the other platforms before writing code:
+- Windows (gpui-pre-windows): what `Server` gives there. If it is the native DWM frame, use it.
+- macOS (gpui-pre-macos): a standard titled window with the traffic lights.
+
+Record what each platform grants in the report. Never guess.
+
 ### S7. Tests and docs
 
 - Tests that relied on the chrome Sidebar, the rail, the inspector panel or its toggle are updated or removed with the feature. The TabBar's navigation gets a test: clicking a tab shows its page.
@@ -118,7 +146,18 @@ The panel is a plain element, not a `Sidebar`, because a `Sidebar`'s children mu
 3. **Check.** Run the coverage script and `env CARGO_BUILD_JOBS=4 ./pre-release-check.sh`.
 4. **Commit.** One commit: `feat(showcase): two panels — the theme and its inspector on the left, the page with its tabs in the middle`.
 
-### Task 2: docs and archive (S7)
+### Task 2: the window manager draws the frame (S8)
+
+1. **Failing tests.**
+   - With `Decorations::Server`, no `TitleBar` is drawn, and the menu-bar row (not on macOS) sits above the toolbar.
+   - With `Decorations::Client`, today's `TitleBar` holds the menus.
+   - The Layout page's `TitleBar` sample is drawn.
+   - The Theme tab's Window section names the mode.
+2. **Implement S8.** Read each platform's backend first.
+3. **Check.** Run the coverage script and `env CARGO_BUILD_JOBS=4 ./pre-release-check.sh`.
+4. **Commit.** One commit: `feat(showcase): the window manager draws the window's frame where it will`.
+
+### Task 3: docs and archive (S7, S8)
 
 - Make the CHANGELOG and `docs/todo.md` updates.
 - Move this document to `docs/archive/` with an "As built" note.
