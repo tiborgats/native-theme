@@ -28,8 +28,8 @@ use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::support::{
-    ChatMessage, NativeStyled, PAGE_COUNT, chat_message, format_font_info, native_icon,
-    next_attachment_status, section, with_gap,
+    ChatMessage, NativeStyled, PAGE_COUNT, chat_message, format_font_info, ghost_hover_fill,
+    native_icon, next_attachment_status, section, with_gap,
 };
 use crate::{LIST_DEMO, PROBE_ATTACHMENT, PROBE_CHAT_SEND, PROBE_PAGINATION, TREE_DEMO, probe};
 
@@ -172,7 +172,7 @@ impl Showcase {
                                     })),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Pagination", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("text", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("current page text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("current page edge", "input", t.input, "gpui-component/button/button.rs:1001")], &[("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs, Pagination::render)".to_string())], &[
+                    .on_hover(self.hover_info(&fi, "Pagination", &[("hover (half alpha in dark mode)", "accent", ghost_hover_fill(&t), "gpui-component/button/button.rs:1125-1131"), ("text", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("current page text", "button_foreground", t.button_foreground, "gpui-component/button/button.rs:949"), ("current page edge", "input", t.input, "gpui-component/button/button.rs:1001")], &[("gap", "geometry::widget_gap on the row; upstream's own is gap_1 (pagination.rs, Pagination::render)".to_string())], &[
                             ("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them"),
                             ("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)"),
                             ("ellipsis", "a ghost Button whose dropdown lists the hidden pages (pagination.rs, PageItem::Ellipsis)"),

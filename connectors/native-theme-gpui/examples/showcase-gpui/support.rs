@@ -41,7 +41,7 @@ pub use crate::info::hsla_to_hex;
 // Sample content (Carousel slides, code editor, Markdown)
 // ---------------------------------------------------------------------------
 
-/// The three Carousel slides of the Layout tab, as (title, caption).
+/// The three Carousel slides of the Layout page, as (title, caption).
 pub(crate) const CAROUSEL_SLIDES: &[(&str, &str)] = &[
     (
         "Native geometry",
@@ -75,10 +75,10 @@ pub(crate) const TITLE_BAR_CONTROLS_NOTE: &str = if cfg!(target_os = "windows") 
      window and a double click zooms it."
 };
 
-/// How many pages the Data tab's `Pagination` navigates, at ten rows each.
+/// How many pages the Data page's `Pagination` navigates, at ten rows each.
 pub(crate) const PAGE_COUNT: usize = 12;
 
-/// One row of the Data tab's chat thread: who sent it and what it says.
+/// One row of the Data page's chat thread: who sent it and what it says.
 #[derive(Clone)]
 pub(crate) struct ChatMessage {
     pub(crate) outgoing: bool,
@@ -137,7 +137,7 @@ pub(crate) fn next_attachment_status(status: AttachmentStatus) -> AttachmentStat
     }
 }
 
-/// The steps the Layout tab's `Stepper` walks through.
+/// The steps the Layout page's `Stepper` walks through.
 pub(crate) const STEPPER_STEPS: &[(&str, IconName)] = &[
     ("Read the OS", IconName::Search),
     ("Resolve the theme", IconName::Settings),
@@ -153,7 +153,7 @@ pub(crate) struct ResizablePanelSpec {
     pub(crate) size: Option<f32>,
 }
 
-/// One of the Layout tab's resizable groups: the element id and debug selector
+/// One of the Layout page's resizable groups: the element id and debug selector
 /// of the fixed-height box it sits in, its heading, the axis its divider
 /// travels on, the box's height, and its panels.
 pub(crate) struct ResizableGroup {
@@ -171,7 +171,7 @@ pub(crate) struct ResizableGroup {
 // box's measured size and has to come off both edges before what is left is
 // compared with `PANEL_MIN_SIZE`.
 
-/// The Layout tab's resizable groups.
+/// The Layout page's resizable groups.
 ///
 /// The box's size along the divider's axis is what makes a group draggable:
 /// gpui-base clamps every panel to `PANEL_MIN_SIZE` (gpui-base
@@ -244,7 +244,7 @@ fn install(cx: &mut App) -> native_theme::Result<()> {
 }
 "#;
 
-/// The Markdown source rendered by the `TextView` of the Typography tab.
+/// The Markdown source rendered by the `TextView` of the Typography page.
 pub(crate) const MARKDOWN_SAMPLE: &str = r#"## What native-theme maps
 
 The connector copies the resolved desktop theme into gpui-component's `Theme`;
@@ -358,6 +358,16 @@ pub(crate) fn widget_tooltip_themed(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// What a Ghost Button is filled with while hovered: accent, at half alpha in
+/// dark mode (gpui-component button/button.rs:1125-1131).
+pub(crate) fn ghost_hover_fill(t: &gpui_component::theme::Theme) -> Hsla {
+    if t.is_dark() {
+        t.accent.opacity(0.5)
+    } else {
+        t.accent
+    }
+}
 
 pub(crate) fn section(title: impl Into<SharedString>) -> Label {
     Label::new(title).text_size(px(13.0)).font_semibold()
@@ -1039,7 +1049,7 @@ pub(crate) fn load_gpui_icons(
 }
 
 // ---------------------------------------------------------------------------
-// Sample Table Delegate (for Data tab)
+// Sample Table Delegate (for Data page)
 // ---------------------------------------------------------------------------
 
 pub(crate) struct SampleTableDelegate {
@@ -1072,7 +1082,7 @@ impl TableDelegate for SampleTableDelegate {
 }
 
 // ---------------------------------------------------------------------------
-// Sample List Delegate (for Data tab)
+// Sample List Delegate (for Data page)
 // ---------------------------------------------------------------------------
 
 pub(crate) struct SampleListDelegate {

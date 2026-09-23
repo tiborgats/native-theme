@@ -36,15 +36,15 @@ use native_theme_gpui::geometry;
 use crate::app::Showcase;
 use crate::support::{
     CAROUSEL_SLIDES, NativeStyled, RESIZABLE_GROUPS, ResizableGroup, STEPPER_STEPS,
-    TITLE_BAR_CONTROLS_NOTE, format_font_info, layout_value, native_geometry, native_group_box,
-    native_icon, section, with_accordion_title_style, with_gap, with_padding,
+    TITLE_BAR_CONTROLS_NOTE, format_font_info, ghost_hover_fill, layout_value, native_geometry,
+    native_group_box, native_icon, section, with_accordion_title_style, with_gap, with_padding,
 };
 use crate::{
     PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, probe,
 };
 
 impl Showcase {
-    /// One resizable group of the Layout tab, from its [`RESIZABLE_GROUPS`]
+    /// One resizable group of the Layout page, from its [`RESIZABLE_GROUPS`]
     /// entry. The box carries its own id as a debug selector so
     /// `resizable_groups_have_room_to_drag` can measure what was laid out.
     fn render_resizable_group(
@@ -501,7 +501,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "Collapsible", &[("toggle text", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("toggle hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("content text", "foreground", t.foreground, "gpui-component/label.rs:211")], &[], &[("fill and edge", "none: a Collapsible only shows or hides its content and paints nothing of its own (collapsible.rs, Collapsible). The accordion fill and border the panel had claimed are an Accordion's; the toggle is this demo's ghost Button"), ("animation", "reads the theme's spring_control (collapsible.rs, Collapsible), the same writable Theme::motion the Accordion uses; the connector leaves it at its default because native-theme models no motion")])),
+                    .on_hover(self.hover_info(&fi, "Collapsible", &[("toggle text", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("toggle hover (half alpha in dark mode)", "accent", ghost_hover_fill(&t), "gpui-component/button/button.rs:1125-1131"), ("content text", "foreground", t.foreground, "gpui-component/label.rs:211")], &[], &[("fill and edge", "none: a Collapsible only shows or hides its content and paints nothing of its own (collapsible.rs, Collapsible). The accordion fill and border the panel had claimed are an Accordion's; the toggle is this demo's ghost Button"), ("animation", "reads the theme's spring_control (collapsible.rs, Collapsible), the same writable Theme::motion the Accordion uses; the connector leaves it at its default because native-theme models no motion")])),
             )
             // Carousel
             .child(section("Carousel"))
@@ -747,9 +747,9 @@ impl Showcase {
                                 .text_color(t.muted_foreground),
                             ),
                     )
-                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("icon on hover", "accent_foreground", t.accent_foreground, "gpui-component/button/button.rs:1141")], &[], &[
+                    .on_hover(self.hover_info(&fi, "SidebarToggleButton", &[("hover (half alpha in dark mode)", "accent", ghost_hover_fill(&t), "gpui-component/button/button.rs:1125-1131"), ("icon", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("icon on hover", "accent_foreground", t.accent_foreground, "gpui-component/button/button.rs:1141")], &[], &[
                             ("button", "a ghost, small Button built by the widget (sidebar/mod.rs, SidebarToggleButton::new)"),
-                            ("fill", "none until hovered: a ghost Button is transparent, and it hovers with accent rather than the button family -- the panel claimed secondary_hover, which no widget-built ghost reads"),
+                            ("fill", "none until hovered: a ghost Button is transparent, and it hovers with accent (at half alpha in dark mode) rather than the button family -- the panel claimed secondary_hover, which no widget-built ghost reads"),
                             ("icon", "PanelLeftOpen / PanelLeftClose at size_4 -- 1rem, so the platform's font size rather than a literal (sidebar/mod.rs, SidebarToggleButton::render)"),
                         ])),
             )

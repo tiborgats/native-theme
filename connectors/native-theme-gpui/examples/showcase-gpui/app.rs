@@ -2,7 +2,7 @@
 
 use gpui::{
     Action, App, Context, Entity, FocusHandle, Hsla, ImageSource, IntoElement, KeyBinding, Menu,
-    ParentElement, Render, SharedString, Styled, Subscription, Task, Window, actions, div,
+    ParentElement, Pixels, Render, SharedString, Styled, Subscription, Task, Window, actions, div,
     prelude::*, px,
 };
 use gpui_component::{
@@ -52,7 +52,10 @@ use crate::support::{
     PresetDelegate, SampleListDelegate, SampleTableDelegate, initial_chat_messages, load_all_icons,
     load_gpui_icons, parse_icon_set_choice, release_sources, widget_tooltip_themed,
 };
-use crate::{CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_WIDTH, NAV_WIDTH, PAGE_ROOT, Page};
+use crate::{
+    CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_WIDTH,
+    NAV_WIDTH, PAGE_ROOT, Page, demo,
+};
 
 /// gpui-component's mode for the showcase's light/dark flag.
 fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
@@ -169,16 +172,13 @@ pub(crate) struct Showcase {
     pub(crate) nav_collapsed: bool,
     /// Whether the inspector's panel is shown (spec §1.1, §2.6).
     pub(crate) inspector_visible: bool,
-    /// The panel sizes of the window's resizable group, one state for each
-    /// arrangement of it: with and without the Sidebar's panel, with and
-    /// without the inspector's. A state keeps its sizes by panel position
-    /// (gpui-base resizable/mod.rs, `ResizableState::sync_panels_count`), so
-    /// in a shared one a panel leaving the group would hand its width to the
-    /// next; and a panel kept but hidden (`ResizablePanel::visible`) keeps
-    /// bounds that a drag of another handle still counts in
-    /// (`ResizableState::resize_panel_at_handle`). So each arrangement has
-    /// its own.
-    body_layouts: [Entity<ResizableState>; 4],
+    /// The window's resizable group's state, owned here so a change of its
+    /// arrangement can start it afresh (`Showcase::rearrange`).
+    body_layout: Entity<ResizableState>,
+    /// The Sidebar's and the inspector's widths, as dragged, which a panel
+    /// that leaves the group and comes back takes again.
+    nav_width: Pixels,
+    inspector_width: Pixels,
 
     /// Where the showcase's widgets report their info (spec §4).
     pub(crate) info_ui: Entity<InfoRegistry>,
@@ -953,7 +953,7 @@ impl Showcase {
             let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
             cx.new(|cx| Inspector::new(ui, showcase, cx))
         };
-        let body_layouts = [(); 4].map(|()| cx.new(|_| ResizableState::default()));
+        let body_layout = cx.new(|_| ResizableState::default());
 
         let fg = cx.theme().foreground;
         let mut showcase = Self {
@@ -967,7 +967,9 @@ impl Showcase {
             active_page: Page::Buttons,
             nav_collapsed: false,
             inspector_visible: true,
-            body_layouts,
+            body_layout,
+            nav_width: NAV_WIDTH,
+            inspector_width: INSPECTOR_WIDTH,
             info_ui,
             inspector,
             menu_bar,
@@ -1230,6 +1232,7 @@ impl Showcase {
         if self.active_page != page {
             self.active_page = page;
             self.info_ui.update(cx, |r, _| r.page_changed());
+            // Task 24: delete (legacy hover_info stopgap)
             self.inspector.update(cx, |i, cx| i.clear_legacy(cx));
         }
         cx.notify();
@@ -1242,12 +1245,39 @@ impl Showcase {
     }
 
     fn on_toggle_sidebar(&mut self, _: &ToggleSidebar, _: &mut Window, cx: &mut Context<Self>) {
-        self.nav_collapsed = !self.nav_collapsed;
-        cx.notify();
+        self.rearrange(cx, |this| this.nav_collapsed = !this.nav_collapsed);
     }
 
     fn on_toggle_inspector(&mut self, _: &ToggleInspector, _: &mut Window, cx: &mut Context<Self>) {
-        self.inspector_visible = !self.inspector_visible;
+        self.rearrange(cx, |this| this.inspector_visible = !this.inspector_visible);
+    }
+
+    /// Add or take away the Sidebar's or the inspector's panel.
+    ///
+    /// The group's state keeps its sizes by panel position (gpui-base
+    /// resizable/mod.rs, `ResizableState::sync_panels_count`), so a panel
+    /// leaving the group would hand its width to its neighbour; and a panel
+    /// kept but hidden (`ResizablePanel::visible`) keeps bounds that a drag of
+    /// another handle still counts (`ResizableState::resize_panel_at_handle`).
+    /// So the widths the two side panels have now are kept here, and the
+    /// state starts afresh, the panels taking those widths again as their
+    /// first sizes.
+    fn rearrange(&mut self, cx: &mut Context<Self>, change: impl FnOnce(&mut Self)) {
+        let sizes = self.body_layout.read(cx).sizes().clone();
+        let has_nav = !self.nav_collapsed;
+        let panels = usize::from(has_nav) + 1 + usize::from(self.inspector_visible);
+        if sizes.len() == panels {
+            if has_nav && let Some(&width) = sizes.first() {
+                self.nav_width = width;
+            }
+            if self.inspector_visible
+                && let Some(&width) = sizes.last()
+            {
+                self.inspector_width = width;
+            }
+        }
+        change(self);
+        self.body_layout.update(cx, |state, _| state.clear());
         cx.notify();
     }
 
@@ -1268,16 +1298,12 @@ impl Showcase {
 
     /// Create a hover handler that shows a page's text panel in the
     /// inspector, until the page reports its instances (plan Tasks 14-23).
-    ///
-    /// The registry forgets what it showed, so an info hovered again after
-    /// the text panel settles anew and replaces it.
+    /// The panel settles like an info does (`Inspector::set_legacy`).
+    // Task 24: delete (legacy hover_info stopgap)
     pub(crate) fn set_info(&self, info: String) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
-        let (ui, inspector) = (self.info_ui.clone(), self.inspector.clone());
+        let inspector = self.inspector.clone();
         move |hovered: &bool, _window: &mut Window, cx: &mut App| {
-            if *hovered {
-                ui.update(cx, |r, _| r.forget_shown());
-                inspector.update(cx, |i, cx| i.set_legacy(info.clone(), cx));
-            }
+            inspector.update(cx, |i, cx| i.set_legacy(info.clone(), *hovered, cx));
         }
     }
 
@@ -1407,27 +1433,43 @@ impl Render for Showcase {
         } else {
             (
                 None,
-                Some(resizable_panel().size(NAV_WIDTH).flex_none().child(nav)),
+                Some(
+                    resizable_panel()
+                        .size(self.nav_width)
+                        .flex_none()
+                        .child(nav),
+                ),
             )
         };
         let inspector_panel = self.inspector_visible.then(|| {
             resizable_panel()
-                .size(INSPECTOR_WIDTH)
+                .size(self.inspector_width)
                 .flex_none()
                 .child(self.inspector.clone())
         });
-        let arrangement =
-            usize::from(nav_panel.is_some()) | (usize::from(inspector_panel.is_some()) << 1);
+        // The handles in panel order: each panel after the first carries the
+        // one on its left edge (gpui-base resizable/panel.rs,
+        // `ResizablePanel::render`).
+        let handles = [
+            nav_panel
+                .is_some()
+                .then_some((CHROME_HANDLE_NAV, "Sidebar | content")),
+            inspector_panel
+                .is_some()
+                .then_some((CHROME_HANDLE_INSPECTOR, "content | inspector")),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
         let panels: Vec<_> = nav_panel
             .into_iter()
             .chain([resizable_panel().child(content)])
             .chain(inspector_panel)
             .collect();
-        let body = h_resizable("body").children(panels);
-        let body = match self.body_layouts.get(arrangement) {
-            Some(state) => body.with_state(state),
-            None => body,
-        };
+        let body = h_resizable("body")
+            .with_state(&self.body_layout)
+            .with_handle_appearance(demo::resize_handles(&self.info_ui, handles))
+            .children(panels);
 
         // Main layout: the title bar, the toolbar and the body, and above
         // them the three layers `Root` keeps but does not draw.

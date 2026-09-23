@@ -1,8 +1,12 @@
 //! Demo helpers the pages share.
 
+use std::{cell::Cell, rc::Rc};
+
 use gpui::{
-    Action, AnyElement, App, Div, ElementId, Entity, SharedString, Stateful, Window, prelude::*,
+    Action, AnyElement, App, Axis, Div, ElementId, Entity, Pixels, SharedString, Stateful, Window,
+    div, prelude::*, px,
 };
+use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
     ActiveTheme, Collapsible, Disableable as _, IconName, Sizable as _, Size, TitleBar,
     button::{Button, ButtonVariants as _, Toggle, ToggleGroup, ToggleVariants as _},
@@ -335,4 +339,70 @@ pub(crate) fn tab_bar(
             "chrome-inspector-tabs",
             info::inspector_tab_bar(cx.theme()),
         )
+}
+
+/// gpui-base's `HANDLE_PADDING` (resizable/resize_handle.rs:11): the hit
+/// area a resize handle adds on each side of its line. It is `pub(crate)`
+/// upstream, so the showcase names it again to cover that area.
+const HANDLE_PADDING: Pixels = px(4.);
+
+/// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:12): the width of
+/// the line a resize handle draws, `pub(crate)` upstream as well.
+const HANDLE_SIZE: Pixels = px(1.);
+
+/// What each handle of a horizontal resizable group paints: upstream's line
+/// in upstream's colour, with an info target over the handle's whole hit
+/// area, the line and `HANDLE_PADDING` on either side.
+///
+/// `handles` names the group's handles in order, as `(id, between)`. The
+/// renderer is not told which handle it draws (resizable/resize_handle.rs,
+/// `ResizeHandleContext`), and the group lays its handles out in panel
+/// order, once each per frame, so the renderer counts them; build it anew
+/// for every frame. A handle past the end of `handles` keeps upstream's own
+/// line. The target is the handle's child, so a press on it is still the
+/// handle's and starts its drag.
+pub(crate) fn resize_handles(
+    ui: &Entity<InfoRegistry>,
+    handles: Vec<(&'static str, &'static str)>,
+) -> ResizeHandleRenderer {
+    let ui = ui.clone();
+    let next = Cell::new(0usize);
+    Rc::new(
+        move |handle: &ResizeHandleContext, _window: &mut Window, cx: &mut App| {
+            let ix = next.get();
+            next.set(ix + 1);
+            if handle.axis() != Axis::Horizontal {
+                return None;
+            }
+            let (id, between) = handles.get(ix).copied()?;
+            let base = gpui_base::Theme::global(cx);
+            // gpui-base's `handle_color` (resizable/resize_handle.rs:286-295).
+            let line = if handle.is_active() {
+                base.resizable
+                    .active_handle
+                    .unwrap_or(base.tokens.colors.ring)
+            } else {
+                base.resizable.handle.unwrap_or(base.tokens.colors.border)
+            };
+            let target = div()
+                .size_full()
+                .info(&ui, id, info::resize_handle(&base, between))
+                .absolute()
+                .top_0()
+                .bottom_0()
+                .left(-HANDLE_PADDING)
+                .right(-HANDLE_PADDING)
+                .debug_selector(move || id.into());
+            Some(
+                div()
+                    .flex_none()
+                    .relative()
+                    .h_full()
+                    .w(HANDLE_SIZE)
+                    .bg(line)
+                    .child(target)
+                    .into_any_element(),
+            )
+        },
+    )
 }

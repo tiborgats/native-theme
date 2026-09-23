@@ -4,8 +4,8 @@ use std::{collections::HashMap, rc::Rc, time::Duration};
 
 use gpui::{
     App, Bounds, Context, Div, ElementId, Entity, InteractiveElement as _, IntoElement,
-    ParentElement as _, Pixels, Stateful, StatefulInteractiveElement as _, Styled as _, canvas,
-    div,
+    ParentElement as _, Pixels, Stateful, StatefulInteractiveElement as _, Styled as _, Window,
+    canvas, div,
 };
 
 use super::WidgetInfo;
@@ -50,12 +50,38 @@ impl InfoRegistry {
     /// Show nothing, for a page whose text panel the inspector shows instead
     /// until the page reports its instances (plan Tasks 14-23): a target
     /// hovered again afterwards is a new choice, and settles as one.
+    // Task 24: delete (legacy hover_info stopgap)
     pub fn forget_shown(&mut self) {
         self.shown = None;
         self.pending = None;
     }
-    fn record_bounds(&mut self, id: ElementId, bounds: Bounds<Pixels>) {
+    /// A target was laid out at `bounds` with `info`, as the frame being
+    /// drawn built it. The info replaces the one hovered or shown under the
+    /// same id, so a state change under a still pointer -- a click that
+    /// makes an item active, a theme switch -- reaches the inspector; hover
+    /// events alone would miss it. True when what is shown changed, and only
+    /// then: a new `Rc` of equal content is not a change, or every frame
+    /// would ask for the next.
+    fn record_target(
+        &mut self,
+        id: ElementId,
+        bounds: Bounds<Pixels>,
+        info: &Rc<WidgetInfo>,
+    ) -> bool {
+        if let Some((_, hovered)) = self.hovered.iter_mut().find(|(h, _)| *h == id)
+            && **hovered != **info
+        {
+            *hovered = info.clone();
+        }
+        let shown_changed = match &mut self.shown {
+            Some((shown_id, shown)) if *shown_id == id && **shown != **info => {
+                *shown = info.clone();
+                true
+            }
+            _ => false,
+        };
         self.bounds.insert(id, (bounds, self.epoch));
+        shown_changed
     }
     /// The hovered target drawn in the latest frame with the smallest area;
     /// the most recently entered wins a tie.
@@ -92,17 +118,19 @@ impl InfoRegistry {
     /// pointer, it starts from not hovered and reports the hover anew
     /// (`elements/div.rs:3148-3157`). Nor does a frame that only takes a
     /// target away send any hover change, so the choice is revisited here.
-    fn frame_drawn(&mut self, cx: &mut Context<Self>) {
+    /// True when it cleared what was shown, which the caller notifies once
+    /// the frame is done.
+    fn frame_drawn(&mut self, cx: &mut Context<Self>) -> bool {
         let (bounds, epoch) = (&self.bounds, self.epoch);
         let drawn = |id: &ElementId| bounds.get(id).is_some_and(|(_, e)| *e == epoch);
         self.hovered.retain(|(id, _)| drawn(id));
-        if std::mem::take(&mut self.page_changed)
-            && self.shown.as_ref().is_some_and(|(id, _)| !drawn(id))
-        {
+        let cleared = std::mem::take(&mut self.page_changed)
+            && self.shown.as_ref().is_some_and(|(id, _)| !drawn(id));
+        if cleared {
             self.shown = None;
-            cx.notify();
         }
         self.reconsider(cx);
+        cleared
     }
     /// Start the settle timer for a new choice. A choice already waiting
     /// keeps its timer, so the frames drawn meanwhile do not restart it; a
@@ -140,6 +168,15 @@ impl InfoRegistry {
     }
 }
 
+/// Tell the registry's observers, once the frame being drawn is done: a
+/// notify raised while a frame is drawn does not ask for the next one
+/// (gpui-base resizable/panel.rs, `ResizablePanelGroup` defers its own for
+/// the same reason).
+fn notify_after_draw(ui: &Entity<InfoRegistry>, window: &mut Window, cx: &mut App) {
+    let ui = ui.clone();
+    window.defer(cx, move |_, cx| ui.update(cx, |_, cx| cx.notify()));
+}
+
 /// The root's first child: its prepaint bumps the epoch before any target
 /// records its bounds in the same frame (spec §4.2), and its paint runs
 /// after every prepaint of the frame, deferred draws included (gpui-pre
@@ -148,7 +185,12 @@ pub fn epoch_marker(ui: &Entity<InfoRegistry>) -> impl IntoElement {
     let (on_prepaint, on_paint) = (ui.clone(), ui.clone());
     canvas(
         move |_, _, cx: &mut App| on_prepaint.update(cx, |r, _| r.bump_epoch()),
-        move |_, _, _, cx: &mut App| on_paint.update(cx, |r, cx| r.frame_drawn(cx)),
+        move |_, _, window: &mut Window, cx: &mut App| {
+            let cleared = on_paint.update(cx, |r, cx| r.frame_drawn(cx));
+            if cleared {
+                notify_after_draw(&on_paint, window, cx);
+            }
+        },
     )
     .absolute()
     .size_0()
@@ -165,6 +207,7 @@ pub trait InfoExt: IntoElement + Sized {
         let info = Rc::new(info);
         let (on_bounds, on_hover) = (ui.clone(), ui.clone());
         let (bounds_id, hover_id) = (id.clone(), id.clone());
+        let bounds_info = info.clone();
         div()
             .id(id)
             .relative()
@@ -173,8 +216,12 @@ pub trait InfoExt: IntoElement + Sized {
                 // Pinned to the corner: an absolute box left at its static
                 // position would sit below the widget, not over it.
                 canvas(
-                    move |bounds, _, cx: &mut App| {
-                        on_bounds.update(cx, |r, _| r.record_bounds(bounds_id, bounds))
+                    move |bounds, window: &mut Window, cx: &mut App| {
+                        let changed = on_bounds
+                            .update(cx, |r, _| r.record_target(bounds_id, bounds, &bounds_info));
+                        if changed {
+                            notify_after_draw(&on_bounds, window, cx);
+                        }
                     },
                     |_, _, _, _| {},
                 )

@@ -20,7 +20,7 @@ use gpui_component::{
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
-use crate::info::{InfoRegistry, Note, WidgetInfo};
+use crate::info::{INFO_SETTLE, InfoRegistry, Note, WidgetInfo};
 use crate::support::{NativeStyled, color_swatch, defined_size, with_gap, with_padding};
 use crate::{INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, demo, probe};
 
@@ -56,7 +56,13 @@ pub(crate) struct Inspector {
     pub(crate) tab: InspectorTab,
     /// The text panel of a page that does not report its instances yet (plan
     /// Tasks 14-23), shown in place of an info until an info settles.
+    // Task 24: delete (legacy hover_info stopgap)
     legacy: Option<String>,
+    /// The text panel waiting out `INFO_SETTLE`, and its ticket.
+    // Task 24: delete (legacy hover_info stopgap)
+    legacy_pending: Option<(String, u64)>,
+    // Task 24: delete (legacy hover_info stopgap)
+    legacy_tickets: u64,
     /// The title of what the last frame drew under the TabBar; `None` for
     /// the hint shown before any hover.
     pub(crate) title_drawn: Option<SharedString>,
@@ -72,6 +78,7 @@ impl Inspector {
         // The registry notifies when what it shows changes; an info that
         // settles replaces a page's text panel.
         let _registry = cx.observe(&ui, |this: &mut Self, ui, cx| {
+            // Task 24: delete (legacy hover_info stopgap)
             if ui.read(cx).shown().is_some() {
                 this.legacy = None;
             }
@@ -82,21 +89,49 @@ impl Inspector {
             showcase,
             tab: InspectorTab::Widget,
             legacy: None,
+            legacy_pending: None,
+            legacy_tickets: 0,
             title_drawn: None,
             _registry,
         }
     }
 
-    /// Show a page's text panel, as a hover over it asks.
-    pub(crate) fn set_legacy(&mut self, text: String, cx: &mut Context<Self>) {
-        if self.legacy.as_ref() != Some(&text) {
-            self.legacy = Some(text);
-            cx.notify();
+    /// A hover over a page's text panel began (`hovered`) or ended. The
+    /// panel replaces what is shown only after it stayed hovered for
+    /// `INFO_SETTLE`, as an info does (spec §4.2), so crossing a page on the
+    /// way to the inspector leaves the inspector as it was.
+    // Task 24: delete (legacy hover_info stopgap)
+    pub(crate) fn set_legacy(&mut self, text: String, hovered: bool, cx: &mut Context<Self>) {
+        if !hovered {
+            self.legacy_pending.take_if(|(pending, _)| *pending == text);
+            return;
         }
+        if self.legacy.as_ref() == Some(&text) {
+            self.legacy_pending = None;
+            return;
+        }
+        self.legacy_tickets = self.legacy_tickets.wrapping_add(1);
+        let ticket = self.legacy_tickets;
+        self.legacy_pending = Some((text, ticket));
+        cx.spawn(async move |this, cx| {
+            cx.background_executor().timer(INFO_SETTLE).await;
+            this.update(cx, |this, cx| {
+                let Some((text, _)) = this.legacy_pending.take_if(|(_, t)| *t == ticket) else {
+                    return;
+                };
+                this.ui.update(cx, |r, _| r.forget_shown());
+                this.legacy = Some(text);
+                cx.notify();
+            })
+            .ok();
+        })
+        .detach();
     }
 
     /// Drop the text panel of a page that is no longer shown.
+    // Task 24: delete (legacy hover_info stopgap)
     pub(crate) fn clear_legacy(&mut self, cx: &mut Context<Self>) {
+        self.legacy_pending = None;
         if self.legacy.take().is_some() {
             cx.notify();
         }

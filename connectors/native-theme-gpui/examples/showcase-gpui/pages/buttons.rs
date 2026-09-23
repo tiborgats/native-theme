@@ -11,7 +11,9 @@ use gpui_component::{
 use native_theme_gpui::{geometry, variants};
 
 use crate::app::Showcase;
-use crate::support::{NativeStyled, format_font_info, native_geometry, refined, section};
+use crate::support::{
+    NativeStyled, format_font_info, ghost_hover_fill, native_geometry, refined, section,
+};
 use crate::{PROBE_CLIPBOARD, probe};
 
 impl Showcase {
@@ -378,7 +380,7 @@ impl Showcase {
                             ))
                             .child(Clipboard::new("clip-2").value("npm install native-theme")),
                     )
-                    .on_hover(self.hover_info(&fi, "Clipboard", &[("hover", "accent", t.accent, "gpui-component/button/button.rs:1126"), ("icon", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground"), ("copy icon", "Copy and Check, built inline with no setter to replace them (clipboard.rs, Clipboard)")])),
+                    .on_hover(self.hover_info(&fi, "Clipboard", &[("hover (half alpha in dark mode)", "accent", ghost_hover_fill(&t), "gpui-component/button/button.rs:1125-1131"), ("icon", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964")], &[("border-radius", format!("radius: {}px", t.radius.as_f32()))], &[("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent (at half alpha in dark mode) -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground"), ("copy icon", "Copy and Check, built inline with no setter to replace them (clipboard.rs, Clipboard)")])),
             )
     }
 }

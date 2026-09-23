@@ -112,12 +112,7 @@ pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
             t.secondary_foreground,
             "gpui-component/button/button.rs:964",
         ))
-        .color(claim(
-            "item hover",
-            "accent",
-            t.accent,
-            "gpui-component/button/button.rs:1126",
-        ))
+        .color(ghost_hover(t))
         .color(claim(
             "menu bg",
             "popover",
@@ -130,7 +125,7 @@ pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
         )
         .not_themeable(
             "items",
-            "ghost Buttons, so they hover with accent rather than the button family, and their label is the Ghost variant's secondary_foreground",
+            "ghost Buttons, so they hover with accent -- at half alpha in dark mode -- rather than the button family, and their label is the Ghost variant's secondary_foreground",
         )
         .instance(
             "source",
@@ -170,12 +165,7 @@ pub fn sidebar_toggle_button(t: &Theme, collapsed: bool) -> WidgetInfo {
             t.secondary_foreground,
             "gpui-component/button/button.rs:964",
         ))
-        .color(claim(
-            "hover",
-            "accent",
-            t.accent,
-            "gpui-component/button/button.rs:1126",
-        ))
+        .color(ghost_hover(t))
         .color(claim(
             "icon on hover",
             "accent_foreground",
@@ -188,7 +178,7 @@ pub fn sidebar_toggle_button(t: &Theme, collapsed: bool) -> WidgetInfo {
         )
         .not_themeable(
             "fill",
-            "none until hovered: a ghost Button is transparent, and it hovers with accent rather than the button family",
+            "none until hovered: a ghost Button is transparent, and it hovers with accent -- at half alpha in dark mode -- rather than the button family (button/button.rs, ButtonVariant::hovered)",
         )
         .not_themeable(
             "icon",
@@ -383,6 +373,26 @@ pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
             "tabs",
             "Widget, the info the pointer settled on, and Theme, what the theme and the window set that no widget carries",
         )
+}
+
+/// What a Ghost Button is filled with while hovered: accent, at half alpha
+/// in dark mode (button/button.rs:1125-1131).
+fn ghost_hover(t: &Theme) -> ColorClaim {
+    if t.is_dark() {
+        claim(
+            "hover, at 50% (dark mode)",
+            "accent",
+            t.accent.opacity(0.5),
+            "gpui-component/button/button.rs:1128",
+        )
+    } else {
+        claim(
+            "hover",
+            "accent",
+            t.accent,
+            "gpui-component/button/button.rs:1126",
+        )
+    }
 }
 
 /// What an input-styled trigger is filled with: upstream's input_style
@@ -605,12 +615,7 @@ pub fn toolbar_button(
             t.secondary_foreground,
             "gpui-component/button/button.rs:964",
         ))
-        .color(claim(
-            "hover",
-            "accent",
-            t.accent,
-            "gpui-component/button/button.rs:1126",
-        ))
+        .color(ghost_hover(t))
         .color(claim(
             "icon on hover",
             "accent_foreground",
@@ -658,4 +663,42 @@ pub fn toolbar_button(
         Some(why) => info.instance("disabled", why),
         None => info,
     }
+}
+
+/// A handle of the window's resizable group (spec §1.1, §4.3.5), between the
+/// panels `between` names. `base` is gpui-base's theme, where the handle's
+/// colours live.
+pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetInfo {
+    WidgetInfo::new("ResizeHandle")
+        .variant(between)
+        .color(claim(
+            "line",
+            "handle",
+            base.resizable.handle.unwrap_or(base.tokens.colors.border),
+            "gpui-base/resizable/resize_handle.rs:293",
+        ))
+        .color(claim(
+            "line while dragged",
+            "active_handle",
+            base.resizable
+                .active_handle
+                .unwrap_or(base.tokens.colors.ring),
+            "gpui-base/resizable/resize_handle.rs:290",
+        ))
+        .not_themeable(
+            "hover",
+            "none: a hovered handle keeps its resting colour, and the model's splitter.hover_color reaches it only while it is dragged (resizable/resize_handle.rs, ResizeHandle)",
+        )
+        .not_themeable(
+            "width",
+            "a 1px line with 4px of hit area on either side, upstream's constants; the model's splitter.divider_width does not reach it (resizable/resize_handle.rs, HANDLE_SIZE)",
+        )
+        .instance(
+            "drawn by",
+            "the showcase, which with_handle_appearance hands the painted part of each handle to (resizable/panel.rs, with_handle_appearance): it paints the colour upstream would (resizable/resize_handle.rs, handle_color) and lays this info over the hit area. The drag and the cursor stay upstream's",
+        )
+        .instance(
+            "drag",
+            "moves the boundary to the pointer; the panels keep the widths it leaves when the Sidebar collapses or the inspector hides and comes back",
+        )
 }

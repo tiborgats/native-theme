@@ -15,7 +15,7 @@ use crate::app::Showcase;
 use crate::support::{IconSource, NativeStyled, format_font_info, is_native_icon_set, section};
 
 impl Showcase {
-    /// Build the "Animated Icons" section for the Icons tab.
+    /// Build the "Animated Icons" section for the Icons page.
     fn render_animated_icons_section(&self, cx: &App) -> impl IntoElement {
         let mut cards: Vec<AnyElement> = Vec::new();
 

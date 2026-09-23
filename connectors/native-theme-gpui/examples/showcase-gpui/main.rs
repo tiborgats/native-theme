@@ -185,9 +185,22 @@ const _: () = {
     }
 };
 
-/// The window the showcase opens. The self-tests lay the interface out at this
-/// width, so a measurement they take is a measurement of the real thing.
-pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> = size(px(1100.), px(850.));
+/// The width, in logical pixels, the pages were laid out for: the content
+/// area the window gave them before the Sidebar and the inspector flanked it.
+/// The model states no such value (spec §1.3); it is the showcase's own
+/// layout default.
+pub(crate) const PAGE_WIDTH_PX: f32 = 880.;
+
+/// The window the showcase opens: `NAV_WIDTH` + the pages' width +
+/// `INSPECTOR_WIDTH` wide, so the content panel starts at the width the pages
+/// were laid out for. The sum is taken over the `f32`s, because gpui's
+/// `Pixels` has no `const` arithmetic. The self-tests lay the interface out
+/// at this width, so a measurement they take is a measurement of the real
+/// thing.
+pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> = size(
+    px(NAV_WIDTH_PX + PAGE_WIDTH_PX + INSPECTOR_WIDTH_PX),
+    px(850.),
+);
 
 /// The debug selector the window's title bar carries, so
 /// `the_title_bar_is_the_top_of_the_window` can see where it was laid out.
@@ -210,12 +223,14 @@ pub(crate) const CHROME_SIDEBAR_TOGGLE: &str = "chrome-sidebar-toggle";
 /// The initial width of the Sidebar's panel. The model states no such value:
 /// `SidebarTheme` has no width (spec §1.3), so this is the showcase's own
 /// layout default, and dragging the panel's handle changes it.
-pub(crate) const NAV_WIDTH: Pixels = px(200.);
+pub(crate) const NAV_WIDTH: Pixels = px(NAV_WIDTH_PX);
+const NAV_WIDTH_PX: f32 = 200.;
 
 /// The initial width of the inspector's panel. The model states no such
 /// value: it has no inspector at all (spec §1.3), so this is the showcase's
 /// own layout default, and dragging the panel's handle changes it.
-pub(crate) const INSPECTOR_WIDTH: Pixels = px(300.);
+pub(crate) const INSPECTOR_WIDTH: Pixels = px(INSPECTOR_WIDTH_PX);
+const INSPECTOR_WIDTH_PX: f32 = 300.;
 
 /// The debug selector the active page's root carries, so `every_page_lays_out`
 /// can find the page it switched to.
@@ -242,6 +257,11 @@ pub(crate) const INSPECTOR_TABS: &str = "inspector-tabs";
 
 /// The debug selector the inspector's Copy button carries.
 pub(crate) const INSPECTOR_COPY: &str = "inspector-copy";
+
+/// The ids and debug selectors of the resizable group's two handles: between
+/// the Sidebar and the content, and between the content and the inspector.
+pub(crate) const CHROME_HANDLE_NAV: &str = "chrome-resize-sidebar-content";
+pub(crate) const CHROME_HANDLE_INSPECTOR: &str = "chrome-resize-content-inspector";
 
 /// The debug selector the toolbar's Toggle Inspector button carries.
 pub(crate) const CHROME_TOOLBAR_INSPECTOR: &str = "chrome-toolbar-inspector";

@@ -31,12 +31,13 @@ use crate::support::{
     CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_INSPECTOR, CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL,
-    INSPECTOR_TABS, INSPECTOR_TITLE, LIST_DEMO, PAGE_ROOT, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT,
-    PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
-    PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE,
-    PROBE_STEPPER, Page, TREE_DEMO, WINDOW_SIZE,
+    CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
+    CHROME_SIDEBAR_TOGGLE, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_INSPECTOR,
+    CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
+    INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, PAGE_ROOT, PAGE_WIDTH_PX,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -944,6 +945,133 @@ fn dragging_a_handle_resizes_its_neighbours(cx: &mut TestAppContext) {
     );
 }
 
+/// The window is as wide as the Sidebar, a page and the inspector, and the
+/// content panel opens at the width the pages were laid out for.
+#[gpui::test]
+fn the_window_fits_the_panels_and_a_page(cx: &mut TestAppContext) {
+    assert_eq!(
+        WINDOW_SIZE.width,
+        NAV_WIDTH + px(PAGE_WIDTH_PX) + INSPECTOR_WIDTH,
+        "WINDOW_SIZE is not NAV_WIDTH + PAGE_WIDTH_PX + INSPECTOR_WIDTH"
+    );
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_eq!(
+        bounds_of(&mut cx, CONTENT_PANEL).size.width,
+        px(PAGE_WIDTH_PX),
+        "the content panel does not open at the pages' width"
+    );
+}
+
+/// Drag the handle whose line is at `x` by `by` along the row, the way
+/// `dragging_a_handle_resizes_its_neighbours` does: the first move starts
+/// the drag, the second is the one that lands.
+fn drag_handle(cx: &mut VisualTestContext, x: Pixels, y: Pixels, by: Pixels) {
+    let start = if by < px(0.) { px(-10.) } else { px(10.) };
+    cx.simulate_mouse_down(point(x, y), MouseButton::Left, Modifiers::default());
+    cx.simulate_mouse_move(
+        point(x + start, y),
+        Some(MouseButton::Left),
+        Modifiers::default(),
+    );
+    cx.simulate_mouse_move(
+        point(x + by, y),
+        Some(MouseButton::Left),
+        Modifiers::default(),
+    );
+    cx.simulate_mouse_up(point(x + by, y), MouseButton::Left, Modifiers::default());
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// The widths the handles were dragged to survive the Sidebar collapsing and
+/// expanding and the inspector hiding and showing again.
+#[gpui::test]
+fn dragged_widths_survive_the_toggles(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let y = bounds_of(&mut cx, CONTENT_PANEL).center().y;
+
+    let nav = bounds_of(&mut cx, CHROME_SIDEBAR).size.width;
+    let at = bounds_of(&mut cx, CONTENT_PANEL).left();
+    drag_handle(&mut cx, at, y, px(30.));
+    let dragged_nav = bounds_of(&mut cx, CHROME_SIDEBAR).size.width;
+    assert!(
+        (dragged_nav - nav - px(30.)).abs() <= px(1.),
+        "dragging the Sidebar's handle 30px right made it {dragged_nav:?} from {nav:?}"
+    );
+
+    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL).size.width;
+    let at = bounds_of(&mut cx, INSPECTOR_PANEL).left();
+    drag_handle(&mut cx, at, y, px(-40.));
+    let dragged_inspector = bounds_of(&mut cx, INSPECTOR_PANEL).size.width;
+    assert!(
+        (dragged_inspector - inspector - px(40.)).abs() <= px(1.),
+        "dragging the inspector's handle 40px left made it {dragged_inspector:?} from {inspector:?}"
+    );
+
+    run_menu_item(&mut cx, "View", "Toggle Inspector");
+    run_menu_item(&mut cx, "View", "Toggle Inspector");
+    assert_eq!(
+        bounds_of(&mut cx, INSPECTOR_PANEL).size.width,
+        dragged_inspector,
+        "the inspector came back at another width than it was dragged to"
+    );
+    assert_eq!(
+        bounds_of(&mut cx, CHROME_SIDEBAR).size.width,
+        dragged_nav,
+        "hiding and showing the inspector moved the Sidebar's width"
+    );
+
+    run_menu_item(&mut cx, "View", "Toggle Sidebar");
+    run_menu_item(&mut cx, "View", "Toggle Sidebar");
+    assert_eq!(
+        bounds_of(&mut cx, CHROME_SIDEBAR).size.width,
+        dragged_nav,
+        "the Sidebar expanded to another width than it was dragged to"
+    );
+    assert_eq!(
+        bounds_of(&mut cx, INSPECTOR_PANEL).size.width,
+        dragged_inspector,
+        "collapsing and expanding the Sidebar moved the inspector's width"
+    );
+}
+
+/// Each handle of the resizable group reports itself (spec §4.3.5), over
+/// its whole hit area, not only its 1px line.
+#[gpui::test]
+fn the_resize_handles_report_themselves(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    for (selector, boundary, title) in [
+        (
+            CHROME_HANDLE_NAV,
+            content.left(),
+            "ResizeHandle · Sidebar | content",
+        ),
+        (
+            CHROME_HANDLE_INSPECTOR,
+            content.right(),
+            "ResizeHandle · content | inspector",
+        ),
+    ] {
+        let target = bounds_of(&mut cx, selector);
+        assert!(
+            target.left() < boundary && target.right() > boundary + px(1.),
+            "{selector}: the target at {target:?} does not reach past the line at {boundary:?}"
+        );
+        // Off the line, in the hit area beside it.
+        hover(&mut cx, point(target.right() - px(1.), target.center().y));
+        settle(&mut cx);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, cx| {
+                this.info_ui.read(cx).shown().map(|info| info.title())
+            })
+            .as_deref(),
+            Some(title),
+            "{selector}: hovering the handle's hit area did not show its info"
+        );
+    }
+}
+
 /// Clicking a Sidebar item shows its page (spec §2.4).
 #[gpui::test]
 fn the_sidebar_navigates(cx: &mut TestAppContext) {
@@ -1005,6 +1133,30 @@ fn the_inspector_shows_the_settled_info(cx: &mut TestAppContext) {
     );
 }
 
+/// A shown info follows the state of its widget while the pointer stays
+/// still: clicking the hovered Sidebar item makes it active, and the
+/// inspector says so without another hover event.
+#[gpui::test]
+fn a_shown_info_follows_its_widgets_state(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
+    hover(&mut cx, item);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("SidebarMenuItem · Charts")
+    );
+    click_at(&mut cx, item);
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("SidebarMenuItem · Charts, active"),
+        "the item the pointer rests on became active, and the inspector did not follow"
+    );
+}
+
 /// The inspector's Copy button puts the shown info's text on the clipboard
 /// (spec §2.6).
 #[gpui::test]
@@ -1063,7 +1215,9 @@ fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
 fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let tabs = bounds_of(&mut cx, INSPECTOR_TABS);
-    hover(&mut cx, point(tabs.left() + px(4.), tabs.center().y));
+    // Clear of the handle on the inspector's left edge, whose hit area
+    // reaches into the panel.
+    hover(&mut cx, point(tabs.left() + px(16.), tabs.center().y));
     settle(&mut cx);
     let shown = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |this, cx| {
@@ -1101,6 +1255,7 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
     let clipboard = bounds_of(&mut cx, PROBE_CLIPBOARD).center();
     let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
     hover(&mut cx, clipboard);
+    settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
@@ -1116,6 +1271,7 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
         "a settled info did not replace the text panel"
     );
     hover(&mut cx, clipboard);
+    settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
@@ -1127,6 +1283,31 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
         inspector_title(&mut cx, &showcase),
         None,
         "the Buttons page's text panel stayed after the page changed"
+    );
+}
+
+/// Crossing a page's text panel on the way to the inspector is not hovering
+/// it (spec §4.2, §4.3.6): a Sidebar item's settled info stays when the
+/// pointer passes over a `tt-` block for less than `INFO_SETTLE`.
+#[gpui::test]
+fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let clipboard = bounds_of(&mut cx, PROBE_CLIPBOARD).center();
+    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
+    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL).center();
+    hover(&mut cx, item);
+    settle(&mut cx);
+    draw(&mut cx);
+    hover(&mut cx, clipboard);
+    cx.executor().advance_clock(INFO_SETTLE / 2);
+    cx.run_until_parked();
+    hover(&mut cx, inspector);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("SidebarMenuItem · Charts"),
+        "passing over the Clipboard block replaced the Sidebar item's info"
     );
 }
 
