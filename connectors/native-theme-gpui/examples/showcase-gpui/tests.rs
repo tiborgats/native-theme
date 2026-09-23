@@ -1579,6 +1579,12 @@ fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
 /// `defaults.icon_sizes` names: each laid out at what its builder gives,
 /// and each reporting that builder and the field it reads. gpui-component's
 /// own set is chosen, so the icon is there to measure.
+///
+/// A size platform-facts §2.1.8 documents none for on the installed native
+/// preset's platform says it has no platform source: adwaita's dialog and
+/// panel (platform-facts.md:1135-1136), and none of kde-breeze's. The preset
+/// is named the way the toolbar's Combobox names it, which `use_preset`
+/// leaves alone.
 #[gpui::test]
 fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -1587,7 +1593,16 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
             this.select_icon_set("gpui-component built-in (Lucide)", window, cx);
         });
     });
-    for preset in ["kde-breeze", "adwaita"] {
+    for (preset, unsourced) in [
+        ("kde-breeze", &[][..]),
+        (
+            "adwaita",
+            &[IconSizeContext::Dialog, IconSizeContext::Panel][..],
+        ),
+    ] {
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, _cx| this.current_theme_name = preset.to_string());
+        });
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Icons);
         for context in IconSizeContext::ALL {
@@ -1622,6 +1637,15 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
                     .and_then(|i| i.instance.iter().find(|n| n.what == "field"))
                     .is_some_and(|f| f.text.contains(&format!("icon_sizes.{name}"))),
                 "{preset}: the {name} cell does not name its model field: {info:?}"
+            );
+            let marked = info
+                .as_ref()
+                .and_then(|i| i.instance.iter().find(|n| n.what == "size"))
+                .is_some_and(|n| n.text.contains("has no platform source"));
+            assert_eq!(
+                marked,
+                unsourced.contains(&context),
+                "{preset}: the {name} cell's size line marks an unsourced number wrongly: {info:?}"
             );
         }
     }

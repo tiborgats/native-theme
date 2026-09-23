@@ -19,8 +19,10 @@ impl Showcase {
         let ui = &self.info_ui;
         let set = self.icon_set_label();
         let drawn = self.chrome_icon(&ICON_SIZES_ICON);
-        let cells = IconSizeContext::ALL
-            .map(|context| demo::icon_size_cell(ui, cx, context, &drawn, &ICON_SIZES_ICON, &set));
+        let preset = &self.current_theme_name;
+        let cells = IconSizeContext::ALL.map(|context| {
+            demo::icon_size_cell(ui, cx, context, &drawn, &ICON_SIZES_ICON, &set, preset)
+        });
         v_flex()
             .gap_2()
             .child(demo::heading(ui, cx, "icons-heading-sizes", "Icon Sizes"))

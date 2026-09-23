@@ -494,18 +494,21 @@ impl SidebarItem for NavItem {
 /// small icon size.
 ///
 /// Platform-facts §2.1.8 names macOS's small size the sidebar's, and states
-/// 16px for Windows, KDE and GNOME. The panel size is not a sidebar's: KDE's
-/// `Panel` group is the Plasma panel's, 48px, which fits neither an
+/// 16px for Windows, KDE and GNOME. The panel size would not fit: KDE states
+/// 48px for its `Panel` group (platform-facts §2.1.8), which fits neither an
 /// expanded item's `h_7` row (sidebar/menu.rs:308) nor the 48px rail
 /// (sidebar/mod.rs:28). `SidebarMenuItem` keeps the icon it is given
 /// (sidebar/menu.rs:300). The size goes on the Icon's style, which upstream
 /// lays out as it would the same size given through `with_size`
-/// (icon.rs:171-182), so a test can read it off the Icon handed to the item.
+/// (icon.rs:171-182), so a test can read it off the Icon this returns.
+///
+/// It takes the Icon built: a public helper that builds one and does not
+/// report it fails `every_widget_reports_itself`, and the item it is handed
+/// to reports it.
 pub(crate) fn nav_icon_sized(cx: &App, icon: Icon) -> Icon {
     match native_value(cx, geometry::icon_size_small) {
         Some(Size::Size(size)) => icon.size(size),
-        Some(size) => icon.with_size(size),
-        None => icon,
+        _ => icon,
     }
 }
 
@@ -4607,7 +4610,8 @@ impl IconSizeContext {
 
 /// A cell of the Icon Sizes section: `drawn`'s icon for `icon`, of the icon
 /// set named `set`, at the size `context` names, through that context's
-/// `geometry::icon_size_*` builder, above the context's name. Where the set
+/// `geometry::icon_size_*` builder, above the context's name, under the
+/// theme installed as `preset`. Where the set
 /// has no such icon the cell shows the name alone, never another set's
 /// icon.
 pub(crate) fn icon_size_cell(
@@ -4617,12 +4621,13 @@ pub(crate) fn icon_size_cell(
     drawn: &ChromeIcon,
     icon: &IconName,
     set: &str,
+    preset: &str,
 ) -> Stateful<Div> {
     let size = match native_value(cx, context.builder()) {
         Some(Size::Size(size)) => Some(size.as_f32()),
         _ => None,
     };
-    let mut cell_info = info::icons::icon_size(cx.theme(), context, drawn, set, size);
+    let mut cell_info = info::icons::icon_size(cx.theme(), context, drawn, set, size, preset);
     let icon = chrome_icon(drawn, icon).map(|icon| native_sized(cx, icon, context.builder()));
     if icon.is_some() && size.is_some() {
         cell_info = match context {

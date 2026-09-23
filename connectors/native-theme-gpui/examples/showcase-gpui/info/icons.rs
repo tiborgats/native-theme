@@ -34,7 +34,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
     match drawn {
         IconDrawn::Builtin => info
             // No colour of its own: the Icon takes the text colour it
-            // inherits (icon.rs:170, :218), which the showcase sets on its
+            // inherits (icon.rs:170, :219), which the showcase sets on its
             // window.
             .color(claim(
                 "icon, inherited foreground",
@@ -258,21 +258,70 @@ fn icon_size_context(context: IconSizeContext) -> &'static str {
             "a dialog's icon: KDE's Dialog group 32. macOS, Windows and GNOME document none; GNOME's 48 is GTK3's legacy (platform-facts §2.1.8)"
         }
         IconSizeContext::Panel => {
-            "KDE's Panel group, the icons of the Plasma panel, not of an application's side panel: 48 by Breeze's default, the C++ fallback. macOS, Windows and GNOME document none (platform-facts §2.1.8)"
+            "KDE's Panel group, 48 by Breeze's default, the C++ fallback. macOS, Windows and GNOME document none (platform-facts §2.1.8)"
         }
     }
 }
 
+/// A platform platform-facts §2.1.8 has a column for, as the native preset
+/// installed names it.
+#[derive(Clone, Copy)]
+enum FactsPlatform {
+    MacOs,
+    Windows,
+    Kde,
+    Gnome,
+}
+
+impl FactsPlatform {
+    /// The platform of the native preset `preset`, full or `-live`; `None`
+    /// for any other theme.
+    fn of_preset(preset: &str) -> Option<Self> {
+        match preset.strip_suffix("-live").unwrap_or(preset) {
+            "macos-sonoma" => Some(Self::MacOs),
+            "windows-11" => Some(Self::Windows),
+            "kde-breeze" => Some(Self::Kde),
+            "adwaita" => Some(Self::Gnome),
+            _ => None,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::MacOs => "macOS",
+            Self::Windows => "Windows",
+            Self::Kde => "KDE",
+            Self::Gnome => "GNOME",
+        }
+    }
+
+    /// Whether platform-facts §2.1.8 documents a size for `context` on this
+    /// platform: its (none) cells are macOS's large, dialog and panel,
+    /// Windows's dialog and panel, and GNOME's dialog and panel
+    /// (platform-facts.md:1132-1136).
+    fn documents(self, context: IconSizeContext) -> bool {
+        !matches!(
+            (self, context),
+            (Self::MacOs, IconSizeContext::Large)
+                | (
+                    Self::MacOs | Self::Windows | Self::Gnome,
+                    IconSizeContext::Dialog | IconSizeContext::Panel
+                )
+        )
+    }
+}
+
 /// A cell of the Icon Sizes section: the chrome's icon `drawn`, of `set`,
-/// at the size `context` names, `size` px where a native theme gives one.
-/// Its geometry line is recorded where `demo::icon_size_cell` applies the
-/// builder.
+/// at the size `context` names, `size` px where a native theme gives one,
+/// under the theme installed as `preset`. Its geometry line is recorded
+/// where `demo::icon_size_cell` applies the builder.
 pub fn icon_size(
     t: &Theme,
     context: IconSizeContext,
     drawn: &ChromeIcon,
     set: &str,
     size: Option<f32>,
+    preset: &str,
 ) -> WidgetInfo {
     let field = match context {
         IconSizeContext::Toolbar => "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
@@ -281,10 +330,17 @@ pub fn icon_size(
         IconSizeContext::Dialog => "defaults.icon_sizes.dialog",
         IconSizeContext::Panel => "defaults.icon_sizes.panel",
     };
-    let info = name_label(
-        WidgetInfo::new("Icon").variant(format!("{} size", context.name())),
-        t,
-    );
+    let name = context.name();
+    // A number for a context the installed native preset's platform
+    // documents none for is the preset's, and its size line says so.
+    let unsourced = match FactsPlatform::of_preset(preset) {
+        Some(platform) if !platform.documents(context) => format!(
+            ". platform-facts §2.1.8 documents no {name} size for {}, so this number has no platform source: native-theme's {preset} preset states it",
+            platform.name()
+        ),
+        _ => String::new(),
+    };
+    let info = name_label(WidgetInfo::new("Icon").variant(format!("{name} size")), t);
     let info = match drawn {
         ChromeIcon::Builtin(_) | ChromeIcon::Loaded(..) => info
             // An Icon takes the text colour it inherits (icon.rs:170,
@@ -298,14 +354,17 @@ pub fn icon_size(
             .instance(
                 "size",
                 match size {
-                    Some(size) => format!("{}px, {field}", px_text(size)),
+                    Some(size) => format!("{}px, {field}{unsourced}", px_text(size)),
                     None => "upstream's own, the inherited text size: no native theme is installed, so no builder applies (icon.rs, Icon::into_svg)".to_string(),
                 },
             ),
         ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => info.instance(
             "size",
             match size {
-                Some(size) => format!("{}px, {field}, which no icon shows", px_text(size)),
+                Some(size) => format!(
+                    "{}px, {field}, which no icon shows{unsourced}",
+                    px_text(size)
+                ),
                 None => "none: no native theme is installed, and no icon shows".to_string(),
             },
         ),
@@ -314,7 +373,7 @@ pub fn icon_size(
         .instance("context", icon_size_context(context))
         .instance(
             "unstated",
-            "where platform-facts documents no size for the context, the theme's value is the theme's own, not the platform's",
+            "where the context line says a platform documents none, the size above has no platform source: native-theme's preset states that number, not the platform (platform-facts §2.1.8)",
         )
         .instance(
             "icon",
