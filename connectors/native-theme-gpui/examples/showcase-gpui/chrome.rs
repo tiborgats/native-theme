@@ -227,8 +227,10 @@ pub(crate) const COMPATIBILITY_URL: &str = concat!(
 /// The width of the Preferences sheet. The model states no sheet, so no
 /// such width either (spec §1.3): this is the showcase's own layout default.
 /// It overrides upstream's 350px (sheet.rs:63) because the Settings inside
-/// starts its sidebar at 250px (setting/settings.rs:54), which would leave
-/// the preferences 100px.
+/// starts its sidebar at 250px (setting/settings.rs:54): a 350px sheet, less
+/// its 1px left border (sheet.rs:186) and the body's 16px padding on each
+/// side (sheet.rs:147, 216-217), holds 317px, which would leave the
+/// preferences at most 67px beside the sidebar.
 const PREFERENCES_WIDTH: Pixels = px(600.);
 
 /// The presets the command palette offers, as `(key, display name)`: the
@@ -322,8 +324,7 @@ pub(crate) fn open_preferences(app: &Showcase, window: &mut Window, cx: &mut App
 }
 
 /// This crate's name and version, as the About dialog states them.
-pub(crate) const ABOUT_NAME_VERSION: &str =
-    concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
+const ABOUT_NAME_VERSION: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
 
 /// Open the About dialog, unless an overlay is open. Its lines are
 /// `app.overlay_gap` apart, read as each frame draws it, so a theme switched

@@ -535,7 +535,7 @@ pub(crate) fn about(
     compatibility: &'static str,
     gap: Option<Pixels>,
 ) -> Dialog {
-    let mut dialog_info = info::about_dialog(cx.theme());
+    let mut dialog_info = info::about_dialog(cx.theme(), gap.is_some());
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "About", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
