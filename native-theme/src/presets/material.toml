@@ -93,10 +93,6 @@ disabled_background = "#1c1b1f1f"
 disabled_text_color = "#c4c7c5"
 
 
-[light.button.border]
-padding_horizontal_px = 24.0
-padding_vertical_px = 10.0
-
 [light.button.font]
 color = "#1d192b"
 [light.input]
@@ -107,10 +103,6 @@ focus_border_color = "#6750a4"
 disabled_background = "#1c1b1f0a"
 disabled_text_color = "#c4c7c5"
 
-
-[light.input.border]
-padding_horizontal_px = 16.0
-padding_vertical_px = 16.0
 
 [light.input.font]
 color = "#1c1b1f"
@@ -127,10 +119,6 @@ unchecked_border_color = "#79747e"
 background_color = "#313033"
 max_width_px = 300.0
 
-
-[light.tooltip.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 8.0
 
 [light.tooltip.font]
 color = "#f4eff4"
@@ -164,31 +152,20 @@ active_background = "#6750a41f"
 active_text_color = "#6750a4"
 
 
-[light.tab.border]
-padding_horizontal_px = 16.0
-padding_vertical_px = 4.0
 [light.menu]
-row_height_px = 48.0
 icon_text_gap_px = 8.0
 hover_background = "#6750a414"
 hover_text_color = "#1c1b1f"
 disabled_text_color = "#c4c7c5"
 
 
-[light.menu.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
 [light.list]
 alternate_row_background = "#f7f2fa"
-row_height_px = 48.0
 hover_background = "#1c1b1f14"
 hover_text_color = "#1c1b1f"
 disabled_text_color = "#c4c7c5"
 
 
-[light.list.border]
-padding_horizontal_px = 16.0
-padding_vertical_px = 4.0
 [light.toolbar]
 item_gap_px = 8.0
 
@@ -251,14 +228,11 @@ stroke_width_px = 3.0
 min_height_px = 40.0
 min_width_px = 120.0
 arrow_icon_size_px =12.0
-arrow_area_width_px = 28.0
 hover_background = "#1c1b1f14"
 disabled_background = "#1c1b1f0a"
 disabled_text_color = "#c4c7c5"
 
 
-[light.combo_box.border]
-padding_horizontal_px = 16.0
 [light.segmented_control]
 segment_height_px = 40.0
 separator_width_px = 1.0
@@ -267,8 +241,6 @@ active_background = "#6750a4"
 active_text_color = "#ffffff"
 
 
-[light.segmented_control.border]
-padding_horizontal_px = 16.0
 [light.card]
 
 [light.expander]
@@ -370,10 +342,6 @@ disabled_background = "#e6e1e51f"
 disabled_text_color = "#49454f"
 
 
-[dark.button.border]
-padding_horizontal_px = 24.0
-padding_vertical_px = 10.0
-
 [dark.button.font]
 color = "#e8def8"
 [dark.input]
@@ -384,10 +352,6 @@ focus_border_color = "#d0bcff"
 disabled_background = "#e6e1e50a"
 disabled_text_color = "#49454f"
 
-
-[dark.input.border]
-padding_horizontal_px = 16.0
-padding_vertical_px = 16.0
 
 [dark.input.font]
 color = "#e6e1e5"
@@ -404,10 +368,6 @@ unchecked_border_color = "#938f99"
 background_color = "#e6e1e5"
 max_width_px = 300.0
 
-
-[dark.tooltip.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 8.0
 
 [dark.tooltip.font]
 color = "#313033"
@@ -441,31 +401,20 @@ active_background = "#d0bcff1f"
 active_text_color = "#d0bcff"
 
 
-[dark.tab.border]
-padding_horizontal_px = 16.0
-padding_vertical_px = 4.0
 [dark.menu]
-row_height_px = 48.0
 icon_text_gap_px = 8.0
 hover_background = "#d0bcff14"
 hover_text_color = "#e6e1e5"
 disabled_text_color = "#49454f"
 
 
-[dark.menu.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
 [dark.list]
 alternate_row_background = "#211f26"
-row_height_px = 48.0
 hover_background = "#e6e1e514"
 hover_text_color = "#e6e1e5"
 disabled_text_color = "#49454f"
 
 
-[dark.list.border]
-padding_horizontal_px = 16.0
-padding_vertical_px = 4.0
 [dark.toolbar]
 item_gap_px = 8.0
 
@@ -528,14 +477,11 @@ stroke_width_px = 3.0
 min_height_px = 40.0
 min_width_px = 120.0
 arrow_icon_size_px =12.0
-arrow_area_width_px = 28.0
 hover_background = "#e6e1e514"
 disabled_background = "#e6e1e50a"
 disabled_text_color = "#49454f"
 
 
-[dark.combo_box.border]
-padding_horizontal_px = 16.0
 [dark.segmented_control]
 segment_height_px = 40.0
 separator_width_px = 1.0
@@ -544,8 +490,6 @@ active_background = "#d0bcff"
 active_text_color = "#381e72"
 
 
-[dark.segmented_control.border]
-padding_horizontal_px = 16.0
 [dark.card]
 
 [dark.expander]

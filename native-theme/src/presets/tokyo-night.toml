@@ -89,10 +89,6 @@ min_height_px = 32.0
 icon_text_gap_px = 6.0
 
 
-[light.button.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 6.0
-
 [light.button.font]
 color = "#3760bf"
 [light.input]
@@ -103,10 +99,6 @@ disabled_background = "#eaeaee"
 disabled_text_color = "#c4c8da"
 min_height_px = 32.0
 
-
-[light.input.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 6.0
 
 [light.input.font]
 color = "#3760bf"
@@ -123,10 +115,6 @@ label_gap_px = 6.0
 background_color = "#3760bf"
 max_width_px = 300.0
 
-
-[light.tooltip.border]
-padding_horizontal_px = 6.0
-padding_vertical_px = 6.0
 
 [light.tooltip.font]
 color = "#e1e2e7"
@@ -160,31 +148,20 @@ min_width_px = 64.0
 min_height_px = 32.0
 
 
-[light.tab.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
 [light.menu]
 hover_background = "#2e7de9"
 hover_text_color = "#ffffff"
 disabled_text_color = "#c4c8da"
-row_height_px = 28.0
 icon_text_gap_px = 8.0
 
 
-[light.menu.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 4.0
 [light.list]
 alternate_row_background = "#d0d5e3"
 hover_background = "#d5d6db"
 hover_text_color = "#3760bf"
 disabled_text_color = "#c4c8da"
-row_height_px = 28.0
 
 
-[light.list.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 2.0
 [light.toolbar]
 item_gap_px = 6.0
 
@@ -249,11 +226,8 @@ disabled_text_color = "#c4c8da"
 min_height_px = 32.0
 min_width_px = 120.0
 arrow_icon_size_px =12.0
-arrow_area_width_px = 28.0
 
 
-[light.combo_box.border]
-padding_horizontal_px = 12.0
 [light.segmented_control]
 active_background = "#2e7de9"
 active_text_color = "#ffffff"
@@ -262,8 +236,6 @@ segment_height_px = 28.0
 separator_width_px = 1.0
 
 
-[light.segmented_control.border]
-padding_horizontal_px = 12.0
 [light.card]
 
 [light.expander]
@@ -361,10 +333,6 @@ min_height_px = 32.0
 icon_text_gap_px = 6.0
 
 
-[dark.button.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 6.0
-
 [dark.button.font]
 color = "#a9b1d6"
 [dark.input]
@@ -375,10 +343,6 @@ disabled_background = "#111118"
 disabled_text_color = "#292e42"
 min_height_px = 32.0
 
-
-[dark.input.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 6.0
 
 [dark.input.font]
 color = "#a9b1d6"
@@ -395,10 +359,6 @@ label_gap_px = 6.0
 background_color = "#292e42"
 max_width_px = 300.0
 
-
-[dark.tooltip.border]
-padding_horizontal_px = 6.0
-padding_vertical_px = 6.0
 
 [dark.tooltip.font]
 color = "#a9b1d6"
@@ -432,31 +392,20 @@ min_width_px = 64.0
 min_height_px = 32.0
 
 
-[dark.tab.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
 [dark.menu]
 hover_background = "#7aa2f7"
 hover_text_color = "#1a1b26"
 disabled_text_color = "#292e42"
-row_height_px = 28.0
 icon_text_gap_px = 8.0
 
 
-[dark.menu.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 4.0
 [dark.list]
 alternate_row_background = "#16161e"
 hover_background = "#272833"
 hover_text_color = "#a9b1d6"
 disabled_text_color = "#292e42"
-row_height_px = 28.0
 
 
-[dark.list.border]
-padding_horizontal_px = 8.0
-padding_vertical_px = 2.0
 [dark.toolbar]
 item_gap_px = 6.0
 
@@ -521,11 +470,8 @@ disabled_text_color = "#292e42"
 min_height_px = 32.0
 min_width_px = 120.0
 arrow_icon_size_px =12.0
-arrow_area_width_px = 28.0
 
 
-[dark.combo_box.border]
-padding_horizontal_px = 12.0
 [dark.segmented_control]
 active_background = "#7aa2f7"
 active_text_color = "#1a1b26"
@@ -534,8 +480,6 @@ segment_height_px = 28.0
 separator_width_px = 1.0
 
 
-[dark.segmented_control.border]
-padding_horizontal_px = 12.0
 [dark.card]
 
 [dark.expander]

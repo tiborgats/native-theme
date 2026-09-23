@@ -9,6 +9,9 @@
 //! a ruling leaves it unstated. Each row cites the platform-facts lines it
 //! reads.
 //!
+//! Presets that name no platform (the colour schemes and `ios`) state none of
+//! these sizes: nothing cites a source for them, so the toolkit's own stand.
+//!
 //! Every row is checked in both variants against two resolutions:
 //!
 //! - **static**: the platform's full preset;
@@ -603,6 +606,64 @@ fn full_and_live_presets_state_the_same_sizes() {
     assert!(
         failures.is_empty(),
         "{} full/live disagreements:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+/// Presets that name no platform: the colour schemes, and `ios`, which no
+/// platform-facts column covers.
+const UNSOURCED_PRESETS: [&str; 12] = [
+    "catppuccin-latte",
+    "catppuccin-frappe",
+    "catppuccin-macchiato",
+    "catppuccin-mocha",
+    "dracula",
+    "gruvbox",
+    "material",
+    "nord",
+    "one-dark",
+    "solarized",
+    "tokyo-night",
+    "ios",
+];
+
+/// A preset without a platform cites no source for a size, so it states no
+/// padding side, `row_height`, `bar_height` or `arrow_area_width`, and the
+/// toolkit's own sizes stand. (`toolbar.item_gap` is required, so every
+/// preset states it.)
+#[test]
+fn unsourced_presets_state_no_gated_size() {
+    let mut failures = Vec::new();
+    for name in UNSOURCED_PRESETS {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let variant = match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
+                Ok(v) => v,
+                Err(e) => {
+                    failures.push(format!("{name} {mode:?}: {e}"));
+                    continue;
+                }
+            };
+            for widget in WIDGETS {
+                let Some(sizes) = stated_sizes(&variant, widget) else {
+                    failures.push(format!("unknown widget `{widget}`"));
+                    continue;
+                };
+                for (key, value) in sizes {
+                    if key != "item_gap"
+                        && let Some(value) = value
+                    {
+                        failures.push(format!(
+                            "{name} {mode:?}: states {widget}.{key} = {value}, with no source"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} unsourced sizes:\n{}",
         failures.len(),
         failures.join("\n")
     );
