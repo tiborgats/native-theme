@@ -7,8 +7,9 @@
 //! opens — and drive it with real input.
 
 use gpui::{
-    App, Bounds, Entity, Focusable as _, Modifiers, MouseButton, Pixels, Point, TestAppContext,
-    VisualTestContext, point, prelude::*, px, size,
+    AbsoluteLength, App, Bounds, DefiniteLength, Entity, Focusable as _, Length, Modifiers,
+    MouseButton, Pixels, Point, TestAppContext, VisualTestContext, point, prelude::*, px, rems,
+    size,
 };
 use gpui_base::ScrollbarHandle as _;
 use gpui_component::{Colorize as _, IconName, Root, WindowExt as _, theme::Theme};
@@ -22,7 +23,7 @@ use crate::app::{
     ToggleInspector, ToggleSidebar,
 };
 use crate::chrome::menus;
-use crate::demo::AREA_FILL_OPACITY;
+use crate::demo::{AREA_FILL_OPACITY, IconSizeContext};
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
     hsla_to_hex, native_info, percent_text,
@@ -1440,6 +1441,190 @@ fn the_sidebar_toggle_collapses_the_sidebar(cx: &mut TestAppContext) {
         expanded.size.width,
         "View > Toggle Sidebar did not expand the Sidebar to its width again"
     );
+}
+
+/// The presets the Sidebar's icons are checked under: every native preset
+/// and one colour-scheme preset.
+const SIDEBAR_ICON_PRESETS: [&str; 5] = [
+    "kde-breeze",
+    "adwaita",
+    "macos-sonoma",
+    "windows-11",
+    "nord",
+];
+
+/// The Sidebar's page icons fit their items (spec §3.5), expanded and in
+/// the rail.
+///
+/// Upstream gives no hook to measure the drawn icon: `SidebarMenuItem`
+/// places the `Icon` it is given itself (sidebar/menu.rs:300), and an `Icon`
+/// builds its `svg()` with nothing of it reachable but its style
+/// (icon.rs:169-177), so no debug selector gets there. What is checked:
+///
+/// - the Icon `demo::nav_icon_sized` hands an item has the size
+///   `geometry::icon_size_small` gives, read off its style;
+/// - in the rail, every item's measured bounds lie within the rail's width,
+///   and no two items overlap. Neither catches an oversized icon on its
+///   own: an item is as wide as the rail lets it be whatever its icon, and
+///   grows taller rather than overlap. What does is the item's height:
+///   there a row has no height of its own and holds its icon alone
+///   (sidebar/menu.rs:301-308), inside `p_2` on every side (:284), so the
+///   measured height less that padding is the icon's, and the icon, as
+///   wide as it is tall (the first check), has to fit the item's measured
+///   width;
+/// - expanded, where every row is `h_7` whatever its icon
+///   (sidebar/menu.rs:308), the icon is no taller than that: 1.75 rem at the
+///   rem the Root installs, the theme's font size (root.rs:582). The items'
+///   measured heights are checked to be that row. The icon's is a model
+///   check, not a measurement: an icon taller than its row overflows it
+///   without moving any bound a test can read.
+///
+/// gpui-component's own set is chosen, so every page has an icon to check:
+/// with a set that has none for a page, its item shows nothing.
+#[gpui::test]
+fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("gpui-component built-in (Lucide)", window, cx);
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    for preset in SIDEBAR_ICON_PRESETS {
+        use_preset(&mut cx, &showcase, preset);
+        let (small, rem) = read(&mut cx, &showcase, |_this, cx| {
+            (
+                native_value(cx, geometry::icon_size_small),
+                gpui_component::ActiveTheme::theme(cx).font_size,
+            )
+        });
+        let small = match small {
+            Some(gpui_component::Size::Size(small)) => small,
+            other => panic!("{preset}: geometry::icon_size_small gives {other:?}, not a size"),
+        };
+        let row = rems(1.75).to_pixels(rem);
+        for page in Page::ALL {
+            let mut icon = read(&mut cx, &showcase, |_this, cx| {
+                crate::demo::nav_icon_sized(cx, gpui_component::Icon::new(page.icon()))
+            });
+            let size = Styled::style(&mut icon).size.clone();
+            assert_eq!(
+                (size.width, size.height),
+                (Some(small.into()), Some(small.into())),
+                "{preset}: the {page:?} item's icon is not icon_size_small's {small:?}"
+            );
+            let Some(Length::Definite(DefiniteLength::Absolute(AbsoluteLength::Pixels(height)))) =
+                size.height
+            else {
+                panic!("{preset}: the {page:?} item's icon has no pixel height");
+            };
+            assert!(
+                height <= row,
+                "{preset}: the {page:?} item's icon is {height:?} tall, over the expanded row's h_7, {row:?}"
+            );
+        }
+
+        for page in Page::ALL {
+            let item = bounds_of(&mut cx, page.nav_item());
+            assert!(
+                (item.size.height - row).abs() < px(1.),
+                "{preset}: the expanded {page:?} item is {:?} tall, not h_7's {row:?}",
+                item.size.height
+            );
+        }
+
+        run_menu_item(&mut cx, "View", "Toggle Sidebar");
+        assert!(
+            read(&mut cx, &showcase, |this, _| this.nav_collapsed),
+            "{preset}: View > Toggle Sidebar did not collapse the Sidebar"
+        );
+        let rail = bounds_of(&mut cx, CHROME_SIDEBAR);
+        let items: Vec<(Page, Bounds<Pixels>)> = Page::ALL
+            .into_iter()
+            .map(|page| (page, bounds_of(&mut cx, page.nav_item())))
+            .collect();
+        let padding = rems(0.5).to_pixels(rem);
+        for (page, item) in &items {
+            assert!(
+                item.left() >= rail.left() && item.right() <= rail.right(),
+                "{preset}: in the rail, the {page:?} item at {item:?} is wider than the rail at {rail:?}"
+            );
+            let icon = item.size.height - padding * 2.;
+            assert!(
+                icon <= item.size.width,
+                "{preset}: in the rail, the {page:?} item is {:?} tall, so its icon is {icon:?}, \
+                 wider than the item's {:?}",
+                item.size.height,
+                item.size.width
+            );
+        }
+        for (i, (page, item)) in items.iter().enumerate() {
+            for (other, next) in items.iter().skip(i + 1) {
+                assert!(
+                    !item.intersects(next),
+                    "{preset}: in the rail, the {page:?} item at {item:?} overlaps the {other:?} item at {next:?}"
+                );
+            }
+        }
+        run_menu_item(&mut cx, "View", "Toggle Sidebar");
+        assert!(
+            !read(&mut cx, &showcase, |this, _| this.nav_collapsed),
+            "{preset}: View > Toggle Sidebar did not expand the Sidebar again"
+        );
+    }
+}
+
+/// The Icons page's Icon Sizes section shows an icon at every size
+/// `defaults.icon_sizes` names: each laid out at what its builder gives,
+/// and each reporting that builder and the field it reads. gpui-component's
+/// own set is chosen, so the icon is there to measure.
+#[gpui::test]
+fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("gpui-component built-in (Lucide)", window, cx);
+        });
+    });
+    for preset in ["kde-breeze", "adwaita"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Icons);
+        for context in IconSizeContext::ALL {
+            let size = read(&mut cx, &showcase, |_this, cx| {
+                native_value(cx, context.builder())
+            });
+            let Some(gpui_component::Size::Size(size)) = size else {
+                panic!("{preset}: the {context:?} builder gives {size:?}, not a size");
+            };
+            let icon = bounds_of(&mut cx, context.icon_box());
+            assert_eq!(
+                (icon.size.width, icon.size.height),
+                (size, size),
+                "{preset}: the {context:?} icon is laid out at {:?}, its builder gives {size:?}",
+                icon.size
+            );
+            let name = context.name();
+            let info = settle_on(&mut cx, &showcase, context.cell());
+            assert_eq!(
+                info.as_ref().map(|i| i.title()),
+                Some(format!("Icon · {name} size")),
+                "{preset}: the pointer settled on the {name} cell, and the inspector does not show its info"
+            );
+            assert!(
+                info.as_ref()
+                    .and_then(|i| i.config.iter().find(|n| n.what == "geometry"))
+                    .is_some_and(|g| g.text.starts_with(&format!("geometry::icon_size_{name}:"))),
+                "{preset}: the {name} cell does not name geometry::icon_size_{name}: {info:?}"
+            );
+            assert!(
+                info.as_ref()
+                    .and_then(|i| i.instance.iter().find(|n| n.what == "field"))
+                    .is_some_and(|f| f.text.contains(&format!("icon_sizes.{name}"))),
+                "{preset}: the {name} cell does not name its model field: {info:?}"
+            );
+        }
+    }
 }
 
 /// `ToggleInspector` hides the inspector's panel and shows it again, from the

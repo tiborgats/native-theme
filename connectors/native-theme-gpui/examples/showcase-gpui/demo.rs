@@ -468,12 +468,9 @@ impl SidebarItem for NavItem {
             &self.icon,
             &self.set,
         );
-        let icon = chrome_icon(&self.icon, &page.icon())
-            .map(|icon| native_sized(cx, icon, geometry::icon_size_panel));
-        // A sidebar is the panel `defaults.icon_sizes.panel` names, and
-        // `SidebarMenuItem` keeps the icon it is given (sidebar/menu.rs:300).
-        if icon.is_some() && native_value(cx, geometry::icon_size_panel).is_some() {
-            item_info = item_info.geometry("icon_size_panel");
+        let icon = chrome_icon(&self.icon, &page.icon()).map(|icon| nav_icon_sized(cx, icon));
+        if icon.is_some() && native_value(cx, geometry::icon_size_small).is_some() {
+            item_info = item_info.geometry("icon_size_small");
         }
         let item = SidebarMenuItem::new(page.label());
         let item = match icon {
@@ -490,6 +487,25 @@ impl SidebarItem for NavItem {
             .info(&self.ui, page.nav_item(), item_info)
             .w_full()
             .debug_selector(move || page.nav_item().into())
+    }
+}
+
+/// `icon` at the size a page's Sidebar item shows it at: the platform's
+/// small icon size.
+///
+/// Platform-facts §2.1.8 names macOS's small size the sidebar's, and states
+/// 16px for Windows, KDE and GNOME. The panel size is not a sidebar's: KDE's
+/// `Panel` group is the Plasma panel's, 48px, which fits neither an
+/// expanded item's `h_7` row (sidebar/menu.rs:308) nor the 48px rail
+/// (sidebar/mod.rs:28). `SidebarMenuItem` keeps the icon it is given
+/// (sidebar/menu.rs:300). The size goes on the Icon's style, which upstream
+/// lays out as it would the same size given through `with_size`
+/// (icon.rs:171-182), so a test can read it off the Icon handed to the item.
+pub(crate) fn nav_icon_sized(cx: &App, icon: Icon) -> Icon {
+    match native_value(cx, geometry::icon_size_small) {
+        Some(Size::Size(size)) => icon.size(size),
+        Some(size) => icon.with_size(size),
+        None => icon,
     }
 }
 
@@ -4520,6 +4536,121 @@ pub(crate) fn gpui_icon(
     icon_cell(cx, cell.art, cell.label)
         .info(ui, id.clone(), info)
         .debug_selector(move || id.to_string())
+}
+
+/// The icon contexts `defaults.icon_sizes` names, in the model's order, so
+/// the matches over them are exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum IconSizeContext {
+    Toolbar,
+    Small,
+    Large,
+    Dialog,
+    Panel,
+}
+
+impl IconSizeContext {
+    pub(crate) const ALL: [Self; 5] = [
+        Self::Toolbar,
+        Self::Small,
+        Self::Large,
+        Self::Dialog,
+        Self::Panel,
+    ];
+
+    /// The context's name, as `defaults.icon_sizes` spells its field.
+    pub(crate) const fn name(self) -> &'static str {
+        match self {
+            Self::Toolbar => "toolbar",
+            Self::Small => "small",
+            Self::Large => "large",
+            Self::Dialog => "dialog",
+            Self::Panel => "panel",
+        }
+    }
+
+    /// The builder that sizes an icon for the context.
+    pub(crate) fn builder(self) -> fn(Native<'_>) -> Size {
+        match self {
+            Self::Toolbar => geometry::icon_size_toolbar,
+            Self::Small => geometry::icon_size_small,
+            Self::Large => geometry::icon_size_large,
+            Self::Dialog => geometry::icon_size_dialog,
+            Self::Panel => geometry::icon_size_panel,
+        }
+    }
+
+    /// The id and debug selector of the context's cell in the Icon Sizes
+    /// section.
+    pub(crate) const fn cell(self) -> &'static str {
+        match self {
+            Self::Toolbar => "icons-size-toolbar",
+            Self::Small => "icons-size-small",
+            Self::Large => "icons-size-large",
+            Self::Dialog => "icons-size-dialog",
+            Self::Panel => "icons-size-panel",
+        }
+    }
+
+    /// The debug selector of the box the cell's icon is laid out in, which
+    /// is as large as the icon.
+    pub(crate) const fn icon_box(self) -> &'static str {
+        match self {
+            Self::Toolbar => "icons-size-toolbar-icon",
+            Self::Small => "icons-size-small-icon",
+            Self::Large => "icons-size-large-icon",
+            Self::Dialog => "icons-size-dialog-icon",
+            Self::Panel => "icons-size-panel-icon",
+        }
+    }
+}
+
+/// A cell of the Icon Sizes section: `drawn`'s icon for `icon`, of the icon
+/// set named `set`, at the size `context` names, through that context's
+/// `geometry::icon_size_*` builder, above the context's name. Where the set
+/// has no such icon the cell shows the name alone, never another set's
+/// icon.
+pub(crate) fn icon_size_cell(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    context: IconSizeContext,
+    drawn: &ChromeIcon,
+    icon: &IconName,
+    set: &str,
+) -> Stateful<Div> {
+    let size = match native_value(cx, context.builder()) {
+        Some(Size::Size(size)) => Some(size.as_f32()),
+        _ => None,
+    };
+    let mut cell_info = info::icons::icon_size(cx.theme(), context, drawn, set, size);
+    let icon = chrome_icon(drawn, icon).map(|icon| native_sized(cx, icon, context.builder()));
+    if icon.is_some() && size.is_some() {
+        cell_info = match context {
+            IconSizeContext::Toolbar => cell_info.geometry("icon_size_toolbar"),
+            IconSizeContext::Small => cell_info.geometry("icon_size_small"),
+            IconSizeContext::Large => cell_info.geometry("icon_size_large"),
+            IconSizeContext::Dialog => cell_info.geometry("icon_size_dialog"),
+            IconSizeContext::Panel => cell_info.geometry("icon_size_panel"),
+        };
+    }
+    let id = context.cell();
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .py_2()
+        .px_2()
+        .gap_1()
+        .when_some(icon, |cell, icon| {
+            cell.child(
+                div()
+                    .debug_selector(move || context.icon_box().into())
+                    .child(icon),
+            )
+        })
+        .child(Label::new(context.name()).text_xs())
+        .info(ui, id, cell_info)
+        .debug_selector(move || id.into())
 }
 
 /// The animations the Icons page shows, so the matches over them in

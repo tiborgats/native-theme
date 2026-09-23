@@ -1,15 +1,32 @@
 //! The Icons page.
 
 use gpui::{AnyElement, App, Context, IntoElement, ParentElement, Styled, div, prelude::*};
-use gpui_component::{IconNamed as _, h_flex, v_flex};
+use gpui_component::{IconName, IconNamed as _, h_flex, v_flex};
 
 use native_theme::theme::{IconSet, icon_name as native_icon_name};
 
 use crate::app::Showcase;
-use crate::demo::{self, AnimatedArt, IconArt, IconCell};
+use crate::demo::{self, AnimatedArt, IconArt, IconCell, IconSizeContext};
 use crate::support::{IconSource, is_native_icon_set};
 
+/// The icon the Icon Sizes section shows at each size.
+pub(crate) const ICON_SIZES_ICON: IconName = IconName::Folder;
+
 impl Showcase {
+    /// The Icon Sizes section: the chosen set's `ICON_SIZES_ICON` at each
+    /// size `defaults.icon_sizes` names, each through its own builder.
+    fn render_icon_sizes_section(&self, cx: &App) -> impl IntoElement {
+        let ui = &self.info_ui;
+        let set = self.icon_set_label();
+        let drawn = self.chrome_icon(&ICON_SIZES_ICON);
+        let cells = IconSizeContext::ALL
+            .map(|context| demo::icon_size_cell(ui, cx, context, &drawn, &ICON_SIZES_ICON, &set));
+        v_flex()
+            .gap_2()
+            .child(demo::heading(ui, cx, "icons-heading-sizes", "Icon Sizes"))
+            .child(h_flex().items_end().flex_wrap().gap_2().children(cells))
+    }
+
     /// The Animated Icons section: the loading indicator the icon set ships,
     /// frame by frame or turning, or a caption saying it ships none.
     fn render_animated_icons_section(&self, cx: &App) -> impl IntoElement {
@@ -250,6 +267,7 @@ impl Showcase {
         v_flex()
             .gap_5()
             .p_4()
+            .child(self.render_icon_sizes_section(cx))
             .child(self.render_animated_icons_section(cx))
             .child(self.render_native_icons_section(cx))
             .child(self.render_gpui_icons_section(cx))

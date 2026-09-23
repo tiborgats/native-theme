@@ -7,8 +7,10 @@
 use gpui::Hsla;
 use gpui_component::theme::Theme;
 
+use super::chrome::chrome_icon_note;
 use super::{WidgetInfo, claim, px_text};
-use crate::demo::{ANIMATED_ICON_SIZE, AnimatedKind, ICON_CELL_SIZE, IconDrawn};
+use crate::demo::{ANIMATED_ICON_SIZE, AnimatedKind, ICON_CELL_SIZE, IconDrawn, IconSizeContext};
+use crate::support::ChromeIcon;
 
 /// `c` as the colour an SVG recoloured with it is painted in: the connector
 /// writes it into the SVG as `#rrggbb`, which has no alpha
@@ -237,4 +239,85 @@ pub fn animated_icon(
             px_text(ANIMATED_ICON_SIZE.as_f32())
         ),
     )
+}
+
+/// What `context` is, from platform-facts §2.1.8: what each platform calls
+/// it and the size it documents, and what it documents none for.
+fn icon_size_context(context: IconSizeContext) -> &'static str {
+    match context {
+        IconSizeContext::Toolbar => {
+            "a toolbar's icons: 32pt regular and 24pt small on macOS, Fluent's AppBarButton 20 on Windows, KDE's MainToolbar group 22, GNOME's GTK_ICON_SIZE_NORMAL 16 (platform-facts §2.1.8)"
+        }
+        IconSizeContext::Small => {
+            "small icons: macOS's sidebar icons, 16-20pt; SM_CXSMICON 16 on Windows; KDE's Small group 16; GNOME's GTK_ICON_SIZE_NORMAL 16 (platform-facts §2.1.8). The Sidebar's page icons take this size"
+        }
+        IconSizeContext::Large => {
+            "large icons: SM_CXICON 32 on Windows; KDE's Desktop group, 48 by Breeze's default; GNOME's GTK_ICON_SIZE_LARGE 32. macOS documents none (platform-facts §2.1.8)"
+        }
+        IconSizeContext::Dialog => {
+            "a dialog's icon: KDE's Dialog group 32. macOS, Windows and GNOME document none; GNOME's 48 is GTK3's legacy (platform-facts §2.1.8)"
+        }
+        IconSizeContext::Panel => {
+            "KDE's Panel group, the icons of the Plasma panel, not of an application's side panel: 48 by Breeze's default, the C++ fallback. macOS, Windows and GNOME document none (platform-facts §2.1.8)"
+        }
+    }
+}
+
+/// A cell of the Icon Sizes section: the chrome's icon `drawn`, of `set`,
+/// at the size `context` names, `size` px where a native theme gives one.
+/// Its geometry line is recorded where `demo::icon_size_cell` applies the
+/// builder.
+pub fn icon_size(
+    t: &Theme,
+    context: IconSizeContext,
+    drawn: &ChromeIcon,
+    set: &str,
+    size: Option<f32>,
+) -> WidgetInfo {
+    let field = match context {
+        IconSizeContext::Toolbar => "toolbar.icon_size, which inherits defaults.icon_sizes.toolbar",
+        IconSizeContext::Small => "defaults.icon_sizes.small",
+        IconSizeContext::Large => "defaults.icon_sizes.large",
+        IconSizeContext::Dialog => "defaults.icon_sizes.dialog",
+        IconSizeContext::Panel => "defaults.icon_sizes.panel",
+    };
+    let info = name_label(
+        WidgetInfo::new("Icon").variant(format!("{} size", context.name())),
+        t,
+    );
+    let info = match drawn {
+        ChromeIcon::Builtin(_) | ChromeIcon::Loaded(..) => info
+            // An Icon takes the text colour it inherits (icon.rs:170,
+            // :219), which the showcase sets on its window.
+            .color(claim(
+                "icon, inherited foreground",
+                "foreground",
+                t.foreground,
+                "showcase",
+            ))
+            .instance(
+                "size",
+                match size {
+                    Some(size) => format!("{}px, {field}", px_text(size)),
+                    None => "upstream's own, the inherited text size: no native theme is installed, so no builder applies (icon.rs, Icon::into_svg)".to_string(),
+                },
+            ),
+        ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => info.instance(
+            "size",
+            match size {
+                Some(size) => format!("{}px, {field}, which no icon shows", px_text(size)),
+                None => "none: no native theme is installed, and no icon shows".to_string(),
+            },
+        ),
+    };
+    info.instance("field", field)
+        .instance("context", icon_size_context(context))
+        .instance(
+            "unstated",
+            "where platform-facts documents no size for the context, the theme's value is the theme's own, not the platform's",
+        )
+        .instance(
+            "icon",
+            chrome_icon_note(drawn, set, "the cell shows the context's name alone"),
+        )
 }

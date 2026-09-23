@@ -745,7 +745,7 @@ pub fn toolbar_button(t: &Theme, action: &'static str, icon: &ChromeIcon, set: &
 /// What a chrome icon's info says it is: `icon` as the icon set named
 /// `set` gives it, and `absent` what its widget shows where the set has
 /// none.
-fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> String {
+pub(crate) fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> String {
     match icon {
         ChromeIcon::Builtin(name) => format!(
             "gpui-component's own {name}: its built-in set is the one the toolbar's icon-set Select chose"
