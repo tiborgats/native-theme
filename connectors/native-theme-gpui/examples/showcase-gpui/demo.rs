@@ -1309,8 +1309,10 @@ pub(crate) fn text_input(
 
 /// A `Textarea` over `state`, `width` by `height`, refined by
 /// `geometry::input`: it renders as an `Input` (input/textarea.rs:164).
-/// `geometry::input`'s height rule is for a single-line field, so the
-/// Textarea's own `height` goes on after the builder, where it wins.
+/// `geometry::input`'s height rule and padding are for a single-line field:
+/// the Textarea's own `height` goes on after the builder, where it wins, and
+/// the refinement's padding sides are cleared, because upstream pads only a
+/// single-line root (input/input.rs:700-702).
 pub(crate) fn textarea(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1320,13 +1322,14 @@ pub(crate) fn textarea(
     height: Pixels,
 ) -> Stateful<Div> {
     let mut textarea_info = info::inputs::textarea(cx.theme());
-    let textarea = native_info(
+    let mut textarea = native_info(
         Textarea::new(state).w(width),
         cx,
         geometry::input,
         "input",
         &mut textarea_info,
     );
+    Styled::style(&mut textarea).padding = StyleRefinement::default().padding;
     Styled::h(textarea, height)
         .info(ui, id, textarea_info)
         .debug_selector(move || id.into())

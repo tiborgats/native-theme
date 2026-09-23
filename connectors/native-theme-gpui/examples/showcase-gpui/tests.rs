@@ -1795,12 +1795,12 @@ fn scale_text(cx: &mut VisualTestContext, factor: f32) {
 /// text scale 2 both grow past it.
 ///
 /// Above text scale 1 the two do not line up, and this test does not claim
-/// they do: the rule's height is then automatic, and each field grows around
-/// its own text and padding -- the refined one's are the platform's, the
-/// height-only one's upstream's `text_sm` and `input_py` for `Size::Medium`
-/// (input/input.rs, Input::render). Under kde-breeze at scale 2 that is 44px
-/// against 50px. Spec v0.5.9 unstated-sizes §2.1 expects them to follow each
-/// other at every scale; that needs a ruling (Task 3 report).
+/// they do. The coordinator's ruling on Task 3 (fix round 1): above scale 1
+/// the HeightOnly field carries the height rule alone, so upstream's own text
+/// size and padding decide its growth -- `text_sm` and `input_py` for
+/// `Size::Medium` (input/input.rs, Input::render) -- while the refined field
+/// grows around the platform's; equality holds at scale 1. Under kde-breeze
+/// at scale 2 that is 50px against 44px.
 #[gpui::test]
 fn the_height_only_field_takes_the_height_rule(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -1834,7 +1834,8 @@ fn the_height_only_field_takes_the_height_rule(cx: &mut TestAppContext) {
 }
 
 /// The Textarea keeps its own 90px under `geometry::input`, whose height
-/// rule is for a single-line field, at text scale 1 and 2.
+/// rule is for a single-line field, at text scale 1 and 2, and takes none of
+/// the builder's padding, which is a single-line field's too.
 #[gpui::test]
 fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -1846,6 +1847,12 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
             .and_then(|i| i.config.iter().find(|n| n.what == "geometry"))
             .is_some_and(|g| g.text.starts_with("geometry::input:")),
         "the Textarea does not take geometry::input: {info:?}"
+    );
+    assert!(
+        info.as_ref()
+            .and_then(|i| i.instance.iter().find(|n| n.what == "padding"))
+            .is_some_and(|p| p.text.starts_with("none from geometry::input")),
+        "the Textarea's info does not say it takes no padding: {info:?}"
     );
     for factor in [1.0, 2.0] {
         scale_text(&mut cx, factor);

@@ -266,7 +266,7 @@ with half the theme's radius.
 
 What stays upstream work (inner elements the caller's style cannot reach:
 checkbox and radio indicators, switch, slider, separator thickness, splitter
-width, button icon gap, input padding, popup-menu rows; the hover of the
+width, button icon gap, popup-menu rows; the hover of the
 flat buttons gpui-component builds internally, which takes `accent` where the
 platform has a button hover; the checkbox and radio unchecked border, which
 takes the text input's border colour; and tab height, radius

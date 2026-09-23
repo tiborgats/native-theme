@@ -62,7 +62,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         InputField::HeightOnly if styled => info
             .instance(
                 "height",
-                "the height rule of the field above without the rest of its refinement: what geometry::input_height is for. At a text scale of 1 or less both are input.min_height tall; above 1 each grows around its own text and padding, and this one's are upstream's",
+                "the height rule of the field above without the rest of its refinement: what geometry::input_height is for. At a text scale of 1 or less both are input.min_height tall; above 1 each grows around its own text and padding, and this one's are upstream's text_sm and input_py for Size::Medium (input/input.rs, Input::render), not the platform's, so it no longer lines up with the field above",
             )
             .instance(
                 "padding",
@@ -102,6 +102,7 @@ pub fn textarea(t: &Theme) -> WidgetInfo {
         ))
         .instance("row height", "defaults.line_height times the text size: geometry::input carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base input/base/element.rs, TextElement::request_layout)")
         .instance("height", "the showcase's own 90px, set after geometry::input: the builder's height rule is for a single-line field, and a Textarea's own height goes on after it, where it wins")
+        .instance("padding", "none from geometry::input: the showcase clears the refinement's padding sides, because they are a single-line field's -- upstream pads only a single-line Input's root (input/input.rs, Input::render: input_px and input_py when not multi-line)")
         .instance("refinement", "geometry::input, the one the single-line Input above takes, because a Textarea renders as one (input/textarea.rs, Textarea::into_input)")
 }
 

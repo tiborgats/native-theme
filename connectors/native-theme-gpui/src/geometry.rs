@@ -210,7 +210,10 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// for a single-line field: a multi-line `Input` sets its own height before
 /// this refinement (`input/input.rs:705-708`), which the rule's `h` would
 /// replace, so a caller that wants a multi-line height applies its own
-/// `Styled::h` after this builder.
+/// `Styled::h` after this builder. The padding is a single-line field's too:
+/// upstream pads only a single-line root (`input/input.rs:700-702`), so a
+/// caller that refines a multi-line `Input` or a `Textarea` clears the
+/// refinement's padding as well.
 ///
 /// The stated padding sides reach the root: upstream pads a single-line
 /// field (`input_px`/`input_py`, `input/input.rs:701`) before the refinement
@@ -551,10 +554,10 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// (`input_size`, `select.rs:544`, `combobox.rs:995`) before the refinement
 /// (`select.rs:546`, `combobox.rs:997`), so the refinement wins, and no inner
 /// element pads again. The caret sits inside that padded trigger
-/// (`select.rs:57-66`, `combobox.rs:1009-1026`), so a platform whose right
-/// side is measured to a separate arrow column, as WinUI's combobox is
-/// (docs/platform-facts.md §2.24), has no receiver for it here; that side is
-/// left unstated in the model.
+/// (`select.rs:57-66`, `combobox.rs:1009-1026`), so the right side has no
+/// receiver in gpui where the platform measures it to a separate arrow
+/// column: WinUI does (spec v0.5.9 unstated-sizes §1.4,
+/// docs/platform-facts.md §2.24), so that platform's value is not applied.
 fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
     let r = with_height_rule(
@@ -577,10 +580,10 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
 /// The stated padding sides reach the trigger: upstream pads it
 /// (`input_size`, `select.rs:544`) before the refinement (`:546`), so the
 /// refinement wins, and no inner element pads again. The caret sits inside
-/// that padded trigger (`select.rs:57-66`), so a platform whose right side is
-/// measured to a separate arrow column, as WinUI's combobox is
-/// (docs/platform-facts.md §2.24), has no receiver for it here; that side is
-/// left unstated in the model.
+/// that padded trigger (`select.rs:57-66`), so the right side has no receiver
+/// in gpui where the platform measures it to a separate arrow column: WinUI
+/// does (spec v0.5.9 unstated-sizes §1.4, docs/platform-facts.md §2.24), so
+/// that platform's value is not applied.
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the trigger with `foreground` through `input_style`

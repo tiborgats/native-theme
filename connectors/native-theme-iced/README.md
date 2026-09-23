@@ -167,7 +167,8 @@ container(Spinner::new()).style(styles::aw::spinner(&resolved))
 | the palette only, no `iced_widget` | `default-features = false` |
 | the palette plus icons, no `iced_widget` | `default-features = false, features = ["lucide-icons"]` |
 
-`widgets` (default) enables `styles`; `iced_aw` (opt-in, implies `widgets`)
+`widgets` (default) enables `styles` and the `button_padding` and
+`input_padding` helpers; `iced_aw` (opt-in, implies `widgets`)
 enables `styles::aw`. It is off by default because `iced_aw` is a third-party
 crate with its own release cadence and an embedded icon font. The icon
 features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
@@ -192,6 +193,11 @@ Full helper list: `button_padding`, `input_padding`, `border_radius`,
 `font_weight`, `mono_font_family`, `mono_font_size`, `mono_font_weight`,
 `line_height_multiplier`, plus `to_iced_weight(css_weight)` for converting
 CSS weight values to iced's `Weight` enum.
+
+`button_padding` and `input_padding` need the `widgets` feature (on by
+default). Each side is the theme's where it states that side; a side it does
+not state is iced's own default, `iced_widget::button::DEFAULT_PADDING` or
+`iced_widget::text_input::DEFAULT_PADDING`.
 
 ### Text scaling
 
