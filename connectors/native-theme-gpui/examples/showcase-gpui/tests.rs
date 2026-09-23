@@ -37,14 +37,16 @@ use crate::{
     FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
     FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
     INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
-    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LAYOUT_GROUP_BOX_NORMAL,
-    LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID, LIST_DEMO,
-    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, TYPOGRAPHY_H1,
-    TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE,
+    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LAYOUT_BREADCRUMB,
+    LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
+    LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
+    LAYOUT_SEPARATOR_SOLID, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
+    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
+    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
+    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
+    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
+    TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
+    WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -2207,6 +2209,67 @@ fn a_solid_separator_and_a_dashed_one_show_different_infos(cx: &mut TestAppConte
     assert!(
         texts.first() != texts.get(1),
         "the solid and the dashed Separator show the same info: {texts:?}"
+    );
+}
+
+/// A Breadcrumb link shows its page: the first link, Buttons, dispatches
+/// `ShowPage` for it, which goes through `show_page` as every other route
+/// to a page does.
+#[gpui::test]
+fn a_breadcrumb_link_shows_its_page(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    click(&mut cx, LAYOUT_BREADCRUMB);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Buttons,
+        "a click on the Breadcrumb's first link did not show the Buttons page"
+    );
+}
+
+/// Toggling the Collapsible redraws it: the click flips the showcase's state
+/// and asks for a frame, so the content goes and the toggle's info follows.
+#[gpui::test]
+fn toggling_the_collapsible_redraws_it(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    let open = settle_on(&mut cx, &showcase, LAYOUT_COLLAPSIBLE_TOGGLE);
+    assert!(
+        cx.debug_bounds(LAYOUT_COLLAPSIBLE_CONTENT).is_some(),
+        "the Collapsible starts open, and its content was not laid out"
+    );
+    // A test draws its frames itself, so what shows the click asked for one
+    // is a notification of the showcase, which is what marks its view dirty
+    // (gpui-pre app/context.rs, Context::notify).
+    let notified = Rc::new(std::cell::Cell::new(0usize));
+    let _observer = cx.update(|_window, cx| {
+        let notified = notified.clone();
+        cx.observe(&showcase, move |_, _| notified.set(notified.get() + 1))
+    });
+    click(&mut cx, LAYOUT_COLLAPSIBLE_TOGGLE);
+    assert!(
+        !read(&mut cx, &showcase, |this, _| this.collapsible_open),
+        "the toggle did not close the Collapsible"
+    );
+    assert!(
+        notified.get() > 0,
+        "the toggle closed the Collapsible without asking for a frame, so the \
+         window keeps showing it open until something else redraws it"
+    );
+    assert!(
+        cx.debug_bounds(LAYOUT_COLLAPSIBLE_CONTENT).is_none(),
+        "the Collapsible closed, and the frame still shows its content"
+    );
+    let closed = settle_on(&mut cx, &showcase, LAYOUT_COLLAPSIBLE);
+    assert_eq!(
+        closed.map(|info| info.title()).as_deref(),
+        Some("Collapsible · closed"),
+        "the Collapsible's info did not follow it closing"
+    );
+    let toggle = settle_on(&mut cx, &showcase, LAYOUT_COLLAPSIBLE_TOGGLE);
+    assert!(
+        open.is_some() && toggle.is_some() && open != toggle,
+        "the toggle's info did not follow the Collapsible closing: {open:?} / {toggle:?}"
     );
 }
 

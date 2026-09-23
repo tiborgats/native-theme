@@ -13,6 +13,7 @@ use crate::demo::{
 };
 use crate::support::{NativeStyled as _, STEPPER_STEPS, layout_value, with_gap};
 use crate::{
+    LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, PROBE_STEPPER, Page, probe,
 };
@@ -87,8 +88,9 @@ impl Showcase {
         let steps = STEPPER_STEPS.len();
         let step = self.step;
         let presets = native_theme::theme::Theme::list_presets().len();
-        let toggle_collapsible = cx.listener(|this, _ev, _w, _cx| {
+        let toggle_collapsible = cx.listener(|this, _ev, _w, cx| {
             this.collapsible_open = !this.collapsible_open;
+            cx.notify();
         });
         let pick_step = cx.listener(|this, step: &usize, _w, cx| {
             this.step = *step;
@@ -261,9 +263,9 @@ impl Showcase {
             .child(demo::collapsible(
                 ui,
                 cx,
-                "layout-collapsible",
-                "layout-collapsible-toggle",
-                "layout-collapsible-content",
+                LAYOUT_COLLAPSIBLE,
+                LAYOUT_COLLAPSIBLE_TOGGLE,
+                LAYOUT_COLLAPSIBLE_CONTENT,
                 collapsible_open,
                 toggle_collapsible,
             ))
@@ -315,7 +317,7 @@ impl Showcase {
             .child(demo::breadcrumb(
                 ui,
                 cx,
-                "layout-breadcrumb",
+                LAYOUT_BREADCRUMB,
                 &BREADCRUMB_PAGES,
                 Page::Layout,
             ))

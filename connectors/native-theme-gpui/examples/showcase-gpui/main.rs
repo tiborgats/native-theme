@@ -379,6 +379,14 @@ pub(crate) const LAYOUT_GROUP_BOX_OUTLINE: &str = "layout-group-box-outline";
 /// hovers.
 pub(crate) const LAYOUT_SEPARATOR_SOLID: &str = "layout-separator-solid";
 pub(crate) const LAYOUT_SEPARATOR_DASHED: &str = "layout-separator-dashed";
+/// The ids and debug selectors of the Layout page's Breadcrumb, whose
+/// first link `a_breadcrumb_link_shows_its_page` clicks, and of its
+/// Collapsible's toggle and content, which
+/// `toggling_the_collapsible_redraws_it` clicks and looks for.
+pub(crate) const LAYOUT_BREADCRUMB: &str = "layout-breadcrumb";
+pub(crate) const LAYOUT_COLLAPSIBLE: &str = "layout-collapsible";
+pub(crate) const LAYOUT_COLLAPSIBLE_TOGGLE: &str = "layout-collapsible-toggle";
+pub(crate) const LAYOUT_COLLAPSIBLE_CONTENT: &str = "layout-collapsible-content";
 
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls

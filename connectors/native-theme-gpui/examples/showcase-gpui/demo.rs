@@ -3231,7 +3231,7 @@ pub(crate) fn scroll_area(
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut area_info = info::layout::scroll_area(cx.theme(), styled);
+    let mut area_info = info::layout::scroll_area(cx.theme(), styled, items);
     native_info(
         div()
             .id(id)
@@ -3271,7 +3271,7 @@ pub(crate) fn accordion(
     id: &'static str,
     items: [(&'static str, &'static str, SharedString); 3],
 ) -> Stateful<Div> {
-    let mut accordion_info = info::layout::accordion(cx.theme(), cx.reduce_motion());
+    let mut accordion_info = info::layout::accordion(cx.theme(), cx.reduce_motion(), items.len());
     // `AccordionItem::title_style` takes a refinement rather than being one.
     let title_style = native_info(
         StyleRefinement::default(),
@@ -3498,7 +3498,7 @@ pub(crate) fn breadcrumb(
             })
         }))
         .child(BreadcrumbItem::new(current.label()))
-        .info(ui, id, info::layout::breadcrumb(cx.theme()))
+        .info(ui, id, info::layout::breadcrumb(cx.theme(), pages, current))
         .self_start()
         .debug_selector(move || id.into())
 }
@@ -3573,7 +3573,6 @@ pub(crate) fn settings(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) ->
     );
     let group = |title: &'static str| refined(SettingGroup::new(), Some(&gutter)).title(title);
     Settings::new(id)
-        .sidebar_width(px(140.0))
         .page(
             SettingPage::new("Appearance")
                 .description("Customize the look and feel")

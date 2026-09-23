@@ -4,6 +4,7 @@ use gpui::Pixels;
 use gpui_component::theme::Theme;
 
 use super::{WidgetInfo, chrome::ghost_hover, claim, px_text};
+use crate::Page;
 use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
 use crate::support::layout_value;
 
@@ -157,7 +158,7 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
 /// The `Accordion`, drawn while gpui's `reduce_motion` is as given. Its
 /// title rows' geometry line is recorded where `demo::accordion` applies
 /// the builder.
-pub fn accordion(t: &Theme, reduce_motion: bool) -> WidgetInfo {
+pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
     WidgetInfo::new("Accordion")
         .color(claim(
             "bg",
@@ -210,7 +211,7 @@ pub fn accordion(t: &Theme, reduce_motion: bool) -> WidgetInfo {
         } else {
             "an item's content springs open and shut on spring_control; the chevron turns at once (accordion.rs, AccordionItem::render)"
         })
-        .instance("items", "three, the first open. Accordion::item takes a closure over an AccordionItem that the Accordion builds and renders itself (accordion.rs, Accordion::item), so an item cannot be wrapped: the Accordion reports for its items and their titles. Each answer is a Label that reports itself")
+        .instance("items", format!("{items}, the first open. Accordion::item takes a closure over an AccordionItem that the Accordion builds and renders itself (accordion.rs, Accordion::item), so an item cannot be wrapped: the Accordion reports for its items and their titles. Each answer is a Label that reports itself"))
 }
 
 /// The `Collapsible`, `open` or not.
@@ -509,7 +510,13 @@ pub fn stepper(t: &Theme, kind: StepperKind, step: usize, count: usize) -> Widge
 }
 
 /// The `Breadcrumb`, whose items but the last show a page.
-pub fn breadcrumb(t: &Theme) -> WidgetInfo {
+pub fn breadcrumb(t: &Theme, pages: &[Page], current: Page) -> WidgetInfo {
+    let links = pages
+        .iter()
+        .map(|page| page.label())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let current = current.label();
     WidgetInfo::new("Breadcrumb")
         .color(claim(
             "items",
@@ -531,7 +538,7 @@ pub fn breadcrumb(t: &Theme) -> WidgetInfo {
         ))
         .not_themeable("separator icon", "a ChevronRight built inline with no setter to replace it (breadcrumb.rs, Breadcrumb) -- unlike an Alert's icon, which Alert::icon takes")
         .not_themeable("spacing", "gap_1p5 (breadcrumb.rs, Breadcrumb) -- rems again -- and applied before the caller's refinement. native-theme states no breadcrumb widget. Our gap")
-        .instance("items", "Buttons, Inputs, Data, Feedback and Layout: a click on one of the first four shows that page, and Layout, the last, is this page. Breadcrumb::child takes a BreadcrumbItem that the Breadcrumb renders itself (breadcrumb.rs, Breadcrumb::child), so an item cannot be wrapped: the Breadcrumb reports for its items")
+        .instance("items", format!("{links} and {current}: a click on one of the first {} shows that page, and {current}, the last, is this page. Breadcrumb::child takes a BreadcrumbItem that the Breadcrumb renders itself (breadcrumb.rs, Breadcrumb::child), so an item cannot be wrapped: the Breadcrumb reports for its items", pages.len()))
 }
 
 /// The horizontal `Form` of the Layout page, its labels `label_width` wide,
@@ -578,7 +585,7 @@ pub fn form(t: &Theme, label_width: Pixels) -> WidgetInfo {
 /// installed, whose scrollbar the connector writes onto gpui-base; its
 /// gutter's geometry line is recorded where `demo::scroll_area` applies the
 /// builder.
-pub fn scroll_area(t: &Theme, styled: bool) -> WidgetInfo {
+pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
     let info = WidgetInfo::new("Scrollbar")
         .color(claim(
             "track",
@@ -610,7 +617,9 @@ pub fn scroll_area(t: &Theme, styled: bool) -> WidgetInfo {
     };
     info.instance(
         "content",
-        "twenty Labels, each of which reports itself; the strip beside them is the scrollbar's",
+        format!(
+            "{items} Labels, each of which reports itself; the strip beside them is the scrollbar's"
+        ),
     )
 }
 
@@ -625,8 +634,8 @@ pub fn settings(t: &Theme) -> WidgetInfo {
             "gpui-component/group_box.rs:147",
         ))
         .not_themeable("fill", "none of its own: nothing under setting/ sets a background, so a Settings page shows the window's (gpui-component setting/)")
-        .not_themeable("descriptions", "muted_foreground, set per item, group and page (setting/item.rs, setting/group.rs, setting/page.rs)")
+        .not_themeable("sidebar width", "250px, upstream's default (setting/settings.rs, Settings::sidebar_width), kept between 160px and 360px (setting/settings.rs, sidebar_size_range), the range a drag of its handle stays in and a width set outside it is clamped to (gpui-base/resizable/panel.rs, ResizablePanel). px literals, and native-theme states no settings page")
         .not_themeable("layout", "the label above the field wherever the page is at most 480px wide, and beside it where it is wider (setting/settings.rs, STACKED_LAYOUT_MAX_WIDTH)")
         .instance("pages", "Appearance, open, with the groups Theme and Editor, and Keyboard, with Shortcuts; the sidebar lists the pages")
-        .instance("fields", "switch, checkbox, input, number input, dropdown, or an element of the application's own (setting/fields/mod.rs, SettingFieldType). This sample shows the first three and a dropdown, which upstream builds inside each SettingItem, so they report through the Settings")
+        .instance("fields", "switch, checkbox, input, number input, dropdown, or an element of the application's own (setting/fields/mod.rs, SettingFieldType). This sample shows the first three and a dropdown, which upstream builds inside each SettingItem, so they report through the Settings. The Theme group also holds a whole-row item of the showcase's own, a 1px strip built with SettingItem::render (setting/item.rs, SettingItem::render), whose right edge is where a row ends: the self-tests measure it against the page's scrollbar")
 }
