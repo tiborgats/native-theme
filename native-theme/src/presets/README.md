@@ -65,5 +65,7 @@ runtime by platform readers or `resolve_platform_defaults`:
 - **`font_dpi`** -- filled by platform reader from OS display settings
 - **`reduce_motion`**, **`high_contrast`**, **`reduce_transparency`**,
   **`text_scaling_factor`** -- filled by platform reader from OS
-  accessibility settings
+  accessibility settings (the macOS reader reports no text-scaling factor:
+  its text size setting reaches only a few Apple apps,
+  `docs/platform-facts.md` §2.1.7)
 - **`icon_sizes`** -- filled by platform reader from filesystem lookup

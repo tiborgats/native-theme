@@ -136,28 +136,18 @@ fn read_scrollbar_style(mtm: objc2::MainThreadMarker) -> Option<bool> {
 
 /// Read accessibility flags from NSWorkspace.
 ///
-/// Returns (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor).
-/// text_scaling_factor is derived by comparing the system font size to the default (13pt).
+/// Returns (reduce_motion, high_contrast, reduce_transparency). No text-scaling
+/// factor: macOS's accessibility text size affects only a few Apple apps, and
+/// `preferredFont(forTextStyle:)` still returns fixed sizes
+/// (docs/platform-facts.md:1123), so the fonts the reader reads already carry
+/// whatever size the system gives them.
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>, Option<f32>) {
+fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>) {
     let workspace = NSWorkspace::sharedWorkspace();
-    let reduce_motion = Some(workspace.accessibilityDisplayShouldReduceMotion());
-    let high_contrast = Some(workspace.accessibilityDisplayShouldIncreaseContrast());
-    let reduce_transparency = Some(workspace.accessibilityDisplayShouldReduceTransparency());
-
-    // Derive text scaling factor from system font size vs default 13pt.
-    let system_size = NSFont::systemFontSize() as f32;
-    let text_scaling_factor = if (system_size - 13.0).abs() > 0.01 {
-        Some(system_size / 13.0)
-    } else {
-        None
-    };
-
     (
-        reduce_motion,
-        high_contrast,
-        reduce_transparency,
-        text_scaling_factor,
+        Some(workspace.accessibilityDisplayShouldReduceMotion()),
+        Some(workspace.accessibilityDisplayShouldIncreaseContrast()),
+        Some(workspace.accessibilityDisplayShouldReduceTransparency()),
     )
 }
 
@@ -525,8 +515,7 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
     }
 
     // Accessibility flags (appearance-independent).
-    let (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor) =
-        read_accessibility();
+    let (reduce_motion, high_contrast, reduce_transparency) = read_accessibility();
     let mut acc = crate::AccessibilityPreferences::default();
     if let Some(rm) = reduce_motion {
         acc.reduce_motion = rm;
@@ -536,9 +525,6 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
     }
     if let Some(rt) = reduce_transparency {
         acc.reduce_transparency = rt;
-    }
-    if let Some(tsf) = text_scaling_factor {
-        acc.text_scaling_factor = tsf;
     }
 
     // macOS coordinate system uses 72 DPI as its base.
