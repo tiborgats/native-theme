@@ -1191,6 +1191,16 @@ the gap — closing it is a change, and each wants its own decision.
       directory before a release. Both defects the gpui self-tests found (the
       overlay layers never mounted; the mode selector dead when no theme can
       be read) sat on paths a configured desktop never takes.
+- [ ] The gpui showcase builds two gpui-base widgets outside `demo.rs` and
+      `chrome.rs`, against spec §5.3 of the showcase-app spec: the body's
+      `h_resizable("body")` and its three `resizable_panel()`s in `app.rs`
+      (`Showcase::render`). `every_widget_reports_itself` does not see them,
+      because it reads constructors as `Type::function(` (spec §10.1) and
+      these are free functions. The handles report themselves
+      (`demo::resize_handles`), but the `ResizablePanelGroup` and its panels
+      have no Widget Info. Either build the group in a `chrome::` helper that
+      reports it, or extend the gate to upstream free functions returning a
+      widget, or both.
 
 #### Upstream PR to gpui
 

@@ -608,7 +608,7 @@ fn native_info_names_the_builder_it_applies() {
     for (file, raw) in SHOWCASE_FILES {
         let starts = line_offsets(raw);
         for open in code_calls(raw, "native_info") {
-            calls += 1;
+            calls += usize::from(*file != TEST_MODULE);
             let args = call_args(raw, open).unwrap_or_default();
             let applied = args.get(2).map(|a| a.trim());
             let recorded = args.get(3).map(|a| a.trim());
@@ -627,7 +627,8 @@ fn native_info_names_the_builder_it_applies() {
     }
     assert!(
         calls > 0,
-        "no native_info call found in the showcase, so this test would pass vacuously"
+        "no native_info call found outside the test module, so this test would pass \
+         vacuously for every widget the showcase shows"
     );
     assert!(
         findings.is_empty(),
@@ -898,39 +899,11 @@ fn block_end(code: &str, open: usize) -> Option<usize> {
     None
 }
 
-/// A parameter as its pattern: `id` for `id: &'static str`, `(name_id,
-/// name)` for a tuple pattern, `self` for `&mut self`.
-fn param_pattern(param: &str) -> &str {
-    let param = param.trim();
-    let mut depth = 0usize;
-    let mut colon = None;
-    let bytes = param.as_bytes();
-    for (ix, c) in param.char_indices() {
-        match c {
-            '(' | '[' | '<' => depth += 1,
-            ')' | ']' | '>' => depth = depth.saturating_sub(1),
-            ':' if depth == 0
-                && bytes.get(ix + 1) != Some(&b':')
-                && (ix == 0 || bytes.get(ix - 1) != Some(&b':')) =>
-            {
-                colon = Some(ix);
-                break;
-            }
-            _ => {}
-        }
-    }
-    let pattern = colon.and_then(|ix| param.get(..ix)).unwrap_or(param).trim();
-    let pattern = pattern.trim_start_matches('&').trim_start();
-    pattern.strip_prefix("mut ").unwrap_or(pattern).trim()
-}
-
 /// One function of a showcase file.
 struct FnItem<'a> {
     /// The offset of its `fn`.
     at: usize,
     name: &'a str,
-    /// Its parameters' patterns (see [`param_pattern`]).
-    params: Vec<&'a str>,
     /// Its body, from the `{` to just past the `}`.
     body: std::ops::Range<usize>,
 }
@@ -1002,16 +975,9 @@ fn fn_items<'a>(raw: &'a str, code: &str) -> Vec<FnItem<'a>> {
         let Some(body_end) = block_end(code, body_open) else {
             continue;
         };
-        let params = call_args(raw, open)
-            .unwrap_or_default()
-            .into_iter()
-            .map(param_pattern)
-            .filter(|p| !p.is_empty())
-            .collect();
         out.push(FnItem {
             at,
             name,
-            params,
             body: body_open..body_end,
         });
     }
@@ -1034,7 +1000,8 @@ fn is_public(code: &str, at: usize) -> bool {
 // by a `demo::` or `chrome::` helper that wraps it with `.info(`. Two rules
 // keep that so. Outside those two files no gpui-component widget is
 // constructed at all; and every public helper in them that constructs one
-// also calls `.info(`. The inspector is the named exemption from the first
+// -- in its own body or in a private function of its file it calls, however
+// indirectly -- also calls `.info(` in one of those bodies. The inspector is the named exemption from the first
 // rule (spec §4.4); the test module and the `info/` files, which build no
 // demo, are not read by it.
 //
@@ -1303,15 +1270,49 @@ fn reports(body: &str) -> bool {
         })
 }
 
+/// The body of `item` and of every private function of the same file it
+/// calls by name, directly or through another: what a public helper builds
+/// includes the parts it delegates to.
+fn reached_bodies(
+    code: &str,
+    items: &[FnItem<'_>],
+    item: &FnItem<'_>,
+) -> Vec<std::ops::Range<usize>> {
+    let mut reached = vec![item.body.clone()];
+    let mut ix = 0;
+    while let Some(body) = reached.get(ix).cloned() {
+        ix += 1;
+        let text = code.get(body.clone()).unwrap_or("");
+        for callee in items.iter().filter(|f| !is_public(code, f.at)) {
+            let called = text.match_indices(callee.name).any(|(at, _)| {
+                let before = text.get(..at).unwrap_or("");
+                let after = text.get(at + callee.name.len()..).unwrap_or("");
+                after.starts_with('(')
+                    && !before.ends_with(|c: char| {
+                        c.is_alphanumeric() || c == '_' || c == '.' || c == ':'
+                    })
+                    && trailing_ident(before.trim_end()) != "fn"
+            });
+            if called && !reached.contains(&callee.body) {
+                reached.push(callee.body.clone());
+            }
+        }
+    }
+    reached
+}
+
 /// What `every_widget_reports_itself` finds in `files`, given upstream's
-/// `widgets`: the findings, how many constructions the helper files hold, and
-/// how many public helpers construct a widget.
+/// `widgets`: the widgets nothing reports, the `exempt` entries that match no
+/// call any more, how many constructions the helper files hold, and how many
+/// public helpers construct a widget -- themselves or through a private
+/// function of their file (`reached_bodies`).
 fn unreported_widgets(
     files: &[(&str, &str)],
     widgets: &BTreeSet<String>,
     exempt: &[(&str, &str, &str)],
-) -> (Vec<String>, usize, usize) {
+) -> (Vec<String>, Vec<String>, usize, usize) {
     let mut findings = Vec::new();
+    let mut stale = Vec::new();
     let mut in_helpers = 0usize;
     let mut helpers = 0usize;
     let mut exempted = BTreeSet::new();
@@ -1321,17 +1322,22 @@ fn unreported_widgets(
         let built = widget_constructions(&code, widgets);
         if HELPER_FILES.contains(&file) {
             in_helpers += built.len();
-            for item in fn_items(raw, &code) {
+            let items = fn_items(raw, &code);
+            for item in items.iter().filter(|item| is_public(&code, item.at)) {
+                let bodies = reached_bodies(&code, &items, item);
                 let inside: BTreeSet<&str> = built
                     .iter()
-                    .filter(|(at, _)| item.body.contains(at))
+                    .filter(|(at, _)| bodies.iter().any(|body| body.contains(at)))
                     .map(|(_, call)| call.as_str())
                     .collect();
-                if !is_public(&code, item.at) || inside.is_empty() {
+                if inside.is_empty() {
                     continue;
                 }
                 helpers += 1;
-                if !reports(code.get(item.body.clone()).unwrap_or("")) {
+                let reported = bodies
+                    .iter()
+                    .any(|body| reports(code.get(body.clone()).unwrap_or("")));
+                if !reported {
                     findings.push(format!(
                         "{file}:{}: `{}` builds {} and never calls .info(",
                         line_at(&starts, item.at),
@@ -1357,12 +1363,12 @@ fn unreported_widgets(
     for (file, call, _) in exempt {
         if files.iter().any(|(f, _)| f == file) && !exempted.contains(&(*file, (*call).to_string()))
         {
-            findings.push(format!(
+            stale.push(format!(
                 "NOT_WIDGET_CONSTRUCTORS lists {call} in {file}, which no longer calls it"
             ));
         }
     }
-    (findings, in_helpers, helpers)
+    (findings, stale, in_helpers, helpers)
 }
 
 /// Spec §10.1: no gpui-component widget is built outside `demo.rs` and
@@ -1383,7 +1389,7 @@ fn every_widget_reports_itself() {
          them, so this test cannot recognise a widget",
         widgets.len()
     );
-    let (findings, in_helpers, helpers) =
+    let (findings, stale, in_helpers, helpers) =
         unreported_widgets(SHOWCASE_FILES, &widgets, NOT_WIDGET_CONSTRUCTORS);
     assert!(
         in_helpers > 0 && helpers > 0,
@@ -1396,6 +1402,12 @@ fn every_widget_reports_itself() {
         "a widget is built where nothing reports it (spec §5.3, §10.1): build it \
          in a demo:: or chrome:: helper that calls .info(:\n  {}",
         findings.join("\n  ")
+    );
+    assert!(
+        stale.is_empty(),
+        "NOT_WIDGET_CONSTRUCTORS exempts a call the showcase no longer makes; \
+         remove the entry:\n  {}",
+        stale.join("\n  ")
     );
 }
 
@@ -1466,14 +1478,25 @@ pub(crate) fn unreported() -> Tag {
 pub(crate) fn plain() -> Div {
     div()
 }
+pub(crate) fn delegates() -> Div {
+    div().child(part())
+}
+fn inner(ui: &Ui, id: &'static str) -> Stateful<Div> {
+    Label::new("inner").info(ui, id, info::label())
+}
+pub(crate) fn through(ui: &Ui, id: &'static str) -> Stateful<Div> {
+    inner(ui, id)
+}
 "#;
-    let (findings, in_helpers, helpers) =
+    let (findings, stale, in_helpers, helpers) =
         unreported_widgets(&[("demo.rs", helpers), ("pages/p.rs", page)], &widgets, &[]);
-    assert_eq!((in_helpers, helpers), (4, 3));
+    assert_eq!((in_helpers, helpers), (5, 5));
+    assert!(stale.is_empty(), "{stale:?}");
     assert_eq!(
         findings,
         vec![
             "demo.rs:11: `unreported` builds Tag::primary and never calls .info(".to_string(),
+            "demo.rs:17: `delegates` builds Label::new and never calls .info(".to_string(),
             "pages/p.rs:6: Label::new( builds a widget outside demo.rs and chrome.rs, so \
              nothing reports it"
                 .to_string(),
@@ -1489,627 +1512,22 @@ pub(crate) fn plain() -> Div {
         ("pages/p.rs", "Label::new", "a sample"),
         ("pages/p.rs", "Tag::gone", "stale"),
     ];
-    let (findings, _, _) = unreported_widgets(&[("pages/p.rs", page)], &widgets, &exempt);
+    let (findings, stale, _, _) = unreported_widgets(&[("pages/p.rs", page)], &widgets, &exempt);
     assert!(
-        !findings.iter().any(|f| f.contains("Label::new"))
-            && findings
-                .iter()
-                .any(|f| f == "NOT_WIDGET_CONSTRUCTORS lists Tag::gone in pages/p.rs, which no longer calls it"),
+        !findings.iter().any(|f| f.contains("Label::new")),
         "{findings:?}"
+    );
+    assert_eq!(
+        stale,
+        vec![
+            "NOT_WIDGET_CONSTRUCTORS lists Tag::gone in pages/p.rs, which no longer calls it"
+                .to_string()
+        ]
     );
 }
 
-// ---------------------------------------------------------------------------
-// Every info id is unique
-// ---------------------------------------------------------------------------
-//
-// The registry keys a target by the `ElementId` its `.info(` was given, the
-// id alone and not gpui's path to it (info/registry.rs), so two targets
-// under one id overwrite each other's bounds and hovers. So every info id is
-// written once, and every id a `format!` generates starts with text no other
-// id starts with.
-//
-// An id is read where it is written, which is seldom at the `.info(` itself:
-// a page passes a literal to a helper, which passes it on as `id`. So the
-// gate follows it. A helper parameter that reaches the id argument of an
-// `.info(` -- or of another helper, as far as that goes -- is an *id
-// parameter*, and the argument every call gives it is an id too. An id
-// written as a variable is followed to the `let` that binds it, to the table
-// whose rows a closure destructures (`VARIANTS.map(|(id, …)|`, a const or a
-// helper's parameter holding one), to the field of the struct literal it was
-// destructured from, or to the helper's calls; a `page.nav_item()` to the
-// arms of the method's `match`. What cannot be followed is a finding unless
-// `UNREAD_INFO_IDS` names it with the reason.
-//
-// A `format!` id that opens with a placeholder, `{id}-row-{ix}`, names a
-// part after the id of the widget it belongs to; it is as unique as that id,
-// which is checked, provided its helper gives its parts distinct suffixes --
-// which this does not check.
-
-/// Info ids the gate cannot follow to where they are written, as (file, the
-/// function the expression is in, the expression, why). The ids behind them
-/// are not checked here.
-const UNREAD_INFO_IDS: &[(&str, &str, &str, &str)] = &[
-    (
-        "demo.rs",
-        "resize_handles",
-        "id",
-        "a resize handle's id, from the (id, between) pairs app.rs collects into a \
-         Vec of the handles on show (CHROME_HANDLE_NAV, CHROME_HANDLE_INSPECTOR) \
-         and passes demo::resize_handles",
-    ),
-    (
-        "demo.rs",
-        "render",
-        "self.id",
-        "a DataTable part's id, which Reported::new is given as `{id}-header` or \
-         `{id}-row-{ix}`: named after the table's id, which is checked",
-    ),
-    (
-        "demo.rs",
-        "accordion",
-        "answer_id",
-        "an answer's id, from the (title, answer id, answer) items the Layout page \
-         passes demo::accordion as an array literal, which a fold over their \
-         enumeration destructures",
-    ),
-];
-
-/// An info id as far as the gate reads it.
-#[derive(Debug, PartialEq)]
-enum IdRead<'a> {
-    /// A string literal, or a const holding one: the text.
-    Literal(&'a str),
-    /// A `format!` pattern: the text before its first placeholder.
-    Prefix(&'a str),
-    /// A `format!` pattern that opens with a placeholder.
-    Nested,
-    /// The id parameter of the helper it is in, read at the helper's calls.
-    Carried,
-    /// Anything else: the expression.
-    Unread(&'a str),
-}
-
-/// One file as the id reader needs it.
-struct IdFile<'a> {
-    path: &'a str,
-    raw: &'a str,
-    code: String,
-    fns: Vec<FnItem<'a>>,
-    /// The `(` of every call in the file, by the name called.
-    calls: BTreeMap<&'a str, Vec<usize>>,
-    /// The id argument of every `.info(` in the file.
-    info_ids: Vec<&'a str>,
-}
-
-/// An id parameter: its position, and for a tuple pattern the element.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-struct IdParam {
-    index: usize,
-    element: Option<usize>,
-}
-
-/// A read: the file and offset it is written at, and what it is.
-type Read<'a> = (&'a str, usize, IdRead<'a>);
-
-/// What the id reader reads the showcase with.
-struct IdContext<'a> {
-    files: Vec<IdFile<'a>>,
-    /// The id parameters of each helper, by (helper file, function).
-    params: BTreeMap<(&'a str, &'a str), Vec<IdParam>>,
-}
-
-/// `expr` without what does not change the text of an id: a
-/// `SharedString::from(…)` or `ElementId::from(…)` around it, a `.clone()`,
-/// `.into()` or `.to_string()` after it, a `&` or `*` before it.
-fn id_text(expr: &str) -> &str {
-    let mut e = expr.trim();
-    loop {
-        let before = e;
-        for wrapper in ["SharedString::from(", "ElementId::from("] {
-            if let Some(inner) = e.strip_prefix(wrapper).and_then(|t| t.strip_suffix(')')) {
-                e = inner.trim();
-            }
-        }
-        for tail in [".clone()", ".into()", ".to_string()"] {
-            if let Some(inner) = e.strip_suffix(tail) {
-                e = inner.trim();
-            }
-        }
-        e = e.trim_start_matches(['&', '*']).trim_start();
-        if e == before {
-            return e;
-        }
-    }
-}
-
-/// Whether `s` is an identifier.
-fn is_ident(s: &str) -> bool {
-    !s.is_empty() && leading_ident(s) == s && !s.starts_with(|c: char| c.is_ascii_digit())
-}
-
-/// Whether `s` names a const: an identifier in capitals.
-fn is_const_name(s: &str) -> bool {
-    is_ident(s) && s.starts_with(char::is_uppercase) && !s.contains(char::is_lowercase)
-}
-
-/// The elements of a tuple pattern or expression `(a, b)`, or `None`.
-fn tuple_elements(text: &str) -> Option<Vec<&str>> {
-    let text = text.trim();
-    if !text.starts_with('(') {
-        return None;
-    }
-    let elements = call_args(text, 0)?;
-    Some(elements.into_iter().map(str::trim).collect())
-}
-
-/// The id argument of every `.info(ui, id, info)` and
-/// `InfoExt::info(w, ui, id, info)` in `raw`.
-fn info_id_args(raw: &str) -> Vec<&str> {
-    let mut out = Vec::new();
-    for open in method_calls(raw, "info") {
-        if let Some(args) = call_args(raw, open)
-            && let [_, id, _] = args.as_slice()
-        {
-            out.push(*id);
-        }
-    }
-    for open in code_calls(raw, "info") {
-        let before = raw.get(..open - "info".len()).unwrap_or("");
-        if before.ends_with("InfoExt::")
-            && let Some(args) = call_args(raw, open)
-            && let [_, _, id, _] = args.as_slice()
-        {
-            out.push(*id);
-        }
-    }
-    out
-}
-
-/// The `(` of every call in `raw`, whose [`blanked`] text is `code`, by the
-/// name called: a function, a method or a path's last segment, but not a
-/// declaration.
-fn calls_in<'a>(raw: &'a str, code: &str) -> BTreeMap<&'a str, Vec<usize>> {
-    let mut out: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
-    let mut prev = ' ';
-    for (at, c) in code.char_indices() {
-        let starts = (c.is_alphabetic() || c == '_') && !(prev.is_alphanumeric() || prev == '_');
-        prev = c;
-        if !starts {
-            continue;
-        }
-        let name = leading_ident(code.get(at..).unwrap_or(""));
-        let open = at + name.len();
-        let declared = trailing_ident(code.get(..at).unwrap_or("").trim_end()) == "fn";
-        if code.get(open..).is_some_and(|t| t.starts_with('('))
-            && !declared
-            && let Some(name) = raw.get(at..open)
-        {
-            out.entry(name).or_default().push(open);
-        }
-    }
-    out
-}
-
-/// The `(` of every call in `file` of the helper `name` of `helper_file`: by
-/// path (`demo::name(`), or bare within its own file.
-fn helper_calls(file: &IdFile<'_>, helper_file: &str, name: &str) -> Vec<usize> {
-    let module = helper_file.trim_end_matches(".rs");
-    file.calls
-        .get(name)
-        .into_iter()
-        .flatten()
-        .copied()
-        .filter(|&open| {
-            let before = file.code.get(..open - name.len()).unwrap_or("");
-            match before.strip_suffix("::") {
-                Some(path_to) => trailing_ident(path_to) == module,
-                None => file.path == helper_file && !before.trim_end().ends_with('.'),
-            }
-        })
-        .collect()
-}
-
-/// The id arguments a call passes to `params`, from its `args`.
-fn id_arguments<'a>(args: &[&'a str], params: &[IdParam]) -> Vec<&'a str> {
-    params
-        .iter()
-        .filter_map(|p| {
-            let arg = *args.get(p.index)?;
-            match p.element {
-                None => Some(arg),
-                Some(k) => tuple_elements(arg)?.get(k).copied(),
-            }
-        })
-        .collect()
-}
-
-/// The innermost function of `file` whose body holds offset `at`.
-fn enclosing_item<'f, 'a>(file: &'f IdFile<'a>, at: usize) -> Option<&'f FnItem<'a>> {
-    file.fns
-        .iter()
-        .filter(|item| item.body.contains(&at))
-        .min_by_key(|item| item.body.len())
-}
-
-impl<'a> IdContext<'a> {
-    fn new(files: &[(&'a str, &'a str)]) -> Self {
-        let files: Vec<IdFile<'a>> = files
-            .iter()
-            .filter(|(path, _)| *path != TEST_MODULE)
-            .map(|&(path, raw)| {
-                let code = blanked(raw);
-                let fns = fn_items(raw, &code);
-                let calls = calls_in(raw, &code);
-                IdFile {
-                    path,
-                    raw,
-                    fns,
-                    calls,
-                    info_ids: info_id_args(raw),
-                    code,
-                }
-            })
-            .collect();
-        let mut ctx = Self {
-            files,
-            params: BTreeMap::new(),
-        };
-        // A parameter passed on as another helper's id parameter is one too,
-        // so this runs until a pass finds nothing new.
-        loop {
-            let mut found = BTreeMap::new();
-            for file in ctx.files.iter().filter(|f| HELPER_FILES.contains(&f.path)) {
-                for item in &file.fns {
-                    let params = ctx.id_params_of(file, item);
-                    if !params.is_empty() {
-                        found.insert((file.path, item.name), params);
-                    }
-                }
-            }
-            if found == ctx.params {
-                return ctx;
-            }
-            ctx.params = found;
-        }
-    }
-
-    /// The parameters of `item` that reach an id argument in its body.
-    fn id_params_of(&self, file: &IdFile<'a>, item: &FnItem<'a>) -> Vec<IdParam> {
-        let mut ids: Vec<&str> = file
-            .info_ids
-            .iter()
-            .copied()
-            .filter(|e| item.body.contains(&offset_in(file.raw, e)))
-            .collect();
-        for ((helper_file, name), params) in &self.params {
-            for open in helper_calls(file, helper_file, name) {
-                if item.body.contains(&open) {
-                    let args = call_args(file.raw, open).unwrap_or_default();
-                    ids.extend(id_arguments(&args, params));
-                }
-            }
-        }
-        let ids: Vec<&str> = ids.into_iter().map(id_text).collect();
-        let mut out = Vec::new();
-        for (index, pattern) in item.params.iter().enumerate() {
-            match tuple_elements(pattern) {
-                Some(elements) => out.extend(
-                    elements
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, e)| ids.contains(e))
-                        .map(|(k, _)| IdParam {
-                            index,
-                            element: Some(k),
-                        }),
-                ),
-                None if ids.contains(pattern) => out.push(IdParam {
-                    index,
-                    element: None,
-                }),
-                None => {}
-            }
-        }
-        out
-    }
-
-    /// Every id position of the showcase: the file, and the expression.
-    fn id_sites(&self) -> Vec<(&IdFile<'a>, &'a str)> {
-        let mut out = Vec::new();
-        for file in &self.files {
-            for &expr in &file.info_ids {
-                out.push((file, expr));
-            }
-            for ((helper_file, name), params) in &self.params {
-                for open in helper_calls(file, helper_file, name) {
-                    let args = call_args(file.raw, open).unwrap_or_default();
-                    for expr in id_arguments(&args, params) {
-                        out.push((file, expr));
-                    }
-                }
-            }
-        }
-        out
-    }
-
-    /// The value of the const `name`: from `from` if it declares one, else
-    /// from whichever file does.
-    fn const_value(&self, from: &IdFile<'a>, name: &str) -> Option<(&IdFile<'a>, &'a str)> {
-        let value_in = |file: &IdFile<'a>| {
-            let at = const_declaration(&file.code, name)?;
-            let eq = at + file.code.get(at..)?.find('=')?;
-            let end = eq + file.code.get(eq..)?.find(';')?;
-            Some(file.raw.get(eq + 1..end)?.trim())
-        };
-        if let Some(value) = value_in(from) {
-            let file = self.files.iter().find(|f| f.path == from.path)?;
-            return Some((file, value));
-        }
-        self.files
-            .iter()
-            .find_map(|file| value_in(file).map(|value| (file, value)))
-    }
-
-    /// The `(` of every call of the helper `name` of `helper_file` in the
-    /// showcase, with the file it is in.
-    fn calls_of(&self, helper_file: &str, name: &str) -> Vec<(&IdFile<'a>, usize)> {
-        self.files
-            .iter()
-            .flat_map(|file| {
-                helper_calls(file, helper_file, name)
-                    .into_iter()
-                    .map(move |open| (file, open))
-            })
-            .collect()
-    }
-
-    /// Read the id `expr`, at offset `at` in `file`, into `out`. `depth`
-    /// stops a cycle.
-    fn read(
-        &self,
-        file: &IdFile<'a>,
-        at: usize,
-        expr: &'a str,
-        depth: usize,
-        out: &mut Vec<Read<'a>>,
-    ) {
-        let e = id_text(expr);
-        let shown = written_at(file.raw, e, at);
-        let method = e
-            .strip_suffix("()")
-            .and_then(|call| call.rsplit_once('.'))
-            .filter(|(receiver, method)| is_ident(receiver) && is_ident(method));
-        if depth > 16 {
-            out.push((file.path, shown, IdRead::Unread(e)));
-        } else if let Some(text) = unquote(e) {
-            out.push((file.path, shown, IdRead::Literal(text)));
-        } else if let Some(args) = e
-            .strip_prefix("format!")
-            .filter(|t| t.starts_with('('))
-            .and_then(|_| call_args(e, "format!".len()))
-        {
-            let read = match args.first().and_then(|pattern| unquote(pattern)) {
-                Some(pattern) => match pattern.split('{').next().unwrap_or("") {
-                    "" => IdRead::Nested,
-                    prefix => IdRead::Prefix(prefix),
-                },
-                None => IdRead::Unread(e),
-            };
-            out.push((file.path, shown, read));
-        } else if is_const_name(e) {
-            match self.const_value(file, e) {
-                Some((declared, value)) => {
-                    let at = offset_in(declared.raw, value);
-                    self.read(declared, at, value, depth + 1, out);
-                }
-                None => out.push((file.path, shown, IdRead::Unread(e))),
-            }
-        } else if is_ident(e) {
-            self.read_variable(file, at, e, depth, out);
-        } else if let Some((_, method)) = method {
-            self.read_arms(method, depth, out, (file.path, shown, e));
-        } else {
-            out.push((file.path, shown, IdRead::Unread(e)));
-        }
-    }
-
-    /// Read the variable `var`, used at `at` in `file`.
-    fn read_variable(
-        &self,
-        file: &IdFile<'a>,
-        at: usize,
-        var: &'a str,
-        depth: usize,
-        out: &mut Vec<Read<'a>>,
-    ) {
-        let shown = written_at(file.raw, var, at);
-        let Some(item) = enclosing_item(file, at) else {
-            out.push((file.path, shown, IdRead::Unread(var)));
-            return;
-        };
-        if let Some(params) = self.params.get(&(file.path, item.name)) {
-            let carried = params.iter().any(|p| {
-                let pattern = item.params.get(p.index).copied().unwrap_or("");
-                match p.element {
-                    None => pattern == var,
-                    Some(k) => tuple_elements(pattern).and_then(|e| e.get(k).copied()) == Some(var),
-                }
-            });
-            if carried {
-                out.push((file.path, shown, IdRead::Carried));
-                return;
-            }
-        }
-        let scope = item.body.start..at;
-        if let Some((bound_at, pattern, value)) = last_let(file, scope.clone(), var) {
-            if pattern == var {
-                self.read(file, bound_at, value, depth + 1, out);
-                return;
-            }
-            if let (Some(names), Some(values)) = (tuple_elements(pattern), tuple_elements(value))
-                && let Some(k) = names.iter().position(|n| *n == var)
-                && let Some(value) = values.get(k)
-            {
-                self.read(file, bound_at, value, depth + 1, out);
-                return;
-            }
-            if let Some((ty, fields)) = pattern.split_once('{')
-                && let Some(field) = struct_pattern_field(fields, var)
-            {
-                self.read_field(ty.trim(), field, depth, out, (file.path, shown, var));
-                return;
-            }
-        }
-        if let Some((table, k)) = closure_row(file, scope, var) {
-            let rows = self.table_rows(file, item, table);
-            for &(declared, row) in &rows {
-                match tuple_elements(row).and_then(|e| e.get(k).copied()) {
-                    Some(element) => {
-                        let at = offset_in(declared.raw, element);
-                        self.read(declared, at, element, depth + 1, out);
-                    }
-                    None => out.push((
-                        declared.path,
-                        offset_in(declared.raw, row),
-                        IdRead::Unread(row.trim()),
-                    )),
-                }
-            }
-            if !rows.is_empty() {
-                return;
-            }
-        }
-        // A helper's parameter that reaches the id through something other
-        // than an id argument -- a struct it builds -- is read at the
-        // helper's calls.
-        if HELPER_FILES.contains(&file.path)
-            && let Some(index) = item.params.iter().position(|p| *p == var)
-        {
-            let calls = self.calls_of(file.path, item.name);
-            for &(caller, open) in &calls {
-                match call_args(caller.raw, open).unwrap_or_default().get(index) {
-                    Some(arg) => {
-                        self.read(caller, offset_in(caller.raw, arg), arg, depth + 1, out);
-                    }
-                    None => out.push((caller.path, open, IdRead::Unread(var))),
-                }
-            }
-            if !calls.is_empty() {
-                return;
-            }
-        }
-        out.push((file.path, shown, IdRead::Unread(var)));
-    }
-
-    /// The rows of the table a closure in `item` of `file` destructures:
-    /// the const `table`, or the const each call of the helper passes as
-    /// its parameter `table`. Empty where neither can be read.
-    fn table_rows(
-        &self,
-        file: &IdFile<'a>,
-        item: &FnItem<'a>,
-        table: &'a str,
-    ) -> Vec<(&IdFile<'a>, &'a str)> {
-        let rows_of = |from: &IdFile<'a>, name: &str| {
-            let Some((declared, value)) = self.const_value(from, name) else {
-                return Vec::new();
-            };
-            if !value.starts_with('[') {
-                return Vec::new();
-            }
-            call_args(declared.raw, offset_in(declared.raw, value))
-                .unwrap_or_default()
-                .into_iter()
-                .map(|row| (declared, row))
-                .collect()
-        };
-        if is_const_name(table) {
-            return rows_of(file, table);
-        }
-        let Some(index) = item.params.iter().position(|p| *p == table) else {
-            return Vec::new();
-        };
-        if !HELPER_FILES.contains(&file.path) {
-            return Vec::new();
-        }
-        let mut out = Vec::new();
-        for (caller, open) in self.calls_of(file.path, item.name) {
-            let args = call_args(caller.raw, open).unwrap_or_default();
-            if let Some(name) = args.get(index).map(|arg| id_text(arg))
-                && is_const_name(name)
-            {
-                out.extend(rows_of(caller, name));
-            }
-        }
-        out
-    }
-
-    /// Read the value of every arm of every `fn method(self)` of the
-    /// showcase whose body is a `match`. `from` is the read that led here,
-    /// reported if none is found.
-    fn read_arms(
-        &self,
-        method: &str,
-        depth: usize,
-        out: &mut Vec<Read<'a>>,
-        from: (&'a str, usize, &'a str),
-    ) {
-        let before = out.len();
-        for file in &self.files {
-            for item in file
-                .fns
-                .iter()
-                .filter(|item| item.name == method && item.params == ["self"])
-            {
-                let body = file.code.get(item.body.clone()).unwrap_or("");
-                for (ix, arrow) in body.match_indices("=>") {
-                    let start = item.body.start + ix + arrow.len();
-                    let rest = file.code.get(start..).unwrap_or("");
-                    let len = rest.find([',', '}']).unwrap_or(rest.len());
-                    if let Some(value) = file.raw.get(start..start + len) {
-                        let at = offset_in(file.raw, value.trim());
-                        self.read(file, at, value.trim(), depth + 1, out);
-                    }
-                }
-            }
-        }
-        if out.len() == before {
-            out.push((from.0, from.1, IdRead::Unread(from.2)));
-        }
-    }
-
-    /// Read the `field` of every struct literal of `ty` in the showcase.
-    /// `from` is the read that led here, reported if no literal is found.
-    fn read_field(
-        &self,
-        ty: &str,
-        field: &str,
-        depth: usize,
-        out: &mut Vec<Read<'a>>,
-        from: (&'a str, usize, &'a str),
-    ) {
-        let before = out.len();
-        for file in &self.files {
-            for open in struct_literals(&file.code, ty) {
-                for entry in call_args(file.raw, open).unwrap_or_default() {
-                    let (name, value) = split_field(entry).unwrap_or((entry.trim(), entry.trim()));
-                    if name == field {
-                        let at = offset_in(file.raw, value);
-                        self.read(file, at, value, depth + 1, out);
-                    }
-                }
-            }
-        }
-        if out.len() == before {
-            out.push((from.0, from.1, IdRead::Unread(from.2)));
-        }
-    }
-}
-
-/// Where `text`, a slice of `raw`, starts -- past the whitespace a call's
-/// argument carries, so a finding names the line the id is written on -- or
-/// `fallback` if it is not a slice of `raw`.
+/// Where `text`, a slice of `raw`, starts, or `fallback` if it is not a
+/// slice of `raw`.
 fn written_at(raw: &str, text: &str, fallback: usize) -> usize {
     let at = offset_in(raw, text);
     if text.as_ptr() >= raw.as_ptr() && at + text.len() <= raw.len() {
@@ -2117,344 +1535,6 @@ fn written_at(raw: &str, text: &str, fallback: usize) -> usize {
     } else {
         fallback
     }
-}
-
-/// The offset of `const NAME` in `code`, a [`blanked`] file.
-fn const_declaration(code: &str, name: &str) -> Option<usize> {
-    let open = format!("const {name}");
-    code.match_indices(&open).find_map(|(at, _)| {
-        let after = code.get(at + open.len()..)?;
-        (!after.starts_with(|c: char| c.is_alphanumeric() || c == '_')).then_some(at)
-    })
-}
-
-/// The last `let <pattern> = <value>;` in `scope` of `file` whose pattern
-/// binds `var`: the offset of its `let`, the pattern and the value.
-fn last_let<'a>(
-    file: &IdFile<'a>,
-    scope: std::ops::Range<usize>,
-    var: &str,
-) -> Option<(usize, &'a str, &'a str)> {
-    let code = file.code.get(scope.clone())?;
-    code.match_indices("let ")
-        .filter_map(|(ix, _)| {
-            let at = scope.start + ix;
-            let rest = file.code.get(at + 4..)?;
-            let eq = rest.find('=')?;
-            let end = rest.get(eq..)?.find(';')? + eq;
-            let pattern = file.raw.get(at + 4..at + 4 + eq)?.trim();
-            let pattern = pattern.strip_prefix("mut ").unwrap_or(pattern);
-            let value = file.raw.get(at + 4 + eq + 1..at + 4 + end)?.trim();
-            mentions(pattern, var).then_some((at, pattern, value))
-        })
-        .last()
-}
-
-/// The field a struct pattern's `fields` (the text after its `{`) binds to
-/// `var`: `var` itself for a shorthand, or the name before `: var`.
-fn struct_pattern_field<'a>(fields: &'a str, var: &str) -> Option<&'a str> {
-    fields
-        .trim_end_matches('}')
-        .split(',')
-        .map(str::trim)
-        .find_map(|entry| match entry.split_once(':') {
-            Some((name, bound)) if bound.trim() == var => Some(name.trim()),
-            None if entry == var => Some(entry),
-            _ => None,
-        })
-}
-
-/// A struct literal entry `name: value`, split; `None` for a shorthand.
-fn split_field(entry: &str) -> Option<(&str, &str)> {
-    let entry = entry.trim();
-    let name = leading_ident(entry);
-    let value = entry.get(name.len()..)?.trim_start().strip_prefix(':')?;
-    (!name.is_empty() && !value.starts_with(':')).then_some((name, value.trim()))
-}
-
-/// The `{` of every struct literal of `ty` in `code`, a [`blanked`] file:
-/// `Ty {` not declared, destructured or implemented there.
-fn struct_literals(code: &str, ty: &str) -> Vec<usize> {
-    code.match_indices(ty)
-        .filter_map(|(at, _)| {
-            let before = code.get(..at)?;
-            if before
-                .chars()
-                .next_back()
-                .is_some_and(|c| c.is_alphanumeric() || c == '_')
-            {
-                return None;
-            }
-            let after = code.get(at + ty.len()..)?;
-            let gap = after.len() - after.trim_start().len();
-            if !after.trim_start().starts_with('{') {
-                return None;
-            }
-            let keyword = trailing_ident(before.trim_end());
-            let declared = ["struct", "enum", "let", "for", "impl"].contains(&keyword);
-            (!declared).then_some(at + ty.len() + gap)
-        })
-        .collect()
-}
-
-/// The table and the tuple element the innermost closure over its rows
-/// around `scope.end` in `file` binds `var` to: `(VARIANTS, 0)` for `id` in
-/// `VARIANTS.map(|(id, label, kind)| …)`. A `&(…)` pattern, an `.iter()` or
-/// `.into_iter()` before the call, and a `.flat_map` or `.filter_map`, read
-/// the same.
-fn closure_row<'a>(
-    file: &IdFile<'a>,
-    scope: std::ops::Range<usize>,
-    var: &str,
-) -> Option<(&'a str, usize)> {
-    let code = file.code.get(scope.clone())?;
-    code.match_indices('|')
-        .filter_map(|(ix, _)| {
-            let bar = scope.start + ix;
-            let after = file.code.get(bar + 1..)?;
-            let open = bar + 1 + after.find('(')?;
-            if !file
-                .code
-                .get(bar + 1..open)?
-                .trim()
-                .trim_start_matches('&')
-                .is_empty()
-            {
-                return None;
-            }
-            let close = end_of_call(&file.code, open)?;
-            let elements = tuple_elements(file.raw.get(open..close)?)?;
-            let k = elements.iter().position(|e| *e == var)?;
-            let call = file.code.get(..bar)?.trim_end();
-            let head = call.strip_suffix("map(")?;
-            // The closure is an argument of this call, which has to hold
-            // the use of `var`.
-            if end_of_call(&file.code, call.len() - 1)? <= scope.end {
-                return None;
-            }
-            let head = ["flat_", "filter_"]
-                .iter()
-                .find_map(|prefix| head.strip_suffix(prefix))
-                .unwrap_or(head);
-            let mut head = head.trim_end().strip_suffix('.')?.trim_end();
-            for iter in ["iter()", "into_iter()"] {
-                if let Some(rest) = head
-                    .strip_suffix(iter)
-                    .and_then(|h| h.trim_end().strip_suffix('.'))
-                {
-                    head = rest.trim_end();
-                }
-            }
-            let table = trailing_ident(head);
-            let start = head.len() - table.len();
-            let table = file.raw.get(start..start + table.len())?;
-            (!table.is_empty()).then_some((table, k))
-        })
-        .next_back()
-}
-
-/// What `every_info_id_is_unique` finds among `files`, and how many
-/// literals, prefixes and helpers taking an id it read.
-fn info_id_findings(
-    files: &[(&str, &str)],
-    unread_allowed: &[(&str, &str, &str, &str)],
-) -> (Vec<String>, usize, usize, usize) {
-    let ctx = IdContext::new(files);
-    let mut reads = Vec::new();
-    for (file, expr) in ctx.id_sites() {
-        ctx.read(file, offset_in(file.raw, expr), expr, 0, &mut reads);
-    }
-    let file_of = |path: &str| ctx.files.iter().find(|f| f.path == path);
-    let where_at = |path: &str, at: usize| {
-        let line = file_of(path)
-            .map(|f| line_at(&line_offsets(f.raw), at))
-            .unwrap_or_default();
-        format!("{path}:{line}")
-    };
-
-    let mut findings = Vec::new();
-    let mut literals: BTreeMap<&str, Vec<String>> = BTreeMap::new();
-    let mut prefixes: Vec<(&str, String)> = Vec::new();
-    let mut allowed = BTreeSet::new();
-    for (path, at, read) in &reads {
-        match read {
-            IdRead::Literal(text) => literals.entry(text).or_default().push(where_at(path, *at)),
-            IdRead::Prefix(text) => prefixes.push((text, where_at(path, *at))),
-            IdRead::Nested | IdRead::Carried => {}
-            IdRead::Unread(what) => {
-                let in_fn = file_of(path)
-                    .and_then(|f| enclosing_item(f, *at))
-                    .map(|item| item.name)
-                    .unwrap_or_default();
-                match unread_allowed
-                    .iter()
-                    .find(|(f, n, e, _)| f == path && *n == in_fn && e == what)
-                {
-                    Some(entry) => {
-                        allowed.insert((entry.0, entry.1, entry.2));
-                    }
-                    None => findings.push(format!(
-                        "{} (in {in_fn}): the info id `{what}` cannot be followed to where \
-                         it is written",
-                        where_at(path, *at)
-                    )),
-                }
-            }
-        }
-    }
-    for (file, in_fn, expr, _) in unread_allowed {
-        if !allowed.contains(&(*file, *in_fn, *expr)) {
-            findings.push(format!(
-                "UNREAD_INFO_IDS lists `{expr}` in {in_fn} of {file}, which is no longer \
-                 an id the gate cannot follow"
-            ));
-        }
-    }
-    for (text, sites) in &literals {
-        if sites.len() > 1 {
-            findings.push(format!(
-                "\"{text}\" is the info id of {} widgets: {}",
-                sites.len(),
-                sites.join(", ")
-            ));
-        }
-    }
-    for (ix, (prefix, site)) in prefixes.iter().enumerate() {
-        for (text, sites) in &literals {
-            if text.starts_with(prefix) {
-                findings.push(format!(
-                    "{site}: ids generated as \"{prefix}…\" can be \"{text}\", the id at {}",
-                    sites.join(", ")
-                ));
-            }
-        }
-        for (other, other_site) in prefixes.iter().skip(ix + 1) {
-            if other.starts_with(prefix) || prefix.starts_with(other) {
-                findings.push(format!(
-                    "{site}: ids generated as \"{prefix}…\" and as \"{other}…\" at \
-                     {other_site} can meet"
-                ));
-            }
-        }
-    }
-    let literal_count = literals.values().map(Vec::len).sum();
-    (findings, literal_count, prefixes.len(), ctx.params.len())
-}
-
-/// The registry keys a target by its id (info/registry.rs), so no two
-/// widgets of the showcase share one: every info id is written once, and
-/// every generated one starts with text no other id starts with.
-#[test]
-fn every_info_id_is_unique() {
-    let (findings, literals, prefixes, helpers) = info_id_findings(SHOWCASE_FILES, UNREAD_INFO_IDS);
-    assert!(
-        literals > 0 && prefixes > 0 && helpers > 0,
-        "{literals} literal ids, {prefixes} generated ones and {helpers} helpers \
-         taking an id were read, so this test would pass vacuously"
-    );
-    assert!(
-        findings.is_empty(),
-        "two widgets can share an info id, which the registry would take for \
-         one:\n  {}",
-        findings.join("\n  ")
-    );
-}
-
-/// The id reader follows an id to where it is written -- through a helper's
-/// parameter, a tuple parameter, a const, a const table, a `let`, a struct
-/// and a method's arms -- reads a `format!` as its prefix, and reports what
-/// it cannot follow, a duplicate and a prefix another id starts with.
-#[test]
-fn the_info_id_reader_does_its_job() {
-    let demo = r#"pub(crate) fn tag(ui: &Ui, id: &'static str) -> Stateful<Div> {
-    Tag::new().info(ui, id, info::tag())
-}
-pub(crate) fn pair(ui: &Ui, (a_id, a): (&'static str, &str)) -> Div {
-    div().child(tag(ui, a_id))
-}
-pub(crate) fn row(ui: &Ui, ix: usize) -> Stateful<Div> {
-    div().info(ui, format!("demo-row-{ix}"), info::row())
-}
-pub(crate) fn part(ui: &Ui, id: &'static str) -> Stateful<Div> {
-    div().info(ui, SharedString::from(format!("{id}-part")), info::part())
-}
-pub(crate) struct Spec {
-    pub id: &'static str,
-}
-pub(crate) fn spec(ui: &Ui, spec: Spec) -> Stateful<Div> {
-    let Spec { id } = spec;
-    div().info(ui, id, info::spec())
-}
-pub(crate) fn odd(ui: &Ui, ids: &[&'static str]) -> Stateful<Div> {
-    div().info(ui, ids.first(), info::odd())
-}
-pub(crate) fn rows(ui: &Ui, rows: &[(&'static str, u8)]) -> Div {
-    div().children(rows.iter().map(|(id, _)| div().info(ui, *id, info::row())))
-}
-pub(crate) fn page_item(ui: &Ui, page: Page) -> Stateful<Div> {
-    div().info(ui, page.nav_item(), info::nav())
-}
-"#;
-    let page = r#"const IDS: &str = "page-const";
-const TABLE: [(&str, u8); 2] = [("page-a", 1), (IDS, 2)];
-const ROWS: [(&str, u8); 1] = [("page-row", 1)];
-impl Page {
-    fn nav_item(self) -> &'static str {
-        match self {
-            Self::One => "page-nav-one",
-            Self::Two => IDS,
-        }
-    }
-}
-fn page(ui: &Ui) {
-    demo::tag(ui, "page-lit");
-    TABLE.map(|(id, _)| demo::tag(ui, id));
-    demo::pair(ui, ("page-pair", "x"));
-    let local = "page-a";
-    demo::tag(ui, local);
-    demo::spec(ui, demo::Spec { id: "demo-row-1" });
-    demo::row(ui, 1);
-    demo::part(ui, "page-part");
-    demo::rows(ui, &ROWS);
-}
-"#;
-    let files = [("demo.rs", demo), ("pages/p.rs", page)];
-    let ctx = IdContext::new(&files);
-    assert_eq!(
-        ctx.params.keys().copied().collect::<Vec<_>>(),
-        vec![("demo.rs", "pair"), ("demo.rs", "tag")],
-        "{:?}",
-        ctx.params
-    );
-    let (findings, literals, prefixes, helpers) = info_id_findings(&files, &[]);
-    assert_eq!((literals, prefixes, helpers), (9, 1, 2), "{findings:#?}");
-    assert_eq!(
-        findings,
-        vec![
-            "demo.rs:21 (in odd): the info id `ids.first()` cannot be followed to where it \
-             is written"
-                .to_string(),
-            "\"page-a\" is the info id of 2 widgets: pages/p.rs:2, pages/p.rs:16".to_string(),
-            "\"page-const\" is the info id of 2 widgets: pages/p.rs:1, pages/p.rs:1".to_string(),
-            "demo.rs:8: ids generated as \"demo-row-…\" can be \"demo-row-1\", the id at \
-             pages/p.rs:18"
-                .to_string(),
-        ]
-    );
-    let allowed = [
-        ("demo.rs", "odd", "ids.first()", "a sample"),
-        ("demo.rs", "odd", "gone", "stale"),
-    ];
-    let (findings, _, _, _) = info_id_findings(&files, &allowed);
-    assert!(
-        !findings.iter().any(|f| f.contains("ids.first()"))
-            && findings.contains(
-                &"UNREAD_INFO_IDS lists `gone` in odd of demo.rs, which is no longer an id \
-                  the gate cannot follow"
-                    .to_string()
-            ),
-        "{findings:?}"
-    );
 }
 
 // ---------------------------------------------------------------------------

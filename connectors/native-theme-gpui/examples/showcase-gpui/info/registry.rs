@@ -27,6 +27,12 @@ pub struct InfoRegistry {
     tickets: u64,
     /// The active page changed since the last frame was drawn.
     page_changed: bool,
+    /// Every id a second target recorded in a frame that had already drawn
+    /// one under it. Two targets sharing an id overwrite each other's bounds
+    /// and hovers, since the registry keys them by the id alone; the tests
+    /// read this after every frame they draw.
+    #[cfg(test)]
+    pub drawn_twice: std::collections::BTreeSet<String>,
 }
 
 impl InfoRegistry {
@@ -72,6 +78,14 @@ impl InfoRegistry {
             }
             _ => false,
         };
+        #[cfg(test)]
+        if self
+            .bounds
+            .get(&id)
+            .is_some_and(|(_, epoch)| *epoch == self.epoch)
+        {
+            self.drawn_twice.insert(id.to_string());
+        }
         self.bounds.insert(id, (bounds, self.epoch));
         shown_changed
     }

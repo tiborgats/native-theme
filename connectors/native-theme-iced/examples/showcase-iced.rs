@@ -1877,12 +1877,12 @@ fn hoverable<'a>(info: String, content: Element<'a, Message>) -> Element<'a, Mes
 }
 
 // ---------------------------------------------------------------------------
-// Widget Info builder (matches gpui's widget_tooltip + widget_tooltip_themed)
+// Widget Info builder
 // ---------------------------------------------------------------------------
 
-/// Build a multi-line info string for the Widget Info panel.
-///
-/// Mirrors the gpui showcase's `widget_tooltip` with three sections:
+/// Build a multi-line info string for the Widget Info panel, with three of
+/// the sections the gpui showcase's `WidgetInfo::to_text` writes (that one
+/// adds a "This instance" section and a citation after each colour):
 /// - Theme colors: (role, field_name, live hex color)
 /// - Theme config: (what, live_value_string)
 /// - Not themeable: (what, reason why)

@@ -108,9 +108,38 @@ fn open(
     (showcase, root, cx)
 }
 
-/// Lay the window out and paint it, which is what fills `debug_bounds`.
+/// Lay the window out and paint it, which is what fills `debug_bounds`,
+/// and check that no frame drawn so far drew two info targets under one id.
 fn draw(cx: &mut VisualTestContext) {
     cx.update(|window, cx| window.draw(cx).clear(cx));
+    let twice = ids_drawn_twice(cx);
+    assert!(
+        twice.is_empty(),
+        "one frame drew two info targets under the same id, which the registry \
+         takes for one widget: {twice:?}"
+    );
+}
+
+/// The info ids a frame of this window has drawn two targets under: the
+/// showcase's registry, or the test view's. Empty for a window whose root
+/// holds neither, which has no registry to read.
+fn ids_drawn_twice(cx: &mut VisualTestContext) -> Vec<String> {
+    cx.update(|window, cx| {
+        let ui = if let Some(Some(root)) = window.root::<Root>() {
+            root.read(cx)
+                .view()
+                .clone()
+                .downcast::<Showcase>()
+                .ok()
+                .map(|showcase| showcase.read(cx).info_ui.clone())
+        } else if let Some(Some(nested)) = window.root::<Nested>() {
+            Some(nested.read(cx).ui.clone())
+        } else {
+            None
+        };
+        ui.map(|ui| ui.read(cx).drawn_twice.iter().cloned().collect())
+            .unwrap_or_default()
+    })
 }
 
 /// Switch to `page` and draw the frame that shows it.
@@ -157,6 +186,15 @@ fn read<R>(
 
 /// Every page lays out: the Sidebar's ten pages each render on the test
 /// platform, each leaves a page root behind, and that root has a size.
+///
+/// And no frame draws two info targets under one id (info/registry.rs,
+/// `drawn_twice`): the registry keys a target by its id alone, so two would
+/// be taken for one widget. That is checked where the ids are drawn, so it
+/// holds for an id built at run time -- a `format!` or a part named after
+/// its widget -- as much as for a literal. Its limit is what is drawn: a
+/// page's widgets here, and in the other tests, through `draw`, the chrome
+/// and whichever dialogs, sheets and menus a test opens. An overlay no test
+/// opens is not checked.
 #[gpui::test]
 fn every_page_lays_out(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -164,6 +202,11 @@ fn every_page_lays_out(cx: &mut TestAppContext) {
     for page in Page::ALL {
         show(&mut cx, &showcase, page);
         assert_eq!(read(&mut cx, &showcase, |this, _| this.active_page), page);
+        assert_eq!(
+            ids_drawn_twice(&mut cx),
+            Vec::<String>::new(),
+            "{page:?}: a frame drew two info targets under one id"
+        );
         let bounds = cx
             .debug_bounds(PAGE_ROOT)
             .unwrap_or_else(|| panic!("{page:?}: nothing was laid out in the content panel"));
