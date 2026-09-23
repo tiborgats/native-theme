@@ -287,7 +287,7 @@ behind them are in the SDD ledger.
   page gained an Icon Sizes section: the chosen set's icon at each of the
   five `defaults.icon_sizes` contexts, each reporting its own info, and
   marking a native preset's size where platform-facts §2.1.8 documents none.
-- **§9, the Sidebar header.** `NAV_WIDTH` is 205px, up from 200: the
+- **§9, the Sidebar header (final review).** The Mode row became a Select like its siblings, so the header fits at text scales 1 and 2 on every offered preset (`ios` on macOS included); `NAV_WIDTH` is back to 200 and the window 1380px (the smallest passing width measured is 172). Before that: `NAV_WIDTH` was 205px, up from 200: the
   smallest whole-pixel width at which every control fits (at 204, adwaita
   overflows by 0.83px). The System toggle reads "System", with the resolved
   mode in its tooltip, and the fit test resolves each native preset at its

@@ -1282,8 +1282,9 @@ the gap — closing it is a change, and each wants its own decision.
         Sidebar's header, the toolbar is padded, and the Separator is gone.
       - Task 10: the window is 1380px wide (`NAV_WIDTH` 200 + 880 for the
         page + `INSPECTOR_WIDTH` 300), with the Sidebar, the resizable panels
-        and the inspector. *Superseded:* `NAV_WIDTH` is 205, so the window is
-        1385px.
+        and the inspector. *Superseded, then restored:* `NAV_WIDTH` was 205
+        while the Mode row was a switch; with the Mode row a Select it is 200
+        again, and the window 1380px.
       - Task 12: the Preferences sheet is 600px wide (`PREFERENCES_WIDTH`).
       - Task 14: page headings are sized to their text (`self_start`), not
         the page's width.
@@ -1317,10 +1318,11 @@ the gap — closing it is a change, and each wants its own decision.
         bar, which is taller for them (the toggles are `h_6`). The theme
         settings are labelled in the Sidebar's header. The toolbar holds
         Command Palette, Reload Theme and Preferences. The title reads
-        `native-theme-gpui <version> showcase`. `NAV_WIDTH` is 205 and the
-        window 1385 wide. The Sidebar's icons are `icon_size_small`. The
-        Icons page has an Icon Sizes section. The System toggle reads
-        "System", with the mode in its tooltip. On KDE, `PanelRight` is
+        `native-theme-gpui <version> showcase`. `NAV_WIDTH` is 200 and the
+        window 1380 wide. The Sidebar's icons are `icon_size_small`. The
+        Icons page has an Icon Sizes section. The Mode row is a Select
+        (System / Light / Dark), like the Theme and Icon set rows; the status
+        bar shows the resolved mode. On KDE, `PanelRight` is
         `sidebar-expand-right`. The vertical Separator is no longer shown
         anywhere: widget coverage counts types, not variants.
       - **Windows:** popover 15/16/17/16; dialog 24; card and group box 12;

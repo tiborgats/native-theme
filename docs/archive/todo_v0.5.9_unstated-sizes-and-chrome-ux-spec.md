@@ -374,7 +374,7 @@ else differs from the text:
   status bar grew taller with them. It also holds two debug probes, a
   wrapper around the environment text and an empty middle box, so a test
   can measure everything it draws.
-- **§3.3.** `NAV_WIDTH` is 205px: the smallest whole-pixel width at which
+- **§3.3 (final review).** The Mode row is a Select (System / Light / Dark), so the header fits at text scales 1 and 2 on every offered preset, `ios` on macOS included; `NAV_WIDTH` is 200 and the window 1380px. Before the final review: `NAV_WIDTH` was 205px: the smallest whole-pixel width at which
   the fit test passes (at 204, adwaita overflows by 0.83px); the window is
   1385px wide. The System toggle's text is "System", and its tooltip names
   the resolved mode. The fit test resolves each native preset at its own
