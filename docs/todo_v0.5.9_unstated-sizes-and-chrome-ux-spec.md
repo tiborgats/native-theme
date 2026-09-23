@@ -261,10 +261,12 @@ One constant, `concat!(CARGO_PKG_NAME, " ", CARGO_PKG_VERSION, " showcase")`, se
 ### 3.5 Sidebar icon size
 
 - The page icons use `geometry::icon_size_small`, not `icon_size_panel` (demo.rs:472), per rationale §9. Their info names that builder.
-- A windowed test runs under every native preset and one colour-scheme preset, expanded and in the rail. It asserts:
-  - each icon lies inside its own item's bounds;
-  - no two items' icons intersect.
-- The test must fail before the fix.
+- `icon_size_panel` then has no use in the showcase. The Icons page gains an "Icon sizes" section: one icon of the chosen set at each of the model's five `defaults.icon_sizes` contexts (toolbar, small, large, dialog, panel), each labelled with its context and reporting its own info, citing platform-facts §2.1.8 for what each context means. That demonstrates every icon-size builder, as the Theme Map demonstrates data.
+- The test runs under every native preset and one colour-scheme preset. Upstream gives no hook to measure the drawn icon inside a `SidebarMenuItem` (sidebar/menu.rs:300; `Icon` exposes only its style, icon.rs:169-177), so it checks:
+  - the Icon handed to each item has the size `icon_size_small` gives, read from its style;
+  - in the rail, where the item's height follows its icon, every item's measured bounds fit within the rail's width and no two items overlap;
+  - expanded, the icon's size is at most the row's height (`h_7`, 1.75 rem at the installed rem), a model check whose doc says why.
+- The first two checks must fail before the fix.
 
 ### 3.6 Info and tests
 
