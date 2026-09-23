@@ -409,7 +409,8 @@ live theme switching, the geometry builders applied where they reach, a
 same widgets — a title bar with menus, a toolbar, a Sidebar of pages,
 resizable panels and a status bar — and resting the pointer on any widget
 shows in the inspector what the theme sets on it, with the upstream line each
-colour is read at.
+colour is read at. The one exception is the resizable group and its panels,
+which report nothing yet; the handles between the panels do.
 
 ## Gallery
 

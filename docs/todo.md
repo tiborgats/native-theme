@@ -1292,6 +1292,18 @@ the gap — closing it is a change, and each wants its own decision.
       showcase can tell which instance is innermost under the pointer, and
       whether the citation gates in `src/showcase.rs` can be shared or need
       an iced twin.
+- [ ] **The iced connector reads nothing of the model's toolbar.** The gpui
+      connector gained `geometry::toolbar` in v0.5.9, which carries
+      `toolbar.bar_height`, `item_gap`, the `toolbar.border` padding,
+      `background_color` and the `toolbar.font` size and weight
+      (`connectors/native-theme-gpui/src/geometry.rs`, `toolbar`). The iced
+      connector has no counterpart: nothing under
+      `connectors/native-theme-iced/src/` reads `resolved.toolbar` (the one
+      `toolbar` there is `defaults.icon_sizes.toolbar`, in a test of
+      `icon_sizes`), and the iced showcase draws no toolbar. Parity means an
+      iced reader of the same fields, and a toolbar row in the iced showcase
+      to show it. Found in the final review of the v0.5.9 showcase-app work
+      (2026-09-23).
 
 #### Upstream PR to gpui
 
@@ -1361,6 +1373,31 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (`examples/showcase-gpui/support.rs`), which records each chosen preset at
       its row in the unfiltered list. Upstream could compare by value, or
       store unfiltered indices. Found 2026-09-22 (showcase-app plan, Task 9).
+- [ ] PR: let a consumer supply the icons gpui-component's widgets build for
+      themselves. Several widgets name a Lucide `IconName` as they render,
+      with no setter, so an application that draws its own icons from
+      another set -- the gpui showcase's chrome follows the icon-set Select
+      and draws no icon where the chosen set has none -- still shows
+      gpui-component's Lucide in them, mixing two sets. Read in
+      gpui-component 0.6.6: `SidebarToggleButton`'s PanelLeftClose /
+      PanelLeftOpen (`src/sidebar/mod.rs:351-359`), the `Caret` chevron of a
+      `Select`, `Combobox` or dropdown `Button` (`src/select.rs:59`), the
+      check mark of a chosen list row (`src/searchable_list/item.rs:42`,
+      `src/searchable_list/adapter.rs:130`), an empty list's Inbox
+      (`src/select.rs:279`, `src/combobox.rs:261`), the window controls
+      (`src/title_bar.rs:148-151`), the close button of a `Dialog`
+      (`src/dialog/dialog.rs:698`) and of a `Sheet` (`src/sheet.rs:204`),
+      the `Command` palette's search icon and check mark
+      (`src/command/state.rs:851`, `:767`), a `PopupMenu`'s check mark,
+      external-link and submenu chevron (`src/menu/popup_menu.rs:1167`,
+      `:1209`, `:1334`, `:1373`), the `Settings` search field's icon
+      (`src/setting/settings.rs:152`) and a `NumberInput`'s minus and plus
+      (`src/input/number_input.rs:155`, `:185`). One way in is an optional
+      icon-provider hook on the theme that these call sites ask first,
+      falling back to today's `IconName`. The showcase's icon-set Select
+      names the ones its chrome shows (`info::chrome::icon_set_select`).
+      Found in the final review of the v0.5.9 showcase-app work
+      (2026-09-23).
 
 ---
 
