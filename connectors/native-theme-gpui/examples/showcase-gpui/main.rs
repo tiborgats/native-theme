@@ -255,17 +255,17 @@ pub(crate) const CHROME_LABEL_ICON_SET: &str = "chrome-label-icon-set";
 /// `SidebarTheme` has no width (spec §1.3), so this is the showcase's own
 /// layout default, and dragging the panel's handle changes it.
 ///
-/// It is what the Sidebar header's widest control needs (spec §3.3): the
-/// colour-mode switch, whose toggles keep their text's width. At 200px it
-/// overflowed under every native preset and nord, in
-/// `the_sidebar_header_holds_the_theme_settings`. The widest case is
-/// macos-sonoma on a 96 DPI desktop, whose 13pt font resolves to 17.33px:
-/// there "System (Dark)" ran 102.5px past the switch, and "System (Light)",
-/// one glyph longer, runs 10.4px further in the test's text system, which
-/// advances every glyph 0.6em (gpui-pre platform.rs, `NoopTextSystem`). So
-/// 200 + 112.9, rounded up.
+/// It is the narrowest whole-pixel width at which the Sidebar header's
+/// controls fit (spec §3.3), as `the_sidebar_header_holds_the_theme_settings`
+/// measures them, each native preset resolved at its own platform's DPI: the
+/// colour-mode switch, whose toggles keep their text's width, is the widest. At 200px adwaita's toggles ran 4.83px past it; at
+/// 205px every preset in the test fits, adwaita with 0.17px to spare, and at
+/// 204px adwaita does not. The test lays text out with gpui's test text
+/// system, which advances every glyph 0.6em (gpui-pre platform.rs,
+/// `NoopTextSystem`), more than a real font's text takes, so the width is
+/// conservative.
 pub(crate) const NAV_WIDTH: Pixels = px(NAV_WIDTH_PX);
-const NAV_WIDTH_PX: f32 = 313.;
+const NAV_WIDTH_PX: f32 = 205.;
 
 /// The initial width of the inspector's panel. The model states no such
 /// value: it has no inspector at all (spec §1.3), so this is the showcase's

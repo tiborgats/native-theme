@@ -269,7 +269,8 @@ const COLOR_MODES: [AppColorMode; 3] = [
 ];
 
 /// A System / Light / Dark `ToggleGroup` with `mode` checked; a click
-/// dispatches `SetColorMode` for the toggle clicked.
+/// dispatches `SetColorMode` for the toggle clicked. System's tooltip names
+/// the mode the desktop is in, which its text leaves out.
 ///
 /// It is as wide as the Sidebar header it is in, and its toggles share that
 /// width, each at least as wide as its text: a toggle that does not shrink
@@ -291,11 +292,19 @@ pub(crate) fn color_mode_toggle_group(
                 .into_iter()
                 .zip(PROBE_COLOR_MODE_TEXTS)
                 .map(|(m, text)| {
-                    Toggle::new(SharedString::from(format!("color-mode-{m:?}")))
+                    let toggle = Toggle::new(SharedString::from(format!("color-mode-{m:?}")))
                         .flex_grow_1()
                         .flex_shrink_0()
-                        .child(div().debug_selector(move || text.into()).child(m.label()))
-                        .checked(m == mode)
+                        .child(
+                            div()
+                                .debug_selector(move || text.into())
+                                .child(m.short_label()),
+                        )
+                        .checked(m == mode);
+                    match m {
+                        AppColorMode::System => toggle.tooltip(m.label()),
+                        AppColorMode::Light | AppColorMode::Dark => toggle,
+                    }
                 }),
         )
         // Upstream reports every toggle's state with the clicked one flipped

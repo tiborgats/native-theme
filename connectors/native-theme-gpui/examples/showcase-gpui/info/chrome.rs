@@ -756,7 +756,12 @@ pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
     super::buttons::toggle_notes(super::buttons::toggle_hover(info, t), t)
         .instance(
             "modes",
-            "System, Light and Dark; a click dispatches SetColorMode, the action the Theme menu's items run. System names the mode the desktop is in",
+            "System, Light and Dark; a click dispatches SetColorMode, the action the Theme menu's items run. System's text is the mode alone, and its tooltip names the mode the desktop is in, as the status bar's environment text does",
+        )
+        .colors(super::feedback::tooltip_colours(t, true))
+        .not_themeable(
+            "tooltip",
+            "System's only: upstream's Tooltip, built from the text Toggle::tooltip stored (tooltip.rs, ComponentTooltip::apply), so geometry::tooltip cannot reach it",
         )
         .instance(
             "segmented",

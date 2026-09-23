@@ -969,18 +969,73 @@ fn the_sidebar_header_switches_the_preset(cx: &mut TestAppContext) {
     );
 }
 
+/// The presets the Sidebar header's fit is checked under, each with the font
+/// DPI it is resolved at. A native preset is resolved at its own platform's
+/// DPI, as the seams test does (tests/seams.rs, `NATIVE`): macOS at 72,
+/// where a point is a pixel (native-theme `detect.rs`,
+/// `detect_system_font_dpi`), the others at 96. A native preset is only
+/// offered on its own platform -- the preset switch lists the presets
+/// `Theme::list_presets_for_platform` gives, so macos-sonoma is offered on
+/// macOS alone -- and macos-sonoma resolved on a 96 DPI Linux host is not a
+/// configuration the showcase shows. The colour-scheme preset, offered
+/// everywhere, keeps the host's DPI (`None`).
+const SIDEBAR_HEADER_PRESETS: [(&str, Option<f32>); 5] = [
+    ("kde-breeze", Some(96.0)),
+    ("adwaita", Some(96.0)),
+    ("macos-sonoma", Some(72.0)),
+    ("windows-11", Some(96.0)),
+    ("nord", None),
+];
+
+/// Install `preset` as `use_preset` does, then re-install its theme resolved
+/// at `dpi`: the point sizes it states become pixels at that DPI, as they do
+/// on the platform whose DPI it is.
+fn use_preset_at(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str, dpi: f32) {
+    use_preset(cx, showcase, preset);
+    cx.update(|_window, cx| {
+        let is_dark = showcase.read(cx).is_dark;
+        let mode = if is_dark {
+            native_theme::theme::ColorMode::Dark
+        } else {
+            native_theme::theme::ColorMode::Light
+        };
+        let resolved = native_theme::theme::Theme::preset(preset)
+            .expect("the preset loads")
+            .into_variant(mode)
+            .expect("the preset has the variant")
+            .into_resolved(&native_theme::ResolutionContext {
+                font_dpi: dpi,
+                ..native_theme::ResolutionContext::for_tests()
+            })
+            .expect("the preset resolves");
+        let prefs = native_theme::AccessibilityPreferences::from_system();
+        native_theme_gpui::apply(
+            native_theme_gpui::to_theme(&resolved, preset, is_dark, &prefs),
+            &resolved,
+            &prefs,
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
 /// The Sidebar header holds the theme settings (spec §3.3): Theme, Mode and
 /// Icon set, each a label above its control, in that order, the gaps
 /// `layout.widget_gap`. Each control takes the panel's width, and each fits
 /// it at `NAV_WIDTH`: the colour-mode switch's toggles keep their text's
 /// width (demo.rs, `color_mode_toggle_group`), so a switch too wide for the
 /// panel runs past it, and the texts' bounds show where. Checked under every
-/// native preset and one colour-scheme preset, whose font sizes differ.
+/// native preset, at its platform's DPI, and one colour-scheme preset at the
+/// host's (`SIDEBAR_HEADER_PRESETS`), whose font sizes differ.
 #[gpui::test]
 fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    for preset in SIDEBAR_ICON_PRESETS {
-        use_preset(&mut cx, &showcase, preset);
+    for (preset, dpi) in SIDEBAR_HEADER_PRESETS {
+        match dpi {
+            Some(dpi) => use_preset_at(&mut cx, &showcase, preset, dpi),
+            None => use_preset(&mut cx, &showcase, preset),
+        }
         let sidebar = bounds_of(&mut cx, CHROME_SIDEBAR);
         assert_eq!(
             sidebar.size.width, NAV_WIDTH,
@@ -1025,7 +1080,26 @@ fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
             );
             above = Some(c);
         }
+        // A toggle's frame reaches past its text by its padding and its edge:
+        // px_2 at the default Size (button/toggle.rs:178) and a 1px outline
+        // on each outer side of a segmented group (button/toggle.rs:193-194,
+        // the first toggle's left edge and the last one's right). A toggle
+        // that does not shrink ends just there, so the texts, moved out by
+        // that much, have to lie within the switch.
         let group = bounds_of(&mut cx, PROBE_COLOR_MODE);
+        let frame = cx.update(|window, _| rems(0.5).to_pixels(window.rem_size())) + px(1.);
+        let (first, last) = (
+            bounds_of(&mut cx, PROBE_COLOR_MODE_TEXTS[0]),
+            bounds_of(&mut cx, PROBE_COLOR_MODE_TEXTS[2]),
+        );
+        assert!(
+            first.left() - frame >= group.left() - px(0.01)
+                && last.right() + frame <= group.right() + px(0.01),
+            "{preset}: the colour-mode switch's toggles span {:?} to {:?}, past the switch \
+             at {group:?}, so the switch does not fit NAV_WIDTH",
+            first.left() - frame,
+            last.right() + frame
+        );
         for text in PROBE_COLOR_MODE_TEXTS {
             let t = bounds_of(&mut cx, text);
             assert!(

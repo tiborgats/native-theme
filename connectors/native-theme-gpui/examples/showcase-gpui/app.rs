@@ -145,7 +145,8 @@ impl AppColorMode {
         }
     }
 
-    /// Display label for the colour-mode switch, with system preference in parentheses.
+    /// Display label for the command palette and the System toggle's
+    /// tooltip, with system preference in parentheses.
     pub(crate) fn label(self) -> String {
         match self {
             AppColorMode::System => {
@@ -154,6 +155,17 @@ impl AppColorMode {
             }
             AppColorMode::Light => "Light".into(),
             AppColorMode::Dark => "Dark".into(),
+        }
+    }
+
+    /// The colour-mode switch's text for this mode: the mode alone. The mode
+    /// System resolves to is in that toggle's tooltip, `label`, and in the
+    /// status bar.
+    pub(crate) fn short_label(self) -> &'static str {
+        match self {
+            AppColorMode::System => "System",
+            AppColorMode::Light => "Light",
+            AppColorMode::Dark => "Dark",
         }
     }
 }
