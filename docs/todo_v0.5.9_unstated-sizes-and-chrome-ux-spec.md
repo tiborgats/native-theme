@@ -204,7 +204,7 @@ A named showcase constant is used only where the theme states no value, for an e
 - the toolbar row's padding;
 - the Sidebar header's gaps.
 
-Where the model's layout values (`widget_gap`, `container_margin`) are stated, they are used instead. The showcase's pages keep their current `with_gap` behaviour; the same rule for them is recorded in `docs/todo.md`. The content the showcase places in a popover or hover card adds no padding of its own: those widgets now draw gpui-component's `p_3` on every preset (rationale §8). The HoverCard's doc at demo.rs:4107-4111 says the content adds none, but also names "the platform's popover padding where `geometry::popover` applies"; it is updated.
+Where the model's layout values (`widget_gap`, `container_margin`) are stated, they are used instead. The showcase's pages keep their current `with_gap` behaviour; the same rule for them is recorded in `docs/todo.md`. The content the showcase places in a popover or hover card adds no padding of its own: those widgets draw the platform's stated popover padding where one is stated (GNOME 8, Windows 15/16/17/16, audit ruling R13), and gpui-component's `p_3` elsewhere (rationale §8). The HoverCard's doc at demo.rs:4107-4111 says the content adds none, but also names "the platform's popover padding where `geometry::popover` applies"; it is updated.
 
 ### 3.2 Status bar (D5)
 

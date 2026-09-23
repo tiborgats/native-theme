@@ -177,7 +177,7 @@ The colour-scheme presets carry sizes that were copied rather than sourced (see 
 
 These change what native presets draw too, not only the colour-scheme presets:
 
-- The popover and hover card were padded 0 on every preset, because no preset states a popover padding and the resolver filled in 0. They now draw gpui-component's own `p_3` (popover.rs:284). The showcase's content inside them adds no padding of its own.
+- The popover and hover card were padded 0 on every preset, because no preset states a popover padding and the resolver filled in 0. They now draw the platform's stated padding where the audit sourced one (GNOME 8, Windows 15/16/17/16, ruling R13), and gpui-component's own `p_3` (popover.rs:284) elsewhere. The showcase's content inside them adds no padding of its own.
 - The status bar draws gpui-component's own `px_2 py_1` on every preset until Task 2 states a platform's value. That is the fix for the first reported defect.
 - On the colour-scheme presets, the dialog draws gpui-component's own padding instead of a zero nobody chose, and the toolbar gets the showcase's own padding (§5, point 6).
 - The input, select and combobox draw their stated padding for the first time.
