@@ -162,3 +162,65 @@ Record what each platform grants in the report. Never guess.
 - Make the CHANGELOG and `docs/todo.md` updates.
 - Move this document to `docs/archive/` with an "As built" note.
 - Commit: `docs: the showcase layout, implemented and archived`.
+
+## As built
+
+Implemented 2026-09-23 on branch `v0.5.9-gpui-kit-0.6.6`, every subagent on
+Opus, and archived in the commit after them. Tasks 1 and 2 each passed review
+after one fix round. The controller's rulings are in the git-ignored SDD
+ledger.
+
+| Task | Commits |
+|---|---|
+| 1 | `8d48141`, fix `f4e3256` |
+| 2 | plan `db09df8`, `5158e23`, fix `ae55019` |
+| 3 | the archiving commit |
+
+What differs from the text above:
+
+- **S3, the Alert's place.** The content panel is the page TabBar, then a
+  theme error's Alert, then the page. Task 1 first put the Alert above the
+  tabs, and two of its tests contradicted each other. The ruling: the page
+  navigation must not move when an error appears. `a_theme_error_is_an_alert`
+  asserts that the TabBar's bounds do not change when the Alert appears, and
+  that the Alert sits between the tabs and the page.
+- **S1, the fit test.** It runs over all 16 bundled presets
+  (`Theme::list_presets()`), not only the ones the preset switch offers on
+  the host. Each native preset is measured at its platform's DPI (macOS and
+  iOS at 72, the others at 96) and each colour-scheme preset at the host's,
+  at text scales 1 and 2. `default` is built on one of them. The test takes
+  about 12s alone.
+- **S8, what each platform grants.** This was read from gpui-pre 0.3.6's
+  source. Nothing was run on Windows or macOS.
+  - Wayland: Server where the compositor offers xdg-decoration and grants
+    server-side, as KWin does (gpui-pre-linux `wayland/window.rs:2094-2113`,
+    `:1150-1168`). Client where there is no manager, as under Mutter, and the
+    showcase then draws its `TitleBar`.
+  - X11: Server, requested through `_MOTIF_WM_HINTS`
+    (`x11/window.rs:1900-1950`).
+  - Windows and macOS: neither backend overrides the request, and both always
+    report Server (gpui-pre `platform.rs:1006`, `:1020-1022`). Their native
+    title bar is hidden only by `titlebar.appears_transparent`, which
+    `TitleBar::window_options()` set. The window now takes
+    `WindowOptions::default()` with `window_decorations: Some(Server)`, so
+    both keep their native title bar. `TitleBar::window_options` is no longer
+    used.
+  - gpui's test platform: always Server.
+- **S8, the Client arm's tests.** Opening the test window with each request
+  cannot reach the Client arm, because the test platform grants Server to
+  both. Both requests are tested, and both assert Server with the menu-bar
+  row. The Client arm is reached through a `#[cfg(test)]` seam,
+  `Showcase::frame_for_test`, which overrides what `Showcase::frame` reports.
+  `Root`, `TitleBar` and `WindowBorder` still read the platform's real answer,
+  so under the seam no window controls and no client inset are drawn.
+- **S8, the menu-bar row's inset.** The model states no menu-bar inset. The
+  row borrows `layout.container_margin` for its left and right padding, and
+  its info says the inset is borrowed. Where that is unstated too, it takes
+  `MENU_BAR_PADDING`, the showcase's own 8px. The row has no fill or font of
+  its own.
+- **S8, the TitleBar sample.** An occluding box lies over it and carries its
+  info, so a drag or a double click on the sample neither moves nor zooms the
+  window.
+- **S3, the page TabBar's menu.** Upstream adds the menu Button whether or
+  not the tabs overflow (gpui-component `tab/tab_bar.rs:554`), and the
+  TabBar's info says so.

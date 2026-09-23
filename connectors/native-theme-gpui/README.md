@@ -425,10 +425,14 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-138-field colour map and a 101-icon gallery. The window is built from the
-same widgets: a title bar with menus, labelled with this crate's name and
-version; a toolbar of actions (the command palette, a theme reload and the
-Preferences); and two resizable panels. The side panel holds the theme
+138-field colour map and a 101-icon gallery. The window asks the window
+manager to draw its frame. Where it does, as KWin does, the frame is the
+desktop's own and the menus sit in a row at the top of the window (on macOS,
+in the system's menu bar); where it does not, as GNOME's Mutter does not for
+a Wayland client, the window's title bar is gpui-component's, with the
+menus, labelled with this crate's name and version. The rest of the window
+is built from the same widgets: a toolbar of actions (the command palette, a
+theme reload and the Preferences), and two resizable panels. The side panel holds the theme
 settings, each labelled -- Theme, Mode and Icon theme -- and below a
 separator, the inspector. The content panel shows the page, with a tab per
 page above it. A status bar has the side panel's toggle at its left end.

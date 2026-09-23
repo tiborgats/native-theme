@@ -1284,7 +1284,8 @@ the gap — closing it is a change, and each wants its own decision.
         page + `INSPECTOR_WIDTH` 300), with the Sidebar, the resizable panels
         and the inspector. *Superseded, then restored:* `NAV_WIDTH` was 205
         while the Mode row was a switch; with the Mode row a Select it is 200
-        again, and the window 1380px.
+        again, and the window 1380px. *Superseded by the showcase-layout
+        plan below:* two panels, and the window 1180px.
       - Task 12: the Preferences sheet is 600px wide (`PREFERENCES_WIDTH`).
       - Task 14: page headings are sized to their text (`self_start`), not
         the page's width.
@@ -1324,7 +1325,9 @@ the gap — closing it is a change, and each wants its own decision.
         (System / Light / Dark), like the Theme and Icon set rows; the status
         bar shows the resolved mode. On KDE, `PanelRight` is
         `sidebar-expand-right`. The vertical Separator is no longer shown
-        anywhere: widget coverage counts types, not variants.
+        anywhere: widget coverage counts types, not variants. *Superseded
+        by the showcase-layout plan below:* the Sidebar, its header, the
+        rail, the inspector panel and the second toggle are gone.
       - **Windows:** popover 15/16/17/16; dialog 24; card and group box 12;
         list rows 0/12 (were 4/12); menu rows 4/11/5/11 (were 8/11/8/11);
         tooltip 6/9/8/9; button top 5 (gpui and iced); input 5/6/6/10, its
@@ -1355,6 +1358,25 @@ the gap — closing it is a change, and each wants its own decision.
         growing with the platform's line height above 1.
       - **The Textarea** keeps its own 90px, and the single-line padding is
         cleared from it.
+
+      The v0.5.9 showcase-layout plan
+      ([archive](archive/todo_v0.5.9_showcase-layout.md)) changed the
+      window's shape, again without a look on screen:
+      - **The frame.** The window asks for server-side decorations. On KDE,
+        KWin grants them, so the title bar, the window controls, the
+        corners and the shadow are KWin's decoration (Breeze by default),
+        and the menus sit in a menu-bar row above the toolbar. The window
+        draws gpui-component's `TitleBar` only where a compositor refuses
+        (GNOME's Mutter); under KWin the Layout page shows one as a sample.
+        The screenshot scripts capture the active window with
+        `spectacle -a -b -n`; check that the captures hold KWin's frame, as
+        whether Spectacle includes a window's decoration is its own setting.
+      - **The layout.** Two panels: the side panel (`LEFT_PANEL_WIDTH`
+        300) holds the Theme, Mode and Icon theme rows, a Separator and the
+        inspector; the content panel has a TabBar of the pages above the
+        page. The window is 1180 × 850. The status bar has one toggle, at
+        its left end. The Layout page shows an expanded and a collapsed
+        `Sidebar`.
 - [ ] **The iced showcase: per-instance Widget Info.** The gpui showcase now
       builds every widget through a helper that attaches a `WidgetInfo` and
       shows the innermost hovered instance's info in an inspector (the v0.5.9
@@ -1612,6 +1634,23 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       names the ones its chrome shows (`info::chrome::icon_set_select`).
       Found in the final review of the v0.5.9 showcase-app work
       (2026-09-23).
+- [ ] Left open by the v0.5.9 showcase-layout work
+      ([archive](archive/todo_v0.5.9_showcase-layout.md)):
+      - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps
+        Windows and macOS branches for its colours and its "window
+        controls" note, but the chrome `TitleBar` is drawn only where
+        client-side decorations are granted, and only the Linux backends
+        ever report that. Drop the branches, or say why they stay.
+      - What Windows and macOS grant was read from gpui-pre 0.3.6's source,
+        not run: check there that the window keeps its native title bar and
+        that the menus sit in the row (Windows) or the system's menu bar
+        (macOS).
+      - The menu-bar row has no fill or font of its own: the model has no
+        menu-bar section (`menu` in platform-facts §2.6 is the popup).
+      - `the_page_tabs_navigate` checks that a click shows the page, not
+        which tab is drawn selected.
+      - The item above on the resizable group's missing Widget Info names
+        three `resizable_panel()`s; there are two now.
 
 ---
 
