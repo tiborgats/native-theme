@@ -1,12 +1,10 @@
 //! The window's chrome: title bar, menus, toolbar, navigation, status bar and overlays.
 
 use gpui::{
-    App, InteractiveElement as _, IntoElement, Menu, MenuItem, Pixels, SharedString, Window, px,
+    Action, App, InteractiveElement as _, IntoElement, Menu, MenuItem, Pixels, SharedString,
+    Window, px,
 };
-use gpui_component::{
-    IconName, WindowExt as _,
-    command::{CommandGroup, CommandItem},
-};
+use gpui_component::{IconName, WindowExt as _};
 use native_theme_gpui::ActiveNativeTheme as _;
 
 use crate::Page;
@@ -18,6 +16,7 @@ use crate::support::{defined_size, preset_items};
 use crate::{
     CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
     CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, PROBE_COLOR_MODE, PROBE_COMBOBOX, demo,
+    demo::PaletteEntry,
 };
 
 /// The showcase's application menus (spec §2.2), built fresh for each
@@ -76,9 +75,10 @@ fn preset_and_mode(app: &Showcase) -> (&str, &str) {
 
 /// The window's toolbar (spec §2.3), under the title bar: the Sidebar's
 /// toggle, the preset switch, the colour mode, the icon set, and buttons for
-/// three of the actions.
+/// three of the actions, their icons of the chosen set.
 pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
     let ui = &app.info_ui;
+    let set = app.icon_set_label();
     demo::toolbar(
         ui,
         cx,
@@ -100,6 +100,8 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                 demo::ToolbarButton {
                     button_id: "toolbar-command-palette",
                     icon: IconName::SquareTerminal,
+                    drawn: app.chrome_icon(&IconName::SquareTerminal),
+                    set: &set,
                     tooltip: "Command Palette",
                     action: &OpenCommandPalette,
                     about: "dispatches OpenCommandPalette, the action View > Command Palette and Ctrl+K run: the command palette opens",
@@ -113,6 +115,8 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                 demo::ToolbarButton {
                     button_id: "toolbar-reload-theme",
                     icon: IconName::RotateCw,
+                    drawn: app.chrome_icon(&IconName::RotateCw),
+                    set: &set,
                     tooltip: "Reload System Theme",
                     action: &ReloadTheme,
                     about: "dispatches ReloadTheme, the action Theme > Reload System Theme runs: the desktop's settings are read again and the current theme is installed from them",
@@ -125,6 +129,8 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                 demo::ToolbarButton {
                     button_id: "toolbar-inspector",
                     icon: IconName::Inspector,
+                    drawn: app.chrome_icon(&IconName::Inspector),
+                    set: &set,
                     tooltip: "Toggle Inspector",
                     action: &ToggleInspector,
                     about: "dispatches ToggleInspector, the action View > Toggle Inspector and Ctrl+I run: the inspector's panel is hidden, or shown again",
@@ -137,10 +143,18 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
     .debug_selector(|| CHROME_TOOLBAR.into())
 }
 
-/// The window's Sidebar (spec §2.4): the pages, the shown one active.
+/// The window's Sidebar (spec §2.4): the pages with their icons of the
+/// chosen set, the shown one active.
 pub(crate) fn sidebar(app: &Showcase, cx: &App) -> impl IntoElement {
-    demo::sidebar(&app.info_ui, cx, app.active_page, app.nav_collapsed)
-        .debug_selector(|| CHROME_SIDEBAR.into())
+    demo::sidebar(
+        &app.info_ui,
+        cx,
+        app.active_page,
+        app.nav_collapsed,
+        |page| app.chrome_icon(&page.icon()),
+        app.icon_set_label().into(),
+    )
+    .debug_selector(|| CHROME_SIDEBAR.into())
 }
 
 /// The window's status bar (spec §2.7), below the body: the environment on
@@ -242,45 +256,78 @@ pub(crate) fn palette_presets() -> Vec<(SharedString, SharedString)> {
         .collect()
 }
 
-/// The command palette's entries (spec §2.8): every page, every preset the
-/// toolbar offers, and the three colour modes, each running the action its
-/// menu item or toolbar control runs.
-fn palette_groups() -> Vec<CommandGroup> {
-    let pages = CommandGroup::new()
-        .label("Pages")
-        .items(Page::ALL.map(|page| {
-            CommandItem::new()
-                .label(page.label())
-                .icon(page.icon())
-                .action(Box::new(ShowPage(page.index())))
-        }));
-    let presets = CommandGroup::new()
-        .label("Presets")
-        .items(palette_presets().into_iter().map(|(key, name)| {
-            CommandItem::new()
-                .label(name)
-                .keywords([key.clone()])
-                .icon(IconName::Palette)
-                .action(Box::new(SetPreset(key)))
-        }));
-    let modes = CommandGroup::new().label("Colour mode").items(
-        [
-            AppColorMode::System,
-            AppColorMode::Light,
-            AppColorMode::Dark,
-        ]
-        .map(|mode| {
-            CommandItem::new()
-                .label(mode.label())
-                .icon(match mode {
-                    AppColorMode::System => IconName::Settings,
-                    AppColorMode::Light => IconName::Sun,
-                    AppColorMode::Dark => IconName::Moon,
-                })
-                .action(Box::new(SetColorMode(mode)))
-        }),
-    );
-    vec![pages, presets, modes]
+/// One entry of the command palette, its icon of `app`'s chosen set.
+fn palette_entry(
+    app: &Showcase,
+    label: impl Into<SharedString>,
+    keywords: Vec<SharedString>,
+    icon: IconName,
+    action: Box<dyn Action>,
+) -> PaletteEntry {
+    PaletteEntry {
+        label: label.into(),
+        keywords,
+        drawn: app.chrome_icon(&icon),
+        icon,
+        action,
+    }
+}
+
+/// The command palette's entries (spec §2.8), as `(group, entries)`: every
+/// page, every preset the toolbar offers, and the three colour modes, each
+/// running the action its menu item or toolbar control runs, their icons of
+/// `app`'s chosen set.
+fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
+    let pages = Page::ALL
+        .map(|page| {
+            palette_entry(
+                app,
+                page.label(),
+                Vec::new(),
+                page.icon(),
+                Box::new(ShowPage(page.index())),
+            )
+        })
+        .into_iter()
+        .collect();
+    let presets = palette_presets()
+        .into_iter()
+        .map(|(key, name)| {
+            palette_entry(
+                app,
+                name,
+                vec![key.clone()],
+                IconName::Palette,
+                Box::new(SetPreset(key)),
+            )
+        })
+        .collect();
+    let modes = [
+        AppColorMode::System,
+        AppColorMode::Light,
+        AppColorMode::Dark,
+    ]
+    .map(|mode| {
+        let icon = match mode {
+            AppColorMode::System => IconName::Settings,
+            AppColorMode::Light => IconName::Sun,
+            AppColorMode::Dark => IconName::Moon,
+        };
+        palette_entry(
+            app,
+            mode.label(),
+            Vec::new(),
+            icon,
+            Box::new(SetColorMode(mode)),
+        )
+    })
+    .into_iter()
+    .collect();
+    vec![
+        ("Pages", pages),
+        ("Presets", presets),
+        ("Colour mode", modes),
+    ]
 }
 
 /// Whether a Dialog or a Sheet is open. Upstream stacks a new Dialog over any
@@ -301,9 +348,10 @@ pub(crate) fn open_command_palette(app: &Showcase, window: &mut Window, cx: &mut
     }
     let (ui, state) = (app.info_ui.clone(), app.palette_state.clone());
     state.update(cx, |state, cx| state.set_query("", window, cx));
-    let groups = palette_groups();
+    let groups = palette_groups(app);
+    let set = SharedString::from(app.icon_set_label());
     window.open_dialog(cx, move |dialog, _window, cx| {
-        demo::command_palette(&ui, cx, dialog, &state, groups.clone())
+        demo::command_palette(&ui, cx, dialog, &state, groups.clone(), set.clone())
     });
     // After the Dialog took the focus for itself (root.rs, Root::open_dialog),
     // so typing reaches the query at once.

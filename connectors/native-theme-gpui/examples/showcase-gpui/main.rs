@@ -192,7 +192,9 @@ pub(crate) const PAGE_WIDTH_PX: f32 = 880.;
 
 /// The window the showcase opens: `NAV_WIDTH` + the pages' width +
 /// `INSPECTOR_WIDTH` wide, so the content panel starts at the width the pages
-/// were laid out for. The sum is taken over the `f32`s, because gpui's
+/// were laid out for, and 850px tall. The model states no window size (spec
+/// §1.3), so both are the showcase's own layout defaults; a page taller than
+/// the window scrolls. The sum is taken over the `f32`s, because gpui's
 /// `Pixels` has no `const` arithmetic. The self-tests lay the interface out
 /// at this width, so a measurement they take is a measurement of the real
 /// thing.
@@ -256,6 +258,10 @@ pub(crate) const INSPECTOR_TABS: &str = "inspector-tabs";
 
 /// The debug selector the inspector's Copy button carries.
 pub(crate) const INSPECTOR_COPY: &str = "inspector-copy";
+
+/// The debug selector of the inspector's note that, with no native theme
+/// installed, the swatches may not be the colours painted.
+pub(crate) const INSPECTOR_TOKENS_NOTE: &str = "inspector-tokens-note";
 
 /// The ids and debug selectors of the resizable group's two handles: between
 /// the Sidebar and the content, and between the content and the inspector.

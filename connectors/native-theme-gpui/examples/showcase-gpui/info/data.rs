@@ -4,7 +4,7 @@ use gpui_component::{Colorize as _, attachment::AttachmentStatus, theme::Theme};
 
 use super::{
     ColorClaim, WidgetInfo,
-    chrome::{ghost_hover, input_background},
+    chrome::{GhostContent, ghost_colours, input_background},
     claim,
 };
 use crate::demo::{BubbleKind, DataTableRow, ListRowState};
@@ -316,26 +316,7 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
     } else {
         info
     };
-    let info = info
-        .color(ghost_hover(t))
-        .color(claim(
-            "text",
-            "secondary_foreground",
-            t.secondary_foreground,
-            "gpui-component/button/button.rs:964",
-        ))
-        .color(claim(
-            "hover text",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/button.rs:1141",
-        ))
-        .color(claim(
-            "pressed bg",
-            "button_active",
-            t.button_active,
-            "gpui-component/button/button.rs:1180",
-        ));
+    let info = info.colors(ghost_colours(t, GhostContent::Text));
     let info = if compact {
         info.not_themeable("buttons", "only the previous and next buttons, as icons: a compact Pagination lists no pages (pagination.rs, Pagination::render_nav_button). Both are ghost Buttons the widget builds, and no refinement reaches them")
     } else {

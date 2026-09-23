@@ -6,7 +6,7 @@ use gpui::{
     prelude::*,
 };
 use gpui_component::{
-    ActiveTheme, GlobalState, ResizableState, Root,
+    ActiveTheme, GlobalState, IconName, ResizableState, Root,
     attachment::AttachmentStatus,
     carousel::CarouselState,
     color_picker::ColorPickerState,
@@ -50,7 +50,7 @@ use crate::chrome;
 use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::Inspector;
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
     PresetDelegate, SampleListDelegate, SampleTableDelegate, initial_chat_messages, load_all_icons,
     load_gpui_icons, parse_icon_set_choice, release_sources,
 };
@@ -512,6 +512,13 @@ impl Showcase {
             ),
             _ => self.icon_set_name.clone(),
         }
+    }
+
+    /// The chrome's icon for gpui-component's `icon`, from the chosen icon
+    /// set: its own icons where the built-in set is chosen, never another
+    /// set's.
+    pub(crate) fn chrome_icon(&self, icon: &IconName) -> ChromeIcon {
+        ChromeIcon::of(&self.gpui_icons, self.icon_set_enum.is_none(), icon)
     }
 
     /// Load the freedesktop icons from `theme` from now on: what
@@ -1146,6 +1153,9 @@ impl Showcase {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        // Every preset, colour-mode, reload and palette switch installs
+        // through here, the failed ones too: those change the colour mode.
+        self.info_ui.update(cx, |r, _| r.screen_changed());
         if name == "default" {
             match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
@@ -1289,7 +1299,7 @@ impl Showcase {
     pub(crate) fn show_page(&mut self, page: Page, cx: &mut Context<Self>) {
         if self.active_page != page {
             self.active_page = page;
-            self.info_ui.update(cx, |r, _| r.page_changed());
+            self.info_ui.update(cx, |r, _| r.screen_changed());
         }
         cx.notify();
     }

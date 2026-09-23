@@ -1,11 +1,13 @@
 //! What the pages share: sample content, layout helpers, icon loading, and the list and table delegates.
 
+use std::borrow::Cow;
+
 use gpui::{
     App, Context, Div, Entity, ImageSource, IntoElement, Pixels, SharedString, Stateful,
     StyleRefinement, Styled, Task, Window, px,
 };
 use gpui_component::{
-    ActiveTheme, IconName, IndexPath, Selectable as _, StyledExt,
+    ActiveTheme, IconName, IconNamed as _, IndexPath, Selectable as _, StyledExt,
     attachment::AttachmentStatus,
     list::{ListDelegate, ListState},
     searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
@@ -734,6 +736,41 @@ pub(crate) fn load_gpui_icons(
             (*name, icon.clone(), None, None, IconSource::NotFound)
         })
         .collect()
+}
+
+/// One of the chrome's own icons -- a toolbar button's, a Sidebar page's, a
+/// command-palette entry's -- as the chosen icon set gives it. Sets are
+/// never mixed: where the chosen set has no icon for it, nothing is drawn.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) enum ChromeIcon {
+    /// gpui-component's own icon of this name, its built-in set being the
+    /// one chosen.
+    Builtin(&'static str),
+    /// The chosen set's SVG for the IconName of this name, as the Icons
+    /// page loads it (`load_gpui_icons`).
+    Loaded(&'static str, Cow<'static, [u8]>),
+    /// The chosen set holds no SVG for the IconName of this name: none at
+    /// all, or only pixels, which an `Icon` cannot draw (icon.rs, `Icon`
+    /// takes a path or SVG bytes).
+    Missing(&'static str),
+}
+
+impl ChromeIcon {
+    /// The chrome's icon for `icon`: `icons` are the chosen set's, as
+    /// `load_gpui_icons` loaded them, and `builtin` is whether that set is
+    /// gpui-component's own. An IconName the gallery lacks is missing too.
+    pub(crate) fn of(icons: &[IconEntry], builtin: bool, icon: &IconName) -> Self {
+        let path = icon.clone().path();
+        let Some((name, _, _, data, _)) = icons.iter().find(|(_, i, ..)| i.clone().path() == path)
+        else {
+            return Self::Missing("an IconName the gallery lacks");
+        };
+        match data {
+            _ if builtin => Self::Builtin(name),
+            Some(IconData::Svg(bytes)) => Self::Loaded(name, bytes.clone()),
+            _ => Self::Missing(name),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

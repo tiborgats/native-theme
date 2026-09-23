@@ -11,7 +11,7 @@ use gpui::{
     VisualTestContext, point, prelude::*, px, size,
 };
 use gpui_base::ScrollbarHandle as _;
-use gpui_component::{Colorize as _, Root, WindowExt as _, theme::Theme};
+use gpui_component::{Colorize as _, IconName, Root, WindowExt as _, theme::Theme};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 use std::cell::RefCell;
 use std::ops::Deref as _;
@@ -28,7 +28,9 @@ use crate::info::{
     hsla_to_hex, native_info, percent_text, px_text,
 };
 use crate::inspector::InspectorTab;
-use crate::support::{CAROUSEL_SLIDES, load_all_icons, native_geometry, native_value};
+use crate::support::{
+    CAROUSEL_SLIDES, ChromeIcon, load_all_icons, load_gpui_icons, native_geometry, native_value,
+};
 use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
     BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
@@ -39,8 +41,8 @@ use crate::{
     FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
     FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
     INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
-    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LAYOUT_BREADCRUMB,
-    LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
+    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, INSPECTOR_WIDTH,
+    LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
     OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
@@ -1335,6 +1337,42 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
     );
 }
 
+/// With no native theme installed the inspector says, once, that its
+/// swatches show ThemeColor fields while upstream may paint derived tokens;
+/// with one installed it does not.
+#[gpui::test]
+fn the_inspector_warns_of_tokens_only_without_a_native_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let item = bounds_of(&mut cx, Page::Charts.nav_item());
+    hover(&mut cx, item.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    assert!(
+        inspector_title(&mut cx, &showcase).is_some(),
+        "nothing is shown, so no note could be"
+    );
+    assert!(
+        cx.debug_bounds(INSPECTOR_TOKENS_NOTE).is_none(),
+        "a native theme is installed, and the inspector still warns of tokens"
+    );
+    cx.update(|_window, cx| {
+        if cx.has_global::<native_theme_gpui::NativeTheme>() {
+            cx.remove_global::<native_theme_gpui::NativeTheme>();
+        }
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert!(
+        cx.update(|_window, cx| cx.native_theme().is_none()),
+        "the native theme is still installed, so this proves nothing"
+    );
+    assert!(
+        cx.debug_bounds(INSPECTOR_TOKENS_NOTE).is_some(),
+        "with no native theme installed, the inspector does not warn of tokens"
+    );
+}
+
 /// The inspector's Theme tab lays out the theme's and the window's facts in
 /// place of the Widget tab.
 #[gpui::test]
@@ -1625,9 +1663,11 @@ fn settle_on(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:994).
+/// Text Button's label is foreground at 90% (button/button.rs:994). A text
+/// colour is not a quad of the scene, so the swatch is checked against that
+/// line, not against the frame.
 #[gpui::test]
-fn a_dimmed_swatch_shows_the_painted_colour(cx: &mut TestAppContext) {
+fn the_text_buttons_text_swatch_is_foreground_at_90_percent(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Buttons);
     let info = settle_on(&mut cx, &showcase, BUTTONS_TEXT);
@@ -1706,6 +1746,7 @@ fn input_fill(info: &Option<WidgetInfo>) -> Option<gpui::Hsla> {
 /// An Input's fill swatch is what `Theme::input_background()` paints in
 /// either mode: the window background in light mode, input mixed toward
 /// transparent in dark (theme/mod.rs:379-384) -- not the background in both.
+/// And it is the fill the frame holds inside the Input.
 #[gpui::test]
 fn an_input_fill_is_what_input_background_paints(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -1723,6 +1764,11 @@ fn an_input_fill_is_what_input_background_paints(cx: &mut TestAppContext) {
             input_fill(&info),
             Some(painted),
             "in {item} mode the Input's fill swatch is not input_background(): {info:?}"
+        );
+        assert_eq!(
+            painted_fill(&mut cx, INPUTS_FIELD),
+            input_fill(&info),
+            "in {item} mode the fill painted inside the Input is not its fill swatch"
         );
     }
 }
@@ -1793,10 +1839,12 @@ fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext)
 }
 
 /// The preset Combobox's swatches are the colours upstream paints: in dark
-/// mode its fill is input mixed toward transparent (theme/mod.rs:381), and a
-/// hovered row is accent at 70% (searchable_list/item.rs:114).
+/// mode its fill is input mixed toward transparent (theme/mod.rs:381), which
+/// is the fill the frame holds inside it, and a hovered row is accent at 70%
+/// (searchable_list/item.rs:114) -- checked against that line, since no row
+/// is drawn while the popup is shut.
 #[gpui::test]
-fn the_preset_comboboxs_swatches_are_the_painted_colours(cx: &mut TestAppContext) {
+fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     run_menu_item(&mut cx, "Theme", "Dark");
     assert!(
@@ -1812,6 +1860,11 @@ fn the_preset_comboboxs_swatches_are_the_painted_colours(cx: &mut TestAppContext
         input_fill(&info),
         Some(fill),
         "the preset Combobox's fill swatch is not input_background(): {info:?}"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, PROBE_COMBOBOX),
+        input_fill(&info),
+        "the fill painted inside the preset Combobox is not its fill swatch"
     );
     let hover = info
         .as_ref()
@@ -2060,7 +2113,8 @@ fn an_animations_info_follows_reduced_motion(cx: &mut TestAppContext) {
 
 /// An Alert's swatches are the tints upstream paints, not its variant's
 /// colour at full strength: the Info Alert fills with 4% info mixed toward
-/// transparent white (alert.rs:39).
+/// transparent white (alert.rs:39), and that is the fill the frame holds
+/// inside it.
 #[gpui::test]
 fn an_alerts_fill_swatch_is_the_painted_tint(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -2078,6 +2132,11 @@ fn an_alerts_fill_swatch_is_the_painted_tint(cx: &mut TestAppContext) {
         fill.map(|c| c.value),
         Some(painted),
         "the Info Alert's fill swatch is not info at 4%: {info:?}"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, FEEDBACK_ALERT_INFO),
+        Some(painted),
+        "the fill painted inside the Info Alert is not its fill swatch"
     );
 }
 
@@ -2341,11 +2400,12 @@ fn every_chart_shows_its_own_info(cx: &mut TestAppContext) {
     }
 }
 
-/// The AreaChart's fill swatch shows the colour upstream paints: the series
-/// colour at the `AREA_FILL_OPACITY` the showcase asks for, not the colour
-/// at full.
+/// The AreaChart's fill swatch is the colour the showcase asks upstream to
+/// paint: the series colour at `AREA_FILL_OPACITY`, not the colour at full.
+/// The area is a path, not a quad of the scene, so the swatch is checked
+/// against what the showcase passes, not against the frame.
 #[gpui::test]
-fn the_area_charts_fill_swatch_shows_the_painted_colour(cx: &mut TestAppContext) {
+fn the_area_charts_fill_swatch_is_the_series_at_the_fill_opacity(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Charts);
     let info = settle_on(&mut cx, &showcase, CHARTS_AREA_CHART);
@@ -2466,6 +2526,144 @@ fn a_missing_icon_says_it_is_missing(cx: &mut TestAppContext) {
     assert!(
         roles.contains(&"missing-icon placeholder") && !roles.iter().any(|r| r.starts_with("icon")),
         "the Shield cell claims an icon's colour, or no placeholder: {roles:?}"
+    );
+}
+
+/// The chrome's own icons: the toolbar buttons', the Sidebar's page icons
+/// and the command palette's entries'. The toolbar's are named in
+/// chrome::toolbar, the pages' in `Page::icon`, the palette's in
+/// chrome::palette_groups.
+fn chrome_icon_names() -> Vec<IconName> {
+    let mut names = vec![
+        IconName::SquareTerminal,
+        IconName::RotateCw,
+        IconName::Inspector,
+        IconName::Palette,
+        IconName::Settings,
+        IconName::Sun,
+        IconName::Moon,
+    ];
+    names.extend(Page::ALL.map(Page::icon));
+    names
+}
+
+/// The chrome's icons come from the chosen icon set, and from no other
+/// (the maintainer's rule: never mix icon sets). With Material chosen, every
+/// chrome icon is the SVG Material's gallery holds for its IconName, as the
+/// Icons page loads it, or none -- never gpui-component's own -- and the
+/// toolbar's Command Palette button says which. With gpui-component's
+/// built-in set chosen, every one is gpui-component's own, which also
+/// proves each is in the gallery the lookup searches.
+#[gpui::test]
+fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let choose = |cx: &mut VisualTestContext, display: &str| {
+        cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| this.select_icon_set(display, window, cx));
+        });
+        cx.run_until_parked();
+        draw(cx);
+    };
+    choose(&mut cx, "gpui-component built-in (Lucide)");
+    for name in chrome_icon_names() {
+        let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
+        assert!(
+            matches!(drawn, ChromeIcon::Builtin(_)),
+            "with the built-in set chosen, a chrome icon is not gpui-component's own: {drawn:?}"
+        );
+    }
+
+    choose(&mut cx, "Material (bundled)");
+    let material = load_gpui_icons(
+        Some(native_theme::theme::IconSet::Material),
+        None,
+        None,
+        None,
+    );
+    for name in chrome_icon_names() {
+        let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
+        let path = gpui_component::IconNamed::path(name.clone());
+        let entry = material
+            .iter()
+            .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path);
+        let expected = match entry {
+            Some((n, _, _, Some(native_theme::theme::IconData::Svg(bytes)), _)) => {
+                ChromeIcon::Loaded(n, bytes.clone())
+            }
+            Some((n, ..)) => ChromeIcon::Missing(n),
+            None => ChromeIcon::Missing("an IconName the gallery lacks"),
+        };
+        assert_eq!(
+            drawn, expected,
+            "with Material chosen, a chrome icon is not Material's own, or not absent"
+        );
+    }
+    let info = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PALETTE);
+    let note = info.as_ref().and_then(|info| {
+        info.instance
+            .iter()
+            .find(|n| n.what == "icon")
+            .map(|n| n.text.clone())
+    });
+    assert!(
+        note.as_deref()
+            .is_some_and(|n| n.starts_with("material's icon for SquareTerminal")
+                || n.starts_with("none: material")),
+        "with Material chosen, the Command Palette button does not say its icon is Material's: {note:?}"
+    );
+}
+
+/// A chrome icon the chosen set has none for is absent, not another set's:
+/// with Material's SquareTerminal taken out of the loaded gallery, the
+/// Command Palette button shows its tooltip's text and says why.
+#[gpui::test]
+fn a_chrome_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("Material (bundled)", window, cx);
+            for entry in &mut this.gpui_icons {
+                if entry.0 == "SquareTerminal" {
+                    entry.3 = None;
+                }
+            }
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this
+            .chrome_icon(&IconName::SquareTerminal)),
+        ChromeIcon::Missing("SquareTerminal")
+    );
+    // Drawn, not only reported: the label is wider than the icon the
+    // Inspector button beside it still shows.
+    let (labelled, iconic) = (
+        bounds_of(&mut cx, CHROME_TOOLBAR_PALETTE),
+        bounds_of(&mut cx, CHROME_TOOLBAR_INSPECTOR),
+    );
+    assert!(
+        labelled.size.width > iconic.size.width,
+        "the Command Palette button at {labelled:?} is no wider than the Inspector's icon \
+         button at {iconic:?}, so it drew something in place of its label"
+    );
+    let info = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PALETTE);
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some("Button · Ghost, labelled"),
+        "the Command Palette button with no icon of the chosen set is not labelled"
+    );
+    let note = info.as_ref().and_then(|info| {
+        info.instance
+            .iter()
+            .find(|n| n.what == "icon")
+            .map(|n| n.text.clone())
+    });
+    assert!(
+        note.as_deref()
+            .is_some_and(|n| n.starts_with("none: material holds no SVG for SquareTerminal")),
+        "the Command Palette button does not say material has no icon for it: {note:?}"
     );
 }
 
@@ -2889,10 +3087,65 @@ fn an_overlay_opens_once(cx: &mut TestAppContext) {
         cx.debug_bounds(OVERLAY_PREFERENCES).is_some(),
         "Ctrl+, did not open the Preferences sheet"
     );
+    run_menu_item_from_focus(&mut cx, "Help", "About");
+    assert!(
+        !a_dialog_is_open(&mut cx),
+        "Help > About opened over the Preferences sheet"
+    );
     press(&mut cx, "ctrl-k");
     assert!(
         !a_dialog_is_open(&mut cx),
         "Ctrl+K opened the palette over the Preferences sheet"
+    );
+}
+
+/// A theme switch clears an info whose target is no longer drawn, as a
+/// page change does: settled on a Preferences switch, the sheet closed and
+/// the colour mode switched, the inspector would otherwise keep showing the
+/// switch's colours under the theme before. The Preferences sheet is shut by
+/// Escape, and the pointer is moved into the page's own padding, where no
+/// widget can settle in its place.
+#[gpui::test]
+fn a_theme_switch_clears_what_left_the_screen(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    press(&mut cx, "ctrl-,");
+    let info = settle_on(&mut cx, &showcase, PREF_REDUCE_MOTION);
+    assert!(
+        info.as_ref().is_some_and(|info| info.kind == "Switch"),
+        "the Reduce motion switch did not report itself: {info:?}"
+    );
+    press(&mut cx, "escape");
+    assert!(
+        cx.debug_bounds(OVERLAY_PREFERENCES).is_none(),
+        "Escape did not close the Preferences sheet"
+    );
+    let page = bounds_of(&mut cx, PAGE_ROOT);
+    hover(&mut cx, point(page.left() + px(4.), page.top() + px(4.)));
+    settle(&mut cx);
+    let shown = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().map(|info| info.kind)
+        })
+    };
+    assert_eq!(
+        shown(&mut cx),
+        Some("Switch"),
+        "closing the sheet alone already cleared the info: leaving keeps it"
+    );
+    let dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
+    run_menu_item(&mut cx, "Theme", if dark { "Light" } else { "Dark" });
+    assert_ne!(
+        cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        dark,
+        "the colour mode did not change, so this proves nothing"
+    );
+    settle(&mut cx);
+    assert_eq!(
+        shown(&mut cx),
+        None,
+        "after the colour mode changed, the info of a switch no longer drawn \
+         still shows the colours of the theme before"
     );
 }
 
@@ -3185,10 +3438,13 @@ fn a_widget_info_titles_itself_by_kind_and_variant() {
 
 #[test]
 fn to_text_prints_the_four_sections_in_order() {
-    let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    let t = Theme::from(&gpui_component::theme::ThemeColor {
+        danger: gpui::hsla(0.0, 1.0, 0.5, 1.0),
+        ..Default::default()
+    });
     let info = WidgetInfo::new("Tag")
         .variant("Danger")
-        .color(claim("bg", "danger", red, "gpui-component/tag.rs:31"))
+        .color(claim("bg", "danger", t.danger, "gpui-component/tag.rs:31"))
         .config("border-radius", "radius: 4px")
         .not_themeable("padding", "a rem literal")
         .instance("label", "Danger");
@@ -3438,7 +3694,7 @@ fn change_page(
     ui: &Entity<InfoRegistry>,
     show: bool,
 ) {
-    cx.update(|_window, cx| ui.update(cx, |r, _| r.page_changed()));
+    cx.update(|_window, cx| ui.update(cx, |r, _| r.screen_changed()));
     show_inner(cx, view, show);
 }
 

@@ -25,8 +25,9 @@ pub struct InfoRegistry {
     /// The choice waiting out `INFO_SETTLE`, and the ticket of its timer.
     pending: Option<(ElementId, u64)>,
     tickets: u64,
-    /// The active page changed since the last frame was drawn.
-    page_changed: bool,
+    /// What the window shows changed since the last frame was drawn: the
+    /// active page, or the installed theme.
+    screen_changed: bool,
     /// Every id a second target recorded in a frame that had already drawn
     /// one under it. Two targets sharing an id overwrite each other's bounds
     /// and hovers, since the registry keys them by the id alone; the tests
@@ -45,13 +46,16 @@ impl InfoRegistry {
     pub fn shown(&self) -> Option<&Rc<WidgetInfo>> {
         self.shown.as_ref().map(|(_, info)| info)
     }
-    /// The active page changed. Once the frame that draws the new page is
-    /// drawn, what is shown goes back to the hint unless that frame drew its
-    /// target too, as it draws the chrome's: no instance of the previous page
-    /// stays on show (spec §4.3.4), and the pointer leaving a target still
-    /// keeps it (§4.3.3).
-    pub fn page_changed(&mut self) {
-        self.page_changed = true;
+    /// The active page changed, or a theme was installed. Once the next
+    /// frame is drawn, what is shown goes back to the hint unless that frame
+    /// drew its target too, as it draws the chrome's: no instance of the
+    /// previous page stays on show (spec §4.3.4), and no info keeps the
+    /// colours of a theme no longer installed -- a target still drawn hands
+    /// the registry its info under the new theme (`record_target`), and one
+    /// that is not, an overlay closed since, cannot. The pointer leaving a
+    /// target still keeps it (§4.3.3).
+    pub fn screen_changed(&mut self) {
+        self.screen_changed = true;
     }
     /// A target was laid out at `bounds` with `info`, as the frame being
     /// drawn built it. The info replaces the one hovered or shown under the
@@ -130,7 +134,7 @@ impl InfoRegistry {
         let (bounds, epoch) = (&self.bounds, self.epoch);
         let drawn = |id: &ElementId| bounds.get(id).is_some_and(|(_, e)| *e == epoch);
         self.hovered.retain(|(id, _)| drawn(id));
-        let cleared = std::mem::take(&mut self.page_changed)
+        let cleared = std::mem::take(&mut self.screen_changed)
             && self.shown.as_ref().is_some_and(|(id, _)| !drawn(id));
         if cleared {
             self.shown = None;

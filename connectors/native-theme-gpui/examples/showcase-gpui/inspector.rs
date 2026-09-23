@@ -17,12 +17,15 @@ use gpui_component::{
     scroll::ScrollableElement,
     v_flex, window_paddings,
 };
-use native_theme_gpui::geometry;
+use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
 
 use crate::app::Showcase;
 use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex};
 use crate::support::{NativeStyled, defined_size, with_gap, with_padding};
-use crate::{INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, demo, probe};
+use crate::{
+    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
+    probe,
+};
 
 /// The inspector's two views, in the order its TabBar shows them.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -84,7 +87,9 @@ impl Inspector {
     }
 
     /// The Widget tab: the shown info's title, a Copy button and its
-    /// sections, or one line of hint before anything was hovered.
+    /// sections, or one line of hint before anything was hovered. With no
+    /// native theme installed, a note says the swatches may not be what is
+    /// painted.
     fn widget_tab(&mut self, gap: Option<gpui::Pixels>, cx: &mut Context<Self>) -> gpui::Div {
         let theme = cx.theme().clone();
         let muted = theme.muted_foreground;
@@ -112,17 +117,38 @@ impl Inspector {
                             .debug_selector(|| INSPECTOR_TITLE.into())
                             .child(Label::new(title).text_sm().font_semibold()),
                     )
+                    // The Buttons page's Ghost, as the toolbar's buttons are.
                     .child(probe(
                         INSPECTOR_COPY,
                         Button::new("inspector-copy")
                             .label("Copy")
                             .small()
-                            .ghost()
+                            .custom(variants::ghost_button(cx))
                             .on_click(move |_, _, cx| {
                                 cx.write_to_clipboard(ClipboardItem::new_string(copied.clone()))
                             }),
                     )),
             )
+            // A claim's value is the ThemeColor field it names, and upstream
+            // paints many widgets from `Theme::tokens` instead, which a theme
+            // can set apart from its fields (theme/schema.rs:1014, and the
+            // test at :1299 asserting a pair that differs). Said only before
+            // the connector's `apply` has run, while gpui-component's own
+            // theme is up.
+            .when(cx.native_theme().is_none(), |tab| {
+                tab.child(
+                    div().debug_selector(|| INSPECTOR_TOKENS_NOTE.into()).child(
+                        Label::new(
+                            "No native theme is installed, so the theme is gpui-component's own. \
+                             The swatches show its ThemeColor fields, but upstream paints many \
+                             widgets from Theme::tokens, which a theme can set apart from those \
+                             fields: a swatch may not be the colour on screen.",
+                        )
+                        .text_sm()
+                        .text_color(muted),
+                    ),
+                )
+            })
             .child(body)
     }
 

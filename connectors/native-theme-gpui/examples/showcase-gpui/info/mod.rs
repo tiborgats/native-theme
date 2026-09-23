@@ -78,6 +78,10 @@ impl WidgetInfo {
         self.colors.push(claim);
         self
     }
+    pub fn colors(mut self, claims: impl IntoIterator<Item = ColorClaim>) -> Self {
+        self.colors.extend(claims);
+        self
+    }
     pub fn config(mut self, what: &'static str, text: impl Into<String>) -> Self {
         self.config.push(Note {
             what,
@@ -253,7 +257,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "dialog_max_width",
-        "dialog.max_width, which Dialog::max_w caps the width at (dialog/dialog.rs, Dialog::max_w)",
+        "dialog.max_width, which caps the width: a Dialog's through Dialog::max_w (dialog/dialog.rs, Dialog::max_w), and an AlertDialog's, which has no max_w of its own, through Styled::max_w, landing on the surface with the rest of the refinement (dialog/alert_dialog.rs, AlertDialog; dialog/dialog.rs, Dialog::render)",
     ),
     (
         "input_height",

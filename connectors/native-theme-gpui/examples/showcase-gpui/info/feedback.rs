@@ -3,7 +3,7 @@
 use gpui::transparent_white;
 use gpui_component::{Colorize as _, theme::Theme};
 
-use super::{WidgetInfo, claim, hsla_to_hex, percent_text};
+use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 
 /// The opacity a hovered Tag paints at: upstream's literal (tag.rs:265).
@@ -578,31 +578,14 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
         } else {
             "Button::tooltip"
         })
-        .color(claim(
-            "bg",
-            "popover",
-            t.popover,
-            "gpui-component/tooltip.rs:114",
-        ))
-        .color(claim(
-            "border",
-            "border",
-            t.border,
-            "gpui-component/tooltip.rs:118",
-        ));
-    // geometry::tooltip paints the text with tooltip.font's colour, which no
-    // ThemeColor field holds, over upstream's, and rounds it with the
-    // platform's corner radius.
+        // geometry::tooltip paints the text with tooltip.font's colour,
+        // which no ThemeColor field holds, over upstream's, and rounds it
+        // with the platform's corner radius.
+        .colors(tooltip_colours(t, !(built && styled)));
     let info = if built && styled {
         info
     } else {
-        info.color(claim(
-            "text",
-            "popover_foreground",
-            t.popover_foreground,
-            "gpui-component/tooltip.rs:115",
-        ))
-        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
     let info = if built {
         info.not_themeable("delay", "gpui's own tooltip, set on an element rather than through Button::tooltip, so it takes tooltip_show_delay (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase does not set. native-theme states no hover delay, though the platforms do -- our model's gap")
@@ -617,6 +600,36 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
         format!("a Default Button reading {label}, which reports through its tooltip. Its own colours are a Default Button's, which the Buttons page's Default Button states"),
     )
     .instance("text", text.to_string())
+}
+
+/// What upstream's `Tooltip` paints: its surface and edge, and, with
+/// `text`, its text -- which a Tooltip refined by `geometry::tooltip` takes
+/// from tooltip.font instead. A Button's own tooltip is upstream's, so the
+/// window's toolbar buttons report these too.
+pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
+    let mut claims = vec![
+        claim(
+            "tooltip bg",
+            "popover",
+            t.popover,
+            "gpui-component/tooltip.rs:114",
+        ),
+        claim(
+            "tooltip border",
+            "border",
+            t.border,
+            "gpui-component/tooltip.rs:118",
+        ),
+    ];
+    if text {
+        claims.push(claim(
+            "tooltip text",
+            "popover_foreground",
+            t.popover_foreground,
+            "gpui-component/tooltip.rs:115",
+        ));
+    }
+    claims
 }
 
 /// The `Notification` of `severity` a Default Button reading `label`

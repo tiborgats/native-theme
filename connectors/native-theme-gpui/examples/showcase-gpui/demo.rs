@@ -35,7 +35,7 @@ use gpui_component::{
     clipboard::Clipboard,
     color_picker::{ColorPicker, ColorPickerState},
     combobox::{Combobox, ComboboxState},
-    command::{Command, CommandGroup, CommandState},
+    command::{Command, CommandGroup, CommandItem, CommandState},
     date_picker::{DatePicker, DatePickerState},
     description_list::DescriptionList,
     dialog::{
@@ -98,7 +98,7 @@ use native_theme_gpui::{
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
     SampleListDelegate, SampleTableDelegate, native_geometry, native_value, refined, with_gap,
     with_padding,
 };
@@ -113,7 +113,25 @@ use crate::{
 /// An icon at the platform's size for the role the builder names; upstream's
 /// own size before `apply` ran. A part: the helper that places it reports.
 fn native_icon(cx: &App, name: IconName, role: fn(Native<'_>) -> Size) -> Icon {
-    let icon = Icon::new(name);
+    native_sized(cx, Icon::new(name), role)
+}
+
+/// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
+/// chosen, the chosen set's SVG otherwise, and `None` where that set has
+/// none. An SVG is drawn as every `Icon` is, as a mask in the colour its
+/// widget gives it (gpui-pre window.rs, `Window::paint_svg`). A part: the
+/// helper that places it reports.
+fn chrome_icon(drawn: &ChromeIcon, icon: &IconName) -> Option<Icon> {
+    match drawn {
+        ChromeIcon::Builtin(_) => Some(Icon::new(icon.clone())),
+        ChromeIcon::Loaded(_, bytes) => Some(Icon::default().data(bytes)),
+        ChromeIcon::Missing(_) => None,
+    }
+}
+
+/// `icon` at the platform's size for the role the builder names; its own
+/// size before `apply` ran.
+fn native_sized(cx: &App, icon: Icon, role: fn(Native<'_>) -> Size) -> Icon {
     match native_value(cx, role) {
         Some(size) => icon.with_size(size),
         None => icon,
@@ -294,17 +312,25 @@ pub(crate) fn toolbar_separator(ui: &Entity<InfoRegistry>, cx: &App) -> Stateful
 /// One of the toolbar's icon Buttons.
 pub(crate) struct ToolbarButton<'a> {
     pub button_id: &'static str,
+    /// gpui-component's icon of the button, which `drawn` is of.
     pub icon: IconName,
-    /// The tooltip's text; the action's key binding follows it.
+    /// That icon as the chosen icon set gives it.
+    pub drawn: ChromeIcon,
+    /// The chosen icon set, as the Icons page names it.
+    pub set: &'a str,
+    /// The tooltip's text; the action's key binding follows it. The button's
+    /// label where the chosen set has no icon for it.
     pub tooltip: &'static str,
     pub action: &'a dyn Action,
     /// The info's "action" line: what the button is for.
     pub about: &'static str,
 }
 
-/// A ghost icon `Button` for the toolbar, dispatching its action, its icon
-/// at `geometry::icon_size_toolbar` and its tooltip showing the action's key
-/// binding.
+/// A Ghost `Button` for the toolbar -- the Buttons page's, built with
+/// `variants::ghost_button` -- dispatching its action, its icon of the
+/// chosen set at `geometry::icon_size_toolbar` and its tooltip showing the
+/// action's key binding. Where the set has no icon for it, it shows its
+/// tooltip's text instead, never another set's icon.
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
 /// whatever it is given to a size derived from the Button's own
@@ -318,19 +344,26 @@ pub(crate) fn toolbar_button(
     let ToolbarButton {
         button_id: id,
         icon,
+        drawn,
+        set,
         tooltip,
         action,
         about,
     } = spec;
-    let mut button_info = info::toolbar_button(cx.theme(), about);
-    if native_value(cx, geometry::icon_size_toolbar).is_some() {
+    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set);
+    let icon =
+        chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
+    if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
     let dispatched = action.boxed_clone();
-    let button = Button::new(id)
-        .ghost()
+    let button = ButtonKind::Ghost
+        .apply(Button::new(id), cx)
         .tooltip_with_action(tooltip, action, None)
-        .child(native_icon(cx, icon, geometry::icon_size_toolbar))
+        .map(|button| match icon {
+            Some(icon) => button.child(icon),
+            None => button.label(tooltip),
+        })
         .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(
@@ -358,8 +391,9 @@ pub(crate) fn sidebar_toggle_button(
         )
 }
 
-/// The window's `Sidebar` (spec §2.4): one item per page, the item of
-/// `active` marked active, collapsed to icons while `collapsed`.
+/// The window's `Sidebar` (spec §2.4): one item per page with its icon as
+/// `icons` gives it from the icon set named `set`, the item of `active`
+/// marked active, collapsed to icons while `collapsed`.
 ///
 /// Its width is its container's: a width that is not an absolute pixel
 /// length keeps upstream from animating it to a width of its own
@@ -370,12 +404,16 @@ pub(crate) fn sidebar(
     cx: &App,
     active: Page,
     collapsed: bool,
+    icons: impl Fn(Page) -> ChromeIcon,
+    set: SharedString,
 ) -> Stateful<Div> {
     let items = Page::ALL.map(|page| NavItem {
         ui: ui.clone(),
         page,
         active: page == active,
         collapsed: false,
+        icon: icons(page),
+        set: set.clone(),
     });
     Sidebar::new("chrome-sidebar")
         .collapsed(collapsed)
@@ -398,6 +436,10 @@ pub(crate) struct NavItem {
     page: Page,
     active: bool,
     collapsed: bool,
+    /// The page's icon as the chosen icon set gives it.
+    icon: ChromeIcon,
+    /// The chosen icon set, as the Icons page names it.
+    set: SharedString,
 }
 
 impl Collapsible for NavItem {
@@ -418,20 +460,32 @@ impl SidebarItem for NavItem {
         cx: &mut App,
     ) -> impl IntoElement {
         let page = self.page;
-        let mut item_info =
-            info::sidebar_item(cx.theme(), page.label(), self.active, self.collapsed);
+        let mut item_info = info::sidebar_item(
+            cx.theme(),
+            page.label(),
+            self.active,
+            self.collapsed,
+            &self.icon,
+            &self.set,
+        );
+        let icon = chrome_icon(&self.icon, &page.icon())
+            .map(|icon| native_sized(cx, icon, geometry::icon_size_panel));
         // A sidebar is the panel `defaults.icon_sizes.panel` names, and
         // `SidebarMenuItem` keeps the icon it is given (sidebar/menu.rs:300).
-        if native_value(cx, geometry::icon_size_panel).is_some() {
+        if icon.is_some() && native_value(cx, geometry::icon_size_panel).is_some() {
             item_info = item_info.geometry("icon_size_panel");
         }
-        let item = SidebarMenuItem::new(page.label())
-            .icon(native_icon(cx, page.icon(), geometry::icon_size_panel))
-            .active(self.active)
-            .collapsed(self.collapsed)
-            .on_click(move |_, window, cx| {
-                window.dispatch_action(Box::new(ShowPage(page.index())), cx)
-            });
+        let item = SidebarMenuItem::new(page.label());
+        let item = match icon {
+            Some(icon) => item.icon(icon),
+            None => item,
+        };
+        let item =
+            item.active(self.active)
+                .collapsed(self.collapsed)
+                .on_click(move |_, window, cx| {
+                    window.dispatch_action(Box::new(ShowPage(page.index())), cx)
+                });
         SidebarItem::render(item, id, window, cx)
             .info(&self.ui, page.nav_item(), item_info)
             .w_full()
@@ -572,9 +626,56 @@ fn dialog_title(cx: &App, text: &'static str, info: &mut WidgetInfo) -> DialogTi
     )
 }
 
+/// One entry of the command palette.
+pub(crate) struct PaletteEntry {
+    pub label: SharedString,
+    /// What typing finds it by besides its label.
+    pub keywords: Vec<SharedString>,
+    /// gpui-component's icon of the entry, which `drawn` is of.
+    pub icon: IconName,
+    /// That icon as the chosen icon set gives it.
+    pub drawn: ChromeIcon,
+    pub action: Box<dyn Action>,
+}
+
+impl Clone for PaletteEntry {
+    fn clone(&self) -> Self {
+        Self {
+            label: self.label.clone(),
+            keywords: self.keywords.clone(),
+            icon: self.icon.clone(),
+            drawn: self.drawn.clone(),
+            action: self.action.boxed_clone(),
+        }
+    }
+}
+
+/// The palette's groups, as `(label, entries)`, each entry with its icon of
+/// the chosen set, or with none where the set has none.
+fn palette_groups(groups: Vec<(&'static str, Vec<PaletteEntry>)>) -> Vec<CommandGroup> {
+    groups
+        .into_iter()
+        .map(|(label, entries)| {
+            CommandGroup::new()
+                .label(label)
+                .items(entries.into_iter().map(|entry| {
+                    let item = CommandItem::new()
+                        .label(entry.label)
+                        .keywords(entry.keywords)
+                        .action(entry.action);
+                    match chrome_icon(&entry.drawn, &entry.icon) {
+                        Some(icon) => item.icon(icon),
+                        None => item,
+                    }
+                }))
+        })
+        .collect()
+}
+
 /// The command palette (spec §2.8): `dialog`, titled, holding an unbordered
-/// `Command` over `state` with `groups`. Running an entry dispatches its
-/// action, then closes the palette.
+/// `Command` over `state` with `groups`, whose icons are of the icon set
+/// named `set`. Running an entry dispatches its action, then closes the
+/// palette.
 ///
 /// The Dialog reports itself on its title: the Command fills the rest of
 /// its content, and the surface around them is upstream's, out of reach.
@@ -583,8 +684,10 @@ pub(crate) fn command_palette(
     cx: &App,
     dialog: Dialog,
     state: &Entity<CommandState>,
-    groups: Vec<CommandGroup>,
+    groups: Vec<(&'static str, Vec<PaletteEntry>)>,
+    set: SharedString,
 ) -> Dialog {
+    let groups = palette_groups(groups);
     let mut dialog_info = info::palette_dialog(cx.theme(), cx.reduce_motion());
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Command Palette", &mut dialog_info)
@@ -599,7 +702,11 @@ pub(crate) fn command_palette(
         let command = groups.iter().cloned().fold(command, Command::group);
         content.child(
             command
-                .info(&ui, "overlay-palette", info::command_palette(cx.theme()))
+                .info(
+                    &ui,
+                    "overlay-palette",
+                    info::command_palette(cx.theme(), &set),
+                )
                 .debug_selector(|| OVERLAY_PALETTE.into()),
         )
     })
@@ -709,11 +816,18 @@ fn installed_preferences(cx: &App) -> Option<AccessibilityPreferences> {
     cx.native_theme().map(|nt| nt.accessibility().clone())
 }
 
-/// Install `prefs` with `change` made, where a native theme is installed.
-fn change_preferences(cx: &mut App, change: impl FnOnce(&mut AccessibilityPreferences)) {
+/// Install `prefs` with `change` made, where a native theme is installed,
+/// and tell `ui`: the theme is rebuilt, so an info shown for a target no
+/// longer drawn would keep the colours of the theme before.
+fn change_preferences(
+    ui: &Entity<InfoRegistry>,
+    cx: &mut App,
+    change: impl FnOnce(&mut AccessibilityPreferences),
+) {
     if let Some(mut prefs) = installed_preferences(cx) {
         change(&mut prefs);
         native_theme_gpui::apply_accessibility(&prefs, cx);
+        ui.update(cx, |r, _| r.screen_changed());
     }
 }
 
@@ -740,12 +854,13 @@ fn preference_item(
     let field = SettingField::render(move |options, _window, cx| {
         let checked = installed_preferences(cx).is_some_and(|p| pref.get(&p));
         let selector = pref.selector();
+        let clicked = ui.clone();
         Switch::new(selector)
             .checked(checked)
             .disabled(options.is_disabled())
             .with_size(options.size())
             .on_click(move |on: &bool, _window, cx| {
-                change_preferences(cx, |prefs| pref.set(prefs, *on));
+                change_preferences(&clicked, cx, |prefs| pref.set(prefs, *on));
             })
             .info(
                 &ui,
@@ -774,6 +889,7 @@ pub(crate) fn preferences(
 ) -> Sheet {
     let disabled = cx.native_theme().is_none();
     let mut settings_info = info::preferences_settings(cx.theme());
+    let scaled = ui.clone();
     let text_scale = SettingItem::new(
         "Text scale",
         SettingField::number_input(
@@ -789,7 +905,11 @@ pub(crate) fn preferences(
                         .text_scaling_factor,
                 )
             },
-            |scale, cx| change_preferences(cx, |prefs| prefs.text_scaling_factor = scale as f32),
+            move |scale, cx| {
+                change_preferences(&scaled, cx, |prefs| {
+                    prefs.text_scaling_factor = scale as f32
+                })
+            },
         ),
     )
     .description("text_scaling_factor: the theme's font sizes are multiplied by it")

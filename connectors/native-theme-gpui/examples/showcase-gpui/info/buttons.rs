@@ -4,7 +4,7 @@ use gpui_component::{Colorize as _, Size, theme::Theme};
 
 use super::{
     ColorClaim, WidgetInfo,
-    chrome::{ghost_hover, input_background},
+    chrome::{GhostContent, ghost_colours, input_background},
     claim,
 };
 use crate::demo::{ButtonKind, ButtonState};
@@ -530,7 +530,7 @@ pub fn button(
     let info = info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs, text_sm or text_base -- all rems -- and gpui-component sets the rem to Theme::font_size (root.rs, Root::render set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm");
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
-        ButtonKind::Ghost => info.instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu selection colour, not a button hover"),
+        ButtonKind::Ghost => ghost_variant(info),
         ButtonKind::Link => info
             .not_themeable("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)")
             .not_themeable("underline", "always on for this variant (button/button.rs, ButtonVariant::underline)"),
@@ -565,11 +565,24 @@ pub fn button(
     };
     match size {
         Some(size) => info
-            .not_themeable("padding", "per Size only because this demo omits the refinement the other Button panels apply: upstream takes a copy of the caller's style before the Size arm sets its px_1/px_2/px_3 and re-applies that copy afterwards (button/button.rs, Button), so geometry::button's border.padding_* would win. Left bare on purpose -- this is the panel that shows the enum")
+            .not_themeable("padding", "per Size only because this demo omits the refinement the other Button panels apply: upstream takes a copy of the caller's style before the Size arm sets its px_1 / px_2 / px_2p5 / px_3 (XSmall, Small, Medium, Large) and re-applies that copy afterwards (button/button.rs, Button), so geometry::button's border.padding_* would win. Left bare on purpose -- this is the panel that shows the enum")
             .not_themeable("min-height", "the same: the Size arm's h_5/h_6/h_8 is overruled by a refinement, so button.min_height would arrive through geometry::button (button/button.rs, Button)")
             .instance("size", format!("{} via the Size enum", size_name(size))),
         None => info,
     }
+}
+
+/// The variant line of a Ghost Button built with
+/// `native_theme_gpui::variants::ghost_button`.
+fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
+    info.instance("variant", "native_theme_gpui::variants::ghost_button: flat like gpui-component's .ghost(), but with the platform's button.hover_background / active_background. Upstream's own .ghost() would hover with the item-highlight pair (button/button.rs, ButtonVariant::hovered Ghost arm), which is the menu selection colour, not a button hover")
+}
+
+/// `info` with what the page's Ghost Button paints, unrefined, and its
+/// variant line: the window's toolbar buttons are that Ghost too, and take
+/// it from here so the two cannot drift apart.
+pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+    ghost_variant(colours(info, t, ButtonKind::Ghost, false))
 }
 
 /// A `ButtonGroup` of Default Buttons, which report through the group.
@@ -600,15 +613,15 @@ pub fn dropdown_button(t: &Theme, kind: ButtonKind) -> WidgetInfo {
         .instance("halves", "both take the variant of the Button the showcase gives it: DropdownButton passes it on to the caret half (button/dropdown_button.rs, DropdownButton::effective_variant)")
 }
 
-/// The notes every Toggle and ToggleGroup of the page shares: both are the
-/// default Ghost variant at the default Size.
-fn toggle_notes(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+/// The notes every Toggle and ToggleGroup the showcase builds shares: all
+/// are at the default Size.
+pub(super) fn toggle_notes(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("size", "min_w_8 / h_8 at the default Size -- rems, so the platform's font -- and settable: the refinement comes last, so segmented_control.segment_height, its padding and its font would reach a Toggle through the geometry::toggle nobody has written (button/toggle.rs, Toggle::render)")
 }
 
-/// The hovered colours of an unchecked Toggle.
-fn toggle_hover(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+/// The hovered colours of an unchecked Toggle, of either variant.
+pub(super) fn toggle_hover(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     info.color(claim(
         "hover bg",
         "accent",
@@ -621,29 +634,38 @@ fn toggle_hover(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         t.accent_foreground,
         "gpui-component/button/toggle.rs:203",
     ))
-    .not_themeable("unchecked fill", "none: ToggleVariant defaults to Ghost (button/toggle.rs, ToggleVariant), which paints no background and no border; only .outline() fills")
+}
+
+/// The colours of a checked Toggle, of either variant, which is not
+/// hoverable (button/toggle.rs:153), and why they are what they are.
+pub(super) fn toggle_checked(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+    info.color(claim(
+        "checked bg",
+        "accent",
+        t.accent,
+        "gpui-component/button/toggle.rs:155",
+    ))
+    .color(claim(
+        "checked text",
+        "accent_foreground",
+        t.accent_foreground,
+        "gpui-component/button/toggle.rs:156",
+    ))
+    .not_themeable("checked fill", "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.active_background and active_text_color gets them. Only an unchecked one's hover is Tier U. Nothing applies them: there is no geometry::toggle -- our gap")
+}
+
+/// The unchecked fill of a Ghost Toggle.
+fn ghost_toggle_fill(info: WidgetInfo) -> WidgetInfo {
+    info.not_themeable("unchecked fill", "none: ToggleVariant defaults to Ghost (button/toggle.rs, ToggleVariant), which paints no background and no border; only .outline() fills")
 }
 
 /// A `Toggle` showing the icon named `icon`, `checked` or not.
 pub fn toggle(t: &Theme, icon: &'static str, checked: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Toggle").variant(if checked { "Ghost, checked" } else { "Ghost" });
-    // A checked Toggle is not hoverable (button/toggle.rs:153).
     let info = if checked {
-        info.color(claim(
-            "checked bg",
-            "accent",
-            t.accent,
-            "gpui-component/button/toggle.rs:155",
-        ))
-        .color(claim(
-            "checked text",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/toggle.rs:156",
-        ))
-        .not_themeable("checked fill", "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.active_background and active_text_color gets them. Only an unchecked one's hover is Tier U. Nothing applies them: there is no geometry::toggle -- our gap")
+        toggle_checked(info, t)
     } else {
-        toggle_hover(info, t)
+        ghost_toggle_fill(toggle_hover(info, t))
     };
     toggle_notes(info, t).instance("icon", icon).instance(
         "click",
@@ -653,7 +675,7 @@ pub fn toggle(t: &Theme, icon: &'static str, checked: bool) -> WidgetInfo {
 
 /// A `ToggleGroup` of unchecked Toggles, which report through the group.
 pub fn toggle_group(t: &Theme) -> WidgetInfo {
-    toggle_notes(toggle_hover(WidgetInfo::new("ToggleGroup").variant("Ghost"), t), t)
+    toggle_notes(ghost_toggle_fill(toggle_hover(WidgetInfo::new("ToggleGroup").variant("Ghost"), t)), t)
         .not_themeable("gap", "gap_2 between the toggles -- a rem, so the platform's font; only a segmented group drops it (button/toggle.rs, ToggleGroup::segmented)")
         .instance("toggles", "Left, Center and Right, none checked. ToggleGroup::child takes a Toggle, not an element a target could wrap, so they report through the group (button/toggle.rs, ToggleGroup::child)")
 }
@@ -661,19 +683,7 @@ pub fn toggle_group(t: &Theme) -> WidgetInfo {
 /// A `Clipboard` copying `value`.
 pub fn clipboard(t: &Theme, value: &'static str) -> WidgetInfo {
     WidgetInfo::new("Clipboard")
-        .color(ghost_hover(t))
-        .color(claim(
-            "icon",
-            "secondary_foreground",
-            t.secondary_foreground,
-            "gpui-component/button/button.rs:964",
-        ))
-        .color(claim(
-            "icon on hover",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/button.rs:1141",
-        ))
+        .colors(ghost_colours(t, GhostContent::Icon))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent (at half alpha in dark mode) -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground")
         .not_themeable("copy icon", "Copy and Check, built inline with no setter to replace them (clipboard.rs, Clipboard)")

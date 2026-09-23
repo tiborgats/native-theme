@@ -4,6 +4,7 @@ use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{ColorClaim, WidgetInfo, claim};
 use crate::demo::{SeparatorKind, Severity, SheetSide};
+use crate::support::ChromeIcon;
 
 /// The window's `TitleBar` (spec §2.1). Its geometry line is recorded by
 /// `native_info` where `demo::title_bar` applies the builder.
@@ -107,13 +108,13 @@ pub fn title_bar(t: &Theme) -> WidgetInfo {
 /// The `AppMenuBar` inside the window's title bar (spec §2.2).
 pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
     let info = WidgetInfo::new("AppMenuBar")
+        .colors(ghost_rest_and_hover(t, GhostContent::Text))
         .color(claim(
-            "item text",
-            "secondary_foreground",
-            t.secondary_foreground,
-            "gpui-component/button/button.rs:964",
-        ))
-        .color(ghost_hover(t));
+            "item of the open menu",
+            "secondary_active",
+            t.secondary_active,
+            "gpui-component/button/button.rs:1245",
+        ));
     popup_menu(info, t)
         .color(claim(
             "menu shortcut text",
@@ -128,6 +129,10 @@ pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
         .not_themeable(
             "items",
             "ghost Buttons, so they hover with accent -- at half alpha in dark mode -- rather than the button family, and their label is the Ghost variant's secondary_foreground",
+        )
+        .not_themeable(
+            "press",
+            "opens the item's menu at once, and the item of an open menu is selected, which a Ghost paints secondary_active (menu/app_menu_bar.rs, AppMenu::render). A selected Button takes no hover or press style (button/button.rs, RenderOnce for Button), so the Ghost's pressed colour never shows here",
         )
         .instance(
             "source",
@@ -229,19 +234,7 @@ pub fn toolbar() -> WidgetInfo {
 /// while the Sidebar is.
 pub fn sidebar_toggle_button(t: &Theme, collapsed: bool) -> WidgetInfo {
     WidgetInfo::new("SidebarToggleButton")
-        .color(claim(
-            "icon",
-            "secondary_foreground",
-            t.secondary_foreground,
-            "gpui-component/button/button.rs:964",
-        ))
-        .color(ghost_hover(t))
-        .color(claim(
-            "icon on hover",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/button.rs:1141",
-        ))
+        .colors(ghost_colours(t, GhostContent::Icon))
         .not_themeable(
             "button",
             "a ghost, small Button the widget builds and keeps to itself: nothing outside it refines, disables or gives a tooltip to it (sidebar/mod.rs, SidebarToggleButton)",
@@ -252,7 +245,7 @@ pub fn sidebar_toggle_button(t: &Theme, collapsed: bool) -> WidgetInfo {
         )
         .not_themeable(
             "icon",
-            "PanelLeftClose, or PanelLeftOpen while collapsed, at size_4 -- 1rem, so the platform's font size. toolbar.icon_size does not reach it: the widget gives its Button the icon as it renders (sidebar/mod.rs, SidebarToggleButton)",
+            "PanelLeftClose, or PanelLeftOpen while collapsed, at size_3p5 -- 0.875rem, so the platform's font size: the Button is small, and Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), which an Icon applies over its own (icon.rs, Icon::into_svg). toolbar.icon_size does not reach it, and neither does the icon-set Select: the widget names gpui-component's own icon as it renders (sidebar/mod.rs, SidebarToggleButton)",
         )
         .instance(
             "action",
@@ -299,7 +292,7 @@ pub fn sidebar(t: &Theme, collapsed: bool) -> WidgetInfo {
         )
         .instance(
             "pages",
-            "one SidebarMenuItem per page with the page's icon; the shown page's item is active, and a click dispatches ShowPage, the action the View menu's page items run",
+            "one SidebarMenuItem per page with the page's icon from the chosen icon set; the shown page's item is active, and a click dispatches ShowPage, the action the View menu's page items run",
         )
         .instance(
             "children",
@@ -319,9 +312,17 @@ pub fn sidebar(t: &Theme, collapsed: bool) -> WidgetInfo {
 }
 
 /// The Sidebar's item for the page labelled `page`, `active` while that page
-/// is shown and `collapsed` while the Sidebar is. Its icon-size line is
-/// recorded where the item is built.
-pub fn sidebar_item(t: &Theme, page: &'static str, active: bool, collapsed: bool) -> WidgetInfo {
+/// is shown and `collapsed` while the Sidebar is, showing `icon` of the
+/// icon set named `set`. Its icon-size line is recorded where the item is
+/// built.
+pub fn sidebar_item(
+    t: &Theme,
+    page: &'static str,
+    active: bool,
+    collapsed: bool,
+    icon: &ChromeIcon,
+    set: &str,
+) -> WidgetInfo {
     let info = WidgetInfo::new("SidebarMenuItem").variant(if active {
         format!("{page}, active")
     } else {
@@ -377,14 +378,21 @@ pub fn sidebar_item(t: &Theme, page: &'static str, active: bool, collapsed: bool
         .instance(
             "page",
             format!("a click dispatches ShowPage for the {page} page, the action View > {page} runs"),
+        )
+        .instance(
+            "icon",
+            chrome_icon_note(icon, set, "the item shows its label alone"),
         );
-    if collapsed {
-        info.instance(
+    match (collapsed, icon) {
+        (true, ChromeIcon::Missing(_)) => info.instance(
+            "collapsed",
+            "the label is hidden, and with no icon the item shows nothing, and has no tooltip either: upstream gives a collapsed item its label as a tooltip only when it has an icon (sidebar/menu.rs, collapsed_tooltip). A click still shows the page",
+        ),
+        (true, _) => info.instance(
             "collapsed",
             "only the icon shows, and the label becomes a tooltip at its right (sidebar/menu.rs, collapsed_tooltip)",
-        )
-    } else {
-        info
+        ),
+        (false, _) => info,
     }
 }
 
@@ -449,9 +457,83 @@ pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
         )
 }
 
+/// What an upstream Ghost Button (`.ghost()`) holds, which its content's
+/// swatches are named after.
+#[derive(Clone, Copy)]
+pub(super) enum GhostContent {
+    Text,
+    Icon,
+    TextAndIcon,
+}
+
+/// What an upstream Ghost Button paints at rest and hovered: no fill at
+/// rest and its content in secondary_foreground; hovered, the fill
+/// `ghost_hover` names and the content in accent_foreground.
+pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<ColorClaim> {
+    let (rest, hovered) = match content {
+        GhostContent::Text => (
+            claim(
+                "text",
+                "secondary_foreground",
+                t.secondary_foreground,
+                "gpui-component/button/button.rs:964",
+            ),
+            claim(
+                "hover text",
+                "accent_foreground",
+                t.accent_foreground,
+                "gpui-component/button/button.rs:1141",
+            ),
+        ),
+        GhostContent::Icon => (
+            claim(
+                "icon",
+                "secondary_foreground",
+                t.secondary_foreground,
+                "gpui-component/button/button.rs:964",
+            ),
+            claim(
+                "icon on hover",
+                "accent_foreground",
+                t.accent_foreground,
+                "gpui-component/button/button.rs:1141",
+            ),
+        ),
+        GhostContent::TextAndIcon => (
+            claim(
+                "text and icon",
+                "secondary_foreground",
+                t.secondary_foreground,
+                "gpui-component/button/button.rs:964",
+            ),
+            claim(
+                "text and icon on hover",
+                "accent_foreground",
+                t.accent_foreground,
+                "gpui-component/button/button.rs:1141",
+            ),
+        ),
+    };
+    vec![rest, ghost_hover(t), hovered]
+}
+
+/// What an upstream Ghost Button paints at rest, hovered and pressed:
+/// `ghost_rest_and_hover`, and a press fills it with button_active, the
+/// content keeping its rest colour (button/button.rs, ButtonVariant::active).
+pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim> {
+    let mut claims = ghost_rest_and_hover(t, content);
+    claims.push(claim(
+        "pressed",
+        "button_active",
+        t.button_active,
+        "gpui-component/button/button.rs:1180",
+    ));
+    claims
+}
+
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
 /// in dark mode (button/button.rs:1125-1131).
-pub(super) fn ghost_hover(t: &Theme) -> ColorClaim {
+fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
@@ -555,20 +637,8 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
 
 /// The toolbar's System / Light / Dark switch (spec §2.3).
 pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("ToggleGroup")
-        .variant("outline, segmented")
-        .color(claim(
-            "checked bg",
-            "accent",
-            t.accent,
-            "gpui-component/button/toggle.rs:155",
-        ))
-        .color(claim(
-            "checked text",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/toggle.rs:156",
-        ))
+    let info = WidgetInfo::new("ToggleGroup").variant("outline, segmented");
+    let info = super::buttons::toggle_checked(info, t)
         .color(claim(
             "unchecked bg",
             "background",
@@ -580,27 +650,8 @@ pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
             "border",
             t.border,
             "gpui-component/button/toggle.rs:197",
-        ))
-        .color(claim(
-            "hover bg",
-            "accent",
-            t.accent,
-            "gpui-component/button/toggle.rs:202",
-        ))
-        .color(claim(
-            "hover text",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/toggle.rs:203",
-        ))
-        .not_themeable(
-            "checked fill",
-            "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.active_background and active_text_color gets them. Nothing applies them: there is no geometry::toggle -- our gap",
-        )
-        .not_themeable(
-            "size",
-            "min_w_8 / h_8 at the default Size -- rems, so the platform's font -- and settable: the refinement comes last, so segmented_control.segment_height, its padding and its font would reach a Toggle through the geometry::toggle nobody has written (button/toggle.rs, Toggle::render)",
-        )
+        ));
+    super::buttons::toggle_notes(super::buttons::toggle_hover(info, t), t)
         .instance(
             "modes",
             "System, Light and Dark; a click dispatches SetColorMode, the action the Theme menu's items run. System names the mode the desktop is in",
@@ -611,39 +662,25 @@ pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
         )
 }
 
-/// The toolbar's icon-set Select (spec §2.3).
+/// The toolbar's icon-set Select (spec §2.3): the Inputs page's Select,
+/// choosing the icon set.
 pub fn icon_set_select(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Select")
-        .color(input_background(t))
-        .color(claim(
-            "upstream trigger text",
-            "foreground",
-            t.foreground,
-            "gpui-component/input/input.rs:105",
-        ))
-        .color(claim(
-            "trigger border",
-            "input",
-            t.input,
-            "gpui-component/select.rs:541",
-        ))
-        .color(claim(
-            "focused border",
-            "ring",
-            t.ring,
-            "gpui-component/select.rs:548",
-        ))
-        .not_themeable(
-            "fill",
-            "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)",
-        )
-        .not_themeable(
-            "caret",
-            "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all. Tier U for the size",
-        )
+    super::inputs::select(t)
         .instance(
             "choices",
             "the icon set the showcase loads its icons from: the preset's own where it names one, the system's, each installed freedesktop theme, gpui-component's built-in Lucide, and the bundled Lucide and Material",
+        )
+        .instance(
+            "follows the choice",
+            "the Icons page's galleries, and the chrome's own icons: the toolbar's Command Palette, Reload System Theme and Toggle Inspector buttons, the Sidebar's page icons, and the command palette's entries. Each shows the chosen set's icon for its IconName -- gpui-component's own where its built-in set is chosen -- and none where the set has none: no other set's icon stands in",
+        )
+        .not_themeable(
+            "upstream's icons",
+            "gpui-component's built-in Lucide whatever is chosen, wherever a widget names its icon as it renders, with no setter: the SidebarToggleButton's PanelLeftClose and PanelLeftOpen (sidebar/mod.rs, SidebarToggleButton); this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (select.rs, SelectState::new; combobox.rs, ComboboxState::new); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
+        )
+        .instance(
+            "pages",
+            "the samples on the other pages keep the icons they name, gpui-component's own: they show the widgets, and the Icons page shows the sets",
         )
 }
 
@@ -655,50 +692,31 @@ pub fn toolbar_separator(t: &Theme) -> WidgetInfo {
     )
 }
 
-/// One of the toolbar's icon Buttons (spec §2.3), running `action`. Its
-/// icon-size line is recorded where `demo::toolbar_button` applies the
-/// builder.
-pub fn toolbar_button(t: &Theme, action: &'static str) -> WidgetInfo {
-    WidgetInfo::new("Button")
-        .variant("Ghost, icon")
-        .color(claim(
-            "icon",
-            "secondary_foreground",
-            t.secondary_foreground,
-            "gpui-component/button/button.rs:964",
-        ))
-        .color(ghost_hover(t))
-        .color(claim(
-            "icon on hover",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/button.rs:1141",
-        ))
-        .color(claim(
-            "tooltip bg",
-            "popover",
-            t.popover,
-            "gpui-component/tooltip.rs:114",
-        ))
-        .color(claim(
-            "tooltip text",
-            "popover_foreground",
-            t.popover_foreground,
-            "gpui-component/tooltip.rs:115",
-        ))
-        .color(claim(
-            "tooltip border",
-            "border",
-            t.border,
-            "gpui-component/tooltip.rs:118",
-        ))
+/// One of the toolbar's icon Buttons (spec §2.3), running `action` and
+/// showing `icon` of the icon set named `set`. Its icon-size line is
+/// recorded where `demo::toolbar_button` applies the builder.
+pub fn toolbar_button(t: &Theme, action: &'static str, icon: &ChromeIcon, set: &str) -> WidgetInfo {
+    let info = WidgetInfo::new("Button").variant(match icon {
+        ChromeIcon::Missing(_) => "Ghost, labelled",
+        _ => "Ghost, icon",
+    });
+    super::buttons::native_ghost(info, t)
+        .colors(super::feedback::tooltip_colours(t, true))
         .not_themeable(
             "fill",
-            "none: a Ghost Button is transparent until hovered (button/button.rs, ButtonVariant::hovered)",
+            "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
         )
         .not_themeable(
             "icon",
-            "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at",
+            "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
+        )
+        .instance(
+            "icon",
+            chrome_icon_note(
+                icon,
+                set,
+                "the button shows the tooltip's text as its label instead",
+            ),
         )
         .not_themeable(
             "size",
@@ -709,6 +727,23 @@ pub fn toolbar_button(t: &Theme, action: &'static str) -> WidgetInfo {
             "upstream's Tooltip, which the Button builds as it renders from the text and action tooltip_with_action stored (button/button.rs, RenderOnce for Button). The only way to hand a Button a Tooltip of one's own is its tooltip_builder, which has no public setter (button/button.rs, Button), so geometry::tooltip cannot reach it; it shows the action's key binding where one is bound (tooltip.rs, Tooltip::action)",
         )
         .instance("action", action)
+}
+
+/// What a chrome icon's info says it is: `icon` as the icon set named
+/// `set` gives it, and `absent` what its widget shows where the set has
+/// none.
+fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> String {
+    match icon {
+        ChromeIcon::Builtin(name) => format!(
+            "gpui-component's own {name}: its built-in set is the one the toolbar's icon-set Select chose"
+        ),
+        ChromeIcon::Loaded(name, _) => format!(
+            "{set}'s icon for {name}, the set the toolbar's icon-set Select chose. It is drawn as every Icon is, as a mask in its widget's text colour (gpui-pre/window.rs, Window::paint_svg), so a coloured icon shows its shape only"
+        ),
+        ChromeIcon::Missing(name) => format!(
+            "none: {set} holds no SVG for {name}, and no other set's icon stands in -- {absent}"
+        ),
+    }
 }
 
 /// The window's `StatusBar` (spec §2.7). Its geometry line is recorded by
@@ -890,8 +925,9 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
 }
 
-/// The command palette's `Command` (spec §2.8), unbordered inside its Dialog.
-pub fn command_palette(t: &Theme) -> WidgetInfo {
+/// The command palette's `Command` (spec §2.8), unbordered inside its
+/// Dialog, its entries' icons from the icon set named `set`.
+pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
     WidgetInfo::new("Command")
         .color(claim(
             "surface bg",
@@ -970,6 +1006,10 @@ pub fn command_palette(t: &Theme) -> WidgetInfo {
         .instance(
             "entries",
             "every page, then the presets the toolbar's preset switch offers -- default, and those Theme::list_presets_for_platform lists -- then the three colour modes. Each runs an action: ShowPage, SetPreset or SetColorMode",
+        )
+        .instance(
+            "entry icons",
+            format!("{set}'s, the icon set the toolbar's icon-set Select chose, in the row icon colour above; an entry whose icon that set holds no SVG for shows its label alone, and no other set's icon stands in. The search icon is upstream's own (command/state.rs, CommandState)"),
         )
         .instance(
             "keys",

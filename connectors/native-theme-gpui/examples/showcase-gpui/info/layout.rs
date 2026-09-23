@@ -3,7 +3,11 @@
 use gpui::Pixels;
 use gpui_component::theme::Theme;
 
-use super::{WidgetInfo, chrome::ghost_hover, claim, px_text};
+use super::{
+    WidgetInfo,
+    chrome::{GhostContent, ghost_colours},
+    claim, px_text,
+};
 use crate::Page;
 use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
 use crate::support::layout_value;
@@ -227,25 +231,7 @@ pub fn collapsible(open: bool) -> WidgetInfo {
 pub fn collapsible_toggle(t: &Theme, open: bool, label: &str) -> WidgetInfo {
     WidgetInfo::new("Button")
         .variant("Ghost, icon")
-        .color(claim(
-            "text and icon",
-            "secondary_foreground",
-            t.secondary_foreground,
-            "gpui-component/button/button.rs:964",
-        ))
-        .color(ghost_hover(t))
-        .color(claim(
-            "text and icon on hover",
-            "accent_foreground",
-            t.accent_foreground,
-            "gpui-component/button/button.rs:1141",
-        ))
-        .color(claim(
-            "pressed",
-            "button_active",
-            t.button_active,
-            "gpui-component/button/button.rs:1180",
-        ))
+        .colors(ghost_colours(t, GhostContent::TextAndIcon))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable(
             "fill",
