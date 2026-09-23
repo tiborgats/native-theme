@@ -138,18 +138,28 @@ impl Inspector {
         }
     }
 
+    /// The title of what the Widget tab shows, `None` for the hint: the
+    /// status bar names the widget by this, so the two never disagree.
+    pub(crate) fn shown_title(&self, cx: &gpui::App) -> Option<String> {
+        match (&self.legacy, self.ui.read(cx).shown()) {
+            // Task 24: delete (legacy hover_info stopgap)
+            (Some(text), _) => Some(text.lines().next().unwrap_or_default().to_string()),
+            (None, Some(info)) => Some(info.title()),
+            (None, None) => None,
+        }
+    }
+
     /// The Widget tab: the shown info's title, a Copy button and its
     /// sections, or one line of hint before anything was hovered.
     fn widget_tab(&mut self, gap: Option<gpui::Pixels>, cx: &mut Context<Self>) -> gpui::Div {
         let theme = cx.theme().clone();
         let muted = theme.muted_foreground;
         let shown = self.ui.read(cx).shown().cloned();
-        let (title, copied, body) = match (&self.legacy, shown) {
+        let title = self.shown_title(cx);
+        let (title, copied, body) = match (&self.legacy, shown, title) {
             // Task 24: delete (legacy hover_info stopgap)
-            (Some(text), _) => {
-                let mut lines = text.lines();
-                let title = lines.next().unwrap_or_default().to_string();
-                let rest: Vec<&str> = lines.collect();
+            (Some(text), _, Some(title)) => {
+                let rest: Vec<&str> = text.lines().skip(1).collect();
                 (
                     title,
                     text.clone(),
@@ -159,12 +169,12 @@ impl Inspector {
                         .into_any_element(),
                 )
             }
-            (None, Some(info)) => (
-                info.title(),
+            (None, Some(info), Some(title)) => (
+                title,
                 info.to_text(),
                 info_sections(&info, gap, cx).into_any_element(),
             ),
-            (None, None) => {
+            _ => {
                 self.title_drawn = None;
                 return v_flex().child(
                     Label::new("Hover any widget to see what the theme sets on it.")

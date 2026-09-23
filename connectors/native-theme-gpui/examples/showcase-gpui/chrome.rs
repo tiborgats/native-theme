@@ -1,15 +1,17 @@
 //! The window's chrome: title bar, menus, toolbar, navigation, status bar and overlays.
 
-use gpui::{App, InteractiveElement as _, IntoElement, Menu, MenuItem};
+use gpui::{App, InteractiveElement as _, IntoElement, Menu, MenuItem, SharedString};
 use gpui_component::IconName;
+use native_theme_gpui::ActiveNativeTheme as _;
 
 use crate::Page;
 use crate::app::{
     AppColorMode, OpenAbout, OpenCommandPalette, OpenPreferences, Quit, ReloadTheme, SetColorMode,
     ShowPage, Showcase, ToggleInspector, ToggleSidebar,
 };
+use crate::support::defined_size;
 use crate::{
-    CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
     CHROME_TOOLBAR_INSPECTOR, PROBE_COLOR_MODE, PROBE_COMBOBOX, demo,
 };
 
@@ -53,12 +55,7 @@ pub(crate) fn menus() -> Vec<Menu> {
 /// The window's title bar (spec §2.1): the installed preset and colour mode,
 /// and the application's menus where the platform has no menu bar of its own.
 pub(crate) fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
-    let preset = if app.current_theme_name == "default" {
-        app.default_label.as_str()
-    } else {
-        app.current_theme_name.as_str()
-    };
-    let mode = if app.is_dark { "dark" } else { "light" };
+    let (preset, mode) = preset_and_mode(app);
     demo::title_bar(
         &app.info_ui,
         cx,
@@ -66,6 +63,17 @@ pub(crate) fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
         app.menu_bar.clone(),
     )
     .debug_selector(|| CHROME_TITLE_BAR.into())
+}
+
+/// The installed preset, the default one by the platform preset it stands
+/// for, and the colour mode, as the title bar and the status bar name them.
+fn preset_and_mode(app: &Showcase) -> (&str, &str) {
+    let preset = if app.current_theme_name == "default" {
+        app.default_label.as_str()
+    } else {
+        app.current_theme_name.as_str()
+    };
+    (preset, if app.is_dark { "dark" } else { "light" })
 }
 
 /// The window's toolbar (spec §2.3), under the title bar: the Sidebar's
@@ -142,4 +150,67 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
 pub(crate) fn sidebar(app: &Showcase, cx: &App) -> impl IntoElement {
     demo::sidebar(&app.info_ui, cx, app.active_page, app.nav_collapsed)
         .debug_selector(|| CHROME_SIDEBAR.into())
+}
+
+/// The window's status bar (spec §2.7), below the body: the environment on
+/// the left; on the right `shown`, the title of what the inspector shows, and
+/// the version of the crate this example belongs to.
+pub(crate) fn status_bar(
+    app: &Showcase,
+    cx: &App,
+    shown: Option<SharedString>,
+) -> impl IntoElement {
+    demo::status_bar(
+        &app.info_ui,
+        cx,
+        status_environment(app, cx).join(" · "),
+        shown,
+        concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION")),
+    )
+    .debug_selector(|| CHROME_STATUS_BAR.into())
+}
+
+/// The status bar's left side (spec §2.7), one item each: the desktop, the
+/// preset and colour mode, the platform font in the unit its source stated,
+/// and, once a native theme is installed, its text-scale factor and each of
+/// its accessibility preferences that is set, by its field name. Before that
+/// no preferences are installed, and none are named.
+pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
+    let (preset, mode) = preset_and_mode(app);
+    let font = &app.original_font;
+    let mut items = vec![
+        desktop(),
+        format!("{preset} {mode}"),
+        format!("{} {}", font.family, defined_size(font)),
+    ];
+    if let Some(prefs) = cx.native_theme().map(|nt| nt.accessibility()) {
+        items.push(format!("text ×{}", prefs.text_scaling_factor));
+        let flags = [
+            ("reduce_motion", prefs.reduce_motion),
+            ("high_contrast", prefs.high_contrast),
+            ("reduce_transparency", prefs.reduce_transparency),
+        ];
+        items.extend(
+            flags
+                .into_iter()
+                .filter(|(_, set)| *set)
+                .map(|(name, _)| name.to_string()),
+        );
+    }
+    items
+}
+
+/// The desktop `native_theme::detect` reads from `XDG_CURRENT_DESKTOP`, as
+/// `SystemTheme::from_system` does to pick its reader (native-theme
+/// pipeline.rs, `select_reader`).
+#[cfg(target_os = "linux")]
+fn desktop() -> String {
+    format!("{:?}", native_theme::detect::detect_linux_desktop())
+}
+
+/// The operating system: `native_theme::detect` names a desktop on Linux
+/// only.
+#[cfg(not(target_os = "linux"))]
+fn desktop() -> String {
+    std::env::consts::OS.to_string()
 }

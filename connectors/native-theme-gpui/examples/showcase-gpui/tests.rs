@@ -32,12 +32,13 @@ use crate::support::{
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
-    CHROME_SIDEBAR_TOGGLE, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_INSPECTOR,
-    CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
-    INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, PAGE_ROOT, PAGE_WIDTH_PX,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, TREE_DEMO, WINDOW_SIZE,
+    CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_TOOLBAR_INSPECTOR, CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL,
+    INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, PAGE_ROOT,
+    PAGE_WIDTH_PX, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND,
+    PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION,
+    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, STATUS_HOVERED,
+    TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -1473,6 +1474,156 @@ fn the_inspector_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
         cx.debug_bounds(INSPECTOR_PANEL).is_some(),
         "the shown inspector was not laid out"
     );
+}
+
+/// The title the status bar's hover label drew in the last frame, and
+/// whether that label was laid out inside the status bar.
+fn status_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Option<String> {
+    let title = read(cx, showcase, |this, _| this.status_title_drawn.clone());
+    let label = cx.debug_bounds(STATUS_HOVERED);
+    assert_eq!(
+        title.is_some(),
+        label.is_some(),
+        "the status bar drew {title:?}, and its hover label was laid out at {label:?}"
+    );
+    if let Some(label) = label {
+        let bar = bounds_of(cx, CHROME_STATUS_BAR);
+        assert!(
+            bar.contains(&label.origin) && label.bottom() <= bar.bottom(),
+            "the hover label at {label:?} is not inside the status bar at {bar:?}"
+        );
+    }
+    title.map(|t| t.to_string())
+}
+
+/// The status bar names the widget whose info the inspector shows (spec
+/// §2.7). A toolbar button is hovered: chrome carries its info already, and
+/// the pages report only their text panels until they are migrated (plan
+/// Tasks 14-23).
+#[gpui::test]
+fn the_status_bar_names_the_hovered_widget(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_eq!(
+        status_title(&mut cx, &showcase),
+        None,
+        "the status bar names a widget before anything was hovered"
+    );
+    let button = bounds_of(&mut cx, CHROME_TOOLBAR_INSPECTOR);
+    hover(&mut cx, button.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        status_title(&mut cx, &showcase).as_deref(),
+        Some("Button · Ghost, icon"),
+        "the status bar does not name the toolbar button the pointer settled on"
+    );
+    assert_eq!(
+        status_title(&mut cx, &showcase),
+        inspector_title(&mut cx, &showcase),
+        "the status bar and the inspector name different widgets"
+    );
+}
+
+/// While the inspector shows a page's text panel instead of an info (plan
+/// Tasks 14-23), the status bar names what the panel describes, never the
+/// info the panel replaced.
+// Task 24: delete (legacy hover_info stopgap)
+#[gpui::test]
+fn the_status_bar_names_what_the_inspector_shows(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
+    let clipboard = bounds_of(&mut cx, PROBE_CLIPBOARD).center();
+    hover(&mut cx, item);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        status_title(&mut cx, &showcase).as_deref(),
+        Some("SidebarMenuItem · Charts")
+    );
+    hover(&mut cx, clipboard);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("Clipboard"),
+        "the Clipboard block's text panel is not shown"
+    );
+    assert_eq!(
+        status_title(&mut cx, &showcase).as_deref(),
+        Some("Clipboard"),
+        "the status bar does not name the text panel the inspector shows"
+    );
+    show(&mut cx, &showcase, Page::Inputs);
+    assert_eq!(
+        status_title(&mut cx, &showcase),
+        inspector_title(&mut cx, &showcase),
+        "after the page change the status bar and the inspector disagree"
+    );
+}
+
+/// The status bar is the bottom of the window (spec §1.1): below the body,
+/// across the whole width.
+#[gpui::test]
+fn the_status_bar_is_the_bottom_of_the_window(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let viewport = cx.update(|window, _| window.viewport_size());
+    let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
+    assert_eq!(
+        bar.bottom(),
+        viewport.height,
+        "the status bar ends at {:?} in a window {:?} tall",
+        bar.bottom(),
+        viewport.height
+    );
+    assert_eq!(
+        bar.left(),
+        px(0.),
+        "the status bar starts at {:?}",
+        bar.left()
+    );
+    assert_eq!(
+        bar.size.width, viewport.width,
+        "the status bar is {:?} wide in a {:?} window",
+        bar.size.width, viewport.width
+    );
+    assert!(bar.size.height > px(0.), "the status bar has no height");
+    let body = bounds_of(&mut cx, CONTENT_PANEL);
+    assert!(
+        body.bottom() <= bar.top(),
+        "the body ends at {:?}, under the status bar's top at {:?}",
+        body.bottom(),
+        bar.top()
+    );
+}
+
+/// The status bar reports the installed accessibility preferences (spec
+/// §2.7): the text-scale factor always, and a flag only while it is set.
+#[gpui::test]
+fn the_status_bar_reports_the_accessibility_preferences(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let prefs = native_theme_gpui::AccessibilityPreferences {
+        text_scaling_factor: 1.5,
+        reduce_motion: false,
+        high_contrast: true,
+        reduce_transparency: false,
+    };
+    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
+    cx.run_until_parked();
+    let items = read(&mut cx, &showcase, crate::chrome::status_environment);
+    assert!(
+        items.iter().any(|i| i == "text ×1.5"),
+        "the status bar does not report the 1.5 text scale: {items:?}"
+    );
+    assert!(
+        items.iter().any(|i| i == "high_contrast"),
+        "the status bar does not report high contrast, which is set: {items:?}"
+    );
+    for unset in ["reduce_motion", "reduce_transparency"] {
+        assert!(
+            !items.iter().any(|i| i == unset),
+            "the status bar reports {unset}, which is not set: {items:?}"
+        );
+    }
 }
 
 #[test]

@@ -665,6 +665,61 @@ pub fn toolbar_button(
     }
 }
 
+/// The window's `StatusBar` (spec §2.7). Its geometry line is recorded by
+/// `native_info` where `demo::status_bar` applies the builder; `styled` is
+/// whether it does, which decides the colour of the text.
+pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("StatusBar")
+        .color(claim(
+            "bg",
+            "status_bar",
+            t.status_bar,
+            "gpui-component/status_bar.rs:93",
+        ))
+        .color(claim(
+            "border",
+            "status_bar_border",
+            t.status_bar_border,
+            "gpui-component/status_bar.rs:92",
+        ));
+    // geometry::status_bar paints the text with status_bar.font's colour,
+    // which no ThemeColor field holds, over upstream's.
+    let info = if styled {
+        info
+    } else {
+        info.color(claim(
+            "text",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/status_bar.rs:95",
+        ))
+    };
+    info.not_themeable(
+        "region gap",
+        "gap_2, 0.5rem, between the regions and between the items of each, on region children the refinement does not reach (status_bar.rs, StatusBar::render); the model states no status-bar item gap",
+    )
+    .not_themeable(
+        "edge",
+        "border_t_1, a 1px rule along the top, which geometry::status_bar leaves as it is (status_bar.rs, StatusBar::render)",
+    )
+    .instance(
+        "left",
+        if cfg!(target_os = "linux") {
+            "the desktop native_theme::detect reads from XDG_CURRENT_DESKTOP, as SystemTheme::from_system does to pick its reader; the preset and colour mode the title bar names; the platform font in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+        } else {
+            "the operating system; the preset and colour mode the title bar names; the platform font in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+        },
+    )
+    .instance(
+        "right",
+        "the title of what the inspector's Widget tab shows, where it shows one, then this crate's name and version",
+    )
+    .instance(
+        "text",
+        "plain text rather than Labels: a Label paints foreground on its own element (label.rs, Label), which would hide the colour geometry::status_bar gives the bar",
+    )
+}
+
 /// A handle of the window's resizable group (spec §1.1, §4.3.5), between the
 /// panels `between` names. `base` is gpui-base's theme, where the handle's
 /// colours live.

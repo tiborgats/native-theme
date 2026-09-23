@@ -184,6 +184,12 @@ pub(crate) struct Showcase {
     pub(crate) info_ui: Entity<InfoRegistry>,
     /// The inspector panel, which shows the info the registry settles on.
     pub(crate) inspector: Entity<Inspector>,
+    /// The title the status bar's hover label showed in the last frame;
+    /// `None` where it showed none.
+    pub(crate) status_title_drawn: Option<SharedString>,
+    /// The status bar names what the inspector shows, so the view follows
+    /// the inspector as the inspector follows the registry.
+    _inspector_shown: Subscription,
     /// The title bar's menus. Its own entity, apart from the Overlays page's
     /// sample: an `AppMenuBar` keeps which menu is open, and one entity drawn
     /// twice would open both.
@@ -953,6 +959,7 @@ impl Showcase {
             let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
             cx.new(|cx| Inspector::new(ui, showcase, cx))
         };
+        let _inspector_shown = cx.observe(&inspector, |_, _, cx| cx.notify());
         let body_layout = cx.new(|_| ResizableState::default());
 
         let fg = cx.theme().foreground;
@@ -972,6 +979,8 @@ impl Showcase {
             inspector_width: INSPECTOR_WIDTH,
             info_ui,
             inspector,
+            status_title_drawn: None,
+            _inspector_shown,
             menu_bar,
             focus_handle,
             _refocus,
@@ -1475,8 +1484,15 @@ impl Render for Showcase {
             .with_handle_appearance(demo::resize_handles(&self.info_ui, handles))
             .children(panels);
 
-        // Main layout: the title bar, the toolbar and the body, and above
-        // them the three layers `Root` keeps but does not draw.
+        let shown = self
+            .inspector
+            .read(cx)
+            .shown_title(cx)
+            .map(SharedString::from);
+        self.status_title_drawn = shown.clone();
+
+        // Main layout: the title bar, the toolbar, the body and the status
+        // bar, and above them the three layers `Root` keeps but does not draw.
         // `Root::render` renders only the view it was given (root.rs,
         // Root::render), so a dialog, a sheet or a notification the showcase
         // pushes reaches the screen only because these three are here --
@@ -1511,7 +1527,8 @@ impl Render for Showcase {
                             .overflow_hidden()
                             .children(rail)
                             .child(div().flex_1().min_w_0().h_full().child(body)),
-                    ),
+                    )
+                    .child(chrome::status_bar(self, cx, shown)),
             )
             .children(Root::render_sheet_layer(window, cx))
             .children(Root::render_dialog_layer(window, cx))

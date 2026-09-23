@@ -16,14 +16,15 @@ use gpui_component::{
     select::{SearchableVec, Select, SelectState},
     separator::Separator,
     sidebar::{Sidebar, SidebarItem, SidebarMenuItem, SidebarToggleButton},
+    status_bar::StatusBar,
     tab::{Tab, TabBar},
 };
-use native_theme_gpui::geometry;
+use native_theme_gpui::{ActiveNativeTheme as _, geometry};
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, native_info};
 use crate::support::{PresetDelegate, native_icon, native_value};
-use crate::{CHROME_APP_MENU_BAR, Page};
+use crate::{CHROME_APP_MENU_BAR, Page, STATUS_HOVERED};
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
 /// `app_menu_bar` where the platform has no menu bar of its own, and quitting
@@ -71,6 +72,36 @@ pub(crate) fn toolbar(
     let row =
         native_info(h_flex(), cx, geometry::toolbar, "toolbar", &mut row_info).children(items);
     row.info(ui, "chrome-toolbar", row_info)
+}
+
+/// The window's `StatusBar` (spec §2.7), refined by `geometry::status_bar`:
+/// `environment` on the left; on the right `shown`, the title of what the
+/// inspector shows, where it shows one, then `version`.
+pub(crate) fn status_bar(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    environment: impl Into<SharedString>,
+    shown: Option<SharedString>,
+    version: impl Into<SharedString>,
+) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut bar_info = info::status_bar(cx.theme(), styled);
+    let bar = native_info(
+        StatusBar::new(),
+        cx,
+        geometry::status_bar,
+        "status_bar",
+        &mut bar_info,
+    )
+    // Plain text, not Labels, as in the title bar: a Label would paint
+    // foreground over the colour `geometry::status_bar` gives the bar.
+    .left(environment.into())
+    .when_some(shown, |bar, title| {
+        bar.right(div().debug_selector(|| STATUS_HOVERED.into()).child(title))
+    })
+    .right(version.into());
+    bar.info(ui, "chrome-status-bar", bar_info)
 }
 
 /// The preset switch: a searchable `Combobox` over `state`'s presets,

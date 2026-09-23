@@ -266,6 +266,14 @@ pub(crate) const CHROME_HANDLE_INSPECTOR: &str = "chrome-resize-content-inspecto
 /// The debug selector the toolbar's Toggle Inspector button carries.
 pub(crate) const CHROME_TOOLBAR_INSPECTOR: &str = "chrome-toolbar-inspector";
 
+/// The debug selector the window's status bar carries, so
+/// `the_status_bar_is_the_bottom_of_the_window` can see where it was laid out.
+pub(crate) const CHROME_STATUS_BAR: &str = "chrome-status-bar";
+
+/// The debug selector the status bar's label with the shown info's title
+/// carries.
+pub(crate) const STATUS_HOVERED: &str = "status-hovered";
+
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside
 /// one and `the_three_list_frames_agree` can measure their frames.
