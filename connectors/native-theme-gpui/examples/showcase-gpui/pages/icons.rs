@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use native_theme::theme::{icon_name as native_icon_name, system_icon_theme};
 
+use crate::ICONS_ANIMATED_ICONS;
 use crate::app::Showcase;
 use crate::support::{IconSource, NativeStyled, format_font_info, is_native_icon_set, section};
 
@@ -117,6 +118,7 @@ impl Showcase {
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         section_el = section_el.child(
             body.id("tt-animated-icons")
+                .debug_selector(|| ICONS_ANIMATED_ICONS.into())
                 .on_hover(self.hover_info(&fi, "Animated Icons", &[("card border", "border", t.border, "showcase"), ("reduced-motion note", "muted_foreground", t.muted_foreground, "showcase")], &[
                     ("animations", format!("{} frame-based, {} spin", self.animated_frame_sources.len(), self.animated_spin_sources.len())),
                     ("reduced motion", format!("{}", self.reduced_motion)),

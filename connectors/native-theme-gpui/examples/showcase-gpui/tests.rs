@@ -30,12 +30,13 @@ use crate::inspector::InspectorTab;
 use crate::support::{CAROUSEL_SLIDES, native_geometry, native_value};
 use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
-    BUTTONS_TEXT, CHARTS_BAR_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR,
-    CHROME_HANDLE_NAV, CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR,
-    CHROME_TOOLBAR, CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL,
-    CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER,
-    FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
-    FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
+    BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
+    CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV,
+    CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
+    DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO,
+    FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
+    FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, ICONS_ANIMATED_ICONS, INPUTS_CHECKBOX_AUTOSAVE,
     INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
     INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LAYOUT_BREADCRUMB,
     LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
@@ -1298,16 +1299,16 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Charts);
-    let chart = bounds_of(&mut cx, CHARTS_BAR_CHART).center();
+    show(&mut cx, &showcase, Page::Icons);
+    let block = bounds_of(&mut cx, ICONS_ANIMATED_ICONS).center();
     let item = bounds_of(&mut cx, Page::Overlays.nav_item()).center();
-    hover(&mut cx, chart);
+    hover(&mut cx, block);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("BarChart"),
-        "the BarChart block's text panel is not shown"
+        Some("Animated Icons"),
+        "the Animated Icons block's text panel is not shown"
     );
     hover(&mut cx, item);
     settle(&mut cx);
@@ -1317,19 +1318,19 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
         Some("SidebarMenuItem · Overlays"),
         "a settled info did not replace the text panel"
     );
-    hover(&mut cx, chart);
+    hover(&mut cx, block);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("BarChart"),
+        Some("Animated Icons"),
         "the text panel did not replace the settled info"
     );
     show(&mut cx, &showcase, Page::Inputs);
     assert_eq!(
         inspector_title(&mut cx, &showcase),
         None,
-        "the Charts page's text panel stayed after the page changed"
+        "the Icons page's text panel stayed after the page changed"
     );
 }
 
@@ -1339,14 +1340,14 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
 #[gpui::test]
 fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Charts);
-    let chart = bounds_of(&mut cx, CHARTS_BAR_CHART).center();
+    show(&mut cx, &showcase, Page::Icons);
+    let block = bounds_of(&mut cx, ICONS_ANIMATED_ICONS).center();
     let item = bounds_of(&mut cx, Page::Overlays.nav_item()).center();
     let inspector = bounds_of(&mut cx, INSPECTOR_PANEL).center();
     hover(&mut cx, item);
     settle(&mut cx);
     draw(&mut cx);
-    hover(&mut cx, chart);
+    hover(&mut cx, block);
     cx.executor().advance_clock(INFO_SETTLE / 2);
     cx.run_until_parked();
     hover(&mut cx, inspector);
@@ -1355,7 +1356,7 @@ fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
         Some("SidebarMenuItem · Overlays"),
-        "passing over the BarChart block replaced the Sidebar item's info"
+        "passing over the Animated Icons block replaced the Sidebar item's info"
     );
 }
 
@@ -2355,6 +2356,49 @@ fn a_right_sheet_and_a_bottom_sheet_show_different_infos(cx: &mut TestAppContext
     assert!(
         texts.first() != texts.get(1),
         "the right and the bottom Sheet show the same info: {texts:?}"
+    );
+}
+
+/// The Charts page's five charts each show their own info (spec §4.3.2):
+/// each paints its own series and names its own upstream lines.
+#[gpui::test]
+fn every_chart_shows_its_own_info(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Charts);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (CHARTS_BAR_CHART, "BarChart"),
+            (CHARTS_LINE_CHART, "LineChart"),
+            (CHARTS_AREA_CHART, "AreaChart"),
+            (CHARTS_PIE_CHART, "PieChart · donut"),
+            (CHARTS_CANDLESTICK_CHART, "CandlestickChart"),
+        ],
+    );
+    for (i, text) in texts.iter().enumerate() {
+        assert!(
+            !texts.iter().skip(i + 1).any(|other| other == text),
+            "two charts show the same info: {texts:?}"
+        );
+    }
+}
+
+/// The AreaChart's fill swatch shows the colour upstream paints: the series
+/// colour at the 30% the showcase asks for, not the colour at full.
+#[gpui::test]
+fn the_area_charts_fill_swatch_shows_the_painted_colour(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Charts);
+    let info = settle_on(&mut cx, &showcase, CHARTS_AREA_CHART);
+    let painted = cx.update(|_window, cx| Theme::global(cx).chart_3.opacity(0.3));
+    let fill = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role.starts_with("fill")));
+    assert_eq!(
+        fill.map(|c| c.value),
+        Some(painted),
+        "the AreaChart's fill swatch is not chart_3 at 30%: {info:?}"
     );
 }
 

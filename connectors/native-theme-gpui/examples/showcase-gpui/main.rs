@@ -403,10 +403,19 @@ pub(crate) const OVERLAYS_SHEET_BOTTOM: &str = "overlays-sheet-bottom";
 pub(crate) const OVERLAYS_SHEET_RIGHT_TITLE: &str = "overlays-sheet-right-title";
 pub(crate) const OVERLAYS_SHEET_BOTTOM_TITLE: &str = "overlays-sheet-bottom-title";
 
-/// The debug selector of the Charts page's BarChart block, one of the blocks
-/// that still show a text panel, which the two tests of that panel hover.
-/// Task 24: delete, with the text panel.
+/// The ids and debug selectors of the Charts page's five charts, which
+/// `every_chart_shows_its_own_info` hovers.
 pub(crate) const CHARTS_BAR_CHART: &str = "charts-bar-chart";
+pub(crate) const CHARTS_LINE_CHART: &str = "charts-line-chart";
+pub(crate) const CHARTS_AREA_CHART: &str = "charts-area-chart";
+pub(crate) const CHARTS_PIE_CHART: &str = "charts-pie-chart";
+pub(crate) const CHARTS_CANDLESTICK_CHART: &str = "charts-candlestick-chart";
+
+/// The debug selector of the Icons page's Animated Icons block, one of the
+/// blocks that still show a text panel, which the two tests of that panel
+/// hover.
+/// Task 24: delete, with the text panel.
+pub(crate) const ICONS_ANIMATED_ICONS: &str = "icons-animated-icons";
 
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls

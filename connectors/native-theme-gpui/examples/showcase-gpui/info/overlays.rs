@@ -225,7 +225,10 @@ fn popover_surface(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
             "showcase",
         ));
     if styled {
-        info
+        info.not_themeable(
+            "corner radius",
+            "popover.border.corner_radius, through geometry::popover: popover_style sets the theme radius, and the refinement, applied after it, replaces it (gpui-component styled.rs, popover_style)",
+        )
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     }
@@ -236,10 +239,6 @@ fn popover_surface(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
 /// recorded where `demo::popover` applies the builders.
 pub fn popover(t: &Theme, styled: bool) -> WidgetInfo {
     popover_surface(WidgetInfo::new("Popover"), t, styled)
-        .config(
-            "corner radius",
-            "set by popover_style from the theme radius, before geometry::popover refines it (gpui-component styled.rs, popover_style)",
-        )
         .not_themeable(
             "edge",
             "no border token: the surface is painted by popover_style, whose edge is a 1px shadow ring of foreground at low alpha. That is how the shadow shows through it, and it is why popover.border.color has no receiver here (gpui-component styled.rs, popover_style and popover_ring)",

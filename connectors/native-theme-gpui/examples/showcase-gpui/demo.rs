@@ -3,7 +3,7 @@
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
-    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, FontWeight,
+    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, FontWeight, Hsla,
     Keystroke, Pixels, RenderOnce, SharedString, Stateful, StyleRefinement, Window, div,
     prelude::*, px, rems,
 };
@@ -30,6 +30,7 @@ use gpui_component::{
         Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPagination,
         CarouselPaginationItem, CarouselPrevious, CarouselState,
     },
+    chart::{AreaChart, BarChart, CandlestickChart, LineChart, PieChart},
     checkbox::Checkbox,
     clipboard::Clipboard,
     color_picker::{ColorPicker, ColorPickerState},
@@ -3948,15 +3949,14 @@ const HOVER_CARD_WIDTH: Pixels = px(260.);
 
 /// A `HoverCard` refined by `geometry::popover`, over a Button styled with
 /// `variants::ghost_button` and refined by `geometry::button`, holding a
-/// title over a muted line, padded by `padding` and `gap` apart -- the card's
-/// own spacing is the application's to set, so it takes the platform's
-/// container margin and widget gap. The trigger and the content report the
-/// HoverCard.
+/// title over a muted line, `gap` apart. The card pads itself, with the
+/// platform's popover padding where `geometry::popover` applies and upstream's
+/// otherwise (popover.rs:284), so the content adds none. The trigger and the
+/// content report the HoverCard.
 pub(crate) fn hover_card(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
-    padding: Option<Pixels>,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
@@ -3977,15 +3977,12 @@ pub(crate) fn hover_card(
         &mut card_info,
     )
     .trigger(trigger);
-    if padding.is_some() {
-        card_info = card_info.geometry("container_margin");
-    }
     if gap.is_some() {
         card_info = card_info.geometry("widget_gap");
     }
     let (content_ui, content_info) = (ui.clone(), card_info.clone());
     card.content(move |_state, _window, cx| {
-        with_padding(with_gap(v_flex(), gap), padding)
+        with_gap(v_flex(), gap)
             .w(HOVER_CARD_WIDTH)
             .child(div().font_semibold().child("KDE Breeze"))
             .child(
@@ -4089,4 +4086,136 @@ pub(crate) fn menu_rows(
                 .info(ui, id, row_info)
                 .debug_selector(move || id.into())
         }))
+}
+
+// ---------------------------------------------------------------------------
+// The Charts page
+// ---------------------------------------------------------------------------
+
+/// The months the BarChart and the LineChart plot, with their values.
+pub(crate) const SAMPLE_MONTHS: [(&str, f64); 6] = [
+    ("Jan", 40.),
+    ("Feb", 65.),
+    ("Mar", 55.),
+    ("Apr", 80.),
+    ("May", 72.),
+    ("Jun", 90.),
+];
+
+/// The months the AreaChart plots, with their values.
+pub(crate) const SAMPLE_MONTHS_AREA: [(&str, f64); 6] = [
+    ("Jan", 30.),
+    ("Feb", 50.),
+    ("Mar", 45.),
+    ("Apr", 70.),
+    ("May", 60.),
+    ("Jun", 85.),
+];
+
+/// The days the CandlestickChart plots, as `(day, open, high, low, close)`.
+pub(crate) const SAMPLE_OHLC: [(&str, f64, f64, f64, f64); 5] = [
+    ("Mon", 100., 115., 95., 110.),
+    ("Tue", 110., 120., 105., 108.),
+    ("Wed", 108., 118., 100., 115.),
+    ("Thu", 115., 125., 110., 112.),
+    ("Fri", 112., 122., 108., 120.),
+];
+
+/// The PieChart's slices, as `(label, value)`, in the order they go round
+/// the ring and take `chart_1`, `chart_2` and `chart_3`.
+pub(crate) const PIE_SLICES: [(&str, f32); 3] =
+    [("Desktop", 55.), ("Mobile", 30.), ("Tablet", 15.)];
+
+/// The height of every chart on the Charts page but the PieChart: the
+/// showcase's own, as the model states no chart size.
+const CHART_HEIGHT: Pixels = px(220.);
+
+/// The PieChart's square box: the showcase's own, as the model states no
+/// chart size.
+const PIE_SIZE: Pixels = px(250.);
+
+/// The PieChart's inner and outer radii and the angle between its slices,
+/// in pixels and radians: the showcase's own, as the model states no chart.
+pub(crate) const PIE_INNER_RADIUS: f32 = 40.;
+pub(crate) const PIE_OUTER_RADIUS: f32 = 100.;
+pub(crate) const PIE_PAD_ANGLE: f32 = 0.03;
+
+/// A `BarChart` of `SAMPLE_MONTHS`, its bars in `chart_1`.
+pub(crate) fn bar_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
+    let fill = cx.theme().chart_1;
+    BarChart::new(SAMPLE_MONTHS)
+        .band(|d: &(&'static str, f64)| d.0)
+        .value(|d: &(&'static str, f64)| d.1)
+        .fill(move |_: &(&'static str, f64), _, _, _| fill)
+        .info(ui, id, info::charts::bar_chart(cx.theme()))
+        .h(CHART_HEIGHT)
+        .w_full()
+        .debug_selector(move || id.into())
+}
+
+/// A `LineChart` of `SAMPLE_MONTHS`, its line and dots in `chart_2`.
+pub(crate) fn line_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
+    LineChart::new(SAMPLE_MONTHS)
+        .x(|d: &(&'static str, f64)| d.0)
+        .y(|d: &(&'static str, f64)| d.1)
+        .stroke(cx.theme().chart_2)
+        .dot()
+        .info(ui, id, info::charts::line_chart(cx.theme()))
+        .h(CHART_HEIGHT)
+        .w_full()
+        .debug_selector(move || id.into())
+}
+
+/// An `AreaChart` of `SAMPLE_MONTHS_AREA`: one series, its line in
+/// `chart_3` over a fill of `chart_3` at 30%.
+pub(crate) fn area_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
+    let t = cx.theme();
+    AreaChart::new(SAMPLE_MONTHS_AREA)
+        .x(|d: &(&'static str, f64)| d.0)
+        .y(|d: &(&'static str, f64)| d.1)
+        .stroke(t.chart_3)
+        .fill(t.chart_3.opacity(0.3))
+        .info(ui, id, info::charts::area_chart(t))
+        .h(CHART_HEIGHT)
+        .w_full()
+        .debug_selector(move || id.into())
+}
+
+/// A donut `PieChart` of `PIE_SLICES`, its slices in `chart_1`, `chart_2`
+/// and `chart_3`.
+pub(crate) fn pie_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
+    let t = cx.theme();
+    let slices: Vec<(f32, Hsla)> = PIE_SLICES
+        .iter()
+        .zip([t.chart_1, t.chart_2, t.chart_3])
+        .map(|(&(_, value), color)| (value, color))
+        .collect();
+    PieChart::new(slices)
+        .value(|d: &(f32, Hsla)| d.0)
+        .color(|d: &(f32, Hsla)| d.1)
+        .inner_radius(PIE_INNER_RADIUS)
+        .outer_radius(PIE_OUTER_RADIUS)
+        .pad_angle(PIE_PAD_ANGLE)
+        .info(ui, id, info::charts::pie_chart(t))
+        .size(PIE_SIZE)
+        .debug_selector(move || id.into())
+}
+
+/// A `CandlestickChart` of `SAMPLE_OHLC`, in the theme's candle colours.
+pub(crate) fn candlestick_chart(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+) -> Stateful<Div> {
+    type Day = (&'static str, f64, f64, f64, f64);
+    CandlestickChart::new(SAMPLE_OHLC)
+        .x(|d: &Day| d.0)
+        .open(|d: &Day| d.1)
+        .high(|d: &Day| d.2)
+        .low(|d: &Day| d.3)
+        .close(|d: &Day| d.4)
+        .info(ui, id, info::charts::candlestick_chart(cx.theme()))
+        .h(CHART_HEIGHT)
+        .w_full()
+        .debug_selector(move || id.into())
 }

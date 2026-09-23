@@ -31,7 +31,6 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let widget_gap = geometry::widget_gap(&self.layout);
-        let container_margin = geometry::container_margin(&self.layout);
         let open_dialog = cx.listener(|this, _ev, window, cx| {
             let (ui, gap) = (this.info_ui.clone(), this.overlay_gap.clone());
             window.open_dialog(cx, move |dialog, _window, cx| {
@@ -166,10 +165,7 @@ impl Showcase {
                 "overlays-heading-hover-card",
                 "HoverCard (hover the trigger, no click)",
             ))
-            .child(
-                demo::hover_card(ui, cx, "overlays-hover-card", container_margin, widget_gap)
-                    .self_start(),
-            )
+            .child(demo::hover_card(ui, cx, "overlays-hover-card", widget_gap).self_start())
             // ContextMenu
             .child(demo::heading(
                 ui,
