@@ -176,12 +176,15 @@ unstated side leaves the widget's own padding in place.
 
 Control heights follow one rule in `button`, `input`, `select`, `combobox`,
 `menu_item` and `list_item`. Each applies the platform's `defaults.line_height`
-as the control's line height. At a text-scaling factor of 1 or less the control
-is its stated height (`h`, or `min_h` for `select` and `combobox`, whose
-trigger keeps upstream's own height where that is larger); above 1 the stated
-height is a minimum and the height is automatic, so the control grows around
-its drawn text and padding. The rule is for single-line controls: a
-multi-line `Input` takes its caller's own `Styled::h` after the builder.
+as the control's line height. `select` and `combobox` take the stated height
+as a minimum (`min_h`) at every text-scaling factor, and their trigger keeps
+upstream's own `h_8` where that is larger: 2 rem, and the rem is the theme's
+font size, which the connector scales, so that height grows with the text.
+The other four are their stated height (`h`) at a factor of 1 or less; above
+1 the stated height is a minimum and the height is automatic, so the control
+grows around its drawn text and padding. The rule is for single-line
+controls: a multi-line `Input` takes its caller's own `Styled::h` after the
+builder.
 
 A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
@@ -209,7 +212,7 @@ test over every preset and mode says so.
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
 | `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
-| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement |
+| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:265-286`, `input/number_input.rs:158-165`, `input/input.rs:700-702`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
 | `menu_item` | `menu.row_height`, `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height`, `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |

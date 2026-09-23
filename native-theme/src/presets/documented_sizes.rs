@@ -4,7 +4,9 @@
 //! One row per (platform, widget) gives every padding side, and for the
 //! toolbar its `bar_height` and `item_gap`, as `Some(v)` where
 //! `docs/platform-facts.md` documents a value for that platform and `None`
-//! where it does not. Each row cites the platform-facts lines it reads.
+//! where it does not, or where a ruling leaves it unstated (e.g. the Windows
+//! combobox's right side, measured to an arrow column the model has no field
+//! for). Each row cites the platform-facts lines it reads.
 //!
 //! Every row is checked in both variants against two resolutions:
 //!

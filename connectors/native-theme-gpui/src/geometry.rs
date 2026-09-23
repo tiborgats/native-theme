@@ -31,12 +31,16 @@
 //! **Control heights.** [`button`], [`input`], [`select`], [`combobox`],
 //! [`menu_item`] and [`list_item`] share one rule. Each applies the
 //! platform's `defaults.line_height` as the control's line height, so text
-//! lays out with the platform's metrics. At a text-scaling factor of 1 or
-//! less the control takes its stated height, through the property its
-//! builder has always used (`h`, or `min_h` for the select and combobox);
-//! above 1 it takes the stated height as a minimum and an automatic height,
-//! so layout grows the control around its drawn text and padding. The rule
-//! is for single-line controls.
+//! lays out with the platform's metrics. [`select`] and [`combobox`] take the
+//! stated height as a minimum (`min_h`) at every text-scaling factor and
+//! leave upstream's own height in place: `h_8` for `Size::Medium`
+//! (`sizing.rs:236-237`, `:261-264`), 2 rem, where the rem is the installed
+//! `Theme::font_size` (`root.rs:582`), which [`to_theme`](crate::to_theme)
+//! scales by the text-scaling factor (`lib.rs:170`), so upstream's height
+//! grows with the text. The other four take their stated height (`h`) at a
+//! factor of 1 or less; above 1 they take it as a minimum and an automatic
+//! height, so layout grows the control around its drawn text and padding.
+//! The rule is for single-line controls.
 //!
 //! Geometry, with one exception that is not geometry: seven builders also
 //! carry the platform's text colour. A builder carries it only where the
@@ -137,13 +141,13 @@ fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
     }
 }
 
-/// The style property a control's stated height goes through at a
-/// text-scaling factor of 1 or less.
+/// The style property a control's stated height goes through.
 #[derive(Clone, Copy)]
 enum HeightProp {
     /// `Styled::h`: the button, input, menu row and list row.
     Height,
-    /// `Styled::min_h`: the select and combobox.
+    /// `Styled::min_h`, at every text-scaling factor: the select and
+    /// combobox.
     MinHeight,
 }
 
@@ -153,10 +157,14 @@ enum HeightProp {
 /// each receiving widget takes the refinement after its own line height
 /// (`button/button.rs:689` → `:690`, `input/input.rs:699` → `:719`) or sets
 /// none (`list/list_item.rs:182-193`, `select.rs:535-546`,
-/// `combobox.rs:980-997`), so the platform's wins. At a text-scaling factor
-/// of 1 or less, `stated` is the control's height through `prop`; above 1,
-/// `stated` is its minimum and the height is automatic, so layout grows the
-/// control around its drawn text and padding.
+/// `combobox.rs:980-997`), so the platform's wins. Through `min_h`, `stated`
+/// is the control's minimum at every text-scaling factor, and upstream's own
+/// height stays: an automatic height would drop upstream's `h_8`, which
+/// grows with the scaled rem, and the trigger could come out shorter just
+/// above a factor of 1 than at 1. Through `h`, `stated` is the control's
+/// height at a factor of 1 or less; above 1 it is its minimum and the height
+/// is automatic, so layout grows the control around its drawn text and
+/// padding.
 fn with_height_rule(
     r: StyleRefinement,
     stated: f32,
@@ -164,13 +172,10 @@ fn with_height_rule(
     n: Native<'_>,
 ) -> StyleRefinement {
     let r = r.line_height(relative(n.resolved.defaults.line_height));
-    if text_scale_factor(n.accessibility) <= 1.0 {
-        match prop {
-            HeightProp::Height => r.h(px(stated)),
-            HeightProp::MinHeight => r.min_h(px(stated)),
-        }
-    } else {
-        r.min_h(px(stated)).h_auto()
+    match prop {
+        HeightProp::MinHeight => r.min_h(px(stated)),
+        HeightProp::Height if text_scale_factor(n.accessibility) <= 1.0 => r.h(px(stated)),
+        HeightProp::Height => r.min_h(px(stated)).h_auto(),
     }
 }
 
@@ -208,7 +213,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 ///
 /// Height by the control-height rule (module doc), through `h`. The rule is
 /// for a single-line field: a multi-line `Input` sets its own height before
-/// this refinement (`input/input.rs:705-708`), which the rule's `h` would
+/// this refinement (`input/input.rs:706-709`), which the rule's `h` would
 /// replace, so a caller that wants a multi-line height applies its own
 /// `Styled::h` after this builder. The padding is a single-line field's too:
 /// upstream pads only a single-line root (`input/input.rs:700-702`), so a
@@ -222,6 +227,11 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// takes its right padding from upstream *after* the refinement
 /// (`input/input.rs:736`, `this.pr(self.size.input_px())`), so there the
 /// platform's right side does not arrive.
+///
+/// When refining an `InputGroup` or `NumberInput` frame, clear the padding
+/// sides: the inner Input already pads (`input/group.rs:265-286` and
+/// `input/number_input.rs:158-165` each render an `Input`, which pads itself
+/// at `input/input.rs:700-702`).
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
@@ -545,10 +555,14 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// The metrics `Select` and `Combobox` share; only the text colour separates
 /// the two.
 ///
-/// Height by the control-height rule (module doc), through `min_h`: upstream
-/// gives both triggers their own `h_8` for `Size::Medium` (`input_size`,
-/// `sizing.rs:236-237`, `:261-264`), so at a text-scaling factor of 1 or
-/// less the trigger is the larger of the two.
+/// Height by the control-height rule (module doc), through `min_h` at every
+/// text-scaling factor: upstream gives both triggers their own `h_8` for
+/// `Size::Medium` (`input_size`, `sizing.rs:236-237`, `:261-264`), 2 rem at
+/// the rem the `Root` installs, `Theme::font_size` (`root.rs:582`), which
+/// [`to_theme`](crate::to_theme) scales by the text-scaling factor
+/// (`lib.rs:170`). So the
+/// trigger is the larger of the stated minimum and upstream's height, which
+/// grows with the text.
 ///
 /// The stated padding sides reach the trigger: upstream pads it
 /// (`input_size`, `select.rs:544`, `combobox.rs:995`) before the refinement
@@ -572,10 +586,11 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
 }
 
 /// `Select` (`src/select.rs:535-545` → `:546`); the arrow is inner, Tier U.
-/// Height by the control-height rule (module doc), through `min_h`:
-/// upstream gives the trigger its own `h_8` for `Size::Medium`
-/// (`input_size`, `sizing.rs:236-237`, `:261-264`), so at a text-scaling
-/// factor of 1 or less the trigger is the larger of the two.
+/// Height by the control-height rule (module doc), through `min_h` at every
+/// text-scaling factor: upstream gives the trigger its own `h_8` for
+/// `Size::Medium` (`input_size`, `sizing.rs:236-237`, `:261-264`), 2 rem,
+/// which grows with the scaled rem (`root.rs:582`), so the trigger is the
+/// larger of the two.
 ///
 /// The stated padding sides reach the trigger: upstream pads it
 /// (`input_size`, `select.rs:544`) before the refinement (`:546`), so the
@@ -818,8 +833,9 @@ mod tests {
         assert_eq!(out.padding.bottom, side(p.bottom), "{what}: bottom");
         assert_eq!(out.padding.left, side(p.left), "{what}: left");
     }
-    /// The control-height rule: the platform's line height, and at s <= 1 the
-    /// stated height through `h` (or `min_h`), above 1 a stated minimum and an
+    /// The control-height rule: the platform's line height; through `min_h`
+    /// the stated minimum at every scale, with no height of its own; through
+    /// `h` the stated height at s <= 1, above 1 a stated minimum and an
     /// automatic height.
     fn assert_height_rule(
         out: &StyleRefinement,
@@ -834,14 +850,12 @@ mod tests {
             Some(relative(r.defaults.line_height)),
             "{what}: the platform's line height"
         );
-        if s <= 1.0 {
-            if through_min_h {
-                assert_eq!(out.min_size.height, len(stated), "{what}: min height");
-                assert_eq!(out.size.height, None, "{what}: no fixed height");
-            } else {
-                assert_eq!(out.size.height, len(stated), "{what}: height");
-                assert_eq!(out.min_size.height, None, "{what}: no minimum");
-            }
+        if through_min_h {
+            assert_eq!(out.min_size.height, len(stated), "{what}: min height");
+            assert_eq!(out.size.height, None, "{what}: no height of its own");
+        } else if s <= 1.0 {
+            assert_eq!(out.size.height, len(stated), "{what}: height");
+            assert_eq!(out.min_size.height, None, "{what}: no minimum");
         } else {
             assert_eq!(
                 out.min_size.height,

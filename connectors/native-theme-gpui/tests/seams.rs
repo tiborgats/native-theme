@@ -18,10 +18,12 @@
 //! widget leaves content-driven, so those three prove that the refinement
 //! reaches the widget's root box and wins there, not an ordering claim.
 //!
-//! Two sweeps run every native preset at its own font DPI: the drawn content
-//! inset of an Input, a Select and a Combobox is the stated padding side,
-//! and six single-line controls are their stated height at text scale 1 and
-//! grow at text scale 2, with their text inside them at both.
+//! Four sweeps run every native preset at its own font DPI: the drawn content
+//! inset of an Input, a Select and a Combobox is the stated left padding
+//! side; an Input with no suffix is laid out with the stated right side; a
+//! Textarea whose refinement has its padding cleared draws none; and six
+//! single-line controls are their stated height at text scale 1, no shorter
+//! at 1.1 and at 2, with their text inside them at all three.
 //! Every other builder rests on the source citation in its doc comment.
 
 use std::num::NonZeroU32;
@@ -35,7 +37,7 @@ use gpui_component::{
     ActiveTheme as _, IndexPath, StyledExt as _,
     button::Button,
     combobox::{Combobox, ComboboxState},
-    input::{Input, InputState},
+    input::{Input, InputState, Textarea, TextareaState},
     list::ListItem,
     progress::Progress,
     select::{SearchableVec, Select, SelectItem, SelectState},
@@ -640,6 +642,116 @@ fn input_select_and_combobox_draw_the_stated_padding(cx: &mut TestAppContext) {
     }
 }
 
+/// A Textarea: it renders as a multi-line `Input` (`input/textarea.rs:162-165`).
+fn textarea(s: Option<&StyleRefinement>, w: &mut Window, cx: &mut Context<Harness>) -> AnyElement {
+    let state = cx.new(|cx| TextareaState::new(w, cx));
+    styled(Textarea::new(&state), s)
+}
+
+/// `style` with its right padding side 0.
+fn without_right(style: &StyleRefinement) -> StyleRefinement {
+    let mut style = style.clone();
+    style.padding.right = Some(px(0.).into());
+    style
+}
+
+/// Under every native preset, at its own DPI, an Input with no suffix is laid
+/// out with the stated right padding side: upstream pads a single-line root
+/// (`input/input.rs:700-702`) before the refinement (`:719`), and only a
+/// suffix pads the right side again after it (`:736`). The right side has no
+/// child to measure it by, so it is measured as the width it adds: the
+/// Input's width under the refinement, less its width under the same
+/// refinement with a right side of 0. At least one preset states a right side
+/// that is not 0, or the sweep proves nothing.
+#[gpui::test]
+fn an_input_without_a_suffix_draws_the_stated_right_padding(cx: &mut TestAppContext) {
+    let mut discriminated = false;
+    for (preset, dpi) in NATIVE {
+        let r = resolved_at(preset, dpi);
+        let prefs = scaled_by(1.0);
+        let Some(stated) = r.input.border.padding.right else {
+            continue;
+        };
+        let style = geometry::input(Native {
+            resolved: &r,
+            accessibility: &prefs,
+        });
+        let mut width = |style: StyleRefinement| {
+            laid_out_as(cx, preset, &r, &prefs, Some(style), input, ["probe"])[0]
+                .size
+                .width
+        };
+        let drawn = width(style.clone()) - width(without_right(&style));
+        assert_eq!(
+            drawn,
+            px(stated),
+            "{preset} input: the right side adds {drawn:?}, not the stated {stated}px"
+        );
+        discriminated |= stated != 0.0;
+    }
+    assert!(
+        discriminated,
+        "input: no native preset states a right padding other than 0"
+    );
+}
+
+/// `style` with every padding side 0.
+fn without_padding(style: &StyleRefinement) -> StyleRefinement {
+    let mut style = style.clone();
+    style.padding.top = Some(px(0.).into());
+    style.padding.right = Some(px(0.).into());
+    style.padding.bottom = Some(px(0.).into());
+    style.padding.left = Some(px(0.).into());
+    style
+}
+
+/// Under every native preset, at its own DPI, a Textarea refined as
+/// `geometry::input`'s doc says -- the padding sides cleared -- draws no
+/// padding: upstream pads only a single-line root (`input/input.rs:700-702`),
+/// so a multi-line root's inset is 0, and the refinement's padding must not
+/// reach it. The inset has no child to measure it by, so it is measured as
+/// the size it adds: the Textarea's size with the padding cleared equals its
+/// size with every side 0. The height the rule sets is removed, as the
+/// showcase replaces it with its own, so the height is the content's.
+///
+/// Left in, the refinement's padding would reach the root (`:719`): at least
+/// one preset states sides that then add to the width, or the sweep proves
+/// nothing about the clearing.
+#[gpui::test]
+fn a_textarea_draws_no_padding(cx: &mut TestAppContext) {
+    let mut discriminated = false;
+    for (preset, dpi) in NATIVE {
+        let r = resolved_at(preset, dpi);
+        let prefs = scaled_by(1.0);
+        let mut style = geometry::input(Native {
+            resolved: &r,
+            accessibility: &prefs,
+        });
+        style.size.height = None;
+        let mut cleared = style.clone();
+        cleared.padding = StyleRefinement::default().padding;
+        let mut size = |style: StyleRefinement| {
+            laid_out_as(cx, preset, &r, &prefs, Some(style), textarea, ["probe"])[0].size
+        };
+        let none = size(without_padding(&style));
+        let drawn = size(cleared);
+        assert_eq!(
+            drawn, none,
+            "{preset} textarea: with the padding cleared it is {drawn:?}, not {none:?}, the \
+             size with no padding, so something pads the multi-line root"
+        );
+        let stated = r.input.border.padding;
+        let sides = stated.left.unwrap_or(0.0) + stated.right.unwrap_or(0.0);
+        let reached = size(style).width - none.width;
+        discriminated |= sides != 0.0 && reached == px(sides);
+    }
+    assert!(
+        discriminated,
+        "textarea: under no native preset does the refinement's padding, left in, add its \
+         stated left and right sides, so clearing it proves nothing"
+    );
+}
+
 /// Where upstream's own Select or Combobox trigger is taller than the
 /// platform's stated minimum, `geometry::select`/`combobox` (through `min_h`,
 /// as they always have) leave upstream's height: upstream's `input_size` sets
@@ -722,6 +834,22 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
                 fits(text, control),
                 "{preset} {widget}: at text scale 1 the text at {text:?} is not inside the \
                  control at {control:?}"
+            );
+
+            // Just above 1, where the rule stops giving a control its stated
+            // height, it must not come out shorter than at 1.
+            let (text11, control11, _) = at(1.1, cx);
+            assert!(
+                control11.size.height >= control.size.height,
+                "{preset} {widget}: at text scale 1.1 the control is {:?}, shorter than {:?} \
+                 at scale 1",
+                control11.size.height,
+                control.size.height
+            );
+            assert!(
+                fits(text11, control11),
+                "{preset} {widget}: at text scale 1.1 the text at {text11:?} is not inside the \
+                 control at {control11:?}"
             );
 
             let (text2, control2, _) = at(2.0, cx);

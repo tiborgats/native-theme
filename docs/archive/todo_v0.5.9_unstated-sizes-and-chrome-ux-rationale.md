@@ -182,7 +182,7 @@ These change what native presets draw too, not only the colour-scheme presets:
 - On the colour-scheme presets, the dialog draws gpui-component's own padding instead of a zero nobody chose, and the toolbar gets the showcase's own padding (§5, point 6).
 - The input, select and combobox draw their stated padding for the first time.
 - Control heights become the stated height at text scale 1. Today `control_height` overshoots it: the Windows button is 33 for a stated 32, and at 96 DPI the macOS button, input and menu row are 27 for a stated 22. The select and combobox keep their minimum height, so nothing turns an unsourced value into an exact height.
-- The showcase's Textarea, which `geometry::input` forces to the single-line height today (input.rs:705-708 runs before the refinement at :719), keeps its own 90px.
+- The showcase's Textarea, which `geometry::input` forces to the single-line height today (input.rs:706-709 runs before the refinement at :719), keeps its own 90px.
 
 These are corrections, and the screenshot review covers them.
 
@@ -228,7 +228,7 @@ The preset and mode stay in the status bar. The version leaves the status bar, b
 
 - The page icons are sized with `icon_size_panel` (demo.rs:472), which is 48px on KDE (kde-breeze.toml:61). KDE's "Panel" group is the Plasma panel.
 - An expanded `SidebarMenuItem` row is `h_7` (sidebar/menu.rs:308): 1.75 rem, which is 28px at a 16px rem and about 23px at KDE's 13.33px font. The rail is 48px wide (sidebar/mod.rs:28). A 48px icon fits neither.
-- The sidebar icon size is `icon_size_small`. Platform-facts' `small` row names macOS's value "sidebar" (platform-facts.md:1122), and it is 16 on KDE, Windows and GNOME.
+- The sidebar icon size is `icon_size_small`. Platform-facts' `small` row names macOS's value "sidebar" (platform-facts.md:1133), and it is 16 on KDE, Windows and GNOME.
 
 ## 10. Decisions
 

@@ -689,7 +689,7 @@ pub fn freedesktop_name_for_gpui_icon(
             } else {
                 "sidebar-expand-right"
             }
-        } // close: Breeze's pair of PanelLeft's sidebar-expand-left
+        } // Breeze's pair of PanelLeft's sidebar-expand-left
         IconName::PanelRightClose => {
             if is_gtk {
                 "sidebar-show-right"
