@@ -91,14 +91,16 @@ use gpui_component::{
     v_flex,
 };
 use native_theme_gpui::icons::with_spin_animation;
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry, variants};
+use native_theme_gpui::{
+    AccessibilityPreferences, ActiveNativeTheme as _, Native, geometry, variants,
+};
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
-    SampleListDelegate, SampleTableDelegate, native_geometry, native_icon, native_value, refined,
-    section, with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, color_swatch, native_geometry, native_icon,
+    native_value, refined, section, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
@@ -4172,7 +4174,7 @@ pub(crate) fn line_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) 
 }
 
 /// An `AreaChart` of `SAMPLE_MONTHS_AREA`: one series, its line in
-/// `chart_3` over a fill of `chart_3` at 30%.
+/// `chart_3` over a fill of `chart_3` at `AREA_FILL_OPACITY`.
 pub(crate) fn area_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
     let t = cx.theme();
     AreaChart::new(SAMPLE_MONTHS_AREA)
@@ -4432,4 +4434,253 @@ pub(crate) fn animated_icon(
             info::icons::animated_icon(t, set, kind, bundled, fg, reduce_motion),
         )
         .debug_selector(move || id.to_string())
+}
+
+// ---------------------------------------------------------------------------
+// The Theme Map page
+// ---------------------------------------------------------------------------
+
+/// The ThemeColor fields the Theme Map shows, a swatch each, so the match
+/// over them in `info::theme_map` is exhaustive and the compiler rejects a
+/// field without its row.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ThemeToken {
+    Background,
+    Foreground,
+    Accent,
+    AccentForeground,
+    Border,
+    Muted,
+    MutedForeground,
+    Input,
+    Ring,
+    Selection,
+    Caret,
+    Link,
+    LinkHover,
+    LinkActive,
+    Overlay,
+    Primary,
+    PrimaryForeground,
+    PrimaryHover,
+    PrimaryActive,
+    Secondary,
+    SecondaryForeground,
+    SecondaryHover,
+    SecondaryActive,
+    Button,
+    ButtonHover,
+    ButtonActive,
+    ButtonForeground,
+    ButtonSecondary,
+    ButtonSecondaryHover,
+    ButtonSecondaryActive,
+    ButtonSecondaryForeground,
+    ButtonPrimary,
+    ButtonPrimaryHover,
+    ButtonPrimaryActive,
+    ButtonPrimaryForeground,
+    ButtonDanger,
+    ButtonDangerHover,
+    ButtonDangerActive,
+    ButtonDangerForeground,
+    ButtonInfo,
+    ButtonInfoHover,
+    ButtonInfoActive,
+    ButtonInfoForeground,
+    ButtonSuccess,
+    ButtonSuccessHover,
+    ButtonSuccessActive,
+    ButtonSuccessForeground,
+    ButtonWarning,
+    ButtonWarningHover,
+    ButtonWarningActive,
+    ButtonWarningForeground,
+    Danger,
+    DangerForeground,
+    DangerHover,
+    DangerActive,
+    Red,
+    RedLight,
+    Success,
+    SuccessForeground,
+    SuccessHover,
+    SuccessActive,
+    Green,
+    GreenLight,
+    Warning,
+    WarningForeground,
+    WarningHover,
+    WarningActive,
+    Yellow,
+    YellowLight,
+    Info,
+    InfoForeground,
+    InfoHover,
+    InfoActive,
+    Blue,
+    BlueLight,
+    List,
+    ListActive,
+    ListActiveBorder,
+    ListEven,
+    ListHead,
+    ListHover,
+    Table,
+    TableActive,
+    TableActiveBorder,
+    TableEven,
+    TableHead,
+    TableHeadForeground,
+    TableFoot,
+    TableFootForeground,
+    TableHover,
+    TableRowBorder,
+    Tab,
+    TabActive,
+    TabActiveForeground,
+    TabBar,
+    TabBarSegmented,
+    TabForeground,
+    Sidebar,
+    SidebarForeground,
+    SidebarAccent,
+    SidebarAccentForeground,
+    SidebarBorder,
+    SidebarPrimary,
+    SidebarPrimaryForeground,
+    Scrollbar,
+    ScrollbarThumb,
+    ScrollbarThumbHover,
+    Accordion,
+    GroupBox,
+    GroupBoxForeground,
+    Chart1,
+    Chart2,
+    Chart3,
+    Chart4,
+    Chart5,
+    ChartBullish,
+    ChartBearish,
+    DescriptionListLabel,
+    DescriptionListLabelForeground,
+    DragBorder,
+    DropTarget,
+    Popover,
+    PopoverForeground,
+    ProgressBar,
+    Skeleton,
+    SliderBar,
+    SliderThumb,
+    Switch,
+    SwitchThumb,
+    StatusBar,
+    StatusBarBorder,
+    TitleBar,
+    TitleBarBorder,
+    WindowBorder,
+    Magenta,
+    MagentaLight,
+    Cyan,
+    CyanLight,
+}
+
+/// A Theme Map swatch of `token`: the installed value of its field in
+/// `frame`, the showcase's frame, which the page builds once, labelled with
+/// the field's name and the value. Its id is `theme-map-<field>`.
+pub(crate) fn swatch(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    frame: &StyleRefinement,
+    token: ThemeToken,
+) -> Stateful<Div> {
+    let t = cx.theme();
+    // What the connector writes the colours under.
+    let native = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let value = info::theme_map::row(t, token).value;
+    let id = SharedString::from(format!("theme-map-{}", value.field));
+    color_swatch(value.field, value.value, frame)
+        .info(ui, id.clone(), info::theme_map::swatch(t, token, native))
+        .debug_selector(move || id.to_string())
+}
+
+/// The widgets whose control height the Theme Map states.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ControlWidget {
+    Button,
+    Input,
+}
+
+impl ControlWidget {
+    /// The widget's name in the model.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Button => "button",
+            Self::Input => "input",
+        }
+    }
+}
+
+/// What `geometry::control_height` computes for one widget of the
+/// installed theme, with the inputs it took, in logical pixels.
+pub(crate) struct ControlHeight {
+    pub(crate) height: f32,
+    pub(crate) min_height: f32,
+    pub(crate) font_size: f32,
+    pub(crate) line_height: f32,
+    pub(crate) padding_vertical: f32,
+}
+
+impl ControlHeight {
+    fn of(widget: ControlWidget, n: Native<'_>) -> Self {
+        let (min_height, font, border) = match widget {
+            ControlWidget::Button => {
+                let b = &n.resolved.button;
+                (b.min_height, &b.font, &b.border)
+            }
+            ControlWidget::Input => {
+                let i = &n.resolved.input;
+                (i.min_height, &i.font, &i.border)
+            }
+        };
+        Self {
+            height: geometry::control_height(min_height, font, border, n).as_f32(),
+            min_height,
+            font_size: font.size,
+            line_height: n.resolved.defaults.line_height,
+            padding_vertical: border.padding_vertical,
+        }
+    }
+}
+
+/// A Theme Map row stating what `geometry::control_height` computes for
+/// `widget`, or that nothing does before a native theme is installed.
+pub(crate) fn control_height(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    widget: ControlWidget,
+) -> Stateful<Div> {
+    let height = native_value(cx, |n| ControlHeight::of(widget, n));
+    let w = widget.name();
+    let text = match &height {
+        Some(h) => format!(
+            "{w}: {}px from geometry::control_height -- the larger of \
+             {w}.min_height {}px and ceil({w}.font.size {}px × text scale × \
+             line_height {}) + 2 × {w}.border.padding_vertical {}px",
+            h.height, h.min_height, h.font_size, h.line_height, h.padding_vertical,
+        ),
+        None => "no native theme installed".to_string(),
+    };
+    let row_info = info::theme_map::control_height(cx.theme(), widget, height.as_ref());
+    let row_info = if height.is_some() {
+        row_info.geometry("control_height")
+    } else {
+        row_info
+    };
+    Label::new(text)
+        .text_sm()
+        .info(ui, id, row_info)
+        .self_start()
+        .debug_selector(move || id.into())
 }

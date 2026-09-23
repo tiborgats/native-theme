@@ -192,6 +192,7 @@ fn widget_tooltip(
 }
 
 /// Format original native-theme font settings (in logical pixels) for display.
+#[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
 pub(crate) fn format_font_info(
     font: &native_theme::theme::ResolvedFontSpec,
     mono_font: &native_theme::theme::ResolvedFontSpec,

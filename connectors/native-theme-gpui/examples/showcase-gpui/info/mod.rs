@@ -16,6 +16,7 @@ pub mod layout;
 pub mod overlays;
 pub mod registry;
 pub mod text;
+pub mod theme_map;
 pub mod typography;
 pub use chrome::*;
 pub use registry::*;
@@ -301,6 +302,12 @@ pub fn native_info<W: Styled>(
 pub fn px_text(v: f32) -> String {
     let s = format!("{v:.2}");
     s.trim_end_matches('0').trim_end_matches('.').to_string()
+}
+
+/// An opacity as a percentage, the way `px_text` prints a size: the prose
+/// derived from the value, so it cannot say another.
+pub fn percent_text(opacity: f32) -> String {
+    format!("{}%", px_text(opacity * 100.))
 }
 
 /// `c` as `#rrggbb`, or as `#rrggbbaa` where it is not opaque: a colour

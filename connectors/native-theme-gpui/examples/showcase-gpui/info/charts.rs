@@ -5,7 +5,7 @@
 
 use gpui_component::theme::Theme;
 
-use super::{WidgetInfo, claim, px_text};
+use super::{WidgetInfo, claim, percent_text, px_text};
 use crate::demo::{
     AREA_FILL_OPACITY, PIE_INNER_RADIUS, PIE_OUTER_RADIUS, PIE_PAD_ANGLE, PIE_SLICES,
     SAMPLE_MONTHS, SAMPLE_MONTHS_AREA, SAMPLE_OHLC,
@@ -146,14 +146,15 @@ pub fn line_chart(t: &Theme) -> WidgetInfo {
 }
 
 /// The Charts page's AreaChart: one series, its line in `chart_3` over a
-/// fill of `chart_3` at 30%.
+/// fill of `chart_3` at `AREA_FILL_OPACITY`.
 pub fn area_chart(t: &Theme) -> WidgetInfo {
+    let fill = percent_text(AREA_FILL_OPACITY);
     let info = WidgetInfo::new("AreaChart")
         .color(claim("line", "chart_3", t.chart_3, "showcase"))
-        // The showcase asks for the series colour at 30%, and upstream
-        // paints the fill as given (plot/shape/area.rs:223).
+        // The showcase asks for the series colour at AREA_FILL_OPACITY, and
+        // upstream paints the fill as given (plot/shape/area.rs:223).
         .color(claim(
-            "fill, at 30%",
+            "fill, faded",
             "chart_3",
             t.chart_3.opacity(AREA_FILL_OPACITY),
             "showcase",
@@ -178,7 +179,7 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
         ))
         .not_themeable(
             "colour source",
-            "this demo picks chart_3, and chart_3 at 30% for the fill, through AreaChart::stroke and fill; without them a series is chart_2 over chart_2 at 40% (chart/area_chart.rs, AreaChart::paint), so chart_3 reaches a pixel only because an application asks for it",
+            format!("this demo picks chart_3, and chart_3 at {fill} for the fill, through AreaChart::stroke and fill; without them a series is chart_2 over chart_2 at 40% (chart/area_chart.rs, AreaChart::paint), so chart_3 reaches a pixel only because an application asks for it"),
         );
     let info = series_colours(plot_axes(info))
         .not_themeable(

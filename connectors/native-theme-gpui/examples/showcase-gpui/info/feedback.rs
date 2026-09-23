@@ -3,8 +3,11 @@
 use gpui::transparent_white;
 use gpui_component::{Colorize as _, theme::Theme};
 
-use super::{WidgetInfo, claim};
+use super::{WidgetInfo, claim, hsla_to_hex, percent_text};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
+
+/// The opacity a hovered Tag paints at: upstream's literal (tag.rs:265).
+const TAG_HOVER_OPACITY: f32 = 0.9;
 
 /// An `Alert` of `severity` at the default Size, a `banner` or not. The
 /// caller adds what the Alert says.
@@ -450,16 +453,40 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
     } else {
         name.to_string()
     });
-    let info = if outline {
-        info.color(outlined_text)
-            .color(edge)
-            .not_themeable("outlined fill", "transparent_white(), a literal: an outlined Tag drops its variant background entirely, keeping only the border and the text (tag.rs, Tag::render)")
+    let (info, painted) = if outline {
+        (
+            info.not_themeable("outlined fill", "transparent_white(), a literal: an outlined Tag drops its variant background entirely, keeping only the border and the text (tag.rs, Tag::render)"),
+            vec![outlined_text, edge],
+        )
     } else {
-        info.color(fill).color(text).color(edge)
+        (info, vec![fill, text, edge])
     };
-    info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+    // gpui multiplies a hovered element's opacity into every colour painted
+    // inside it (gpui-pre window.rs:4513-4520 for fills and edges, :4657 and
+    // :4706 for glyphs), so these are what a hovered Tag paints.
+    let hovered: Vec<String> = painted
+        .iter()
+        .map(|c| {
+            format!(
+                "{} {}",
+                c.role,
+                hsla_to_hex(c.value.opacity(TAG_HOVER_OPACITY))
+            )
+        })
+        .collect();
+    painted
+        .into_iter()
+        .fold(info, WidgetInfo::color)
+        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("padding", "px_2p5 / py_1 at the default Size -- rems, so the platform's font -- and settable: Tag applies the caller's refinement last (tag.rs, Tag::render). native-theme states no tag widget. Our gap")
-        .not_themeable("hover", "the whole Tag fades to 90% opacity, a literal, fill, text and edge alike (tag.rs, Tag::render)")
+        .not_themeable(
+            "hover",
+            format!(
+                "the whole Tag fades to {} opacity, a literal, everything it paints alike: hovered, it paints {} (tag.rs, Tag::render)",
+                percent_text(TAG_HOVER_OPACITY),
+                hovered.join(", ")
+            ),
+        )
         .instance("label", label.to_string())
 }
 

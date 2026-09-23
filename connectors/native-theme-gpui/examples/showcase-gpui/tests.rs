@@ -25,10 +25,10 @@ use crate::chrome::menus;
 use crate::demo::AREA_FILL_OPACITY;
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
-    hsla_to_hex, native_info,
+    hsla_to_hex, native_info, percent_text, px_text,
 };
 use crate::inspector::InspectorTab;
-use crate::support::{CAROUSEL_SLIDES, native_geometry, native_value};
+use crate::support::{CAROUSEL_SLIDES, load_all_icons, native_geometry, native_value};
 use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
     BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
@@ -2318,7 +2318,8 @@ fn every_chart_shows_its_own_info(cx: &mut TestAppContext) {
 }
 
 /// The AreaChart's fill swatch shows the colour upstream paints: the series
-/// colour at the 30% the showcase asks for, not the colour at full.
+/// colour at the `AREA_FILL_OPACITY` the showcase asks for, not the colour
+/// at full.
 #[gpui::test]
 fn the_area_charts_fill_swatch_shows_the_painted_colour(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -2331,7 +2332,8 @@ fn the_area_charts_fill_swatch_shows_the_painted_colour(cx: &mut TestAppContext)
     assert_eq!(
         fill.map(|c| c.value),
         Some(painted),
-        "the AreaChart's fill swatch is not chart_3 at 30%: {info:?}"
+        "the AreaChart's fill swatch is not chart_3 at {}: {info:?}",
+        percent_text(AREA_FILL_OPACITY)
     );
 }
 
@@ -2459,28 +2461,7 @@ fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
     let tag = bounds_of(&mut cx, FEEDBACK_TAG_PRIMARY);
     hover(&mut cx, point(tag.left() - px(40.), tag.center().y));
     draw(&mut cx);
-    let painted = cx.update(|window, _cx| {
-        let tag = tag.scale(window.scale_factor());
-        // gpui paints a bordered box as its fill and, apart, its border
-        // strips over a transparent fill (gpui-pre window.rs,
-        // Window::paint_quad), so the fill is the largest opaque quad
-        // inside the Tag's bounds.
-        window
-            .painted_quads()
-            .into_iter()
-            .filter(|q| {
-                !q.background.is_transparent()
-                    && q.bounds.left() >= tag.left()
-                    && q.bounds.top() >= tag.top()
-                    && q.bounds.right() <= tag.right()
-                    && q.bounds.bottom() <= tag.bottom()
-            })
-            .max_by(|a, b| {
-                let area = |q: &gpui::Quad| q.bounds.size.width.0 * q.bounds.size.height.0;
-                area(a).total_cmp(&area(b))
-            })
-            .and_then(|q| q.background.as_solid())
-    });
+    let painted = painted_fill(&mut cx, FEEDBACK_TAG_PRIMARY);
     assert!(
         claimed.is_some(),
         "the Primary Tag's info claims no bg: {info:?}"
@@ -2488,6 +2469,198 @@ fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
     assert_eq!(
         painted, claimed,
         "the fill painted inside the Primary Tag is not its bg claim"
+    );
+}
+
+/// The fill gpui painted last frame inside the element tagged `selector`.
+///
+/// gpui paints a bordered box as its fill and, apart, its border strips over
+/// a transparent fill (gpui-pre window.rs, Window::paint_quad), so the fill
+/// is the largest quad inside the element's bounds that is not transparent.
+fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
+    let bounds = bounds_of(cx, selector);
+    cx.update(|window, _cx| {
+        let bounds = bounds.scale(window.scale_factor());
+        window
+            .painted_quads()
+            .into_iter()
+            .filter(|q| {
+                !q.background.is_transparent()
+                    && q.bounds.left() >= bounds.left()
+                    && q.bounds.top() >= bounds.top()
+                    && q.bounds.right() <= bounds.right()
+                    && q.bounds.bottom() <= bounds.bottom()
+            })
+            .max_by(|a, b| {
+                let area = |q: &gpui::Quad| q.bounds.size.width.0 * q.bounds.size.height.0;
+                area(a).total_cmp(&area(b))
+            })
+            .and_then(|q| q.background.as_solid())
+    })
+}
+
+/// A hovered Tag fades to 90% (tag.rs:265), and its info names the fill
+/// that paints -- the painted value, not the token it fades.
+#[gpui::test]
+fn a_hovered_tags_info_names_its_painted_fill(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Feedback);
+    // `settle_on` leaves the pointer on the Tag, so this frame is hovered.
+    let info = settle_on(&mut cx, &showcase, FEEDBACK_TAG_PRIMARY);
+    let painted = painted_fill(&mut cx, FEEDBACK_TAG_PRIMARY);
+    let hover = info.as_ref().and_then(|info| {
+        info.not_themeable
+            .iter()
+            .find(|n| n.what == "hover")
+            .map(|n| n.text.clone())
+    });
+    assert!(
+        painted.is_some(),
+        "nothing was painted inside the Primary Tag"
+    );
+    assert!(
+        painted.is_some_and(|fill| hover
+            .as_deref()
+            .is_some_and(|text| text.contains(&hsla_to_hex(fill)))),
+        "the hovered Primary Tag paints {:?}, which its hover note does not name: {hover:?}",
+        painted.map(hsla_to_hex)
+    );
+}
+
+/// The ids and debug selectors of three of the Theme Map's swatches and of
+/// its Button control-height row. The page forms a swatch's from the name
+/// of the token it shows (pages/theme_map.rs).
+const THEME_MAP_BACKGROUND: &str = "theme-map-background";
+const THEME_MAP_PRIMARY_HOVER: &str = "theme-map-primary_hover";
+const THEME_MAP_DROP_TARGET: &str = "theme-map-drop_target";
+const THEME_MAP_CONTROL_HEIGHT_BUTTON: &str = "theme-map-control-height-button";
+
+/// The Theme Map reports each row of its table (spec §4.3.2): two swatches
+/// each show their own token, and the connector line that writes it.
+#[gpui::test]
+fn two_swatches_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::ThemeMap);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (THEME_MAP_BACKGROUND, "ThemeColor · background"),
+            (THEME_MAP_PRIMARY_HOVER, "ThemeColor · primary_hover"),
+        ],
+    );
+    for (i, text) in texts.iter().enumerate() {
+        assert!(
+            !texts.iter().skip(i + 1).any(|other| other == text),
+            "two swatches show the same info: {texts:?}"
+        );
+    }
+    for text in &texts {
+        assert!(
+            text.as_deref()
+                .is_some_and(|t| t.contains("(native-theme-gpui/colors.rs:")),
+            "a swatch does not cite the connector line that writes it: {text:?}"
+        );
+    }
+}
+
+/// A swatch paints the value its info claims, translucent or not:
+/// drop_target is primary at 20%, and the swatch shows that, not primary.
+#[gpui::test]
+fn a_swatchs_painted_fill_is_its_value_claim(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::ThemeMap);
+    let info = settle_on(&mut cx, &showcase, THEME_MAP_DROP_TARGET);
+    let claimed = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role == "value"))
+        .map(|c| c.value);
+    let installed = cx.update(|_window, cx| Theme::global(cx).drop_target);
+    assert_eq!(
+        claimed,
+        Some(installed),
+        "the drop_target swatch does not claim the installed drop_target: {info:?}"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, THEME_MAP_DROP_TARGET),
+        claimed,
+        "the fill painted in the drop_target swatch is not its value claim"
+    );
+}
+
+/// The Theme Map's control-height row reports what
+/// `geometry::control_height` computes for a Button, through the geometry
+/// line the table states.
+#[gpui::test]
+fn a_control_height_row_reports_the_builders_value(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::ThemeMap);
+    let info = settle_on(&mut cx, &showcase, THEME_MAP_CONTROL_HEIGHT_BUTTON);
+    let height = cx.update(|_window, cx| {
+        native_value(cx, |n| {
+            let b = &n.resolved.button;
+            geometry::control_height(b.min_height, &b.font, &b.border, n).as_f32()
+        })
+    });
+    assert!(height.is_some(), "kde-breeze installed no native theme");
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some("Label · control height, button")
+    );
+    let config = |what: &str| {
+        info.as_ref().and_then(|info| {
+            info.config
+                .iter()
+                .find(|n| n.what == what)
+                .map(|n| n.text.clone())
+        })
+    };
+    assert!(
+        config("geometry").is_some_and(|g| g.starts_with("geometry::control_height:")),
+        "the row carries no geometry::control_height line: {info:?}"
+    );
+    assert!(
+        height
+            .is_some_and(|h| config("height")
+                .is_some_and(|text| text.starts_with(&format!("{}px", px_text(h))))),
+        "the row's height is not geometry::control_height's {height:?}: {info:?}"
+    );
+}
+
+/// `--icon-theme` names the freedesktop theme the icons load from, and they
+/// load from it: applying the override reloads them, so the Icons page's
+/// label and the icons it shows agree.
+#[gpui::test]
+fn the_icon_theme_override_reloads_the_icons(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let theme = "hicolor";
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.set_icon_theme_override(theme.to_string(), window, cx);
+        });
+    });
+    cx.run_until_parked();
+    let (loaded, expected) = read(&mut cx, &showcase, |this, _cx| {
+        let effective = this
+            .icon_set_choice
+            .effective_icon_set(this.current_icon_set);
+        let fc = this.original_font.color;
+        (
+            this.loaded_icons.clone(),
+            load_all_icons(
+                effective,
+                this.icon_set_choice.freedesktop_theme(),
+                Some(theme),
+                Some([fc.r, fc.g, fc.b]),
+            ),
+        )
+    });
+    assert!(
+        loaded == expected,
+        "the icons on show are not the ones --icon-theme {theme} loads"
     );
 }
 

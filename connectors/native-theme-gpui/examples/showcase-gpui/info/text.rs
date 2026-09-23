@@ -9,7 +9,7 @@ use crate::demo::{LabelKind, TextSize};
 
 /// A `Label` of `variant`, with what every Label sets whatever it is asked
 /// for: the line height Label::render gives its text.
-fn label_of(variant: impl Into<String>) -> WidgetInfo {
+pub(super) fn label_of(variant: impl Into<String>) -> WidgetInfo {
     WidgetInfo::new("Label").variant(variant).not_themeable(
         "line height",
         "rems(1.25), a literal, so it follows the platform's font (label.rs, Label::render)",

@@ -82,6 +82,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
         include_str!("../examples/showcase-gpui/info/text.rs"),
     ),
     (
+        "info/theme_map.rs",
+        include_str!("../examples/showcase-gpui/info/theme_map.rs"),
+    ),
+    (
         "info/typography.rs",
         include_str!("../examples/showcase-gpui/info/typography.rs"),
     ),

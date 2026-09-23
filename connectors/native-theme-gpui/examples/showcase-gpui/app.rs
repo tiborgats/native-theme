@@ -514,6 +514,20 @@ impl Showcase {
         }
     }
 
+    /// Load the freedesktop icons from `theme` from now on: what
+    /// `--icon-theme` asks for.
+    pub(crate) fn set_icon_theme_override(
+        &mut self,
+        theme: String,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.icon_theme_override = Some(theme);
+        // The icons on show were loaded before the override, so the page
+        // would name this theme over another theme's icons.
+        self.reload_icons(window, cx);
+    }
+
     /// Load the icon set the icon-set Select names `display`, as the Select
     /// does when it is confirmed.
     pub(crate) fn select_icon_set(
@@ -527,10 +541,6 @@ impl Showcase {
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
-        let default_theme = self
-            .icon_set_choice
-            .freedesktop_theme()
-            .map(|s| s.to_string());
         // The page tells gpui-component's own icons by this name, which
         // `effective` (Lucide, for the built-in entry) would not give.
         self.icon_set_name = if is_gpui_builtin {
@@ -545,10 +555,24 @@ impl Showcase {
         } else {
             Some(effective)
         };
+        self.reload_icons(window, cx);
+    }
+
+    /// Load the icons of the chosen set -- from the `--icon-theme` override
+    /// where one is set -- and rebuild what the Icons page draws from them.
+    fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let effective = self
+            .icon_set_choice
+            .effective_icon_set(self.current_icon_set);
+        let default_theme = self
+            .icon_set_choice
+            .freedesktop_theme()
+            .map(|s| s.to_string());
         let cli_ref = self.icon_theme_override.as_deref();
         let fc = self.original_font.color;
         let fg_rgb = Some([fc.r, fc.g, fc.b]);
-        if !is_gpui_builtin {
+        // gpui-builtin draws gpui-component's own icons: nothing to load.
+        if self.icon_set_enum.is_some() {
             self.loaded_icons =
                 load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
         }

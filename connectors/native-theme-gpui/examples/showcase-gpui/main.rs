@@ -879,7 +879,7 @@ fn main() {
 
                     // Override icon theme if --icon-theme was specified
                     if let Some(ref theme_name) = cli_args.icon_theme {
-                        s.icon_theme_override = Some(theme_name.clone());
+                        s.set_icon_theme_override(theme_name.clone(), window, cx);
                     }
 
                     // Override icon set if --icon-set was specified
