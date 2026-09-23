@@ -35,7 +35,7 @@ Two things turn these missing values into zero spacing:
 - **The resolver** fills a missing widget padding with `0.0` and reports nothing (native-theme `resolve/validate_helpers.rs:283-284`, `:337-338`).
 - **The connector** then applies that 0, which overrides the toolkit's own padding. gpui-component's StatusBar, for instance, has `px_2 py_1` (status_bar.rs:89-90).
 
-The same mechanism explains Task 7's two findings:
+The same mechanism explains the two findings of the showcase-app plan's Task 7 (`geometry::toolbar`):
 
 - The toolbar padding is 0 on every preset. §2.13 documents KDE 6, GNOME 6, macOS 8 (measured) and Windows 4 left / 0 right.
 - KDE's `toolbar.bar_height = 40` has no source. §2.13 says KDE's toolbar "sizes to content".
