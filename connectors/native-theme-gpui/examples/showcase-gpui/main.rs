@@ -305,6 +305,13 @@ pub(crate) const PREF_REDUCE_TRANSPARENCY: &str = "pref-reduce-transparency";
 /// hovers.
 pub(crate) const BUTTONS_PRIMARY: &str = "buttons-primary";
 pub(crate) const BUTTONS_DANGER: &str = "buttons-danger";
+/// The id and debug selector of the Buttons page's Text Button, whose
+/// swatches `a_dimmed_swatch_shows_the_painted_colour` reads.
+pub(crate) const BUTTONS_TEXT: &str = "buttons-text";
+/// The id and debug selector of the Buttons page's disabled Secondary Button.
+pub(crate) const BUTTONS_DISABLED_SECONDARY: &str = "buttons-disabled-secondary";
+/// The id and debug selector of the Buttons page's first section heading.
+pub(crate) const BUTTONS_HEADING_VARIANTS: &str = "buttons-heading-variants";
 
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside

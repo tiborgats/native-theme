@@ -29,16 +29,16 @@ use crate::info::{
 use crate::inspector::InspectorTab;
 use crate::support::{CAROUSEL_SLIDES, native_geometry, native_value};
 use crate::{
-    BUTTONS_DANGER, BUTTONS_PRIMARY, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR,
-    CHROME_HANDLE_NAV, CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR,
-    CHROME_TOOLBAR, CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL,
-    CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
-    INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
-    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
-    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
-    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
-    TREE_DEMO, WINDOW_SIZE,
+    BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
+    BUTTONS_TEXT, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
+    CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
+    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO,
+    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -1629,6 +1629,65 @@ fn two_buttons_of_different_variants_show_different_infos(cx: &mut TestAppContex
     assert!(
         texts.first() != texts.get(1),
         "the Primary and the Danger Button show the same info: {texts:?}"
+    );
+}
+
+/// Settle the pointer on the element tagged `selector` and return the info
+/// the inspector then shows.
+fn settle_on(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    selector: &'static str,
+) -> Option<WidgetInfo> {
+    let at = bounds_of(cx, selector).center();
+    hover(cx, at);
+    settle(cx);
+    draw(cx);
+    read(cx, showcase, |this, cx| {
+        this.info_ui.read(cx).shown().map(|info| (**info).clone())
+    })
+}
+
+/// A swatch shows the colour upstream paints, not the token it dims: the
+/// Text Button's label is foreground at 90% (button/button.rs:994).
+#[gpui::test]
+fn a_dimmed_swatch_shows_the_painted_colour(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Buttons);
+    let info = settle_on(&mut cx, &showcase, BUTTONS_TEXT);
+    let painted = cx.update(|_window, cx| Theme::global(cx).foreground.opacity(0.9));
+    let text = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role.starts_with("text")));
+    assert_eq!(
+        text.map(|c| c.value),
+        Some(painted),
+        "the Text Button's text swatch is not foreground at 90%: {info:?}"
+    );
+}
+
+/// The disabled row's Secondary Button is a Secondary Button, and says so.
+#[gpui::test]
+fn the_disabled_secondary_button_is_secondary(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Buttons);
+    let info = settle_on(&mut cx, &showcase, BUTTONS_DISABLED_SECONDARY);
+    assert_eq!(
+        info.map(|info| info.title()).as_deref(),
+        Some("Button · Secondary, disabled")
+    );
+}
+
+/// A section heading is page text, and reports itself as a Label (spec
+/// §5.3).
+#[gpui::test]
+fn a_section_heading_reports_itself(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Buttons);
+    let info = settle_on(&mut cx, &showcase, BUTTONS_HEADING_VARIANTS);
+    assert_eq!(
+        info.map(|info| info.title()).as_deref(),
+        Some("Label · heading")
     );
 }
 

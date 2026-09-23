@@ -20,6 +20,7 @@ use gpui_component::{
     command::{Command, CommandGroup, CommandState},
     dialog::{Dialog, DialogDescription, DialogTitle},
     h_flex,
+    label::Label,
     link::Link,
     menu::{AppMenuBar, PopupMenu},
     select::{SearchableVec, Select, SelectState},
@@ -36,7 +37,7 @@ use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geomet
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
-use crate::support::{PresetDelegate, native_geometry, native_icon, native_value, with_gap};
+use crate::support::{PresetDelegate, native_icon, native_value, section, with_gap};
 use crate::{
     CHROME_APP_MENU_BAR, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
     OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PREF_HIGH_CONTRAST,
@@ -783,6 +784,46 @@ pub(crate) fn alert(
 }
 
 // ---------------------------------------------------------------------------
+// Page text (spec §5.3)
+// ---------------------------------------------------------------------------
+
+/// A section heading reading `text`. `id` is its info's id and its debug
+/// selector.
+pub(crate) fn heading(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: impl Into<SharedString>,
+) -> Stateful<Div> {
+    section(text)
+        .info(ui, id, info::text::heading(cx.theme()))
+        // As wide as its text, not its column: the space beside a heading
+        // is not the heading.
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// A caption reading `text`, in the muted colour. `id` is its info's id and
+/// its debug selector.
+#[allow(
+    dead_code,
+    reason = "the Buttons page has no caption; the pages that do use it as they report their instances (plan Tasks 15-23)"
+)]
+pub(crate) fn caption(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: impl Into<SharedString>,
+) -> Stateful<Div> {
+    Label::new(text)
+        .text_sm()
+        .text_color(cx.theme().muted_foreground)
+        .info(ui, id, info::text::caption(cx.theme()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+// ---------------------------------------------------------------------------
 // The Buttons page
 // ---------------------------------------------------------------------------
 
@@ -869,7 +910,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         icon,
     } = spec;
     // What `native_info` applies the builder under.
-    let styled = native_geometry(cx, geometry::button).is_some();
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut button_info =
         info::buttons::button(cx.theme(), kind, state, icon.is_some(), None, styled);
     let button = native_info(

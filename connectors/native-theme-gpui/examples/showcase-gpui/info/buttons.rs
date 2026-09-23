@@ -120,16 +120,16 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
             "gpui-component/button/button.rs:993",
         )],
         ButtonKind::Text => vec![claim(
-            "text",
+            "text, foreground at 90%",
             "foreground",
-            t.foreground,
+            t.foreground.opacity(0.9),
             "gpui-component/button/button.rs:994",
         )],
         ButtonKind::PrimaryOutline => vec![
             claim(
-                "fill",
+                "fill, primary at 10%",
                 "primary",
-                t.primary,
+                t.primary.opacity(0.1),
                 "gpui-component/button/button.rs:871",
             ),
             claim(
@@ -279,23 +279,23 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "gpui-component/button/button.rs:1140",
             ),
             claim(
-                "pressed text",
+                "pressed text, foreground at 70%",
                 "foreground",
-                t.foreground,
+                t.foreground.opacity(0.7),
                 "gpui-component/button/button.rs:1216",
             ),
         ],
         ButtonKind::PrimaryOutline => vec![
             claim(
-                "hover bg",
+                "hover bg, primary_hover at 20%",
                 "primary_hover",
-                t.primary_hover,
+                t.primary_hover.opacity(0.2),
                 "gpui-component/button/button.rs:874",
             ),
             claim(
-                "active bg",
+                "active bg, primary_active at 40%",
                 "primary_active",
-                t.primary_active,
+                t.primary_active.opacity(0.4),
                 "gpui-component/button/button.rs:877",
             ),
         ],
@@ -361,6 +361,15 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
             t.button_primary.opacity(0.15),
             "gpui-component/button/button.rs:1276",
         )),
+        // `opacity(1.5)`: gpui clamps the factor to 1 (gpui-pre
+        // color.rs:637-644), so the fill is the token as it stands, in both
+        // modes -- the arm does not branch on the mode.
+        ButtonKind::Secondary => Some(claim(
+            "bg, button_secondary at 150% (clamped to 100%)",
+            "button_secondary",
+            t.button_secondary.opacity(1.5),
+            "gpui-component/button/button.rs:1281",
+        )),
         ButtonKind::Danger => Some(claim(
             "bg, at 15%",
             "button_danger",
@@ -382,6 +391,32 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
             "gpui-component/theme/mod.rs:383",
         )),
         _ => None,
+    }
+}
+
+/// What a loading Button of `kind` paints: its colours at rest, faded with
+/// the whole element to 80% (button/button.rs:782). It is not interactive,
+/// so it takes no hover or press style (:493-495, :669).
+///
+/// Only the variant the page shows loading has an arm: read another's rest
+/// arms before the page loads one.
+fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
+    match kind {
+        ButtonKind::Primary => vec![
+            claim(
+                "bg, at 80% (a loading Button fades)",
+                "button_primary",
+                t.button_primary.opacity(0.8),
+                "gpui-component/button/button.rs:936",
+            ),
+            claim(
+                "text, at 80% (a loading Button fades)",
+                "button_primary_foreground",
+                t.button_primary_foreground.opacity(0.8),
+                "gpui-component/button/button.rs:954",
+            ),
+        ],
+        _ => Vec::new(),
     }
 }
 
@@ -422,12 +457,11 @@ pub fn button(
     let info = WidgetInfo::new("Button").variant(variant);
     let info = match state {
         ButtonState::Idle => colours(info, t, kind, styled),
-        // A loading Button is not interactive, so it takes no hover or
-        // press style (button/button.rs:493-495, 669).
-        ButtonState::Loading => at_rest(t, kind).into_iter().fold(info, WidgetInfo::color),
+        ButtonState::Loading => loading(t, kind).into_iter().fold(info, WidgetInfo::color),
         ButtonState::Disabled => {
             let info = match kind {
                 ButtonKind::Primary | ButtonKind::Danger => info.not_themeable("fill", "the variant's own token at 0.15, a literal -- not 0.5, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
+                ButtonKind::Secondary => info.not_themeable("fill", "the variant's own token at 1.5, a literal that gpui clamps to 1 (color.rs, Hsla::opacity), so a disabled Secondary keeps its fill while a disabled Primary or Danger fades to 0.15 -- and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
                 ButtonKind::Default => info.not_themeable("fill", "input_background() at 0.5, a literal, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
                 _ => info,
             };
@@ -474,7 +508,7 @@ pub fn button(
             .not_themeable("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)")
             .not_themeable("underline", "always on for this variant (button/button.rs, ButtonVariant::underline)"),
         ButtonKind::Text => info
-            .not_themeable("opacity", "the one variant that dims rather than recolours: foreground at 90% idle and 70% pressed, full strength on hover (button/button.rs, ButtonVariant::text_color, hovered, active). The swatches show foreground itself, since the model states no dimmed copy")
+            .not_themeable("opacity", "the one variant that dims rather than recolours: foreground at 90% idle and 70% pressed, full strength on hover (button/button.rs, ButtonVariant::text_color, hovered, active). Those are literals, and the model states no dimmed copy; the swatches show the dimmed colours upstream paints")
             .not_themeable("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"),
         ButtonKind::PrimaryOutline => info.not_themeable("outline fill opacity", "0.1 at rest, 0.2 hovered, 0.4 pressed -- three literals, so the platform sets the hue and gpui-component sets how far it is faded (button/button.rs, ButtonVariant::outline_background)"),
         ButtonKind::Primary
