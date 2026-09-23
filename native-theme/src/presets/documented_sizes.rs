@@ -225,7 +225,7 @@ const ROWS: &[Row] = &[
     row(Windows, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1235, 1236], "11; mouse context 4 top / 5 bottom"),
     row(Windows, "tooltip", trbl(6.0, 9.0, 8.0, 9.0), &[1257, 1258], "ToolTipBorderPadding=9,6,9,8"),
     row(Windows, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Windows, "tab", axes(3.0, 8.0), &[1318, 1319], "without-close-button context: 8/8; 3"),
+    row(Windows, "tab", axes(3.0, 8.0), &[1318, 1319], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3"),
     row(Windows, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
     Row {
         platform: Windows,
@@ -315,6 +315,47 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
         _ => return None,
     };
     Some(border.padding)
+}
+
+/// The in-scope sizing keys a preset states for one widget, unresolved: the
+/// four padding sides, and for the toolbar `bar_height` and `item_gap`.
+fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<[Option<f32>; 6]> {
+    let border = match widget {
+        "window" => &v.window.border,
+        "button" => &v.button.border,
+        "input" => &v.input.border,
+        "checkbox" => &v.checkbox.border,
+        "menu" => &v.menu.border,
+        "tooltip" => &v.tooltip.border,
+        "progress_bar" => &v.progress_bar.border,
+        "tab" => &v.tab.border,
+        "sidebar" => &v.sidebar.border,
+        "toolbar" => &v.toolbar.border,
+        "status_bar" => &v.status_bar.border,
+        "list" => &v.list.border,
+        "popover" => &v.popover.border,
+        "dialog" => &v.dialog.border,
+        "combo_box" => &v.combo_box.border,
+        "segmented_control" => &v.segmented_control.border,
+        "card" => &v.card.border,
+        "expander" => &v.expander.border,
+        _ => return None,
+    };
+    let side =
+        |f: fn(&crate::model::border::WidgetBorderSpec) -> Option<f32>| border.as_ref().and_then(f);
+    let (bar_height, item_gap) = if widget == "toolbar" {
+        (v.toolbar.bar_height, v.toolbar.item_gap)
+    } else {
+        (None, None)
+    };
+    Some([
+        side(|b| b.padding_top),
+        side(|b| b.padding_right),
+        side(|b| b.padding_bottom),
+        side(|b| b.padding_left),
+        bar_height,
+        item_gap,
+    ])
 }
 
 fn toolbar_field(theme: &ResolvedTheme, field: &str) -> Option<Option<f32>> {
@@ -488,4 +529,61 @@ fn every_citation_names_its_platform_facts_row() {
             );
         }
     }
+}
+
+/// The live resolution merges the `-live` preset under the reader constants,
+/// so a `-live` value a reader overrides never reaches the gate above. Each
+/// full preset and its `-live` twin therefore state the same padding sides,
+/// `bar_height` and `item_gap`, in both variants.
+#[test]
+fn full_and_live_presets_state_the_same_sizes() {
+    const KEYS: [&str; 6] = [
+        "border.padding_top",
+        "border.padding_right",
+        "border.padding_bottom",
+        "border.padding_left",
+        "bar_height",
+        "item_gap",
+    ];
+    let mut failures = Vec::new();
+    for platform in Platform::ALL {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let variant = |name: &str| {
+                Theme::preset(name)
+                    .and_then(|t| t.into_variant(mode))
+                    .map_err(|e| format!("{name} {mode:?}: {e}"))
+            };
+            let (full, live) = match (variant(platform.preset()), variant(platform.live_preset())) {
+                (Ok(f), Ok(l)) => (f, l),
+                (f, l) => {
+                    failures.extend(f.err().into_iter().chain(l.err()));
+                    continue;
+                }
+            };
+            for widget in WIDGETS {
+                let (Some(f), Some(l)) = (stated_sizes(&full, widget), stated_sizes(&live, widget))
+                else {
+                    failures.push(format!("unknown widget `{widget}`"));
+                    continue;
+                };
+                for (i, key) in KEYS.iter().enumerate() {
+                    if f[i] != l[i] {
+                        failures.push(format!(
+                            "{widget}.{key} {mode:?}: {} states {:?}, {} states {:?}",
+                            platform.preset(),
+                            f[i],
+                            platform.live_preset(),
+                            l[i],
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} full/live disagreements:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }

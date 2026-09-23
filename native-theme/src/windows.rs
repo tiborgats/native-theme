@@ -226,7 +226,7 @@ pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.progress_bar.track_height = Some(4.0);
     variant.tab.min_height = Some(32.0);
     let border = variant.tab.border.get_or_insert_default();
-    // platform-facts.md:1318 (§2.11): 8/8 in the without-close-button context
+    // platform-facts.md:1318 (§2.11): without-close-button context, 8,3,8,3
     border.padding_left = Some(8.0);
     border.padding_right = Some(8.0);
     let border = variant.menu.border.get_or_insert_default();

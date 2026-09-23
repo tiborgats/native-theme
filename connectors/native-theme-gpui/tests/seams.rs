@@ -656,7 +656,9 @@ const TRIGGER_TALLER_THAN_STATED: &[(&str, &str)] =
 /// means, not the requirement: a control with no stated vertical padding whose
 /// text exactly fills it at scale 2 (windows-11's list row) is correct.
 #[gpui::test]
-fn single_line_controls_are_their_stated_height_and_grow_with_the_text(cx: &mut TestAppContext) {
+fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
+    cx: &mut TestAppContext,
+) {
     type Case = (
         &'static str,
         Build,

@@ -190,7 +190,7 @@ hover_background = "#0000000a"
 
 
 [light.tab.border]
-# platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context 8/8; 3
+# platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [light.menu]
@@ -568,7 +568,7 @@ hover_background = "#ffffff0f"
 
 
 [dark.tab.border]
-# platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context 8/8; 3
+# platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [dark.menu]

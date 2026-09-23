@@ -1315,7 +1315,7 @@ have no platform limit — preset values are our defaults.
 | `bar_background`    | ← `defaults.background_color` | ← `defaults.background_color`| ← `defaults.background_color` | ← `defaults.background_color` |
 | `min_width`         | **(none)** — sizes to label | **(none)** — sizes to label | `TabBar_TabMinWidth` = 80  | **(Adwaita CSS)**: none |
 | `min_height`        | NSTabView: 24       | WinUI3: 32          | `TabBar_TabMinHeight` = 30 | **(Adwaita CSS)**: 30  |
-| `border.padding_horizontal`| NSTabView: 12       | WinUI3: 8 left / 4 right | `TabBar_TabMarginWidth` = 8| **(Adwaita CSS)**: 12  |
+| `border.padding_horizontal`| NSTabView: 12       | WinUI3, per context: without close button 8 left / 8 right (`TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3`), with close button 8 left / 4 right (`TabViewItemHeaderPaddingWithCloseButton=8,3,4,3`) — the `CloseButtonCollapsed` / `CloseButtonVisible` visual states pick one ([TabView_themeresources.xaml:253-254](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/TabView/TabView_themeresources.xaml#L253-L254); [TabView.xaml:493-500](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/TabView/TabView.xaml#L493-L500)) | `TabBar_TabMarginWidth` = 8| **(Adwaita CSS)**: 12  |
 | `border.padding_vertical`  | 4 **(measured)** (24−16)/2 | WinUI3: 3      | `TabBar_TabMarginHeight` = 4| **(Adwaita CSS)**: 3 (CSS `padding: 3px 12px`; visual 8px from min-height: 30 centering) |
 | `border.color` | **(none)** — CoreUI bezel is a multi-color composite, no single extractable color | **(Fluent)** selected: `CardStrokeColorDefault` gradient (1px top/sides); unselected: transparent | **(Breeze src)** `KColorUtils::mix(bg, WindowText)` blended stroke | Notebook: none per-tab (header has 1px `$border_color`); AdwTabBar: none (high-contrast only) |
 | `border.line_width` | **(none)** — CoreUI bezel is a multi-stroke composite, no single line width | 1 (`TabViewItemBorderThickness`; selected only: `TabViewSelectedItemBorderThickness=1,1,1,0`) | `PenWidth::Frame` = 1.001 | Notebook: 0; AdwTabBar: 0 (high-contrast: 1) |
@@ -1568,12 +1568,12 @@ rotating `process-working-symbolic` icon.
 | `active_text_color`| `alternateSelectedControlTextColor` | **(none)** | `[Colors:Selection] ForegroundNormal`    | **(none)** |
 | `segment_height`  | NSSegmentedControl: 24        | **(none)**     | `TabBar_TabMinHeight` = 30 (tab bar as proxy) | **(none)** |
 | `separator_width` | 1px                           | **(none)**     | `TabBar_TabOverlap` = 1  | **(none)**          |
-| `border.padding_horizontal` | ~8–10px **(measured)**     | **(none)**     | `TabBar_TabMarginWidth` = 8 | **(none)**       |
+| `border.padding_horizontal` | ~8–10px **(measured)**     | **(none)**     | `TabBar_TabMarginWidth` = 8 (tab bar as proxy — not a platform value) | **(none)**       |
 | `border.corner_radius`          | ← `defaults.border.corner_radius`          | **(none)**     | ← `defaults.border.corner_radius`     | **(none)**          |
 | `border.color` | NSSegmentedControl border | **(none)** | ← `defaults.border.color` | **(none)** |
 | `border.line_width` | ← `defaults.border.line_width` | **(none)** | ← `defaults.border.line_width` | **(none)** |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** | **(none)** — no shadow | **(none)** |
-| `border.padding_vertical` | ~3px **(measured)** | **(none)** | `TabBar_TabMarginHeight` = 4 | **(none)** |
+| `border.padding_vertical` | ~3px **(measured)** | **(none)** | `TabBar_TabMarginHeight` = 4 (tab bar as proxy — not a platform value) | **(none)** |
 | `disabled_opacity`  | ← `defaults.disabled_opacity`| **(none)** | ← `defaults.disabled_opacity`     | **(none)** |
 
 macOS is the only platform with a first-class segmented control.
