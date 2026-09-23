@@ -4,7 +4,7 @@
 use gpui_component::theme::Theme;
 
 use super::{WidgetInfo, claim, px_text};
-use crate::demo::{DecorationKind, HeadingLevel, WeightKind};
+use crate::demo::{DecorationKind, HeadingLevel, TextSize, WeightKind};
 
 /// One level of the showcase's own heading ladder: plain text in a div, no
 /// widget, at a rem size and a weight the showcase sets.
@@ -35,7 +35,7 @@ pub fn heading_level(t: &Theme, level: HeadingLevel) -> WidgetInfo {
             "weight",
             format!(
                 "FontWeight::{}, a gpui constant the showcase sets",
-                level.weight_name()
+                level.weight().1
             ),
         )
 }
@@ -55,7 +55,7 @@ pub fn weight(t: &Theme, weight: WeightKind) -> WidgetInfo {
             "weight",
             format!(
                 "FontWeight::{}, a gpui constant the showcase sets",
-                weight.constant_name()
+                weight.weight().1
             ),
         )
 }
@@ -91,14 +91,7 @@ pub fn decoration(t: &Theme, decoration: DecorationKind) -> WidgetInfo {
                 t.foreground,
                 "showcase",
             ))
-            .color(claim(
-                "underline, the text's colour",
-                "foreground",
-                t.foreground,
-                "showcase",
-            ))
-            .instance("style", "line_through, 1px thick and given no colour, so gpui draws it in the text's colour (gpui-pre/text_system/line.rs, paint_line)")
-            .instance("underline", "drawn too: the sample also calls text_decoration_1, which sets the underline's thickness and creates an underline to set it on (gpui-pre/styled.rs, text_decoration_1), so it is underlined as well as struck through"),
+            .instance("style", "line_through, 1px thick and given no colour, so gpui draws it in the text's colour (gpui-pre/text_system/line.rs, paint_line)"),
         DecorationKind::Italic => info.instance("style", "FontStyle::Italic, set by the showcase (gpui-pre/styled.rs, italic)"),
     }
 }
@@ -189,7 +182,7 @@ pub fn link(t: &Theme) -> WidgetInfo {
         ))
         .not_themeable("underline", "always on, and out of reach: the decoration is set on the base style before the caller's refinement merges into it (link.rs, Link), and a refinement whose `underline` is None leaves the base's `Some` standing -- `text_decoration_none` sets exactly that None, so it cannot switch one off. link.underline_enabled is modelled and has no receiver: Tier U")
         .not_themeable("hover text", "link at 0.8, computed from the one token (link.rs, Link). Upstream has a link_hover token, the connector writes it from link.hover_text_color, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U")
-        .not_themeable("active text", "link at 0.6, the same story: link_active is written by the connector and read by the Button variant, not here (link.rs, Link)")
+        .not_themeable("pressed text", "link at 0.6, the same story: link_active is written by the connector from link.active_text_color and read by the Button variant, not here (link.rs, Link)")
 }
 
 /// A `Kbd` for `keys`, which `Kbd::format` draws as `drawn` on this
@@ -211,13 +204,14 @@ pub fn kbd(t: &Theme, keys: &str, drawn: &str) -> WidgetInfo {
         ))
         .config(
             "border-radius",
-            format!("radius / 2: {}px", t.radius.as_f32() / 2.0),
+            format!("radius / 2: {}px", px_text(t.radius.as_f32() / 2.0)),
         )
         .config(
             "size",
             format!(
-                "{}px: text_xs, 0.75 rem at a font_size of {}px",
-                px_text(0.75 * rem),
+                "{}px: text_xs, {} rem at a font_size of {}px",
+                px_text(TextSize::Xs.rems() * rem),
+                TextSize::Xs.rems(),
                 px_text(rem)
             ),
         )
@@ -247,12 +241,12 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             t.border.opacity(0.85),
             "gpui-base/input/base/element.rs:2319",
         ))
-        // The text is painted in the colour the element inherits
+        // Unhighlighted text is painted in the colour the element inherits
         // (gpui-base input/base/element.rs:1823), not the style block's
         // foreground, and Input sets none (input/input.rs:639): so the
         // colour the showcase sets on its window.
         .color(claim(
-            "text, inherited",
+            "unhighlighted text, inherited",
             "foreground",
             t.foreground,
             "showcase",
@@ -294,7 +288,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
         .not_themeable("bg", "#0a0a0a in dark and #ffffff in light, whatever the platform: the connector installs upstream's default highlight themes, and their editor.background wins over the input_background() fallback (theme/mod.rs, editor_background; native-theme-gpui/lib.rs, to_theme). The current line is filled from the same theme, #171717 or #F5F5F5. The fields are public, so this one is ours")
         .not_themeable("syntax colors", "highlight_theme: default_light / default_dark per color mode; the grammar comes from the tree-sitter-rust dev feature")
         .not_themeable("style block", "the editor takes one InputEditorStyle built in a single place (input/input.rs, set_editor_style), so its colours cite the same block. Its border paints the indent guides; the edge is the bordered Input's own input token (input/editor.rs, Editor::render)")
-        .not_themeable("text colour", "none of its own: the block's foreground reaches only the current line's number, and the text takes the colour it inherits (gpui-base/input/base/element.rs, prepaint), which is the one the showcase sets on its window")
+        .not_themeable("text colour", "none of its own: the block's foreground reaches only the current line's number, and unhighlighted text takes the colour it inherits (gpui-base/input/base/element.rs, prepaint), which is the one the showcase sets on its window. A syntax-highlighted run takes its colour from highlight_theme instead")
         .not_themeable("line height", "1.5 is only what the widget sets first: Editor is Styled and applies the caller's refinement last, on purpose (input/editor.rs, Editor::render -- the comment there says a text style set on the editor refines over them). defaults.line_height is modelled (1.4 on the bundled defaults) and no builder carries it yet")
         .not_themeable("line numbers / search", "on by default (gpui-base/input/base/state.rs, EditorMode)")
 }
@@ -345,7 +339,7 @@ pub fn markdown(t: &Theme) -> WidgetInfo {
             t.table_head_foreground,
             "gpui-component/text/mod.rs:45",
         ))
-        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .config("border-radius", format!("radius: {}px", px_text(t.radius.as_f32())))
         .config(
             "mono font",
             format!("mono_font_family: {}", t.mono_font_family),

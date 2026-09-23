@@ -98,7 +98,7 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
         LabelKind::Masked => info.instance(
             "masked",
             format!(
-                "every character of \"{text}\" is drawn as a •, {} of them, so none of its words reach the screen. A masked Label paints no secondary colour and no highlight either (label.rs, Label::measure_highlights)",
+                "every character of \"{text}\" is drawn as a •, {} of them, so the text itself never reaches the screen. A masked Label paints no secondary colour and no highlight either (label.rs, Label::measure_highlights)",
                 text.chars().count()
             ),
         ),
@@ -125,7 +125,7 @@ pub fn sized_label(t: &Theme, size: TextSize) -> WidgetInfo {
         TextSize::Sm => info.instance("size", "text_sm: rems(0.875) (gpui-pre/styled.rs, text_sm)"),
         TextSize::Base => info.instance(
             "size",
-            "none set, so gpui's default text size, rems(1.) (gpui-pre/style.rs, TextStyle)",
+            "text_base: rems(1.) (gpui-pre/styled.rs, text_base) -- the same as gpui's default text size (gpui-pre/style.rs, TextStyle)",
         ),
         TextSize::Lg => info.instance("size", "text_lg: rems(1.125) (gpui-pre/styled.rs, text_lg)"),
         TextSize::Xl => info.instance("size", "text_xl: rems(1.25) (gpui-pre/styled.rs, text_xl)"),

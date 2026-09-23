@@ -2734,7 +2734,7 @@ pub(crate) fn gallery_label(
 pub(crate) enum TextSize {
     Xs,
     Sm,
-    /// No size set: gpui's default.
+    /// text_base, which is gpui's default size too.
     Base,
     Lg,
     Xl,
@@ -2750,8 +2750,7 @@ impl TextSize {
             Self::Xl => "text_xl",
         }
     }
-    /// The size in rems each sets (gpui-pre styled.rs:545-576), and gpui's
-    /// default text size where none is set (gpui-pre style.rs:493).
+    /// The size in rems each sets (gpui-pre styled.rs:545-576).
     pub(crate) fn rems(self) -> f32 {
         match self {
             Self::Xs => 0.75,
@@ -2775,7 +2774,7 @@ pub(crate) fn sized_label(
     let label = match size {
         TextSize::Xs => label.text_xs(),
         TextSize::Sm => label.text_sm(),
-        TextSize::Base => label,
+        TextSize::Base => label.text_base(),
         TextSize::Lg => label.text_lg(),
         TextSize::Xl => label.text_xl(),
     };
@@ -2817,19 +2816,12 @@ impl HeadingLevel {
             Self::H6 => 0.875,
         }
     }
-    fn weight(self) -> FontWeight {
+    /// The weight, and the name of its `FontWeight` constant.
+    pub(crate) fn weight(self) -> (FontWeight, &'static str) {
         match self {
-            Self::H1 | Self::H2 => FontWeight::BOLD,
-            Self::H3 | Self::H4 => FontWeight::SEMIBOLD,
-            Self::H5 | Self::H6 => FontWeight::MEDIUM,
-        }
-    }
-    /// The name of the `FontWeight` constant `weight` returns.
-    pub(crate) fn weight_name(self) -> &'static str {
-        match self {
-            Self::H1 | Self::H2 => "BOLD",
-            Self::H3 | Self::H4 => "SEMIBOLD",
-            Self::H5 | Self::H6 => "MEDIUM",
+            Self::H1 | Self::H2 => (FontWeight::BOLD, "BOLD"),
+            Self::H3 | Self::H4 => (FontWeight::SEMIBOLD, "SEMIBOLD"),
+            Self::H5 | Self::H6 => (FontWeight::MEDIUM, "MEDIUM"),
         }
     }
 }
@@ -2844,7 +2836,7 @@ pub(crate) fn heading_level(
 ) -> Stateful<Div> {
     div()
         .text_size(rems(level.rems()))
-        .font_weight(level.weight())
+        .font_weight(level.weight().0)
         .child(text)
         .info(ui, id, info::typography::heading_level(cx.theme(), level))
         .self_start()
@@ -2879,31 +2871,18 @@ impl WeightKind {
             Self::Black => "Black (900)",
         }
     }
-    fn weight(self) -> FontWeight {
+    /// The weight, and the name of its `FontWeight` constant.
+    pub(crate) fn weight(self) -> (FontWeight, &'static str) {
         match self {
-            Self::Thin => FontWeight::THIN,
-            Self::ExtraLight => FontWeight::EXTRA_LIGHT,
-            Self::Light => FontWeight::LIGHT,
-            Self::Normal => FontWeight::NORMAL,
-            Self::Medium => FontWeight::MEDIUM,
-            Self::Semibold => FontWeight::SEMIBOLD,
-            Self::Bold => FontWeight::BOLD,
-            Self::ExtraBold => FontWeight::EXTRA_BOLD,
-            Self::Black => FontWeight::BLACK,
-        }
-    }
-    /// The name of the `FontWeight` constant `weight` returns.
-    pub(crate) fn constant_name(self) -> &'static str {
-        match self {
-            Self::Thin => "THIN",
-            Self::ExtraLight => "EXTRA_LIGHT",
-            Self::Light => "LIGHT",
-            Self::Normal => "NORMAL",
-            Self::Medium => "MEDIUM",
-            Self::Semibold => "SEMIBOLD",
-            Self::Bold => "BOLD",
-            Self::ExtraBold => "EXTRA_BOLD",
-            Self::Black => "BLACK",
+            Self::Thin => (FontWeight::THIN, "THIN"),
+            Self::ExtraLight => (FontWeight::EXTRA_LIGHT, "EXTRA_LIGHT"),
+            Self::Light => (FontWeight::LIGHT, "LIGHT"),
+            Self::Normal => (FontWeight::NORMAL, "NORMAL"),
+            Self::Medium => (FontWeight::MEDIUM, "MEDIUM"),
+            Self::Semibold => (FontWeight::SEMIBOLD, "SEMIBOLD"),
+            Self::Bold => (FontWeight::BOLD, "BOLD"),
+            Self::ExtraBold => (FontWeight::EXTRA_BOLD, "EXTRA_BOLD"),
+            Self::Black => (FontWeight::BLACK, "BLACK"),
         }
     }
 }
@@ -2916,7 +2895,7 @@ pub(crate) fn weight_sample(
     weight: WeightKind,
 ) -> Stateful<Div> {
     div()
-        .font_weight(weight.weight())
+        .font_weight(weight.weight().0)
         .child(weight.name())
         .info(ui, id, info::typography::weight(cx.theme(), weight))
         .self_start()
@@ -2955,7 +2934,7 @@ pub(crate) fn decoration_sample(
     let sample = match decoration {
         DecorationKind::Bold => sample.font_weight(FontWeight::BOLD),
         DecorationKind::Underline => sample.underline().text_decoration_1(),
-        DecorationKind::Strikethrough => sample.line_through().text_decoration_1(),
+        DecorationKind::Strikethrough => sample.line_through(),
         DecorationKind::Italic => sample.italic(),
     };
     sample

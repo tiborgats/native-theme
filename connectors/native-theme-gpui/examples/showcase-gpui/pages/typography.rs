@@ -8,18 +8,13 @@ use crate::demo::{self, DecorationKind, HeadingLevel, LabelKind, TextSize, Weigh
 use crate::support::MARKDOWN_SAMPLE;
 use crate::{TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY};
 
-/// The Labels, as `(id, kind, text)`.
-const LABELS: [(&str, LabelKind, &str); 3] = [
+/// The Labels above the masked one, as `(id, kind, text)`.
+const LABELS: [(&str, LabelKind, &str); 2] = [
     (TYPOGRAPHY_LABEL_PLAIN, LabelKind::Plain, "Regular label"),
     (
         TYPOGRAPHY_LABEL_SECONDARY,
         LabelKind::Secondary("(secondary text)"),
         "Label with secondary",
-    ),
-    (
-        "typography-label-masked",
-        LabelKind::Masked,
-        "Masked label: secret123",
     ),
 ];
 
@@ -115,9 +110,33 @@ impl Showcase {
             .p_4()
             .flex_1()
             .child(demo::heading(ui, cx, "typography-heading-label", "Label"))
-            .child(v_flex().gap_2().children(
-                LABELS.map(|(id, kind, text)| demo::gallery_label(ui, cx, id, kind, text)),
-            ))
+            .child(
+                v_flex()
+                    .gap_2()
+                    .children(
+                        LABELS.map(|(id, kind, text)| demo::gallery_label(ui, cx, id, kind, text)),
+                    )
+                    // Only the secret is masked: the words naming it are page
+                    // text beside it.
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .items_center()
+                            .child(demo::label(
+                                ui,
+                                cx,
+                                "typography-label-masked-caption",
+                                "Masked label:",
+                            ))
+                            .child(demo::gallery_label(
+                                ui,
+                                cx,
+                                "typography-label-masked",
+                                LabelKind::Masked,
+                                "secret123",
+                            )),
+                    ),
+            )
             .child(demo::heading(ui, cx, "typography-heading-link", "Link"))
             .child(
                 h_flex()
