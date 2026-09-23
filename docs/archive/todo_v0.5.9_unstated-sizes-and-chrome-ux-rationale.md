@@ -167,7 +167,7 @@ The same principle reaches beyond padding. Platform-facts marks KDE **(none)** f
 | dialog minimum and maximum width and height | 320 / 560 / 140 / 600 |
 | combobox `min_height` and `min_width` | 32 / 120 |
 
-Tooltip `max_width` is "(none) — preset: 300" (platform-facts.md:1248): a preset's own choice, written into the facts. The macOS `small` icon size is a range, "sidebar: 16–20pt" (:1122), while `macos-sonoma` states 16. And `panel_px = 20` in adwaita, macos-sonoma and windows-11 stands against "(none)" (:1125).
+Tooltip `max_width` is "(none) — preset: 300" (platform-facts.md:1259): a preset's own choice, written into the facts. The macOS `small` icon size is a range, "sidebar: 16–20pt" (:1133), while `macos-sonoma` states 16. And `panel_px = 20` in adwaita, macos-sonoma and windows-11 stands against "(none)" (:1136).
 
 This change leaves them as they are. Each needs its own connector decision, such as what a builder does without a minimum height or without a dialog bound. None of them causes the reported defects. The audit (plan Task 1) lists every such field, and `docs/todo.md` records the list as a follow-up plan.
 

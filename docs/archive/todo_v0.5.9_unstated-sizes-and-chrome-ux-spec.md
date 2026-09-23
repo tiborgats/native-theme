@@ -384,7 +384,7 @@ else differs from the text:
   gone, and no other place shows one (widget coverage counts types, not
   variants).
 - **§3.5.** Each Icon Sizes cell marks a native preset's size where
-  §2.1.8 documents none; under the `default` theme no cell is marked. The
+  §2.1.8 documents none, under a native preset and under the `default` theme alike (the final review taught it which preset `default` stands for). The
   NavItem icon expression stays in `NavItem`: extracted whole into a
   `pub(crate)` helper, it trips `every_widget_reports_itself`, so the test
   checks the helper NavItem calls (`nav_icon_sized`) and the rail check
