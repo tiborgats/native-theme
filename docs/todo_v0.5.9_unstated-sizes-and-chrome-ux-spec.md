@@ -18,8 +18,8 @@ Plan: `todo_v0.5.9_unstated-sizes-and-chrome-ux-plan.md`.
 - `padding_top_px`, `padding_right_px`, `padding_bottom_px` and `padding_left_px` name the sides.
 - `padding_horizontal_px` and `padding_vertical_px` are parse-time shorthand, setting both sides of their axis.
 - A table that states an axis key and one of that axis's sides is a parse error, and the error names the table and both keys.
-- **Mechanism.** The derived `#[serde(default)]` struct (border.rs:58-78) cannot express a shorthand or that error. `WidgetBorderSpec` deserialises through a raw struct that has all six keys, with `#[serde(try_from = "...")]` doing the expansion and the check.
-- **Linter.** `lint_toml` (model/mod.rs:679) builds its known keys from the struct's fields, so the two shorthand keys are registered with it, or every existing theme would be reported as using unknown fields. A test lints the raw source of every bundled preset. If the existing `lint_toml_all_presets_clean` (model/mod.rs:1568) lints `to_toml()` output rather than the sources, a source-linting test is added beside it.
+- **Mechanism.** The derived `#[serde(default)]` struct (border.rs:58-78) cannot express a shorthand or that error. `WidgetBorderSpec` deserialises through a raw struct that has all six keys, with `#[serde(try_from = "...")]` doing the expansion and the check, exactly as `FontSpec` deserialises through `FontSpecRaw` (font.rs:151-156) and registers its wire keys with `#[theme_layer(fields = …)]` (native-theme-derive lib.rs:146-151).
+- **Linter.** `lint_toml` (model/mod.rs:679) builds its known keys from the struct's fields, so the two shorthand keys are registered with it through that same attribute, or every existing theme would be reported as using unknown fields. The existing `lint_toml_all_presets_clean` (model/mod.rs:1568-1580) lints `to_toml()` output, which never contains a shorthand key, so a new test lints the raw source of every bundled preset.
 - Serialisation writes sides.
 - `docs/property-registry.toml`'s `Border` structure lists the four side keys and the two shorthands.
 - Platform-facts' padding conventions paragraph says how an asymmetric cell maps to the sides.
@@ -74,6 +74,7 @@ The native presets are `kde-breeze`, `adwaita`, `macos-sonoma` and `windows-11`,
 | A derivation ("← button padding (10px)") | Stated as the derived value, and the comment cites the derivation. |
 | A pointer ("(none) — use §2.20 layout margins") | Not stated here; the field it points to carries the value. |
 | A cell with no number, or any "(none)" | Not stated. The audit may propose a sourced `0` for platform-facts; the preset never states one on the strength of a remark. |
+| A side measured to a structure the model has no field for (WinUI's combobox: "0 right (arrow area adjacent)", with a 38px arrow area, platform-facts.md:1539-1541) | Not stated, with the reason. The structure is a recorded model extension. |
 
 The following values are known now; the audit (plan Task 1) completes the list.
 
@@ -92,11 +93,11 @@ The following values are known now; the audit (plan Task 1) completes the list.
 | Windows | button | 5 / 11 / 6 / 11 | §2.3 |
 | Windows | input | 5 / 6 / 6 / 10 | §2.4 |
 | Windows | tooltip | 6 / 9 / 8 / 9 | §2.7, `ToolTipBorderPadding=9,6,9,8` |
-| Windows | tab | 3 / 4 / 3 / 8 | §2.11 |
+| Windows | tab | 3 / 4 / 3 / 8, pending the ruling below | §2.11 |
 | Windows | menu | 4 / 11 / 5 / 11 | §2.6, mouse context |
-| Windows | combo_box | 5 / 0 / 7 / 12 | §2.24 |
+| Windows | combo_box | 5 / not stated / 7 / 12 | §2.24; the right side is measured to the arrow column |
 
-Two per-context cells need a ruling before they are written: the Windows tab's "8,3,4,3 (8/8 without close button)" (platform-facts.md:428), and Windows' toolbar `bar_height`, "default = 64, compact mode = 48" (:1340), where the preset and the reader both state 48.
+Three per-context cells need a ruling before they are written: the Windows tab's "8,3,4,3 (8/8 without close button)" (platform-facts.md:428); Windows' toolbar `bar_height`, "default = 64, compact mode = 48" (:1340), where the preset and the reader both state 48; and GNOME's list padding, "rich-list=12, plain list=2" and "rich-list=8, plain list=2" (:1377-1378).
 
 The audit adds every other row and mismatch in scope: documented but missing, stated where not documented, different, range, per-context, derivation. It also covers the OS readers' size constants:
 
@@ -151,18 +152,22 @@ Append per-side padding rows to platform-facts §2.14, with citations. A platfor
 **Padding:**
 
 - Every `geometry::*` builder that pads sets each side (`pt`, `pr`, `pb`, `pl`) only when that side is `Some`.
-- `geometry::input`, `select` and `combobox` apply their stated sides. Upstream sets its own padding before the refinement (input.rs:701 → :719; select.rs:543 → :546; combobox.rs:995 → :997), so the refinement wins. The "padding is inner, Tier U" note at geometry.rs:147 is corrected. One exception stays and is documented: an Input with a suffix takes its right padding from upstream after the refinement (input.rs:736).
+- `geometry::input`, `select` and `combobox` apply their stated sides. Upstream sets its own padding before the refinement (input.rs:701 → :719; select.rs:544 → :546; combobox.rs:995 → :997), so the refinement wins, and neither trigger pads an inner element, so nothing doubles. The "padding is inner, Tier U" note at geometry.rs:147 is corrected. Two exceptions are documented: an Input with a suffix takes its right padding from upstream after the refinement (input.rs:736), and the combobox's right side has no receiver in gpui (§1.4), whose caret sits inside the padded root (select.rs:57-66, combobox.rs:1009-1026).
 - A seams test measures each of these widgets under every native preset and asserts that the drawn content inset equals the stated side.
 
 **Heights:**
 
 - `control_height` goes. One private helper applies this rule to `geometry::button`, `input`, `combo_box_metrics` (select and combobox), `menu_item` and `list_item`:
-  - at text scale 1, `h(platform height)`: the button's and input's `min_height`, the combobox's `min_height`, the menu's and list's `row_height`;
-  - at a text scale above 1, `min_h(platform height)` together with `h_auto`, so layout grows the control around its drawn text and padding.
-- `geometry::input_height` returns the platform's input height, `input.min_height`. Its doc says that is the height `geometry::input` draws at text scale 1.
-- A seams test proves, under every native preset, for a real Button, Input, Select, menu item and list item:
-  - at text scale 1, the height equals the platform's value exactly;
-  - at text scale 2, the height grows, and the text's bounds lie inside the control.
+  - it applies the platform's `defaults.line_height` as the control's line height, so growth follows the platform's font metrics (button.rs:689, input.rs:699 and the list and menu rows all take a refinement after their own line height, or set none);
+  - at a text scale of 1 or less, the stated height through the property each builder uses today: `h` for the button, input, menu item and list item; `min_h` for the select and combobox;
+  - above 1, `min_h(stated height)` together with `h_auto`, so layout grows the control around its drawn text and padding.
+- The rule is for single-line controls. A multi-line Input sets its own height before the refinement (input.rs:705-708), which the refinement overrides today; the showcase's Textarea applies its own `Styled::h` after the builder, and the builder's doc says so.
+- `geometry::input_height` returns a `StyleRefinement` carrying the height rule alone. The showcase's HeightOnly sample applies it, so its height follows the refined Input's at every scale.
+- A seams test proves, under every native preset, for a real Button, Input, Select, Combobox, the app-drawn menu row (`demo::menu_rows`; upstream's `MenuItemElement` is `pub(crate)`) and a ListItem:
+  - at text scale 1, resolved at the platform's own DPI (72 for macOS, per detect.rs:433), the height equals the stated value exactly, and the text's bounds lie inside the control;
+  - at text scale 2, the height grows and the text's bounds still lie inside.
+
+  The text's bounds are read through a probe element around the sample's text, since an Input's text element has no debug selector.
 - If upstream prevents `h_auto` for a widget, the implementer reports it rather than working around it.
 
 **Toolbar:** `geometry::toolbar` sets `min_h` only when `bar_height` is `Some`. The row is the application's own, so an unstated side or height leaves it to the application.
@@ -181,7 +186,7 @@ Append per-side padding rows to platform-facts §2.14, with citations. A platfor
 - the seams test;
 - the README builder table;
 - the showcase's `GEOMETRY_NOTES` and infos that describe padding, heights or `bar_height`;
-- the Theme Map rows that showed `control_height`.
+- the Theme Map rows that showed `control_height` (demo.rs:4784-4850) and their test (tests.rs:2880-2893), which go with it.
 
 ### 2.2 iced (`native-theme-iced`)
 
@@ -198,7 +203,7 @@ A named showcase constant is used only where the theme states no value, for an e
 - the toolbar row's padding;
 - the Sidebar header's gaps.
 
-Where the model's layout values (`widget_gap`, `container_margin`) are stated, they are used instead. The showcase's pages keep their current `with_gap` behaviour; the same rule for them is recorded in `docs/todo.md`. The content the showcase places in a popover or hover card adds no padding of its own: those widgets now draw gpui-component's `p_3` on every preset (rationale §8), and demo.rs:4106-4110 already says the content adds none.
+Where the model's layout values (`widget_gap`, `container_margin`) are stated, they are used instead. The showcase's pages keep their current `with_gap` behaviour; the same rule for them is recorded in `docs/todo.md`. The content the showcase places in a popover or hover card adds no padding of its own: those widgets now draw gpui-component's `p_3` on every preset (rationale §8). The HoverCard's doc at demo.rs:4107-4111 says the content adds none, but also names "the platform's popover padding where `geometry::popover` applies"; it is updated.
 
 ### 3.2 Status bar (D5)
 
@@ -271,7 +276,7 @@ These tests follow the controls to their new places:
 - the status-bar tests;
 - the preset, mode and icon-set tests.
 
-`the_toolbar_is_the_models_toolbar` checks `min_h` only where `bar_height` is stated. `chrome_icon_names()` (tests.rs:2536-2547) gains `PanelLeft` and `PanelRight` and loses `Inspector` if no chrome element uses it any more.
+`the_toolbar_is_the_models_toolbar` changes twice: Task 3 makes it check `min_h` only where `bar_height` is stated, and Task 6 re-points its children. `chrome_icon_names()` (tests.rs:2536-2547) gains `PanelLeft` and `PanelRight` and loses `Inspector` if no chrome element uses it any more.
 
 **End-to-end tests of the reported defects**, under `kde-breeze`:
 
@@ -294,14 +299,15 @@ These tests follow the controls to their new places:
   - the showcase's chrome changes.
 
   The entries the showcase-app plan added about the toolbar's contents, the status bar's version or the title are updated to the new arrangement.
-- **The connector README** is updated where it describes padding builders, heights or the showcase's chrome. `connectors/native-theme-gpui/proposals/README.md` names the old padding fields and is updated too.
+- **The connector README:** Task 3 updates its builder table (padding, heights, line height, the removed functions), and Task 7 its description of the showcase's chrome. `connectors/native-theme-gpui/proposals/README.md` names the old padding fields and is updated too.
 - **`docs/todo.md`:**
   - The open item "KDE's toolbar height has no source, and no preset states a toolbar padding" is closed, with what this change did about each of its three findings.
-  - The screenshot-review item is updated to cover: the new chrome; the popover and hover card on every preset; the colour-scheme presets' dialog, status bar and toolbar; the GNOME dialog's section and content gaps; the input, select and combobox padding now applied.
+  - The line-height item (todo.md:860-870) is updated: its "`control_height` already uses it" becomes false, and the builders now apply the line height.
+  - The screenshot-review item is updated to cover: the new chrome; the popover, hover card and status bar on every preset; the colour-scheme presets' dialog and toolbar; the GNOME dialog's section and content gaps; the input, select and combobox padding now applied; the control heights on Windows and macOS; the Textarea.
   - These items are appended:
     - the follow-up plan for the other unstated sizing fields (rationale §7), with the audit's Table B;
     - the colour-scheme presets' sizing provenance;
     - applying rule §3.1 to the showcase's pages;
     - a machine-readable platform-facts, so that every native value can be gated.
-- **Other plan documents:** `docs/todo_iced-full-theme-geometry.md`, `docs/todo_gpui-full-theme.md`, `docs/todo_egui-widgets-spec.md` and `docs/todo_v0.6.0_egui-connector-{rationale,spec}.md` name the old padding fields or a plain `f32` `bar_height`. Each gets an appended note describing the new model; existing text is not rewritten.
+- **Other plan documents:** `docs/todo_iced-full-theme-geometry.md`, `docs/todo_gpui-full-theme.md` (whose line 50 also names `dialog_content_padding` as delivered), `docs/todo_egui-widgets-spec.md` and `docs/todo_v0.6.0_egui-connector-{rationale,spec}.md` name the old padding fields, the removed functions or a plain `f32` `bar_height`. Each gets an appended note describing the new model; existing text is not rewritten.
 - **Archive:** these three documents are archived when the work is done.

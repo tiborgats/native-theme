@@ -11,7 +11,7 @@
 - A sizing value no platform states stays absent all the way from the resolver to the toolkit.
 - Padding is stated per side, and the input, select and combobox builders apply it.
 - For padding, `toolbar.bar_height` and `toolbar.item_gap`, native themes, whether static or live, state every value their platform documents.
-- Controls are the platform's height at the platform's text scale, and grow with scaled text.
+- Single-line controls are their stated height up to the platform's text scale, and grow with the platform's line height above it.
 - The showcase's panel toggles and theme controls sit where users expect them.
 
 **Spec:** `docs/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md`
@@ -69,7 +69,7 @@ The classes follow spec §1.4:
 
 Report `ios` separately, because platform-facts has no iOS column.
 
-**Gate:** none. The controller rules on every Table A row, including the two per-context cells spec §1.4 names. The rulings are ledgered and feed Tasks 3 and 4.
+**Gate:** none. The controller rules on every Table A row, including the three per-context cells and the combobox's right side that spec §1.4 names. The rulings are ledgered and feed Tasks 3 and 4.
 
 ### Task 2: Research the status-bar padding (spec §1.7)
 
@@ -98,7 +98,8 @@ This is one task: the model's type changes and their consumers must compile toge
      - Each padding builder leaves unstated sides unset.
      - `geometry::toolbar` leaves `min_h` unset without a `bar_height`.
      - A seams test measures the drawn content inset of a real Input, Select and Combobox under every native preset, and it equals the stated side.
-     - A seams test measures a real Button, Input, Select, menu item and list item under every native preset: at text scale 1 the height equals the platform's value; at scale 2 it grows and the text's bounds stay inside.
+     - A seams test measures a real Button, Input, Select, Combobox, the app-drawn menu row and a ListItem under every native preset, at the preset's own DPI: at text scale 1 the height equals the stated value and the text fits; at scale 2 it grows and the text still fits.
+     - The showcase's Textarea keeps its 90px under `geometry::input`, and the HeightOnly field matches the refined Input's height at scale 1 and at scale 2.
      - `tooltip_content` uses upstream's rem padding for an unstated side.
    - iced: `button_padding` and `input_padding` fill unstated sides from `DEFAULT_PADDING`.
 2. **Implement** spec §1.1–§1.3 and §2:
@@ -108,10 +109,10 @@ This is one task: the model's type changes and their consumers must compile toge
    - the registry and platform-facts conventions;
    - the stale rules;
    - every consumer and test listed in §1.3, including the gpui showcase's;
-   - gpui: padding, heights, tooltip, dialog, the removed `dialog_content_padding`;
+   - gpui: padding, the height rule with the platform's line height, tooltip, dialog, the removed `dialog_content_padding`;
    - iced, plus the iced showcase;
    - the README builder table;
-   - the gpui showcase's `GEOMETRY_NOTES`, infos, HeightOnly sample and Theme Map rows.
+   - the gpui showcase's `GEOMETRY_NOTES`, infos, HeightOnly sample, Textarea, and the removed Theme Map `control_height` rows with their test.
 3. Run `cargo test --workspace`, then pre-release-check.
 4. Commit `feat(model): padding per side; a size the platform does not state stays unstated`.
 
@@ -169,8 +170,8 @@ This is one task: the model's type changes and their consumers must compile toge
 ### Task 7: Docs and archive (spec §4)
 
 - Update the CHANGELOG. This includes rewriting the earlier `[Unreleased]` entries about the toolbar, status bar and title.
-- Update the connector README and `proposals/README.md`.
-- In `docs/todo.md`, close the toolbar item, update the screenshot item and append the new items.
+- Update the connector README's showcase description and `proposals/README.md`.
+- In `docs/todo.md`, close the toolbar item, update the line-height and screenshot items, and append the new items.
 - Append a note on the new model to the other plan documents.
 - Move the three documents to `docs/archive/` and fix their links.
 - Commit `docs: unstated sizes and chrome UX, implemented and archived`.

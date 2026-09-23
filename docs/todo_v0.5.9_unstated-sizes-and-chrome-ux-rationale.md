@@ -102,8 +102,8 @@ Leaving those unstated would strip most of Windows' documented padding. Keeping 
 2. **The resolver stops inventing.** A missing value stays `None`. A stated padding side must be ≥ 0; today no range check covers widget padding.
 3. **Connectors apply only what is stated.**
    - A gpui builder refines a side only when that side is `Some`. Otherwise the toolkit's own default stands: gpui-component's StatusBar, for example, keeps `px_2 py_1`.
-   - **The input, select and combobox builders apply their stated sides too.** Upstream sets its own padding on those widgets' roots before applying the refinement (input.rs:701 then :719; select.rs:543 then :546; combobox.rs:995 then :997), so a refinement overrides it. The builders' current "Tier U" note (geometry.rs:147), which says the padding cannot be reached, is wrong. Today KDE's input padding, and Windows' input and combobox sides, reach nothing in gpui.
-   - **Control heights: the platform's height at the platform's text scale, laid out when text is scaled.** At text scale 1 a control is exactly the height the platform states. When the user scales text, the builder sets that height as a minimum and lets layout grow the control around its drawn text and padding. That is how the native toolkits behave: GTK's `min-height` with content-driven growth, and Breeze's heights derived from font metrics. `control_height`, which computes a height from the model's padding and a line-height multiplier that is not upstream's, goes; layout replaces the computation.
+   - **The input, select and combobox builders apply their stated sides too.** Upstream sets its own padding on those widgets' roots before applying the refinement (input.rs:701 then :719; select.rs:543 then :546; combobox.rs:995 then :997), so a refinement overrides it. The builders' current "Tier U" note (geometry.rs:147), which says the padding cannot be reached, is wrong. Today no preset's input or combobox padding reaches gpui at all. One side has no receiver: WinUI measures the combobox's right padding of 0 up to a separate 38px arrow column (§2.24), which gpui's trigger does not have, so that side stays unstated.
+   - **Control heights: the stated height up to the platform's text scale, laid out above it.** At a text scale of 1 or less, a control is exactly the height its theme states. Above 1, the builder sets that height as a minimum and lets layout grow the control around its drawn text and padding. That is how the native toolkits behave: GTK's `min-height` with content-driven growth, and Breeze's heights derived from font metrics. So that the growth follows the platform's metrics rather than gpui-component's, the same builders apply the platform's `defaults.line_height`, which is sourced on all four platforms (platform-facts.md:1019) and today reaches no control builder. `control_height`, which computes a height from the model's padding and gets it wrong at scale 1 on Windows and macOS, goes. The rule is for single-line controls; a multi-line input keeps the height its caller gives it. On KDE the stated heights (32 for the button and input, 28 for a row) are themselves unsourced (§7); the rule applies what the theme states, and the follow-up decides those values.
    - **The tooltip's text width does need a number.** `tooltip_content` subtracts the padding from `max_width`. Where no side is stated, it uses upstream's own tooltip padding (`px_2`, tooltip.rs:123). That is a rem multiple, so it is converted at the font size the connector installs as the rem (root.rs:582).
    - **iced's `button_padding` and `input_padding` return a whole `Padding`.** They fill an unstated side with iced's own public default: `button::DEFAULT_PADDING` (iced_widget 0.14.2 button.rs:461) or `text_input::DEFAULT_PADDING` (text_input.rs:125).
 4. **Native themes state everything their platform documents, for the fields this change covers** (§6, §7). A gate checks both paths by which a native theme reaches the model.
@@ -175,12 +175,14 @@ The colour-scheme presets carry sizes that were copied rather than sourced (see 
 
 ## 8. Visible changes on every preset
 
-Reading every "(none)" as unstated (§3) changes what native presets draw too, not only the colour-scheme presets:
+These change what native presets draw too, not only the colour-scheme presets:
 
 - The popover and hover card were padded 0 on every preset, because no preset states a popover padding and the resolver filled in 0. They now draw gpui-component's own `p_3` (popover.rs:284). The showcase's content inside them adds no padding of its own.
-- On the colour-scheme presets, the dialog and status bar draw gpui-component's own padding instead of a zero nobody chose, and the toolbar gets the showcase's own padding (§5, point 6).
+- The status bar draws gpui-component's own `px_2 py_1` on every preset until Task 2 states a platform's value. That is the fix for the first reported defect.
+- On the colour-scheme presets, the dialog draws gpui-component's own padding instead of a zero nobody chose, and the toolbar gets the showcase's own padding (§5, point 6).
 - The input, select and combobox draw their stated padding for the first time.
-- Control heights stay the platform's at text scale 1; only scaled text changes them.
+- Control heights become the stated height at text scale 1. Today `control_height` overshoots it: the Windows button is 33 for a stated 32, and at 96 DPI the macOS button, input and menu row are 27 for a stated 22. The select and combobox keep their minimum height, so nothing turns an unsourced value into an exact height.
+- The showcase's Textarea, which `geometry::input` forces to the single-line height today (input.rs:705-708 runs before the refinement at :719), keeps its own 90px.
 
 These are corrections, and the screenshot review covers them.
 
@@ -230,7 +232,7 @@ The preset and mode stay in the status bar. The version leaves the status bar, b
 
 ## 10. Decisions
 
-- **D1. Unstated stays unstated.** An unstated sizing value is `None` from the resolved model, through the connector, to the toolkit's default. Only a number in platform-facts is a stated value; a "(none)" with a remark is not. A control is the platform's height at text scale 1, and is laid out from its drawn text and padding when text is scaled.
+- **D1. Unstated stays unstated.** An unstated sizing value is `None` from the resolved model, through the connector, to the toolkit's default. Only a number in platform-facts is a stated value; a "(none)" with a remark is not. A single-line control is its stated height at a text scale of 1 or less, and is laid out from its drawn text, the platform's line height and its padding above that.
 - **D2. The gate.** For padding, `toolbar.bar_height` and `toolbar.item_gap`, native themes state every value platform-facts documents. A gate enforces this on both paths:
   - the static preset;
   - the live merge: full preset, then `-live` preset, then reader constants.
@@ -245,5 +247,5 @@ The preset and mode stay in the status bar. The version leaves the status bar, b
 - **D9. Public API.** These breaking changes are allowed before 1.0, with no migration guide.
   - New: `ResolvedPadding`, `ResolvedDefaultsBorder`, `ResolvedWidgetBorder`, and `WidgetBorderSpec`'s four side fields.
   - Removed: `ResolvedBorderSpec`; `WidgetBorderSpec`'s `padding_horizontal`/`padding_vertical` fields (the TOML keys stay); `geometry::control_height`, which layout replaces; `native_theme_gpui::dialog_content_padding`, which nothing but its own test calls (lib.rs:1420) and which the resolved theme already exposes.
-  - Changed: `toolbar.bar_height` becomes `Option<f32>`; `geometry::input_height` returns the platform's input height, the height `geometry::input` draws at text scale 1.
+  - Changed: `toolbar.bar_height` becomes `Option<f32>`; `geometry::input_height` returns a `StyleRefinement` carrying the height rule alone, so a caller that wants only the height gets the same rule `geometry::input` applies.
   - Unchanged: iced's `button_padding` and `input_padding` keep their `Padding` return type.
