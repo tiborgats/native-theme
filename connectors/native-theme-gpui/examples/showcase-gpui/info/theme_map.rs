@@ -137,7 +137,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             |i| i.config("model", "input.selection_background"),
         ),
         ThemeToken::Caret => (
-            claim("value", "caret", t.caret, "native-theme-gpui/colors.rs:546"),
+            claim("value", "caret", t.caret, "native-theme-gpui/colors.rs:548"),
             |i| i.config("model", "input.caret_color"),
         ),
         ThemeToken::Link => (
@@ -167,7 +167,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "overlay",
                 t.overlay,
-                "native-theme-gpui/colors.rs:516",
+                "native-theme-gpui/colors.rs:514",
             ),
             |i| {
                 i.config("model", "defaults.shadow_color").config("derived", "defaults.shadow_color's hue, saturation and lightness, its alpha replaced: 1 where reduced transparency is asked for, else 0.5 in dark mode and 0.4 in light (native-theme-gpui/colors.rs, assign_misc)")
@@ -673,7 +673,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             |i| active(i.config("model", "defaults.danger_color")),
         ),
         ThemeToken::Red => (
-            claim("value", "red", t.red, "native-theme-gpui/colors.rs:647"),
+            claim("value", "red", t.red, "native-theme-gpui/colors.rs:649"),
             |i| i.config("model", "defaults.danger_color"),
         ),
         ThemeToken::RedLight => (
@@ -681,7 +681,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "red_light",
                 t.red_light,
-                "native-theme-gpui/colors.rs:648",
+                "native-theme-gpui/colors.rs:650",
             ),
             |i| light(i.config("model", "defaults.danger_color, window.background_color")),
         ),
@@ -722,7 +722,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             |i| active(i.config("model", "defaults.success_color")),
         ),
         ThemeToken::Green => (
-            claim("value", "green", t.green, "native-theme-gpui/colors.rs:649"),
+            claim("value", "green", t.green, "native-theme-gpui/colors.rs:651"),
             |i| i.config("model", "defaults.success_color"),
         ),
         ThemeToken::GreenLight => (
@@ -730,7 +730,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "green_light",
                 t.green_light,
-                "native-theme-gpui/colors.rs:650",
+                "native-theme-gpui/colors.rs:652",
             ),
             |i| light(i.config("model", "defaults.success_color, window.background_color")),
         ),
@@ -775,7 +775,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "yellow",
                 t.yellow,
-                "native-theme-gpui/colors.rs:653",
+                "native-theme-gpui/colors.rs:655",
             ),
             |i| i.config("model", "defaults.warning_color"),
         ),
@@ -784,7 +784,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "yellow_light",
                 t.yellow_light,
-                "native-theme-gpui/colors.rs:654",
+                "native-theme-gpui/colors.rs:656",
             ),
             |i| light(i.config("model", "defaults.warning_color, window.background_color")),
         ),
@@ -820,7 +820,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             |i| active(i.config("model", "defaults.info_color")),
         ),
         ThemeToken::Blue => (
-            claim("value", "blue", t.blue, "native-theme-gpui/colors.rs:651"),
+            claim("value", "blue", t.blue, "native-theme-gpui/colors.rs:653"),
             |i| i.config("model", "defaults.info_color"),
         ),
         ThemeToken::BlueLight => (
@@ -828,7 +828,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "blue_light",
                 t.blue_light,
-                "native-theme-gpui/colors.rs:652",
+                "native-theme-gpui/colors.rs:654",
             ),
             |i| light(i.config("model", "defaults.info_color, window.background_color")),
         ),
@@ -1114,7 +1114,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "scrollbar",
                 t.scrollbar,
-                "native-theme-gpui/colors.rs:525",
+                "native-theme-gpui/colors.rs:527",
             ),
             |i| i.config("model", "scrollbar.track_color"),
         ),
@@ -1123,7 +1123,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "scrollbar_thumb",
                 t.scrollbar_thumb,
-                "native-theme-gpui/colors.rs:526",
+                "native-theme-gpui/colors.rs:528",
             ),
             |i| i.config("model", "scrollbar.thumb_color"),
         ),
@@ -1132,7 +1132,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "scrollbar_thumb_hover",
                 t.scrollbar_thumb_hover,
-                "native-theme-gpui/colors.rs:527",
+                "native-theme-gpui/colors.rs:529",
             ),
             |i| i.config("model", "scrollbar.thumb_hover_color"),
         ),
@@ -1261,7 +1261,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "drag_border",
                 t.drag_border,
-                "native-theme-gpui/colors.rs:551",
+                "native-theme-gpui/colors.rs:553",
             ),
             |i| {
                 i.config("model", "button.primary_background").config("derived", "button.primary_background faded to 65% of its alpha, so translucent (native-theme-gpui/colors.rs, assign_misc)")
@@ -1272,7 +1272,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "drop_target",
                 t.drop_target,
-                "native-theme-gpui/colors.rs:553",
+                "native-theme-gpui/colors.rs:555",
             ),
             |i| {
                 i.config("model", "button.primary_background").config("derived", "button.primary_background faded to 20% of its alpha, so translucent (native-theme-gpui/colors.rs, assign_misc)")
@@ -1301,7 +1301,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "progress_bar",
                 t.progress_bar,
-                "native-theme-gpui/colors.rs:543",
+                "native-theme-gpui/colors.rs:545",
             ),
             |i| i.config("model", "progress_bar.fill_color"),
         ),
@@ -1310,7 +1310,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "skeleton",
                 t.skeleton,
-                "native-theme-gpui/colors.rs:548",
+                "native-theme-gpui/colors.rs:550",
             ),
             |i| i.config("model", "button.background_color"),
         ),
@@ -1319,7 +1319,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "slider_bar",
                 t.slider_bar,
-                "native-theme-gpui/colors.rs:530",
+                "native-theme-gpui/colors.rs:532",
             ),
             |i| i.config("model", "slider.fill_color"),
         ),
@@ -1328,7 +1328,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "slider_thumb",
                 t.slider_thumb,
-                "native-theme-gpui/colors.rs:531",
+                "native-theme-gpui/colors.rs:533",
             ),
             |i| i.config("model", "slider.thumb_color"),
         ),
@@ -1337,7 +1337,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "switch",
                 t.switch,
-                "native-theme-gpui/colors.rs:534",
+                "native-theme-gpui/colors.rs:536",
             ),
             |i| {
                 i.config("model", "switch.unchecked_background").config("derived", "none: the model field as it is. ThemeColor has no field for a checked switch, so the connector maps switch.checked_background nowhere (native-theme-gpui/colors.rs, assign_misc)")
@@ -1348,7 +1348,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "switch_thumb",
                 t.switch_thumb,
-                "native-theme-gpui/colors.rs:540",
+                "native-theme-gpui/colors.rs:542",
             ),
             |i| i.config("model", "switch.thumb_background"),
         ),
@@ -1357,7 +1357,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "status_bar",
                 t.status_bar,
-                "native-theme-gpui/colors.rs:556",
+                "native-theme-gpui/colors.rs:558",
             ),
             |i| i.config("model", "status_bar.background_color"),
         ),
@@ -1366,7 +1366,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "status_bar_border",
                 t.status_bar_border,
-                "native-theme-gpui/colors.rs:557",
+                "native-theme-gpui/colors.rs:559",
             ),
             |i| i.config("model", "status_bar.border.color"),
         ),
@@ -1402,7 +1402,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "magenta",
                 t.magenta,
-                "native-theme-gpui/colors.rs:663",
+                "native-theme-gpui/colors.rs:665",
             ),
             |i| {
                 i.config("model", "defaults.accent_color").config("derived", "hue 0.833, a literal, with defaults.accent_color's lightness and its saturation capped at 0.85, opaque (native-theme-gpui/colors.rs, assign_base_colors)")
@@ -1413,14 +1413,14 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "magenta_light",
                 t.magenta_light,
-                "native-theme-gpui/colors.rs:664",
+                "native-theme-gpui/colors.rs:666",
             ),
             |i| {
                 light(i.config("model", "defaults.accent_color, window.background_color").config("derived", "magenta as its own swatch states it, through light_variant (native-theme-gpui/colors.rs, assign_base_colors)"))
             },
         ),
         ThemeToken::Cyan => (
-            claim("value", "cyan", t.cyan, "native-theme-gpui/colors.rs:673"),
+            claim("value", "cyan", t.cyan, "native-theme-gpui/colors.rs:675"),
             |i| {
                 i.config("model", "defaults.info_color").config("derived", "hue 0.5, a literal, with defaults.info_color's lightness and its saturation capped at 0.85, opaque (native-theme-gpui/colors.rs, assign_base_colors)")
             },
@@ -1430,7 +1430,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "cyan_light",
                 t.cyan_light,
-                "native-theme-gpui/colors.rs:674",
+                "native-theme-gpui/colors.rs:676",
             ),
             |i| {
                 light(i.config("model", "defaults.info_color, window.background_color").config("derived", "cyan as its own swatch states it, through light_variant (native-theme-gpui/colors.rs, assign_base_colors)"))

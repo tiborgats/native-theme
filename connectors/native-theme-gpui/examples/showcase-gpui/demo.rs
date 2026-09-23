@@ -1223,7 +1223,7 @@ pub(crate) fn preferences(
     .item(preference_item(
         ui,
         "Reduce transparency",
-        "reduce_transparency: the backdrop behind a dialog or a sheet is made opaque",
+        "reduce_transparency: the backdrop behind a dialog or a sheet is not drawn",
         Preference::ReduceTransparency,
         disabled,
     ));

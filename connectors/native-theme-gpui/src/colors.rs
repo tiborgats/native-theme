@@ -503,21 +503,23 @@ fn assign_misc(
     tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
     tc.description_list_label_foreground = c.muted_fg;
 
-    // Issue 6: respect reduce_transparency. When the user requests reduced
-    // transparency, use a fully opaque overlay instead of semi-transparent.
+    // The overlay is the scrim gpui-component lays over the window behind a
+    // dialog or sheet. Under reduce_transparency it is not drawn: Apple's
+    // `accessibilityDisplayShouldReduceTransparency` asks for no
+    // semitransparent backgrounds ("use only opaque windows"), and an opaque
+    // scrim would hide the whole window. Transparent black is upstream's own
+    // colour for no overlay (dialog/dialog.rs:277-279); the backdrop still
+    // takes the clicks, whatever its colour.
     let shadow = rgba_to_hsla(resolved.defaults.shadow_color);
-    let overlay_alpha = if reduce_transparency {
-        1.0
-    } else if is_dark {
-        0.5
+    tc.overlay = if reduce_transparency {
+        Hsla::transparent_black()
     } else {
-        0.4
-    };
-    tc.overlay = Hsla {
-        h: shadow.h,
-        s: shadow.s,
-        l: shadow.l,
-        a: overlay_alpha,
+        Hsla {
+            h: shadow.h,
+            s: shadow.s,
+            l: shadow.l,
+            a: if is_dark { 0.5 } else { 0.4 },
+        }
     };
 
     // Issue 68: use resolved scrollbar track color instead of plain bg
@@ -1139,6 +1141,31 @@ mod tests {
             tc.overlay.s,
             shadow.s
         );
+    }
+
+    /// Under reduce_transparency the overlay is not drawn: Apple's
+    /// `accessibilityDisplayShouldReduceTransparency` asks for no
+    /// semitransparent backgrounds, and an opaque overlay would hide the
+    /// whole window behind a dialog or sheet. It is upstream's own colour for
+    /// no overlay (`dialog::overlay_color(false)`, transparent black).
+    #[test]
+    fn reduce_transparency_draws_no_overlay() {
+        let resolved = test_resolved();
+        for is_dark in [false, true] {
+            let tc = to_theme_color(&resolved, is_dark, true);
+            assert_eq!(
+                tc.overlay,
+                Hsla::transparent_black(),
+                "is_dark {is_dark}: the overlay {:?} is drawn under reduce_transparency",
+                tc.overlay
+            );
+            let normal = to_theme_color(&resolved, is_dark, false);
+            assert!(
+                normal.overlay.a > 0.0 && normal.overlay.a < 1.0,
+                "is_dark {is_dark}: without the preference the overlay is not translucent: {:?}",
+                normal.overlay
+            );
+        }
     }
 
     #[test]

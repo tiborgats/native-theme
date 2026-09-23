@@ -629,7 +629,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The four base-palette colours the connector maps directly
-    // (`colors.rs:601-607`); their `_light` siblings are derived.
+    // (`colors.rs:649-656`); their `_light` siblings are derived.
     Row {
         slot: "red",
         native: |r| r.defaults.danger_color,
@@ -846,7 +846,7 @@ const DERIVED: &[(&str, &str)] = &[
     ),
     (
         "overlay",
-        "defaults.shadow_color at the mode's overlay alpha",
+        "defaults.shadow_color at the mode's overlay alpha; transparent under reduce_transparency",
     ),
     ("drag_border", "primary faded to 0.65"),
     ("drop_target", "primary faded to 0.2"),
