@@ -5,6 +5,7 @@ use native_theme_gpui::Native;
 
 use crate::support::{native_geometry, refined};
 
+pub mod buttons;
 pub mod chrome;
 pub mod registry;
 pub use chrome::*;

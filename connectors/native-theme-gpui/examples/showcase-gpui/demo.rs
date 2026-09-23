@@ -3,7 +3,7 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    Action, AnyElement, App, Axis, Div, ElementId, Entity, Pixels, SharedString, Stateful,
+    Action, AnyElement, App, Axis, Context, Div, ElementId, Entity, Pixels, SharedString, Stateful,
     StyleRefinement, Window, div, prelude::*, px,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
@@ -11,13 +11,17 @@ use gpui_component::{
     ActiveTheme, Collapsible, Disableable as _, IconName, Sizable as _, Size, StyledExt as _,
     TitleBar, WindowExt as _,
     alert::Alert,
-    button::{Button, ButtonVariants as _, Toggle, ToggleGroup, ToggleVariants as _},
+    button::{
+        Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
+        ToggleVariants as _,
+    },
+    clipboard::Clipboard,
     combobox::{Combobox, ComboboxState},
     command::{Command, CommandGroup, CommandState},
     dialog::{Dialog, DialogDescription, DialogTitle},
     h_flex,
     link::Link,
-    menu::AppMenuBar,
+    menu::{AppMenuBar, PopupMenu},
     select::{SearchableVec, Select, SelectState},
     separator::Separator,
     setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
@@ -28,11 +32,11 @@ use gpui_component::{
     tab::{Tab, TabBar},
     v_flex,
 };
-use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry, variants};
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
-use crate::support::{PresetDelegate, native_icon, native_value, with_gap};
+use crate::support::{PresetDelegate, native_geometry, native_icon, native_value, with_gap};
 use crate::{
     CHROME_APP_MENU_BAR, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
     OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PREF_HIGH_CONTRAST,
@@ -776,4 +780,217 @@ pub(crate) fn alert(
         .banner()
         .info(ui, id, info::theme_error_alert(cx.theme()))
         .w_full()
+}
+
+// ---------------------------------------------------------------------------
+// The Buttons page
+// ---------------------------------------------------------------------------
+
+/// The Button variants the showcase builds, so the matches over them in
+/// `info::buttons` are exhaustive and the compiler rejects a variant without
+/// an arm.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ButtonKind {
+    Default,
+    Primary,
+    Secondary,
+    Danger,
+    Success,
+    Warning,
+    Info,
+    /// `native_theme_gpui::variants::ghost_button`, not upstream's `.ghost()`.
+    Ghost,
+    Link,
+    Text,
+    /// Primary, outlined.
+    PrimaryOutline,
+}
+
+impl ButtonKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Default => "Default",
+            Self::Primary => "Primary",
+            Self::Secondary => "Secondary",
+            Self::Danger => "Danger",
+            Self::Success => "Success",
+            Self::Warning => "Warning",
+            Self::Info => "Info",
+            Self::Ghost => "Ghost",
+            Self::Link => "Link",
+            Self::Text => "Text",
+            Self::PrimaryOutline => "Primary, outline",
+        }
+    }
+    /// `button` given this variant.
+    fn apply(self, button: Button, cx: &App) -> Button {
+        match self {
+            Self::Default => button,
+            Self::Primary => button.primary(),
+            Self::Secondary => button.secondary(),
+            Self::Danger => button.danger(),
+            Self::Success => button.success(),
+            Self::Warning => button.warning(),
+            // By path: `InfoExt::info` is in scope too.
+            Self::Info => ButtonVariants::info(button),
+            Self::Ghost => button.custom(variants::ghost_button(cx)),
+            Self::Link => button.link(),
+            Self::Text => button.text(),
+            Self::PrimaryOutline => button.primary().outline(),
+        }
+    }
+}
+
+/// What a Button of the Buttons page is doing.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ButtonState {
+    Idle,
+    Disabled,
+    Loading,
+}
+
+/// One Button of the Buttons page. `id` is its info's id and its debug
+/// selector.
+pub(crate) struct DemoButton {
+    pub id: &'static str,
+    pub label: &'static str,
+    pub kind: ButtonKind,
+    pub state: ButtonState,
+    pub icon: Option<IconName>,
+}
+
+/// A Button refined by `geometry::button`.
+pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> Stateful<Div> {
+    let DemoButton {
+        id,
+        label,
+        kind,
+        state,
+        icon,
+    } = spec;
+    // What `native_info` applies the builder under.
+    let styled = native_geometry(cx, geometry::button).is_some();
+    let mut button_info =
+        info::buttons::button(cx.theme(), kind, state, icon.is_some(), None, styled);
+    let button = native_info(
+        kind.apply(Button::new(id), cx),
+        cx,
+        geometry::button,
+        "button",
+        &mut button_info,
+    )
+    .label(label)
+    .when_some(icon, |button, icon| button.icon(icon))
+    .disabled(state == ButtonState::Disabled)
+    .loading(state == ButtonState::Loading);
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
+}
+
+/// A Default Button at `size`, left without `geometry::button`: this row
+/// shows upstream's own size scale, which the refinement would overrule
+/// (button/button.rs:626-641, then :690).
+pub(crate) fn sized_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    size: Size,
+) -> Stateful<Div> {
+    let button = Button::new(id).label(label).with_size(size);
+    InfoExt::info(
+        button,
+        ui,
+        id,
+        info::buttons::button(
+            cx.theme(),
+            ButtonKind::Default,
+            ButtonState::Idle,
+            false,
+            Some(size),
+            false,
+        ),
+    )
+}
+
+/// A `ButtonGroup` of Default Buttons reading `labels`, without
+/// `geometry::button`: the group joins its Buttons' corners and edges itself
+/// (button/button_group.rs:182-229), which a refinement's radius would undo.
+pub(crate) fn button_group(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    labels: &[&'static str],
+) -> Stateful<Div> {
+    let group =
+        ButtonGroup::new(id).children(labels.iter().map(|&label| Button::new(label).label(label)));
+    InfoExt::info(group, ui, id, info::buttons::button_group(cx.theme()))
+}
+
+/// A `DropdownButton` whose Button, of `kind`, reads `label`, opening
+/// `menu`. Neither half takes `geometry::button`: the DropdownButton joins
+/// their corners itself (button/dropdown_button.rs:174-207).
+pub(crate) fn dropdown_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    kind: ButtonKind,
+    menu: impl Fn(PopupMenu, &mut Window, &mut Context<PopupMenu>) -> PopupMenu + 'static,
+) -> Stateful<Div> {
+    let dropdown = DropdownButton::new(id)
+        .button(kind.apply(Button::new("button"), cx).label(label))
+        .dropdown_menu(menu);
+    InfoExt::info(
+        dropdown,
+        ui,
+        id,
+        info::buttons::dropdown_button(cx.theme(), kind),
+    )
+}
+
+/// A `Toggle` showing `icon`, named `icon_name` in its info, `checked` or
+/// not; a click hands `on_click` the state it asks for.
+pub(crate) fn toggle(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    icon: IconName,
+    icon_name: &'static str,
+    checked: bool,
+    on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    Toggle::new(id)
+        .icon(icon)
+        .checked(checked)
+        .on_click(on_click)
+        .info(
+            ui,
+            id,
+            info::buttons::toggle(cx.theme(), icon_name, checked),
+        )
+}
+
+/// A `ToggleGroup` of unchecked Toggles reading `labels`.
+pub(crate) fn toggle_group(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    labels: &[&'static str],
+) -> Stateful<Div> {
+    ToggleGroup::new(id)
+        .children(labels.iter().map(|&label| Toggle::new(label).label(label)))
+        .info(ui, id, info::buttons::toggle_group(cx.theme()))
+}
+
+/// A `Clipboard` copying `value`.
+pub(crate) fn clipboard(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    value: &'static str,
+) -> Stateful<Div> {
+    Clipboard::new(id)
+        .value(value)
+        .info(ui, id, info::buttons::clipboard(cx.theme(), value))
 }

@@ -300,6 +300,12 @@ pub(crate) const PREF_REDUCE_MOTION: &str = "pref-reduce-motion";
 pub(crate) const PREF_HIGH_CONTRAST: &str = "pref-high-contrast";
 pub(crate) const PREF_REDUCE_TRANSPARENCY: &str = "pref-reduce-transparency";
 
+/// The ids and debug selectors of two Buttons of the Buttons page's variant
+/// row, which `two_buttons_of_different_variants_show_different_infos`
+/// hovers.
+pub(crate) const BUTTONS_PRIMARY: &str = "buttons-primary";
+pub(crate) const BUTTONS_DANGER: &str = "buttons-danger";
+
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside
 /// one and `the_three_list_frames_agree` can measure their frames.

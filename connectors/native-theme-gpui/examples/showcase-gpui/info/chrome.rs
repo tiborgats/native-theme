@@ -382,7 +382,7 @@ pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
 /// in dark mode (button/button.rs:1125-1131).
-fn ghost_hover(t: &Theme) -> ColorClaim {
+pub(super) fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",

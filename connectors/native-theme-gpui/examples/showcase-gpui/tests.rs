@@ -29,15 +29,16 @@ use crate::info::{
 use crate::inspector::InspectorTab;
 use crate::support::{CAROUSEL_SLIDES, native_geometry, native_value};
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
-    CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO,
-    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
+    BUTTONS_DANGER, BUTTONS_PRIMARY, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR,
+    CHROME_HANDLE_NAV, CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR,
+    CHROME_TOOLBAR, CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL,
+    CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
+    INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
+    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
+    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
+    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
+    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
+    TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -1279,15 +1280,16 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    let clipboard = bounds_of(&mut cx, PROBE_CLIPBOARD).center();
+    show(&mut cx, &showcase, Page::Overlays);
+    let alert = bounds_of(&mut cx, PROBE_ALERT_DIALOG).center();
     let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
-    hover(&mut cx, clipboard);
+    hover(&mut cx, alert);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("Clipboard"),
-        "the Clipboard block's text panel is not shown"
+        Some("AlertDialog"),
+        "the AlertDialog block's text panel is not shown"
     );
     hover(&mut cx, item);
     settle(&mut cx);
@@ -1297,19 +1299,19 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
         Some("SidebarMenuItem · Charts"),
         "a settled info did not replace the text panel"
     );
-    hover(&mut cx, clipboard);
+    hover(&mut cx, alert);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("Clipboard"),
+        Some("AlertDialog"),
         "the text panel did not replace the settled info"
     );
     show(&mut cx, &showcase, Page::Inputs);
     assert_eq!(
         inspector_title(&mut cx, &showcase),
         None,
-        "the Buttons page's text panel stayed after the page changed"
+        "the Overlays page's text panel stayed after the page changed"
     );
 }
 
@@ -1319,13 +1321,14 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
 #[gpui::test]
 fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    let clipboard = bounds_of(&mut cx, PROBE_CLIPBOARD).center();
+    show(&mut cx, &showcase, Page::Overlays);
+    let alert = bounds_of(&mut cx, PROBE_ALERT_DIALOG).center();
     let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
     let inspector = bounds_of(&mut cx, INSPECTOR_PANEL).center();
     hover(&mut cx, item);
     settle(&mut cx);
     draw(&mut cx);
-    hover(&mut cx, clipboard);
+    hover(&mut cx, alert);
     cx.executor().advance_clock(INFO_SETTLE / 2);
     cx.run_until_parked();
     hover(&mut cx, inspector);
@@ -1334,7 +1337,7 @@ fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
         Some("SidebarMenuItem · Charts"),
-        "passing over the Clipboard block replaced the Sidebar item's info"
+        "passing over the AlertDialog block replaced the Sidebar item's info"
     );
 }
 
@@ -1596,6 +1599,37 @@ fn the_chrome_bars_report_themselves(cx: &mut TestAppContext) {
             "the pointer at {at:?} settled, and the inspector does not show the {title}"
         );
     }
+}
+
+/// Two Buttons of different variants show different infos (spec §4.3.2):
+/// the pointer settled on the Primary Button shows the Primary's info, and
+/// moved to the Danger Button beside it, the Danger's.
+#[gpui::test]
+fn two_buttons_of_different_variants_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Buttons);
+    let mut texts = Vec::new();
+    for (selector, title) in [
+        (BUTTONS_PRIMARY, "Button · Primary"),
+        (BUTTONS_DANGER, "Button · Danger"),
+    ] {
+        let at = bounds_of(&mut cx, selector).center();
+        hover(&mut cx, at);
+        settle(&mut cx);
+        draw(&mut cx);
+        assert_eq!(
+            inspector_title(&mut cx, &showcase).as_deref(),
+            Some(title),
+            "the pointer settled on {selector}, and the inspector does not show its info"
+        );
+        texts.push(read(&mut cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().map(|info| info.to_text())
+        }));
+    }
+    assert!(
+        texts.first() != texts.get(1),
+        "the Primary and the Danger Button show the same info: {texts:?}"
+    );
 }
 
 /// The status bar reports the installed accessibility preferences (spec
