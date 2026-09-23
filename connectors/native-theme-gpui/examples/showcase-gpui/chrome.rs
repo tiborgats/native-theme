@@ -154,7 +154,7 @@ pub(crate) fn sidebar(app: &Showcase, cx: &App) -> impl IntoElement {
                 (
                     CHROME_LABEL_MODE,
                     "Mode",
-                    demo::color_mode_toggle_group(ui, cx, app.color_mode)
+                    demo::color_mode_select(ui, cx, &app.color_mode_select)
                         .debug_selector(|| PROBE_COLOR_MODE.into())
                         .into_any_element(),
                 ),

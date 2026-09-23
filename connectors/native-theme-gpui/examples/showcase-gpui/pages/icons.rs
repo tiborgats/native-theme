@@ -19,7 +19,7 @@ impl Showcase {
         let ui = &self.info_ui;
         let set = self.icon_set_label();
         let drawn = self.chrome_icon(&ICON_SIZES_ICON);
-        let preset = &self.current_theme_name;
+        let preset = self.platform_preset();
         let cells = IconSizeContext::ALL.map(|context| {
             demo::icon_size_cell(ui, cx, context, &drawn, &ICON_SIZES_ICON, &set, preset)
         });

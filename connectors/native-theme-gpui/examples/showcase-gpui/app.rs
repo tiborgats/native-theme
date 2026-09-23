@@ -97,7 +97,7 @@ actions!(
 #[action(namespace = showcase, no_json)]
 pub(crate) struct ShowPage(pub usize);
 
-/// Install a colour mode, as the Sidebar's colour-mode switch does.
+/// Install a colour mode, as the Sidebar's colour-mode Select does.
 #[derive(Clone, PartialEq, Debug, Action)]
 #[action(namespace = showcase, no_json)]
 pub(crate) struct SetColorMode(pub AppColorMode);
@@ -145,8 +145,8 @@ impl AppColorMode {
         }
     }
 
-    /// Display label for the command palette and the System toggle's
-    /// tooltip, with system preference in parentheses.
+    /// Display label for the command palette, with system preference in
+    /// parentheses.
     pub(crate) fn label(self) -> String {
         match self {
             AppColorMode::System => {
@@ -158,9 +158,20 @@ impl AppColorMode {
         }
     }
 
-    /// The colour-mode switch's text for this mode: the mode alone. The mode
-    /// System resolves to is in that toggle's tooltip, `label`, and, while
-    /// System is chosen, in the status bar.
+    /// Every mode, in the order the colour-mode Select lists them.
+    pub(crate) const ALL: [AppColorMode; 3] = [
+        AppColorMode::System,
+        AppColorMode::Light,
+        AppColorMode::Dark,
+    ];
+
+    /// The mode whose `short_label` is `label`.
+    fn from_short_label(label: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|m| m.short_label() == label)
+    }
+
+    /// The colour-mode Select's row for this mode: the mode alone. The mode
+    /// System resolves to is in the status bar while System is chosen.
     pub(crate) fn short_label(self) -> &'static str {
         match self {
             AppColorMode::System => "System",
@@ -180,6 +191,10 @@ pub(crate) struct Showcase {
     pub(crate) current_theme_name: String,
     /// Dynamic label for the "default" theme entry, updated on color mode change.
     pub(crate) default_label: String,
+    /// The platform preset the "default" theme is built on, as its label
+    /// names it: `SystemTheme::preset`, or `platform_preset_name` where the
+    /// OS theme could not be read.
+    pub(crate) default_preset: String,
     pub(crate) is_dark: bool,
     pub(crate) color_mode: AppColorMode,
     /// Original native-theme font spec, for display purposes.
@@ -294,6 +309,10 @@ pub(crate) struct Showcase {
     /// What the last `AlertDialog` was answered with, written by its `on_ok`
     /// and `on_cancel` so the section reports a real outcome.
     pub(crate) alert_choice: Option<SharedString>,
+
+    /// The Sidebar header's colour-mode Select (spec §3.3): a row per
+    /// `AppColorMode::ALL`, reading its `short_label`.
+    pub(crate) color_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
 
     // Icon set selector state
     pub(crate) icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
@@ -665,6 +684,37 @@ impl Showcase {
         .detach();
 
         let color_mode = AppColorMode::System;
+        let color_mode_select = cx.new(|cx| {
+            SelectState::new(
+                SearchableVec::new(
+                    AppColorMode::ALL
+                        .map(|m| SharedString::from(m.short_label()))
+                        .to_vec(),
+                ),
+                AppColorMode::ALL
+                    .iter()
+                    .position(|&m| m == color_mode)
+                    .map(|ix| gpui_component::IndexPath::default().row(ix)),
+                window,
+                cx,
+            )
+        });
+        cx.subscribe_in(
+            &color_mode_select,
+            window,
+            |_this: &mut Self,
+             _entity,
+             event: &SelectEvent<SearchableVec<SharedString>>,
+             window,
+             cx| {
+                if let SelectEvent::Confirm(Some(value)) = event
+                    && let Some(mode) = AppColorMode::from_short_label(value)
+                {
+                    window.dispatch_action(Box::new(SetColorMode(mode)), cx);
+                }
+            },
+        )
+        .detach();
 
         let input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
@@ -767,7 +817,7 @@ impl Showcase {
         let (
             original_font,
             original_mono_font,
-            initial_default_label,
+            (initial_default_label, initial_default_preset),
             initial_icon_theme,
             initial_icon_set,
             initial_has_toml_icon_theme,
@@ -795,7 +845,14 @@ impl Showcase {
                 let label = format!("default ({})", system.preset);
                 // Platform presets always specify icon_theme
                 (
-                    font, mono_font, label, icon_theme, icon_set, true, layout, None,
+                    font,
+                    mono_font,
+                    (label, system.preset.clone()),
+                    icon_theme,
+                    icon_set,
+                    true,
+                    layout,
+                    None,
                 )
             }
             Err(e) => {
@@ -826,7 +883,7 @@ impl Showcase {
                 (
                     font,
                     mono_font,
-                    label,
+                    (label, preset.name.to_string()),
                     icon_theme,
                     icon_set,
                     false,
@@ -1057,6 +1114,7 @@ impl Showcase {
             preset_combobox,
             current_theme_name: "default".into(),
             default_label: initial_default_label,
+            default_preset: initial_default_preset,
             is_dark,
             color_mode,
             original_font,
@@ -1112,6 +1170,7 @@ impl Showcase {
             toggle_bold: false,
             toggle_italic: false,
             alert_choice: None,
+            color_mode_select,
             icon_set_select,
             icon_set_name: initial_resolved_name,
             icon_set_enum: Some(initial_effective_set),
@@ -1188,6 +1247,7 @@ impl Showcase {
                         Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
                     }
                     self.default_label = format!("default ({})", system.preset);
+                    self.default_preset = system.preset.clone();
                     self.error_message = None;
                 }
                 Err(e) => {
@@ -1289,9 +1349,29 @@ impl Showcase {
 
     fn set_color_mode(&mut self, mode: AppColorMode, window: &mut Window, cx: &mut Context<Self>) {
         self.color_mode = mode;
+        self.show_color_mode(window, cx);
         self.is_dark = mode.is_dark();
         let name = self.current_theme_name.clone();
         self.apply_theme_by_name(&name, window, cx);
+    }
+
+    /// The key of the preset the installed theme is: the current theme's,
+    /// or, under "default", the platform preset it is built on.
+    pub(crate) fn platform_preset(&self) -> &str {
+        if self.current_theme_name == "default" {
+            &self.default_preset
+        } else {
+            &self.current_theme_name
+        }
+    }
+
+    /// Show the current colour mode chosen in the Sidebar's colour-mode
+    /// Select, whichever way it was chosen.
+    pub(crate) fn show_color_mode(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let label = SharedString::from(self.color_mode.short_label());
+        self.color_mode_select.update(cx, |select, cx| {
+            select.set_selected_value(&label, window, cx);
+        });
     }
 
     /// Read the desktop's settings again and re-install the current theme

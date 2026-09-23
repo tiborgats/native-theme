@@ -255,16 +255,21 @@ pub(crate) const CHROME_LABEL_ICON_SET: &str = "chrome-label-icon-set";
 /// `SidebarTheme` has no width (spec §1.3), so this is the showcase's own
 /// layout default, and dragging the panel's handle changes it.
 ///
-/// It is the narrowest whole-pixel width at which the Sidebar header's
-/// controls fit (spec §3.3), as `the_sidebar_header_holds_the_theme_settings`
-/// measures them, each native preset resolved at its own platform's DPI: the
-/// colour-mode switch, whose toggles keep their text's width, is the widest.
-/// At 205px every preset in the test fits; at 204px adwaita's does not. The
-/// test lays text out with gpui's test text system, which advances every
-/// glyph 0.6em (gpui-pre platform.rs, `NoopTextSystem`), so the width is
-/// conservative for these labels.
+/// It is 200px, the width the Sidebar had before its header held the theme
+/// settings (spec §3.3). The header's three controls are a Combobox and two
+/// Selects, triggers that take the panel's width and truncate their text, so
+/// their text forces no width on the panel; what does is the minimum width
+/// `geometry::select` and `geometry::combobox` give the triggers,
+/// `combo_box.min_width`, against the panel less the header slot's padding,
+/// which is rem-based (sidebar/mod.rs:431-432) and so grows with the text.
+/// Measured by `the_sidebar_header_holds_the_theme_settings` -- each native
+/// preset resolved at its own platform's DPI, at text scale 1 and at 2 --
+/// the header fits at 200px and down to 172px; at 171px, under ios at text
+/// scale 2, the header is 119px wide, narrower than the triggers' 120px
+/// minimum. The test lays text out with gpui's test text system, which
+/// advances every glyph 0.6em (gpui-pre platform.rs, `NoopTextSystem`).
 pub(crate) const NAV_WIDTH: Pixels = px(NAV_WIDTH_PX);
-const NAV_WIDTH_PX: f32 = 205.;
+const NAV_WIDTH_PX: f32 = 200.;
 
 /// The initial width of the inspector's panel. The model states no such
 /// value: it has no inspector at all (spec §1.3), so this is the showcase's
@@ -488,15 +493,9 @@ pub(crate) const PROBE_STEPPER: &str = "probe-stepper";
 pub(crate) const PROBE_CAROUSEL_LAST: &str = "probe-carousel-last";
 pub(crate) const PROBE_ALERT_DIALOG: &str = "probe-alert-dialog";
 pub(crate) const PROBE_NOTIFICATION: &str = "probe-notification";
+/// The Sidebar header's colour-mode Select, which
+/// `interactive_controls_respond` drives.
 pub(crate) const PROBE_COLOR_MODE: &str = "probe-color-mode";
-/// The text of each of the colour-mode switch's toggles, in its order:
-/// System, Light, Dark. What `the_sidebar_header_holds_the_theme_settings`
-/// measures the switch's fit by.
-pub(crate) const PROBE_COLOR_MODE_TEXTS: [&str; 3] = [
-    "probe-color-mode-system",
-    "probe-color-mode-light",
-    "probe-color-mode-dark",
-];
 /// The Sidebar header's icon-set Select, which
 /// `the_sidebar_header_switches_the_icon_set` drives.
 pub(crate) const PROBE_ICON_SET: &str = "probe-icon-set";
@@ -923,6 +922,7 @@ fn main() {
                         };
                         s.color_mode = mode;
                         s.is_dark = is_dark;
+                        s.show_color_mode(window, cx);
                     }
 
                     // Override theme if --theme was specified

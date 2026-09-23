@@ -1473,12 +1473,16 @@ the gap — closing it is a change, and each wants its own decision.
       structured form (per platform, per field, the value, its context and
       its source), every native value — not only padding and the toolbar —
       could be gated, and the Markdown tables generated from it.
-- [ ] **macOS: the Sidebar icon runs into its rail item's padding.** Under
+- [x] **macOS: the Sidebar icon runs into its rail item's padding.** Under
       macos-sonoma at 96 DPI (rem 17.33px) the icon rail's items are 30px
       wide, and gpui-component's `p_2` on every side (sidebar/menu.rs:284)
       leaves about 12.7px, so the 16px icon runs about 1.7px into the
       padding on each side. It still lies inside its item. The padding is
-      upstream's; measured in v0.5.9 Task 5.
+      upstream's; measured in v0.5.9 Task 5. *Re-measured at 72 DPI*, the
+      DPI macOS resolves at and the only one the showcase shows macos-sonoma
+      at (it is offered on macOS alone): rem 13px, items 34px wide, `p_2`
+      6.5px, so 21px remains and the 16px icon fits inside the padding. The
+      96 DPI case does not arise.
 - [ ] **WinUI's combobox arrow column: a model extension.** Per-side padding
       is done (v0.5.9). WinUI measures its combobox's right padding, 0, to
       a separate 38px arrow column (platform-facts §2.24), a structure the
@@ -1491,6 +1495,10 @@ the gap — closing it is a change, and each wants its own decision.
         measures the left side only: top and bottom are invisible under
         `items_center` at a fixed height, and the right side is the suffix
         and caret exception. No test measures the Textarea's drawn inset.
+        *Since the final review:* `an_input_without_a_suffix_draws_the_stated_right_padding`
+        measures an Input's right side, and `a_textarea_draws_no_padding`
+        the Textarea's inset, each as the size the padding adds, since
+        neither side has a child to measure it by.
       - The NavItem's icon expression could not be extracted whole into a
         `pub(crate)` helper: `every_widget_reports_itself` has no exemption
         for a part whose caller reports it. The test checks the helper
@@ -1500,6 +1508,14 @@ the gap — closing it is a change, and each wants its own decision.
       - Under the `default` theme, the Icon Sizes cells carry no per-cell
         caveat for unsourced sizes: the showcase keeps `default_label`, not
         the system preset's key. The section's general line still applies.
+        *Fixed since the final review:* the showcase keeps the key too
+        (`default_preset`), and the cells take the caveat of the preset
+        `default` is built on.
+      - The status bar carries two debug-selector probes, an
+        environment-text wrapper and an empty middle box, so the tests can
+        measure its content. Task 6's new status-bar tests allow one device
+        pixel, half a logical pixel at the test window's scale factor of 2
+        (gpui-pre platform/test/window.rs:129).
 
 #### Upstream PR to gpui
 

@@ -52,9 +52,9 @@ use crate::{
     OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
     OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
     PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COLOR_MODE_TEXTS, PROBE_COMBOBOX, PROBE_ICON_SET, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT,
-    STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_SET, PROBE_NOTIFICATION, PROBE_PAGINATION,
+    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
+    STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
     TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
 };
 
@@ -577,50 +577,81 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Notification: nothing was pushed"
     );
 
-    // --- The Sidebar header's colour mode switch -----------------------
+    // --- The Sidebar header's colour-mode Select ------------------------
     //
-    // The group's toggles are System, Light, Dark, and a Toggle carries no
-    // selector of its own, so the step clicks the group's two ends. Dark is
-    // clicked from light, so the theme's mode always has to change: on a
-    // dark desktop, System already is dark, and the Theme menu's Light sets
-    // the start. Then System, back from Dark.
+    // Its rows are System, Light and Dark, and they are not searchable, so
+    // the keyboard walks from the chosen row to Dark and back to System, and
+    // Enter takes each. Dark is chosen from light, so the theme's mode always
+    // has to change: on a dark desktop, System already is dark, and the
+    // Theme menu's Light sets the start, which the Select has to show too.
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.color_mode),
         AppColorMode::System,
         "the showcase no longer starts in System, so choosing Dark may prove nothing"
     );
-    if native_theme::detect::system_is_dark() {
+    let start = if native_theme::detect::system_is_dark() {
         run_menu_item(&mut cx, "Theme", "Light");
-    }
+        AppColorMode::Light
+    } else {
+        AppColorMode::System
+    };
     assert!(
         !cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
         "the step does not start from light, so choosing Dark may change nothing"
     );
-    let group = bounds_of(&mut cx, PROBE_COLOR_MODE);
-    assert!(
-        within(group, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
-        "the colour mode switch at {group:?} is not in the Sidebar header"
+    let shown = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            this.color_mode_select.read(cx).selected_value().cloned()
+        })
+    };
+    assert_eq!(
+        shown(&mut cx).as_deref(),
+        Some(start.short_label()),
+        "the colour-mode Select does not show the mode the showcase is in"
     );
-    click_at(&mut cx, point(group.right() - px(4.), group.center().y));
+    let select = bounds_of(&mut cx, PROBE_COLOR_MODE);
+    assert!(
+        within(select, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
+        "the colour-mode Select at {select:?} is not in the Sidebar header"
+    );
+    click(&mut cx, PROBE_COLOR_MODE);
+    let steps = if start == AppColorMode::Light { 1 } else { 2 };
+    for _ in 0..steps {
+        cx.simulate_keystrokes("down");
+    }
+    cx.simulate_keystrokes("enter");
+    cx.run_until_parked();
+    draw(&mut cx);
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.color_mode),
         AppColorMode::Dark,
-        "the colour mode switch's Dark did not reach SetColorMode"
+        "the colour-mode Select's Dark did not reach SetColorMode"
     );
     assert!(
         cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
-        "the colour mode switch's Dark did not reach Theme::mode"
+        "the colour-mode Select's Dark did not reach Theme::mode"
     );
-    click_at(&mut cx, point(group.left() + px(4.), group.center().y));
+    click(&mut cx, PROBE_COLOR_MODE);
+    cx.simulate_keystrokes("up");
+    cx.simulate_keystrokes("up");
+    cx.simulate_keystrokes("enter");
+    cx.run_until_parked();
+    draw(&mut cx);
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.color_mode),
         AppColorMode::System,
-        "the colour mode switch's System did not reach SetColorMode"
+        "the colour-mode Select's System did not reach SetColorMode"
     );
     assert_eq!(
         cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
         native_theme::detect::system_is_dark(),
-        "the colour mode switch's System did not install the desktop's mode"
+        "the colour-mode Select's System did not install the desktop's mode"
+    );
+    run_menu_item(&mut cx, "Theme", "Dark");
+    assert_eq!(
+        shown(&mut cx).as_deref(),
+        Some(AppColorMode::Dark.short_label()),
+        "Theme > Dark did not show Dark in the colour-mode Select"
     );
 }
 
@@ -977,13 +1008,15 @@ fn the_sidebar_header_switches_the_preset(cx: &mut TestAppContext) {
 /// offered on its own platform -- the preset switch lists the presets
 /// `Theme::list_presets_for_platform` gives, so macos-sonoma is offered on
 /// macOS alone -- and macos-sonoma resolved on a 96 DPI Linux host is not a
-/// configuration the showcase shows. The colour-scheme preset, offered
-/// everywhere, keeps the host's DPI (`None`), as
-/// `ResolutionContext::from_system` reads it.
-const SIDEBAR_HEADER_PRESETS: [(&str, Option<f32>); 5] = [
+/// configuration the showcase shows. ios is offered on macOS too (its
+/// preset lists `platforms = ["macos", "ios"]`), so it is resolved at 72.
+/// The colour-scheme preset, offered everywhere, keeps the host's DPI
+/// (`None`), as `ResolutionContext::from_system` reads it.
+const SIDEBAR_HEADER_PRESETS: [(&str, Option<f32>); 6] = [
     ("kde-breeze", Some(96.0)),
     ("adwaita", Some(96.0)),
     ("macos-sonoma", Some(72.0)),
+    ("ios", Some(72.0)),
     ("windows-11", Some(96.0)),
     ("nord", None),
 ];
@@ -1000,6 +1033,18 @@ fn use_preset_at(
     showcase: &Entity<Showcase>,
     preset: &str,
     dpi: Option<f32>,
+) {
+    use_preset_scaled(cx, showcase, preset, dpi, 1.0);
+}
+
+/// [`use_preset_at`], with the text scaled by `text_scale`, the
+/// accessibility preferences' only other difference from the defaults.
+fn use_preset_scaled(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    preset: &str,
+    dpi: Option<f32>,
+    text_scale: f32,
 ) {
     use_preset(cx, showcase, preset);
     let font_dpi = dpi.unwrap_or_else(|| native_theme::ResolutionContext::from_system().font_dpi);
@@ -1019,7 +1064,10 @@ fn use_preset_at(
                 ..native_theme::ResolutionContext::for_tests()
             })
             .expect("the preset resolves");
-        let prefs = native_theme::AccessibilityPreferences::default();
+        let prefs = native_theme::AccessibilityPreferences {
+            text_scaling_factor: text_scale,
+            ..native_theme::AccessibilityPreferences::default()
+        };
         native_theme_gpui::apply(
             native_theme_gpui::to_theme(&resolved, preset, is_dark, &prefs),
             &resolved,
@@ -1031,19 +1079,53 @@ fn use_preset_at(
     draw(cx);
 }
 
+/// The narrowest the Sidebar header's triggers can be: the minimum width
+/// `geometry::select` and `geometry::combobox` give them, `None` where no
+/// native theme is installed or they give none. A trigger takes the header's
+/// width and this minimum where that is wider, and its wrapper, which the
+/// probes are on, is the header's width either way, so a trigger wider than
+/// the header does not show in the wrapper's bounds.
+fn header_trigger_min_width(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> Option<Pixels> {
+    read(cx, showcase, |_this, cx| {
+        [
+            native_value(cx, geometry::select),
+            native_value(cx, geometry::combobox),
+        ]
+        .into_iter()
+        .flatten()
+        .filter_map(|style| match style.min_size.width {
+            Some(Length::Definite(DefiniteLength::Absolute(AbsoluteLength::Pixels(w)))) => Some(w),
+            _ => None,
+        })
+        .max()
+    })
+}
+
 /// The Sidebar header holds the theme settings (spec §3.3): Theme, Mode and
 /// Icon set, each a label above its control, in that order, the gaps
-/// `layout.widget_gap`. Each control takes the panel's width, and each fits
-/// it at `NAV_WIDTH`: the colour-mode switch's toggles keep their text's
-/// width (demo.rs, `color_mode_toggle_group`), so a switch too wide for the
-/// panel runs past it, and the texts' bounds show where. Checked under every
-/// native preset, at its platform's DPI, and one colour-scheme preset at the
-/// host's (`SIDEBAR_HEADER_PRESETS`), whose font sizes differ -- all at a text
-/// scale of 1, whatever the host's, so the measurement is the same on every
-/// machine (`use_preset_at`).
+/// `layout.widget_gap`. Each control is a trigger that takes the panel's
+/// width and truncates its text (select.rs, `SelectState::render`;
+/// combobox.rs, `Combobox`), so its text never widens it; the narrowest it
+/// can be is the minimum its builder gives it, which the header has to be at
+/// least as wide as (`header_trigger_min_width`). Checked under
+/// every native preset, at its platform's DPI, and one colour-scheme preset
+/// at the host's (`SIDEBAR_HEADER_PRESETS`), whose font sizes differ -- at a
+/// text scale of 1, whatever the host's, so the measurement is the same on
+/// every machine (`use_preset_at`) -- and again at a text scale of 2, where
+/// the header's rem-based padding and every text grow: no row's label or
+/// control may extend past the panel, and the triggers' minimum still has to
+/// fit the header.
 #[gpui::test]
 fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let rows = [
+        (CHROME_LABEL_THEME, PROBE_COMBOBOX),
+        (CHROME_LABEL_MODE, PROBE_COLOR_MODE),
+        (CHROME_LABEL_ICON_SET, PROBE_ICON_SET),
+    ];
     for (preset, dpi) in SIDEBAR_HEADER_PRESETS {
         use_preset_at(&mut cx, &showcase, preset, dpi);
         let sidebar = bounds_of(&mut cx, CHROME_SIDEBAR);
@@ -1060,11 +1142,6 @@ fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
             geometry::widget_gap(&this.layout)
         });
         assert!(gap.is_some(), "{preset} states no widget_gap");
-        let rows = [
-            (CHROME_LABEL_THEME, PROBE_COMBOBOX),
-            (CHROME_LABEL_MODE, PROBE_COLOR_MODE),
-            (CHROME_LABEL_ICON_SET, PROBE_ICON_SET),
-        ];
         let mut above: Option<Bounds<Pixels>> = None;
         for (label, control) in rows {
             let (l, c) = (bounds_of(&mut cx, label), bounds_of(&mut cx, control));
@@ -1090,39 +1167,41 @@ fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
             );
             above = Some(c);
         }
-        // A toggle's frame reaches past its text by its padding and its edge:
-        // px_2 at the default Size (button/toggle.rs:178) and a 1px outline
-        // on each outer side of a segmented group (button/toggle.rs:193-194,
-        // the first toggle's left edge and the last one's right). A toggle
-        // that does not shrink ends just there, so the texts, moved out by
-        // that much, have to lie within the switch.
-        let group = bounds_of(&mut cx, PROBE_COLOR_MODE);
-        let frame = cx.update(|window, _| rems(0.5).to_pixels(window.rem_size())) + px(1.);
-        let (first, last) = (
-            bounds_of(&mut cx, PROBE_COLOR_MODE_TEXTS[0]),
-            bounds_of(&mut cx, PROBE_COLOR_MODE_TEXTS[2]),
-        );
-        // The switch is as wide as the panel less the header's padding, so
-        // it needs the panel wider by what it runs past.
-        let over =
-            (last.right() + frame - group.right()).max(group.left() - (first.left() - frame));
+        let min = header_trigger_min_width(&mut cx, &showcase);
         assert!(
-            over <= px(0.01),
-            "{preset}: the colour-mode switch's toggles span {:?} to {:?}, past the switch \
-             at {group:?}, so the switch does not fit NAV_WIDTH: it needs a NAV_WIDTH of at \
-             least {:?}",
-            first.left() - frame,
-            last.right() + frame,
-            NAV_WIDTH + over
+            min.is_some_and(|min| min <= header.size.width),
+            "{preset}: the header's triggers are at least {min:?} wide, wider than the header's \
+             {:?}",
+            header.size.width
         );
-        for text in PROBE_COLOR_MODE_TEXTS {
-            let t = bounds_of(&mut cx, text);
-            assert!(
-                within(t, group),
-                "{preset}: the colour-mode toggle text {text} at {t:?} runs past the switch \
-                 at {group:?}, so the switch does not fit NAV_WIDTH"
-            );
+    }
+
+    for (preset, dpi) in SIDEBAR_HEADER_PRESETS {
+        use_preset_scaled(&mut cx, &showcase, preset, dpi, 2.0);
+        let sidebar = bounds_of(&mut cx, CHROME_SIDEBAR);
+        let header = bounds_of(&mut cx, CHROME_SIDEBAR_HEADER);
+        assert!(
+            within(header, sidebar),
+            "{preset} at text scale 2: the header at {header:?} runs past the Sidebar at {sidebar:?}"
+        );
+        for (label, control) in rows {
+            for part in [label, control] {
+                let b = bounds_of(&mut cx, part);
+                assert!(
+                    within(b, sidebar) && b.right() <= header.right() + px(0.01),
+                    "{preset} at text scale 2: {part} at {b:?} runs past the panel at {sidebar:?} \
+                     (its header ends at {:?})",
+                    header.right()
+                );
+            }
         }
+        let min = header_trigger_min_width(&mut cx, &showcase);
+        assert!(
+            min.is_some_and(|min| min <= header.size.width),
+            "{preset} at text scale 2: the header's triggers are at least {min:?} wide, wider \
+             than the header's {:?}",
+            header.size.width
+        );
     }
 
     // With widget_gap unstated, the gaps are the showcase's own, and the
@@ -2104,7 +2183,9 @@ fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
 /// preset's platform says it has no platform source: adwaita's dialog and
 /// panel (platform-facts.md:1135-1136), and none of kde-breeze's. The preset
 /// is named the way the Sidebar's Combobox names it, which `use_preset`
-/// leaves alone.
+/// leaves alone. Under `default` the caveat is the preset's the desktop
+/// theme is built on: `default` standing for adwaita, as it does on GNOME,
+/// marks adwaita's dialog and panel too.
 #[gpui::test]
 fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -2113,17 +2194,31 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
             this.select_icon_set("gpui-component built-in (Lucide)", window, cx);
         });
     });
-    for (preset, unsourced) in [
-        ("kde-breeze", &[][..]),
+    for (chosen, preset, unsourced) in [
+        ("kde-breeze", "kde-breeze", &[][..]),
         (
+            "adwaita",
+            "adwaita",
+            &[IconSizeContext::Dialog, IconSizeContext::Panel][..],
+        ),
+        (
+            "default",
             "adwaita",
             &[IconSizeContext::Dialog, IconSizeContext::Panel][..],
         ),
     ] {
         cx.update(|_window, cx| {
-            showcase.update(cx, |this, _cx| this.current_theme_name = preset.to_string());
+            showcase.update(cx, |this, _cx| {
+                this.current_theme_name = chosen.to_string();
+                this.default_preset = preset.to_string();
+            });
         });
         use_preset(&mut cx, &showcase, preset);
+        let preset = if chosen == preset {
+            preset.to_string()
+        } else {
+            format!("{chosen} ({preset})")
+        };
         show(&mut cx, &showcase, Page::Icons);
         for context in IconSizeContext::ALL {
             let size = read(&mut cx, &showcase, |_this, cx| {
@@ -2161,7 +2256,10 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
             let marked = info
                 .as_ref()
                 .and_then(|i| i.instance.iter().find(|n| n.what == "size"))
-                .is_some_and(|n| n.text.contains("has no platform source"));
+                .is_some_and(|n| {
+                    n.text.contains("has no platform source")
+                        && n.text.contains("native-theme's adwaita preset")
+                });
             assert_eq!(
                 marked,
                 unsourced.contains(&context),

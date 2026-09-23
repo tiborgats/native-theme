@@ -23,7 +23,6 @@ use gpui_component::{
     bubble::{Bubble, BubbleVariant},
     button::{
         Button, ButtonGroup, ButtonVariant, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
-        ToggleVariants as _,
     },
     calendar::{Calendar, CalendarState},
     carousel::{
@@ -95,7 +94,7 @@ use native_theme_gpui::{
     AccessibilityPreferences, ActiveNativeTheme as _, Native, geometry, variants,
 };
 
-use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage};
+use crate::app::{Quit, ShowPage};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
@@ -106,8 +105,8 @@ use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDEBAR_HEADER, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK,
     OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
     OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST,
-    PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_COLOR_MODE_TEXTS,
-    PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
+    PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page,
+    STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
 };
 
 /// An icon at the platform's size for the role the builder names; upstream's
@@ -268,70 +267,24 @@ pub(crate) fn preset_combobox(
     combobox.info(ui, "chrome-sidebar-preset", combobox_info)
 }
 
-/// The colour modes, in the order the switch shows them.
-const COLOR_MODES: [AppColorMode; 3] = [
-    AppColorMode::System,
-    AppColorMode::Light,
-    AppColorMode::Dark,
-];
-
-/// A System / Light / Dark `ToggleGroup` with `mode` checked; a click
-/// dispatches `SetColorMode` for the toggle clicked. System's tooltip names
-/// the mode the desktop is in, which its text leaves out.
-///
-/// It is as wide as the Sidebar header it is in, and its toggles share that
-/// width, each at least as wide as its text: a toggle that does not shrink
-/// runs past the group rather than squeezing its text, so a group too wide
-/// for the panel shows, to the eye and to the texts' debug selectors
-/// (`PROBE_COLOR_MODE_TEXTS`), where it overflows.
-pub(crate) fn color_mode_toggle_group(
+/// The colour-mode `Select` over `state`, refined by `geometry::select`, as
+/// wide as the Sidebar header it is in: System, Light and Dark, and the
+/// choice dispatches `SetColorMode` (`Showcase::new`).
+pub(crate) fn color_mode_select(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    mode: AppColorMode,
+    state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let checked = COLOR_MODES.map(|m| m == mode);
-    let group = ToggleGroup::new("color-mode")
-        .outline()
-        .segmented()
-        .w_full()
-        .children(
-            COLOR_MODES
-                .into_iter()
-                .zip(PROBE_COLOR_MODE_TEXTS)
-                .map(|(m, text)| {
-                    let toggle = Toggle::new(SharedString::from(format!("color-mode-{m:?}")))
-                        .flex_grow_1()
-                        .flex_shrink_0()
-                        .child(
-                            div()
-                                .debug_selector(move || text.into())
-                                .child(m.short_label()),
-                        )
-                        .checked(m == mode);
-                    match m {
-                        AppColorMode::System => toggle.tooltip(m.label()),
-                        AppColorMode::Light | AppColorMode::Dark => toggle,
-                    }
-                }),
-        )
-        // Upstream reports every toggle's state with the clicked one flipped
-        // (button/toggle.rs, ToggleGroup::render), so the toggle clicked is
-        // the one whose state differs from what was drawn.
-        .on_click(move |next: &Vec<bool>, window, cx| {
-            let clicked = next
-                .iter()
-                .zip(checked)
-                .position(|(now, was)| *now != was)
-                .and_then(|ix| COLOR_MODES.get(ix));
-            if let Some(&m) = clicked {
-                window.dispatch_action(Box::new(SetColorMode(m)), cx);
-            }
-        });
-    group.info(
-        ui,
-        "chrome-sidebar-color-mode",
-        info::color_mode_toggle_group(cx.theme()),
+    let mut select_info = info::color_mode_select(cx.theme());
+    let select = native_info(
+        Select::new(state),
+        cx,
+        geometry::select,
+        "select",
+        &mut select_info,
     )
+    .w_full();
+    select.info(ui, "chrome-sidebar-color-mode", select_info)
 }
 
 /// The icon-set `Select` over `state`, refined by `geometry::select`, as

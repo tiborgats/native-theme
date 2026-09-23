@@ -737,39 +737,21 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
         )
 }
 
-/// The Sidebar header's System / Light / Dark switch (spec §3.3).
-pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
-    let info = WidgetInfo::new("ToggleGroup").variant("outline, segmented");
-    let info = super::buttons::toggle_checked(info, t)
-        .color(claim(
-            "unchecked bg",
-            "background",
-            t.background,
-            "gpui-component/button/toggle.rs:198",
-        ))
-        .color(claim(
-            "outline",
-            "border",
-            t.border,
-            "gpui-component/button/toggle.rs:197",
-        ));
-    super::buttons::toggle_notes(super::buttons::toggle_hover(info, t), t)
+/// The Sidebar header's colour-mode Select (spec §3.3): the Inputs page's
+/// Select, choosing System, Light or Dark.
+pub fn color_mode_select(t: &Theme) -> WidgetInfo {
+    super::inputs::select(t)
         .instance(
             "modes",
-            "System, Light and Dark; a click dispatches SetColorMode, the action the Theme menu's items run. System's text is the mode alone, and its tooltip names the mode the desktop is in, as the status bar's environment text does while System is chosen",
-        )
-        .colors(super::feedback::tooltip_colours(t, true))
-        .not_themeable(
-            "tooltip",
-            "System's only: upstream's Tooltip, built from the text Toggle::tooltip stored (tooltip.rs, ComponentTooltip::apply), so geometry::tooltip cannot reach it",
+            "System, Light and Dark; choosing one dispatches SetColorMode, the action the Theme menu's items run. System's row is the mode alone: the mode the desktop is in shows in the status bar's environment text while System is chosen",
         )
         .instance(
-            "segmented",
-            "the toggles share one outline, and upstream drops the gap it leaves between separate toggles (button/toggle.rs, ToggleGroup::segmented)",
+            "shows",
+            "the mode chosen, whichever way it was chosen: here, from the Theme menu, from the command palette or by the --variant flag (Showcase::show_color_mode)",
         )
         .instance(
             "width",
-            "the panel's: the toggles grow to share it and never shrink below their text, so the switch fits the panel at NAV_WIDTH, the Sidebar's width, and runs past it if the panel is dragged narrower",
+            "the panel's: the trigger takes it and truncates its text (select.rs, SelectState::render), so its text never widens it past the panel",
         )
 }
 
