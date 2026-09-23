@@ -171,10 +171,12 @@ pub(crate) fn status_bar(
 }
 
 /// The status bar's left side (spec §2.7), one item each: the desktop, the
-/// preset and colour mode, the platform font in the unit its source stated,
-/// and, once a native theme is installed, its text-scale factor and each of
-/// its accessibility preferences that is set, by its field name. Before that
-/// no preferences are installed, and none are named.
+/// preset and colour mode, the installed theme's `defaults.font` in the unit
+/// its source stated (`Showcase::original_font`, a placeholder where no
+/// theme could be read), and, once a native theme is installed, its
+/// text-scale factor and each of its accessibility preferences that is set,
+/// by its field name. Before that no preferences are installed, and none are
+/// named.
 pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
     let (preset, mode) = preset_and_mode(app);
     let font = &app.original_font;
@@ -200,9 +202,10 @@ pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
     items
 }
 
-/// The desktop `native_theme::detect` reads from `XDG_CURRENT_DESKTOP`, as
-/// `SystemTheme::from_system` does to pick its reader (native-theme
-/// pipeline.rs, `select_reader`).
+/// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, or
+/// `Unknown` where it recognises none. `SystemTheme::from_system` then asks
+/// the portal, then `kdeglobals` (native-theme pipeline.rs, `select_reader`),
+/// and the preset names what it settled on.
 #[cfg(target_os = "linux")]
 fn desktop() -> String {
     format!("{:?}", native_theme::detect::detect_linux_desktop())

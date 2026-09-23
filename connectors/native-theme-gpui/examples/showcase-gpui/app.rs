@@ -187,9 +187,6 @@ pub(crate) struct Showcase {
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
     pub(crate) status_title_drawn: Option<SharedString>,
-    /// The status bar names what the inspector shows, so the view follows
-    /// the inspector as the inspector follows the registry.
-    _inspector_shown: Subscription,
     /// The title bar's menus. Its own entity, apart from the Overlays page's
     /// sample: an `AppMenuBar` keeps which menu is open, and one entity drawn
     /// twice would open both.
@@ -959,7 +956,6 @@ impl Showcase {
             let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
             cx.new(|cx| Inspector::new(ui, showcase, cx))
         };
-        let _inspector_shown = cx.observe(&inspector, |_, _, cx| cx.notify());
         let body_layout = cx.new(|_| ResizableState::default());
 
         let fg = cx.theme().foreground;
@@ -980,7 +976,6 @@ impl Showcase {
             info_ui,
             inspector,
             status_title_drawn: None,
-            _inspector_shown,
             menu_bar,
             focus_handle,
             _refocus,

@@ -1596,6 +1596,47 @@ fn the_status_bar_is_the_bottom_of_the_window(cx: &mut TestAppContext) {
     );
 }
 
+/// The window's three bars report themselves (spec §4.3.5): the pointer on
+/// an empty stretch of each, clear of the widgets it holds, settles on the
+/// bar's own info. In this order a bar that reported nothing would leave the
+/// previous bar's info on show, and fail as surely as the first.
+#[gpui::test]
+fn the_chrome_bars_report_themselves(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let toolbar = bounds_of(&mut cx, CHROME_TOOLBAR);
+    let title_bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
+    let status_bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
+    if cfg!(not(target_os = "macos")) {
+        // The title bar's middle is empty only while the menus sit right of it.
+        let menus = bounds_of(&mut cx, CHROME_APP_MENU_BAR);
+        assert!(
+            menus.left() > title_bar.center().x,
+            "the menu bar at {menus:?} reaches the title bar's middle"
+        );
+    }
+    let cases = [
+        // The toolbar's items are packed at its start; its end is the row.
+        (
+            "Toolbar",
+            point(toolbar.right() - px(8.), toolbar.center().y),
+        ),
+        // Between the label at the start and the menus at the end.
+        ("TitleBar", title_bar.center()),
+        // The middle region, which holds no item of this bar's.
+        ("StatusBar", status_bar.center()),
+    ];
+    for (title, at) in cases {
+        hover(&mut cx, at);
+        settle(&mut cx);
+        draw(&mut cx);
+        assert_eq!(
+            inspector_title(&mut cx, &showcase).as_deref(),
+            Some(title),
+            "the pointer at {at:?} settled, and the inspector does not show the {title}"
+        );
+    }
+}
+
 /// The status bar reports the installed accessibility preferences (spec
 /// §2.7): the text-scale factor always, and a flag only while it is set.
 #[gpui::test]

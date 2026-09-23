@@ -705,9 +705,9 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
     .instance(
         "left",
         if cfg!(target_os = "linux") {
-            "the desktop native_theme::detect reads from XDG_CURRENT_DESKTOP, as SystemTheme::from_system does to pick its reader; the preset and colour mode the title bar names; the platform font in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- SystemTheme::from_system then asks the portal, then kdeglobals, and the preset names what it settled on; the preset and colour mode the title bar names; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         } else {
-            "the operating system; the preset and colour mode the title bar names; the platform font in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the operating system; the preset and colour mode the title bar names; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         },
     )
     .instance(
