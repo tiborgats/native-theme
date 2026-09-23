@@ -163,7 +163,7 @@ Append per-side padding rows to platform-facts §2.14, with citations. A platfor
   - at a text scale of 1 or less, the stated height through the property each builder uses today: `h` for the button, input, menu item and list item; `min_h` for the select and combobox;
   - above 1, `min_h(stated height)` together with `h_auto`, so layout grows the control around its drawn text and padding.
 - The rule is for single-line controls. A multi-line Input sets its own height before the refinement (input.rs:705-708), which the refinement overrides today; the showcase's Textarea applies its own `Styled::h` after the builder, and the builder's doc says so.
-- `geometry::input_height` returns a `StyleRefinement` carrying the height rule alone. The showcase's HeightOnly sample applies it, so its height follows the refined Input's at every scale.
+- `geometry::input_height` returns a `StyleRefinement` carrying the height rule alone. The showcase's HeightOnly sample applies it: at text scale 1 its height equals the refined Input's; above 1, upstream's own text size and padding decide its growth (ledger ruling, Task 3).
 - A seams test proves, under every native preset, for a real Button, Input, Select, Combobox, the app-drawn menu row (`demo::menu_rows`; upstream's `MenuItemElement` is `pub(crate)`) and a ListItem:
   - at text scale 1, resolved at the platform's own DPI (72 for macOS, per detect.rs:433), the height equals the stated value exactly, and the text's bounds lie inside the control;
   - at text scale 2, the height grows and the text's bounds still lie inside.
