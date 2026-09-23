@@ -32,9 +32,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use native_theme::detect::{prefers_reduced_motion, system_is_dark};
+use native_theme::detect::system_is_dark;
 use native_theme::icons::{
-    IconSetChoice, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
+    FreedesktopLoader, IconSetChoice, default_icon_choice, list_freedesktop_themes,
+    load_icon_indicator,
 };
 use native_theme::pipeline::platform_preset_name;
 use native_theme::theme::{
@@ -315,14 +316,11 @@ pub(crate) struct Showcase {
     pub(crate) animated_frame_durations: Vec<u32>,
     /// Current frame index for each frame-based animation.
     pub(crate) animated_frame_indices: Vec<usize>,
-    /// Cached ImageSource for transform-based (spin) animations (set name, source, duration_ms).
-    pub(crate) animated_spin_sources: Vec<(String, ImageSource, u32)>,
+    /// The SVG of each transform-based (spin) animation, which the page
+    /// turns with `with_spin_animation` (set name, SVG bytes, duration_ms).
+    pub(crate) animated_spin_sources: Vec<(String, Vec<u8>, u32)>,
     /// Timer task handle for frame cycling (dropped to cancel).
     pub(crate) animation_timer: Option<Task<()>>,
-    /// Whether reduced motion is active.
-    pub(crate) reduced_motion: bool,
-    /// Static first-frame ImageSources for reduced motion display (set name, source, anim type label).
-    pub(crate) animated_static_sources: Vec<(String, ImageSource, &'static str)>,
 
     /// Why the last theme failed to load, which an Alert at the top of the
     /// content reports (spec §2.5); `None` once a theme loads.
@@ -391,63 +389,49 @@ impl Showcase {
         release_sources(
             std::mem::take(&mut self.animated_frame_sources)
                 .into_iter()
-                .flat_map(|(_name, frames)| frames)
-                .chain(
-                    std::mem::take(&mut self.animated_spin_sources)
-                        .into_iter()
-                        .map(|(_name, source, _ms)| source),
-                )
-                .chain(
-                    std::mem::take(&mut self.animated_static_sources)
-                        .into_iter()
-                        .map(|(_name, source, _kind)| source),
-                ),
+                .flat_map(|(_name, frames)| frames),
             window,
             cx,
         );
+        self.animated_spin_sources.clear();
         self.animated_frame_durations.clear();
 
+        // gpui-builtin is not a native-theme icon set; load_indicator would
+        // fall back to the system set, showing the wrong spinner. A
+        // freedesktop spinner comes from the theme the icons come from, not
+        // the system's, so the page never mixes two themes.
+        let anim = match self.icon_set_enum {
+            Some(IconSet::Freedesktop) => {
+                FreedesktopLoader::load_indicator(self.freedesktop_theme())
+            }
+            Some(icon_set) => load_icon_indicator(icon_set),
+            None => None,
+        };
         let set_name = &self.icon_set_name;
         let fg = self.icon_cache_fg;
-        // gpui-builtin is not a native-theme icon set; load_indicator would
-        // fall back to the system set, showing the wrong spinner.
-        if let Some(icon_set) = self.icon_set_enum
-            && let Some(anim) = load_icon_indicator(icon_set)
-        {
+        if let Some(anim) = anim {
             match &anim {
                 AnimatedIcon::Frames(data) => {
                     if let Some(anim_sources) =
                         animated_frames_to_image_sources(&anim, Some(fg), None)
                     {
-                        if let Some(first_source) =
-                            to_image_source(anim.first_frame(), Some(fg), None)
-                        {
-                            self.animated_static_sources.push((
-                                set_name.to_string(),
-                                first_source,
-                                "Frames",
-                            ));
-                        }
                         self.animated_frame_durations
                             .push(data.frame_duration_ms().get());
                         self.animated_frame_sources
                             .push((set_name.to_string(), anim_sources.sources));
                     }
                 }
+                // gpui turns an SVG element but not an image, so a spin is
+                // kept as the SVG it is (gpui-pre elements/svg.rs, Svg).
                 AnimatedIcon::Transform(data) => {
-                    if let Some(source) = to_image_source(data.icon(), None, None) {
-                        self.animated_static_sources.push((
+                    if let (IconData::Svg(bytes), TransformAnimation::Spin { duration_ms }) =
+                        (data.icon(), data.animation())
+                    {
+                        self.animated_spin_sources.push((
                             set_name.to_string(),
-                            source.clone(),
-                            "Transform",
+                            bytes.to_vec(),
+                            duration_ms.get(),
                         ));
-                        if let TransformAnimation::Spin { duration_ms } = data.animation() {
-                            self.animated_spin_sources.push((
-                                set_name.to_string(),
-                                source,
-                                duration_ms.get(),
-                            ));
-                        }
                     }
                 }
                 _ => {}
@@ -455,18 +439,19 @@ impl Showcase {
         }
 
         self.animated_frame_indices = vec![0; self.animated_frame_sources.len()];
-        self.reduced_motion = prefers_reduced_motion();
     }
 
     /// Start (or restart) the frame-cycling timer for animated icons.
     ///
-    /// Cancels any previous timer. Does nothing when `reduced_motion` is true
-    /// or there are no frame-based animations cached.
+    /// Cancels any previous timer. Does nothing when there are no frame-based
+    /// animations cached, and a tick does nothing while gpui's
+    /// `reduce_motion` is on: the page then shows each animation's first
+    /// frame, as gpui holds its own animations at their start.
     pub(crate) fn start_animation_timer(&mut self, cx: &mut Context<Self>) {
         // Drop old timer (cancels the task)
         self.animation_timer = None;
 
-        if self.reduced_motion || self.animated_frame_sources.is_empty() {
+        if self.animated_frame_sources.is_empty() {
             return;
         }
 
@@ -489,6 +474,9 @@ impl Showcase {
                     .timer(Duration::from_millis(min_duration))
                     .await;
                 let Ok(()) = this.update(cx, |this, cx| {
+                    if cx.reduce_motion() {
+                        return;
+                    }
                     for (i, (_name, frames)) in this.animated_frame_sources.iter().enumerate() {
                         if let Some(idx) = this.animated_frame_indices.get_mut(i) {
                             *idx = (*idx + 1) % frames.len();
@@ -502,6 +490,79 @@ impl Showcase {
         });
 
         self.animation_timer = Some(task);
+    }
+
+    /// The freedesktop theme the page's icons load from where the set is
+    /// freedesktop: the `--icon-theme` override, else the theme the choice
+    /// names; `None` is the system's own.
+    pub(crate) fn freedesktop_theme(&self) -> Option<&str> {
+        self.icon_theme_override
+            .as_deref()
+            .or(self.icon_set_choice.freedesktop_theme())
+    }
+
+    /// The icon set as the Icons page names it: a freedesktop set with the
+    /// theme its icons load from.
+    pub(crate) fn icon_set_label(&self) -> String {
+        match self.icon_set_enum {
+            Some(IconSet::Freedesktop) => format!(
+                "freedesktop ({})",
+                self.freedesktop_theme()
+                    .map_or_else(system_icon_theme, str::to_string)
+            ),
+            _ => self.icon_set_name.clone(),
+        }
+    }
+
+    /// Load the icon set the icon-set Select names `display`, as the Select
+    /// does when it is confirmed.
+    pub(crate) fn select_icon_set(
+        &mut self,
+        display: &str,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let is_gpui_builtin = display == "gpui-component built-in (Lucide)";
+        self.icon_set_choice = parse_icon_set_choice(display);
+        let effective = self
+            .icon_set_choice
+            .effective_icon_set(self.current_icon_set);
+        let default_theme = self
+            .icon_set_choice
+            .freedesktop_theme()
+            .map(|s| s.to_string());
+        // The page tells gpui-component's own icons by this name, which
+        // `effective` (Lucide, for the built-in entry) would not give.
+        self.icon_set_name = if is_gpui_builtin {
+            "gpui-builtin".to_string()
+        } else {
+            effective.name().to_string()
+        };
+        // For gpui-builtin, icon_set_enum is None (uses gpui-component's
+        // built-in icons rather than native-theme's loader).
+        self.icon_set_enum = if is_gpui_builtin {
+            None
+        } else {
+            Some(effective)
+        };
+        let cli_ref = self.icon_theme_override.as_deref();
+        let fc = self.original_font.color;
+        let fg_rgb = Some([fc.r, fc.g, fc.b]);
+        if !is_gpui_builtin {
+            self.loaded_icons =
+                load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
+        }
+        self.gpui_icons = load_gpui_icons(
+            self.icon_set_enum,
+            default_theme.as_deref(),
+            cli_ref,
+            fg_rgb,
+        );
+        let fg = cx.theme().foreground;
+        self.rebuild_icon_caches(fg, window, cx);
+        self.rebuild_animation_caches(window, cx);
+        self.start_animation_timer(cx);
+        cx.notify();
     }
 
     /// Build the list of icon set dropdown names.
@@ -806,42 +867,7 @@ impl Showcase {
              window,
              cx| {
                 if let SelectEvent::Confirm(Some(value)) = event {
-                    let display = value.to_string();
-                    let is_gpui_builtin = display == "gpui-component built-in (Lucide)";
-                    this.icon_set_choice = parse_icon_set_choice(&display);
-                    let effective = this
-                        .icon_set_choice
-                        .effective_icon_set(this.current_icon_set);
-                    let default_theme = this
-                        .icon_set_choice
-                        .freedesktop_theme()
-                        .map(|s| s.to_string());
-                    this.icon_set_name = effective.name().to_string();
-                    // For gpui-builtin, icon_set_enum is None (uses gpui-component's
-                    // built-in icons rather than native-theme's loader).
-                    this.icon_set_enum = if is_gpui_builtin {
-                        None
-                    } else {
-                        Some(effective)
-                    };
-                    let cli_ref = this.icon_theme_override.as_deref();
-                    let fc = this.original_font.color;
-                    let fg_rgb = Some([fc.r, fc.g, fc.b]);
-                    if !is_gpui_builtin {
-                        this.loaded_icons =
-                            load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
-                    }
-                    this.gpui_icons = load_gpui_icons(
-                        this.icon_set_enum,
-                        default_theme.as_deref(),
-                        cli_ref,
-                        fg_rgb,
-                    );
-                    let fg = cx.theme().foreground;
-                    this.rebuild_icon_caches(fg, window, cx);
-                    this.rebuild_animation_caches(window, cx);
-                    this.start_animation_timer(cx);
-                    cx.notify();
+                    this.select_icon_set(value.as_ref(), window, cx);
                 }
             },
         )
@@ -1062,8 +1088,6 @@ impl Showcase {
             animated_frame_indices: Vec::new(),
             animated_spin_sources: Vec::new(),
             animation_timer: None,
-            reduced_motion: false,
-            animated_static_sources: Vec::new(),
             error_message: initial_error,
             theme_change_flag,
             _theme_watcher,
@@ -1364,6 +1388,7 @@ impl Showcase {
     /// inspector, until the page reports its instances (plan Tasks 14-23).
     /// The panel settles like an info does (`Inspector::set_legacy`).
     // Task 24: delete (legacy hover_info stopgap)
+    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
     pub(crate) fn set_info(&self, info: String) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
         let inspector = self.inspector.clone();
         move |hovered: &bool, _window: &mut Window, cx: &mut App| {
@@ -1372,6 +1397,7 @@ impl Showcase {
     }
 
     /// Create a hover handler using the standard widget_tooltip_themed format.
+    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
     pub(crate) fn hover_info(
         &self,
         fi: &str,

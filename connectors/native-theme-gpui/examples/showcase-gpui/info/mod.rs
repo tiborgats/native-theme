@@ -10,6 +10,7 @@ pub mod charts;
 pub mod chrome;
 pub mod data;
 pub mod feedback;
+pub mod icons;
 pub mod inputs;
 pub mod layout;
 pub mod overlays;

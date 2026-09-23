@@ -62,6 +62,7 @@ pub(crate) struct Inspector {
     // Task 24: delete (legacy hover_info stopgap)
     legacy_pending: Option<(String, u64)>,
     // Task 24: delete (legacy hover_info stopgap)
+    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
     legacy_tickets: u64,
     /// The title of what the last frame drew under the TabBar; `None` for
     /// the hint shown before any hover.
@@ -102,6 +103,7 @@ impl Inspector {
     /// `INFO_SETTLE`, as an info does (spec §4.2), so crossing a page on the
     /// way to the inspector leaves the inspector as it was.
     // Task 24: delete (legacy hover_info stopgap)
+    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
     pub(crate) fn set_legacy(&mut self, text: String, hovered: bool, cx: &mut Context<Self>) {
         if !hovered {
             self.legacy_pending.take_if(|(pending, _)| *pending == text);

@@ -4,8 +4,8 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, FontWeight, Hsla,
-    Keystroke, Pixels, RenderOnce, SharedString, Stateful, StyleRefinement, Window, div,
-    prelude::*, px, rems,
+    ImageSource, Keystroke, Pixels, RenderOnce, SharedString, Stateful, StyleRefinement, Window,
+    div, prelude::*, px, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
@@ -90,6 +90,7 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
+use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry, variants};
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
@@ -4140,6 +4141,10 @@ pub(crate) const PIE_INNER_RADIUS: f32 = 40.;
 pub(crate) const PIE_OUTER_RADIUS: f32 = 100.;
 pub(crate) const PIE_PAD_ANGLE: f32 = 0.03;
 
+/// The strength the AreaChart's fill takes its series colour at: the
+/// showcase's own, as the model states no chart.
+pub(crate) const AREA_FILL_OPACITY: f32 = 0.3;
+
 /// A `BarChart` of `SAMPLE_MONTHS`, its bars in `chart_1`.
 pub(crate) fn bar_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
     let fill = cx.theme().chart_1;
@@ -4174,7 +4179,7 @@ pub(crate) fn area_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) 
         .x(|d: &(&'static str, f64)| d.0)
         .y(|d: &(&'static str, f64)| d.1)
         .stroke(t.chart_3)
-        .fill(t.chart_3.opacity(0.3))
+        .fill(t.chart_3.opacity(AREA_FILL_OPACITY))
         .info(ui, id, info::charts::area_chart(t))
         .h(CHART_HEIGHT)
         .w_full()
@@ -4218,4 +4223,213 @@ pub(crate) fn candlestick_chart(
         .h(CHART_HEIGHT)
         .w_full()
         .debug_selector(move || id.into())
+}
+
+// ---------------------------------------------------------------------------
+// The Icons page
+// ---------------------------------------------------------------------------
+
+/// The size the Icons page draws an icon image at: the showcase's own. The
+/// model's icon sizes each belong to a role -- small, large, toolbar,
+/// panel, dialog -- and a gallery of every icon belongs to none of them.
+pub(crate) const ICON_CELL_SIZE: Pixels = px(20.);
+
+/// The size the Icons page draws an animated icon at: the showcase's own,
+/// for the same reason.
+pub(crate) const ANIMATED_ICON_SIZE: Pixels = px(32.);
+
+/// What a cell of the Icons page's galleries draws, so the matches over it
+/// in `info::icons` are exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum IconDrawn {
+    /// gpui-component's own Icon.
+    Builtin,
+    /// A set bundled with native-theme, recoloured by the showcase.
+    Bundled,
+    /// The OS icon theme's own file.
+    System,
+    /// The set has no icon for it: the placeholder.
+    Missing,
+    /// The set has one that did not convert to an image: the placeholder.
+    Unreadable,
+}
+
+/// What a cell of the Icons page's galleries draws, and from what.
+pub(crate) enum IconArt {
+    Builtin(IconName),
+    Bundled(ImageSource),
+    System(ImageSource),
+    Missing,
+    Unreadable,
+}
+
+impl IconArt {
+    fn drawn(&self) -> IconDrawn {
+        match self {
+            Self::Builtin(_) => IconDrawn::Builtin,
+            Self::Bundled(_) => IconDrawn::Bundled,
+            Self::System(_) => IconDrawn::System,
+            Self::Missing => IconDrawn::Missing,
+            Self::Unreadable => IconDrawn::Unreadable,
+        }
+    }
+}
+
+/// One cell of an Icons page gallery: the icon a set gives for `label`,
+/// labelled with it.
+pub(crate) struct IconCell<'a> {
+    /// The role's or the IconName's name.
+    pub(crate) label: &'a str,
+    /// The icon set, as the page names it.
+    pub(crate) set: &'a str,
+    pub(crate) art: IconArt,
+}
+
+/// The icon `art` draws above its `label`. A set that has no icon leaves
+/// the placeholder the theme names for one, at the theme's own rounding --
+/// never another set's icon.
+fn icon_cell(cx: &App, art: IconArt, label: &str) -> Div {
+    let t = cx.theme();
+    let icon = match art {
+        IconArt::Builtin(name) => div().child(Icon::new(name).with_size(Size::Medium)),
+        IconArt::Bundled(source) | IconArt::System(source) => {
+            div().child(gpui::img(source).size(ICON_CELL_SIZE))
+        }
+        IconArt::Missing | IconArt::Unreadable => {
+            div().size(ICON_CELL_SIZE).bg(t.skeleton).rounded(t.radius)
+        }
+    };
+    div()
+        .flex()
+        .flex_col()
+        .items_center()
+        .py_2()
+        .px_2()
+        .gap_1()
+        .child(icon)
+        .child(Label::new(label.to_string()).text_xs())
+}
+
+/// A cell of the Native Theme Icons grid: native-theme's icon for the role
+/// `cell.label` names, which the set calls `name` where the showcase knows
+/// it; `builtin` where the set is gpui-component's own. A recoloured icon
+/// is painted in `fg`.
+pub(crate) fn role_icon(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: impl Into<SharedString>,
+    cell: IconCell<'_>,
+    builtin: bool,
+    name: Option<&str>,
+    fg: Hsla,
+) -> Stateful<Div> {
+    let id: SharedString = id.into();
+    let drawn = cell.art.drawn();
+    let info = info::icons::role_icon(cx.theme(), cell.label, cell.set, builtin, name, drawn, fg);
+    icon_cell(cx, cell.art, cell.label)
+        .info(ui, id.clone(), info)
+        .debug_selector(move || id.to_string())
+}
+
+/// A cell of the gpui-component Icons grid: the icon the set gives the
+/// IconName `cell.label` names, found by `role` where one maps to it. A
+/// recoloured icon is painted in `fg`.
+pub(crate) fn gpui_icon(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: impl Into<SharedString>,
+    cell: IconCell<'_>,
+    role: Option<&str>,
+    fg: Hsla,
+) -> Stateful<Div> {
+    let id: SharedString = id.into();
+    let drawn = cell.art.drawn();
+    let info = info::icons::gpui_icon(cx.theme(), cell.label, role, cell.set, drawn, fg);
+    icon_cell(cx, cell.art, cell.label)
+        .info(ui, id.clone(), info)
+        .debug_selector(move || id.to_string())
+}
+
+/// The animations the Icons page shows, so the matches over them in
+/// `info::icons` are exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum AnimatedKind {
+    /// Frame by frame: `count` frames, `duration_ms` each.
+    Frames { count: usize, duration_ms: u32 },
+    /// One SVG turned a full circle every `duration_ms`.
+    Spin { duration_ms: u32 },
+}
+
+/// An animated icon, with what the page draws it from.
+pub(crate) enum AnimatedArt<'a> {
+    /// The frame to show now, of `count`.
+    Frames {
+        frame: ImageSource,
+        count: usize,
+        duration_ms: u32,
+    },
+    /// The SVG to turn.
+    Spin { svg: &'a [u8], duration_ms: u32 },
+}
+
+/// A card holding the animated icon `set` ships as `art`, in the
+/// showcase's frame, labelled with what it is. A bundled set's frames are
+/// recoloured with `fg`.
+pub(crate) fn animated_icon(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: impl Into<SharedString>,
+    set: &str,
+    art: AnimatedArt<'_>,
+    bundled: bool,
+    fg: Hsla,
+) -> Stateful<Div> {
+    let id: SharedString = id.into();
+    let t = cx.theme();
+    let reduce_motion = cx.reduce_motion();
+    let (kind, icon, what) = match art {
+        AnimatedArt::Frames {
+            frame,
+            count,
+            duration_ms,
+        } => (
+            AnimatedKind::Frames { count, duration_ms },
+            gpui::img(frame).size(ANIMATED_ICON_SIZE).into_any_element(),
+            format!("Frames: {count} ({duration_ms}ms)"),
+        ),
+        // An SVG element paints every shape in its text colour, and gpui
+        // turns it where it would not turn an image (gpui-pre
+        // elements/svg.rs, Svg::with_transformation).
+        AnimatedArt::Spin { svg, duration_ms } => (
+            AnimatedKind::Spin { duration_ms },
+            with_spin_animation(
+                gpui::svg()
+                    .data(svg)
+                    .size(ANIMATED_ICON_SIZE)
+                    .text_color(t.foreground),
+                SharedString::from(format!("{id}-spin")),
+                duration_ms,
+            )
+            .into_any_element(),
+            format!("Spin ({duration_ms}ms)"),
+        ),
+    };
+    let label = if reduce_motion {
+        format!("{set} - {what} (reduced motion)")
+    } else {
+        format!("{set} - {what}")
+    };
+    v_flex()
+        .items_center()
+        .gap_2()
+        .p_4()
+        .demo_frame(cx)
+        .child(icon)
+        .child(Label::new(label).text_xs())
+        .info(
+            ui,
+            id.clone(),
+            info::icons::animated_icon(t, set, kind, bundled, fg, reduce_motion),
+        )
+        .debug_selector(move || id.to_string())
 }

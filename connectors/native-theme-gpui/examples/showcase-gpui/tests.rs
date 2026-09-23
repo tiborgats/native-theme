@@ -22,6 +22,7 @@ use crate::app::{
     ToggleInspector, ToggleSidebar,
 };
 use crate::chrome::menus;
+use crate::demo::AREA_FILL_OPACITY;
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
     hsla_to_hex, native_info,
@@ -36,7 +37,7 @@ use crate::{
     CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
     DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO,
     FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
-    FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, ICONS_ANIMATED_ICONS, INPUTS_CHECKBOX_AUTOSAVE,
+    FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
     INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
     INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LAYOUT_BREADCRUMB,
     LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
@@ -1292,74 +1293,6 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
     );
 }
 
-/// A page that does not report its instances yet (plan Tasks 14-23) still
-/// shows its text panel in the inspector, and an info that settles replaces
-/// it, as the text panel replaces the info in turn; a page change takes the
-/// text panel away.
-#[gpui::test]
-fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Icons);
-    let block = bounds_of(&mut cx, ICONS_ANIMATED_ICONS).center();
-    let item = bounds_of(&mut cx, Page::Overlays.nav_item()).center();
-    hover(&mut cx, block);
-    settle(&mut cx);
-    draw(&mut cx);
-    assert_eq!(
-        inspector_title(&mut cx, &showcase).as_deref(),
-        Some("Animated Icons"),
-        "the Animated Icons block's text panel is not shown"
-    );
-    hover(&mut cx, item);
-    settle(&mut cx);
-    draw(&mut cx);
-    assert_eq!(
-        inspector_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Overlays"),
-        "a settled info did not replace the text panel"
-    );
-    hover(&mut cx, block);
-    settle(&mut cx);
-    draw(&mut cx);
-    assert_eq!(
-        inspector_title(&mut cx, &showcase).as_deref(),
-        Some("Animated Icons"),
-        "the text panel did not replace the settled info"
-    );
-    show(&mut cx, &showcase, Page::Inputs);
-    assert_eq!(
-        inspector_title(&mut cx, &showcase),
-        None,
-        "the Icons page's text panel stayed after the page changed"
-    );
-}
-
-/// Crossing a page's text panel on the way to the inspector is not hovering
-/// it (spec §4.2, §4.3.6): a Sidebar item's settled info stays when the
-/// pointer passes over a `tt-` block for less than `INFO_SETTLE`.
-#[gpui::test]
-fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Icons);
-    let block = bounds_of(&mut cx, ICONS_ANIMATED_ICONS).center();
-    let item = bounds_of(&mut cx, Page::Overlays.nav_item()).center();
-    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL).center();
-    hover(&mut cx, item);
-    settle(&mut cx);
-    draw(&mut cx);
-    hover(&mut cx, block);
-    cx.executor().advance_clock(INFO_SETTLE / 2);
-    cx.run_until_parked();
-    hover(&mut cx, inspector);
-    settle(&mut cx);
-    draw(&mut cx);
-    assert_eq!(
-        inspector_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Overlays"),
-        "passing over the Animated Icons block replaced the Sidebar item's info"
-    );
-}
-
 /// The inspector's Theme tab lays out the theme's and the window's facts in
 /// place of the Widget tab.
 #[gpui::test]
@@ -2391,7 +2324,7 @@ fn the_area_charts_fill_swatch_shows_the_painted_colour(cx: &mut TestAppContext)
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Charts);
     let info = settle_on(&mut cx, &showcase, CHARTS_AREA_CHART);
-    let painted = cx.update(|_window, cx| Theme::global(cx).chart_3.opacity(0.3));
+    let painted = cx.update(|_window, cx| Theme::global(cx).chart_3.opacity(AREA_FILL_OPACITY));
     let fill = info
         .as_ref()
         .and_then(|info| info.colors.iter().find(|c| c.role.starts_with("fill")));
@@ -2399,6 +2332,162 @@ fn the_area_charts_fill_swatch_shows_the_painted_colour(cx: &mut TestAppContext)
         fill.map(|c| c.value),
         Some(painted),
         "the AreaChart's fill swatch is not chart_3 at 30%: {info:?}"
+    );
+}
+
+/// The ids and debug selectors of three of the Icons page's icons, one from
+/// each gallery, with Material's icons loaded. The page forms them from the
+/// animation's place, the role's name and the IconName's (pages/icons.rs).
+const ICONS_ANIMATED_FRAMES: &str = "icons-animated-frames-0";
+const ICONS_NATIVE_DIALOG_WARNING: &str = "icons-native-DialogWarning";
+const ICONS_GPUI_TRIANGLE_ALERT: &str = "icons-gpui-TriangleAlert";
+/// The role gpui-component has no icon for (native-theme-gpui icons.rs,
+/// `icon_name`), whose cell the page forms the same way.
+const ICONS_NATIVE_SHIELD: &str = "icons-native-Shield";
+
+/// Load the icons of the icon set the Select names `display`, as confirming
+/// it there does, and show the Icons page.
+fn show_icons(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, display: &str) {
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| this.select_icon_set(display, window, cx));
+    });
+    show(cx, showcase, Page::Icons);
+}
+
+/// The Icons page's galleries report each icon, not one info for a block
+/// (spec §4.3.2): an animated icon, a role's icon and an IconName's each
+/// show their own.
+#[gpui::test]
+fn icons_from_different_galleries_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show_icons(&mut cx, &showcase, "Material (bundled)");
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (ICONS_ANIMATED_FRAMES, "Animated icon · material, frames"),
+            (ICONS_NATIVE_DIALOG_WARNING, "IconRole · DialogWarning"),
+            (ICONS_GPUI_TRIANGLE_ALERT, "IconName · TriangleAlert"),
+        ],
+    );
+    for (i, text) in texts.iter().enumerate() {
+        assert!(
+            !texts.iter().skip(i + 1).any(|other| other == text),
+            "two icons of different galleries show the same info: {texts:?}"
+        );
+    }
+}
+
+/// An animated icon's info holds under reduced motion as the page does:
+/// with motion on the showcase steps through the frames, and under reduced
+/// motion it shows the first and says that nothing moves.
+#[gpui::test]
+fn an_animated_icons_info_follows_reduced_motion(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let note = |info: &Option<WidgetInfo>| {
+        info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "animation")
+                .map(|n| n.text.clone())
+        })
+    };
+    show_icons(&mut cx, &showcase, "Material (bundled)");
+    let moving = note(&settle_on(&mut cx, &showcase, ICONS_ANIMATED_FRAMES));
+
+    show(&mut cx, &showcase, Page::Buttons);
+    cx.update(|_window, cx| cx.set_reduce_motion(true));
+    show(&mut cx, &showcase, Page::Icons);
+    let still = note(&settle_on(&mut cx, &showcase, ICONS_ANIMATED_FRAMES));
+    assert!(
+        moving.is_some() && moving != still,
+        "the animated icon's note does not follow reduced motion: {moving:?} / {still:?}"
+    );
+    assert!(
+        still.as_deref().is_some_and(|n| n.starts_with("none")),
+        "under reduced motion the animated icon's note says it moves: {still:?}"
+    );
+}
+
+/// A role the icon set has no icon for says so and shows the placeholder,
+/// never another set's icon: gpui-component has none for Shield, and the
+/// cell's info claims the placeholder's colour and no icon's.
+#[gpui::test]
+fn a_missing_icon_says_it_is_missing(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show_icons(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    let info = settle_on(&mut cx, &showcase, ICONS_NATIVE_SHIELD);
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some("IconRole · Shield")
+    );
+    let resolved = info.as_ref().and_then(|info| {
+        info.instance
+            .iter()
+            .find(|n| n.what == "resolved")
+            .map(|n| n.text.clone())
+    });
+    assert!(
+        resolved
+            .as_deref()
+            .is_some_and(|r| r.starts_with("None: gpui-builtin has no icon")),
+        "the Shield cell does not say gpui-builtin lacks it: {resolved:?}"
+    );
+    let roles: Vec<&str> = info
+        .as_ref()
+        .map(|info| info.colors.iter().map(|c| c.role).collect())
+        .unwrap_or_default();
+    assert!(
+        roles.contains(&"missing-icon placeholder") && !roles.iter().any(|r| r.starts_with("icon")),
+        "the Shield cell claims an icon's colour, or no placeholder: {roles:?}"
+    );
+}
+
+/// Paint-level check (rationale §3.6): the fill gpui painted inside the
+/// Primary Tag at rest is the colour its info's bg claim shows. The colour
+/// gate reads the line a claim cites; this reads the frame. At rest, because
+/// a hovered Tag paints at 90% (tag.rs:265).
+#[gpui::test]
+fn a_tags_painted_fill_is_its_bg_claim(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Feedback);
+    let info = settle_on(&mut cx, &showcase, FEEDBACK_TAG_PRIMARY);
+    let claimed = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role == "bg"))
+        .map(|c| c.value);
+    let tag = bounds_of(&mut cx, FEEDBACK_TAG_PRIMARY);
+    hover(&mut cx, point(tag.left() - px(40.), tag.center().y));
+    draw(&mut cx);
+    let painted = cx.update(|window, _cx| {
+        let tag = tag.scale(window.scale_factor());
+        // gpui paints a bordered box as its fill and, apart, its border
+        // strips over a transparent fill (gpui-pre window.rs,
+        // Window::paint_quad), so the fill is the largest opaque quad
+        // inside the Tag's bounds.
+        window
+            .painted_quads()
+            .into_iter()
+            .filter(|q| {
+                !q.background.is_transparent()
+                    && q.bounds.left() >= tag.left()
+                    && q.bounds.top() >= tag.top()
+                    && q.bounds.right() <= tag.right()
+                    && q.bounds.bottom() <= tag.bottom()
+            })
+            .max_by(|a, b| {
+                let area = |q: &gpui::Quad| q.bounds.size.width.0 * q.bounds.size.height.0;
+                area(a).total_cmp(&area(b))
+            })
+            .and_then(|q| q.background.as_solid())
+    });
+    assert!(
+        claimed.is_some(),
+        "the Primary Tag's info claims no bg: {info:?}"
+    );
+    assert_eq!(
+        painted, claimed,
+        "the fill painted inside the Primary Tag is not its bg claim"
     );
 }
 

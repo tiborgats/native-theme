@@ -54,6 +54,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
         include_str!("../examples/showcase-gpui/info/feedback.rs"),
     ),
     (
+        "info/icons.rs",
+        include_str!("../examples/showcase-gpui/info/icons.rs"),
+    ),
+    (
         "info/inputs.rs",
         include_str!("../examples/showcase-gpui/info/inputs.rs"),
     ),
@@ -776,6 +780,10 @@ fn demo_block_starts(source: &str) -> Vec<usize> {
 struct Block {
     start: usize,
     end: usize,
+    #[expect(
+        dead_code,
+        reason = "Task 24 deletes the block gates; the last tt- block is gone"
+    )]
     has_panel: bool,
 }
 
@@ -861,37 +869,6 @@ fn demo_blocks(raw: &str, code: &str, methods: &[usize]) -> Vec<Block> {
         }
     }
     out
-}
-
-/// Spec section 2.2: every `tt-` demo block carries a Widget Info panel.
-#[test]
-fn every_demo_block_has_a_widget_info_panel() {
-    let mut total = 0usize;
-    let mut missing = Vec::new();
-    for (file, demos) in demo_files() {
-        let code = without_comments_or_strings(demos);
-        let blocks = demo_blocks(demos, &code, &method_starts(&code));
-        total += blocks.len();
-        missing.extend(
-            blocks
-                .iter()
-                .filter(|b| !b.has_panel)
-                .map(|b| format!("{file}:{}", b.start + 1)),
-        );
-    }
-
-    assert!(
-        total > 0,
-        "no `{BLOCK_ID}` found in the showcase, so this test would pass vacuously"
-    );
-
-    assert!(
-        missing.is_empty(),
-        "{} of {total} demo blocks in examples/showcase-gpui/ carry no Widget \
-         Info panel, so hovering them says nothing; at: {}",
-        missing.len(),
-        missing.join(", ")
-    );
 }
 
 // ---------------------------------------------------------------------------
@@ -1858,12 +1835,17 @@ fn the_omission_report() {
         .iter()
         .flat_map(|(_, raw)| panel_calls(raw))
         .collect();
+    let (claims, _) = showcase_claims();
     assert!(
-        !calls.is_empty(),
-        "no Widget Info panels were found, so this report would be empty for \
+        !claims.is_empty(),
+        "no Widget Info claims were found, so this report would be empty for \
          the wrong reason"
     );
-    let (claims, _) = showcase_claims();
+    let panels: BTreeSet<&str> = claims
+        .iter()
+        .filter(|c| c.file != TEST_MODULE)
+        .map(|c| c.widget)
+        .collect();
 
     // Every file a claim cites, with the panels that cite it. An ambiguous or
     // unparseable citation is left out here; the citation gate already fails
@@ -1933,7 +1915,7 @@ fn the_omission_report() {
     println!(
         "\nWidget Info omission report\n  {} panels cite {} files, which read \
          {} distinct theme fields.\n  {} of those are named by no panel:",
-        calls.len(),
+        panels.len(),
         cited.len(),
         seen.len(),
         unnamed.len()

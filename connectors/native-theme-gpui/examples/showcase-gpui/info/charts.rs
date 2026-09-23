@@ -7,8 +7,8 @@ use gpui_component::theme::Theme;
 
 use super::{WidgetInfo, claim, px_text};
 use crate::demo::{
-    PIE_INNER_RADIUS, PIE_OUTER_RADIUS, PIE_PAD_ANGLE, PIE_SLICES, SAMPLE_MONTHS,
-    SAMPLE_MONTHS_AREA, SAMPLE_OHLC,
+    AREA_FILL_OPACITY, PIE_INNER_RADIUS, PIE_OUTER_RADIUS, PIE_PAD_ANGLE, PIE_SLICES,
+    SAMPLE_MONTHS, SAMPLE_MONTHS_AREA, SAMPLE_OHLC,
 };
 
 /// `months` as the text of a "data" note: each month with its value.
@@ -155,7 +155,7 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
         .color(claim(
             "fill, at 30%",
             "chart_3",
-            t.chart_3.opacity(0.3),
+            t.chart_3.opacity(AREA_FILL_OPACITY),
             "showcase",
         ))
         .color(claim(
@@ -187,7 +187,7 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
         )
         .not_themeable(
             "line width",
-            "1px, a literal (plot/shape/area.rs, Area::paint)",
+            "1px, a literal (plot/shape/area.rs, Area::path)",
         )
         .instance("data", months(&SAMPLE_MONTHS_AREA))
         .instance(

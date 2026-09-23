@@ -411,12 +411,6 @@ pub(crate) const CHARTS_AREA_CHART: &str = "charts-area-chart";
 pub(crate) const CHARTS_PIE_CHART: &str = "charts-pie-chart";
 pub(crate) const CHARTS_CANDLESTICK_CHART: &str = "charts-candlestick-chart";
 
-/// The debug selector of the Icons page's Animated Icons block, one of the
-/// blocks that still show a text panel, which the two tests of that panel
-/// hover.
-/// Task 24: delete, with the text panel.
-pub(crate) const ICONS_ANIMATED_ICONS: &str = "icons-animated-icons";
-
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------

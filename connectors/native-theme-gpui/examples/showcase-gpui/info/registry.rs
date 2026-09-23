@@ -51,6 +51,7 @@ impl InfoRegistry {
     /// until the page reports its instances (plan Tasks 14-23): a target
     /// hovered again afterwards is a new choice, and settles as one.
     // Task 24: delete (legacy hover_info stopgap)
+    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
     pub fn forget_shown(&mut self) {
         self.shown = None;
         self.pending = None;

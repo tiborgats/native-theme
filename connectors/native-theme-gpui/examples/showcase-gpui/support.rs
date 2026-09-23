@@ -13,7 +13,6 @@ use gpui_component::{
     searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
     table::{Column, TableDelegate, TableEvent, TableState},
 };
-use std::collections::HashMap;
 
 #[cfg(target_os = "linux")]
 use native_theme::detect::parse_linux_desktop;
@@ -155,6 +154,7 @@ apply_system_theme(&system, cx);
 /// - `colors`: slice of (role, field_name, live Hsla value)
 /// - `config`: slice of (what, live_value_string)
 /// - `not_themeable`: slice of (what, why)
+#[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
 fn widget_tooltip(
     name: &str,
     colors: &[(&str, &str, Hsla, &str)],
@@ -223,6 +223,7 @@ pub(crate) fn defined_size(font: &native_theme::theme::ResolvedFontSpec) -> Stri
 }
 
 /// Like [`widget_tooltip`] but appends the active theme font settings.
+#[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
 pub(crate) fn widget_tooltip_themed(
     font_info: &str,
     name: &str,
@@ -401,9 +402,8 @@ pub(crate) enum IconSource {
     System,
     /// Bundled icon set (material or lucide) used directly.
     Bundled,
-    /// System lookup failed; fell back to bundled Material SVGs.
-    Fallback,
-    /// No icon data available at all.
+    /// The set has no icon for it. No other set's icon stands in: the
+    /// loaders return `None` rather than substitute one.
     NotFound,
 }
 
@@ -446,25 +446,14 @@ pub(crate) fn load_all_icons(
     cli_override: Option<&str>,
     fg_color: Option<[u8; 3]>,
 ) -> Vec<(IconRole, Option<IconData>, IconSource)> {
-    // For system icon sets, pre-load the Material set so we can detect fallbacks
-    // by comparing SVG bytes.
     let is_system_set = matches!(
         icon_set,
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
     );
-    let material_icons: Vec<Option<IconData>> = if is_system_set {
-        IconRole::ALL
-            .iter()
-            .map(|role| MaterialLoader::new(*role).load())
-            .collect()
-    } else {
-        vec![]
-    };
 
     IconRole::ALL
         .iter()
-        .enumerate()
-        .map(|(i, role)| {
+        .map(|role| {
             // When a CLI override is specified and we're using freedesktop,
             // load from that specific theme via FreedesktopLoader with .theme().
             // When a default theme is specified (from the TOML), use
@@ -511,23 +500,7 @@ pub(crate) fn load_all_icons(
             let source = match (&data, is_system_set) {
                 (None, _) => IconSource::NotFound,
                 (Some(_), false) => IconSource::Bundled,
-                (Some(IconData::Svg(loaded)), true) => {
-                    // Compare with Material to detect fallback
-                    if let Some(Some(IconData::Svg(mat))) = material_icons.get(i) {
-                        if loaded == mat {
-                            IconSource::Fallback
-                        } else {
-                            IconSource::System
-                        }
-                    } else {
-                        // Material has no icon for this role, so it must be system
-                        IconSource::System
-                    }
-                }
-                (Some(_), true) => {
-                    // RGBA or other data comes from native APIs, always system
-                    IconSource::System
-                }
+                (Some(_), true) => IconSource::System,
             };
             (*role, data, source)
         })
@@ -754,22 +727,6 @@ pub(crate) fn load_gpui_icons(
         (None, None)
     };
 
-    // Pre-load Material icons once for all roles that appear in GPUI_ICONS,
-    // so we can detect system-vs-fallback without redundant per-icon loads.
-    // Issue 56: this duplicates the Material pre-load in load_all_icons().
-    // A future refactor could share the Material cache between both call sites.
-    let material_cache: HashMap<IconRole, Option<IconData>> = if is_system_set {
-        GPUI_ICONS
-            .iter()
-            .filter_map(|(name, _)| role_for_gpui_icon(name))
-            .collect::<std::collections::HashSet<_>>()
-            .into_iter()
-            .map(|r| (r, MaterialLoader::new(r).load()))
-            .collect()
-    } else {
-        HashMap::new()
-    };
-
     GPUI_ICONS
         .iter()
         .map(|(name, icon)| {
@@ -823,24 +780,12 @@ pub(crate) fn load_gpui_icons(
                 let source = match &data {
                     None => IconSource::NotFound,
                     Some(_) if !is_system_set => IconSource::Bundled,
-                    Some(IconData::Svg(loaded)) => {
-                        // Compare against pre-loaded Material icon to detect fallback
-                        if let Some(Some(IconData::Svg(mat_bytes))) = material_cache.get(&r) {
-                            if loaded == mat_bytes {
-                                IconSource::Fallback
-                            } else {
-                                IconSource::System
-                            }
-                        } else {
-                            IconSource::System
-                        }
-                    }
                     Some(_) => IconSource::System,
                 };
-                // If system set returned a bundled fallback or not found, try
+                // If the system set has no icon for the role, try
                 // freedesktop_name_for_gpui_icon before giving up (no theme mixing)
                 #[cfg(target_os = "linux")]
-                if matches!(source, IconSource::Fallback | IconSource::NotFound)
+                if source == IconSource::NotFound
                     && let (Some(de), Some(theme)) = (&linux_de, &fd_theme)
                 {
                     if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
