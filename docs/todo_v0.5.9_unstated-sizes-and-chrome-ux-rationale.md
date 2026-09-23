@@ -57,7 +57,7 @@ When the platform does not state a sizing value, there are five options:
 | Require every theme to state it (a resolution error) | Nothing different for native presets | It forces every user theme and colour-scheme preset to invent numbers its author does not have. |
 | Keep it **absent**, so the toolkit's own default stands | The toolkit's own look for that one property | Yes. It says nothing the platform did not say, and the gap stays visible, so it can be counted and closed. |
 
-Only the last option is honest. It is also as close to native as the data allows: a toolkit's default is a considered design value, and `0` is not.
+For a value the platform truly does not state, only the last option is honest. It is also as close to native as the data allows: a toolkit's default is a considered design value, and `0` is not.
 
 The principle cuts both ways. **Where the platform does state a value, the native preset must carry it.** A native preset that omits a documented value, as `kde-breeze` omits its dialog margin, is a defect. A gate must catch it, and the resolver must not paper over it.
 
@@ -65,7 +65,7 @@ The principle cuts both ways. **Where the platform does state a value, the nativ
 
 - §2.16: "(none) — content provides own padding", for the popover's own padding;
 - §2.5: "checkmark fills indicator";
-- §2.14: "(none) — rectangular bar", for a corner radius.
+- §2.14: "(none) — rectangular bar", for a corner radius (outside this change's scope; the reading is the same).
 
 Only these leave the value unstated: "(none) — sizes to content", "not specified", "app-defined", and a bare "(none)". The audit reads each "(none)" by its reason.
 
@@ -195,7 +195,7 @@ The alternatives lose:
 
 **Both toggles are our own Buttons, not upstream's `SidebarToggleButton`.** `SidebarToggleButton` draws a hardcoded icon. Its Button is built at sidebar/mod.rs:313, and the icon is chosen at :349-360 (`PanelLeftClose`/`PanelLeftOpen`). So it would show gpui-component's icon whichever icon set is chosen, and the maintainer's rule forbids mixing icon sets.
 
-- Our buttons use `IconName::PanelLeft` and `IconName::PanelRight` from the chosen set, as the rest of the chrome does.
+- Our buttons use `IconName::PanelLeft` and `IconName::PanelRight` from the chosen set, as the rest of the chrome does. The connector's freedesktop map gives KDE `sidebar-expand-left` for `PanelLeft` but `view-right-new` for `PanelRight` (icons.rs:665-691), while Breeze ships `sidebar-expand-right` beside `sidebar-expand-left` (both present in `/usr/share/icons/breeze/actions/22/`). The `PanelRight` mapping is corrected to `sidebar-expand-right`, so the two toggles are a matching pair on KDE.
 - The selected state, not a changing icon, shows whether a panel is open.
 - `SidebarToggleButton` then appears nowhere, so it goes to `docs/showcase-exceptions.toml`. That file's list of reason kinds gains "it would mix icon sets".
 

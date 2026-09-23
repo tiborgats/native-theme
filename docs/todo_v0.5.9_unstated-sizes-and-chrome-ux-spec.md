@@ -150,15 +150,15 @@ Append per-side padding rows to platform-facts §2.14, with citations. A platfor
 **Padding:**
 
 - Every `geometry::*` builder that pads sets each side (`pt`, `pr`, `pb`, `pl`) only when that side is `Some`.
-- Where a builder cannot apply padding because upstream sets it after the refinement (input, select, combobox: geometry.rs:148-157, :444-449, "Tier U"), its doc says upstream's padding is drawn.
+- Where a builder cannot apply padding because upstream sets it inside the widget, after the refinement (the input: geometry.rs:147, "padding is inner, Tier U"; the select and combobox: `combo_box_metrics`, geometry.rs:444-449, which sets no padding), its doc says upstream's padding is drawn.
 
 **Heights:**
 
 - `control_height` goes.
-- `geometry::button` and `geometry::input` set the platform's height as `min_h` together with `h_auto`, so layout adds the padding and scaled text actually drawn.
+- `geometry::button` and `geometry::input` set the platform's height as `min_h` together with `h_auto`, so layout adds the padding and scaled text actually drawn. `combo_box_metrics` (geometry.rs:447), which already uses `min_h`, sets the platform's `min_height` directly.
 - `geometry::input_height` returns the input's minimum height, to use with `min_h`.
-- A seams test proves, for a real Button and a real Input:
-  - at text scale 1, the height equals the platform's minimum;
+- A seams test proves, for a real Button and a real Input, under every native preset:
+  - at text scale 1, the height equals the platform's minimum, as it does today;
   - at a large scale, the height grows with the text and no text clips.
 - If upstream prevents `h_auto` for a widget, the implementer reports it rather than working around it.
 
@@ -213,6 +213,7 @@ Each toggle:
 
 - is built by a `demo::` helper and reports itself;
 - is a ghost icon Button with `IconName::PanelLeft` or `IconName::PanelRight`, taken from the chosen set through `chrome_icon`. Where the set lacks the icon, the toggle shows its tooltip text as a label, as toolbar buttons already do;
+  - The freedesktop map's KDE arm for `PanelRight` becomes `sidebar-expand-right` (icons.rs:686-691), the pair of `PanelLeft`'s `sidebar-expand-left`. Breeze ships both files. The GTK arms stay.
 - is `selected` while its panel is open (for the left toggle, while it is expanded rather than collapsed to the rail);
 - dispatches `ToggleSidebar` or `ToggleInspector`;
 - has a tooltip naming its action and key (Ctrl+B, Ctrl+I).
