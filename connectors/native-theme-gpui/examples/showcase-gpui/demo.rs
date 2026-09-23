@@ -202,20 +202,19 @@ pub(crate) const MENU_BAR_PADDING: Pixels = px(8.);
 
 /// The menu-bar row (spec S8): at the top of a window whose frame the window
 /// manager draws, the application's own row holding `app_menu_bar`, as a KDE
-/// application places its menus. Its sides are padded with
-/// `container_margin`, the installed layout's `geometry::container_margin`,
-/// and where that is unstated with [`MENU_BAR_PADDING`]; the AppMenuBar's
-/// items set its height.
+/// application places its menus. The model states no menu-bar inset, so its
+/// sides borrow `container_margin`, the installed layout's
+/// `geometry::container_margin`, and where that is unstated take
+/// [`MENU_BAR_PADDING`]; the AppMenuBar's items set its height.
 pub(crate) fn menu_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     container_margin: Option<Pixels>,
     app_menu_bar: Entity<AppMenuBar>,
 ) -> Stateful<Div> {
-    let mut row_info = info::menu_bar(container_margin, MENU_BAR_PADDING);
-    if container_margin.is_some() {
-        row_info = row_info.geometry("container_margin");
-    }
+    // No geometry line: the model states no menu-bar inset, and the row only
+    // borrows container_margin, which its info says in its own words.
+    let row_info = info::menu_bar(cx.theme(), container_margin, MENU_BAR_PADDING);
     h_flex()
         .px(container_margin.unwrap_or(MENU_BAR_PADDING))
         .child(reported_menus(ui, cx, app_menu_bar, info::MenuHost::Row))

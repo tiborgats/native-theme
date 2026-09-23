@@ -72,8 +72,8 @@ fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
 }
 
 /// The menu-bar row under the window manager's frame (spec S8): the
-/// application's menus at the top of the window, padded by the installed
-/// layout's `container_margin`, as the toolbar under it is.
+/// application's menus at the top of the window, their sides borrowing the
+/// installed layout's `container_margin`: the model states no menu-bar inset.
 fn menu_bar(app: &Showcase, cx: &App) -> impl IntoElement {
     demo::menu_bar(
         &app.info_ui,

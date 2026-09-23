@@ -196,11 +196,13 @@ impl Inspector {
             None => Vec::new(),
         };
 
-        let window_rows = window_rows(
-            window.window_decorations(),
-            window.client_inset(),
-            window_paddings(window),
-        );
+        // The decorations the chrome was drawn for (`Showcase::frame`), so the
+        // section and the chrome never disagree.
+        let frame = self
+            .showcase
+            .upgrade()
+            .map_or_else(|| window.window_decorations(), |s| s.read(cx).frame(window));
+        let window_rows = window_rows(frame, window.client_inset(), window_paddings(window));
 
         with_gap(v_flex(), gap)
             .child(section("Theme config"))
@@ -254,7 +256,7 @@ pub(crate) fn window_rows(
             ),
             (
                 "frame",
-                "the window manager's: the title bar, the window controls, the corners and the shadow. Root's WindowBorder draws nothing (window_border.rs, WindowBorder)"
+                "whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow). Root's WindowBorder draws nothing (window_border.rs, WindowBorder)"
                     .to_string(),
             ),
             ("client inset", inset),

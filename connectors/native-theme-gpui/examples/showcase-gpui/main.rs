@@ -536,8 +536,8 @@ pub(crate) fn probe(selector: &'static str, control: impl IntoElement) -> Div {
 }
 
 /// The window the showcase opens at `bounds`, asking the window manager to
-/// draw its frame -- title bar, window controls, corners and shadow -- so
-/// they look native (spec S8). The self-tests open their windows with it too.
+/// draw its frame, so that whatever it draws -- on KDE, Breeze's title bar,
+/// controls, corners and shadow -- looks native (spec S8). The self-tests open their windows with it too.
 ///
 /// gpui's default options keep the system's title bar: macOS and Windows
 /// hide it only for a titlebar that `appears_transparent` (gpui-pre-macos

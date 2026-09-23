@@ -828,25 +828,38 @@ const CLIENT_SIDE: gpui::Decorations = gpui::Decorations::Client {
 /// sample: the window's own title bar is one.
 ///
 /// The test platform grants server-side decorations only, so the grant is
-/// the test's (`Showcase::frame_for_test`), and `Root`'s `window_border`,
-/// which reads the window's own answer, adds no inset: the bar's top is the
-/// window's.
+/// the test's (`Showcase::frame_for_test`). In a window really granted
+/// client-side decorations `Root`'s `window_border` insets the content by
+/// `window_paddings` and, on each side not tiled, its own border
+/// (window_border.rs, `window_content_insets`, which is not public), so the
+/// bar is held inside the paddings and across the content's whole width --
+/// the toolbar's -- rather than to a pixel.
 #[gpui::test]
 fn under_client_decorations_the_title_bar_holds_the_menus(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     grant(&mut cx, &showcase, CLIENT_SIDE);
     let bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
-    assert_eq!(bar.top(), px(0.), "the title bar starts at {:?}", bar.top());
-    assert_eq!(
-        bar.left(),
-        px(0.),
-        "the title bar starts at {:?}",
-        bar.left()
+    let toolbar = bounds_of(&mut cx, CHROME_TOOLBAR);
+    let (paddings, viewport) = cx.update(|window, _cx| {
+        (
+            gpui_component::window_paddings(window),
+            window.viewport_size(),
+        )
+    });
+    assert!(
+        bar.top() >= paddings.top && bar.left() >= paddings.left,
+        "the title bar starts at {:?}, outside the frame's paddings {paddings:?}",
+        bar.origin
     );
-    assert_eq!(
-        bar.size.width, WINDOW_SIZE.width,
-        "the title bar is {:?} wide in a {:?} window",
-        bar.size.width, WINDOW_SIZE.width
+    assert!(
+        bar.right() <= viewport.width - paddings.right,
+        "the title bar ends at {:?}, past the frame's right padding in a {:?} window",
+        bar.right(),
+        viewport.width
+    );
+    assert!(
+        bar.left() == toolbar.left() && bar.right() == toolbar.right(),
+        "the title bar at {bar:?} is not as wide as the content, the toolbar at {toolbar:?}"
     );
     assert!(bar.size.height > px(0.), "the title bar has no height");
     assert_eq!(
@@ -855,7 +868,7 @@ fn under_client_decorations_the_title_bar_holds_the_menus(cx: &mut TestAppContex
         "a menu-bar row is drawn beside a title bar"
     );
     assert_eq!(
-        bounds_of(&mut cx, CHROME_TOOLBAR).top(),
+        toolbar.top(),
         bar.bottom(),
         "the toolbar is not right under the title bar"
     );
@@ -952,7 +965,7 @@ fn the_theme_tabs_window_section_names_the_mode() {
         "the server-side rows do not name the mode: {server:?}"
     );
     assert!(
-        value(&server, "frame").is_some_and(|v| v.starts_with("the window manager's")),
+        value(&server, "frame").is_some_and(|v| v.starts_with("whatever the window manager draws")),
         "the server-side rows do not say the window manager draws the frame: {server:?}"
     );
     for client_only in ["frame fill", "frame colour", "frame shadow"] {

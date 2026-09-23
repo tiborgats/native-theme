@@ -163,30 +163,36 @@ pub enum MenuHost {
 
 /// The menu-bar row (spec S8), at the top of a window whose frame the window
 /// manager draws. `margin` is the installed layout's
-/// `layout.container_margin`, and `own` the showcase's `MENU_BAR_PADDING`.
-pub fn menu_bar(margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
+/// `layout.container_margin`, which the row borrows, and `own` the showcase's
+/// `MENU_BAR_PADDING`.
+pub fn menu_bar(t: &Theme, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
     let sides = match margin {
         Some(m) => format!(
-            "left and right {}px, layout.container_margin",
+            "left and right {}px, layout.container_margin, borrowed",
             px_text(m.as_f32())
         ),
         None => format!(
-            "left and right {}px, MENU_BAR_PADDING, the showcase's own choice rather than a platform's: the theme states no layout.container_margin, and the row is the application's own element, with no toolkit default to keep (spec §3.1)",
+            "left and right {}px, MENU_BAR_PADDING, the showcase's own choice rather than a platform's: the theme states no layout.container_margin to borrow either, and the row is the application's own element, with no toolkit default to keep (spec §3.1)",
             px_text(own.as_f32())
         ),
     };
     WidgetInfo::new("Menu bar")
+        .color(claim("bg (the window's)", "background", t.background, "showcase"))
         .not_themeable(
             "widget",
             "gpui-component has no menu-bar row, so this row is the application's own h_flex around the AppMenuBar. The model states no menu bar either: its menu is the popup a menu opens (platform-facts §2.6)",
         )
         .not_themeable(
+            "inset",
+            "the model states no menu-bar inset. The row borrows layout.container_margin, the padding inside containers, so its menus start where the toolbar's buttons do wherever toolbar.border states no left padding of its own: the showcase's choice",
+        )
+        .not_themeable(
             "fill",
-            "none: the window's background shows through",
+            "none of its own: the view's background, which the showcase paints under the whole window, shows through",
         )
         .instance(
             "window",
-            "the window manager draws this window's frame -- title bar, window controls, corners and shadow -- so the menus sit in a row of their own at the top of the window, above the toolbar, as a KDE application places them",
+            "the window manager draws this window's frame, so the menus sit in a row of their own at the top of the window, above the toolbar, as a KDE application places them",
         )
         .instance(
             "padding",
