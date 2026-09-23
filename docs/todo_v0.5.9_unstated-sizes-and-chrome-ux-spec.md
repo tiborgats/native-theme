@@ -81,9 +81,10 @@ The following values are known now; the audit (plan Task 1) completes the list.
 | Platform (presets) | Widget | top / right / bottom / left | Source |
 |---|---|---|---|
 | KDE (kde-breeze, -live) | dialog | 10 / 10 / 10 / 10 | §2.22, `Layout_TopLevelMarginWidth` |
-| KDE | toolbar | 0 / 6 / 0 / 6 | §2.13, `ToolBar_ItemMargin` |
+| KDE | toolbar | 6 / 6 / 6 / 6 | §2.13 corrected (audit R7): Qt applies `ToolBar_ItemMargin` on all four sides (qtoolbarlayout.cpp:87-89) |
 | KDE | toolbar `bar_height` | not stated | §2.13, "(none), sizes to content" |
-| GNOME (adwaita, -live) | toolbar | 0 / 6 / 0 / 6 | §2.13 |
+| GNOME (adwaita, -live) | toolbar | 6 / 6 / 6 / 6 | §2.13 corrected (audit R6): `.toolbar { padding: 6px }` (_toolbars.scss:99-101) |
+| GNOME | toolbar `bar_height` | not stated | `.toolbar` sets no min-height; the 47 is the headerbar's (audit R6) |
 | GNOME | dialog | 32 / 24 / 24 / 24 | §2.22 |
 | GNOME | combo_box | 5 / 10 / 5 / 10 | §2.24, "← button padding (10px)", "← button (5px)" |
 | macOS (macos-sonoma, -live) | toolbar | 0 / 8 / 0 / 8 | §2.13, measured |
@@ -93,11 +94,11 @@ The following values are known now; the audit (plan Task 1) completes the list.
 | Windows | button | 5 / 11 / 6 / 11 | §2.3 |
 | Windows | input | 5 / 6 / 6 / 10 | §2.4 |
 | Windows | tooltip | 6 / 9 / 8 / 9 | §2.7, `ToolTipBorderPadding=9,6,9,8` |
-| Windows | tab | 3 / 4 / 3 / 8, pending the ruling below | §2.11 |
+| Windows | tab | 3 / 8 / 3 / 8 | §2.11, "without close button" context (audit R1) |
 | Windows | menu | 4 / 11 / 5 / 11 | §2.6, mouse context |
 | Windows | combo_box | 5 / not stated / 7 / 12 | §2.24; the right side is measured to the arrow column |
 
-Three per-context cells need a ruling before they are written: the Windows tab's "8,3,4,3 (8/8 without close button)" (platform-facts.md:428); Windows' toolbar `bar_height`, "default = 64, compact mode = 48" (:1340), where the preset and the reader both state 48; and GNOME's list padding, "rich-list=12, plain list=2" and "rich-list=8, plain list=2" (:1377-1378).
+Task 1's audit and its rulings (ledger R1–R13) settle the remaining rows, and correct six platform-facts cells with upstream sources. Before the audit, three per-context cells were open: the Windows tab's "8,3,4,3 (8/8 without close button)" (platform-facts.md:428); Windows' toolbar `bar_height`, "default = 64, compact mode = 48" (:1340), where the preset and the reader both state 48; and GNOME's list padding, "rich-list=12, plain list=2" and "rich-list=8, plain list=2" (:1377-1378).
 
 The audit adds every other row and mismatch in scope: documented but missing, stated where not documented, different, range, per-context, derivation. It also covers the OS readers' size constants:
 
