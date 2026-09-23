@@ -5,10 +5,11 @@
 # naming a widget the toolkit no longer offers, or one the showcase does show
 # after all. An exception is therefore a claim that has to stay true.
 #
-# A reason belongs to one of five kinds (spec §6a.4): a test harness, an
+# A reason belongs to one of six kinds (spec §6a.4): a test harness, an
 # internal sub-part of a compound widget, a layout wrapper with no visual
-# surface, a widget needing a GPU pipeline the application supplies, or a
-# widget native-theme models no counterpart for. Each was read in the
+# surface, a widget needing a GPU pipeline the application supplies, a
+# widget native-theme models no counterpart for, or a widget that would mix
+# icon sets (v0.5.9 chrome-UX rationale §9). Each was read in the
 # vendored source on 2026-09-21 -- `Loading` and `Text` on 2026-09-22, when
 # the gpui matching rule stopped accepting a bare path segment and reported
 # them -- and cites the file and line it was read at: gpui-component 0.6.4,
@@ -40,6 +41,7 @@ MessageHeader = "the header slot of a `Message` (message.rs:276)"
 SearchableListItemElement = "the row `Select`, `Combobox` and `MultiCombobox` dropdowns render (searchable_list/item.rs:11-18)"
 SidebarFooter = "the footer of a `Sidebar` (sidebar/footer.rs:8-10)"
 SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
+SidebarToggleButton = "it would mix icon sets: it draws gpui-component's own `PanelLeftClose` or `PanelLeftOpen`, chosen as it renders with no setter (sidebar/mod.rs:349-360, :369; read in gpui-component 0.6.6), so under any other chosen icon set it would show another set's icon. The status bar's panel toggles are Buttons whose `PanelLeft` and `PanelRight` icons come from the chosen set"
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
 Text = "not a text widget but a chart axis label: `plot::label::Text` is built only by `AxisText`, which the charts build for every tick (plot/label.rs:95, plot/axis.rs:99, :144, chart/mod.rs:83)"

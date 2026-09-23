@@ -5,7 +5,7 @@ use gpui::{
     Window, px,
 };
 use gpui_component::{IconName, WindowExt as _};
-use native_theme_gpui::ActiveNativeTheme as _;
+use native_theme_gpui::{ActiveNativeTheme as _, geometry};
 
 use crate::Page;
 use crate::app::{
@@ -14,9 +14,10 @@ use crate::app::{
 };
 use crate::support::{defined_size, preset_items};
 use crate::{
+    CHROME_INSPECTOR_TOGGLE, CHROME_LABEL_ICON_SET, CHROME_LABEL_MODE, CHROME_LABEL_THEME,
     CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, PROBE_COLOR_MODE, PROBE_COMBOBOX, demo,
-    demo::PaletteEntry,
+    CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, PROBE_COLOR_MODE,
+    PROBE_COMBOBOX, PROBE_ICON_SET, WINDOW_TITLE, demo, demo::PaletteEntry,
 };
 
 /// The showcase's application menus (spec §2.2), built fresh for each
@@ -49,21 +50,16 @@ pub(crate) fn menus() -> Vec<Menu> {
     ]
 }
 
-/// The window's title bar (spec §2.1): the installed preset and colour mode,
-/// and the application's menus where the platform has no menu bar of its own.
+/// The window's title bar (spec §2.1, §3.4): this crate's name and version,
+/// the window's title, and the application's menus where the platform has no
+/// menu bar of its own.
 pub(crate) fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
-    let (preset, mode) = preset_and_mode(app);
-    demo::title_bar(
-        &app.info_ui,
-        cx,
-        format!("native-theme showcase — {preset} ({mode})"),
-        app.menu_bar.clone(),
-    )
-    .debug_selector(|| CHROME_TITLE_BAR.into())
+    demo::title_bar(&app.info_ui, cx, WINDOW_TITLE, app.menu_bar.clone())
+        .debug_selector(|| CHROME_TITLE_BAR.into())
 }
 
 /// The installed preset, the default one by the platform preset it stands
-/// for, and the colour mode, as the title bar and the status bar name them.
+/// for, and the colour mode, as the status bar names them.
 fn preset_and_mode(app: &Showcase) -> (&str, &str) {
     let preset = if app.current_theme_name == "default" {
         app.default_label.as_str()
@@ -73,27 +69,17 @@ fn preset_and_mode(app: &Showcase) -> (&str, &str) {
     (preset, if app.is_dark { "dark" } else { "light" })
 }
 
-/// The window's toolbar (spec §2.3), under the title bar: the Sidebar's
-/// toggle, the preset switch, the colour mode, the icon set, and buttons for
-/// three of the actions, their icons of the chosen set.
+/// The window's toolbar (spec §2.3, §3.3), under the title bar: buttons for
+/// three of the actions -- the command palette, a theme reload and the
+/// Preferences sheet -- their icons of the chosen set.
 pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
     let ui = &app.info_ui;
     let set = app.icon_set_label();
     demo::toolbar(
         ui,
         cx,
+        geometry::container_margin(&app.layout),
         [
-            demo::sidebar_toggle_button(ui, cx, app.nav_collapsed)
-                .debug_selector(|| CHROME_SIDEBAR_TOGGLE.into())
-                .into_any_element(),
-            demo::preset_combobox(ui, cx, &app.preset_combobox)
-                .debug_selector(|| PROBE_COMBOBOX.into())
-                .into_any_element(),
-            demo::color_mode_toggle_group(ui, cx, app.color_mode)
-                .debug_selector(|| PROBE_COLOR_MODE.into())
-                .into_any_element(),
-            demo::icon_set_select(ui, cx, &app.icon_set_select).into_any_element(),
-            demo::toolbar_separator(ui, cx).into_any_element(),
             demo::toolbar_button(
                 ui,
                 cx,
@@ -122,60 +108,145 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                     about: "dispatches ReloadTheme, the action Theme > Reload System Theme runs: the desktop's settings are read again and the current theme is installed from them",
                 },
             )
+            .debug_selector(|| CHROME_TOOLBAR_RELOAD.into())
             .into_any_element(),
             demo::toolbar_button(
                 ui,
                 cx,
                 demo::ToolbarButton {
-                    button_id: "toolbar-inspector",
-                    icon: IconName::Inspector,
-                    drawn: app.chrome_icon(&IconName::Inspector),
+                    button_id: "toolbar-preferences",
+                    icon: IconName::Settings,
+                    drawn: app.chrome_icon(&IconName::Settings),
                     set: &set,
-                    tooltip: "Toggle Inspector",
-                    action: &ToggleInspector,
-                    about: "dispatches ToggleInspector, the action View > Toggle Inspector and Ctrl+I run: the inspector's panel is hidden, or shown again",
+                    tooltip: "Preferences",
+                    action: &OpenPreferences,
+                    about: "dispatches OpenPreferences, the action Theme > Preferences… and Ctrl+, run: the Preferences sheet opens",
                 },
             )
-            .debug_selector(|| CHROME_TOOLBAR_INSPECTOR.into())
+            .debug_selector(|| CHROME_TOOLBAR_PREFERENCES.into())
             .into_any_element(),
         ],
     )
     .debug_selector(|| CHROME_TOOLBAR.into())
 }
 
-/// The window's Sidebar (spec §2.4): the pages with their icons of the
-/// chosen set, the shown one active.
+/// The window's Sidebar (spec §2.4, §3.3): expanded, the theme settings in
+/// its header -- the preset switch, the colour mode and the icon set, each
+/// labelled -- above the pages with their icons of the chosen set, the shown
+/// one active. The icon rail has no room for the header, so it draws none;
+/// the command palette still offers the presets and colour modes, and the
+/// Theme menu the colour modes.
 pub(crate) fn sidebar(app: &Showcase, cx: &App) -> impl IntoElement {
+    let ui = &app.info_ui;
+    let header = (!app.nav_collapsed).then(|| {
+        demo::sidebar_header(
+            ui,
+            cx,
+            geometry::widget_gap(&app.layout),
+            [
+                (
+                    CHROME_LABEL_THEME,
+                    "Theme",
+                    demo::preset_combobox(ui, cx, &app.preset_combobox)
+                        .debug_selector(|| PROBE_COMBOBOX.into())
+                        .into_any_element(),
+                ),
+                (
+                    CHROME_LABEL_MODE,
+                    "Mode",
+                    demo::color_mode_toggle_group(ui, cx, app.color_mode)
+                        .debug_selector(|| PROBE_COLOR_MODE.into())
+                        .into_any_element(),
+                ),
+                (
+                    CHROME_LABEL_ICON_SET,
+                    "Icon set",
+                    demo::icon_set_select(ui, cx, &app.icon_set_select)
+                        .debug_selector(|| PROBE_ICON_SET.into())
+                        .into_any_element(),
+                ),
+            ],
+        )
+        .into_any_element()
+    });
     demo::sidebar(
-        &app.info_ui,
+        ui,
         cx,
         app.active_page,
         app.nav_collapsed,
         |page| app.chrome_icon(&page.icon()),
         app.icon_set_label().into(),
+        header,
     )
     .debug_selector(|| CHROME_SIDEBAR.into())
 }
 
-/// The window's status bar (spec §2.7), below the body: the environment on
-/// the left; on the right `shown`, the title of what the inspector shows, and
-/// the version of the crate this example belongs to.
+/// The window's status bar (spec §2.7, §3.2), below the body: at its left
+/// end the left-panel toggle, then the environment; at its right end `shown`,
+/// the title of what the inspector shows, then the inspector toggle. Each
+/// toggle sits at the edge of the panel it controls, and is selected while
+/// that panel is open.
 pub(crate) fn status_bar(
     app: &Showcase,
     cx: &App,
     shown: Option<SharedString>,
 ) -> impl IntoElement {
-    demo::status_bar(
-        &app.info_ui,
+    let ui = &app.info_ui;
+    let set = app.icon_set_label();
+    let expanded = !app.nav_collapsed;
+    let left = demo::panel_toggle(
+        ui,
         cx,
+        demo::PanelToggle {
+            button_id: "status-toggle-sidebar",
+            icon: IconName::PanelLeft,
+            drawn: app.chrome_icon(&IconName::PanelLeft),
+            set: &set,
+            tooltip: "Toggle Sidebar",
+            action: &ToggleSidebar,
+            open: expanded,
+            about: "dispatches ToggleSidebar, the action View > Toggle Sidebar and Ctrl+B run: the Sidebar collapses to its icon rail, or expands again",
+            state: if expanded {
+                "selected: the Sidebar is expanded"
+            } else {
+                "not selected: the Sidebar is collapsed to its icon rail"
+            },
+        },
+    )
+    .debug_selector(|| CHROME_SIDEBAR_TOGGLE.into());
+    let visible = app.inspector_visible;
+    let right = demo::panel_toggle(
+        ui,
+        cx,
+        demo::PanelToggle {
+            button_id: "status-toggle-inspector",
+            icon: IconName::PanelRight,
+            drawn: app.chrome_icon(&IconName::PanelRight),
+            set: &set,
+            tooltip: "Toggle Inspector",
+            action: &ToggleInspector,
+            open: visible,
+            about: "dispatches ToggleInspector, the action View > Toggle Inspector and Ctrl+I run: the inspector's panel is hidden, or shown again",
+            state: if visible {
+                "selected: the inspector is shown"
+            } else {
+                "not selected: the inspector is hidden"
+            },
+        },
+    )
+    .debug_selector(|| CHROME_INSPECTOR_TOGGLE.into());
+    demo::status_bar(
+        ui,
+        cx,
+        left,
         status_environment(app, cx).join(" · "),
         shown,
-        concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION")),
+        right,
     )
     .debug_selector(|| CHROME_STATUS_BAR.into())
 }
 
-/// The status bar's left side (spec §2.7), one item each: the desktop, the
+/// The status bar's environment text (spec §2.7), one item each: the desktop, the
 /// preset and colour mode, the installed theme's `defaults.font` in the unit
 /// its source stated (`Showcase::original_font`, a placeholder where no
 /// theme could be read), and, once a native theme is installed, its
@@ -248,7 +319,7 @@ pub(crate) const COMPATIBILITY_URL: &str = concat!(
 const PREFERENCES_WIDTH: Pixels = px(600.);
 
 /// The presets the command palette offers, as `(key, display name)`: the
-/// toolbar's preset switch's, from the same list (`support::preset_items`).
+/// Sidebar's preset switch's, from the same list (`support::preset_items`).
 pub(crate) fn palette_presets() -> Vec<(SharedString, SharedString)> {
     preset_items()
         .into_iter()
@@ -274,9 +345,9 @@ fn palette_entry(
 }
 
 /// The command palette's entries (spec §2.8), as `(group, entries)`: every
-/// page, every preset the toolbar offers, and the three colour modes, each
-/// running the action its menu item or toolbar control runs, their icons of
-/// `app`'s chosen set.
+/// page, every preset the Sidebar's switch offers, and the three colour
+/// modes, each running the action its menu item or Sidebar control runs,
+/// their icons of `app`'s chosen set.
 fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
     let pages = Page::ALL
         .map(|page| {

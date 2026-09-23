@@ -36,24 +36,26 @@ use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
     BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
     CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV,
-    CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
-    DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO,
-    FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
-    FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
-    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA,
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE,
-    INSPECTOR_WIDTH, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT,
-    LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE,
-    LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK,
-    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
-    OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER,
-    OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT,
-    OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG,
-    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
-    PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW,
-    PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2,
-    TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE,
+    CHROME_INSPECTOR_TOGGLE, CHROME_LABEL_ICON_SET, CHROME_LABEL_MODE, CHROME_LABEL_THEME,
+    CHROME_SIDEBAR, CHROME_SIDEBAR_HEADER, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR,
+    CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES,
+    CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, DATA_PAGINATION,
+    DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT,
+    FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER,
+    FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
+    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
+    INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, INSPECTOR_WIDTH, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
+    LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_GROUP_BOX_NORMAL,
+    LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID, LIST_DEMO,
+    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
+    OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
+    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COLOR_MODE_TEXTS, PROBE_COMBOBOX, PROBE_ICON_SET, PROBE_NOTIFICATION,
+    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
+    TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
+    WINDOW_SIZE, WINDOW_TITLE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -575,7 +577,7 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Notification: nothing was pushed"
     );
 
-    // --- The toolbar's colour mode switch -----------------------------
+    // --- The Sidebar header's colour mode switch -----------------------
     //
     // The group's toggles are System, Light, Dark, and a Toggle carries no
     // selector of its own, so the step clicks the group's two ends. Dark is
@@ -595,6 +597,10 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "the step does not start from light, so choosing Dark may change nothing"
     );
     let group = bounds_of(&mut cx, PROBE_COLOR_MODE);
+    assert!(
+        within(group, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
+        "the colour mode switch at {group:?} is not in the Sidebar header"
+    );
     click_at(&mut cx, point(group.right() - px(4.), group.center().y));
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.color_mode),
@@ -671,9 +677,50 @@ fn the_title_bar_is_the_top_of_the_window(cx: &mut TestAppContext) {
     }
 }
 
+/// The window is titled with this crate's name and version (spec §3.4): the
+/// title bar's label, the title the OS shows and the string the Windows
+/// screenshot capture finds the window by are one string. The capture is
+/// Windows-only code; it looks the window up by `WINDOW_TITLE`, which is
+/// checked here. The label is read off the title bar's info, which names the
+/// text it draws.
+#[gpui::test]
+fn the_window_is_titled_with_the_crates_version(cx: &mut TestAppContext) {
+    let expected = format!("native-theme-gpui {} showcase", env!("CARGO_PKG_VERSION"));
+    assert_eq!(
+        WINDOW_TITLE, expected,
+        "the title the screenshot capture looks the window up by is not the crate's name and version"
+    );
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|window, _cx| crate::name_window(window));
+    assert_eq!(
+        cx.window_title().as_deref(),
+        Some(expected.as_str()),
+        "the OS window title is not the crate's name and version"
+    );
+    let bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
+    hover(&mut cx, bar.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    let label = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "label")
+                .map(|n| n.text.clone())
+        })
+    });
+    assert!(
+        label
+            .as_deref()
+            .is_some_and(|l| l.starts_with(&format!("\"{expected}\""))),
+        "the title bar's label is not the crate's name and version: {label:?}"
+    );
+}
+
 /// The toolbar is the model's toolbar (spec §2.3, §9): at least
 /// `toolbar.bar_height` tall where the theme states one, with
-/// `toolbar.item_gap` between its items.
+/// `toolbar.item_gap` between its items: its first two, the Command Palette
+/// and Reload System Theme buttons, are measured.
 ///
 /// kde-breeze states a 0px gap and adwaita a 6px one, so a row that kept a
 /// gap of its own fails one of the two.
@@ -708,14 +755,14 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
             title.bottom(),
             "{preset}: the toolbar is not right under the title bar"
         );
-        // The toolbar's first two children: the SidebarToggleButton and the
-        // preset Combobox.
-        let first = bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE);
-        let second = bounds_of(&mut cx, PROBE_COMBOBOX);
+        // The toolbar's first two children: the Command Palette and Reload
+        // System Theme buttons.
+        let first = bounds_of(&mut cx, CHROME_TOOLBAR_PALETTE);
+        let second = bounds_of(&mut cx, CHROME_TOOLBAR_RELOAD);
         assert!(
-            bar.contains(&first.origin) && bar.contains(&second.origin),
-            "{preset}: the SidebarToggleButton at {first:?} or the Combobox at {second:?} \
-             is not inside the toolbar at {bar:?}"
+            within(first, bar) && within(second, bar),
+            "{preset}: the Command Palette button at {first:?} or the Reload button at \
+             {second:?} is not inside the toolbar at {bar:?}"
         );
         assert_eq!(
             second.left() - first.right(),
@@ -726,11 +773,175 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
     }
 }
 
-/// The toolbar's Combobox is the real preset switch: choosing a preset in it
-/// installs that preset.
+/// The toolbar holds the actions and nothing else (spec §3.3): the Command
+/// Palette, Reload System Theme and Preferences buttons, in that order. The
+/// theme settings and the panel toggles are drawn elsewhere, clear of it,
+/// and the Preferences button opens the Preferences sheet.
 #[gpui::test]
-fn the_toolbar_switches_the_preset(cx: &mut TestAppContext) {
+fn the_toolbar_holds_the_actions(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let bar = bounds_of(&mut cx, CHROME_TOOLBAR);
+    let buttons = [
+        CHROME_TOOLBAR_PALETTE,
+        CHROME_TOOLBAR_RELOAD,
+        CHROME_TOOLBAR_PREFERENCES,
+    ]
+    .map(|selector| (selector, bounds_of(&mut cx, selector)));
+    for (selector, button) in buttons {
+        assert!(
+            within(button, bar),
+            "{selector} at {button:?} is not in the toolbar at {bar:?}"
+        );
+    }
+    for pair in buttons.windows(2) {
+        if let [(first, a), (second, b)] = pair {
+            assert!(
+                a.right() <= b.left(),
+                "{first} at {a:?} is not before {second} at {b:?}"
+            );
+        }
+    }
+    for selector in [
+        PROBE_COMBOBOX,
+        PROBE_COLOR_MODE,
+        PROBE_ICON_SET,
+        CHROME_SIDEBAR_TOGGLE,
+        CHROME_INSPECTOR_TOGGLE,
+    ] {
+        let elsewhere = bounds_of(&mut cx, selector);
+        assert!(
+            !bar.intersects(&elsewhere),
+            "{selector} at {elsewhere:?} is still in the toolbar at {bar:?}"
+        );
+    }
+    // The row's end holds nothing, so the pointer there settles on the row.
+    hover(&mut cx, point(bar.right() - px(8.), bar.center().y));
+    settle(&mut cx);
+    draw(&mut cx);
+    let items = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "items")
+                .map(|n| n.text.clone())
+        })
+    });
+    assert_eq!(
+        items.as_deref(),
+        Some("icon Buttons for the command palette, a theme reload and the Preferences sheet"),
+        "the toolbar's info does not name what it holds"
+    );
+    click(&mut cx, CHROME_TOOLBAR_PREFERENCES);
+    assert!(
+        cx.update(|window, cx| window.has_active_sheet(cx)),
+        "the toolbar's Preferences button did not open the Preferences sheet"
+    );
+}
+
+/// The toolbar row is padded where the theme states no padding for it (spec
+/// §3.1). nord, a colour-scheme preset, states no `toolbar.border` side, so
+/// each side is `layout.container_margin`; with that unstated too, the
+/// showcase's own `TOOLBAR_PADDING`, which the row's info names. Under
+/// kde-breeze and windows-11, which state their sides, the stated left side
+/// stands. The row is as tall as its buttons and its padding -- none of the
+/// three states a `toolbar.bar_height` for nord -- so the first button's top
+/// is the top padding.
+#[gpui::test]
+fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let inset = |cx: &mut VisualTestContext| {
+        let (bar, first) = (
+            bounds_of(cx, CHROME_TOOLBAR),
+            bounds_of(cx, CHROME_TOOLBAR_PALETTE),
+        );
+        (first.left() - bar.left(), first.top() - bar.top())
+    };
+    let toolbar_padding = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |_this, cx| {
+            cx.native_theme()
+                .and_then(|nt| nt.native(cx))
+                .map(|n| n.resolved.toolbar.border.padding)
+        })
+    };
+    for preset in ["kde-breeze", "windows-11"] {
+        use_preset(&mut cx, &showcase, preset);
+        let left = toolbar_padding(&mut cx).and_then(|p| p.left);
+        assert!(
+            left.is_some(),
+            "{preset} states no left toolbar padding, so its stated side is not measured"
+        );
+        assert_eq!(
+            Some(inset(&mut cx).0),
+            left.map(px),
+            "{preset}: the toolbar's first button is not its stated left padding in"
+        );
+    }
+
+    use_preset(&mut cx, &showcase, "nord");
+    assert_eq!(
+        toolbar_padding(&mut cx),
+        Some(native_theme::theme::ResolvedPadding::default()),
+        "nord states a toolbar padding side, so the fallback is not what is measured"
+    );
+    let margin = read(&mut cx, &showcase, |this, _| {
+        geometry::container_margin(&this.layout)
+    });
+    assert!(
+        margin.is_some(),
+        "nord states no container_margin, so the showcase's constant is measured twice"
+    );
+    let (left, top) = inset(&mut cx);
+    assert_eq!(
+        (Some(left), Some(top)),
+        (margin, margin),
+        "nord: the toolbar is not padded by layout.container_margin"
+    );
+
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.layout = native_theme::theme::LayoutTheme::default();
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        inset(&mut cx),
+        (crate::demo::TOOLBAR_PADDING, crate::demo::TOOLBAR_PADDING),
+        "with neither the toolbar's padding nor container_margin stated, the toolbar is \
+         not padded by the showcase's own TOOLBAR_PADDING"
+    );
+    let bar = bounds_of(&mut cx, CHROME_TOOLBAR);
+    hover(&mut cx, point(bar.right() - px(8.), bar.center().y));
+    settle(&mut cx);
+    draw(&mut cx);
+    let padding = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "padding")
+                .map(|n| n.text.clone())
+        })
+    });
+    assert!(
+        padding
+            .as_deref()
+            .is_some_and(|p| p.contains("TOOLBAR_PADDING") && p.contains("the showcase's own")),
+        "the toolbar's info does not say its padding is the showcase's own TOOLBAR_PADDING: \
+         {padding:?}"
+    );
+}
+
+/// The Sidebar header's Combobox is the real preset switch: choosing a
+/// preset in it installs that preset.
+#[gpui::test]
+fn the_sidebar_header_switches_the_preset(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let combobox = bounds_of(&mut cx, PROBE_COMBOBOX);
+    assert!(
+        within(combobox, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
+        "the preset Combobox at {combobox:?} is not in the Sidebar header"
+    );
     assert_ne!(
         read(&mut cx, &showcase, |this, _| this
             .current_theme_name
@@ -754,7 +965,159 @@ fn the_toolbar_switches_the_preset(cx: &mut TestAppContext) {
             .current_theme_name
             .clone()),
         "nord",
-        "choosing nord in the toolbar's Combobox did not install it"
+        "choosing nord in the Sidebar header's Combobox did not install it"
+    );
+}
+
+/// The Sidebar header holds the theme settings (spec §3.3): Theme, Mode and
+/// Icon set, each a label above its control, in that order, the gaps
+/// `layout.widget_gap`. Each control takes the panel's width, and each fits
+/// it at `NAV_WIDTH`: the colour-mode switch's toggles keep their text's
+/// width (demo.rs, `color_mode_toggle_group`), so a switch too wide for the
+/// panel runs past it, and the texts' bounds show where. Checked under every
+/// native preset and one colour-scheme preset, whose font sizes differ.
+#[gpui::test]
+fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in SIDEBAR_ICON_PRESETS {
+        use_preset(&mut cx, &showcase, preset);
+        let sidebar = bounds_of(&mut cx, CHROME_SIDEBAR);
+        assert_eq!(
+            sidebar.size.width, NAV_WIDTH,
+            "{preset}: the Sidebar is not NAV_WIDTH wide, so this is not its fit at NAV_WIDTH"
+        );
+        let header = bounds_of(&mut cx, CHROME_SIDEBAR_HEADER);
+        assert!(
+            within(header, sidebar),
+            "{preset}: the header at {header:?} is not in the Sidebar at {sidebar:?}"
+        );
+        let gap = read(&mut cx, &showcase, |this, _| {
+            geometry::widget_gap(&this.layout)
+        });
+        assert!(gap.is_some(), "{preset} states no widget_gap");
+        let rows = [
+            (CHROME_LABEL_THEME, PROBE_COMBOBOX),
+            (CHROME_LABEL_MODE, PROBE_COLOR_MODE),
+            (CHROME_LABEL_ICON_SET, PROBE_ICON_SET),
+        ];
+        let mut above: Option<Bounds<Pixels>> = None;
+        for (label, control) in rows {
+            let (l, c) = (bounds_of(&mut cx, label), bounds_of(&mut cx, control));
+            assert!(
+                within(l, header) && within(c, header),
+                "{preset}: {label} at {l:?} or {control} at {c:?} is not in the header at {header:?}"
+            );
+            if let Some(above) = above {
+                assert_eq!(
+                    Some(l.top() - above.bottom()),
+                    gap,
+                    "{preset}: {label} is not widget_gap under the row above"
+                );
+            }
+            assert_eq!(
+                Some(c.top() - l.bottom()),
+                gap,
+                "{preset}: {control} is not widget_gap under its label {label}"
+            );
+            assert_eq!(
+                c.size.width, header.size.width,
+                "{preset}: {control} does not take the panel's width"
+            );
+            above = Some(c);
+        }
+        let group = bounds_of(&mut cx, PROBE_COLOR_MODE);
+        for text in PROBE_COLOR_MODE_TEXTS {
+            let t = bounds_of(&mut cx, text);
+            assert!(
+                within(t, group),
+                "{preset}: the colour-mode toggle text {text} at {t:?} runs past the switch \
+                 at {group:?}, so the switch does not fit NAV_WIDTH"
+            );
+        }
+    }
+
+    // With widget_gap unstated, the gaps are the showcase's own, and the
+    // header's info says so.
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.layout = native_theme::theme::LayoutTheme::default();
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (label, control) = (
+        bounds_of(&mut cx, CHROME_LABEL_MODE),
+        bounds_of(&mut cx, PROBE_COLOR_MODE),
+    );
+    assert_eq!(
+        control.top() - label.bottom(),
+        crate::demo::SIDEBAR_HEADER_GAP,
+        "with widget_gap unstated, the header's gap is not the showcase's own SIDEBAR_HEADER_GAP"
+    );
+    let above = bounds_of(&mut cx, PROBE_COMBOBOX);
+    assert_eq!(
+        label.top() - above.bottom(),
+        crate::demo::SIDEBAR_HEADER_GAP,
+        "with widget_gap unstated, the header's rows are not SIDEBAR_HEADER_GAP apart"
+    );
+    // Right of the Mode label, which is as wide as its text: the header's
+    // own ground.
+    hover(&mut cx, point(label.right() + px(8.), label.center().y));
+    settle(&mut cx);
+    draw(&mut cx);
+    let gaps = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "gaps")
+                .map(|n| n.text.clone())
+        })
+    });
+    assert!(
+        gaps.as_deref()
+            .is_some_and(|g| g.contains("SIDEBAR_HEADER_GAP") && g.contains("the showcase's own")),
+        "the header's info does not say its gaps are the showcase's own SIDEBAR_HEADER_GAP: {gaps:?}"
+    );
+}
+
+/// The Sidebar header's icon-set Select is the real icon-set switch:
+/// choosing a set in it loads that set. The rows are not searchable, so the
+/// keyboard walks down to the last, Material, and Enter takes it.
+#[gpui::test]
+fn the_sidebar_header_switches_the_icon_set(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let select = bounds_of(&mut cx, PROBE_ICON_SET);
+    assert!(
+        within(select, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
+        "the icon-set Select at {select:?} is not in the Sidebar header"
+    );
+    let (count, current) = read(&mut cx, &showcase, |this, cx| {
+        (
+            this.icon_set_dropdown_names().len(),
+            this.icon_set_select
+                .read(cx)
+                .selected_index(cx)
+                .map(|ix| ix.row),
+        )
+    });
+    let last = count.saturating_sub(1);
+    assert_ne!(
+        current,
+        Some(last),
+        "the showcase starts on the last icon set, so choosing it proves nothing"
+    );
+    click(&mut cx, PROBE_ICON_SET);
+    for _ in current.unwrap_or(0)..last {
+        cx.simulate_keystrokes("down");
+    }
+    cx.simulate_keystrokes("enter");
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.icon_set_name.clone()),
+        "material",
+        "choosing Material in the Sidebar header's icon-set Select did not load it"
     );
 }
 
@@ -1407,20 +1770,62 @@ fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
     assert!(panel.size.width > px(0.) && panel.size.height > px(0.));
 }
 
-/// The toolbar's SidebarToggleButton collapses the Sidebar to its icons and
-/// expands it again (spec §2.4), through `ToggleSidebar`.
+/// The fill the panel toggle tagged `selector` paints with the pointer
+/// elsewhere: the ghost variant's active colour while it is selected
+/// (button/button.rs:1252, `colors.active`, which `variants::ghost_button`
+/// fills with `secondary_active`), and none at rest -- the variant is
+/// transparent there.
+fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
+    // The status bar's middle region holds nothing, so no widget there is
+    // hovered.
+    let middle = bounds_of(cx, CHROME_STATUS_BAR).center();
+    hover(cx, middle);
+    draw(cx);
+    painted_fill(cx, selector)
+}
+
+/// What a selected panel toggle is filled with.
+fn selected_fill(cx: &mut VisualTestContext) -> gpui::Hsla {
+    cx.update(|_w, cx| Theme::global(cx).secondary_active)
+}
+
+/// Whether `inner` lies within `outer`, to a hundredth of a pixel.
+fn within(inner: Bounds<Pixels>, outer: Bounds<Pixels>) -> bool {
+    let slack = px(0.01);
+    inner.left() >= outer.left() - slack
+        && inner.right() <= outer.right() + slack
+        && inner.top() >= outer.top() - slack
+        && inner.bottom() <= outer.bottom() + slack
+}
+
+/// The status bar's left-panel toggle collapses the Sidebar to its icon rail
+/// and expands it again (spec §3.2), through `ToggleSidebar`, and is
+/// selected while the Sidebar is expanded. The rail draws no theme settings
+/// (spec §3.3).
 #[gpui::test]
 fn the_sidebar_toggle_collapses_the_sidebar(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
     assert!(
         !menu_item_disabled("View", "Toggle Sidebar"),
         "View > Toggle Sidebar is still disabled"
+    );
+    let toggle = bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE);
+    assert!(
+        within(toggle, bounds_of(&mut cx, CHROME_STATUS_BAR)),
+        "the left-panel toggle at {toggle:?} is not in the status bar"
+    );
+    let selected = selected_fill(&mut cx);
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_SIDEBAR_TOGGLE),
+        Some(selected),
+        "the left-panel toggle is not selected while the Sidebar is expanded"
     );
     let expanded = bounds_of(&mut cx, CHROME_SIDEBAR);
     click(&mut cx, CHROME_SIDEBAR_TOGGLE);
     assert!(
         read(&mut cx, &showcase, |this, _| this.nav_collapsed),
-        "the SidebarToggleButton did not collapse the Sidebar"
+        "the left-panel toggle did not collapse the Sidebar"
     );
     let collapsed = bounds_of(&mut cx, CHROME_SIDEBAR);
     assert!(
@@ -1435,11 +1840,37 @@ fn the_sidebar_toggle_collapses_the_sidebar(cx: &mut TestAppContext) {
         collapsed.right(),
         "the content does not take the room the collapsed Sidebar gave up"
     );
+    for selector in [
+        CHROME_SIDEBAR_HEADER,
+        PROBE_COMBOBOX,
+        PROBE_COLOR_MODE,
+        PROBE_ICON_SET,
+    ] {
+        assert_eq!(
+            cx.debug_bounds(selector),
+            None,
+            "{selector} is drawn in the icon rail"
+        );
+    }
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_SIDEBAR_TOGGLE),
+        None,
+        "the left-panel toggle is still selected with the Sidebar collapsed to its rail"
+    );
     run_menu_item(&mut cx, "View", "Toggle Sidebar");
     assert_eq!(
         bounds_of(&mut cx, CHROME_SIDEBAR).size.width,
         expanded.size.width,
         "View > Toggle Sidebar did not expand the Sidebar to its width again"
+    );
+    assert!(
+        cx.debug_bounds(CHROME_SIDEBAR_HEADER).is_some(),
+        "the expanded Sidebar did not draw its header again"
+    );
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_SIDEBAR_TOGGLE),
+        Some(selected),
+        "the left-panel toggle is not selected again with the Sidebar expanded"
     );
 }
 
@@ -1652,13 +2083,26 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
 }
 
 /// `ToggleInspector` hides the inspector's panel and shows it again, from the
-/// View menu and from the toolbar's button (spec §1.1, §2.2, §2.6).
+/// View menu and from the status bar's inspector toggle (spec §3.2), which is
+/// selected while the inspector is shown.
 #[gpui::test]
 fn the_inspector_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
     assert!(
         !menu_item_disabled("View", "Toggle Inspector"),
         "View > Toggle Inspector is still disabled"
+    );
+    let toggle = bounds_of(&mut cx, CHROME_INSPECTOR_TOGGLE);
+    assert!(
+        within(toggle, bounds_of(&mut cx, CHROME_STATUS_BAR)),
+        "the inspector toggle at {toggle:?} is not in the status bar"
+    );
+    let selected = selected_fill(&mut cx);
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_INSPECTOR_TOGGLE),
+        Some(selected),
+        "the inspector toggle is not selected while the inspector is shown"
     );
     let content = bounds_of(&mut cx, CONTENT_PANEL);
     run_menu_item(&mut cx, "View", "Toggle Inspector");
@@ -1675,14 +2119,29 @@ fn the_inspector_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
         bounds_of(&mut cx, CONTENT_PANEL).size.width > content.size.width,
         "the content did not take the room the inspector gave up"
     );
-    click(&mut cx, CHROME_TOOLBAR_INSPECTOR);
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_INSPECTOR_TOGGLE),
+        None,
+        "the inspector toggle is still selected with the inspector hidden"
+    );
+    click(&mut cx, CHROME_INSPECTOR_TOGGLE);
     assert!(
         read(&mut cx, &showcase, |this, _| this.inspector_visible),
-        "the toolbar's Inspector button did not show the inspector again"
+        "the status bar's inspector toggle did not show the inspector again"
     );
     assert!(
         cx.debug_bounds(INSPECTOR_PANEL).is_some(),
         "the shown inspector was not laid out"
+    );
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_INSPECTOR_TOGGLE),
+        Some(selected),
+        "the inspector toggle is not selected again with the inspector shown"
+    );
+    click(&mut cx, CHROME_INSPECTOR_TOGGLE);
+    assert!(
+        !read(&mut cx, &showcase, |this, _| this.inspector_visible),
+        "the status bar's inspector toggle did not hide the inspector"
     );
 }
 
@@ -1708,7 +2167,8 @@ fn status_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Opti
 
 /// The status bar names the widget whose info the inspector shows (spec
 /// §2.7): a toolbar button, then a page's widget, and after a page change
-/// the two still agree.
+/// the two still agree. gpui-component's own icons are chosen, so the
+/// button has its icon whatever the desktop's set holds.
 #[gpui::test]
 fn the_status_bar_names_the_hovered_widget(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -1717,7 +2177,14 @@ fn the_status_bar_names_the_hovered_widget(cx: &mut TestAppContext) {
         None,
         "the status bar names a widget before anything was hovered"
     );
-    let button = bounds_of(&mut cx, CHROME_TOOLBAR_INSPECTOR);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("gpui-component built-in (Lucide)", window, cx)
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let button = bounds_of(&mut cx, CHROME_TOOLBAR_PALETTE);
     hover(&mut cx, button.center());
     settle(&mut cx);
     draw(&mut cx);
@@ -1785,6 +2252,66 @@ fn the_status_bar_is_the_bottom_of_the_window(cx: &mut TestAppContext) {
         "the body ends at {:?}, under the status bar's top at {:?}",
         body.bottom(),
         bar.top()
+    );
+}
+
+/// The status bar's first and last children are inset from its edges by the
+/// padding it draws (spec §3.6), the reported defect. Under kde-breeze that
+/// is `status_bar.border`'s 2px left and 0px right, Qt's status-bar item
+/// layout (platform-facts §2.14). The bar has no side border
+/// (status_bar.rs:91, `border_t_1`), so its edges are its padding's.
+#[gpui::test]
+fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let padding = read(&mut cx, &showcase, |_this, cx| {
+        cx.native_theme()
+            .and_then(|nt| nt.native(cx))
+            .map(|n| n.resolved.status_bar.border.padding)
+    });
+    let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
+    assert_eq!(
+        (left, right),
+        (Some(2.0), Some(0.0)),
+        "kde-breeze no longer states Qt's 2px left and 0px right, so this measures something else"
+    );
+    let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
+    let (first, last) = (
+        bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE),
+        bounds_of(&mut cx, CHROME_INSPECTOR_TOGGLE),
+    );
+    assert_eq!(
+        Some(first.left() - bar.left()),
+        left.map(px),
+        "the status bar's first child, the left-panel toggle, is not its left padding in"
+    );
+    assert_eq!(
+        Some(bar.right() - last.right()),
+        right.map(px),
+        "the status bar's last child, the inspector toggle, is not its right padding in"
+    );
+}
+
+/// The status bar no longer carries the version (spec §3.2): the title bar
+/// does. Its info says what each end holds, and the version is in neither.
+#[gpui::test]
+fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
+    hover(&mut cx, bar.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    let info = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().map(|info| (**info).clone())
+    });
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some("StatusBar")
+    );
+    let text = info.map(|info| info.to_text()).unwrap_or_default();
+    assert!(
+        !text.contains("version") && !text.contains(env!("CARGO_PKG_VERSION")),
+        "the status bar's info still names a version:\n{text}"
     );
 }
 
@@ -2804,16 +3331,18 @@ fn a_missing_icon_says_it_is_missing(cx: &mut TestAppContext) {
     );
 }
 
-/// The chrome's own icons: the toolbar buttons', the Sidebar's page icons,
-/// the command palette's entries' and the theme-error Alert's. The
-/// toolbar's are named in chrome::toolbar, the pages' in `Page::icon`, the
+/// The chrome's own icons: the toolbar buttons', the status bar's panel
+/// toggles', the Sidebar's page icons, the command palette's entries' and
+/// the theme-error Alert's. The toolbar's are named in chrome::toolbar, the
+/// toggles' in chrome::status_bar, the pages' in `Page::icon`, the
 /// palette's in chrome::palette_groups, the Alert's where app.rs draws it.
 fn chrome_icon_names() -> Vec<IconName> {
     let mut names = vec![
         IconName::CircleX,
         IconName::SquareTerminal,
         IconName::RotateCw,
-        IconName::Inspector,
+        IconName::PanelLeft,
+        IconName::PanelRight,
         IconName::Palette,
         IconName::Settings,
         IconName::Sun,
@@ -2874,19 +3403,25 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
             "with Material chosen, a chrome icon is not Material's own, or not absent"
         );
     }
-    let info = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PALETTE);
-    let note = info.as_ref().and_then(|info| {
-        info.instance
-            .iter()
-            .find(|n| n.what == "icon")
-            .map(|n| n.text.clone())
-    });
-    assert!(
-        note.as_deref()
-            .is_some_and(|n| n.starts_with("material's icon for SquareTerminal")
-                || n.starts_with("none: material")),
-        "with Material chosen, the Command Palette button does not say its icon is Material's: {note:?}"
-    );
+    for (selector, name) in [
+        (CHROME_TOOLBAR_PALETTE, "SquareTerminal"),
+        (CHROME_SIDEBAR_TOGGLE, "PanelLeft"),
+        (CHROME_INSPECTOR_TOGGLE, "PanelRight"),
+    ] {
+        let info = settle_on(&mut cx, &showcase, selector);
+        let note = info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "icon")
+                .map(|n| n.text.clone())
+        });
+        assert!(
+            note.as_deref()
+                .is_some_and(|n| n.starts_with(&format!("material's icon for {name}"))
+                    || n.starts_with(&format!("none: material holds no SVG for {name}"))),
+            "with Material chosen, {selector} does not say its icon is Material's {name}: {note:?}"
+        );
+    }
 }
 
 /// A chrome icon the chosen set has none for is absent, not another set's:
@@ -2914,14 +3449,14 @@ fn a_chrome_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
         ChromeIcon::Missing("SquareTerminal")
     );
     // Drawn, not only reported: the label is wider than the icon the
-    // Inspector button beside it still shows.
+    // Reload button beside it still shows.
     let (labelled, iconic) = (
         bounds_of(&mut cx, CHROME_TOOLBAR_PALETTE),
-        bounds_of(&mut cx, CHROME_TOOLBAR_INSPECTOR),
+        bounds_of(&mut cx, CHROME_TOOLBAR_RELOAD),
     );
     assert!(
         labelled.size.width > iconic.size.width,
-        "the Command Palette button at {labelled:?} is no wider than the Inspector's icon \
+        "the Command Palette button at {labelled:?} is no wider than the Reload icon \
          button at {iconic:?}, so it drew something in place of its label"
     );
     let info = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PALETTE);
@@ -3700,6 +4235,45 @@ fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
         inspector_title(&mut cx, &showcase).as_deref(),
         Some("Dialog · About"),
         "the pointer settled on the About dialog's title, and the inspector does not show it"
+    );
+}
+
+/// The About dialog's content is inset from its frame by the dialog's
+/// padding (spec §3.6), the reported defect. Under kde-breeze that is
+/// `Layout_TopLevelMarginWidth`, 10px (platform-facts §2.22), measured from
+/// the frame's inner edge: upstream draws the frame with `border_1`
+/// (dialog/dialog.rs:614) and pads each section inside it with the
+/// refinement's sides (dialog/dialog.rs:540-552, :657-658).
+#[gpui::test]
+fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    without_motion(&mut cx);
+    let padding = read(&mut cx, &showcase, |_this, cx| {
+        cx.native_theme()
+            .and_then(|nt| nt.native(cx))
+            .map(|n| n.resolved.dialog.border.padding)
+    });
+    let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
+    assert_eq!(
+        (left, right),
+        (Some(10.0), Some(10.0)),
+        "kde-breeze no longer states Breeze's 10px dialog margin, so this measures something else"
+    );
+    run_menu_item(&mut cx, "Help", "About");
+    draw(&mut cx);
+    let frame = bounds_of(&mut cx, "dialog-0");
+    let name = bounds_of(&mut cx, OVERLAY_ABOUT_NAME);
+    let border = px(1.);
+    assert_eq!(
+        Some(name.left() - frame.left() - border),
+        left.map(px),
+        "the About dialog's content is not its left padding in from the frame"
+    );
+    assert_eq!(
+        Some(frame.right() - border - name.right()),
+        right.map(px),
+        "the About dialog's content is not its right padding in from the frame"
     );
 }
 

@@ -1,14 +1,17 @@
 //! What the window's chrome reports about itself (spec §2).
 
+use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
+use native_theme::theme::ResolvedPadding;
 
-use super::{ColorClaim, WidgetInfo, claim};
-use crate::demo::{SeparatorKind, Severity, SheetSide};
+use super::{ColorClaim, WidgetInfo, claim, px_text};
+use crate::demo::{Severity, SheetSide};
 use crate::support::ChromeIcon;
 
-/// The window's `TitleBar` (spec §2.1). Its geometry line is recorded by
-/// `native_info` where `demo::title_bar` applies the builder.
-pub fn title_bar(t: &Theme) -> WidgetInfo {
+/// The window's `TitleBar` (spec §2.1, §3.4), reading `label`. Its
+/// geometry line is recorded by `native_info` where `demo::title_bar`
+/// applies the builder.
+pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
     let info = WidgetInfo::new("TitleBar")
         .color(claim(
             "bg",
@@ -83,7 +86,7 @@ pub fn title_bar(t: &Theme) -> WidgetInfo {
     )
     .instance(
         "label",
-        "the installed preset and colour mode, as plain text rather than a Label: a Label paints foreground on its own element (label.rs, Label), which would hide the colour geometry::title_bar gives the bar",
+        format!("\"{label}\", this crate's name and version: the same string, WINDOW_TITLE, is the title the OS shows and the one the Windows screenshot capture finds the window by. The installed preset and colour mode are in the status bar. Plain text rather than a Label: a Label paints foreground on its own element (label.rs, Label), which would hide the colour geometry::title_bar gives the bar"),
     )
     .instance(
         "window controls",
@@ -212,53 +215,106 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
-/// The window's toolbar row (spec §2.3). Its geometry line is recorded by
-/// `native_info` where `demo::toolbar` applies the builder.
-pub fn toolbar() -> WidgetInfo {
+/// The window's toolbar row (spec §2.3, §3.1, §3.3). Its geometry line is
+/// recorded by `native_info` where `demo::toolbar` applies the builder;
+/// `stated` is the `toolbar.border` padding the theme states, `margin` its
+/// `layout.container_margin`, and `own` the showcase's `TOOLBAR_PADDING`.
+pub fn toolbar(stated: ResolvedPadding, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
+    let side = |name: &str, value: Option<f32>| match (value, margin) {
+        (Some(v), _) => format!("{name} {}px, toolbar.border's", px_text(v)),
+        (None, Some(m)) => format!("{name} {}px, layout.container_margin", px_text(m.as_f32())),
+        (None, None) => format!(
+            "{name} {}px, TOOLBAR_PADDING, the showcase's own",
+            px_text(own.as_f32())
+        ),
+    };
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "gpui-component has no toolbar widget, so this row is the application's own h_flex, and geometry::toolbar is the whole of its geometry: nothing after it sets a height, padding, gap or fill",
+            "gpui-component has no toolbar widget, so this row is the application's own h_flex: geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides the theme leaves unstated, which the padding line below names",
         )
         .not_themeable(
             "edge",
             "the model inherits toolbar.border.color and line_width from defaults.border, but platform-facts §2.13 states neither, so geometry::toolbar draws no edge -- an application that wants a rule draws a Separator",
         )
         .instance(
+            "padding",
+            format!(
+                "{}; {}; {}; {}. A side toolbar.border leaves unstated takes layout.container_margin, and where that is unstated too, TOOLBAR_PADDING, {}px, the showcase's own choice rather than a platform's: the row is the application's own element, with no toolkit default to keep (spec §3.1)",
+                side("top", stated.top),
+                side("right", stated.right),
+                side("bottom", stated.bottom),
+                side("left", stated.left),
+                px_text(own.as_f32()),
+            ),
+        )
+        .instance(
             "items",
-            "the SidebarToggleButton, the preset Combobox, the colour-mode ToggleGroup, the icon-set Select, a vertical Separator, and icon Buttons for the command palette, a theme reload and the inspector",
+            "icon Buttons for the command palette, a theme reload and the Preferences sheet",
         )
 }
 
-/// The toolbar's `SidebarToggleButton` (spec §2.3, §2.4), drawn `collapsed`
-/// while the Sidebar is.
-pub fn sidebar_toggle_button(t: &Theme, collapsed: bool) -> WidgetInfo {
-    WidgetInfo::new("SidebarToggleButton")
-        .colors(ghost_colours(t, GhostContent::Icon))
-        .not_themeable(
-            "button",
-            "a ghost, small Button the widget builds and keeps to itself: nothing outside it refines, disables or gives a tooltip to it (sidebar/mod.rs, SidebarToggleButton)",
-        )
-        .not_themeable(
+/// One of the status bar's panel toggles (spec §3.2), running `action` and
+/// showing `icon` of the icon set named `set`, selected while its panel is
+/// `open`, which `state` describes. Its icon-size line is recorded where
+/// `demo::panel_toggle` applies the builder.
+pub fn panel_toggle(
+    t: &Theme,
+    action: &'static str,
+    icon: &ChromeIcon,
+    set: &str,
+    open: bool,
+    state: &'static str,
+) -> WidgetInfo {
+    let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
+    let info = WidgetInfo::new("Button").variant(match (drawn, open) {
+        (true, true) => "Ghost, icon, selected",
+        (true, false) => "Ghost, icon",
+        (false, true) => "Ghost, labelled, selected",
+        (false, false) => "Ghost, labelled",
+    });
+    let info = if open {
+        super::buttons::native_ghost_selected(info, t).not_themeable(
             "fill",
-            "none until hovered: a ghost Button is transparent, and it hovers with accent -- at half alpha in dark mode -- rather than the button family (button/button.rs, ButtonVariant::hovered)",
+            "the ghost variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style and hovers only a Button that is neither disabled nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)",
         )
-        .not_themeable(
+    } else {
+        super::buttons::native_ghost(info, t).not_themeable(
+            "fill",
+            "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
+        )
+    };
+    let info = info.colors(super::feedback::tooltip_colours(t, true));
+    let info = if drawn {
+        info.not_themeable(
             "icon",
-            "PanelLeftClose, or PanelLeftOpen while collapsed, at size_3p5 -- 0.875rem, so the platform's font size: the Button is small, and Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), which an Icon applies over its own (icon.rs, Icon::into_svg). toolbar.icon_size does not reach it, and neither does the icon-set Select: the widget names gpui-component's own icon as it renders (sidebar/mod.rs, SidebarToggleButton)",
+            "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
         )
-        .instance(
-            "action",
-            "dispatches ToggleSidebar, the action View > Toggle Sidebar and Ctrl+B run: the Sidebar collapses to its icons, or expands again",
-        )
-        .instance(
-            "state",
-            if collapsed {
-                "the Sidebar is collapsed"
-            } else {
-                "the Sidebar is expanded"
-            },
-        )
+    } else {
+        info
+    };
+    info.not_themeable(
+        "size",
+        "h_6 with px_2 at Size::Small -- rems, so the platform's font; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button (button/button.rs, RenderOnce for Button)",
+    )
+    .instance(
+        "icon",
+        chrome_icon_note(
+            icon,
+            set,
+            "the toggle shows the tooltip's text as its label instead",
+        ),
+    )
+    .not_themeable(
+        "tooltip",
+        "upstream's Tooltip, which the Button builds as it renders from the text and action tooltip_with_action stored (button/button.rs, RenderOnce for Button), so geometry::tooltip cannot reach it; it shows the action's key binding (tooltip.rs, Tooltip::action)",
+    )
+    .instance(
+        "place",
+        "at the end of the status bar on the side of the panel it controls, the pattern Zed's status bar follows; the selection, not a changing icon, shows whether the panel is open",
+    )
+    .instance("action", action)
+    .instance("state", state)
 }
 
 /// The window's `Sidebar` (spec §2.4), which navigates between the pages.
@@ -295,13 +351,21 @@ pub fn sidebar(t: &Theme, collapsed: bool) -> WidgetInfo {
             "one SidebarMenuItem per page with the page's icon from the chosen icon set; the shown page's item is active, and a click dispatches ShowPage, the action the View menu's page items run",
         )
         .instance(
+            "header",
+            if collapsed {
+                "none in the rail, which has no room for the theme settings: the command palette still offers the presets and colour modes, and the Theme menu the colour modes. Expanding the Sidebar brings them back"
+            } else {
+                "the theme settings, in the slot upstream pads with pt_3 and px_3 (sidebar/mod.rs, RenderOnce for Sidebar)"
+            },
+        )
+        .instance(
             "children",
             "must implement SidebarItem, which asks for Collapsible + Clone (sidebar/mod.rs, SidebarItem)",
         );
     if collapsed {
         info.instance(
             "collapsed",
-            "to its icons, by the toolbar's SidebarToggleButton, View > Toggle Sidebar or Ctrl+B. An icon rail is out of the resizable group, so no handle resizes it",
+            "to its icons, by the status bar's left-panel toggle, View > Toggle Sidebar or Ctrl+B. An icon rail is out of the resizable group, so no handle resizes it",
         )
     } else {
         info.instance(
@@ -394,6 +458,43 @@ pub fn sidebar_item(
         ),
         (false, _) => info,
     }
+}
+
+/// The Sidebar's header (spec §3.1, §3.3): the theme settings, each a
+/// label above its control. `widget_gap` is the installed layout's, and
+/// `own` the showcase's `SIDEBAR_HEADER_GAP`.
+pub fn sidebar_header(widget_gap: Option<Pixels>, own: Pixels) -> WidgetInfo {
+    WidgetInfo::new("Sidebar header")
+        .not_themeable(
+            "widget",
+            "the application's own column of plain elements, not upstream's SidebarHeader, which is one row that highlights under the pointer and opens a dropdown menu (sidebar/header.rs, SidebarHeader)",
+        )
+        .instance(
+            "rows",
+            "Theme, the preset switch; Mode, the colour mode; Icon set, the icon set the chrome and the Icons page take their icons from. Each is a Label above its control, and each control takes the panel's width",
+        )
+        .instance(
+            "gaps",
+            match widget_gap {
+                Some(gap) => format!(
+                    "{}px between the rows and between each label and its control, layout.widget_gap. Where that is unstated, SIDEBAR_HEADER_GAP, {}px, the showcase's own choice rather than a platform's: the header is the application's own element, with no toolkit default to keep (spec §3.1)",
+                    px_text(gap.as_f32()),
+                    px_text(own.as_f32()),
+                ),
+                None => format!(
+                    "{}px between the rows and between each label and its control: SIDEBAR_HEADER_GAP, the showcase's own choice rather than a platform's, as layout.widget_gap is unstated and the header is the application's own element, with no toolkit default to keep (spec §3.1)",
+                    px_text(own.as_f32()),
+                ),
+            },
+        )
+        .instance(
+            "padding",
+            "none of its own: upstream pads the Sidebar's header slot with pt_3 and px_3 -- rems, so the platform's font (sidebar/mod.rs, RenderOnce for Sidebar)",
+        )
+        .instance(
+            "rail",
+            "not drawn while the Sidebar is collapsed to its icon rail, which has no room for it",
+        )
 }
 
 /// The inspector's TabBar (spec §2.6, §4.4): chrome, so it reports itself,
@@ -574,7 +675,8 @@ pub(super) fn input_background(t: &Theme) -> ColorClaim {
     }
 }
 
-/// The toolbar's preset Combobox (spec §2.3), the showcase's preset switch.
+/// The Sidebar header's preset Combobox (spec §3.3), the showcase's preset
+/// switch.
 pub fn preset_combobox(t: &Theme) -> WidgetInfo {
     WidgetInfo::new("Combobox")
         .variant("searchable")
@@ -635,7 +737,7 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
         )
 }
 
-/// The toolbar's System / Light / Dark switch (spec §2.3).
+/// The Sidebar header's System / Light / Dark switch (spec §3.3).
 pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
     let info = WidgetInfo::new("ToggleGroup").variant("outline, segmented");
     let info = super::buttons::toggle_checked(info, t)
@@ -660,10 +762,14 @@ pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
             "segmented",
             "the toggles share one outline, and upstream drops the gap it leaves between separate toggles (button/toggle.rs, ToggleGroup::segmented)",
         )
+        .instance(
+            "width",
+            "the panel's: the toggles grow to share it and never shrink below their text, so the switch fits the panel at NAV_WIDTH, the Sidebar's width, and runs past it if the panel is dragged narrower",
+        )
 }
 
-/// The toolbar's icon-set Select (spec §2.3): the Inputs page's Select,
-/// choosing the icon set.
+/// The Sidebar header's icon-set Select (spec §3.3): the Inputs page's
+/// Select, choosing the icon set.
 pub fn icon_set_select(t: &Theme) -> WidgetInfo {
     super::inputs::select(t)
         .instance(
@@ -672,7 +778,7 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "follows the choice",
-            "the Icons page's galleries, and the chrome's own icons: the toolbar's Command Palette, Reload System Theme and Toggle Inspector buttons, the Sidebar's page icons, the command palette's entries, and the icon of the Alert that reports a theme that failed to load. Each shows the chosen set's icon for its IconName -- gpui-component's own where its built-in set is chosen -- and none where the set has none: no other set's icon stands in",
+            "the Icons page's galleries, and the chrome's own icons: the toolbar's Command Palette, Reload System Theme and Preferences buttons, the status bar's two panel toggles, the Sidebar's page icons, the command palette's entries, and the icon of the Alert that reports a theme that failed to load. Each shows the chosen set's icon for its IconName -- gpui-component's own where its built-in set is chosen -- and none where the set has none: no other set's icon stands in",
         )
         .instance(
             "raster sets",
@@ -680,20 +786,12 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
         )
         .not_themeable(
             "upstream's icons",
-            "gpui-component's built-in Lucide whatever is chosen, wherever a widget names its icon as it renders, with no setter: the SidebarToggleButton's PanelLeftClose and PanelLeftOpen (sidebar/mod.rs, SidebarToggleButton); this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (select.rs, SelectState::new; combobox.rs, ComboboxState::new); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
+            "gpui-component's built-in Lucide whatever is chosen, wherever a widget names its icon as it renders, with no setter: this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (select.rs, SelectState::new; combobox.rs, ComboboxState::new); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
         )
         .instance(
             "pages",
             "the samples on the other pages keep the icons they name, gpui-component's own: they show the widgets, and the Icons page shows the sets",
         )
-}
-
-/// The Separator between the toolbar's controls and its icon Buttons.
-pub fn toolbar_separator(t: &Theme) -> WidgetInfo {
-    super::layout::separator(t, SeparatorKind::Vertical).not_themeable(
-        "width",
-        "none of its own: a vertical Separator's box sets only its height, and the 1px line overflows it (separator.rs, Separator::vertical), so the toolbar's item_gap is the space on either side",
-    )
 }
 
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
@@ -748,10 +846,10 @@ pub fn toolbar_button(t: &Theme, action: &'static str, icon: &ChromeIcon, set: &
 pub(crate) fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> String {
     match icon {
         ChromeIcon::Builtin(name) => format!(
-            "gpui-component's own {name}: its built-in set is the one the toolbar's icon-set Select chose"
+            "gpui-component's own {name}: its built-in set is the one the Sidebar's icon-set Select chose"
         ),
         ChromeIcon::Loaded(name, _) => format!(
-            "{set}'s icon for {name}, the set the toolbar's icon-set Select chose. It is drawn as every Icon is, as a mask in its widget's text colour (gpui-pre/window.rs, Window::paint_svg), so a coloured icon shows its shape only"
+            "{set}'s icon for {name}, the set the Sidebar's icon-set Select chose. It is drawn as every Icon is, as a mask in its widget's text colour (gpui-pre/window.rs, Window::paint_svg), so a coloured icon shows its shape only"
         ),
         ChromeIcon::Missing(name) => format!(
             "none: {set} holds no SVG for {name}, and no other set's icon stands in -- {absent}"
@@ -802,18 +900,18 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
     .instance(
         "left",
         if cfg!(target_os = "linux") {
-            "the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- SystemTheme::from_system then asks the portal, then kdeglobals, and the preset names what it settled on; the preset and colour mode the title bar names; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the left-panel toggle at the bar's left end, then the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- SystemTheme::from_system then asks the portal, then kdeglobals, and the preset names what it settled on; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         } else {
-            "the operating system; the preset and colour mode the title bar names; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
+            "the left-panel toggle at the bar's left end, then the operating system; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         },
     )
     .instance(
         "right",
-        "the title of what the inspector's Widget tab shows, where it shows one, then this crate's name and version",
+        "the title of what the inspector's Widget tab shows, where it shows one, then the inspector toggle at the bar's right end",
     )
     .instance(
         "text",
-        "plain text rather than Labels: a Label paints foreground on its own element (label.rs, Label), which would hide the colour geometry::status_bar gives the bar",
+        "the environment and the shown title are plain text rather than Labels: a Label paints foreground on its own element (label.rs, Label), which would hide the colour geometry::status_bar gives the bar",
     )
 }
 
@@ -1021,11 +1119,11 @@ pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
         )
         .instance(
             "entries",
-            "every page, then the presets the toolbar's preset switch offers -- default, and those Theme::list_presets_for_platform lists -- then the three colour modes. Each runs an action: ShowPage, SetPreset or SetColorMode",
+            "every page, then the presets the Sidebar's preset switch offers -- default, and those Theme::list_presets_for_platform lists -- then the three colour modes. Each runs an action: ShowPage, SetPreset or SetColorMode",
         )
         .instance(
             "entry icons",
-            format!("{set}'s, the icon set the toolbar's icon-set Select chose, in the row icon colour above; an entry whose icon that set holds no SVG for shows its label alone, and no other set's icon stands in. The search icon is upstream's own (command/state.rs, CommandState)"),
+            format!("{set}'s, the icon set the Sidebar's icon-set Select chose, in the row icon colour above; an entry whose icon that set holds no SVG for shows its label alone, and no other set's icon stands in. The search icon is upstream's own (command/state.rs, CommandState)"),
         )
         .instance(
             "keys",
@@ -1123,7 +1221,7 @@ pub fn preferences_sheet(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
     .instance(
         "opens",
-        "on OpenPreferences: Theme > Preferences… or Ctrl+,",
+        "on OpenPreferences: Theme > Preferences…, Ctrl+, or the toolbar's Preferences button",
     )
 }
 

@@ -72,8 +72,8 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
 // Actions (spec §2.2)
 // ---------------------------------------------------------------------------
 //
-// One action backs a menu item, its key binding, a toolbar button and a
-// command-palette entry, where each has one.
+// One action backs a menu item, its key binding, a toolbar button or a
+// status-bar toggle, and a command-palette entry, where each has one.
 
 actions!(
     showcase,
@@ -97,12 +97,12 @@ actions!(
 #[action(namespace = showcase, no_json)]
 pub(crate) struct ShowPage(pub usize);
 
-/// Install a colour mode, as the toolbar's colour-mode switch does.
+/// Install a colour mode, as the Sidebar's colour-mode switch does.
 #[derive(Clone, PartialEq, Debug, Action)]
 #[action(namespace = showcase, no_json)]
 pub(crate) struct SetColorMode(pub AppColorMode);
 
-/// Install the preset of this key, as the toolbar's preset switch does, and
+/// Install the preset of this key, as the Sidebar's preset switch does, and
 /// show it chosen there.
 #[derive(Clone, PartialEq, Debug, Action)]
 #[action(namespace = showcase, no_json)]
@@ -163,7 +163,7 @@ impl AppColorMode {
 // ---------------------------------------------------------------------------
 
 pub(crate) struct Showcase {
-    /// The toolbar's preset switch (spec §2.3).
+    /// The Sidebar header's preset switch (spec §3.3).
     pub(crate) preset_combobox: Entity<ComboboxState<PresetDelegate>>,
     pub(crate) current_theme_name: String,
     /// Dynamic label for the "default" theme entry, updated on color mode change.

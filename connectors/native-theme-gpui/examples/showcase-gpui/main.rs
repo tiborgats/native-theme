@@ -13,7 +13,7 @@
 //!
 //! # What to look for
 //!
-//! - The toolbar under the title bar switches theme presets, color modes and icon sets
+//! - The Sidebar's header switches theme presets, color modes and icon sets
 //!   without restarting the app. Watch how the entire widget tree re-themes
 //!   on each change — no manual rewiring per widget.
 //! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
@@ -203,6 +203,22 @@ pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> = size(
     px(850.),
 );
 
+/// The window's title: this crate's name and version. The title bar's label,
+/// the title the OS shows, and the Windows screenshot capture, which finds
+/// the window by it, all take this one string.
+pub(crate) const WINDOW_TITLE: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    " ",
+    env!("CARGO_PKG_VERSION"),
+    " showcase"
+);
+
+/// Give `window` the title the OS shows, as `main` does once the window is
+/// open.
+pub(crate) fn name_window(window: &mut gpui::Window) {
+    window.set_window_title(WINDOW_TITLE);
+}
+
 /// The debug selector the window's title bar carries, so
 /// `the_title_bar_is_the_top_of_the_window` can see where it was laid out.
 pub(crate) const CHROME_TITLE_BAR: &str = "chrome-title-bar";
@@ -217,15 +233,39 @@ pub(crate) const CHROME_TOOLBAR: &str = "chrome-toolbar";
 /// The debug selector the Sidebar carries, so the toggle test can measure it.
 pub(crate) const CHROME_SIDEBAR: &str = "chrome-sidebar";
 
-/// The debug selector the toolbar's SidebarToggleButton carries, the
-/// toolbar's first item.
+/// The debug selector the status bar's left-panel toggle carries, the
+/// status bar's first item.
 pub(crate) const CHROME_SIDEBAR_TOGGLE: &str = "chrome-sidebar-toggle";
+
+/// The debug selector the status bar's inspector toggle carries, the status
+/// bar's last item.
+pub(crate) const CHROME_INSPECTOR_TOGGLE: &str = "chrome-inspector-toggle";
+
+/// The debug selector the Sidebar's header carries: the theme settings, one
+/// labelled row each.
+pub(crate) const CHROME_SIDEBAR_HEADER: &str = "chrome-sidebar-header";
+
+/// The ids and debug selectors of the Sidebar header's three labels, in
+/// their order: Theme, Mode, Icon set.
+pub(crate) const CHROME_LABEL_THEME: &str = "chrome-label-theme";
+pub(crate) const CHROME_LABEL_MODE: &str = "chrome-label-mode";
+pub(crate) const CHROME_LABEL_ICON_SET: &str = "chrome-label-icon-set";
 
 /// The initial width of the Sidebar's panel. The model states no such value:
 /// `SidebarTheme` has no width (spec §1.3), so this is the showcase's own
 /// layout default, and dragging the panel's handle changes it.
+///
+/// It is what the Sidebar header's widest control needs (spec §3.3): the
+/// colour-mode switch, whose toggles keep their text's width. At 200px it
+/// overflowed under every native preset and nord, in
+/// `the_sidebar_header_holds_the_theme_settings`. The widest case is
+/// macos-sonoma on a 96 DPI desktop, whose 13pt font resolves to 17.33px:
+/// there "System (Dark)" ran 102.5px past the switch, and "System (Light)",
+/// one glyph longer, runs 10.4px further in the test's text system, which
+/// advances every glyph 0.6em (gpui-pre platform.rs, `NoopTextSystem`). So
+/// 200 + 112.9, rounded up.
 pub(crate) const NAV_WIDTH: Pixels = px(NAV_WIDTH_PX);
-const NAV_WIDTH_PX: f32 = 200.;
+const NAV_WIDTH_PX: f32 = 313.;
 
 /// The initial width of the inspector's panel. The model states no such
 /// value: it has no inspector at all (spec §1.3), so this is the showcase's
@@ -268,11 +308,11 @@ pub(crate) const INSPECTOR_TOKENS_NOTE: &str = "inspector-tokens-note";
 pub(crate) const CHROME_HANDLE_NAV: &str = "chrome-resize-sidebar-content";
 pub(crate) const CHROME_HANDLE_INSPECTOR: &str = "chrome-resize-content-inspector";
 
-/// The debug selector the toolbar's Toggle Inspector button carries.
-pub(crate) const CHROME_TOOLBAR_INSPECTOR: &str = "chrome-toolbar-inspector";
-
-/// The debug selector the toolbar's Command Palette button carries.
+/// The debug selectors the toolbar's three buttons carry, in their order:
+/// Command Palette, Reload System Theme and Preferences.
 pub(crate) const CHROME_TOOLBAR_PALETTE: &str = "chrome-toolbar-palette";
+pub(crate) const CHROME_TOOLBAR_RELOAD: &str = "chrome-toolbar-reload";
+pub(crate) const CHROME_TOOLBAR_PREFERENCES: &str = "chrome-toolbar-preferences";
 
 /// The debug selector the window's status bar carries, so
 /// `the_status_bar_is_the_bottom_of_the_window` can see where it was laid out.
@@ -428,9 +468,9 @@ pub(crate) const CHARTS_CANDLESTICK_CHART: &str = "charts-candlestick-chart";
 // the self-tests drive; the name is shared by the render code and the tests,
 // so neither can drift onto an element the other does not mean.
 pub(crate) const PROBE_RATING: &str = "probe-rating";
-/// The toolbar's preset Combobox, which `the_toolbar_switches_the_preset`
-/// drives and `the_toolbar_is_the_models_toolbar` measures (the latter with
-/// `PROBE_COLOR_MODE`).
+/// The Sidebar header's preset Combobox, which
+/// `the_sidebar_header_switches_the_preset` drives and
+/// `the_sidebar_header_holds_the_theme_settings` measures.
 pub(crate) const PROBE_COMBOBOX: &str = "probe-combobox";
 pub(crate) const PROBE_CLIPBOARD: &str = "probe-clipboard";
 pub(crate) const PROBE_PAGINATION: &str = "probe-pagination";
@@ -441,6 +481,17 @@ pub(crate) const PROBE_CAROUSEL_LAST: &str = "probe-carousel-last";
 pub(crate) const PROBE_ALERT_DIALOG: &str = "probe-alert-dialog";
 pub(crate) const PROBE_NOTIFICATION: &str = "probe-notification";
 pub(crate) const PROBE_COLOR_MODE: &str = "probe-color-mode";
+/// The text of each of the colour-mode switch's toggles, in its order:
+/// System, Light, Dark. What `the_sidebar_header_holds_the_theme_settings`
+/// measures the switch's fit by.
+pub(crate) const PROBE_COLOR_MODE_TEXTS: [&str; 3] = [
+    "probe-color-mode-system",
+    "probe-color-mode-light",
+    "probe-color-mode-dark",
+];
+/// The Sidebar header's icon-set Select, which
+/// `the_sidebar_header_switches_the_icon_set` drives.
+pub(crate) const PROBE_ICON_SET: &str = "probe-icon-set";
 
 /// The debug selector a full-width item in the Settings demo's first group
 /// carries. Nothing clicks it: its right edge is where a Settings row ends,
@@ -695,7 +746,7 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) -> bool {
 
 /// Capture the gpui window including decorations using Windows BitBlt.
 ///
-/// Uses `FindWindowW` with the known window title to locate the correct HWND
+/// Uses `FindWindowW` with `WINDOW_TITLE` to locate the correct HWND
 /// (more reliable than `GetForegroundWindow` which may return a console or
 /// other window on CI), then `BitBlt` + `GetDIBits` to extract pixel data.
 #[cfg(target_os = "windows")]
@@ -707,11 +758,10 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
     use windows::core::PCWSTR;
 
     unsafe {
-        let title = format!(
-            "Native Theme \u{2013} GPUI Showcase, v{}",
-            env!("CARGO_PKG_VERSION")
-        );
-        let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+        let title_w: Vec<u16> = WINDOW_TITLE
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
         let hwnd = match FindWindowW(None, PCWSTR(title_w.as_ptr())) {
             Ok(h) => h,
             Err(e) => {
@@ -871,7 +921,7 @@ fn main() {
                     if let Some(ref theme_name) = cli_args.theme {
                         s.current_theme_name = theme_name.clone();
                         s.apply_theme_by_name(theme_name, window, cx);
-                        // Show the overridden theme in the toolbar's preset switch
+                        // Show the overridden theme in the Sidebar's preset switch
                         let key = SharedString::from(theme_name.clone());
                         s.preset_combobox.update(cx, |combobox, cx| {
                             combobox.set_selected_values(&[key], window, cx);
@@ -928,12 +978,7 @@ fn main() {
                 return;
             };
             window_handle
-                .update(cx, |_, window, _| {
-                    window.set_window_title(&format!(
-                        "Native Theme – GPUI Showcase, v{}",
-                        env!("CARGO_PKG_VERSION")
-                    ));
-                })
+                .update(cx, |_, window, _| name_window(window))
                 .ok();
 
             // Force Metal drawable to adopt the Retina scale factor by

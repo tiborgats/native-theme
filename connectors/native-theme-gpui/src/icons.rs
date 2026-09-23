@@ -687,9 +687,9 @@ pub fn freedesktop_name_for_gpui_icon(
             if is_gtk {
                 "sidebar-show-right"
             } else {
-                "view-right-new"
+                "sidebar-expand-right"
             }
-        } // close
+        } // close: Breeze's pair of PanelLeft's sidebar-expand-left
         IconName::PanelRightClose => {
             if is_gtk {
                 "sidebar-show-right"
@@ -2394,6 +2394,25 @@ mod freedesktop_mapping_tests {
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Gnome),
             Some("view-reveal"),
+        );
+    }
+
+    /// The status bar's two panel toggles are a matching pair on KDE: Breeze
+    /// ships `sidebar-expand-left` and `sidebar-expand-right` side by side
+    /// (`actions/22/`). The GTK arm stays Adwaita's `sidebar-show-right`.
+    #[test]
+    fn panel_right_is_breezes_pair_of_panel_left() {
+        assert_eq!(
+            freedesktop_name_for_gpui_icon(IconName::PanelLeft, LinuxDesktop::Kde),
+            Some("sidebar-expand-left"),
+        );
+        assert_eq!(
+            freedesktop_name_for_gpui_icon(IconName::PanelRight, LinuxDesktop::Kde),
+            Some("sidebar-expand-right"),
+        );
+        assert_eq!(
+            freedesktop_name_for_gpui_icon(IconName::PanelRight, LinuxDesktop::Gnome),
+            Some("sidebar-show-right"),
         );
     }
 

@@ -75,7 +75,7 @@ use gpui_component::{
     setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
     sheet::Sheet,
     shimmer::ShimmerText,
-    sidebar::{Sidebar, SidebarItem, SidebarMenuItem, SidebarToggleButton},
+    sidebar::{Sidebar, SidebarItem, SidebarMenuItem},
     skeleton::Skeleton,
     slider::{Slider, SliderState},
     spinner::Spinner,
@@ -95,7 +95,7 @@ use native_theme_gpui::{
     AccessibilityPreferences, ActiveNativeTheme as _, Native, geometry, variants,
 };
 
-use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
+use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
@@ -103,11 +103,11 @@ use crate::support::{
     with_padding,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
-    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
-    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION,
-    PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_HOVERED,
-    TREE_DEMO, probe,
+    CHROME_APP_MENU_BAR, CHROME_SIDEBAR_HEADER, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK,
+    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
+    OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST,
+    PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_COLOR_MODE_TEXTS,
+    PROBE_SETTINGS_ROW, Page, STATUS_HOVERED, TREE_DEMO, probe,
 };
 
 /// An icon at the platform's size for the role the builder names; upstream's
@@ -147,7 +147,8 @@ pub(crate) fn title_bar(
     label: impl Into<SharedString>,
     app_menu_bar: Entity<AppMenuBar>,
 ) -> Stateful<Div> {
-    let mut bar_info = info::title_bar(cx.theme());
+    let label: SharedString = label.into();
+    let mut bar_info = info::title_bar(cx.theme(), &label);
     let bar = native_info(
         TitleBar::new(),
         cx,
@@ -162,7 +163,7 @@ pub(crate) fn title_bar(
     // Plain text, not a Label: `Label::render` sets `foreground` on its own
     // element (label.rs:211), which would hide the title-bar font's colour
     // `geometry::title_bar` just gave the bar.
-    .child(label.into())
+    .child(label)
     .when(cfg!(not(target_os = "macos")), |bar| {
         bar.child(
             app_menu_bar
@@ -173,28 +174,50 @@ pub(crate) fn title_bar(
     bar.info(ui, "chrome-title-bar", bar_info)
 }
 
+/// The toolbar row's padding on a side the theme leaves unstated twice over:
+/// neither `toolbar.border` nor `layout.container_margin` states it (spec
+/// §3.1). The row is the showcase's own element, with no toolkit default to
+/// fall back on, so this is the showcase's own choice, not a platform's
+/// value, and the row's info says so.
+pub(crate) const TOOLBAR_PADDING: Pixels = px(8.);
+
 /// The window's toolbar (spec §2.3): the application's own row, refined by
 /// `geometry::toolbar`, holding `items`.
+///
+/// A side `toolbar.border` leaves unstated is padded with `container_margin`,
+/// the installed layout's `geometry::container_margin`, and where that is
+/// unstated too with [`TOOLBAR_PADDING`] (spec §3.1). That padding goes on
+/// first, so the refinement's stated sides land over it.
 pub(crate) fn toolbar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
+    container_margin: Option<Pixels>,
     items: impl IntoIterator<Item = AnyElement>,
 ) -> Stateful<Div> {
-    let mut row_info = info::toolbar();
-    let row =
-        native_info(h_flex(), cx, geometry::toolbar, "toolbar", &mut row_info).children(items);
+    let stated = native_value(cx, |n| n.resolved.toolbar.border.padding).unwrap_or_default();
+    let mut row_info = info::toolbar(stated, container_margin, TOOLBAR_PADDING);
+    let unstated = [stated.top, stated.right, stated.bottom, stated.left]
+        .iter()
+        .any(Option::is_none);
+    if unstated && container_margin.is_some() {
+        row_info = row_info.geometry("container_margin");
+    }
+    let row = h_flex().p(container_margin.unwrap_or(TOOLBAR_PADDING));
+    let row = native_info(row, cx, geometry::toolbar, "toolbar", &mut row_info).children(items);
     row.info(ui, "chrome-toolbar", row_info)
 }
 
-/// The window's `StatusBar` (spec §2.7), refined by `geometry::status_bar`:
-/// `environment` on the left; on the right `shown`, the title of what the
-/// inspector shows, where it shows one, then `version`.
+/// The window's `StatusBar` (spec §2.7, §3.2), refined by
+/// `geometry::status_bar`: on the left `left_toggle`, then `environment`; on
+/// the right `shown`, the title of what the inspector shows, where it shows
+/// one, then `right_toggle`.
 pub(crate) fn status_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
+    left_toggle: impl IntoElement,
     environment: impl Into<SharedString>,
     shown: Option<SharedString>,
-    version: impl Into<SharedString>,
+    right_toggle: impl IntoElement,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
@@ -206,18 +229,19 @@ pub(crate) fn status_bar(
         "status_bar",
         &mut bar_info,
     )
+    .left(left_toggle)
     // Plain text, not Labels, as in the title bar: a Label would paint
     // foreground over the colour `geometry::status_bar` gives the bar.
     .left(environment.into())
     .when_some(shown, |bar, title| {
         bar.right(div().debug_selector(|| STATUS_HOVERED.into()).child(title))
     })
-    .right(version.into());
+    .right(right_toggle);
     bar.info(ui, "chrome-status-bar", bar_info)
 }
 
 /// The preset switch: a searchable `Combobox` over `state`'s presets,
-/// refined by `geometry::combobox`.
+/// refined by `geometry::combobox`, as wide as the Sidebar header it is in.
 pub(crate) fn preset_combobox(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -232,8 +256,9 @@ pub(crate) fn preset_combobox(
         geometry::combobox,
         "combobox",
         &mut combobox_info,
-    );
-    combobox.info(ui, "chrome-toolbar-preset", combobox_info)
+    )
+    .w_full();
+    combobox.info(ui, "chrome-sidebar-preset", combobox_info)
 }
 
 /// The colour modes, in the order the switch shows them.
@@ -245,6 +270,12 @@ const COLOR_MODES: [AppColorMode; 3] = [
 
 /// A System / Light / Dark `ToggleGroup` with `mode` checked; a click
 /// dispatches `SetColorMode` for the toggle clicked.
+///
+/// It is as wide as the Sidebar header it is in, and its toggles share that
+/// width, each at least as wide as its text: a toggle that does not shrink
+/// runs past the group rather than squeezing its text, so a group too wide
+/// for the panel shows, to the eye and to the texts' debug selectors
+/// (`PROBE_COLOR_MODE_TEXTS`), where it overflows.
 pub(crate) fn color_mode_toggle_group(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -254,11 +285,19 @@ pub(crate) fn color_mode_toggle_group(
     let group = ToggleGroup::new("color-mode")
         .outline()
         .segmented()
-        .children(COLOR_MODES.map(|m| {
-            Toggle::new(SharedString::from(format!("color-mode-{m:?}")))
-                .label(m.label())
-                .checked(m == mode)
-        }))
+        .w_full()
+        .children(
+            COLOR_MODES
+                .into_iter()
+                .zip(PROBE_COLOR_MODE_TEXTS)
+                .map(|(m, text)| {
+                    Toggle::new(SharedString::from(format!("color-mode-{m:?}")))
+                        .flex_grow_1()
+                        .flex_shrink_0()
+                        .child(div().debug_selector(move || text.into()).child(m.label()))
+                        .checked(m == mode)
+                }),
+        )
         // Upstream reports every toggle's state with the clicked one flipped
         // (button/toggle.rs, ToggleGroup::render), so the toggle clicked is
         // the one whose state differs from what was drawn.
@@ -274,12 +313,13 @@ pub(crate) fn color_mode_toggle_group(
         });
     group.info(
         ui,
-        "chrome-toolbar-color-mode",
+        "chrome-sidebar-color-mode",
         info::color_mode_toggle_group(cx.theme()),
     )
 }
 
-/// The icon-set `Select` over `state`, refined by `geometry::select`.
+/// The icon-set `Select` over `state`, refined by `geometry::select`, as
+/// wide as the Sidebar header it is in.
 pub(crate) fn icon_set_select(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -292,21 +332,9 @@ pub(crate) fn icon_set_select(
         geometry::select,
         "select",
         &mut select_info,
-    );
-    select.info(ui, "chrome-toolbar-icon-set", select_info)
-}
-
-/// A vertical `Separator` between toolbar items.
-pub(crate) fn toolbar_separator(ui: &Entity<InfoRegistry>, cx: &App) -> Stateful<Div> {
-    Separator::vertical()
-        .info(
-            ui,
-            "chrome-toolbar-separator",
-            info::toolbar_separator(cx.theme()),
-        )
-        // A vertical Separator is as tall as its parent (separator.rs,
-        // Separator::vertical), so the wrapper takes the row's height.
-        .self_stretch()
+    )
+    .w_full();
+    select.info(ui, "chrome-sidebar-icon-set", select_info)
 }
 
 /// One of the toolbar's icon Buttons.
@@ -374,26 +402,126 @@ pub(crate) fn toolbar_button(
     )
 }
 
-/// The toolbar's `SidebarToggleButton`, drawn `collapsed` while the Sidebar
-/// is; a click dispatches `ToggleSidebar`.
-pub(crate) fn sidebar_toggle_button(
-    ui: &Entity<InfoRegistry>,
-    cx: &App,
-    collapsed: bool,
-) -> Stateful<Div> {
-    SidebarToggleButton::new()
-        .collapsed(collapsed)
-        .on_click(|_, window, cx| window.dispatch_action(Box::new(ToggleSidebar), cx))
-        .info(
-            ui,
-            "chrome-sidebar-toggle",
-            info::sidebar_toggle_button(cx.theme(), collapsed),
-        )
+/// One of the status bar's two panel toggles (spec §3.2).
+pub(crate) struct PanelToggle<'a> {
+    pub button_id: &'static str,
+    /// gpui-component's icon of the toggle, which `drawn` is of.
+    pub icon: IconName,
+    /// That icon as the chosen icon set gives it.
+    pub drawn: ChromeIcon,
+    /// The chosen icon set, as the Icons page names it.
+    pub set: &'a str,
+    /// The tooltip's text; the action's key binding follows it. The toggle's
+    /// label where the chosen set has no icon for it.
+    pub tooltip: &'static str,
+    pub action: &'a dyn Action,
+    /// Whether the panel it toggles is open, which shows it selected.
+    pub open: bool,
+    /// The info's "action" line: what the toggle does.
+    pub about: &'static str,
+    /// The info's "state" line: the panel's state, which the selection shows.
+    pub state: &'static str,
 }
 
-/// The window's `Sidebar` (spec §2.4): one item per page with its icon as
-/// `icons` gives it from the icon set named `set`, the item of `active`
-/// marked active, collapsed to icons while `collapsed`.
+/// A small Ghost `Button` for the status bar -- built with
+/// `variants::ghost_button`, as the toolbar's are -- dispatching its action,
+/// selected while its panel is open, its icon of the chosen set at
+/// `geometry::icon_size_small` and its tooltip showing the action's key
+/// binding. Where the set has no icon for it, it shows its tooltip's text
+/// instead, never another set's icon. The icon is the Button's child, not
+/// its `icon`, for the reason `toolbar_button` gives.
+pub(crate) fn panel_toggle(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    spec: PanelToggle<'_>,
+) -> Stateful<Div> {
+    let PanelToggle {
+        button_id: id,
+        icon,
+        drawn,
+        set,
+        tooltip,
+        action,
+        open,
+        about,
+        state,
+    } = spec;
+    let mut button_info = info::panel_toggle(cx.theme(), about, &drawn, set, open, state);
+    let icon =
+        chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_small));
+    if icon.is_some() && native_value(cx, geometry::icon_size_small).is_some() {
+        button_info = button_info.geometry("icon_size_small");
+    }
+    let dispatched = action.boxed_clone();
+    let button = ButtonKind::Ghost
+        .apply(Button::new(id), cx)
+        .small()
+        .selected(open)
+        .toggled(open)
+        .tooltip_with_action(tooltip, action, None)
+        .map(|button| match icon {
+            Some(icon) => button.child(icon),
+            None => button.label(tooltip),
+        })
+        .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    InfoExt::info(
+        button,
+        ui,
+        SharedString::from(format!("chrome-button-{id}")),
+        button_info,
+    )
+}
+
+/// The gap between the Sidebar header's rows, and between each row's label
+/// and its control, where `layout.widget_gap` is unstated (spec §3.1). The
+/// header is the showcase's own element, with no toolkit default to fall
+/// back on, so this is the showcase's own choice, not a platform's value,
+/// and the header's info says so.
+pub(crate) const SIDEBAR_HEADER_GAP: Pixels = px(8.);
+
+/// The Sidebar's header (spec §3.3): `rows`, each `(id, text, control)`, a
+/// `label` reading `text` above `control`. The rows, and each row's label and
+/// control, are `widget_gap` apart, or [`SIDEBAR_HEADER_GAP`] where that is
+/// unstated. The Sidebar pads its header slot itself (sidebar/mod.rs:431-432),
+/// so the header adds no margin; it takes the slot's width, and so do the
+/// controls.
+///
+/// Plain elements, not upstream's `SidebarHeader`, which is one row that
+/// highlights under the pointer and when selected, and opens a dropdown
+/// menu (sidebar/header.rs), not a container for controls.
+pub(crate) fn sidebar_header<const N: usize>(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    widget_gap: Option<Pixels>,
+    rows: [(&'static str, &'static str, AnyElement); N],
+) -> Stateful<Div> {
+    let gap = widget_gap.unwrap_or(SIDEBAR_HEADER_GAP);
+    let mut header_info = info::sidebar_header(widget_gap, SIDEBAR_HEADER_GAP);
+    if widget_gap.is_some() {
+        header_info = header_info.geometry("widget_gap");
+    }
+    v_flex()
+        .w_full()
+        .gap(gap)
+        .children(rows.map(|(id, text, control)| {
+            v_flex()
+                .w_full()
+                .gap(gap)
+                .child(label(ui, cx, id, text))
+                .child(control)
+        }))
+        .info(ui, "chrome-sidebar-header", header_info)
+        .w_full()
+        .min_w_0()
+        .debug_selector(|| CHROME_SIDEBAR_HEADER.into())
+}
+
+/// The window's `Sidebar` (spec §2.4): `header` above one item per page
+/// with its icon as `icons` gives it from the icon set named `set`, the item
+/// of `active` marked active, collapsed to icons while `collapsed`. The
+/// caller passes no header for the rail (spec §3.3): upstream draws one in
+/// the rail too (sidebar/mod.rs:427-437), which has no room for it.
 ///
 /// Its width is its container's: a width that is not an absolute pixel
 /// length keeps upstream from animating it to a width of its own
@@ -406,6 +534,7 @@ pub(crate) fn sidebar(
     collapsed: bool,
     icons: impl Fn(Page) -> ChromeIcon,
     set: SharedString,
+    header: Option<AnyElement>,
 ) -> Stateful<Div> {
     let items = Page::ALL.map(|page| NavItem {
         ui: ui.clone(),
@@ -418,6 +547,7 @@ pub(crate) fn sidebar(
     Sidebar::new("chrome-sidebar")
         .collapsed(collapsed)
         .w_full()
+        .when_some(header, Sidebar::header)
         .children(items)
         .info(ui, "chrome-sidebar", info::sidebar(cx.theme(), collapsed))
         .h_full()
@@ -3313,11 +3443,10 @@ pub(crate) fn spacing_box(
         .debug_selector(move || id.into())
 }
 
-/// The Separators the Layout page builds, and the toolbar's, so the match
-/// over them in `info::layout` is exhaustive.
+/// The Separators the Layout page builds, so the match over them in
+/// `info::layout` is exhaustive.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SeparatorKind {
-    Vertical,
     Horizontal,
     /// Horizontal, reading the given label.
     Labelled(&'static str),
@@ -3328,7 +3457,6 @@ pub(crate) enum SeparatorKind {
 impl SeparatorKind {
     pub(crate) fn name(self) -> &'static str {
         match self {
-            Self::Vertical => "vertical",
             Self::Horizontal => "horizontal",
             Self::Labelled(_) => "horizontal, labelled",
             Self::Dashed => "horizontal, dashed",
@@ -3344,7 +3472,6 @@ pub(crate) fn separator(
     kind: SeparatorKind,
 ) -> Stateful<Div> {
     let separator = match kind {
-        SeparatorKind::Vertical => Separator::vertical(),
         SeparatorKind::Horizontal => Separator::horizontal(),
         SeparatorKind::Labelled(label) => Separator::horizontal().label(label),
         SeparatorKind::Dashed => Separator::horizontal_dashed(),

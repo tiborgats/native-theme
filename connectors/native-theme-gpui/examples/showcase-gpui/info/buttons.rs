@@ -579,10 +579,34 @@ fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
 }
 
 /// `info` with what the page's Ghost Button paints, unrefined, and its
-/// variant line: the window's toolbar buttons are that Ghost too, and take
-/// it from here so the two cannot drift apart.
+/// variant line: the window's toolbar buttons and status-bar toggles are
+/// that Ghost too, and take it from here so they cannot drift apart.
 pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     ghost_variant(colours(info, t, ButtonKind::Ghost, false))
+}
+
+/// `info` with what a selected Button built with
+/// `native_theme_gpui::variants::ghost_button` paints, and its variant line.
+/// Upstream fills a selected Button with its variant's selected style,
+/// which for a custom variant is the variant's active colour and its
+/// foreground (button/button.rs, ButtonVariant::selected), and gives it no
+/// hover or press style: those apply only while it is neither disabled nor
+/// selected (button/button.rs, RenderOnce for Button).
+pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+    ghost_variant(
+        info.color(claim(
+            "selected bg",
+            "secondary_active",
+            t.secondary_active,
+            "native-theme-gpui/variants.rs:56",
+        ))
+        .color(claim(
+            "text",
+            "secondary_foreground",
+            t.secondary_foreground,
+            "native-theme-gpui/variants.rs:54",
+        )),
+    )
 }
 
 /// A `ButtonGroup` of Default Buttons, which report through the group.

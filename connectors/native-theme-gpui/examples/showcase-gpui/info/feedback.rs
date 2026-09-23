@@ -605,7 +605,7 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
 /// What upstream's `Tooltip` paints: its surface and edge, and, with
 /// `text`, its text -- which a Tooltip refined by `geometry::tooltip` takes
 /// from tooltip.font instead. A Button's own tooltip is upstream's, so the
-/// window's toolbar buttons report these too.
+/// window's toolbar buttons and status-bar toggles report these too.
 pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
     let mut claims = vec![
         claim(

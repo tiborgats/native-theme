@@ -946,7 +946,7 @@ impl ListDelegate for SampleListDelegate {
 }
 
 // ---------------------------------------------------------------------------
-// The toolbar's preset Combobox
+// The Sidebar's preset Combobox
 // ---------------------------------------------------------------------------
 
 /// One row of the preset Combobox: a preset, by key and display name.
@@ -958,7 +958,7 @@ pub(crate) struct PresetItem {
 
 /// The presets the showcase offers, in the order it offers them: the
 /// desktop's own theme, keyed `default` and labelled with the preset it
-/// builds on, then the presets meant for this platform. The toolbar's preset
+/// builds on, then the presets meant for this platform. The Sidebar's preset
 /// switch and the command palette both list these, so neither can offer a
 /// preset the other does not.
 pub(crate) fn preset_items() -> Vec<PresetItem> {
@@ -998,7 +998,7 @@ impl SearchableListItem for PresetItem {
 }
 
 /// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:749`),
-/// so the toolbar's preset switch takes a delegate: [`preset_items`],
+/// so the Sidebar's preset switch takes a delegate: [`preset_items`],
 /// filtered as the user types.
 pub(crate) struct PresetDelegate {
     items: Vec<PresetItem>,
@@ -1056,7 +1056,7 @@ impl SearchableListDelegate for PresetDelegate {
     /// Typing "nord" puts Nord in row 0, where `default` already is, so the
     /// choice would change nothing that upstream compares: no `Change`, and
     /// the popup stays open. A preset's row in the full list is its own.
-    /// Single selection only, which is how the toolbar builds it.
+    /// Single selection only, which is how the Sidebar builds it.
     fn on_will_change(
         &mut self,
         selection: &mut Vec<(IndexPath, Self::Item)>,

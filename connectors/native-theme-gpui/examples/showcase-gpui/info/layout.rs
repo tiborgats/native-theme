@@ -67,7 +67,7 @@ pub fn separator(t: &Theme, kind: SeparatorKind) -> WidgetInfo {
             "Tier U, not an absence: the platform states separator.line_width and the model carries it. Upstream draws the line on an inner absolutely-positioned div at px(1.) and applies the caller's refinement to the outer container instead, so nothing reaches the line (separator.rs, Separator::render_base)",
         );
     match kind {
-        SeparatorKind::Vertical | SeparatorKind::Horizontal => info,
+        SeparatorKind::Horizontal => info,
         SeparatorKind::Labelled(label) => info
             .color(claim(
                 "label bg",
