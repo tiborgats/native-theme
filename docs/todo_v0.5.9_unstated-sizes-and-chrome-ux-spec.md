@@ -261,12 +261,12 @@ One constant, `concat!(CARGO_PKG_NAME, " ", CARGO_PKG_VERSION, " showcase")`, se
 ### 3.5 Sidebar icon size
 
 - The page icons use `geometry::icon_size_small`, not `icon_size_panel` (demo.rs:472), per rationale §9. Their info names that builder.
-- `icon_size_panel` then has no use in the showcase. The Icons page gains an "Icon sizes" section: one icon of the chosen set at each of the model's five `defaults.icon_sizes` contexts (toolbar, small, large, dialog, panel), each labelled with its context and reporting its own info, citing platform-facts §2.1.8 for what each context means. That demonstrates every icon-size builder, as the Theme Map demonstrates data.
+- `icon_size_panel` then has no use in the showcase. The Icons page gains an "Icon Sizes" section: one icon of the chosen set at each of the model's five `defaults.icon_sizes` contexts (toolbar, small, large, dialog, panel), each labelled with its context and reporting its own info, citing platform-facts §2.1.8 for what each context means. That demonstrates every icon-size builder, as the Theme Map demonstrates data.
 - The test runs under every native preset and one colour-scheme preset. Upstream gives no hook to measure the drawn icon inside a `SidebarMenuItem` (sidebar/menu.rs:300; `Icon` exposes only its style, icon.rs:169-177), so it checks:
   - the Icon handed to each item has the size `icon_size_small` gives, read from its style;
-  - in the rail, where the item's height follows its icon, every item's measured bounds fit within the rail's width and no two items overlap;
+  - in the rail, where the item's height follows its icon, every item's measured bounds fit within the rail's width, no two items overlap, and each item's measured height less `p_2` on each side (menu.rs:284) — which is its icon's height, since a rail row holds only its icon (menu.rs:301-308) — is at most the item's measured width;
   - expanded, the icon's size is at most the row's height (`h_7`, 1.75 rem at the installed rem), a model check whose doc says why.
-- The first two checks must fail before the fix.
+- The first check fails before the fix on every preset; the rail check fails on kde-breeze, whose panel size is 48. (Items that are too tall grow rather than overlap, so the width and overlap checks alone cannot fail on this bug.)
 
 ### 3.6 Info and tests
 
