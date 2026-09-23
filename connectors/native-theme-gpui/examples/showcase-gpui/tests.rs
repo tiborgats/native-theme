@@ -1035,6 +1035,56 @@ fn dragged_widths_survive_the_toggles(cx: &mut TestAppContext) {
     );
 }
 
+/// Toggling both side panels in the middle of a drag, then moving the
+/// pointer, leaves nothing holding the dragged handle's index.
+///
+/// The drag records which handle it is on in the group's state
+/// (gpui-base resizable/panel.rs, `ResizablePanel::render`), and the group
+/// looks that panel up on every move (`ResizePanelGroupElement::paint`); a
+/// state emptied under a live drag would hand it an index it no longer has.
+#[gpui::test]
+fn toggling_the_panels_mid_drag_is_safe(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL);
+    let (x, y) = (inspector.left(), inspector.center().y);
+    cx.simulate_mouse_down(point(x, y), MouseButton::Left, Modifiers::default());
+    cx.simulate_mouse_move(
+        point(x - px(10.), y),
+        Some(MouseButton::Left),
+        Modifiers::default(),
+    );
+    cx.simulate_mouse_move(
+        point(x - px(20.), y),
+        Some(MouseButton::Left),
+        Modifiers::default(),
+    );
+    cx.simulate_keystrokes("ctrl-b");
+    cx.simulate_keystrokes("ctrl-i");
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.nav_collapsed
+            && !this.inspector_visible),
+        "Ctrl+B and Ctrl+I did not collapse the Sidebar and hide the inspector"
+    );
+    cx.simulate_mouse_move(
+        point(x - px(40.), y),
+        Some(MouseButton::Left),
+        Modifiers::default(),
+    );
+    cx.simulate_mouse_up(
+        point(x - px(40.), y),
+        MouseButton::Left,
+        Modifiers::default(),
+    );
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert!(
+        bounds_of(&mut cx, CONTENT_PANEL).size.width > px(0.),
+        "the content panel was not laid out after the drag"
+    );
+}
+
 /// Each handle of the resizable group reports itself (spec §4.3.5), over
 /// its whole hit area, not only its 1px line.
 #[gpui::test]
@@ -1054,12 +1104,27 @@ fn the_resize_handles_report_themselves(cx: &mut TestAppContext) {
         ),
     ] {
         let target = bounds_of(&mut cx, selector);
-        assert!(
-            target.left() < boundary && target.right() > boundary + px(1.),
-            "{selector}: the target at {target:?} does not reach past the line at {boundary:?}"
+        // The handle's hit area: 4px either side of the boundary, the line
+        // taking the first pixel right of it (demo.rs, resize_handles).
+        assert_eq!(
+            (target.left(), target.right()),
+            (boundary - px(4.), boundary + px(4.)),
+            "{selector}: the target at {target:?} is not the hit area around {boundary:?}"
+        );
+        // Just past the hit area, where no handle takes a press.
+        let y = target.center().y;
+        hover(&mut cx, point(boundary + px(4.5), y));
+        settle(&mut cx);
+        assert_ne!(
+            read(&mut cx, &showcase, |this, cx| {
+                this.info_ui.read(cx).shown().map(|info| info.title())
+            })
+            .as_deref(),
+            Some(title),
+            "{selector}: a hover past the handle's hit area showed its info"
         );
         // Off the line, in the hit area beside it.
-        hover(&mut cx, point(target.right() - px(1.), target.center().y));
+        hover(&mut cx, point(boundary + px(3.5), y));
         settle(&mut cx);
         assert_eq!(
             read(&mut cx, &showcase, |this, cx| {

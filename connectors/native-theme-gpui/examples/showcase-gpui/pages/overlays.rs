@@ -52,7 +52,7 @@ impl Showcase {
                     .child(self.app_menu_bar.clone())
                     .on_hover(self.hover_info(&fi, "AppMenuBar", &[("item text", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("item hover (half alpha in dark mode)", "accent", ghost_hover_fill(&t), "gpui-component/button/button.rs:1125-1131"), ("menu bg", "popover", t.popover, "gpui-component/styled.rs:197")], &[], &[
                             ("fill", "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background -- the panel had claimed tab_bar, which nothing here touches"),
-                            ("items", "ghost Buttons, so they hover with accent rather than the button family, and their label is the Ghost variant's secondary_foreground"),
+                            ("items", "ghost Buttons, so they hover with accent -- at half alpha in dark mode -- rather than the button family, and their label is the Ghost variant's secondary_foreground"),
                             ("source", "gpui-base's GlobalState app menus, which only set_app_menus fills -- not gpui's cx.set_menus, which feeds the platform's own menu bar. This showcase gives both the same menus (menu/app_menu_bar.rs, AppMenuBar::reload)"),
                         ])),
             )

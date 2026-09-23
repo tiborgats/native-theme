@@ -1259,9 +1259,13 @@ impl Showcase {
     /// leaving the group would hand its width to its neighbour; and a panel
     /// kept but hidden (`ResizablePanel::visible`) keeps bounds that a drag of
     /// another handle still counts (`ResizableState::resize_panel_at_handle`).
-    /// So the widths the two side panels have now are kept here, and the
-    /// state starts afresh, the panels taking those widths again as their
-    /// first sizes.
+    /// So the widths the two side panels have now are kept here, and a new
+    /// state takes over, the panels taking those widths again as their first
+    /// sizes. A new state, not the old one cleared: `ResizableState::clear`
+    /// leaves the index of a handle being dragged (gpui-base
+    /// resizable/mod.rs:242-245), and the next pointer move would look that
+    /// panel up in a state that no longer has it (resizable/panel.rs:452). The
+    /// old state stays with the listeners the last frame painted, whole.
     fn rearrange(&mut self, cx: &mut Context<Self>, change: impl FnOnce(&mut Self)) {
         let sizes = self.body_layout.read(cx).sizes().clone();
         let has_nav = !self.nav_collapsed;
@@ -1277,7 +1281,7 @@ impl Showcase {
             }
         }
         change(self);
-        self.body_layout.update(cx, |state, _| state.clear());
+        self.body_layout = cx.new(|_| ResizableState::default());
         cx.notify();
     }
 

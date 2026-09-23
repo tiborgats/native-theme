@@ -678,7 +678,7 @@ pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetIn
             "gpui-base/resizable/resize_handle.rs:293",
         ))
         .color(claim(
-            "line while dragged",
+            "line while pressed",
             "active_handle",
             base.resizable
                 .active_handle
@@ -687,11 +687,11 @@ pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetIn
         ))
         .not_themeable(
             "hover",
-            "none: a hovered handle keeps its resting colour, and the model's splitter.hover_color reaches it only while it is dragged (resizable/resize_handle.rs, ResizeHandle)",
+            "none: a hovered handle keeps its resting colour, and the model's splitter.hover_color reaches it only while it is pressed -- a press inside the handle sets it and any release clears it (resizable/resize_handle.rs, ResizeHandleState)",
         )
         .not_themeable(
             "width",
-            "a 1px line with 4px of hit area on either side, upstream's constants; the model's splitter.divider_width does not reach it (resizable/resize_handle.rs, HANDLE_SIZE)",
+            "a 1px line with a hit area of 4px on its left and 3px on its right: the handle is 1px wide with 4px of padding on each side, which layout widens to the 8px of its padding. Upstream's constants; the model's splitter.divider_width does not reach it (resizable/resize_handle.rs, HANDLE_SIZE)",
         )
         .instance(
             "drawn by",

@@ -88,6 +88,7 @@ impl Inspector {
             ui,
             showcase,
             tab: InspectorTab::Widget,
+            // Task 24: delete (legacy hover_info stopgap)
             legacy: None,
             legacy_pending: None,
             legacy_tickets: 0,
@@ -144,6 +145,7 @@ impl Inspector {
         let muted = theme.muted_foreground;
         let shown = self.ui.read(cx).shown().cloned();
         let (title, copied, body) = match (&self.legacy, shown) {
+            // Task 24: delete (legacy hover_info stopgap)
             (Some(text), _) => {
                 let mut lines = text.lines();
                 let title = lines.next().unwrap_or_default().to_string();

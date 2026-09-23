@@ -341,18 +341,26 @@ pub(crate) fn tab_bar(
         )
 }
 
-/// gpui-base's `HANDLE_PADDING` (resizable/resize_handle.rs:11): the hit
-/// area a resize handle adds on each side of its line. It is `pub(crate)`
-/// upstream, so the showcase names it again to cover that area.
+/// gpui-base's `HANDLE_PADDING` (resizable/resize_handle.rs:11): the padding
+/// a resize handle puts on each side of its line. It is `pub(crate)`
+/// upstream, so the showcase names it again to cover the handle's hit area.
 const HANDLE_PADDING: Pixels = px(4.);
 
-/// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:12): the width of
-/// the line a resize handle draws, `pub(crate)` upstream as well.
+/// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:12): the width a
+/// resize handle is given and its line is drawn at, `pub(crate)` upstream as
+/// well.
 const HANDLE_SIZE: Pixels = px(1.);
 
 /// What each handle of a horizontal resizable group paints: upstream's line
 /// in upstream's colour, with an info target over the handle's whole hit
-/// area, the line and `HANDLE_PADDING` on either side.
+/// area.
+///
+/// That area is not the line and `HANDLE_PADDING` on either side. The handle
+/// is `HANDLE_SIZE` wide with `HANDLE_PADDING` on each side, and layout
+/// widens a box to at least its padding (taffy 0.13 compute/flexbox.rs:
+/// 2294-2295), so the handle spans `HANDLE_PADDING` either side of the
+/// panel boundary: 4px left of the line, which starts at the boundary, and
+/// 3px right of it.
 ///
 /// `handles` names the group's handles in order, as `(id, between)`. The
 /// renderer is not told which handle it draws (resizable/resize_handle.rs,
@@ -369,6 +377,13 @@ pub(crate) fn resize_handles(
     let next = Cell::new(0usize);
     Rc::new(
         move |handle: &ResizeHandleContext, _window: &mut Window, cx: &mut App| {
+            // One call per handle, in panel order, every frame: each panel
+            // after the first builds the handle on its left edge as it
+            // renders (resizable/panel.rs:363-368), and each handle calls
+            // this once as it lays itself out (resizable/resize_handle.rs:
+            // 194-203). A panel given `visible(false)` returns before it
+            // builds its handle (resizable/panel.rs:302) and would shift the
+            // count, so an absent panel is left out of the group instead.
             let ix = next.get();
             next.set(ix + 1);
             if handle.axis() != Axis::Horizontal {
@@ -391,7 +406,7 @@ pub(crate) fn resize_handles(
                 .top_0()
                 .bottom_0()
                 .left(-HANDLE_PADDING)
-                .right(-HANDLE_PADDING)
+                .right(-(HANDLE_PADDING - HANDLE_SIZE))
                 .debug_selector(move || id.into());
             Some(
                 div()
