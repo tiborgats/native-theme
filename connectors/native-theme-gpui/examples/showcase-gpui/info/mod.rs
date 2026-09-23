@@ -249,7 +249,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "input_height",
-        "input.min_height (control height), for Input::h: the height geometry::input sets, and nothing else",
+        "input.min_height (control height), as an Input's height: the height geometry::input sets, and nothing else",
     ),
     (
         "widget_gap",

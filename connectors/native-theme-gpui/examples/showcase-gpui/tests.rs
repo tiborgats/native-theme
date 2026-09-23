@@ -1786,6 +1786,46 @@ fn the_height_only_field_takes_the_control_height(cx: &mut TestAppContext) {
     );
 }
 
+/// A Switch's corner line follows upstream's condition: the theme's radius
+/// under 4px, the track's own height from 4px up (switch.rs:158-162).
+#[gpui::test]
+fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let theme = cx.update(|_w, cx| Theme::global(cx).clone());
+    let corner = |radius: f32| {
+        let mut t = theme.clone();
+        t.radius = px(radius);
+        crate::info::inputs::switch(&t, "Feature toggle", false, false)
+            .config
+            .into_iter()
+            .find(|n| n.what == "border-radius")
+            .map(|n| n.text)
+    };
+    assert_eq!(corner(2.).as_deref(), Some("radius: 2px"));
+    assert!(
+        corner(6.).is_some_and(|text| text.starts_with("fully round")),
+        "at a 6px radius the track is rounded by its height, and the line says {:?}",
+        corner(6.)
+    );
+}
+
+/// The height-only Input says it takes the control height only when a
+/// native theme gives it one.
+#[gpui::test]
+fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let theme = cx.update(|_w, cx| Theme::global(cx).clone());
+    let height = |styled: bool| {
+        crate::info::inputs::input(&theme, crate::demo::InputField::HeightOnly, styled)
+            .instance
+            .into_iter()
+            .find(|n| n.what == "height")
+            .map(|n| n.text)
+    };
+    assert!(height(true).is_some_and(|t| t.starts_with("the control height")));
+    assert!(height(false).is_some_and(|t| t.starts_with("upstream's own")));
+}
+
 /// The preset Combobox's swatches are the colours upstream paints: in dark
 /// mode its fill is input mixed toward transparent (theme/mod.rs:381), and a
 /// hovered row is accent at 70% (searchable_list/item.rs:114).

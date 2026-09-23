@@ -1,14 +1,15 @@
 //! What the Inputs page's widgets report about themselves (spec §3.4).
 
-use gpui_component::{Colorize as _, theme::Theme};
+use gpui_component::theme::Theme;
 
 use super::{WidgetInfo, chrome::input_background, claim};
 use crate::demo::InputField;
 
 /// A single-line `Input` taking the refinement `field` names. `styled` is
 /// whether a native theme is installed, so whether `geometry::input` refined
-/// a `Refined` field. Its geometry line is recorded where `demo::text_input`
-/// applies the builder.
+/// a `Refined` field and `geometry::input_height` sized a `HeightOnly` one.
+/// Its geometry line is recorded where `demo::text_input` applies the
+/// builder.
 pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Input");
     let info = match field {
@@ -49,15 +50,19 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         .config("focus_ring", format!("{}", t.focus_ring))
         .not_themeable("fill", "input_background(): the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs)")
         .not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window")
-        .not_themeable("focus ring", "the connector uses the platform's focus_ring_width only as a switch: upstream drops the ring where Theme::focus_ring is off (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide at half the ring colour's alpha where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring's colour is `ring`, shown on the InputGroup and OtpInput panels")
-        .not_themeable("disabled fill", "input mixed toward transparent, not muted as the panel had claimed (input/input.rs, input_style)")
+        .not_themeable("focus ring", "the connector uses the platform's focus_ring_width only as a switch: upstream drops the ring where Theme::focus_ring is off (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide at half the ring colour's alpha where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` at that half alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border")
+        .not_themeable("disabled fill", "input_style's Oklab mix of 80% input and 20% transparent, then faded to half alpha, because a disabled Input fades its fill again (input/input.rs, Input::render) -- a literal pair, and not muted")
         .not_themeable("placeholder colour", "Tier U: input.placeholder_color is modelled from each platform's own placeholder colour -- inheritance-rules.toml lists falling back to muted_color as wrong -- but Input hands its editor the shared muted_foreground on every render and takes no colour of its own (input/input.rs, Input::render)")
         .not_themeable("padding", "inner editor (Tier U)");
     match field {
         InputField::Refined => info,
-        InputField::HeightOnly => info.instance(
+        InputField::HeightOnly if styled => info.instance(
             "height",
             "the control height of the field above without the rest of its refinement: what geometry::input_height is for, a field that must line up with the one above without taking its border or text size",
+        ),
+        InputField::HeightOnly => info.instance(
+            "height",
+            "upstream's own for Size::Medium: no native theme is installed, so geometry::input_height has no height to give it",
         ),
     }
 }
@@ -249,24 +254,6 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
 /// `selected` selected. Its geometry line is recorded where
 /// `demo::radio_group` applies the builder.
 pub fn radio_group(t: &Theme, labels: &[&'static str], selected: Option<usize>) -> WidgetInfo {
-    // Radio::render fills an unselected Radio with input_background()
-    // (radio.rs:238), which reads a different field in each mode
-    // (theme/mod.rs:379-384).
-    let unselected_fill = if t.is_dark() {
-        claim(
-            "unselected fill, input mixed toward transparent (0.3)",
-            "input",
-            t.input.mix_oklab(t.transparent, 0.3),
-            "gpui-component/theme/mod.rs:381",
-        )
-    } else {
-        claim(
-            "unselected fill",
-            "background",
-            t.background,
-            "gpui-component/theme/mod.rs:383",
-        )
-    };
     let selected = selected
         .and_then(|ix| labels.get(ix).copied())
         .unwrap_or("none");
@@ -284,7 +271,9 @@ pub fn radio_group(t: &Theme, labels: &[&'static str], selected: Option<usize>) 
             t.input,
             "gpui-component/radio.rs:188",
         ))
-        .color(unselected_fill)
+        // The unselected Radios' fill: Radio::render takes
+        // input_background() for an unchecked one (radio.rs:238).
+        .color(input_background(t))
         .color(claim(
             "upstream label",
             "foreground",
@@ -351,8 +340,14 @@ pub fn switch(t: &Theme, label: &'static str, checked: bool, disabled: bool) -> 
     } else {
         info
     };
+    // The track takes the theme's radius only under 4px; from 4px up it is
+    // rounded by its own height (switch.rs:158-162).
+    let info = if t.radius.as_f32() < 4.0 {
+        info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+    } else {
+        info.config("border-radius", format!("fully round: the theme's radius, {}px, is 4px or more, so the track is rounded by its own height instead", t.radius.as_f32()))
+    };
     let info = info
-        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("on track", "primary by default, and Switch::color replaces it -- a per-instance receiver for the model's switch.checked_background that nothing in the connector feeds, since ThemeColor has no field for it (gpui-component switch.rs, Switch::color). Our gap")
         .not_themeable("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component switch.rs, Switch::render disabled_bg)")
         .not_themeable("size", "Tier U: track and thumb are px literals per Size, on children of the wrapper the refinement lands on (gpui-component switch.rs, Switch::render), while the model states switch.track_width, track_height and thumb_diameter")

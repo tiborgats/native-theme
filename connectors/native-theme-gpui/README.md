@@ -199,7 +199,7 @@ test over every preset and mode says so.
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
 | `button` | `button.min_height`, `.min_width`, `.border.padding_*`, `.corner_radius`, `.line_width`, `.color`, `button.font`, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
-| `input`, `input_height` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `.padding_vertical`, `input.font`, `defaults.line_height` | `Input` (`Input::h` for the height alone) |
+| `input`, `input_height` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `.padding_vertical`, `input.font`, `defaults.line_height` | `Input` (`Styled::h` for the height alone; `Input::h` reaches a multi-line input only) |
 | `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
 | `list_item` | `list.row_height`, `list.border.padding_*`, `list.item_font`, `defaults.line_height` | `ListItem` |
 | `list` | `list.border.line_width`, `.color`, `.corner_radius` | the frame of a list view: a `List`, a `Tree`, or the box an application draws around one. Neither widget paints a border of its own, while `DataTable` draws one from the same values through `Theme`, so this is what makes the three agree. It also clips to the radius, because a row's selected fill would otherwise show through the rounded corners. A tree is a list view — the model has no tree theme |

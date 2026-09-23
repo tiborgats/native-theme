@@ -588,7 +588,12 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
     px(n.resolved.dialog.max_width)
 }
 
-/// For `Input::h` (`src/input/input.rs:257`): the same control height [`input`] sets.
+/// An `Input`'s height alone: the same control height [`input`] sets.
+///
+/// A single-line `Input` takes it through `Styled::h`, the caller's style,
+/// which `Input` refines its root with last (`src/input/input.rs:481-485`,
+/// `:719`). `Input::h` does not reach one: upstream applies that height to a
+/// multi-line input only (`src/input/input.rs:706-709`).
 #[must_use]
 pub fn input_height(n: Native<'_>) -> Pixels {
     let i = &n.resolved.input;

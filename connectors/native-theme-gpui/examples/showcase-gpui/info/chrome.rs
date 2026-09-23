@@ -402,12 +402,13 @@ pub(super) fn ghost_hover(t: &Theme) -> ColorClaim {
 
 /// What `Theme::input_background()` paints, the fill of an Input and of
 /// every widget styled like one: the window background in light mode, and in
-/// dark mode input mixed 30% with transparent (theme/mod.rs:379-384) -- the
-/// swatch is that mix, not input at full strength.
+/// dark mode an Oklab mix of 30% input and 70% transparent -- `mix_oklab`'s
+/// factor is the first colour's share (theme/color.rs:44-49) -- read at
+/// theme/mod.rs:379-384. The swatch is that mix, not input at full strength.
 pub(super) fn input_background(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
-            "bg, input mixed toward transparent (0.3)",
+            "bg, 30% input mixed with 70% transparent",
             "input",
             t.input.mix_oklab(t.transparent, 0.3),
             "gpui-component/theme/mod.rs:381",
@@ -452,7 +453,7 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
             "gpui-component/searchable_list/item.rs:114",
         ))
         .color(claim(
-            "focus ring",
+            "focused border",
             "ring",
             t.ring,
             "gpui-component/combobox.rs:999",
@@ -558,7 +559,7 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
             "gpui-component/select.rs:541",
         ))
         .color(claim(
-            "focus ring",
+            "focused border",
             "ring",
             t.ring,
             "gpui-component/select.rs:548",
