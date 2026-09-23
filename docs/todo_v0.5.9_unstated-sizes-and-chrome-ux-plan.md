@@ -9,8 +9,9 @@
 **Goal:**
 
 - A sizing value no platform states stays absent all the way from the resolver to the toolkit.
-- Padding is stated per side.
-- For padding and `toolbar.bar_height`, native themes, whether static or live, state every value their platform documents.
+- Padding is stated per side, and the input, select and combobox builders apply it.
+- For padding, `toolbar.bar_height` and `toolbar.item_gap`, native themes, whether static or live, state every value their platform documents.
+- Controls are the platform's height at the platform's text scale, and grow with scaled text.
 - The showcase's panel toggles and theme controls sit where users expect them.
 
 **Spec:** `docs/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md`
@@ -37,7 +38,7 @@
 
 **Output:** `.superpowers/sdd/<plan>/audit-sizing.md`, with two tables.
 
-**Table A, the fields in this plan's scope** (padding sides and `toolbar.bar_height`). One row per finding, with these columns:
+**Table A, the fields in this plan's scope** (padding sides, `toolbar.bar_height`, `toolbar.item_gap`). One row per finding, with these columns:
 
 - source: the preset and variant, or the reader's file:line;
 - widget.field and side;
@@ -55,10 +56,10 @@ The classes follow spec §1.4:
 - (e) range;
 - (f) per-context;
 - (g) derivation;
-- (h) "(none)" that means zero;
-- (i) "(none)" that means unstated.
+- (h) pointer to another section;
+- (i) a "(none)" whose remark describes a real zero, with the source the audit proposes for it.
 
-**Table B, every other sizing field** that some native platform leaves unstated while a native preset or reader states it. Examples: KDE `min_height`, `row_height`, dialog bounds, tooltip `max_width`. This table feeds the follow-up item; nothing in this plan changes those fields.
+**Table B, every other sizing field** that some native platform leaves unstated while a native preset or reader states it. Known examples: KDE `min_height`, `row_height`, dialog bounds; tooltip `max_width`; macOS `small_px` against a range; `panel_px` against "(none)". This table feeds the follow-up item; nothing in this plan changes those fields.
 
 **Scope:**
 
@@ -68,17 +69,17 @@ The classes follow spec §1.4:
 
 Report `ios` separately, because platform-facts has no iOS column.
 
-**Gate:** none. The controller rules on every Table A row. The rulings are ledgered and feed Tasks 3 and 4.
+**Gate:** none. The controller rules on every Table A row, including the two per-context cells spec §1.4 names. The rulings are ledgered and feed Tasks 3 and 4.
 
 ### Task 2: Research the status-bar padding (spec §1.7)
 
 - Fetch the upstream sources for each platform.
-- Append the per-side rows to platform-facts §2.14, with citations. A platform without a value gets **(none)** and its reason.
+- Append the per-side rows to platform-facts §2.14, with citations. A platform without a sourced number gets **(none)** and its reason.
 - The controller checks every citation.
 - Run pre-release-check.
 - Commit `docs(facts): the status bar's padding, per platform`.
 
-### Task 3: Per-side padding; unstated stays unstated (spec §1.1–§1.3, §2)
+### Task 3: Per-side padding; unstated stays unstated; heights laid out (spec §1.1–§1.3, §2)
 
 This is one task: the model's type changes and their consumers must compile together.
 
@@ -87,6 +88,7 @@ This is one task: the model's type changes and their consumers must compile toge
      - `padding_horizontal_px = 10` gives left and right `Some(10)`, and top and bottom `None`.
      - `padding_vertical_px = 0.0` gives top and bottom `Some(0.0)`.
      - A table stating `padding_horizontal_px` together with `padding_left_px` is rejected, naming both keys.
+     - `lint_toml` accepts the shorthand keys and the side keys, and every bundled preset's source lints clean.
    - Merging: a reader's left side over a preset's shorthand wins for left only.
    - Resolution:
      - A colour-scheme preset resolves its unstated toolbar, dialog and status-bar sides to `None`.
@@ -95,20 +97,21 @@ This is one task: the model's type changes and their consumers must compile toge
    - gpui:
      - Each padding builder leaves unstated sides unset.
      - `geometry::toolbar` leaves `min_h` unset without a `bar_height`.
-     - `geometry::button` and `geometry::input` set `min_h` and `h_auto`.
-     - A seams test measures a real Button and a real Input: at scale 1 their height is the minimum, and at a large scale the text does not clip.
+     - A seams test measures the drawn content inset of a real Input, Select and Combobox under every native preset, and it equals the stated side.
+     - A seams test measures a real Button, Input, Select, menu item and list item under every native preset: at text scale 1 the height equals the platform's value; at scale 2 it grows and the text's bounds stay inside.
      - `tooltip_content` uses upstream's rem padding for an unstated side.
    - iced: `button_padding` and `input_padding` fill unstated sides from `DEFAULT_PADDING`.
 2. **Implement** spec §1.1–§1.3 and §2:
-   - the split border types;
+   - the raw-struct deserialisation and the linter's keys;
+   - the split border types, the derive crate, and the re-export;
    - the readers setting sides;
    - the registry and platform-facts conventions;
    - the stale rules;
-   - every consumer and test listed in §1.3;
-   - gpui and iced;
-   - the iced showcase;
+   - every consumer and test listed in §1.3, including the gpui showcase's;
+   - gpui: padding, heights, tooltip, dialog, the removed `dialog_content_padding`;
+   - iced, plus the iced showcase;
    - the README builder table;
-   - the gpui showcase's `GEOMETRY_NOTES`, infos and Theme Map rows.
+   - the gpui showcase's `GEOMETRY_NOTES`, infos, HeightOnly sample and Theme Map rows.
 3. Run `cargo test --workspace`, then pre-release-check.
 4. Commit `feat(model): padding per side; a size the platform does not state stays unstated`.
 
@@ -119,9 +122,9 @@ This is one task: the model's type changes and their consumers must compile toge
 3. **Edit the presets and readers** to match the table and the Task 1 rulings:
    - Replace the chosen numbers for asymmetric rows (Windows tooltip 7, and others) with the documented sides.
    - Remove KDE's `bar_height` and the colour-scheme presets' `bar_height_px = 40.0`.
-   - Correct `kde/metrics.rs:20` and the Windows reader's `toolbar.item_gap` as ruled.
+   - Correct the reader constants as ruled: `kde/metrics.rs:20`, the Windows reader's 12s, tooltip and `item_gap`, and `macos.rs:263`.
    - Give every value a comment citing platform-facts.
-   - Correct platform-facts wherever a ruling found it wrong.
+   - Correct platform-facts wherever a ruling found it wrong, including any sourced `0` the audit proposed.
 4. **Seed proofs** (spec §1.6).
 5. Run pre-release-check.
 6. Commit `fix(presets): native themes state their platform's documented sizes`.
@@ -140,6 +143,7 @@ This is one task: the model's type changes and their consumers must compile toge
      - The left toggle sits at the status bar's left end, and the inspector toggle at its right end.
      - The left toggle collapses the Sidebar to its rail, and the right toggle hides the inspector.
      - Each toggle is selected while its panel is open, and takes its icon from the chosen set.
+     - Under a freedesktop set on KDE, the right toggle's icon is `sidebar-expand-right`.
      - The status bar no longer carries the version.
    - Sidebar header:
      - The three labelled rows sit in the Sidebar header, fit at `NAV_WIDTH`, and are absent in the rail.
@@ -156,7 +160,7 @@ This is one task: the model's type changes and their consumers must compile toge
 2. **Implement** spec §3.1–§3.4:
    - the `demo::` helpers and their infos;
    - the showcase's own named constants;
-   - the popover and hover-card content padding;
+   - the `PanelRight` mapping in `icons.rs`;
    - `showcase-exceptions.toml`;
    - `chrome_icon_names()`.
 3. Run pre-release-check.
@@ -165,7 +169,7 @@ This is one task: the model's type changes and their consumers must compile toge
 ### Task 7: Docs and archive (spec §4)
 
 - Update the CHANGELOG. This includes rewriting the earlier `[Unreleased]` entries about the toolbar, status bar and title.
-- Update the connector README.
+- Update the connector README and `proposals/README.md`.
 - In `docs/todo.md`, close the toolbar item, update the screenshot item and append the new items.
 - Append a note on the new model to the other plan documents.
 - Move the three documents to `docs/archive/` and fix their links.

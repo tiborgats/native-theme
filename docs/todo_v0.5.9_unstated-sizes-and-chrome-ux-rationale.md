@@ -61,13 +61,7 @@ For a value the platform truly does not state, only the last option is honest. I
 
 The principle cuts both ways. **Where the platform does state a value, the native preset must carry it.** A native preset that omits a documented value, as `kde-breeze` omits its dialog margin, is a defect. A gate must catch it, and the resolver must not paper over it.
 
-**"(none)" in platform-facts does not always mean "not stated".** Some "(none)" entries say the thing does not exist, and so state zero:
-
-- §2.16: "(none) — content provides own padding", for the popover's own padding;
-- §2.5: "checkmark fills indicator";
-- §2.14: "(none) — rectangular bar", for a corner radius (outside this change's scope; the reading is the same).
-
-Only these leave the value unstated: "(none) — sizes to content", "not specified", "app-defined", and a bare "(none)". The audit reads each "(none)" by its reason.
+**Only a number is a stated value.** Platform-facts writes some cells as "(none)" with a remark, for example §2.16's "(none) — content provides own padding" for the popover, on all four platforms alike. Such a remark may describe a real zero, but it cites nothing, so it is not a value, and it is read as unstated. Where a remark does describe a real zero, the fix is to source it and write `0` with its source into platform-facts. The audit proposes such corrections; it never writes a `0` on the strength of a remark.
 
 ## 4. Padding is per side
 
@@ -104,22 +98,25 @@ Leaving those unstated would strip most of Windows' documented padding. Keeping 
 1. **The model can say "not stated", per side.**
    - Each padding side and `toolbar.bar_height` resolves to `Option<f32>`.
    - `None` means the platform states no value.
-   - `Some(0.0)` means it states zero. KDE's toolbar vertical padding does this, and so does the popover's "content provides own padding".
+   - `Some(0.0)` means it states zero, as KDE's toolbar vertical padding does.
 2. **The resolver stops inventing.** A missing value stays `None`. A stated padding side must be ≥ 0; today no range check covers widget padding.
 3. **Connectors apply only what is stated.**
    - A gpui builder refines a side only when that side is `Some`. Otherwise the toolkit's own default stands: gpui-component's StatusBar, for example, keeps `px_2 py_1`.
-   - **Control heights are laid out, not computed.** Today `control_height` computes a height from the model's padding. For the input, that is a padding the input builder does not even apply ("Tier U"), so the computed height is wrong. The builders instead set the platform's height as a minimum and let layout add the padding actually drawn. Scaled text can no longer clip, and no padding needs mirroring.
+   - **The input, select and combobox builders apply their stated sides too.** Upstream sets its own padding on those widgets' roots before applying the refinement (input.rs:701 then :719; select.rs:543 then :546; combobox.rs:995 then :997), so a refinement overrides it. The builders' current "Tier U" note (geometry.rs:147), which says the padding cannot be reached, is wrong. Today KDE's input padding, and Windows' input and combobox sides, reach nothing in gpui.
+   - **Control heights: the platform's height at the platform's text scale, laid out when text is scaled.** At text scale 1 a control is exactly the height the platform states. When the user scales text, the builder sets that height as a minimum and lets layout grow the control around its drawn text and padding. That is how the native toolkits behave: GTK's `min-height` with content-driven growth, and Breeze's heights derived from font metrics. `control_height`, which computes a height from the model's padding and a line-height multiplier that is not upstream's, goes; layout replaces the computation.
    - **The tooltip's text width does need a number.** `tooltip_content` subtracts the padding from `max_width`. Where no side is stated, it uses upstream's own tooltip padding (`px_2`, tooltip.rs:123). That is a rem multiple, so it is converted at the font size the connector installs as the rem (root.rs:582).
-   - **iced's `button_padding` and `input_padding` return a whole `Padding`.** They fill an unstated side with iced's own public default: `button::DEFAULT_PADDING` (iced_widget 0.14.2 button.rs:462) or `text_input::DEFAULT_PADDING` (text_input.rs:125).
+   - **iced's `button_padding` and `input_padding` return a whole `Padding`.** They fill an unstated side with iced's own public default: `button::DEFAULT_PADDING` (iced_widget 0.14.2 button.rs:461) or `text_input::DEFAULT_PADDING` (text_input.rs:125).
 4. **Native themes state everything their platform documents, for the fields this change covers** (§6, §7). A gate checks both paths by which a native theme reaches the model.
 5. **Reading platform-facts cells:**
 
    | Cell | How it is read |
    |---|---|
-   | A single "(measured)" value | Stated, with a comment saying "measured". |
+   | A number, with or without a qualifier such as "(measured)", "(convention)" or a leading "~" | Stated. The comment carries the qualifier. |
    | A range ("~8–10px") | Not stated, unless a source pins it. Then platform-facts is corrected. |
-   | A value per context (input device, list style, size mode) | The context the connector's widget matches is stated, and the comment names it. For the input device that is the desktop pointer, so the Windows menu states its mouse values. Where no context clearly matches (GNOME's "rich-list" vs "plain list"), a ruling decides. If none matches, the value is `None`. |
+   | A value per context (input device, list style, size mode, with or without a close button) | The context the connector's widget matches is stated, and the comment names it. For the input device that is the desktop pointer, so the Windows menu states its mouse values. Where no context clearly matches, a ruling decides. If none matches, the value is `None`. |
    | A derivation ("← button padding (10px)") | Stated as the derived value, and the comment cites the derivation. |
+   | A pointer ("(none) — use §2.20 layout margins") | Not stated here; the field it points to carries the value. |
+   | A cell with no number ("(Adwaita CSS) row padding"), or any "(none)" | Not stated. |
 6. **An application may choose its own value where the theme states none, and must say so.** The connector never invents. The showcase, though, is an application. An application-drawn element, such as the toolbar row `geometry::toolbar` refines or the Sidebar header's rows, has no toolkit default. Where the theme leaves such a value unstated, the showcase uses its own named constant, and the element's info says it is the showcase's choice. Without that, the colour-scheme presets' toolbar would put its items flush against the window edge, the very defect reported.
 
 ## 6. The platform's values come from two places
@@ -139,7 +136,14 @@ The readers' sizes are mostly constants:
 
 The KDE reader also reads some sizes from the system, such as icon sizes from `index.theme` (kde/mod.rs:128). Those are not constants, and the gate does not cover them.
 
-Both paths must agree with platform-facts, and today they do not. `kde/metrics.rs:20` gives the KDE button a vertical padding of 5 ("Breeze measured frame+margin"), while §2.3 gives `Button_MarginWidth` = 6. On the live path that 5 wins over whatever `kde-breeze-live` states.
+Both paths must agree with platform-facts, and today they do not. On the live path these reader constants win over the presets:
+
+| Reader | States | Platform-facts |
+|---|---|---|
+| kde/metrics.rs:20 | button vertical padding 5 ("Breeze measured frame+margin") | `Button_MarginWidth` = 6 (§2.3) |
+| windows.rs:196-233, :250-290 | 12 horizontal for button, input, tab and menu; tooltip 8 / 8 | 11; 10 left / 6 right; 8 left / 4 right; 11; tooltip 9 and 6 top / 8 bottom |
+| windows.rs:240, :296 | `toolbar.item_gap` 4 | 0 (§2.13; `windows-11.toml:217` also says 0) |
+| macos.rs:263 | button horizontal padding 12 | ~8 (§2.3; the preset states 8) |
 
 So the gate resolves both paths:
 
@@ -148,7 +152,7 @@ So the gate resolves both paths:
 
 Checking a `-live` preset alone would check values a reader may override.
 
-Every run must see every reader's constants, and today that is not possible. The pre-release check runs `cargo test -p native-theme` with no features, and the KDE module only builds with the `kde` feature (lib.rs:99-100). So the KDE and Windows constants move into functions outside any feature or OS gate. Only the OS reads, `GetSystemMetricsForDpi` and `index.theme`, stay gated.
+Every run must see every reader's constants, and today that is not possible. The pre-release check runs `cargo test -p native-theme` with no features, and the KDE module only builds on Linux with the `kde` feature (lib.rs:99-100). So the KDE and Windows constants move into functions outside any feature or OS gate. Only the OS reads, `GetSystemMetricsForDpi` and `index.theme`, stay gated.
 
 A mismatch is corrected on whichever side its source proves wrong: the preset, the reader, or platform-facts.
 
@@ -163,20 +167,22 @@ The same principle reaches beyond padding. Platform-facts marks KDE **(none)** f
 | dialog minimum and maximum width and height | 320 / 560 / 140 / 600 |
 | combobox `min_height` and `min_width` | 32 / 120 |
 
-Tooltip `max_width` is "(none) — preset: 300" (platform-facts.md:1248): a preset's own choice, written into the facts.
+Tooltip `max_width` is "(none) — preset: 300" (platform-facts.md:1248): a preset's own choice, written into the facts. The macOS `small` icon size is a range, "sidebar: 16–20pt" (:1122), while `macos-sonoma` states 16. And `panel_px = 20` in adwaita, macos-sonoma and windows-11 stands against "(none)" (:1125).
 
 This change leaves them as they are. Each needs its own connector decision, such as what a builder does without a minimum height or without a dialog bound. None of them causes the reported defects. The audit (plan Task 1) lists every such field, and `docs/todo.md` records the list as a follow-up plan.
 
 The colour-scheme presets carry sizes that were copied rather than sourced (see the todo.md toolbar item). This change removes only their `bar_height_px = 40.0`: `toolbar.bar_height` becomes optional here, and 40 is the same unsourced value this change removes from KDE. Sourcing the rest of their sizes is part of the follow-up.
 
-## 8. Colour-scheme presets
+## 8. Visible changes on every preset
 
-Catppuccin, Nord, Dracula and the others are colour schemes, not platforms. None of them states a toolbar, dialog or status-bar padding. Those were `0.0` and become `None`:
+Reading every "(none)" as unstated (§3) changes what native presets draw too, not only the colour-scheme presets:
 
-- gpui-component's dialog and status bar draw their own padding, instead of a zero nobody chose.
-- The toolbar gets the showcase's own padding (§5, point 6), because an application-drawn row has no toolkit default.
+- The popover and hover card were padded 0 on every preset, because no preset states a popover padding and the resolver filled in 0. They now draw gpui-component's own `p_3` (popover.rs:284). The showcase's content inside them adds no padding of its own.
+- On the colour-scheme presets, the dialog and status bar draw gpui-component's own padding instead of a zero nobody chose, and the toolbar gets the showcase's own padding (§5, point 6).
+- The input, select and combobox draw their stated padding for the first time.
+- Control heights stay the platform's at text scale 1; only scaled text changes them.
 
-These are visible changes, and corrections.
+These are corrections, and the screenshot review covers them.
 
 ## 9. The showcase's chrome UX
 
@@ -219,28 +225,25 @@ The preset and mode stay in the status bar. The version leaves the status bar, b
 **The Sidebar's icons overlap because of their size.**
 
 - The page icons are sized with `icon_size_panel` (demo.rs:472), which is 48px on KDE (kde-breeze.toml:61). KDE's "Panel" group is the Plasma panel.
-- A `SidebarMenuItem` row is 28px tall (`h_7`, sidebar/menu.rs:308), and the rail is 48px wide (sidebar/mod.rs:28), so a 48px icon cannot fit.
+- An expanded `SidebarMenuItem` row is `h_7` (sidebar/menu.rs:308): 1.75 rem, which is 28px at a 16px rem and about 23px at KDE's 13.33px font. The rail is 48px wide (sidebar/mod.rs:28). A 48px icon fits neither.
 - The sidebar icon size is `icon_size_small`. Platform-facts' `small` row names macOS's value "sidebar" (platform-facts.md:1122), and it is 16 on KDE, Windows and GNOME.
 
 ## 10. Decisions
 
-- **D1. Unstated stays unstated.** An unstated sizing value is `None` from the resolved model, through the connector, to the toolkit's default. A "(none)" that says the thing does not exist is `0`. A control's height is laid out from the padding actually drawn.
-- **D2. The gate.** For padding and `toolbar.bar_height`, native themes state every value platform-facts documents. A gate enforces this on both paths:
+- **D1. Unstated stays unstated.** An unstated sizing value is `None` from the resolved model, through the connector, to the toolkit's default. Only a number in platform-facts is a stated value; a "(none)" with a remark is not. A control is the platform's height at text scale 1, and is laid out from its drawn text and padding when text is scaled.
+- **D2. The gate.** For padding, `toolbar.bar_height` and `toolbar.item_gap`, native themes state every value platform-facts documents. A gate enforces this on both paths:
   - the static preset;
   - the live merge: full preset, then `-live` preset, then reader constants.
 
   The reader constants move outside feature and OS gates, so every run sees them. Other sizing fields are a recorded follow-up (§7).
 - **D3. Padding is per side.** The model stores only sides. The TOML axis keys are parse-time shorthand, and stating an axis key together with one of its sides is an error. Merging stays per field, with the overlay winning.
-- **D4. Status-bar padding** is researched from upstream toolkit sources for all four platforms and recorded in platform-facts §2.14. Where no source states it, the reason decides between `None` and `0` (§3).
-- **D5. Panel toggles** live in the status bar. The left one collapses its panel to the rail; the right one hides its panel. Both are our own buttons, with icons from the chosen set.
+- **D4. Status-bar padding** is researched from upstream toolkit sources for all four platforms and recorded in platform-facts §2.14. A platform without a sourced number is **(none)**, with the reason, and stays unstated.
+- **D5. Panel toggles** live in the status bar. The left one collapses its panel to the rail; the right one hides its panel. Both are our own buttons, with icons from the chosen set, and KDE's `PanelRight` icon becomes Breeze's `sidebar-expand-right`.
 - **D6. Theme settings** live, labelled, in the Sidebar header, and are hidden in the rail. The toolbar holds the actions. Where the theme states no gap or padding for these application-drawn elements, the showcase uses its own named constant and says so.
 - **D7. Title.** One constant, `native-theme-gpui <version> showcase`, serves the title-bar label, the OS window title and the screenshot capture's window lookup.
-- **D8. The resolved border type is split** into `ResolvedDefaultsBorder` and `ResolvedWidgetBorder`. The shared `ResolvedBorderSpec` makes every widget border carry a `corner_radius_lg` and an `opacity` resolved to an invented `0.0` (validate_helpers.rs:280-282, :332-334). It would also make `defaults.border` carry a padding that is always `None`. No connector reads either widget field.
+- **D8. The resolved border type is split** into `ResolvedDefaultsBorder` and `ResolvedWidgetBorder`. The shared `ResolvedBorderSpec` makes every widget border carry a `corner_radius_lg` and an `opacity` resolved to an invented `0.0` (validate_helpers.rs:279-281, :333-335). It would also make `defaults.border` carry a padding that is always `None`. No connector reads either widget field.
 - **D9. Public API.** These breaking changes are allowed before 1.0, with no migration guide.
   - New: `ResolvedPadding`, `ResolvedDefaultsBorder`, `ResolvedWidgetBorder`, and `WidgetBorderSpec`'s four side fields.
-  - Removed: `ResolvedBorderSpec`; `WidgetBorderSpec`'s `padding_horizontal`/`padding_vertical` fields (the TOML keys stay); `geometry::control_height`, which layout replaces.
-  - Changed:
-    - `toolbar.bar_height` becomes `Option<f32>`.
-    - `native_theme_gpui::dialog_content_padding` returns the dialog's `ResolvedPadding`.
-    - `geometry::input_height` returns the input's minimum height, to use with `min_h`.
+  - Removed: `ResolvedBorderSpec`; `WidgetBorderSpec`'s `padding_horizontal`/`padding_vertical` fields (the TOML keys stay); `geometry::control_height`, which layout replaces; `native_theme_gpui::dialog_content_padding`, which nothing but its own test calls (lib.rs:1420) and which the resolved theme already exposes.
+  - Changed: `toolbar.bar_height` becomes `Option<f32>`; `geometry::input_height` returns the platform's input height, the height `geometry::input` draws at text scale 1.
   - Unchanged: iced's `button_padding` and `input_padding` keep their `Padding` return type.
