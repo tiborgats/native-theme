@@ -1048,8 +1048,8 @@ const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[
         "app.rs",
         "AppMenuBar::new",
         "returns an Entity<AppMenuBar> (menu/app_menu_bar.rs, AppMenuBar::new), which \
-         the view keeps so that an open menu outlives the frame; demo::title_bar \
-         draws it and reports it",
+         the view keeps so that an open menu outlives the frame; demo::menu_bar or \
+         demo::title_bar draws it and reports it",
     ),
     (
         "app.rs",
@@ -1077,12 +1077,6 @@ const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[
         "the window's root view: upstream finds its Dialogs, Sheets and \
          Notifications through window.root::<Root>() (root.rs, Root::update), so the \
          window has to be a Root, which no element can wrap",
-    ),
-    (
-        "main.rs",
-        "TitleBar::window_options",
-        "returns the WindowOptions a TitleBar window opens with (title_bar.rs, \
-         TitleBar::window_options), not a TitleBar",
     ),
 ];
 

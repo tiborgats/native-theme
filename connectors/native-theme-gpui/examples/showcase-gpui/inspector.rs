@@ -196,69 +196,11 @@ impl Inspector {
             None => Vec::new(),
         };
 
-        // `Root::new` sets `bordered` (root.rs:117) and `Root::render` wraps
-        // everything it holds in `window_border()` (root.rs:605), so the
-        // window's frame is a WindowBorder no page draws. Its client-side arm
-        // alone sets the client inset (window_border.rs:147-149).
-        let window_decorations = window.window_decorations();
-        let decorations = match window_decorations {
-            gpui::Decorations::Server => "server-side: the compositor draws the frame".to_string(),
-            gpui::Decorations::Client { tiling } => {
-                format!("client-side, tiled {tiling:?}")
-            }
-        };
-        let inset = match window.client_inset() {
-            Some(inset) => format!("{}px, set by the WindowBorder", inset.as_f32()),
-            None => "none: nothing has called set_client_inset".to_string(),
-        };
-        let paddings = window_paddings(window);
-        let frame_insets = format!(
-            "top {}px, right {}px, bottom {}px, left {}px (window_border.rs, window_paddings)",
-            paddings.top.as_f32(),
-            paddings.right.as_f32(),
-            paddings.bottom.as_f32(),
-            paddings.left.as_f32(),
+        let window_rows = window_rows(
+            window.window_decorations(),
+            window.client_inset(),
+            window_paddings(window),
         );
-        // The Server arm hands back the bare backdrop (window_border.rs:172);
-        // only the client-side arm lays the hit zones (`:270-280`).
-        let resize_band = match window_decorations {
-            gpui::Decorations::Server => {
-                "the compositor's: the WindowBorder lays none (window_border.rs, WindowBorder)"
-            }
-            gpui::Decorations::Client { .. } => {
-                "the WindowBorder's, along each edge not tiled (window_border.rs, resize_hit_zones)"
-            }
-        };
-        let window_rows = vec![
-            ("decorations", decorations),
-            ("client inset", inset),
-            ("frame insets", frame_insets),
-            ("resize band", resize_band.to_string()),
-            (
-                "frame fill",
-                "none: the WindowBorder's backdrop and frame are transparent (window_border.rs, WindowBorder)"
-                    .to_string(),
-            ),
-            (
-                "frame",
-                "a WindowBorder, which Root draws around everything it holds (root.rs, Root)"
-                    .to_string(),
-            ),
-            (
-                "frame colour",
-                "a literal grey, l=0.2 dark / l=0.8 light, that no theme field reaches (window_border.rs, WindowBorder)"
-                    .to_string(),
-            ),
-            (
-                "frame shadow",
-                "a literal two-layer box shadow (window_border.rs, WindowBorder)".to_string(),
-            ),
-            (
-                "server-side",
-                "nothing is drawn: the compositor owns the frame (window_border.rs, WindowBorder)"
-                    .to_string(),
-            ),
-        ];
 
         with_gap(v_flex(), gap)
             .child(section("Theme config"))
@@ -275,6 +217,86 @@ impl Inspector {
                     .into_iter()
                     .map(|(what, value)| row(what, value, cx)),
             )
+    }
+}
+
+/// The Theme tab's Window section (spec S8): what draws the window's frame
+/// under `window_decorations`, the decorations the window was granted, with
+/// the client inset and the frame's insets the window reports. Under
+/// server-side decorations the window manager draws the frame; under
+/// client-side ones, `Root`'s client frame and the window's TitleBar do.
+pub(crate) fn window_rows(
+    window_decorations: gpui::Decorations,
+    inset: Option<gpui::Pixels>,
+    paddings: gpui::Edges<gpui::Pixels>,
+) -> Vec<(&'static str, String)> {
+    // `Root::new` sets `bordered` (root.rs:117) and `Root::render` wraps
+    // everything it holds in `window_border()` (root.rs:605). Its client-side
+    // arm alone sets the client inset (window_border.rs:147-149) and draws a
+    // frame; the Server arm hands back the bare backdrop (window_border.rs:172)
+    // and lays no hit zones (`:270-280`).
+    let inset = match inset {
+        Some(inset) => format!("{}px, set by the WindowBorder", inset.as_f32()),
+        None => "none: nothing has called set_client_inset".to_string(),
+    };
+    let frame_insets = format!(
+        "top {}px, right {}px, bottom {}px, left {}px (window_border.rs, window_paddings)",
+        paddings.top.as_f32(),
+        paddings.right.as_f32(),
+        paddings.bottom.as_f32(),
+        paddings.left.as_f32(),
+    );
+    match window_decorations {
+        gpui::Decorations::Server => vec![
+            (
+                "decorations",
+                "server-side: the window manager draws the frame".to_string(),
+            ),
+            (
+                "frame",
+                "the window manager's: the title bar, the window controls, the corners and the shadow. Root's WindowBorder draws nothing (window_border.rs, WindowBorder)"
+                    .to_string(),
+            ),
+            ("client inset", inset),
+            ("frame insets", frame_insets),
+            (
+                "resize band",
+                "the window manager's: the WindowBorder lays none (window_border.rs, WindowBorder)"
+                    .to_string(),
+            ),
+        ],
+        gpui::Decorations::Client { tiling } => vec![
+            (
+                "decorations",
+                format!("client-side, tiled {tiling:?}: the window manager leaves the frame to the application"),
+            ),
+            (
+                "frame",
+                "Root's client frame: a WindowBorder, which Root draws around everything it holds (root.rs, Root), with the window's TitleBar at its top"
+                    .to_string(),
+            ),
+            ("client inset", inset),
+            ("frame insets", frame_insets),
+            (
+                "resize band",
+                "the WindowBorder's, along each edge not tiled (window_border.rs, resize_hit_zones)"
+                    .to_string(),
+            ),
+            (
+                "frame fill",
+                "none: the WindowBorder's backdrop and frame are transparent (window_border.rs, WindowBorder)"
+                    .to_string(),
+            ),
+            (
+                "frame colour",
+                "a literal grey, l=0.2 dark / l=0.8 light, that no theme field reaches (window_border.rs, WindowBorder)"
+                    .to_string(),
+            ),
+            (
+                "frame shadow",
+                "a literal two-layer box shadow (window_border.rs, WindowBorder)".to_string(),
+            ),
+        ],
     }
 }
 

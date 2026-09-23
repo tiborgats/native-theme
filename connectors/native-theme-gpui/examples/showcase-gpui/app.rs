@@ -1,9 +1,9 @@
 //! The showcase's state, theme switching, and the view that renders it.
 
 use gpui::{
-    Action, App, Context, Entity, FocusHandle, Hsla, ImageSource, IntoElement, KeyBinding, Menu,
-    ParentElement, Pixels, Render, SharedString, Styled, Subscription, Task, Window, actions, div,
-    prelude::*,
+    Action, App, Context, Decorations, Entity, FocusHandle, Hsla, ImageSource, IntoElement,
+    KeyBinding, Menu, ParentElement, Pixels, Render, SharedString, Styled, Subscription, Task,
+    Window, actions, div, prelude::*,
 };
 use gpui_component::{
     ActiveTheme, GlobalState, IconName, ResizableState, Root,
@@ -219,8 +219,14 @@ pub(crate) struct Showcase {
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
     pub(crate) status_title_drawn: Option<SharedString>,
-    /// The title bar's menus.
+    /// The application's menus, in the menu-bar row or in the title bar.
     pub(crate) menu_bar: Entity<AppMenuBar>,
+    /// The decorations the self-tests say the window was granted. gpui's test
+    /// platform grants server-side decorations whatever it is asked for (gpui-pre
+    /// platform.rs, `PlatformWindow::window_decorations`), so this is how a test
+    /// reaches the client-side arm of `Showcase::frame`.
+    #[cfg(test)]
+    pub(crate) frame_for_test: Option<Decorations>,
     /// The command palette's query and highlighted row (spec §2.8).
     pub(crate) palette_state: Entity<CommandState>,
     /// The view's focus, so an action dispatched with nothing else focused
@@ -540,6 +546,17 @@ impl Showcase {
             ),
             _ => self.icon_set_name.clone(),
         }
+    }
+
+    /// The decorations the window was granted (spec S8), which decide who
+    /// draws its frame: the window manager, or the application with `Root`'s
+    /// client frame and a `TitleBar`.
+    pub(crate) fn frame(&self, window: &Window) -> Decorations {
+        #[cfg(test)]
+        if let Some(frame) = self.frame_for_test {
+            return frame;
+        }
+        window.window_decorations()
     }
 
     /// The chrome's icon for gpui-component's `icon`, from the chosen icon
@@ -1124,6 +1141,8 @@ impl Showcase {
             inspector,
             status_title_drawn: None,
             menu_bar,
+            #[cfg(test)]
+            frame_for_test: None,
             palette_state,
             focus_handle,
             _refocus,
@@ -1619,8 +1638,9 @@ impl Render for Showcase {
             .map(SharedString::from);
         self.status_title_drawn = shown.clone();
 
-        // Main layout: the title bar, the toolbar, the body and the status
-        // bar, and above them the three layers `Root` keeps but does not draw.
+        // Main layout: the title bar or the menu-bar row (spec S8), the
+        // toolbar, the body and the status bar, and above them the three
+        // layers `Root` keeps but does not draw.
         // `Root::render` renders only the view it was given (root.rs,
         // Root::render), so a dialog, a sheet or a notification the showcase
         // pushes reaches the screen only because these three are here --
@@ -1646,7 +1666,7 @@ impl Render for Showcase {
             .child(
                 v_flex()
                     .size_full()
-                    .child(chrome::title_bar(self, cx))
+                    .children(chrome::window_top(self, self.frame(window), cx))
                     .child(chrome::toolbar(self, cx))
                     .child(
                         h_flex()
@@ -1654,7 +1674,7 @@ impl Render for Showcase {
                             .flex_1()
                             // A flex item's minimum height is its content's
                             // unless it clips; the body has to fit under the
-                            // title bar, not push the window taller.
+                            // toolbar, not push the window taller.
                             .overflow_hidden()
                             .child(div().flex_1().min_w_0().h_full().child(body)),
                     )

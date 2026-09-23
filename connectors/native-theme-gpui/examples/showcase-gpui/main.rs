@@ -47,7 +47,7 @@ use gpui::{
     App, Bounds, Div, IntoElement, ParentElement, Pixels, SharedString, WindowBounds,
     WindowDecorations, WindowOptions, div, prelude::*, px, size,
 };
-use gpui_component::{IconName, Root, TitleBar, select::SearchableVec};
+use gpui_component::{IconName, Root, select::SearchableVec};
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use {gpui::Window, std::time::Duration};
 
@@ -215,12 +215,19 @@ pub(crate) fn name_window(window: &mut gpui::Window) {
     window.set_window_title(WINDOW_TITLE);
 }
 
-/// The debug selector the window's title bar carries, so
-/// `the_title_bar_is_the_top_of_the_window` can see where it was laid out.
+/// The debug selector the window's title bar carries, drawn where the window
+/// was granted client-side decorations, so
+/// `under_client_decorations_the_title_bar_holds_the_menus` can see where it
+/// was laid out.
 pub(crate) const CHROME_TITLE_BAR: &str = "chrome-title-bar";
 
-/// The debug selector the AppMenuBar inside the title bar carries.
+/// The debug selector the AppMenuBar carries, in the menu-bar row or in the
+/// title bar.
 pub(crate) const CHROME_APP_MENU_BAR: &str = "chrome-app-menu-bar";
+
+/// The debug selector of the menu-bar row at the top of a window whose frame
+/// the window manager draws, above the toolbar (spec S8).
+pub(crate) const CHROME_MENU_BAR: &str = "chrome-menu-bar";
 
 /// The debug selector the window's toolbar carries, so
 /// `the_toolbar_is_the_models_toolbar` can measure it.
@@ -434,6 +441,9 @@ pub(crate) const LAYOUT_BREADCRUMB: &str = "layout-breadcrumb";
 pub(crate) const LAYOUT_COLLAPSIBLE: &str = "layout-collapsible";
 pub(crate) const LAYOUT_COLLAPSIBLE_TOGGLE: &str = "layout-collapsible-toggle";
 pub(crate) const LAYOUT_COLLAPSIBLE_CONTENT: &str = "layout-collapsible-content";
+/// The id and debug selector of the Layout page's TitleBar sample, drawn
+/// while the window manager draws the window's own frame (spec S8).
+pub(crate) const LAYOUT_TITLE_BAR: &str = "layout-title-bar";
 /// The ids and debug selectors of the Layout page's two Sidebar samples,
 /// expanded and collapsed, and of their items, as `(label, icon, id in the
 /// expanded sample, id in the collapsed one)`, which
@@ -525,15 +535,25 @@ pub(crate) fn probe(selector: &'static str, control: impl IntoElement) -> Div {
     div().debug_selector(move || selector.into()).child(control)
 }
 
-/// The window the showcase opens at `bounds`: upstream's options for a
-/// window that renders a `TitleBar` (title_bar.rs, `TitleBar::window_options`),
-/// asking to draw its own decorations, so the `TitleBar` is the window's title
-/// bar (spec §1.2). The self-tests open their windows with it too.
+/// The window the showcase opens at `bounds`, asking the window manager to
+/// draw its frame -- title bar, window controls, corners and shadow -- so
+/// they look native (spec S8). The self-tests open their windows with it too.
+///
+/// gpui's default options keep the system's title bar: macOS and Windows
+/// hide it only for a titlebar that `appears_transparent` (gpui-pre-macos
+/// window.rs, `MacWindow::open`; gpui-pre-windows window.rs,
+/// `WindowsWindow::new`), and neither reports anything but server-side
+/// decorations (gpui-pre platform.rs, `PlatformWindow::window_decorations`).
+/// So nothing of `TitleBar::window_options` applies: its transparent
+/// titlebar, traffic-light position and title-bar drag are for a window whose
+/// `TitleBar` is its title bar on those two, and the Linux backends read no
+/// titlebar option but the title. A Linux compositor that grants no
+/// server-side decorations still gets the `TitleBar` (`Showcase::frame`).
 pub(crate) fn window_options(bounds: Bounds<Pixels>) -> WindowOptions {
     WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
-        window_decorations: Some(WindowDecorations::Client),
-        ..TitleBar::window_options()
+        window_decorations: Some(WindowDecorations::Server),
+        ..WindowOptions::default()
     }
 }
 

@@ -1,8 +1,8 @@
-//! The window's chrome: title bar, menus, toolbar, side panel, page tabs, status bar and overlays.
+//! The window's chrome: title bar or menu-bar row, menus, toolbar, side panel, page tabs, status bar and overlays.
 
 use gpui::{
-    Action, App, InteractiveElement as _, IntoElement, Menu, MenuItem, Pixels, SharedString,
-    Window, px,
+    Action, AnyElement, App, Decorations, InteractiveElement as _, IntoElement, Menu, MenuItem,
+    Pixels, SharedString, Window, px,
 };
 use gpui_component::{IconName, WindowExt as _};
 use native_theme_gpui::{ActiveNativeTheme as _, geometry};
@@ -15,11 +15,11 @@ use crate::app::{
 use crate::demo::{SeparatorKind, TabBarKind};
 use crate::support::{defined_size, preset_items};
 use crate::{
-    CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_PAGE_TABS,
-    CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE, CHROME_STATUS_BAR,
-    CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES,
-    CHROME_TOOLBAR_RELOAD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME, WINDOW_TITLE, demo,
-    demo::PaletteEntry,
+    CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR,
+    CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE,
+    CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE,
+    CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
+    PROBE_ICON_THEME, WINDOW_TITLE, demo, demo::PaletteEntry,
 };
 
 /// The showcase's application menus (spec §2.2), built fresh for each
@@ -51,12 +51,37 @@ pub(crate) fn menus() -> Vec<Menu> {
     ]
 }
 
-/// The window's title bar (spec §2.1, §3.4): this crate's name and version,
-/// the window's title, and the application's menus where the platform has no
-/// menu bar of its own.
-pub(crate) fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
+/// The top of the window, by the decorations it was granted, `frame` (spec
+/// S8). Where the window manager draws the frame, the menu-bar row -- none on
+/// macOS, whose menus are in the system's menu bar. Where it leaves the
+/// frame to the application, the window's TitleBar.
+pub(crate) fn window_top(app: &Showcase, frame: Decorations, cx: &App) -> Option<AnyElement> {
+    match frame {
+        Decorations::Client { .. } => Some(title_bar(app, cx).into_any_element()),
+        Decorations::Server if cfg!(target_os = "macos") => None,
+        Decorations::Server => Some(menu_bar(app, cx).into_any_element()),
+    }
+}
+
+/// The window's title bar under client-side decorations (spec §2.1, §3.4,
+/// S8): this crate's name and version, the window's title, and the
+/// application's menus where the platform has no menu bar of its own.
+fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
     demo::title_bar(&app.info_ui, cx, WINDOW_TITLE, app.menu_bar.clone())
         .debug_selector(|| CHROME_TITLE_BAR.into())
+}
+
+/// The menu-bar row under the window manager's frame (spec S8): the
+/// application's menus at the top of the window, padded by the installed
+/// layout's `container_margin`, as the toolbar under it is.
+fn menu_bar(app: &Showcase, cx: &App) -> impl IntoElement {
+    demo::menu_bar(
+        &app.info_ui,
+        cx,
+        geometry::container_margin(&app.layout),
+        app.menu_bar.clone(),
+    )
+    .debug_selector(|| CHROME_MENU_BAR.into())
 }
 
 /// The installed preset, the default one by the platform preset it stands
@@ -70,9 +95,10 @@ fn preset_and_mode(app: &Showcase) -> (&str, &str) {
     (preset, if app.is_dark { "dark" } else { "light" })
 }
 
-/// The window's toolbar (spec §2.3, §3.3), under the title bar: buttons for
-/// three of the actions -- the command palette, a theme reload and the
-/// Preferences sheet -- their icons of the chosen icon theme.
+/// The window's toolbar (spec §2.3, §3.3, S8), under the title bar or the
+/// menu-bar row: buttons for three of the actions -- the command palette, a
+/// theme reload and the Preferences sheet -- their icons of the chosen icon
+/// theme.
 pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
     let ui = &app.info_ui;
     let set = app.icon_set_label();

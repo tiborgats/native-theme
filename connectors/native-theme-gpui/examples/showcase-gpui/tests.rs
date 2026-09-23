@@ -36,7 +36,7 @@ use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
     BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
     CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE, CHROME_LABEL_ICON_THEME,
-    CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_PAGE_TABS, CHROME_SIDE_PANEL,
+    CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR, CHROME_PAGE_TABS, CHROME_SIDE_PANEL,
     CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE, CHROME_STATUS_BAR,
     CHROME_THEME_SETTINGS, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE,
     CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL,
@@ -48,15 +48,16 @@ use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
-    LAYOUT_SIDEBAR_ITEMS, LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
-    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
-    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM,
-    OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT,
-    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
-    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME,
-    PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page,
-    STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2,
-    TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
+    LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK,
+    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
+    OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER,
+    OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT,
+    OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG,
+    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
+    PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE,
+    TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
+    WINDOW_SIZE, WINDOW_TITLE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -85,15 +86,25 @@ fn open(
     cx: &mut TestAppContext,
     window_size: gpui::Size<Pixels>,
 ) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
+    open_with(
+        cx,
+        crate::window_options(Bounds {
+            origin: Point::default(),
+            size: window_size,
+        }),
+    )
+}
+
+/// [`open`], in a window opened with `options`.
+fn open_with(
+    cx: &mut TestAppContext,
+    options: gpui::WindowOptions,
+) -> (Entity<Showcase>, Entity<Root>, VisualTestContext) {
     cx.update(|cx| {
         gpui_kit::init(cx);
         crate::app::init(cx);
     });
     let view: Rc<RefCell<Option<Entity<Showcase>>>> = Rc::new(RefCell::new(None));
-    let options = crate::window_options(Bounds {
-        origin: Point::default(),
-        size: window_size,
-    });
     let handle = cx
         .update(|cx| {
             cx.open_window(options, {
@@ -656,30 +667,174 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
     );
 }
 
-/// The TitleBar is the window's own title bar (spec §1.2, §2.1): the first
-/// thing in the window, across its whole width, with the AppMenuBar inside it
-/// where the platform has no menu bar of its own.
-///
-/// The test platform's window is server-decorated whatever it is asked for
-/// (gpui-pre `platform.rs`, `PlatformWindow::window_decorations`), so `Root`'s
-/// `window_border` adds no inset here and the bar's top is the window's.
+/// The window asks the window manager to draw its frame (spec S8): it
+/// requests server-side decorations, and leaves the system's title bar in
+/// place on macOS and Windows, which hide it only for a titlebar that
+/// `appears_transparent` (gpui-pre-macos window.rs, `MacWindow::open`;
+/// gpui-pre-windows window.rs, `WindowsWindow::new`) -- the option
+/// `TitleBar::window_options` sets for a window that draws its own
+/// (title_bar.rs, `TitleBar::title_bar_options`).
 #[gpui::test]
-fn the_title_bar_is_the_top_of_the_window(cx: &mut TestAppContext) {
+fn the_window_asks_the_window_manager_for_its_frame(_cx: &mut TestAppContext) {
     let options = crate::window_options(Bounds {
         origin: Point::default(),
         size: WINDOW_SIZE,
     });
     assert_eq!(
         options.window_decorations,
-        Some(gpui::WindowDecorations::Client),
-        "the window does not ask to draw its own decorations"
+        Some(gpui::WindowDecorations::Server),
+        "the window does not ask the window manager to draw its frame"
     );
     assert!(
-        options.app_owns_titlebar_drag,
-        "the window options are not TitleBar::window_options"
+        options
+            .titlebar
+            .as_ref()
+            .is_some_and(|titlebar| !titlebar.appears_transparent),
+        "the window hides the system's title bar on macOS and Windows"
     );
+    assert!(
+        !options.app_owns_titlebar_drag,
+        "the window claims the title bar's drag, which only a window drawing its own TitleBar has"
+    );
+}
 
-    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+/// Opened asking for server-side decorations, the test window is granted
+/// them, and the chrome is the one for a frame the window manager draws.
+#[gpui::test]
+fn a_window_asking_for_server_decorations_is_granted_them(cx: &mut TestAppContext) {
+    frame_under_request(cx, gpui::WindowDecorations::Server);
+}
+
+/// Opened asking for client-side decorations, the test window is granted
+/// server-side ones: gpui's test platform keeps the default
+/// `PlatformWindow::window_decorations` (gpui-pre platform.rs), which
+/// answers `Decorations::Server` whatever was requested. The client-side
+/// arm is reached through `Showcase::frame_for_test` instead
+/// (`under_client_decorations_the_title_bar_holds_the_menus`).
+#[gpui::test]
+fn a_window_asking_for_client_decorations_is_granted_server_ones_here(cx: &mut TestAppContext) {
+    frame_under_request(cx, gpui::WindowDecorations::Client);
+}
+
+/// Open the showcase asking for `request`, check the test platform granted
+/// server-side decorations, and that the chrome is the one for a frame the
+/// window manager draws.
+fn frame_under_request(cx: &mut TestAppContext, request: gpui::WindowDecorations) {
+    let options = gpui::WindowOptions {
+        window_decorations: Some(request),
+        ..crate::window_options(Bounds {
+            origin: Point::default(),
+            size: WINDOW_SIZE,
+        })
+    };
+    let (_showcase, _root, mut cx) = open_with(cx, options);
+    let granted = cx.update(|window, _cx| window.window_decorations());
+    assert_eq!(
+        granted,
+        gpui::Decorations::Server,
+        "asked for {request:?}, the test platform granted {granted:?}"
+    );
+    server_chrome(&mut cx);
+}
+
+/// The chrome of a window whose frame the window manager draws (spec S8):
+/// no TitleBar, and at the top of the window, across its whole width, the
+/// menu-bar row with the AppMenuBar in it, the toolbar right under it. On
+/// macOS the menus are in the system's menu bar and there is no row.
+fn server_chrome(cx: &mut VisualTestContext) {
+    assert_eq!(
+        cx.debug_bounds(CHROME_TITLE_BAR),
+        None,
+        "a TitleBar is drawn, and the window manager draws the window's title bar"
+    );
+    let toolbar = bounds_of(cx, CHROME_TOOLBAR);
+    if cfg!(target_os = "macos") {
+        assert_eq!(
+            cx.debug_bounds(CHROME_MENU_BAR),
+            None,
+            "a menu-bar row is drawn, and the menus are in the system's menu bar"
+        );
+        assert_eq!(
+            toolbar.top(),
+            px(0.),
+            "the toolbar starts at {:?}",
+            toolbar.top()
+        );
+        return;
+    }
+    let row = bounds_of(cx, CHROME_MENU_BAR);
+    assert_eq!(
+        row.top(),
+        px(0.),
+        "the menu-bar row starts at {:?}",
+        row.top()
+    );
+    assert_eq!(
+        row.left(),
+        px(0.),
+        "the menu-bar row starts at {:?}",
+        row.left()
+    );
+    assert_eq!(
+        row.size.width, WINDOW_SIZE.width,
+        "the menu-bar row is {:?} wide in a {:?} window",
+        row.size.width, WINDOW_SIZE.width
+    );
+    assert_eq!(
+        toolbar.top(),
+        row.bottom(),
+        "the toolbar is not right under the menu-bar row"
+    );
+    let menus = bounds_of(cx, CHROME_APP_MENU_BAR);
+    assert!(
+        menus.size.width > px(0.) && menus.size.height > px(0.),
+        "the menu bar laid out at {:?}",
+        menus.size
+    );
+    assert!(
+        within(menus, row),
+        "the menu bar at {menus:?} is not inside the menu-bar row at {row:?}"
+    );
+}
+
+/// Say the window was granted `frame`, and draw the frame that follows.
+fn grant(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, frame: gpui::Decorations) {
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.frame_for_test = Some(frame);
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// Client-side decorations, as the showcase is granted them where the
+/// window manager leaves the frame to the application.
+const CLIENT_SIDE: gpui::Decorations = gpui::Decorations::Client {
+    tiling: gpui::Tiling {
+        top: false,
+        left: false,
+        right: false,
+        bottom: false,
+    },
+};
+
+/// Granted client-side decorations -- where a compositor draws none, as
+/// GNOME's Mutter does for a Wayland client -- the TitleBar is the window's
+/// title bar (spec S8): the first thing in the window, across its whole
+/// width, with the AppMenuBar inside it where the platform has no menu bar
+/// of its own, and no menu-bar row. The Layout page then draws no TitleBar
+/// sample: the window's own title bar is one.
+///
+/// The test platform grants server-side decorations only, so the grant is
+/// the test's (`Showcase::frame_for_test`), and `Root`'s `window_border`,
+/// which reads the window's own answer, adds no inset: the bar's top is the
+/// window's.
+#[gpui::test]
+fn under_client_decorations_the_title_bar_holds_the_menus(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    grant(&mut cx, &showcase, CLIENT_SIDE);
     let bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
     assert_eq!(bar.top(), px(0.), "the title bar starts at {:?}", bar.top());
     assert_eq!(
@@ -694,6 +849,16 @@ fn the_title_bar_is_the_top_of_the_window(cx: &mut TestAppContext) {
         bar.size.width, WINDOW_SIZE.width
     );
     assert!(bar.size.height > px(0.), "the title bar has no height");
+    assert_eq!(
+        cx.debug_bounds(CHROME_MENU_BAR),
+        None,
+        "a menu-bar row is drawn beside a title bar"
+    );
+    assert_eq!(
+        bounds_of(&mut cx, CHROME_TOOLBAR).top(),
+        bar.bottom(),
+        "the toolbar is not right under the title bar"
+    );
 
     if cfg!(not(target_os = "macos")) {
         let menus = bounds_of(&mut cx, CHROME_APP_MENU_BAR);
@@ -707,14 +872,121 @@ fn the_title_bar_is_the_top_of_the_window(cx: &mut TestAppContext) {
             "the menu bar at {menus:?} is not inside the title bar at {bar:?}"
         );
     }
+
+    show(&mut cx, &showcase, Page::Layout);
+    assert_eq!(
+        cx.debug_bounds(LAYOUT_TITLE_BAR),
+        None,
+        "the Layout page draws a TitleBar sample under the window's own TitleBar"
+    );
+}
+
+/// While the window manager draws the window's frame, the Layout page shows
+/// a TitleBar sample (spec S8), which reports itself, and leaves the window
+/// alone: a double click on it zooms nothing and a drag moves nothing. The
+/// test window's `zoom` and `start_window_move` are `unimplemented!()`
+/// (gpui-pre platform/test/window.rs), so a sample that passed either on to
+/// the window would fail here.
+#[gpui::test]
+fn the_title_bar_sample_is_drawn_and_leaves_the_window_alone(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    let sample = bounds_of(&mut cx, LAYOUT_TITLE_BAR);
+    assert!(
+        sample.size.width > px(0.) && sample.size.height > px(0.),
+        "the TitleBar sample laid out at {:?}",
+        sample.size
+    );
+    let at = sample.center();
+    hover(&mut cx, at);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("TitleBar"),
+        "the pointer settled on the TitleBar sample, and the inspector does not show its info"
+    );
+
+    let modifiers = Modifiers::default();
+    cx.simulate_click(at, modifiers);
+    cx.simulate_event(gpui::MouseDownEvent {
+        button: MouseButton::Left,
+        position: at,
+        modifiers,
+        click_count: 2,
+        first_mouse: false,
+    });
+    cx.simulate_event(gpui::MouseUpEvent {
+        button: MouseButton::Left,
+        position: at,
+        modifiers,
+        click_count: 2,
+    });
+    cx.run_until_parked();
+    cx.simulate_mouse_down(at, MouseButton::Left, modifiers);
+    cx.simulate_mouse_move(at + point(px(24.), px(0.)), MouseButton::Left, modifiers);
+    cx.simulate_mouse_up(at + point(px(24.), px(0.)), MouseButton::Left, modifiers);
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert!(
+        cx.debug_bounds(LAYOUT_TITLE_BAR).is_some(),
+        "the TitleBar sample is gone after a click and a drag"
+    );
+}
+
+/// The Theme tab's Window section names the decorations the window was
+/// granted and what draws the frame under them (spec S8): the window
+/// manager's frame, with none of the facts of `Root`'s client frame, or
+/// `Root`'s client frame.
+#[test]
+fn the_theme_tabs_window_section_names_the_mode() {
+    let value = |rows: &[(&str, String)], what: &str| {
+        rows.iter()
+            .find(|(w, _)| *w == what)
+            .map(|(_, v)| v.clone())
+    };
+    let server =
+        crate::inspector::window_rows(gpui::Decorations::Server, None, gpui::Edges::all(px(0.)));
+    assert!(
+        value(&server, "decorations").is_some_and(|v| v.starts_with("server-side")),
+        "the server-side rows do not name the mode: {server:?}"
+    );
+    assert!(
+        value(&server, "frame").is_some_and(|v| v.starts_with("the window manager's")),
+        "the server-side rows do not say the window manager draws the frame: {server:?}"
+    );
+    for client_only in ["frame fill", "frame colour", "frame shadow"] {
+        assert_eq!(
+            value(&server, client_only),
+            None,
+            "the server-side rows state {client_only}, a fact of Root's client frame"
+        );
+    }
+    let client =
+        crate::inspector::window_rows(CLIENT_SIDE, Some(px(20.)), gpui::Edges::all(px(20.)));
+    assert!(
+        value(&client, "decorations").is_some_and(|v| v.starts_with("client-side")),
+        "the client-side rows do not name the mode: {client:?}"
+    );
+    assert!(
+        value(&client, "frame").is_some_and(|v| v.starts_with("Root's client frame")),
+        "the client-side rows do not say Root's client frame is drawn: {client:?}"
+    );
+    for client_only in ["frame fill", "frame colour", "frame shadow"] {
+        assert!(
+            value(&client, client_only).is_some(),
+            "the client-side rows do not state {client_only}"
+        );
+    }
 }
 
 /// The window is titled with this crate's name and version (spec §3.4): the
 /// title bar's label, the title the OS shows and the string the Windows
 /// screenshot capture finds the window by are one string. The capture is
 /// Windows-only code; it looks the window up by `WINDOW_TITLE`, which is
-/// checked here. The label is read off the title bar's info, which names the
-/// text it draws.
+/// checked here. The label is read off the info of the TitleBar the window
+/// draws under client-side decorations (spec S8), which names the text it
+/// draws.
 #[gpui::test]
 fn the_window_is_titled_with_the_crates_version(cx: &mut TestAppContext) {
     let expected = format!("native-theme-gpui {} showcase", env!("CARGO_PKG_VERSION"));
@@ -729,6 +1001,7 @@ fn the_window_is_titled_with_the_crates_version(cx: &mut TestAppContext) {
         Some(expected.as_str()),
         "the OS window title is not the crate's name and version"
     );
+    grant(&mut cx, &showcase, CLIENT_SIDE);
     let bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
     hover(&mut cx, bar.center());
     settle(&mut cx);
@@ -781,11 +1054,15 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
                 bar.size.height
             );
         }
-        let title = bounds_of(&mut cx, CHROME_TITLE_BAR);
+        // Under the menu-bar row, which the window manager's frame leaves
+        // at the top of the window, or at the top itself on macOS.
+        let above = cx
+            .debug_bounds(CHROME_MENU_BAR)
+            .map_or(px(0.), |row| row.bottom());
         assert_eq!(
             bar.top(),
-            title.bottom(),
-            "{preset}: the toolbar is not right under the title bar"
+            above,
+            "{preset}: the toolbar is not right under the menu-bar row"
         );
         // The toolbar's first two children: the Command Palette and Reload
         // System Theme buttons.
@@ -2921,35 +3198,39 @@ fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
     }
 }
 
-/// The window's three bars report themselves (spec §4.3.5): the pointer on
-/// an empty stretch of each, clear of the widgets it holds, settles on the
+/// The window's bars report themselves (spec §4.3.5): the pointer on an
+/// empty stretch of each, clear of the widgets it holds, settles on the
 /// bar's own info. In this order a bar that reported nothing would leave the
 /// previous bar's info on show, and fail as surely as the first.
+///
+/// Under the window manager's frame the bars are the toolbar, the menu-bar
+/// row (not on macOS) and the status bar; granted client-side decorations,
+/// the TitleBar is one too (spec S8).
 #[gpui::test]
 fn the_chrome_bars_report_themselves(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let toolbar = bounds_of(&mut cx, CHROME_TOOLBAR);
-    let title_bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
     let status_bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
-    if cfg!(not(target_os = "macos")) {
-        // The title bar's middle is empty only while the menus sit right of it.
-        let menus = bounds_of(&mut cx, CHROME_APP_MENU_BAR);
-        assert!(
-            menus.left() > title_bar.center().x,
-            "the menu bar at {menus:?} reaches the title bar's middle"
-        );
-    }
-    let cases = [
+    let mut cases = vec![
         // The toolbar's items are packed at its start; its end is the row.
         (
             "Toolbar",
             point(toolbar.right() - px(8.), toolbar.center().y),
         ),
-        // Between the label at the start and the menus at the end.
-        ("TitleBar", title_bar.center()),
         // The middle region, which holds no item of this bar's.
         ("StatusBar", status_bar.center()),
     ];
+    if cfg!(not(target_os = "macos")) {
+        let row = bounds_of(&mut cx, CHROME_MENU_BAR);
+        let menus = bounds_of(&mut cx, CHROME_APP_MENU_BAR);
+        // The menus are packed at the row's start; its end is the row.
+        let at = point(row.right() - px(8.), row.center().y);
+        assert!(
+            menus.right() < at.x,
+            "the menu bar at {menus:?} reaches the menu-bar row's end at {row:?}"
+        );
+        cases.insert(1, ("Menu bar", at));
+    }
     for (title, at) in cases {
         hover(&mut cx, at);
         settle(&mut cx);
@@ -2960,6 +3241,26 @@ fn the_chrome_bars_report_themselves(cx: &mut TestAppContext) {
             "the pointer at {at:?} settled, and the inspector does not show the {title}"
         );
     }
+
+    grant(&mut cx, &showcase, CLIENT_SIDE);
+    let title_bar = bounds_of(&mut cx, CHROME_TITLE_BAR);
+    if cfg!(not(target_os = "macos")) {
+        // The title bar's middle is empty only while the menus sit right of it.
+        let menus = bounds_of(&mut cx, CHROME_APP_MENU_BAR);
+        assert!(
+            menus.left() > title_bar.center().x,
+            "the menu bar at {menus:?} reaches the title bar's middle"
+        );
+    }
+    // Between the label at the start and the menus at the end.
+    hover(&mut cx, title_bar.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("TitleBar"),
+        "the pointer at the title bar's middle settled, and the inspector does not show the TitleBar"
+    );
 }
 
 /// Two Buttons of different variants show different infos (spec §4.3.2):

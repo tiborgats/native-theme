@@ -8,81 +8,17 @@ use super::{ColorClaim, WidgetInfo, claim, px_text};
 use crate::demo::{Severity, SheetSide};
 use crate::support::ChromeIcon;
 
-/// The window's `TitleBar` (spec §2.1, §3.4), reading `label`. Its
-/// geometry line is recorded by `native_info` where `demo::title_bar`
+/// The window's `TitleBar` (spec §2.1, §3.4, S8), reading `label`: the
+/// window's title bar where the window was granted client-side decorations.
+/// Its geometry line is recorded by `native_info` where `demo::title_bar`
 /// applies the builder.
 pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
-    let info = WidgetInfo::new("TitleBar")
-        .color(claim(
-            "bg",
-            "title_bar",
-            t.title_bar,
-            "gpui-component/title_bar.rs:340",
-        ))
-        .color(claim(
-            "border",
-            "title_bar_border",
-            t.title_bar_border,
-            "gpui-component/title_bar.rs:338",
-        ));
     // macOS draws no window controls of upstream's (title_bar.rs:254-256).
-    let info = if cfg!(target_os = "macos") {
-        info
-    } else {
-        info.color(claim(
-            "window control text",
-            "foreground",
-            t.foreground,
-            "gpui-component/title_bar.rs:217",
-        ))
-        .color(claim(
-            "control hover",
-            "secondary_hover",
-            t.secondary_hover,
-            "gpui-component/title_bar.rs:181",
-        ))
-        .color(claim(
-            "control hover icon",
-            "secondary_foreground",
-            t.secondary_foreground,
-            "gpui-component/title_bar.rs:172",
-        ))
-        .color(claim(
-            "control pressed",
-            "secondary_active",
-            t.secondary_active,
-            "gpui-component/title_bar.rs:190",
-        ))
-        .color(claim(
-            "close hover",
-            "danger",
-            t.danger,
-            "gpui-component/title_bar.rs:179",
-        ))
-        .color(claim(
-            "close hover icon",
-            "danger_foreground",
-            t.danger_foreground,
-            "gpui-component/title_bar.rs:170",
-        ))
-        .color(claim(
-            "close pressed",
-            "danger_active",
-            t.danger_active,
-            "gpui-component/title_bar.rs:188",
-        ))
-    };
-    info.not_themeable(
-        "height",
-        "TITLE_BAR_HEIGHT, 34px, and settable: TitleBar applies the caller's refinement after it (title_bar.rs, TitleBar). The model states no title-bar height -- our gap. Only the window controls stay 34px wide",
-    )
-    .not_themeable(
-        "fill",
-        "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)",
-    )
+    let info = title_bar_colours(t, cfg!(not(target_os = "macos")));
+    title_bar_notes(info)
     .instance(
         "window",
-        "the window asks to draw its own decorations, on top of TitleBar::window_options (title_bar.rs, TitleBar::window_options), so this bar is the window's title bar",
+        "the window asked the window manager to draw its frame, and was granted client-side decorations instead -- a Wayland compositor that offers none, as GNOME's Mutter, leaves the frame to the application -- so this bar is the window's title bar, and Root draws the rest of the frame (window_border.rs, WindowBorder)",
     )
     .instance(
         "label",
@@ -108,8 +44,158 @@ pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
     )
 }
 
-/// The `AppMenuBar` inside the window's title bar (spec §2.2).
-pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
+/// The Layout page's `TitleBar` sample (spec S8), reading `label`, shown
+/// while the window manager draws the window's frame. Its geometry line is
+/// recorded by `native_info` where `demo::title_bar_sample` applies the
+/// builder.
+pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
+    // Upstream draws its controls on Windows in any window, on Linux only in
+    // a client-decorated one, and on macOS never (title_bar.rs:254-270).
+    let info = title_bar_colours(t, cfg!(target_os = "windows"));
+    title_bar_notes(info)
+        .instance(
+            "sample",
+            "the window manager draws this window's frame, so the window has no TitleBar of its own: this one is drawn as the window's title bar is where the window manager leaves the frame to the application",
+        )
+        .instance(
+            "label",
+            format!("\"{label}\", the window's title, which the window's own TitleBar reads"),
+        )
+        .instance(
+            "pointer",
+            "a box laid over the bar takes the pointer and carries this info. A TitleBar acts on the window it is in -- a drag moves it and a double click zooms it (title_bar.rs, RenderOnce for TitleBar) -- and gpui leaves every hitbox under the box out of the hit test (window.rs, HitboxBehavior), so this one moves, zooms and closes nothing",
+        )
+        .instance(
+            "window controls",
+            if cfg!(target_os = "windows") {
+                "drawn, as upstream draws them in any Windows window (title_bar.rs, WindowControls); the OS would hit-test them as the window's own, and the box keeps them out of that hit test"
+            } else if cfg!(target_os = "macos") {
+                "none: upstream draws none on macOS (title_bar.rs, WindowControls)"
+            } else {
+                "none: upstream draws them only in a client-decorated window, and this one is server-decorated (title_bar.rs, WindowControls)"
+            },
+        )
+}
+
+/// What a `TitleBar` paints: its fill and border, and with `controls` drawn,
+/// its window controls' colours.
+fn title_bar_colours(t: &Theme, controls: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("TitleBar")
+        .color(claim(
+            "bg",
+            "title_bar",
+            t.title_bar,
+            "gpui-component/title_bar.rs:340",
+        ))
+        .color(claim(
+            "border",
+            "title_bar_border",
+            t.title_bar_border,
+            "gpui-component/title_bar.rs:338",
+        ));
+    if !controls {
+        return info;
+    }
+    info.color(claim(
+        "window control text",
+        "foreground",
+        t.foreground,
+        "gpui-component/title_bar.rs:217",
+    ))
+    .color(claim(
+        "control hover",
+        "secondary_hover",
+        t.secondary_hover,
+        "gpui-component/title_bar.rs:181",
+    ))
+    .color(claim(
+        "control hover icon",
+        "secondary_foreground",
+        t.secondary_foreground,
+        "gpui-component/title_bar.rs:172",
+    ))
+    .color(claim(
+        "control pressed",
+        "secondary_active",
+        t.secondary_active,
+        "gpui-component/title_bar.rs:190",
+    ))
+    .color(claim(
+        "close hover",
+        "danger",
+        t.danger,
+        "gpui-component/title_bar.rs:179",
+    ))
+    .color(claim(
+        "close hover icon",
+        "danger_foreground",
+        t.danger_foreground,
+        "gpui-component/title_bar.rs:170",
+    ))
+    .color(claim(
+        "close pressed",
+        "danger_active",
+        t.danger_active,
+        "gpui-component/title_bar.rs:188",
+    ))
+}
+
+/// What cannot be given to a `TitleBar`.
+fn title_bar_notes(info: WidgetInfo) -> WidgetInfo {
+    info.not_themeable(
+        "height",
+        "TITLE_BAR_HEIGHT, 34px, and settable: TitleBar applies the caller's refinement after it (title_bar.rs, TitleBar). The model states no title-bar height -- our gap. Only the window controls stay 34px wide",
+    )
+    .not_themeable(
+        "fill",
+        "a gradient between title_bar and background (title_bar.rs, default_title_bar_background)",
+    )
+}
+
+/// What an `AppMenuBar` sits in, and so what shows through it.
+#[derive(Clone, Copy)]
+pub enum MenuHost {
+    /// The menu-bar row, under the window manager's frame.
+    Row,
+    /// The window's own TitleBar, under client-side decorations.
+    TitleBar,
+}
+
+/// The menu-bar row (spec S8), at the top of a window whose frame the window
+/// manager draws. `margin` is the installed layout's
+/// `layout.container_margin`, and `own` the showcase's `MENU_BAR_PADDING`.
+pub fn menu_bar(margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
+    let sides = match margin {
+        Some(m) => format!(
+            "left and right {}px, layout.container_margin",
+            px_text(m.as_f32())
+        ),
+        None => format!(
+            "left and right {}px, MENU_BAR_PADDING, the showcase's own choice rather than a platform's: the theme states no layout.container_margin, and the row is the application's own element, with no toolkit default to keep (spec §3.1)",
+            px_text(own.as_f32())
+        ),
+    };
+    WidgetInfo::new("Menu bar")
+        .not_themeable(
+            "widget",
+            "gpui-component has no menu-bar row, so this row is the application's own h_flex around the AppMenuBar. The model states no menu bar either: its menu is the popup a menu opens (platform-facts §2.6)",
+        )
+        .not_themeable(
+            "fill",
+            "none: the window's background shows through",
+        )
+        .instance(
+            "window",
+            "the window manager draws this window's frame -- title bar, window controls, corners and shadow -- so the menus sit in a row of their own at the top of the window, above the toolbar, as a KDE application places them",
+        )
+        .instance(
+            "padding",
+            format!("{sides}; top and bottom none: the AppMenuBar's items set the row's height"),
+        )
+}
+
+/// The `AppMenuBar` (spec §2.2), in `host`.
+pub fn app_menu_bar(t: &Theme, host: MenuHost) -> WidgetInfo {
     let info = WidgetInfo::new("AppMenuBar")
         .colors(ghost_rest_and_hover(t, GhostContent::Text))
         .color(claim(
@@ -127,7 +213,10 @@ pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
         ))
         .not_themeable(
             "fill",
-            "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background, so the title bar's fill shows through",
+            match host {
+                MenuHost::Row => "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background, so the window's background shows through",
+                MenuHost::TitleBar => "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background, so the title bar's fill shows through",
+            },
         )
         .not_themeable(
             "items",

@@ -1,8 +1,8 @@
 //! The Layout page.
 
 use gpui::{
-    Context, IntoElement, ParentElement, Rems, SharedString, Styled, Window, div, prelude::*, px,
-    rems,
+    Context, Decorations, IntoElement, ParentElement, Rems, SharedString, Styled, Window, div,
+    prelude::*, px, rems,
 };
 use gpui_component::{h_flex, v_flex};
 
@@ -18,7 +18,7 @@ use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
-    LAYOUT_SIDEBAR_ITEMS, PROBE_STEPPER, Page, probe,
+    LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, PROBE_STEPPER, Page, WINDOW_TITLE, probe,
 };
 
 /// The Separators, as `(id, kind)`.
@@ -79,7 +79,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     pub(crate) fn render_layout_page(
         &self,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
@@ -204,6 +204,21 @@ impl Showcase {
                     }),
                 ),
             )
+            // Where the window manager draws the window's frame, the
+            // window has no TitleBar of its own, so one is shown here
+            // (spec S8).
+            .when(matches!(self.frame(window), Decorations::Server), |page| {
+                page.child(demo::heading(
+                    ui,
+                    cx,
+                    "layout-heading-title-bar",
+                    "TitleBar (a sample: the window manager draws this window's frame)",
+                ))
+                .child(
+                    demo::title_bar_sample(ui, cx, LAYOUT_TITLE_BAR, WINDOW_TITLE)
+                        .debug_selector(|| LAYOUT_TITLE_BAR.into()),
+                )
+            })
             .child(demo::heading(
                 ui,
                 cx,
