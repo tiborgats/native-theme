@@ -33,14 +33,14 @@ use crate::{
     BUTTONS_TEXT, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
     CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
     CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
-    INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
-    INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
-    INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
-    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
-    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
-    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
-    TREE_DEMO, WINDOW_SIZE,
+    DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, INPUTS_CHECKBOX_AUTOSAVE,
+    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
+    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH,
+    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -1854,6 +1854,124 @@ fn the_preset_comboboxs_swatches_are_the_painted_colours(cx: &mut TestAppContext
         hover.map(|c| c.value),
         Some(row),
         "the preset Combobox's row hover swatch is not accent at 70%: {info:?}"
+    );
+}
+
+/// Settle on each selector of `cases` in turn, assert the info shown is
+/// titled as the case says, and return the infos' texts.
+fn settle_on_each(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    cases: &[(&'static str, &str)],
+) -> Vec<Option<String>> {
+    let mut texts = Vec::new();
+    for (selector, title) in cases {
+        let info = settle_on(cx, showcase, selector);
+        assert_eq!(
+            info.as_ref().map(|info| info.title()).as_deref(),
+            Some(*title),
+            "the pointer settled on {selector}, and the inspector does not show its info"
+        );
+        texts.push(info.map(|info| info.to_text()));
+    }
+    texts
+}
+
+/// The Data page's two Paginations show different infos (spec §4.3.2): the
+/// full one lists its pages and the current page's outlined button, the
+/// compact one only its two arrows.
+#[gpui::test]
+fn two_paginations_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Data);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (DATA_PAGINATION, "Pagination"),
+            (DATA_PAGINATION_COMPACT, "Pagination · compact"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the full and the compact Pagination show the same info: {texts:?}"
+    );
+}
+
+/// A selected List row and an unselected one show different infos (spec
+/// §4.3.2): the row the List marks selected after the delegate built it
+/// says so.
+#[gpui::test]
+fn a_selected_list_row_and_an_unselected_one_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Data);
+    click(&mut cx, "data-list-row-1");
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            ("data-list-row-1", "ListItem · Starred, selected"),
+            ("data-list-row-0", "ListItem · Inbox"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the selected and the unselected List row show the same info: {texts:?}"
+    );
+}
+
+/// The DataTable's header and its rows report themselves, and a row's info
+/// follows the table's selection, which the delegate learns from the
+/// table's events.
+#[gpui::test]
+fn a_table_row_reports_what_the_table_paints_on_it(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Data);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (DATA_TABLE_HEADER, "DataTable row · header"),
+            ("data-table-row-0", "DataTable row"),
+            ("data-table-row-1", "DataTable row · striped"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the header and a body row show the same info: {texts:?}"
+    );
+    click(&mut cx, "data-table-row-0");
+    let selected = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[("data-table-row-0", "DataTable row · selected")],
+    );
+    assert!(
+        selected.first() != texts.get(1),
+        "the selected row shows the info it had unselected: {selected:?}"
+    );
+}
+
+/// A Tree row reports itself though `Tree::new` gives nothing room to wrap
+/// it, and its info follows a click that selects it.
+#[gpui::test]
+fn a_tree_row_reports_itself(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Data);
+    let before = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[("data-tree-row-1", "ListItem · lib.rs")],
+    );
+    click(&mut cx, "data-tree-row-1");
+    let after = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[("data-tree-row-1", "ListItem · lib.rs, selected")],
+    );
+    assert!(
+        before != after,
+        "the Tree row shows the same info selected: {after:?}"
     );
 }
 

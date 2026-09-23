@@ -3,14 +3,20 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, Pixels,
+    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, Pixels, RenderOnce,
     SharedString, Stateful, StyleRefinement, Window, div, prelude::*, px,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
-    ActiveTheme, Collapsible, Disableable as _, Icon, IconName, Sizable as _, Size, StyledExt as _,
-    TitleBar, WindowExt as _,
+    ActiveTheme, ChildElement, Collapsible, Disableable as _, Icon, IconName, Selectable, Sizable,
+    Size, StyledExt as _, TitleBar, WindowExt as _,
     alert::Alert,
+    attachment::{
+        Attachment, AttachmentContent, AttachmentDescription, AttachmentMedia, AttachmentStatus,
+        AttachmentTitle,
+    },
+    avatar::{Avatar, AvatarGroup},
+    bubble::{Bubble, BubbleVariant},
     button::{
         Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
         ToggleVariants as _,
@@ -22,6 +28,7 @@ use gpui_component::{
     combobox::{Combobox, ComboboxState},
     command::{Command, CommandGroup, CommandState},
     date_picker::{DatePicker, DatePickerState},
+    description_list::DescriptionList,
     dialog::{Dialog, DialogDescription, DialogTitle},
     h_flex,
     input::{
@@ -31,7 +38,11 @@ use gpui_component::{
     },
     label::Label,
     link::Link,
+    list::{List, ListItem, ListState},
     menu::{AppMenuBar, PopupMenu},
+    message::{Message, MessageAlignment, MessageContent},
+    message_scroller::{MessageScroller, MessageScrollerState},
+    pagination::Pagination,
     radio::{Radio, RadioGroup},
     rating::Rating,
     select::{SearchableVec, Select, SelectState},
@@ -43,17 +54,23 @@ use gpui_component::{
     status_bar::StatusBar,
     switch::Switch,
     tab::{Tab, TabBar},
+    table::{DataTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableState},
+    tree::{Tree, TreeState},
     v_flex,
 };
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry, variants};
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
-use crate::support::{PresetDelegate, native_icon, native_value, section, with_gap};
+use crate::support::{
+    ChatMessage, NativeStyled as _, PresetDelegate, SampleListDelegate, SampleTableDelegate,
+    native_icon, native_value, section, with_gap,
+};
 use crate::{
-    CHROME_APP_MENU_BAR, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
-    OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PREF_HIGH_CONTRAST,
-    PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, Page, STATUS_HOVERED,
+    CHROME_APP_MENU_BAR, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
+    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
+    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, Page, STATUS_HOVERED,
+    TREE_DEMO,
 };
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
@@ -1412,4 +1429,679 @@ pub(crate) fn calendar(
     state: &Entity<CalendarState>,
 ) -> Stateful<Div> {
     Calendar::new(state).info(ui, id, info::inputs::calendar(cx.theme()))
+}
+
+// ---------------------------------------------------------------------------
+// The Data page
+// ---------------------------------------------------------------------------
+
+/// A `DescriptionList` of `items`, as (label, value, span), in `columns`
+/// columns.
+pub(crate) fn description_list(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    columns: usize,
+    items: &[(&'static str, &'static str, usize)],
+) -> Stateful<Div> {
+    items
+        .iter()
+        .fold(
+            DescriptionList::new().columns(columns),
+            |list, &(label, value, span)| list.item(label, value, span),
+        )
+        .info(
+            ui,
+            id,
+            info::data::description_list(cx.theme(), items.len(), columns),
+        )
+}
+
+/// The striped, bordered `DataTable` over `state`, `height` tall. Its rows
+/// report themselves through the delegate, which builds them with
+/// `data_table_header` and `data_table_row`.
+pub(crate) fn data_table(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<TableState<SampleTableDelegate>>,
+    height: Pixels,
+) -> Stateful<Div> {
+    let (rows, columns) = {
+        let delegate = state.read(cx).delegate();
+        (delegate.rows.len(), delegate.columns.len())
+    };
+    DataTable::new(state)
+        .stripe(true)
+        .bordered(true)
+        .info(ui, id, info::data::data_table(cx.theme(), rows, columns))
+        .h(height)
+        // gpui's scroll listeners run in the bubble phase and stop at no one,
+        // so without this the page under the table scrolls by the same delta
+        // (div.rs, paint_scroll_listener; window.rs, HitboxBehavior::BlockMouse).
+        .occlude()
+}
+
+/// What a row of the Data page's `DataTable` is, as the table paints it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum DataTableRow {
+    /// One of the delegate's rows.
+    Body(BodyRow),
+    /// A row the table draws below the data to fill its height.
+    Filler { striped: bool },
+}
+
+/// The state of one of the `DataTable`'s own rows, as the table's events
+/// reported it to the delegate.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct BodyRow {
+    /// An odd row of a striped table (table/state.rs:1959).
+    pub striped: bool,
+    /// The last of the delegate's rows.
+    pub last: bool,
+    /// The table's selected row.
+    pub selected: bool,
+    /// The table is selecting rows, so it paints its selected row as one
+    /// (table/state.rs:2194); a column selection keeps the selected row but
+    /// not its fill.
+    pub selection_shown: bool,
+    pub right_clicked: bool,
+}
+
+/// The `DataTable`'s header row, reading `columns`, as `render_header` hands
+/// it to the table: an empty row the table fills with the header cells.
+pub(crate) fn data_table_header(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    columns: &str,
+) -> Stateful<Div> {
+    div()
+        .info(
+            ui,
+            DATA_TABLE_HEADER,
+            info::data::data_table_header(cx.theme(), columns),
+        )
+        .debug_selector(|| DATA_TABLE_HEADER.into())
+}
+
+/// The `DataTable`'s row `ix`, reading `cells` where it is one of the
+/// delegate's rows, as `render_tr` hands it to the table: an empty row the
+/// table fills with its cells.
+pub(crate) fn data_table_row(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    ix: usize,
+    row: DataTableRow,
+    cells: Option<String>,
+) -> Stateful<Div> {
+    let id = format!("data-table-row-{ix}");
+    div()
+        .info(
+            ui,
+            SharedString::from(id.clone()),
+            info::data::data_table_row(cx.theme(), row, cells),
+        )
+        .debug_selector(move || id)
+}
+
+/// A cell of the `DataTable`, reading `text`.
+pub(crate) fn data_table_cell(text: SharedString) -> Label {
+    Label::new(text).text_sm()
+}
+
+/// A child of a declarative `Table` wrapped in its info: the `Table`, its
+/// header and its body take their children as `ChildElement`s, so the
+/// wrapper passes on the index and the size the parent gives it.
+#[derive(IntoElement)]
+pub(crate) struct Reported<E: ChildElement + 'static> {
+    inner: E,
+    ui: Entity<InfoRegistry>,
+    id: SharedString,
+    info: WidgetInfo,
+}
+
+impl<E: ChildElement + 'static> Reported<E> {
+    fn new(
+        inner: E,
+        ui: &Entity<InfoRegistry>,
+        id: impl Into<SharedString>,
+        info: WidgetInfo,
+    ) -> Self {
+        Self {
+            inner,
+            ui: ui.clone(),
+            id: id.into(),
+            info,
+        }
+    }
+}
+
+impl<E: ChildElement + 'static> Sizable for Reported<E> {
+    fn with_size(mut self, size: impl Into<Size>) -> Self {
+        self.inner = self.inner.with_size(size);
+        self
+    }
+}
+
+impl<E: ChildElement + 'static> ChildElement for Reported<E> {
+    fn with_ix(mut self, ix: usize) -> Self {
+        self.inner = self.inner.with_ix(ix);
+        self
+    }
+}
+
+impl<E: ChildElement + 'static> RenderOnce for Reported<E> {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        let id = self.id.clone();
+        self.inner
+            .info(&self.ui, self.id, self.info)
+            .w_full()
+            .debug_selector(move || id.to_string())
+    }
+}
+
+/// A declarative `Table` named `label`, refined by `geometry::table`: a
+/// header reading `head` above a body row for each of `rows`. The header
+/// and every body row report themselves.
+pub(crate) fn table(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    head: [&'static str; 2],
+    rows: &[[&'static str; 2]],
+) -> Stateful<Div> {
+    let t = cx.theme();
+    let mut table_info = info::data::table(t, rows.len());
+    let table = native_info(Table::new(), cx, geometry::table, "table", &mut table_info)
+        .accessibility_label(label);
+    let header = Reported::new(
+        TableHeader::new().child(TableRow::new().children(head.map(|h| TableHead::new().child(h)))),
+        ui,
+        format!("{id}-header"),
+        info::data::table_header(t, &head.join(", ")),
+    );
+    let body = rows
+        .iter()
+        .enumerate()
+        .fold(TableBody::new(), |body, (ix, cells)| {
+            body.child(Reported::new(
+                TableRow::new().children(cells.map(|c| TableCell::new().child(c))),
+                ui,
+                format!("{id}-row-{ix}"),
+                info::data::table_row(t, ix == 0, &cells.join(", ")),
+            ))
+        });
+    table.child(header).child(body).info(ui, id, table_info)
+}
+
+/// One `Pagination` of the Data page. `id` is its info's id and its debug
+/// selector.
+pub(crate) struct DemoPagination {
+    pub id: &'static str,
+    pub page: usize,
+    pub pages: usize,
+    pub compact: bool,
+    /// The gap `geometry::widget_gap` gives, where the Pagination takes it.
+    pub gap: Option<Pixels>,
+}
+
+/// A `Pagination` on `page` of `pages`, `compact` or not, `gap` apart where
+/// it is given one; a click hands `on_click` the page asked for.
+pub(crate) fn pagination(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    spec: DemoPagination,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let DemoPagination {
+        id,
+        page,
+        pages,
+        compact,
+        gap,
+    } = spec;
+    let mut pagination_info =
+        info::data::pagination(cx.theme(), compact, page, pages, gap.is_some());
+    let pagination = Pagination::new(id)
+        .current_page(page)
+        .total_pages(pages)
+        .on_click(on_click);
+    let pagination = if compact {
+        pagination.compact()
+    } else {
+        pagination
+    };
+    let pagination = match gap {
+        Some(gap) => {
+            pagination_info = pagination_info.geometry("widget_gap");
+            pagination.gap(gap)
+        }
+        None => pagination,
+    };
+    pagination
+        .info(ui, id, pagination_info)
+        .debug_selector(move || id.into())
+}
+
+/// A box `width` by `height`, refined by `geometry::list`, around the List
+/// over `state`. A List paints no frame of its own (list/list.rs,
+/// `RenderOnce for List`), so the box is its frame; the rows report
+/// themselves (`ListRow`).
+pub(crate) fn list(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<ListState<SampleListDelegate>>,
+    width: Pixels,
+    height: Pixels,
+) -> Stateful<Div> {
+    let mut list_info = info::data::list(state.read(cx).delegate().items.len());
+    native_info(
+        div().w(width).h(height),
+        cx,
+        geometry::list,
+        "list",
+        &mut list_info,
+    )
+    .child(List::new(state))
+    .info(ui, id, list_info)
+    .self_start()
+    // gpui's scroll listeners run in the bubble phase and stop at no one, so
+    // without this the page under the List scrolls by the same delta (div.rs,
+    // paint_scroll_listener; window.rs, HitboxBehavior::BlockMouse). Every
+    // demo box that holds a scroller of its own carries it.
+    .occlude()
+    .debug_selector(|| LIST_DEMO.into())
+}
+
+/// What a `ListItem` row is marked as.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ListRowState {
+    Idle,
+    Selected,
+    /// Right-clicked, selected or not: it paints the same either way
+    /// (list/list_item.rs:235-242).
+    RightClicked,
+}
+
+impl ListRowState {
+    fn of(selected: bool, right_clicked: bool) -> Self {
+        match (selected, right_clicked) {
+            (_, true) => Self::RightClicked,
+            (true, false) => Self::Selected,
+            (false, false) => Self::Idle,
+        }
+    }
+}
+
+/// Row `ix` of the Data page's List, reading `label`: a `ListItem` refined
+/// by `geometry::list_item`.
+///
+/// The List marks a row selected or right-clicked after the delegate built
+/// it (list/list.rs, `ListState::render_list_item`), so the row builds its
+/// `ListItem` and its info only as it renders, from what it was marked.
+#[derive(IntoElement)]
+pub(crate) struct ListRow {
+    ui: Entity<InfoRegistry>,
+    ix: usize,
+    label: SharedString,
+    selected: bool,
+    right_clicked: bool,
+}
+
+impl ListRow {
+    pub(crate) fn new(ui: &Entity<InfoRegistry>, ix: usize, label: SharedString) -> Self {
+        Self {
+            ui: ui.clone(),
+            ix,
+            label,
+            selected: false,
+            right_clicked: false,
+        }
+    }
+}
+
+impl Selectable for ListRow {
+    fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
+    fn is_selected(&self) -> bool {
+        self.selected
+    }
+    fn secondary_selected(mut self, selected: bool) -> Self {
+        self.right_clicked = selected;
+        self
+    }
+}
+
+impl RenderOnce for ListRow {
+    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let id = format!("data-list-row-{}", self.ix);
+        let state = ListRowState::of(self.selected, self.right_clicked);
+        let mut row_info = info::data::list_row(cx.theme(), &self.label, state);
+        let item = native_info(
+            ListItem::new(SharedString::from(id.clone())),
+            cx,
+            geometry::list_item,
+            "list_item",
+            &mut row_info,
+        )
+        .child(Label::new(self.label).text_sm())
+        .selected(self.selected)
+        .secondary_selected(self.right_clicked);
+        item.info(&self.ui, SharedString::from(id.clone()), row_info)
+            .w_full()
+            .debug_selector(move || id)
+    }
+}
+
+/// A box `width` by `height`, refined by `geometry::list`, around the Tree
+/// over `state`. A tree is a list view and the model gives it no theme of
+/// its own, so its frame is the list's; the rows report themselves
+/// (`tree_row`).
+pub(crate) fn tree(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<TreeState>,
+    width: Pixels,
+    height: Pixels,
+) -> Stateful<Div> {
+    let mut tree_info = info::data::tree();
+    let rows = ui.clone();
+    native_info(
+        div().w(width).h(height),
+        cx,
+        geometry::list,
+        "list",
+        &mut tree_info,
+    )
+    .child(Tree::new(state, move |ix, entry, selected, _window, cx| {
+        tree_row(&rows, cx, ix, entry.item().label.clone(), selected)
+    }))
+    .info(ui, id, tree_info)
+    .self_start()
+    // As the List's box: the Tree scrolls on its own.
+    .occlude()
+    .debug_selector(|| TREE_DEMO.into())
+}
+
+/// Row `ix` of the Tree, reading `label`, `selected` or not: a `ListItem`
+/// refined by `geometry::list_item`.
+///
+/// `Tree::new` takes a closure that returns the `ListItem` itself and wraps
+/// it in a box of its own (tree.rs:41-44, 87-93), so nothing can be put
+/// around the row. Its info target is its suffix instead: `ListItem` puts
+/// the suffix straight into its root, which is `relative()`
+/// (list/list_item.rs:183, 233), so an absolute box there covers the
+/// whole row. It takes no pointer from the row: an ordinary hitbox blocks
+/// nothing under it.
+fn tree_row(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    ix: usize,
+    label: SharedString,
+    selected: bool,
+) -> ListItem {
+    let id = format!("data-tree-row-{ix}");
+    let mut row_info = info::data::tree_row(cx.theme(), &label, selected);
+    let item = native_info(
+        ListItem::new(SharedString::from(id.clone())),
+        cx,
+        geometry::list_item,
+        "list_item",
+        &mut row_info,
+    );
+    let ui = ui.clone();
+    item.child(Label::new(label).text_sm())
+        .selected(selected)
+        .suffix(move |_window, _cx| {
+            let id = id.clone();
+            div()
+                .info(&ui, SharedString::from(id.clone()), row_info.clone())
+                .absolute()
+                .top_0()
+                .left_0()
+                .size_full()
+                .debug_selector(move || id)
+        })
+}
+
+/// An `Avatar` named `name`.
+pub(crate) fn avatar(
+    ui: &Entity<InfoRegistry>,
+    id: impl Into<SharedString>,
+    name: impl Into<SharedString>,
+) -> Stateful<Div> {
+    let name = name.into();
+    let avatar_info = info::data::avatar(&name);
+    Avatar::new().name(name).info(ui, id.into(), avatar_info)
+}
+
+/// An `AvatarGroup` of Avatars named `names`, showing `limit` of them.
+pub(crate) fn avatar_group(
+    ui: &Entity<InfoRegistry>,
+    id: &'static str,
+    names: &[&'static str],
+    limit: usize,
+) -> Stateful<Div> {
+    names
+        .iter()
+        .fold(AvatarGroup::new(), |group, &name| {
+            group.child(Avatar::new().name(name))
+        })
+        .limit(limit)
+        .info(ui, id, info::data::avatar_group(names, limit))
+}
+
+/// The Bubble variants the Data page builds, so the match over them in
+/// `info::data::bubble` is exhaustive and the compiler rejects a variant
+/// without an arm.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BubbleKind {
+    Filled,
+    Secondary,
+    Muted,
+    Tinted,
+    Outline,
+    Ghost,
+    Destructive,
+}
+
+impl BubbleKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Filled => "Filled",
+            Self::Secondary => "Secondary",
+            Self::Muted => "Muted",
+            Self::Tinted => "Tinted",
+            Self::Outline => "Outline",
+            Self::Ghost => "Ghost",
+            Self::Destructive => "Destructive",
+        }
+    }
+    fn variant(self) -> BubbleVariant {
+        match self {
+            Self::Filled => BubbleVariant::Filled,
+            Self::Secondary => BubbleVariant::Secondary,
+            Self::Muted => BubbleVariant::Muted,
+            Self::Tinted => BubbleVariant::Tinted,
+            Self::Outline => BubbleVariant::Outline,
+            Self::Ghost => BubbleVariant::Ghost,
+            Self::Destructive => BubbleVariant::Destructive,
+        }
+    }
+}
+
+/// A `Bubble` of `kind` reading `text`, at the end of its row where
+/// `outgoing`, at the start otherwise.
+pub(crate) fn bubble(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: BubbleKind,
+    outgoing: bool,
+    text: &'static str,
+) -> Stateful<Div> {
+    let alignment = if outgoing {
+        MessageAlignment::End
+    } else {
+        MessageAlignment::Start
+    };
+    Bubble::new()
+        .alignment(alignment)
+        .with_variant(kind.variant())
+        .child(text)
+        .info(ui, id, info::data::bubble(cx.theme(), kind, outgoing))
+}
+
+/// A row of the chat thread, built the same way for the Message section and
+/// for every row the `MessageScroller` renders: the sender's Avatar beside a
+/// bubble whose variant and alignment say which side sent it. The Avatar
+/// reports itself as `{id}-avatar`; the Bubble, which `MessageContent::bubble`
+/// takes as it is, reports through the row.
+pub(crate) fn message(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: impl Into<SharedString>,
+    msg: &ChatMessage,
+) -> Stateful<Div> {
+    let id = id.into();
+    let (alignment, variant) = if msg.outgoing {
+        (MessageAlignment::End, BubbleVariant::Filled)
+    } else {
+        (MessageAlignment::Start, BubbleVariant::Muted)
+    };
+    Message::new()
+        .alignment(alignment)
+        .avatar(avatar(ui, format!("{id}-avatar"), msg.sender.clone()))
+        .content(
+            MessageContent::new()
+                .bubble(Bubble::new().with_variant(variant).child(msg.text.clone())),
+        )
+        .info(
+            ui,
+            id.clone(),
+            info::data::message(cx.theme(), msg.outgoing, &msg.sender, &msg.text),
+        )
+        .debug_selector(move || id.to_string())
+}
+
+/// The `MessageScroller` over `messages`, following `state`, in the
+/// showcase's frame `height` tall, its bottom faded into the window's
+/// background.
+pub(crate) fn message_scroller(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<MessageScrollerState>,
+    messages: &[ChatMessage],
+    height: Pixels,
+) -> Stateful<Div> {
+    let t = cx.theme();
+    // The data stays with the caller; the state owns only the virtual
+    // list's bookkeeping (message_scroller.rs:23-25).
+    let rows = messages.to_vec();
+    let row_ui = ui.clone();
+    let scroller = MessageScroller::new(id, state.clone(), move |ix, _window, cx| {
+        match rows.get(ix) {
+            Some(msg) => {
+                message(&row_ui, cx, format!("data-scroller-message-{ix}"), msg).into_any_element()
+            }
+            None => div().into_any_element(),
+        }
+    })
+    .with_bottom_fade(t.background)
+    .size_full();
+    div()
+        .h(height)
+        .demo_frame(cx)
+        .child(scroller)
+        .info(ui, id, info::data::message_scroller(t, messages.len()))
+        // As the List's box: the thread scrolls on its own.
+        .occlude()
+}
+
+/// The Default Button reading `label`, refined by `geometry::button`, that
+/// hands `on_click` its click. `about` is its info's "click" line.
+pub(crate) fn action_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    about: &'static str,
+    on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut button_info = info::buttons::button(
+        cx.theme(),
+        ButtonKind::Default,
+        ButtonState::Idle,
+        false,
+        None,
+        styled,
+    )
+    .instance("click", about);
+    let button = native_info(
+        Button::new(id),
+        cx,
+        geometry::button,
+        "button",
+        &mut button_info,
+    )
+    .label(label)
+    .on_click(on_click);
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
+}
+
+/// One `Attachment` card of the Data page: `file`, described by
+/// `description`, in `status`, its media `icon`. `id` is its info's id and
+/// its debug selector.
+pub(crate) struct DemoAttachment {
+    pub id: &'static str,
+    pub status: AttachmentStatus,
+    pub icon: IconName,
+    pub file: &'static str,
+    pub description: SharedString,
+}
+
+/// An `Attachment` card, its media icon at `geometry::icon_size_small`. A
+/// card given `on_click` is clickable as a whole.
+pub(crate) fn attachment(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    spec: DemoAttachment,
+    on_click: Option<impl Fn(&ClickEvent, &mut Window, &mut App) + 'static>,
+) -> Stateful<Div> {
+    let DemoAttachment {
+        id,
+        status,
+        icon,
+        file,
+        description,
+    } = spec;
+    let mut card_info = info::data::attachment(cx.theme(), status, file, on_click.is_some());
+    if native_value(cx, geometry::icon_size_small).is_some() {
+        card_info = card_info.geometry("icon_size_small");
+    }
+    let card = Attachment::new()
+        .status(status)
+        .media(AttachmentMedia::new().child(native_icon(cx, icon, geometry::icon_size_small)))
+        .content(
+            AttachmentContent::new()
+                .title(AttachmentTitle::new(file).status(status))
+                .description(AttachmentDescription::new(description).status(status)),
+        );
+    // The whole card is the click target, so the status it is in is the
+    // status a click advances.
+    let card = match on_click {
+        Some(on_click) => card.id(id).on_click(on_click),
+        None => card,
+    };
+    card.info(ui, id, card_info)
+        .debug_selector(move || id.into())
 }

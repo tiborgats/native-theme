@@ -332,6 +332,15 @@ pub(crate) const INPUTS_FIELD_HEIGHT_ONLY: &str = "inputs-field-height-only";
 pub(crate) const LIST_DEMO: &str = "list-demo";
 pub(crate) const TREE_DEMO: &str = "tree-demo";
 
+/// The ids and debug selectors of the Data page's two Paginations, which
+/// `two_paginations_show_different_infos` hovers.
+pub(crate) const DATA_PAGINATION: &str = "data-pagination";
+pub(crate) const DATA_PAGINATION_COMPACT: &str = "data-pagination-compact";
+/// The id and debug selector of the Data page's DataTable header row. Its
+/// body rows are `data-table-row-{ix}`, the List's rows `data-list-row-{ix}`
+/// and the Tree's `data-tree-row-{ix}`, each its own debug selector too.
+pub(crate) const DATA_TABLE_HEADER: &str = "data-table-header";
+
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------

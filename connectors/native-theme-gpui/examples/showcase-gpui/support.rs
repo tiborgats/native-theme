@@ -1,22 +1,19 @@
 //! What the pages share: sample content, tooltip and layout helpers, icon loading, and the list and table delegates.
 
 use gpui::{
-    App, Context, Div, Hsla, ImageSource, IntoElement, ParentElement, Pixels, SharedString,
-    StyleRefinement, Styled, Task, Window, div, px,
+    App, Context, Div, Entity, Hsla, ImageSource, IntoElement, ParentElement, Pixels, SharedString,
+    Stateful, StyleRefinement, Styled, Task, Window, div, px,
 };
 use gpui_component::{
-    ActiveTheme, Icon, IconName, IndexPath, Sizable, Size, StyledExt,
+    ActiveTheme, Icon, IconName, IndexPath, Selectable as _, Sizable, Size, StyledExt,
     accordion::AccordionItem,
     attachment::AttachmentStatus,
-    avatar::Avatar,
-    bubble::{Bubble, BubbleVariant},
     group_box::GroupBox,
     h_flex,
     label::Label,
-    list::{ListDelegate, ListItem, ListState},
-    message::{Message, MessageAlignment, MessageContent},
+    list::{ListDelegate, ListState},
     searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
-    table::{Column, TableDelegate, TableState},
+    table::{Column, TableDelegate, TableEvent, TableState},
 };
 use std::collections::HashMap;
 
@@ -35,6 +32,8 @@ use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{ActiveNativeTheme, Native, geometry};
 
+use crate::demo::{self, BodyRow, DataTableRow};
+use crate::info::InfoRegistry;
 pub use crate::info::hsla_to_hex;
 
 // ---------------------------------------------------------------------------
@@ -88,24 +87,6 @@ pub(crate) fn initial_chat_messages() -> Vec<ChatMessage> {
         text: text.into(),
     })
     .collect()
-}
-
-/// One row of the thread, built the same way for the `Message` section and
-/// for every row the `MessageScroller` renders: the sender's avatar beside a
-/// bubble whose variant and alignment say which side sent it.
-pub(crate) fn chat_message(msg: &ChatMessage) -> Message {
-    let (alignment, variant) = if msg.outgoing {
-        (MessageAlignment::End, BubbleVariant::Filled)
-    } else {
-        (MessageAlignment::Start, BubbleVariant::Muted)
-    };
-    Message::new()
-        .alignment(alignment)
-        .avatar(Avatar::new().name(msg.sender.clone()))
-        .content(
-            MessageContent::new()
-                .bubble(Bubble::new().with_variant(variant).child(msg.text.clone())),
-        )
 }
 
 /// The next lifecycle state the Attachment card steps to when it is clicked.
@@ -953,9 +934,48 @@ pub(crate) fn load_gpui_icons(
 // Sample Table Delegate (for Data page)
 // ---------------------------------------------------------------------------
 
+/// The Data page's `DataTable` rows, and what the table's events said about
+/// them.
+///
+/// A row's info has to say what the table paints on it, and the table
+/// renders its rows from inside its own update, so the delegate cannot ask
+/// it (table/state.rs, `TableState::render_table_row`). The showcase keeps
+/// these three fields in step with the table's events instead
+/// (`SampleTableDelegate::follow`).
 pub(crate) struct SampleTableDelegate {
+    pub(crate) ui: Entity<InfoRegistry>,
     pub(crate) columns: Vec<Column>,
     pub(crate) rows: Vec<[SharedString; 3]>,
+    /// The table's selected row (`TableState::selected_row`).
+    pub(crate) selected_row: Option<usize>,
+    /// Whether the table selects rows rather than a column, so paints its
+    /// selected row as one.
+    pub(crate) selection_shown: bool,
+    pub(crate) right_clicked_row: Option<usize>,
+}
+
+impl SampleTableDelegate {
+    /// Keep the delegate's copy of the table's selection in step with
+    /// `event`: every change to it is emitted (table/state.rs,
+    /// `TableState::set_selected_row`, `set_selected_col`,
+    /// `set_selected_cell`, `clear_selection`, `on_row_right_click`).
+    pub(crate) fn follow(&mut self, event: &TableEvent) {
+        match event {
+            TableEvent::SelectRow(ix) => {
+                self.selected_row = Some(*ix);
+                self.selection_shown = true;
+            }
+            TableEvent::SelectColumn(_) | TableEvent::SelectCell(..) => {
+                self.selection_shown = false;
+            }
+            TableEvent::ClearSelection => {
+                self.selected_row = None;
+                self.selection_shown = true;
+            }
+            TableEvent::RightClickedRow(row) => self.right_clicked_row = *row,
+            _ => {}
+        }
+    }
 }
 
 impl TableDelegate for SampleTableDelegate {
@@ -971,6 +991,40 @@ impl TableDelegate for SampleTableDelegate {
         self.columns[col_ix].clone()
     }
 
+    fn render_header(
+        &mut self,
+        _window: &mut Window,
+        cx: &mut Context<TableState<Self>>,
+    ) -> Stateful<Div> {
+        let names: Vec<&str> = self.columns.iter().map(|c| c.name.as_ref()).collect();
+        demo::data_table_header(&self.ui, cx, &names.join(", "))
+    }
+
+    fn render_tr(
+        &mut self,
+        row_ix: usize,
+        _window: &mut Window,
+        cx: &mut Context<TableState<Self>>,
+    ) -> Stateful<Div> {
+        // `demo::data_table` stripes the table, which shades its odd rows
+        // (table/state.rs:1959).
+        let striped = !row_ix.is_multiple_of(2);
+        let (row, cells) = match self.rows.get(row_ix) {
+            Some(cells) => (
+                DataTableRow::Body(BodyRow {
+                    striped,
+                    last: row_ix + 1 == self.rows.len(),
+                    selected: self.selected_row == Some(row_ix),
+                    selection_shown: self.selection_shown,
+                    right_clicked: self.right_clicked_row == Some(row_ix),
+                }),
+                Some(cells.join(", ")),
+            ),
+            None => (DataTableRow::Filler { striped }, None),
+        };
+        demo::data_table_row(&self.ui, cx, row_ix, row, cells)
+    }
+
     fn render_td(
         &mut self,
         row_ix: usize,
@@ -978,7 +1032,13 @@ impl TableDelegate for SampleTableDelegate {
         _window: &mut Window,
         _cx: &mut Context<TableState<Self>>,
     ) -> impl IntoElement {
-        Label::new(self.rows[row_ix][col_ix].clone()).text_sm()
+        let text = self
+            .rows
+            .get(row_ix)
+            .and_then(|row| row.get(col_ix))
+            .cloned()
+            .unwrap_or_default();
+        demo::data_table_cell(text)
     }
 }
 
@@ -987,12 +1047,13 @@ impl TableDelegate for SampleTableDelegate {
 // ---------------------------------------------------------------------------
 
 pub(crate) struct SampleListDelegate {
+    pub(crate) ui: Entity<InfoRegistry>,
     pub(crate) items: Vec<SharedString>,
     pub(crate) selected: Option<usize>,
 }
 
 impl ListDelegate for SampleListDelegate {
-    type Item = ListItem;
+    type Item = demo::ListRow;
 
     fn items_count(&self, _section: usize, _cx: &App) -> usize {
         self.items.len()
@@ -1002,15 +1063,10 @@ impl ListDelegate for SampleListDelegate {
         &mut self,
         ix: gpui_component::IndexPath,
         _window: &mut Window,
-        cx: &mut Context<ListState<Self>>,
+        _cx: &mut Context<ListState<Self>>,
     ) -> Option<Self::Item> {
         let label = self.items.get(ix.row)?.clone();
-        Some(
-            ListItem::new(("list-item", ix.row))
-                .native(cx, geometry::list_item)
-                .child(Label::new(label).text_sm())
-                .selected(self.selected == Some(ix.row)),
-        )
+        Some(demo::ListRow::new(&self.ui, ix.row, label).selected(self.selected == Some(ix.row)))
     }
 
     fn set_selected_index(

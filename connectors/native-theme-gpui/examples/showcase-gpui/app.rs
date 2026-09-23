@@ -21,7 +21,7 @@ use gpui_component::{
     scroll::ScrollableElement,
     select::{SearchableVec, SelectEvent, SelectState},
     slider::{SliderEvent, SliderState},
-    table::{Column, TableState},
+    table::{Column, TableEvent, TableState},
     theme::Theme,
     tree::{TreeItem, TreeState},
     v_flex,
@@ -862,9 +862,14 @@ impl Showcase {
         // Calendar state
         let calendar_state = cx.new(|cx| gpui_component::calendar::CalendarState::new(window, cx));
 
+        // What the inspector shows. Created before the Data page's states:
+        // their delegates build rows that report themselves to it.
+        let info_ui = cx.new(|_| InfoRegistry::new());
+
         // Table state with sample data
         let table_state = cx.new(|cx| {
             let delegate = SampleTableDelegate {
+                ui: info_ui.clone(),
                 columns: vec![
                     Column::new("name", "Name"),
                     Column::new("role", "Role"),
@@ -877,13 +882,26 @@ impl Showcase {
                     ["Dave".into(), "Intern".into(), "Offline".into()],
                     ["Eve".into(), "DevOps".into(), "Active".into()],
                 ],
+                selected_row: None,
+                selection_shown: true,
+                right_clicked_row: None,
             };
             TableState::new(delegate, window, cx)
         });
+        // The rows' infos follow what the table selects (support.rs,
+        // `SampleTableDelegate::follow`).
+        cx.subscribe(&table_state, |_this, table, event: &TableEvent, cx| {
+            table.update(cx, |table, cx| {
+                table.delegate_mut().follow(event);
+                cx.notify();
+            });
+        })
+        .detach();
 
         // List state with sample items
         let list_state = cx.new(|cx| {
             let delegate = SampleListDelegate {
+                ui: info_ui.clone(),
                 items: vec![
                     "Inbox".into(),
                     "Starred".into(),
@@ -959,7 +977,6 @@ impl Showcase {
             .ok()
         };
 
-        let info_ui = cx.new(|_| InfoRegistry::new());
         let inspector = {
             let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
             cx.new(|cx| Inspector::new(ui, showcase, cx))
