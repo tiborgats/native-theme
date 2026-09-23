@@ -125,7 +125,7 @@ fn chrome_icon(drawn: &ChromeIcon, icon: &IconName) -> Option<Icon> {
     match drawn {
         ChromeIcon::Builtin(_) => Some(Icon::new(icon.clone())),
         ChromeIcon::Loaded(_, bytes) => Some(Icon::default().data(bytes)),
-        ChromeIcon::Missing(_) => None,
+        ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => None,
     }
 }
 
@@ -966,16 +966,28 @@ pub(crate) fn preferences(
 }
 
 /// An error `Alert` across the top of the content (spec §2.5), reading
-/// `message`.
+/// `message`, its icon `drawn`: gpui-component's CircleX as the chosen icon
+/// set named `set` gives it.
+///
+/// An Alert always holds an `Icon` (alert.rs, `Alert`), so where the set
+/// has none it is handed an empty one, sized to nothing and invisible: gpui
+/// paints nothing of an invisible element (gpui-pre elements/div.rs,
+/// `Interactivity::paint`), so its empty path is never loaded, and no other
+/// set's icon stands in.
 pub(crate) fn alert(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     message: impl Into<SharedString>,
+    drawn: ChromeIcon,
+    set: &str,
 ) -> Stateful<Div> {
+    let icon = chrome_icon(&drawn, &IconName::CircleX)
+        .unwrap_or_else(|| Icon::empty().size_0().invisible());
     Alert::error(id, message.into())
+        .icon(icon)
         .banner()
-        .info(ui, id, info::theme_error_alert(cx.theme()))
+        .info(ui, id, info::theme_error_alert(cx.theme(), &drawn, set))
         .w_full()
 }
 

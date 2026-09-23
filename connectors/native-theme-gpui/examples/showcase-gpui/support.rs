@@ -744,8 +744,9 @@ pub(crate) fn load_gpui_icons(
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum ChromeIcon {
     /// gpui-component's own icon of this name, its built-in set being the
-    /// one chosen.
-    Builtin(&'static str),
+    /// one chosen: its IconName's name, or its asset path where the gallery
+    /// does not list it.
+    Builtin(SharedString),
     /// The chosen set's SVG for the IconName of this name, as the Icons
     /// page loads it (`load_gpui_icons`).
     Loaded(&'static str, Cow<'static, [u8]>),
@@ -753,22 +754,25 @@ pub(crate) enum ChromeIcon {
     /// all, or only pixels, which an `Icon` cannot draw (icon.rs, `Icon`
     /// takes a path or SVG bytes).
     Missing(&'static str),
+    /// An IconName, by its asset path, that the Icons page's gallery does
+    /// not list, so no set other than gpui-component's own was asked for it.
+    Unlisted(SharedString),
 }
 
 impl ChromeIcon {
     /// The chrome's icon for `icon`: `icons` are the chosen set's, as
     /// `load_gpui_icons` loaded them, and `builtin` is whether that set is
-    /// gpui-component's own. An IconName the gallery lacks is missing too.
+    /// gpui-component's own. With another set chosen, an IconName the
+    /// gallery does not list is `Unlisted`: nothing was loaded for it.
     pub(crate) fn of(icons: &[IconEntry], builtin: bool, icon: &IconName) -> Self {
         let path = icon.clone().path();
-        let Some((name, _, _, data, _)) = icons.iter().find(|(_, i, ..)| i.clone().path() == path)
-        else {
-            return Self::Missing("an IconName the gallery lacks");
-        };
-        match data {
-            _ if builtin => Self::Builtin(name),
-            Some(IconData::Svg(bytes)) => Self::Loaded(name, bytes.clone()),
-            _ => Self::Missing(name),
+        let listed = icons.iter().find(|(_, i, ..)| i.clone().path() == path);
+        match listed {
+            Some((name, ..)) if builtin => Self::Builtin((*name).into()),
+            None if builtin => Self::Builtin(path),
+            Some((name, _, _, Some(IconData::Svg(bytes)), _)) => Self::Loaded(name, bytes.clone()),
+            Some((name, ..)) => Self::Missing(name),
+            None => Self::Unlisted(path),
         }
     }
 }

@@ -2529,12 +2529,13 @@ fn a_missing_icon_says_it_is_missing(cx: &mut TestAppContext) {
     );
 }
 
-/// The chrome's own icons: the toolbar buttons', the Sidebar's page icons
-/// and the command palette's entries'. The toolbar's are named in
-/// chrome::toolbar, the pages' in `Page::icon`, the palette's in
-/// chrome::palette_groups.
+/// The chrome's own icons: the toolbar buttons', the Sidebar's page icons,
+/// the command palette's entries' and the theme-error Alert's. The
+/// toolbar's are named in chrome::toolbar, the pages' in `Page::icon`, the
+/// palette's in chrome::palette_groups, the Alert's where app.rs draws it.
 fn chrome_icon_names() -> Vec<IconName> {
     let mut names = vec![
+        IconName::CircleX,
         IconName::SquareTerminal,
         IconName::RotateCw,
         IconName::Inspector,
@@ -2591,7 +2592,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
                 ChromeIcon::Loaded(n, bytes.clone())
             }
             Some((n, ..)) => ChromeIcon::Missing(n),
-            None => ChromeIcon::Missing("an IconName the gallery lacks"),
+            None => ChromeIcon::Unlisted(path),
         };
         assert_eq!(
             drawn, expected,
@@ -2664,6 +2665,70 @@ fn a_chrome_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
         note.as_deref()
             .is_some_and(|n| n.starts_with("none: material holds no SVG for SquareTerminal")),
         "the Command Palette button does not say material has no icon for it: {note:?}"
+    );
+    assert!(
+        info.as_ref()
+            .is_some_and(|info| !info.not_themeable.iter().any(|n| n.what == "icon")),
+        "the labelled Command Palette button still describes an icon it does not draw: {info:?}"
+    );
+}
+
+/// The theme-error Alert's icon is the chosen set's CircleX, or none: with
+/// Material chosen it reports Material's, and with that icon taken out of
+/// the loaded gallery it reports none, as `Showcase::chrome_icon` says,
+/// never gpui-component's own. What an Alert draws for its icon is an
+/// SVG sprite, which no test reads from the frame (gpui-pre window.rs has
+/// `painted_quads` and `painted_underlines` only), so the check is on the
+/// `ChromeIcon` app.rs hands `demo::alert`, which both its drawing and its
+/// info are built from.
+#[gpui::test]
+fn the_theme_error_alerts_icon_follows_the_chosen_set(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let alert_icon_note = |cx: &mut VisualTestContext| {
+        settle_on(cx, &showcase, CONTENT_ALERT).and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "icon")
+                .map(|n| n.text.clone())
+        })
+    };
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("Material (bundled)", window, cx)
+        });
+    });
+    use_preset(&mut cx, &showcase, "no-such-preset");
+    let expected = read(&mut cx, &showcase, |this, _| {
+        this.chrome_icon(&IconName::CircleX)
+    });
+    assert!(
+        matches!(expected, ChromeIcon::Loaded("CircleX", _)),
+        "Material has no CircleX in its gallery, so this proves nothing: {expected:?}"
+    );
+    let note = alert_icon_note(&mut cx);
+    assert!(
+        note.as_deref()
+            .is_some_and(|n| n.starts_with("material's icon for CircleX")),
+        "with Material chosen, the theme-error Alert does not report Material's CircleX: {note:?}"
+    );
+
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            for entry in &mut this.gpui_icons {
+                if entry.0 == "CircleX" {
+                    entry.3 = None;
+                }
+            }
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let note = alert_icon_note(&mut cx);
+    assert!(
+        note.as_deref()
+            .is_some_and(|n| n.starts_with("none: material holds no SVG for CircleX")),
+        "with Material's CircleX gone, the theme-error Alert does not report no icon: {note:?}"
     );
 }
 

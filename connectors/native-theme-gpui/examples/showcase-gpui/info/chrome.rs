@@ -384,7 +384,7 @@ pub fn sidebar_item(
             chrome_icon_note(icon, set, "the item shows its label alone"),
         );
     match (collapsed, icon) {
-        (true, ChromeIcon::Missing(_)) => info.instance(
+        (true, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_)) => info.instance(
             "collapsed",
             "the label is hidden, and with no icon the item shows nothing, and has no tooltip either: upstream gives a collapsed item its label as a tooltip only when it has an icon (sidebar/menu.rs, collapsed_tooltip). A click still shows the page",
         ),
@@ -672,7 +672,11 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "follows the choice",
-            "the Icons page's galleries, and the chrome's own icons: the toolbar's Command Palette, Reload System Theme and Toggle Inspector buttons, the Sidebar's page icons, and the command palette's entries. Each shows the chosen set's icon for its IconName -- gpui-component's own where its built-in set is chosen -- and none where the set has none: no other set's icon stands in",
+            "the Icons page's galleries, and the chrome's own icons: the toolbar's Command Palette, Reload System Theme and Toggle Inspector buttons, the Sidebar's page icons, the command palette's entries, and the icon of the Alert that reports a theme that failed to load. Each shows the chosen set's icon for its IconName -- gpui-component's own where its built-in set is chosen -- and none where the set has none: no other set's icon stands in",
+        )
+        .instance(
+            "raster sets",
+            "on macOS and Windows the system sets come as pixels, not SVG -- native-theme's loaders there return IconData::Rgba (sficons.rs:110 and winicons.rs:173, native-theme 0.5.9) -- and an Icon draws only a path or SVG bytes (icon.rs, Icon::data), so with the system set chosen there the chrome shows none of its icons",
         )
         .not_themeable(
             "upstream's icons",
@@ -696,32 +700,41 @@ pub fn toolbar_separator(t: &Theme) -> WidgetInfo {
 /// showing `icon` of the icon set named `set`. Its icon-size line is
 /// recorded where `demo::toolbar_button` applies the builder.
 pub fn toolbar_button(t: &Theme, action: &'static str, icon: &ChromeIcon, set: &str) -> WidgetInfo {
-    let info = WidgetInfo::new("Button").variant(match icon {
-        ChromeIcon::Missing(_) => "Ghost, labelled",
-        _ => "Ghost, icon",
+    let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
+    let info = WidgetInfo::new("Button").variant(if drawn {
+        "Ghost, icon"
+    } else {
+        "Ghost, labelled"
     });
-    super::buttons::native_ghost(info, t)
+    let info = super::buttons::native_ghost(info, t)
         .colors(super::feedback::tooltip_colours(t, true))
         .not_themeable(
             "fill",
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
-        )
-        .not_themeable(
+        );
+    let info = if drawn {
+        info.not_themeable(
             "icon",
             "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
-        )
-        .instance(
-            "icon",
-            chrome_icon_note(
-                icon,
-                set,
-                "the button shows the tooltip's text as its label instead",
-            ),
         )
         .not_themeable(
             "size",
             "h_8 with px_2p5 at the default Size -- rems, so the platform's font; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button (button/button.rs, RenderOnce for Button)",
         )
+    } else {
+        info.not_themeable(
+            "size",
+            "h_8 with px_2p5 at the default Size -- rems, so the platform's font (button/button.rs, RenderOnce for Button)",
+        )
+    };
+    info.instance(
+        "icon",
+        chrome_icon_note(
+            icon,
+            set,
+            "the button shows the tooltip's text as its label instead",
+        ),
+    )
         .not_themeable(
             "tooltip",
             "upstream's Tooltip, which the Button builds as it renders from the text and action tooltip_with_action stored (button/button.rs, RenderOnce for Button). The only way to hand a Button a Tooltip of one's own is its tooltip_builder, which has no public setter (button/button.rs, Button), so geometry::tooltip cannot reach it; it shows the action's key binding where one is bound (tooltip.rs, Tooltip::action)",
@@ -742,6 +755,9 @@ fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> String {
         ),
         ChromeIcon::Missing(name) => format!(
             "none: {set} holds no SVG for {name}, and no other set's icon stands in -- {absent}"
+        ),
+        ChromeIcon::Unlisted(path) => format!(
+            "none: {path} is not in the Icons page's gallery, so nothing of {set} was loaded for it, and no other set's icon stands in -- {absent}"
         ),
     }
 }
@@ -1276,10 +1292,20 @@ pub fn about_link(t: &Theme) -> WidgetInfo {
 }
 
 /// The Alert that reports a theme that failed to load (spec §2.5): the
-/// Feedback page's Error Alert, as a banner.
-pub fn theme_error_alert(t: &Theme) -> WidgetInfo {
-    super::feedback::alert(t, Severity::Error, true).instance(
-        "message",
-        "why the theme failed to load, as the loader reported it. The theme installed before stays, in the colour mode asked for, and the next theme that loads clears the Alert",
-    )
+/// Feedback page's Error Alert, as a banner, showing `icon` of the icon set
+/// named `set`.
+pub fn theme_error_alert(t: &Theme, icon: &ChromeIcon, set: &str) -> WidgetInfo {
+    super::feedback::alert(t, Severity::Error, true)
+        .instance(
+            "message",
+            "why the theme failed to load, as the loader reported it. The theme installed before stays, in the colour mode asked for, and the next theme that loads clears the Alert",
+        )
+        .instance(
+            "icon",
+            chrome_icon_note(
+                icon,
+                set,
+                "an Alert always holds an Icon (alert.rs, Alert), so the showcase hands it an empty one, sized to nothing and invisible, which gpui never paints (gpui-pre/elements/div.rs, Interactivity::paint); the message keeps the gap an icon would have beside it",
+            ),
+        )
 }

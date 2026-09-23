@@ -1428,8 +1428,15 @@ impl Render for Showcase {
             .overflow_hidden()
             .debug_selector(|| CONTENT_PANEL.into())
             .children(self.error_message.clone().map(|message| {
-                demo::alert(&self.info_ui, cx, "content-alert", message)
-                    .debug_selector(|| CONTENT_ALERT.into())
+                demo::alert(
+                    &self.info_ui,
+                    cx,
+                    "content-alert",
+                    message,
+                    self.chrome_icon(&IconName::CircleX),
+                    &self.icon_set_label(),
+                )
+                .debug_selector(|| CONTENT_ALERT.into())
             }))
             .child(
                 div()
