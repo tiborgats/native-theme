@@ -443,8 +443,8 @@ pub struct ToolbarTheme {
     #[theme(inherit_from = "defaults.background_color")]
     pub background_color: Option<Rgba>,
     /// Toolbar height in logical pixels. `None` where the platform states
-    /// no toolbar height: KDE's toolbar sizes to its content
-    /// (docs/platform-facts.md §2.13).
+    /// no toolbar height: KDE's toolbar sizes to its content, and GNOME's
+    /// `.toolbar` sets no minimum height (docs/platform-facts.md §2.13).
     #[serde(rename = "bar_height_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub bar_height: Option<f32>,

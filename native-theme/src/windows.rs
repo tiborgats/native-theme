@@ -191,39 +191,7 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeMode) {
         variant.defaults.focus_ring_width =
             Some(GetSystemMetricsForDpi(SM_CXFOCUSBORDER, dpi) as f32);
     }
-    // WinUI3 Fluent Design constants (not from OS APIs)
-    variant.button.min_height = Some(32.0);
-    let border = variant.button.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
-    variant.checkbox.indicator_width = Some(20.0);
-    variant.checkbox.label_gap = Some(8.0);
-    variant.input.min_height = Some(32.0);
-    let border = variant.input.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
-    variant.slider.track_height = Some(4.0);
-    variant.slider.thumb_diameter = Some(22.0);
-    variant.progress_bar.track_height = Some(4.0);
-    variant.tab.min_height = Some(32.0);
-    let border = variant.tab.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
-    let border = variant.menu.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
-    let border = variant.tooltip.border.get_or_insert_default();
-    border.padding_left = Some(8.0);
-    border.padding_right = Some(8.0);
-    border.padding_top = Some(8.0);
-    border.padding_bottom = Some(8.0);
-    variant.list.row_height = Some(40.0);
-    let border = variant.list.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
-    variant.toolbar.bar_height = Some(48.0);
-    variant.toolbar.item_gap = Some(4.0);
-    variant.splitter.divider_width = Some(4.0);
+    winui3_widget_sizing(variant);
 }
 
 /// Apply WinUI3 Fluent Design widget sizing constants (non-Windows testable version).
@@ -233,37 +201,53 @@ fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeMode) {
     variant.scrollbar.min_thumb_length = Some(40.0);
     variant.menu.row_height = Some(32.0);
     variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
+    winui3_widget_sizing(variant);
+}
+
+/// WinUI3 Fluent Design widget sizing constants (not from OS APIs).
+///
+/// Compiled on every target and feature set: both builds of
+/// `read_widget_sizing` call it, and the preset gate reads it.
+pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.button.min_height = Some(32.0);
     let border = variant.button.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
+    // platform-facts.md:1171 (§2.3): ButtonPadding=11,5,11,6
+    border.padding_left = Some(11.0);
+    border.padding_right = Some(11.0);
     variant.checkbox.indicator_width = Some(20.0);
     variant.checkbox.label_gap = Some(8.0);
     variant.input.min_height = Some(32.0);
     let border = variant.input.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
+    // platform-facts.md:1196 (§2.4): TextControlThemePadding=10,5,6,6
+    border.padding_left = Some(10.0);
+    border.padding_right = Some(6.0);
     variant.slider.track_height = Some(4.0);
     variant.slider.thumb_diameter = Some(22.0);
     variant.progress_bar.track_height = Some(4.0);
     variant.tab.min_height = Some(32.0);
     let border = variant.tab.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
-    let border = variant.menu.border.get_or_insert_default();
-    border.padding_left = Some(12.0);
-    border.padding_right = Some(12.0);
-    let border = variant.tooltip.border.get_or_insert_default();
+    // platform-facts.md:1318 (§2.11): 8/8 in the without-close-button context
     border.padding_left = Some(8.0);
     border.padding_right = Some(8.0);
-    border.padding_top = Some(8.0);
+    let border = variant.menu.border.get_or_insert_default();
+    // platform-facts.md:1235 (§2.6): MenuFlyoutItemThemePadding, 11 horizontal
+    border.padding_left = Some(11.0);
+    border.padding_right = Some(11.0);
+    let border = variant.tooltip.border.get_or_insert_default();
+    // platform-facts.md:1257-1258 (§2.7): ToolTipBorderPadding=9,6,9,8
+    border.padding_left = Some(9.0);
+    border.padding_right = Some(9.0);
+    border.padding_top = Some(6.0);
     border.padding_bottom = Some(8.0);
     variant.list.row_height = Some(40.0);
     let border = variant.list.border.get_or_insert_default();
+    // platform-facts.md:1390 (§2.15): 12
     border.padding_left = Some(12.0);
     border.padding_right = Some(12.0);
+    // platform-facts.md:1351 (§2.13): CommandBar's default compact mode, AppBarThemeCompactHeight
     variant.toolbar.bar_height = Some(48.0);
-    variant.toolbar.item_gap = Some(4.0);
+    // platform-facts.md:1352 (§2.13)
+    variant.toolbar.item_gap = Some(0.0);
     variant.splitter.divider_width = Some(4.0);
 }
 

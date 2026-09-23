@@ -96,6 +96,7 @@ disabled_text_color = "#cccccc"
 
 
 [light.button.border]
+# platform-facts.md:1171-1172 (§2.3): Adwaita CSS 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 
@@ -113,6 +114,7 @@ disabled_text_color = "#cccccc"
 
 
 [light.input.border]
+# platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
 
@@ -127,12 +129,19 @@ disabled_text_color = "#cccccc"
 unchecked_background = "#ffffff"
 unchecked_border_color = "#d5d5d5"
 
+
+[light.checkbox.border]
+# platform-facts.md:1216-1217 (§2.5): Adwaita CSS check { padding: 3px }
+padding_horizontal_px = 3.0
+padding_vertical_px = 3.0
+
 [light.tooltip]
 background_color = "#2e3436"
 max_width_px = 360.0
 
 
 [light.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): Adwaita CSS 10; 6
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -169,6 +178,7 @@ hover_text_color = "#2e3436"
 
 
 [light.tab.border]
+# platform-facts.md:1318-1319 (§2.11): Adwaita CSS 12; 3
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [light.menu]
@@ -180,6 +190,7 @@ disabled_text_color = "#cccccc"
 
 
 [light.menu.border]
+# platform-facts.md:1235-1236 (§2.6): Adwaita CSS 12 ($menu_padding); 0
 padding_horizontal_px = 12.0
 padding_vertical_px = 0.0
 [light.list]
@@ -191,11 +202,25 @@ disabled_text_color = "#cccccc"
 
 
 [light.list.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 8.0
+# platform-facts.md:1390-1391 (§2.15): Adwaita CSS plain list context, 2
+padding_horizontal_px = 2.0
+padding_vertical_px = 2.0
 [light.toolbar]
-bar_height_px = 47.0
+# bar_height not stated: platform-facts.md:1351 (§2.13), .toolbar sets no min-height
+# platform-facts.md:1352 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
+
+
+[light.toolbar.border]
+# platform-facts.md:1353-1354 (§2.13): Adwaita CSS .toolbar { padding: 6px }
+padding_horizontal_px = 6.0
+padding_vertical_px = 6.0
+
+
+[light.status_bar.border]
+# platform-facts.md:1372-1373 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
+padding_horizontal_px = 10.0
+padding_vertical_px = 6.0
 
 [light.sidebar]
 background_color = "#ebebed"
@@ -210,6 +235,12 @@ background_color = "#ffffff"
 
 [light.popover.font]
 color = "#2e3436"
+
+
+[light.popover.border]
+# platform-facts.md:1412-1413 (§2.16): Adwaita CSS popover > contents { padding: 8px }
+padding_horizontal_px = 8.0
+padding_vertical_px = 8.0
 [light.separator]
 line_color = "#d5d5d5"
 
@@ -242,6 +273,10 @@ icon_size_px =32.0
 
 [light.dialog.border]
 corner_radius_px = 18.0
+# platform-facts.md:1491-1492 (§2.22): 24; 32 top / 24 bottom
+padding_horizontal_px = 24.0
+padding_top_px = 32.0
+padding_bottom_px = 24.0
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
@@ -266,7 +301,9 @@ disabled_text_color = "#cccccc"
 
 
 [light.combo_box.border]
+# platform-facts.md:1552, :1557 (§2.24): ← button padding (10px); ← button (5px)
 padding_horizontal_px = 10.0
+padding_vertical_px = 5.0
 [light.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
@@ -275,8 +312,6 @@ active_text_color = "#ffffff"
 hover_background = "#d5d5d5"
 
 
-[light.segmented_control.border]
-padding_horizontal_px = 12.0
 [light.card]
 
 
@@ -383,6 +418,7 @@ disabled_text_color = "#4a4a4e"
 
 
 [dark.button.border]
+# platform-facts.md:1171-1172 (§2.3): Adwaita CSS 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 
@@ -400,6 +436,7 @@ disabled_text_color = "#4a4a4e"
 
 
 [dark.input.border]
+# platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
 
@@ -414,12 +451,19 @@ disabled_text_color = "#4a4a4e"
 unchecked_background = "#303034"
 unchecked_border_color = "#4a4a4e"
 
+
+[dark.checkbox.border]
+# platform-facts.md:1216-1217 (§2.5): Adwaita CSS check { padding: 3px }
+padding_horizontal_px = 3.0
+padding_vertical_px = 3.0
+
 [dark.tooltip]
 background_color = "#3a3a3e"
 max_width_px = 360.0
 
 
 [dark.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): Adwaita CSS 10; 6
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -456,6 +500,7 @@ hover_text_color = "#ffffff"
 
 
 [dark.tab.border]
+# platform-facts.md:1318-1319 (§2.11): Adwaita CSS 12; 3
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [dark.menu]
@@ -467,6 +512,7 @@ disabled_text_color = "#4a4a4e"
 
 
 [dark.menu.border]
+# platform-facts.md:1235-1236 (§2.6): Adwaita CSS 12 ($menu_padding); 0
 padding_horizontal_px = 12.0
 padding_vertical_px = 0.0
 [dark.list]
@@ -478,11 +524,25 @@ disabled_text_color = "#4a4a4e"
 
 
 [dark.list.border]
-padding_horizontal_px = 12.0
-padding_vertical_px = 8.0
+# platform-facts.md:1390-1391 (§2.15): Adwaita CSS plain list context, 2
+padding_horizontal_px = 2.0
+padding_vertical_px = 2.0
 [dark.toolbar]
-bar_height_px = 47.0
+# bar_height not stated: platform-facts.md:1351 (§2.13), .toolbar sets no min-height
+# platform-facts.md:1352 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
+
+
+[dark.toolbar.border]
+# platform-facts.md:1353-1354 (§2.13): Adwaita CSS .toolbar { padding: 6px }
+padding_horizontal_px = 6.0
+padding_vertical_px = 6.0
+
+
+[dark.status_bar.border]
+# platform-facts.md:1372-1373 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
+padding_horizontal_px = 10.0
+padding_vertical_px = 6.0
 
 [dark.sidebar]
 background_color = "#2e2e32"
@@ -497,6 +557,12 @@ background_color = "#36363a"
 
 [dark.popover.font]
 color = "#ffffff"
+
+
+[dark.popover.border]
+# platform-facts.md:1412-1413 (§2.16): Adwaita CSS popover > contents { padding: 8px }
+padding_horizontal_px = 8.0
+padding_vertical_px = 8.0
 [dark.separator]
 line_color = "#4a4a4e"
 
@@ -529,6 +595,10 @@ icon_size_px =32.0
 
 [dark.dialog.border]
 corner_radius_px = 18.0
+# platform-facts.md:1491-1492 (§2.22): 24; 32 top / 24 bottom
+padding_horizontal_px = 24.0
+padding_top_px = 32.0
+padding_bottom_px = 24.0
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
@@ -553,7 +623,9 @@ disabled_text_color = "#4a4a4e"
 
 
 [dark.combo_box.border]
+# platform-facts.md:1552, :1557 (§2.24): ← button padding (10px); ← button (5px)
 padding_horizontal_px = 10.0
+padding_vertical_px = 5.0
 [dark.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
@@ -562,8 +634,6 @@ active_text_color = "#ffffff"
 hover_background = "#464649"
 
 
-[dark.segmented_control.border]
-padding_horizontal_px = 12.0
 [dark.card]
 
 

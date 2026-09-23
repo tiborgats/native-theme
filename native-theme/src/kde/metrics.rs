@@ -5,14 +5,17 @@
 ///
 /// All values are in logical pixels (integers from breezemetrics.h, cast to f32).
 /// Each value is annotated with the corresponding breezemetrics.h constant name.
+#[cfg_attr(not(all(target_os = "linux", feature = "kde")), allow(dead_code))]
 pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Button
     variant.button.min_width = Some(80.0); // Button_MinWidth
     let border = variant.button.border.get_or_insert_default();
+    // platform-facts.md:1171-1172 (§2.3): Button_MarginWidth = 6 on both axes
+    // (breezestyle.cpp expands the button size by the margin on each side).
     border.padding_left = Some(6.0); // Button_MarginWidth
     border.padding_right = Some(6.0); // Button_MarginWidth
-    border.padding_top = Some(5.0); // Breeze measured frame+margin
-    border.padding_bottom = Some(5.0); // Breeze measured frame+margin
+    border.padding_top = Some(6.0); // Button_MarginWidth
+    border.padding_bottom = Some(6.0); // Button_MarginWidth
     variant.button.icon_text_gap = Some(4.0); // Button_ItemSpacing
 
     // Checkbox
@@ -21,6 +24,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Input
     let border = variant.input.border.get_or_insert_default();
+    // platform-facts.md:1196-1197 (§2.4)
     border.padding_left = Some(6.0); // LineEdit_FrameWidth
     border.padding_right = Some(6.0); // LineEdit_FrameWidth
     border.padding_top = Some(3.0); // Breeze measured frame
@@ -46,6 +50,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.tab.min_width = Some(80.0); // TabBar_TabMinWidth
     variant.tab.min_height = Some(30.0); // TabBar_TabMinHeight
     let border = variant.tab.border.get_or_insert_default();
+    // platform-facts.md:1318-1319 (§2.11)
     border.padding_left = Some(8.0); // TabBar_TabMarginWidth
     border.padding_right = Some(8.0); // TabBar_TabMarginWidth
     border.padding_top = Some(4.0); // TabBar_TabMarginHeight
@@ -53,6 +58,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Menu
     let border = variant.menu.border.get_or_insert_default();
+    // platform-facts.md:1235-1236 (§2.6)
     border.padding_left = Some(4.0); // MenuItem_MarginWidth
     border.padding_right = Some(4.0); // MenuItem_MarginWidth
     border.padding_top = Some(4.0); // MenuItem_MarginHeight
@@ -61,6 +67,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Tooltip
     let border = variant.tooltip.border.get_or_insert_default();
+    // platform-facts.md:1257-1258 (§2.7)
     border.padding_left = Some(3.0); // ToolTip_FrameWidth
     border.padding_right = Some(3.0); // ToolTip_FrameWidth
     border.padding_top = Some(3.0); // ToolTip_FrameWidth
@@ -68,12 +75,14 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // List
     let border = variant.list.border.get_or_insert_default();
+    // platform-facts.md:1390-1391 (§2.15)
     border.padding_left = Some(2.0); // ItemView_ItemMarginLeft
     border.padding_right = Some(2.0); // ItemView_ItemMarginLeft
     border.padding_top = Some(1.0); // ItemView_ItemMarginTop
     border.padding_bottom = Some(1.0); // ItemView_ItemMarginTop
 
     // Toolbar
+    // platform-facts.md:1352 (§2.13)
     variant.toolbar.item_gap = Some(0.0); // ToolBar_ItemSpacing
 
     // Splitter

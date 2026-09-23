@@ -93,8 +93,10 @@ disabled_background = "#f9f9f900"
 
 
 [light.button.border]
+# platform-facts.md:1171-1172 (§2.3): WinUI3 ButtonPadding=11,5,11,6
 padding_horizontal_px = 11.0
-padding_vertical_px = 6.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
 
 [light.button.font]
 color = "#1a1a1a"
@@ -112,8 +114,11 @@ disabled_background = "#f9f9f900"
 
 
 [light.input.border]
-padding_horizontal_px = 10.0
-padding_vertical_px = 5.0
+# platform-facts.md:1196-1197 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
+padding_right_px = 6.0
+padding_left_px = 10.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
 
 [light.input.font]
 color = "#1a1a1a"
@@ -137,8 +142,10 @@ max_width_px = 320.0
 
 
 [light.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): WinUI3 ToolTipBorderPadding=9,6,9,8
 padding_horizontal_px = 9.0
-padding_vertical_px = 7.0
+padding_top_px = 6.0
+padding_bottom_px = 8.0
 
 [light.tooltip.font]
 color = "#ffffff"
@@ -183,6 +190,7 @@ hover_background = "#0000000a"
 
 
 [light.tab.border]
+# platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context 8/8; 3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [light.menu]
@@ -197,8 +205,10 @@ disabled_text_color = "#c5c5c5"
 
 
 [light.menu.border]
+# platform-facts.md:1235-1236 (§2.6): WinUI3 11; mouse context 4 top / 5 bottom
 padding_horizontal_px = 11.0
-padding_vertical_px = 8.0
+padding_top_px = 4.0
+padding_bottom_px = 5.0
 [light.list]
 alternate_row_background = "#f9f9f9"
 row_height_px = 40.0
@@ -210,11 +220,21 @@ disabled_text_color = "#c5c5c5"
 
 
 [light.list.border]
+# platform-facts.md:1390-1391 (§2.15): WinUI3 12; 0
 padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
+padding_vertical_px = 0.0
 [light.toolbar]
+# platform-facts.md:1351 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
 bar_height_px = 48.0
+# platform-facts.md:1352 (§2.13): WinUI3 0
 item_gap_px = 0.0
+
+
+[light.toolbar.border]
+# platform-facts.md:1353-1354 (§2.13): WinUI3 CommandBar Padding=4,0,0,0
+padding_right_px = 0.0
+padding_left_px = 4.0
+padding_vertical_px = 0.0
 
 [light.sidebar]
 background_color = "#ebebeb"
@@ -231,6 +251,13 @@ background_color = "#ffffff"
 
 [light.popover.font]
 color = "#1a1a1a"
+
+
+[light.popover.border]
+# platform-facts.md:1412-1413 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
+padding_horizontal_px = 16.0
+padding_top_px = 15.0
+padding_bottom_px = 17.0
 [light.separator]
 line_color = "#e5e5e5"
 
@@ -274,6 +301,12 @@ icon_size_px =32.0
 size_pt =15.0
 weight = 600
 
+
+[light.dialog.border]
+# platform-facts.md:1491-1492 (§2.22): WinUI3 ContentDialogPadding=24
+padding_horizontal_px = 24.0
+padding_vertical_px = 24.0
+
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
@@ -302,7 +335,10 @@ disabled_background = "#f9f9f900"
 
 
 [light.combo_box.border]
-padding_horizontal_px = 12.0
+# platform-facts.md:1552, :1557 (§2.24): WinUI3 12 left, 5 top / 7 bottom; the right side is measured to the arrow column, not stated
+padding_left_px = 12.0
+padding_top_px = 5.0
+padding_bottom_px = 7.0
 [light.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
@@ -315,9 +351,13 @@ active_text_color = "#ffffff"
 hover_background = "#0000000a"
 
 
-[light.segmented_control.border]
-padding_horizontal_px = 12.0
 [light.card]
+
+
+[light.card.border]
+# platform-facts.md:1592-1593 (§2.26): 12 (convention)
+padding_horizontal_px = 12.0
+padding_vertical_px = 12.0
 
 [light.expander]
 header_height_px = 48.0
@@ -327,6 +367,13 @@ arrow_icon_size_px =12.0
 hover_background = "#0000000a"
 # Fluent Expander chevron color = TextFillColorPrimary
 arrow_color = "#1a1a1ae0"
+
+
+[light.expander.border]
+# platform-facts.md:1607-1608 (§2.27): WinUI3 header context, ExpanderHeaderPadding=16,0,0,0
+padding_right_px = 0.0
+padding_left_px = 16.0
+padding_vertical_px = 0.0
 
 [light.window]
 # Interactive state colors (platform-facts.md section 2.2 Windows)
@@ -424,8 +471,10 @@ disabled_background = "#33333300"
 
 
 [dark.button.border]
+# platform-facts.md:1171-1172 (§2.3): WinUI3 ButtonPadding=11,5,11,6
 padding_horizontal_px = 11.0
-padding_vertical_px = 6.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
 
 [dark.button.font]
 color = "#ffffff"
@@ -443,8 +492,11 @@ disabled_background = "#33333300"
 
 
 [dark.input.border]
-padding_horizontal_px = 10.0
-padding_vertical_px = 5.0
+# platform-facts.md:1196-1197 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
+padding_right_px = 6.0
+padding_left_px = 10.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
 
 [dark.input.font]
 color = "#ffffff"
@@ -468,8 +520,10 @@ max_width_px = 320.0
 
 
 [dark.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): WinUI3 ToolTipBorderPadding=9,6,9,8
 padding_horizontal_px = 9.0
-padding_vertical_px = 7.0
+padding_top_px = 6.0
+padding_bottom_px = 8.0
 
 [dark.tooltip.font]
 color = "#ffffff"
@@ -514,6 +568,7 @@ hover_background = "#ffffff0f"
 
 
 [dark.tab.border]
+# platform-facts.md:1318-1319 (§2.11): WinUI3 without-close-button context 8/8; 3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [dark.menu]
@@ -528,8 +583,10 @@ disabled_text_color = "#454545"
 
 
 [dark.menu.border]
+# platform-facts.md:1235-1236 (§2.6): WinUI3 11; mouse context 4 top / 5 bottom
 padding_horizontal_px = 11.0
-padding_vertical_px = 8.0
+padding_top_px = 4.0
+padding_bottom_px = 5.0
 [dark.list]
 alternate_row_background = "#262626"
 row_height_px = 40.0
@@ -541,11 +598,21 @@ disabled_text_color = "#454545"
 
 
 [dark.list.border]
+# platform-facts.md:1390-1391 (§2.15): WinUI3 12; 0
 padding_horizontal_px = 12.0
-padding_vertical_px = 4.0
+padding_vertical_px = 0.0
 [dark.toolbar]
+# platform-facts.md:1351 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
 bar_height_px = 48.0
+# platform-facts.md:1352 (§2.13): WinUI3 0
 item_gap_px = 0.0
+
+
+[dark.toolbar.border]
+# platform-facts.md:1353-1354 (§2.13): WinUI3 CommandBar Padding=4,0,0,0
+padding_right_px = 0.0
+padding_left_px = 4.0
+padding_vertical_px = 0.0
 
 [dark.sidebar]
 background_color = "#272727"
@@ -562,6 +629,13 @@ background_color = "#2d2d2d"
 
 [dark.popover.font]
 color = "#ffffff"
+
+
+[dark.popover.border]
+# platform-facts.md:1412-1413 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
+padding_horizontal_px = 16.0
+padding_top_px = 15.0
+padding_bottom_px = 17.0
 [dark.separator]
 line_color = "#3b3b3b"
 
@@ -605,6 +679,12 @@ icon_size_px =32.0
 size_pt =15.0
 weight = 600
 
+
+[dark.dialog.border]
+# platform-facts.md:1491-1492 (§2.22): WinUI3 ContentDialogPadding=24
+padding_horizontal_px = 24.0
+padding_vertical_px = 24.0
+
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
@@ -633,7 +713,10 @@ disabled_background = "#33333300"
 
 
 [dark.combo_box.border]
-padding_horizontal_px = 12.0
+# platform-facts.md:1552, :1557 (§2.24): WinUI3 12 left, 5 top / 7 bottom; the right side is measured to the arrow column, not stated
+padding_left_px = 12.0
+padding_top_px = 5.0
+padding_bottom_px = 7.0
 [dark.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
@@ -646,9 +729,13 @@ active_text_color = "#000000"
 hover_background = "#ffffff0f"
 
 
-[dark.segmented_control.border]
-padding_horizontal_px = 12.0
 [dark.card]
+
+
+[dark.card.border]
+# platform-facts.md:1592-1593 (§2.26): 12 (convention)
+padding_horizontal_px = 12.0
+padding_vertical_px = 12.0
 
 [dark.expander]
 header_height_px = 48.0
@@ -658,6 +745,13 @@ arrow_icon_size_px =12.0
 hover_background = "#ffffff0f"
 # Fluent Expander chevron color = TextFillColorPrimary
 arrow_color = "#ffffffe0"
+
+
+[dark.expander.border]
+# platform-facts.md:1607-1608 (§2.27): WinUI3 header context, ExpanderHeaderPadding=16,0,0,0
+padding_right_px = 0.0
+padding_left_px = 16.0
+padding_vertical_px = 0.0
 
 [dark.window]
 # Interactive state colors (platform-facts.md section 2.2 Windows)

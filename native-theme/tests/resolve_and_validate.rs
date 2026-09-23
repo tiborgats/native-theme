@@ -563,14 +563,14 @@ fn a_negative_padding_side_is_a_validation_error() {
 
 #[test]
 fn toolbar_bar_height_is_none_where_absent() {
-    let mut v = Theme::preset("kde-breeze")
+    let mut v = Theme::preset("macos-sonoma")
         .unwrap()
         .into_variant(ColorMode::Light)
         .unwrap();
     let stated = resolve_mode(v.clone()).unwrap().toolbar.bar_height;
     assert!(
         stated.is_some(),
-        "precondition: kde-breeze states a bar height today"
+        "precondition: macos-sonoma states a bar height"
     );
     v.toolbar.bar_height = None;
     assert_eq!(resolve_mode(v).unwrap().toolbar.bar_height, None);

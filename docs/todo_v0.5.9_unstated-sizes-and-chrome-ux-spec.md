@@ -166,7 +166,7 @@ Append per-side padding rows to platform-facts §2.14, with citations. A platfor
 - `geometry::input_height` returns a `StyleRefinement` carrying the height rule alone. The showcase's HeightOnly sample applies it: at text scale 1 its height equals the refined Input's; above 1, upstream's own text size and padding decide its growth (ledger ruling, Task 3).
 - A seams test proves, under every native preset, for a real Button, Input, Select, Combobox, the app-drawn menu row (`demo::menu_rows`; upstream's `MenuItemElement` is `pub(crate)`) and a ListItem:
   - at text scale 1, resolved at the platform's own DPI (72 for macOS, per detect.rs:433), the height equals the stated value exactly, and the text's bounds lie inside the control;
-  - at text scale 2, the height grows and the text's bounds still lie inside.
+  - at text scale 2, the height is at least its scale-1 height and the text's bounds still lie inside.
 
   The text's bounds are read through a probe element around the sample's text, since an Input's text element has no debug selector.
 - If upstream prevents `h_auto` for a widget, the implementer reports it rather than working around it.

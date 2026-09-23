@@ -186,7 +186,6 @@ disabled_text_color = "#bcc0cc"
 padding_horizontal_px = 8.0
 padding_vertical_px = 2.0
 [light.toolbar]
-bar_height_px = 40.0
 item_gap_px = 6.0
 
 [light.sidebar]
@@ -459,7 +458,6 @@ disabled_text_color = "#51576d"
 padding_horizontal_px = 8.0
 padding_vertical_px = 2.0
 [dark.toolbar]
-bar_height_px = 40.0
 item_gap_px = 6.0
 
 [dark.sidebar]

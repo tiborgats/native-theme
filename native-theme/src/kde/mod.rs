@@ -4,8 +4,6 @@
 pub mod colors;
 /// Qt font string parsing with weight extraction.
 pub mod fonts;
-/// Breeze widget sizing constants.
-pub mod metrics;
 
 use crate::Rgba;
 use crate::model::IconSizes;
@@ -36,7 +34,7 @@ pub fn from_kde_content_pure(
     // Populate colors, fonts, and widget sizing on the variant
     colors::populate_colors(&ini, &mut variant);
     fonts::populate_fonts(&ini, &mut variant);
-    metrics::populate_widget_sizing(&mut variant);
+    crate::kde_metrics::populate_widget_sizing(&mut variant);
 
     // KDE-06: Accessibility flags (pure -- no I/O)
     // AnimationDurationFactor from [KDE]

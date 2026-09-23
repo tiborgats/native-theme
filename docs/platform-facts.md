@@ -435,7 +435,7 @@ WinUI3 focus visual primary border is 2px ✅ (differs from Win32
 | ListView        | item height         | WinUI3 default                | 40px     | ✅ ListViewItemMinHeight=40 |
 | ListView        | horizontal padding  | WinUI3 default                | 12px     | ✅ `Padding="12,0,12,0"` in Grid-based style (first style uses 16/12) |
 | ListView        | vertical padding    | WinUI3 default                | 0px      | ✅ vertical space from `MinHeight=40`, not padding |
-| CommandBar      | height (default)    | WinUI3 default                | 64px     | ✅ AppBarThemeMinHeight=64 |
+| CommandBar      | height (default)    | WinUI3 default                | 48px     | ✅ `DefaultCommandBarStyle` sets `ClosedDisplayMode="Compact"` ([CommandBar_themeresources.xaml:86](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/CommandBar_themeresources.xaml#L86)) and its `ContentRoot` has `MinHeight=AppBarThemeCompactHeight` (:795) = 48 (:72); `AppBarThemeMinHeight=64` (:71) is referenced nowhere else in that file. Microsoft Learn [Command bar](https://learn.microsoft.com/en-us/windows/apps/design/controls/command-bar): "**Compact**: The default mode." |
 | CommandBar      | height (compact)    | WinUI3 default                | 48px     | ✅ AppBarThemeCompactHeight=48 |
 | CommandBar      | item spacing        | WinUI3 default                | 0px      | ✅ StackPanel has no Spacing; visual separation from AppBarButton inner margins (2,6,2,6) |
 | CommandBar      | padding             | WinUI3 default                | 4px left only | ✅ `Padding="4,0,0,0"` |
@@ -1213,8 +1213,8 @@ against the `danger_color` color if using it as a fill).
 | `label_gap`       | AppKit: 4                 | WinUI3: 8           | `CheckBox_ItemSpacing` = 4       | **(Adwaita CSS)**: 8     |
 | `border.corner_radius`        | ← `defaults.border.corner_radius`      | ← `defaults.border.corner_radius`| ← `defaults.border.corner_radius`              | ← `defaults.border.corner_radius`     |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
-| `border.padding_horizontal` | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator |
-| `border.padding_vertical` | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator |
+| `border.padding_horizontal` | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(Adwaita CSS)**: 3 — `check, radio { padding: 3px }` ([_checks.scss:20-26](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L20-26)) |
+| `border.padding_vertical` | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(Adwaita CSS)**: 3 — same `check, radio` rule |
 | `checked_background`   | ← `defaults.accent_color`      | ← `defaults.accent_color`    | ← `defaults.accent_color`         | ← `defaults.accent_color`    |
 | `disabled_opacity`  | ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`     | ← `defaults.disabled_opacity`|
 
@@ -1348,10 +1348,10 @@ have no platform limit — preset values are our defaults.
 | `font.weight`  | ← `defaults.font`    | ← `defaults.font` | `[General] toolBarFont` field 4 | ← `defaults.font`  |
 | `font.style`   | ← `defaults.font`    | ← `defaults.font` | `[General] toolBarFont` style   | ← `defaults.font`  |
 | `font.color`   | ← `defaults.font.color`   | ← `defaults.font.color`   | ← `defaults.font.color`          | ← `defaults.font.color` |
-| `bar_height`       | NSToolbar: 38         | WinUI3 CommandBar: default=64, compact mode=48 (`AppBarThemeCompactHeight`) | **(none)** — sizes to content  | **(Adwaita CSS)**: 47|
-| `item_gap` | AppKit: 8             | WinUI3: 0 (visual gap from AppBarButton margins) | `ToolBar_ItemSpacing` = 0         | **(Adwaita CSS)**: 6 |
-| `border.padding_horizontal` | 8 **(measured)** NSToolbar | WinUI3: 4 left / 0 right | `ToolBar_ItemMargin` = 6   | **(Adwaita CSS)**: 6 |
-| `border.padding_vertical`  | 0                         | WinUI3: 0                      | 0                          | 0                    |
+| `bar_height`       | NSToolbar: 38         | WinUI3 CommandBar: 48 (`AppBarThemeCompactHeight`; the default mode is Compact, [CommandBar_themeresources.xaml:86, :795](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/CommandBar_themeresources.xaml#L86)) | **(none)** — sizes to content  | **(none)** — `.toolbar` sets no min-height ([_toolbars.scss:99-101](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L99-101)); the 47 is `headerbar`'s `min-height` ([_header-bar.scss:2](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_header-bar.scss#L2)), not the toolbar's |
+| `item_gap` | AppKit: 8             | WinUI3: 0 (visual gap from AppBarButton margins) | `ToolBar_ItemSpacing` = 0         | **(Adwaita CSS)**: 6 — `.toolbar { border-spacing: 6px }` ([_toolbars.scss:99-101](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L99-101)) |
+| `border.padding_horizontal` | 8 **(measured)** NSToolbar | WinUI3: 4 left / 0 right | `ToolBar_ItemMargin` = 6   | **(Adwaita CSS)**: 6 — `.toolbar { padding: 6px }` ([_toolbars.scss:99-101](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_toolbars.scss#L99-101)) |
+| `border.padding_vertical`  | 0                         | WinUI3: 0                      | `ToolBar_ItemMargin` = 6 — Qt sets the toolbar layout's margin on all four sides, `PM_ToolBarItemMargin` + `PM_ToolBarFrameWidth` ([qtoolbarlayout.cpp:87-89](https://github.com/qt/qtbase/blob/cb18a8e32caf93b3cd2373921ba1a4a41be90323/src/widgets/widgets/qtoolbarlayout.cpp#L87-L89)); Breeze returns `ToolBar_ItemMargin` = 6 and `ToolBar_FrameWidth` = 0 ([breezestyle.cpp:732-733, :807-808](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L732-L733); [breezemetrics.h:105, :110](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L105)) | **(Adwaita CSS)**: 6 — same `.toolbar { padding: 6px }` rule |
 | `background_color`   | ← `defaults.background_color`   | ← `defaults.background_color`   | ← `defaults.background_color`          | ← `defaults.background_color` |
 | `icon_size`    | default=32, small mode=24 (`NSToolbar.SizeMode`, deprecated) — see §2.1.8 toolbar | ↕ 20 — see §2.1.8 toolbar | 22 — see §2.1.8 toolbar | 16 — see §2.1.8 toolbar |
 
@@ -1409,8 +1409,8 @@ as theme properties — they inherit the list row styling above.
 | `border.line_width`  | ← `defaults.border.line_width`     | ← `defaults.border.line_width`   | ← `defaults.border.line_width`            | ← `defaults.border.line_width`     |
 | `border.corner_radius`     | ← `defaults.border.corner_radius_lg`  | ← `defaults.border.corner_radius_lg` | ← `defaults.border.corner_radius_lg` | ← `defaults.border.corner_radius_lg` |
 | `border.shadow_enabled`     | yes (system popup shadow)| yes (Flyout elevation)  | yes (KWin compositor)   | **(Adwaita CSS)** box-shadow|
-| `border.padding_horizontal` | **(none)** — content provides own padding | **(none)** — content provides own padding | **(none)** — content provides own padding | **(none)** — content provides own padding |
-| `border.padding_vertical` | **(none)** — content provides own padding | **(none)** — content provides own padding | **(none)** — content provides own padding | **(none)** — content provides own padding |
+| `border.padding_horizontal` | **(none)** — content provides own padding | WinUI3: 16 — `FlyoutContentPadding=16,15,16,17` set as the FlyoutPresenter `Padding` ([FlyoutPresenter_themeresources.xaml:20, :29](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/FlyoutPresenter_themeresources.xaml#L20)) | **(none)** — content provides own padding | **(Adwaita CSS)**: 8 — `popover > contents { padding: 8px }` ([_popovers.scss:7-14](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_popovers.scss#L7-14)); a menu popover's contents have 0 (`popover.menu > contents { padding: 0 }`, [_menus.scss:1, :58-59](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_menus.scss#L58-59)) |
+| `border.padding_vertical` | **(none)** — content provides own padding | WinUI3: 15 top / 17 bottom (`FlyoutContentPadding=16,15,16,17`) | **(none)** — content provides own padding | **(Adwaita CSS)**: 8 — same `popover > contents` rule |
 
 ### 2.17 Splitter
 
@@ -1554,7 +1554,7 @@ rotating `process-working-symbolic` icon.
 | `arrow_area_width`  | ~16–18px **(measured)**  | WinUI3: 38             | 20px                            | **(none)** — inline icon     |
 | `border.corner_radius`            | ← `defaults.border.corner_radius`     | ← `defaults.border.corner_radius`   | ← `defaults.border.corner_radius`            | ← `defaults.border.corner_radius`         |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
-| `border.padding_vertical` | ~3px **(measured)** | WinUI3: 5 top / 7 bottom | **(none)** — sizes to content | ← button (5px) |
+| `border.padding_vertical` | ~3px **(measured)** | WinUI3: 5 top / 7 bottom | `ComboBox_FrameWidth` = 6 — a non-editable combo box expands by it on both axes ([breezestyle.cpp:3366-3367](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L3366-L3367); `PM_ComboBoxFrameWidth` picks it, :727) | ← button (5px) |
 | `disabled_opacity`  | ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`     | ← `defaults.disabled_opacity`|
 
 ### 2.25 Segmented Control
@@ -1604,8 +1604,8 @@ resources but no Card control (open proposal #6543). GNOME defines
 | `font.color`          | ← `defaults.font.color`    | ← `defaults.font.color`    | ← `defaults.font.color`     | ← `defaults.font.color`     |
 | `header_height`   | **(none)** — content-sized  | WinUI3 Expander: 48      | **(none)** — content-sized   | AdwExpanderRow: 50           |
 | `arrow_icon_size`      | ~13px **(measured)**        | WinUI3 chevron glyph: 12 | `ItemView_ArrowSize` = 10    | 16px (pan-end-symbolic)      |
-| `border.padding_horizontal` | **(none)** — app-defined | WinUI3: 16            | **(none)** — app-defined     | **(Adwaita CSS)** row padding|
-| `border.padding_vertical`  | **(none)** — app-defined | WinUI3: 16            | **(none)** — app-defined     | **(Adwaita CSS)** row padding|
+| `border.padding_horizontal` | **(none)** — app-defined | WinUI3 header: 16 left / 0 right (`ExpanderHeaderPadding=16,0,0,0`, [Expander_themeresources.xaml:80](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/Expander/Expander_themeresources.xaml#L80)); the content area's `ExpanderContentPadding=16` (:86) is the content context | **(none)** — app-defined     | **(Adwaita CSS)** row padding|
+| `border.padding_vertical`  | **(none)** — app-defined | WinUI3 header: 0 (`ExpanderHeaderPadding=16,0,0,0`) | **(none)** — app-defined     | **(Adwaita CSS)** row padding|
 | `border.corner_radius`          | **(none)**                  | ← `defaults.border.corner_radius`     | `Frame_FrameRadius` = 5      | 6px (expander title)         |
 | `border.color` | **(none)** | ← `defaults.border.color` | **(none)** | **(Adwaita CSS)** expander border |
 | `border.line_width` | **(none)** | ← `defaults.border.line_width` | **(none)** | ← `defaults.border.line_width` |
@@ -1716,7 +1716,7 @@ Below are the authoritative sources used, organized by platform.
 | ListView item height=40 | [ListViewItem_themeresources.xaml](https://github.com/microsoft/microsoft-ui-xaml/blob/main/src/controls/dev/CommonStyles/ListViewItem_themeresources.xaml) |
 | ToggleSwitch 40×20, thumb 12/14 | [ToggleSwitch_themeresources.xaml](https://github.com/microsoft/microsoft-ui-xaml/blob/main/src/controls/dev/CommonStyles/ToggleSwitch_themeresources.xaml) |
 | ContentDialog 320-548 × 184-756, padding=24, button spacing=8, title=20px SemiBold | [ContentDialog_themeresources.xaml](https://github.com/microsoft/microsoft-ui-xaml/blob/main/src/controls/dev/CommonStyles/ContentDialog_themeresources.xaml) |
-| CommandBar 64/48, item spacing=0 (StackPanel), padding=4,0,0,0 | [CommandBar_themeresources.xaml](https://github.com/microsoft/microsoft-ui-xaml/blob/main/src/controls/dev/CommonStyles/CommandBar_themeresources.xaml) |
+| CommandBar height 48 (compact: the default style's `ClosedDisplayMode="Compact"` and `ContentRoot` `MinHeight=AppBarThemeCompactHeight`) / 64 (`AppBarThemeMinHeight`, not used by the default style), item spacing=0 (StackPanel), padding=4,0,0,0 | [CommandBar_themeresources.xaml](https://github.com/microsoft/microsoft-ui-xaml/blob/main/src/controls/dev/CommonStyles/CommandBar_themeresources.xaml); heights verified at [8463f45](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/CommandBar_themeresources.xaml#L71-L72): :71 (64), :72 (48), :86 (Compact), :795 (MinHeight) |
 | ProgressRing 32×32, stroke=4, min=16×16 | [ProgressRing_themeresources.xaml](https://github.com/microsoft/microsoft-ui-xaml/blob/main/src/controls/dev/ProgressRing/ProgressRing_themeresources.xaml) and ProgressRing.xaml template (`MinWidth/MinHeight=16`) |
 | Spacing token pixel values | [FluentUI spacings.ts](https://github.com/microsoft/fluentui/blob/master/packages/tokens/src/global/spacings.ts) |
 | Spacing token names (XXSmall, sNudge etc.) | Informal shorthand. Fluent 2 uses `size20..size320` per [Fluent 2 Layout](https://fluent2.microsoft.design/layout). Code uses `spacingHorizontalXXS` etc. |

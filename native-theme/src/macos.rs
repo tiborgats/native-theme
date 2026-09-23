@@ -254,14 +254,16 @@ fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec
 /// Values based on AppKit intrinsic content sizes and Apple Human Interface
 /// Guidelines for standard control dimensions.
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn macos_widget_defaults() -> crate::ThemeMode {
+pub(crate) fn macos_widget_defaults() -> crate::ThemeMode {
     use crate::model::border::WidgetBorderSpec;
     crate::ThemeMode {
         button: crate::ButtonTheme {
             min_height: Some(22.0), // NSButton regular control size
+            // platform-facts.md:1171 (§2.3): ~8 (WebKit); the legacy HIG 12 is
+            // inter-button spacing (platform-facts.md:195)
             border: Some(WidgetBorderSpec {
-                padding_left: Some(12.0),
-                padding_right: Some(12.0),
+                padding_left: Some(8.0),
+                padding_right: Some(8.0),
                 ..Default::default()
             }),
             ..Default::default()
@@ -273,6 +275,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         input: crate::InputTheme {
             min_height: Some(22.0), // NSTextField regular
+            // platform-facts.md:1196 (§2.4)
             border: Some(WidgetBorderSpec {
                 padding_left: Some(4.0),
                 padding_right: Some(4.0),
@@ -296,6 +299,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         tab: crate::TabTheme {
             min_height: Some(24.0), // NSTabView
+            // platform-facts.md:1318 (§2.11)
             border: Some(WidgetBorderSpec {
                 padding_left: Some(12.0),
                 padding_right: Some(12.0),
@@ -305,6 +309,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         menu: crate::MenuTheme {
             row_height: Some(22.0), // Standard menu item
+            // platform-facts.md:1235 (§2.6)
             border: Some(WidgetBorderSpec {
                 padding_left: Some(12.0),
                 padding_right: Some(12.0),
@@ -313,6 +318,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
             ..Default::default()
         },
         tooltip: crate::TooltipTheme {
+            // platform-facts.md:1257-1258 (§2.7)
             border: Some(WidgetBorderSpec {
                 padding_left: Some(4.0),
                 padding_right: Some(4.0),
@@ -324,6 +330,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         list: crate::ListTheme {
             row_height: Some(24.0), // NSTableView row
+            // platform-facts.md:1390 (§2.15)
             border: Some(WidgetBorderSpec {
                 padding_left: Some(4.0),
                 padding_right: Some(4.0),
@@ -332,8 +339,8 @@ fn macos_widget_defaults() -> crate::ThemeMode {
             ..Default::default()
         },
         toolbar: crate::ToolbarTheme {
-            bar_height: Some(38.0), // NSToolbar standard
-            item_gap: Some(8.0),
+            bar_height: Some(38.0), // platform-facts.md:1351 (§2.13): NSToolbar
+            item_gap: Some(8.0),    // platform-facts.md:1352 (§2.13): AppKit
             ..Default::default()
         },
         splitter: crate::SplitterTheme {

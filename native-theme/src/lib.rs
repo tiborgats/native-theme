@@ -98,6 +98,10 @@ pub mod icons;
 /// KDE theme reader.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub mod kde;
+/// Breeze widget sizing constants. Compiled on every target and feature set,
+/// so the preset gate sees the values the KDE reader states.
+#[path = "kde/metrics.rs"]
+pub(crate) mod kde_metrics;
 /// Theme data model types.
 pub mod model;
 /// Theme pipeline: reader -> preset merge -> resolve -> validate.

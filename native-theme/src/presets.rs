@@ -347,6 +347,9 @@ pub(crate) fn to_toml(theme: &Theme) -> Result<String> {
 }
 
 #[cfg(test)]
+mod documented_sizes;
+
+#[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;

@@ -652,7 +652,9 @@ const TRIGGER_TALLER_THAN_STATED: &[(&str, &str)] =
 
 /// Under every native preset, at its own DPI: at text scale 1 each single-line
 /// control is its stated height and its text lies inside it; at text scale 2
-/// it grows, and its text still lies inside it.
+/// it is at least that tall, and its text still lies inside it. Growth is the
+/// means, not the requirement: a control with no stated vertical padding whose
+/// text exactly fills it at scale 2 (windows-11's list row) is correct.
 #[gpui::test]
 fn single_line_controls_are_their_stated_height_and_grow_with_the_text(cx: &mut TestAppContext) {
     type Case = (
@@ -722,8 +724,8 @@ fn single_line_controls_are_their_stated_height_and_grow_with_the_text(cx: &mut 
 
             let (text2, control2, _) = at(2.0, cx);
             assert!(
-                control2.size.height > control.size.height,
-                "{preset} {widget}: at text scale 2 the control is {:?}, no taller than {:?} \
+                control2.size.height >= control.size.height,
+                "{preset} {widget}: at text scale 2 the control is {:?}, shorter than {:?} \
                  at scale 1",
                 control2.size.height,
                 control.size.height

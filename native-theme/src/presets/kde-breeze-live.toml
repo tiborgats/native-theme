@@ -51,6 +51,7 @@ icon_text_gap_px = 4.0
 
 
 [light.button.border]
+# platform-facts.md:1171-1172 (§2.3): Button_MarginWidth = 6, both axes
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 [light.input]
@@ -58,6 +59,7 @@ min_height_px = 32.0
 
 
 [light.input.border]
+# platform-facts.md:1196-1197 (§2.4): LineEdit_FrameWidth = 6; 3 (measured)
 padding_horizontal_px = 6.0
 padding_vertical_px = 3.0
 [light.checkbox]
@@ -69,6 +71,7 @@ max_width_px = 300.0
 
 
 [light.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): ToolTip_FrameWidth = 3
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 [light.scrollbar]
@@ -92,6 +95,7 @@ min_height_px = 30.0
 
 
 [light.tab.border]
+# platform-facts.md:1318-1319 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [light.menu]
@@ -100,6 +104,7 @@ icon_text_gap_px = 8.0
 
 
 [light.menu.border]
+# platform-facts.md:1235-1236 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 [light.list]
@@ -107,11 +112,27 @@ row_height_px = 28.0
 
 
 [light.list.border]
+# platform-facts.md:1390-1391 (§2.15): 2; 1
 padding_horizontal_px = 2.0
 padding_vertical_px = 1.0
 [light.toolbar]
-bar_height_px = 40.0
+# bar_height not stated: platform-facts.md:1351 (§2.13), (none), sizes to content
+# platform-facts.md:1352 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
+
+
+[light.toolbar.border]
+# platform-facts.md:1353-1354 (§2.13): ToolBar_ItemMargin = 6 on all four sides
+padding_horizontal_px = 6.0
+padding_vertical_px = 6.0
+
+
+[light.status_bar.border]
+# platform-facts.md:1372-1373 (§2.14): QStatusBar item layout, 2 left / 0 right, 3 top / 2 bottom
+padding_right_px = 0.0
+padding_left_px = 2.0
+padding_top_px = 3.0
+padding_bottom_px = 2.0
 
 [light.splitter]
 divider_width_px = 1.0
@@ -131,6 +152,12 @@ max_height_px = 600.0
 button_gap_px = 6.0
 icon_size_px =32.0
 
+
+[light.dialog.border]
+# platform-facts.md:1491-1492 (§2.22): Layout_TopLevelMarginWidth = 10
+padding_horizontal_px = 10.0
+padding_vertical_px = 10.0
+
 [light.link]
 underline_enabled = true
 
@@ -147,14 +174,14 @@ arrow_area_width_px = 20.0
 
 
 [light.combo_box.border]
+# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6, both axes
 padding_horizontal_px = 6.0
+padding_vertical_px = 6.0
 [light.segmented_control]
 segment_height_px = 30.0
 separator_width_px = 1.0
 
 
-[light.segmented_control.border]
-padding_horizontal_px = 8.0
 [light.card]
 
 [light.expander]
@@ -210,6 +237,7 @@ icon_text_gap_px = 4.0
 
 
 [dark.button.border]
+# platform-facts.md:1171-1172 (§2.3): Button_MarginWidth = 6, both axes
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 [dark.input]
@@ -217,6 +245,7 @@ min_height_px = 32.0
 
 
 [dark.input.border]
+# platform-facts.md:1196-1197 (§2.4): LineEdit_FrameWidth = 6; 3 (measured)
 padding_horizontal_px = 6.0
 padding_vertical_px = 3.0
 [dark.checkbox]
@@ -228,6 +257,7 @@ max_width_px = 300.0
 
 
 [dark.tooltip.border]
+# platform-facts.md:1257-1258 (§2.7): ToolTip_FrameWidth = 3
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 [dark.scrollbar]
@@ -251,6 +281,7 @@ min_height_px = 30.0
 
 
 [dark.tab.border]
+# platform-facts.md:1318-1319 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [dark.menu]
@@ -259,6 +290,7 @@ icon_text_gap_px = 8.0
 
 
 [dark.menu.border]
+# platform-facts.md:1235-1236 (§2.6): MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 [dark.list]
@@ -266,11 +298,27 @@ row_height_px = 28.0
 
 
 [dark.list.border]
+# platform-facts.md:1390-1391 (§2.15): 2; 1
 padding_horizontal_px = 2.0
 padding_vertical_px = 1.0
 [dark.toolbar]
-bar_height_px = 40.0
+# bar_height not stated: platform-facts.md:1351 (§2.13), (none), sizes to content
+# platform-facts.md:1352 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
+
+
+[dark.toolbar.border]
+# platform-facts.md:1353-1354 (§2.13): ToolBar_ItemMargin = 6 on all four sides
+padding_horizontal_px = 6.0
+padding_vertical_px = 6.0
+
+
+[dark.status_bar.border]
+# platform-facts.md:1372-1373 (§2.14): QStatusBar item layout, 2 left / 0 right, 3 top / 2 bottom
+padding_right_px = 0.0
+padding_left_px = 2.0
+padding_top_px = 3.0
+padding_bottom_px = 2.0
 
 [dark.splitter]
 divider_width_px = 1.0
@@ -290,6 +338,12 @@ max_height_px = 600.0
 button_gap_px = 6.0
 icon_size_px =32.0
 
+
+[dark.dialog.border]
+# platform-facts.md:1491-1492 (§2.22): Layout_TopLevelMarginWidth = 10
+padding_horizontal_px = 10.0
+padding_vertical_px = 10.0
+
 [dark.link]
 underline_enabled = true
 
@@ -306,14 +360,14 @@ arrow_area_width_px = 20.0
 
 
 [dark.combo_box.border]
+# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6, both axes
 padding_horizontal_px = 6.0
+padding_vertical_px = 6.0
 [dark.segmented_control]
 segment_height_px = 30.0
 separator_width_px = 1.0
 
 
-[dark.segmented_control.border]
-padding_horizontal_px = 8.0
 [dark.card]
 
 [dark.expander]
