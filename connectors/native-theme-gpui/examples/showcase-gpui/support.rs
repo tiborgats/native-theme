@@ -48,7 +48,7 @@ pub(crate) const CAROUSEL_SLIDES: &[(&str, &str)] = &[
     ),
     (
         "Native icons",
-        "IconRole maps to the desktop icon theme; sets are never mixed.",
+        "IconRole maps to the desktop icon theme; icon themes are never mixed.",
     ),
 ];
 

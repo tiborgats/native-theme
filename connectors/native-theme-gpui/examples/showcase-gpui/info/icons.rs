@@ -87,7 +87,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
                 format!("Some: {set} has it")
             }
             IconDrawn::Missing => format!(
-                "None: {set} has no icon for it, and no other set's icon stands in -- the cell shows the placeholder"
+                "None: {set} has no icon for it, and no other icon theme's icon stands in -- the cell shows the placeholder"
             ),
             IconDrawn::Unreadable => format!(
                 "Some: {set} has it, but it did not convert to an image (native-theme-gpui/icons.rs, to_image_source), so the cell shows the placeholder"

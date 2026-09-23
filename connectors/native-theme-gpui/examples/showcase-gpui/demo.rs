@@ -102,11 +102,11 @@ use crate::support::{
     with_padding,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK,
-    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
-    OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST,
-    PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page,
-    STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
+    CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, LIST_DEMO,
+    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
+    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST,
+    PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
 };
 
 /// An icon at the platform's size for the role the builder names; upstream's
@@ -502,7 +502,7 @@ pub(crate) fn side_panel(
         .child(with_padding(div().w_full(), container_margin).child(settings))
         .child(separator)
         .child(div().w_full().flex_1().min_h_0().child(inspector))
-        .info(ui, "chrome-side-panel", panel_info)
+        .info(ui, CHROME_SIDE_PANEL, panel_info)
         .size_full()
 }
 
@@ -1147,15 +1147,15 @@ pub(crate) fn preferences(
         )
 }
 
-/// An error `Alert` across the top of the content (spec §2.5), reading
-/// `message`, its icon `drawn`: gpui-component's CircleX as the chosen icon
-/// set named `set` gives it.
+/// An error `Alert` across the content, under the page TabBar (spec §2.5),
+/// reading `message`, its icon `drawn`: gpui-component's CircleX as the
+/// chosen icon theme named `set` gives it.
 ///
-/// An Alert always holds an `Icon` (alert.rs, `Alert`), so where the set
-/// has none it is handed an empty one, sized to nothing and invisible: gpui
+/// An Alert always holds an `Icon` (alert.rs, `Alert`), so where the icon
+/// theme has none it is handed an empty one, sized to nothing and invisible: gpui
 /// paints nothing of an invisible element (gpui-pre elements/div.rs,
 /// `Interactivity::paint`), so its empty path is never loaded, and no other
-/// set's icon stands in.
+/// icon theme's icon stands in.
 pub(crate) fn alert(
     ui: &Entity<InfoRegistry>,
     cx: &App,

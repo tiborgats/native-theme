@@ -1507,12 +1507,14 @@ impl Render for Showcase {
 
         let active_page = self.active_page;
 
-        // The content panel: the Alert of a theme that failed to load, then
-        // the page TabBar, then the page, scrolling.
+        // The content panel: the page TabBar, then the Alert of a theme that
+        // failed to load, then the page, scrolling. The TabBar comes first so
+        // that an Alert appearing never moves the page navigation.
         let content = v_flex()
             .size_full()
             .overflow_hidden()
             .debug_selector(|| CONTENT_PANEL.into())
+            .child(chrome::page_tabs(self, cx))
             .children(self.error_message.clone().map(|message| {
                 demo::alert(
                     &self.info_ui,
@@ -1524,7 +1526,6 @@ impl Render for Showcase {
                 )
                 .debug_selector(|| CONTENT_ALERT.into())
             }))
-            .child(chrome::page_tabs(self, cx))
             .child(
                 div()
                     .id("content-scroll-outer")

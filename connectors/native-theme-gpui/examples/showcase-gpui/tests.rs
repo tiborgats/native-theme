@@ -1000,26 +1000,36 @@ fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
     );
 }
 
-/// The presets the side panel's fit is checked under, each with the font
-/// DPI it is resolved at. A native preset is resolved at its own platform's
-/// DPI, as the seams test does (tests/seams.rs, `NATIVE`): macOS at 72,
-/// where a point is a pixel (native-theme `detect.rs`,
-/// `detect_system_font_dpi`), the others at 96. A native preset is only
-/// offered on its own platform -- the preset switch lists the presets
-/// `Theme::list_presets_for_platform` gives, so macos-sonoma is offered on
-/// macOS alone -- and macos-sonoma resolved on a 96 DPI Linux host is not a
-/// configuration the showcase shows. ios is offered on macOS too (its
-/// preset lists `platforms = ["macos", "ios"]`), so it is resolved at 72.
-/// The colour-scheme preset, offered everywhere, keeps the host's DPI
-/// (`None`), as `ResolutionContext::from_system` reads it.
-const SIDE_PANEL_PRESETS: [(&str, Option<f32>); 6] = [
-    ("kde-breeze", Some(96.0)),
-    ("adwaita", Some(96.0)),
-    ("macos-sonoma", Some(72.0)),
-    ("ios", Some(72.0)),
-    ("windows-11", Some(96.0)),
-    ("nord", None),
-];
+/// The presets the side panel's fit is checked under: every bundled preset
+/// (`Theme::list_presets`), each offered on some platform -- the preset
+/// switch offers those `Theme::list_presets_for_platform` gives, plus
+/// `default`, the desktop's own theme, which is built on one of them and
+/// which a test cannot reproduce -- with the font DPI it is resolved at.
+///
+/// A native preset is resolved at its own platform's DPI, as the seams test
+/// does (tests/seams.rs, `NATIVE`): macOS at 72, where a point is a pixel
+/// (native-theme `detect.rs`, `detect_system_font_dpi`), the others at 96.
+/// A native preset is only offered on its own platform, so macos-sonoma
+/// resolved on a 96 DPI Linux host is not a configuration the showcase
+/// shows; ios is offered on macOS too (its `platforms` are `macos` and
+/// `ios`), so it is resolved at 72. A colour-scheme preset, offered
+/// everywhere (no `platforms`), keeps the host's DPI (`None`), as
+/// `ResolutionContext::from_system` reads it.
+fn side_panel_presets() -> Vec<(&'static str, Option<f32>)> {
+    native_theme::theme::Theme::list_presets()
+        .iter()
+        .map(|info| {
+            let dpi = if info.platforms.is_empty() {
+                None
+            } else if info.platforms.iter().any(|p| *p == "macos" || *p == "ios") {
+                Some(72.0)
+            } else {
+                Some(96.0)
+            };
+            (info.key, dpi)
+        })
+        .collect()
+}
 
 /// Install `preset` as `use_preset` does, then re-install its theme resolved
 /// at `dpi`, or at the host's DPI where it is `None`, with the text scaled by
@@ -1104,8 +1114,8 @@ fn settings_trigger_min_width(
 /// it, and the narrowest it can be is the minimum its builder gives it,
 /// which the settings have to be at least as wide as
 /// (`settings_trigger_min_width`). Checked under every native preset, at its
-/// platform's DPI, and one colour-scheme preset at the host's
-/// (`SIDE_PANEL_PRESETS`), whose font sizes differ -- at a text scale of 1,
+/// platform's DPI, and every colour-scheme preset at the host's
+/// (`side_panel_presets`), whose font sizes differ -- at a text scale of 1,
 /// whatever the host's, so the measurement is the same on every machine
 /// (`use_preset_scaled`) -- and again at a text scale of 2, where every text
 /// grows.
@@ -1117,8 +1127,17 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
         (CHROME_LABEL_MODE, PROBE_COLOR_MODE),
         (CHROME_LABEL_ICON_THEME, PROBE_ICON_THEME),
     ];
+    let presets = side_panel_presets();
+    for native in ["kde-breeze", "adwaita", "macos-sonoma", "ios", "windows-11"] {
+        assert!(
+            presets
+                .iter()
+                .any(|(key, dpi)| *key == native && dpi.is_some()),
+            "{native} is not among the presets checked as a native one: {presets:?}"
+        );
+    }
     for text_scale in [1.0, 2.0] {
-        for (preset, dpi) in SIDE_PANEL_PRESETS {
+        for &(preset, dpi) in &presets {
             use_preset_scaled(&mut cx, &showcase, preset, dpi, text_scale);
             let at = format!("{preset} at text scale {text_scale}");
             let panel = bounds_of(&mut cx, CHROME_SIDE_PANEL);
@@ -1244,6 +1263,23 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
             .is_some_and(|g| g.contains("THEME_SETTINGS_GAP") && g.contains("the showcase's own")),
         "the settings' info does not say its gaps are the showcase's own THEME_SETTINGS_GAP: \
          {gaps:?}"
+    );
+}
+
+/// The side panel and its Separator report themselves (spec S2): the
+/// pointer in the middle of the panel, over the inspector's content, which
+/// reports nothing by design (inspector.rs), settles on the panel's own
+/// info, and on the Separator, on the Separator's.
+#[gpui::test]
+fn the_side_panel_and_its_separator_report_themselves(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (CHROME_SIDE_PANEL, "Side panel"),
+            (CHROME_SIDE_PANEL_SEPARATOR, "Separator · horizontal"),
+        ],
     );
 }
 
@@ -4695,8 +4731,9 @@ fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
     );
 }
 
-/// A theme that fails to load is reported by an Alert at the top of the
-/// content (spec §2.5), which reports itself.
+/// A theme that fails to load is reported by an Alert across the content
+/// (spec §2.5), which reports itself: under the page TabBar, which does not
+/// move, and above the page.
 #[gpui::test]
 fn a_theme_error_is_an_alert(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4705,13 +4742,23 @@ fn a_theme_error_is_an_alert(cx: &mut TestAppContext) {
         cx.debug_bounds(CONTENT_ALERT).is_none(),
         "an Alert shows before any theme failed"
     );
+    let tabs_before = bounds_of(&mut cx, CHROME_PAGE_TABS);
     use_preset(&mut cx, &showcase, "no-such-preset");
     let alert = bounds_of(&mut cx, CONTENT_ALERT);
-    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    let tabs = bounds_of(&mut cx, CHROME_PAGE_TABS);
+    let scroll = bounds_of(&mut cx, CONTENT_SCROLL);
+    assert_eq!(
+        tabs, tabs_before,
+        "the page TabBar moved when the Alert appeared"
+    );
     assert_eq!(
         alert.top(),
-        content.top(),
-        "the Alert at {alert:?} is not at the top of the content at {content:?}"
+        tabs.bottom(),
+        "the Alert at {alert:?} is not right under the page TabBar at {tabs:?}"
+    );
+    assert!(
+        alert.bottom() <= scroll.top(),
+        "the Alert at {alert:?} is not above the page's scroll area at {scroll:?}"
     );
     hover(&mut cx, alert.center());
     settle(&mut cx);

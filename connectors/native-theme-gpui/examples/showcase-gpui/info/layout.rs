@@ -659,7 +659,7 @@ pub fn sidebar(t: &Theme, collapsed: bool, header: &str) -> WidgetInfo {
         )
         .instance(
             "items",
-            "three SidebarMenuItems, each with its icon from the chosen icon theme, the first active",
+            "three SidebarMenuItems, the first active, each with its icon from the chosen icon theme where that theme has one: an item whose icon it lacks shows its label alone expanded and nothing in the rail, and no other icon theme's icon stands in",
         )
         .instance(
             "header",

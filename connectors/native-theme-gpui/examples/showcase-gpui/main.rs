@@ -255,7 +255,8 @@ pub(crate) const CHROME_SIDE_PANEL_SEPARATOR: &str = "chrome-side-panel-separato
 /// It is 300px, the width the inspector's content was laid out for when it
 /// had a panel of its own. `the_side_panel_holds_the_theme_settings_and_the_inspector`
 /// checks that the theme settings and the inspector fit it under every
-/// offered preset, at text scale 1 and at 2.
+/// bundled preset, a native one at its own platform's DPI, at text scale 1
+/// and at 2. `default`, the desktop's own theme, is built on one of them.
 pub(crate) const LEFT_PANEL_WIDTH: Pixels = px(LEFT_PANEL_WIDTH_PX);
 const LEFT_PANEL_WIDTH_PX: f32 = 300.;
 
@@ -320,8 +321,8 @@ pub(crate) const STATUS_ENVIRONMENT: &str = "status-environment";
 /// between them.
 pub(crate) const STATUS_MIDDLE: &str = "status-middle";
 
-/// The debug selector the Alert that reports a theme error carries, at the
-/// top of the content panel (spec §2.5).
+/// The debug selector the Alert that reports a theme error carries, in the
+/// content panel under the page TabBar and above the page (spec §2.5).
 pub(crate) const CONTENT_ALERT: &str = "content-alert";
 
 /// The debug selectors of the overlays (spec §2.8): the command palette's

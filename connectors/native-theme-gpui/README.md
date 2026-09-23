@@ -428,14 +428,16 @@ live theme switching, the geometry builders applied where they reach, a
 138-field colour map and a 101-icon gallery. The window is built from the
 same widgets: a title bar with menus, labelled with this crate's name and
 version; a toolbar of actions (the command palette, a theme reload and the
-Preferences); a Sidebar of pages, whose header holds the theme, colour-mode
-and icon-set settings, each labelled; resizable panels; and a status bar
-with the Sidebar's toggle at its left end and the inspector's at its right.
+Preferences); and two resizable panels. The side panel holds the theme
+settings, each labelled -- Theme, Mode and Icon theme -- and below a
+separator, the inspector. The content panel shows the page, with a tab per
+page above it. A status bar has the side panel's toggle at its left end.
 Resting the pointer on any widget shows in the inspector what the theme sets
 on it, with the upstream line each colour is read at. Two parts report
-nothing: the resizable group and its panels, not yet (the handles between the
-panels do), and the inspector's own content below its tabs, by design, so the
-pointer can move into it without replacing what it shows.
+nothing: the resizable group and its content panel, not yet (the handle
+between the panels and the side panel do), and the inspector's own content
+below its tabs, by design, so the pointer can move into it without replacing
+what it shows.
 
 ## Gallery
 
