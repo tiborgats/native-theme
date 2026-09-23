@@ -26,6 +26,8 @@ use gpui_component::{
     tree::{TreeItem, TreeState},
     v_flex,
 };
+use std::cell::Cell;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -204,6 +206,13 @@ pub(crate) struct Showcase {
     /// gpui would dispatch from the window's root instead (gpui-pre
     /// window.rs:6244-6252), out of the view's handlers' reach.
     _refocus: Subscription,
+
+    /// `geometry::widget_gap` of `layout`, set as each frame starts, for the
+    /// overlays: `Root` builds them anew for every frame from builders that
+    /// cannot borrow the view (root.rs, `Root::render_dialog_layer`), so this
+    /// is how the gap they read is the installed theme's, not the one they
+    /// opened under.
+    pub(crate) overlay_gap: Rc<Cell<Option<Pixels>>>,
 
     /// Layout spacing of the installed theme. It lives on the model, not on
     /// `ResolvedTheme`, so the geometry accessors take it from here rather
@@ -989,6 +998,7 @@ impl Showcase {
             menu_bar,
             focus_handle,
             _refocus,
+            overlay_gap: Rc::new(Cell::new(None)),
             layout: initial_layout,
             input_state,
             input_height_state,
@@ -1385,6 +1395,7 @@ impl Render for Showcase {
             self.reload_system_theme(window, cx);
         }
 
+        self.overlay_gap.set(geometry::widget_gap(&self.layout));
         let theme = cx.theme().clone();
         // Ensure icon image caches match the current foreground color
         if theme.foreground != self.icon_cache_fg {

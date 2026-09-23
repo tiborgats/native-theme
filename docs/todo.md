@@ -307,6 +307,29 @@
       (`geometry::scrollbar_gutter`), which works only because a group applies
       the caller's refinement last (`setting/group.rs:112`); the page body
       takes no refinement.
+- [ ] element hooks on the surfaces upstream builds itself, so an
+      application can attach an id, a hover handler or a debug selector to
+      them (found 2026-09-23 by v0.5.9 Task 12). A `SettingGroup` is not an
+      element: it is rendered inside the page's `list` (`setting/page.rs:230-248`),
+      its `render` is `pub(crate)` (`setting/group.rs:79`), and its `Styled`
+      reaches only the `GroupBox` style (`group_box.rs:143`). A `Dialog`'s
+      surface, padding and close button are built around the caller's title
+      and content (`dialog/dialog.rs:608-725`), and so are a `Sheet`'s title
+      row, padding and close button (`sheet.rs:167-245`). The showcase can
+      therefore report a SettingGroup only through its enclosing `Settings`,
+      and a Dialog or Sheet only on the title and content it passes in; the
+      rest of each surface shows no info, which their notes say.
+- [ ] the gpui connector reads `AccessibilityPreferences::high_contrast`
+      nowhere but its accessor (`native-theme-gpui` `lib.rs:356-357`,
+      `is_high_contrast`): `to_theme` and `apply` build the same theme with it
+      set or unset, so the showcase's Preferences toggle changes only the
+      stored value and the status bar's flag. Decide what it should change
+      (a high-contrast preset, or the contrast rule's thresholds) or say in
+      the connector's docs that it is carried and not applied.
+- [ ] spec v0.5.9 §2.2's action table lacks `SetPreset(key)`, which the
+      command palette's preset entries run (Task 12): add it with the
+      palette as its one caller (the toolbar's Combobox installs a preset
+      through its own `Change` event).
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 

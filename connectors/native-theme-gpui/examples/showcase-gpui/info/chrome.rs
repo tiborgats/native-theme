@@ -774,6 +774,10 @@ fn dialog_surface(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "animation",
         "a 0.25s slide and fade on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION)",
     )
+    .instance(
+        "unreported",
+        "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render), so only the title and the content report",
+    )
 }
 
 /// The command palette's Dialog (spec §2.8). Its geometry lines are recorded
@@ -913,6 +917,10 @@ pub fn preferences_sheet(t: &Theme) -> WidgetInfo {
             "a 0.15s literal slide, not the theme's motion tokens (sheet.rs, Sheet)",
         )
         .instance(
+            "unreported",
+            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (sheet.rs, Sheet), so the rest of the surface around the Settings shows no info",
+        )
+        .instance(
             "width",
             "PREFERENCES_WIDTH, the showcase's own: the model states no sheet",
         )
@@ -1050,7 +1058,7 @@ pub fn about_dialog(t: &Theme) -> WidgetInfo {
     dialog_surface(WidgetInfo::new("Dialog").variant("About"), t)
         .instance(
             "content",
-            "this crate's name and the version Cargo built it at. Upstream's versions are not repeated: the link opens the README's Compatibility table, which states them",
+            "this crate's name and the version Cargo built it at, its lines layout.widget_gap apart as the installed theme states it now. Upstream's versions are not repeated: the link opens the README's Compatibility table, which states them",
         )
         .instance("opens", "on OpenAbout: Help > About")
 }
@@ -1082,7 +1090,7 @@ pub fn about_link(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "target",
-            "the connector README at this version's tag, at its Compatibility heading; the tag exists once the version is released",
+            "the connector README at this version's tag, v-prefixed as the text says, at its Compatibility heading. The tag exists once the version is released; before that the page is missing",
         )
 }
 

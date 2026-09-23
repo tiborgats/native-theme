@@ -34,9 +34,9 @@ use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
 use crate::support::{PresetDelegate, native_icon, native_value, with_gap};
 use crate::{
-    CHROME_APP_MENU_BAR, OVERLAY_ABOUT_LINK, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
-    OVERLAY_PREFERENCES, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, Page,
-    STATUS_HOVERED,
+    CHROME_APP_MENU_BAR, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
+    OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PREF_HIGH_CONTRAST,
+    PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, Page, STATUS_HOVERED,
 };
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
@@ -526,7 +526,7 @@ pub(crate) fn command_palette(
 
 /// The About dialog (spec §2.8): `dialog`, titled, stating `name_version`
 /// and linking to `compatibility`, its lines `gap` apart. The Dialog reports
-/// itself on its content, the link on its own.
+/// itself on its title and on its content, the link on its own.
 pub(crate) fn about(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -547,21 +547,34 @@ pub(crate) fn about(
         "dialog_description",
         &mut dialog_info,
     );
+    if gap.is_some() {
+        dialog_info = dialog_info.geometry("widget_gap");
+    }
+    let title = title.info(ui, "overlay-about-title", dialog_info.clone());
     let ui = ui.clone();
     dialog.title(title).content(move |content, _window, cx| {
         let link = Link::new("about-compatibility")
             .href(compatibility)
-            .child("the README's Compatibility table")
+            .child(concat!(
+                "the README's Compatibility table at v",
+                env!("CARGO_PKG_VERSION")
+            ))
             .info(&ui, "overlay-about-link", info::about_link(cx.theme()))
             .debug_selector(|| OVERLAY_ABOUT_LINK.into());
         content.child(
             with_gap(v_flex(), gap)
-                .child(name_version)
                 .child(
-                    DialogDescription::new()
-                        .refine_style(&description_style)
-                        .child("The gpui-component, gpui-base and gpui-pre versions it requires, and those it was verified against, are in")
-                        .child(link),
+                    div()
+                        .debug_selector(|| OVERLAY_ABOUT_NAME.into())
+                        .child(name_version),
+                )
+                .child(
+                    div().debug_selector(|| OVERLAY_ABOUT_TEXT.into()).child(
+                        DialogDescription::new()
+                            .refine_style(&description_style)
+                            .child("The gpui-component, gpui-base and gpui-pre versions it requires, and those it was verified against, are in")
+                            .child(link),
+                    ),
                 )
                 .info(&ui, "overlay-about", dialog_info.clone()),
         )

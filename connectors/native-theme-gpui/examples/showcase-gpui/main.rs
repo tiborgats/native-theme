@@ -288,6 +288,11 @@ pub(crate) const OVERLAY_PALETTE: &str = "overlay-palette";
 pub(crate) const OVERLAY_PALETTE_TITLE: &str = "overlay-palette-title";
 pub(crate) const OVERLAY_PREFERENCES: &str = "overlay-preferences";
 pub(crate) const OVERLAY_ABOUT_LINK: &str = "overlay-about-link";
+/// The debug selector of the About dialog's line with this crate's name and
+/// version.
+pub(crate) const OVERLAY_ABOUT_NAME: &str = "overlay-about-name";
+/// The debug selector of the About dialog's description, under that line.
+pub(crate) const OVERLAY_ABOUT_TEXT: &str = "overlay-about-text";
 
 /// The debug selectors of the Preferences sheet's three switches, one per
 /// `AccessibilityPreferences` flag.

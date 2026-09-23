@@ -7,7 +7,7 @@ use gpui_component::{
     IconName, WindowExt as _,
     command::{CommandGroup, CommandItem},
 };
-use native_theme_gpui::{ActiveNativeTheme as _, geometry};
+use native_theme_gpui::ActiveNativeTheme as _;
 
 use crate::Page;
 use crate::app::{
@@ -224,8 +224,11 @@ pub(crate) const COMPATIBILITY_URL: &str = concat!(
     "/connectors/native-theme-gpui/README.md#compatibility"
 );
 
-/// The width of the Preferences sheet. The model states no sheet (spec
-/// §1.3), so this is the showcase's own layout default.
+/// The width of the Preferences sheet. The model states no sheet, so no
+/// such width either (spec §1.3): this is the showcase's own layout default.
+/// It overrides upstream's 350px (sheet.rs:63) because the Settings inside
+/// starts its sidebar at 250px (setting/settings.rs:54), which would leave
+/// the preferences 100px.
 const PREFERENCES_WIDTH: Pixels = px(600.);
 
 /// The presets the command palette offers, as `(key, display name)`: the
@@ -278,8 +281,22 @@ fn palette_groups() -> Vec<CommandGroup> {
     vec![pages, presets, modes]
 }
 
-/// Open the command palette, its query cleared and focused.
+/// Whether a Dialog or a Sheet is open. Upstream stacks a new Dialog over any
+/// open one (root.rs, Root::open_dialog pushes a layer each time), so the
+/// three overlays open only while none is: a second Ctrl+K would otherwise
+/// lay a second palette over the first, on the same state. A modal keeps the
+/// application's other windows out until it is dismissed, as a desktop
+/// application's does.
+fn an_overlay_is_open(window: &mut Window, cx: &mut App) -> bool {
+    window.has_active_dialog(cx) || window.has_active_sheet(cx)
+}
+
+/// Open the command palette, its query cleared and focused, unless an
+/// overlay is open.
 pub(crate) fn open_command_palette(app: &Showcase, window: &mut Window, cx: &mut App) {
+    if an_overlay_is_open(window, cx) {
+        return;
+    }
     let (ui, state) = (app.info_ui.clone(), app.palette_state.clone());
     state.update(cx, |state, cx| state.set_query("", window, cx));
     let groups = palette_groups();
@@ -293,26 +310,37 @@ pub(crate) fn open_command_palette(app: &Showcase, window: &mut Window, cx: &mut
         .update(cx, |state, cx| state.focus(window, cx));
 }
 
-/// Open the Preferences sheet.
+/// Open the Preferences sheet, unless an overlay is open.
 pub(crate) fn open_preferences(app: &Showcase, window: &mut Window, cx: &mut App) {
+    if an_overlay_is_open(window, cx) {
+        return;
+    }
     let ui = app.info_ui.clone();
     window.open_sheet(cx, move |sheet, _window, cx| {
         demo::preferences(&ui, cx, sheet, PREFERENCES_WIDTH)
     });
 }
 
-/// Open the About dialog.
+/// This crate's name and version, as the About dialog states them.
+pub(crate) const ABOUT_NAME_VERSION: &str =
+    concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
+
+/// Open the About dialog, unless an overlay is open. Its lines are
+/// `app.overlay_gap` apart, read as each frame draws it, so a theme switched
+/// while it is open reaches it.
 pub(crate) fn open_about(app: &Showcase, window: &mut Window, cx: &mut App) {
-    let ui = app.info_ui.clone();
-    let gap = geometry::widget_gap(&app.layout);
+    if an_overlay_is_open(window, cx) {
+        return;
+    }
+    let (ui, gap) = (app.info_ui.clone(), app.overlay_gap.clone());
     window.open_dialog(cx, move |dialog, _window, cx| {
         demo::about(
             &ui,
             cx,
             dialog,
-            concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION")),
+            ABOUT_NAME_VERSION,
             COMPATIBILITY_URL,
-            gap,
+            gap.get(),
         )
     });
 }

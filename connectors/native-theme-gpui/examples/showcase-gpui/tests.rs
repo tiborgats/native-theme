@@ -35,11 +35,12 @@ use crate::{
     CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
     CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
     INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO,
-    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
-    PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT,
-    PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
-    PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE,
-    PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
+    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO,
+    WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -1763,21 +1764,78 @@ fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
 }
 
 /// The palette's preset entries are the toolbar's (ledger ruling for T12):
-/// `default` and the presets meant for this platform, no other.
+/// the rows the preset Combobox's delegate holds, in its order -- `default`,
+/// then only presets meant for this platform.
 #[test]
 fn the_palette_offers_the_toolbars_presets() {
+    use gpui_component::searchable_list::{SearchableListDelegate as _, SearchableListItem as _};
     let offered: Vec<String> = crate::chrome::palette_presets()
         .into_iter()
         .map(|(key, _)| key.to_string())
         .collect();
-    let toolbar: Vec<String> = crate::support::preset_items()
-        .into_iter()
-        .map(|item| item.key.to_string())
+    let delegate = crate::support::PresetDelegate::new();
+    let toolbar: Vec<String> = (0..delegate.items_count(0))
+        .filter_map(|row| delegate.item(gpui_component::IndexPath::default().row(row)))
+        .map(|item| item.value().to_string())
         .collect();
-    assert_eq!(offered, toolbar);
+    assert_eq!(
+        offered, toolbar,
+        "the palette's presets are not the toolbar Combobox's rows"
+    );
+    assert_eq!(
+        offered.first().map(String::as_str),
+        Some("default"),
+        "the palette's first preset is not the desktop's own"
+    );
+    let platform: Vec<&str> = native_theme::theme::Theme::list_presets_for_platform()
+        .iter()
+        .map(|info| info.key)
+        .collect();
+    for key in offered.iter().skip(1) {
+        assert!(
+            platform.contains(&key.as_str()),
+            "the palette offers {key}, which is not a preset for this platform"
+        );
+    }
     assert!(
         offered.len() > 1,
         "the palette offers no preset beside default"
+    );
+}
+
+/// An overlay opens once (fix round 1): while one is open, asking for any of
+/// the three again -- by key or from a menu -- opens no second layer over it,
+/// as a desktop application's modal dialog keeps the others out.
+#[gpui::test]
+fn an_overlay_opens_once(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    press(&mut cx, "ctrl-k");
+    assert!(a_dialog_is_open(&mut cx), "Ctrl+K opened nothing");
+    press(&mut cx, "ctrl-k");
+    assert!(
+        cx.debug_bounds("dialog-1").is_none(),
+        "a second Ctrl+K opened a second palette over the first"
+    );
+    run_menu_item_from_focus(&mut cx, "Help", "About");
+    assert!(
+        cx.debug_bounds("dialog-1").is_none(),
+        "Help > About opened over the palette"
+    );
+    press(&mut cx, "ctrl-,");
+    assert!(
+        cx.debug_bounds(OVERLAY_PREFERENCES).is_none(),
+        "Ctrl+, opened the Preferences sheet under the palette"
+    );
+    press(&mut cx, "escape");
+    press(&mut cx, "ctrl-,");
+    assert!(
+        cx.debug_bounds(OVERLAY_PREFERENCES).is_some(),
+        "Ctrl+, did not open the Preferences sheet"
+    );
+    press(&mut cx, "ctrl-k");
+    assert!(
+        !a_dialog_is_open(&mut cx),
+        "Ctrl+K opened the palette over the Preferences sheet"
     );
 }
 
@@ -1963,12 +2021,78 @@ fn the_about_dialog_links_to_the_compatibility_table(cx: &mut TestAppContext) {
     without_motion(&mut cx);
     run_menu_item(&mut cx, "Help", "About");
     draw(&mut cx);
+    let name = bounds_of(&mut cx, OVERLAY_ABOUT_NAME);
+    assert!(
+        bounds_of(&mut cx, "dialog-0").contains(&name.origin),
+        "the crate's name and version are not on the About dialog"
+    );
+    assert_eq!(
+        crate::chrome::ABOUT_NAME_VERSION,
+        format!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")),
+        "the About dialog does not state this crate's name and version"
+    );
     click(&mut cx, OVERLAY_ABOUT_LINK);
     let opened = cx.opened_url();
     assert_eq!(
         opened.as_deref(),
         Some(crate::chrome::COMPATIBILITY_URL),
         "the About dialog's link did not open the compatibility table"
+    );
+}
+
+/// The About dialog follows the installed theme while it is open: its lines
+/// are `layout.widget_gap` apart as the theme installed now states it, not
+/// as the one it opened under (fix round 1).
+#[gpui::test]
+fn the_about_dialog_follows_a_theme_switch(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    let gap_between = |cx: &mut VisualTestContext| {
+        bounds_of(cx, OVERLAY_ABOUT_TEXT).top() - bounds_of(cx, OVERLAY_ABOUT_NAME).bottom()
+    };
+    let gap_of = |cx: &mut VisualTestContext, showcase: &Entity<Showcase>| {
+        read(cx, showcase, |this, _| geometry::widget_gap(&this.layout))
+    };
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    run_menu_item(&mut cx, "Help", "About");
+    draw(&mut cx);
+    let breeze = gap_of(&mut cx, &showcase);
+    assert_eq!(Some(gap_between(&mut cx)), breeze);
+    use_preset(&mut cx, &showcase, "macos-sonoma");
+    draw(&mut cx);
+    let sonoma = gap_of(&mut cx, &showcase);
+    assert_ne!(
+        breeze, sonoma,
+        "the two presets state the same gap, so the switch proves nothing"
+    );
+    assert_eq!(
+        Some(gap_between(&mut cx)),
+        sonoma,
+        "the open About dialog kept the gap of the theme it opened under"
+    );
+}
+
+/// The About dialog's title reports the Dialog, as the palette's does.
+#[gpui::test]
+fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    run_menu_item(&mut cx, "Help", "About");
+    draw(&mut cx);
+    let surface = bounds_of(&mut cx, "dialog-0");
+    let name = bounds_of(&mut cx, OVERLAY_ABOUT_NAME);
+    // Above the content, clear of the close button at the surface's right.
+    let at = point(
+        name.left() + px(4.),
+        surface.top() + (name.top() - surface.top()) / 2.,
+    );
+    hover(&mut cx, at);
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("Dialog · About"),
+        "the pointer settled on the About dialog's title, and the inspector does not show it"
     );
 }
 
