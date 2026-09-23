@@ -73,6 +73,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme ${{ matrix.flags }}
+      # Both connectors enable `system-icons` by default, and its icon code
+      # imports the platform crates, so it must build alone on each platform.
+      - name: Check system-icons alone
+        if: runner.os != 'Linux' && matrix.flags == '--no-default-features'
+        run: cargo check -p native-theme --no-default-features --features system-icons
 
   test-build-crate:
     name: Test native-theme-build

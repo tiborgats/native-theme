@@ -397,6 +397,34 @@ for crate in $WORKSPACE_CRATES; do
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: system-icons on macOS and Windows
+#
+# Both connectors enable `system-icons` by default, and its icon code imports
+# the platform crates, so the feature must build alone on each platform. A
+# cross-target `cargo check` needs the target's standard library (and, for
+# windows-gnu, the MinGW linker toolchain); where one is missing the check is
+# skipped and says why. CI's Windows and macOS test legs run the same check.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "system-icons (cross-target)"
+if command -v rustup &>/dev/null; then
+    INSTALLED_TARGETS=$(rustup target list --installed 2>/dev/null || true)
+else
+    INSTALLED_TARGETS=""
+fi
+for target in x86_64-pc-windows-gnu x86_64-apple-darwin; do
+    if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
+        print_info "skipped system-icons ($target): target not installed (rustup target add $target)"
+        continue
+    fi
+    if [ "$target" = "x86_64-pc-windows-gnu" ] && ! command -v x86_64-w64-mingw32-gcc &>/dev/null; then
+        print_info "skipped system-icons ($target): x86_64-w64-mingw32-gcc not found"
+        continue
+    fi
+    run_check "system-icons ($target)" \
+        cargo check --target "$target" -p native-theme --no-default-features --features system-icons
+done
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section: formatting
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Formatting"

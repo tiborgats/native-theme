@@ -34,9 +34,13 @@ lucide-icons = []
 svg-rasterize = ["dep:resvg"]
 system-icons = [
     "dep:freedesktop-icons",
+    "dep:objc2",
+    "dep:objc2-app-kit",
     "dep:objc2-core-foundation",
     "dep:objc2-core-graphics",
+    "dep:objc2-foundation",
     "dep:png",
+    "dep:windows",
     "material-icons",
 ]
 
