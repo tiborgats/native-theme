@@ -159,7 +159,7 @@ const ROWS: &[Row] = &[
         note: "ToolBar_ItemMargin = 6 on all four sides (qtoolbarlayout.cpp:87-89)",
         extra: &[("bar_height", None, 1351), ("item_gap", Some(0.0), 1352)],
     },
-    row(Kde, "status_bar", trbl(3.0, 0.0, 2.0, 2.0), &[1372, 1373], "QStatusBar item layout: 2 left / 0 right, 3 top / 2 bottom"),
+    row(Kde, "status_bar", trbl(3.0, 14.0, 2.0, 2.0), &[1372, 1373], "QStatusBar: 2 left, 3 top / 2 bottom; 14 right, the 1 + 13px size grip Breeze paints as nothing (not maximized)"),
     row(Kde, "list", axes(1.0, 2.0), &[1390, 1391], "2; 1"),
     row(Kde, "popover", NONE, &[1412, 1413], "(none)"),
     row(Kde, "dialog", all(10.0), &[1491, 1492], "Layout_TopLevelMarginWidth = 10"),

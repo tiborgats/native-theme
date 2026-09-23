@@ -1339,7 +1339,8 @@ the gap — closing it is a change, and each wants its own decision.
         and bottom as the gaps between its sections and its content; select
         and combobox gain vertical 5.
       - **KDE:** dialog 10; the toolbar loses its 40 minimum and gains 6 on
-        every side; status bar 3/0/2/2; select and combobox gain vertical 6;
+        every side; status bar 3/14/2/2 (the right is the size grip's
+        empty 14px); select and combobox gain vertical 6;
         the live reader's button 5 → 6.
       - **macOS:** dialog 20; toolbar 0/8/0/8; select and combobox
         horizontal becomes upstream's, with vertical 3; the live reader's

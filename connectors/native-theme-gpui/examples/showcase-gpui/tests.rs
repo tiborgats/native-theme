@@ -2899,8 +2899,8 @@ fn the_status_bar_is_the_bottom_of_the_window(cx: &mut TestAppContext) {
 /// The status bar's first and last children are inset from its edges by the
 /// padding it draws (spec §3.6), the reported defect. With nothing shown,
 /// the last is the middle region, which runs to the bar's right end. Under kde-breeze that
-/// is `status_bar.border`'s 2px left and 0px right, Qt's status-bar item
-/// layout (platform-facts §2.14). The bar has no side border
+/// is `status_bar.border`'s 2px left, Qt's status-bar item layout, and 14px
+/// right, the size grip Breeze paints as nothing (platform-facts §2.14). The bar has no side border
 /// (status_bar.rs:91, `border_t_1`), so its edges are its padding's.
 #[gpui::test]
 fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
@@ -2914,8 +2914,8 @@ fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
     let (left, right) = (padding.and_then(|p| p.left), padding.and_then(|p| p.right));
     assert_eq!(
         (left, right),
-        (Some(2.0), Some(0.0)),
-        "kde-breeze no longer states Qt's 2px left and 0px right, so this measures something else"
+        (Some(2.0), Some(14.0)),
+        "kde-breeze no longer states Qt's 2px left and the grip's 14px right, so this measures something else"
     );
     let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
     let (first, last) = (

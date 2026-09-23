@@ -213,8 +213,8 @@ padding_vertical_px = 6.0
 
 
 [light.status_bar.border]
-# platform-facts.md:1372-1373 (§2.14): QStatusBar item layout, 2 left / 0 right, 3 top / 2 bottom; the size grip's 1 + width (qstatusbar.cpp:466-467) is excluded, as this status bar draws no grip
-padding_right_px = 0.0
+# platform-facts.md:1372-1373 (§2.14): QStatusBar, 2 left, 3 top / 2 bottom; 14 right, the size grip's 1 + 13px (qstatusbar.cpp:466-467, qsizegrip.cpp:198-202), which Breeze paints as nothing (breezestyle.cpp:1505-1506), in a window that is not maximized
+padding_right_px = 14.0
 padding_left_px = 2.0
 padding_top_px = 3.0
 padding_bottom_px = 2.0
@@ -520,8 +520,8 @@ padding_vertical_px = 6.0
 
 
 [dark.status_bar.border]
-# platform-facts.md:1372-1373 (§2.14): QStatusBar item layout, 2 left / 0 right, 3 top / 2 bottom; the size grip's 1 + width (qstatusbar.cpp:466-467) is excluded, as this status bar draws no grip
-padding_right_px = 0.0
+# platform-facts.md:1372-1373 (§2.14): QStatusBar, 2 left, 3 top / 2 bottom; 14 right, the size grip's 1 + 13px (qstatusbar.cpp:466-467, qsizegrip.cpp:198-202), which Breeze paints as nothing (breezestyle.cpp:1505-1506), in a window that is not maximized
+padding_right_px = 14.0
 padding_left_px = 2.0
 padding_top_px = 3.0
 padding_bottom_px = 2.0
