@@ -47,14 +47,13 @@ use gpui::{
     App, Bounds, Div, IntoElement, ParentElement, Pixels, SharedString, WindowBounds,
     WindowDecorations, WindowOptions, div, prelude::*, px, size,
 };
-use gpui_component::{ActiveTheme, IconName, Root, TitleBar, select::SearchableVec};
+use gpui_component::{IconName, Root, TitleBar, select::SearchableVec};
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use {gpui::Window, std::time::Duration};
 
 use native_theme::icons::IconSetChoice;
 
 use crate::app::{AppColorMode, Showcase};
-use crate::support::{load_all_icons, load_gpui_icons};
 
 // ---------------------------------------------------------------------------
 // Pages
@@ -892,25 +891,9 @@ fn main() {
                             _ => IconSetChoice::System,
                         };
                         let effective = s.icon_set_choice.effective_icon_set(s.current_icon_set);
-                        let default_theme =
-                            s.icon_set_choice.freedesktop_theme().map(|t| t.to_string());
                         s.icon_set_name = effective.name().to_string();
                         s.icon_set_enum = Some(effective);
-                        let cli_ref = s.icon_theme_override.as_deref();
-                        let fc = s.original_font.color;
-                        let fg_rgb = Some([fc.r, fc.g, fc.b]);
-                        s.loaded_icons =
-                            load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
-                        s.gpui_icons = load_gpui_icons(
-                            Some(effective),
-                            default_theme.as_deref(),
-                            cli_ref,
-                            fg_rgb,
-                        );
-                        let fg = cx.theme().foreground;
-                        s.rebuild_icon_caches(fg, window, cx);
-                        s.rebuild_animation_caches(window, cx);
-                        s.start_animation_timer(cx);
+                        s.reload_icons(window, cx);
 
                         // Update the icon theme selector dropdown
                         let icon_display: SharedString = s.icon_set_choice.to_string().into();

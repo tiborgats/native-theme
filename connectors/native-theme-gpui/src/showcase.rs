@@ -16,7 +16,7 @@
 //! with or without an argument list: the showcase passes several of them as
 //! function items (`.native(cx, geometry::button)`), which is a call at one
 //! remove. Comments and string literals are removed first, because the
-//! showcase names builders in both -- every widget's hover note says which
+//! showcase names builders in both -- every widget's Widget Info says which
 //! builder shaped it -- and a note about a builder is not a use of it. That is
 //! the opposite of what `scripts/check-widget-coverage.py` does with the same
 //! files, and for the opposite reason: a widget is often reached through an
@@ -152,8 +152,9 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
 ///
 /// Everything in it is test code: it builds widgets and calls builders for
 /// reasons that have nothing to do with a demo, so the gates that measure
-/// demo blocks leave it out. The gates that ask what the showcase does *at
-/// all* -- which builders it calls, which colours it paints -- read it too.
+/// what the showcase shows its reader leave it out. The gates that ask what
+/// the showcase does *at all* -- which builders it calls, which colours it
+/// paints -- read it too.
 const TEST_MODULE: &str = "tests.rs";
 
 /// The showcase files that hold demos: every one but the test module.
@@ -603,9 +604,11 @@ fn every_geometry_builder_has_a_note() {
 #[test]
 fn native_info_names_the_builder_it_applies() {
     let mut findings = Vec::new();
+    let mut calls = 0usize;
     for (file, raw) in SHOWCASE_FILES {
         let starts = line_offsets(raw);
         for open in code_calls(raw, "native_info") {
+            calls += 1;
             let args = call_args(raw, open).unwrap_or_default();
             let applied = args.get(2).map(|a| a.trim());
             let recorded = args.get(3).map(|a| a.trim());
@@ -622,6 +625,10 @@ fn native_info_names_the_builder_it_applies() {
             }
         }
     }
+    assert!(
+        calls > 0,
+        "no native_info call found in the showcase, so this test would pass vacuously"
+    );
     assert!(
         findings.is_empty(),
         "a native_info call records a builder other than the one it applies, so \
@@ -657,10 +664,7 @@ fn geometry_line_calls(raw: &str) -> Vec<(usize, Option<&str>)> {
 /// so "(no GEOMETRY_NOTES entry)" never reaches the inspector.
 ///
 /// The test module is left out: it names a builder that does not exist on
-/// purpose, to see that line. No page records a builder yet (they migrate in
-/// Tasks 14-23), so zero calls is a pass here;
-/// `the_geometry_note_parsers_do_their_jobs` is what shows the parser finds
-/// the calls it must.
+/// purpose, to see that line.
 #[test]
 fn every_recorded_builder_has_a_note() {
     let (noted, unreadable) = geometry_note_names(geometry_notes_source());
@@ -671,8 +675,10 @@ fn every_recorded_builder_has_a_note() {
         unreadable.join("\n  ")
     );
     let mut findings = Vec::new();
+    let mut recorded = 0usize;
     for (file, raw) in demo_files() {
         for (line, literal) in geometry_line_calls(raw) {
+            recorded += usize::from(literal.is_some());
             if let Some(name) = literal
                 && !noted.iter().any(|(_, noted)| *noted == name)
             {
@@ -682,6 +688,11 @@ fn every_recorded_builder_has_a_note() {
             }
         }
     }
+    assert!(
+        recorded > 0,
+        "no `.geometry(\"x\")` call found outside the test module, so this test \
+         would pass vacuously"
+    );
     assert!(
         findings.is_empty(),
         "a widget records a builder GEOMETRY_NOTES does not describe, so its \
@@ -743,53 +754,8 @@ fn the_geometry_note_parsers_do_their_jobs() {
 }
 
 // ---------------------------------------------------------------------------
-// Every demo block carries a Widget Info panel
+// Shared scanning helpers
 // ---------------------------------------------------------------------------
-//
-// Widget-info spec section 2.2. A demo block is the element chain rooted at
-// `div().id("tt-<slug>")`. A block with no `.on_hover(self.hover_info(` is a
-// widget a reader can hover and learn nothing from.
-//
-// A block **ends where its own panel's call ends**, not at the next id. The
-// showcase writes a demo as `div().id("tt-x").child(..).on_hover(..)`, so the
-// panel closes the chain, and everything after it belongs to the page and not
-// to the demo. Taking the next id as the end instead makes the last block of
-// a method swallow the rest of it: `tt-tabbar` would have been credited with
-// the `geometry::scrollbar_gutter` on the content scroller beside it, which
-// is a sibling of the tab bar and not part of it.
-//
-// The boundaries are read from the file as written and not from the stripped
-// copy: `without_comments_or_strings` removes string literals, and the id
-// *is* a string literal. The body is then checked in the stripped copy, so a
-// panel named inside a comment does not count as one. Both agree on line
-// numbers, because a removed span leaves its newlines behind (see
-// `without_comments_or_strings`).
-
-/// The marker that opens a demo block, and the call that gives it a panel.
-const BLOCK_ID: &str = ".id(\"tt-";
-const PANEL_CALL: &str = ".on_hover(self.hover_info(";
-
-/// The 0-based line indices of `source` that open a demo block.
-fn demo_block_starts(source: &str) -> Vec<usize> {
-    source
-        .lines()
-        .enumerate()
-        .filter(|(_, line)| line.contains(BLOCK_ID))
-        .map(|(n, _)| n)
-        .collect()
-}
-
-/// A demo block: the line its id is on, the line after its last, and whether
-/// a Widget Info panel closes it.
-struct Block {
-    start: usize,
-    end: usize,
-    #[expect(
-        dead_code,
-        reason = "Task 24 deletes the block gates; the last tt- block is gone"
-    )]
-    has_panel: bool,
-}
 
 /// The byte offset at which each line of `text` begins.
 fn line_offsets(text: &str) -> Vec<usize> {
@@ -831,117 +797,6 @@ fn end_of_call(code: &str, open: usize) -> Option<usize> {
     None
 }
 
-/// Every demo block of the showcase, in source order.
-///
-/// `raw` supplies the ids (they are string literals) and `code` the panel
-/// call and its extent (parentheses must be code, not text). The two have the
-/// same line numbering.
-fn demo_blocks(raw: &str, code: &str, methods: &[usize]) -> Vec<Block> {
-    let starts = demo_block_starts(raw);
-    let offsets = line_offsets(code);
-    let total = code.lines().count();
-    let mut out = Vec::with_capacity(starts.len());
-    for (i, &start) in starts.iter().enumerate() {
-        // A block cannot outlive its method, nor reach the next demo.
-        let next_id = starts.get(i + 1).copied().unwrap_or(total);
-        let next_method = methods
-            .iter()
-            .find(|&&m| m > start)
-            .copied()
-            .unwrap_or(total);
-        let limit = next_id.min(next_method).min(total);
-
-        let from = offsets.get(start).copied().unwrap_or(code.len());
-        let to = offsets.get(limit).copied().unwrap_or(code.len());
-        let window = code.get(from..to).unwrap_or("");
-        let panel = window.find(PANEL_CALL).and_then(|ix| {
-            let open = from + ix + PANEL_CALL.len() - 1;
-            end_of_call(code, open)
-        });
-
-        match panel {
-            Some(close) => out.push(Block {
-                start,
-                end: code.get(..close).unwrap_or(code).lines().count(),
-                has_panel: true,
-            }),
-            None => out.push(Block {
-                start,
-                end: limit,
-                has_panel: false,
-            }),
-        }
-    }
-    out
-}
-
-// ---------------------------------------------------------------------------
-// A demo names the builders it applies
-// ---------------------------------------------------------------------------
-//
-// Widget-info spec section 3. A panel's geometry note is the only place a
-// reader learns that the native theme shaped a widget, and it is written by
-// hand beside code the compiler never relates it to. Seven panels had lost
-// that relation when this was written.
-//
-// A builder reaches a demo in two ways, and both count (spec section 2.1):
-// named in the block, or bound once in the enclosing method and applied in
-// several blocks. Requiring the second to move would mean duplicating one
-// computation across the ten Button demos, so the binding is read instead.
-
-/// `source` with everything **but** its string literals removed: literal
-/// bodies are kept, the code around them becomes blank, and line breaks are
-/// preserved, so a line number in the result is a line number in the file.
-///
-/// The complement of [`without_comments_or_strings`], and the reason both
-/// exist: a builder a demo *applies* is code, a builder its panel *names* is
-/// a string. `every_demo_names_the_builders_it_applies` compares the two, so
-/// neither may see the other's half. Comments are dropped here too -- a note
-/// in a `//` comment is not what the panel shows a reader.
-fn string_literals_only(source: &str) -> String {
-    let mut out = String::with_capacity(source.len());
-    let mut rest = source;
-    while let Some(next) = rest.find(['/', '"', 'r', '\'']) {
-        let (before, from) = rest.split_at(next);
-        push_newlines_of(&mut out, before);
-        if let Some(after) = from.strip_prefix("//") {
-            rest = match after.find('\n') {
-                Some(ix) => &after[ix..],
-                None => "",
-            };
-        } else if let Some(len) = char_literal_len(from) {
-            rest = from.get(len..).unwrap_or("");
-        } else if let Some(body) = from.strip_prefix('"') {
-            let end = end_of_string(body, "\"");
-            out.push_str(body.get(..end).unwrap_or(body));
-            rest = body.get(end..).unwrap_or("");
-        } else if let Some(hashes) = raw_string_hashes(from) {
-            let open = hashes + 2;
-            let close = format!("\"{}", "#".repeat(hashes));
-            let end = match from.get(open..).and_then(|t| t.find(&close)) {
-                Some(ix) => open + ix + close.len(),
-                None => from.len(),
-            };
-            out.push_str(from.get(..end).unwrap_or(from));
-            rest = from.get(end..).unwrap_or("");
-        } else {
-            let end = char_len(from);
-            push_newlines_of(&mut out, from.get(..end).unwrap_or(""));
-            rest = from.get(end..).unwrap_or("");
-        }
-    }
-    push_newlines_of(&mut out, rest);
-    out
-}
-
-/// A `let` binding that holds a `geometry` builder's value: the line it is
-/// on, the variable it binds, and the builder it came from.
-struct Binding<'a> {
-    line: usize,
-    var: &'a str,
-    builder: &'a str,
-}
-
 /// The leading identifier of `s`, or `""`.
 fn leading_ident(s: &str) -> &str {
     let end = s
@@ -974,171 +829,1924 @@ fn mentions(haystack: &str, ident: &str) -> bool {
     false
 }
 
-/// Every `let <var> = … geometry::<builder> …` in `code`, in source order.
-fn geometry_bindings(code: &str) -> Vec<Binding<'_>> {
-    let mut out = Vec::new();
-    for (line, text) in code.lines().enumerate() {
-        let Some(after_let) = text.trim_start().strip_prefix("let ") else {
+/// `raw` with every comment, string literal and char literal blanked to
+/// spaces, its length and line breaks kept: an offset into the result is an
+/// offset into `raw`, and whatever a search finds in it is code.
+fn blanked(raw: &str) -> String {
+    let mut out = String::with_capacity(raw.len());
+    let mut at = 0usize;
+    while let Some(rest) = raw.get(at..).filter(|rest| !rest.is_empty()) {
+        let len = if let Some(after) = rest.strip_prefix("//") {
+            2 + after.find('\n').unwrap_or(after.len())
+        } else if let Some(len) = char_literal_len(rest) {
+            len
+        } else if let Some(hashes) = raw_string_hashes(rest) {
+            let close = format!("\"{}", "#".repeat(hashes));
+            let from = hashes + 2;
+            match rest.get(from..).and_then(|t| t.find(&close)) {
+                Some(ix) => from + ix + close.len(),
+                None => rest.len(),
+            }
+        } else if let Some(body) = rest.strip_prefix('"') {
+            1 + end_of_string(body, "\"")
+        } else {
+            let len = char_len(rest);
+            out.push_str(rest.get(..len).unwrap_or(""));
+            at += len;
             continue;
         };
-        let after_let = after_let.strip_prefix("mut ").unwrap_or(after_let);
-        let var = leading_ident(after_let);
-        if var.is_empty() {
+        for c in rest.get(..len).unwrap_or(rest).chars() {
+            if c == '\n' {
+                out.push('\n');
+            } else {
+                for _ in 0..c.len_utf8() {
+                    out.push(' ');
+                }
+            }
+        }
+        at += len;
+    }
+    out
+}
+
+/// The identifier `s` ends with, or `""`.
+fn trailing_ident(s: &str) -> &str {
+    let start = s
+        .char_indices()
+        .rfind(|(_, c)| !(c.is_alphanumeric() || *c == '_'))
+        .map(|(ix, c)| ix + c.len_utf8())
+        .unwrap_or_default();
+    s.get(start..).unwrap_or("")
+}
+
+/// The offset just past the `}` that closes the block whose `{` is at `open`
+/// in `code`, a [`blanked`] text.
+fn block_end(code: &str, open: usize) -> Option<usize> {
+    let mut depth = 0usize;
+    for (ix, c) in code.get(open..)?.char_indices() {
+        match c {
+            '{' => depth += 1,
+            '}' => {
+                depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    return Some(open + ix + 1);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
+/// A parameter as its pattern: `id` for `id: &'static str`, `(name_id,
+/// name)` for a tuple pattern, `self` for `&mut self`.
+fn param_pattern(param: &str) -> &str {
+    let param = param.trim();
+    let mut depth = 0usize;
+    let mut colon = None;
+    let bytes = param.as_bytes();
+    for (ix, c) in param.char_indices() {
+        match c {
+            '(' | '[' | '<' => depth += 1,
+            ')' | ']' | '>' => depth = depth.saturating_sub(1),
+            ':' if depth == 0
+                && bytes.get(ix + 1) != Some(&b':')
+                && (ix == 0 || bytes.get(ix - 1) != Some(&b':')) =>
+            {
+                colon = Some(ix);
+                break;
+            }
+            _ => {}
+        }
+    }
+    let pattern = colon.and_then(|ix| param.get(..ix)).unwrap_or(param).trim();
+    let pattern = pattern.trim_start_matches('&').trim_start();
+    pattern.strip_prefix("mut ").unwrap_or(pattern).trim()
+}
+
+/// One function of a showcase file.
+struct FnItem<'a> {
+    /// The offset of its `fn`.
+    at: usize,
+    name: &'a str,
+    /// Its parameters' patterns (see [`param_pattern`]).
+    params: Vec<&'a str>,
+    /// Its body, from the `{` to just past the `}`.
+    body: std::ops::Range<usize>,
+}
+
+/// Every function with a body in `raw`, whose [`blanked`] text is `code`, in
+/// source order: free functions, methods and functions nested in either.
+fn fn_items<'a>(raw: &'a str, code: &str) -> Vec<FnItem<'a>> {
+    let mut out = Vec::new();
+    for (at, _) in code.match_indices("fn ") {
+        if code
+            .get(..at)
+            .and_then(|t| t.chars().next_back())
+            .is_some_and(|c| c.is_alphanumeric() || c == '_')
+        {
             continue;
         }
-        let mut rest = after_let;
-        while let Some(ix) = rest.find("geometry::") {
-            rest = rest.get(ix + "geometry::".len()..).unwrap_or("");
-            let builder = leading_ident(rest);
-            if !builder.is_empty() {
-                out.push(Binding { line, var, builder });
+        let rest = code.get(at + 3..).unwrap_or("");
+        let name_at = at + 3 + (rest.len() - rest.trim_start().len());
+        let name = leading_ident(raw.get(name_at..).unwrap_or(""));
+        if name.is_empty() {
+            continue;
+        }
+        let mut open = name_at + name.len();
+        if code.get(open..).is_some_and(|t| t.starts_with('<')) {
+            // Generics, `F: Fn(A) -> B` among them: a `>` after a `-` closes
+            // nothing.
+            let mut depth = 0usize;
+            let mut prev = ' ';
+            for (ix, c) in code.get(open..).unwrap_or("").char_indices() {
+                match c {
+                    '<' => depth += 1,
+                    '>' if prev != '-' => {
+                        depth = depth.saturating_sub(1);
+                        if depth == 0 {
+                            open += ix + 1;
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+                prev = c;
             }
+        }
+        if !code.get(open..).is_some_and(|t| t.starts_with('(')) {
+            continue;
+        }
+        let Some(close) = end_of_call(code, open) else {
+            continue;
+        };
+        // The body opens at the first `{` outside brackets; a `;` there first
+        // is a declaration without one. `-> [Tag; 3]` has a `;` inside them.
+        let mut depth = 0usize;
+        let mut body_open = None;
+        for (ix, c) in code.get(close..).unwrap_or("").char_indices() {
+            match c {
+                '(' | '[' => depth += 1,
+                ')' | ']' => depth = depth.saturating_sub(1),
+                '{' if depth == 0 => {
+                    body_open = Some(close + ix);
+                    break;
+                }
+                ';' if depth == 0 => break,
+                _ => {}
+            }
+        }
+        let Some(body_open) = body_open else {
+            continue;
+        };
+        let Some(body_end) = block_end(code, body_open) else {
+            continue;
+        };
+        let params = call_args(raw, open)
+            .unwrap_or_default()
+            .into_iter()
+            .map(param_pattern)
+            .filter(|p| !p.is_empty())
+            .collect();
+        out.push(FnItem {
+            at,
+            name,
+            params,
+            body: body_open..body_end,
+        });
+    }
+    out
+}
+
+/// Whether the function whose `fn` is at `at` in `code` is `pub` or
+/// `pub(crate)`.
+fn is_public(code: &str, at: usize) -> bool {
+    let before = code.get(..at).unwrap_or("").trim_end();
+    before.ends_with("pub") || before.ends_with("pub(crate)")
+}
+
+// ---------------------------------------------------------------------------
+// Every widget reports itself
+// ---------------------------------------------------------------------------
+//
+// Showcase spec §5.3 and §10.1. A widget the pointer can rest on and learn
+// nothing from is what per-instance Widget Info exists to end: each is built
+// by a `demo::` or `chrome::` helper that wraps it with `.info(`. Two rules
+// keep that so. Outside those two files no gpui-component widget is
+// constructed at all; and every public helper in them that constructs one
+// also calls `.info(`. The inspector is the named exemption from the first
+// rule (spec §4.4); the test module and the `info/` files, which build no
+// demo, are not read by it.
+//
+// What a widget is comes from upstream, not from a list here: a type
+// gpui-component or gpui-base draws -- one it implements `RenderOnce`,
+// `Render`, `Element` or `IntoElement` for, or derives `IntoElement` on. A
+// type upstream names `…State` is not one: it is a widget's model, such as
+// `InputState` or `ListState`, which the view keeps across frames and hands
+// to the helper that builds the widget, so constructing it puts nothing on
+// screen. Which names a file can mean by those types comes from its own
+// `use gpui_component::…` and `use gpui_base::…` items, read the way
+// `scripts/check-widget-coverage.py` reads them (`toolkit_roots`): `Tag`
+// imported by name, or reached through an imported module (`form::Form`) or
+// the crate itself (`gpui_component::tag::Tag`).
+//
+// A constructor is any associated function called on such a type,
+// `Tag::new(` and `Tag::primary(` alike. The few calls of one that put no
+// widget on screen are listed in `NOT_WIDGET_CONSTRUCTORS`, each with the
+// upstream code that shows it. Two shapes are not read: a constructor passed
+// as a function item (`.map(Tag::new)`), and a free function that returns a
+// widget (`h_resizable(`), which spec §10.1 does not count as a constructor.
+
+/// The files whose helpers build the widgets and report them (spec §5.3).
+const HELPER_FILES: &[&str] = &["demo.rs", "chrome.rs"];
+
+/// The inspector, whose content is built without `.info()` so that the
+/// pointer can move into it without replacing what it shows (spec §4.4): the
+/// one module the first rule exempts by name.
+const UNREPORTED_MODULE: &str = "inspector.rs";
+
+/// The directory of the files that say what a widget reports.
+const INFO_DIR: &str = "info/";
+
+/// The crates whose widgets report themselves, as a `use` item names them.
+const WIDGET_CRATES: &[&str] = &["gpui_component", "gpui_base"];
+
+/// The traits whose implementors upstream draws.
+const DRAWN_TRAITS: &[&str] = &["RenderOnce", "Render", "Element", "IntoElement"];
+
+/// Calls of a widget type's associated functions outside the helpers that put
+/// no widget on screen, as (file, `Type::function`, why).
+const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[
+    (
+        "app.rs",
+        "AppMenuBar::new",
+        "returns an Entity<AppMenuBar> (menu/app_menu_bar.rs, AppMenuBar::new), which \
+         the view keeps so that an open menu outlives the frame; demo::title_bar \
+         draws it and reports it",
+    ),
+    (
+        "app.rs",
+        "Root::render_dialog_layer",
+        "draws the Dialogs Root keeps (root.rs, Root::render_dialog_layer); each is \
+         built by the demo helper its opener hands `open_dialog` or \
+         `open_alert_dialog`",
+    ),
+    (
+        "app.rs",
+        "Root::render_notification_layer",
+        "draws the Notifications Root keeps (root.rs, \
+         Root::render_notification_layer); each is pushed by the demo helper whose \
+         widget reports it",
+    ),
+    (
+        "app.rs",
+        "Root::render_sheet_layer",
+        "draws the Sheet Root keeps (root.rs, Root::render_sheet_layer), built by \
+         the demo helper its opener hands `open_sheet` or `open_sheet_at`",
+    ),
+    (
+        "main.rs",
+        "Root::new",
+        "the window's root view: upstream finds its Dialogs, Sheets and \
+         Notifications through window.root::<Root>() (root.rs, Root::update), so the \
+         window has to be a Root, which no element can wrap",
+    ),
+    (
+        "main.rs",
+        "TitleBar::window_options",
+        "returns the WindowOptions a TitleBar window opens with (title_bar.rs, \
+         TitleBar::window_options), not a TitleBar",
+    ),
+];
+
+/// Whether `file` is one the first rule of `every_widget_reports_itself`
+/// leaves out: a helper file, the inspector, the test module, or an info file.
+fn exempt_from_the_first_rule(file: &str) -> bool {
+    HELPER_FILES.contains(&file)
+        || file == UNREPORTED_MODULE
+        || file == TEST_MODULE
+        || file.starts_with(INFO_DIR)
+}
+
+/// Every `.rs` file under `dir`, appended to `out`.
+fn collect_sources(dir: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect_sources(&path, out);
+        } else if path.extension().is_some_and(|e| e == "rs") {
+            out.push(path);
+        }
+    }
+}
+
+/// The types `source` implements one of `DRAWN_TRAITS` for, or derives
+/// `IntoElement` on.
+fn drawn_types(source: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut deriving = false;
+    for line in source.lines().map(str::trim_start) {
+        if line.starts_with("#[derive(") && line.contains("IntoElement") {
+            deriving = true;
+            continue;
+        }
+        if deriving {
+            if line.starts_with("#[") || line.starts_with("//") {
+                continue;
+            }
+            deriving = false;
+            let declared = ["struct ", "enum "]
+                .iter()
+                .find_map(|kw| line.split_once(kw).map(|(_, rest)| leading_ident(rest)));
+            if let Some(name) = declared.filter(|n| !n.is_empty()) {
+                out.push(name);
+            }
+            continue;
+        }
+        let Some(rest) = line.strip_prefix("impl") else {
+            continue;
+        };
+        let Some((head, ty)) = rest.split_once(" for ") else {
+            continue;
+        };
+        let trait_name = head
+            .split_whitespace()
+            .last()
+            .and_then(|t| t.rsplit("::").next())
+            .unwrap_or("");
+        if !DRAWN_TRAITS.contains(&trait_name) {
+            continue;
+        }
+        let path = ty
+            .trim_start()
+            .split(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':'))
+            .next()
+            .unwrap_or("");
+        let name = path.rsplit("::").next().unwrap_or("");
+        if !name.is_empty() {
+            out.push(name);
         }
     }
     out
 }
 
-/// The 0-based lines on which a method of the showcase's types begins.
-///
-/// Four-space indent is the showcase's own shape for an `impl` method, and a
-/// binding shared by several demo blocks always sits in one. A method another
-/// of the showcase's modules calls -- every page's `render_*_tab` -- is
-/// `pub(crate)`.
-fn method_starts(code: &str) -> Vec<usize> {
-    code.lines()
-        .enumerate()
-        .filter(|(_, l)| {
-            l.starts_with("    fn ")
-                || l.starts_with("    pub fn ")
-                || l.starts_with("    pub(crate) fn ")
-        })
-        .map(|(n, _)| n)
-        .collect()
-}
-
-/// The 0-based line where the method enclosing `line` begins, if any.
-///
-/// `None` for a line above the first method; two `None`s compare equal, which
-/// is what is wanted -- both are outside every method, so a binding there is
-/// in scope for a block there.
-fn enclosing_method(starts: &[usize], line: usize) -> Option<usize> {
-    starts.iter().rev().find(|&&s| s <= line).copied()
-}
-
-/// Builders that shape a demo's *scaffolding* rather than the widget it
-/// demonstrates, and so need no note in that widget's panel.
-///
-/// A demo opens a dialog from a `Button` and lays its parts out with the
-/// platform's spacing; neither is what the panel is about, and requiring a
-/// note would put the same two sentences on a dozen panels. Each of these
-/// has a panel of its own where it *is* the subject -- the ten Button demos
-/// and "Layout spacing" -- so nothing goes undescribed.
-const AMBIENT_BUILDERS: &[&str] = &[
-    "button",
-    "widget_gap",
-    "container_margin",
-    "window_margin",
-    "section_gap",
-];
-
-/// Spec section 3: a demo block names every `geometry::` builder that shaped
-/// it.
-///
-/// One direction only. Naming a builder a demo does *not* apply is how a
-/// panel says why it could not: `PopupMenu`'s note records that
-/// `geometry::menu_item` has no receiver there, and `AlertDialog`'s points at
-/// the Dialog above. Requiring set equality would delete both.
-#[test]
-fn every_demo_names_the_builders_it_applies() {
-    let builders = public_fns(GEOMETRY);
-    assert!(
-        !builders.is_empty(),
-        "no `pub fn` found in geometry.rs, so this test would pass vacuously"
-    );
-
-    let mut findings = Vec::new();
-    let mut total = 0usize;
-    for (file, demos) in demo_files() {
-        total += unnamed_builders(file, demos, &builders, &mut findings);
+/// The widget types of gpui-component and gpui-base, read from their
+/// sources: every drawn type but the `…State` models.
+fn upstream_widget_types(roots: &[(String, PathBuf)]) -> BTreeSet<String> {
+    let mut files = Vec::new();
+    for (name, root) in roots {
+        if WIDGET_CRATES.iter().any(|c| c.replace('_', "-") == *name) {
+            collect_sources(root, &mut files);
+        }
     }
+    let mut out = BTreeSet::new();
+    for file in files {
+        let Ok(text) = std::fs::read_to_string(&file) else {
+            continue;
+        };
+        out.extend(
+            drawn_types(&text)
+                .into_iter()
+                .filter(|name| !name.ends_with("State"))
+                .map(str::to_string),
+        );
+    }
+    out
+}
 
+/// The names the `use` items of `code`, a [`blanked`] file, bring in from a
+/// widget crate: types, and modules a path can start from.
+fn toolkit_names(code: &str) -> BTreeSet<&str> {
+    let mut out = BTreeSet::new();
+    for krate in WIDGET_CRATES {
+        let open = format!("use {krate}::");
+        for (at, _) in code.match_indices(&open) {
+            if code
+                .get(..at)
+                .and_then(|t| t.chars().next_back())
+                .is_some_and(|c| c.is_alphanumeric() || c == '_')
+            {
+                continue;
+            }
+            let from = at + open.len();
+            let Some(end) = code.get(from..).and_then(|t| t.find(';')) else {
+                continue;
+            };
+            out.extend(
+                code.get(from..from + end)
+                    .unwrap_or("")
+                    .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                    .filter(|w| !w.is_empty() && !matches!(*w, "self" | "as" | "crate" | "super")),
+            );
+        }
+    }
+    out
+}
+
+/// Every call of an associated function of a type in `widgets` in `code`, a
+/// [`blanked`] file, that the file's `use` items resolve to a widget crate:
+/// the offset of the type and `Type::function`.
+fn widget_constructions(code: &str, widgets: &BTreeSet<String>) -> Vec<(usize, String)> {
+    let names = toolkit_names(code);
+    let mut out = Vec::new();
+    for (sep, _) in code.match_indices("::") {
+        let after = code.get(sep + 2..).unwrap_or("");
+        let function = leading_ident(after);
+        let is_call = after
+            .get(function.len()..)
+            .is_some_and(|t| t.trim_start().starts_with('('));
+        if function.is_empty()
+            || !function.starts_with(|c: char| c.is_lowercase() || c == '_')
+            || !is_call
+        {
+            continue;
+        }
+        let before = code.get(..sep).unwrap_or("");
+        let ty = trailing_ident(before);
+        if !ty.starts_with(char::is_uppercase) || !widgets.contains(ty) {
+            continue;
+        }
+        let ty_at = sep - ty.len();
+        // The first segment of the path the type is written with, if any.
+        let mut root = None;
+        let mut head = code.get(..ty_at).unwrap_or("");
+        while let Some(path) = head.strip_suffix("::") {
+            let segment = trailing_ident(path);
+            if segment.is_empty() {
+                break;
+            }
+            root = Some(segment);
+            head = path.get(..path.len() - segment.len()).unwrap_or("");
+        }
+        let resolves = match root {
+            None => names.contains(ty),
+            Some(root) => WIDGET_CRATES.contains(&root) || names.contains(root),
+        };
+        if resolves {
+            out.push((ty_at, format!("{ty}::{function}")));
+        }
+    }
+    out
+}
+
+/// Whether `body`, [`blanked`] code, wraps something in `.info(ui, id, info)`
+/// -- by method or by path -- rather than calling the `ButtonVariants::info()`
+/// that takes nothing.
+fn reports(body: &str) -> bool {
+    body.contains("InfoExt::info(")
+        || body.match_indices(".info(").any(|(at, call)| {
+            body.get(at + call.len()..)
+                .is_some_and(|rest| !rest.trim_start().starts_with(')'))
+        })
+}
+
+/// What `every_widget_reports_itself` finds in `files`, given upstream's
+/// `widgets`: the findings, how many constructions the helper files hold, and
+/// how many public helpers construct a widget.
+fn unreported_widgets(
+    files: &[(&str, &str)],
+    widgets: &BTreeSet<String>,
+    exempt: &[(&str, &str, &str)],
+) -> (Vec<String>, usize, usize) {
+    let mut findings = Vec::new();
+    let mut in_helpers = 0usize;
+    let mut helpers = 0usize;
+    let mut exempted = BTreeSet::new();
+    for &(file, raw) in files {
+        let code = blanked(raw);
+        let starts = line_offsets(raw);
+        let built = widget_constructions(&code, widgets);
+        if HELPER_FILES.contains(&file) {
+            in_helpers += built.len();
+            for item in fn_items(raw, &code) {
+                let inside: BTreeSet<&str> = built
+                    .iter()
+                    .filter(|(at, _)| item.body.contains(at))
+                    .map(|(_, call)| call.as_str())
+                    .collect();
+                if !is_public(&code, item.at) || inside.is_empty() {
+                    continue;
+                }
+                helpers += 1;
+                if !reports(code.get(item.body.clone()).unwrap_or("")) {
+                    findings.push(format!(
+                        "{file}:{}: `{}` builds {} and never calls .info(",
+                        line_at(&starts, item.at),
+                        item.name,
+                        inside.into_iter().collect::<Vec<_>>().join(", ")
+                    ));
+                }
+            }
+        } else if !exempt_from_the_first_rule(file) {
+            for (at, call) in built {
+                if exempt.iter().any(|(f, c, _)| *f == file && *c == call) {
+                    exempted.insert((file, call));
+                    continue;
+                }
+                findings.push(format!(
+                    "{file}:{}: {call}( builds a widget outside demo.rs and chrome.rs, \
+                     so nothing reports it",
+                    line_at(&starts, at)
+                ));
+            }
+        }
+    }
+    for (file, call, _) in exempt {
+        if files.iter().any(|(f, _)| f == file) && !exempted.contains(&(*file, (*call).to_string()))
+        {
+            findings.push(format!(
+                "NOT_WIDGET_CONSTRUCTORS lists {call} in {file}, which no longer calls it"
+            ));
+        }
+    }
+    (findings, in_helpers, helpers)
+}
+
+/// Spec §10.1: no gpui-component widget is built outside `demo.rs` and
+/// `chrome.rs`, and every public helper there that builds one reports it.
+#[test]
+fn every_widget_reports_itself() {
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the upstream sources could not be located, so no widget type is known: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let widgets = upstream_widget_types(&roots);
+    assert!(
+        widgets.contains("Tag") && widgets.contains("Button"),
+        "the upstream sources yielded {} widget types, not Tag and Button among \
+         them, so this test cannot recognise a widget",
+        widgets.len()
+    );
+    let (findings, in_helpers, helpers) =
+        unreported_widgets(SHOWCASE_FILES, &widgets, NOT_WIDGET_CONSTRUCTORS);
+    assert!(
+        in_helpers > 0 && helpers > 0,
+        "no widget construction found in demo.rs or chrome.rs ({in_helpers}), or \
+         no public helper building one ({helpers}), so this test would pass \
+         vacuously"
+    );
     assert!(
         findings.is_empty(),
-        "{} of {total} demo blocks in examples/showcase-gpui/ are shaped by a \
-         geometry builder their Widget Info panel never names, so hovering them \
-         hides what the native theme did:\n  {}",
-        findings.len(),
+        "a widget is built where nothing reports it (spec §5.3, §10.1): build it \
+         in a demo:: or chrome:: helper that calls .info(:\n  {}",
         findings.join("\n  ")
     );
 }
 
-/// The demo blocks of one showcase file whose panel leaves a builder that
-/// shaped them unnamed, appended to `findings` as `file:line: builders`.
-/// Returns how many demo blocks the file holds.
-///
-/// Per file, because a demo block never spans two: a block, the method
-/// around it and the bindings that method makes are all in the one file.
-fn unnamed_builders(
-    file: &str,
-    demos: &str,
-    builders: &[&str],
-    findings: &mut Vec<String>,
-) -> usize {
-    let code = without_comments_or_strings(demos);
-    let notes = string_literals_only(demos);
-    let code_lines: Vec<&str> = code.lines().collect();
-    let note_lines: Vec<&str> = notes.lines().collect();
+/// The scanners behind `every_widget_reports_itself` see what they must: a
+/// constructor by name, through a module and through the crate, but not one
+/// in a comment or a string, not a type the file does not import from a
+/// widget crate, and not a `…State`; and a public helper that builds without
+/// reporting, but not a private part or a helper that reports.
+#[test]
+fn the_widget_scanners_do_their_jobs() {
+    let upstream = "#[derive(IntoElement)]\n\
+                    /// A tag.\n\
+                    pub struct Tag {}\n\
+                    impl RenderOnce for Label {}\n\
+                    impl<D: ListDelegate> Render for ListState<D> {}\n\
+                    impl gpui::Element for Form {}\n\
+                    impl Styled for Button {}\n";
+    let widgets: BTreeSet<String> = drawn_types(upstream)
+        .into_iter()
+        .filter(|name| !name.ends_with("State"))
+        .map(str::to_string)
+        .collect();
+    assert_eq!(
+        widgets.iter().map(String::as_str).collect::<Vec<_>>(),
+        vec!["Form", "Label", "Tag"]
+    );
 
-    let methods = method_starts(&code);
-    let blocks = demo_blocks(demos, &code, &methods);
-    let bindings = geometry_bindings(&code);
+    let page = r#"use gpui_component::{form, label::Label};
+fn page() {
+    let a = Tag::primary();
+    // Label::new("commented")
+    let s = "Label::new(quoted)";
+    let b = Label::new("x");
+    let c = form::Form::horizontal();
+    let d = gpui_component::tag::Tag::new();
+    let e = other::Label::new("y");
+    let f = ListState::new(d);
+}
+"#;
+    let code = blanked(page);
+    let starts = line_offsets(page);
+    let found: Vec<(usize, String)> = widget_constructions(&code, &widgets)
+        .into_iter()
+        .map(|(at, call)| (line_at(&starts, at), call))
+        .collect();
+    assert_eq!(
+        found,
+        vec![
+            (6, "Label::new".to_string()),
+            (7, "Form::horizontal".to_string()),
+            (8, "Tag::new".to_string()),
+        ]
+    );
 
-    let spans: Vec<(usize, usize)> = blocks.iter().map(|b| (b.start, b.end)).collect();
-    let inside_a_block = |line: usize| spans.iter().any(|&(a, b)| a <= line && line < b);
+    let helpers = r#"use gpui_component::{tag::Tag, label::Label};
+pub(crate) fn reported(ui: &Ui, id: &'static str) -> Stateful<Div> {
+    Tag::primary().info(ui, id, info::tag())
+}
+pub(crate) fn by_path(ui: &Ui, id: &'static str) -> Stateful<Div> {
+    InfoExt::info(Tag::primary(), ui, id, info::tag())
+}
+fn part() -> Label {
+    Label::new("part")
+}
+pub(crate) fn unreported() -> Tag {
+    Tag::primary().info()
+}
+pub(crate) fn plain() -> Div {
+    div()
+}
+"#;
+    let (findings, in_helpers, helpers) =
+        unreported_widgets(&[("demo.rs", helpers), ("pages/p.rs", page)], &widgets, &[]);
+    assert_eq!((in_helpers, helpers), (4, 3));
+    assert_eq!(
+        findings,
+        vec![
+            "demo.rs:11: `unreported` builds Tag::primary and never calls .info(".to_string(),
+            "pages/p.rs:6: Label::new( builds a widget outside demo.rs and chrome.rs, so \
+             nothing reports it"
+                .to_string(),
+            "pages/p.rs:7: Form::horizontal( builds a widget outside demo.rs and chrome.rs, \
+             so nothing reports it"
+                .to_string(),
+            "pages/p.rs:8: Tag::new( builds a widget outside demo.rs and chrome.rs, so \
+             nothing reports it"
+                .to_string(),
+        ]
+    );
+    let exempt = [
+        ("pages/p.rs", "Label::new", "a sample"),
+        ("pages/p.rs", "Tag::gone", "stale"),
+    ];
+    let (findings, _, _) = unreported_widgets(&[("pages/p.rs", page)], &widgets, &exempt);
+    assert!(
+        !findings.iter().any(|f| f.contains("Label::new"))
+            && findings
+                .iter()
+                .any(|f| f == "NOT_WIDGET_CONSTRUCTORS lists Tag::gone in pages/p.rs, which no longer calls it"),
+        "{findings:?}"
+    );
+}
 
-    for block in &blocks {
-        let to = block.end.min(code_lines.len());
-        let from = block.start.min(to);
-        let block_code = code_lines.get(from..to).unwrap_or(&[]).join("\n");
-        let note_to = block.end.min(note_lines.len());
-        let note_from = block.start.min(note_to);
-        let block_note = note_lines.get(note_from..note_to).unwrap_or(&[]).join("\n");
-        let method = enclosing_method(&methods, block.start);
+// ---------------------------------------------------------------------------
+// Every info id is unique
+// ---------------------------------------------------------------------------
+//
+// The registry keys a target by the `ElementId` its `.info(` was given, the
+// id alone and not gpui's path to it (info/registry.rs), so two targets
+// under one id overwrite each other's bounds and hovers. So every info id is
+// written once, and every id a `format!` generates starts with text no other
+// id starts with.
+//
+// An id is read where it is written, which is seldom at the `.info(` itself:
+// a page passes a literal to a helper, which passes it on as `id`. So the
+// gate follows it. A helper parameter that reaches the id argument of an
+// `.info(` -- or of another helper, as far as that goes -- is an *id
+// parameter*, and the argument every call gives it is an id too. An id
+// written as a variable is followed to the `let` that binds it, to the table
+// whose rows a closure destructures (`VARIANTS.map(|(id, …)|`, a const or a
+// helper's parameter holding one), to the field of the struct literal it was
+// destructured from, or to the helper's calls; a `page.nav_item()` to the
+// arms of the method's `match`. What cannot be followed is a finding unless
+// `UNREAD_INFO_IDS` names it with the reason.
+//
+// A `format!` id that opens with a placeholder, `{id}-row-{ix}`, names a
+// part after the id of the widget it belongs to; it is as unique as that id,
+// which is checked, provided its helper gives its parts distinct suffixes --
+// which this does not check.
 
-        let mut applied: Vec<&str> = builders
-            .iter()
-            .copied()
-            .filter(|b| references(&block_code, "geometry", b))
-            .collect();
-        for binding in &bindings {
-            // A binding inside a block belongs to that block; one outside
-            // every block is the method's, and is shared by its demos.
-            let reaches = if inside_a_block(binding.line) {
-                block.start <= binding.line && binding.line < block.end
-            } else {
-                enclosing_method(&methods, binding.line) == method
-            };
-            if reaches && mentions(&block_code, binding.var) && !applied.contains(&binding.builder)
-            {
-                applied.push(binding.builder);
+/// Info ids the gate cannot follow to where they are written, as (file, the
+/// function the expression is in, the expression, why). The ids behind them
+/// are not checked here.
+const UNREAD_INFO_IDS: &[(&str, &str, &str, &str)] = &[
+    (
+        "demo.rs",
+        "resize_handles",
+        "id",
+        "a resize handle's id, from the (id, between) pairs app.rs collects into a \
+         Vec of the handles on show (CHROME_HANDLE_NAV, CHROME_HANDLE_INSPECTOR) \
+         and passes demo::resize_handles",
+    ),
+    (
+        "demo.rs",
+        "render",
+        "self.id",
+        "a DataTable part's id, which Reported::new is given as `{id}-header` or \
+         `{id}-row-{ix}`: named after the table's id, which is checked",
+    ),
+    (
+        "demo.rs",
+        "accordion",
+        "answer_id",
+        "an answer's id, from the (title, answer id, answer) items the Layout page \
+         passes demo::accordion as an array literal, which a fold over their \
+         enumeration destructures",
+    ),
+];
+
+/// An info id as far as the gate reads it.
+#[derive(Debug, PartialEq)]
+enum IdRead<'a> {
+    /// A string literal, or a const holding one: the text.
+    Literal(&'a str),
+    /// A `format!` pattern: the text before its first placeholder.
+    Prefix(&'a str),
+    /// A `format!` pattern that opens with a placeholder.
+    Nested,
+    /// The id parameter of the helper it is in, read at the helper's calls.
+    Carried,
+    /// Anything else: the expression.
+    Unread(&'a str),
+}
+
+/// One file as the id reader needs it.
+struct IdFile<'a> {
+    path: &'a str,
+    raw: &'a str,
+    code: String,
+    fns: Vec<FnItem<'a>>,
+    /// The `(` of every call in the file, by the name called.
+    calls: BTreeMap<&'a str, Vec<usize>>,
+    /// The id argument of every `.info(` in the file.
+    info_ids: Vec<&'a str>,
+}
+
+/// An id parameter: its position, and for a tuple pattern the element.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct IdParam {
+    index: usize,
+    element: Option<usize>,
+}
+
+/// A read: the file and offset it is written at, and what it is.
+type Read<'a> = (&'a str, usize, IdRead<'a>);
+
+/// What the id reader reads the showcase with.
+struct IdContext<'a> {
+    files: Vec<IdFile<'a>>,
+    /// The id parameters of each helper, by (helper file, function).
+    params: BTreeMap<(&'a str, &'a str), Vec<IdParam>>,
+}
+
+/// `expr` without what does not change the text of an id: a
+/// `SharedString::from(…)` or `ElementId::from(…)` around it, a `.clone()`,
+/// `.into()` or `.to_string()` after it, a `&` or `*` before it.
+fn id_text(expr: &str) -> &str {
+    let mut e = expr.trim();
+    loop {
+        let before = e;
+        for wrapper in ["SharedString::from(", "ElementId::from("] {
+            if let Some(inner) = e.strip_prefix(wrapper).and_then(|t| t.strip_suffix(')')) {
+                e = inner.trim();
             }
         }
+        for tail in [".clone()", ".into()", ".to_string()"] {
+            if let Some(inner) = e.strip_suffix(tail) {
+                e = inner.trim();
+            }
+        }
+        e = e.trim_start_matches(['&', '*']).trim_start();
+        if e == before {
+            return e;
+        }
+    }
+}
 
-        let unnamed: Vec<&str> = applied
+/// Whether `s` is an identifier.
+fn is_ident(s: &str) -> bool {
+    !s.is_empty() && leading_ident(s) == s && !s.starts_with(|c: char| c.is_ascii_digit())
+}
+
+/// Whether `s` names a const: an identifier in capitals.
+fn is_const_name(s: &str) -> bool {
+    is_ident(s) && s.starts_with(char::is_uppercase) && !s.contains(char::is_lowercase)
+}
+
+/// The elements of a tuple pattern or expression `(a, b)`, or `None`.
+fn tuple_elements(text: &str) -> Option<Vec<&str>> {
+    let text = text.trim();
+    if !text.starts_with('(') {
+        return None;
+    }
+    let elements = call_args(text, 0)?;
+    Some(elements.into_iter().map(str::trim).collect())
+}
+
+/// The id argument of every `.info(ui, id, info)` and
+/// `InfoExt::info(w, ui, id, info)` in `raw`.
+fn info_id_args(raw: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    for open in method_calls(raw, "info") {
+        if let Some(args) = call_args(raw, open)
+            && let [_, id, _] = args.as_slice()
+        {
+            out.push(*id);
+        }
+    }
+    for open in code_calls(raw, "info") {
+        let before = raw.get(..open - "info".len()).unwrap_or("");
+        if before.ends_with("InfoExt::")
+            && let Some(args) = call_args(raw, open)
+            && let [_, _, id, _] = args.as_slice()
+        {
+            out.push(*id);
+        }
+    }
+    out
+}
+
+/// The `(` of every call in `raw`, whose [`blanked`] text is `code`, by the
+/// name called: a function, a method or a path's last segment, but not a
+/// declaration.
+fn calls_in<'a>(raw: &'a str, code: &str) -> BTreeMap<&'a str, Vec<usize>> {
+    let mut out: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
+    let mut prev = ' ';
+    for (at, c) in code.char_indices() {
+        let starts = (c.is_alphabetic() || c == '_') && !(prev.is_alphanumeric() || prev == '_');
+        prev = c;
+        if !starts {
+            continue;
+        }
+        let name = leading_ident(code.get(at..).unwrap_or(""));
+        let open = at + name.len();
+        let declared = trailing_ident(code.get(..at).unwrap_or("").trim_end()) == "fn";
+        if code.get(open..).is_some_and(|t| t.starts_with('('))
+            && !declared
+            && let Some(name) = raw.get(at..open)
+        {
+            out.entry(name).or_default().push(open);
+        }
+    }
+    out
+}
+
+/// The `(` of every call in `file` of the helper `name` of `helper_file`: by
+/// path (`demo::name(`), or bare within its own file.
+fn helper_calls(file: &IdFile<'_>, helper_file: &str, name: &str) -> Vec<usize> {
+    let module = helper_file.trim_end_matches(".rs");
+    file.calls
+        .get(name)
+        .into_iter()
+        .flatten()
+        .copied()
+        .filter(|&open| {
+            let before = file.code.get(..open - name.len()).unwrap_or("");
+            match before.strip_suffix("::") {
+                Some(path_to) => trailing_ident(path_to) == module,
+                None => file.path == helper_file && !before.trim_end().ends_with('.'),
+            }
+        })
+        .collect()
+}
+
+/// The id arguments a call passes to `params`, from its `args`.
+fn id_arguments<'a>(args: &[&'a str], params: &[IdParam]) -> Vec<&'a str> {
+    params
+        .iter()
+        .filter_map(|p| {
+            let arg = *args.get(p.index)?;
+            match p.element {
+                None => Some(arg),
+                Some(k) => tuple_elements(arg)?.get(k).copied(),
+            }
+        })
+        .collect()
+}
+
+/// The innermost function of `file` whose body holds offset `at`.
+fn enclosing_item<'f, 'a>(file: &'f IdFile<'a>, at: usize) -> Option<&'f FnItem<'a>> {
+    file.fns
+        .iter()
+        .filter(|item| item.body.contains(&at))
+        .min_by_key(|item| item.body.len())
+}
+
+impl<'a> IdContext<'a> {
+    fn new(files: &[(&'a str, &'a str)]) -> Self {
+        let files: Vec<IdFile<'a>> = files
+            .iter()
+            .filter(|(path, _)| *path != TEST_MODULE)
+            .map(|&(path, raw)| {
+                let code = blanked(raw);
+                let fns = fn_items(raw, &code);
+                let calls = calls_in(raw, &code);
+                IdFile {
+                    path,
+                    raw,
+                    fns,
+                    calls,
+                    info_ids: info_id_args(raw),
+                    code,
+                }
+            })
+            .collect();
+        let mut ctx = Self {
+            files,
+            params: BTreeMap::new(),
+        };
+        // A parameter passed on as another helper's id parameter is one too,
+        // so this runs until a pass finds nothing new.
+        loop {
+            let mut found = BTreeMap::new();
+            for file in ctx.files.iter().filter(|f| HELPER_FILES.contains(&f.path)) {
+                for item in &file.fns {
+                    let params = ctx.id_params_of(file, item);
+                    if !params.is_empty() {
+                        found.insert((file.path, item.name), params);
+                    }
+                }
+            }
+            if found == ctx.params {
+                return ctx;
+            }
+            ctx.params = found;
+        }
+    }
+
+    /// The parameters of `item` that reach an id argument in its body.
+    fn id_params_of(&self, file: &IdFile<'a>, item: &FnItem<'a>) -> Vec<IdParam> {
+        let mut ids: Vec<&str> = file
+            .info_ids
             .iter()
             .copied()
-            .filter(|b| !AMBIENT_BUILDERS.contains(b))
-            .filter(|b| !references(&block_note, "geometry", b))
+            .filter(|e| item.body.contains(&offset_in(file.raw, e)))
             .collect();
-        if !unnamed.is_empty() {
+        for ((helper_file, name), params) in &self.params {
+            for open in helper_calls(file, helper_file, name) {
+                if item.body.contains(&open) {
+                    let args = call_args(file.raw, open).unwrap_or_default();
+                    ids.extend(id_arguments(&args, params));
+                }
+            }
+        }
+        let ids: Vec<&str> = ids.into_iter().map(id_text).collect();
+        let mut out = Vec::new();
+        for (index, pattern) in item.params.iter().enumerate() {
+            match tuple_elements(pattern) {
+                Some(elements) => out.extend(
+                    elements
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, e)| ids.contains(e))
+                        .map(|(k, _)| IdParam {
+                            index,
+                            element: Some(k),
+                        }),
+                ),
+                None if ids.contains(pattern) => out.push(IdParam {
+                    index,
+                    element: None,
+                }),
+                None => {}
+            }
+        }
+        out
+    }
+
+    /// Every id position of the showcase: the file, and the expression.
+    fn id_sites(&self) -> Vec<(&IdFile<'a>, &'a str)> {
+        let mut out = Vec::new();
+        for file in &self.files {
+            for &expr in &file.info_ids {
+                out.push((file, expr));
+            }
+            for ((helper_file, name), params) in &self.params {
+                for open in helper_calls(file, helper_file, name) {
+                    let args = call_args(file.raw, open).unwrap_or_default();
+                    for expr in id_arguments(&args, params) {
+                        out.push((file, expr));
+                    }
+                }
+            }
+        }
+        out
+    }
+
+    /// The value of the const `name`: from `from` if it declares one, else
+    /// from whichever file does.
+    fn const_value(&self, from: &IdFile<'a>, name: &str) -> Option<(&IdFile<'a>, &'a str)> {
+        let value_in = |file: &IdFile<'a>| {
+            let at = const_declaration(&file.code, name)?;
+            let eq = at + file.code.get(at..)?.find('=')?;
+            let end = eq + file.code.get(eq..)?.find(';')?;
+            Some(file.raw.get(eq + 1..end)?.trim())
+        };
+        if let Some(value) = value_in(from) {
+            let file = self.files.iter().find(|f| f.path == from.path)?;
+            return Some((file, value));
+        }
+        self.files
+            .iter()
+            .find_map(|file| value_in(file).map(|value| (file, value)))
+    }
+
+    /// The `(` of every call of the helper `name` of `helper_file` in the
+    /// showcase, with the file it is in.
+    fn calls_of(&self, helper_file: &str, name: &str) -> Vec<(&IdFile<'a>, usize)> {
+        self.files
+            .iter()
+            .flat_map(|file| {
+                helper_calls(file, helper_file, name)
+                    .into_iter()
+                    .map(move |open| (file, open))
+            })
+            .collect()
+    }
+
+    /// Read the id `expr`, at offset `at` in `file`, into `out`. `depth`
+    /// stops a cycle.
+    fn read(
+        &self,
+        file: &IdFile<'a>,
+        at: usize,
+        expr: &'a str,
+        depth: usize,
+        out: &mut Vec<Read<'a>>,
+    ) {
+        let e = id_text(expr);
+        let shown = written_at(file.raw, e, at);
+        let method = e
+            .strip_suffix("()")
+            .and_then(|call| call.rsplit_once('.'))
+            .filter(|(receiver, method)| is_ident(receiver) && is_ident(method));
+        if depth > 16 {
+            out.push((file.path, shown, IdRead::Unread(e)));
+        } else if let Some(text) = unquote(e) {
+            out.push((file.path, shown, IdRead::Literal(text)));
+        } else if let Some(args) = e
+            .strip_prefix("format!")
+            .filter(|t| t.starts_with('('))
+            .and_then(|_| call_args(e, "format!".len()))
+        {
+            let read = match args.first().and_then(|pattern| unquote(pattern)) {
+                Some(pattern) => match pattern.split('{').next().unwrap_or("") {
+                    "" => IdRead::Nested,
+                    prefix => IdRead::Prefix(prefix),
+                },
+                None => IdRead::Unread(e),
+            };
+            out.push((file.path, shown, read));
+        } else if is_const_name(e) {
+            match self.const_value(file, e) {
+                Some((declared, value)) => {
+                    let at = offset_in(declared.raw, value);
+                    self.read(declared, at, value, depth + 1, out);
+                }
+                None => out.push((file.path, shown, IdRead::Unread(e))),
+            }
+        } else if is_ident(e) {
+            self.read_variable(file, at, e, depth, out);
+        } else if let Some((_, method)) = method {
+            self.read_arms(method, depth, out, (file.path, shown, e));
+        } else {
+            out.push((file.path, shown, IdRead::Unread(e)));
+        }
+    }
+
+    /// Read the variable `var`, used at `at` in `file`.
+    fn read_variable(
+        &self,
+        file: &IdFile<'a>,
+        at: usize,
+        var: &'a str,
+        depth: usize,
+        out: &mut Vec<Read<'a>>,
+    ) {
+        let shown = written_at(file.raw, var, at);
+        let Some(item) = enclosing_item(file, at) else {
+            out.push((file.path, shown, IdRead::Unread(var)));
+            return;
+        };
+        if let Some(params) = self.params.get(&(file.path, item.name)) {
+            let carried = params.iter().any(|p| {
+                let pattern = item.params.get(p.index).copied().unwrap_or("");
+                match p.element {
+                    None => pattern == var,
+                    Some(k) => tuple_elements(pattern).and_then(|e| e.get(k).copied()) == Some(var),
+                }
+            });
+            if carried {
+                out.push((file.path, shown, IdRead::Carried));
+                return;
+            }
+        }
+        let scope = item.body.start..at;
+        if let Some((bound_at, pattern, value)) = last_let(file, scope.clone(), var) {
+            if pattern == var {
+                self.read(file, bound_at, value, depth + 1, out);
+                return;
+            }
+            if let (Some(names), Some(values)) = (tuple_elements(pattern), tuple_elements(value))
+                && let Some(k) = names.iter().position(|n| *n == var)
+                && let Some(value) = values.get(k)
+            {
+                self.read(file, bound_at, value, depth + 1, out);
+                return;
+            }
+            if let Some((ty, fields)) = pattern.split_once('{')
+                && let Some(field) = struct_pattern_field(fields, var)
+            {
+                self.read_field(ty.trim(), field, depth, out, (file.path, shown, var));
+                return;
+            }
+        }
+        if let Some((table, k)) = closure_row(file, scope, var) {
+            let rows = self.table_rows(file, item, table);
+            for &(declared, row) in &rows {
+                match tuple_elements(row).and_then(|e| e.get(k).copied()) {
+                    Some(element) => {
+                        let at = offset_in(declared.raw, element);
+                        self.read(declared, at, element, depth + 1, out);
+                    }
+                    None => out.push((
+                        declared.path,
+                        offset_in(declared.raw, row),
+                        IdRead::Unread(row.trim()),
+                    )),
+                }
+            }
+            if !rows.is_empty() {
+                return;
+            }
+        }
+        // A helper's parameter that reaches the id through something other
+        // than an id argument -- a struct it builds -- is read at the
+        // helper's calls.
+        if HELPER_FILES.contains(&file.path)
+            && let Some(index) = item.params.iter().position(|p| *p == var)
+        {
+            let calls = self.calls_of(file.path, item.name);
+            for &(caller, open) in &calls {
+                match call_args(caller.raw, open).unwrap_or_default().get(index) {
+                    Some(arg) => {
+                        self.read(caller, offset_in(caller.raw, arg), arg, depth + 1, out);
+                    }
+                    None => out.push((caller.path, open, IdRead::Unread(var))),
+                }
+            }
+            if !calls.is_empty() {
+                return;
+            }
+        }
+        out.push((file.path, shown, IdRead::Unread(var)));
+    }
+
+    /// The rows of the table a closure in `item` of `file` destructures:
+    /// the const `table`, or the const each call of the helper passes as
+    /// its parameter `table`. Empty where neither can be read.
+    fn table_rows(
+        &self,
+        file: &IdFile<'a>,
+        item: &FnItem<'a>,
+        table: &'a str,
+    ) -> Vec<(&IdFile<'a>, &'a str)> {
+        let rows_of = |from: &IdFile<'a>, name: &str| {
+            let Some((declared, value)) = self.const_value(from, name) else {
+                return Vec::new();
+            };
+            if !value.starts_with('[') {
+                return Vec::new();
+            }
+            call_args(declared.raw, offset_in(declared.raw, value))
+                .unwrap_or_default()
+                .into_iter()
+                .map(|row| (declared, row))
+                .collect()
+        };
+        if is_const_name(table) {
+            return rows_of(file, table);
+        }
+        let Some(index) = item.params.iter().position(|p| *p == table) else {
+            return Vec::new();
+        };
+        if !HELPER_FILES.contains(&file.path) {
+            return Vec::new();
+        }
+        let mut out = Vec::new();
+        for (caller, open) in self.calls_of(file.path, item.name) {
+            let args = call_args(caller.raw, open).unwrap_or_default();
+            if let Some(name) = args.get(index).map(|arg| id_text(arg))
+                && is_const_name(name)
+            {
+                out.extend(rows_of(caller, name));
+            }
+        }
+        out
+    }
+
+    /// Read the value of every arm of every `fn method(self)` of the
+    /// showcase whose body is a `match`. `from` is the read that led here,
+    /// reported if none is found.
+    fn read_arms(
+        &self,
+        method: &str,
+        depth: usize,
+        out: &mut Vec<Read<'a>>,
+        from: (&'a str, usize, &'a str),
+    ) {
+        let before = out.len();
+        for file in &self.files {
+            for item in file
+                .fns
+                .iter()
+                .filter(|item| item.name == method && item.params == ["self"])
+            {
+                let body = file.code.get(item.body.clone()).unwrap_or("");
+                for (ix, arrow) in body.match_indices("=>") {
+                    let start = item.body.start + ix + arrow.len();
+                    let rest = file.code.get(start..).unwrap_or("");
+                    let len = rest.find([',', '}']).unwrap_or(rest.len());
+                    if let Some(value) = file.raw.get(start..start + len) {
+                        let at = offset_in(file.raw, value.trim());
+                        self.read(file, at, value.trim(), depth + 1, out);
+                    }
+                }
+            }
+        }
+        if out.len() == before {
+            out.push((from.0, from.1, IdRead::Unread(from.2)));
+        }
+    }
+
+    /// Read the `field` of every struct literal of `ty` in the showcase.
+    /// `from` is the read that led here, reported if no literal is found.
+    fn read_field(
+        &self,
+        ty: &str,
+        field: &str,
+        depth: usize,
+        out: &mut Vec<Read<'a>>,
+        from: (&'a str, usize, &'a str),
+    ) {
+        let before = out.len();
+        for file in &self.files {
+            for open in struct_literals(&file.code, ty) {
+                for entry in call_args(file.raw, open).unwrap_or_default() {
+                    let (name, value) = split_field(entry).unwrap_or((entry.trim(), entry.trim()));
+                    if name == field {
+                        let at = offset_in(file.raw, value);
+                        self.read(file, at, value, depth + 1, out);
+                    }
+                }
+            }
+        }
+        if out.len() == before {
+            out.push((from.0, from.1, IdRead::Unread(from.2)));
+        }
+    }
+}
+
+/// Where `text`, a slice of `raw`, starts -- past the whitespace a call's
+/// argument carries, so a finding names the line the id is written on -- or
+/// `fallback` if it is not a slice of `raw`.
+fn written_at(raw: &str, text: &str, fallback: usize) -> usize {
+    let at = offset_in(raw, text);
+    if text.as_ptr() >= raw.as_ptr() && at + text.len() <= raw.len() {
+        at
+    } else {
+        fallback
+    }
+}
+
+/// The offset of `const NAME` in `code`, a [`blanked`] file.
+fn const_declaration(code: &str, name: &str) -> Option<usize> {
+    let open = format!("const {name}");
+    code.match_indices(&open).find_map(|(at, _)| {
+        let after = code.get(at + open.len()..)?;
+        (!after.starts_with(|c: char| c.is_alphanumeric() || c == '_')).then_some(at)
+    })
+}
+
+/// The last `let <pattern> = <value>;` in `scope` of `file` whose pattern
+/// binds `var`: the offset of its `let`, the pattern and the value.
+fn last_let<'a>(
+    file: &IdFile<'a>,
+    scope: std::ops::Range<usize>,
+    var: &str,
+) -> Option<(usize, &'a str, &'a str)> {
+    let code = file.code.get(scope.clone())?;
+    code.match_indices("let ")
+        .filter_map(|(ix, _)| {
+            let at = scope.start + ix;
+            let rest = file.code.get(at + 4..)?;
+            let eq = rest.find('=')?;
+            let end = rest.get(eq..)?.find(';')? + eq;
+            let pattern = file.raw.get(at + 4..at + 4 + eq)?.trim();
+            let pattern = pattern.strip_prefix("mut ").unwrap_or(pattern);
+            let value = file.raw.get(at + 4 + eq + 1..at + 4 + end)?.trim();
+            mentions(pattern, var).then_some((at, pattern, value))
+        })
+        .last()
+}
+
+/// The field a struct pattern's `fields` (the text after its `{`) binds to
+/// `var`: `var` itself for a shorthand, or the name before `: var`.
+fn struct_pattern_field<'a>(fields: &'a str, var: &str) -> Option<&'a str> {
+    fields
+        .trim_end_matches('}')
+        .split(',')
+        .map(str::trim)
+        .find_map(|entry| match entry.split_once(':') {
+            Some((name, bound)) if bound.trim() == var => Some(name.trim()),
+            None if entry == var => Some(entry),
+            _ => None,
+        })
+}
+
+/// A struct literal entry `name: value`, split; `None` for a shorthand.
+fn split_field(entry: &str) -> Option<(&str, &str)> {
+    let entry = entry.trim();
+    let name = leading_ident(entry);
+    let value = entry.get(name.len()..)?.trim_start().strip_prefix(':')?;
+    (!name.is_empty() && !value.starts_with(':')).then_some((name, value.trim()))
+}
+
+/// The `{` of every struct literal of `ty` in `code`, a [`blanked`] file:
+/// `Ty {` not declared, destructured or implemented there.
+fn struct_literals(code: &str, ty: &str) -> Vec<usize> {
+    code.match_indices(ty)
+        .filter_map(|(at, _)| {
+            let before = code.get(..at)?;
+            if before
+                .chars()
+                .next_back()
+                .is_some_and(|c| c.is_alphanumeric() || c == '_')
+            {
+                return None;
+            }
+            let after = code.get(at + ty.len()..)?;
+            let gap = after.len() - after.trim_start().len();
+            if !after.trim_start().starts_with('{') {
+                return None;
+            }
+            let keyword = trailing_ident(before.trim_end());
+            let declared = ["struct", "enum", "let", "for", "impl"].contains(&keyword);
+            (!declared).then_some(at + ty.len() + gap)
+        })
+        .collect()
+}
+
+/// The table and the tuple element the innermost closure over its rows
+/// around `scope.end` in `file` binds `var` to: `(VARIANTS, 0)` for `id` in
+/// `VARIANTS.map(|(id, label, kind)| …)`. A `&(…)` pattern, an `.iter()` or
+/// `.into_iter()` before the call, and a `.flat_map` or `.filter_map`, read
+/// the same.
+fn closure_row<'a>(
+    file: &IdFile<'a>,
+    scope: std::ops::Range<usize>,
+    var: &str,
+) -> Option<(&'a str, usize)> {
+    let code = file.code.get(scope.clone())?;
+    code.match_indices('|')
+        .filter_map(|(ix, _)| {
+            let bar = scope.start + ix;
+            let after = file.code.get(bar + 1..)?;
+            let open = bar + 1 + after.find('(')?;
+            if !file
+                .code
+                .get(bar + 1..open)?
+                .trim()
+                .trim_start_matches('&')
+                .is_empty()
+            {
+                return None;
+            }
+            let close = end_of_call(&file.code, open)?;
+            let elements = tuple_elements(file.raw.get(open..close)?)?;
+            let k = elements.iter().position(|e| *e == var)?;
+            let call = file.code.get(..bar)?.trim_end();
+            let head = call.strip_suffix("map(")?;
+            // The closure is an argument of this call, which has to hold
+            // the use of `var`.
+            if end_of_call(&file.code, call.len() - 1)? <= scope.end {
+                return None;
+            }
+            let head = ["flat_", "filter_"]
+                .iter()
+                .find_map(|prefix| head.strip_suffix(prefix))
+                .unwrap_or(head);
+            let mut head = head.trim_end().strip_suffix('.')?.trim_end();
+            for iter in ["iter()", "into_iter()"] {
+                if let Some(rest) = head
+                    .strip_suffix(iter)
+                    .and_then(|h| h.trim_end().strip_suffix('.'))
+                {
+                    head = rest.trim_end();
+                }
+            }
+            let table = trailing_ident(head);
+            let start = head.len() - table.len();
+            let table = file.raw.get(start..start + table.len())?;
+            (!table.is_empty()).then_some((table, k))
+        })
+        .next_back()
+}
+
+/// What `every_info_id_is_unique` finds among `files`, and how many
+/// literals, prefixes and helpers taking an id it read.
+fn info_id_findings(
+    files: &[(&str, &str)],
+    unread_allowed: &[(&str, &str, &str, &str)],
+) -> (Vec<String>, usize, usize, usize) {
+    let ctx = IdContext::new(files);
+    let mut reads = Vec::new();
+    for (file, expr) in ctx.id_sites() {
+        ctx.read(file, offset_in(file.raw, expr), expr, 0, &mut reads);
+    }
+    let file_of = |path: &str| ctx.files.iter().find(|f| f.path == path);
+    let where_at = |path: &str, at: usize| {
+        let line = file_of(path)
+            .map(|f| line_at(&line_offsets(f.raw), at))
+            .unwrap_or_default();
+        format!("{path}:{line}")
+    };
+
+    let mut findings = Vec::new();
+    let mut literals: BTreeMap<&str, Vec<String>> = BTreeMap::new();
+    let mut prefixes: Vec<(&str, String)> = Vec::new();
+    let mut allowed = BTreeSet::new();
+    for (path, at, read) in &reads {
+        match read {
+            IdRead::Literal(text) => literals.entry(text).or_default().push(where_at(path, *at)),
+            IdRead::Prefix(text) => prefixes.push((text, where_at(path, *at))),
+            IdRead::Nested | IdRead::Carried => {}
+            IdRead::Unread(what) => {
+                let in_fn = file_of(path)
+                    .and_then(|f| enclosing_item(f, *at))
+                    .map(|item| item.name)
+                    .unwrap_or_default();
+                match unread_allowed
+                    .iter()
+                    .find(|(f, n, e, _)| f == path && *n == in_fn && e == what)
+                {
+                    Some(entry) => {
+                        allowed.insert((entry.0, entry.1, entry.2));
+                    }
+                    None => findings.push(format!(
+                        "{} (in {in_fn}): the info id `{what}` cannot be followed to where \
+                         it is written",
+                        where_at(path, *at)
+                    )),
+                }
+            }
+        }
+    }
+    for (file, in_fn, expr, _) in unread_allowed {
+        if !allowed.contains(&(*file, *in_fn, *expr)) {
             findings.push(format!(
-                "{file}:{}: {}",
-                block.start + 1,
-                unnamed.join(", ")
+                "UNREAD_INFO_IDS lists `{expr}` in {in_fn} of {file}, which is no longer \
+                 an id the gate cannot follow"
             ));
         }
     }
-    blocks.len()
+    for (text, sites) in &literals {
+        if sites.len() > 1 {
+            findings.push(format!(
+                "\"{text}\" is the info id of {} widgets: {}",
+                sites.len(),
+                sites.join(", ")
+            ));
+        }
+    }
+    for (ix, (prefix, site)) in prefixes.iter().enumerate() {
+        for (text, sites) in &literals {
+            if text.starts_with(prefix) {
+                findings.push(format!(
+                    "{site}: ids generated as \"{prefix}…\" can be \"{text}\", the id at {}",
+                    sites.join(", ")
+                ));
+            }
+        }
+        for (other, other_site) in prefixes.iter().skip(ix + 1) {
+            if other.starts_with(prefix) || prefix.starts_with(other) {
+                findings.push(format!(
+                    "{site}: ids generated as \"{prefix}…\" and as \"{other}…\" at \
+                     {other_site} can meet"
+                ));
+            }
+        }
+    }
+    let literal_count = literals.values().map(Vec::len).sum();
+    (findings, literal_count, prefixes.len(), ctx.params.len())
+}
+
+/// The registry keys a target by its id (info/registry.rs), so no two
+/// widgets of the showcase share one: every info id is written once, and
+/// every generated one starts with text no other id starts with.
+#[test]
+fn every_info_id_is_unique() {
+    let (findings, literals, prefixes, helpers) = info_id_findings(SHOWCASE_FILES, UNREAD_INFO_IDS);
+    assert!(
+        literals > 0 && prefixes > 0 && helpers > 0,
+        "{literals} literal ids, {prefixes} generated ones and {helpers} helpers \
+         taking an id were read, so this test would pass vacuously"
+    );
+    assert!(
+        findings.is_empty(),
+        "two widgets can share an info id, which the registry would take for \
+         one:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// The id reader follows an id to where it is written -- through a helper's
+/// parameter, a tuple parameter, a const, a const table, a `let`, a struct
+/// and a method's arms -- reads a `format!` as its prefix, and reports what
+/// it cannot follow, a duplicate and a prefix another id starts with.
+#[test]
+fn the_info_id_reader_does_its_job() {
+    let demo = r#"pub(crate) fn tag(ui: &Ui, id: &'static str) -> Stateful<Div> {
+    Tag::new().info(ui, id, info::tag())
+}
+pub(crate) fn pair(ui: &Ui, (a_id, a): (&'static str, &str)) -> Div {
+    div().child(tag(ui, a_id))
+}
+pub(crate) fn row(ui: &Ui, ix: usize) -> Stateful<Div> {
+    div().info(ui, format!("demo-row-{ix}"), info::row())
+}
+pub(crate) fn part(ui: &Ui, id: &'static str) -> Stateful<Div> {
+    div().info(ui, SharedString::from(format!("{id}-part")), info::part())
+}
+pub(crate) struct Spec {
+    pub id: &'static str,
+}
+pub(crate) fn spec(ui: &Ui, spec: Spec) -> Stateful<Div> {
+    let Spec { id } = spec;
+    div().info(ui, id, info::spec())
+}
+pub(crate) fn odd(ui: &Ui, ids: &[&'static str]) -> Stateful<Div> {
+    div().info(ui, ids.first(), info::odd())
+}
+pub(crate) fn rows(ui: &Ui, rows: &[(&'static str, u8)]) -> Div {
+    div().children(rows.iter().map(|(id, _)| div().info(ui, *id, info::row())))
+}
+pub(crate) fn page_item(ui: &Ui, page: Page) -> Stateful<Div> {
+    div().info(ui, page.nav_item(), info::nav())
+}
+"#;
+    let page = r#"const IDS: &str = "page-const";
+const TABLE: [(&str, u8); 2] = [("page-a", 1), (IDS, 2)];
+const ROWS: [(&str, u8); 1] = [("page-row", 1)];
+impl Page {
+    fn nav_item(self) -> &'static str {
+        match self {
+            Self::One => "page-nav-one",
+            Self::Two => IDS,
+        }
+    }
+}
+fn page(ui: &Ui) {
+    demo::tag(ui, "page-lit");
+    TABLE.map(|(id, _)| demo::tag(ui, id));
+    demo::pair(ui, ("page-pair", "x"));
+    let local = "page-a";
+    demo::tag(ui, local);
+    demo::spec(ui, demo::Spec { id: "demo-row-1" });
+    demo::row(ui, 1);
+    demo::part(ui, "page-part");
+    demo::rows(ui, &ROWS);
+}
+"#;
+    let files = [("demo.rs", demo), ("pages/p.rs", page)];
+    let ctx = IdContext::new(&files);
+    assert_eq!(
+        ctx.params.keys().copied().collect::<Vec<_>>(),
+        vec![("demo.rs", "pair"), ("demo.rs", "tag")],
+        "{:?}",
+        ctx.params
+    );
+    let (findings, literals, prefixes, helpers) = info_id_findings(&files, &[]);
+    assert_eq!((literals, prefixes, helpers), (9, 1, 2), "{findings:#?}");
+    assert_eq!(
+        findings,
+        vec![
+            "demo.rs:21 (in odd): the info id `ids.first()` cannot be followed to where it \
+             is written"
+                .to_string(),
+            "\"page-a\" is the info id of 2 widgets: pages/p.rs:2, pages/p.rs:16".to_string(),
+            "\"page-const\" is the info id of 2 widgets: pages/p.rs:1, pages/p.rs:1".to_string(),
+            "demo.rs:8: ids generated as \"demo-row-…\" can be \"demo-row-1\", the id at \
+             pages/p.rs:18"
+                .to_string(),
+        ]
+    );
+    let allowed = [
+        ("demo.rs", "odd", "ids.first()", "a sample"),
+        ("demo.rs", "odd", "gone", "stale"),
+    ];
+    let (findings, _, _, _) = info_id_findings(&files, &allowed);
+    assert!(
+        !findings.iter().any(|f| f.contains("ids.first()"))
+            && findings.contains(
+                &"UNREAD_INFO_IDS lists `gone` in odd of demo.rs, which is no longer an id \
+                  the gate cannot follow"
+                    .to_string()
+            ),
+        "{findings:?}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// The Theme Map has one swatch per ThemeColor field
+// ---------------------------------------------------------------------------
+//
+// The Theme Map shows every field of gpui-component's `ThemeColor`, one
+// swatch per `ThemeToken` variant (demo.rs), whose row claims the field it
+// shows (`info::theme_map::row`). The enum and the row are the showcase's;
+// the field list is upstream's, and a patch release that adds a field --
+// or removes one, as `ThemeColor::tiles` went -- is what this catches.
+
+/// The file and struct upstream declares the colour fields in.
+const THEME_COLOR_FILE: &str = "theme/theme_color.rs";
+const THEME_COLOR_OPEN: &str = "pub struct ThemeColor {";
+
+/// The showcase's token enum, and the function whose arms claim its fields.
+const THEME_TOKEN_OPEN: &str = "pub(crate) enum ThemeToken {";
+const THEME_ROW_OPEN: &str = "pub fn row(";
+
+/// The `pub` fields of the struct that opens at `open` in `source`.
+fn struct_fields<'a>(source: &'a str, open: &str) -> Vec<&'a str> {
+    let code = blanked(source);
+    let Some(start) = code.find(open) else {
+        return Vec::new();
+    };
+    let brace = start + open.len() - 1;
+    let Some(end) = block_end(&code, brace) else {
+        return Vec::new();
+    };
+    code.get(brace + 1..end - 1)
+        .unwrap_or("")
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix("pub "))
+        .filter_map(|rest| {
+            let start = offset_in(&code, rest);
+            source.get(start..start + leading_ident(rest).len())
+        })
+        .filter(|name| !name.is_empty())
+        .collect()
+}
+
+/// The variants of the enum that opens at `open` in `source`.
+fn enum_variants<'a>(source: &'a str, open: &str) -> Vec<&'a str> {
+    let code = blanked(source);
+    let Some(start) = code.find(open) else {
+        return Vec::new();
+    };
+    let brace = start + open.len() - 1;
+    let Some(end) = block_end(&code, brace) else {
+        return Vec::new();
+    };
+    code.get(brace + 1..end - 1)
+        .unwrap_or("")
+        .split(',')
+        .filter_map(|variant| {
+            // Past its attributes, each on a line of its own.
+            let line = variant
+                .lines()
+                .map(str::trim)
+                .rfind(|l| !l.is_empty() && !l.starts_with('#'))?;
+            let start = offset_in(&code, line);
+            source.get(start..start + leading_ident(line).len())
+        })
+        .filter(|v| !v.is_empty())
+        .collect()
+}
+
+/// Every arm `ThemeToken::X =>` of the function that opens at `open` in
+/// `source`, with the field the first `claim(` after it names: `(X, field)`,
+/// `field` empty where the arm has none that can be read.
+fn token_rows<'a>(source: &'a str, open: &str) -> Vec<(&'a str, &'a str)> {
+    let code = blanked(source);
+    let Some(start) = code.find(open) else {
+        return Vec::new();
+    };
+    let Some(brace) = code
+        .get(start..)
+        .and_then(|t| t.find('{'))
+        .map(|ix| start + ix)
+    else {
+        return Vec::new();
+    };
+    let Some(end) = block_end(&code, brace) else {
+        return Vec::new();
+    };
+    let arms: Vec<usize> = code
+        .get(brace..end)
+        .unwrap_or("")
+        .match_indices("ThemeToken::")
+        .map(|(ix, m)| brace + ix + m.len())
+        .filter(|&at| {
+            let name = leading_ident(code.get(at..).unwrap_or(""));
+            code.get(at + name.len()..)
+                .is_some_and(|t| t.trim_start().starts_with("=>"))
+        })
+        .collect();
+    let claims = code_calls(source, "claim");
+    arms.iter()
+        .enumerate()
+        .map(|(ix, &at)| {
+            let next = arms.get(ix + 1).copied().unwrap_or(end);
+            let variant = leading_ident(source.get(at..).unwrap_or(""));
+            let field = claims
+                .iter()
+                .find(|&&c| c > at && c < next)
+                .and_then(|&c| call_args(source, c))
+                .and_then(|args| args.get(1).copied())
+                .and_then(unquote)
+                .unwrap_or("");
+            (variant, field)
+        })
+        .collect()
+}
+
+/// Where `name`, a slice of the file `path` whose text is `text`, is
+/// written: `path:line`.
+fn written_in(path: &str, text: &str, name: &str) -> String {
+    let at = written_at(text, name, text.len());
+    format!("{path}:{}", line_at(&line_offsets(text), at))
+}
+
+/// What `every_theme_color_field_has_one_theme_token` finds: `fields` are
+/// upstream's, read from `(path, text)`, `variants` the enum's and `rows`
+/// the claims of its arms, each read from its own file likewise.
+fn theme_token_findings(
+    (fields_path, fields_text, fields): (&str, &str, &[&str]),
+    (variants_path, variants_text, variants): (&str, &str, &[&str]),
+    (rows_path, rows_text, rows): (&str, &str, &[(&str, &str)]),
+) -> Vec<String> {
+    let mut findings = Vec::new();
+    for variant in variants {
+        let at = written_in(variants_path, variants_text, variant);
+        match rows.iter().filter(|(v, _)| v == variant).count() {
+            1 => {}
+            0 => findings.push(format!(
+                "{at}: ThemeToken::{variant} has no row claiming a field"
+            )),
+            n => findings.push(format!("{at}: ThemeToken::{variant} has {n} rows")),
+        }
+    }
+    for (variant, field) in rows {
+        let at = written_in(rows_path, rows_text, variant);
+        if !variants.contains(variant) {
+            findings.push(format!(
+                "{at}: a row for ThemeToken::{variant}, which the enum does not declare"
+            ));
+        } else if field.is_empty() {
+            findings.push(format!(
+                "{at}: the row of ThemeToken::{variant} claims no field that can be read"
+            ));
+        } else if !fields.contains(field) {
+            findings.push(format!(
+                "{at}: ThemeToken::{variant} shows `{field}`, which ThemeColor does not declare"
+            ));
+        }
+    }
+    for field in fields {
+        let at = written_in(fields_path, fields_text, field);
+        let shown: Vec<&str> = rows
+            .iter()
+            .filter(|(v, f)| f == field && variants.contains(v))
+            .map(|(v, _)| *v)
+            .collect();
+        match shown.as_slice() {
+            [_] => {}
+            [] => findings.push(format!(
+                "{at}: ThemeColor::{field} has no ThemeToken, so the Theme Map leaves it out"
+            )),
+            many => findings.push(format!(
+                "{at}: ThemeColor::{field} is shown by {} ThemeTokens: {}",
+                many.len(),
+                many.join(", ")
+            )),
+        }
+    }
+    findings
+}
+
+/// The Theme Map shows every upstream `ThemeColor` field exactly once, and
+/// nothing else (showcase spec §7.3).
+#[test]
+fn every_theme_color_field_has_one_theme_token() {
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let upstream = roots
+        .iter()
+        .find(|(name, _)| name == "gpui-component")
+        .map(|(_, root)| root.join(THEME_COLOR_FILE));
+    let text = upstream
+        .as_ref()
+        .and_then(|path| std::fs::read_to_string(path).ok());
+    assert!(
+        text.is_some(),
+        "gpui-component's {THEME_COLOR_FILE} could not be read, so nothing was checked"
+    );
+    let text = text.unwrap_or_default();
+    let upstream_path = upstream.as_deref().map(shorten).unwrap_or_default();
+    let fields = struct_fields(&text, THEME_COLOR_OPEN);
+    let source = |path: &str| {
+        SHOWCASE_FILES
+            .iter()
+            .find(|(p, _)| *p == path)
+            .map(|(_, text)| *text)
+            .unwrap_or_default()
+    };
+    let (demo, theme_map) = (source("demo.rs"), source(THEME_MAP_INFO));
+    let variants = enum_variants(demo, THEME_TOKEN_OPEN);
+    let rows = token_rows(theme_map, THEME_ROW_OPEN);
+    assert!(
+        !fields.is_empty() && !variants.is_empty() && !rows.is_empty(),
+        "{} ThemeColor fields, {} ThemeToken variants and {} rows were read, so \
+         this test would pass vacuously",
+        fields.len(),
+        variants.len(),
+        rows.len()
+    );
+    let findings = theme_token_findings(
+        (&upstream_path, &text, &fields),
+        ("demo.rs", demo, &variants),
+        (THEME_MAP_INFO, theme_map, &rows),
+    );
+    assert!(
+        findings.is_empty(),
+        "the Theme Map and gpui-component's ThemeColor ({} fields) disagree:\n  {}",
+        fields.len(),
+        findings.join("\n  ")
+    );
+}
+
+/// The readers behind the Theme Map gate see a struct's fields, an enum's
+/// variants past their doc comments and attributes, and each arm's claimed
+/// field; the findings name the line of each.
+#[test]
+fn the_theme_token_readers_do_their_jobs() {
+    let upstream = "pub struct ThemeColor {\n\
+                    \x20   /// The background.\n\
+                    \x20   pub background: Hsla,\n\
+                    \x20   #[serde(default)]\n\
+                    \x20   pub border: Hsla,\n\
+                    \x20   pub tiles: Hsla,\n\
+                    }\n";
+    let fields = struct_fields(upstream, THEME_COLOR_OPEN);
+    assert_eq!(fields, vec!["background", "border", "tiles"]);
+    let tokens = "pub(crate) enum ThemeToken {\n\
+                  \x20   /// Behind everything.\n\
+                  \x20   Background,\n\
+                  \x20   #[doc(hidden)]\n\
+                  \x20   Border,\n\
+                  \x20   Ring,\n\
+                  }\n";
+    let variants = enum_variants(tokens, THEME_TOKEN_OPEN);
+    assert_eq!(variants, vec!["Background", "Border", "Ring"]);
+    let rows = "pub fn row(t: &Theme, token: ThemeToken) -> Row {\n\
+                \x20   match token {\n\
+                \x20       ThemeToken::Background => (claim(\"value\", \"background\", t.background, \"c.rs:1\"), |i| i),\n\
+                \x20       ThemeToken::Border => (\n\
+                \x20           claim(\"value\", \"border\", t.border, \"c.rs:2\"),\n\
+                \x20           |i| i.config(\"x\", \"ThemeToken::Ring is elsewhere\"),\n\
+                \x20       ),\n\
+                \x20       ThemeToken::Ring => (claim(\"value\", \"background\", t.ring, \"c.rs:3\"), |i| i),\n\
+                \x20   }\n\
+                }\n";
+    let read = token_rows(rows, THEME_ROW_OPEN);
+    assert_eq!(
+        read,
+        vec![
+            ("Background", "background"),
+            ("Border", "border"),
+            ("Ring", "background")
+        ]
+    );
+    assert_eq!(
+        theme_token_findings(
+            ("theme_color.rs", upstream, &fields),
+            ("demo.rs", tokens, &variants),
+            ("info/theme_map.rs", rows, &read),
+        ),
+        vec![
+            "theme_color.rs:3: ThemeColor::background is shown by 2 ThemeTokens: \
+             Background, Ring"
+                .to_string(),
+            "theme_color.rs:6: ThemeColor::tiles has no ThemeToken, so the Theme Map \
+             leaves it out"
+                .to_string(),
+        ]
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -1165,11 +2773,10 @@ fn unnamed_builders(
 // cargo, and a published crate does not gain a build script to locate a
 // *dev*-dependency's source.
 //
-// A claim is written in one of two forms while the pages migrate (showcase
-// spec §3.2 and §10.2): a tuple in a `hover_info` array, or a
-// `claim("role", "field", value, "cite")` call. Both are read into the same
-// `Claim`, and a panel's prose and a `.config`/`.not_themeable`/`.instance`
-// note into the same `Prose`, so each gate asks one question of both.
+// A claim is a `claim("role", "field", value, "cite")` call in one of the
+// `info/` files (showcase spec §3.2 and §10.2), and a note is a
+// `.config`/`.not_themeable`/`.instance` call; each is read into a `Claim` or
+// a `Prose`, so the gates below ask their questions of both alike.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
@@ -1256,30 +2863,6 @@ struct Claim<'a> {
     role: &'a str,
     field: &'a str,
     cited_at: &'a str,
-}
-
-/// Every `hover_info` call: the line it sits on, the widget it names, and its
-/// five arguments.
-///
-/// Shared by the citation gate and the omission report, which ask different
-/// questions of the same five arguments.
-fn panel_calls(raw: &str) -> Vec<(usize, &str, Vec<&str>)> {
-    let starts = line_offsets(raw);
-    let mut out = Vec::new();
-    let mut from = 0usize;
-    while let Some(ix) = raw.get(from..).and_then(|t| t.find(".hover_info(")) {
-        let call = from + ix;
-        from = call + ".hover_info(".len();
-        let Some(args) = call_args(raw, from - 1) else {
-            continue;
-        };
-        if args.len() != 5 {
-            continue;
-        }
-        let widget = unquote(args[1]).unwrap_or("?");
-        out.push((line_at(&starts, call), widget, args));
-    }
-    out
 }
 
 /// Every `claim(` call in `raw` that is code: the line it is on and its
@@ -1376,11 +2959,11 @@ fn enclosing_fn(raw: &str, at: usize) -> &str {
         .unwrap_or("?")
 }
 
-/// A panel's prose argument: the file and line of its panel, the widget it
-/// names, and the text.
+/// A note's text: the file and line it is written on, the function it is in
+/// -- the widget whose info it belongs to -- and the text as written.
 type Prose<'a> = (&'a str, usize, &'a str, &'a str);
 
-/// Every colour claim of the showcase, and every panel's prose argument.
+/// Every colour claim of the showcase, and every note's text.
 fn showcase_claims() -> (Vec<Claim<'static>>, Vec<Prose<'static>>) {
     let mut claims = Vec::new();
     let mut prose = Vec::new();
@@ -1392,8 +2975,7 @@ fn showcase_claims() -> (Vec<Claim<'static>>, Vec<Prose<'static>>) {
     (claims, prose)
 }
 
-/// Every colour claim of one showcase file, in either form, and every prose
-/// text: a panel's prose argument and every note's text.
+/// Every colour claim of one showcase file, and every note's text.
 ///
 /// The test module is read too. Its claims are written to exercise the
 /// model, but a claim anywhere in the showcase is a statement about upstream
@@ -1420,64 +3002,7 @@ fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>
     for (line, _, text) in note_calls(raw).0 {
         prose.push((file, line, enclosing_fn(raw, offset_in(raw, text)), text));
     }
-    for (line, widget, args) in panel_calls(raw) {
-        prose.push((file, line, widget, args[4]));
-
-        let trimmed = args[2].trim();
-        let Some(inner) = trimmed
-            .strip_prefix("&[")
-            .and_then(|t| t.trim_end().strip_suffix(']'))
-        else {
-            continue;
-        };
-        if inner.trim().is_empty() {
-            continue;
-        }
-        // Wrapped so the array's entries are one depth-1 group each.
-        let wrapped = format!("({inner})");
-        let Some(tuples) = call_args(&wrapped, 0) else {
-            continue;
-        };
-        for tup in tuples {
-            let t = tup.trim();
-            if !t.starts_with('(') {
-                continue;
-            }
-            let Some(parts) = call_args(t, 0) else {
-                continue;
-            };
-            if parts.len() != 4 {
-                continue;
-            }
-            // Re-borrow from `raw`: `wrapped` is a local copy.
-            let Some(field) = unquote(parts[1]).and_then(|f| find_in(raw, f)) else {
-                continue;
-            };
-            let cited = unquote(parts[3]).unwrap_or("");
-            let cited_at = if cited.is_empty() {
-                ""
-            } else {
-                find_in(raw, cited).unwrap_or("")
-            };
-            claims.push(Claim {
-                file,
-                line,
-                widget,
-                role: unquote(parts[0])
-                    .and_then(|r| find_in(raw, r))
-                    .unwrap_or("?"),
-                field,
-                cited_at,
-            });
-        }
-    }
     (claims, prose)
-}
-
-/// The same text, borrowed from `haystack` rather than from a temporary.
-fn find_in<'a>(haystack: &'a str, needle: &str) -> Option<&'a str> {
-    let at = haystack.find(needle)?;
-    haystack.get(at..at + needle.len())
 }
 
 /// A citation `<file>.rs:<line>` or `<file>.rs:<from>-<to>`.
@@ -1633,8 +3158,9 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
     let Ok(roots) = located else { return };
     let (claims, _) = showcase_claims();
     assert!(
-        !claims.is_empty(),
-        "no colour claims found in the showcase, so this test would pass vacuously"
+        claims.iter().any(|c| c.file != TEST_MODULE),
+        "no colour claims found outside the test module, so this test would pass \
+         vacuously for every claim the showcase shows"
     );
     // Against the *code*, strings removed: the panel text names the field
     // too, so searching the files as written would let a claim vouch for
@@ -1804,7 +3330,21 @@ fn theme_reads(text: &str) -> BTreeSet<&str> {
     out
 }
 
-/// Spec section 5: the theme fields the cited files read that no panel names.
+/// The Theme Map's infos: one swatch per ThemeColor field, which between
+/// them name every field by construction. Counted as panels, they would
+/// leave the omission report nothing to find, so it leaves them out;
+/// `every_theme_color_field_has_one_theme_token` holds them to the field
+/// list instead.
+const THEME_MAP_INFO: &str = "info/theme_map.rs";
+
+/// Whether a claim or a note in `file` is one a widget's panel shows: not the
+/// test module's, and not a Theme Map swatch's.
+fn is_widget_panel(file: &str) -> bool {
+    file != TEST_MODULE && file != THEME_MAP_INFO
+}
+
+/// Spec section 5: the theme fields the cited files read that no widget's
+/// panel names.
 ///
 /// The plan ordered this after the citation pass for a reason -- once every
 /// claim carries a citation, the widget-to-file mapping is exact rather than
@@ -1817,6 +3357,10 @@ fn theme_reads(text: &str) -> BTreeSet<&str> {
 /// the whole file would report the other nine's tokens as omissions and bury
 /// the report in noise it was already known to produce. A field some other
 /// panel names is documented in the showcase, just not here.
+///
+/// The panels are the widgets' own: the test module's claims are checked but
+/// are not what the showcase tells its reader, and the Theme Map's swatches
+/// name every field by construction (`THEME_MAP_INFO`), so neither counts.
 ///
 /// Printed, never failed (W6). A panel legitimately says nothing about states
 /// and variants its demo does not show, and turning that into a gate would
@@ -1835,29 +3379,20 @@ fn the_omission_report() {
         located.as_ref().err().cloned().unwrap_or_default()
     );
     let Ok(roots) = located else { return };
-    let calls: Vec<(usize, &str, Vec<&str>)> = SHOWCASE_FILES
-        .iter()
-        .flat_map(|(_, raw)| panel_calls(raw))
-        .collect();
     let (claims, _) = showcase_claims();
+    let claims: Vec<&Claim<'_>> = claims.iter().filter(|c| is_widget_panel(c.file)).collect();
     assert!(
         !claims.is_empty(),
-        "no Widget Info claims were found, so this report would be empty for \
-         the wrong reason"
+        "no widget panel's claims were found, so this report would be empty \
+         for the wrong reason"
     );
-    let panels: BTreeSet<&str> = claims
-        .iter()
-        .filter(|c| c.file != TEST_MODULE)
-        .map(|c| c.widget)
-        .collect();
+    let panels: BTreeSet<&str> = claims.iter().map(|c| c.widget).collect();
 
     // Every file a claim cites, with the panels that cite it. An ambiguous or
     // unparseable citation is left out here; the citation gate already fails
-    // on both, so this report never has to speak about them. The test
-    // module's claims are left out too: they are checked, but they are not
-    // what the showcase tells its reader.
+    // on both, so this report never has to speak about them.
     let mut cited: BTreeMap<PathBuf, BTreeSet<&str>> = BTreeMap::new();
-    for claim in claims.iter().filter(|c| c.file != TEST_MODULE) {
+    for claim in &claims {
         let Some((path, _, _)) = parse_citation(claim.cited_at) else {
             continue;
         };
@@ -1876,15 +3411,12 @@ fn the_omission_report() {
          the wrong reason"
     );
 
-    // What the panels say, all five arguments of all of them: a field named
-    // in a config line or a not-themeable note is described just as much as
-    // one that carries a swatch. In the newer form that is every argument of
-    // every `claim(` and note call, and the geometry lines' texts.
-    let mut said: Vec<&str> = calls
-        .iter()
-        .flat_map(|(_, _, args)| args.iter().copied())
-        .collect();
-    for (_, raw) in demo_files() {
+    // What the panels say: every argument of every `claim(` and note call,
+    // since a field named in a config line or a not-themeable note is
+    // described just as much as one that carries a swatch, and the geometry
+    // lines' texts.
+    let mut said: Vec<&str> = Vec::new();
+    for (_, raw) in demo_files().filter(|(file, _)| is_widget_panel(file)) {
         said.extend(claim_calls(raw).into_iter().flat_map(|(_, args)| args));
         said.extend(
             note_calls(raw)
@@ -1917,8 +3449,8 @@ fn the_omission_report() {
     }
 
     println!(
-        "\nWidget Info omission report\n  {} panels cite {} files, which read \
-         {} distinct theme fields.\n  {} of those are named by no panel:",
+        "\nWidget Info omission report\n  {} widget panels cite {} files, which \
+         read {} distinct theme fields.\n  {} of those are named by no widget panel:",
         panels.len(),
         cited.len(),
         seen.len(),
@@ -1999,6 +3531,11 @@ fn every_prose_citation_still_exists() {
     );
     let Ok(roots) = located else { return };
     let (_, mut prose) = showcase_claims();
+    let note_citations: usize = prose
+        .iter()
+        .filter(|(file, _, _, _)| *file != TEST_MODULE)
+        .map(|(_, _, _, text)| prose_citations(text).len())
+        .sum();
     // The geometry lines' texts, which a widget's info carries without a note
     // call of its own (spec §3.3).
     let info = geometry_notes_source();
@@ -2055,9 +3592,9 @@ fn every_prose_citation_still_exists() {
     }
 
     assert!(
-        checked > 0,
-        "no `file.rs, Symbol` citation found in any panel's prose, so this test \
-         would pass vacuously"
+        note_citations > 0,
+        "no `file.rs, Symbol` citation found in a note outside the test module, \
+         so this test would pass vacuously for every note the showcase shows"
     );
     assert!(
         geometry_citations > 0,
@@ -2174,10 +3711,13 @@ config("free", "fn, not a method");
 // No hardcoded style values in the showcase
 // ---------------------------------------------------------------------------
 //
-// Spec §6a: a showcase demonstrates the theme, so every radius and every
-// colour it paints has to come from the theme. The call shapes below are the
-// ways a literal reaches a pixel: a tailwind radius helper, a radius setter
-// given a number, and a colour setter given a colour constructor. Line widths
+// Spec §6a: a showcase demonstrates the theme, so every radius, every colour
+// and every text size it paints has to come from the theme. The call shapes
+// below are the ways a literal reaches a pixel: a tailwind radius helper, a
+// radius setter given a number, a colour setter given a colour constructor,
+// and a text size given in pixels (showcase spec §10.4) -- a rem such as
+// `text_sm()` or `rems(0.875)` follows the platform's font, which
+// gpui-component makes the window's rem, and a pixel size does not. Line widths
 // (`border_1()` and friends) are not listed -- gpui offers no other way to ask
 // for a border, and the width the platform states arrives through
 // `demo_frame`, which every frame in the showcase goes through.
@@ -2205,6 +3745,10 @@ const RADIUS_SETTERS: &[&str] = &[
     "rounded_bl",
     "rounded_br",
 ];
+
+/// Text-size setters, which take a length: a literal pixel size is the
+/// finding.
+const TEXT_SIZE_SETTERS: &[&str] = &["text_size"];
 
 /// Colour setters, which take an `Hsla`: a literal one is the finding.
 const COLOUR_SETTERS: &[&str] = &["bg", "border_color", "text_color"];
@@ -2280,6 +3824,19 @@ fn hardcoded_style_values(source: &str, allowed: &[(&str, &str)]) -> Vec<String>
                 }
             }
         }
+        for setter in TEXT_SIZE_SETTERS {
+            let call = format!(".{setter}(");
+            for (at, _) in line.match_indices(&call) {
+                let arg = line.get(at + call.len()..).unwrap_or("").trim_start();
+                let arg = arg.strip_prefix("gpui::").unwrap_or(arg);
+                if arg
+                    .strip_prefix("px(")
+                    .is_some_and(|n| starts_with_number_literal(n.trim_start()))
+                {
+                    report(format!(".{setter}(px(…))"));
+                }
+            }
+        }
     }
     found
 }
@@ -2309,9 +3866,33 @@ fn starts_with_number_literal(arg: &str) -> bool {
     arg.starts_with(|c: char| c.is_ascii_digit())
 }
 
-/// Spec §6a: no showcase paints a radius or a colour of its own invention.
+/// Spec §6a: no showcase paints a radius, a colour or a text size of its own
+/// invention.
 #[test]
 fn the_showcase_hardcodes_no_style_values() {
+    // The detector reads the calls it checks; a showcase in which it found
+    // none would be one it could not read.
+    let setters: Vec<String> = RADIUS_SETTERS
+        .iter()
+        .chain(COLOUR_SETTERS)
+        .chain(TEXT_SIZE_SETTERS)
+        .map(|setter| format!(".{setter}("))
+        .collect();
+    let calls: usize = SHOWCASE_FILES
+        .iter()
+        .map(|(_, source)| {
+            let code = without_comments_or_strings(source);
+            setters
+                .iter()
+                .map(|call| code.matches(call.as_str()).count())
+                .sum::<usize>()
+        })
+        .sum();
+    assert!(
+        calls > 0,
+        "no radius, colour or text-size setter call found in the showcase, so \
+         this test would pass vacuously"
+    );
     let found: Vec<String> = SHOWCASE_FILES
         .iter()
         .flat_map(|(file, source)| {
@@ -2324,7 +3905,8 @@ fn the_showcase_hardcodes_no_style_values() {
         found.is_empty(),
         "examples/showcase-gpui/ paints {} value(s) the theme did not give it; \
          a frame goes through `demo_frame`, a widget radius through its \
-         `geometry` builder, and a colour that IS the datum goes on \
+         `geometry` builder, a text size through a rem (`text_sm()`, \
+         `rems(…)`), and a colour that IS the datum goes on \
          ALLOWED_STYLE_LITERALS with its reason:\n{}",
         found.len(),
         found.join("\n")
@@ -2342,11 +3924,13 @@ fn the_detector_reads_the_call_and_not_the_line() {
                   div().bg(gpui::hsla(0.0, 0.0, 0.5, 0.2));\n\
                   div().border_color(rgb(0x112233));\n\
                   div().text_color(gpui::white());\n\
+                  Label::new(t).text_size(px(13.0));\n\
+                  div().text_size(gpui::px(12.));\n\
                   }\n";
     let found = hardcoded_style_values(source, &[]);
     assert_eq!(
         found.len(),
-        6,
+        8,
         "one finding per painted literal was expected: {found:?}"
     );
     assert!(
@@ -2364,6 +3948,7 @@ fn the_detector_reads_the_call_and_not_the_line() {
                  let note = \"div().bg(hsla(0.0, 0.0, 0.5, 0.2))\";\n\
                  div().rounded(t.radius).bg(t.muted).border_color(theme.border);\n\
                  div().rounded(theme.radius_lg).text_color(t.muted_foreground);\n\
+                 div().text_size(rems(0.875)).text_size(t.font_size);\n\
                  }\n";
     assert_eq!(hardcoded_style_values(clean, &[]), Vec::<String>::new());
 

@@ -1152,8 +1152,7 @@ fn inspector_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> O
 
 /// The inspector shows the info the pointer has settled on (spec §2.6, §4.2).
 ///
-/// A Sidebar item is hovered: the pages report only their text panels until
-/// they are migrated (plan Tasks 14-23), and chrome carries its info already.
+/// A Sidebar item is hovered.
 #[gpui::test]
 fn the_inspector_shows_the_settled_info(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1413,12 +1412,11 @@ fn status_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Opti
 }
 
 /// The status bar names the widget whose info the inspector shows (spec
-/// §2.7). A toolbar button is hovered: chrome carries its info already, and
-/// the pages report only their text panels until they are migrated (plan
-/// Tasks 14-23).
+/// §2.7): a toolbar button, then a page's widget, and after a page change
+/// the two still agree.
 #[gpui::test]
 fn the_status_bar_names_the_hovered_widget(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     assert_eq!(
         status_title(&mut cx, &showcase),
         None,
@@ -1438,36 +1436,19 @@ fn the_status_bar_names_the_hovered_widget(cx: &mut TestAppContext) {
         inspector_title(&mut cx, &showcase),
         "the status bar and the inspector name different widgets"
     );
-}
-
-/// While the inspector shows a page's text panel instead of an info (plan
-/// Tasks 14-23), the status bar names what the panel describes, never the
-/// info the panel replaced.
-// Task 24: delete (legacy hover_info stopgap)
-#[gpui::test]
-fn the_status_bar_names_what_the_inspector_shows(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
     let clipboard = bounds_of(&mut cx, PROBE_CLIPBOARD).center();
-    hover(&mut cx, item);
-    settle(&mut cx);
-    draw(&mut cx);
-    assert_eq!(
-        status_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Charts")
-    );
     hover(&mut cx, clipboard);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
         Some("Clipboard"),
-        "the Clipboard block's text panel is not shown"
+        "the inspector does not show the Clipboard the pointer settled on"
     );
     assert_eq!(
         status_title(&mut cx, &showcase).as_deref(),
         Some("Clipboard"),
-        "the status bar does not name the text panel the inspector shows"
+        "the status bar does not name the page widget the inspector shows"
     );
     show(&mut cx, &showcase, Page::Inputs);
     assert_eq!(
@@ -2530,9 +2511,9 @@ fn a_hovered_tags_info_names_its_painted_fill(cx: &mut TestAppContext) {
 /// The ids and debug selectors of three of the Theme Map's swatches and of
 /// its Button control-height row. The page forms a swatch's from the name
 /// of the token it shows (pages/theme_map.rs).
-const THEME_MAP_BACKGROUND: &str = "theme-map-background";
-const THEME_MAP_PRIMARY_HOVER: &str = "theme-map-primary_hover";
-const THEME_MAP_DROP_TARGET: &str = "theme-map-drop_target";
+const THEME_MAP_BACKGROUND: &str = "theme-map-swatch-background";
+const THEME_MAP_PRIMARY_HOVER: &str = "theme-map-swatch-primary_hover";
+const THEME_MAP_DROP_TARGET: &str = "theme-map-swatch-drop_target";
 const THEME_MAP_CONTROL_HEIGHT_BUTTON: &str = "theme-map-control-height-button";
 
 /// The Theme Map reports each row of its table (spec §4.3.2): two swatches
@@ -2632,13 +2613,16 @@ fn a_control_height_row_reports_the_builders_value(cx: &mut TestAppContext) {
 
 /// `--icon-theme` names the freedesktop theme the icons load from, and they
 /// load from it: applying the override reloads them, so the Icons page's
-/// label and the icons it shows agree.
+/// label and the icons it shows agree. A freedesktop set is chosen first
+/// (another theme's, which the override must win over), so the label names
+/// a theme on every platform.
 #[gpui::test]
 fn the_icon_theme_override_reloads_the_icons(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let theme = "hicolor";
     cx.update(|window, cx| {
         showcase.update(cx, |this, cx| {
+            this.select_icon_set("Adwaita", window, cx);
             this.set_icon_theme_override(theme.to_string(), window, cx);
         });
     });
@@ -2661,6 +2645,11 @@ fn the_icon_theme_override_reloads_the_icons(cx: &mut TestAppContext) {
     assert!(
         loaded == expected,
         "the icons on show are not the ones --icon-theme {theme} loads"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _cx| this.icon_set_label()),
+        format!("freedesktop ({theme})"),
+        "the Icons page names another theme than the one --icon-theme loads from"
     );
 }
 

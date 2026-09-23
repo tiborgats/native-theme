@@ -287,7 +287,7 @@ impl Showcase {
                         .iter()
                         .take(2)
                         .enumerate()
-                        .map(|(ix, msg)| demo::message(ui, cx, format!("data-message-{ix}"), msg)),
+                        .map(|(ix, msg)| demo::message(ui, cx, format!("data-message-row-{ix}"), msg)),
                 ),
             )
             .child(demo::heading(

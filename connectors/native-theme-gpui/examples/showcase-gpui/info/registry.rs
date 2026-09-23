@@ -47,15 +47,6 @@ impl InfoRegistry {
     pub fn page_changed(&mut self) {
         self.page_changed = true;
     }
-    /// Show nothing, for a page whose text panel the inspector shows instead
-    /// until the page reports its instances (plan Tasks 14-23): a target
-    /// hovered again afterwards is a new choice, and settles as one.
-    // Task 24: delete (legacy hover_info stopgap)
-    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-    pub fn forget_shown(&mut self) {
-        self.shown = None;
-        self.pending = None;
-    }
     /// A target was laid out at `bounds` with `info`, as the frame being
     /// drawn built it. The info replaces the one hovered or shown under the
     /// same id, so a state change under a still pointer -- a click that

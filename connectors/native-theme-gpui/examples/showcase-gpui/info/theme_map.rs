@@ -8,6 +8,7 @@
 //! how in both.
 
 use gpui_component::theme::Theme;
+use native_theme_gpui::Native;
 
 use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text, px_text, text};
 use crate::demo::{ControlHeight, ControlWidget, ThemeToken};
@@ -284,7 +285,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "native-theme-gpui/colors.rs:355",
             ),
             |i| {
-                i.config("model", "button.active_background, else button.background_color").config("derived", "secondary_active laid over button: the blend lerps by the layer's alpha and keeps the base's, so an opaque secondary_active stands as it is and a translucent one is composited over the idle fill (native-theme-gpui/colors.rs, assign_buttons)")
+                active(i.config("model", "button.background_color, the blend's base; and button.active_background, else button.background_color, for secondary_active").config("derived", "secondary_active laid over button: the blend lerps by the layer's alpha and keeps the base's, so an opaque secondary_active stands as it is and a translucent one is composited over the idle fill (native-theme-gpui/colors.rs, assign_buttons)"))
             },
         ),
         ThemeToken::ButtonForeground => {
@@ -333,7 +334,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "native-theme-gpui/colors.rs:359",
             ),
             |i| {
-                i.config("model", "button.active_background, else button.background_color").config("derived", "secondary_active laid over button_secondary: the blend lerps by the layer's alpha and keeps the base's, so an opaque secondary_active stands as it is and a translucent one is composited over the idle fill (native-theme-gpui/colors.rs, assign_buttons)")
+                active(i.config("model", "button.background_color, the blend's base; and button.active_background, else button.background_color, for secondary_active").config("derived", "secondary_active laid over button_secondary: the blend lerps by the layer's alpha and keeps the base's, so an opaque secondary_active stands as it is and a translucent one is composited over the idle fill (native-theme-gpui/colors.rs, assign_buttons)"))
             },
         ),
         ThemeToken::ButtonSecondaryForeground => {
@@ -1459,17 +1460,42 @@ fn base_palette(field: &str) -> bool {
     )
 }
 
-/// The Theme Map's swatch of `token`. `native` is whether a native theme is
-/// installed for the current mode, which is when the connector wrote the
+/// Whether `token` is made from secondary_active, which the connector takes
+/// from `button.active_background` where the model states one and makes
+/// through `active_color` where it does not (native-theme-gpui/colors.rs,
+/// assign_secondary).
+fn reads_secondary_active(token: ThemeToken) -> bool {
+    matches!(
+        token,
+        ThemeToken::SecondaryActive | ThemeToken::ButtonActive | ThemeToken::ButtonSecondaryActive
+    )
+}
+
+/// The Theme Map's swatch of `token`. `native` is the native theme installed
+/// for the current mode, if one is, which is when the connector wrote the
 /// value.
-pub fn swatch(t: &Theme, token: ThemeToken, native: bool) -> WidgetInfo {
+pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> WidgetInfo {
     let Row { value, notes } = row(t, token);
     let field = value.field;
     let hex = hsla_to_hex(value.value);
     let alpha = value.value.a;
     let info = WidgetInfo::new("ThemeColor").variant(field);
-    let info = if native {
+    let info = if let Some(n) = native {
         let info = notes(info.color(value));
+        let info = match (
+            reads_secondary_active(token),
+            n.resolved.button.active_background.is_some(),
+        ) {
+            (true, true) => info.config(
+                "branch",
+                "the model states button.active_background, so secondary_active is that colour as it is: active_color is not applied",
+            ),
+            (true, false) => info.config(
+                "branch",
+                "the model states no button.active_background, so secondary_active is button.background_color through active_color",
+            ),
+            (false, _) => info,
+        };
         if base_palette(field) {
             info.config("installed", "to_theme_color writes it, and a ThemeConfig cannot carry it, so the connector writes it again after every rebuild upstream makes (native-theme-gpui/lib.rs, repair_base_palette)")
         } else {
@@ -1528,10 +1554,11 @@ pub fn control_height(
             .config(
                 "height",
                 format!(
-                    "{}px: the larger of {w}.min_height {}px and ceil({w}.font.size {}px × the text-scaling factor × defaults.line_height {}) + 2 × {w}.border.padding_vertical {}px (native-theme-gpui/lib.rs, text_scale_factor)",
+                    "{}px: the larger of {w}.min_height {}px and ceil({w}.font.size {}px × the text-scaling factor {} × defaults.line_height {}) + 2 × {w}.border.padding_vertical {}px (native-theme-gpui/lib.rs, text_scale_factor)",
                     px_text(h.height),
                     px_text(h.min_height),
                     px_text(h.font_size),
+                    h.text_scale,
                     h.line_height,
                     px_text(h.padding_vertical),
                 ),

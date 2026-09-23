@@ -1,14 +1,12 @@
-//! What the pages share: sample content, tooltip and layout helpers, icon loading, and the list and table delegates.
+//! What the pages share: sample content, layout helpers, icon loading, and the list and table delegates.
 
 use gpui::{
-    App, Context, Div, Entity, Hsla, ImageSource, IntoElement, ParentElement, Pixels, SharedString,
-    Stateful, StyleRefinement, Styled, Task, Window, div, px,
+    App, Context, Div, Entity, ImageSource, IntoElement, Pixels, SharedString, Stateful,
+    StyleRefinement, Styled, Task, Window, px,
 };
 use gpui_component::{
-    ActiveTheme, Icon, IconName, IndexPath, Selectable as _, Sizable, Size, StyledExt,
+    ActiveTheme, IconName, IndexPath, Selectable as _, StyledExt,
     attachment::AttachmentStatus,
-    h_flex,
-    label::Label,
     list::{ListDelegate, ListState},
     searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
     table::{Column, TableDelegate, TableEvent, TableState},
@@ -31,7 +29,6 @@ use native_theme_gpui::{ActiveNativeTheme, Native};
 
 use crate::demo::{self, BodyRow, DataTableRow};
 use crate::info::InfoRegistry;
-pub use crate::info::hsla_to_hex;
 
 // ---------------------------------------------------------------------------
 // Sample content (Carousel slides, code editor, Markdown)
@@ -145,66 +142,8 @@ apply_system_theme(&system, cx);
 "#;
 
 // ---------------------------------------------------------------------------
-// Tooltip helpers
+// Helpers
 // ---------------------------------------------------------------------------
-
-/// Build a multi-line tooltip string for a widget.
-///
-/// - `name`: widget display name
-/// - `colors`: slice of (role, field_name, live Hsla value)
-/// - `config`: slice of (what, live_value_string)
-/// - `not_themeable`: slice of (what, why)
-#[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-fn widget_tooltip(
-    name: &str,
-    colors: &[(&str, &str, Hsla, &str)],
-    config: &[(&str, String)],
-    not_themeable: &[(&str, &str)],
-) -> String {
-    let mut s = format!("{}\n", name);
-
-    if !colors.is_empty() {
-        s.push_str("\nTheme colors:\n");
-        for (role, field, val, cited_at) in colors {
-            s.push_str(&format!("  {}: {} {}", role, field, hsla_to_hex(*val)));
-            if !cited_at.is_empty() {
-                s.push_str(&format!(" ({cited_at})"));
-            }
-            s.push('\n');
-        }
-    }
-
-    if !config.is_empty() {
-        s.push_str("\nTheme config:\n");
-        for (what, val) in config {
-            s.push_str(&format!("  {}: {}\n", what, val));
-        }
-    }
-
-    if !not_themeable.is_empty() {
-        s.push_str("\nNot themeable:\n");
-        for (what, why) in not_themeable {
-            s.push_str(&format!("  {}: {}\n", what, why));
-        }
-    }
-
-    s
-}
-
-/// Format original native-theme font settings (in logical pixels) for display.
-#[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-pub(crate) fn format_font_info(
-    font: &native_theme::theme::ResolvedFontSpec,
-    mono_font: &native_theme::theme::ResolvedFontSpec,
-) -> String {
-    format!(
-        "\nTheme fonts:\n  Font: {} {}\n  Mono: {} {}",
-        font.family,
-        defined_size(font),
-        mono_font.family,
-        defined_size(mono_font),
-    )
-}
 
 /// A font size in the unit its source stated, never converted.
 ///
@@ -223,29 +162,6 @@ pub(crate) fn defined_size(font: &native_theme::theme::ResolvedFontSpec) -> Stri
     }
 }
 
-/// Like [`widget_tooltip`] but appends the active theme font settings.
-#[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-pub(crate) fn widget_tooltip_themed(
-    font_info: &str,
-    name: &str,
-    colors: &[(&str, &str, Hsla, &str)],
-    config: &[(&str, String)],
-    not_themeable: &[(&str, &str)],
-) -> String {
-    let mut s = widget_tooltip(name, colors, config, not_themeable);
-    s.push_str(font_info);
-    s
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-pub(crate) fn section(title: impl Into<SharedString>) -> Label {
-    Label::new(title).text_size(px(13.0)).font_semibold()
-}
-
-/// A color swatch: small rounded square + label.
 /// The geometry refinement a builder produces for the installed native theme,
 /// or `None` before `apply` ran (spec §9.1). Returns an owned value so the
 /// borrow of `cx` ends at once.
@@ -342,16 +258,6 @@ pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) ->
     cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
 }
 
-/// An icon at the platform's size for the role the builder names; upstream's
-/// own size before `apply` ran.
-pub(crate) fn native_icon(cx: &App, name: IconName, role: fn(Native<'_>) -> Size) -> Icon {
-    let icon = Icon::new(name);
-    match native_value(cx, role) {
-        Some(size) => icon.with_size(size),
-        None => icon,
-    }
-}
-
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
 /// wherever the platform specifies nothing (platform-facts §2.20). All 16
 /// bundled presets state `layout.widget_gap`, so the `None` arm is reached
@@ -377,19 +283,6 @@ pub(crate) fn layout_value(value: Option<Pixels>) -> String {
         Some(v) => format!("{}px", v.as_f32()),
         None => "unspecified by the platform".into(),
     }
-}
-
-/// `frame` is the showcase's own `demo_frame`, built once by the caller: the
-/// fill is the datum this swatch exists to show, and everything around it is
-/// the same box every other demonstration in the showcase sits in.
-pub(crate) fn color_swatch(name: &str, color: Hsla, frame: &StyleRefinement) -> Div {
-    let hex = hsla_to_hex(color);
-    let label_text: SharedString = format!("{} {}", name, hex).into();
-    h_flex()
-        .gap_2()
-        .items_center()
-        .child(refined(div().size(px(16.0)).bg(color), Some(frame)))
-        .child(Label::new(label_text).text_sm())
 }
 
 // ---------------------------------------------------------------------------

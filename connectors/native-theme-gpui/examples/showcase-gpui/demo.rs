@@ -3,9 +3,9 @@
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
-    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, FontWeight, Hsla,
-    ImageSource, Keystroke, Pixels, RenderOnce, SharedString, Stateful, StyleRefinement, Window,
-    div, prelude::*, px, rems,
+    Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
+    FontWeight, Hsla, ImageSource, Keystroke, Pixels, RenderOnce, SharedString, Stateful,
+    StyleRefinement, Window, div, prelude::*, px, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
@@ -96,11 +96,11 @@ use native_theme_gpui::{
 };
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
-use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
+use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
-    SampleListDelegate, SampleTableDelegate, color_swatch, native_geometry, native_icon,
-    native_value, refined, section, with_gap, with_padding,
+    SampleListDelegate, SampleTableDelegate, native_geometry, native_value, refined, with_gap,
+    with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
@@ -109,6 +109,16 @@ use crate::{
     PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_HOVERED,
     TREE_DEMO, probe,
 };
+
+/// An icon at the platform's size for the role the builder names; upstream's
+/// own size before `apply` ran. A part: the helper that places it reports.
+fn native_icon(cx: &App, name: IconName, role: fn(Native<'_>) -> Size) -> Icon {
+    let icon = Icon::new(name);
+    match native_value(cx, role) {
+        Some(size) => icon.with_size(size),
+        None => icon,
+    }
+}
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
 /// `app_menu_bar` where the platform has no menu bar of its own, and quitting
@@ -326,7 +336,7 @@ pub(crate) fn toolbar_button(
     InfoExt::info(
         button,
         ui,
-        SharedString::from(format!("chrome-{id}")),
+        SharedString::from(format!("chrome-button-{id}")),
         button_info,
     )
 }
@@ -861,7 +871,9 @@ pub(crate) fn heading(
     id: &'static str,
     text: impl Into<SharedString>,
 ) -> Stateful<Div> {
-    section(text)
+    Label::new(text)
+        .text_base()
+        .font_semibold()
         .info(ui, id, info::text::heading(cx.theme()))
         // As wide as its text, not its column: the space beside a heading
         // is not the heading.
@@ -1195,15 +1207,15 @@ pub(crate) struct InputGroupStates<'a> {
 }
 
 /// Three `InputGroup`s, `width` wide, one above the other: a field behind a
-/// Search icon, a field with a Copy button after it, which hands `on_copy`
-/// its click, and a textarea with a note under it. They report as one.
+/// Search icon, a field with a Copy button after it, which puts the field's
+/// text on the clipboard and says so in a notification, and a textarea with
+/// a note under it. They report as one.
 pub(crate) fn input_groups(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     states: InputGroupStates<'_>,
     width: Pixels,
-    on_copy: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let mut groups_info = info::inputs::input_groups(cx.theme());
     // One refinement, recorded once, for both single-line groups; the
@@ -1231,7 +1243,17 @@ pub(crate) fn input_groups(
     .icon(IconName::Copy)
     .label("Copy")
     .tooltip("Copy the field to the clipboard")
-    .on_click(on_copy);
+    .on_click({
+        let copied = states.copy.clone();
+        move |_, window, cx| {
+            let value = copied.read(cx).value();
+            cx.write_to_clipboard(ClipboardItem::new_string(value.to_string()));
+            window.push_notification(
+                Notification::success(value).title("Copied").autohide(true),
+                cx,
+            );
+        }
+    });
     v_flex()
         .gap_3()
         .w(width)
@@ -4587,7 +4609,7 @@ pub(crate) enum ThemeToken {
 
 /// A Theme Map swatch of `token`: the installed value of its field in
 /// `frame`, the showcase's frame, which the page builds once, labelled with
-/// the field's name and the value. Its id is `theme-map-<field>`.
+/// the field's name and the value. Its id is `theme-map-swatch-<field>`.
 pub(crate) fn swatch(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -4596,10 +4618,17 @@ pub(crate) fn swatch(
 ) -> Stateful<Div> {
     let t = cx.theme();
     // What the connector writes the colours under.
-    let native = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
     let value = info::theme_map::row(t, token).value;
-    let id = SharedString::from(format!("theme-map-{}", value.field));
-    color_swatch(value.field, value.value, frame)
+    let id = SharedString::from(format!("theme-map-swatch-{}", value.field));
+    let label = SharedString::from(format!("{} {}", value.field, hsla_to_hex(value.value)));
+    // The fill is the datum this swatch exists to show; everything around it
+    // is `frame`, the box every other demonstration sits in.
+    h_flex()
+        .gap_2()
+        .items_center()
+        .child(refined(div().size(px(16.0)).bg(value.value), Some(frame)))
+        .child(Label::new(label).text_sm())
         .info(ui, id.clone(), info::theme_map::swatch(t, token, native))
         .debug_selector(move || id.to_string())
 }
@@ -4627,6 +4656,7 @@ pub(crate) struct ControlHeight {
     pub(crate) height: f32,
     pub(crate) min_height: f32,
     pub(crate) font_size: f32,
+    pub(crate) text_scale: f32,
     pub(crate) line_height: f32,
     pub(crate) padding_vertical: f32,
 }
@@ -4647,6 +4677,13 @@ impl ControlHeight {
             height: geometry::control_height(min_height, font, border, n).as_f32(),
             min_height,
             font_size: font.size,
+            // The factor `control_height` scales by: the preference, or 1
+            // where it is not a finite positive number
+            // (native-theme-gpui/lib.rs, text_scale_factor, not public).
+            text_scale: match n.accessibility.text_scaling_factor {
+                s if s.is_finite() && s > 0.0 => s,
+                _ => 1.0,
+            },
             line_height: n.resolved.defaults.line_height,
             padding_vertical: border.padding_vertical,
         }

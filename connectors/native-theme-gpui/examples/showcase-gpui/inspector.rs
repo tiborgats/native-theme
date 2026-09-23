@@ -20,8 +20,8 @@ use gpui_component::{
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
-use crate::info::{INFO_SETTLE, InfoRegistry, Note, WidgetInfo};
-use crate::support::{NativeStyled, color_swatch, defined_size, with_gap, with_padding};
+use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex};
+use crate::support::{NativeStyled, defined_size, with_gap, with_padding};
 use crate::{INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, demo, probe};
 
 /// The inspector's two views, in the order its TabBar shows them.
@@ -54,16 +54,6 @@ pub(crate) struct Inspector {
     /// Where the Theme tab reads the installed theme's fonts and layout.
     showcase: WeakEntity<Showcase>,
     pub(crate) tab: InspectorTab,
-    /// The text panel of a page that does not report its instances yet (plan
-    /// Tasks 14-23), shown in place of an info until an info settles.
-    // Task 24: delete (legacy hover_info stopgap)
-    legacy: Option<String>,
-    /// The text panel waiting out `INFO_SETTLE`, and its ticket.
-    // Task 24: delete (legacy hover_info stopgap)
-    legacy_pending: Option<(String, u64)>,
-    // Task 24: delete (legacy hover_info stopgap)
-    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-    legacy_tickets: u64,
     /// The title of what the last frame drew under the TabBar; `None` for
     /// the hint shown before any hover.
     pub(crate) title_drawn: Option<SharedString>,
@@ -76,79 +66,21 @@ impl Inspector {
         showcase: WeakEntity<Showcase>,
         cx: &mut Context<Self>,
     ) -> Self {
-        // The registry notifies when what it shows changes; an info that
-        // settles replaces a page's text panel.
-        let _registry = cx.observe(&ui, |this: &mut Self, ui, cx| {
-            // Task 24: delete (legacy hover_info stopgap)
-            if ui.read(cx).shown().is_some() {
-                this.legacy = None;
-            }
-            cx.notify();
-        });
+        // The registry notifies when what it shows changes.
+        let _registry = cx.observe(&ui, |_: &mut Self, _, cx| cx.notify());
         Self {
             ui,
             showcase,
             tab: InspectorTab::Widget,
-            // Task 24: delete (legacy hover_info stopgap)
-            legacy: None,
-            legacy_pending: None,
-            legacy_tickets: 0,
             title_drawn: None,
             _registry,
-        }
-    }
-
-    /// A hover over a page's text panel began (`hovered`) or ended. The
-    /// panel replaces what is shown only after it stayed hovered for
-    /// `INFO_SETTLE`, as an info does (spec §4.2), so crossing a page on the
-    /// way to the inspector leaves the inspector as it was.
-    // Task 24: delete (legacy hover_info stopgap)
-    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-    pub(crate) fn set_legacy(&mut self, text: String, hovered: bool, cx: &mut Context<Self>) {
-        if !hovered {
-            self.legacy_pending.take_if(|(pending, _)| *pending == text);
-            return;
-        }
-        if self.legacy.as_ref() == Some(&text) {
-            self.legacy_pending = None;
-            return;
-        }
-        self.legacy_tickets = self.legacy_tickets.wrapping_add(1);
-        let ticket = self.legacy_tickets;
-        self.legacy_pending = Some((text, ticket));
-        cx.spawn(async move |this, cx| {
-            cx.background_executor().timer(INFO_SETTLE).await;
-            this.update(cx, |this, cx| {
-                let Some((text, _)) = this.legacy_pending.take_if(|(_, t)| *t == ticket) else {
-                    return;
-                };
-                this.ui.update(cx, |r, _| r.forget_shown());
-                this.legacy = Some(text);
-                cx.notify();
-            })
-            .ok();
-        })
-        .detach();
-    }
-
-    /// Drop the text panel of a page that is no longer shown.
-    // Task 24: delete (legacy hover_info stopgap)
-    pub(crate) fn clear_legacy(&mut self, cx: &mut Context<Self>) {
-        self.legacy_pending = None;
-        if self.legacy.take().is_some() {
-            cx.notify();
         }
     }
 
     /// The title of what the Widget tab shows, `None` for the hint: the
     /// status bar names the widget by this, so the two never disagree.
     pub(crate) fn shown_title(&self, cx: &gpui::App) -> Option<String> {
-        match (&self.legacy, self.ui.read(cx).shown()) {
-            // Task 24: delete (legacy hover_info stopgap)
-            (Some(text), _) => Some(text.lines().next().unwrap_or_default().to_string()),
-            (None, Some(info)) => Some(info.title()),
-            (None, None) => None,
-        }
+        self.ui.read(cx).shown().map(|info| info.title())
     }
 
     /// The Widget tab: the shown info's title, a Copy button and its
@@ -157,26 +89,9 @@ impl Inspector {
         let theme = cx.theme().clone();
         let muted = theme.muted_foreground;
         let shown = self.ui.read(cx).shown().cloned();
-        let title = self.shown_title(cx);
-        let (title, copied, body) = match (&self.legacy, shown, title) {
-            // Task 24: delete (legacy hover_info stopgap)
-            (Some(text), _, Some(title)) => {
-                let rest: Vec<&str> = text.lines().skip(1).collect();
-                (
-                    title,
-                    text.clone(),
-                    div()
-                        .text_xs()
-                        .child(SharedString::from(rest.join("\n")))
-                        .into_any_element(),
-                )
-            }
-            (None, Some(info), Some(title)) => (
-                title,
-                info.to_text(),
-                info_sections(&info, gap, cx).into_any_element(),
-            ),
-            _ => {
+        let (title, copied, body) = match shown {
+            Some(info) => (info.title(), info.to_text(), info_sections(&info, gap, cx)),
+            None => {
                 self.title_drawn = None;
                 return v_flex().child(
                     Label::new("Hover any widget to see what the theme sets on it.")
@@ -344,17 +259,24 @@ fn row(what: &'static str, value: String, cx: &gpui::App) -> gpui::Div {
         .child(Label::new(value).text_xs())
 }
 
+/// A colour swatch labelled `name` and the colour's hex value, its square
+/// in `frame`, the showcase's frame, built once by the caller.
+fn swatch(name: &str, color: gpui::Hsla, frame: &gpui::StyleRefinement) -> gpui::Div {
+    let label = SharedString::from(format!("{name} {}", hsla_to_hex(color)));
+    h_flex()
+        .gap_2()
+        .items_center()
+        .child(div().size(gpui::px(16.0)).bg(color).refine_style(frame))
+        .child(Label::new(label).text_sm())
+}
+
 /// The four sections of `info` (spec §2.6), each only where it has lines.
 fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -> gpui::Div {
     let muted = cx.theme().muted_foreground;
     let frame = gpui::StyleRefinement::default().demo_frame(cx);
     let colors = info.colors.iter().map(|c| {
         v_flex()
-            .child(color_swatch(
-                &format!("{}: {}", c.role, c.field),
-                c.value,
-                &frame,
-            ))
+            .child(swatch(&format!("{}: {}", c.role, c.field), c.value, &frame))
             .child(Label::new(c.cited_at).text_xs().text_color(muted))
     });
     let notes = |title: &'static str, notes: &[Note]| {

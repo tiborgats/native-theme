@@ -1,10 +1,7 @@
 //! The Inputs page.
 
-use gpui::{
-    ClipboardItem, Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*,
-    px,
-};
-use gpui_component::{WindowExt, h_flex, notification::Notification, v_flex};
+use gpui::{Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*, px};
+use gpui_component::{h_flex, v_flex};
 
 use native_theme_gpui::geometry;
 
@@ -27,14 +24,6 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let widget_gap = geometry::widget_gap(&self.layout);
-        let on_copy = cx.listener(|this, _, window, cx| {
-            let value = this.input_group_button_state.read(cx).value();
-            cx.write_to_clipboard(ClipboardItem::new_string(value.to_string()));
-            window.push_notification(
-                Notification::success(value).title("Copied").autohide(true),
-                cx,
-            );
-        });
         let on_checkbox_a = cx.listener(|this, val: &bool, _w, _cx| {
             this.checkbox_a = *val;
         });
@@ -125,7 +114,6 @@ impl Showcase {
                         notes: &self.input_group_textarea_state,
                     },
                     px(360.0),
-                    on_copy,
                 )
                 .self_start(),
             )

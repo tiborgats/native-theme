@@ -27,7 +27,7 @@ pub fn heading(t: &Theme) -> WidgetInfo {
         ))
         .instance(
             "style",
-            "semibold, at a pixel size the showcase sets itself: not a theme value, and not scaled with the platform's font",
+            "semibold at text_base -- one rem, so it follows the platform's font, a step above the text_sm of the captions and labels -- in the foreground the Label paints itself (label.rs, Label::render): the showcase's own heading style",
         )
 }
 

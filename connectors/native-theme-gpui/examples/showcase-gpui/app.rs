@@ -52,7 +52,7 @@ use crate::inspector::Inspector;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
     PresetDelegate, SampleListDelegate, SampleTableDelegate, initial_chat_messages, load_all_icons,
-    load_gpui_icons, parse_icon_set_choice, release_sources, widget_tooltip_themed,
+    load_gpui_icons, parse_icon_set_choice, release_sources,
 };
 use crate::{
     CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
@@ -560,7 +560,7 @@ impl Showcase {
 
     /// Load the icons of the chosen set -- from the `--icon-theme` override
     /// where one is set -- and rebuild what the Icons page draws from them.
-    fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    pub(crate) fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
@@ -1233,27 +1233,9 @@ impl Showcase {
                 select.set_selected_value(&selected_label, window, cx);
             });
         }
-        // ALWAYS reload icons regardless of choice (text color changes on dark/light)
-        {
-            let effective = self
-                .icon_set_choice
-                .effective_icon_set(self.current_icon_set);
-            let default_theme = self
-                .icon_set_choice
-                .freedesktop_theme()
-                .map(|s| s.to_string());
-            let cli_ref = self.icon_theme_override.as_deref();
-            let fc = self.original_font.color;
-            let fg_rgb = Some([fc.r, fc.g, fc.b]);
-            self.loaded_icons =
-                load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
-            self.gpui_icons =
-                load_gpui_icons(Some(effective), default_theme.as_deref(), cli_ref, fg_rgb);
-        }
-        let fg = cx.theme().foreground;
-        self.rebuild_icon_caches(fg, window, cx);
-        self.rebuild_animation_caches(window, cx);
-        self.start_animation_timer(cx);
+        // Always, whichever set is chosen: a recoloured icon takes the new
+        // theme's text colour.
+        self.reload_icons(window, cx);
     }
 
     /// Spawn a background task that polls the theme change flag and triggers
@@ -1308,8 +1290,6 @@ impl Showcase {
         if self.active_page != page {
             self.active_page = page;
             self.info_ui.update(cx, |r, _| r.page_changed());
-            // Task 24: delete (legacy hover_info stopgap)
-            self.inspector.update(cx, |i, cx| i.clear_legacy(cx));
         }
         cx.notify();
     }
@@ -1406,32 +1386,6 @@ impl Showcase {
 
     fn on_open_about(&mut self, _: &OpenAbout, window: &mut Window, cx: &mut Context<Self>) {
         chrome::open_about(self, window, cx);
-    }
-
-    /// Create a hover handler that shows a page's text panel in the
-    /// inspector, until the page reports its instances (plan Tasks 14-23).
-    /// The panel settles like an info does (`Inspector::set_legacy`).
-    // Task 24: delete (legacy hover_info stopgap)
-    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-    pub(crate) fn set_info(&self, info: String) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
-        let inspector = self.inspector.clone();
-        move |hovered: &bool, _window: &mut Window, cx: &mut App| {
-            inspector.update(cx, |i, cx| i.set_legacy(info.clone(), *hovered, cx));
-        }
-    }
-
-    /// Create a hover handler using the standard widget_tooltip_themed format.
-    #[expect(dead_code, reason = "Task 24 deletes the legacy stopgap")]
-    pub(crate) fn hover_info(
-        &self,
-        fi: &str,
-        name: &str,
-        colors: &[(&str, &str, Hsla, &str)],
-        config: &[(&str, String)],
-        not_themeable: &[(&str, &str)],
-    ) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
-        let info = widget_tooltip_themed(fi, name, colors, config, not_themeable);
-        self.set_info(info)
     }
 }
 
