@@ -15,7 +15,7 @@ use gpui_component::{
     h_flex,
     label::Label,
     scroll::ScrollableElement,
-    v_flex,
+    v_flex, window_paddings,
 };
 use native_theme_gpui::geometry;
 
@@ -248,7 +248,8 @@ impl Inspector {
         // everything it holds in `window_border()` (root.rs:605), so the
         // window's frame is a WindowBorder no page draws. Its client-side arm
         // alone sets the client inset (window_border.rs:147-149).
-        let decorations = match window.window_decorations() {
+        let window_decorations = window.window_decorations();
+        let decorations = match window_decorations {
             gpui::Decorations::Server => "server-side: the compositor draws the frame".to_string(),
             gpui::Decorations::Client { tiling } => {
                 format!("client-side, tiled {tiling:?}")
@@ -258,9 +259,34 @@ impl Inspector {
             Some(inset) => format!("{}px, set by the WindowBorder", inset.as_f32()),
             None => "none: nothing has called set_client_inset".to_string(),
         };
+        let paddings = window_paddings(window);
+        let frame_insets = format!(
+            "top {}px, right {}px, bottom {}px, left {}px (window_border.rs, window_paddings)",
+            paddings.top.as_f32(),
+            paddings.right.as_f32(),
+            paddings.bottom.as_f32(),
+            paddings.left.as_f32(),
+        );
+        // The Server arm hands back the bare backdrop (window_border.rs:172);
+        // only the client-side arm lays the hit zones (`:270-280`).
+        let resize_band = match window_decorations {
+            gpui::Decorations::Server => {
+                "the compositor's: the WindowBorder lays none (window_border.rs, WindowBorder)"
+            }
+            gpui::Decorations::Client { .. } => {
+                "the WindowBorder's, along each edge not tiled (window_border.rs, resize_hit_zones)"
+            }
+        };
         let window_rows = vec![
             ("decorations", decorations),
             ("client inset", inset),
+            ("frame insets", frame_insets),
+            ("resize band", resize_band.to_string()),
+            (
+                "frame fill",
+                "none: the WindowBorder's backdrop and frame are transparent (window_border.rs, WindowBorder)"
+                    .to_string(),
+            ),
             (
                 "frame",
                 "a WindowBorder, which Root draws around everything it holds (root.rs, Root)"

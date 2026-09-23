@@ -1,7 +1,7 @@
 //! What the pages share: sample content, tooltip and layout helpers, icon loading, and the list and table delegates.
 
 use gpui::{
-    App, Axis, Context, Div, Hsla, ImageSource, IntoElement, ParentElement, Pixels, SharedString,
+    App, Context, Div, Hsla, ImageSource, IntoElement, ParentElement, Pixels, SharedString,
     StyleRefinement, Styled, Task, Window, div, px,
 };
 use gpui_component::{
@@ -56,24 +56,6 @@ pub(crate) const CAROUSEL_SLIDES: &[(&str, &str)] = &[
         "IconRole maps to the desktop icon theme; sets are never mixed.",
     ),
 ];
-
-/// What the demo `TitleBar`'s window controls do on this platform.
-///
-/// `on_close_window` is kept only on Linux (`title_bar.rs:99-101`); on Windows
-/// the controls are hit-tested by the OS through `window_control_area`
-/// (`:220-222`), so no handler can stand between them and the real window.
-/// macOS draws none (`:254-256`).
-pub(crate) const TITLE_BAR_CONTROLS_NOTE: &str = if cfg!(target_os = "windows") {
-    "On Windows these buttons act on the real window: the OS hit-tests them \
-     and upstream discards the close handler, so the X really does close the \
-     showcase."
-} else if cfg!(target_os = "macos") {
-    "On macOS upstream draws no window controls in its own title bar; the \
-     system provides them."
-} else {
-    "The close button is intercepted and inert; dragging the bar moves the \
-     window and a double click zooms it."
-};
 
 /// How many pages the Data page's `Pagination` navigates, at ten rows each.
 pub(crate) const PAGE_COUNT: usize = 12;
@@ -142,87 +124,6 @@ pub(crate) const STEPPER_STEPS: &[(&str, IconName)] = &[
     ("Read the OS", IconName::Search),
     ("Resolve the theme", IconName::Settings),
     ("Apply to gpui", IconName::CircleCheck),
-];
-
-/// One panel of a resizable group: the title it carries, the line under that
-/// title if it has one, and the size it asks the group for — `None` for the
-/// panel that takes whatever the others leave.
-pub(crate) struct ResizablePanelSpec {
-    pub(crate) title: &'static str,
-    pub(crate) caption: Option<&'static str>,
-    pub(crate) size: Option<f32>,
-}
-
-/// One of the Layout page's resizable groups: the element id and debug selector
-/// of the fixed-height box it sits in, its heading, the axis its divider
-/// travels on, the box's height, and its panels.
-pub(crate) struct ResizableGroup {
-    pub(crate) id: &'static str,
-    pub(crate) group_id: &'static str,
-    pub(crate) heading: &'static str,
-    pub(crate) axis: Axis,
-    pub(crate) height: f32,
-    pub(crate) panels: &'static [ResizablePanelSpec],
-}
-
-// The line width of the box a resizable group sits in is the platform's
-// (`demo_frame`), so `resizable_groups_have_room_to_drag` asks
-// `demo_border_width` for it rather than naming a number: it is inside the
-// box's measured size and has to come off both edges before what is left is
-// compared with `PANEL_MIN_SIZE`.
-
-/// The Layout page's resizable groups.
-///
-/// The box's size along the divider's axis is what makes a group draggable:
-/// gpui-base clamps every panel to `PANEL_MIN_SIZE` (gpui-base
-/// resizable/mod.rs, `PANEL_MIN_SIZE`), so a two-panel group needs more than
-/// twice that plus its border before the divider has anywhere to go. The
-/// vertical group stood at 200px once, with both panels clamped to 99px and the
-/// divider unable to move at all. `resizable_groups_have_room_to_drag` is that
-/// finding as a rule, and it measures the boxes this list builds.
-pub(crate) const RESIZABLE_GROUPS: &[ResizableGroup] = &[
-    ResizableGroup {
-        id: "tt-resizable-h",
-        group_id: "resize-h",
-        heading: "Resizable Panels (horizontal)",
-        axis: Axis::Horizontal,
-        // Cross-axis here: the width the divider travels on comes from the
-        // content area, so only the laid-out bounds can report it.
-        height: 160.0,
-        panels: &[
-            ResizablePanelSpec {
-                title: "Left Panel",
-                caption: Some("Drag the divider to resize"),
-                size: Some(250.0),
-            },
-            ResizablePanelSpec {
-                title: "Right Panel",
-                caption: Some("This panel fills remaining space"),
-                size: None,
-            },
-        ],
-    },
-    ResizableGroup {
-        id: "tt-resizable-v",
-        group_id: "resize-v",
-        heading: "Resizable Panels (vertical)",
-        axis: Axis::Vertical,
-        height: 300.0,
-        panels: &[
-            ResizablePanelSpec {
-                title: "Top Panel",
-                caption: None,
-                // Above PANEL_MIN_SIZE, so the request survives the clamp;
-                // travel is 100px..198px.
-                size: Some(130.0),
-            },
-            ResizablePanelSpec {
-                title: "Bottom Panel",
-                caption: None,
-                size: None,
-            },
-        ],
-    },
 ];
 
 /// The source the code editor holds — the connector's own install sequence.

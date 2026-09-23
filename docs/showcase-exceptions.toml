@@ -43,7 +43,7 @@ SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
 Text = "not a text widget but a chart axis label: `plot::label::Text` is built only by `AxisText`, which the charts build for every tick (plot/label.rs:95, plot/axis.rs:99, :144, chart/mod.rs:83)"
-WindowBorder = "the window's own edge, rendered by `Root` and not by an application: `Root::new` sets `bordered: true` (root.rs:117) and `Root::render` wraps the window in `window_border()` (root.rs:605). A second, nested one would call `set_client_inset` again (window_border.rs), so the showcase names it in a panel and builds none"
+WindowBorder = "drawn by `Root` around the window (client-side decorations since this change); its facts are in the inspector's Theme tab"
 
 # Layout and utility wrappers with no visual surface of their own, and the
 # one widget that needs a GPU pipeline the application supplies (spec §6a.3).

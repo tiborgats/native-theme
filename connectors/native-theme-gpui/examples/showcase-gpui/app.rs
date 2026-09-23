@@ -194,9 +194,7 @@ pub(crate) struct Showcase {
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
     pub(crate) status_title_drawn: Option<SharedString>,
-    /// The title bar's menus. Its own entity, apart from the Overlays page's
-    /// sample: an `AppMenuBar` keeps which menu is open, and one entity drawn
-    /// twice would open both.
+    /// The title bar's menus.
     pub(crate) menu_bar: Entity<AppMenuBar>,
     /// The view's focus, so an action dispatched with nothing else focused
     /// still reaches the handlers `render` puts on the view.
@@ -256,9 +254,6 @@ pub(crate) struct Showcase {
     pub(crate) carousel_state: Entity<CarouselState>,
     /// The `Stepper`'s current step, written by its `on_click`.
     pub(crate) step: usize,
-    /// Whether the Layout page's `Sidebar` is collapsed; its
-    /// `SidebarToggleButton` flips it.
-    pub(crate) sidebar_collapsed: bool,
 
     // Typography page
     pub(crate) editor_state: Entity<EditorState>,
@@ -281,14 +276,10 @@ pub(crate) struct Showcase {
     pub(crate) toggle_italic: bool,
 
     // Overlays page
-    pub(crate) app_menu_bar: Entity<AppMenuBar>,
     /// What the last `AlertDialog` was answered with, written by its `on_ok`
     /// and `on_cancel` so the section reports a real outcome.
     pub(crate) alert_choice: Option<SharedString>,
-    /// The Overlays page's Command sample's query and highlighted row.
-    pub(crate) command_state: Entity<CommandState>,
-    /// The command palette's (spec §2.8), apart from the sample's so that
-    /// neither leaves a query or a highlight in the other.
+    /// The command palette's query and highlighted row (spec §2.8).
     pub(crate) palette_state: Entity<CommandState>,
 
     // Icon set selector state
@@ -598,7 +589,6 @@ impl Showcase {
             )
         });
 
-        let command_state = cx.new(|cx| CommandState::new(window, cx));
         let palette_state = cx.new(|cx| CommandState::new(window, cx));
 
         let input_group_state = cx.new(|cx| {
@@ -944,7 +934,6 @@ impl Showcase {
             GlobalState::global_mut(cx)
                 .set_app_menus(chrome::menus().into_iter().map(Menu::owned).collect());
         }
-        let app_menu_bar = AppMenuBar::new(cx);
         let menu_bar = AppMenuBar::new(cx);
         let focus_handle = cx.focus_handle();
         focus_handle.focus(window, cx);
@@ -1025,7 +1014,6 @@ impl Showcase {
             collapsible_open: true,
             carousel_state,
             step: 1,
-            sidebar_collapsed: false,
             editor_state,
             table_state,
             list_state,
@@ -1036,9 +1024,7 @@ impl Showcase {
             attachment_status: AttachmentStatus::Uploading,
             toggle_bold: false,
             toggle_italic: false,
-            app_menu_bar,
             alert_choice: None,
-            command_state,
             palette_state,
             icon_set_select,
             icon_set_name: initial_resolved_name,

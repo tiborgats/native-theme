@@ -4,7 +4,6 @@ use gpui::{Context, IntoElement, ParentElement, Styled, Window, div, prelude::*,
 use gpui_component::{
     ActiveTheme, IconName, Placement, StyledExt, WindowExt,
     button::{Button, ButtonVariant, ButtonVariants, DropdownButton},
-    command::{Command, CommandGroup, CommandItem},
     dialog::{
         AlertDialog, DialogButtonProps, DialogClose, DialogDescription, DialogFooter, DialogTitle,
     },
@@ -20,8 +19,8 @@ use native_theme_gpui::{ActiveNativeTheme, geometry, variants};
 
 use crate::app::Showcase;
 use crate::support::{
-    NativeStyled, format_font_info, ghost_hover_fill, native_geometry, native_icon, refined,
-    section, with_gap, with_padding,
+    NativeStyled, format_font_info, native_geometry, native_icon, refined, section, with_gap,
+    with_padding,
 };
 use crate::{PROBE_ALERT_DIALOG, probe};
 
@@ -42,20 +41,6 @@ impl Showcase {
             .gap_5()
             .p_4()
             .flex_1()
-            // AppMenuBar
-            .child(section("AppMenuBar (File / View / Theme / Help)"))
-            .child(
-                div()
-                    .id("tt-app-menu-bar")
-                    .w_full()
-                    .demo_frame(cx)
-                    .child(self.app_menu_bar.clone())
-                    .on_hover(self.hover_info(&fi, "AppMenuBar", &[("item text", "secondary_foreground", t.secondary_foreground, "gpui-component/button/button.rs:964"), ("item hover (half alpha in dark mode)", "accent", ghost_hover_fill(&t), "gpui-component/button/button.rs:1125-1131"), ("menu bg", "popover", t.popover, "gpui-component/styled.rs:197")], &[], &[
-                            ("fill", "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background -- the panel had claimed tab_bar, which nothing here touches"),
-                            ("items", "ghost Buttons, so they hover with accent -- at half alpha in dark mode -- rather than the button family, and their label is the Ghost variant's secondary_foreground"),
-                            ("source", "gpui-base's GlobalState app menus, which only set_app_menus fills -- not gpui's cx.set_menus, which feeds the platform's own menu bar. This showcase gives both the same menus (menu/app_menu_bar.rs, AppMenuBar::reload)"),
-                        ])),
-            )
             // Dialog
             .child(section("Dialog"))
             .child(
@@ -353,41 +338,6 @@ impl Showcase {
                             ("surface", "a ContextMenu is a PopupMenu wrapper and reads no theme field itself (menu/context_menu.rs)"),
                             ("edge", "no border: popover_style draws a shadow ring; the border token is the separator between items (menu/popup_menu.rs)"),
                         ])),
-            )
-            // Command palette
-            .child(section("Command (a search field over a filtered list)"))
-            .child(
-                div()
-                    .id("tt-command")
-                    .w(px(360.0))
-                    .child(
-                        Command::new(&self.command_state)
-                            .placeholder("Type a command or search…")
-                            .group(
-                                CommandGroup::new().label("Suggestions").item(
-                                    CommandItem::new()
-                                        .label("Calendar")
-                                        .icon(IconName::Calendar),
-                                ),
-                            )
-                            .group(
-                                CommandGroup::new().label("Settings").items([
-                                    CommandItem::new()
-                                        .label("Profile")
-                                        .icon(IconName::User),
-                                    CommandItem::new()
-                                        .label("Search")
-                                        .icon(IconName::Search),
-                                ]),
-                            ),
-                    )
-                    .on_hover(self.hover_info(&fi, "Command", &[("surface bg", "popover", t.popover, "gpui-component/command/state.rs:830"), ("surface text", "popover_foreground", t.popover_foreground, "gpui-component/command/state.rs:831"), ("border", "border", t.border, "gpui-component/command/state.rs:835"), ("search divider", "border", t.border, "gpui-component/command/state.rs:847"), ("search icon", "muted_foreground", t.muted_foreground, "gpui-component/command/state.rs:852"), ("group label", "muted_foreground", t.muted_foreground, "gpui-component/command/state.rs:685"), ("separator", "border", t.border, "gpui-component/command/state.rs:695"), ("selected row", "accent", t.accent, "gpui-component/command/state.rs:673"), ("selected row text", "accent_foreground", t.accent_foreground, "gpui-component/command/state.rs:674"), ("empty text", "muted_foreground", t.muted_foreground, "gpui-component/command/state.rs:785")], &[
-                        ("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32())),
-                    ], &[
-                        ("geometry", "none: no geometry:: builder is applied. The palette sizes itself from its own text sizes and a max height of 18.75rem (command/command.rs, CommandOptions::default)"),
-                        ("accent is the menu highlight", "the highlighted row takes the same token a menu row's hover does, so the palette follows the platform's menu selection rather than a list selection (native-theme-gpui colors.rs, assign_core)"),
-                        ("query field", "an Input with appearance(false): it draws no background and no border of its own, so the surface shows through (command/state.rs, CommandState::render)"),
-                    ])),
             )
             // DropdownMenu
             .child(section("DropdownMenu"))

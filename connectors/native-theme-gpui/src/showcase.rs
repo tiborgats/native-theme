@@ -725,20 +725,12 @@ fn the_geometry_note_parsers_do_their_jobs() {
 const BLOCK_ID: &str = ".id(\"tt-";
 const PANEL_CALL: &str = ".on_hover(self.hover_info(";
 
-/// The one demo whose id reaches `.id()` through a `const` table rather than
-/// as a literal: the resizable groups are rendered from [`RESIZABLE_GROUPS`]
-/// by a single function, so the call site reads `.id(group.id)`.
-///
-/// `every_demo_id_is_a_tt_id` keeps that indirection honest, so this marker
-/// cannot come to stand for a block that is not a demo.
-const INDIRECT_BLOCK_ID: &str = ".id(group.id)";
-
 /// The 0-based line indices of `source` that open a demo block.
 fn demo_block_starts(source: &str) -> Vec<usize> {
     source
         .lines()
         .enumerate()
-        .filter(|(_, line)| line.contains(BLOCK_ID) || line.contains(INDIRECT_BLOCK_ID))
+        .filter(|(_, line)| line.contains(BLOCK_ID))
         .map(|(n, _)| n)
         .collect()
 }
@@ -833,42 +825,6 @@ fn demo_blocks(raw: &str, code: &str, methods: &[usize]) -> Vec<Block> {
         }
     }
     out
-}
-
-/// Spec section 2.1: an id that reaches a demo block through a `const` table
-/// is still a `tt-` id.
-///
-/// Without this, [`INDIRECT_BLOCK_ID`] would be a hole: renaming a table
-/// entry to something that is not a demo would keep the marker and lose the
-/// meaning.
-#[test]
-fn every_demo_id_is_a_tt_id() {
-    let mut wrong = Vec::new();
-    let mut checked = 0usize;
-    for (file, source) in SHOWCASE_FILES {
-        for (n, line) in source.lines().enumerate() {
-            let Some(rest) = line.trim_start().strip_prefix("id: \"") else {
-                continue;
-            };
-            let Some(id) = rest.split('"').next() else {
-                continue;
-            };
-            checked += 1;
-            if !id.starts_with("tt-") {
-                wrong.push(format!("{file}:{}: {id}", n + 1));
-            }
-        }
-    }
-    assert!(
-        checked > 0,
-        "no `id: \"...\"` field found in the showcase, so this test would pass vacuously"
-    );
-    assert!(
-        wrong.is_empty(),
-        "a demo id reached through a const table must start with `tt-`, or \
-         `demo_block_starts` counts a non-demo as a demo block: {}",
-        wrong.join(", ")
-    );
 }
 
 /// Spec section 2.2: every `tt-` demo block carries a Widget Info panel.

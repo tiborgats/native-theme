@@ -324,7 +324,6 @@ pub(crate) const PROBE_PAGINATION: &str = "probe-pagination";
 pub(crate) const PROBE_ATTACHMENT: &str = "probe-attachment";
 pub(crate) const PROBE_CHAT_SEND: &str = "probe-chat-send";
 pub(crate) const PROBE_STEPPER: &str = "probe-stepper";
-pub(crate) const PROBE_SIDEBAR_TOGGLE: &str = "probe-sidebar-toggle";
 pub(crate) const PROBE_CAROUSEL_LAST: &str = "probe-carousel-last";
 pub(crate) const PROBE_ALERT_DIALOG: &str = "probe-alert-dialog";
 pub(crate) const PROBE_NOTIFICATION: &str = "probe-notification";

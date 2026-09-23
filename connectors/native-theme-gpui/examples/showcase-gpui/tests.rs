@@ -7,10 +7,10 @@
 //! opens — and drive it with real input.
 
 use gpui::{
-    App, Axis, Bounds, Entity, Focusable as _, Modifiers, MouseButton, Pixels, Point,
-    TestAppContext, VisualTestContext, point, prelude::*, px, size,
+    App, Bounds, Entity, Focusable as _, Modifiers, MouseButton, Pixels, Point, TestAppContext,
+    VisualTestContext, point, prelude::*, px, size,
 };
-use gpui_base::{PANEL_MIN_SIZE, ScrollbarHandle as _};
+use gpui_base::ScrollbarHandle as _;
 use gpui_component::{Root, theme::Theme};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 use std::cell::RefCell;
@@ -27,9 +27,7 @@ use crate::info::{
     hsla_to_hex, native_info,
 };
 use crate::inspector::InspectorTab;
-use crate::support::{
-    CAROUSEL_SLIDES, RESIZABLE_GROUPS, demo_border_width, native_geometry, native_value,
-};
+use crate::support::{CAROUSEL_SLIDES, native_geometry, native_value};
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
     CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
@@ -39,14 +37,12 @@ use crate::{
     OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
     PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
     PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO,
-    WINDOW_SIZE,
+    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
 ///
-/// The width is the application's own, so the horizontal resizable group is
-/// measured at the width it really gets. The height is not: a page is one
+/// The width is the application's own. The height is not: a page is one
 /// long scrolling column, and an element scrolled out of the viewport is
 /// clipped out of the frame and cannot be clicked, so this window is tall
 /// enough to hold the longest page whole. `every_page_lays_out` uses
@@ -396,36 +392,6 @@ fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
     }
 }
 
-/// Every resizable group has room to drag: rationale §1.1 as a rule.
-///
-/// gpui-base clamps each panel to `PANEL_MIN_SIZE`, so a box narrower —
-/// or shorter — than its panels' minimums put together holds a divider
-/// that cannot move. The sizes come from the frame the showcase just drew
-/// and the panel counts from the same `RESIZABLE_GROUPS` entries the render
-/// code builds from, so neither is a number this test types out again.
-#[gpui::test]
-fn resizable_groups_have_room_to_drag(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Layout);
-    assert!(!RESIZABLE_GROUPS.is_empty());
-    for group in RESIZABLE_GROUPS {
-        let bounds = bounds_of(&mut cx, group.id);
-        let outer = match group.axis {
-            Axis::Horizontal => bounds.size.width,
-            Axis::Vertical => bounds.size.height,
-        };
-        let border = cx.update(|_w, cx| demo_border_width(cx));
-        let room = outer - border * 2.;
-        let needed = PANEL_MIN_SIZE * group.panels.len() as f32;
-        assert!(
-            room > needed,
-            "{}: {} panels need more than {needed:?} between the borders, the box leaves {room:?} — the divider cannot move",
-            group.id,
-            group.panels.len(),
-        );
-    }
-}
-
 /// Every control the showcase advertises as interactive answers a click.
 ///
 /// Each step drives the real widget through the test platform's mouse and
@@ -499,13 +465,6 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         read(&mut cx, &showcase, |this, _| this.step),
         0,
         "Stepper: clicking the first step left the selection alone"
-    );
-
-    // SidebarToggleButton: the flag it draws is the flag it flips.
-    click(&mut cx, PROBE_SIDEBAR_TOGGLE);
-    assert!(
-        read(&mut cx, &showcase, |this, _| this.sidebar_collapsed),
-        "SidebarToggleButton: the sidebar did not collapse"
     );
 
     // Carousel: the last pagination dot goes to the last slide.
