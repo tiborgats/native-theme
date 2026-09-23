@@ -1952,6 +1952,37 @@ fn a_table_row_reports_what_the_table_paints_on_it(cx: &mut TestAppContext) {
     );
 }
 
+/// A List row's text is plain text, so it takes the list font
+/// `geometry::list_item` gives the row, and its info says so; without a
+/// native theme it is ListItem's own foreground.
+#[gpui::test]
+fn a_list_rows_text_is_the_list_font(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Data);
+    let styled = cx.update(|_w, cx| native_value(cx, |_| ()).is_some());
+    let info = settle_on(&mut cx, &showcase, "data-list-row-0");
+    let text_claim = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role == "text"));
+    let font_note = info.as_ref().is_some_and(|info| {
+        info.instance
+            .iter()
+            .any(|n| n.what == "text" && n.text.starts_with("list.item_font"))
+    });
+    if styled {
+        assert!(
+            text_claim.is_none() && font_note,
+            "the row takes list.item_font, and its info does not say so: {info:?}"
+        );
+    } else {
+        assert_eq!(
+            text_claim.map(|c| c.cited_at),
+            Some("gpui-component/list/list_item.rs:189"),
+            "the unstyled row's text is ListItem's foreground: {info:?}"
+        );
+    }
+}
+
 /// A Tree row reports itself though `Tree::new` gives nothing room to wrap
 /// it, and its info follows a click that selects it.
 #[gpui::test]

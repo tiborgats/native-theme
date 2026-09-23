@@ -958,7 +958,8 @@ impl SampleTableDelegate {
     /// Keep the delegate's copy of the table's selection in step with
     /// `event`: every change to it is emitted (table/state.rs,
     /// `TableState::set_selected_row`, `set_selected_col`,
-    /// `set_selected_cell`, `clear_selection`, `on_row_right_click`).
+    /// `set_selected_cell`, `clear_selection`, `on_row_right_click`,
+    /// `on_cell_right_click`).
     pub(crate) fn follow(&mut self, event: &TableEvent) {
         match event {
             TableEvent::SelectRow(ix) => {
@@ -973,6 +974,9 @@ impl SampleTableDelegate {
                 self.selection_shown = true;
             }
             TableEvent::RightClickedRow(row) => self.right_clicked_row = *row,
+            // A right-clicked cell clears the right-clicked row (table/
+            // state.rs:745). Only a `cell_selectable` table emits it.
+            TableEvent::RightClickedCell(..) => self.right_clicked_row = None,
             _ => {}
         }
     }
@@ -987,8 +991,11 @@ impl TableDelegate for SampleTableDelegate {
         self.rows.len()
     }
 
+    /// Upstream asks only for the columns `columns_count` gives it
+    /// (table/state.rs, `TableState::prepare_col_groups`); an index past them
+    /// gets upstream's own `Column::default()` rather than a panic.
     fn column(&self, col_ix: usize, _cx: &App) -> Column {
-        self.columns[col_ix].clone()
+        self.columns.get(col_ix).cloned().unwrap_or_default()
     }
 
     fn render_header(
@@ -1038,7 +1045,10 @@ impl TableDelegate for SampleTableDelegate {
             .and_then(|row| row.get(col_ix))
             .cloned()
             .unwrap_or_default();
-        demo::data_table_cell(text)
+        // Plain text, not a Label: `Label::render` paints foreground and
+        // this showcase's text_sm on its own element (label.rs:211), over what
+        // the table gives the row.
+        text
     }
 }
 

@@ -1544,11 +1544,6 @@ pub(crate) fn data_table_row(
         .debug_selector(move || id)
 }
 
-/// A cell of the `DataTable`, reading `text`.
-pub(crate) fn data_table_cell(text: SharedString) -> Label {
-    Label::new(text).text_sm()
-}
-
 /// A child of a declarative `Table` wrapped in its info: the `Table`, its
 /// header and its body take their children as `ChildElement`s, so the
 /// wrapper passes on the index and the size the parent gives it.
@@ -1780,7 +1775,9 @@ impl RenderOnce for ListRow {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = format!("data-list-row-{}", self.ix);
         let state = ListRowState::of(self.selected, self.right_clicked);
-        let mut row_info = info::data::list_row(cx.theme(), &self.label, state);
+        // What `native_info` applies the builder under.
+        let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+        let mut row_info = info::data::list_row(cx.theme(), &self.label, state, styled);
         let item = native_info(
             ListItem::new(SharedString::from(id.clone())),
             cx,
@@ -1788,7 +1785,9 @@ impl RenderOnce for ListRow {
             "list_item",
             &mut row_info,
         )
-        .child(Label::new(self.label).text_sm())
+        // Plain text, not a Label: `Label::render` paints foreground on its
+        // own element (label.rs:211) over the list font the row carries.
+        .child(self.label)
         .selected(self.selected)
         .secondary_selected(self.right_clicked);
         item.info(&self.ui, SharedString::from(id.clone()), row_info)
@@ -1846,7 +1845,9 @@ fn tree_row(
     selected: bool,
 ) -> ListItem {
     let id = format!("data-tree-row-{ix}");
-    let mut row_info = info::data::tree_row(cx.theme(), &label, selected);
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled);
     let item = native_info(
         ListItem::new(SharedString::from(id.clone())),
         cx,
@@ -1855,7 +1856,8 @@ fn tree_row(
         &mut row_info,
     );
     let ui = ui.clone();
-    item.child(Label::new(label).text_sm())
+    // Plain text, as the List's rows.
+    item.child(label)
         .selected(selected)
         .suffix(move |_window, _cx| {
             let id = id.clone();

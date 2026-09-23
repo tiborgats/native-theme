@@ -2,7 +2,11 @@
 
 use gpui_component::{Colorize as _, attachment::AttachmentStatus, theme::Theme};
 
-use super::{WidgetInfo, chrome::ghost_hover, claim};
+use super::{
+    ColorClaim, WidgetInfo,
+    chrome::{ghost_hover, input_background},
+    claim,
+};
 use crate::demo::{BubbleKind, DataTableRow, ListRowState};
 
 /// A `DescriptionList` of `items` items, `columns` wide, bordered as upstream
@@ -165,13 +169,15 @@ pub fn data_table_row(t: &Theme, row: DataTableRow, cells: Option<String>) -> Wi
             "gpui-component/table/data_table.rs:167",
         ))
     };
-    // Every cell is a Label the showcase builds, which paints foreground on
-    // its own element.
+    // A cell is the delegate's plain text, and neither the table nor its
+    // rows set a body text colour (table/state.rs, TableState::
+    // render_table_row), so the text is the colour the showcase sets on its
+    // window.
     let info = info.color(claim(
-        "text",
+        "text, inherited",
         "foreground",
         t.foreground,
-        "gpui-component/label.rs:211",
+        "showcase",
     ));
     let info = if body.selected || body.right_clicked {
         info.not_themeable("hover", "none: the table gives its selected row and its right-clicked row no hover (table/state.rs, TableState::render_table_row)")
@@ -287,23 +293,16 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
 }
 
 /// The fill of the page Button showing the current page: an outlined
-/// Default Button's `input_background()` (button/button.rs:859), which reads
-/// a different field in each mode (theme/mod.rs:379-384).
-fn current_page_fill(t: &Theme) -> super::ColorClaim {
-    if t.is_dark() {
-        claim(
-            "current page bg, 30% input mixed with 70% transparent",
-            "input",
-            t.input.mix_oklab(t.transparent, 0.3),
-            "gpui-component/theme/mod.rs:381",
-        )
-    } else {
-        claim(
-            "current page bg",
-            "background",
-            t.background,
-            "gpui-component/theme/mod.rs:383",
-        )
+/// Default Button's `input_background()` (button/button.rs:859), the shared
+/// claim with a role that says whose fill it is.
+fn current_page_fill(t: &Theme) -> ColorClaim {
+    ColorClaim {
+        role: if t.is_dark() {
+            "current page bg, 30% input mixed with 70% transparent"
+        } else {
+            "current page bg"
+        },
+        ..input_background(t)
     }
 }
 
@@ -412,9 +411,10 @@ pub fn list(rows: usize) -> WidgetInfo {
 }
 
 /// What a `ListItem` row reading `label` paints in `state`, for the List and
-/// the Tree. Its geometry line is recorded where the row applies
-/// `geometry::list_item`.
-fn list_item(t: &Theme, label: &str, state: ListRowState) -> WidgetInfo {
+/// the Tree. `styled` is whether a native theme is installed, so whether the
+/// row took `geometry::list_item`, whose line is recorded where the row
+/// applies it.
+fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("ListItem").variant(match state {
         ListRowState::Idle => label.to_string(),
         ListRowState::Selected => format!("{label}, selected"),
@@ -439,19 +439,27 @@ fn list_item(t: &Theme, label: &str, state: ListRowState) -> WidgetInfo {
             .not_themeable("hover", "none while selected (list/list_item.rs, ListItem::render)"),
         ListRowState::RightClicked => info.not_themeable("fill", "none, selected or not, and no hover: a right-clicked row paints neither (list/list_item.rs, ListItem::render)"),
     };
-    info.color(claim(
-        "text",
-        "foreground",
-        t.foreground,
-        "gpui-component/label.rs:211",
-    ))
-    .not_themeable("fill at rest", NO_LIST_FILL)
-    .not_themeable("text", "the showcase's Label paints foreground at text_sm on its own element, over the colour and size the row carries -- list.item_font's, where geometry::list_item applied (label.rs, Label::render)")
+    let info = info.not_themeable("fill at rest", NO_LIST_FILL);
+    // The label is plain text, so it takes the row's own text style: the
+    // foreground and text_base ListItem sets (list/list_item.rs:188-189),
+    // which geometry::list_item then refines with list.item_font, colour
+    // included -- a colour no ThemeColor field holds.
+    if styled {
+        info.instance("text", "list.item_font's size and colour, which geometry::list_item refines the row with over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
+    } else {
+        info.color(claim(
+            "text",
+            "foreground",
+            t.foreground,
+            "gpui-component/list/list_item.rs:189",
+        ))
+        .not_themeable("text size", "text_base, ListItem's own: no native theme is installed, so geometry::list_item has no font to give the row (list/list_item.rs, ListItem::render)")
+    }
 }
 
 /// A row of the List reading `label`, in `state`.
-pub fn list_row(t: &Theme, label: &str, state: ListRowState) -> WidgetInfo {
-    list_item(t, label, state).instance("click", "selects the row")
+pub fn list_row(t: &Theme, label: &str, state: ListRowState, styled: bool) -> WidgetInfo {
+    list_item(t, label, state, styled).instance("click", "selects the row")
 }
 
 /// The Tree, with the box around it that is its frame. Its geometry line is
@@ -467,15 +475,15 @@ pub fn tree() -> WidgetInfo {
 }
 
 /// A row of the Tree reading `label`, `selected` or not.
-pub fn tree_row(t: &Theme, label: &str, selected: bool) -> WidgetInfo {
+pub fn tree_row(t: &Theme, label: &str, selected: bool, styled: bool) -> WidgetInfo {
     let state = if selected {
         ListRowState::Selected
     } else {
         ListRowState::Idle
     };
-    list_item(t, label, state)
-        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else, and marks a right-clicked row after it is built (tree.rs, Tree::new). A right-clicked row paints no hover, and no fill even when selected (list/list_item.rs, ListItem::render)")
-        .instance("click", "selects the row, and opens or closes a folder (tree.rs, TreeState::on_entry_click)")
+    list_item(t, label, state, styled)
+        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (tree.rs, Tree::new), and marks a right-clicked row after it is built (tree.rs, RenderOnce for Tree). A right-clicked row paints no hover, and no fill even when selected (list/list_item.rs, ListItem::render)")
+        .instance("click", "selects the row, and opens or closes a folder (gpui-base/tree.rs, TreeState::on_entry_click)")
 }
 
 /// The notes every Avatar of the page shares: each has a name and no image.
@@ -495,7 +503,10 @@ pub fn avatar(name: &str) -> WidgetInfo {
 /// report through the group.
 pub fn avatar_group(names: &[&str], limit: usize) -> WidgetInfo {
     avatar_notes(WidgetInfo::new("AvatarGroup"))
-        .not_themeable("limit", "three shown and the fourth dropped with no marker: the overflow marker is an Avatar named ⋯, not a +N count, and only AvatarGroup::ellipsis adds it, which this demo does not call (avatar/avatar_group.rs, AvatarGroup::ellipsis)")
+        .not_themeable("limit", match names.len().checked_sub(limit) {
+            Some(dropped) if dropped > 0 => format!("{limit} shown and {dropped} dropped with no marker: the overflow marker is an Avatar named ⋯, not a +N count, and only AvatarGroup::ellipsis adds it, which this demo does not call (avatar/avatar_group.rs, AvatarGroup::ellipsis)"),
+            _ => format!("all {} shown: the limit, {limit}, drops none (avatar/avatar_group.rs, AvatarGroup::limit)", names.len()),
+        })
         .instance("avatars", format!("{}, limited to {limit}. AvatarGroup::child takes an Avatar, not an element a target could wrap, so they report through the group (avatar/avatar_group.rs, AvatarGroup::child)", names.join(", ")))
 }
 
