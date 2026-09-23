@@ -404,13 +404,13 @@ fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
     match kind {
         ButtonKind::Primary => vec![
             claim(
-                "bg, at 80% (a loading Button fades)",
+                "bg, at 80% (the whole Button fades, button.rs:782)",
                 "button_primary",
                 t.button_primary.opacity(0.8),
                 "gpui-component/button/button.rs:936",
             ),
             claim(
-                "text, at 80% (a loading Button fades)",
+                "text, at 80% (the whole Button fades, button.rs:782)",
                 "button_primary_foreground",
                 t.button_primary_foreground.opacity(0.8),
                 "gpui-component/button/button.rs:954",
@@ -490,7 +490,7 @@ pub fn button(
                     ButtonKind::Ghost | ButtonKind::Link | ButtonKind::Text => "transparent, so it vanishes under the pointer",
                 }),
                 ButtonState::Disabled => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
-                ButtonState::Loading => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive)".to_string(),
+                ButtonState::Loading => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: the opacity(0.8) at :782)".to_string(),
             })
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))

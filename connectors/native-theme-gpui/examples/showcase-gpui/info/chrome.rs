@@ -400,20 +400,21 @@ pub(super) fn ghost_hover(t: &Theme) -> ColorClaim {
     }
 }
 
-/// What an input-styled trigger is filled with: upstream's input_style
-/// (input/input.rs:105) takes `input_background()`, which reads a different
-/// field in each mode (theme/mod.rs:379-384).
-fn trigger_fill(t: &Theme) -> ColorClaim {
+/// What `Theme::input_background()` paints, the fill of an Input and of
+/// every widget styled like one: the window background in light mode, and in
+/// dark mode input mixed 30% with transparent (theme/mod.rs:379-384) -- the
+/// swatch is that mix, not input at full strength.
+pub(super) fn input_background(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
-            "trigger bg (input mixed toward transparent)",
+            "bg, input mixed toward transparent (0.3)",
             "input",
-            t.input,
+            t.input.mix_oklab(t.transparent, 0.3),
             "gpui-component/theme/mod.rs:381",
         )
     } else {
         claim(
-            "trigger bg",
+            "bg",
             "background",
             t.background,
             "gpui-component/theme/mod.rs:383",
@@ -425,7 +426,7 @@ fn trigger_fill(t: &Theme) -> ColorClaim {
 pub fn preset_combobox(t: &Theme) -> WidgetInfo {
     WidgetInfo::new("Combobox")
         .variant("searchable")
-        .color(trigger_fill(t))
+        .color(input_background(t))
         .color(claim(
             "trigger border",
             "input",
@@ -445,9 +446,9 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
             "gpui-component/styled.rs:197",
         ))
         .color(claim(
-            "row hover",
+            "row hover, accent at 70%",
             "accent",
-            t.accent,
+            t.accent.opacity(0.7),
             "gpui-component/searchable_list/item.rs:114",
         ))
         .color(claim(
@@ -543,7 +544,7 @@ pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
 /// The toolbar's icon-set Select (spec §2.3).
 pub fn icon_set_select(t: &Theme) -> WidgetInfo {
     WidgetInfo::new("Select")
-        .color(trigger_fill(t))
+        .color(input_background(t))
         .color(claim(
             "upstream trigger text",
             "foreground",

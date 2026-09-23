@@ -3,31 +3,43 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    Action, AnyElement, App, Axis, Context, Div, ElementId, Entity, Pixels, SharedString, Stateful,
-    StyleRefinement, Window, div, prelude::*, px,
+    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, Pixels,
+    SharedString, Stateful, StyleRefinement, Window, div, prelude::*, px,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
-    ActiveTheme, Collapsible, Disableable as _, IconName, Sizable as _, Size, StyledExt as _,
+    ActiveTheme, Collapsible, Disableable as _, Icon, IconName, Sizable as _, Size, StyledExt as _,
     TitleBar, WindowExt as _,
     alert::Alert,
     button::{
         Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
         ToggleVariants as _,
     },
+    calendar::{Calendar, CalendarState},
+    checkbox::Checkbox,
     clipboard::Clipboard,
+    color_picker::{ColorPicker, ColorPickerState},
     combobox::{Combobox, ComboboxState},
     command::{Command, CommandGroup, CommandState},
+    date_picker::{DatePicker, DatePickerState},
     dialog::{Dialog, DialogDescription, DialogTitle},
     h_flex,
+    input::{
+        Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment, InputGroupButton,
+        InputGroupText, InputGroupTextarea, InputState, NumberInput, OtpInput, OtpState, Textarea,
+        TextareaState,
+    },
     label::Label,
     link::Link,
     menu::{AppMenuBar, PopupMenu},
+    radio::{Radio, RadioGroup},
+    rating::Rating,
     select::{SearchableVec, Select, SelectState},
     separator::Separator,
     setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
     sheet::Sheet,
     sidebar::{Sidebar, SidebarItem, SidebarMenuItem, SidebarToggleButton},
+    slider::{Slider, SliderState},
     status_bar::StatusBar,
     switch::Switch,
     tab::{Tab, TabBar},
@@ -805,10 +817,6 @@ pub(crate) fn heading(
 
 /// A caption reading `text`, in the muted colour. `id` is its info's id and
 /// its debug selector.
-#[allow(
-    dead_code,
-    reason = "the Buttons page has no caption; the pages that do use it as they report their instances (plan Tasks 15-23)"
-)]
 pub(crate) fn caption(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1034,4 +1042,374 @@ pub(crate) fn clipboard(
     Clipboard::new(id)
         .value(value)
         .info(ui, id, info::buttons::clipboard(cx.theme(), value))
+}
+
+// ---------------------------------------------------------------------------
+// The Inputs page
+// ---------------------------------------------------------------------------
+
+/// Which refinement a single-line `Input` of the Inputs page takes.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum InputField {
+    /// `geometry::input`, the whole refinement.
+    Refined,
+    /// `geometry::input_height` alone, as the field's height.
+    HeightOnly,
+}
+
+/// A single-line `Input` over `state`, `width` wide, taking the refinement
+/// `field` names.
+pub(crate) fn text_input(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<InputState>,
+    field: InputField,
+    width: Pixels,
+) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut input_info = info::inputs::input(cx.theme(), field, styled);
+    let input = Input::new(state).with_size(Size::Medium).w(width);
+    let input = match field {
+        InputField::Refined => native_info(input, cx, geometry::input, "input", &mut input_info),
+        // Through the caller's style, which Input applies after its own
+        // height (input/input.rs:703, then :719). `Input::h` would not do:
+        // upstream reads it for a multi-line input only (:706-709).
+        InputField::HeightOnly => match native_value(cx, geometry::input_height) {
+            Some(height) => {
+                input_info = input_info.geometry("input_height");
+                Styled::h(input, height)
+            }
+            None => input,
+        },
+    };
+    input
+        .info(ui, id, input_info)
+        .debug_selector(move || id.into())
+}
+
+/// A `Textarea` over `state`, `width` by `height`, refined by
+/// `geometry::input`: it renders as an `Input` (input/textarea.rs:164).
+pub(crate) fn textarea(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<TextareaState>,
+    width: Pixels,
+    height: Pixels,
+) -> Stateful<Div> {
+    let mut textarea_info = info::inputs::textarea(cx.theme());
+    let textarea = native_info(
+        Textarea::new(state).h(height).w(width),
+        cx,
+        geometry::input,
+        "input",
+        &mut textarea_info,
+    );
+    textarea.info(ui, id, textarea_info)
+}
+
+/// The states of the three `InputGroup`s.
+pub(crate) struct InputGroupStates<'a> {
+    /// The field behind the Search icon.
+    pub search: &'a Entity<InputState>,
+    /// The field the Copy button copies.
+    pub copy: &'a Entity<InputState>,
+    /// The textarea above the note.
+    pub notes: &'a Entity<TextareaState>,
+}
+
+/// Three `InputGroup`s, `width` wide, one above the other: a field behind a
+/// Search icon, a field with a Copy button after it, which hands `on_copy`
+/// its click, and a textarea with a note under it. They report as one.
+pub(crate) fn input_groups(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    states: InputGroupStates<'_>,
+    width: Pixels,
+    on_copy: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let mut groups_info = info::inputs::input_groups(cx.theme());
+    // One refinement, recorded once, for both single-line groups; the
+    // textarea group keeps upstream's frame.
+    let frame = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::input,
+        "input",
+        &mut groups_info,
+    );
+    // `InputGroupButton::new` is a ghost button that upstream repaints,
+    // inside a group, with a hover of `theme.muted` (`input/group.rs:544-583`):
+    // a grey that under Breeze is barely distinguishable from the field,
+    // while every button around it hovers blue. A custom variant makes
+    // upstream skip that repaint.
+    let copy = native_info(
+        InputGroupButton::new("input-group-copy"),
+        cx,
+        geometry::input_group_button,
+        "input_group_button",
+        &mut groups_info,
+    )
+    .custom(variants::ghost_button(cx))
+    .icon(IconName::Copy)
+    .label("Copy")
+    .tooltip("Copy the field to the clipboard")
+    .on_click(on_copy);
+    v_flex()
+        .gap_3()
+        .w(width)
+        .child(
+            InputGroup::new("input-group-inline")
+                .input(Input::new(states.search))
+                .addon(
+                    InputGroupAddon::new("input-group-inline-addon")
+                        .child(Icon::new(IconName::Search)),
+                )
+                .refine_style(&frame),
+        )
+        .child(
+            InputGroup::new("input-group-trailing")
+                .input(Input::new(states.copy))
+                .addon(
+                    InputGroupAddon::new("input-group-trailing-addon")
+                        .align(InputGroupAddonAlignment::InlineEnd)
+                        .child(copy),
+                )
+                .refine_style(&frame),
+        )
+        .child(
+            InputGroup::new("input-group-textarea")
+                .input(InputGroupTextarea::new(states.notes))
+                .addon(
+                    InputGroupAddon::new("input-group-textarea-addon")
+                        .align(InputGroupAddonAlignment::BlockEnd)
+                        .child(InputGroupText::new().child("Markdown supported")),
+                ),
+        )
+        .info(ui, id, groups_info)
+}
+
+/// A `NumberInput` over `state`, `width` wide, refined by `geometry::input`.
+pub(crate) fn number_input(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<InputState>,
+    width: Pixels,
+) -> Stateful<Div> {
+    let mut number_info = info::inputs::number_input(cx.theme());
+    let number = native_info(
+        NumberInput::new(state),
+        cx,
+        geometry::input,
+        "input",
+        &mut number_info,
+    )
+    .placeholder("Enter a number")
+    .with_size(Size::Medium)
+    .w(width);
+    number.info(ui, id, number_info)
+}
+
+/// A `Checkbox` reading `label`, `checked` or not, refined by
+/// `geometry::checkbox`. A disabled one takes no `on_click`.
+pub(crate) fn checkbox(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    checked: bool,
+    on_click: Option<impl Fn(&bool, &mut Window, &mut App) + 'static>,
+) -> Stateful<Div> {
+    let disabled = on_click.is_none();
+    let mut checkbox_info = info::inputs::checkbox(cx.theme(), label, checked, disabled);
+    let checkbox = native_info(
+        Checkbox::new(id),
+        cx,
+        geometry::checkbox,
+        "checkbox",
+        &mut checkbox_info,
+    )
+    .label(label)
+    .checked(checked)
+    .disabled(disabled)
+    .when_some(on_click, |checkbox, on_click| checkbox.on_click(on_click));
+    checkbox
+        .info(ui, id, checkbox_info)
+        .debug_selector(move || id.into())
+}
+
+/// A horizontal `RadioGroup` of Radios reading `labels`, each refined by
+/// `geometry::radio`, the one at `selected` selected; a click hands
+/// `on_click` the index of the Radio clicked.
+///
+/// `RadioGroup::child` takes `impl Into<Radio>`, so a `&str` child would
+/// build a `Radio` with no refinement; built here instead, each row carries
+/// the platform's label gap and font. The group overwrites the id
+/// (`radio.rs:406`), not the style.
+pub(crate) fn radio_group(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    labels: &[&'static str],
+    selected: Option<usize>,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let mut group_info = info::inputs::radio_group(cx.theme(), labels, selected);
+    // One refinement, recorded once, for every Radio of the group.
+    let row = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::radio,
+        "radio",
+        &mut group_info,
+    );
+    RadioGroup::horizontal(id)
+        .children(
+            labels
+                .iter()
+                .map(|&label| Radio::new(label).refine_style(&row).label(label)),
+        )
+        .selected_index(selected)
+        .on_click(on_click)
+        .info(ui, id, group_info)
+}
+
+/// A `Switch` reading `label`, `checked` or not. A disabled one takes no
+/// `on_click`.
+pub(crate) fn switch(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    checked: bool,
+    on_click: Option<impl Fn(&bool, &mut Window, &mut App) + 'static>,
+) -> Stateful<Div> {
+    let disabled = on_click.is_none();
+    Switch::new(id)
+        .label(label)
+        .checked(checked)
+        .disabled(disabled)
+        .when_some(on_click, |switch, on_click| switch.on_click(on_click))
+        .info(
+            ui,
+            id,
+            info::inputs::switch(cx.theme(), label, checked, disabled),
+        )
+}
+
+/// A `Slider` over `state`, `width` wide.
+pub(crate) fn slider(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<SliderState>,
+    width: Pixels,
+) -> Stateful<Div> {
+    Slider::new(state)
+        .w(width)
+        .info(ui, id, info::inputs::slider(cx.theme()))
+}
+
+/// A `Rating` at `value`, its stars at `geometry::icon_size_small`: they are
+/// inline icons, and `Rating` has no geometry builder of its own. A disabled
+/// one takes no `on_click`.
+pub(crate) fn rating(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    value: usize,
+    on_click: Option<impl Fn(&usize, &mut Window, &mut App) + 'static>,
+) -> Stateful<Div> {
+    let disabled = on_click.is_none();
+    let mut rating_info = info::inputs::rating(cx.theme(), value, disabled);
+    let rating = Rating::new(id)
+        .value(value)
+        .disabled(disabled)
+        .when_some(on_click, |rating, on_click| rating.on_click(on_click));
+    let rating = match native_value(cx, geometry::icon_size_small) {
+        Some(size) => {
+            rating_info = rating_info.geometry("icon_size_small");
+            rating.with_size(size)
+        }
+        None => rating,
+    };
+    rating.info(ui, id, rating_info)
+}
+
+/// An `OtpInput` over `state`, its boxes in `groups` groups. It is not
+/// `Styled`, so it takes no refinement.
+pub(crate) fn otp_input(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<OtpState>,
+    groups: usize,
+) -> Stateful<Div> {
+    OtpInput::new(state)
+        .groups(groups)
+        .info(ui, id, info::inputs::otp_input(cx.theme()))
+}
+
+/// A `Select` over `state`, `width` wide, reading `placeholder` until a
+/// choice is made, refined by `geometry::select`.
+pub(crate) fn select(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<SelectState<SearchableVec<SharedString>>>,
+    placeholder: &'static str,
+    width: Pixels,
+) -> Stateful<Div> {
+    let mut select_info = info::inputs::select(cx.theme());
+    let select = native_info(
+        Select::new(state).placeholder(placeholder).w(width),
+        cx,
+        geometry::select,
+        "select",
+        &mut select_info,
+    );
+    select.info(ui, id, select_info)
+}
+
+/// A `ColorPicker` over `state`, reading `label`.
+pub(crate) fn color_picker(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<ColorPickerState>,
+    label: &'static str,
+) -> Stateful<Div> {
+    ColorPicker::new(state)
+        .label(label)
+        .info(ui, id, info::inputs::color_picker(cx.theme()))
+}
+
+/// A `DatePicker` over `state`, reading `placeholder` until a date is
+/// picked.
+pub(crate) fn date_picker(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<DatePickerState>,
+    placeholder: &'static str,
+) -> Stateful<Div> {
+    DatePicker::new(state).placeholder(placeholder).info(
+        ui,
+        id,
+        info::inputs::date_picker(cx.theme()),
+    )
+}
+
+/// A `Calendar` over `state`.
+pub(crate) fn calendar(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<CalendarState>,
+) -> Stateful<Div> {
+    Calendar::new(state).info(ui, id, info::inputs::calendar(cx.theme()))
 }

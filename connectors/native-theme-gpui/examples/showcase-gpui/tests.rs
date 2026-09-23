@@ -33,12 +33,14 @@ use crate::{
     BUTTONS_TEXT, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
     CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
     CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO,
-    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
+    INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
+    INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
+    INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
+    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
+    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
+    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
+    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
+    TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -1239,6 +1241,10 @@ fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
 /// (spec §4.3.4 as ruled), through every route to a page: here the View
 /// menu. The inspector's own TabBar is the target, taken off the screen by
 /// hiding the inspector, which no hover end reports.
+///
+/// Once the TabBar is gone the pointer moves into the page's own padding,
+/// which no page draws a widget in, so what the page draws where the
+/// inspector was cannot settle in its place.
 #[gpui::test]
 fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1258,6 +1264,10 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
         "the inspector's TabBar did not report itself"
     );
     run_menu_item(&mut cx, "View", "Toggle Inspector");
+    // Every page root pads its content by p_4 (16px), so 4px in from its
+    // corner is empty on every page.
+    let page = bounds_of(&mut cx, PAGE_ROOT);
+    hover(&mut cx, point(page.left() + px(4.), page.top() + px(4.)));
     settle(&mut cx);
     assert_eq!(
         shown(&mut cx).as_deref(),
@@ -1688,6 +1698,122 @@ fn a_section_heading_reports_itself(cx: &mut TestAppContext) {
     assert_eq!(
         info.map(|info| info.title()).as_deref(),
         Some("Label · heading")
+    );
+}
+
+/// Two Checkboxes in different states show different infos (spec §4.3.2):
+/// the one the showcase starts checked says so, and the one beside it, which
+/// starts unchecked, says that.
+#[gpui::test]
+fn two_checkboxes_in_different_states_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Inputs);
+    let mut texts = Vec::new();
+    for (selector, title) in [
+        (INPUTS_CHECKBOX_NOTIFICATIONS, "Checkbox · checked"),
+        (INPUTS_CHECKBOX_AUTOSAVE, "Checkbox · unchecked"),
+    ] {
+        let info = settle_on(&mut cx, &showcase, selector);
+        assert_eq!(
+            info.as_ref().map(|info| info.title()).as_deref(),
+            Some(title),
+            "the pointer settled on {selector}, and the inspector does not show its info"
+        );
+        texts.push(info.map(|info| info.to_text()));
+    }
+    assert!(
+        texts.first() != texts.get(1),
+        "the checked and the unchecked Checkbox show the same info: {texts:?}"
+    );
+}
+
+/// The claim of `info` that `Theme::input_background()` stands behind: the
+/// one cited in theme/mod.rs, where that accessor is.
+fn input_fill(info: &Option<WidgetInfo>) -> Option<gpui::Hsla> {
+    info.as_ref()?
+        .colors
+        .iter()
+        .find(|c| c.cited_at.starts_with("gpui-component/theme/mod.rs"))
+        .map(|c| c.value)
+}
+
+/// An Input's fill swatch is what `Theme::input_background()` paints in
+/// either mode: the window background in light mode, input mixed toward
+/// transparent in dark (theme/mod.rs:379-384) -- not the background in both.
+#[gpui::test]
+fn an_input_fill_is_what_input_background_paints(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Inputs);
+    for (item, dark) in [("Light", false), ("Dark", true)] {
+        run_menu_item(&mut cx, "Theme", item);
+        assert_eq!(
+            cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+            dark,
+            "Theme > {item} did not reach Theme::mode, so this proves nothing"
+        );
+        let info = settle_on(&mut cx, &showcase, INPUTS_FIELD);
+        let painted = cx.update(|_w, cx| Theme::global(cx).input_background());
+        assert_eq!(
+            input_fill(&info),
+            Some(painted),
+            "in {item} mode the Input's fill swatch is not input_background(): {info:?}"
+        );
+    }
+}
+
+/// The Input sized by `geometry::input_height` alone is as tall as the one
+/// the whole `geometry::input` refines, which is what its info says it
+/// takes.
+#[gpui::test]
+fn the_height_only_field_takes_the_control_height(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Inputs);
+    let height = cx.update(|_w, cx| native_value(cx, geometry::input_height));
+    assert!(
+        height.is_some(),
+        "no native theme is installed, so no field takes the control height"
+    );
+    let field = bounds_of(&mut cx, INPUTS_FIELD_HEIGHT_ONLY);
+    assert_eq!(
+        Some(field.size.height),
+        height,
+        "the height-only field is not geometry::input_height tall"
+    );
+    assert_eq!(
+        field.size.height,
+        bounds_of(&mut cx, INPUTS_FIELD).size.height,
+        "the height-only field does not line up with the refined one"
+    );
+}
+
+/// The preset Combobox's swatches are the colours upstream paints: in dark
+/// mode its fill is input mixed toward transparent (theme/mod.rs:381), and a
+/// hovered row is accent at 70% (searchable_list/item.rs:114).
+#[gpui::test]
+fn the_preset_comboboxs_swatches_are_the_painted_colours(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    run_menu_item(&mut cx, "Theme", "Dark");
+    assert!(
+        cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        "Theme > Dark did not reach Theme::mode, so this proves nothing"
+    );
+    let info = settle_on(&mut cx, &showcase, PROBE_COMBOBOX);
+    let (fill, row) = cx.update(|_w, cx| {
+        let t = Theme::global(cx);
+        (t.input_background(), t.accent.opacity(0.7))
+    });
+    assert_eq!(
+        input_fill(&info),
+        Some(fill),
+        "the preset Combobox's fill swatch is not input_background(): {info:?}"
+    );
+    let hover = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role.starts_with("row hover")));
+    assert_eq!(
+        hover.map(|c| c.value),
+        Some(row),
+        "the preset Combobox's row hover swatch is not accent at 70%: {info:?}"
     );
 }
 

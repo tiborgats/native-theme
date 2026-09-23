@@ -313,6 +313,19 @@ pub(crate) const BUTTONS_DISABLED_SECONDARY: &str = "buttons-disabled-secondary"
 /// The id and debug selector of the Buttons page's first section heading.
 pub(crate) const BUTTONS_HEADING_VARIANTS: &str = "buttons-heading-variants";
 
+/// The ids and debug selectors of the Inputs page's first two Checkboxes,
+/// one checked and one not when the showcase starts, which
+/// `two_checkboxes_in_different_states_show_different_infos` hovers.
+pub(crate) const INPUTS_CHECKBOX_NOTIFICATIONS: &str = "inputs-checkbox-notifications";
+pub(crate) const INPUTS_CHECKBOX_AUTOSAVE: &str = "inputs-checkbox-autosave";
+/// The id and debug selector of the Inputs page's first Input, whose fill
+/// `an_input_fill_is_what_input_background_paints` reads.
+pub(crate) const INPUTS_FIELD: &str = "inputs-field";
+/// The id and debug selector of the Input below it, sized by
+/// `geometry::input_height` alone, which
+/// `the_height_only_field_takes_the_control_height` measures.
+pub(crate) const INPUTS_FIELD_HEIGHT_ONLY: &str = "inputs-field-height-only";
+
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside
 /// one and `the_three_list_frames_agree` can measure their frames.

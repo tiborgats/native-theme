@@ -7,6 +7,7 @@ use crate::support::{native_geometry, refined};
 
 pub mod buttons;
 pub mod chrome;
+pub mod inputs;
 pub mod registry;
 pub mod text;
 pub use chrome::*;
