@@ -8,16 +8,11 @@
 pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Button
     variant.button.min_width = Some(80.0); // Button_MinWidth
-    variant
-        .button
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(6.0); // Button_MarginWidth
-    variant
-        .button
-        .border
-        .get_or_insert_default()
-        .padding_vertical = Some(5.0); // Breeze measured frame+margin
+    let border = variant.button.border.get_or_insert_default();
+    border.padding_left = Some(6.0); // Button_MarginWidth
+    border.padding_right = Some(6.0); // Button_MarginWidth
+    border.padding_top = Some(5.0); // Breeze measured frame+margin
+    border.padding_bottom = Some(5.0); // Breeze measured frame+margin
     variant.button.icon_text_gap = Some(4.0); // Button_ItemSpacing
 
     // Checkbox
@@ -25,16 +20,11 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.checkbox.label_gap = Some(4.0); // CheckBox_ItemSpacing
 
     // Input
-    variant
-        .input
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(6.0); // LineEdit_FrameWidth
-    variant
-        .input
-        .border
-        .get_or_insert_default()
-        .padding_vertical = Some(3.0); // Breeze measured frame
+    let border = variant.input.border.get_or_insert_default();
+    border.padding_left = Some(6.0); // LineEdit_FrameWidth
+    border.padding_right = Some(6.0); // LineEdit_FrameWidth
+    border.padding_top = Some(3.0); // Breeze measured frame
+    border.padding_bottom = Some(3.0); // Breeze measured frame
 
     // Scrollbar
     variant.scrollbar.groove_width = Some(21.0); // ScrollBar_Extend
@@ -55,41 +45,33 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Tab
     variant.tab.min_width = Some(80.0); // TabBar_TabMinWidth
     variant.tab.min_height = Some(30.0); // TabBar_TabMinHeight
-    variant
-        .tab
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(8.0); // TabBar_TabMarginWidth
-    variant.tab.border.get_or_insert_default().padding_vertical = Some(4.0); // TabBar_TabMarginHeight
+    let border = variant.tab.border.get_or_insert_default();
+    border.padding_left = Some(8.0); // TabBar_TabMarginWidth
+    border.padding_right = Some(8.0); // TabBar_TabMarginWidth
+    border.padding_top = Some(4.0); // TabBar_TabMarginHeight
+    border.padding_bottom = Some(4.0); // TabBar_TabMarginHeight
 
     // Menu
-    variant
-        .menu
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(4.0); // MenuItem_MarginWidth
-    variant.menu.border.get_or_insert_default().padding_vertical = Some(4.0); // MenuItem_MarginHeight
+    let border = variant.menu.border.get_or_insert_default();
+    border.padding_left = Some(4.0); // MenuItem_MarginWidth
+    border.padding_right = Some(4.0); // MenuItem_MarginWidth
+    border.padding_top = Some(4.0); // MenuItem_MarginHeight
+    border.padding_bottom = Some(4.0); // MenuItem_MarginHeight
     variant.menu.icon_text_gap = Some(8.0); // MenuItem_TextLeftMargin
 
     // Tooltip
-    variant
-        .tooltip
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(3.0); // ToolTip_FrameWidth
-    variant
-        .tooltip
-        .border
-        .get_or_insert_default()
-        .padding_vertical = Some(3.0); // ToolTip_FrameWidth
+    let border = variant.tooltip.border.get_or_insert_default();
+    border.padding_left = Some(3.0); // ToolTip_FrameWidth
+    border.padding_right = Some(3.0); // ToolTip_FrameWidth
+    border.padding_top = Some(3.0); // ToolTip_FrameWidth
+    border.padding_bottom = Some(3.0); // ToolTip_FrameWidth
 
     // List
-    variant
-        .list
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(2.0); // ItemView_ItemMarginLeft
-    variant.list.border.get_or_insert_default().padding_vertical = Some(1.0); // ItemView_ItemMarginTop
+    let border = variant.list.border.get_or_insert_default();
+    border.padding_left = Some(2.0); // ItemView_ItemMarginLeft
+    border.padding_right = Some(2.0); // ItemView_ItemMarginLeft
+    border.padding_top = Some(1.0); // ItemView_ItemMarginTop
+    border.padding_bottom = Some(1.0); // ItemView_ItemMarginTop
 
     // Toolbar
     variant.toolbar.item_gap = Some(0.0); // ToolBar_ItemSpacing

@@ -25,7 +25,7 @@ use crate::chrome::menus;
 use crate::demo::AREA_FILL_OPACITY;
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
-    hsla_to_hex, native_info, percent_text, px_text,
+    hsla_to_hex, native_info, percent_text,
 };
 use crate::inspector::InspectorTab;
 use crate::support::{
@@ -40,19 +40,19 @@ use crate::{
     DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO,
     FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
     FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
-    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
-    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, INSPECTOR_WIDTH,
-    LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
-    LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
-    LAYOUT_SEPARATOR_SOLID, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
-    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
-    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM,
-    OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT,
-    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
-    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
-    TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
-    WINDOW_SIZE,
+    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA,
+    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE,
+    INSPECTOR_WIDTH, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT,
+    LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE,
+    LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK,
+    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
+    OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER,
+    OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT,
+    OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG,
+    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
+    PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW,
+    PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2,
+    TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -404,7 +404,7 @@ fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
     for preset in ["material", "windows-11"] {
         use_preset(&mut cx, &showcase, preset);
         let native = read(&mut cx, &showcase, |_this, cx| {
-            let b = |f: fn(&native_theme::theme::ResolvedBorderSpec) -> f32| {
+            let b = |f: fn(&native_theme::theme::ResolvedWidgetBorder) -> f32| {
                 native_value(cx, |n| px(f(&n.resolved.list.border)))
             };
             b(|b| b.corner_radius).zip(b(|b| b.line_width))
@@ -671,7 +671,8 @@ fn the_title_bar_is_the_top_of_the_window(cx: &mut TestAppContext) {
 }
 
 /// The toolbar is the model's toolbar (spec §2.3, §9): at least
-/// `toolbar.bar_height` tall, with `toolbar.item_gap` between its items.
+/// `toolbar.bar_height` tall where the theme states one, with
+/// `toolbar.item_gap` between its items.
 ///
 /// kde-breeze states a 0px gap and adwaita a 6px one, so a row that kept a
 /// gap of its own fails one of the two.
@@ -691,11 +692,15 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
         );
         let (bar_height, item_gap) = model.unwrap_or_default();
         let bar = bounds_of(&mut cx, CHROME_TOOLBAR);
-        assert!(
-            bar.size.height >= px(bar_height),
-            "{preset}: the toolbar is {:?} tall, under toolbar.bar_height {bar_height}px",
-            bar.size.height
-        );
+        // A theme that states no bar height leaves the row to size to its
+        // content, so there is nothing to hold it to.
+        if let Some(bar_height) = bar_height {
+            assert!(
+                bar.size.height >= px(bar_height),
+                "{preset}: the toolbar is {:?} tall, under toolbar.bar_height {bar_height}px",
+                bar.size.height
+            );
+        }
         let title = bounds_of(&mut cx, CHROME_TITLE_BAR);
         assert_eq!(
             bar.top(),
@@ -1773,29 +1778,83 @@ fn an_input_fill_is_what_input_background_paints(cx: &mut TestAppContext) {
     }
 }
 
-/// The Input sized by `geometry::input_height` alone is as tall as the one
-/// the whole `geometry::input` refines, which is what its info says it
-/// takes.
+/// Set the text-scaling factor the connector lays controls out at, and draw
+/// the frame that follows.
+fn scale_text(cx: &mut VisualTestContext, factor: f32) {
+    let prefs = native_theme_gpui::AccessibilityPreferences {
+        text_scaling_factor: factor,
+        ..Default::default()
+    };
+    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&prefs, cx));
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// The Input given `geometry::input_height` alone takes the height rule the
+/// refined Input takes: at text scale 1 both are `input.min_height` tall; at
+/// text scale 2 both grow past it.
+///
+/// Above text scale 1 the two do not line up, and this test does not claim
+/// they do: the rule's height is then automatic, and each field grows around
+/// its own text and padding -- the refined one's are the platform's, the
+/// height-only one's upstream's `text_sm` and `input_py` for `Size::Medium`
+/// (input/input.rs, Input::render). Under kde-breeze at scale 2 that is 44px
+/// against 50px. Spec v0.5.9 unstated-sizes §2.1 expects them to follow each
+/// other at every scale; that needs a ruling (Task 3 report).
 #[gpui::test]
-fn the_height_only_field_takes_the_control_height(cx: &mut TestAppContext) {
+fn the_height_only_field_takes_the_height_rule(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
     show(&mut cx, &showcase, Page::Inputs);
-    let height = cx.update(|_w, cx| native_value(cx, geometry::input_height));
+    let stated = cx.update(|_w, cx| native_value(cx, |n| px(n.resolved.input.min_height)));
     assert!(
-        height.is_some(),
-        "no native theme is installed, so no field takes the control height"
+        stated.is_some(),
+        "no native theme is installed, so no field takes the height rule"
     );
-    let field = bounds_of(&mut cx, INPUTS_FIELD_HEIGHT_ONLY);
+    let field = bounds_of(&mut cx, INPUTS_FIELD_HEIGHT_ONLY).size.height;
+    let refined = bounds_of(&mut cx, INPUTS_FIELD).size.height;
     assert_eq!(
-        Some(field.size.height),
-        height,
-        "the height-only field is not geometry::input_height tall"
+        Some(field),
+        stated,
+        "at text scale 1 the height-only field is not input.min_height tall"
     );
     assert_eq!(
-        field.size.height,
-        bounds_of(&mut cx, INPUTS_FIELD).size.height,
-        "the height-only field does not line up with the refined one"
+        field, refined,
+        "at text scale 1 the height-only field does not line up with the refined one"
     );
+
+    scale_text(&mut cx, 2.0);
+    let field = bounds_of(&mut cx, INPUTS_FIELD_HEIGHT_ONLY).size.height;
+    let refined = bounds_of(&mut cx, INPUTS_FIELD).size.height;
+    assert!(
+        stated.is_some_and(|s| field > s && refined > s),
+        "at text scale 2 the fields did not grow past input.min_height {stated:?}: \
+         height-only {field:?}, refined {refined:?}"
+    );
+}
+
+/// The Textarea keeps its own 90px under `geometry::input`, whose height
+/// rule is for a single-line field, at text scale 1 and 2.
+#[gpui::test]
+fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Inputs);
+    let info = settle_on(&mut cx, &showcase, INPUTS_TEXTAREA);
+    assert!(
+        info.as_ref()
+            .and_then(|i| i.config.iter().find(|n| n.what == "geometry"))
+            .is_some_and(|g| g.text.starts_with("geometry::input:")),
+        "the Textarea does not take geometry::input: {info:?}"
+    );
+    for factor in [1.0, 2.0] {
+        scale_text(&mut cx, factor);
+        assert_eq!(
+            bounds_of(&mut cx, INPUTS_TEXTAREA).size.height,
+            px(90.0),
+            "at text scale {factor} the Textarea is not its own 90px"
+        );
+    }
 }
 
 /// A Switch's corner line follows upstream's condition: the theme's radius
@@ -1821,8 +1880,8 @@ fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     );
 }
 
-/// The height-only Input says it takes the control height only when a
-/// native theme gives it one.
+/// The height-only Input says it takes the height rule only when a native
+/// theme gives it one.
 #[gpui::test]
 fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1834,7 +1893,7 @@ fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext)
             .find(|n| n.what == "height")
             .map(|n| n.text)
     };
-    assert!(height(true).is_some_and(|t| t.starts_with("the control height")));
+    assert!(height(true).is_some_and(|t| t.starts_with("the height rule")));
     assert!(height(false).is_some_and(|t| t.starts_with("upstream's own")));
 }
 
@@ -2814,13 +2873,12 @@ fn a_hovered_tags_info_names_its_painted_fill(cx: &mut TestAppContext) {
     );
 }
 
-/// The ids and debug selectors of three of the Theme Map's swatches and of
-/// its Button control-height row. The page forms a swatch's from the name
-/// of the token it shows (pages/theme_map.rs).
+/// The ids and debug selectors of three of the Theme Map's swatches. The
+/// page forms a swatch's from the name of the token it shows
+/// (pages/theme_map.rs).
 const THEME_MAP_BACKGROUND: &str = "theme-map-swatch-background";
 const THEME_MAP_PRIMARY_HOVER: &str = "theme-map-swatch-primary_hover";
 const THEME_MAP_DROP_TARGET: &str = "theme-map-swatch-drop_target";
-const THEME_MAP_CONTROL_HEIGHT_BUTTON: &str = "theme-map-control-height-button";
 
 /// The Theme Map reports each row of its table (spec §4.3.2): two swatches
 /// each show their own token, and the connector line that writes it.
@@ -2874,46 +2932,6 @@ fn a_swatchs_painted_fill_is_its_value_claim(cx: &mut TestAppContext) {
         painted_fill(&mut cx, THEME_MAP_DROP_TARGET),
         claimed,
         "the fill painted in the drop_target swatch is not its value claim"
-    );
-}
-
-/// The Theme Map's control-height row reports what
-/// `geometry::control_height` computes for a Button, through the geometry
-/// line the table states.
-#[gpui::test]
-fn a_control_height_row_reports_the_builders_value(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_preset(&mut cx, &showcase, "kde-breeze");
-    show(&mut cx, &showcase, Page::ThemeMap);
-    let info = settle_on(&mut cx, &showcase, THEME_MAP_CONTROL_HEIGHT_BUTTON);
-    let height = cx.update(|_window, cx| {
-        native_value(cx, |n| {
-            let b = &n.resolved.button;
-            geometry::control_height(b.min_height, &b.font, &b.border, n).as_f32()
-        })
-    });
-    assert!(height.is_some(), "kde-breeze installed no native theme");
-    assert_eq!(
-        info.as_ref().map(|info| info.title()).as_deref(),
-        Some("Label · control height, button")
-    );
-    let config = |what: &str| {
-        info.as_ref().and_then(|info| {
-            info.config
-                .iter()
-                .find(|n| n.what == what)
-                .map(|n| n.text.clone())
-        })
-    };
-    assert!(
-        config("geometry").is_some_and(|g| g.starts_with("geometry::control_height:")),
-        "the row carries no geometry::control_height line: {info:?}"
-    );
-    assert!(
-        height
-            .is_some_and(|h| config("height")
-                .is_some_and(|text| text.starts_with(&format!("{}px", px_text(h))))),
-        "the row's height is not geometry::control_height's {height:?}: {info:?}"
     );
 }
 

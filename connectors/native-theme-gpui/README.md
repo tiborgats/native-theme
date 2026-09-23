@@ -169,9 +169,19 @@ let button = match cx.native_theme().and_then(|t| t.native(cx)) {
 ```
 
 Text sizes carry the accessibility text-scaling factor; widths, paddings,
-radii and icon sizes do not (that is what the platform toolkit does). Control
-heights grow only when scaled text would no longer fit:
-`max(theme height, ceil(font size × factor × line height) + 2 × vertical padding)`.
+radii and icon sizes do not (that is what the platform toolkit does).
+
+Padding is per side, and a builder sets only the sides the theme states: an
+unstated side leaves the widget's own padding in place.
+
+Control heights follow one rule in `button`, `input`, `select`, `combobox`,
+`menu_item` and `list_item`. Each applies the platform's `defaults.line_height`
+as the control's line height. At a text-scaling factor of 1 or less the control
+is its stated height (`h`, or `min_h` for `select` and `combobox`, whose
+trigger keeps upstream's own height where that is larger); above 1 the stated
+height is a minimum and the height is automatic, so the control grows around
+its drawn text and padding. The rule is for single-line controls: a
+multi-line `Input` takes its caller's own `Styled::h` after the builder.
 
 A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
@@ -198,25 +208,26 @@ test over every preset and mode says so.
 
 | Builder | `ResolvedTheme` fields it reads | Applies to |
 |---|---|---|
-| `button` | `button.min_height`, `.min_width`, `.border.padding_*`, `.corner_radius`, `.line_width`, `.color`, `button.font`, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
-| `input`, `input_height` | `input.min_height`, `input.border.corner_radius`, `.line_width`, `.padding_vertical`, `input.font`, `defaults.line_height` | `Input` (`Styled::h` for the height alone; `Input::h` reaches a multi-line input only) |
-| `menu_item` | `menu.row_height`, `menu.border.padding_*`, `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
-| `list_item` | `list.row_height`, `list.border.padding_*`, `list.item_font`, `defaults.line_height` | `ListItem` |
+| `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element; the outline/ghost/link/text variants take the native border too) |
+| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement |
+| `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
+| `menu_item` | `menu.row_height`, `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
+| `list_item` | `list.row_height`, `list.border.padding` (the stated sides), `list.item_font`, `defaults.line_height` | `ListItem` |
 | `list` | `list.border.line_width`, `.color`, `.corner_radius` | the frame of a list view: a `List`, a `Tree`, or the box an application draws around one. Neither widget paints a border of its own, while `DataTable` draws one from the same values through `Theme`, so this is what makes the three agree. It also clips to the radius, because a row's selected fill would otherwise show through the rounded corners. A tree is a list view — the model has no tree theme |
-| `tooltip` | `tooltip.border.padding_*`, `.corner_radius`, `tooltip.font` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
-| `tooltip_content` | `tooltip.max_width` less `tooltip.border.padding_horizontal` twice and upstream's 1 px border twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
-| `popover` | `popover.border.padding_*`, `.corner_radius` | `Popover` |
-| `status_bar` | `status_bar.border.padding_*`, `status_bar.font` | `StatusBar` |
-| `dialog`, `dialog_max_width` | `dialog.border.padding_*`, `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
+| `tooltip` | `tooltip.border.padding` (the stated sides), `.corner_radius`, `tooltip.font` | an application-built `Tooltip`. No width: `tooltip.max_width` on the bubble clamps the bubble and not its text, which runs out of it |
+| `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and upstream's 1 px border twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
+| `popover` | `popover.border.padding` (the stated sides), `.corner_radius` | `Popover` |
+| `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font` | `StatusBar` |
+| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_height`, `.border.corner_radius`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font` | declarative `Table` |
 | `progress` | `progress_bar.track_height`, `progress_bar.border.corner_radius`, `.min_width` | `Progress` |
-| `group_box_content` | `card.border.padding_*`, `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
+| `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
 | `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |
 | `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform) | `Checkbox`, `Radio` |
-| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.corner_radius`, `.padding_vertical`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox` |
+| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.padding` (the stated sides), `.corner_radius`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. The caret sits inside the padded trigger, so a right side measured to a separate arrow column has no receiver |
 | `title_bar` | `window.title_bar_font` | `TitleBar` |
-| `toolbar` | `toolbar.bar_height` (as a minimum height), `.item_gap`, `.border.padding_*`, `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements — gpui-component has no toolbar widget. No edge: the platforms state none |
+| `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap`, `.border.padding` (the stated sides), `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements — gpui-component has no toolbar widget. No edge: the platforms state none |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
 | `scrollbar_gutter` | `scrollbar.overlay_mode`, and the groove width the base layer installed | the element a `overflow_y_scrollbar` container scrolls. gpui-component overlays its bar on the scroll area whatever the platform does, so where the platform's bars are not overlays this reserves the groove width beside the content; where they are, it reserves nothing |
 | `widget_gap`, `container_margin`, `window_margin`, `section_gap` | `LayoutTheme` (`Theme::layout` or `SystemTheme.layout`) | your own layout; `None` where the platform specifies nothing |

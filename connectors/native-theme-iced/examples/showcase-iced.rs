@@ -1697,8 +1697,12 @@ fn view(state: &State) -> Element<'_, Message> {
                 native_theme_iced::border_radius_lg(&state.current_resolved)
             );
             let sw = format!("scrollbar: {sb_width:.0}px");
-            let bp = format!("btn pad: {:.0}\u{00d7}{:.0}", btn_pad.left, btn_pad.top);
-            let ip = format!("input pad: {:.0}\u{00d7}{:.0}", inp_pad.left, inp_pad.top);
+            // Each side as button_padding / input_padding return it: the
+            // theme's where it states the side, iced's own default where not.
+            let sides =
+                |p: Padding| format!("{:.0} {:.0} {:.0} {:.0}", p.top, p.right, p.bottom, p.left);
+            let bp = format!("btn pad (t r b l): {}", sides(btn_pad));
+            let ip = format!("input pad (t r b l): {}", sides(inp_pad));
             // The four LayoutTheme distances, and which of them the platform
             // leaves to the showcase's own scale.
             let lay = format!(

@@ -565,7 +565,7 @@ pub fn button(
     };
     match size {
         Some(size) => info
-            .not_themeable("padding", "per Size only because this demo omits the refinement the other Button panels apply: upstream takes a copy of the caller's style before the Size arm sets its px_1 / px_2 / px_2p5 / px_3 (XSmall, Small, Medium, Large) and re-applies that copy afterwards (button/button.rs, Button), so geometry::button's border.padding_* would win. Left bare on purpose -- this is the panel that shows the enum")
+            .not_themeable("padding", "per Size only because this demo omits the refinement the other Button panels apply: upstream takes a copy of the caller's style before the Size arm sets its px_1 / px_2 / px_2p5 / px_3 (XSmall, Small, Medium, Large) and re-applies that copy afterwards (button/button.rs, Button), so the border.padding sides geometry::button carries would win. Left bare on purpose -- this is the panel that shows the enum")
             .not_themeable("min-height", "the same: the Size arm's h_5/h_6/h_8 is overruled by a refinement, so button.min_height would arrive through geometry::button (button/button.rs, Button)")
             .instance("size", format!("{} via the Size enum", size_name(size))),
         None => info,

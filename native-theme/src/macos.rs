@@ -260,7 +260,8 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         button: crate::ButtonTheme {
             min_height: Some(22.0), // NSButton regular control size
             border: Some(WidgetBorderSpec {
-                padding_horizontal: Some(12.0),
+                padding_left: Some(12.0),
+                padding_right: Some(12.0),
                 ..Default::default()
             }),
             ..Default::default()
@@ -273,7 +274,8 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         input: crate::InputTheme {
             min_height: Some(22.0), // NSTextField regular
             border: Some(WidgetBorderSpec {
-                padding_horizontal: Some(4.0),
+                padding_left: Some(4.0),
+                padding_right: Some(4.0),
                 ..Default::default()
             }),
             ..Default::default()
@@ -295,7 +297,8 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         tab: crate::TabTheme {
             min_height: Some(24.0), // NSTabView
             border: Some(WidgetBorderSpec {
-                padding_horizontal: Some(12.0),
+                padding_left: Some(12.0),
+                padding_right: Some(12.0),
                 ..Default::default()
             }),
             ..Default::default()
@@ -303,15 +306,18 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         menu: crate::MenuTheme {
             row_height: Some(22.0), // Standard menu item
             border: Some(WidgetBorderSpec {
-                padding_horizontal: Some(12.0),
+                padding_left: Some(12.0),
+                padding_right: Some(12.0),
                 ..Default::default()
             }),
             ..Default::default()
         },
         tooltip: crate::TooltipTheme {
             border: Some(WidgetBorderSpec {
-                padding_horizontal: Some(4.0),
-                padding_vertical: Some(4.0),
+                padding_left: Some(4.0),
+                padding_right: Some(4.0),
+                padding_top: Some(4.0),
+                padding_bottom: Some(4.0),
                 ..Default::default()
             }),
             ..Default::default()
@@ -319,7 +325,8 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         list: crate::ListTheme {
             row_height: Some(24.0), // NSTableView row
             border: Some(WidgetBorderSpec {
-                padding_horizontal: Some(4.0),
+                padding_left: Some(4.0),
+                padding_right: Some(4.0),
                 ..Default::default()
             }),
             ..Default::default()

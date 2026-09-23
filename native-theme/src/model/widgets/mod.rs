@@ -1,7 +1,7 @@
 // Per-widget struct pairs: all 25 per-variant widgets + LayoutTheme use #[derive(ThemeWidget)].
 
 use crate::Rgba;
-use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
+use crate::model::border::{ResolvedWidgetBorder, WidgetBorderSpec};
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 use native_theme_derive::{ThemeFields, ThemeWidget};
 
@@ -27,7 +27,7 @@ pub struct WindowTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub title_bar_font: Option<FontSpec>,
     /// Window border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -83,7 +83,7 @@ pub struct ButtonTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Button border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -132,7 +132,7 @@ pub struct InputTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Input border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -183,7 +183,7 @@ pub struct CheckboxTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Checkbox border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -227,7 +227,7 @@ pub struct MenuTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Menu border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -250,7 +250,7 @@ pub struct TooltipTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Tooltip border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -356,7 +356,7 @@ pub struct ProgressBarTheme {
     #[theme(check = "non_negative")]
     pub min_width: Option<f32>,
     /// Progress bar border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -398,7 +398,7 @@ pub struct TabTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Tab border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -427,7 +427,7 @@ pub struct SidebarTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Sidebar border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -442,9 +442,11 @@ pub struct ToolbarTheme {
     /// Toolbar background color.
     #[theme(inherit_from = "defaults.background_color")]
     pub background_color: Option<Rgba>,
-    /// Toolbar height in logical pixels.
+    /// Toolbar height in logical pixels. `None` where the platform states
+    /// no toolbar height: KDE's toolbar sizes to its content
+    /// (docs/platform-facts.md §2.13).
     #[serde(rename = "bar_height_px")]
-    #[theme(check = "non_negative")]
+    #[theme(category = "soft_option", check = "non_negative")]
     pub bar_height: Option<f32>,
     /// Horizontal space between toolbar items.
     #[serde(rename = "item_gap_px")]
@@ -458,7 +460,7 @@ pub struct ToolbarTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Toolbar border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -478,7 +480,7 @@ pub struct StatusBarTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Status bar border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -526,7 +528,7 @@ pub struct ListTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub header_font: Option<FontSpec>,
     /// List border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -544,7 +546,7 @@ pub struct PopoverTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Popover border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -677,7 +679,7 @@ pub struct DialogTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub body_font: Option<FontSpec>,
     /// Dialog border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -747,7 +749,7 @@ pub struct ComboBoxTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// ComboBox border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -786,7 +788,7 @@ pub struct SegmentedControlTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Segmented control border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -802,7 +804,7 @@ pub struct CardTheme {
     #[theme(inherit_from = "defaults.surface_color")]
     pub background_color: Option<Rgba>,
     /// Card border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -832,7 +834,7 @@ pub struct ExpanderTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Expander border specification.
-    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -905,7 +907,7 @@ pub struct LayoutTheme {
 mod tests {
     use super::*;
     use crate::Rgba;
-    use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
+    use crate::model::border::{ResolvedWidgetBorder, WidgetBorderSpec};
     use crate::model::font::FontSize;
     use crate::model::{DialogButtonOrder, FontSpec};
 
@@ -1496,7 +1498,7 @@ mod tests {
         pub min_height: Option<f32>,
         #[theme(nested, resolved_type = "ResolvedFontSpec")]
         pub font: Option<FontSpec>,
-        #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+        #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
         pub border: Option<WidgetBorderSpec>,
     }
 
@@ -1644,8 +1646,10 @@ mod tests {
                 corner_radius: Some(4.0),
                 line_width: Some(1.0),
                 shadow_enabled: Some(false),
-                padding_horizontal: Some(12.0),
-                padding_vertical: Some(6.0),
+                padding_top: Some(6.0),
+                padding_right: Some(12.0),
+                padding_bottom: Some(6.0),
+                padding_left: Some(12.0),
             }),
         };
         let mut missing = Vec::new();

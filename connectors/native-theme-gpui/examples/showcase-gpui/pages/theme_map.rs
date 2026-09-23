@@ -6,7 +6,7 @@ use gpui::{
 use gpui_component::v_flex;
 
 use crate::app::Showcase;
-use crate::demo::{self, ControlWidget, ThemeToken};
+use crate::demo::{self, ThemeToken};
 use crate::support::NativeStyled as _;
 
 /// The space between two swatches of a row, and between two rows: the
@@ -260,12 +260,6 @@ pub(crate) const THEME_MAP_GROUPS: [(&str, &str, &[ThemeToken]); 18] = [
     ),
 ];
 
-/// The widgets whose control height the page states, as `(id, widget)`.
-const CONTROL_HEIGHTS: [(&str, ControlWidget); 2] = [
-    ("theme-map-control-height-button", ControlWidget::Button),
-    ("theme-map-control-height-input", ControlWidget::Input),
-];
-
 impl Showcase {
     // -----------------------------------------------------------------------
     // Page: Theme Map
@@ -304,16 +298,5 @@ impl Showcase {
                         .into_any_element(),
                 ]
             }))
-            // Derived, not stored: the height the connector gives a control
-            // at the current text scale.
-            .child(demo::heading(
-                ui,
-                cx,
-                "theme-map-heading-control-height",
-                "Control height (derived by the connector)",
-            ))
-            .child(v_flex().children(
-                CONTROL_HEIGHTS.map(|(id, widget)| demo::control_height(ui, cx, id, widget)),
-            ))
     }
 }

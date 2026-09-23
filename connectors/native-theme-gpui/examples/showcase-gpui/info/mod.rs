@@ -155,41 +155,40 @@ impl WidgetInfo {
 /// `every_geometry_builder_has_a_note` holds it to geometry.rs.
 pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     (
-        "control_height",
-        "max(the widget's height field, ceil(font.size × text scale × defaults.line_height) + 2 × border.padding_vertical) -- the widget's own height, raised where its text, scaled for accessibility, would not fit",
-    ),
-    (
         "button",
-        "button.min_height (control height), min_width, border.padding_*, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
+        "button.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, corner_radius, line_width, color, and button.font.weight but not its size (spec §9.2)",
     ),
     (
         "input",
-        "input.min_height (control height), border.corner_radius, line_width, input.font",
+        "input.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the border.padding sides the theme states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, border.corner_radius, line_width, input.font",
     ),
     (
         "menu_item",
-        "menu.row_height (control height), menu.border.padding_*, menu.icon_text_gap, menu.font",
+        "menu.row_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
     ),
     (
         "list_item",
-        "list.row_height (control height), list.border.padding_*, and list.item_font including its colour -- upstream labels the row with foreground before applying it (list/list_item.rs, ListItem::render)",
+        "list.row_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the list.border.padding sides the theme states, and list.item_font including its colour -- upstream labels the row with foreground before applying it (list/list_item.rs, ListItem::render)",
     ),
     (
         "tooltip",
-        "tooltip.border.padding_*, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style)",
+        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style)",
     ),
     (
         "tooltip_content",
-        "tooltip.max_width less the bubble's horizontal paddings (tooltip.border.padding_horizontal) and its 1px border (tooltip.rs, Tooltip::render: border_1), as the max width of the element passed to Tooltip::element, which the text wraps at",
+        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (tooltip.rs, Tooltip::render) -- and its 1px border (tooltip.rs, Tooltip::render: border_1), as the max width of the element passed to Tooltip::element, which the text wraps at",
     ),
-    ("popover", "popover.border.padding_* and corner_radius"),
+    (
+        "popover",
+        "the popover.border.padding sides the theme states, and corner_radius; an unstated side keeps upstream's p_3 (popover.rs, Popover::render)",
+    ),
     (
         "status_bar",
-        "status_bar.border.padding_*, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style)",
+        "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style)",
     ),
     (
         "dialog",
-        "dialog.border.padding_*, min_height, max_height and border.corner_radius; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
+        "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_height, max_height and border.corner_radius; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
     ),
     (
         "input_group_button",
@@ -218,7 +217,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "group_box_content",
-        "card.border.padding_*, corner_radius, line_width, color -- refined last, so the radius and the edge drawn are the card's, not upstream's radius (group_box.rs, GroupBox)",
+        "the card.border.padding sides the theme states, corner_radius, line_width, color -- refined last, so the radius and the edge drawn are the card's, not upstream's radius (group_box.rs, GroupBox)",
     ),
     ("accordion_title", "expander.header_height"),
     ("checkbox", "checkbox.label_gap, checkbox.font"),
@@ -228,11 +227,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "select",
-        "combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height as a minimum at a text scale of 1 or less, where upstream's own trigger height stands if larger, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
     ),
     (
         "combobox",
-        "combo_box.min_height (control height), min_width, border.corner_radius, combo_box.font",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height as a minimum at a text scale of 1 or less, where upstream's own trigger height stands if larger, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, border.corner_radius, combo_box.font",
     ),
     (
         "title_bar",
@@ -240,7 +239,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar",
-        "toolbar.bar_height (minimum height), item_gap, border.padding_*, background_color, font size and weight",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap, the border.padding sides the theme states, background_color, font size and weight",
     ),
     ("spinner_size", "spinner.diameter"),
     (
@@ -261,7 +260,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "input_height",
-        "input.min_height (control height), as an Input's height: the height geometry::input sets, and nothing else",
+        "input.min_height by the control-height rule geometry::input applies (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), and nothing else of geometry::input",
     ),
     (
         "widget_gap",

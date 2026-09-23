@@ -193,49 +193,34 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeMode) {
     }
     // WinUI3 Fluent Design constants (not from OS APIs)
     variant.button.min_height = Some(32.0);
-    variant
-        .button
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    let border = variant.button.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
     variant.checkbox.indicator_width = Some(20.0);
     variant.checkbox.label_gap = Some(8.0);
     variant.input.min_height = Some(32.0);
-    variant
-        .input
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    let border = variant.input.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
     variant.slider.track_height = Some(4.0);
     variant.slider.thumb_diameter = Some(22.0);
     variant.progress_bar.track_height = Some(4.0);
     variant.tab.min_height = Some(32.0);
-    variant
-        .tab
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
-    variant
-        .menu
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
-    variant
-        .tooltip
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(8.0);
-    variant
-        .tooltip
-        .border
-        .get_or_insert_default()
-        .padding_vertical = Some(8.0);
+    let border = variant.tab.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
+    let border = variant.menu.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
+    let border = variant.tooltip.border.get_or_insert_default();
+    border.padding_left = Some(8.0);
+    border.padding_right = Some(8.0);
+    border.padding_top = Some(8.0);
+    border.padding_bottom = Some(8.0);
     variant.list.row_height = Some(40.0);
-    variant
-        .list
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    let border = variant.list.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
     variant.toolbar.bar_height = Some(48.0);
     variant.toolbar.item_gap = Some(4.0);
     variant.splitter.divider_width = Some(4.0);
@@ -249,49 +234,34 @@ fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeMode) {
     variant.menu.row_height = Some(32.0);
     variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
     variant.button.min_height = Some(32.0);
-    variant
-        .button
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    let border = variant.button.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
     variant.checkbox.indicator_width = Some(20.0);
     variant.checkbox.label_gap = Some(8.0);
     variant.input.min_height = Some(32.0);
-    variant
-        .input
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    let border = variant.input.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
     variant.slider.track_height = Some(4.0);
     variant.slider.thumb_diameter = Some(22.0);
     variant.progress_bar.track_height = Some(4.0);
     variant.tab.min_height = Some(32.0);
-    variant
-        .tab
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
-    variant
-        .menu
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
-    variant
-        .tooltip
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(8.0);
-    variant
-        .tooltip
-        .border
-        .get_or_insert_default()
-        .padding_vertical = Some(8.0);
+    let border = variant.tab.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
+    let border = variant.menu.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
+    let border = variant.tooltip.border.get_or_insert_default();
+    border.padding_left = Some(8.0);
+    border.padding_right = Some(8.0);
+    border.padding_top = Some(8.0);
+    border.padding_bottom = Some(8.0);
     variant.list.row_height = Some(40.0);
-    variant
-        .list
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    let border = variant.list.border.get_or_insert_default();
+    border.padding_left = Some(12.0);
+    border.padding_right = Some(12.0);
     variant.toolbar.bar_height = Some(48.0);
     variant.toolbar.item_gap = Some(4.0);
     variant.splitter.divider_width = Some(4.0);

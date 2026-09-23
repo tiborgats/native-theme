@@ -55,16 +55,15 @@
 "defaults.text_selection_color"          = "defaults.selection_text_color"
 "defaults.font.color"                   = "defaults.text_color"                 # must run BEFORE mono_font.color
 "defaults.mono_font.color"              = "defaults.font.color"                 # must run AFTER font.color
-"defaults.border.padding_horizontal"    = "0.0 (when border.line_width or corner_radius present)"
-"defaults.border.padding_vertical"      = "0.0 (when border.line_width or corner_radius present)"
 
 # ─── Border sub-field inheritance (Phase 3) ───────────────────────────────
 #
 # Widgets that have a border sub-struct AND whose border sub-fields
 # inherit from defaults.border (per platform-facts tables showing
 # ← defaults.border.*). Listed once here to avoid repeating per widget.
-# padding_horizontal and padding_vertical are sizing fields with NO
-# inheritance. opacity and corner_radius_lg are defaults-only fields.
+# padding_top, padding_right, padding_bottom and padding_left are sizing
+# fields with NO inheritance. opacity and corner_radius_lg are defaults-only
+# fields.
 #
 # Widgets whose border sub-fields are all platform-specific or (none)
 # are NOT listed here — they get values from preset/OS reader only.

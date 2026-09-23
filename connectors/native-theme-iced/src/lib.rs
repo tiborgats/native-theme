@@ -112,7 +112,7 @@
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
 //! | `styles` (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input padding, border radius, scrollbar width | Per-widget resolved fields |
+//! | Widget metrics | button/input padding (the stated sides, iced's own default for the others; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
@@ -268,26 +268,48 @@ impl SystemThemeExt for native_theme::SystemTheme {
     }
 }
 
+/// Each side the theme states, and `default`'s side where it states none.
+#[cfg(feature = "widgets")]
+fn padding_or(
+    stated: &native_theme::theme::ResolvedPadding,
+    default: iced_core::Padding,
+) -> iced_core::Padding {
+    iced_core::Padding {
+        top: stated.top.unwrap_or(default.top),
+        right: stated.right.unwrap_or(default.right),
+        bottom: stated.bottom.unwrap_or(default.bottom),
+        left: stated.left.unwrap_or(default.left),
+    }
+}
+
 /// Returns button padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
 ///
-/// Maps `padding_vertical` to top/bottom and `padding_horizontal` to left/right.
+/// Each side is `button.border.padding`'s side where the theme states it,
+/// and iced's own button padding where it does not:
+/// `iced_widget::button::DEFAULT_PADDING` (iced_widget 0.14.2
+/// `src/button.rs:461`), 5 top and bottom, 10 left and right.
+#[cfg(feature = "widgets")]
 #[must_use]
 pub fn button_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
-    iced_core::Padding::from([
-        resolved.button.border.padding_vertical,
-        resolved.button.border.padding_horizontal,
-    ])
+    padding_or(
+        &resolved.button.border.padding,
+        iced_widget::button::DEFAULT_PADDING,
+    )
 }
 
 /// Returns text input padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
 ///
-/// Maps `border.padding_vertical` to top/bottom and `border.padding_horizontal` to left/right.
+/// Each side is `input.border.padding`'s side where the theme states it,
+/// and iced's own text-input padding where it does not:
+/// `iced_widget::text_input::DEFAULT_PADDING` (iced_widget 0.14.2
+/// `src/text_input.rs:125`), 5 on every side.
+#[cfg(feature = "widgets")]
 #[must_use]
 pub fn input_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
-    iced_core::Padding::from([
-        resolved.input.border.padding_vertical,
-        resolved.input.border.padding_horizontal,
-    ])
+    padding_or(
+        &resolved.input.border.padding,
+        iced_widget::text_input::DEFAULT_PADDING,
+    )
 }
 
 /// Returns the standard border radius from the resolved theme.
@@ -595,42 +617,71 @@ mod tests {
         assert!(w > 0.0, "scrollbar width should be > 0");
     }
 
-    #[test]
-    fn button_padding_returns_iced_padding() {
-        let resolved = make_resolved(false);
-        let pad = button_padding(&resolved);
-        // Padding values come from border sub-struct; >= 0 is the valid range.
-        // Phase 51 will wire per-widget border padding from presets.
-        assert!(
-            pad.top >= 0.0,
-            "button vertical (top) padding should be >= 0"
-        );
-        assert!(
-            pad.right >= 0.0,
-            "button horizontal (right) padding should be >= 0"
-        );
-        // vertical maps to top+bottom, horizontal maps to left+right
-        assert_eq!(pad.top, pad.bottom, "top and bottom should be equal");
-        assert_eq!(pad.left, pad.right, "left and right should be equal");
+    /// A padding stated on two sides and not on the other two.
+    #[cfg(feature = "widgets")]
+    fn partly_stated() -> native_theme::theme::ResolvedPadding {
+        native_theme::theme::ResolvedPadding {
+            top: Some(0.0),
+            right: None,
+            bottom: None,
+            left: Some(7.0),
+        }
     }
 
+    #[cfg(feature = "widgets")]
     #[test]
-    fn input_padding_returns_iced_padding() {
-        let resolved = make_resolved(false);
+    fn button_padding_fills_unstated_sides_from_iceds_default() {
+        let mut resolved = make_resolved(false);
+        resolved.button.border.padding = partly_stated();
+        let pad = button_padding(&resolved);
+        let default = iced_widget::button::DEFAULT_PADDING;
+        assert_eq!(pad.top, 0.0, "a stated zero is the theme's");
+        assert_eq!(pad.left, 7.0, "a stated side is the theme's");
+        assert_eq!(pad.right, default.right, "an unstated side is iced's");
+        assert_eq!(pad.bottom, default.bottom, "an unstated side is iced's");
+    }
+
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn input_padding_fills_unstated_sides_from_iceds_default() {
+        let mut resolved = make_resolved(false);
+        resolved.input.border.padding = partly_stated();
         let pad = input_padding(&resolved);
-        // Padding values come from border sub-struct; >= 0 is the valid range.
-        // Phase 51 will wire per-widget border padding from presets.
-        assert!(
-            pad.top >= 0.0,
-            "input vertical (top) padding should be >= 0"
-        );
-        assert!(
-            pad.right >= 0.0,
-            "input horizontal (right) padding should be >= 0"
-        );
-        // Symmetry: vertical maps to top+bottom, horizontal maps to left+right
-        assert_eq!(pad.top, pad.bottom, "top and bottom should be equal");
-        assert_eq!(pad.left, pad.right, "left and right should be equal");
+        let default = iced_widget::text_input::DEFAULT_PADDING;
+        assert_eq!(pad.top, 0.0, "a stated zero is the theme's");
+        assert_eq!(pad.left, 7.0, "a stated side is the theme's");
+        assert_eq!(pad.right, default.right, "an unstated side is iced's");
+        assert_eq!(pad.bottom, default.bottom, "an unstated side is iced's");
+    }
+
+    /// Where the theme states every side, every side is the theme's.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn stated_padding_sides_are_the_themes() {
+        let resolved = make_resolved(false);
+        for (what, stated, pad) in [
+            (
+                "button",
+                resolved.button.border.padding,
+                button_padding(&resolved),
+            ),
+            (
+                "input",
+                resolved.input.border.padding,
+                input_padding(&resolved),
+            ),
+        ] {
+            for (side, stated, got) in [
+                ("top", stated.top, pad.top),
+                ("right", stated.right, pad.right),
+                ("bottom", stated.bottom, pad.bottom),
+                ("left", stated.left, pad.left),
+            ] {
+                if let Some(stated) = stated {
+                    assert_eq!(got, stated, "{what} {side}");
+                }
+            }
+        }
     }
 
     // === Color helper tests ===

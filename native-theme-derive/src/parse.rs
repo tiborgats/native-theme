@@ -482,7 +482,7 @@ mod tests {
     #[test]
     fn nested_field_is_parsed_as_nested() {
         let tokens = quote::quote! {
-            #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+            #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
             pub border: Option<WidgetBorderSpec>
         };
         let meta = parse_field_from_tokens(tokens).expect("should parse");
@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn border_partial_attribute_produces_error() {
         let tokens = quote::quote! {
-            #[theme(border_partial, resolved_type = "ResolvedBorderSpec")]
+            #[theme(border_partial, resolved_type = "ResolvedWidgetBorder")]
             pub border: Option<WidgetBorderSpec>
         };
         let result = parse_field_from_tokens(tokens);
@@ -514,7 +514,7 @@ mod tests {
     #[test]
     fn border_optional_attribute_produces_error() {
         let tokens = quote::quote! {
-            #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+            #[theme(border_optional, resolved_type = "ResolvedWidgetBorder")]
             pub border: Option<WidgetBorderSpec>
         };
         let result = parse_field_from_tokens(tokens);

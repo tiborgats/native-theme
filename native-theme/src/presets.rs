@@ -355,6 +355,28 @@ mod tests {
     // are covered by tests/preset_loading.rs (all_presets_parse_without_error,
     // all_presets_have_both_variants, all_presets_have_core_colors).
 
+    /// Every bundled preset's own source lints clean, shorthand keys and
+    /// all. `lint_toml_all_presets_clean` lints `to_toml()` output, which
+    /// writes padding sides only, so it cannot see a shorthand key.
+    #[test]
+    fn every_bundled_preset_source_lints_clean() {
+        for (name, source) in PRESET_ENTRIES {
+            let warnings = crate::Theme::lint_toml(source)
+                .unwrap_or_else(|e| panic!("preset {name} should lint: {e}"));
+            assert!(
+                warnings.is_empty(),
+                "preset {name}'s source has lint warnings: {warnings:?}"
+            );
+        }
+        assert!(
+            PRESET_ENTRIES
+                .iter()
+                .any(|(_, s)| s.contains("padding_horizontal_px")),
+            "no bundled preset uses the shorthand any more, so this test no \
+             longer proves the linter accepts it"
+        );
+    }
+
     #[test]
     fn preset_unknown_name_returns_unknown_preset() {
         let err = preset("nonexistent").unwrap_err();

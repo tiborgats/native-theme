@@ -1271,7 +1271,8 @@ pub(crate) fn clipboard(
 pub(crate) enum InputField {
     /// `geometry::input`, the whole refinement.
     Refined,
-    /// `geometry::input_height` alone, as the field's height.
+    /// `geometry::input_height` alone: the height rule `geometry::input`
+    /// applies, and nothing else of it.
     HeightOnly,
 }
 
@@ -1292,15 +1293,14 @@ pub(crate) fn text_input(
     let input = match field {
         InputField::Refined => native_info(input, cx, geometry::input, "input", &mut input_info),
         // Through the caller's style, which Input applies after its own
-        // height (input/input.rs:703, then :719). `Input::h` would not do:
-        // upstream reads it for a multi-line input only (:706-709).
-        InputField::HeightOnly => match native_value(cx, geometry::input_height) {
-            Some(height) => {
-                input_info = input_info.geometry("input_height");
-                Styled::h(input, height)
-            }
-            None => input,
-        },
+        // height and line height (input/input.rs:699-703, then :719).
+        InputField::HeightOnly => native_info(
+            input,
+            cx,
+            geometry::input_height,
+            "input_height",
+            &mut input_info,
+        ),
     };
     input
         .info(ui, id, input_info)
@@ -1309,6 +1309,8 @@ pub(crate) fn text_input(
 
 /// A `Textarea` over `state`, `width` by `height`, refined by
 /// `geometry::input`: it renders as an `Input` (input/textarea.rs:164).
+/// `geometry::input`'s height rule is for a single-line field, so the
+/// Textarea's own `height` goes on after the builder, where it wins.
 pub(crate) fn textarea(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1319,13 +1321,15 @@ pub(crate) fn textarea(
 ) -> Stateful<Div> {
     let mut textarea_info = info::inputs::textarea(cx.theme());
     let textarea = native_info(
-        Textarea::new(state).h(height).w(width),
+        Textarea::new(state).w(width),
         cx,
         geometry::input,
         "input",
         &mut textarea_info,
     );
-    textarea.info(ui, id, textarea_info)
+    Styled::h(textarea, height)
+        .info(ui, id, textarea_info)
+        .debug_selector(move || id.into())
 }
 
 /// The states of the three `InputGroup`s.
@@ -1351,14 +1355,18 @@ pub(crate) fn input_groups(
 ) -> Stateful<Div> {
     let mut groups_info = info::inputs::input_groups(cx.theme());
     // One refinement, recorded once, for both single-line groups; the
-    // textarea group keeps upstream's frame.
-    let frame = native_info(
+    // textarea group keeps upstream's frame. Without its padding: the frame
+    // is not the Input, which sits inside it and keeps its own padding
+    // (input/group.rs, render_control), so the frame padded as well would
+    // inset the field twice.
+    let mut frame = native_info(
         StyleRefinement::default(),
         cx,
         geometry::input,
         "input",
         &mut groups_info,
     );
+    frame.padding = StyleRefinement::default().padding;
     // `InputGroupButton::new` is a ghost button that upstream repaints,
     // inside a group, with a hover of `theme.muted` (`input/group.rs:544-583`):
     // a grey that under Breeze is barely distinguishable from the field,
@@ -1429,16 +1437,21 @@ pub(crate) fn number_input(
     width: Pixels,
 ) -> Stateful<Div> {
     let mut number_info = info::inputs::number_input(cx.theme());
-    let number = native_info(
+    let mut number = native_info(
         NumberInput::new(state),
         cx,
         geometry::input,
         "input",
         &mut number_info,
-    )
-    .placeholder("Enter a number")
-    .with_size(Size::Medium)
-    .w(width);
+    );
+    // Without geometry::input's padding: the refinement lands on the frame
+    // round the buttons (input/number_input.rs, NumberInput::render), not on
+    // the Input inside it, which keeps its own padding.
+    Styled::style(&mut number).padding = StyleRefinement::default().padding;
+    let number = number
+        .placeholder("Enter a number")
+        .with_size(Size::Medium)
+        .w(width);
     number.info(ui, id, number_info)
 }
 
@@ -4763,93 +4776,4 @@ pub(crate) fn swatch(
         .child(Label::new(label).text_sm())
         .info(ui, id.clone(), info::theme_map::swatch(t, token, native))
         .debug_selector(move || id.to_string())
-}
-
-/// The widgets whose control height the Theme Map states.
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ControlWidget {
-    Button,
-    Input,
-}
-
-impl ControlWidget {
-    /// The widget's name in the model.
-    pub(crate) fn name(self) -> &'static str {
-        match self {
-            Self::Button => "button",
-            Self::Input => "input",
-        }
-    }
-}
-
-/// What `geometry::control_height` computes for one widget of the
-/// installed theme, with the inputs it took, in logical pixels.
-pub(crate) struct ControlHeight {
-    pub(crate) height: f32,
-    pub(crate) min_height: f32,
-    pub(crate) font_size: f32,
-    pub(crate) text_scale: f32,
-    pub(crate) line_height: f32,
-    pub(crate) padding_vertical: f32,
-}
-
-impl ControlHeight {
-    fn of(widget: ControlWidget, n: Native<'_>) -> Self {
-        let (min_height, font, border) = match widget {
-            ControlWidget::Button => {
-                let b = &n.resolved.button;
-                (b.min_height, &b.font, &b.border)
-            }
-            ControlWidget::Input => {
-                let i = &n.resolved.input;
-                (i.min_height, &i.font, &i.border)
-            }
-        };
-        Self {
-            height: geometry::control_height(min_height, font, border, n).as_f32(),
-            min_height,
-            font_size: font.size,
-            // The factor `control_height` scales by: the preference, or 1
-            // where it is not a finite positive number
-            // (native-theme-gpui/lib.rs, text_scale_factor, not public).
-            text_scale: match n.accessibility.text_scaling_factor {
-                s if s.is_finite() && s > 0.0 => s,
-                _ => 1.0,
-            },
-            line_height: n.resolved.defaults.line_height,
-            padding_vertical: border.padding_vertical,
-        }
-    }
-}
-
-/// A Theme Map row stating what `geometry::control_height` computes for
-/// `widget`, or that nothing does before a native theme is installed.
-pub(crate) fn control_height(
-    ui: &Entity<InfoRegistry>,
-    cx: &App,
-    id: &'static str,
-    widget: ControlWidget,
-) -> Stateful<Div> {
-    let height = native_value(cx, |n| ControlHeight::of(widget, n));
-    let w = widget.name();
-    let text = match &height {
-        Some(h) => format!(
-            "{w}: {}px from geometry::control_height -- the larger of \
-             {w}.min_height {}px and ceil({w}.font.size {}px × text scale × \
-             line_height {}) + 2 × {w}.border.padding_vertical {}px",
-            h.height, h.min_height, h.font_size, h.line_height, h.padding_vertical,
-        ),
-        None => "no native theme installed".to_string(),
-    };
-    let row_info = info::theme_map::control_height(cx.theme(), widget, height.as_ref());
-    let row_info = if height.is_some() {
-        row_info.geometry("control_height")
-    } else {
-        row_info
-    };
-    Label::new(text)
-        .text_sm()
-        .info(ui, id, row_info)
-        .self_start()
-        .debug_selector(move || id.into())
 }

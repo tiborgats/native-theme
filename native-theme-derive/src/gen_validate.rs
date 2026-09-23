@@ -39,12 +39,12 @@ pub(crate) fn gen_validate(
     }
 }
 
-/// Check if a resolved type's last path segment is "ResolvedBorderSpec".
+/// Check if a resolved type's last path segment is "ResolvedWidgetBorder".
 fn is_border_type(ty: &syn::Type) -> bool {
     if let syn::Type::Path(type_path) = ty
         && let Some(seg) = type_path.path.segments.last()
     {
-        return seg.ident == "ResolvedBorderSpec";
+        return seg.ident == "ResolvedWidgetBorder";
     }
     false
 }

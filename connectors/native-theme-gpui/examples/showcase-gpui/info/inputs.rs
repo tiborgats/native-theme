@@ -52,14 +52,22 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         .not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window")
         .not_themeable("focus ring", "the connector uses the platform's focus_ring_width only as a switch: upstream drops the ring where Theme::focus_ring is off (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide at half the ring colour's alpha where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` at that half alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border")
         .not_themeable("disabled fill", "input_style's Oklab mix of 80% input and 20% transparent, then faded to half alpha, because a disabled Input fades its fill again (input/input.rs, Input::render) -- a literal pair, and not muted")
-        .not_themeable("placeholder colour", "Tier U: input.placeholder_color is modelled from each platform's own placeholder colour -- inheritance-rules.toml lists falling back to muted_color as wrong -- but Input hands its editor the shared muted_foreground on every render and takes no colour of its own (input/input.rs, Input::render)")
-        .not_themeable("padding", "inner editor (Tier U)");
+        .not_themeable("placeholder colour", "Tier U: input.placeholder_color is modelled from each platform's own placeholder colour -- inheritance-rules.toml lists falling back to muted_color as wrong -- but Input hands its editor the shared muted_foreground on every render and takes no colour of its own (input/input.rs, Input::render)");
     match field {
-        InputField::Refined => info,
-        InputField::HeightOnly if styled => info.instance(
-            "height",
-            "the control height of the field above without the rest of its refinement: what geometry::input_height is for, a field that must line up with the one above without taking its border or text size",
+        InputField::Refined if styled => info,
+        InputField::Refined => info.instance(
+            "padding",
+            "upstream's own input_px and input_py for Size::Medium (input/input.rs, Input::render): no native theme is installed, so geometry::input has no padding to give it",
         ),
+        InputField::HeightOnly if styled => info
+            .instance(
+                "height",
+                "the height rule of the field above without the rest of its refinement: what geometry::input_height is for. At a text scale of 1 or less both are input.min_height tall; above 1 each grows around its own text and padding, and this one's are upstream's",
+            )
+            .instance(
+                "padding",
+                "upstream's own input_px and input_py for Size::Medium (input/input.rs, Input::render): geometry::input_height carries no padding",
+            ),
         InputField::HeightOnly => info.instance(
             "height",
             "upstream's own for Size::Medium: no native theme is installed, so geometry::input_height has no height to give it",
@@ -92,7 +100,8 @@ pub fn textarea(t: &Theme) -> WidgetInfo {
             t.ring,
             "gpui-component/input/input.rs:681",
         ))
-        .not_themeable("row height", "1.25rem, the line height Input sets for every row (input/input.rs, Input::render), not the resolved font's. Input applies the caller's refinement after it, and defaults.line_height is modelled, but no builder carries it -- our gap")
+        .instance("row height", "defaults.line_height times the text size: geometry::input carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base input/base/element.rs, TextElement::request_layout)")
+        .instance("height", "the showcase's own 90px, set after geometry::input: the builder's height rule is for a single-line field, and a Textarea's own height goes on after it, where it wins")
         .instance("refinement", "geometry::input, the one the single-line Input above takes, because a Textarea renders as one (input/textarea.rs, Textarea::into_input)")
 }
 
@@ -133,6 +142,7 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
         .not_themeable("addon padding", "inner (Tier U)")
         .not_themeable("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs, InputGroupButton::render_in_group)")
         .instance("groups", "a Search icon before the field, a Copy button after it, and a note under a textarea. geometry::input refines the two single-line groups; the textarea group keeps upstream's frame")
+        .instance("padding", "none from geometry::input: the showcase leaves out its padding sides, because the refinement lands on the group's frame and the Input inside it keeps its own padding (input/group.rs, render_control) -- padding the frame too would inset the field twice")
         .instance("copy", "puts the second group's text on the clipboard and says so in a notification")
 }
 
@@ -155,7 +165,7 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
             t.foreground,
             "showcase",
         ))
-        .not_themeable("padding", "inner editor (Tier U), as Input")
+        .instance("padding", "none from geometry::input: the showcase leaves out its padding sides, because the refinement lands on the frame round the buttons (input/number_input.rs, NumberInput::render) and the Input inside it keeps upstream's own padding")
         .not_themeable("step buttons", "hardcoded +/- icons; the Size enum sets their min width (input/number_input.rs, NumberInput::render: min_w_6 / min_w_8), not the field's height")
 }
 

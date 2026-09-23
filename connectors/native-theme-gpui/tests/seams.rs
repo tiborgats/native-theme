@@ -7,15 +7,21 @@
 //! with the refinement's own field. When an upstream release stops honouring
 //! a seam, this file fails (the nightly dependency canary runs it).
 //!
-//! Every test: `u` (unstyled) must differ from `e` (expected), otherwise the
-//! input does not discriminate; then `s` (styled) must equal `e`. Text scale
-//! 1.5 is the input that takes `control_height` past the presets' minimum.
+//! Every seam test: `u` (unstyled) must differ from `e` (expected), otherwise
+//! the input does not discriminate; then `s` (styled) must equal `e`. They
+//! run at text scale 1, where the control-height rule gives each control its
+//! stated height.
 //!
 //! `button`, `input` and `progress` set the same `size.height` their widget
 //! sets for itself, so they also prove the ordering of the two writes.
 //! `select` and `combobox` set `min_size.height` and `list_item` a height the
 //! widget leaves content-driven, so those three prove that the refinement
 //! reaches the widget's root box and wins there, not an ordering claim.
+//!
+//! Two sweeps run every native preset at its own font DPI: the drawn content
+//! inset of an Input, a Select and a Combobox is the stated padding side,
+//! and six single-line controls are their stated height at text scale 1 and
+//! grow at text scale 2, with their text inside them at both.
 //! Every other builder rests on the source citation in its doc comment.
 
 use std::num::NonZeroU32;
@@ -26,24 +32,29 @@ use gpui::{
     Size, StyleRefinement, Styled as _, TestAppContext, Window, div, px,
 };
 use gpui_component::{
-    StyledExt as _,
+    ActiveTheme as _, IndexPath, StyledExt as _,
     button::Button,
     combobox::{Combobox, ComboboxState},
     input::{Input, InputState},
     list::ListItem,
     progress::Progress,
-    select::{SearchableVec, Select, SelectState},
+    select::{SearchableVec, Select, SelectItem, SelectState},
     tooltip::Tooltip,
 };
 use native_theme::theme::{AnimatedIcon, ColorMode, IconData, ResolvedTheme, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext};
 use native_theme_gpui::{ActiveNativeTheme as _, Native, apply, geometry, icons, to_theme};
 
-fn scaled() -> AccessibilityPreferences {
+fn scaled_by(factor: f32) -> AccessibilityPreferences {
     AccessibilityPreferences {
-        text_scaling_factor: 1.5,
+        text_scaling_factor: factor,
         ..AccessibilityPreferences::default()
     }
+}
+
+/// The text scale the seam tests run at.
+fn scaled() -> AccessibilityPreferences {
+    scaled_by(1.0)
 }
 
 /// Resolve a preset without consulting the machine. `ResolutionContext::for_tests`
@@ -53,13 +64,32 @@ fn scaled() -> AccessibilityPreferences {
 /// (`native-theme/src/resolve/context.rs:62-83`) and would make the expected
 /// height machine-dependent.
 fn resolved(preset: &str) -> ResolvedTheme {
+    resolved_at(preset, ResolutionContext::for_tests().font_dpi)
+}
+
+/// `preset` resolved at `dpi`: the point sizes it states become pixels at
+/// that DPI.
+fn resolved_at(preset: &str, dpi: f32) -> ResolvedTheme {
     Theme::preset(preset)
         .expect("preset loads")
         .into_variant(ColorMode::Light)
         .expect("light variant")
-        .into_resolved(&ResolutionContext::for_tests())
+        .into_resolved(&ResolutionContext {
+            font_dpi: dpi,
+            ..ResolutionContext::for_tests()
+        })
         .expect("preset resolves")
 }
+
+/// The native presets, each with the font DPI its platform resolves at:
+/// macOS at 72, where a point is a pixel (native-theme `detect.rs`,
+/// `detect_system_font_dpi`), the others at the 96 `for_tests` pins.
+const NATIVE: [(&str, f32); 4] = [
+    ("kde-breeze", 96.0),
+    ("adwaita", 96.0),
+    ("macos-sonoma", 72.0),
+    ("windows-11", 96.0),
+];
 
 type Build = fn(Option<&StyleRefinement>, &mut Window, &mut Context<Harness>) -> AnyElement;
 
@@ -70,13 +100,24 @@ struct Harness {
 
 impl Render for Harness {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // What gpui-component's `Root` does for an application's window
+        // (`root.rs:582`, `:590`): the installed font size is the rem, which
+        // the connector scales by the text-scaling factor, and the installed
+        // family is the text's.
+        window.set_rem_size(cx.theme().font_size);
+        let family = cx.theme().font_family.clone();
         let widget = (self.build)(self.style.as_ref(), window, cx);
-        div().size(px(600.)).flex().items_start().child(
-            div()
-                .debug_selector(|| "probe".into())
-                .flex_none()
-                .child(widget),
-        )
+        div()
+            .size(px(600.))
+            .flex()
+            .items_start()
+            .font_family(family)
+            .child(
+                div()
+                    .debug_selector(|| "probe".into())
+                    .flex_none()
+                    .child(widget),
+            )
     }
 }
 
@@ -98,12 +139,31 @@ fn laid_out<const N: usize>(
     build: Build,
     selectors: [&'static str; N],
 ) -> [Bounds<Pixels>; N] {
-    let prefs = scaled();
-    let resolved = resolved(preset);
-    let theme = to_theme(&resolved, preset, false, &prefs);
+    laid_out_as(
+        cx,
+        preset,
+        &resolved(preset),
+        &scaled(),
+        style,
+        build,
+        selectors,
+    )
+}
+
+/// [`laid_out`] with the resolved theme and the preferences given.
+fn laid_out_as<const N: usize>(
+    cx: &mut TestAppContext,
+    preset: &str,
+    resolved: &ResolvedTheme,
+    prefs: &AccessibilityPreferences,
+    style: Option<StyleRefinement>,
+    build: Build,
+    selectors: [&'static str; N],
+) -> [Bounds<Pixels>; N] {
+    let theme = to_theme(resolved, preset, false, prefs);
     cx.update(|cx| {
         gpui_component::init(cx);
-        apply(theme, &resolved, &prefs, cx);
+        apply(theme, resolved, prefs, cx);
     });
     let (_, cx) = cx.add_window_view(|_, _| Harness { style, build });
     cx.update(|window, cx| window.draw(cx).clear(cx));
@@ -251,8 +311,8 @@ fn an_animation_frame_is_there_on_its_first_draw(cx: &mut TestAppContext) {
     );
 }
 
-/// kde-breeze states a 300 px tooltip with a 3 px horizontal padding, so a
-/// sentence overruns it by a wide margin.
+/// kde-breeze states a 300 px tooltip with a 3 px padding on the left and the
+/// right, so a sentence overruns it by a wide margin.
 const TOOLTIP_PRESET: &str = "kde-breeze";
 /// One line that no bundled preset's `tooltip.max_width` holds unwrapped.
 const LONG_TOOLTIP: &str = "This popup carries the platform's max width, padding, radius, text size \
@@ -379,7 +439,12 @@ seam!(
 #[gpui::test]
 fn tooltip_text_keeps_inside_the_bubble(cx: &mut TestAppContext) {
     let t = resolved(TOOLTIP_PRESET).tooltip;
-    let inner = px(t.max_width - 2.0 * t.border.padding_horizontal - 2.0 * TOOLTIP_BORDER);
+    let (Some(left), Some(right)) = (t.border.padding.left, t.border.padding.right) else {
+        panic!(
+            "{TOOLTIP_PRESET} no longer states both horizontal tooltip sides; pick another preset"
+        );
+    };
+    let inner = px(t.max_width - left - right - 2.0 * TOOLTIP_BORDER);
     let style = native_style(TOOLTIP_PRESET, geometry::tooltip);
 
     let [text, probe] = laid_out(
@@ -415,5 +480,263 @@ fn tooltip_text_keeps_inside_the_bubble(cx: &mut TestAppContext) {
         short.size.width < text.size.width && short.size.width < inner,
         "a short tooltip text was stretched to {:?}",
         short.size.width,
+    );
+}
+
+// --- The drawn content inset and the control-height rule ----------------------
+
+/// The debug selector on the element around a sample's text.
+const TEXT: &str = "text";
+/// The sample text.
+const SAMPLE: &str = "Ag";
+
+fn text_probe() -> gpui::Div {
+    div().debug_selector(|| TEXT.into()).child(SAMPLE)
+}
+
+/// An item whose trigger title is the text probe, so a Select's title can be
+/// measured.
+#[derive(Clone)]
+struct Probed(SharedString);
+
+impl SelectItem for Probed {
+    type Value = SharedString;
+    fn title(&self) -> SharedString {
+        self.0.clone()
+    }
+    fn display_title(&self) -> Option<AnyElement> {
+        Some(
+            div()
+                .debug_selector(|| TEXT.into())
+                .child(self.0.clone())
+                .into_any_element(),
+        )
+    }
+    fn value(&self) -> &SharedString {
+        &self.0
+    }
+}
+
+/// A Button whose label is the text probe.
+fn probed_button(
+    s: Option<&StyleRefinement>,
+    _: &mut Window,
+    _: &mut Context<Harness>,
+) -> AnyElement {
+    styled(Button::new("b").child(text_probe()), s)
+}
+/// An Input whose prefix is the text probe: the prefix is the root's first
+/// child (`input/input.rs:724`), so its left edge is where the root's
+/// padding ends, and it lays out one line of the root's text style.
+fn probed_input(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let state = cx.new(|cx| InputState::new(w, cx));
+    styled(Input::new(&state).prefix(text_probe()), s)
+}
+/// A Select showing a selected item whose title is the text probe.
+fn probed_select(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let items = vec![Probed(SAMPLE.into())];
+    let state =
+        cx.new(|cx| SelectState::new(SearchableVec::new(items), Some(IndexPath::default()), w, cx));
+    styled(Select::new(&state), s)
+}
+/// A Combobox whose trigger body is the text probe (`Combobox::render_trigger`).
+fn probed_combobox(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let items: Vec<SharedString> = vec!["a".into(), "b".into()];
+    let state = cx.new(|cx| ComboboxState::new(SearchableVec::new(items), vec![], w, cx));
+    styled(
+        Combobox::new(&state).render_trigger(|_, _, _| text_probe()),
+        s,
+    )
+}
+/// A ListItem whose content is the text probe.
+fn probed_list_item(
+    s: Option<&StyleRefinement>,
+    _: &mut Window,
+    _: &mut Context<Harness>,
+) -> AnyElement {
+    styled(ListItem::new("i").child(text_probe()), s)
+}
+/// A menu row the application draws, as the showcase's `demo::menu_rows`
+/// does: gpui-component's own `MenuItemElement` is crate-private
+/// (`menu/menu_item.rs:10-11`), so `geometry::menu_item` lands on the
+/// application's row, a flex `div` of items centred on the cross axis.
+fn probed_menu_row(
+    s: Option<&StyleRefinement>,
+    _: &mut Window,
+    _: &mut Context<Harness>,
+) -> AnyElement {
+    styled(div().flex().items_center().child(text_probe()), s)
+}
+
+/// Upstream draws a one-pixel border round the Select and Combobox triggers
+/// (`select.rs:535`, `combobox.rs:986`, `border_1()`), which the drawn inset
+/// includes; `geometry::select`/`combobox` set no border width.
+const TRIGGER_BORDER: f32 = 1.0;
+
+/// Under every native preset, at its own DPI, the drawn content inset of an
+/// Input, a Select and a Combobox is the border and the stated padding side:
+/// upstream pads each root before the refinement (`input/input.rs:701` then
+/// `:719`, `select.rs:544` then `:546`, `combobox.rs:995` then `:997`), so the
+/// platform's side is the one drawn.
+///
+/// The left side is measured: it is where the first child starts. At least
+/// one preset per widget states a side upstream does not draw on its own, or
+/// the sweep proves nothing.
+#[gpui::test]
+fn input_select_and_combobox_draw_the_stated_padding(cx: &mut TestAppContext) {
+    type Case = (&'static str, Build, fn(Native<'_>) -> StyleRefinement);
+    let cases: [Case; 3] = [
+        ("input", probed_input, geometry::input),
+        ("select", probed_select, geometry::select),
+        ("combobox", probed_combobox, geometry::combobox),
+    ];
+    for (widget, build, geom) in cases {
+        let mut discriminated = false;
+        for (preset, dpi) in NATIVE {
+            let r = resolved_at(preset, dpi);
+            let prefs = scaled_by(1.0);
+            let (stated, border) = match widget {
+                "input" => (r.input.border.padding.left, r.input.border.line_width),
+                _ => (r.combo_box.border.padding.left, TRIGGER_BORDER),
+            };
+            let Some(stated) = stated else {
+                continue;
+            };
+            let style = geom(Native {
+                resolved: &r,
+                accessibility: &prefs,
+            });
+            let inset = |style: Option<StyleRefinement>, cx: &mut TestAppContext| {
+                let [text, probe] =
+                    laid_out_as(cx, preset, &r, &prefs, style, build, [TEXT, "probe"]);
+                text.left() - probe.left()
+            };
+            let u = inset(None, cx);
+            let s = inset(Some(style), cx);
+            let e = px(border + stated);
+            assert_eq!(
+                s, e,
+                "{preset} {widget}: the content starts {s:?} in, not at the {border}px border \
+                 plus the stated left padding {stated}px"
+            );
+            discriminated |= u != e;
+        }
+        assert!(
+            discriminated,
+            "{widget}: no native preset states a left padding upstream does not draw already"
+        );
+    }
+}
+
+/// Where upstream's own Select or Combobox trigger is taller than the
+/// platform's stated minimum, `geometry::select`/`combobox` (through `min_h`,
+/// as they always have) leave upstream's height: upstream's `input_size` sets
+/// `h_8`, 2 rem, for `Size::Medium` (`sizing.rs:236-237`, `:261-264`), and a
+/// minimum below it changes nothing. These are the (preset, widget) pairs
+/// where that happens at text scale 1; the stated heights themselves are the
+/// follow-up plan's (spec v0.5.9 unstated-sizes rationale §7).
+const TRIGGER_TALLER_THAN_STATED: &[(&str, &str)] =
+    &[("macos-sonoma", "select"), ("macos-sonoma", "combobox")];
+
+/// Under every native preset, at its own DPI: at text scale 1 each single-line
+/// control is its stated height and its text lies inside it; at text scale 2
+/// it grows, and its text still lies inside it.
+#[gpui::test]
+fn single_line_controls_are_their_stated_height_and_grow_with_the_text(cx: &mut TestAppContext) {
+    type Case = (
+        &'static str,
+        Build,
+        fn(Native<'_>) -> StyleRefinement,
+        fn(&ResolvedTheme) -> f32,
+    );
+    let cases: [Case; 6] = [
+        ("button", probed_button, geometry::button, |r| {
+            r.button.min_height
+        }),
+        ("input", probed_input, geometry::input, |r| {
+            r.input.min_height
+        }),
+        ("select", probed_select, geometry::select, |r| {
+            r.combo_box.min_height
+        }),
+        ("combobox", probed_combobox, geometry::combobox, |r| {
+            r.combo_box.min_height
+        }),
+        ("menu row", probed_menu_row, geometry::menu_item, |r| {
+            r.menu.row_height
+        }),
+        ("list item", probed_list_item, geometry::list_item, |r| {
+            r.list.row_height
+        }),
+    ];
+    let mut taller = Vec::new();
+    for (widget, build, geom, stated_of) in cases {
+        for (preset, dpi) in NATIVE {
+            let r = resolved_at(preset, dpi);
+            let stated = px(stated_of(&r));
+            let at = |factor: f32, cx: &mut TestAppContext| {
+                let prefs = scaled_by(factor);
+                let style = geom(Native {
+                    resolved: &r,
+                    accessibility: &prefs,
+                });
+                let [text, probe] =
+                    laid_out_as(cx, preset, &r, &prefs, Some(style), build, [TEXT, "probe"]);
+                let own = laid_out_as(cx, preset, &r, &prefs, None, build, ["probe"])[0];
+                (text, probe, own)
+            };
+            let fits = |text: Bounds<Pixels>, control: Bounds<Pixels>| {
+                text.top() >= control.top() && text.bottom() <= control.bottom()
+            };
+
+            let (text, control, own) = at(1.0, cx);
+            let expected = if matches!(widget, "select" | "combobox") && own.size.height > stated {
+                taller.push((preset, widget));
+                own.size.height
+            } else {
+                stated
+            };
+            assert_eq!(
+                control.size.height, expected,
+                "{preset} {widget}: at text scale 1 the control is not its stated height {stated:?} \
+                 (upstream's own: {:?})",
+                own.size.height
+            );
+            assert!(
+                fits(text, control),
+                "{preset} {widget}: at text scale 1 the text at {text:?} is not inside the \
+                 control at {control:?}"
+            );
+
+            let (text2, control2, _) = at(2.0, cx);
+            assert!(
+                control2.size.height > control.size.height,
+                "{preset} {widget}: at text scale 2 the control is {:?}, no taller than {:?} \
+                 at scale 1",
+                control2.size.height,
+                control.size.height
+            );
+            assert!(
+                fits(text2, control2),
+                "{preset} {widget}: at text scale 2 the text at {text2:?} is not inside the \
+                 control at {control2:?}"
+            );
+        }
+    }
+    assert_eq!(
+        taller, TRIGGER_TALLER_THAN_STATED,
+        "the triggers upstream draws taller than the stated minimum changed"
     );
 }

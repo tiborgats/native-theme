@@ -52,8 +52,14 @@ corner_radius_lg_px          = "f32"    # defaults only
 line_width_px                = "f32"
 opacity                      = "f32"    # defaults only
 shadow_enabled               = "bool"
-padding_horizontal_px        = "f32"
-padding_vertical_px          = "f32"
+padding_top_px               = "f32"    # widget borders only
+padding_right_px             = "f32"    # widget borders only
+padding_bottom_px            = "f32"    # widget borders only
+padding_left_px              = "f32"    # widget borders only
+padding_horizontal_px        = "f32"    # shorthand: sets padding_left_px and padding_right_px
+padding_vertical_px          = "f32"    # shorthand: sets padding_top_px and padding_bottom_px
+# A table that states an axis shorthand together with one of that axis's
+# sides is a parse error. Serialisation writes the four sides only.
 
 [_structures.IconSizes]
 # Platform icon size contexts, nested under defaults.

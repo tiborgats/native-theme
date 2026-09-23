@@ -347,8 +347,6 @@ mod tests {
             "defaults.text_selection_color",
             "defaults.font.color",
             "defaults.mono_font.color",
-            "defaults.border.padding_horizontal",
-            "defaults.border.padding_vertical",
         ];
 
         for key in defaults_internal.keys() {

@@ -328,8 +328,11 @@ pub(crate) const INPUTS_CHECKBOX_AUTOSAVE: &str = "inputs-checkbox-autosave";
 pub(crate) const INPUTS_FIELD: &str = "inputs-field";
 /// The id and debug selector of the Input below it, sized by
 /// `geometry::input_height` alone, which
-/// `the_height_only_field_takes_the_control_height` measures.
+/// `the_height_only_field_takes_the_height_rule` measures.
 pub(crate) const INPUTS_FIELD_HEIGHT_ONLY: &str = "inputs-field-height-only";
+/// The id and debug selector of the Inputs page's Textarea, whose own
+/// height `the_textarea_keeps_its_own_height` measures.
+pub(crate) const INPUTS_TEXTAREA: &str = "inputs-textarea";
 
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside

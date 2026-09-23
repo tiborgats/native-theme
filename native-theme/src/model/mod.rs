@@ -55,7 +55,10 @@ pub mod widgets;
 pub use animated::{
     AnimatedIcon, EmptyFrameListError, FrameList, FramesData, TransformAnimation, TransformData,
 };
-pub use border::{DefaultsBorderSpec, ResolvedBorderSpec, WidgetBorderSpec};
+pub use border::{
+    DefaultsBorderSpec, ResolvedDefaultsBorder, ResolvedPadding, ResolvedWidgetBorder,
+    WidgetBorderSpec,
+};
 // G3 (Phase 93-03): demoted to pub(crate). Use the per-set loaders in `crate::icons` externally.
 pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
@@ -553,8 +556,8 @@ impl Theme {
     /// color = "#2e3436"
     ///
     /// [light.button.border]
-    /// padding_horizontal = 12.0
-    /// padding_vertical = 6.0
+    /// padding_horizontal_px = 12.0
+    /// padding_vertical_px = 6.0
     ///
     /// [light.tooltip]
     /// background_color = "#2e3436"
@@ -1587,6 +1590,27 @@ primay_bg = "#0078d7"
     }
 
     #[test]
+    fn lint_toml_accepts_padding_sides_and_shorthand() {
+        let toml = r##"
+name = "Test"
+[light.button.border]
+padding_top_px = 1.0
+padding_right_px = 2.0
+padding_bottom_px = 3.0
+padding_left_px = 4.0
+[light.input.border]
+padding_horizontal_px = 6.0
+padding_vertical_px = 0.0
+"##;
+        let warnings = Theme::lint_toml(toml).unwrap();
+        assert!(warnings.is_empty(), "got: {warnings:?}");
+        let warnings =
+            Theme::lint_toml("name = \"T\"\n[light.input.border]\npadding_sideways_px = 1.0\n")
+                .unwrap();
+        assert_eq!(warnings.len(), 1, "got: {warnings:?}");
+    }
+
+    #[test]
     fn lint_toml_rejects_unknown_field_on_registered_widget() {
         // Verify that lint_toml discovers widget field names from inventory.
         // If a field name is not in the registered FIELD_NAMES for a widget,
@@ -1742,6 +1766,10 @@ nonexistent_field = "#ff0000"
             "corner_radius_px",
             "line_width_px",
             "shadow_enabled",
+            "padding_top_px",
+            "padding_right_px",
+            "padding_bottom_px",
+            "padding_left_px",
             "padding_horizontal_px",
             "padding_vertical_px",
         ];

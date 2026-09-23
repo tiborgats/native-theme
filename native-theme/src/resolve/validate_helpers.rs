@@ -8,7 +8,7 @@
 // `impl Default for Rgba`. See `fn require` below for details.
 
 use crate::Rgba;
-use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
+use crate::model::border::{ResolvedPadding, ResolvedWidgetBorder, WidgetBorderSpec};
 use crate::model::font::FontStyle;
 use crate::model::{FontSpec, ResolvedFontSpec};
 use std::sync::Arc;
@@ -41,19 +41,28 @@ fn resolved_font_spec_sentinel() -> ResolvedFontSpec {
     }
 }
 
-/// Construct the zero-value sentinel for `ResolvedBorderSpec`. Fields mirror
-/// the pre-G1 `ResolvedBorderSpec::default()` output (TRANSPARENT color,
-/// 0.0 geometry, false shadow).
-fn resolved_border_spec_sentinel() -> ResolvedBorderSpec {
-    ResolvedBorderSpec {
+/// Construct the placeholder sentinel for `ResolvedWidgetBorder`
+/// (TRANSPARENT color, 0.0 geometry, false shadow, every padding side
+/// unstated). Never observed by user code: `validate()` returns `Err`
+/// whenever a required border was recorded as missing.
+fn resolved_widget_border_sentinel() -> ResolvedWidgetBorder {
+    ResolvedWidgetBorder {
         color: Rgba::TRANSPARENT,
         corner_radius: 0.0,
-        corner_radius_lg: 0.0,
         line_width: 0.0,
-        opacity: 0.0,
         shadow_enabled: false,
-        padding_horizontal: 0.0,
-        padding_vertical: 0.0,
+        padding: ResolvedPadding::default(),
+    }
+}
+
+/// A widget border's padding sides, each as the theme states it: `None`
+/// where it states nothing.
+fn padding_of(b: &WidgetBorderSpec) -> ResolvedPadding {
+    ResolvedPadding {
+        top: b.padding_top,
+        right: b.padding_right,
+        bottom: b.padding_bottom,
+        left: b.padding_left,
     }
 }
 
@@ -257,37 +266,33 @@ pub(crate) enum BorderKind {
 /// - `Partial`: requires color and line_width only.
 /// - `None`: all sub-fields optional, no missing-field errors.
 ///
-/// Padding sub-fields are sizing fields with no inheritance — the preset
-/// value is used when present, otherwise zero. `corner_radius_lg` and
-/// `opacity` are defaults-only; always 0.0 at widget level.
+/// Padding sides are sizing fields with no inheritance: each side is the
+/// value the theme states, or `None` where it states none.
 pub(crate) fn validate_border(
     border: &Option<WidgetBorderSpec>,
     prefix: &str,
     kind: BorderKind,
     missing: &mut Vec<String>,
-) -> ResolvedBorderSpec {
+) -> ResolvedWidgetBorder {
     match kind {
         BorderKind::None => match border {
-            Option::None => resolved_border_spec_sentinel(),
-            Some(b) => ResolvedBorderSpec {
+            Option::None => resolved_widget_border_sentinel(),
+            Some(b) => ResolvedWidgetBorder {
                 // `b.color: Option<Rgba>`. Once `impl Default for Rgba` is
                 // removed in Task 2, `Option::unwrap_or_default()` can no
                 // longer synthesise an Rgba. Pass TRANSPARENT explicitly
                 // (same value as the old `Rgba::default()`).
                 color: b.color.unwrap_or(Rgba::TRANSPARENT),
                 corner_radius: b.corner_radius.unwrap_or_default(),
-                corner_radius_lg: 0.0,
                 line_width: b.line_width.unwrap_or_default(),
-                opacity: 0.0,
                 shadow_enabled: b.shadow_enabled.unwrap_or_default(),
-                padding_horizontal: b.padding_horizontal.unwrap_or_default(),
-                padding_vertical: b.padding_vertical.unwrap_or_default(),
+                padding: padding_of(b),
             },
         },
         BorderKind::Full | BorderKind::Partial => match border {
             Option::None => {
                 missing.push(prefix.to_string());
-                resolved_border_spec_sentinel()
+                resolved_widget_border_sentinel()
             }
             Some(b) => {
                 let color = require(
@@ -327,15 +332,12 @@ pub(crate) fn validate_border(
                     )
                 };
 
-                ResolvedBorderSpec {
+                ResolvedWidgetBorder {
                     color,
                     corner_radius,
-                    corner_radius_lg: 0.0,
                     line_width,
-                    opacity: 0.0,
                     shadow_enabled,
-                    padding_horizontal: b.padding_horizontal.unwrap_or_default(),
-                    padding_vertical: b.padding_vertical.unwrap_or_default(),
+                    padding: padding_of(b),
                 }
             }
         },
@@ -453,6 +455,35 @@ pub(crate) fn check_min_max(
     }
 }
 
+/// Check that every padding side a widget border states is finite and
+/// non-negative. An unstated side is not checked. Paths name the model's
+/// side fields: `"{prefix}.{field}.padding_left"`.
+pub(crate) fn check_padding(
+    padding: &ResolvedPadding,
+    prefix: &str,
+    field: &str,
+    errors: &mut Vec<crate::error::RangeViolation>,
+) {
+    let sides = [
+        ("padding_top", padding.top),
+        ("padding_right", padding.right),
+        ("padding_bottom", padding.bottom),
+        ("padding_left", padding.left),
+    ];
+    for (side, value) in sides {
+        if let Some(value) = value
+            && (!value.is_finite() || value < 0.0)
+        {
+            errors.push(crate::error::RangeViolation {
+                path: format!("{prefix}.{field}.{side}"),
+                value: value as f64,
+                min: Some(0.0),
+                max: None,
+            });
+        }
+    }
+}
+
 /// Trait for nested types that can be validated from an Option wrapper.
 /// Used by `define_widget_pair!` generated `validate_widget()` methods
 /// to dispatch to the correct extraction function without knowing the
@@ -485,13 +516,13 @@ impl ValidateNested for FontSpec {
 }
 
 impl ValidateNested for WidgetBorderSpec {
-    type Resolved = ResolvedBorderSpec;
+    type Resolved = ResolvedWidgetBorder;
     fn validate_nested(
         source: &Option<Self>,
         prefix: &str,
         _dpi: f32,
         missing: &mut Vec<String>,
-    ) -> ResolvedBorderSpec {
+    ) -> ResolvedWidgetBorder {
         validate_border(source, prefix, BorderKind::Full, missing)
     }
 }
@@ -518,8 +549,8 @@ impl ValidateNested for WidgetBorderSpec {
 /// `Default`-equivalent trait. Encoding the type group at the macro call
 /// site keeps the fallback sentinel construction local and explicit.
 ///
-/// Border padding fields (`padding_horizontal`, `padding_vertical`) default to `0.0`
-/// and are not extracted via `require()`.
+/// `defaults.border` has no padding: padding is a widget-level field
+/// (`ResolvedWidgetBorder::padding`).
 macro_rules! validate_defaults {
     (
         $src:expr, $dpi:expr, $missing:expr;
@@ -576,16 +607,14 @@ macro_rules! validate_defaults {
             );
         )*
 
-        use $crate::model::border::ResolvedBorderSpec;
+        use $crate::model::border::ResolvedDefaultsBorder;
         use $crate::model::resolved::{ResolvedDefaults, ResolvedIconSizes};
         ResolvedDefaults {
             $($font_field,)*
             $($color_field,)*
             $($f32_field,)*
-            border: ResolvedBorderSpec {
+            border: ResolvedDefaultsBorder {
                 $($br_field,)*
-                padding_horizontal: 0.0,
-                padding_vertical: 0.0,
             },
             icon_sizes: ResolvedIconSizes {
                 $($is_field,)*
@@ -694,20 +723,6 @@ pub(crate) fn check_defaults_ranges(
         1.0,
         "defaults.border",
         "opacity",
-        errors,
-    );
-
-    // defaults: border padding >= 0
-    check_non_negative(
-        defaults.border.padding_horizontal,
-        "defaults.border",
-        "padding_horizontal",
-        errors,
-    );
-    check_non_negative(
-        defaults.border.padding_vertical,
-        "defaults.border",
-        "padding_vertical",
         errors,
     );
 

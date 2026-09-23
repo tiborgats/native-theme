@@ -16,12 +16,27 @@
 //! Each widget applies the caller's refinement after its own geometry at the
 //! cited upstream line, so the values here win. Text sizes carry the
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
-//! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
-//! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]), with
-//! two conversions the receiving widget forces: [`tooltip_content`] turns the
-//! platform's outer tooltip width into the inner box its text wraps in, and
+//! do not (spec §3.4). Every value is a `ResolvedTheme` field or the one
+//! derivation in spec §9.4 (`scaled_text_size`), with two conversions the
+//! receiving widget forces: [`tooltip_content`] turns the platform's outer
+//! tooltip width into the inner box its text wraps in, and
 //! [`scrollbar_gutter`] turns the scrollbar groove width the base layer
 //! installs into the strip a non-overlay bar needs beside the content.
+//!
+//! **Padding is per side, and only what is stated.** A builder that pads sets
+//! a side (`pt`, `pr`, `pb`, `pl`) only where the theme states it
+//! (`ResolvedPadding`); an unstated side leaves the widget's own padding in
+//! place.
+//!
+//! **Control heights.** [`button`], [`input`], [`select`], [`combobox`],
+//! [`menu_item`] and [`list_item`] share one rule. Each applies the
+//! platform's `defaults.line_height` as the control's line height, so text
+//! lays out with the platform's metrics. At a text-scaling factor of 1 or
+//! less the control takes its stated height, through the property its
+//! builder has always used (`h`, or `min_h` for the select and combobox);
+//! above 1 it takes the stated height as a minimum and an automatic height,
+//! so layout grows the control around its drawn text and padding. The rule
+//! is for single-line controls.
 //!
 //! Geometry, with one exception that is not geometry: seven builders also
 //! carry the platform's text colour. A builder carries it only where the
@@ -57,11 +72,12 @@
 //! comments.
 //!
 //! Upstream citations in this module are verified against gpui-component 0.6.4,
-//! gpui-base 0.6.4 and gpui-pre 0.3.5.
+//! gpui-base 0.6.4 and gpui-pre 0.3.5; the per-side padding and height-rule
+//! citations against gpui-component 0.6.6 and gpui-pre 0.3.6.
 
-use gpui::{FontWeight, Pixels, StyleRefinement, Styled, px};
+use gpui::{FontWeight, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
-use native_theme::theme::{LayoutTheme, ResolvedBorderSpec, ResolvedFontSpec};
+use native_theme::theme::{LayoutTheme, ResolvedFontSpec, ResolvedPadding};
 
 use crate::colors::rgba_to_hsla;
 use crate::{Native, text_scale_factor};
@@ -100,34 +116,78 @@ fn with_coloured_text(
     with_text(r, font, n).text_color(rgba_to_hsla(font.color))
 }
 
-/// Control height (spec §9.4, rationale §5.3):
-/// `max(theme_height, ceil(font.size × s × defaults.line_height) + 2 × padding_vertical)`.
+/// Each side the theme states, and no other: an unstated side leaves the
+/// receiving widget's own padding in place.
+fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
+    let r = match p.top {
+        Some(v) => r.pt(px(v)),
+        None => r,
+    };
+    let r = match p.right {
+        Some(v) => r.pr(px(v)),
+        None => r,
+    };
+    let r = match p.bottom {
+        Some(v) => r.pb(px(v)),
+        None => r,
+    };
+    match p.left {
+        Some(v) => r.pl(px(v)),
+        None => r,
+    }
+}
+
+/// The style property a control's stated height goes through at a
+/// text-scaling factor of 1 or less.
+#[derive(Clone, Copy)]
+enum HeightProp {
+    /// `Styled::h`: the button, input, menu row and list row.
+    Height,
+    /// `Styled::min_h`: the select and combobox.
+    MinHeight,
+}
+
+/// The control-height rule (module doc, rationale §5 point 3).
 ///
-/// At `s = 1` a platform's declared height already accommodates its text, so
-/// this returns the theme's own value; it grows only when scaled text would be
-/// clipped by gpui-component's fixed heights.
-#[must_use]
-pub fn control_height(
-    theme_height: f32,
-    font: &ResolvedFontSpec,
-    border: &ResolvedBorderSpec,
+/// The platform's `defaults.line_height` becomes the control's line height:
+/// each receiving widget takes the refinement after its own line height
+/// (`button/button.rs:689` → `:690`, `input/input.rs:699` → `:719`) or sets
+/// none (`list/list_item.rs:182-193`, `select.rs:535-546`,
+/// `combobox.rs:980-997`), so the platform's wins. At a text-scaling factor
+/// of 1 or less, `stated` is the control's height through `prop`; above 1,
+/// `stated` is its minimum and the height is automatic, so layout grows the
+/// control around its drawn text and padding.
+fn with_height_rule(
+    r: StyleRefinement,
+    stated: f32,
+    prop: HeightProp,
     n: Native<'_>,
-) -> Pixels {
-    let text =
-        (font.size * text_scale_factor(n.accessibility) * n.resolved.defaults.line_height).ceil();
-    px(theme_height.max(text + 2.0 * border.padding_vertical))
+) -> StyleRefinement {
+    let r = r.line_height(relative(n.resolved.defaults.line_height));
+    if text_scale_factor(n.accessibility) <= 1.0 {
+        match prop {
+            HeightProp::Height => r.h(px(stated)),
+            HeightProp::MinHeight => r.min_h(px(stated)),
+        }
+    } else {
+        r.min_h(px(stated)).h_auto()
+    }
 }
 
 /// `Button` (gpui-component `src/button/button.rs:626-663` → refined at `:690`).
 /// The label's text size is set on an inner element (`:698-706`), Tier U.
+///
+/// Height by the control-height rule (module doc), through `h`.
 #[must_use]
 pub fn button(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
-    StyleRefinement::default()
-        .h(control_height(b.min_height, &b.font, &b.border, n))
-        .min_w(px(b.min_width))
-        .px(px(b.border.padding_horizontal))
-        .py(px(b.border.padding_vertical))
+    let r = with_height_rule(
+        StyleRefinement::default(),
+        b.min_height,
+        HeightProp::Height,
+        n,
+    );
+    with_padding(r.min_w(px(b.min_width)), &b.border.padding)
         .rounded(px(b.border.corner_radius.max(0.0)))
         .border(px(b.border.line_width))
         .border_color(rgba_to_hsla(b.border.color))
@@ -144,13 +204,32 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         .font_weight(weight_of(&b.font))
 }
 
-/// `Input` root (`src/input/input.rs:704-714` → `:719`); padding is inner, Tier U.
+/// `Input` root (`src/input/input.rs:704-714` → `:719`).
+///
+/// Height by the control-height rule (module doc), through `h`. The rule is
+/// for a single-line field: a multi-line `Input` sets its own height before
+/// this refinement (`input/input.rs:705-708`), which the rule's `h` would
+/// replace, so a caller that wants a multi-line height applies its own
+/// `Styled::h` after this builder.
+///
+/// The stated padding sides reach the root: upstream pads a single-line
+/// field (`input_px`/`input_py`, `input/input.rs:701`) before the refinement
+/// at `:719`, so the refinement wins, and the field's text element has no
+/// padding of its own to double it. One exception: an `Input` with a suffix
+/// takes its right padding from upstream *after* the refinement
+/// (`input/input.rs:736`, `this.pr(self.size.input_px())`), so there the
+/// platform's right side does not arrive.
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
+    let r = with_height_rule(
+        StyleRefinement::default(),
+        i.min_height,
+        HeightProp::Height,
+        n,
+    );
     with_text(
-        StyleRefinement::default()
-            .h(control_height(i.min_height, &i.font, &i.border, n))
+        with_padding(r, &i.border.padding)
             .rounded(px(i.border.corner_radius.max(0.0)))
             .border(px(i.border.line_width)),
         &i.font,
@@ -165,15 +244,19 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 /// crate-private in a private module (`src/menu/menu_item.rs:10-11`,
 /// `src/menu/mod.rs:6`) and `PopupMenu` builds its own rows, so the receiver
 /// the v0.5.8 documentation named does not exist.
+///
+/// Height by the control-height rule (module doc), through `h`.
 #[must_use]
 pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     let m = &n.resolved.menu;
+    let r = with_height_rule(
+        StyleRefinement::default(),
+        m.row_height,
+        HeightProp::Height,
+        n,
+    );
     with_text(
-        StyleRefinement::default()
-            .h(control_height(m.row_height, &m.font, &m.border, n))
-            .px(px(m.border.padding_horizontal))
-            .py(px(m.border.padding_vertical))
-            .gap_x(px(m.icon_text_gap)),
+        with_padding(r, &m.border.padding).gap_x(px(m.icon_text_gap)),
         &m.font,
         n,
     )
@@ -186,17 +269,18 @@ pub fn menu_item(n: Native<'_>) -> StyleRefinement {
 /// `list.item_font.color` is the window's text colour in every bundled preset,
 /// so this changes no pixel; it is what honours a preset that states a row
 /// colour of its own.
+///
+/// Height by the control-height rule (module doc), through `h`.
 #[must_use]
 pub fn list_item(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.list;
-    with_coloured_text(
-        StyleRefinement::default()
-            .h(control_height(l.row_height, &l.item_font, &l.border, n))
-            .px(px(l.border.padding_horizontal))
-            .py(px(l.border.padding_vertical)),
-        &l.item_font,
+    let r = with_height_rule(
+        StyleRefinement::default(),
+        l.row_height,
+        HeightProp::Height,
         n,
-    )
+    );
+    with_coloured_text(with_padding(r, &l.border.padding), &l.item_font, n)
 }
 
 /// Application-built `Tooltip` (`src/tooltip.rs:120-125` → `:126`).
@@ -216,9 +300,7 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
     with_coloured_text(
-        StyleRefinement::default()
-            .px(px(t.border.padding_horizontal))
-            .py(px(t.border.padding_vertical))
+        with_padding(StyleRefinement::default(), &t.border.padding)
             .rounded(px(t.border.corner_radius.max(0.0))),
         &t.font,
         n,
@@ -245,6 +327,13 @@ const TOOLTIP_BORDER: f32 = 1.0;
 /// content instead, the same width is what the text wraps at, and the bubble
 /// grows to exactly `tooltip.max_width` around it.
 ///
+/// A side the platform does not state is upstream's own `px_2`
+/// (`src/tooltip.rs:123`), which is 0.5 rem (gpui-pre-macros
+/// `src/styles.rs:949-950`), converted at the font size this connector
+/// installs as the rem: `defaults.font.size` × the text-scaling factor
+/// (`theme.font_size` in [`crate::to_theme`], which gpui-component's `Root`
+/// sets as the window's rem size, `src/root.rs:582`).
+///
 /// Never negative: a platform that states a width narrower than its own
 /// paddings leaves nothing for the text rather than a width gpui would reject.
 ///
@@ -252,17 +341,26 @@ const TOOLTIP_BORDER: f32 = 1.0;
 #[must_use]
 pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
-    let inner = t.max_width - 2.0 * (t.border.padding_horizontal + TOOLTIP_BORDER);
+    let upstream_side = TOOLTIP_UPSTREAM_PX_REM
+        * n.resolved.defaults.font.size
+        * text_scale_factor(n.accessibility);
+    let left = t.border.padding.left.unwrap_or(upstream_side);
+    let right = t.border.padding.right.unwrap_or(upstream_side);
+    let inner = t.max_width - left - right - 2.0 * TOOLTIP_BORDER;
     StyleRefinement::default().max_w(px(inner.max(0.0)))
 }
 
-/// `Popover` (`src/popover.rs:284` → `:312`).
+/// Upstream's horizontal tooltip padding, `px_2` (`src/tooltip.rs:123`), in
+/// rem: gpui's spacing suffix `2` is `rems(0.5)` (gpui-pre-macros
+/// `src/styles.rs:949-950`).
+const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
+
+/// `Popover` (`src/popover.rs:284` → `:312`). An unstated side keeps
+/// upstream's `p_3` (`:284`).
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
-    StyleRefinement::default()
-        .px(px(p.border.padding_horizontal))
-        .py(px(p.border.padding_vertical))
+    with_padding(StyleRefinement::default(), &p.border.padding)
         .rounded(px(p.border.corner_radius.max(0.0)))
 }
 
@@ -271,14 +369,12 @@ pub fn popover(n: Native<'_>) -> StyleRefinement {
 /// The colour is carried because upstream labels the bar with
 /// `muted_foreground` (`:95`), one line before it applies this refinement, and
 /// every preset states a status-bar colour of its own that `ThemeColor` has no
-/// field for.
+/// field for. An unstated side keeps upstream's `px_2 py_1` (`:89-90`).
 #[must_use]
 pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     let s = &n.resolved.status_bar;
     with_coloured_text(
-        StyleRefinement::default()
-            .px(px(s.border.padding_horizontal))
-            .py(px(s.border.padding_vertical)),
+        with_padding(StyleRefinement::default(), &s.border.padding),
         &s.font,
         n,
     )
@@ -295,12 +391,18 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 /// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
 /// refinement. Kept here for an application-drawn dialog and for the day
 /// upstream takes a `max_h` prop (spec v0.5.9 §4, E18).
+///
+/// Upstream reads the four padding sides back out of this style
+/// (`dialog/dialog.rs:540-552`, 0.6.6), starting from 16px on each side, so
+/// an unstated side keeps that 16px. It also reuses them as gaps: the gap
+/// between the dialog's sections is `max(top, 8px)` (`:620`), and a
+/// `DialogContent`'s gap is the bottom padding (`:656`). A platform that
+/// states 32 top and 24 bottom, as GNOME does (docs/platform-facts.md §2.22),
+/// therefore also spaces the sections by 32 and the content by 24.
 #[must_use]
 pub fn dialog(n: Native<'_>) -> StyleRefinement {
     let d = &n.resolved.dialog;
-    StyleRefinement::default()
-        .px(px(d.border.padding_horizontal))
-        .py(px(d.border.padding_vertical))
+    with_padding(StyleRefinement::default(), &d.border.padding)
         .min_h(px(d.min_height))
         .max_h(px(d.max_height))
         .rounded(px(d.border.corner_radius.max(0.0)))
@@ -389,9 +491,7 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.card;
-    StyleRefinement::default()
-        .px(px(c.border.padding_horizontal))
-        .py(px(c.border.padding_vertical))
+    with_padding(StyleRefinement::default(), &c.border.padding)
         .rounded(px(c.border.corner_radius.max(0.0)))
         .border(px(c.border.line_width))
         .border_color(rgba_to_hsla(c.border.color))
@@ -441,15 +541,46 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 
 /// The metrics `Select` and `Combobox` share; only the text colour separates
 /// the two.
+///
+/// Height by the control-height rule (module doc), through `min_h`: upstream
+/// gives both triggers their own `h_8` for `Size::Medium` (`input_size`,
+/// `sizing.rs:236-237`, `:261-264`), so at a text-scaling factor of 1 or
+/// less the trigger is the larger of the two.
+///
+/// The stated padding sides reach the trigger: upstream pads it
+/// (`input_size`, `select.rs:544`, `combobox.rs:995`) before the refinement
+/// (`select.rs:546`, `combobox.rs:997`), so the refinement wins, and no inner
+/// element pads again. The caret sits inside that padded trigger
+/// (`select.rs:57-66`, `combobox.rs:1009-1026`), so a platform whose right
+/// side is measured to a separate arrow column, as WinUI's combobox is
+/// (docs/platform-facts.md §2.24), has no receiver for it here; that side is
+/// left unstated in the model.
 fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
-    StyleRefinement::default()
-        .min_h(control_height(c.min_height, &c.font, &c.border, n))
+    let r = with_height_rule(
+        StyleRefinement::default(),
+        c.min_height,
+        HeightProp::MinHeight,
+        n,
+    );
+    with_padding(r, &c.border.padding)
         .min_w(px(c.min_width))
         .rounded(px(c.border.corner_radius.max(0.0)))
 }
 
 /// `Select` (`src/select.rs:535-545` → `:546`); the arrow is inner, Tier U.
+/// Height by the control-height rule (module doc), through `min_h`:
+/// upstream gives the trigger its own `h_8` for `Size::Medium`
+/// (`input_size`, `sizing.rs:236-237`, `:261-264`), so at a text-scaling
+/// factor of 1 or less the trigger is the larger of the two.
+///
+/// The stated padding sides reach the trigger: upstream pads it
+/// (`input_size`, `select.rs:544`) before the refinement (`:546`), so the
+/// refinement wins, and no inner element pads again. The caret sits inside
+/// that padded trigger (`select.rs:57-66`), so a platform whose right side is
+/// measured to a separate arrow column, as WinUI's combobox is
+/// (docs/platform-facts.md §2.24), has no receiver for it here; that side is
+/// left unstated in the model.
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the trigger with `foreground` through `input_style`
@@ -494,20 +625,23 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 }
 
 /// An application-drawn toolbar row (docs/platform-facts.md §2.13):
-/// `toolbar.bar_height` as its minimum height -- KDE's toolbar sizes to its
-/// content, so a fixed height would be an invention there --,
-/// `toolbar.item_gap` between items, `toolbar.border` padding,
-/// `toolbar.background_color`, and `toolbar.font` size and weight. No edge:
-/// §2.13 states none; an application that wants a rule draws a Separator.
+/// `toolbar.bar_height` as its minimum height where the platform states one
+/// -- a toolbar that sizes to its content, as KDE's does, states none, and a
+/// fixed height would be an invention there --, `toolbar.item_gap` between
+/// items, the `toolbar.border` padding sides the platform states,
+/// `toolbar.background_color`, and `toolbar.font` size and weight. The row
+/// is the application's own, so an unstated side or height is left to the
+/// application. No edge: §2.13 states none; an application that wants a
+/// rule draws a Separator.
 #[must_use]
 pub fn toolbar(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
-    with_text(StyleRefinement::default(), &t.font, n)
-        .min_h(px(t.bar_height))
-        .gap(px(t.item_gap))
-        .px(px(t.border.padding_horizontal))
-        .py(px(t.border.padding_vertical))
-        .bg(rgba_to_hsla(t.background_color))
+    let r = with_text(StyleRefinement::default(), &t.font, n);
+    let r = match t.bar_height {
+        Some(h) => r.min_h(px(h)),
+        None => r,
+    };
+    with_padding(r.gap(px(t.item_gap)), &t.border.padding).bg(rgba_to_hsla(t.background_color))
 }
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
@@ -588,16 +722,23 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
     px(n.resolved.dialog.max_width)
 }
 
-/// An `Input`'s height alone: the same control height [`input`] sets.
+/// An `Input`'s height rule alone: the line height and height [`input`]
+/// sets, and nothing else of its refinement.
 ///
-/// A single-line `Input` takes it through `Styled::h`, the caller's style,
-/// which `Input` refines its root with last (`src/input/input.rs:481-485`,
-/// `:719`). `Input::h` does not reach one: upstream applies that height to a
-/// multi-line input only (`src/input/input.rs:706-709`).
+/// A single-line `Input` takes it through `StyledExt::refine_style`, the
+/// caller's style, which `Input` refines its root with last
+/// (`src/input/input.rs:719`). Above a text-scaling factor of 1 the rule's
+/// height is automatic, so the field then grows around its own drawn text
+/// and padding -- upstream's, unless the caller also gives it the
+/// platform's.
 #[must_use]
-pub fn input_height(n: Native<'_>) -> Pixels {
-    let i = &n.resolved.input;
-    control_height(i.min_height, &i.font, &i.border, n)
+pub fn input_height(n: Native<'_>) -> StyleRefinement {
+    with_height_rule(
+        StyleRefinement::default(),
+        n.resolved.input.min_height,
+        HeightProp::Height,
+        n,
+    )
 }
 
 // --- Layout accessors (spec §9.5) ---------------------------------------------
@@ -664,12 +805,59 @@ mod tests {
     fn abs(v: f32) -> Option<AbsoluteLength> {
         Some(px(v).into())
     }
+    /// A stated side as the refinement carries it; an unstated one is unset.
+    fn side(v: Option<f32>) -> Option<DefiniteLength> {
+        v.map(|v| px(v).into())
+    }
+    fn assert_padding(out: &StyleRefinement, p: &ResolvedPadding, what: &str) {
+        assert_eq!(out.padding.top, side(p.top), "{what}: top");
+        assert_eq!(out.padding.right, side(p.right), "{what}: right");
+        assert_eq!(out.padding.bottom, side(p.bottom), "{what}: bottom");
+        assert_eq!(out.padding.left, side(p.left), "{what}: left");
+    }
+    /// The control-height rule: the platform's line height, and at s <= 1 the
+    /// stated height through `h` (or `min_h`), above 1 a stated minimum and an
+    /// automatic height.
+    fn assert_height_rule(
+        out: &StyleRefinement,
+        r: &ResolvedTheme,
+        stated: f32,
+        s: f32,
+        through_min_h: bool,
+        what: &str,
+    ) {
+        assert_eq!(
+            out.text.line_height,
+            Some(relative(r.defaults.line_height)),
+            "{what}: the platform's line height"
+        );
+        if s <= 1.0 {
+            if through_min_h {
+                assert_eq!(out.min_size.height, len(stated), "{what}: min height");
+                assert_eq!(out.size.height, None, "{what}: no fixed height");
+            } else {
+                assert_eq!(out.size.height, len(stated), "{what}: height");
+                assert_eq!(out.min_size.height, None, "{what}: no minimum");
+            }
+        } else {
+            assert_eq!(
+                out.min_size.height,
+                len(stated),
+                "{what}: min height above 1"
+            );
+            assert_eq!(
+                out.size.height,
+                Some(Length::Auto),
+                "{what}: automatic height above 1"
+            );
+        }
+    }
 
     const CASES: &[(&str, ColorMode)] = &[
         ("catppuccin-mocha", ColorMode::Dark),
         ("catppuccin-latte", ColorMode::Light),
     ];
-    const FACTORS: &[f32] = &[1.0, 1.5];
+    const FACTORS: &[f32] = &[1.0, 1.5, 0.8];
 
     /// Runs `check` for both presets and both factors with a `Native` view.
     fn for_each_case(mut check: impl FnMut(&ResolvedTheme, f32, Native<'_>)) {
@@ -699,18 +887,12 @@ mod tests {
 
     #[test]
     fn button_refinement_matches_theme_values() {
-        for_each_case(|r, _s, n| {
+        for_each_case(|r, s, n| {
             let b = &r.button;
             let out = button(n);
-            assert_eq!(
-                out.size.height,
-                Some(control_height(b.min_height, &b.font, &b.border, n).into())
-            );
+            assert_height_rule(&out, r, b.min_height, s, false, "button");
             assert_eq!(out.min_size.width, len(b.min_width));
-            assert_eq!(out.padding.left, def(b.border.padding_horizontal));
-            assert_eq!(out.padding.right, def(b.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(b.border.padding_vertical));
-            assert_eq!(out.padding.bottom, def(b.border.padding_vertical));
+            assert_padding(&out, &b.border.padding, "button");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(b.border.corner_radius.max(0.0))
@@ -738,20 +920,32 @@ mod tests {
         for_each_case(|r, s, n| {
             let i = &r.input;
             let out = input(n);
-            assert_eq!(
-                out.size.height,
-                Some(control_height(i.min_height, &i.font, &i.border, n).into())
-            );
+            assert_height_rule(&out, r, i.min_height, s, false, "input");
+            assert_padding(&out, &i.border.padding, "input");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(i.border.corner_radius.max(0.0))
             );
             assert_eq!(out.border_widths.top, abs(i.border.line_width));
             assert_text(&out, &i.font, s);
-            assert_eq!(
-                input_height(n),
-                control_height(i.min_height, &i.font, &i.border, n)
-            );
+        });
+    }
+
+    /// `input_height` is the height rule [`input`] applies, and nothing else
+    /// of its refinement.
+    #[test]
+    fn input_height_is_the_height_rule_alone() {
+        for_each_case(|r, s, n| {
+            let out = input_height(n);
+            assert_height_rule(&out, r, r.input.min_height, s, false, "input_height");
+            let full = input(n);
+            assert_eq!(out.size.height, full.size.height);
+            assert_eq!(out.min_size.height, full.min_size.height);
+            assert_eq!(out.text.line_height, full.text.line_height);
+            assert_eq!(out.padding, StyleRefinement::default().padding);
+            assert_eq!(out.text.font_size, None);
+            assert_eq!(out.border_widths, StyleRefinement::default().border_widths);
+            assert_eq!(out.corner_radii, StyleRefinement::default().corner_radii);
         });
     }
 
@@ -760,24 +954,16 @@ mod tests {
         for_each_case(|r, s, n| {
             let m = &r.menu;
             let out = menu_item(n);
-            assert_eq!(
-                out.size.height,
-                Some(control_height(m.row_height, &m.font, &m.border, n).into())
-            );
-            assert_eq!(out.padding.left, def(m.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(m.border.padding_vertical));
+            assert_height_rule(&out, r, m.row_height, s, false, "menu_item");
+            assert_padding(&out, &m.border.padding, "menu_item");
             assert_eq!(out.gap.width, def(m.icon_text_gap));
             assert_eq!(out.gap.height, None, "gap_x sets the column gap only");
             assert_text(&out, &m.font, s);
 
             let l = &r.list;
             let out = list_item(n);
-            assert_eq!(
-                out.size.height,
-                Some(control_height(l.row_height, &l.item_font, &l.border, n).into())
-            );
-            assert_eq!(out.padding.left, def(l.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(l.border.padding_vertical));
+            assert_height_rule(&out, r, l.row_height, s, false, "list_item");
+            assert_padding(&out, &l.border.padding, "list_item");
             assert_text(&out, &l.item_font, s);
         });
     }
@@ -790,12 +976,16 @@ mod tests {
             // The width is the content element's, not the bubble's: a bubble
             // that states it clamps itself and not its text.
             assert_eq!(out.max_size.width, None);
+            let upstream = TOOLTIP_UPSTREAM_PX_REM * r.defaults.font.size * s;
             assert_eq!(
                 tooltip_content(n).max_size.width,
-                len(t.max_width - 2.0 * (t.border.padding_horizontal + TOOLTIP_BORDER))
+                len((t.max_width
+                    - t.border.padding.left.unwrap_or(upstream)
+                    - t.border.padding.right.unwrap_or(upstream)
+                    - 2.0 * TOOLTIP_BORDER)
+                    .max(0.0))
             );
-            assert_eq!(out.padding.left, def(t.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(t.border.padding_vertical));
+            assert_padding(&out, &t.border.padding, "tooltip");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(t.border.corner_radius.max(0.0))
@@ -804,8 +994,7 @@ mod tests {
 
             let p = &r.popover;
             let out = popover(n);
-            assert_eq!(out.padding.left, def(p.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(p.border.padding_vertical));
+            assert_padding(&out, &p.border.padding, "popover");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(p.border.corner_radius.max(0.0))
@@ -813,8 +1002,7 @@ mod tests {
 
             let sb = &r.status_bar;
             let out = status_bar(n);
-            assert_eq!(out.padding.left, def(sb.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(sb.border.padding_vertical));
+            assert_padding(&out, &sb.border.padding, "status_bar");
             assert_text(&out, &sb.font, s);
         });
     }
@@ -1071,8 +1259,7 @@ mod tests {
         for_each_case(|r, s, n| {
             let d = &r.dialog;
             let out = dialog(n);
-            assert_eq!(out.padding.left, def(d.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(d.border.padding_vertical));
+            assert_padding(&out, &d.border.padding, "dialog");
             assert_eq!(out.min_size.height, len(d.min_height));
             assert_eq!(out.max_size.height, len(d.max_height));
             assert_eq!(
@@ -1139,8 +1326,7 @@ mod tests {
 
             let c = &r.card;
             let out = group_box_content(n);
-            assert_eq!(out.padding.left, def(c.border.padding_horizontal));
-            assert_eq!(out.padding.top, def(c.border.padding_vertical));
+            assert_padding(&out, &c.border.padding, "group_box_content");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(c.border.corner_radius.max(0.0))
@@ -1168,10 +1354,8 @@ mod tests {
 
             let cb = &r.combo_box;
             let out = select(n);
-            assert_eq!(
-                out.min_size.height,
-                Some(control_height(cb.min_height, &cb.font, &cb.border, n).into())
-            );
+            assert_height_rule(&out, r, cb.min_height, s, true, "select");
+            assert_padding(&out, &cb.border.padding, "select");
             assert_eq!(out.min_size.width, len(cb.min_width));
             assert_eq!(
                 out.corner_radii.top_left,
@@ -1179,6 +1363,8 @@ mod tests {
             );
             assert_text(&out, &cb.font, s);
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
+            assert_height_rule(&combobox(n), r, cb.min_height, s, true, "combobox");
+            assert_padding(&combobox(n), &cb.border.padding, "combobox");
         });
     }
 
@@ -1196,8 +1382,9 @@ mod tests {
     }
 
     /// Over every preset in both modes: the row is the model's `toolbar`, with
-    /// the bar height as a floor rather than a fixed height (KDE's toolbar
-    /// sizes to its content, platform-facts §2.13) and no edge.
+    /// the bar height as a floor rather than a fixed height, and only where it
+    /// is stated (KDE's toolbar sizes to its content, platform-facts §2.13),
+    /// and no edge.
     #[test]
     fn toolbar_carries_the_models_toolbar() {
         for info in Theme::list_presets() {
@@ -1211,29 +1398,14 @@ mod tests {
                 let at = format!("{}/{mode:?}", info.key);
                 let t = &r.toolbar;
                 let out = toolbar(n);
-                assert_eq!(out.min_size.height, len(t.bar_height), "{at}: bar height");
+                assert_eq!(
+                    out.min_size.height,
+                    t.bar_height.map(|h| px(h).into()),
+                    "{at}: bar height"
+                );
                 assert_eq!(out.size.height, None, "{at}: the height is a floor");
                 assert_eq!(out.gap.width, def(t.item_gap), "{at}: item gap");
-                assert_eq!(
-                    out.padding.left,
-                    def(t.border.padding_horizontal),
-                    "{at}: padding"
-                );
-                assert_eq!(
-                    out.padding.right,
-                    def(t.border.padding_horizontal),
-                    "{at}: padding"
-                );
-                assert_eq!(
-                    out.padding.top,
-                    def(t.border.padding_vertical),
-                    "{at}: padding"
-                );
-                assert_eq!(
-                    out.padding.bottom,
-                    def(t.border.padding_vertical),
-                    "{at}: padding"
-                );
+                assert_padding(&out, &t.border.padding, &at);
                 assert_eq!(
                     out.background,
                     Some(rgba_to_hsla(t.background_color).into()),
@@ -1289,52 +1461,122 @@ mod tests {
         assert_eq!(widget_gap(&LayoutTheme::default()), None);
     }
 
-    /// §9.4, rationale §2.23: at s = 1 the platform's own height wins.
+    /// A theme whose padding sides are stated on some sides and not on
+    /// others: stated sides of zero and of a number, and unstated ones.
+    fn partly_stated() -> ResolvedTheme {
+        let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
+        let p = ResolvedPadding {
+            top: Some(0.0),
+            right: None,
+            bottom: None,
+            left: Some(7.0),
+        };
+        for b in [
+            &mut r.button.border,
+            &mut r.input.border,
+            &mut r.menu.border,
+            &mut r.list.border,
+            &mut r.tooltip.border,
+            &mut r.popover.border,
+            &mut r.status_bar.border,
+            &mut r.dialog.border,
+            &mut r.card.border,
+            &mut r.combo_box.border,
+            &mut r.toolbar.border,
+        ] {
+            b.padding = p;
+        }
+        r
+    }
+
+    /// Every builder that pads sets the sides the theme states and leaves the
+    /// others unset, so the receiving widget keeps its own padding there.
     #[test]
-    fn control_height_returns_theme_height_when_text_fits() {
-        for preset in ["kde-breeze", "adwaita"] {
-            let r = resolved(preset, ColorMode::Light);
-            let prefs = scaled(1.0);
+    fn each_padding_builder_leaves_unstated_sides_unset() {
+        let r = partly_stated();
+        let n = Native::unscaled(&r);
+        type Builder = fn(Native<'_>) -> StyleRefinement;
+        let builders: [(&str, Builder); 11] = [
+            ("button", button),
+            ("input", input),
+            ("menu_item", menu_item),
+            ("list_item", list_item),
+            ("tooltip", tooltip),
+            ("popover", popover),
+            ("status_bar", status_bar),
+            ("dialog", dialog),
+            ("group_box_content", group_box_content),
+            ("select", select),
+            ("toolbar", toolbar),
+        ];
+        for (what, build) in builders {
+            let out = build(n);
+            assert_eq!(out.padding.top, def(0.0), "{what}: a stated zero is set");
+            assert_eq!(out.padding.left, def(7.0), "{what}: a stated side is set");
+            assert_eq!(out.padding.right, None, "{what}: an unstated side is set");
+            assert_eq!(out.padding.bottom, None, "{what}: an unstated side is set");
+        }
+        let out = combobox(n);
+        assert_eq!(out.padding.right, None, "combobox: an unstated side is set");
+        assert_eq!(out.padding.left, def(7.0), "combobox");
+    }
+
+    /// Without a stated bar height the application's row keeps its own.
+    #[test]
+    fn toolbar_leaves_min_height_unset_without_a_bar_height() {
+        let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
+        r.toolbar.bar_height = None;
+        let out = toolbar(Native::unscaled(&r));
+        assert_eq!(out.min_size.height, None);
+        assert_eq!(out.size.height, None);
+        r.toolbar.bar_height = Some(40.0);
+        assert_eq!(toolbar(Native::unscaled(&r)).min_size.height, len(40.0));
+    }
+
+    /// An unstated tooltip side is upstream's `px_2`, 0.5 rem at the rem this
+    /// connector installs (`defaults.font.size` × the text-scaling factor);
+    /// a stated side is the platform's.
+    #[test]
+    fn tooltip_content_uses_upstreams_rem_padding_for_an_unstated_side() {
+        let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
+        r.tooltip.border.padding = ResolvedPadding {
+            top: None,
+            right: None,
+            bottom: None,
+            left: Some(3.0),
+        };
+        for s in [1.0, 2.0] {
+            let prefs = scaled(s);
             let n = Native {
                 resolved: &r,
                 accessibility: &prefs,
             };
-            let b = &r.button;
-            let text =
-                (b.font.size * r.defaults.line_height).ceil() + 2.0 * b.border.padding_vertical;
-            assert!(
-                text <= b.min_height,
-                "{preset}: precondition, text {text} must fit in {}",
-                b.min_height
-            );
+            let rem = r.defaults.font.size * s;
             assert_eq!(
-                control_height(b.min_height, &b.font, &b.border, n),
-                px(b.min_height)
+                tooltip_content(n).max_size.width,
+                len(r.tooltip.max_width - 3.0 - 0.5 * rem - 2.0 * TOOLTIP_BORDER),
+                "at s = {s}"
             );
         }
     }
 
-    /// §9.4: at s = 1.5 scaled text no longer fits and the height grows.
+    /// At s <= 1 the stated height is exact; above 1 it is a floor and the
+    /// height is laid out. The boundary is exactly 1.
     #[test]
-    fn control_height_grows_when_scaled_text_does_not_fit() {
-        for preset in ["kde-breeze", "adwaita"] {
-            let r = resolved(preset, ColorMode::Light);
-            let prefs = scaled(1.5);
+    fn the_height_rule_switches_above_a_text_scale_of_one() {
+        let r = resolved("kde-breeze", ColorMode::Light);
+        for (s, laid_out) in [(0.5, false), (1.0, false), (1.01, true), (2.0, true)] {
+            let prefs = scaled(s);
             let n = Native {
                 resolved: &r,
                 accessibility: &prefs,
             };
-            let b = &r.button;
-            let text = (b.font.size * 1.5 * r.defaults.line_height).ceil()
-                + 2.0 * b.border.padding_vertical;
-            assert!(
-                text > b.min_height,
-                "{preset}: precondition, scaled text {text} must exceed {}",
-                b.min_height
-            );
+            let out = button(n);
             assert_eq!(
-                control_height(b.min_height, &b.font, &b.border, n),
-                px(text)
+                out.size.height == Some(Length::Auto),
+                laid_out,
+                "at s = {s}: {:?}",
+                out.size.height
             );
         }
     }

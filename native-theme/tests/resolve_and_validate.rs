@@ -205,31 +205,20 @@ fn live_presets_geometry_matches_full_presets() {
                 full_var.button.min_height, live_var.button.min_height,
                 "{full_name} {label} button.min_height mismatch with live"
             );
+            let sides = |v: &native_theme::theme::ThemeMode| {
+                v.button.border.as_ref().map(|b| {
+                    (
+                        b.padding_top,
+                        b.padding_right,
+                        b.padding_bottom,
+                        b.padding_left,
+                    )
+                })
+            };
             assert_eq!(
-                full_var
-                    .button
-                    .border
-                    .as_ref()
-                    .and_then(|b| b.padding_horizontal),
-                live_var
-                    .button
-                    .border
-                    .as_ref()
-                    .and_then(|b| b.padding_horizontal),
-                "{full_name} {label} button.padding_horizontal mismatch with live"
-            );
-            assert_eq!(
-                full_var
-                    .button
-                    .border
-                    .as_ref()
-                    .and_then(|b| b.padding_vertical),
-                live_var
-                    .button
-                    .border
-                    .as_ref()
-                    .and_then(|b| b.padding_vertical),
-                "{full_name} {label} button.padding_vertical mismatch with live"
+                sides(full_var),
+                sides(live_var),
+                "{full_name} {label} button padding (top, right, bottom, left) mismatch with live"
             );
             // Input geometry
             assert_eq!(
@@ -479,4 +468,127 @@ fn segoe_icons_returns_none_on_non_windows() {
             "SegoeIcons should not load on non-Windows for {role:?}"
         );
     }
+}
+
+// === Unstated sizes stay unstated (spec v0.5.9 unstated-sizes §1.3) ===
+
+fn resolve_mode(v: ThemeMode) -> native_theme::Result<ResolvedTheme> {
+    v.into_resolved(&native_theme::ResolutionContext::for_tests())
+}
+
+/// A colour-scheme preset states no toolbar, dialog or status-bar padding,
+/// and resolves every one of those sides to `None` rather than to an
+/// invented `0.0`.
+#[test]
+fn a_colour_scheme_presets_unstated_paddings_resolve_to_none() {
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let v = Theme::preset("catppuccin-mocha")
+            .unwrap()
+            .into_variant(mode)
+            .unwrap();
+        for (widget, border) in [
+            ("toolbar", &v.toolbar.border),
+            ("dialog", &v.dialog.border),
+            ("status_bar", &v.status_bar.border),
+        ] {
+            let b = border.clone().unwrap_or_default();
+            assert_eq!(
+                (
+                    b.padding_top,
+                    b.padding_right,
+                    b.padding_bottom,
+                    b.padding_left
+                ),
+                (None, None, None, None),
+                "catppuccin-mocha {mode:?} states a {widget} padding; pick a preset that does not"
+            );
+        }
+        let r = resolve_mode(v).unwrap();
+        for (widget, padding) in [
+            ("toolbar", r.toolbar.border.padding),
+            ("dialog", r.dialog.border.padding),
+            ("status_bar", r.status_bar.border.padding),
+        ] {
+            assert_eq!(
+                padding,
+                ResolvedPadding::default(),
+                "{mode:?} {widget}: an unstated padding side must resolve to None"
+            );
+        }
+    }
+}
+
+/// A stated side resolves to exactly its value, and a stated zero stays a
+/// stated zero.
+#[test]
+fn a_stated_padding_side_resolves_to_its_value() {
+    let mut v = Theme::preset("catppuccin-mocha")
+        .unwrap()
+        .into_variant(ColorMode::Dark)
+        .unwrap();
+    let b = v.dialog.border.get_or_insert_default();
+    b.padding_top = Some(0.0);
+    b.padding_left = Some(12.0);
+    let r = resolve_mode(v).unwrap();
+    assert_eq!(
+        r.dialog.border.padding,
+        ResolvedPadding {
+            top: Some(0.0),
+            right: None,
+            bottom: None,
+            left: Some(12.0),
+        }
+    );
+}
+
+#[test]
+fn a_negative_padding_side_is_a_validation_error() {
+    let mut v = Theme::preset("catppuccin-mocha")
+        .unwrap()
+        .into_variant(ColorMode::Dark)
+        .unwrap();
+    v.button.border.get_or_insert_default().padding_bottom = Some(-1.0);
+    match resolve_mode(v) {
+        Err(Error::ResolutionInvalid { errors }) => {
+            assert!(
+                errors
+                    .iter()
+                    .any(|e| e.path == "button.border.padding_bottom" && e.value == -1.0),
+                "no violation names button.border.padding_bottom: {errors:?}"
+            );
+        }
+        other => panic!("a negative padding side must be a range violation, got {other:?}"),
+    }
+}
+
+#[test]
+fn toolbar_bar_height_is_none_where_absent() {
+    let mut v = Theme::preset("kde-breeze")
+        .unwrap()
+        .into_variant(ColorMode::Light)
+        .unwrap();
+    let stated = resolve_mode(v.clone()).unwrap().toolbar.bar_height;
+    assert!(
+        stated.is_some(),
+        "precondition: kde-breeze states a bar height today"
+    );
+    v.toolbar.bar_height = None;
+    assert_eq!(resolve_mode(v).unwrap().toolbar.bar_height, None);
+}
+
+#[test]
+fn a_negative_bar_height_is_a_validation_error() {
+    let mut v = Theme::preset("kde-breeze")
+        .unwrap()
+        .into_variant(ColorMode::Light)
+        .unwrap();
+    v.toolbar.bar_height = Some(-4.0);
+    assert!(
+        matches!(
+            resolve_mode(v),
+            Err(Error::ResolutionInvalid { ref errors })
+                if errors.iter().any(|e| e.path == "toolbar.bar_height")
+        ),
+        "a stated negative bar height must still be range-checked"
+    );
 }

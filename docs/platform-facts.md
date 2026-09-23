@@ -914,6 +914,16 @@ ambiguity for every dimension and spacing property:
    on the right (20 px total horizontal gap). When a platform has
    asymmetric padding (different left vs right, or different top vs
    bottom), the cell shows both values (e.g. "10 left / 6 right").
+   The model stores the four sides as separate fields —
+   `border.padding_top`, `border.padding_right`, `border.padding_bottom`
+   and `border.padding_left` (TOML `padding_top_px` … `padding_left_px`).
+   A cell with one number sets both sides of its axis, which a preset
+   may write with the TOML shorthand `padding_horizontal_px` or
+   `padding_vertical_px`; an asymmetric cell sets each side to its own
+   number, so "10 left / 6 right" is `padding_left_px = 10` and
+   `padding_right_px = 6`, and "5 top / 6 bottom" is
+   `padding_top_px = 5` and `padding_bottom_px = 6`. A side a cell does
+   not state stays unstated.
 
 3. **GNOME "sp" unit:** Some GNOME/libadwaita values are suffixed
    "sp" (e.g. "300sp"). This is libadwaita's scale-independent pixel
@@ -937,6 +947,7 @@ values differ per platform.
 - `border.shadow_enabled` — whether the widget casts a drop shadow.
 - `border.padding_horizontal` — per-side left/right space between the inner border edge and the widget's content (text, icon).
 - `border.padding_vertical` — per-side top/bottom space between the inner border edge and the widget's content.
+- In the model these two rows are four side fields, `border.padding_top`, `border.padding_right`, `border.padding_bottom` and `border.padding_left`; see conventions point 2 for how a cell maps to them.
 
 `defaults.border` provides: `line_width`, `corner_radius`,
 `corner_radius_lg`, `color`, `opacity`, `shadow_enabled`. Padding has

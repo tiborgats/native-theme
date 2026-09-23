@@ -10,7 +10,7 @@ use crate::demo::{self, InputField, InputGroupStates};
 use crate::support::with_gap;
 use crate::{
     INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
-    INPUTS_FIELD_HEIGHT_ONLY, PROBE_RATING, probe,
+    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, PROBE_RATING, probe,
 };
 
 impl Showcase {
@@ -64,10 +64,8 @@ impl Showcase {
                         )
                         .self_start(),
                     )
-                    // The same control height without the rest of the
-                    // refinement: what `geometry::input_height` is for, a
-                    // field that must line up with the one above without
-                    // taking its border or text size.
+                    // The same height rule without the rest of the
+                    // refinement: what `geometry::input_height` is for.
                     .child(
                         demo::text_input(
                             ui,
@@ -90,7 +88,7 @@ impl Showcase {
                 demo::textarea(
                     ui,
                     cx,
-                    "inputs-textarea",
+                    INPUTS_TEXTAREA,
                     &self.textarea_demo,
                     px(360.0),
                     px(90.0),

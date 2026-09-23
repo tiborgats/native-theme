@@ -209,12 +209,13 @@ pub(crate) use model::{
     AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ColorMode, ComboBoxTheme,
     DefaultsBorderSpec, DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec,
     FontStyle, IconData, IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme,
-    LinkTheme, ListTheme, MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec,
-    ResolvedDefaults, ResolvedFontSpec, ResolvedIconSizes, ResolvedTextScale,
-    ResolvedTextScaleEntry, ResolvedTheme, ScrollbarTheme, SegmentedControlTheme, SeparatorTheme,
-    SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme,
-    TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode, ToolbarTheme, TooltipTheme,
-    TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
+    LinkTheme, ListTheme, MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedDefaults,
+    ResolvedDefaultsBorder, ResolvedFontSpec, ResolvedIconSizes, ResolvedPadding,
+    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ResolvedWidgetBorder, ScrollbarTheme,
+    SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme,
+    StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, Theme, ThemeDefaults,
+    ThemeMode, ToolbarTheme, TooltipTheme, TransformAnimation, WidgetBorderSpec, WindowTheme,
+    bundled_icon_by_name, bundled_icon_svg,
 };
 pub use pipeline::{DiagnosticEntry, PlatformPreset};
 #[allow(unused_imports)]

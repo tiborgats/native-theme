@@ -42,57 +42,70 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
         let ident = &f.ident;
         let field_name = ident.to_string();
 
-        // Emit explicit range check if present
+        // Emit explicit range check if present. A soft-option field stays
+        // `Option<T>` on the resolved struct, so it is checked only where it
+        // is stated.
         if let Some(ref check) = f.range_check {
-            match check {
-                RangeCheck::NonNegative => {
-                    stmts.push(quote! {
-                        crate::resolve::validate_helpers::check_non_negative(
-                            self.#ident,
-                            prefix,
-                            #field_name,
-                            errors,
-                        );
-                    });
-                }
-                RangeCheck::Positive => {
-                    stmts.push(quote! {
-                        crate::resolve::validate_helpers::check_positive(
-                            self.#ident,
-                            prefix,
-                            #field_name,
-                            errors,
-                        );
-                    });
-                }
+            let soft = matches!(f.category, FieldCategory::SoftOption);
+            let value = if soft {
+                quote! { __value }
+            } else {
+                quote! { self.#ident }
+            };
+            let stmt = match check {
+                RangeCheck::NonNegative => quote! {
+                    crate::resolve::validate_helpers::check_non_negative(
+                        #value,
+                        prefix,
+                        #field_name,
+                        errors,
+                    );
+                },
+                RangeCheck::Positive => quote! {
+                    crate::resolve::validate_helpers::check_positive(
+                        #value,
+                        prefix,
+                        #field_name,
+                        errors,
+                    );
+                },
                 RangeCheck::Range { min, max } => {
                     let min_lit = *min as f32;
                     let max_lit = *max as f32;
-                    stmts.push(quote! {
+                    quote! {
                         crate::resolve::validate_helpers::check_range_f32(
-                            self.#ident,
+                            #value,
                             #min_lit,
                             #max_lit,
                             prefix,
                             #field_name,
                             errors,
                         );
-                    });
+                    }
                 }
                 RangeCheck::RangeU16 { min, max } => {
                     let min_lit = *min;
                     let max_lit = *max;
-                    stmts.push(quote! {
+                    quote! {
                         crate::resolve::validate_helpers::check_range_u16(
-                            self.#ident,
+                            #value,
                             #min_lit,
                             #max_lit,
                             prefix,
                             #field_name,
                             errors,
                         );
-                    });
+                    }
                 }
+            };
+            if soft {
+                stmts.push(quote! {
+                    if let Some(__value) = self.#ident {
+                        #stmt
+                    }
+                });
+            } else {
+                stmts.push(stmt);
             }
         }
 
@@ -106,6 +119,22 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                     prefix,
                     #field_name,
                     #pair_name,
+                    errors,
+                );
+            });
+        }
+
+        // Auto-emit the padding check for nested ResolvedWidgetBorder fields:
+        // every side the theme states must be >= 0; an unstated side is not
+        // checked.
+        if let FieldCategory::Nested { resolved_ty } = &f.category
+            && is_resolved_widget_border(resolved_ty)
+        {
+            stmts.push(quote! {
+                crate::resolve::validate_helpers::check_padding(
+                    &self.#ident.padding,
+                    prefix,
+                    #field_name,
                     errors,
                 );
             });
@@ -150,6 +179,16 @@ fn is_resolved_font_spec(ty: &syn::Type) -> bool {
         && let Some(seg) = type_path.path.segments.last()
     {
         return seg.ident == "ResolvedFontSpec";
+    }
+    false
+}
+
+/// Check if a type path refers to ResolvedWidgetBorder.
+fn is_resolved_widget_border(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty
+        && let Some(seg) = type_path.path.segments.last()
+    {
+        return seg.ident == "ResolvedWidgetBorder";
     }
     false
 }

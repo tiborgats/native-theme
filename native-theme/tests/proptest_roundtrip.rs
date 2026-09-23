@@ -65,12 +65,14 @@ prop_compose! {
         corner_radius in proptest::option::of(0.0f32..100.0),
         line_width in proptest::option::of(0.0f32..10.0),
         shadow_enabled in proptest::option::of(any::<bool>()),
-        padding_horizontal in proptest::option::of(0.0f32..100.0),
-        padding_vertical in proptest::option::of(0.0f32..100.0),
+        padding_top in proptest::option::of(0.0f32..100.0),
+        padding_right in proptest::option::of(0.0f32..100.0),
+        padding_bottom in proptest::option::of(0.0f32..100.0),
+        padding_left in proptest::option::of(0.0f32..100.0),
     ) -> WidgetBorderSpec {
         WidgetBorderSpec {
-            color, corner_radius, line_width,
-            shadow_enabled, padding_horizontal, padding_vertical,
+            color, corner_radius, line_width, shadow_enabled,
+            padding_top, padding_right, padding_bottom, padding_left,
         }
     }
 }

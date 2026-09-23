@@ -4,7 +4,7 @@
 // icon_sizes.rs, and mod.rs (ThemeMode), but with all fields
 // guaranteed populated. Produced by validate() after resolve().
 
-use super::border::ResolvedBorderSpec;
+use super::border::ResolvedDefaultsBorder;
 use super::font::ResolvedFontSpec;
 use crate::Rgba;
 
@@ -127,7 +127,7 @@ pub struct ResolvedDefaults {
 
     // ---- Global geometry ----
     /// Border sub-struct (color, corner_radius, line_width, etc.).
-    pub border: ResolvedBorderSpec,
+    pub border: ResolvedDefaultsBorder,
     /// Opacity for disabled controls.
     pub disabled_opacity: f32,
 
@@ -272,7 +272,7 @@ mod tests {
     use super::*;
     use crate::Rgba;
     use crate::model::ResolvedFontSpec;
-    use crate::model::border::ResolvedBorderSpec;
+    use crate::model::border::ResolvedDefaultsBorder;
     use crate::model::font::FontStyle;
 
     fn sample_font() -> ResolvedFontSpec {
@@ -286,16 +286,14 @@ mod tests {
         }
     }
 
-    fn sample_border() -> ResolvedBorderSpec {
-        ResolvedBorderSpec {
+    fn sample_border() -> ResolvedDefaultsBorder {
+        ResolvedDefaultsBorder {
             color: Rgba::rgb(200, 200, 200),
             corner_radius: 4.0,
             corner_radius_lg: 8.0,
             line_width: 1.0,
             opacity: 0.15,
             shadow_enabled: true,
-            padding_horizontal: 0.0,
-            padding_vertical: 0.0,
         }
     }
 

@@ -10,8 +10,8 @@
 use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
 
-use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text, px_text, text};
-use crate::demo::{ControlHeight, ControlWidget, ThemeToken};
+use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text};
+use crate::demo::ThemeToken;
 
 /// `hover_color`, which makes the field from the model's colour.
 fn hover(info: WidgetInfo) -> WidgetInfo {
@@ -1532,55 +1532,4 @@ pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> Widge
             "none: a square of the showcase's own in its frame, which reads Theme::border, Theme::radius and the platform's defaults.border.line_width (showcase-gpui/support.rs, demo_frame)",
         )
         .instance("label", format!("{field} {hex}"))
-}
-
-/// The Theme Map's row stating the control height of `widget`, which
-/// `geometry::control_height` computed as `height` where a native theme is
-/// installed.
-pub fn control_height(
-    t: &Theme,
-    widget: ControlWidget,
-    height: Option<&ControlHeight>,
-) -> WidgetInfo {
-    let w = widget.name();
-    let info = text::label_of(format!("control height, {w}")).color(claim(
-        "text",
-        "foreground",
-        t.foreground,
-        "gpui-component/label.rs:211",
-    ));
-    let info = match height {
-        Some(h) => info
-            .config(
-                "height",
-                format!(
-                    "{}px: the larger of {w}.min_height {}px and ceil({w}.font.size {}px × the text-scaling factor {} × defaults.line_height {}) + 2 × {w}.border.padding_vertical {}px (native-theme-gpui/lib.rs, text_scale_factor)",
-                    px_text(h.height),
-                    px_text(h.min_height),
-                    px_text(h.font_size),
-                    h.text_scale,
-                    h.line_height,
-                    px_text(h.padding_vertical),
-                ),
-            )
-            .instance(
-                "used by",
-                match widget {
-                    ControlWidget::Button => {
-                        "geometry::button, as the Button's height (native-theme-gpui/geometry.rs, button)"
-                    }
-                    ControlWidget::Input => {
-                        "geometry::input and geometry::input_height, as the Input's height (native-theme-gpui/geometry.rs, input_height)"
-                    }
-                },
-            ),
-        None => info.instance(
-            "height",
-            "none: no native theme is installed for this mode, so the connector computes no control height",
-        ),
-    };
-    info.instance(
-        "style",
-        "text_sm -- a rem, so it follows the platform's font -- in the foreground the Label paints itself (label.rs, Label::render)",
-    )
 }

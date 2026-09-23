@@ -746,8 +746,16 @@ fn fully_populated_variant() -> ThemeMode {
     v.button.primary_text_color = Some(c);
     v.button.min_width = Some(64.0);
     v.button.min_height = Some(28.0);
-    v.button.border.get_or_insert_default().padding_horizontal = Some(12.0);
-    v.button.border.get_or_insert_default().padding_vertical = Some(6.0);
+    {
+        let b = v.button.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
+    {
+        let b = v.button.border.get_or_insert_default();
+        b.padding_top = Some(6.0);
+        b.padding_bottom = Some(6.0);
+    }
     v.button.border.get_or_insert_default().corner_radius = Some(4.0);
     v.button.border.get_or_insert_default().line_width = Some(1.0);
     v.button.icon_text_gap = Some(6.0);
@@ -775,8 +783,16 @@ fn fully_populated_variant() -> ThemeMode {
     v.input.selection_background = Some(c);
     v.input.selection_text_color = Some(c);
     v.input.min_height = Some(28.0);
-    v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.input.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.input.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.input.disabled_opacity = Some(0.5);
     v.input.disabled_text_color = Some(c);
     v.input.hover_border_color = Some(c);
@@ -819,8 +835,16 @@ fn fully_populated_variant() -> ThemeMode {
     v.menu.font.get_or_insert_default().color = Some(c);
     v.menu.separator_color = Some(c);
     v.menu.row_height = Some(28.0);
-    v.menu.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.menu.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.menu.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.menu.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.menu.icon_text_gap = Some(6.0);
     v.menu.icon_size = Some(16.0);
     v.menu.hover_background = Some(c);
@@ -836,8 +860,16 @@ fn fully_populated_variant() -> ThemeMode {
     // tooltip
     v.tooltip.background_color = Some(c);
     v.tooltip.font.get_or_insert_default().color = Some(c);
-    v.tooltip.border.get_or_insert_default().padding_horizontal = Some(6.0);
-    v.tooltip.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.tooltip.border.get_or_insert_default();
+        b.padding_left = Some(6.0);
+        b.padding_right = Some(6.0);
+    }
+    {
+        let b = v.tooltip.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.tooltip.max_width = Some(300.0);
     v.tooltip.border.get_or_insert_default().corner_radius = Some(4.0);
     v.tooltip.border.get_or_insert_default().line_width = Some(1.0);
@@ -891,8 +923,16 @@ fn fully_populated_variant() -> ThemeMode {
     v.tab.min_height = Some(32.0);
     v.tab.hover_text_color = Some(c);
     v.tab.hover_background = Some(c);
-    v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
-    v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
+    {
+        let b = v.tab.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
+    {
+        let b = v.tab.border.get_or_insert_default();
+        b.padding_top = Some(6.0);
+        b.padding_bottom = Some(6.0);
+    }
     v.tab.font = Some(FontSpec {
         family: Some("Inter".into()),
         size: Some(FontSize::Px(14.0)),
@@ -1324,24 +1364,56 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
     // button sizing
     v.button.min_width = Some(64.0);
     v.button.min_height = Some(28.0);
-    v.button.border.get_or_insert_default().padding_horizontal = Some(12.0);
-    v.button.border.get_or_insert_default().padding_vertical = Some(6.0);
+    {
+        let b = v.button.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
+    {
+        let b = v.button.border.get_or_insert_default();
+        b.padding_top = Some(6.0);
+        b.padding_bottom = Some(6.0);
+    }
     v.button.icon_text_gap = Some(6.0);
     // input sizing
     v.input.min_height = Some(28.0);
-    v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.input.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.input.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     // checkbox sizing
     v.checkbox.indicator_width = Some(18.0);
     v.checkbox.label_gap = Some(6.0);
     // menu sizing
     v.menu.row_height = Some(28.0);
-    v.menu.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.menu.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.menu.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.menu.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.menu.icon_text_gap = Some(6.0);
     // tooltip sizing
-    v.tooltip.border.get_or_insert_default().padding_horizontal = Some(6.0);
-    v.tooltip.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.tooltip.border.get_or_insert_default();
+        b.padding_left = Some(6.0);
+        b.padding_right = Some(6.0);
+    }
+    {
+        let b = v.tooltip.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.tooltip.max_width = Some(300.0);
     // scrollbar sizing
     v.scrollbar.groove_width = Some(14.0);
@@ -1358,16 +1430,32 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
     // tab sizing
     v.tab.min_width = Some(60.0);
     v.tab.min_height = Some(32.0);
-    v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
-    v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
+    {
+        let b = v.tab.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
+    {
+        let b = v.tab.border.get_or_insert_default();
+        b.padding_top = Some(6.0);
+        b.padding_bottom = Some(6.0);
+    }
     // toolbar sizing
     v.toolbar.bar_height = Some(40.0);
     v.toolbar.item_gap = Some(4.0);
     // REMOVED: toolbar.padding not in new schema
     // list sizing + alternate_row (no longer derived — must be explicit)
     v.list.row_height = Some(28.0);
-    v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.list.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.list.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.list.alternate_row_background = Some(Rgba::rgb(245, 245, 245));
     // splitter
     v.splitter.divider_width = Some(4.0);
@@ -1393,19 +1481,21 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
     // combo_box sizing
     v.combo_box.min_height = Some(28.0);
     v.combo_box.min_width = Some(80.0);
-    v.combo_box
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(8.0);
+    {
+        let b = v.combo_box.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
     v.combo_box.arrow_icon_size = Some(12.0);
     v.combo_box.arrow_area_width = Some(20.0);
     // segmented_control sizing
     v.segmented_control.segment_height = Some(28.0);
     v.segmented_control.separator_width = Some(1.0);
-    v.segmented_control
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    {
+        let b = v.segmented_control.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
     // card
     // REMOVED: card.padding not in new schema
     // expander
@@ -1861,24 +1951,56 @@ fn set_widget_geometry(v: &mut ThemeMode) {
     // button
     v.button.min_width = Some(64.0);
     v.button.min_height = Some(28.0);
-    v.button.border.get_or_insert_default().padding_horizontal = Some(12.0);
-    v.button.border.get_or_insert_default().padding_vertical = Some(6.0);
+    {
+        let b = v.button.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
+    {
+        let b = v.button.border.get_or_insert_default();
+        b.padding_top = Some(6.0);
+        b.padding_bottom = Some(6.0);
+    }
     v.button.icon_text_gap = Some(6.0);
     // input
     v.input.min_height = Some(28.0);
-    v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.input.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.input.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     // checkbox
     v.checkbox.indicator_width = Some(18.0);
     v.checkbox.label_gap = Some(6.0);
     // menu
     v.menu.row_height = Some(28.0);
-    v.menu.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.menu.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.menu.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.menu.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.menu.icon_text_gap = Some(6.0);
     // tooltip
-    v.tooltip.border.get_or_insert_default().padding_horizontal = Some(6.0);
-    v.tooltip.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.tooltip.border.get_or_insert_default();
+        b.padding_left = Some(6.0);
+        b.padding_right = Some(6.0);
+    }
+    {
+        let b = v.tooltip.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.tooltip.max_width = Some(300.0);
     // scrollbar
     v.scrollbar.groove_width = Some(14.0);
@@ -1895,16 +2017,32 @@ fn set_widget_geometry(v: &mut ThemeMode) {
     // tab
     v.tab.min_width = Some(60.0);
     v.tab.min_height = Some(32.0);
-    v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
-    v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
+    {
+        let b = v.tab.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
+    {
+        let b = v.tab.border.get_or_insert_default();
+        b.padding_top = Some(6.0);
+        b.padding_bottom = Some(6.0);
+    }
     // toolbar
     v.toolbar.bar_height = Some(40.0);
     v.toolbar.item_gap = Some(4.0);
     // REMOVED: toolbar.padding not in new schema
     // list (alternate_row_background has no inheritance -- must be preset-provided)
     v.list.row_height = Some(28.0);
-    v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
-    v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
+    {
+        let b = v.list.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
+    {
+        let b = v.list.border.get_or_insert_default();
+        b.padding_top = Some(4.0);
+        b.padding_bottom = Some(4.0);
+    }
     v.list.alternate_row_background = Some(Rgba::rgb(245, 245, 245));
     // splitter
     v.splitter.divider_width = Some(4.0);
@@ -1934,19 +2072,21 @@ fn set_widget_geometry(v: &mut ThemeMode) {
     // combo_box
     v.combo_box.min_height = Some(28.0);
     v.combo_box.min_width = Some(80.0);
-    v.combo_box
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(8.0);
+    {
+        let b = v.combo_box.border.get_or_insert_default();
+        b.padding_left = Some(8.0);
+        b.padding_right = Some(8.0);
+    }
     v.combo_box.arrow_icon_size = Some(12.0);
     v.combo_box.arrow_area_width = Some(20.0);
     // segmented_control
     v.segmented_control.segment_height = Some(28.0);
     v.segmented_control.separator_width = Some(1.0);
-    v.segmented_control
-        .border
-        .get_or_insert_default()
-        .padding_horizontal = Some(12.0);
+    {
+        let b = v.segmented_control.border.get_or_insert_default();
+        b.padding_left = Some(12.0);
+        b.padding_right = Some(12.0);
+    }
     // card
     // REMOVED: card.padding not in new schema
     // expander
@@ -2269,7 +2409,7 @@ fn require_rgba_fallback_is_transparent_when_missing() {
 #[test]
 fn validate_border_sentinel_on_none_with_border_kind_none() {
     // Ensures validate_border returns a zero/TRANSPARENT sentinel (no T::default()
-    // required for Rgba/ResolvedBorderSpec) when the widget's border is None
+    // required for Rgba/ResolvedWidgetBorder) when the widget's border is None
     // under BorderKind::None.
     let mut missing = Vec::new();
     let out = super::validate_helpers::validate_border(
@@ -2283,8 +2423,12 @@ fn validate_border_sentinel_on_none_with_border_kind_none() {
     assert_eq!(out.color, Rgba::TRANSPARENT);
     assert_eq!(out.corner_radius, 0.0);
     assert_eq!(out.line_width, 0.0);
-    assert_eq!(out.opacity, 0.0);
     assert!(!out.shadow_enabled);
+    assert_eq!(
+        out.padding,
+        crate::model::border::ResolvedPadding::default(),
+        "an absent border states no padding side"
+    );
 }
 
 #[test]

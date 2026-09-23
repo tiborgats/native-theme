@@ -58,7 +58,7 @@
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
 //! | `sidebar` | 2 of 6 | background, font.color |
 //! | `window` | 3 of 6 | background_color, title_bar_background, border |
-//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, radius, border, text via `geometry::input` |
+//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text via `geometry::input` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 2 of 3 | background, border |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
@@ -78,7 +78,7 @@
 //!
 //! **Limits.** Geometry on inner elements the caller's style cannot reach
 //! (checkbox and radio indicators, switch, slider, separator thickness,
-//! splitter width, button icon gap, input padding, popup-menu rows), and tab
+//! splitter width, button icon gap, popup-menu rows), and tab
 //! height, radius and text size, which `Tab`'s render writes into the same
 //! style bag the caller's setters fill (`tab/tab.rs:801-808`), stay upstream
 //! work; §14 of the v0.5.8 specification
@@ -463,14 +463,6 @@ pub fn dialog_button_order(resolved: &ResolvedTheme) -> DialogButtonOrder {
 }
 
 // --- Issue 37: Padding/geometry helpers ---
-
-/// Dialog content padding in logical pixels.
-///
-/// Returns the horizontal padding from the dialog's border spec.
-#[must_use]
-pub fn dialog_content_padding(resolved: &ResolvedTheme) -> f32 {
-    resolved.dialog.border.padding_horizontal
-}
 
 /// Dialog button gap in logical pixels.
 #[must_use]
@@ -1417,7 +1409,6 @@ mod tests {
     #[test]
     fn geometry_helpers() {
         let resolved = test_resolved();
-        assert!(dialog_content_padding(&resolved) >= 0.0);
         assert!(dialog_button_spacing(&resolved) >= 0.0);
         assert!(scrollbar_width(&resolved) > 0.0);
     }
