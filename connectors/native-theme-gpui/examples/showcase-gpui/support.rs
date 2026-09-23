@@ -738,8 +738,9 @@ pub(crate) fn load_gpui_icons(
         .collect()
 }
 
-/// One of the chrome's own icons -- a toolbar button's, a Sidebar page's, a
-/// command-palette entry's -- as the chosen icon set gives it. Sets are
+/// One of the chrome's own icons -- a toolbar button's, a status-bar panel
+/// toggle's, a Sidebar page's, a command-palette entry's -- as the chosen
+/// icon set gives it. Sets are
 /// never mixed: where the chosen set has no icon for it, nothing is drawn.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum ChromeIcon {

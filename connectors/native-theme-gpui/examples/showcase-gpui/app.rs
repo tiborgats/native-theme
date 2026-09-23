@@ -159,8 +159,8 @@ impl AppColorMode {
     }
 
     /// The colour-mode switch's text for this mode: the mode alone. The mode
-    /// System resolves to is in that toggle's tooltip, `label`, and in the
-    /// status bar.
+    /// System resolves to is in that toggle's tooltip, `label`, and, while
+    /// System is chosen, in the status bar.
     pub(crate) fn short_label(self) -> &'static str {
         match self {
             AppColorMode::System => "System",

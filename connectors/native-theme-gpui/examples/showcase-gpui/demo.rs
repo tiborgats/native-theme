@@ -107,7 +107,7 @@ use crate::{
     OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
     OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST,
     PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_COLOR_MODE_TEXTS,
-    PROBE_SETTINGS_ROW, Page, STATUS_HOVERED, TREE_DEMO, probe,
+    PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
 };
 
 /// An icon at the platform's size for the role the builder names; upstream's
@@ -232,7 +232,14 @@ pub(crate) fn status_bar(
     .left(left_toggle)
     // Plain text, not Labels, as in the title bar: a Label would paint
     // foreground over the colour `geometry::status_bar` gives the bar.
-    .left(environment.into())
+    .left(
+        div()
+            .debug_selector(|| STATUS_ENVIRONMENT.into())
+            .child(environment.into()),
+    )
+    // The middle region holds nothing; this empty box fills it, so its
+    // edges are where the two ends stop.
+    .child(div().flex_1().debug_selector(|| STATUS_MIDDLE.into()))
     .when_some(shown, |bar, title| {
         bar.right(div().debug_selector(|| STATUS_HOVERED.into()).child(title))
     })

@@ -258,12 +258,11 @@ pub(crate) const CHROME_LABEL_ICON_SET: &str = "chrome-label-icon-set";
 /// It is the narrowest whole-pixel width at which the Sidebar header's
 /// controls fit (spec §3.3), as `the_sidebar_header_holds_the_theme_settings`
 /// measures them, each native preset resolved at its own platform's DPI: the
-/// colour-mode switch, whose toggles keep their text's width, is the widest. At 200px adwaita's toggles ran 4.83px past it; at
-/// 205px every preset in the test fits, adwaita with 0.17px to spare, and at
-/// 204px adwaita does not. The test lays text out with gpui's test text
-/// system, which advances every glyph 0.6em (gpui-pre platform.rs,
-/// `NoopTextSystem`), more than a real font's text takes, so the width is
-/// conservative.
+/// colour-mode switch, whose toggles keep their text's width, is the widest.
+/// At 205px every preset in the test fits; at 204px adwaita's does not. The
+/// test lays text out with gpui's test text system, which advances every
+/// glyph 0.6em (gpui-pre platform.rs, `NoopTextSystem`), so the width is
+/// conservative for these labels.
 pub(crate) const NAV_WIDTH: Pixels = px(NAV_WIDTH_PX);
 const NAV_WIDTH_PX: f32 = 205.;
 
@@ -321,6 +320,15 @@ pub(crate) const CHROME_STATUS_BAR: &str = "chrome-status-bar";
 /// The debug selector the status bar's label with the shown info's title
 /// carries.
 pub(crate) const STATUS_HOVERED: &str = "status-hovered";
+
+/// The debug selector the status bar's environment text carries.
+pub(crate) const STATUS_ENVIRONMENT: &str = "status-environment";
+
+/// The debug selector of an empty box that fills the status bar's middle
+/// region, which holds nothing: its edges are where the bar's two ends stop,
+/// so `the_status_bar_carries_no_version` can account for everything drawn
+/// between them.
+pub(crate) const STATUS_MIDDLE: &str = "status-middle";
 
 /// The debug selector the Alert that reports a theme error carries, at the
 /// top of the content panel (spec §2.5).

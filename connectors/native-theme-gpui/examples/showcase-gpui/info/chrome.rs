@@ -756,7 +756,7 @@ pub fn color_mode_toggle_group(t: &Theme) -> WidgetInfo {
     super::buttons::toggle_notes(super::buttons::toggle_hover(info, t), t)
         .instance(
             "modes",
-            "System, Light and Dark; a click dispatches SetColorMode, the action the Theme menu's items run. System's text is the mode alone, and its tooltip names the mode the desktop is in, as the status bar's environment text does",
+            "System, Light and Dark; a click dispatches SetColorMode, the action the Theme menu's items run. System's text is the mode alone, and its tooltip names the mode the desktop is in, as the status bar's environment text does while System is chosen",
         )
         .colors(super::feedback::tooltip_colours(t, true))
         .not_themeable(

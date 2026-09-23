@@ -53,9 +53,9 @@ use crate::{
     OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
     PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
     PROBE_COLOR_MODE, PROBE_COLOR_MODE_TEXTS, PROBE_COMBOBOX, PROBE_ICON_SET, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
-    TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
-    WINDOW_SIZE, WINDOW_TITLE,
+    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT,
+    STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
+    TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -978,7 +978,8 @@ fn the_sidebar_header_switches_the_preset(cx: &mut TestAppContext) {
 /// `Theme::list_presets_for_platform` gives, so macos-sonoma is offered on
 /// macOS alone -- and macos-sonoma resolved on a 96 DPI Linux host is not a
 /// configuration the showcase shows. The colour-scheme preset, offered
-/// everywhere, keeps the host's DPI (`None`).
+/// everywhere, keeps the host's DPI (`None`), as
+/// `ResolutionContext::from_system` reads it.
 const SIDEBAR_HEADER_PRESETS: [(&str, Option<f32>); 5] = [
     ("kde-breeze", Some(96.0)),
     ("adwaita", Some(96.0)),
@@ -988,10 +989,20 @@ const SIDEBAR_HEADER_PRESETS: [(&str, Option<f32>); 5] = [
 ];
 
 /// Install `preset` as `use_preset` does, then re-install its theme resolved
-/// at `dpi`: the point sizes it states become pixels at that DPI, as they do
-/// on the platform whose DPI it is.
-fn use_preset_at(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str, dpi: f32) {
+/// at `dpi`, or at the host's DPI where it is `None`: the point sizes it
+/// states become pixels at that DPI, as they do on the platform whose DPI it
+/// is. The accessibility preferences are the defaults, a text scale of 1,
+/// not the host's: `AccessibilityPreferences::from_system`, which the
+/// showcase's own preset path reads, would scale the text by whatever the
+/// desktop the test runs on is set to (native-theme-gpui lib.rs, `to_theme`).
+fn use_preset_at(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    preset: &str,
+    dpi: Option<f32>,
+) {
     use_preset(cx, showcase, preset);
+    let font_dpi = dpi.unwrap_or_else(|| native_theme::ResolutionContext::from_system().font_dpi);
     cx.update(|_window, cx| {
         let is_dark = showcase.read(cx).is_dark;
         let mode = if is_dark {
@@ -1004,11 +1015,11 @@ fn use_preset_at(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset
             .into_variant(mode)
             .expect("the preset has the variant")
             .into_resolved(&native_theme::ResolutionContext {
-                font_dpi: dpi,
+                font_dpi,
                 ..native_theme::ResolutionContext::for_tests()
             })
             .expect("the preset resolves");
-        let prefs = native_theme::AccessibilityPreferences::from_system();
+        let prefs = native_theme::AccessibilityPreferences::default();
         native_theme_gpui::apply(
             native_theme_gpui::to_theme(&resolved, preset, is_dark, &prefs),
             &resolved,
@@ -1027,15 +1038,14 @@ fn use_preset_at(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset
 /// width (demo.rs, `color_mode_toggle_group`), so a switch too wide for the
 /// panel runs past it, and the texts' bounds show where. Checked under every
 /// native preset, at its platform's DPI, and one colour-scheme preset at the
-/// host's (`SIDEBAR_HEADER_PRESETS`), whose font sizes differ.
+/// host's (`SIDEBAR_HEADER_PRESETS`), whose font sizes differ -- all at a text
+/// scale of 1, whatever the host's, so the measurement is the same on every
+/// machine (`use_preset_at`).
 #[gpui::test]
 fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     for (preset, dpi) in SIDEBAR_HEADER_PRESETS {
-        match dpi {
-            Some(dpi) => use_preset_at(&mut cx, &showcase, preset, dpi),
-            None => use_preset(&mut cx, &showcase, preset),
-        }
+        use_preset_at(&mut cx, &showcase, preset, dpi);
         let sidebar = bounds_of(&mut cx, CHROME_SIDEBAR);
         assert_eq!(
             sidebar.size.width, NAV_WIDTH,
@@ -1092,13 +1102,18 @@ fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
             bounds_of(&mut cx, PROBE_COLOR_MODE_TEXTS[0]),
             bounds_of(&mut cx, PROBE_COLOR_MODE_TEXTS[2]),
         );
+        // The switch is as wide as the panel less the header's padding, so
+        // it needs the panel wider by what it runs past.
+        let over =
+            (last.right() + frame - group.right()).max(group.left() - (first.left() - frame));
         assert!(
-            first.left() - frame >= group.left() - px(0.01)
-                && last.right() + frame <= group.right() + px(0.01),
+            over <= px(0.01),
             "{preset}: the colour-mode switch's toggles span {:?} to {:?}, past the switch \
-             at {group:?}, so the switch does not fit NAV_WIDTH",
+             at {group:?}, so the switch does not fit NAV_WIDTH: it needs a NAV_WIDTH of at \
+             least {:?}",
             first.left() - frame,
-            last.right() + frame
+            last.right() + frame,
+            NAV_WIDTH + over
         );
         for text in PROBE_COLOR_MODE_TEXTS {
             let t = bounds_of(&mut cx, text);
@@ -2088,7 +2103,7 @@ fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
 /// A size platform-facts §2.1.8 documents none for on the installed native
 /// preset's platform says it has no platform source: adwaita's dialog and
 /// panel (platform-facts.md:1135-1136), and none of kde-breeze's. The preset
-/// is named the way the toolbar's Combobox names it, which `use_preset`
+/// is named the way the Sidebar's Combobox names it, which `use_preset`
 /// leaves alone.
 #[gpui::test]
 fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
@@ -2366,11 +2381,121 @@ fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
     );
 }
 
+/// One pixel of the device the test window draws on, in logical pixels: how
+/// far gpui may move an element when it puts it on the pixel grid.
+fn device_pixel(cx: &mut VisualTestContext) -> Pixels {
+    cx.update(|window, _| px(1. / window.scale_factor()))
+}
+
+/// The width gpui's text system gives `text` at the status bar's text size,
+/// which `geometry::status_bar` sets from `status_bar.font`: the width the
+/// bar draws that text at. `None` before a native theme is installed.
+fn status_text_width(cx: &mut VisualTestContext, text: &str) -> Option<Pixels> {
+    cx.update(|window, cx| {
+        let size = native_geometry(cx, geometry::status_bar)?
+            .text
+            .font_size?
+            .to_pixels(window.rem_size());
+        let text = gpui::SharedString::from(text.to_string());
+        let run = window.text_style().to_run(text.len());
+        Some(
+            window
+                .text_system()
+                .shape_line(text, size, &[run], None)
+                .width(),
+        )
+    })
+}
+
 /// The status bar no longer carries the version (spec §3.2): the title bar
-/// does. Its info says what each end holds, and the version is in neither.
+/// does. What it draws is read off the frame, end to end: the left-panel
+/// toggle, the environment text, the empty middle region, the shown title
+/// where one is shown, and the inspector toggle, each next to the one before
+/// it by the bar's `gap_2` (status_bar.rs:84, :88), the last ending the bar's
+/// right padding in. So nothing else is drawn between them. The environment
+/// text is as wide as gpui's text system lays out the environment the
+/// showcase names (`chrome::status_environment`), and the shown title as its
+/// title, so neither carries more. Its info says the same.
 #[gpui::test]
 fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let right_padding = read(&mut cx, &showcase, |_this, cx| {
+        cx.native_theme()
+            .and_then(|nt| nt.native(cx))
+            .and_then(|n| n.resolved.status_bar.border.padding.right)
+    });
+    assert!(
+        right_padding.is_some(),
+        "kde-breeze states no right status-bar padding, so the bar's end is not known"
+    );
+    let gap = cx.update(|window, _| rems(0.5).to_pixels(window.rem_size()));
+    // gpui places elements on the device's pixel grid, so a position may be
+    // off by up to one device pixel.
+    let slack = device_pixel(&mut cx);
+    let environment = read(&mut cx, &showcase, |this, cx| {
+        crate::chrome::status_environment(this, cx).join(" · ")
+    });
+    assert!(
+        !environment.contains(env!("CARGO_PKG_VERSION")),
+        "the environment the showcase names carries the version: {environment}"
+    );
+    let expected = status_text_width(&mut cx, &environment);
+    assert!(expected.is_some(), "no status-bar text size is installed");
+
+    // Nothing shown, and then the toolbar's Command Palette button.
+    for hovered in [None, Some(CHROME_TOOLBAR_PALETTE)] {
+        if let Some(selector) = hovered {
+            let at = bounds_of(&mut cx, selector).center();
+            hover(&mut cx, at);
+            settle(&mut cx);
+            draw(&mut cx);
+        }
+        let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
+        let left = bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE);
+        let env = bounds_of(&mut cx, STATUS_ENVIRONMENT);
+        let middle = bounds_of(&mut cx, STATUS_MIDDLE);
+        let right = bounds_of(&mut cx, CHROME_INSPECTOR_TOGGLE);
+        assert_eq!(
+            Some(env.size.width),
+            expected,
+            "the status bar's environment text is not the environment alone"
+        );
+        let mut drawn = vec![
+            ("left-panel toggle", left),
+            ("environment", env),
+            ("middle", middle),
+        ];
+        let shown = read(&mut cx, &showcase, |this, _| {
+            this.status_title_drawn.clone()
+        });
+        assert_eq!(shown.is_some(), hovered.is_some());
+        if let Some(title) = shown {
+            let label = bounds_of(&mut cx, STATUS_HOVERED);
+            assert_eq!(
+                Some(label.size.width),
+                status_text_width(&mut cx, &title),
+                "the status bar's shown title is not {title:?} alone"
+            );
+            drawn.push(("shown title", label));
+        }
+        drawn.push(("inspector toggle", right));
+        for pair in drawn.windows(2) {
+            if let [(a, before), (b, after)] = pair {
+                assert!(
+                    (after.left() - before.right() - gap).abs() <= slack,
+                    "the status bar draws something between its {a} at {before:?} and its {b} \
+                     at {after:?}, which are not gap_2 apart"
+                );
+            }
+        }
+        assert_eq!(
+            Some(bar.right() - right.right()),
+            right_padding.map(px),
+            "the status bar draws something after its inspector toggle"
+        );
+    }
+
     let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
     hover(&mut cx, bar.center());
     settle(&mut cx);
@@ -2387,6 +2512,193 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
         !text.contains("version") && !text.contains(env!("CARGO_PKG_VERSION")),
         "the status bar's info still names a version:\n{text}"
     );
+}
+
+/// Where the chosen icon set has no `PanelLeft` or `PanelRight`, the panel
+/// toggle shows its tooltip's text as its label, never another set's icon
+/// (spec §3.2): with Material's two taken out of the loaded gallery, each
+/// toggle is as wide as its tooltip's text at a Small Button's `text_sm`
+/// (sizing.rs:322) plus the `px_2` on either side (button/button.rs:629-631),
+/// and says why in its info.
+#[gpui::test]
+fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("Material (bundled)", window, cx)
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let cases = [
+        (
+            CHROME_SIDEBAR_TOGGLE,
+            IconName::PanelLeft,
+            "PanelLeft",
+            "Toggle Sidebar",
+        ),
+        (
+            CHROME_INSPECTOR_TOGGLE,
+            IconName::PanelRight,
+            "PanelRight",
+            "Toggle Inspector",
+        ),
+    ];
+    let mut iconic = Vec::new();
+    for (selector, icon, name, _) in &cases {
+        let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(icon));
+        assert!(
+            matches!(drawn, ChromeIcon::Loaded(n, _) if n == *name),
+            "Material has no {name} in its gallery, so taking it out proves nothing: {drawn:?}"
+        );
+        iconic.push(bounds_of(&mut cx, selector));
+    }
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            for entry in &mut this.gpui_icons {
+                if entry.0 == "PanelLeft" || entry.0 == "PanelRight" {
+                    entry.3 = None;
+                }
+            }
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    for ((selector, icon, name, tooltip), with_icon) in cases.into_iter().zip(iconic) {
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.chrome_icon(&icon)),
+            ChromeIcon::Missing(name)
+        );
+        let labelled = bounds_of(&mut cx, selector);
+        let expected = cx.update(|window, _| {
+            let rem = window.rem_size();
+            let text = gpui::SharedString::from(tooltip);
+            let run = window.text_style().to_run(text.len());
+            window
+                .text_system()
+                .shape_line(text, rems(0.875).to_pixels(rem), &[run], None)
+                .width()
+                + rems(0.5).to_pixels(rem) * 2.
+        });
+        // gpui places elements on the device's pixel grid.
+        assert!(
+            (labelled.size.width - expected).abs() <= device_pixel(&mut cx),
+            "{selector} is {:?} wide, not its tooltip text {tooltip:?} as a label, {expected:?}",
+            labelled.size.width
+        );
+        assert!(
+            labelled.size.width > with_icon.size.width,
+            "{selector} at {labelled:?} is no wider than with its icon at {with_icon:?}"
+        );
+        let info = settle_on(&mut cx, &showcase, selector);
+        assert_eq!(
+            info.as_ref().map(|info| info.title()).as_deref(),
+            Some("Button · Ghost, labelled, selected"),
+            "{selector} with no icon of the chosen set is not labelled"
+        );
+        let note = info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "icon")
+                .map(|n| n.text.clone())
+        });
+        assert!(
+            note.as_deref()
+                .is_some_and(|n| n.starts_with(&format!("none: material holds no SVG for {name}"))),
+            "{selector} does not say material has no {name}: {note:?}"
+        );
+    }
+}
+
+/// The popover-filled boxes painted in the last frame.
+fn popover_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
+    cx.update(|window, cx| {
+        let popover = Theme::global(cx).popover;
+        window
+            .painted_quads()
+            .into_iter()
+            .filter(|q| q.background.as_solid() == Some(popover))
+            .map(|q| q.bounds)
+            .collect()
+    })
+}
+
+/// The width of the tooltip that shows once the pointer rests on the
+/// element tagged `selector` past gpui's tooltip delay (gpui-pre
+/// elements/div.rs:53, 500ms): the widest box painted in the tooltip's
+/// `popover` fill (tooltip.rs:113-114) that was not painted before. `None`
+/// where no such box is painted.
+fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<Pixels> {
+    // Off any widget first, so a tooltip shown before is gone.
+    let middle = bounds_of(cx, STATUS_MIDDLE).center();
+    hover(cx, middle);
+    cx.executor()
+        .advance_clock(std::time::Duration::from_secs(1));
+    draw(cx);
+    let before = popover_boxes(cx);
+    let at = bounds_of(cx, selector).center();
+    hover(cx, at);
+    cx.executor()
+        .advance_clock(std::time::Duration::from_secs(1));
+    cx.run_until_parked();
+    draw(cx);
+    let scale = cx.update(|window, _| window.scale_factor());
+    popover_boxes(cx)
+        .into_iter()
+        .filter(|b| !before.contains(b))
+        .map(|b| px(b.size.width.0 / scale))
+        .max_by(|a, b| a.as_f32().total_cmp(&b.as_f32()))
+}
+
+/// Each panel toggle's tooltip names its key binding (spec §3.2): the
+/// actions are bound to Ctrl+B and Ctrl+I, and each tooltip is wider while
+/// its action has that binding than once the bindings are gone -- upstream's
+/// Tooltip adds the binding's Kbd beside the text only where the action has
+/// one (tooltip.rs:94-106, :133-141). The tooltip's text is not readable
+/// from the test's frame, so its width is what shows the Kbd.
+#[gpui::test]
+fn the_panel_toggles_tooltips_name_their_keys(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    // A tooltip fades in (tooltip.rs:178-181); without motion it is drawn
+    // in full at once.
+    without_motion(&mut cx);
+    let cases: [(&'static str, Box<dyn gpui::Action>, &str); 2] = [
+        (CHROME_SIDEBAR_TOGGLE, Box::new(ToggleSidebar), "ctrl-b"),
+        (CHROME_INSPECTOR_TOGGLE, Box::new(ToggleInspector), "ctrl-i"),
+    ];
+    let mut bound = Vec::new();
+    for (selector, action, keys) in &cases {
+        let binding = cx.update(|window, _| {
+            window
+                .highest_precedence_binding_for_action(action.as_ref())
+                .map(|b| {
+                    b.keystrokes()
+                        .iter()
+                        .map(|k| k.unparse())
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                })
+        });
+        assert_eq!(
+            binding.as_deref(),
+            Some(*keys),
+            "{selector}'s action is not bound to {keys}"
+        );
+        let width = tooltip_width(&mut cx, selector);
+        assert!(width.is_some(), "{selector} showed no tooltip");
+        bound.push(width);
+    }
+    cx.update(|_window, cx| cx.clear_key_bindings());
+    for ((selector, _, keys), with) in cases.iter().zip(bound) {
+        let without = tooltip_width(&mut cx, selector);
+        assert!(
+            without.is_some() && with > without,
+            "{selector}'s tooltip is {with:?} wide with {keys} bound and {without:?} without, \
+             so it does not name the binding"
+        );
+    }
 }
 
 /// The window's three bars report themselves (spec §4.3.5): the pointer on
@@ -3899,7 +4211,7 @@ fn the_palette_switches_page(cx: &mut TestAppContext) {
     );
 }
 
-/// The palette's preset entries install the preset, and the toolbar's
+/// The palette's preset entries install the preset, and the Sidebar's
 /// preset switch shows the one installed.
 #[gpui::test]
 fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
@@ -3922,28 +4234,28 @@ fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
         })
         .as_deref(),
         Some("nord"),
-        "the toolbar's preset switch does not show the preset the palette installed"
+        "the Sidebar's preset switch does not show the preset the palette installed"
     );
 }
 
-/// The palette's preset entries are the toolbar's (ledger ruling for T12):
+/// The palette's preset entries are the Sidebar's (ledger ruling for T12):
 /// the rows the preset Combobox's delegate holds, in its order -- `default`,
 /// then only presets meant for this platform.
 #[test]
-fn the_palette_offers_the_toolbars_presets() {
+fn the_palette_offers_the_sidebars_presets() {
     use gpui_component::searchable_list::{SearchableListDelegate as _, SearchableListItem as _};
     let offered: Vec<String> = crate::chrome::palette_presets()
         .into_iter()
         .map(|(key, _)| key.to_string())
         .collect();
     let delegate = crate::support::PresetDelegate::new();
-    let toolbar: Vec<String> = (0..delegate.items_count(0))
+    let sidebar: Vec<String> = (0..delegate.items_count(0))
         .filter_map(|row| delegate.item(gpui_component::IndexPath::default().row(row)))
         .map(|item| item.value().to_string())
         .collect();
     assert_eq!(
-        offered, toolbar,
-        "the palette's presets are not the toolbar Combobox's rows"
+        offered, sidebar,
+        "the palette's presets are not the Sidebar Combobox's rows"
     );
     assert_eq!(
         offered.first().map(String::as_str),
