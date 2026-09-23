@@ -861,13 +861,17 @@ the gap — closing it is a change, and each wants its own decision.
       `relative(1.5)` and then applies the caller's refinement last, with a
       comment saying that is deliberate so a text style set on the editor
       refines over it (`input/editor.rs:137-143`, `:159`).
-      `defaults.line_height` is modelled — 1.4 on the bundled defaults — and
-      `control_height` already uses it for control heights
-      (`geometry.rs:117`), so nothing new has to be modelled: it wants a
-      builder, or a line in an existing one. The same goes for every `Input`
-      and `Textarea`: their rows are a `1.25rem` literal (`input/input.rs:489`,
-      `:699`) set before the caller's refinement (`:719`), and `with_text`
-      carries size and weight but no line height (`geometry.rs:80-83`).
+      `defaults.line_height` is modelled — 1.4 on the bundled defaults — so
+      nothing new has to be modelled: it wants a builder, or a line in an
+      existing one.
+      **Update (v0.5.9 unstated sizes):** `control_height` is gone, and the
+      builders now apply the line height themselves: `geometry::button`,
+      `input`, `select`, `combobox`, `menu_item` and `list_item` set
+      `defaults.line_height` as the control's line height (`with_height_rule`
+      in `geometry.rs`). So an `Input` or `Textarea` refined with
+      `geometry::input` takes it over upstream's `1.25rem` rows
+      (`input/input.rs:699`, set before the caller's refinement at `:719`).
+      The `Editor` is what remains.
 - [ ] **The showcase ignores its own `text_scale`.** `ResolvedTextScale` states
       four typographic roles — `caption`, `section_heading`, `dialog_title`,
       `display` — each with a size, a weight and a line height, and
@@ -1060,7 +1064,12 @@ the gap — closing it is a change, and each wants its own decision.
       `toolbar.icon_size`. The showcase's toolbar is drawn with both. What
       checking the presets against platform-facts §2.13 found is the next
       item.
-- [ ] **KDE's toolbar height has no source, and no preset states a toolbar
+      **Update (v0.5.9 unstated sizes):** Adwaita's 47px above is the
+      headerbar's; GNOME's `.toolbar` row sets no minimum height (platform-facts
+      §2.13, corrected per ruling R6). `toolbar.bar_height` is `Option<f32>`
+      now, adwaita, kde-breeze and the colour-scheme presets state none, and
+      `geometry::toolbar` sets its minimum height only where one is stated.
+- [x] **KDE's toolbar height has no source, and no preset states a toolbar
       padding.** Checked 2026-09-22 against platform-facts §2.13 before
       `geometry::toolbar` relied on the presets:
       - `kde-breeze.toml:198`/`:478` and `kde-breeze-live.toml:113`/`:272`
@@ -1096,6 +1105,22 @@ the gap — closing it is a change, and each wants its own decision.
       toolbar icon size, which every preset leaves to
       `defaults.icon_sizes.toolbar` (22 KDE, 16 GNOME, 20 Windows, 24 macOS
       small mode). No preset value was changed.
+      **Done (24da5c1, 70d705f), all three findings:**
+      - `toolbar.bar_height` is `Option<f32>` (24da5c1), and kde-breeze and
+        kde-breeze-live no longer state one (70d705f). Nor do adwaita, whose
+        47 was the headerbar's (ruling R6), and the colour-scheme presets,
+        whose 40 (material's 64) had no source. `geometry::toolbar` sets its
+        minimum height only where one is stated; macos-sonoma's 38 and
+        windows-11's 48 remain.
+      - An unstated padding side resolves to `None`, not 0, and the native
+        presets state §2.13's toolbar padding: KDE 6 and GNOME 6 on every
+        side (both cells corrected: Qt pads a toolbar's items on all four
+        sides, `qtoolbarlayout.cpp:87-89`; libadwaita's `.toolbar { padding:
+        6px }`), macOS 0/8/0/8, Windows 0/0/0/4.
+      - The Windows reader's `toolbar.item_gap` is 0.
+      The gate `native-theme/src/presets/documented_sizes.rs` now holds the
+      presets and the readers to §2.13. Plan:
+      [archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-plan.md](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-plan.md).
 - [ ] **The code editor's background is a fixed colour.** `Theme::editor_background`
       returns the highlight theme's `editor.background` and falls back to
       `input_background()` only when that is unset (`theme/mod.rs:389-394`).
@@ -1252,10 +1277,13 @@ the gap — closing it is a change, and each wants its own decision.
         content, where both were 260px); the icon buttons are laid out at a
         labelled Button's height, `h_8` (2rem); on kde-breeze the items touch,
         because `toolbar.item_gap` and the toolbar padding are 0 there, and a
-        vertical Separator's line overflows its 0px box.
+        vertical Separator's line overflows its 0px box. *Superseded by the
+        unstated-sizes plan below:* the three theme controls moved to the
+        Sidebar's header, the toolbar is padded, and the Separator is gone.
       - Task 10: the window is 1380px wide (`NAV_WIDTH` 200 + 880 for the
         page + `INSPECTOR_WIDTH` 300), with the Sidebar, the resizable panels
-        and the inspector.
+        and the inspector. *Superseded:* `NAV_WIDTH` is 205, so the window is
+        1385px.
       - Task 12: the Preferences sheet is 600px wide (`PREFERENCES_WIDTH`).
       - Task 14: page headings are sized to their text (`self_start`), not
         the page's width.
@@ -1280,6 +1308,51 @@ the gap — closing it is a change, and each wants its own decision.
         built-in icon set shows its icons.
       - Task 24: section headings are `text_base` (1rem), where they were
         13px.
+
+      The v0.5.9 unstated-sizes plan
+      ([archive](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-plan.md))
+      changed more, again without a look on screen. Sides are top / right /
+      bottom / left:
+      - **The chrome.** The panel toggles are at the two ends of the status
+        bar, which is taller for them (the toggles are `h_6`). The theme
+        settings are labelled in the Sidebar's header. The toolbar holds
+        Command Palette, Reload Theme and Preferences. The title reads
+        `native-theme-gpui <version> showcase`. `NAV_WIDTH` is 205 and the
+        window 1385 wide. The Sidebar's icons are `icon_size_small`. The
+        Icons page has an Icon Sizes section. The System toggle reads
+        "System", with the mode in its tooltip. On KDE, `PanelRight` is
+        `sidebar-expand-right`. The vertical Separator is no longer shown
+        anywhere: widget coverage counts types, not variants.
+      - **Windows:** popover 15/16/17/16; dialog 24; card and group box 12;
+        list rows 0/12 (were 4/12); menu rows 4/11/5/11 (were 8/11/8/11);
+        tooltip 6/9/8/9; button top 5 (gpui and iced); input 5/6/6/10, its
+        right side 10 → 6 (gpui and iced); select and combobox 5/–/7/12, the
+        right side upstream's; the toolbar gains a 4px left padding.
+      - **GNOME:** popover 8; list rows 2/2/2/2 (were 8/12); the toolbar
+        loses its 47 minimum, sizes to its content and gains 6 on every side;
+        status bar 6/10; dialog 32/24/24/24, and upstream also uses the top
+        and bottom as the gaps between its sections and its content; select
+        and combobox gain vertical 5.
+      - **KDE:** dialog 10; the toolbar loses its 40 minimum and gains 6 on
+        every side; status bar 3/0/2/2; select and combobox gain vertical 6;
+        the live reader's button 5 → 6.
+      - **macOS:** dialog 20; toolbar 0/8/0/8; select and combobox
+        horizontal becomes upstream's, with vertical 3; the live reader's
+        button 12 → 8; select and combobox are 26px at scale 1 (upstream's
+        `h_8`; the stated 21 cannot shrink it).
+      - **Live Windows only:** reader button 12 → 11, input 12/12 → 10/6,
+        menu 12 → 11, tooltip 8 → 6/9/8/9, toolbar `item_gap` 4 → 0.
+      - **The colour-scheme presets** (ten at 40px, material at 64px): the
+        toolbar sizes to its content, and the showcase's own toolbar padding
+        applies where nothing is stated. Their dialog and status bar draw
+        gpui-component's padding, where they drew 0.
+      - **Every preset:** the popover and hover card, which drew 0; the
+        input, select and combobox now draw their stated padding.
+      - **Control heights:** the stated height at text scale 1 (the Windows
+        button was 33 for 32; macOS controls at 96 DPI were 27 for 22),
+        growing with the platform's line height above 1.
+      - **The Textarea** keeps its own 90px, and the single-line padding is
+        cleared from it.
 - [ ] **The iced showcase: per-instance Widget Info.** The gpui showcase now
       builds every widget through a helper that attaches a `WidgetInfo` and
       shows the innermost hovered instance's info in an inspector (the v0.5.9
@@ -1304,6 +1377,129 @@ the gap — closing it is a change, and each wants its own decision.
       iced reader of the same fields, and a toolbar row in the iced showcase
       to show it. Found in the final review of the v0.5.9 showcase-app work
       (2026-09-23).
+
+- [ ] **Follow-up plan: the other sizing fields a platform leaves
+      unstated.** The v0.5.9 unstated-sizes plan
+      ([rationale](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-rationale.md)
+      §7) made padding, `toolbar.bar_height` and `toolbar.item_gap` follow
+      platform-facts, with a gate. Every other sizing field still carries
+      numbers where platform-facts states **(none)**, a range, a preset's own
+      choice, or no number at all. Each needs its own connector decision,
+      e.g. what a builder does without a minimum height or a dialog bound,
+      and `bar_height`'s change to `Option` is the pattern. The plan's audit
+      (Table B, 2026-09-23) found these; the values are unchanged since, and
+      are the same in each `-live` twin:
+
+      | Field | Platform-facts cell | Stated by |
+      |---|---|---|
+      | `button.min_width` | macOS, Windows (none); GNOME "none" (§2.3) | macos-sonoma, windows-11, adwaita 64 |
+      | `button.min_height` | KDE (none), sizes to content (§2.3) | kde-breeze 32. Also Windows: platform-facts "27 (derived)" against windows-11 32 and the reader's 32, a value mismatch |
+      | `input.min_height` | KDE (none) (§2.4) | kde-breeze 32 |
+      | `menu.row_height` | KDE (none), sizes to font (§2.6) | kde-breeze 28 |
+      | `menu.row_height` | Windows per context: touch 31, mouse 23 (§2.6) | windows-11 36, which matches neither. The reader reads `SM_CYMENU` (its testable build states 32), which Ch. 1 of platform-facts calls the menu *bar* height, not an item's |
+      | `tooltip.max_width` | KDE "(none) — preset: 300"; GNOME "(none) — preset: 360" (§2.7) | kde-breeze 300, adwaita 360 |
+      | `scrollbar.groove_width` | GNOME "slider: 8 + margins", no total; macOS per context, legacy 16 / overlay 7 (§2.8) | adwaita 12, macos-sonoma 16. The macOS reader states 15, which matches neither context |
+      | `scrollbar.thumb_width` | macOS per context; Windows "↕ `SM_CXVSCROLL` (same)" (§2.8) | macos-sonoma 7 and the reader's 7; windows-11 6 against the API value |
+      | `scrollbar.min_thumb_length` | Windows `SM_CYVTHUMB` (§2.8) | windows-11 17; the reader's testable build states 40 |
+      | `slider.tick_mark_length` | GNOME (none), no ticks (§2.9) | adwaita 4 |
+      | `progress_bar.min_width` | macOS, Windows, KDE (none) (§2.10) | macos-sonoma 100, windows-11 100, kde-breeze 6 (the KDE reader's comment says "Preset provides the value") |
+      | `tab.min_width` | macOS, Windows (none); GNOME "none" (§2.11) | macos-sonoma, windows-11, adwaita 64 |
+      | `list.row_height` | KDE (none); GNOME per context, rich list 32 / plain list none (§2.15) | kde-breeze 28; adwaita 34, which matches neither context |
+      | `splitter.divider_width` | GNOME per context, 1 / 5 (§2.17) | adwaita 1. Value mismatches: the macOS reader's 9 against platform-facts' and the preset's 6; the Windows reader's 4 against platform-facts' and the preset's 1 |
+      | `layout.widget_gap` | Windows (none) (§2.20) | windows-11 6 |
+      | `layout.container_margin` | macOS, Windows (none) (§2.20) | macos-sonoma 8, windows-11 6 |
+      | `layout.window_margin` | Windows (none) (§2.20) | windows-11 10 |
+      | `layout.section_gap` | Windows, KDE (none) (§2.20) | windows-11 18, kde-breeze 18 |
+      | `dialog.min_width` / `max_width` / `min_height` / `max_height` | macOS and KDE all (none); GNOME min and max height (none), max width per context 372 / wide 600 (§2.22) | macos-sonoma and kde-breeze 320/560/140/600; adwaita min height 140, max height 600 |
+      | `dialog.icon_size` | Windows, KDE, GNOME (none) (§2.22) | windows-11, kde-breeze, adwaita 32 |
+      | `spinner.min_diameter` | KDE, GNOME (none) (§2.23) | kde-breeze, adwaita 16 |
+      | `spinner.stroke_width` | macOS, KDE, GNOME (none) (§2.23) | macos-sonoma, kde-breeze, adwaita 2 |
+      | `combo_box.min_height` | KDE (none); GNOME a derivation, "← button min-height (24+pad)" (§2.24) | kde-breeze 32, adwaita 34 |
+      | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-sonoma, kde-breeze, adwaita 120 |
+      | `combo_box.arrow_icon_size` | macOS range ~16–18 (§2.24) | macos-sonoma 17 |
+      | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | macos-sonoma 17, adwaita 28 |
+      | `segmented_control.segment_height` | Windows, GNOME (none); KDE the tab bar as proxy (§2.25) | windows-11 28, adwaita 28, kde-breeze 30 |
+      | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
+      | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-sonoma 40, kde-breeze 40 |
+      | `defaults.icon_sizes.small` | macOS range, "sidebar: 16–20pt" (§2.1.8) | macos-sonoma 16 |
+      | `defaults.icon_sizes.large` | macOS (none) (§2.1.8) | macos-sonoma 32 |
+      | `defaults.icon_sizes.dialog` | macOS, Windows (none); GNOME "(none) — 48 (GTK3 legacy)" (§2.1.8) | macos-sonoma, windows-11, adwaita 22 |
+      | `defaults.icon_sizes.panel` | macOS, Windows, GNOME (none) (§2.1.8) | macos-sonoma, windows-11, adwaita 20 |
+      | `defaults.icon_sizes.toolbar` | macOS per context, "32pt (reg) / 24 (sm)" (§2.1.8) | macos-sonoma 24, the small mode rather than the regular default |
+
+      The Icons page's Icon Sizes section already marks the unsourced icon
+      sizes (panel 20, dialog 22, macOS large 32). Outside sizing, KDE's
+      `defaults.border.corner_radius_lg` is "(none) — preset" (§2.1.6) while
+      kde-breeze states 8. Two value mismatches the audit noticed and did
+      not follow: adwaita's `checkbox.indicator_width` 20 against §2.5's
+      "libadwaita CSS: 14" (Ch. 1 gives 20 with padding), and windows-11's
+      menu `row_height` 36, which no platform-facts context gives. Also for
+      this plan:
+      - **KDE input vertical padding** (the audit's N4): platform-facts'
+        §2.4 cell is "3 (measured)", and the gate keeps 3/6/3/6. Breeze's
+        `lineEditSizeFromContents` expands by `LineEdit_FrameWidth` = 6 on
+        both axes, and QLineEdit's own margins were not read.
+      - **iOS.** Platform-facts has no iOS column, so no iOS size is
+        sourced: `ios.toml`'s `bar_height_px = 44.0` is unsourced, and so is
+        every other size in it (the 44 `min_height` of button, input and
+        combo box, the 44 `row_height` of menu and list, tooltip
+        `max_width` 300, the dialog bounds 270/560/140/600, the layout
+        8/8/20/20). The gate does not cover iOS.
+- [ ] **The colour-scheme presets' sizes have no source.** The eleven
+      colour-scheme presets (the four catppuccin, dracula, gruvbox,
+      material, nord, one-dark, solarized, tokyo-night) carry sizes that
+      were copied rather than sourced: their toolbar's 40 was the height
+      the removed generic `default.toml` carried, and material's header
+      cites Material 3 for its colours only. v0.5.9 removed only their
+      `bar_height_px` (40, material 64). Decide, field by field, what a
+      colour-scheme preset's size is: a value with a source, or absent, so
+      that the toolkit's default or the application's stands.
+- [ ] **The showcase's pages: the application's own values, as the chrome
+      has them.** The unstated-sizes spec §3.1 rule — a named showcase
+      constant only where the theme states nothing, for an element the
+      showcase draws itself, with its comment and its info saying so — is
+      applied to the toolbar row and the Sidebar header only. The pages
+      still use `with_gap` (`support.rs`), which leaves a gap absent where
+      `layout.widget_gap` is unstated, so gpui's own default gap
+      applies. Every bundled preset states `widget_gap` today, but windows-11's
+      6 is itself unsourced (platform-facts §2.20 says (none), see the
+      follow-up plan above), so the question becomes live when that plan
+      removes it.
+- [ ] **A machine-readable platform-facts.** The documented-sizes gate
+      (`native-theme/src/presets/documented_sizes.rs`) copies each value it
+      checks by hand from `docs/platform-facts.md` and cites the line; a
+      companion test checks the citation lands on the right row, but not
+      that the number is the one written there. With the facts in a
+      structured form (per platform, per field, the value, its context and
+      its source), every native value — not only padding and the toolbar —
+      could be gated, and the Markdown tables generated from it.
+- [ ] **macOS: the Sidebar icon runs into its rail item's padding.** Under
+      macos-sonoma at 96 DPI (rem 17.33px) the icon rail's items are 30px
+      wide, and gpui-component's `p_2` on every side (sidebar/menu.rs:284)
+      leaves about 12.7px, so the 16px icon runs about 1.7px into the
+      padding on each side. It still lies inside its item. The padding is
+      upstream's; measured in v0.5.9 Task 5.
+- [ ] **WinUI's combobox arrow column: a model extension.** Per-side padding
+      is done (v0.5.9). WinUI measures its combobox's right padding, 0, to
+      a separate 38px arrow column (platform-facts §2.24), a structure the
+      model has no field for, so windows-11 leaves the right side unstated
+      and gpui's trigger keeps upstream's. An arrow-column field (or a
+      right padding that includes it) would let a connector with such a
+      column draw it.
+- [ ] **Loose ends of the v0.5.9 unstated-sizes plan** (from its reviews):
+      - The seams test `input_select_and_combobox_draw_the_stated_padding`
+        measures the left side only: top and bottom are invisible under
+        `items_center` at a fixed height, and the right side is the suffix
+        and caret exception. No test measures the Textarea's drawn inset.
+      - The NavItem's icon expression could not be extracted whole into a
+        `pub(crate)` helper: `every_widget_reports_itself` has no exemption
+        for a part whose caller reports it. The test checks the helper
+        NavItem calls (`nav_icon_sized`), and the rail check measures the
+        result, so a NavItem that bypassed the helper would be caught by the
+        rail check alone.
+      - Under the `default` theme, the Icon Sizes cells carry no per-cell
+        caveat for unsourced sizes: the showcase keeps `default_label`, not
+        the system preset's key. The section's general line still applies.
 
 #### Upstream PR to gpui
 

@@ -1,5 +1,5 @@
 //! Gate: the native themes state what their platform documents
-//! (spec `docs/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md` §1.4–§1.6).
+//! (spec `docs/archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md` §1.4–§1.6).
 //!
 //! One row per (platform, widget) gives every padding side, and for the
 //! toolbar its `bar_height` and `item_gap`, as `Some(v)` where

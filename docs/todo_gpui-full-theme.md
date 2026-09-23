@@ -626,3 +626,41 @@ and switch re-exports back to gpui-component.
 The upstream proposal (Option A) is a separate document already written at
 `connectors/native-theme-gpui/proposals/README.md` and can be submitted
 in parallel.
+
+## Note: the sizing model since v0.5.9
+
+Appended 2026-09-23; the text above is left as written. The v0.5.9
+unstated-sizes change
+([spec](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md)) changed
+the model this document was written against:
+
+- **Padding is per side.** A widget's resolved `border.padding` is a
+  `ResolvedPadding` with `top`, `right`, `bottom` and `left`, each
+  `Option<f32>`. Unresolved, `WidgetBorderSpec` has `padding_top`,
+  `padding_right`, `padding_bottom` and `padding_left`. The
+  `padding_horizontal`/`padding_vertical` fields are gone; in TOML,
+  `padding_horizontal_px` and `padding_vertical_px` remain as shorthand
+  that sets both sides of their axis.
+- **`None` means unstated.** A side the platform does not state resolves to
+  `None`, where it used to resolve to an invented `0.0`, and a connector
+  leaves the toolkit's own padding in place for it. `Some(0.0)` is a stated
+  zero.
+- **The resolved border is split.** `ResolvedBorderSpec` is replaced by
+  `ResolvedDefaultsBorder` for `defaults.border` (no padding) and
+  `ResolvedWidgetBorder` for widgets (no `corner_radius_lg`, no `opacity`).
+- **`toolbar.bar_height` is `Option<f32>`**, `None` where the platform's
+  toolbar sizes to its content (KDE, and GNOME's `.toolbar`).
+- **Removed or changed functions.** gpui: `geometry::control_height` and
+  `native_theme_gpui::dialog_content_padding` are removed, and
+  `geometry::input_height` returns a `StyleRefinement` carrying the height
+  rule. iced: `button_padding` and `input_padding` still return `Padding`,
+  fill an unstated side from iced's own `DEFAULT_PADDING`, and need the
+  `widgets` feature.
+
+For this document: the "delivered" dialog row names
+`dialog_content_padding`, which no longer exists; `geometry::dialog` sets
+the stated sides and leaves upstream's 16px on the others. The `px`/`py`
+the button and list rows list are per-side `pt`/`pr`/`pb`/`pl` now, set
+only where stated, and the input's padding, listed as inner, is delivered
+too: upstream pads the input's root before the caller's refinement. The toolbar row predates `geometry::toolbar`,
+which sets `bar_height` as a minimum height only where it is stated.

@@ -1,5 +1,7 @@
 # v0.5.9: unstated sizes, and the showcase's chrome UX — spec
 
+Status: implemented (2026-09-23) and archived. Where the build departed from
+the design, *As built* at the end says so.
 Rationale: `todo_v0.5.9_unstated-sizes-and-chrome-ux-rationale.md` (decisions D1–D9).
 Plan: `todo_v0.5.9_unstated-sizes-and-chrome-ux-plan.md`.
 
@@ -314,3 +316,78 @@ These tests follow the controls to their new places:
     - a machine-readable platform-facts, so that every native value can be gated.
 - **Other plan documents:** `docs/todo_iced-full-theme-geometry.md`, `docs/todo_gpui-full-theme.md` (whose line 50 also names `dialog_content_padding` as delivered), `docs/todo_egui-widgets-spec.md` and `docs/todo_v0.6.0_egui-connector-{rationale,spec}.md` name the old padding fields, the removed functions or a plain `f32` `bar_height`. Each gets an appended note describing the new model; existing text is not rewritten.
 - **Archive:** these three documents are archived when the work is done.
+
+## As built
+
+The sections above already carry the rulings made during execution that
+amended them: §1.4's table (the audit's rulings), §2.1's HeightOnly and
+fit-not-growth sentences, §3.1's popover padding and §3.5's checks. What
+else differs from the text:
+
+- **§1.1.** The conflict error reads
+  ``border: set `padding_horizontal_px` or `padding_left_px`, not both``;
+  toml's own error names the table (`[light.button.border]`). `ResolvedPadding`
+  is `Copy`, and its `Default` is every side unstated.
+- **§1.4.** The audit's rulings R1–R13 are in the rationale's *As built*.
+  Besides the preset edits, the readers' constants changed: KDE button top
+  and bottom 5 → 6; Windows button left and right 12 → 11, input 12/12 →
+  10 left / 6 right, tab 12 → 8, menu 12 → 11, tooltip 8 on every side →
+  6/9/8/9, `toolbar.item_gap` 4 → 0; macOS button left and right 12 → 8.
+  material.toml's `bar_height_px = 64.0` went with the other colour-scheme
+  presets' 40s: its header cites Material 3 for colours only.
+- **§1.5.** The KDE constants compile on every target as the crate-private
+  `kde_metrics` (`#[path = "kde/metrics.rs"]`), and the public
+  `native_theme::kde::metrics` module, which held no public item, is gone.
+  The Windows constants are `windows::winui3_widget_sizing`; macOS's
+  `macos_widget_defaults` became `pub(crate)`.
+- **§1.6.** The gate is `native-theme/src/presets/documented_sizes.rs`:
+  72 rows, four platforms by the 18 widgets whose border has padding.
+  `every_platform_and_widget_has_one_row` and
+  `every_citation_names_its_platform_facts_row` keep its rows complete and
+  its citations on the right lines. A fourth test,
+  `full_and_live_presets_state_the_same_sizes`, requires each full preset
+  and its `-live` twin to state the same sizes, since a `-live` value that a
+  reader overrides is invisible to the gate.
+- **§1.7.** KDE 3/0/2/2, QStatusBar's layout for added widgets (the
+  showcase's bar holds widgets and draws no size grip); GNOME 6/10/6/10;
+  Windows and macOS (none).
+- **§2.1.**
+  - macOS `Select` and `Combobox` are 26px at text scale 1, not the stated
+    21: upstream's `h_8` is 2 rem at 72 DPI, and `min_h` cannot shrink it.
+    The seams test lists the two as an explicit exception.
+  - The showcase's InputGroup and NumberInput frames take `geometry::input`
+    without its padding sides, because the `Input` inside keeps its own;
+    the Textarea clears them too, as upstream pads only a single-line root.
+  - The seams harness sets the rem and font family as gpui-component's
+    `Root` does. The two new seams tests are
+    `input_select_and_combobox_draw_the_stated_padding`, which measures the
+    left side, and
+    `single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale`.
+- **§2.2.** `button_padding` and `input_padding` need the `widgets`
+  feature (on by default), which brings in `iced_widget`.
+- **§3.1.** A toolbar side the theme leaves unstated takes
+  `layout.container_margin`, and where that is unstated too, the showcase's
+  `TOOLBAR_PADDING` (8px). The header's gaps are `widget_gap`, or the
+  showcase's `SIDEBAR_HEADER_GAP` (8px).
+- **§3.2.** The toggles are small ghost Buttons built with
+  `variants::ghost_button`, their icons at `geometry::icon_size_small`. The
+  status bar grew taller with them. It also holds two debug probes, a
+  wrapper around the environment text and an empty middle box, so a test
+  can measure everything it draws.
+- **§3.3.** `NAV_WIDTH` is 205px: the smallest whole-pixel width at which
+  the fit test passes (at 204, adwaita overflows by 0.83px); the window is
+  1385px wide. The System toggle's text is "System", and its tooltip names
+  the resolved mode. The fit test resolves each native preset at its own
+  platform's DPI (macOS 72) and at text scale 1. The toolbar's Reload
+  button reads "Reload System Theme"; Preferences uses `IconName::Settings`
+  and dispatches `OpenPreferences`. The toolbar's vertical Separator is
+  gone, and no other place shows one (widget coverage counts types, not
+  variants).
+- **§3.5.** Each Icon Sizes cell marks a native preset's size where
+  §2.1.8 documents none; under the `default` theme no cell is marked. The
+  NavItem icon expression stays in `NavItem`: extracted whole into a
+  `pub(crate)` helper, it trips `every_widget_reports_itself`, so the test
+  checks the helper NavItem calls (`nav_icon_sized`) and the rail check
+  measures the result.
+- **§3.6.** `chrome_icon_names()` lost `Inspector`, which no chrome element
+  uses any more.

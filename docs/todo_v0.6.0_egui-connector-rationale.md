@@ -1835,3 +1835,39 @@ and unasserted in 0.36.1; egui clamps only its own settings slider to
 assertion on the field in a future egui release. Until then the connector clamps
 to `>= 0.0` itself, which is the conservative direction: too much leading is
 ugly, negative leading may overlap glyphs.
+
+## Note: the sizing model since v0.5.9
+
+Appended 2026-09-23; the text above is left as written. The v0.5.9
+unstated-sizes change
+([spec](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md)) changed
+the model this document was written against:
+
+- **Padding is per side.** A widget's resolved `border.padding` is a
+  `ResolvedPadding` with `top`, `right`, `bottom` and `left`, each
+  `Option<f32>`. Unresolved, `WidgetBorderSpec` has `padding_top`,
+  `padding_right`, `padding_bottom` and `padding_left`. The
+  `padding_horizontal`/`padding_vertical` fields are gone; in TOML,
+  `padding_horizontal_px` and `padding_vertical_px` remain as shorthand
+  that sets both sides of their axis.
+- **`None` means unstated.** A side the platform does not state resolves to
+  `None`, where it used to resolve to an invented `0.0`, and a connector
+  leaves the toolkit's own padding in place for it. `Some(0.0)` is a stated
+  zero.
+- **The resolved border is split.** `ResolvedBorderSpec` is replaced by
+  `ResolvedDefaultsBorder` for `defaults.border` (no padding) and
+  `ResolvedWidgetBorder` for widgets (no `corner_radius_lg`, no `opacity`).
+- **`toolbar.bar_height` is `Option<f32>`**, `None` where the platform's
+  toolbar sizes to its content (KDE, and GNOME's `.toolbar`).
+- **Removed or changed functions.** gpui: `geometry::control_height` and
+  `native_theme_gpui::dialog_content_padding` are removed, and
+  `geometry::input_height` returns a `StyleRefinement` carrying the height
+  rule. iced: `button_padding` and `input_padding` still return `Padding`,
+  fill an unstated side from iced's own `DEFAULT_PADDING`, and need the
+  `widgets` feature.
+
+For this document: `ResolvedBorderSpec`'s eight leaves are now
+`ResolvedWidgetBorder`'s eight (`color`, `corner_radius`, `line_width`,
+`shadow_enabled` and the four padding sides) and `ResolvedDefaultsBorder`'s
+six, and the two `defaults.border.padding_*` leaves are gone. kde-breeze no longer states a
+`toolbar.bar_height` of 40; it is `None` there.

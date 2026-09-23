@@ -237,6 +237,12 @@ builders are verified against real gpui-component widgets in `tests/seams.rs`,
 which lays each one out headlessly with and without the refinement and
 compares the measured height with the refinement's own field. The same file
 lays a real `Tooltip` out and checks that its text keeps inside the bubble.
+Under every native preset, at its own platform's DPI, it also checks that a
+real `Input`, `Select` and `Combobox` draw their content inset by the stated
+left padding, and that a real `Button`, `Input`, `Select`, `Combobox`,
+`ListItem` and an application-drawn menu row are their stated height at a
+text-scaling factor of 1 (macOS's `Select` and `Combobox` excepted, whose
+upstream trigger is taller) and keep their text inside them at 2.
 
 ### Flat buttons
 
@@ -417,13 +423,16 @@ cargo run -p native-theme-gpui --example showcase-gpui
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
 138-field colour map and a 101-icon gallery. The window is built from the
-same widgets — a title bar with menus, a toolbar, a Sidebar of pages,
-resizable panels and a status bar — and resting the pointer on any widget
-shows in the inspector what the theme sets on it, with the upstream line each
-colour is read at. Two parts report nothing: the resizable group and its
-panels, not yet (the handles between the panels do), and the inspector's own
-content below its tabs, by design, so the pointer can move into it without
-replacing what it shows.
+same widgets: a title bar with menus, labelled with this crate's name and
+version; a toolbar of actions (the command palette, a theme reload and the
+Preferences); a Sidebar of pages, whose header holds the theme, colour-mode
+and icon-set settings, each labelled; resizable panels; and a status bar
+with the Sidebar's toggle at its left end and the inspector's at its right.
+Resting the pointer on any widget shows in the inspector what the theme sets
+on it, with the upstream line each colour is read at. Two parts report
+nothing: the resizable group and its panels, not yet (the handles between the
+panels do), and the inspector's own content below its tabs, by design, so the
+pointer can move into it without replacing what it shows.
 
 ## Gallery
 

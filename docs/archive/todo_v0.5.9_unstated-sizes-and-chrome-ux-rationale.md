@@ -1,6 +1,6 @@
 # v0.5.9: unstated sizes, and the showcase's chrome UX — rationale
 
-Status: proposed, 2026-09-23.
+Status: implemented (2026-09-23) and archived; see *As built* at the end.
 Spec: `todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md`.
 Plan: `todo_v0.5.9_unstated-sizes-and-chrome-ux-plan.md`.
 
@@ -249,3 +249,55 @@ The preset and mode stay in the status bar. The version leaves the status bar, b
   - Removed: `ResolvedBorderSpec`; `WidgetBorderSpec`'s `padding_horizontal`/`padding_vertical` fields (the TOML keys stay); `geometry::control_height`, which layout replaces; `native_theme_gpui::dialog_content_padding`, which nothing but its own test calls (lib.rs:1420) and which the resolved theme already exposes.
   - Changed: `toolbar.bar_height` becomes `Option<f32>`; `geometry::input_height` returns a `StyleRefinement` carrying the height rule alone, so a caller that wants only the height gets the same rule `geometry::input` applies.
   - Unchanged: iced's `button_padding` and `input_padding` keep their `Padding` return type.
+
+## As built
+
+Implemented 2026-09-23 on branch `v0.5.9-gpui-kit-0.6.6`, commits
+`cd76c3e`..`b4d586b`, and archived in the commit after them. The decisions
+held. These outcomes differ from the text above; the controller's rulings
+behind them are in the SDD ledger.
+
+- **§6, the audit's rulings (R1–R13).** They settled the per-context cells
+  and corrected platform-facts from upstream sources. Windows tab 3/8/3/8,
+  the "without close button" context (R1). Windows `bar_height` 48: the
+  default CommandBar style is Compact, so 64 is not the default (R2). GNOME
+  list 2/2/2/2, the plain list (R3). The Windows combobox's right side
+  stays unstated (R4). Windows menu 4/11/5/11, the mouse context (R5).
+  GNOME's toolbar is `.toolbar`: padding 6 on every side, `item_gap` 6, and
+  no `bar_height`, because 47 is the headerbar's (R6). KDE toolbar 6 on
+  every side (R7). KDE combobox 6 on every side (R8). No platform states a
+  `segmented_control` padding except macOS's measured vertical 3; KDE's
+  cells borrow the tab bar as a proxy (R9, R12). Windows expander 0/0/0/16,
+  the header context (R10). Windows list 0/12/0/12 (R11). macOS combobox
+  and segmented horizontal stay unstated, as ranges (R12). Popover padding
+  GNOME 8 and Windows 15/16/17/16, and GNOME checkbox 3 (R13).
+- **§5 point 3, heights: fit, not growth.** At text scale 2 a control is at
+  least its scale-1 height and its text lies inside it. It need not grow:
+  Windows 11's list row, with 0 top and bottom padding (R11), fits its text
+  exactly in its 40px at scale 2, and that is correct.
+- **D9, `input_height`.** It carries the height rule alone. Above text
+  scale 1 a field it alone refines grows around upstream's text size and
+  padding, not the platform's, so it equals the refined `Input`'s height
+  at scale 1 only (kde-breeze at scale 2: 50px against 44px).
+- **macOS select and combobox are 26px at text scale 1**, not the stated
+  21. Upstream's trigger is `h_8`, 2 rem at 72 DPI, and `min_h` cannot
+  shrink it. The seams test holds the two as an explicit exception;
+  `combo_box.min_height` belongs to the follow-up (§7).
+- **§9, the Sidebar icons.** `icon_size_panel` lost its only use. The Icons
+  page gained an Icon Sizes section: the chosen set's icon at each of the
+  five `defaults.icon_sizes` contexts, each reporting its own info, and
+  marking a native preset's size where platform-facts §2.1.8 documents none.
+- **§9, the Sidebar header.** `NAV_WIDTH` is 205px, up from 200: the
+  smallest whole-pixel width at which every control fits (at 204, adwaita
+  overflows by 0.83px). The System toggle reads "System", with the resolved
+  mode in its tooltip, and the fit test resolves each native preset at its
+  own platform's DPI and text scale 1. The window is 1385px wide.
+- **D4, the status bar.** KDE 3/0/2/2, QStatusBar's layout for added
+  widgets, which is what the showcase's bar holds; GNOME 6/10/6/10;
+  Windows and macOS (none).
+- **§6, the reader constants.** The KDE constants compile on every target
+  as the crate-private `kde_metrics`; the public `native_theme::kde::metrics`
+  module, which held no public item, is gone.
+- **§5 point 3, iced.** `button_padding` and `input_padding` need the
+  `widgets` feature (on by default), because `iced_widget`, which holds
+  `DEFAULT_PADDING`, is an optional dependency of it.

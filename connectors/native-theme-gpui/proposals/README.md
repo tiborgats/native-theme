@@ -50,6 +50,19 @@ The `native-theme` crate captures these values in a `WidgetMetrics` struct conta
 | `ToolbarMetrics` | height, item_spacing, padding | 38px, 0px, 6px |
 | `SplitterMetrics` | width | 1px |
 
+> **Model note (v0.5.9).** The table above and the `widget_metrics` code
+> below describe native-theme as it stood when this draft was written
+> (2026-03-08). `WidgetMetrics` has since been replaced by per-widget themes
+> in `ResolvedTheme` (`button`, `input`, `tab`, `menu`, …), and padding is
+> stated **per side**: a widget's `border.padding` is a `ResolvedPadding`
+> with `top`, `right`, `bottom` and `left`, each `Option<f32>`, `None` where
+> the platform states no value. `padding_horizontal` and `padding_vertical`
+> survive only as TOML shorthand that sets both sides of an axis. A
+> `ThemeConfig` padding hook would therefore take four optional sides, and
+> `None` would keep the widget's own padding. Toolbar height
+> (`toolbar.bar_height`) is likewise `Option<f32>`, `None` where the toolbar
+> sizes to its content.
+
 Without `ThemeConfig` hooks for these values, connector crates like `native-theme-gpui`
 cannot apply native widget sizing -- they can only map colors, fonts, and border radius.
 

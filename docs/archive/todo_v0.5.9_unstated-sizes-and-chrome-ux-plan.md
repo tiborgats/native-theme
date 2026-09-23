@@ -1,5 +1,7 @@
 # v0.5.9: unstated sizes, and the showcase's chrome UX — plan
 
+Status: implemented (2026-09-23, Tasks 1–7) and archived; see *As built* at the end.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development.
 >
 > - Every subagent runs on Opus. The maintainer asked for this explicitly, and it overrides the global tiered-dispatch table.
@@ -14,7 +16,7 @@
 - Single-line controls are their stated height up to the platform's text scale, and grow with the platform's line height above it.
 - The showcase's panel toggles and theme controls sit where users expect them.
 
-**Spec:** `docs/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md`
+**Spec:** `docs/archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md`
 
 ## Global Constraints
 
@@ -175,3 +177,22 @@ This is one task: the model's type changes and their consumers must compile toge
 - Append a note on the new model to the other plan documents.
 - Move the three documents to `docs/archive/` and fix their links.
 - Commit `docs: unstated sizes and chrome UX, implemented and archived`.
+
+## As built
+
+Every subagent ran on Opus, and Tasks 3–6 each passed review after one fix
+round. The commits, on `v0.5.9-gpui-kit-0.6.6`:
+
+| Task | Commits | Differs from the plan |
+|---|---|---|
+| 1 | none: the audit is in the git-ignored SDD workspace | Its rulings R1–R13 are in the rationale's *As built*; `08adb93` wrote them into spec §1.4 |
+| 2 | `cd76c3e` | — |
+| 3 | `24da5c1`, `ecabcdf`; spec `745ab3d` | The HeightOnly field equals the refined Input's height at scale 1 only, and the spec was amended; the iced helpers need the `widgets` feature |
+| 4 | `70d705f`, `b898590` | "Grows at scale 2" became "fits at every scale" (Windows 11's list row fits exactly), and the spec was amended; a fourth gate test checks full and `-live` presets against each other |
+| 5 | `0476bf7`, `e9cd6c3`; spec `7c3f83a`, `6416e3c` | The Icons page gained an Icon Sizes section so `icon_size_panel` keeps a use; the rail check measures each item's icon height against its width, because items that are too tall grow rather than overlap. The fix commit is titled `fix(showcase): unsourced icon sizes are marked` |
+| 6 | `480de8d`, `620e5af`, `b4d586b`; spec `e8cb4df` | `NAV_WIDTH` 205 and the "System" label (the first build widened the panel to 313px) |
+| 7 | the archive commit | — |
+
+Task 3's commit also kept macOS `Select` and `Combobox` at upstream's 26px
+at text scale 1, above the stated 21, as an explicit exception in the
+seams test.
