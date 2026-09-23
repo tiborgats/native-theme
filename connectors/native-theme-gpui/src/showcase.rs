@@ -46,6 +46,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
         include_str!("../examples/showcase-gpui/info/data.rs"),
     ),
     (
+        "info/feedback.rs",
+        include_str!("../examples/showcase-gpui/info/feedback.rs"),
+    ),
+    (
         "info/inputs.rs",
         include_str!("../examples/showcase-gpui/info/inputs.rs"),
     ),

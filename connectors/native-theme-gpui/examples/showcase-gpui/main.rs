@@ -341,6 +341,19 @@ pub(crate) const DATA_PAGINATION_COMPACT: &str = "data-pagination-compact";
 /// and the Tree's `data-tree-row-{ix}`, each its own debug selector too.
 pub(crate) const DATA_TABLE_HEADER: &str = "data-table-header";
 
+/// The ids and debug selectors of two of the Feedback page's Tags, which
+/// `two_tags_show_different_infos` hovers.
+pub(crate) const FEEDBACK_TAG_PRIMARY: &str = "feedback-tag-primary";
+pub(crate) const FEEDBACK_TAG_DANGER: &str = "feedback-tag-danger";
+/// The ids and debug selectors of the Feedback page's first count Badge and
+/// its dot Badge, which `a_count_badge_and_a_dot_badge_show_different_infos`
+/// hovers.
+pub(crate) const FEEDBACK_BADGE_COUNT: &str = "feedback-badge-messages";
+pub(crate) const FEEDBACK_BADGE_DOT: &str = "feedback-badge-updates";
+/// The id and debug selector of the Feedback page's Info Alert, whose fill
+/// `an_alerts_fill_swatch_is_the_painted_tint` reads.
+pub(crate) const FEEDBACK_ALERT_INFO: &str = "feedback-alert-info";
+
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------

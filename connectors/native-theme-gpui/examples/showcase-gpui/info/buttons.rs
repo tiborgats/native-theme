@@ -1,8 +1,12 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
-use gpui_component::{Size, theme::Theme};
+use gpui_component::{Colorize as _, Size, theme::Theme};
 
-use super::{ColorClaim, WidgetInfo, chrome::ghost_hover, claim};
+use super::{
+    ColorClaim, WidgetInfo,
+    chrome::{ghost_hover, input_background},
+    claim,
+};
 use crate::demo::{ButtonKind, ButtonState};
 
 /// What a Button of `kind` paints at rest: its fill, where it has one, and
@@ -125,6 +129,15 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
             t.foreground.opacity(0.9),
             "gpui-component/button/button.rs:994",
         )],
+        ButtonKind::DefaultOutline => vec![
+            input_background(t),
+            claim(
+                "text",
+                "button_foreground",
+                t.button_foreground,
+                "gpui-component/button/button.rs:949",
+            ),
+        ],
         ButtonKind::PrimaryOutline => vec![
             claim(
                 "fill, primary at 10%",
@@ -285,6 +298,20 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "gpui-component/button/button.rs:1216",
             ),
         ],
+        ButtonKind::DefaultOutline => vec![
+            claim(
+                "hover bg, 50% input mixed with 50% transparent",
+                "input",
+                t.input.mix_oklab(t.transparent, 0.5),
+                "gpui-component/button/button.rs:860-864",
+            ),
+            claim(
+                "active bg, 70% input mixed with 30% transparent",
+                "input",
+                t.input.mix_oklab(t.transparent, 0.7),
+                "gpui-component/button/button.rs:865-869",
+            ),
+        ],
         ButtonKind::PrimaryOutline => vec![
             claim(
                 "hover bg, primary_hover at 20%",
@@ -308,13 +335,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
 /// platform's colour and leaves upstream's to hover and press.
 fn edge(t: &Theme, kind: ButtonKind, styled: bool) -> Option<ColorClaim> {
     match (kind, styled) {
-        (ButtonKind::Default, true) => Some(claim(
+        (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(
             "border, hovered or pressed",
             "input",
             t.input,
             "gpui-component/button/button.rs:1001",
         )),
-        (ButtonKind::Default, false) => Some(claim(
+        (ButtonKind::Default | ButtonKind::DefaultOutline, false) => Some(claim(
             "border",
             "input",
             t.input,
@@ -480,7 +507,7 @@ pub fn button(
         info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
             .not_themeable("edge", match state {
                 ButtonState::Idle => format!("button.border.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
-                    ButtonKind::Default => "input",
+                    ButtonKind::Default | ButtonKind::DefaultOutline => "input",
                     ButtonKind::Primary | ButtonKind::PrimaryOutline => "primary",
                     ButtonKind::Secondary => "border",
                     ButtonKind::Danger => "button_danger",
@@ -510,6 +537,8 @@ pub fn button(
         ButtonKind::Text => info
             .not_themeable("opacity", "the one variant that dims rather than recolours: foreground at 90% idle and 70% pressed, full strength on hover (button/button.rs, ButtonVariant::text_color, hovered, active). Those are literals, and the model states no dimmed copy; the swatches show the dimmed colours upstream paints")
             .not_themeable("fill", "transparent in every state (button/button.rs, ButtonVariant::bg_color, hovered and active)"),
+        ButtonKind::DefaultOutline => info.instance("variant", "no variant method, outlined: ButtonVariant::Default, which an outline fills with input_background() and edges with input, not with the button family (button/button.rs, ButtonVariant::outline_background)")
+            .not_themeable("outline fill", "input_background() at rest, and input mixed toward transparent under the pointer: 50% hovered and 70% pressed, two literals (button/button.rs, ButtonVariant::outline_background)"),
         ButtonKind::PrimaryOutline => info.not_themeable("outline fill opacity", "0.1 at rest, 0.2 hovered, 0.4 pressed -- three literals, so the platform sets the hue and gpui-component sets how far it is faded (button/button.rs, ButtonVariant::outline_background)"),
         ButtonKind::Primary
         | ButtonKind::Secondary

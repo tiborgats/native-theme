@@ -1,6 +1,6 @@
 //! Demo helpers the pages share.
 
-use std::{cell::Cell, rc::Rc};
+use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, Pixels, RenderOnce,
@@ -16,6 +16,7 @@ use gpui_component::{
         AttachmentTitle,
     },
     avatar::{Avatar, AvatarGroup},
+    badge::Badge,
     bubble::{Bubble, BubbleVariant},
     button::{
         Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
@@ -30,6 +31,10 @@ use gpui_component::{
     date_picker::{DatePicker, DatePickerState},
     description_list::DescriptionList,
     dialog::{Dialog, DialogDescription, DialogTitle},
+    empty::{
+        Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
+        EmptyTitle,
+    },
     h_flex,
     input::{
         Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment, InputGroupButton,
@@ -39,22 +44,30 @@ use gpui_component::{
     label::Label,
     link::Link,
     list::{List, ListItem, ListState},
+    marker::{Marker, MarkerContent, MarkerIcon, MarkerLoadingStyle, MarkerVariant},
     menu::{AppMenuBar, PopupMenu},
     message::{Message, MessageAlignment, MessageContent},
     message_scroller::{MessageScroller, MessageScrollerState},
+    notification::Notification,
     pagination::Pagination,
+    progress::{Progress, ProgressCircle},
     radio::{Radio, RadioGroup},
     rating::Rating,
     select::{SearchableVec, Select, SelectState},
     separator::Separator,
     setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
     sheet::Sheet,
+    shimmer::ShimmerText,
     sidebar::{Sidebar, SidebarItem, SidebarMenuItem, SidebarToggleButton},
+    skeleton::Skeleton,
     slider::{Slider, SliderState},
+    spinner::Spinner,
     status_bar::StatusBar,
     switch::Switch,
     tab::{Tab, TabBar},
     table::{DataTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableState},
+    tag::{Tag, TagVariant},
+    tooltip::Tooltip,
     tree::{Tree, TreeState},
     v_flex,
 };
@@ -64,7 +77,7 @@ use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
 use crate::support::{
     ChatMessage, NativeStyled as _, PresetDelegate, SampleListDelegate, SampleTableDelegate,
-    native_icon, native_value, section, with_gap,
+    native_geometry, native_icon, native_value, refined, section, with_gap,
 };
 use crate::{
     CHROME_APP_MENU_BAR, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
@@ -868,6 +881,8 @@ pub(crate) enum ButtonKind {
     Ghost,
     Link,
     Text,
+    /// Default, outlined.
+    DefaultOutline,
     /// Primary, outlined.
     PrimaryOutline,
 }
@@ -885,6 +900,7 @@ impl ButtonKind {
             Self::Ghost => "Ghost",
             Self::Link => "Link",
             Self::Text => "Text",
+            Self::DefaultOutline => "Default, outline",
             Self::PrimaryOutline => "Primary, outline",
         }
     }
@@ -902,6 +918,7 @@ impl ButtonKind {
             Self::Ghost => button.custom(variants::ghost_button(cx)),
             Self::Link => button.link(),
             Self::Text => button.text(),
+            Self::DefaultOutline => button.outline(),
             Self::PrimaryOutline => button.primary().outline(),
         }
     }
@@ -2106,4 +2123,549 @@ pub(crate) fn attachment(
     };
     card.info(ui, id, card_info)
         .debug_selector(move || id.into())
+}
+
+// ---------------------------------------------------------------------------
+// The Feedback page
+// ---------------------------------------------------------------------------
+
+/// A small Label reading `text`, in the colour the Label paints. `id` is its
+/// info's id and its debug selector.
+pub(crate) fn label(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: impl Into<SharedString>,
+) -> Stateful<Div> {
+    Label::new(text)
+        .text_sm()
+        .info(ui, id, info::text::label(cx.theme()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The four severities an `Alert` and a `Notification` share, so the
+/// matches over them in `info::feedback` are exhaustive and the compiler
+/// rejects one without an arm.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Severity {
+    Info,
+    Success,
+    Warning,
+    Error,
+}
+
+impl Severity {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Info => "Info",
+            Self::Success => "Success",
+            Self::Warning => "Warning",
+            Self::Error => "Error",
+        }
+    }
+}
+
+/// An `Alert` of `severity` reading `message`, titled with the severity's
+/// name.
+pub(crate) fn severity_alert(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    severity: Severity,
+    message: &'static str,
+) -> Stateful<Div> {
+    let alert = match severity {
+        Severity::Info => Alert::info(id, message),
+        Severity::Success => Alert::success(id, message),
+        Severity::Warning => Alert::warning(id, message),
+        Severity::Error => Alert::error(id, message),
+    };
+    alert
+        .title(severity.name())
+        .info(ui, id, info::feedback::alert(cx.theme(), severity, message))
+        .debug_selector(move || id.into())
+}
+
+/// A `Progress` bar at `value` percent, refined by `geometry::progress`;
+/// `label` names it in its info, as the page's label beside it does.
+pub(crate) fn progress(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    value: f32,
+) -> Stateful<Div> {
+    let mut bar_info = info::feedback::progress(cx.theme(), label, value);
+    native_info(
+        Progress::new(id).value(value),
+        cx,
+        geometry::progress,
+        "progress",
+        &mut bar_info,
+    )
+    .info(ui, id, bar_info)
+    .debug_selector(move || id.into())
+}
+
+/// The ProgressCircles the Feedback page builds.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CircleKind {
+    /// At 73%, at the default Size.
+    Value,
+    /// At 100%, at `Size::Large`.
+    ValueLarge,
+    /// Loading, at the platform's spinner diameter.
+    Indeterminate,
+}
+
+impl CircleKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Value => "73%",
+            Self::ValueLarge => "100%, Large",
+            Self::Indeterminate => "indeterminate",
+        }
+    }
+}
+
+/// A `ProgressCircle` of `kind`. Indeterminate, it is a spinner drawn as an
+/// arc, so the platform's spinner diameter is the size it takes.
+pub(crate) fn progress_circle(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: CircleKind,
+) -> Stateful<Div> {
+    let circle = ProgressCircle::new(id);
+    let spinner_size = native_value(cx, geometry::spinner_size);
+    let (circle, styled) = match kind {
+        CircleKind::Value => (circle.value(73.0), false),
+        CircleKind::ValueLarge => (circle.value(100.0).with_size(Size::Large), false),
+        CircleKind::Indeterminate => match spinner_size {
+            Some(size) => (circle.loading(true).with_size(size), true),
+            None => (circle.loading(true), false),
+        },
+    };
+    let circle_info = info::feedback::progress_circle(cx.theme(), kind, styled);
+    let circle_info = if styled {
+        circle_info.geometry("spinner_size")
+    } else {
+        circle_info
+    };
+    circle
+        .info(ui, id, circle_info)
+        .debug_selector(move || id.into())
+}
+
+/// The Spinners the Feedback page builds.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SpinnerKind {
+    Small,
+    /// At the platform's spinner diameter where a native theme is
+    /// installed, upstream's Medium otherwise.
+    Medium,
+    Large,
+}
+
+impl SpinnerKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Small => "Small",
+            Self::Medium => "Medium",
+            Self::Large => "Large",
+        }
+    }
+}
+
+/// A `Spinner` of `kind`.
+pub(crate) fn spinner(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: SpinnerKind,
+) -> Stateful<Div> {
+    let (size, styled) = match kind {
+        SpinnerKind::Small => (Size::Small, false),
+        SpinnerKind::Large => (Size::Large, false),
+        SpinnerKind::Medium => match native_value(cx, geometry::spinner_size) {
+            Some(size) => (size, true),
+            None => (Size::Medium, false),
+        },
+    };
+    let spinner_info = info::feedback::spinner(cx.theme(), kind, styled);
+    let spinner_info = if styled {
+        spinner_info.geometry("spinner_size")
+    } else {
+        spinner_info
+    };
+    Spinner::new()
+        .with_size(size)
+        .info(ui, id, spinner_info)
+        .debug_selector(move || id.into())
+}
+
+/// A `Skeleton` placeholder, `secondary` or not, `height` tall and `width`
+/// wide, or as wide as its column where `width` is `None`. Its rounding is
+/// the theme's, `radius_lg` or `radius`, not a number of its own.
+pub(crate) fn skeleton(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    secondary: bool,
+    height: f32,
+    width: Option<f32>,
+    radius_lg: bool,
+) -> Stateful<Div> {
+    let t = cx.theme();
+    let skeleton =
+        Skeleton::new()
+            .h(px(height))
+            .rounded(if radius_lg { t.radius_lg } else { t.radius });
+    let skeleton = if secondary {
+        skeleton.secondary()
+    } else {
+        skeleton
+    };
+    let skeleton = match width {
+        Some(width) => skeleton.w(px(width)),
+        None => skeleton,
+    };
+    skeleton
+        .info(
+            ui,
+            id,
+            info::feedback::skeleton(t, secondary, height, width, radius_lg),
+        )
+        .debug_selector(move || id.into())
+}
+
+/// The ShimmerTexts the Feedback page builds.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ShimmerKind {
+    /// Upstream's defaults.
+    Default,
+    /// A 3s sweep, in the muted text colour.
+    Slow,
+    /// Swept right to left, half the text wide.
+    Reverse,
+}
+
+impl ShimmerKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Default => "default",
+            Self::Slow => "slow, muted",
+            Self::Reverse => "reversed",
+        }
+    }
+}
+
+/// A `ShimmerText` of `kind` reading `text`. The highlight is mixed from the
+/// text colour, so each shimmers in whatever colour the native theme gave its
+/// own text.
+pub(crate) fn shimmer_text(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: ShimmerKind,
+    text: &'static str,
+) -> Stateful<Div> {
+    let t = cx.theme();
+    let shimmer = ShimmerText::new(text).id(id);
+    let shimmer = match kind {
+        ShimmerKind::Default => shimmer,
+        ShimmerKind::Slow => shimmer
+            .duration(Duration::from_secs(3))
+            .text_color(t.muted_foreground),
+        ShimmerKind::Reverse => shimmer.reverse(true).spread(0.5),
+    };
+    shimmer
+        .info(ui, id, info::feedback::shimmer_text(t, kind, text))
+        .debug_selector(move || id.into())
+}
+
+/// The `Empty` state, titled `title` over `description`, its media the
+/// Inbox icon at the platform's large icon size and its action an outlined
+/// Refresh Button, which reports itself as `refresh`.
+pub(crate) fn empty(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    refresh: &'static str,
+    title: &'static str,
+    description: &'static str,
+) -> Stateful<Div> {
+    let empty_info = info::feedback::empty(cx.theme(), title, description);
+    let empty_info = if native_value(cx, geometry::icon_size_large).is_some() {
+        empty_info.geometry("icon_size_large")
+    } else {
+        empty_info
+    };
+    Empty::new()
+        .header(
+            EmptyHeader::new()
+                .media(
+                    EmptyMedia::new()
+                        .with_variant(EmptyMediaVariant::Icon)
+                        // An empty state's icon is the large one; `EmptyMedia`
+                        // takes it as a plain child, so the size survives.
+                        .child(native_icon(cx, IconName::Inbox, geometry::icon_size_large)),
+                )
+                .title(EmptyTitle::new().child(title))
+                .description(EmptyDescription::new().child(description)),
+        )
+        .content(EmptyContent::new().child(button(
+            ui,
+            cx,
+            DemoButton {
+                id: refresh,
+                label: "Refresh",
+                kind: ButtonKind::DefaultOutline,
+                state: ButtonState::Idle,
+                icon: None,
+            },
+        )))
+        .info(ui, id, empty_info)
+        .debug_selector(move || id.into())
+}
+
+/// The Tag variants the showcase builds, so the matches over them in
+/// `info::feedback` are exhaustive and the compiler rejects a variant
+/// without an arm.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TagKind {
+    Primary,
+    Secondary,
+    Danger,
+    Success,
+    Warning,
+    Info,
+}
+
+impl TagKind {
+    fn variant(self) -> TagVariant {
+        match self {
+            Self::Primary => TagVariant::Primary,
+            Self::Secondary => TagVariant::Secondary,
+            Self::Danger => TagVariant::Danger,
+            Self::Success => TagVariant::Success,
+            Self::Warning => TagVariant::Warning,
+            Self::Info => TagVariant::Info,
+        }
+    }
+}
+
+/// A `Tag` of `kind`, `outline` or not, reading `label`.
+pub(crate) fn tag(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: TagKind,
+    outline: bool,
+    label: &'static str,
+) -> Stateful<Div> {
+    let tag = Tag::new().with_variant(kind.variant());
+    let tag = if outline { tag.outline() } else { tag };
+    tag.child(label)
+        .info(
+            ui,
+            id,
+            info::feedback::tag(cx.theme(), kind, outline, label),
+        )
+        .debug_selector(move || id.into())
+}
+
+/// A `Badge` showing `count`, or a dot where `count` is `None`, on a
+/// Default Button reading `label` and refined by `geometry::button`. The
+/// Badge is exactly as large as the Button, so the Button reports through
+/// it.
+pub(crate) fn badge(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    count: Option<usize>,
+    label: &'static str,
+) -> Stateful<Div> {
+    let mut badge_info = info::feedback::badge(cx.theme(), count, label);
+    let target = native_info(
+        Button::new(id),
+        cx,
+        geometry::button,
+        "button",
+        &mut badge_info,
+    )
+    .label(label);
+    let badge = match count {
+        Some(count) => Badge::new().count(count),
+        None => Badge::new().dot(),
+    };
+    badge
+        .child(target)
+        .info(ui, id, badge_info)
+        .debug_selector(move || id.into())
+}
+
+/// The Markers the Feedback page builds.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MarkerKind {
+    /// Plain, with an icon slot.
+    Plain,
+    Separator,
+    Border,
+    /// Loading, with the spinner the Marker adds for itself when no icon
+    /// slot is set.
+    Spinner,
+    /// Loading, shimmering.
+    Shimmer,
+}
+
+impl MarkerKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Plain => "Plain, with an icon",
+            Self::Separator => "Separator",
+            Self::Border => "Border",
+            Self::Spinner => "loading, Spinner",
+            Self::Shimmer => "loading, Shimmer",
+        }
+    }
+}
+
+/// A `Marker` of `kind` reading `text`; a Plain one shows the CircleCheck
+/// icon at the platform's small icon size.
+pub(crate) fn marker(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: MarkerKind,
+    text: &'static str,
+) -> Stateful<Div> {
+    let mut marker_info = info::feedback::marker(cx.theme(), kind, text);
+    let marker = Marker::new();
+    let marker = match kind {
+        MarkerKind::Plain => {
+            if native_value(cx, geometry::icon_size_small).is_some() {
+                marker_info = marker_info.geometry("icon_size_small");
+            }
+            marker.icon(MarkerIcon::new().child(native_icon(
+                cx,
+                IconName::CircleCheck,
+                geometry::icon_size_small,
+            )))
+        }
+        MarkerKind::Separator => marker.with_variant(MarkerVariant::Separator),
+        MarkerKind::Border => marker.with_variant(MarkerVariant::Border),
+        MarkerKind::Spinner => marker.id(id).loading(true),
+        MarkerKind::Shimmer => marker
+            .id(id)
+            .loading(true)
+            .with_loading_style(MarkerLoadingStyle::Shimmer),
+    };
+    marker
+        .content(MarkerContent::new().text(text))
+        .info(ui, id, marker_info)
+        .debug_selector(move || id.into())
+}
+
+/// A Default Button reading `label`, refined by `geometry::button`, whose
+/// tooltip reads `text`. The Button reports through the tooltip: its popup
+/// is drawn on a layer above the page, where nothing can wrap it.
+pub(crate) fn tooltip_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    text: &'static str,
+) -> Stateful<Div> {
+    let mut tooltip_info = info::feedback::tooltip(cx.theme(), false, false, label, text);
+    let button = native_info(
+        Button::new(id),
+        cx,
+        geometry::button,
+        "button",
+        &mut tooltip_info,
+    )
+    .label(label)
+    .tooltip(text);
+    InfoExt::info(button, ui, id, tooltip_info).debug_selector(move || id.into())
+}
+
+/// A Default Button reading `label`, refined by `geometry::button`, under a
+/// tooltip the application builds itself, reading `text`.
+///
+/// `Button::tooltip` takes a string and builds the tooltip itself
+/// (`button/button.rs:389`), so the only way to a refined one is to build
+/// it: that is what `geometry::tooltip` documents, and the one place the
+/// platform's tooltip padding, radius and text colour reach the popup. The
+/// width is the content element's, through `Tooltip::element`: on the
+/// popup it would clamp the popup and not the text, which then runs out of
+/// it.
+pub(crate) fn built_tooltip_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    text: &'static str,
+) -> Stateful<Div> {
+    let style = native_geometry(cx, geometry::tooltip);
+    let content = native_geometry(cx, geometry::tooltip_content);
+    let mut tooltip_info = info::feedback::tooltip(cx.theme(), true, style.is_some(), label, text);
+    let button = native_info(
+        Button::new(id),
+        cx,
+        geometry::button,
+        "button",
+        &mut tooltip_info,
+    )
+    .label(label);
+    if style.is_some() {
+        tooltip_info = tooltip_info.geometry("tooltip");
+    }
+    if content.is_some() {
+        tooltip_info = tooltip_info.geometry("tooltip_content");
+    }
+    InfoExt::info(button, ui, id, tooltip_info)
+        .debug_selector(move || id.into())
+        .tooltip(move |window, cx| {
+            let content = content.clone();
+            refined(
+                Tooltip::element(move |_window, _cx| refined(div().child(text), content.as_ref())),
+                style.as_ref(),
+            )
+            .build(window, cx)
+        })
+}
+
+/// A Default Button reading `label`, refined by `geometry::button`, whose
+/// click pushes a `Notification` of `severity` reading `message`, titled
+/// with the severity's name. The notification reports through the Button:
+/// upstream draws it on the Root's layer, where nothing can wrap it.
+pub(crate) fn notification_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    severity: Severity,
+    label: &'static str,
+    message: &'static str,
+) -> Stateful<Div> {
+    let mut button_info = info::feedback::notification(cx.theme(), severity, label, message);
+    let button = native_info(
+        Button::new(id),
+        cx,
+        geometry::button,
+        "button",
+        &mut button_info,
+    )
+    .label(label)
+    .on_click(move |_ev, window, cx| {
+        let notification = match severity {
+            Severity::Info => Notification::info(message),
+            Severity::Success => Notification::success(message),
+            Severity::Warning => Notification::warning(message),
+            Severity::Error => Notification::error(message),
+        };
+        window.push_notification(notification.title(severity.name()).autohide(true), cx);
+    });
+    InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }

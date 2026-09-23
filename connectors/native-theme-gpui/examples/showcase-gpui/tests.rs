@@ -11,7 +11,7 @@ use gpui::{
     VisualTestContext, point, prelude::*, px, size,
 };
 use gpui_base::ScrollbarHandle as _;
-use gpui_component::{Root, theme::Theme};
+use gpui_component::{Colorize as _, Root, theme::Theme};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 use std::cell::RefCell;
 use std::ops::Deref as _;
@@ -33,14 +33,16 @@ use crate::{
     BUTTONS_TEXT, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
     CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
     CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
-    DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, INPUTS_CHECKBOX_AUTOSAVE,
-    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
-    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH,
-    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
+    DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO,
+    FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY,
+    INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
+    INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
+    INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
+    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
+    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
+    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
+    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
+    TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -2003,6 +2005,70 @@ fn a_tree_row_reports_itself(cx: &mut TestAppContext) {
     assert!(
         before != after,
         "the Tree row shows the same info selected: {after:?}"
+    );
+}
+
+/// Two Tags of different variants show different infos (spec §4.3.2): the
+/// Primary Tag's info names Primary and its colours, and the Danger Tag's
+/// beside it, Danger's -- not one info for the whole gallery.
+#[gpui::test]
+fn two_tags_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Feedback);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (FEEDBACK_TAG_PRIMARY, "Tag · Primary"),
+            (FEEDBACK_TAG_DANGER, "Tag · Danger"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the Primary and the Danger Tag show the same info: {texts:?}"
+    );
+}
+
+/// A count Badge and a dot Badge show different infos (spec §4.3.2): only
+/// the count's says what its digits are painted with.
+#[gpui::test]
+fn a_count_badge_and_a_dot_badge_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Feedback);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (FEEDBACK_BADGE_COUNT, "Badge · count"),
+            (FEEDBACK_BADGE_DOT, "Badge · dot"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the count and the dot Badge show the same info: {texts:?}"
+    );
+}
+
+/// An Alert's swatches are the tints upstream paints, not its variant's
+/// colour at full strength: the Info Alert fills with 4% info mixed toward
+/// transparent white (alert.rs:39).
+#[gpui::test]
+fn an_alerts_fill_swatch_is_the_painted_tint(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Feedback);
+    let info = settle_on(&mut cx, &showcase, FEEDBACK_ALERT_INFO);
+    let painted = cx.update(|_window, cx| {
+        Theme::global(cx)
+            .info
+            .mix_oklab(gpui::transparent_white(), 0.04)
+    });
+    let fill = info
+        .as_ref()
+        .and_then(|info| info.colors.iter().find(|c| c.role.starts_with("bg")));
+    assert_eq!(
+        fill.map(|c| c.value),
+        Some(painted),
+        "the Info Alert's fill swatch is not info at 4%: {info:?}"
     );
 }
 
