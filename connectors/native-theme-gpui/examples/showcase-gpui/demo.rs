@@ -3,28 +3,41 @@
 use std::{cell::Cell, rc::Rc};
 
 use gpui::{
-    Action, AnyElement, App, Axis, Div, ElementId, Entity, Pixels, SharedString, Stateful, Window,
-    div, prelude::*, px,
+    Action, AnyElement, App, Axis, Div, ElementId, Entity, Pixels, SharedString, Stateful,
+    StyleRefinement, Window, div, prelude::*, px,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
-    ActiveTheme, Collapsible, Disableable as _, IconName, Sizable as _, Size, TitleBar,
+    ActiveTheme, Collapsible, Disableable as _, IconName, Sizable as _, Size, StyledExt as _,
+    TitleBar, WindowExt as _,
+    alert::Alert,
     button::{Button, ButtonVariants as _, Toggle, ToggleGroup, ToggleVariants as _},
     combobox::{Combobox, ComboboxState},
+    command::{Command, CommandGroup, CommandState},
+    dialog::{Dialog, DialogDescription, DialogTitle},
     h_flex,
+    link::Link,
     menu::AppMenuBar,
     select::{SearchableVec, Select, SelectState},
     separator::Separator,
+    setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
+    sheet::Sheet,
     sidebar::{Sidebar, SidebarItem, SidebarMenuItem, SidebarToggleButton},
     status_bar::StatusBar,
+    switch::Switch,
     tab::{Tab, TabBar},
+    v_flex,
 };
-use native_theme_gpui::{ActiveNativeTheme as _, geometry};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
 
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
-use crate::info::{self, InfoExt, InfoRegistry, native_info};
-use crate::support::{PresetDelegate, native_icon, native_value};
-use crate::{CHROME_APP_MENU_BAR, Page, STATUS_HOVERED};
+use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
+use crate::support::{PresetDelegate, native_icon, native_value, with_gap};
+use crate::{
+    CHROME_APP_MENU_BAR, OVERLAY_ABOUT_LINK, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
+    OVERLAY_PREFERENCES, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, Page,
+    STATUS_HOVERED,
+};
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
 /// `app_menu_bar` where the platform has no menu bar of its own, and quitting
@@ -206,8 +219,6 @@ pub(crate) struct ToolbarButton<'a> {
     pub action: &'a dyn Action,
     /// The info's "action" line: what the button is for.
     pub about: &'static str,
-    /// Why the button is disabled, where nothing handles `action` yet.
-    pub disabled: Option<&'static str>,
 }
 
 /// A ghost icon `Button` for the toolbar, dispatching its action, its icon
@@ -229,9 +240,8 @@ pub(crate) fn toolbar_button(
         tooltip,
         action,
         about,
-        disabled,
     } = spec;
-    let mut button_info = info::toolbar_button(cx.theme(), about, disabled);
+    let mut button_info = info::toolbar_button(cx.theme(), about);
     if native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
@@ -239,7 +249,6 @@ pub(crate) fn toolbar_button(
     let button = Button::new(id)
         .ghost()
         .tooltip_with_action(tooltip, action, None)
-        .disabled(disabled.is_some())
         .child(native_icon(cx, icon, geometry::icon_size_toolbar))
         .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
@@ -451,4 +460,307 @@ pub(crate) fn resize_handles(
             )
         },
     )
+}
+
+// ---------------------------------------------------------------------------
+// Overlays (spec §2.8) and the theme-error Alert (spec §2.5)
+// ---------------------------------------------------------------------------
+
+/// `dialog` refined by `geometry::dialog` and capped at
+/// `geometry::dialog_max_width`, each recorded in `info` where it applies.
+fn dialog_frame(dialog: Dialog, cx: &App, info: &mut WidgetInfo) -> Dialog {
+    let dialog = native_info(dialog, cx, geometry::dialog, "dialog", info);
+    match native_value(cx, geometry::dialog_max_width) {
+        Some(width) => {
+            *info = std::mem::take(info).geometry("dialog_max_width");
+            dialog.max_w(width)
+        }
+        None => dialog,
+    }
+}
+
+/// A `DialogTitle` reading `text`, refined by `geometry::dialog_title`,
+/// recorded in `info`.
+fn dialog_title(cx: &App, text: &'static str, info: &mut WidgetInfo) -> DialogTitle {
+    native_info(
+        DialogTitle::new().child(text),
+        cx,
+        geometry::dialog_title,
+        "dialog_title",
+        info,
+    )
+}
+
+/// The command palette (spec §2.8): `dialog`, titled, holding an unbordered
+/// `Command` over `state` with `groups`. Running an entry dispatches its
+/// action, then closes the palette.
+///
+/// The Dialog reports itself on its title: the Command fills the rest of
+/// its content, and the surface around them is upstream's, out of reach.
+pub(crate) fn command_palette(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    dialog: Dialog,
+    state: &Entity<CommandState>,
+    groups: Vec<CommandGroup>,
+) -> Dialog {
+    let mut dialog_info = info::palette_dialog(cx.theme());
+    let dialog = dialog_frame(dialog, cx, &mut dialog_info);
+    let title = dialog_title(cx, "Command Palette", &mut dialog_info)
+        .info(ui, "overlay-palette-dialog", dialog_info)
+        .debug_selector(|| OVERLAY_PALETTE_TITLE.into());
+    let (ui, state) = (ui.clone(), state.clone());
+    dialog.title(title).content(move |content, _window, cx| {
+        let command = Command::new(&state)
+            .bordered(false)
+            .placeholder("A page, a preset or a colour mode…")
+            .on_confirm(|_, window, cx| window.close_dialog(cx));
+        let command = groups.iter().cloned().fold(command, Command::group);
+        content.child(
+            command
+                .info(&ui, "overlay-palette", info::command_palette(cx.theme()))
+                .debug_selector(|| OVERLAY_PALETTE.into()),
+        )
+    })
+}
+
+/// The About dialog (spec §2.8): `dialog`, titled, stating `name_version`
+/// and linking to `compatibility`, its lines `gap` apart. The Dialog reports
+/// itself on its content, the link on its own.
+pub(crate) fn about(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    dialog: Dialog,
+    name_version: &'static str,
+    compatibility: &'static str,
+    gap: Option<Pixels>,
+) -> Dialog {
+    let mut dialog_info = info::about_dialog(cx.theme());
+    let dialog = dialog_frame(dialog, cx, &mut dialog_info);
+    let title = dialog_title(cx, "About", &mut dialog_info);
+    // A `DialogDescription` is built anew for every frame, so what the
+    // refinement records is recorded once, here, and applied there.
+    let description_style = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::dialog_description,
+        "dialog_description",
+        &mut dialog_info,
+    );
+    let ui = ui.clone();
+    dialog.title(title).content(move |content, _window, cx| {
+        let link = Link::new("about-compatibility")
+            .href(compatibility)
+            .child("the README's Compatibility table")
+            .info(&ui, "overlay-about-link", info::about_link(cx.theme()))
+            .debug_selector(|| OVERLAY_ABOUT_LINK.into());
+        content.child(
+            with_gap(v_flex(), gap)
+                .child(name_version)
+                .child(
+                    DialogDescription::new()
+                        .refine_style(&description_style)
+                        .child("The gpui-component, gpui-base and gpui-pre versions it requires, and those it was verified against, are in")
+                        .child(link),
+                )
+                .info(&ui, "overlay-about", dialog_info.clone()),
+        )
+    })
+}
+
+/// The preferences a switch flips.
+#[derive(Clone, Copy)]
+enum Preference {
+    ReduceMotion,
+    HighContrast,
+    ReduceTransparency,
+}
+
+impl Preference {
+    fn get(self, prefs: &AccessibilityPreferences) -> bool {
+        match self {
+            Self::ReduceMotion => prefs.reduce_motion,
+            Self::HighContrast => prefs.high_contrast,
+            Self::ReduceTransparency => prefs.reduce_transparency,
+        }
+    }
+    fn set(self, prefs: &mut AccessibilityPreferences, on: bool) {
+        match self {
+            Self::ReduceMotion => prefs.reduce_motion = on,
+            Self::HighContrast => prefs.high_contrast = on,
+            Self::ReduceTransparency => prefs.reduce_transparency = on,
+        }
+    }
+    /// The field's name, which its info names.
+    fn field(self) -> &'static str {
+        match self {
+            Self::ReduceMotion => "reduce_motion",
+            Self::HighContrast => "high_contrast",
+            Self::ReduceTransparency => "reduce_transparency",
+        }
+    }
+    /// The id and debug selector of the preference's switch.
+    fn selector(self) -> &'static str {
+        match self {
+            Self::ReduceMotion => PREF_REDUCE_MOTION,
+            Self::HighContrast => PREF_HIGH_CONTRAST,
+            Self::ReduceTransparency => PREF_REDUCE_TRANSPARENCY,
+        }
+    }
+}
+
+/// The accessibility preferences the installed native theme carries; `None`
+/// before one is installed.
+fn installed_preferences(cx: &App) -> Option<AccessibilityPreferences> {
+    cx.native_theme().map(|nt| nt.accessibility().clone())
+}
+
+/// Install `prefs` with `change` made, where a native theme is installed.
+fn change_preferences(cx: &mut App, change: impl FnOnce(&mut AccessibilityPreferences)) {
+    if let Some(mut prefs) = installed_preferences(cx) {
+        change(&mut prefs);
+        native_theme_gpui::apply_accessibility(&prefs, cx);
+    }
+}
+
+/// The smallest and largest text scale the Preferences sheet offers:
+/// Windows' `UISettings.TextScaleFactor` range (platform-facts §1.2.7), the
+/// one range the platform facts state. The model states none.
+const TEXT_SCALE_MIN: f64 = 1.0;
+const TEXT_SCALE_MAX: f64 = 2.25;
+/// The step the text scale field moves by: the showcase's own choice, which
+/// divides the range above evenly. The model states no step.
+const TEXT_SCALE_STEP: f64 = 0.25;
+
+/// A row whose field is one of the showcase's own Switches, built as
+/// upstream's switch field builds one (setting/fields/bool.rs, `BoolField`)
+/// but wrapped in its info, which upstream's field has no room for.
+fn preference_item(
+    ui: &Entity<InfoRegistry>,
+    title: &'static str,
+    description: &'static str,
+    pref: Preference,
+    disabled: bool,
+) -> SettingItem {
+    let ui = ui.clone();
+    let field = SettingField::render(move |options, _window, cx| {
+        let checked = installed_preferences(cx).is_some_and(|p| pref.get(&p));
+        let selector = pref.selector();
+        Switch::new(selector)
+            .checked(checked)
+            .disabled(options.is_disabled())
+            .with_size(options.size())
+            .on_click(move |on: &bool, _window, cx| {
+                change_preferences(cx, |prefs| pref.set(prefs, *on));
+            })
+            .info(
+                &ui,
+                selector,
+                info::preference_switch(cx.theme(), pref.field(), checked, options.is_disabled()),
+            )
+            .debug_selector(move || selector.into())
+    });
+    SettingItem::new(title, field)
+        .description(description)
+        .disabled(disabled)
+}
+
+/// The Preferences sheet (spec §2.8): `sheet`, `width` wide, holding a
+/// Settings page with the four accessibility preferences. A change goes
+/// through `native_theme_gpui::apply_accessibility`. Without a native theme
+/// there is nothing to re-install, and the rows are disabled.
+///
+/// The Sheet reports itself on its title, the one part of it the showcase
+/// builds; the Settings below report theirs.
+pub(crate) fn preferences(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    sheet: Sheet,
+    width: Pixels,
+) -> Sheet {
+    let disabled = cx.native_theme().is_none();
+    let mut settings_info = info::preferences_settings(cx.theme());
+    let text_scale = SettingItem::new(
+        "Text scale",
+        SettingField::number_input(
+            NumberFieldOptions {
+                min: TEXT_SCALE_MIN,
+                max: TEXT_SCALE_MAX,
+                step: TEXT_SCALE_STEP,
+            },
+            |cx| {
+                f64::from(
+                    installed_preferences(cx)
+                        .unwrap_or_default()
+                        .text_scaling_factor,
+                )
+            },
+            |scale, cx| change_preferences(cx, |prefs| prefs.text_scaling_factor = scale as f32),
+        ),
+    )
+    .description("text_scaling_factor: the theme's font sizes are multiplied by it")
+    .disabled(disabled);
+    let group = native_info(
+        SettingGroup::new(),
+        cx,
+        geometry::scrollbar_gutter,
+        "scrollbar_gutter",
+        &mut settings_info,
+    )
+    .item(text_scale)
+    .item(preference_item(
+        ui,
+        "Reduce motion",
+        "reduce_motion: forwarded to gpui's own reduce-motion flag",
+        Preference::ReduceMotion,
+        disabled,
+    ))
+    .item(preference_item(
+        ui,
+        "High contrast",
+        "high_contrast: stored with the theme, which the connector builds no differently for it",
+        Preference::HighContrast,
+        disabled,
+    ))
+    .item(preference_item(
+        ui,
+        "Reduce transparency",
+        "reduce_transparency: the backdrop behind a dialog or a sheet is made opaque",
+        Preference::ReduceTransparency,
+        disabled,
+    ));
+    let settings = Settings::new("preferences").page(
+        SettingPage::new("Accessibility")
+            .description("Installed with native_theme_gpui::apply_accessibility")
+            .resettable(false)
+            .default_open(true)
+            .group(group),
+    );
+    sheet
+        .title(div().child("Preferences").info(
+            ui,
+            "overlay-preferences-sheet",
+            info::preferences_sheet(cx.theme()),
+        ))
+        .size(width)
+        .child(
+            settings
+                .info(ui, "overlay-preferences", settings_info)
+                .size_full()
+                .debug_selector(|| OVERLAY_PREFERENCES.into()),
+        )
+}
+
+/// An error `Alert` across the top of the content (spec §2.5), reading
+/// `message`.
+pub(crate) fn alert(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    message: impl Into<SharedString>,
+) -> Stateful<Div> {
+    Alert::error(id, message.into())
+        .banner()
+        .info(ui, id, info::theme_error_alert(cx.theme()))
+        .w_full()
 }

@@ -3,7 +3,7 @@
 use gpui::{
     Action, App, Context, Entity, FocusHandle, Hsla, ImageSource, IntoElement, KeyBinding, Menu,
     ParentElement, Pixels, Render, SharedString, Styled, Subscription, Task, Window, actions, div,
-    prelude::*, px,
+    prelude::*,
 };
 use gpui_component::{
     ActiveTheme, GlobalState, ResizableState, Root,
@@ -14,7 +14,6 @@ use gpui_component::{
     command::CommandState,
     h_flex, h_resizable,
     input::{EditorState, InputState, NumberInputEvent, OtpState, StepAction, TextareaState},
-    label::Label,
     list::ListState,
     menu::AppMenuBar,
     message_scroller::MessageScrollerState,
@@ -53,8 +52,8 @@ use crate::support::{
     load_gpui_icons, parse_icon_set_choice, release_sources, widget_tooltip_themed,
 };
 use crate::{
-    CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_WIDTH,
-    NAV_WIDTH, PAGE_ROOT, Page, demo,
+    CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
+    INSPECTOR_WIDTH, NAV_WIDTH, PAGE_ROOT, Page, demo,
 };
 
 /// gpui-component's mode for the showcase's light/dark flag.
@@ -70,8 +69,8 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
 // Actions (spec §2.2)
 // ---------------------------------------------------------------------------
 //
-// One action backs a menu item, its key binding and, from later tasks, a
-// toolbar button and a command-palette entry.
+// One action backs a menu item, its key binding, a toolbar button and a
+// command-palette entry, where each has one.
 
 actions!(
     showcase,
@@ -99,6 +98,12 @@ pub(crate) struct ShowPage(pub usize);
 #[derive(Clone, PartialEq, Debug, Action)]
 #[action(namespace = showcase, no_json)]
 pub(crate) struct SetColorMode(pub AppColorMode);
+
+/// Install the preset of this key, as the toolbar's preset switch does, and
+/// show it chosen there.
+#[derive(Clone, PartialEq, Debug, Action)]
+#[action(namespace = showcase, no_json)]
+pub(crate) struct SetPreset(pub SharedString);
 
 /// Bind the showcase's keys (spec §2.2) and quit on [`Quit`].
 ///
@@ -271,8 +276,11 @@ pub(crate) struct Showcase {
     /// What the last `AlertDialog` was answered with, written by its `on_ok`
     /// and `on_cancel` so the section reports a real outcome.
     pub(crate) alert_choice: Option<SharedString>,
-    /// The command palette's query and highlighted row.
+    /// The Overlays page's Command sample's query and highlighted row.
     pub(crate) command_state: Entity<CommandState>,
+    /// The command palette's (spec §2.8), apart from the sample's so that
+    /// neither leaves a query or a highlight in the other.
+    pub(crate) palette_state: Entity<CommandState>,
 
     // Icon set selector state
     pub(crate) icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
@@ -316,7 +324,8 @@ pub(crate) struct Showcase {
     /// Static first-frame ImageSources for reduced motion display (set name, source, anim type label).
     pub(crate) animated_static_sources: Vec<(String, ImageSource, &'static str)>,
 
-    /// Error message from theme loading, displayed as a banner in the UI.
+    /// Why the last theme failed to load, which an Alert at the top of the
+    /// content reports (spec §2.5); `None` once a theme loads.
     pub(crate) error_message: Option<String>,
 
     // Theme watcher (runtime dark/light toggle detection)
@@ -581,6 +590,7 @@ impl Showcase {
         });
 
         let command_state = cx.new(|cx| CommandState::new(window, cx));
+        let palette_state = cx.new(|cx| CommandState::new(window, cx));
 
         let input_group_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
@@ -1019,6 +1029,7 @@ impl Showcase {
             app_menu_bar,
             alert_choice: None,
             command_state,
+            palette_state,
             icon_set_select,
             icon_set_name: initial_resolved_name,
             icon_set_enum: Some(initial_effective_set),
@@ -1304,6 +1315,38 @@ impl Showcase {
         cx.notify();
     }
 
+    fn on_set_preset(&mut self, action: &SetPreset, window: &mut Window, cx: &mut Context<Self>) {
+        let key = action.0.clone();
+        self.current_theme_name = key.to_string();
+        self.apply_theme_by_name(&key, window, cx);
+        self.preset_combobox.update(cx, |combobox, cx| {
+            combobox.set_selected_values(&[key], window, cx)
+        });
+        cx.notify();
+    }
+
+    fn on_open_command_palette(
+        &mut self,
+        _: &OpenCommandPalette,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        chrome::open_command_palette(self, window, cx);
+    }
+
+    fn on_open_preferences(
+        &mut self,
+        _: &OpenPreferences,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        chrome::open_preferences(self, window, cx);
+    }
+
+    fn on_open_about(&mut self, _: &OpenAbout, window: &mut Window, cx: &mut Context<Self>) {
+        chrome::open_about(self, window, cx);
+    }
+
     /// Create a hover handler that shows a page's text panel in the
     /// inspector, until the page reports its instances (plan Tasks 14-23).
     /// The panel settles like an info does (`Inspector::set_legacy`).
@@ -1350,86 +1393,77 @@ impl Render for Showcase {
 
         let active_page = self.active_page;
 
-        // The content panel: the error banner, then the page, scrolling.
-        let mut content = v_flex()
+        // The content panel: the Alert of a theme that failed to load, then
+        // the page, scrolling.
+        let content = v_flex()
             .size_full()
             .overflow_hidden()
-            .debug_selector(|| CONTENT_PANEL.into());
-
-        // Error banner (if any)
-        if let Some(ref msg) = self.error_message {
-            content = content.child(
+            .debug_selector(|| CONTENT_PANEL.into())
+            .children(self.error_message.clone().map(|message| {
+                demo::alert(&self.info_ui, cx, "content-alert", message)
+                    .debug_selector(|| CONTENT_ALERT.into())
+            }))
+            .child(
                 div()
-                    .id("error-banner")
-                    .px_4()
-                    .py_2()
-                    .bg(theme.danger)
-                    .text_color(theme.danger_foreground)
-                    .child(Label::new(msg.clone()).text_size(px(12.0))),
+                    .id("content-scroll-outer")
+                    .flex_1()
+                    .overflow_y_scrollbar()
+                    // The bar is drawn over the right edge of the scroll area,
+                    // so the page keeps that width free; the page roots' own
+                    // padding is untouched.
+                    .native(cx, geometry::scrollbar_gutter)
+                    .debug_selector(|| CONTENT_SCROLL.into())
+                    // PAGE_ROOT is what `every_page_lays_out` looks the page up
+                    // by, and it goes on each arm rather than on one wrapper
+                    // around the match: the test asserts the page's own root
+                    // has a size, and a wrapper would report this scroll
+                    // container's size for every page -- including a page that
+                    // rendered nothing. That is what makes the ten
+                    // `impl IntoElement + InteractiveElement` signatures worth
+                    // their noise.
+                    .child(match active_page {
+                        Page::Buttons => self
+                            .render_buttons_page(window, cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Inputs => self
+                            .render_inputs_page(window, cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Data => self
+                            .render_data_page(window, cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Feedback => self
+                            .render_feedback_page(window, cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Typography => self
+                            .render_typography_page(cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Layout => self
+                            .render_layout_page(window, cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Overlays => self
+                            .render_overlays_page(window, cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Charts => self
+                            .render_charts_page(cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::Icons => self
+                            .render_icons_page(cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                        Page::ThemeMap => self
+                            .render_theme_map_page(cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
+                    }),
             );
-        }
-
-        let content = content.child(
-            div()
-                .id("content-scroll-outer")
-                .flex_1()
-                .overflow_y_scrollbar()
-                // The bar is drawn over the right edge of the scroll area,
-                // so the page keeps that width free; the page roots' own
-                // padding is untouched.
-                .native(cx, geometry::scrollbar_gutter)
-                .debug_selector(|| CONTENT_SCROLL.into())
-                // PAGE_ROOT is what `every_page_lays_out` looks the page up
-                // by, and it goes on each arm rather than on one wrapper
-                // around the match: the test asserts the page's own root
-                // has a size, and a wrapper would report this scroll
-                // container's size for every page -- including a page that
-                // rendered nothing. That is what makes the ten
-                // `impl IntoElement + InteractiveElement` signatures worth
-                // their noise.
-                .child(match active_page {
-                    Page::Buttons => self
-                        .render_buttons_page(window, cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Inputs => self
-                        .render_inputs_page(window, cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Data => self
-                        .render_data_page(window, cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Feedback => self
-                        .render_feedback_page(window, cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Typography => self
-                        .render_typography_page(cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Layout => self
-                        .render_layout_page(window, cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Overlays => self
-                        .render_overlays_page(window, cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Charts => self
-                        .render_charts_page(cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::Icons => self
-                        .render_icons_page(cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                    Page::ThemeMap => self
-                        .render_theme_map_page(cx)
-                        .debug_selector(|| PAGE_ROOT.into())
-                        .into_any_element(),
-                }),
-        );
 
         // The body: Sidebar | content | inspector, one resizable group
         // (spec §1.1). A collapsed Sidebar is an icon rail beside the group
@@ -1504,6 +1538,10 @@ impl Render for Showcase {
             .on_action(cx.listener(Self::on_reload_theme))
             .on_action(cx.listener(Self::on_toggle_sidebar))
             .on_action(cx.listener(Self::on_toggle_inspector))
+            .on_action(cx.listener(Self::on_set_preset))
+            .on_action(cx.listener(Self::on_open_command_palette))
+            .on_action(cx.listener(Self::on_open_preferences))
+            .on_action(cx.listener(Self::on_open_about))
             // First, so its prepaint opens the frame for every target
             // (info/registry.rs, epoch_marker).
             .child(epoch_marker(&self.info_ui))

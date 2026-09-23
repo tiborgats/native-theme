@@ -1138,8 +1138,30 @@ impl ListDelegate for SampleListDelegate {
 /// One row of the preset Combobox: a preset, by key and display name.
 #[derive(Clone)]
 pub(crate) struct PresetItem {
-    key: SharedString,
-    display_name: SharedString,
+    pub(crate) key: SharedString,
+    pub(crate) display_name: SharedString,
+}
+
+/// The presets the showcase offers, in the order it offers them: the
+/// desktop's own theme, keyed `default` and labelled with the preset it
+/// builds on, then the presets meant for this platform. The toolbar's preset
+/// switch and the command palette both list these, so neither can offer a
+/// preset the other does not.
+pub(crate) fn preset_items() -> Vec<PresetItem> {
+    let default = PresetItem {
+        key: "default".into(),
+        display_name: format!("default ({})", platform_preset_name().name).into(),
+    };
+    std::iter::once(default)
+        .chain(
+            native_theme::theme::Theme::list_presets_for_platform()
+                .iter()
+                .map(|info| PresetItem {
+                    key: info.key.into(),
+                    display_name: info.display_name.into(),
+                }),
+        )
+        .collect()
 }
 
 impl SearchableListItem for PresetItem {
@@ -1162,9 +1184,8 @@ impl SearchableListItem for PresetItem {
 }
 
 /// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:749`),
-/// so the toolbar's preset switch takes a delegate: the desktop's own theme,
-/// keyed `default` and labelled with the preset it builds on, then the
-/// presets meant for this platform, filtered as the user types.
+/// so the toolbar's preset switch takes a delegate: [`preset_items`],
+/// filtered as the user types.
 pub(crate) struct PresetDelegate {
     items: Vec<PresetItem>,
     matched: Vec<PresetItem>,
@@ -1172,20 +1193,7 @@ pub(crate) struct PresetDelegate {
 
 impl PresetDelegate {
     pub(crate) fn new() -> Self {
-        let default = PresetItem {
-            key: "default".into(),
-            display_name: format!("default ({})", platform_preset_name().name).into(),
-        };
-        let items: Vec<PresetItem> = std::iter::once(default)
-            .chain(
-                native_theme::theme::Theme::list_presets_for_platform()
-                    .iter()
-                    .map(|info| PresetItem {
-                        key: info.key.into(),
-                        display_name: info.display_name.into(),
-                    }),
-            )
-            .collect();
+        let items = preset_items();
         Self {
             matched: items.clone(),
             items,

@@ -1,6 +1,7 @@
 //! What the window's chrome reports about itself (spec §2).
 
-use gpui_component::theme::Theme;
+use gpui::transparent_white;
+use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{ColorClaim, WidgetInfo, claim};
 
@@ -133,7 +134,7 @@ pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "menus",
-            "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding, the binding runs the same action. An item whose action has no handler yet is disabled",
+            "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding, the binding runs the same action",
         )
 }
 
@@ -591,25 +592,13 @@ pub fn toolbar_separator(t: &Theme) -> WidgetInfo {
         )
 }
 
-/// One of the toolbar's icon Buttons (spec §2.3), running `action`.
-/// `disabled` is why the button is disabled, where nothing handles its
-/// action yet. Its icon-size line is recorded where `demo::toolbar_button`
-/// applies the builder.
-pub fn toolbar_button(
-    t: &Theme,
-    action: &'static str,
-    disabled: Option<&'static str>,
-) -> WidgetInfo {
-    let info = WidgetInfo::new("Button").variant("Ghost, icon");
-    let info = if disabled.is_some() {
-        info.color(claim(
-            "disabled icon",
-            "muted_foreground",
-            t.muted_foreground,
-            "gpui-component/button/button.rs:1284",
-        ))
-    } else {
-        info.color(claim(
+/// One of the toolbar's icon Buttons (spec §2.3), running `action`. Its
+/// icon-size line is recorded where `demo::toolbar_button` applies the
+/// builder.
+pub fn toolbar_button(t: &Theme, action: &'static str) -> WidgetInfo {
+    WidgetInfo::new("Button")
+        .variant("Ghost, icon")
+        .color(claim(
             "icon",
             "secondary_foreground",
             t.secondary_foreground,
@@ -622,8 +611,6 @@ pub fn toolbar_button(
             t.accent_foreground,
             "gpui-component/button/button.rs:1141",
         ))
-    };
-    let info = info
         .color(claim(
             "tooltip bg",
             "popover",
@@ -644,7 +631,7 @@ pub fn toolbar_button(
         ))
         .not_themeable(
             "fill",
-            "none: a Ghost Button is transparent until hovered, and a disabled one stays transparent while its icon takes muted_foreground at half opacity (button/button.rs, ButtonVariant::disabled)",
+            "none: a Ghost Button is transparent until hovered (button/button.rs, ButtonVariant::hovered)",
         )
         .not_themeable(
             "icon",
@@ -658,11 +645,7 @@ pub fn toolbar_button(
             "tooltip",
             "upstream's Tooltip, which the Button builds as it renders from the text and action tooltip_with_action stored (button/button.rs, RenderOnce for Button). The only way to hand a Button a Tooltip of one's own is its tooltip_builder, which has no public setter (button/button.rs, Button), so geometry::tooltip cannot reach it; it shows the action's key binding where one is bound (tooltip.rs, Tooltip::action)",
         )
-        .instance("action", action);
-    match disabled {
-        Some(why) => info.instance("disabled", why),
-        None => info,
-    }
+        .instance("action", action)
 }
 
 /// The window's `StatusBar` (spec §2.7). Its geometry line is recorded by
@@ -755,5 +738,390 @@ pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetIn
         .instance(
             "drag",
             "moves the boundary to the pointer; the panels keep the widths it leaves when the Sidebar collapses or the inspector hides and comes back",
+        )
+}
+
+/// The Dialog's own colours, which every Dialog the showcase opens paints:
+/// the surface, its edge, and the backdrop behind it.
+fn dialog_surface(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+    info.color(claim(
+        "bg",
+        "background",
+        t.background,
+        "gpui-component/dialog/dialog.rs:613",
+    ))
+    .color(claim(
+        "border",
+        "border",
+        t.border,
+        "gpui-component/dialog/dialog.rs:615",
+    ))
+    .color(claim(
+        "backdrop",
+        "overlay",
+        t.overlay,
+        "gpui-component/dialog/dialog.rs:282",
+    ))
+    .not_themeable(
+        "fill",
+        "the window's own background, not the popover colour: a dialog is a surface, not a popup (dialog/dialog.rs, Dialog)",
+    )
+    .not_themeable(
+        "width",
+        "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog_max_width caps it",
+    )
+    .not_themeable(
+        "animation",
+        "a 0.25s slide and fade on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION)",
+    )
+}
+
+/// The command palette's Dialog (spec §2.8). Its geometry lines are recorded
+/// where `demo::command_palette` applies the builders; its info target is the
+/// title, because the Command fills the rest of its content.
+pub fn palette_dialog(t: &Theme) -> WidgetInfo {
+    dialog_surface(WidgetInfo::new("Dialog").variant("Command Palette"), t)
+        .instance(
+            "opens",
+            "on OpenCommandPalette: View > Command Palette, Ctrl+K, or the toolbar's Command Palette button",
+        )
+        .instance(
+            "closes",
+            "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop below the title bar (dialog/dialog.rs, Dialog::render)",
+        )
+}
+
+/// The command palette's `Command` (spec §2.8), unbordered inside its Dialog.
+pub fn command_palette(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Command")
+        .color(claim(
+            "surface bg",
+            "popover",
+            t.popover,
+            "gpui-component/command/state.rs:830",
+        ))
+        .color(claim(
+            "surface text",
+            "popover_foreground",
+            t.popover_foreground,
+            "gpui-component/command/state.rs:831",
+        ))
+        .color(claim(
+            "search divider",
+            "border",
+            t.border,
+            "gpui-component/command/state.rs:847",
+        ))
+        .color(claim(
+            "search icon",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/command/state.rs:852",
+        ))
+        .color(claim(
+            "group label",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/command/state.rs:685",
+        ))
+        .color(claim(
+            "row icon",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/command/state.rs:716",
+        ))
+        .color(claim(
+            "highlighted row",
+            "accent",
+            t.accent,
+            "gpui-component/command/state.rs:673",
+        ))
+        .color(claim(
+            "highlighted row text",
+            "accent_foreground",
+            t.accent_foreground,
+            "gpui-component/command/state.rs:674",
+        ))
+        .color(claim(
+            "empty text",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/command/state.rs:785",
+        ))
+        .not_themeable(
+            "geometry",
+            "none: no geometry:: builder reaches it. Rows are text_sm with rem paddings, and the list is at most 18.75rem tall (command/command.rs, CommandOptions)",
+        )
+        .not_themeable(
+            "edge",
+            "none: bordered(false), as upstream advises for a palette inside a frame of its own such as a Dialog (command/command.rs, Command::bordered)",
+        )
+        .not_themeable(
+            "query field",
+            "an Input with appearance(false): it draws no background and no border of its own, so the surface shows through (command/state.rs, CommandState)",
+        )
+        .not_themeable(
+            "scrollbar",
+            "the list scrolls inside the Command, with a Scrollbar laid over it, on an element no refinement reaches, so geometry::scrollbar_gutter cannot keep the rows clear of the bar -- Tier U (command/state.rs, CommandState)",
+        )
+        .instance(
+            "entries",
+            "every page, then the presets the toolbar's preset switch offers -- default, and those Theme::list_presets_for_platform lists -- then the three colour modes. Each runs an action: ShowPage, SetPreset or SetColorMode",
+        )
+        .instance(
+            "keys",
+            "typing filters the entries by label and keyword, Up and Down move the highlight, Enter runs the highlighted entry and closes the palette, and Escape clears the query, then closes it (command/state.rs, on_action_cancel)",
+        )
+}
+
+/// The Preferences `Sheet` (spec §2.8); its info target is its title.
+pub fn preferences_sheet(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Sheet")
+        .variant("Preferences")
+        .color(claim(
+            "bg",
+            "background",
+            t.background,
+            "gpui-component/sheet.rs:172",
+        ))
+        .color(claim(
+            "border",
+            "border",
+            t.border,
+            "gpui-component/sheet.rs:173",
+        ))
+        .color(claim(
+            "backdrop",
+            "overlay",
+            t.overlay,
+            "gpui-component/dialog/dialog.rs:282",
+        ))
+        .not_themeable(
+            "fill",
+            "the window's own background, not the popover colour, as a Dialog's (sheet.rs, Sheet)",
+        )
+        .not_themeable(
+            "top margin",
+            "Theme::sheet.margin_top, a gpui-component setting the connector leaves at its default of TITLE_BAR_HEIGHT, 34px (sheet.rs, SheetSettings). native-theme states no sheet",
+        )
+        .not_themeable(
+            "scrollbar",
+            "the body scrolls on an element the Sheet builds itself, and a Sheet's refinement lands on its surface, not there -- Tier U (sheet.rs, Sheet)",
+        )
+        .not_themeable(
+            "animation",
+            "a 0.15s literal slide, not the theme's motion tokens (sheet.rs, Sheet)",
+        )
+        .instance(
+            "width",
+            "PREFERENCES_WIDTH, the showcase's own: the model states no sheet",
+        )
+        .instance(
+            "opens",
+            "on OpenPreferences: Theme > Preferences… or Ctrl+,",
+        )
+}
+
+/// The Settings inside the Preferences sheet (spec §2.8). Its geometry line
+/// is recorded where `demo::preferences` applies the builder to its group.
+pub fn preferences_settings(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Settings")
+        .variant("Preferences")
+        .color(claim(
+            "sidebar bg",
+            "sidebar",
+            t.sidebar,
+            "gpui-component/sidebar/mod.rs:413",
+        ))
+        .color(claim(
+            "sidebar text",
+            "sidebar_foreground",
+            t.sidebar_foreground,
+            "gpui-component/sidebar/mod.rs:414",
+        ))
+        .color(claim(
+            "page item",
+            "sidebar_accent",
+            t.sidebar_accent,
+            "gpui-component/sidebar/menu.rs:297",
+        ))
+        .color(claim(
+            "header rule",
+            "border",
+            t.border,
+            "gpui-component/setting/page.rs:185",
+        ))
+        .color(claim(
+            "page description",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/setting/page.rs:219",
+        ))
+        .color(claim(
+            "item description",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/setting/item.rs:299",
+        ))
+        .not_themeable(
+            "group",
+            "no fill and no edge: a Settings uses GroupBoxVariant::Normal unless with_group_variant picks another (setting/settings.rs, with_group_variant). A SettingGroup is not an element the showcase can wrap -- the page renders it (setting/group.rs, SettingGroup) -- so it reports here",
+        )
+        .not_themeable(
+            "scrollbar",
+            "the page lays its scrollbar over the body's right edge and takes no refinement -- Tier U (setting/page.rs, SettingPage); the group is padded by the platform's groove width instead (setting/group.rs, SettingGroup)",
+        )
+        .not_themeable(
+            "layout",
+            "the label above the field wherever the page is at most 480px wide, as it is in this sheet (setting/settings.rs, STACKED_LAYOUT_MAX_WIDTH)",
+        )
+        .instance(
+            "preferences",
+            "the four AccessibilityPreferences fields of the installed native theme; a change is installed with native_theme_gpui::apply_accessibility, which rebuilds the theme from its stored variant (native-theme-gpui lib.rs, apply_accessibility). The desktop's own settings are not changed, and switching or reloading the theme installs the desktop's preferences again",
+        )
+        .instance(
+            "text scale",
+            "1.0 to 2.25 in steps of 0.25: Windows' TextScaleFactor range (platform-facts §1.2.7) in the showcase's own steps; the model states no range",
+        )
+}
+
+/// One of the Preferences sheet's switches, `checked` or not, `disabled`
+/// while no native theme is installed.
+pub fn preference_switch(
+    t: &Theme,
+    field: &'static str,
+    checked: bool,
+    disabled: bool,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("Switch").variant(match (checked, disabled) {
+        (_, true) => "disabled",
+        (true, false) => "on",
+        (false, false) => "off",
+    });
+    let info = match (checked, disabled) {
+        (_, true) => info.not_themeable(
+            "disabled",
+            "the row at half opacity (setting/item.rs, SettingItem), and the track at half alpha within it (switch.rs, Switch)",
+        ),
+        (true, false) => info.color(claim(
+            "track",
+            "primary",
+            t.primary,
+            "gpui-component/switch.rs:139",
+        )),
+        (false, false) => info.color(claim(
+            "track",
+            "switch",
+            t.switch,
+            "gpui-component/switch.rs:140",
+        )),
+    };
+    info.color(claim(
+        "thumb",
+        "switch_thumb",
+        t.switch_thumb,
+        "gpui-component/switch.rs:146",
+    ))
+    .not_themeable(
+        "size",
+        "Tier U: track and thumb are px literals per Size, on children of the wrapper a refinement lands on (switch.rs, Switch), while the model states switch.track_width, track_height and thumb_diameter",
+    )
+    .not_themeable(
+        "on track",
+        "primary by default; Switch::color would replace it, a receiver for the model's switch.checked_background that nothing in the connector feeds (switch.rs, Switch)",
+    )
+    .instance(
+        "preference",
+        match field {
+            "reduce_motion" => "reduce_motion: a click installs the preferences with it flipped, and apply_accessibility forwards it to gpui's reduced motion",
+            "high_contrast" => "high_contrast: a click installs the preferences with it flipped",
+            _ => "reduce_transparency: a click installs the preferences with it flipped",
+        },
+    )
+    .instance(
+        "field",
+        "the showcase's own Switch, built as upstream's switch field builds one (setting/fields/bool.rs, BoolField) but in a SettingField::render slot, so it can report itself",
+    )
+}
+
+/// The About dialog (spec §2.8). Its geometry lines are recorded where
+/// `demo::about` applies the builders; its info target is its content.
+pub fn about_dialog(t: &Theme) -> WidgetInfo {
+    dialog_surface(WidgetInfo::new("Dialog").variant("About"), t)
+        .instance(
+            "content",
+            "this crate's name and the version Cargo built it at. Upstream's versions are not repeated: the link opens the README's Compatibility table, which states them",
+        )
+        .instance("opens", "on OpenAbout: Help > About")
+}
+
+/// The About dialog's link to the README's Compatibility table.
+pub fn about_link(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Link")
+        .color(claim(
+            "text",
+            "link",
+            t.link,
+            "gpui-component/link.rs:76",
+        ))
+        .color(claim(
+            "underline, at 50%",
+            "link",
+            t.link.opacity(0.5),
+            "gpui-component/link.rs:78",
+        ))
+        .color(claim(
+            "hover text, at 80%",
+            "link",
+            t.link.opacity(0.8),
+            "gpui-component/link.rs:80",
+        ))
+        .not_themeable(
+            "hover and pressed",
+            "link at literal opacities: a Link reads no link_hover or link_active, which the connector fills from link.hover_text_color and active_text_color (link.rs, Link)",
+        )
+        .instance(
+            "target",
+            "the connector README at this version's tag, at its Compatibility heading; the tag exists once the version is released",
+        )
+}
+
+/// The Alert that reports a theme that failed to load (spec §2.5).
+pub fn theme_error_alert(t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Alert")
+        .variant("Error, banner")
+        .color(claim(
+            "text and icon",
+            "danger",
+            t.danger,
+            "gpui-component/alert.rs:32",
+        ))
+        .color(claim(
+            "bg, danger at 4%",
+            "danger",
+            t.danger.mix_oklab(transparent_white(), 0.04),
+            "gpui-component/alert.rs:42",
+        ))
+        .color(claim(
+            "border, danger at 30%",
+            "danger",
+            t.danger.mix_oklab(transparent_white(), 0.3),
+            "gpui-component/alert.rs:52",
+        ))
+        .not_themeable(
+            "fills",
+            "danger mixed toward transparent white in Oklab, a tint of the danger colour rather than a token of its own (alert.rs, AlertVariant)",
+        )
+        .not_themeable(
+            "padding",
+            "px literals per Size (alert.rs, Alert); the model states no alert",
+        )
+        .not_themeable(
+            "banner",
+            "full width, with no corner radius and no title (alert.rs, banner)",
+        )
+        .instance(
+            "message",
+            "why the theme failed to load, as the loader reported it. The theme installed before stays, in the colour mode asked for, and the next theme that loads clears the Alert",
         )
 }

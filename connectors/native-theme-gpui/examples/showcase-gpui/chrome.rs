@@ -1,27 +1,28 @@
 //! The window's chrome: title bar, menus, toolbar, navigation, status bar and overlays.
 
-use gpui::{App, InteractiveElement as _, IntoElement, Menu, MenuItem, SharedString};
-use gpui_component::IconName;
-use native_theme_gpui::ActiveNativeTheme as _;
+use gpui::{
+    App, InteractiveElement as _, IntoElement, Menu, MenuItem, Pixels, SharedString, Window, px,
+};
+use gpui_component::{
+    IconName, WindowExt as _,
+    command::{CommandGroup, CommandItem},
+};
+use native_theme_gpui::{ActiveNativeTheme as _, geometry};
 
 use crate::Page;
 use crate::app::{
     AppColorMode, OpenAbout, OpenCommandPalette, OpenPreferences, Quit, ReloadTheme, SetColorMode,
-    ShowPage, Showcase, ToggleInspector, ToggleSidebar,
+    SetPreset, ShowPage, Showcase, ToggleInspector, ToggleSidebar,
 };
-use crate::support::defined_size;
+use crate::support::{defined_size, preset_items};
 use crate::{
     CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_INSPECTOR, PROBE_COLOR_MODE, PROBE_COMBOBOX, demo,
+    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, PROBE_COLOR_MODE, PROBE_COMBOBOX, demo,
 };
 
 /// The showcase's application menus (spec §2.2), built fresh for each
 /// consumer: gpui's `Menu` is handed over by value, and the platform bar and
 /// `AppMenuBar` each take their own copy.
-///
-/// An item whose action nothing handles yet is disabled rather than left to
-/// do nothing when chosen; the task that gives the action its handler
-/// enables the item.
 pub(crate) fn menus() -> Vec<Menu> {
     vec![
         Menu::new("File").items([MenuItem::action("Quit", Quit)]),
@@ -33,8 +34,7 @@ pub(crate) fn menus() -> Vec<Menu> {
                     MenuItem::separator(),
                     MenuItem::action("Toggle Sidebar", ToggleSidebar),
                     MenuItem::action("Toggle Inspector", ToggleInspector),
-                    // The command palette is Task 12's.
-                    MenuItem::action("Command Palette", OpenCommandPalette).disabled(true),
+                    MenuItem::action("Command Palette", OpenCommandPalette),
                 ]),
         ),
         Menu::new("Theme").items([
@@ -44,11 +44,9 @@ pub(crate) fn menus() -> Vec<Menu> {
             MenuItem::action("Light", SetColorMode(AppColorMode::Light)),
             MenuItem::action("Dark", SetColorMode(AppColorMode::Dark)),
             MenuItem::separator(),
-            // The preferences dialog is Task 12's.
-            MenuItem::action("Preferences…", OpenPreferences).disabled(true),
+            MenuItem::action("Preferences…", OpenPreferences),
         ]),
-        // The About dialog is Task 12's.
-        Menu::new("Help").items([MenuItem::action("About", OpenAbout).disabled(true)]),
+        Menu::new("Help").items([MenuItem::action("About", OpenAbout)]),
     ]
 }
 
@@ -79,9 +77,6 @@ fn preset_and_mode(app: &Showcase) -> (&str, &str) {
 /// The window's toolbar (spec §2.3), under the title bar: the Sidebar's
 /// toggle, the preset switch, the colour mode, the icon set, and buttons for
 /// three of the actions.
-///
-/// A button whose action nothing handles yet is disabled, as its menu item
-/// is, and says why.
 pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
     let ui = &app.info_ui;
     demo::toolbar(
@@ -107,12 +102,10 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                     icon: IconName::SquareTerminal,
                     tooltip: "Command Palette",
                     action: &OpenCommandPalette,
-                    about: "OpenCommandPalette's button: the action behind View > Command Palette and Ctrl+K",
-                    disabled: Some(
-                        "disabled in this build: nothing handles OpenCommandPalette yet, and a button that did nothing when pressed would misstate what the showcase does",
-                    ),
+                    about: "dispatches OpenCommandPalette, the action View > Command Palette and Ctrl+K run: the command palette opens",
                 },
             )
+            .debug_selector(|| CHROME_TOOLBAR_PALETTE.into())
             .into_any_element(),
             demo::toolbar_button(
                 ui,
@@ -123,7 +116,6 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                     tooltip: "Reload System Theme",
                     action: &ReloadTheme,
                     about: "dispatches ReloadTheme, the action Theme > Reload System Theme runs: the desktop's settings are read again and the current theme is installed from them",
-                    disabled: None,
                 },
             )
             .into_any_element(),
@@ -136,7 +128,6 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                     tooltip: "Toggle Inspector",
                     action: &ToggleInspector,
                     about: "dispatches ToggleInspector, the action View > Toggle Inspector and Ctrl+I run: the inspector's panel is hidden, or shown again",
-                    disabled: None,
                 },
             )
             .debug_selector(|| CHROME_TOOLBAR_INSPECTOR.into())
@@ -216,4 +207,112 @@ fn desktop() -> String {
 #[cfg(not(target_os = "linux"))]
 fn desktop() -> String {
     std::env::consts::OS.to_string()
+}
+
+// ---------------------------------------------------------------------------
+// Overlays (spec §2.8)
+// ---------------------------------------------------------------------------
+
+/// The connector README's Compatibility table, at the tag of this version:
+/// the upstream versions the About dialog does not repeat. `#compatibility`
+/// is the anchor of the README's `## Compatibility` heading, which the
+/// README's own opening lines link to.
+pub(crate) const COMPATIBILITY_URL: &str = concat!(
+    env!("CARGO_PKG_REPOSITORY"),
+    "/blob/v",
+    env!("CARGO_PKG_VERSION"),
+    "/connectors/native-theme-gpui/README.md#compatibility"
+);
+
+/// The width of the Preferences sheet. The model states no sheet (spec
+/// §1.3), so this is the showcase's own layout default.
+const PREFERENCES_WIDTH: Pixels = px(600.);
+
+/// The presets the command palette offers, as `(key, display name)`: the
+/// toolbar's preset switch's, from the same list (`support::preset_items`).
+pub(crate) fn palette_presets() -> Vec<(SharedString, SharedString)> {
+    preset_items()
+        .into_iter()
+        .map(|item| (item.key, item.display_name))
+        .collect()
+}
+
+/// The command palette's entries (spec §2.8): every page, every preset the
+/// toolbar offers, and the three colour modes, each running the action its
+/// menu item or toolbar control runs.
+fn palette_groups() -> Vec<CommandGroup> {
+    let pages = CommandGroup::new()
+        .label("Pages")
+        .items(Page::ALL.map(|page| {
+            CommandItem::new()
+                .label(page.label())
+                .icon(page.icon())
+                .action(Box::new(ShowPage(page.index())))
+        }));
+    let presets = CommandGroup::new()
+        .label("Presets")
+        .items(palette_presets().into_iter().map(|(key, name)| {
+            CommandItem::new()
+                .label(name)
+                .keywords([key.clone()])
+                .icon(IconName::Palette)
+                .action(Box::new(SetPreset(key)))
+        }));
+    let modes = CommandGroup::new().label("Colour mode").items(
+        [
+            AppColorMode::System,
+            AppColorMode::Light,
+            AppColorMode::Dark,
+        ]
+        .map(|mode| {
+            CommandItem::new()
+                .label(mode.label())
+                .icon(match mode {
+                    AppColorMode::System => IconName::Settings,
+                    AppColorMode::Light => IconName::Sun,
+                    AppColorMode::Dark => IconName::Moon,
+                })
+                .action(Box::new(SetColorMode(mode)))
+        }),
+    );
+    vec![pages, presets, modes]
+}
+
+/// Open the command palette, its query cleared and focused.
+pub(crate) fn open_command_palette(app: &Showcase, window: &mut Window, cx: &mut App) {
+    let (ui, state) = (app.info_ui.clone(), app.palette_state.clone());
+    state.update(cx, |state, cx| state.set_query("", window, cx));
+    let groups = palette_groups();
+    window.open_dialog(cx, move |dialog, _window, cx| {
+        demo::command_palette(&ui, cx, dialog, &state, groups.clone())
+    });
+    // After the Dialog took the focus for itself (root.rs, Root::open_dialog),
+    // so typing reaches the query at once.
+    app.palette_state
+        .clone()
+        .update(cx, |state, cx| state.focus(window, cx));
+}
+
+/// Open the Preferences sheet.
+pub(crate) fn open_preferences(app: &Showcase, window: &mut Window, cx: &mut App) {
+    let ui = app.info_ui.clone();
+    window.open_sheet(cx, move |sheet, _window, cx| {
+        demo::preferences(&ui, cx, sheet, PREFERENCES_WIDTH)
+    });
+}
+
+/// Open the About dialog.
+pub(crate) fn open_about(app: &Showcase, window: &mut Window, cx: &mut App) {
+    let ui = app.info_ui.clone();
+    let gap = geometry::widget_gap(&app.layout);
+    window.open_dialog(cx, move |dialog, _window, cx| {
+        demo::about(
+            &ui,
+            cx,
+            dialog,
+            concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION")),
+            COMPATIBILITY_URL,
+            gap,
+        )
+    });
 }

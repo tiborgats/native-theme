@@ -266,6 +266,9 @@ pub(crate) const CHROME_HANDLE_INSPECTOR: &str = "chrome-resize-content-inspecto
 /// The debug selector the toolbar's Toggle Inspector button carries.
 pub(crate) const CHROME_TOOLBAR_INSPECTOR: &str = "chrome-toolbar-inspector";
 
+/// The debug selector the toolbar's Command Palette button carries.
+pub(crate) const CHROME_TOOLBAR_PALETTE: &str = "chrome-toolbar-palette";
+
 /// The debug selector the window's status bar carries, so
 /// `the_status_bar_is_the_bottom_of_the_window` can see where it was laid out.
 pub(crate) const CHROME_STATUS_BAR: &str = "chrome-status-bar";
@@ -273,6 +276,24 @@ pub(crate) const CHROME_STATUS_BAR: &str = "chrome-status-bar";
 /// The debug selector the status bar's label with the shown info's title
 /// carries.
 pub(crate) const STATUS_HOVERED: &str = "status-hovered";
+
+/// The debug selector the Alert that reports a theme error carries, at the
+/// top of the content panel (spec §2.5).
+pub(crate) const CONTENT_ALERT: &str = "content-alert";
+
+/// The debug selectors of the overlays (spec §2.8): the command palette's
+/// Command and the title of the Dialog around it, the Preferences sheet's
+/// Settings, and the About dialog's link.
+pub(crate) const OVERLAY_PALETTE: &str = "overlay-palette";
+pub(crate) const OVERLAY_PALETTE_TITLE: &str = "overlay-palette-title";
+pub(crate) const OVERLAY_PREFERENCES: &str = "overlay-preferences";
+pub(crate) const OVERLAY_ABOUT_LINK: &str = "overlay-about-link";
+
+/// The debug selectors of the Preferences sheet's three switches, one per
+/// `AccessibilityPreferences` flag.
+pub(crate) const PREF_REDUCE_MOTION: &str = "pref-reduce-motion";
+pub(crate) const PREF_HIGH_CONTRAST: &str = "pref-high-contrast";
+pub(crate) const PREF_REDUCE_TRANSPARENCY: &str = "pref-reduce-transparency";
 
 /// The debug selectors the List and the Tree demo boxes carry, so
 /// `a_nested_scroller_keeps_the_wheel_to_itself` can put a wheel event inside

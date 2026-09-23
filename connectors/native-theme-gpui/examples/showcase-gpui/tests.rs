@@ -33,12 +33,13 @@ use crate::support::{
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
     CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_INSPECTOR, CONTENT_PANEL, CONTENT_SCROLL, INSPECTOR_COPY, INSPECTOR_PANEL,
-    INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, PAGE_ROOT,
-    PAGE_WIDTH_PX, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND,
-    PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION,
-    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE, PROBE_STEPPER, Page, STATUS_HOVERED,
-    TREE_DEMO, WINDOW_SIZE,
+    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
+    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO,
+    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
+    PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT,
+    PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
+    PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_SIDEBAR_TOGGLE,
+    PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -1665,6 +1666,334 @@ fn the_status_bar_reports_the_accessibility_preferences(cx: &mut TestAppContext)
             "the status bar reports {unset}, which is not set: {items:?}"
         );
     }
+}
+
+/// Press `keys` and draw the frames that follow: an overlay pushed onto
+/// `Root` mounts in the first and settles in the second.
+fn press(cx: &mut VisualTestContext, keys: &str) {
+    cx.simulate_keystrokes(keys);
+    cx.run_until_parked();
+    draw(cx);
+    draw(cx);
+}
+
+/// Motion reduced, so an overlay's entrance animation settles on the frame
+/// that mounts it and a measurement of it is a measurement at rest
+/// (upstream's own dialog tests do the same, dialog/dialog.rs, `window`).
+fn without_motion(cx: &mut VisualTestContext) {
+    cx.update(|_window, cx| cx.set_reduce_motion(true));
+}
+
+/// Whether a dialog is on screen: upstream names each dialog's surface
+/// `dialog-<layer>` (dialog/dialog.rs, Dialog::render).
+fn a_dialog_is_open(cx: &mut VisualTestContext) -> bool {
+    cx.debug_bounds("dialog-0").is_some()
+}
+
+/// Ctrl+K opens the command palette (spec §2.2, §2.8): a Dialog, with the
+/// palette's Command on its surface.
+#[gpui::test]
+fn ctrl_k_opens_the_command_palette(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert!(!a_dialog_is_open(&mut cx), "a dialog is open at start");
+    press(&mut cx, "ctrl-k");
+    assert!(
+        cx.debug_bounds("dialog-layer").is_some(),
+        "Ctrl+K drew no dialog layer"
+    );
+    let surface = bounds_of(&mut cx, "dialog-0");
+    let palette = bounds_of(&mut cx, OVERLAY_PALETTE);
+    assert!(
+        surface.contains(&palette.origin) && palette.bottom() <= surface.bottom(),
+        "the palette at {palette:?} is not on the dialog's surface at {surface:?}"
+    );
+}
+
+/// The palette's entries run: typing a page's name and pressing Enter shows
+/// that page and closes the palette.
+#[gpui::test]
+fn the_palette_switches_page(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_ne!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Charts,
+        "the showcase starts on Charts, so showing it proves nothing"
+    );
+    press(&mut cx, "ctrl-k");
+    cx.simulate_input("Charts");
+    cx.run_until_parked();
+    draw(&mut cx);
+    press(&mut cx, "enter");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Charts,
+        "\"Charts\" and Enter in the palette did not show the Charts page"
+    );
+    assert!(
+        !a_dialog_is_open(&mut cx),
+        "the palette stayed open after running an entry"
+    );
+}
+
+/// The palette's preset entries install the preset, and the toolbar's
+/// preset switch shows the one installed.
+#[gpui::test]
+fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    press(&mut cx, "ctrl-k");
+    cx.simulate_input("Nord");
+    cx.run_until_parked();
+    draw(&mut cx);
+    press(&mut cx, "enter");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this
+            .current_theme_name
+            .clone()),
+        "nord",
+        "\"Nord\" and Enter in the palette did not install nord"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, cx| {
+            this.preset_combobox.read(cx).selected_value()
+        })
+        .as_deref(),
+        Some("nord"),
+        "the toolbar's preset switch does not show the preset the palette installed"
+    );
+}
+
+/// The palette's preset entries are the toolbar's (ledger ruling for T12):
+/// `default` and the presets meant for this platform, no other.
+#[test]
+fn the_palette_offers_the_toolbars_presets() {
+    let offered: Vec<String> = crate::chrome::palette_presets()
+        .into_iter()
+        .map(|(key, _)| key.to_string())
+        .collect();
+    let toolbar: Vec<String> = crate::support::preset_items()
+        .into_iter()
+        .map(|item| item.key.to_string())
+        .collect();
+    assert_eq!(offered, toolbar);
+    assert!(
+        offered.len() > 1,
+        "the palette offers no preset beside default"
+    );
+}
+
+/// Escape clears a typed query first and closes the palette only on an
+/// empty one, as the palette's info says (command/state.rs,
+/// `on_action_cancel`).
+#[gpui::test]
+fn escape_clears_the_query_then_closes_the_palette(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    press(&mut cx, "ctrl-k");
+    cx.simulate_input("Charts");
+    cx.run_until_parked();
+    draw(&mut cx);
+    press(&mut cx, "escape");
+    assert!(
+        a_dialog_is_open(&mut cx),
+        "Escape on a typed query closed the palette"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, cx| this
+            .palette_state
+            .read(cx)
+            .query(cx)),
+        "",
+        "Escape did not clear the query"
+    );
+    press(&mut cx, "escape");
+    assert!(
+        !a_dialog_is_open(&mut cx),
+        "a second Escape did not close the palette"
+    );
+}
+
+/// Closing the palette leaves the menus and the key bindings working: the
+/// focus goes back where the showcase's handlers reach it.
+#[gpui::test]
+fn closing_the_palette_keeps_the_actions_working(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    press(&mut cx, "ctrl-k");
+    assert!(a_dialog_is_open(&mut cx), "Ctrl+K opened nothing");
+    press(&mut cx, "escape");
+    assert!(
+        !a_dialog_is_open(&mut cx),
+        "Escape on an empty query did not close the palette"
+    );
+    run_menu_item_from_focus(&mut cx, "View", "Charts");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Charts,
+        "View > Charts did nothing after the palette closed"
+    );
+    press(&mut cx, "ctrl-k");
+    assert!(
+        a_dialog_is_open(&mut cx),
+        "Ctrl+K did nothing after the palette closed"
+    );
+}
+
+/// The three overlays' menu items and the toolbar's palette button are
+/// enabled, now that their actions are handled, and the button opens the
+/// palette.
+#[gpui::test]
+fn the_overlays_are_reachable(cx: &mut TestAppContext) {
+    for (menu, item) in [
+        ("View", "Command Palette"),
+        ("Theme", "Preferences…"),
+        ("Help", "About"),
+    ] {
+        assert!(
+            !menu_item_disabled(menu, item),
+            "{menu} > {item} is still disabled"
+        );
+    }
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    click(&mut cx, CHROME_TOOLBAR_PALETTE);
+    draw(&mut cx);
+    assert!(
+        cx.debug_bounds(OVERLAY_PALETTE).is_some(),
+        "the toolbar's Command Palette button did not open the palette"
+    );
+}
+
+/// The palette's Dialog and its Command report themselves (spec §4.3.1,
+/// §4.3.5): the Dialog's title is the Dialog's, the Command is the Command's.
+#[gpui::test]
+fn the_palette_reports_itself(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    press(&mut cx, "ctrl-k");
+    let cases = [
+        ("Dialog · Command Palette", OVERLAY_PALETTE_TITLE),
+        ("Command", OVERLAY_PALETTE),
+    ];
+    for (title, selector) in cases {
+        let at = bounds_of(&mut cx, selector).center();
+        hover(&mut cx, at);
+        settle(&mut cx);
+        draw(&mut cx);
+        assert_eq!(
+            inspector_title(&mut cx, &showcase).as_deref(),
+            Some(title),
+            "the pointer settled on {selector}, and the inspector does not show the {title}"
+        );
+    }
+}
+
+/// A preference changed in the Preferences sheet reaches the installed
+/// theme through `apply_accessibility` (spec §2.8): the Reduce motion switch,
+/// clicked, switches gpui's reduced motion on.
+#[gpui::test]
+fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let unset = native_theme_gpui::AccessibilityPreferences {
+        text_scaling_factor: 1.0,
+        reduce_motion: false,
+        high_contrast: false,
+        reduce_transparency: false,
+    };
+    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&unset, cx));
+    cx.run_until_parked();
+    assert!(
+        !cx.update(|_window, cx| cx.reduce_motion()),
+        "motion is reduced before the switch is clicked, so the click could prove nothing"
+    );
+    press(&mut cx, "ctrl-,");
+    assert!(
+        cx.debug_bounds(OVERLAY_PREFERENCES).is_some(),
+        "Ctrl+, did not open the Preferences sheet"
+    );
+    click(&mut cx, PREF_REDUCE_MOTION);
+    assert!(
+        read(&mut cx, &showcase, |_this, cx| {
+            cx.native_theme()
+                .is_some_and(|nt| nt.accessibility().reduce_motion)
+        }),
+        "the switch did not install reduce_motion"
+    );
+    assert!(
+        cx.update(|_window, cx| cx.reduce_motion()),
+        "the installed preference did not reach gpui's reduced motion"
+    );
+}
+
+/// A theme that fails to load is reported by an Alert at the top of the
+/// content (spec §2.5), which reports itself.
+#[gpui::test]
+fn a_theme_error_is_an_alert(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    assert!(
+        cx.debug_bounds(CONTENT_ALERT).is_none(),
+        "an Alert shows before any theme failed"
+    );
+    use_preset(&mut cx, &showcase, "no-such-preset");
+    let alert = bounds_of(&mut cx, CONTENT_ALERT);
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    assert_eq!(
+        alert.top(),
+        content.top(),
+        "the Alert at {alert:?} is not at the top of the content at {content:?}"
+    );
+    hover(&mut cx, alert.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        inspector_title(&mut cx, &showcase).as_deref(),
+        Some("Alert · Error, banner"),
+        "the pointer settled on the Alert, and the inspector does not show it"
+    );
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    assert!(
+        cx.debug_bounds(CONTENT_ALERT).is_none(),
+        "the Alert stayed after a theme loaded"
+    );
+}
+
+/// The About dialog names this crate and its version, and its link opens
+/// the README's Compatibility table (spec §2.8).
+#[gpui::test]
+fn the_about_dialog_links_to_the_compatibility_table(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    run_menu_item(&mut cx, "Help", "About");
+    draw(&mut cx);
+    click(&mut cx, OVERLAY_ABOUT_LINK);
+    let opened = cx.opened_url();
+    assert_eq!(
+        opened.as_deref(),
+        Some(crate::chrome::COMPATIBILITY_URL),
+        "the About dialog's link did not open the compatibility table"
+    );
+}
+
+/// The link's anchor is a heading the README has: `## Compatibility`, which
+/// the README's own first lines link to as `#compatibility`.
+#[test]
+fn the_compatibility_anchor_is_the_readmes() {
+    let readme = include_str!("../../README.md");
+    assert!(
+        readme.lines().any(|l| l == "## Compatibility"),
+        "the README has no `## Compatibility` heading"
+    );
+    assert!(
+        readme.contains("(#compatibility)"),
+        "the README does not link to its own #compatibility anchor"
+    );
+    let url = crate::chrome::COMPATIBILITY_URL;
+    assert!(
+        url.ends_with("/connectors/native-theme-gpui/README.md#compatibility"),
+        "{url} is not the connector README's compatibility table"
+    );
+    assert!(
+        url.contains(&format!("/blob/v{}/", env!("CARGO_PKG_VERSION"))),
+        "{url} is not the README at this version's tag"
+    );
 }
 
 #[test]
