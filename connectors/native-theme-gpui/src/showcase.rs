@@ -1942,6 +1942,8 @@ struct Claim<'a> {
     widget: &'a str,
     role: &'a str,
     field: &'a str,
+    /// The value expression, as written.
+    value: &'a str,
     cited_at: &'a str,
 }
 
@@ -1960,15 +1962,50 @@ fn claim_calls(raw: &str) -> Vec<(usize, Vec<&str>)> {
         .collect()
 }
 
-/// A `claim(` call's role, field and citation, or `None` unless it has four
-/// arguments and those three are string literals -- the one shape spec §3.2
-/// allows, and the only one a gate can read. The value, `t.<field>`, is not
-/// read: what is checked is the field named against the line cited.
-fn claim_literals<'a>(args: &[&'a str]) -> Option<(&'a str, &'a str, &'a str)> {
-    let &[role, field, _, cited] = args else {
+/// A `claim(` call's role, field, value and citation, or `None` unless it
+/// has four arguments and the three besides the value are string literals --
+/// the one shape spec §3.2 allows, and the only one a gate can read. The
+/// value is returned as written, for `value_reads_field`.
+fn claim_literals<'a>(args: &[&'a str]) -> Option<(&'a str, &'a str, &'a str, &'a str)> {
+    let &[role, field, value, cited] = args else {
         return None;
     };
-    Some((unquote(role)?, unquote(field)?, unquote(cited)?))
+    Some((
+        unquote(role)?,
+        unquote(field)?,
+        value.trim(),
+        unquote(cited)?,
+    ))
+}
+
+/// The helpers a claim's value may be built with in place of naming its
+/// field, each for a reason:
+///
+/// - `opaque(` (info/icons.rs): a recoloured icon's colour is the
+///   foreground the icons were recoloured with when their set was loaded
+///   (`Showcase::icon_cache_fg`), with the alpha dropped as the SVG drops
+///   it; that copy is passed in, not read off the theme where it is used.
+/// - `.input_background(`: upstream's `Theme::input_background()`, which
+///   paints input in dark mode and background in light (theme/mod.rs:379-384);
+///   the one claim built with it (info/buttons.rs, `disabled_fill`) is the
+///   dark-mode arm and names input.
+///
+/// The showcase's own `input_background(` and `ghost_hover(` need no entry:
+/// they return claims whose own values name their fields.
+const VALUE_HELPERS: &[&str] = &["opaque(", ".input_background("];
+
+/// Whether a claim's `value` reads the `field` it names -- `t.<field>`,
+/// `t.colors.<field>`, `base.tokens.colors.<field>`, or the field through
+/// any other path -- or is built with one of `VALUE_HELPERS`. A swatch
+/// whose value reads another field shows a colour its field line does not
+/// name.
+fn value_reads_field(value: &str, field: &str) -> bool {
+    let code = without_comments_or_strings(value);
+    let named = code.match_indices('.').any(|(at, _)| {
+        let rest = code.get(at + 1..).unwrap_or("");
+        leading_ident(rest) == field
+    });
+    named || VALUE_HELPERS.iter().any(|helper| code.contains(helper))
 }
 
 /// The methods a note is written with (spec §3.2).
@@ -2064,7 +2101,7 @@ fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>
     let mut claims = Vec::new();
     let mut prose = Vec::new();
     for (line, args) in claim_calls(raw) {
-        let Some((role, field, cited_at)) = claim_literals(&args) else {
+        let Some((role, field, value, cited_at)) = claim_literals(&args) else {
             continue;
         };
         let widget = args
@@ -2076,6 +2113,7 @@ fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>
             widget,
             role,
             field,
+            value,
             cited_at,
         });
     }
@@ -2261,6 +2299,23 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
                      nothing can check it"
                 ));
             }
+        }
+    }
+    // The value is what the swatch paints, and it has to be the field the
+    // claim names, or the line cited vouches for a colour nobody shows.
+    for claim in &claims {
+        if !value_reads_field(claim.value, claim.field) {
+            wrong.push(format!(
+                "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
+                 uses none of VALUE_HELPERS",
+                claim.widget,
+                claim.role,
+                claim.file,
+                claim.line,
+                claim.field,
+                claim.value,
+                claim.field
+            ));
         }
     }
     let mut uncited = 0usize;
@@ -2689,6 +2744,89 @@ fn every_prose_citation_still_exists() {
     );
 }
 
+/// The `pub(crate)` constants of gpui-base the showcase names again, as
+/// (upstream file, constant): demo.rs repeats them, since it cannot import
+/// them, to lay a handle's info target over the handle's hit area.
+const MIRRORED_CONSTANTS: &[(&str, &str)] = &[
+    ("gpui-base/resizable/resize_handle.rs", "HANDLE_PADDING"),
+    ("gpui-base/resizable/resize_handle.rs", "HANDLE_SIZE"),
+];
+
+/// The 1-based line of `const <name>: Pixels = px(<n>)` in `source`, and
+/// `<n>`; `None` where no such line is, or its value is not a number.
+fn const_px(source: &str, name: &str) -> Option<(usize, f32)> {
+    let decl = format!("const {name}: Pixels = px(");
+    source.lines().enumerate().find_map(|(ix, line)| {
+        let at = line.find(&decl)?;
+        let rest = line.get(at + decl.len()..)?;
+        let value = rest.get(..rest.find(')')?)?.trim();
+        Some((ix + 1, value.parse().ok()?))
+    })
+}
+
+/// demo.rs's copies of gpui-base's `pub(crate)` handle constants hold the
+/// values the pinned gpui-base declares, and cite the lines it declares them
+/// on (spec §1.3): an upstream release that moves a handle's padding would
+/// otherwise leave the info target off the hit area with every gate green.
+#[test]
+fn the_mirrored_handle_constants_match_gpui_base() {
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the upstream sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let demo = SHOWCASE_FILES
+        .iter()
+        .find(|(path, _)| *path == "demo.rs")
+        .map_or("", |(_, text)| *text);
+    let mut wrong = Vec::new();
+    for (citation, name) in MIRRORED_CONSTANTS {
+        let files = candidates(citation, &roots);
+        let upstream = files
+            .first()
+            .and_then(|file| std::fs::read_to_string(file).ok())
+            .and_then(|text| const_px(&text, name));
+        let Some((line, value)) = upstream else {
+            wrong.push(format!("{citation} declares no `{name}: Pixels = px(..)`"));
+            continue;
+        };
+        let Some((ours_line, ours)) = const_px(demo, name) else {
+            wrong.push(format!("demo.rs declares no `{name}: Pixels = px(..)`"));
+            continue;
+        };
+        if ours != value {
+            wrong.push(format!(
+                "demo.rs:{ours_line}: `{name}` is {ours}px, but {citation}:{line} \
+                 declares {value}px"
+            ));
+        }
+        let path = citation.split_once('/').map_or(*citation, |(_, p)| p);
+        let cited = format!("({path}:{line})");
+        if !demo.contains(&format!("`{name}` {cited}")) {
+            wrong.push(format!(
+                "demo.rs:{ours_line}: `{name}`'s comment does not cite {cited}, where \
+                 the pinned gpui-base declares it"
+            ));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "the showcase's copies of gpui-base constants have drifted:\n  {}",
+        wrong.join("\n  ")
+    );
+    assert_eq!(
+        const_px("x\nconst HANDLE_SIZE: Pixels = px(1.);\n", "HANDLE_SIZE"),
+        Some((2, 1.)),
+        "the constant reader reads nothing, so the check above proves nothing"
+    );
+    assert_eq!(
+        const_px("const HANDLE_SIZE: Pixels = px(one);", "HANDLE_SIZE"),
+        None
+    );
+}
+
 /// The claim and note parsers see what they are meant to: a `claim(` call in
 /// either of rustfmt's layouts and a note method with a literal `what`, but
 /// not a mention in a comment or a string, a longer name, a declaration, a
@@ -2785,6 +2923,16 @@ config("free", "fn, not a method");
         ]
     );
     assert!(unreadable.is_empty(), "{unreadable:?}");
+
+    // A value reads the field its claim names, as a whole identifier, by any
+    // path; another field, or a longer one that starts with it, does not.
+    assert!(value_reads_field("t.popover", "popover"));
+    assert!(value_reads_field("t.accent.opacity(0.5)", "accent"));
+    assert!(value_reads_field("base.tokens.colors.border", "border"));
+    assert!(value_reads_field("opaque(fg)", "foreground"));
+    assert!(!value_reads_field("t.background", "popover"));
+    assert!(!value_reads_field("t.popover_foreground", "popover"));
+    assert!(!value_reads_field("red", "danger"));
 }
 
 // ---------------------------------------------------------------------------
