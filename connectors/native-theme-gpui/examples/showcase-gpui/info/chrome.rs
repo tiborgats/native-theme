@@ -549,6 +549,18 @@ pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
     )
 }
 
+/// A TabBar's left and right padding: `container_margin`, the installed
+/// layout's, where it states one.
+pub fn tab_bar_padding(container_margin: Option<Pixels>) -> String {
+    match container_margin {
+        Some(margin) => format!(
+            "left and right {}px, layout.container_margin, as the side panel's settings and the inspector's content take: upstream's Underline bar pads neither itself nor its tabs (tab/tab.rs, TabVariant::inner_paddings; tab/tab_bar.rs, TabBar::render), leaving the inset to its container. The bottom rule still runs the bar's full width",
+            px_text(margin.as_f32()),
+        ),
+        None => "none: upstream's Underline bar pads neither itself nor its tabs (tab/tab.rs, TabVariant::inner_paddings; tab/tab_bar.rs, TabBar::render), and layout.container_margin, which the showcase would inset it by, is unstated".to_string(),
+    }
+}
+
 /// The content panel's page TabBar (spec S3), with upstream's menu of every
 /// tab.
 pub fn page_tab_bar(t: &Theme) -> WidgetInfo {

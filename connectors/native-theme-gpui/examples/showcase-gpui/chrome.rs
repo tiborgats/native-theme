@@ -208,12 +208,14 @@ pub(crate) fn side_panel(app: &Showcase, cx: &App) -> impl IntoElement {
 }
 
 /// The content panel's TabBar (spec S3): a tab per page, the shown one
-/// selected, and a click shows its page.
+/// selected, and a click shows its page. It is inset by the installed
+/// layout's `container_margin` (`demo::tab_bar`).
 pub(crate) fn page_tabs(app: &Showcase, cx: &App) -> impl IntoElement {
     demo::tab_bar(
         &app.info_ui,
         cx,
         TabBarKind::Pages,
+        geometry::container_margin(&app.layout),
         Page::ALL.map(|page| (page.label(), page.tab())),
         app.active_page.index(),
         |ix: &usize, window: &mut Window, cx: &mut App| {

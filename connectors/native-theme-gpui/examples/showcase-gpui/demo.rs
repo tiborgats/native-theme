@@ -749,10 +749,20 @@ pub(crate) enum TabBarKind {
 /// A `TabBar` of `kind`, Underline at `Size::Small`, over `tabs`, each
 /// `(label, selector)`, `selected` the one shown; a click hands `on_click`
 /// the index of the tab clicked.
+///
+/// Upstream's Underline bar pads neither itself nor its tabs (tab/tab.rs:
+/// 79-81, tab/tab_bar.rs:393-402), leaving the inset to its container, so
+/// the bar takes `container_margin`, the installed layout's
+/// `geometry::container_margin`, on its left and right, as the side panel's
+/// settings and the inspector's content do. Its bottom rule is drawn by an
+/// absolute child at the bar's full size (tab_bar.rs:497-507), so it still
+/// runs from edge to edge. Where the layout states no margin, upstream's
+/// none stands.
 pub(crate) fn tab_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     kind: TabBarKind,
+    container_margin: Option<Pixels>,
     tabs: impl IntoIterator<Item = (&'static str, &'static str)>,
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
@@ -771,10 +781,15 @@ pub(crate) fn tab_bar(
             info::page_tab_bar(cx.theme()),
         ),
     };
+    let mut bar_info = bar_info.instance("padding", info::tab_bar_padding(container_margin));
+    if container_margin.is_some() {
+        bar_info = bar_info.geometry("container_margin");
+    }
     TabBar::new(id)
         .underline()
         .with_size(Size::Small)
         .menu(menu)
+        .when_some(container_margin, |bar, margin| bar.px(margin))
         .children(tabs.into_iter().map(|(label, selector)| {
             Tab::new()
                 .label(label)

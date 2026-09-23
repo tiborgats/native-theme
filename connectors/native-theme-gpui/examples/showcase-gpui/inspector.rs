@@ -53,7 +53,7 @@ impl InspectorTab {
     }
 
     /// The debug selector of the view's tab.
-    fn tab(self) -> &'static str {
+    pub(crate) fn tab(self) -> &'static str {
         match self {
             Self::Widget => "inspector-tab-widget",
             Self::Theme => "inspector-tab-theme",
@@ -371,6 +371,7 @@ impl Render for Inspector {
             &self.ui,
             cx,
             TabBarKind::Inspector,
+            margin,
             InspectorTab::ALL.map(|tab| (tab.label(), tab.tab())),
             self.tab.index(),
             cx.listener(|this, ix: &usize, _window, cx| {

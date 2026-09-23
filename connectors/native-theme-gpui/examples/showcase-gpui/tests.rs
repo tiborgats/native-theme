@@ -2154,6 +2154,41 @@ fn the_page_tabs_navigate(cx: &mut TestAppContext) {
     }
 }
 
+/// Upstream's Underline TabBar pads neither itself nor its tabs
+/// (tab/tab.rs:79-81, tab/tab_bar.rs:393-402): it leaves the inset to the
+/// container it is in. So each of the showcase's two TabBars is inset by
+/// `layout.container_margin`, the padding the side panel's settings and the
+/// inspector's content take: its first tab starts that far from the edge of
+/// its panel, not against the resize handle's line or the window's edge.
+#[gpui::test]
+fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let slack = device_pixel(&mut cx);
+    for preset in ["kde-breeze", "adwaita"] {
+        use_preset(&mut cx, &showcase, preset);
+        let margin = read(&mut cx, &showcase, |this, _| {
+            geometry::container_margin(&this.layout)
+        });
+        let Some(margin) = margin else {
+            panic!("{preset} states no layout.container_margin");
+        };
+        for (bar, panel, first) in [
+            ("page", CONTENT_PANEL, Page::ALL[0].tab()),
+            ("inspector", INSPECTOR_PANEL, InspectorTab::Widget.tab()),
+        ] {
+            let panel = bounds_of(&mut cx, panel);
+            let tab = bounds_of(&mut cx, first);
+            assert!(
+                (tab.left() - panel.left() - margin).abs() <= slack,
+                "{preset}: the {bar} TabBar's first tab starts at {:?}, {:?} from its panel's \
+                 left edge, not layout.container_margin, {margin:?}",
+                tab.left(),
+                tab.left() - panel.left()
+            );
+        }
+    }
+}
+
 /// The title of the info the inspector drew in the last frame, and whether
 /// the label that shows it was laid out.
 fn inspector_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Option<String> {
