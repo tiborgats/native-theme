@@ -196,6 +196,8 @@ pub(crate) struct Showcase {
     pub(crate) status_title_drawn: Option<SharedString>,
     /// The title bar's menus.
     pub(crate) menu_bar: Entity<AppMenuBar>,
+    /// The command palette's query and highlighted row (spec §2.8).
+    pub(crate) palette_state: Entity<CommandState>,
     /// The view's focus, so an action dispatched with nothing else focused
     /// still reaches the handlers `render` puts on the view.
     focus_handle: FocusHandle,
@@ -279,8 +281,6 @@ pub(crate) struct Showcase {
     /// What the last `AlertDialog` was answered with, written by its `on_ok`
     /// and `on_cancel` so the section reports a real outcome.
     pub(crate) alert_choice: Option<SharedString>,
-    /// The command palette's query and highlighted row (spec §2.8).
-    pub(crate) palette_state: Entity<CommandState>,
 
     // Icon set selector state
     pub(crate) icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
@@ -985,6 +985,7 @@ impl Showcase {
             inspector,
             status_title_drawn: None,
             menu_bar,
+            palette_state,
             focus_handle,
             _refocus,
             overlay_gap: Rc::new(Cell::new(None)),
@@ -1025,7 +1026,6 @@ impl Showcase {
             toggle_bold: false,
             toggle_italic: false,
             alert_choice: None,
-            palette_state,
             icon_set_select,
             icon_set_name: initial_resolved_name,
             icon_set_enum: Some(initial_effective_set),

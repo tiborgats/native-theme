@@ -231,6 +231,10 @@ pub fn sidebar(t: &Theme, collapsed: bool) -> WidgetInfo {
         .instance(
             "pages",
             "one SidebarMenuItem per page with the page's icon; the shown page's item is active, and a click dispatches ShowPage, the action the View menu's page items run",
+        )
+        .instance(
+            "children",
+            "must implement SidebarItem, which asks for Collapsible + Clone (sidebar/mod.rs, SidebarItem)",
         );
     if collapsed {
         info.instance(
@@ -723,6 +727,10 @@ pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetIn
                 .unwrap_or(base.tokens.colors.ring),
             "gpui-base/resizable/resize_handle.rs:290",
         ))
+        .instance(
+            "colour source",
+            "handle and active_handle are gpui-base's fields, always filled: upstream projects border and drag_border into them (theme/mod.rs, Theme::base_theme), and the connector then writes the platform's splitter.divider_color and splitter.hover_color over both (native-theme-gpui/base_layer.rs, resizable_theme). Only where the installed theme has no variant for the current colour mode are border and drag_border written back (native-theme-gpui/lib.rs, base_overrides_for). So the fallbacks gpui-base reads for an unset field, border at rest and ring while pressed, never apply here (gpui-base/resizable/resize_handle.rs, handle_color)",
+        )
         .not_themeable(
             "hover",
             "none: a hovered handle keeps its resting colour, and the model's splitter.hover_color reaches it only while it is pressed -- a press inside the handle sets it and any release clears it (resizable/resize_handle.rs, ResizeHandleState)",
@@ -737,7 +745,7 @@ pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetIn
         )
         .instance(
             "drag",
-            "moves the boundary to the pointer; the panels keep the widths it leaves when the Sidebar collapses or the inspector hides and comes back",
+            "moves the boundary to the pointer until a panel reaches PANEL_MIN_SIZE, 100px, the least a panel takes unless it sets a size range of its own (gpui-base/resizable/mod.rs, PANEL_MIN_SIZE; gpui-base/resizable/panel.rs, size_range); the body's panels set none. The panels keep the widths it leaves when the Sidebar collapses or the inspector hides and comes back",
         )
 }
 
@@ -863,6 +871,10 @@ pub fn command_palette(t: &Theme) -> WidgetInfo {
         .not_themeable(
             "query field",
             "an Input with appearance(false): it draws no background and no border of its own, so the surface shows through (command/state.rs, CommandState)",
+        )
+        .instance(
+            "accent is the menu highlight",
+            "the highlighted row takes the token a menu row's hover takes, which the connector fills from the platform's menu hover colour, so the palette follows the platform's menu selection rather than a list selection (native-theme-gpui/colors.rs, assign_core)",
         )
         .not_themeable(
             "scrollbar",
