@@ -357,7 +357,9 @@ pub fn sidebar(
 /// passes `list.item_font.size` as `text_size` and, as the padding, the
 /// vertical remainder the label leaves -- `row_height - item_font.size`, split
 /// between top and bottom -- guarding the case where a theme states a row no
-/// taller than its own label. Nothing horizontal is implied: the label is
+/// taller than its own label, and the case where it states none (KDE's rows
+/// size to their content), where the consumer's own padding stands. Nothing
+/// horizontal is implied: the label is
 /// drawn at the row's own `bounds.x` (`selection_list/list.rs:274`), while the
 /// list's intrinsic width does read `padding.x()` (`selection_list.rs:237`,
 /// `:244`).

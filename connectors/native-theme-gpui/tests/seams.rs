@@ -414,9 +414,10 @@ seam!(
     geometry::combobox,
     min_size.height
 );
+// kde-breeze states no list row height (its rows size to their content).
 seam!(
     list_item_takes_the_native_height,
-    "kde-breeze",
+    "windows-11",
     list_item,
     geometry::list_item,
     size.height
@@ -763,7 +764,9 @@ const TRIGGER_TALLER_THAN_STATED: &[(&str, &str)] =
     &[("macos-sonoma", "select"), ("macos-sonoma", "combobox")];
 
 /// Under every native preset, at its own DPI: at text scale 1 each single-line
-/// control is its stated height and its text lies inside it; at text scale 2
+/// control is its stated height where the preset states one (KDE's menu and
+/// list rows and GNOME's list row size to their content), and its text lies
+/// inside it; at text scale 2
 /// it is at least that tall, and its text still lies inside it. Growth is the
 /// means, not the requirement: a control with no stated vertical padding whose
 /// text exactly fills it at scale 2 (windows-11's list row) is correct.
@@ -775,20 +778,20 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
         &'static str,
         Build,
         fn(Native<'_>) -> StyleRefinement,
-        fn(&ResolvedTheme) -> f32,
+        fn(&ResolvedTheme) -> Option<f32>,
     );
     let cases: [Case; 6] = [
         ("button", probed_button, geometry::button, |r| {
-            r.button.min_height
+            Some(r.button.min_height)
         }),
         ("input", probed_input, geometry::input, |r| {
-            r.input.min_height
+            Some(r.input.min_height)
         }),
         ("select", probed_select, geometry::select, |r| {
-            r.combo_box.min_height
+            Some(r.combo_box.min_height)
         }),
         ("combobox", probed_combobox, geometry::combobox, |r| {
-            r.combo_box.min_height
+            Some(r.combo_box.min_height)
         }),
         ("menu row", probed_menu_row, geometry::menu_item, |r| {
             r.menu.row_height
@@ -801,7 +804,7 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
     for (widget, build, geom, stated_of) in cases {
         for (preset, dpi) in NATIVE {
             let r = resolved_at(preset, dpi);
-            let stated = px(stated_of(&r));
+            let stated = stated_of(&r).map(px);
             let at = |factor: f32, cx: &mut TestAppContext| {
                 let prefs = scaled_by(factor);
                 let style = geom(Native {
@@ -818,18 +821,23 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
             };
 
             let (text, control, own) = at(1.0, cx);
-            let expected = if matches!(widget, "select" | "combobox") && own.size.height > stated {
-                taller.push((preset, widget));
-                own.size.height
-            } else {
-                stated
-            };
-            assert_eq!(
-                control.size.height, expected,
-                "{preset} {widget}: at text scale 1 the control is not its stated height {stated:?} \
-                 (upstream's own: {:?})",
-                own.size.height
-            );
+            // A row with no stated height sizes to its content; only that
+            // its text fits is checked.
+            if let Some(stated) = stated {
+                let expected =
+                    if matches!(widget, "select" | "combobox") && own.size.height > stated {
+                        taller.push((preset, widget));
+                        own.size.height
+                    } else {
+                        stated
+                    };
+                assert_eq!(
+                    control.size.height, expected,
+                    "{preset} {widget}: at text scale 1 the control is not its stated height \
+                     {stated:?} (upstream's own: {:?})",
+                    own.size.height
+                );
+            }
             assert!(
                 fits(text, control),
                 "{preset} {widget}: at text scale 1 the text at {text:?} is not inside the \

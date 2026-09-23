@@ -241,6 +241,7 @@ pub struct ResolvedWidgetBorder {
     pub shadow_enabled: bool,
     /// Padding inside the border, per side; a side the theme does not state
     /// is `None`.
+    #[serde(default)]
     pub padding: ResolvedPadding,
 }
 
@@ -501,5 +502,15 @@ mod tests {
         assert_eq!(widget.padding.left, Some(4.0));
         assert_eq!(widget.padding.top, None);
         assert_eq!(ResolvedPadding::default().right, None);
+    }
+
+    /// A resolved border serialised without its padding (by a version that
+    /// had none, or by hand) deserialises with every side unstated.
+    #[test]
+    fn resolved_widget_border_without_padding_deserialises_unstated() {
+        let src =
+            "color = \"#000000\"\ncorner_radius = 2.0\nline_width = 1.0\nshadow_enabled = false\n";
+        let border: ResolvedWidgetBorder = toml::from_str(src).unwrap();
+        assert_eq!(border.padding, ResolvedPadding::default());
     }
 }

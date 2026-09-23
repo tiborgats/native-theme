@@ -99,7 +99,7 @@ min_height_px = 30.0
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [light.menu]
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1234 (§2.6), (none), sizes to font
 icon_text_gap_px = 8.0
 
 
@@ -108,7 +108,7 @@ icon_text_gap_px = 8.0
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 [light.list]
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1389 (§2.15), (none), sizes to content
 
 
 [light.list.border]
@@ -174,8 +174,9 @@ arrow_area_width_px = 20.0
 
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6, both axes
-padding_horizontal_px = 6.0
+# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+padding_left_px = 6.0
+padding_right_px = 0.0
 padding_vertical_px = 6.0
 [light.segmented_control]
 segment_height_px = 30.0
@@ -285,7 +286,7 @@ min_height_px = 30.0
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [dark.menu]
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1234 (§2.6), (none), sizes to font
 icon_text_gap_px = 8.0
 
 
@@ -294,7 +295,7 @@ icon_text_gap_px = 8.0
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 [dark.list]
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1389 (§2.15), (none), sizes to content
 
 
 [dark.list.border]
@@ -360,8 +361,9 @@ arrow_area_width_px = 20.0
 
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6, both axes
-padding_horizontal_px = 6.0
+# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+padding_left_px = 6.0
+padding_right_px = 0.0
 padding_vertical_px = 6.0
 [dark.segmented_control]
 segment_height_px = 30.0

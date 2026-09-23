@@ -40,7 +40,10 @@
 //! grows with the text. The other four take their stated height (`h`) at a
 //! factor of 1 or less; above 1 they take it as a minimum and an automatic
 //! height, so layout grows the control around its drawn text and padding.
-//! The rule is for single-line controls.
+//! Where the theme states no height (`menu.row_height` and `list.row_height`
+//! are optional, and KDE states neither), the builder sets the line height
+//! alone and the row keeps the toolkit's own height. The rule is for
+//! single-line controls.
 //!
 //! Geometry, with one exception that is not geometry: seven builders also
 //! carry the platform's text colour. A builder carries it only where the
@@ -164,14 +167,18 @@ enum HeightProp {
 /// above a factor of 1 than at 1. Through `h`, `stated` is the control's
 /// height at a factor of 1 or less; above 1 it is its minimum and the height
 /// is automatic, so layout grows the control around its drawn text and
-/// padding.
+/// padding. Without a stated height, the line height alone: the control
+/// keeps the toolkit's own height.
 fn with_height_rule(
     r: StyleRefinement,
-    stated: f32,
+    stated: Option<f32>,
     prop: HeightProp,
     n: Native<'_>,
 ) -> StyleRefinement {
     let r = r.line_height(relative(n.resolved.defaults.line_height));
+    let Some(stated) = stated else {
+        return r;
+    };
     match prop {
         HeightProp::MinHeight => r.min_h(px(stated)),
         HeightProp::Height if text_scale_factor(n.accessibility) <= 1.0 => r.h(px(stated)),
@@ -188,7 +195,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
     let r = with_height_rule(
         StyleRefinement::default(),
-        b.min_height,
+        Some(b.min_height),
         HeightProp::Height,
         n,
     );
@@ -237,7 +244,7 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
     let r = with_height_rule(
         StyleRefinement::default(),
-        i.min_height,
+        Some(i.min_height),
         HeightProp::Height,
         n,
     );
@@ -258,7 +265,8 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 /// `src/menu/mod.rs:6`) and `PopupMenu` builds its own rows, so the receiver
 /// the v0.5.8 documentation named does not exist.
 ///
-/// Height by the control-height rule (module doc), through `h`.
+/// Height by the control-height rule (module doc), through `h`, where
+/// `menu.row_height` is stated.
 #[must_use]
 pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     let m = &n.resolved.menu;
@@ -283,7 +291,8 @@ pub fn menu_item(n: Native<'_>) -> StyleRefinement {
 /// so this changes no pixel; it is what honours a preset that states a row
 /// colour of its own.
 ///
-/// Height by the control-height rule (module doc), through `h`.
+/// Height by the control-height rule (module doc), through `h`, where
+/// `list.row_height` is stated.
 #[must_use]
 pub fn list_item(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.list;
@@ -576,7 +585,7 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
     let r = with_height_rule(
         StyleRefinement::default(),
-        c.min_height,
+        Some(c.min_height),
         HeightProp::MinHeight,
         n,
     );
@@ -753,7 +762,7 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
 pub fn input_height(n: Native<'_>) -> StyleRefinement {
     with_height_rule(
         StyleRefinement::default(),
-        n.resolved.input.min_height,
+        Some(n.resolved.input.min_height),
         HeightProp::Height,
         n,
     )
@@ -840,7 +849,7 @@ mod tests {
     fn assert_height_rule(
         out: &StyleRefinement,
         r: &ResolvedTheme,
-        stated: f32,
+        stated: Option<f32>,
         s: f32,
         through_min_h: bool,
         what: &str,
@@ -850,6 +859,11 @@ mod tests {
             Some(relative(r.defaults.line_height)),
             "{what}: the platform's line height"
         );
+        let Some(stated) = stated else {
+            assert_eq!(out.size.height, None, "{what}: no stated height");
+            assert_eq!(out.min_size.height, None, "{what}: no stated minimum");
+            return;
+        };
         if through_min_h {
             assert_eq!(out.min_size.height, len(stated), "{what}: min height");
             assert_eq!(out.size.height, None, "{what}: no height of its own");
@@ -907,7 +921,7 @@ mod tests {
         for_each_case(|r, s, n| {
             let b = &r.button;
             let out = button(n);
-            assert_height_rule(&out, r, b.min_height, s, false, "button");
+            assert_height_rule(&out, r, Some(b.min_height), s, false, "button");
             assert_eq!(out.min_size.width, len(b.min_width));
             assert_padding(&out, &b.border.padding, "button");
             assert_eq!(
@@ -937,7 +951,7 @@ mod tests {
         for_each_case(|r, s, n| {
             let i = &r.input;
             let out = input(n);
-            assert_height_rule(&out, r, i.min_height, s, false, "input");
+            assert_height_rule(&out, r, Some(i.min_height), s, false, "input");
             assert_padding(&out, &i.border.padding, "input");
             assert_eq!(
                 out.corner_radii.top_left,
@@ -954,7 +968,7 @@ mod tests {
     fn input_height_is_the_height_rule_alone() {
         for_each_case(|r, s, n| {
             let out = input_height(n);
-            assert_height_rule(&out, r, r.input.min_height, s, false, "input_height");
+            assert_height_rule(&out, r, Some(r.input.min_height), s, false, "input_height");
             let full = input(n);
             assert_eq!(out.size.height, full.size.height);
             assert_eq!(out.min_size.height, full.min_size.height);
@@ -1371,7 +1385,7 @@ mod tests {
 
             let cb = &r.combo_box;
             let out = select(n);
-            assert_height_rule(&out, r, cb.min_height, s, true, "select");
+            assert_height_rule(&out, r, Some(cb.min_height), s, true, "select");
             assert_padding(&out, &cb.border.padding, "select");
             assert_eq!(out.min_size.width, len(cb.min_width));
             assert_eq!(
@@ -1380,7 +1394,7 @@ mod tests {
             );
             assert_text(&out, &cb.font, s);
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
-            assert_height_rule(&combobox(n), r, cb.min_height, s, true, "combobox");
+            assert_height_rule(&combobox(n), r, Some(cb.min_height), s, true, "combobox");
             assert_padding(&combobox(n), &cb.border.padding, "combobox");
         });
     }
@@ -1548,6 +1562,25 @@ mod tests {
         assert_eq!(out.size.height, None);
         r.toolbar.bar_height = Some(40.0);
         assert_eq!(toolbar(Native::unscaled(&r)).min_size.height, len(40.0));
+    }
+
+    #[test]
+    fn menu_and_list_items_leave_height_unset_without_a_row_height() {
+        let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
+        r.menu.row_height = None;
+        r.list.row_height = None;
+        for out in [
+            menu_item(Native::unscaled(&r)),
+            list_item(Native::unscaled(&r)),
+        ] {
+            assert_eq!(out.size.height, None);
+            assert_eq!(out.min_size.height, None);
+            assert_eq!(out.text.line_height, Some(relative(r.defaults.line_height)));
+        }
+        r.menu.row_height = Some(22.0);
+        r.list.row_height = Some(24.0);
+        assert_eq!(menu_item(Native::unscaled(&r)).size.height, len(22.0));
+        assert_eq!(list_item(Native::unscaled(&r)).size.height, len(24.0));
     }
 
     /// An unstated tooltip side is upstream's `px_2`, 0.5 rem at the rem this

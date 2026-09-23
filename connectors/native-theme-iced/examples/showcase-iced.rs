@@ -3886,14 +3886,20 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     // ---- MenuBar and Menu ----
 
+    // A theme that states no row height (KDE's items size to their font)
+    // leaves the item its own height, padded like the bar's roots.
     let menu_entry = |label: &'static str| -> Element<'_, Message> {
-        button(text(label).size(menu_t.font.size))
+        let entry = button(text(label).size(menu_t.font.size))
             .on_press(Message::AwActionChosen(format!("Menu: {label}")))
             .style(styles::button(resolved))
-            .width(Fill)
-            .height(Length::Fixed(menu_t.row_height))
-            .padding(Padding::from([0.0, sp.s]))
-            .into()
+            .width(Fill);
+        match menu_t.row_height {
+            Some(h) => entry
+                .height(Length::Fixed(h))
+                .padding(Padding::from([0.0, sp.s])),
+            None => entry.padding(Padding::from([sp.xxs, sp.s])),
+        }
+        .into()
     };
     let menu_root = |label: &'static str| {
         button(text(label).size(menu_t.font.size))
@@ -3948,7 +3954,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ("border", "menu.border.color", to_color(menu_t.border.color)),
             ],
             &[
-                ("item height", "menu.row_height, on the item button"),
+                (
+                    "item height",
+                    "menu.row_height where the theme states one, on the item button",
+                ),
                 ("item label size", "menu.font.size"),
             ],
             &[
@@ -4221,11 +4230,14 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // (`selection_list/list.rs:118`, `:209`), so `list.row_height` is reachable
     // after all -- not through a setter of its own, but as the vertical padding
     // that makes the sum come out. `padding.y()` is top plus bottom, so each
-    // side takes half of what the label leaves. A theme whose row height does
-    // not clear its own label size leaves the showcase's own padding standing,
-    // rather than a negative inset.
-    let row_height_s = format!("{:.0}px", list_t.row_height);
-    let row_inset = list_t.row_height - list_t.item_font.size;
+    // side takes half of what the label leaves. A theme that states no row
+    // height, or one that does not clear its own label size, leaves the
+    // showcase's own padding standing, rather than a negative inset.
+    let row_height_s = match list_t.row_height {
+        Some(h) => format!("{h:.0}px"),
+        None => "not stated: the showcase's own padding".to_string(),
+    };
+    let row_inset = list_t.row_height.map_or(0.0, |h| h - list_t.item_font.size);
     let list_padding = if row_inset > 0.0 {
         // Only the vertical half is the platform's: the label is drawn at the
         // row's own `bounds.x` (`selection_list/list.rs:274`), so horizontal

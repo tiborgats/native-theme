@@ -177,7 +177,7 @@ hover_text_color = "#232629"
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [light.menu]
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1234 (§2.6), (none), sizes to font
 icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
@@ -190,7 +190,7 @@ padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 [light.list]
 alternate_row_background = "#f5f6f7"
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1389 (§2.15), (none), sizes to content
 hover_background = "#93cee9"
 hover_text_color = "#232629"
 disabled_text_color = "#bcc0bf"
@@ -291,8 +291,9 @@ disabled_text_color = "#bcc0bf"
 
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6, both axes
-padding_horizontal_px = 6.0
+# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+padding_left_px = 6.0
+padding_right_px = 0.0
 padding_vertical_px = 6.0
 [light.segmented_control]
 segment_height_px = 30.0
@@ -484,7 +485,7 @@ hover_text_color = "#fcfcfc"
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
 [dark.menu]
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1234 (§2.6), (none), sizes to font
 icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
@@ -497,7 +498,7 @@ padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 [dark.list]
 alternate_row_background = "#2a2e32"
-row_height_px = 28.0
+# row_height not stated: platform-facts.md:1389 (§2.15), (none), sizes to content
 hover_background = "#2e4a5e"
 hover_text_color = "#fcfcfc"
 disabled_text_color = "#4d545b"
@@ -598,8 +599,9 @@ disabled_text_color = "#4d545b"
 
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6, both axes
-padding_horizontal_px = 6.0
+# platform-facts.md:1552, :1557 (§2.24): ComboBox_FrameWidth = 6 left, top and bottom; 0 right, where the edit field meets the 20px arrow column
+padding_left_px = 6.0
+padding_right_px = 0.0
 padding_vertical_px = 6.0
 [dark.segmented_control]
 segment_height_px = 30.0

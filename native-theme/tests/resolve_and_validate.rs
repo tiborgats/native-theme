@@ -592,3 +592,51 @@ fn a_negative_bar_height_is_a_validation_error() {
         "a stated negative bar height must still be range-checked"
     );
 }
+
+#[test]
+fn row_heights_and_arrow_area_width_are_none_where_absent() {
+    let mut v = Theme::preset("macos-sonoma")
+        .unwrap()
+        .into_variant(ColorMode::Light)
+        .unwrap();
+    let stated = resolve_mode(v.clone()).unwrap();
+    assert!(
+        stated.menu.row_height.is_some()
+            && stated.list.row_height.is_some()
+            && stated.combo_box.arrow_area_width.is_some(),
+        "precondition: macos-sonoma states both row heights and the arrow area width"
+    );
+    v.menu.row_height = None;
+    v.list.row_height = None;
+    v.combo_box.arrow_area_width = None;
+    let resolved = resolve_mode(v).unwrap();
+    assert_eq!(resolved.menu.row_height, None);
+    assert_eq!(resolved.list.row_height, None);
+    assert_eq!(resolved.combo_box.arrow_area_width, None);
+}
+
+#[test]
+fn a_negative_row_height_or_arrow_area_width_is_a_validation_error() {
+    let mut v = Theme::preset("kde-breeze")
+        .unwrap()
+        .into_variant(ColorMode::Light)
+        .unwrap();
+    v.menu.row_height = Some(-1.0);
+    v.list.row_height = Some(-2.0);
+    v.combo_box.arrow_area_width = Some(-3.0);
+    match resolve_mode(v) {
+        Err(Error::ResolutionInvalid { errors }) => {
+            for path in [
+                "menu.row_height",
+                "list.row_height",
+                "combo_box.arrow_area_width",
+            ] {
+                assert!(
+                    errors.iter().any(|e| e.path == path),
+                    "no violation names {path}: {errors:?}"
+                );
+            }
+        }
+        other => panic!("stated negative sizes must be range violations, got {other:?}"),
+    }
+}

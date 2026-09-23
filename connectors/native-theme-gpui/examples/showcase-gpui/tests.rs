@@ -359,9 +359,9 @@ const NESTED_SCROLL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(1500
 #[gpui::test]
 fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, NESTED_SCROLL_WINDOW);
-    // material's list rows are the tallest of the bundled presets, so the
-    // six sample rows are certain to overflow the demo box.
-    use_preset(&mut cx, &showcase, "material");
+    // windows-11's list rows (40px) are the tallest any bundled preset
+    // states, so the six sample rows are certain to overflow the demo box.
+    use_preset(&mut cx, &showcase, "windows-11");
     show(&mut cx, &showcase, Page::Data);
     assert!(
         bounds_of(&mut cx, PAGE_ROOT).size.height > NESTED_SCROLL_WINDOW.height,

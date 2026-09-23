@@ -2,11 +2,12 @@
 //! (spec `docs/archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md` §1.4–§1.6).
 //!
 //! One row per (platform, widget) gives every padding side, and for the
-//! toolbar its `bar_height` and `item_gap`, as `Some(v)` where
-//! `docs/platform-facts.md` documents a value for that platform and `None`
-//! where it does not, or where a ruling leaves it unstated (e.g. the Windows
-//! combobox's right side, measured to an arrow column the model has no field
-//! for). Each row cites the platform-facts lines it reads.
+//! toolbar its `bar_height` and `item_gap`, for the menu and the list their
+//! `row_height`, and for the combobox its `arrow_area_width` where the
+//! platform gives one number, as `Some(v)` where `docs/platform-facts.md`
+//! documents a value for that platform and `None` where it does not, or where
+//! a ruling leaves it unstated. Each row cites the platform-facts lines it
+//! reads.
 //!
 //! Every row is checked in both variants against two resolutions:
 //!
@@ -120,6 +121,12 @@ struct Row {
     extra: &'static [(&'static str, Option<f32>, usize)],
 }
 
+impl Row {
+    const fn with(self, extra: &'static [(&'static str, Option<f32>, usize)]) -> Row {
+        Row { extra, ..self }
+    }
+}
+
 const fn row(
     platform: Platform,
     widget: &'static str,
@@ -146,7 +153,8 @@ const ROWS: &[Row] = &[
     row(Kde, "button", all(6.0), &[1171, 1172], "Button_MarginWidth = 6, both axes"),
     row(Kde, "input", axes(3.0, 6.0), &[1196, 1197], "LineEdit_FrameWidth = 6; 3 (measured)"),
     row(Kde, "checkbox", NONE, &[1216, 1217], "(none)"),
-    row(Kde, "menu", all(4.0), &[1235, 1236], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4"),
+    row(Kde, "menu", all(4.0), &[1235, 1236], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
+        .with(&[("row_height", None, 1234)]),
     row(Kde, "tooltip", all(3.0), &[1257, 1258], "ToolTip_FrameWidth = 3"),
     row(Kde, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Kde, "tab", axes(4.0, 8.0), &[1318, 1319], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4"),
@@ -160,10 +168,12 @@ const ROWS: &[Row] = &[
         extra: &[("bar_height", None, 1351), ("item_gap", Some(0.0), 1352)],
     },
     row(Kde, "status_bar", trbl(3.0, 14.0, 2.0, 2.0), &[1372, 1373], "QStatusBar: 2 left, 3 top / 2 bottom; 14 right, the 1 + 13px size grip Breeze paints as nothing (not maximized)"),
-    row(Kde, "list", axes(1.0, 2.0), &[1390, 1391], "2; 1"),
+    row(Kde, "list", axes(1.0, 2.0), &[1390, 1391], "2; 1")
+        .with(&[("row_height", None, 1389)]),
     row(Kde, "popover", NONE, &[1412, 1413], "(none)"),
     row(Kde, "dialog", all(10.0), &[1491, 1492], "Layout_TopLevelMarginWidth = 10"),
-    row(Kde, "combo_box", all(6.0), &[1552, 1557], "ComboBox_FrameWidth = 6, both axes"),
+    row(Kde, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1552, 1557], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
+        .with(&[("arrow_area_width", Some(20.0), 1554)]),
     row(Kde, "segmented_control", NONE, &[1571, 1576], "tab bar as proxy, not the platform's value"),
     row(Kde, "card", NONE, &[1592, 1593], "(none)"),
     row(Kde, "expander", NONE, &[1607, 1608], "(none), app-defined"),
@@ -172,7 +182,8 @@ const ROWS: &[Row] = &[
     row(Gnome, "button", axes(5.0, 10.0), &[1171, 1172], "10; 5"),
     row(Gnome, "input", axes(0.0, 9.0), &[1196, 1197], "9; 0"),
     row(Gnome, "checkbox", all(3.0), &[1216, 1217], "check { padding: 3px }"),
-    row(Gnome, "menu", axes(0.0, 12.0), &[1235, 1236], "12 ($menu_padding); 0"),
+    row(Gnome, "menu", axes(0.0, 12.0), &[1235, 1236], "12 ($menu_padding); 0")
+        .with(&[("row_height", Some(32.0), 1234)]),
     row(Gnome, "tooltip", axes(6.0, 10.0), &[1257, 1258], "10; 6"),
     row(Gnome, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Gnome, "tab", axes(3.0, 12.0), &[1318, 1319], "12; 3"),
@@ -186,10 +197,12 @@ const ROWS: &[Row] = &[
         extra: &[("bar_height", None, 1351), ("item_gap", Some(6.0), 1352)],
     },
     row(Gnome, "status_bar", axes(6.0, 10.0), &[1372, 1373], "statusbar { padding: 6px 10px }"),
-    row(Gnome, "list", all(2.0), &[1390, 1391], "plain list context: 2"),
+    row(Gnome, "list", all(2.0), &[1390, 1391], "plain list context: 2")
+        .with(&[("row_height", None, 1389)]),
     row(Gnome, "popover", all(8.0), &[1412, 1413], "popover > contents { padding: 8px }"),
     row(Gnome, "dialog", trbl(32.0, 24.0, 24.0, 24.0), &[1491, 1492], "24; 32 top / 24 bottom"),
-    row(Gnome, "combo_box", axes(5.0, 10.0), &[1552, 1557], "← button padding (10px); ← button (5px)"),
+    row(Gnome, "combo_box", axes(5.0, 10.0), &[1552, 1557], "← button padding (10px); ← button (5px)")
+        .with(&[("arrow_area_width", None, 1554)]),
     row(Gnome, "segmented_control", NONE, &[1571, 1576], "(none)"),
     row(Gnome, "card", NONE, &[1592, 1593], "(none), app-defined"),
     row(Gnome, "expander", NONE, &[1607, 1608], "row padding, no number"),
@@ -198,7 +211,8 @@ const ROWS: &[Row] = &[
     row(Macos, "button", axes(3.0, 8.0), &[1171, 1172], "~8 (WebKit); 3 (measured)"),
     row(Macos, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
     row(Macos, "checkbox", NONE, &[1216, 1217], "(none)"),
-    row(Macos, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)"),
+    row(Macos, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)")
+        .with(&[("row_height", Some(22.0), 1234)]),
     row(Macos, "tooltip", all(4.0), &[1257, 1258], "4; 4"),
     row(Macos, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Macos, "tab", axes(4.0, 12.0), &[1318, 1319], "12; 4 (measured)"),
@@ -212,7 +226,8 @@ const ROWS: &[Row] = &[
         extra: &[("bar_height", Some(38.0), 1351), ("item_gap", Some(8.0), 1352)],
     },
     row(Macos, "status_bar", NONE, &[1372, 1373], "(none): no window status bar"),
-    row(Macos, "list", all(4.0), &[1390, 1391], "4; 4 (measured)"),
+    row(Macos, "list", all(4.0), &[1390, 1391], "4; 4 (measured)")
+        .with(&[("row_height", Some(24.0), 1389)]),
     row(Macos, "popover", NONE, &[1412, 1413], "(none)"),
     row(Macos, "dialog", all(20.0), &[1491, 1492], "~20 (measured)"),
     row(Macos, "combo_box", [Some(3.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; ~3 (measured)"),
@@ -224,7 +239,8 @@ const ROWS: &[Row] = &[
     row(Windows, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
     row(Windows, "input", trbl(5.0, 6.0, 6.0, 10.0), &[1196, 1197], "10 left / 6 right; 5 top / 6 bottom"),
     row(Windows, "checkbox", NONE, &[1216, 1217], "(none)"),
-    row(Windows, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1235, 1236], "11; mouse context 4 top / 5 bottom"),
+    row(Windows, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1235, 1236], "11; mouse context 4 top / 5 bottom")
+        .with(&[("row_height", Some(23.0), 1234)]),
     row(Windows, "tooltip", trbl(6.0, 9.0, 8.0, 9.0), &[1257, 1258], "ToolTipBorderPadding=9,6,9,8"),
     row(Windows, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
     row(Windows, "tab", axes(3.0, 8.0), &[1318, 1319], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3"),
@@ -238,10 +254,12 @@ const ROWS: &[Row] = &[
         extra: &[("bar_height", Some(48.0), 1351), ("item_gap", Some(0.0), 1352)],
     },
     row(Windows, "status_bar", NONE, &[1372, 1373], "(none): not specified"),
-    row(Windows, "list", axes(0.0, 12.0), &[1390, 1391], "12; 0"),
+    row(Windows, "list", axes(0.0, 12.0), &[1390, 1391], "12; 0")
+        .with(&[("row_height", Some(40.0), 1389)]),
     row(Windows, "popover", trbl(15.0, 16.0, 17.0, 16.0), &[1412, 1413], "FlyoutContentPadding=16,15,16,17"),
     row(Windows, "dialog", all(24.0), &[1491, 1492], "ContentDialogPadding=24"),
-    row(Windows, "combo_box", [Some(5.0), None, Some(7.0), Some(12.0)], &[1552, 1557], "12 left, right measured to the arrow column; 5 top / 7 bottom"),
+    row(Windows, "combo_box", trbl(5.0, 0.0, 7.0, 12.0), &[1552, 1557], "ComboBoxPadding=12,5,0,7: 0 right, to the 38px arrow column")
+        .with(&[("arrow_area_width", Some(38.0), 1554)]),
     row(Windows, "segmented_control", NONE, &[1571, 1576], "(none)"),
     row(Windows, "card", all(12.0), &[1592, 1593], "12 (convention)"),
     row(Windows, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1607, 1608], "header context: ExpanderHeaderPadding=16,0,0,0"),
@@ -320,8 +338,10 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
 }
 
 /// The in-scope sizing keys a preset states for one widget, unresolved: the
-/// four padding sides, and for the toolbar `bar_height` and `item_gap`.
-fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<[Option<f32>; 6]> {
+/// four padding sides, and the widget's further fields (`bar_height` and
+/// `item_gap` for the toolbar, `row_height` for the menu and the list,
+/// `arrow_area_width` for the combobox).
+fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option<f32>)>> {
     let border = match widget {
         "window" => &v.window.border,
         "button" => &v.button.border,
@@ -345,25 +365,33 @@ fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<[Option<f32>; 6]> {
     };
     let side =
         |f: fn(&crate::model::border::WidgetBorderSpec) -> Option<f32>| border.as_ref().and_then(f);
-    let (bar_height, item_gap) = if widget == "toolbar" {
-        (v.toolbar.bar_height, v.toolbar.item_gap)
-    } else {
-        (None, None)
-    };
-    Some([
-        side(|b| b.padding_top),
-        side(|b| b.padding_right),
-        side(|b| b.padding_bottom),
-        side(|b| b.padding_left),
-        bar_height,
-        item_gap,
-    ])
+    let mut sizes = vec![
+        ("border.padding_top", side(|b| b.padding_top)),
+        ("border.padding_right", side(|b| b.padding_right)),
+        ("border.padding_bottom", side(|b| b.padding_bottom)),
+        ("border.padding_left", side(|b| b.padding_left)),
+    ];
+    match widget {
+        "toolbar" => {
+            sizes.push(("bar_height", v.toolbar.bar_height));
+            sizes.push(("item_gap", v.toolbar.item_gap));
+        }
+        "menu" => sizes.push(("row_height", v.menu.row_height)),
+        "list" => sizes.push(("row_height", v.list.row_height)),
+        "combo_box" => sizes.push(("arrow_area_width", v.combo_box.arrow_area_width)),
+        _ => {}
+    }
+    Some(sizes)
 }
 
-fn toolbar_field(theme: &ResolvedTheme, field: &str) -> Option<Option<f32>> {
-    match field {
-        "bar_height" => Some(theme.toolbar.bar_height),
-        "item_gap" => Some(Some(theme.toolbar.item_gap)),
+/// A row's further field, resolved.
+fn extra_field(theme: &ResolvedTheme, widget: &str, field: &str) -> Option<Option<f32>> {
+    match (widget, field) {
+        ("toolbar", "bar_height") => Some(theme.toolbar.bar_height),
+        ("toolbar", "item_gap") => Some(Some(theme.toolbar.item_gap)),
+        ("menu", "row_height") => Some(theme.menu.row_height),
+        ("list", "row_height") => Some(theme.list.row_height),
+        ("combo_box", "arrow_area_width") => Some(theme.combo_box.arrow_area_width),
         _ => None,
     }
 }
@@ -445,7 +473,7 @@ fn native_themes_state_documented_sizes() {
                         }
                     }
                     for &(field, expected, line) in row.extra {
-                        let got = toolbar_field(&theme, field);
+                        let got = extra_field(&theme, row.widget, field);
                         if got != Some(expected) {
                             failures.push(format!(
                                 "{}.{field}: {} {variant}: resolved {:?}, \
@@ -535,18 +563,10 @@ fn every_citation_names_its_platform_facts_row() {
 
 /// The live resolution merges the `-live` preset under the reader constants,
 /// so a `-live` value a reader overrides never reaches the gate above. Each
-/// full preset and its `-live` twin therefore state the same padding sides,
-/// `bar_height` and `item_gap`, in both variants.
+/// full preset and its `-live` twin therefore state the same sizes (the
+/// padding sides and the further fields), in both variants.
 #[test]
 fn full_and_live_presets_state_the_same_sizes() {
-    const KEYS: [&str; 6] = [
-        "border.padding_top",
-        "border.padding_right",
-        "border.padding_bottom",
-        "border.padding_left",
-        "bar_height",
-        "item_gap",
-    ];
     let mut failures = Vec::new();
     for platform in Platform::ALL {
         for mode in [ColorMode::Light, ColorMode::Dark] {
@@ -568,14 +588,12 @@ fn full_and_live_presets_state_the_same_sizes() {
                     failures.push(format!("unknown widget `{widget}`"));
                     continue;
                 };
-                for (i, key) in KEYS.iter().enumerate() {
-                    if f[i] != l[i] {
+                for ((key, f), (_, l)) in f.iter().zip(&l) {
+                    if f != l {
                         failures.push(format!(
-                            "{widget}.{key} {mode:?}: {} states {:?}, {} states {:?}",
+                            "{widget}.{key} {mode:?}: {} states {f:?}, {} states {l:?}",
                             platform.preset(),
-                            f[i],
                             platform.live_preset(),
-                            l[i],
                         ));
                     }
                 }

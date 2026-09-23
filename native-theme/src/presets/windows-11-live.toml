@@ -102,7 +102,8 @@ min_height_px = 32.0
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [light.menu]
-row_height_px = 36.0
+# platform-facts.md:1234 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
+row_height_px = 23.0
 icon_text_gap_px = 12.0
 
 
@@ -179,8 +180,9 @@ arrow_area_width_px = 38.0
 
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): WinUI3 12 left, 5 top / 7 bottom; the right side is measured to the arrow column, not stated
+# platform-facts.md:1552, :1557 (§2.24): WinUI3 ComboBoxPadding=12,5,0,7; 0 right, where the text column meets the 38px arrow column
 padding_left_px = 12.0
+padding_right_px = 0.0
 padding_top_px = 5.0
 padding_bottom_px = 7.0
 [light.segmented_control]
@@ -303,7 +305,8 @@ min_height_px = 32.0
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [dark.menu]
-row_height_px = 36.0
+# platform-facts.md:1234 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
+row_height_px = 23.0
 icon_text_gap_px = 12.0
 
 
@@ -380,8 +383,9 @@ arrow_area_width_px = 38.0
 
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): WinUI3 12 left, 5 top / 7 bottom; the right side is measured to the arrow column, not stated
+# platform-facts.md:1552, :1557 (§2.24): WinUI3 ComboBoxPadding=12,5,0,7; 0 right, where the text column meets the 38px arrow column
 padding_left_px = 12.0
+padding_right_px = 0.0
 padding_top_px = 5.0
 padding_bottom_px = 7.0
 [dark.segmented_control]

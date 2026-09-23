@@ -507,11 +507,20 @@ impl Theme {
     ///
     /// # TOML Format
     ///
-    /// Theme files use the following structure. All fields are `Option<T>` --
-    /// omit any field you don't need. Unknown fields are silently ignored.
-    /// Hex colors accept `#RRGGBB` or `#RRGGBBAA` format.
+    /// Theme files use the following structure. Every field is optional --
+    /// omit any field you don't need. Unknown fields are silently ignored;
+    /// [`lint_toml`](Self::lint_toml) reports them. Hex colors accept
+    /// `#RRGGBB` or `#RRGGBBAA` format. A size carries its unit in its key:
+    /// `_px` for logical pixels, and `size_pt` or `size_px` for a font.
+    /// A widget border's padding takes one key per side (`padding_top_px`,
+    /// `padding_right_px`, `padding_bottom_px`, `padding_left_px`) or one per
+    /// axis (`padding_horizontal_px`, `padding_vertical_px`), not both for
+    /// the same axis.
     ///
-    /// ```toml
+    /// ```
+    /// use native_theme::theme::Theme;
+    ///
+    /// let toml = r##"
     /// name = "My Theme"
     ///
     /// [light.defaults]
@@ -534,23 +543,23 @@ impl Theme {
     ///
     /// [light.defaults.font]
     /// family = "sans-serif"
-    /// size = 10.0
+    /// size_pt = 10.0
     ///
     /// [light.defaults.mono_font]
     /// family = "monospace"
-    /// size = 10.0
+    /// size_pt = 10.0
     ///
     /// [light.defaults.border]
     /// color = "#c0c0c0"
-    /// corner_radius = 6.0
-    /// corner_radius_lg = 12.0
-    /// line_width = 1.0
+    /// corner_radius_px = 6.0
+    /// corner_radius_lg_px = 12.0
+    /// line_width_px = 1.0
     /// opacity = 0.15
     /// shadow_enabled = true
     ///
     /// [light.button]
     /// background_color = "#e8e8e8"
-    /// min_height = 32.0
+    /// min_height_px = 32.0
     ///
     /// [light.button.font]
     /// color = "#2e3436"
@@ -561,12 +570,27 @@ impl Theme {
     ///
     /// [light.tooltip]
     /// background_color = "#2e3436"
-    /// max_width = 300.0
+    /// max_width_px = 300.0
     ///
     /// [light.tooltip.font]
     /// color = "#f0f0f0"
     ///
-    /// # [dark.*] mirrors the same structure as [light.*]
+    /// ## [dark.*] mirrors the same structure as [light.*]
+    /// "##;
+    ///
+    /// assert!(Theme::lint_toml(toml)?.is_empty());
+    /// let theme = Theme::from_toml(toml)?;
+    /// let light = theme.light.as_ref();
+    /// assert_eq!(light.and_then(|v| v.button.min_height), Some(32.0));
+    /// assert_eq!(light.and_then(|v| v.tooltip.max_width), Some(300.0));
+    /// assert_eq!(
+    ///     light.and_then(|v| v.defaults.border.corner_radius),
+    ///     Some(6.0)
+    /// );
+    /// let button_border = light.and_then(|v| v.button.border.as_ref());
+    /// assert_eq!(button_border.and_then(|b| b.padding_left), Some(12.0));
+    /// assert_eq!(button_border.and_then(|b| b.padding_bottom), Some(6.0));
+    /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     ///
     /// # Errors

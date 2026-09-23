@@ -11,7 +11,7 @@ use ::windows::Win32::UI::HiDpi::{GetDpiForSystem, GetSystemMetricsForDpi};
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::Win32::UI::WindowsAndMessaging::{
     NONCLIENTMETRICSW, SM_CXBORDER, SM_CXFOCUSBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL,
-    SM_CYMENU, SM_CYVTHUMB, SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    SM_CYVTHUMB, SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
     SystemParametersInfoW,
 };
 
@@ -187,7 +187,6 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeMode) {
     unsafe {
         variant.scrollbar.groove_width = Some(GetSystemMetricsForDpi(SM_CXVSCROLL, dpi) as f32);
         variant.scrollbar.min_thumb_length = Some(GetSystemMetricsForDpi(SM_CYVTHUMB, dpi) as f32);
-        variant.menu.row_height = Some(GetSystemMetricsForDpi(SM_CYMENU, dpi) as f32);
         variant.defaults.focus_ring_width =
             Some(GetSystemMetricsForDpi(SM_CXFOCUSBORDER, dpi) as f32);
     }
@@ -199,7 +198,6 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeMode) {
 fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeMode) {
     variant.scrollbar.groove_width = Some(17.0);
     variant.scrollbar.min_thumb_length = Some(40.0);
-    variant.menu.row_height = Some(32.0);
     variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
     winui3_widget_sizing(variant);
 }
@@ -229,6 +227,9 @@ pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     // platform-facts.md:1318 (§2.11): without-close-button context, 8,3,8,3
     border.padding_left = Some(8.0);
     border.padding_right = Some(8.0);
+    // platform-facts.md:1234 (§2.6): the mouse (Narrow) context, 14 text + 4 + 5.
+    // Not SM_CYMENU, the menu bar's height (platform-facts.md:383).
+    variant.menu.row_height = Some(23.0);
     let border = variant.menu.border.get_or_insert_default();
     // platform-facts.md:1235 (§2.6): MenuFlyoutItemThemePadding, 11 horizontal
     border.padding_left = Some(11.0);
@@ -1205,7 +1206,7 @@ mod tests {
         assert_eq!(variant.input.min_height, Some(32.0));
         assert_eq!(variant.slider.thumb_diameter, Some(22.0));
         assert!(variant.scrollbar.groove_width.is_some());
-        assert!(variant.menu.row_height.is_some());
+        assert_eq!(variant.menu.row_height, Some(23.0));
         assert_eq!(variant.splitter.divider_width, Some(4.0));
     }
 

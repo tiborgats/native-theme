@@ -202,9 +202,11 @@ pub struct MenuTheme {
     /// Separator line color between menu items.
     #[theme(inherit_from = "defaults.border.color")]
     pub separator_color: Option<Rgba>,
-    /// Height of a single menu item row.
+    /// Height of a single menu item row. `None` where the platform states
+    /// no row height: KDE's menu items size to their font
+    /// (docs/platform-facts.md §2.6).
     #[serde(rename = "row_height_px")]
-    #[theme(check = "non_negative")]
+    #[theme(category = "soft_option", check = "non_negative")]
     pub row_height: Option<f32>,
     /// Space between a menu item's icon and its label.
     #[serde(rename = "icon_text_gap_px")]
@@ -509,9 +511,11 @@ pub struct ListTheme {
     /// Grid line color between rows/columns.
     #[theme(inherit_from = "defaults.border.color")]
     pub grid_color: Option<Rgba>,
-    /// Row height in logical pixels.
+    /// Row height in logical pixels. `None` where the platform states no row
+    /// height: KDE's rows size to their content, and GNOME's plain list sets
+    /// no minimum height (docs/platform-facts.md §2.15).
     #[serde(rename = "row_height_px")]
-    #[theme(check = "non_negative")]
+    #[theme(category = "soft_option", check = "non_negative")]
     pub row_height: Option<f32>,
     /// Hovered row background color.
     #[theme(inherit_from = "defaults.background_color")]
@@ -729,9 +733,11 @@ pub struct ComboBoxTheme {
     #[serde(rename = "arrow_icon_size_px")]
     #[theme(check = "non_negative")]
     pub arrow_icon_size: Option<f32>,
-    /// Width of the arrow clickable area.
+    /// Width of the arrow clickable area. `None` where the platform has no
+    /// arrow column: GNOME's dropdown draws its arrow inline
+    /// (docs/platform-facts.md §2.24).
     #[serde(rename = "arrow_area_width_px")]
-    #[theme(check = "non_negative")]
+    #[theme(category = "soft_option", check = "non_negative")]
     pub arrow_area_width: Option<f32>,
     /// Opacity multiplier when disabled (0.0-1.0).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
