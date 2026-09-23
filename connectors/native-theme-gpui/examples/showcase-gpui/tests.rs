@@ -37,8 +37,9 @@ use crate::{
     FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
     FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
     INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
-    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH,
-    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
+    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LAYOUT_GROUP_BOX_NORMAL,
+    LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID, LIST_DEMO,
+    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
     OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
     PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
     PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
@@ -2165,6 +2166,47 @@ fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
     assert!(
         texts.first() != texts.get(1),
         "the H1 and the H2 show the same info: {texts:?}"
+    );
+}
+
+/// Two GroupBoxes of different variants show different infos (spec
+/// §4.3.2): the Normal one and the Outline one each report their own
+/// variant, not one info for the whole gallery.
+#[gpui::test]
+fn two_group_boxes_of_different_variants_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (LAYOUT_GROUP_BOX_NORMAL, "GroupBox · Normal"),
+            (LAYOUT_GROUP_BOX_OUTLINE, "GroupBox · Outline"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the Normal and the Outline GroupBox show the same info: {texts:?}"
+    );
+}
+
+/// A solid Separator and a dashed one show different infos (spec §4.3.2):
+/// only the dashed one says its line is stroked in dashes.
+#[gpui::test]
+fn a_solid_separator_and_a_dashed_one_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (LAYOUT_SEPARATOR_SOLID, "Separator · horizontal"),
+            (LAYOUT_SEPARATOR_DASHED, "Separator · horizontal, dashed"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the solid and the dashed Separator show the same info: {texts:?}"
     );
 }
 

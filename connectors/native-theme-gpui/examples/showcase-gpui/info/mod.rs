@@ -10,6 +10,7 @@ pub mod chrome;
 pub mod data;
 pub mod feedback;
 pub mod inputs;
+pub mod layout;
 pub mod registry;
 pub mod text;
 pub mod typography;

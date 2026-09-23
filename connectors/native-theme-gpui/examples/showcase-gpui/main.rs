@@ -369,6 +369,17 @@ pub(crate) const TYPOGRAPHY_LABEL_SECONDARY: &str = "typography-label-secondary"
 pub(crate) const TYPOGRAPHY_H1: &str = "typography-h1";
 pub(crate) const TYPOGRAPHY_H2: &str = "typography-h2";
 
+/// The ids and debug selectors of the Layout page's Normal and Outline
+/// GroupBoxes, which `two_group_boxes_of_different_variants_show_different_infos`
+/// hovers.
+pub(crate) const LAYOUT_GROUP_BOX_NORMAL: &str = "layout-group-box-normal";
+pub(crate) const LAYOUT_GROUP_BOX_OUTLINE: &str = "layout-group-box-outline";
+/// The ids and debug selectors of the Layout page's solid and dashed
+/// Separators, which `a_solid_separator_and_a_dashed_one_show_different_infos`
+/// hovers.
+pub(crate) const LAYOUT_SEPARATOR_SOLID: &str = "layout-separator-solid";
+pub(crate) const LAYOUT_SEPARATOR_DASHED: &str = "layout-separator-dashed";
+
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------

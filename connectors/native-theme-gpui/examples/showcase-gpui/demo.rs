@@ -11,6 +11,7 @@ use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
     ActiveTheme, ChildElement, Collapsible, Disableable as _, Icon, IconName, Selectable, Sizable,
     Size, StyledExt as _, TitleBar, WindowExt as _,
+    accordion::Accordion,
     alert::Alert,
     attachment::{
         Attachment, AttachmentContent, AttachmentDescription, AttachmentMedia, AttachmentStatus,
@@ -18,12 +19,17 @@ use gpui_component::{
     },
     avatar::{Avatar, AvatarGroup},
     badge::Badge,
+    breadcrumb::{Breadcrumb, BreadcrumbItem},
     bubble::{Bubble, BubbleVariant},
     button::{
         Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
         ToggleVariants as _,
     },
     calendar::{Calendar, CalendarState},
+    carousel::{
+        Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPagination,
+        CarouselPaginationItem, CarouselPrevious, CarouselState,
+    },
     checkbox::Checkbox,
     clipboard::Clipboard,
     color_picker::{ColorPicker, ColorPickerState},
@@ -36,6 +42,8 @@ use gpui_component::{
         Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
         EmptyTitle,
     },
+    form::{Field, Form},
+    group_box::{GroupBox, GroupBoxVariant, GroupBoxVariants as _},
     h_flex,
     input::{
         Editor, EditorState, Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment,
@@ -55,6 +63,7 @@ use gpui_component::{
     progress::{Progress, ProgressCircle},
     radio::{Radio, RadioGroup},
     rating::Rating,
+    scroll::ScrollableElement as _,
     select::{SearchableVec, Select, SelectState},
     separator::Separator,
     setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
@@ -65,6 +74,7 @@ use gpui_component::{
     slider::{Slider, SliderState},
     spinner::Spinner,
     status_bar::StatusBar,
+    stepper::{Stepper, StepperItem},
     switch::Switch,
     tab::{Tab, TabBar},
     table::{DataTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableState},
@@ -79,14 +89,15 @@ use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geomet
 use crate::app::{AppColorMode, Quit, SetColorMode, ShowPage, ToggleSidebar};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, native_info};
 use crate::support::{
-    ChatMessage, NativeStyled as _, PresetDelegate, SampleListDelegate, SampleTableDelegate,
-    native_geometry, native_icon, native_value, refined, section, with_gap,
+    CAROUSEL_SLIDES, ChatMessage, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
+    SampleListDelegate, SampleTableDelegate, native_geometry, native_icon, native_value, refined,
+    section, with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
     OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
-    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, Page, STATUS_HOVERED,
-    TREE_DEMO,
+    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST,
+    PROBE_SETTINGS_ROW, Page, STATUS_HOVERED, TREE_DEMO, probe,
 };
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
@@ -869,14 +880,15 @@ pub(crate) fn caption(
 pub(crate) fn label(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    id: &'static str,
+    id: impl Into<SharedString>,
     text: impl Into<SharedString>,
 ) -> Stateful<Div> {
+    let id: SharedString = id.into();
     Label::new(text)
         .text_sm()
-        .info(ui, id, info::text::label(cx.theme()))
+        .info(ui, id.clone(), info::text::label(cx.theme()))
         .self_start()
-        .debug_selector(move || id.into())
+        .debug_selector(move || id.to_string())
 }
 
 // ---------------------------------------------------------------------------
@@ -3036,5 +3048,589 @@ pub(crate) fn markdown(
     TextView::markdown(id, source)
         .selectable(true)
         .info(ui, id, info::typography::markdown(cx.theme()))
+        .debug_selector(move || id.into())
+}
+
+// ---------------------------------------------------------------------------
+// The Layout page
+// ---------------------------------------------------------------------------
+
+/// The two boxes the Layout page applies the four layout accessors to, so
+/// the match over them in `info::layout` is exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SpacingBox {
+    /// A column padded by the window margin, its children the section gap
+    /// apart.
+    Window,
+    /// A row padded by the container margin, its children the widget gap
+    /// apart.
+    Container,
+}
+
+/// A spacing box of `kind` in the showcase's frame, holding `children`,
+/// padded by `padding` and spacing them by `gap`. Where either is `None`
+/// the platform states none and gpui's own spacing stands.
+pub(crate) fn spacing_box(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: SpacingBox,
+    padding: Option<Pixels>,
+    gap: Option<Pixels>,
+    children: impl IntoIterator<Item = AnyElement>,
+) -> Stateful<Div> {
+    let box_info = info::layout::spacing_box(cx.theme(), kind, padding, gap);
+    let (frame, box_info) = match kind {
+        SpacingBox::Window => {
+            let box_info = if padding.is_some() {
+                box_info.geometry("window_margin")
+            } else {
+                box_info
+            };
+            let box_info = if gap.is_some() {
+                box_info.geometry("section_gap")
+            } else {
+                box_info
+            };
+            (v_flex(), box_info)
+        }
+        SpacingBox::Container => {
+            let box_info = if padding.is_some() {
+                box_info.geometry("container_margin")
+            } else {
+                box_info
+            };
+            let box_info = if gap.is_some() {
+                box_info.geometry("widget_gap")
+            } else {
+                box_info
+            };
+            (h_flex(), box_info)
+        }
+    };
+    with_padding(with_gap(frame.demo_frame(cx), gap), padding)
+        .children(children)
+        .info(ui, id, box_info)
+        .debug_selector(move || id.into())
+}
+
+/// The Separators the Layout page builds, and the toolbar's, so the match
+/// over them in `info::layout` is exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SeparatorKind {
+    Vertical,
+    Horizontal,
+    /// Horizontal, reading the given label.
+    Labelled(&'static str),
+    /// Horizontal, dashed.
+    Dashed,
+}
+
+impl SeparatorKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Vertical => "vertical",
+            Self::Horizontal => "horizontal",
+            Self::Labelled(_) => "horizontal, labelled",
+            Self::Dashed => "horizontal, dashed",
+        }
+    }
+}
+
+/// A `Separator` of `kind`.
+pub(crate) fn separator(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: SeparatorKind,
+) -> Stateful<Div> {
+    let separator = match kind {
+        SeparatorKind::Vertical => Separator::vertical(),
+        SeparatorKind::Horizontal => Separator::horizontal(),
+        SeparatorKind::Labelled(label) => Separator::horizontal().label(label),
+        SeparatorKind::Dashed => Separator::horizontal_dashed(),
+    };
+    separator
+        .info(ui, id, info::layout::separator(cx.theme(), kind))
+        // A horizontal Separator's box is as tall as its label and no
+        // taller: the line is an absolute child (separator.rs:79-84). The
+        // padding leaves something to point at.
+        .py_1()
+        .debug_selector(move || id.into())
+}
+
+/// The GroupBox variants, so the matches over them in `info::layout` are
+/// exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GroupBoxKind {
+    Normal,
+    Fill,
+    Outline,
+}
+
+impl GroupBoxKind {
+    /// The name upstream gives the variant (group_box.rs, GroupBoxVariant).
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Normal => "Normal",
+            Self::Fill => "Fill",
+            Self::Outline => "Outline",
+        }
+    }
+    fn variant(self) -> GroupBoxVariant {
+        match self {
+            Self::Normal => GroupBoxVariant::Normal,
+            Self::Fill => GroupBoxVariant::Fill,
+            Self::Outline => GroupBoxVariant::Outline,
+        }
+    }
+}
+
+/// A `GroupBox` of `kind` titled `title` around `content`, which `about`
+/// describes in its info; its content refined by
+/// `geometry::group_box_content`.
+pub(crate) fn group_box(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: GroupBoxKind,
+    title: &'static str,
+    content: impl IntoElement,
+    about: &'static str,
+) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut box_info =
+        info::layout::group_box(cx.theme(), kind, styled, title).instance("content", about);
+    // `GroupBox::content_style` takes a refinement rather than being one.
+    let content_style = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::group_box_content,
+        "group_box_content",
+        &mut box_info,
+    );
+    GroupBox::new()
+        .with_variant(kind.variant())
+        .content_style(content_style)
+        .title(title)
+        .child(content)
+        .info(ui, id, box_info)
+        .debug_selector(move || id.into())
+}
+
+/// A column of `items` small Labels, each reporting itself, `height` tall in
+/// the showcase's frame, scrolled by gpui-component's scrollbar and kept
+/// clear of it by `geometry::scrollbar_gutter`.
+pub(crate) fn scroll_area(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    height: Pixels,
+    items: usize,
+) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut area_info = info::layout::scroll_area(cx.theme(), styled);
+    native_info(
+        div()
+            .id(id)
+            .h(height)
+            .w_full()
+            .demo_frame(cx)
+            .overflow_y_scrollbar(),
+        cx,
+        geometry::scrollbar_gutter,
+        "scrollbar_gutter",
+        &mut area_info,
+    )
+    .child(v_flex().gap_2().p_3().children((1..=items).map(|n| {
+        label(
+            ui,
+            cx,
+            format!("{id}-item-{n}"),
+            format!("Scrollable item #{n} - demonstrates scrollbar theming"),
+        )
+    })))
+    .info(ui, id, area_info)
+    // A scroller inside the page's own takes the pointer out of the page's
+    // hit test, or a wheel turned here would scroll both (gpui-pre
+    // window.rs, HitboxBehavior::BlockMouse). On the wrapper, not the
+    // scroller: an occluding scroller would hide its wrapper's hover.
+    .occlude()
+    .debug_selector(move || id.into())
+}
+
+/// The Accordion of the Layout page: an item per `(title, answer id,
+/// answer)`, the first open, their title rows refined by
+/// `geometry::accordion_title`. Each answer is a small Label that reports
+/// itself.
+pub(crate) fn accordion(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    items: [(&'static str, &'static str, SharedString); 3],
+) -> Stateful<Div> {
+    let mut accordion_info = info::layout::accordion(cx.theme(), cx.reduce_motion());
+    // `AccordionItem::title_style` takes a refinement rather than being one.
+    let title_style = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::accordion_title,
+        "accordion_title",
+        &mut accordion_info,
+    );
+    items
+        .into_iter()
+        .enumerate()
+        .fold(
+            Accordion::new(id),
+            |accordion, (ix, (title, answer_id, answer))| {
+                accordion.item(|item| {
+                    item.title_style(title_style.clone())
+                        .title(title)
+                        .open(ix == 0)
+                        .child(label(ui, cx, answer_id, answer))
+                })
+            },
+        )
+        .info(ui, id, accordion_info)
+        .debug_selector(move || id.into())
+}
+
+/// A `Collapsible`, `open` or not, toggled by an upstream Ghost Button
+/// `toggle` that runs `on_toggle`, over a small Label `content`. The
+/// Collapsible, the Button and the Label each report themselves.
+pub(crate) fn collapsible(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    toggle: &'static str,
+    content: &'static str,
+    open: bool,
+    on_toggle: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let text = if open {
+        "Click to collapse"
+    } else {
+        "Click to expand"
+    };
+    let button = Button::new(toggle)
+        .label(text)
+        .ghost()
+        .icon(if open {
+            IconName::ChevronDown
+        } else {
+            IconName::ChevronRight
+        })
+        .on_click(on_toggle);
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    let button = InfoExt::info(
+        button,
+        ui,
+        toggle,
+        info::layout::collapsible_toggle(cx.theme(), open, text),
+    )
+    .debug_selector(move || toggle.into());
+    gpui_component::collapsible::Collapsible::new()
+        .open(open)
+        .child(button)
+        .content(v_flex().p_3().child(label(
+            ui,
+            cx,
+            content,
+            "This content is shown when collapsible is open.",
+        )))
+        .info(ui, id, info::layout::collapsible(open))
+        .debug_selector(move || id.into())
+}
+
+/// The Carousel over `state`, `width` wide with slides `height` tall: a
+/// slide per `CAROUSEL_SLIDES` entry, a page button for each, and its
+/// previous and next controls. The last page button carries
+/// `PROBE_CAROUSEL_LAST`.
+pub(crate) fn carousel(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<CarouselState>,
+    width: Pixels,
+    height: Pixels,
+) -> Stateful<Div> {
+    let t = cx.theme();
+    let selected = state.read(cx).selected_index();
+    let slides = CAROUSEL_SLIDES
+        .iter()
+        .enumerate()
+        .map(|(ix, (title, caption))| {
+            let slide_id = SharedString::from(format!("{id}-slide-{}", ix + 1));
+            let selector = slide_id.clone();
+            CarouselItem::new((id, ix), ix, state).child(
+                v_flex()
+                    .size_full()
+                    .justify_center()
+                    .gap_1()
+                    .p_4()
+                    .rounded(t.radius)
+                    .bg(t.muted)
+                    .child(Label::new(*title).font_semibold())
+                    .child(
+                        Label::new(*caption)
+                            .text_sm()
+                            .text_color(t.muted_foreground),
+                    )
+                    .info(
+                        ui,
+                        slide_id,
+                        info::layout::carousel_slide(t, ix, title, caption),
+                    )
+                    .size_full()
+                    .debug_selector(move || selector.to_string()),
+            )
+        });
+    let last = CAROUSEL_SLIDES.len().saturating_sub(1);
+    let pages = (0..CAROUSEL_SLIDES.len()).map(|ix| {
+        let page_id = SharedString::from(format!("{id}-page-{}", ix + 1));
+        let selector = page_id.clone();
+        let page = CarouselPaginationItem::new(page_id.clone(), ix, state)
+            .child(SharedString::from((ix + 1).to_string()))
+            .info(
+                ui,
+                page_id,
+                info::layout::carousel_page(t, ix, selected == Some(ix)),
+            )
+            .debug_selector(move || selector.to_string());
+        // The last page button is the self-test's way into the carousel:
+        // the previous and next controls place themselves absolutely
+        // outside the frame, so a wrapper around one of those would take
+        // it out of the flow.
+        if ix == last {
+            probe(PROBE_CAROUSEL_LAST, page).into_any_element()
+        } else {
+            page.into_any_element()
+        }
+    });
+    Carousel::new(id, state)
+        .w(width)
+        .child(CarouselContent::new(state).h(height).children(slides))
+        .child(CarouselPagination::new().children(pages))
+        // The carousel's own slide controls. They take the same state as
+        // the viewport and position themselves outside the frame
+        // (`carousel/carousel.rs:757-768`), so they belong to the carousel
+        // rather than beside it.
+        .child(CarouselPrevious::new(state))
+        .child(CarouselNext::new(state))
+        .info(ui, id, info::layout::carousel(t, cx.reduce_motion()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The Steppers of the Layout page.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StepperKind {
+    /// Horizontal, each step showing its icon at the platform's small icon
+    /// size.
+    Icons,
+    /// Vertical, each step showing its number.
+    Numbers,
+}
+
+impl StepperKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Icons => "horizontal, icons",
+            Self::Numbers => "vertical, numbered",
+        }
+    }
+}
+
+/// A `Stepper` of `kind` through `STEPPER_STEPS`, `step` the current one; a
+/// click on a step hands `on_click` its index. Each step's label is a small
+/// Label that reports itself.
+pub(crate) fn stepper(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: StepperKind,
+    step: usize,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let mut stepper_info = info::layout::stepper(cx.theme(), kind, step, STEPPER_STEPS.len());
+    // The indicator is a circle (stepper/trigger.rs:118-123) around the
+    // icon it is given, which keeps its size (`:138-139`).
+    if kind == StepperKind::Icons && native_value(cx, geometry::icon_size_small).is_some() {
+        stepper_info = stepper_info.geometry("icon_size_small");
+    }
+    let stepper = match kind {
+        StepperKind::Icons => Stepper::new(id),
+        StepperKind::Numbers => Stepper::new(id).vertical(),
+    };
+    stepper
+        .selected_index(step)
+        .items(STEPPER_STEPS.iter().enumerate().map(|(ix, (text, icon))| {
+            let item =
+                StepperItem::new().child(label(ui, cx, format!("{id}-step-{}", ix + 1), *text));
+            match kind {
+                StepperKind::Icons => {
+                    item.icon(native_icon(cx, icon.clone(), geometry::icon_size_small))
+                }
+                StepperKind::Numbers => item,
+            }
+        }))
+        .on_click(on_click)
+        .info(ui, id, stepper_info)
+        .debug_selector(move || id.into())
+}
+
+/// A `Breadcrumb` through `pages`, each showing its page when clicked, to
+/// `current`, the last, which takes no click.
+pub(crate) fn breadcrumb(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    pages: &[Page],
+    current: Page,
+) -> Stateful<Div> {
+    Breadcrumb::new()
+        .children(pages.iter().map(|&page| {
+            BreadcrumbItem::new(page.label()).on_click(move |_, window, cx| {
+                window.dispatch_action(Box::new(ShowPage(page.index())), cx)
+            })
+        }))
+        .child(BreadcrumbItem::new(current.label()))
+        .info(ui, id, info::layout::breadcrumb(cx.theme()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The width the Layout page's Form gives its labels: the showcase's own,
+/// narrower than upstream's 140px default (form/field.rs:27). The model
+/// states no form.
+const FORM_LABEL_WIDTH: Pixels = px(100.);
+
+/// An `Input` over `state` in a Form's field, refined by `geometry::input`.
+fn field_input(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<InputState>,
+) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut input_info = info::inputs::input(cx.theme(), InputField::Refined, styled);
+    native_info(
+        Input::new(state),
+        cx,
+        geometry::input,
+        "input",
+        &mut input_info,
+    )
+    .info(ui, id, input_info)
+    .debug_selector(move || id.into())
+}
+
+/// The horizontal `Form` of the Layout page: a required Name field over
+/// `name` and an Email field over `email` with a description. The Form
+/// reports for its Fields, and each field's Input reports itself.
+pub(crate) fn form(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    (name_id, name): (&'static str, &Entity<InputState>),
+    (email_id, email): (&'static str, &Entity<InputState>),
+) -> Stateful<Div> {
+    Form::horizontal()
+        .label_width(FORM_LABEL_WIDTH)
+        .child(
+            Field::new()
+                .label("Name")
+                .required(true)
+                .child(field_input(ui, cx, name_id, name)),
+        )
+        .child(
+            Field::new()
+                .label("Email")
+                .description("We will never share your email.")
+                .child(field_input(ui, cx, email_id, email)),
+        )
+        .info(ui, id, info::layout::form(cx.theme(), FORM_LABEL_WIDTH))
+        .debug_selector(move || id.into())
+}
+
+/// The Layout page's `Settings`: two pages of fields upstream builds, each
+/// group kept clear of the page's scrollbar by `geometry::scrollbar_gutter`,
+/// and a whole-row item carrying `PROBE_SETTINGS_ROW`. A `SettingGroup` is
+/// not an element the showcase can wrap, so the Settings reports for them.
+pub(crate) fn settings(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
+    let mut settings_info = info::layout::settings(cx.theme());
+    // One refinement for the three groups, so its line is recorded once.
+    let gutter = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::scrollbar_gutter,
+        "scrollbar_gutter",
+        &mut settings_info,
+    );
+    let group = |title: &'static str| refined(SettingGroup::new(), Some(&gutter)).title(title);
+    Settings::new(id)
+        .sidebar_width(px(140.0))
+        .page(
+            SettingPage::new("Appearance")
+                .description("Customize the look and feel")
+                .default_open(true)
+                .group(
+                    group("Theme")
+                        .item(
+                            SettingItem::new(
+                                "Dark Mode",
+                                SettingField::switch(|_cx| false, |_val, _cx| {}),
+                            )
+                            .description("Toggle dark appearance"),
+                        )
+                        // The row probe is a whole-row item
+                        // (setting/item.rs, SettingItem::render): a field's
+                        // slot is only as wide as its content, so it would
+                        // not span the row.
+                        .item(SettingItem::render(|_, _, _| {
+                            div()
+                                .w_full()
+                                .h(px(1.))
+                                .debug_selector(|| PROBE_SETTINGS_ROW.into())
+                        }))
+                        .item(SettingItem::new(
+                            "Accent Color",
+                            SettingField::dropdown(
+                                vec![
+                                    ("blue".into(), "Blue".into()),
+                                    ("green".into(), "Green".into()),
+                                    ("red".into(), "Red".into()),
+                                ],
+                                |_cx| "blue".into(),
+                                |_val, _cx| {},
+                            ),
+                        )),
+                )
+                .group(
+                    group("Editor")
+                        .item(SettingItem::new(
+                            "Font Size",
+                            SettingField::input(|_cx| "14".into(), |_val, _cx| {}),
+                        ))
+                        .item(SettingItem::new(
+                            "Word Wrap",
+                            SettingField::checkbox(|_cx| true, |_val, _cx| {}),
+                        )),
+                ),
+        )
+        .page(
+            SettingPage::new("Keyboard")
+                .description("Keyboard shortcuts and input")
+                .group(group("Shortcuts").item(SettingItem::new(
+                    "Vim Mode",
+                    SettingField::switch(|_cx| false, |_val, _cx| {}),
+                ))),
+        )
+        .info(ui, id, settings_info)
+        .size_full()
         .debug_selector(move || id.into())
 }

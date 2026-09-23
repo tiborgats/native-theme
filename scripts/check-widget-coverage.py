@@ -275,6 +275,11 @@ GPUI_VIA = {
     "Dialog": r"\.open_dialog\s*\(",
     "AlertDialog": r"\.open_alert_dialog\s*\(",
     "Sheet": r"\.open_sheet(?:_at)?\s*\(",
+    # `Accordion::item` builds the item itself and hands it to a builder
+    # closure, `FnOnce(AccordionItem) -> AccordionItem` (accordion.rs:63-70),
+    # so an application never names the type to render one: an item is
+    # shown where an Accordion is built and given one in the same statement.
+    "AccordionItem": r"\bAccordion::new\s*\([^;]*?\.item\s*\(",
 }
 
 # The `\w+::` run immediately before a name, i.e. the path it is a segment of.

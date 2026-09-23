@@ -3,7 +3,7 @@
 use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{ColorClaim, WidgetInfo, claim};
-use crate::demo::Severity;
+use crate::demo::{SeparatorKind, Severity};
 
 /// The window's `TitleBar` (spec §2.1). Its geometry line is recorded by
 /// `native_info` where `demo::title_bar` applies the builder.
@@ -580,22 +580,10 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
 
 /// The Separator between the toolbar's controls and its icon Buttons.
 pub fn toolbar_separator(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Separator")
-        .variant("vertical")
-        .color(claim(
-            "line",
-            "border",
-            t.border,
-            "gpui-component/separator.rs:128",
-        ))
-        .not_themeable(
-            "thickness",
-            "Tier U, not an absence: the platform states separator.line_width and the model carries it. Upstream draws the line on an inner absolutely-positioned div at px(1.) and applies the caller's refinement to the outer container instead, so nothing reaches the line (separator.rs, Separator::render_base)",
-        )
-        .not_themeable(
-            "width",
-            "none of its own: a vertical Separator's box sets only its height, and the 1px line overflows it (separator.rs, Separator::vertical), so the toolbar's item_gap is the space on either side",
-        )
+    super::layout::separator(t, SeparatorKind::Vertical).not_themeable(
+        "width",
+        "none of its own: a vertical Separator's box sets only its height, and the 1px line overflows it (separator.rs, Separator::vertical), so the toolbar's item_gap is the space on either side",
+    )
 }
 
 /// One of the toolbar's icon Buttons (spec §2.3), running `action`. Its
@@ -944,11 +932,11 @@ pub fn preferences_sheet(t: &Theme) -> WidgetInfo {
         )
 }
 
-/// The Settings inside the Preferences sheet (spec §2.8). Its geometry line
-/// is recorded where `demo::preferences` applies the builder to its group.
-pub fn preferences_settings(t: &Theme) -> WidgetInfo {
+/// What every `Settings` the showcase builds paints and cannot be given:
+/// the Preferences sheet's and the Layout page's, named `variant`.
+pub(super) fn settings(t: &Theme, variant: &'static str) -> WidgetInfo {
     WidgetInfo::new("Settings")
-        .variant("Preferences")
+        .variant(variant)
         .color(claim(
             "sidebar bg",
             "sidebar",
@@ -993,6 +981,12 @@ pub fn preferences_settings(t: &Theme) -> WidgetInfo {
             "scrollbar",
             "the page lays its scrollbar over the body's right edge and takes no refinement -- Tier U (setting/page.rs, SettingPage); the group is padded by the platform's groove width instead (setting/group.rs, SettingGroup)",
         )
+}
+
+/// The Settings inside the Preferences sheet (spec §2.8). Its geometry line
+/// is recorded where `demo::preferences` applies the builder to its group.
+pub fn preferences_settings(t: &Theme) -> WidgetInfo {
+    settings(t, "Preferences")
         .not_themeable(
             "layout",
             "the label above the field wherever the page is at most 480px wide, as it is in this sheet (setting/settings.rs, STACKED_LAYOUT_MAX_WIDTH)",

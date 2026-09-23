@@ -6,9 +6,7 @@ use gpui::{
 };
 use gpui_component::{
     ActiveTheme, Icon, IconName, IndexPath, Selectable as _, Sizable, Size, StyledExt,
-    accordion::AccordionItem,
     attachment::AttachmentStatus,
-    group_box::GroupBox,
     h_flex,
     label::Label,
     list::{ListDelegate, ListState},
@@ -30,7 +28,7 @@ use native_theme::theme::{icon_name as native_icon_name, system_icon_theme};
 #[cfg(target_os = "linux")]
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
-use native_theme_gpui::{ActiveNativeTheme, Native, geometry};
+use native_theme_gpui::{ActiveNativeTheme, Native};
 
 use crate::demo::{self, BodyRow, DataTableRow};
 use crate::info::InfoRegistry;
@@ -241,16 +239,6 @@ pub(crate) fn widget_tooltip_themed(
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// What a Ghost Button is filled with while hovered: accent, at half alpha in
-/// dark mode (gpui-component button/button.rs:1125-1131).
-pub(crate) fn ghost_hover_fill(t: &gpui_component::theme::Theme) -> Hsla {
-    if t.is_dark() {
-        t.accent.opacity(0.5)
-    } else {
-        t.accent
-    }
-}
-
 pub(crate) fn section(title: impl Into<SharedString>) -> Label {
     Label::new(title).text_size(px(13.0)).font_semibold()
 }
@@ -386,27 +374,6 @@ pub(crate) fn layout_value(value: Option<Pixels>) -> String {
     match value {
         Some(v) => format!("{}px", v.as_f32()),
         None => "unspecified by the platform".into(),
-    }
-}
-
-/// `AccordionItem::title_style` with the native expander header height, when
-/// the native theme is installed.
-pub(crate) fn with_accordion_title_style(
-    item: AccordionItem,
-    style: &Option<StyleRefinement>,
-) -> AccordionItem {
-    match style {
-        Some(s) => item.title_style(s.clone()),
-        None => item,
-    }
-}
-
-/// A `GroupBox` whose content carries the native card geometry when the native
-/// theme is installed (`GroupBox::content_style`, spec §9.3).
-pub(crate) fn native_group_box(cx: &App) -> GroupBox {
-    match native_geometry(cx, geometry::group_box_content) {
-        Some(s) => GroupBox::new().content_style(s),
-        None => GroupBox::new(),
     }
 }
 
