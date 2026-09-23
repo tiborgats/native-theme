@@ -1,9 +1,9 @@
 //! What the window's chrome reports about itself (spec §2).
 
-use gpui::transparent_white;
 use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{ColorClaim, WidgetInfo, claim};
+use crate::demo::Severity;
 
 /// The window's `TitleBar` (spec §2.1). Its geometry line is recorded by
 /// `native_info` where `demo::title_bar` applies the builder.
@@ -1117,42 +1117,11 @@ pub fn about_link(t: &Theme) -> WidgetInfo {
         )
 }
 
-/// The Alert that reports a theme that failed to load (spec §2.5).
+/// The Alert that reports a theme that failed to load (spec §2.5): the
+/// Feedback page's Error Alert, as a banner.
 pub fn theme_error_alert(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Alert")
-        .variant("Error, banner")
-        .color(claim(
-            "text and icon",
-            "danger",
-            t.danger,
-            "gpui-component/alert.rs:32",
-        ))
-        .color(claim(
-            "bg, danger at 4%",
-            "danger",
-            t.danger.mix_oklab(transparent_white(), 0.04),
-            "gpui-component/alert.rs:42",
-        ))
-        .color(claim(
-            "border, danger at 30%",
-            "danger",
-            t.danger.mix_oklab(transparent_white(), 0.3),
-            "gpui-component/alert.rs:52",
-        ))
-        .not_themeable(
-            "fills",
-            "danger mixed toward transparent white in Oklab, a tint of the danger colour rather than a token of its own (alert.rs, AlertVariant)",
-        )
-        .not_themeable(
-            "padding",
-            "px literals per Size (alert.rs, Alert); the model states no alert",
-        )
-        .not_themeable(
-            "banner",
-            "full width, with no corner radius and no title (alert.rs, banner)",
-        )
-        .instance(
-            "message",
-            "why the theme failed to load, as the loader reported it. The theme installed before stays, in the colour mode asked for, and the next theme that loads clears the Alert",
-        )
+    super::feedback::alert(t, Severity::Error, true).instance(
+        "message",
+        "why the theme failed to load, as the loader reported it. The theme installed before stays, in the colour mode asked for, and the next theme that loads clears the Alert",
+    )
 }

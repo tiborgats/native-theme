@@ -34,15 +34,15 @@ use crate::{
     CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
     CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
     DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO,
-    FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY,
-    INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
-    INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE,
-    INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
-    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
-    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
-    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
-    TREE_DEMO, WINDOW_SIZE,
+    FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
+    FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
+    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
+    INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LIST_DEMO, NAV_WIDTH,
+    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
+    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -2046,6 +2046,51 @@ fn a_count_badge_and_a_dot_badge_show_different_infos(cx: &mut TestAppContext) {
     assert!(
         texts.first() != texts.get(1),
         "the count and the dot Badge show the same info: {texts:?}"
+    );
+}
+
+/// What an animated widget's info says holds only while motion is on:
+/// under reduced motion gpui draws a repeating animation's start state and
+/// schedules no frames (gpui-pre elements/animation.rs, AnimationExt). The
+/// Spinner then stands still, and the indeterminate ProgressCircle draws no
+/// arc at all.
+#[gpui::test]
+fn an_animations_info_follows_reduced_motion(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let note = |info: &Option<WidgetInfo>| {
+        info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|n| n.what == "animation")
+                .map(|n| n.text.clone())
+        })
+    };
+    let has_arc = |info: &Option<WidgetInfo>| {
+        info.as_ref()
+            .is_some_and(|info| info.colors.iter().any(|c| c.role == "arc"))
+    };
+    show(&mut cx, &showcase, Page::Feedback);
+    let moving = settle_on(&mut cx, &showcase, FEEDBACK_SPINNER_SMALL);
+    let looping = settle_on(&mut cx, &showcase, FEEDBACK_CIRCLE_LOADING);
+    assert!(
+        has_arc(&looping),
+        "the ProgressCircle claims no arc with motion on: {looping:?}"
+    );
+
+    show(&mut cx, &showcase, Page::Buttons);
+    cx.update(|_window, cx| cx.set_reduce_motion(true));
+    show(&mut cx, &showcase, Page::Feedback);
+    let still = settle_on(&mut cx, &showcase, FEEDBACK_SPINNER_SMALL);
+    let held = settle_on(&mut cx, &showcase, FEEDBACK_CIRCLE_LOADING);
+    assert!(
+        note(&moving).is_some() && note(&moving) != note(&still),
+        "the Spinner's animation note does not follow reduced motion: {:?} / {:?}",
+        note(&moving),
+        note(&still)
+    );
+    assert!(
+        !has_arc(&held),
+        "under reduced motion the ProgressCircle draws no arc, and its info claims one: {held:?}"
     );
 }
 

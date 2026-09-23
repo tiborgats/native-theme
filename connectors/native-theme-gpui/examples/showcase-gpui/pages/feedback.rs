@@ -9,8 +9,8 @@ use crate::app::Showcase;
 use crate::demo::{self, CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::with_gap;
 use crate::{
-    FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_TAG_DANGER,
-    FEEDBACK_TAG_PRIMARY, PROBE_NOTIFICATION, probe,
+    FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
+    FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, PROBE_NOTIFICATION, probe,
 };
 
 /// The Alerts, as `(id, severity, message)`.
@@ -65,7 +65,7 @@ const BARS: [(&str, &str, &str, &str, f32); 3] = [
 /// The Spinners, as `(id, label id, kind)`.
 const SPINNERS: [(&str, &str, SpinnerKind); 3] = [
     (
-        "feedback-spinner-small",
+        FEEDBACK_SPINNER_SMALL,
         "feedback-spinner-small-label",
         SpinnerKind::Small,
     ),
@@ -238,7 +238,7 @@ impl Showcase {
                     .child(demo::progress_circle(
                         ui,
                         cx,
-                        "feedback-circle-loading",
+                        FEEDBACK_CIRCLE_LOADING,
                         CircleKind::Indeterminate,
                     ))
                     .child(demo::caption(

@@ -861,6 +861,21 @@ pub(crate) fn caption(
         .debug_selector(move || id.into())
 }
 
+/// A small Label reading `text`, in the colour the Label paints. `id` is its
+/// info's id and its debug selector.
+pub(crate) fn label(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: impl Into<SharedString>,
+) -> Stateful<Div> {
+    Label::new(text)
+        .text_sm()
+        .info(ui, id, info::text::label(cx.theme()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
 // ---------------------------------------------------------------------------
 // The Buttons page
 // ---------------------------------------------------------------------------
@@ -2129,21 +2144,6 @@ pub(crate) fn attachment(
 // The Feedback page
 // ---------------------------------------------------------------------------
 
-/// A small Label reading `text`, in the colour the Label paints. `id` is its
-/// info's id and its debug selector.
-pub(crate) fn label(
-    ui: &Entity<InfoRegistry>,
-    cx: &App,
-    id: &'static str,
-    text: impl Into<SharedString>,
-) -> Stateful<Div> {
-    Label::new(text)
-        .text_sm()
-        .info(ui, id, info::text::label(cx.theme()))
-        .self_start()
-        .debug_selector(move || id.into())
-}
-
 /// The four severities an `Alert` and a `Notification` share, so the
 /// matches over them in `info::feedback` are exhaustive and the compiler
 /// rejects one without an arm.
@@ -2183,7 +2183,13 @@ pub(crate) fn severity_alert(
     };
     alert
         .title(severity.name())
-        .info(ui, id, info::feedback::alert(cx.theme(), severity, message))
+        .info(
+            ui,
+            id,
+            info::feedback::alert(cx.theme(), severity, false)
+                .instance("title", severity.name())
+                .instance("message", message),
+        )
         .debug_selector(move || id.into())
 }
 
@@ -2196,7 +2202,7 @@ pub(crate) fn progress(
     label: &'static str,
     value: f32,
 ) -> Stateful<Div> {
-    let mut bar_info = info::feedback::progress(cx.theme(), label, value);
+    let mut bar_info = info::feedback::progress(cx.theme(), label, value, cx.reduce_motion());
     native_info(
         Progress::new(id).value(value),
         cx,
@@ -2247,7 +2253,7 @@ pub(crate) fn progress_circle(
             None => (circle.loading(true), false),
         },
     };
-    let circle_info = info::feedback::progress_circle(cx.theme(), kind, styled);
+    let circle_info = info::feedback::progress_circle(cx.theme(), kind, styled, cx.reduce_motion());
     let circle_info = if styled {
         circle_info.geometry("spinner_size")
     } else {
@@ -2293,7 +2299,7 @@ pub(crate) fn spinner(
             None => (Size::Medium, false),
         },
     };
-    let spinner_info = info::feedback::spinner(cx.theme(), kind, styled);
+    let spinner_info = info::feedback::spinner(cx.theme(), kind, styled, cx.reduce_motion());
     let spinner_info = if styled {
         spinner_info.geometry("spinner_size")
     } else {
@@ -2335,7 +2341,7 @@ pub(crate) fn skeleton(
         .info(
             ui,
             id,
-            info::feedback::skeleton(t, secondary, height, width, radius_lg),
+            info::feedback::skeleton(t, secondary, height, width, radius_lg, cx.reduce_motion()),
         )
         .debug_selector(move || id.into())
 }
@@ -2381,7 +2387,11 @@ pub(crate) fn shimmer_text(
         ShimmerKind::Reverse => shimmer.reverse(true).spread(0.5),
     };
     shimmer
-        .info(ui, id, info::feedback::shimmer_text(t, kind, text))
+        .info(
+            ui,
+            id,
+            info::feedback::shimmer_text(t, kind, text, cx.reduce_motion()),
+        )
         .debug_selector(move || id.into())
 }
 
@@ -2541,7 +2551,7 @@ pub(crate) fn marker(
     kind: MarkerKind,
     text: &'static str,
 ) -> Stateful<Div> {
-    let mut marker_info = info::feedback::marker(cx.theme(), kind, text);
+    let mut marker_info = info::feedback::marker(cx.theme(), kind, text, cx.reduce_motion());
     let marker = Marker::new();
     let marker = match kind {
         MarkerKind::Plain => {

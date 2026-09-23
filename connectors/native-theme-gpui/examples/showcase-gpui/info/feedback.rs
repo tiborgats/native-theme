@@ -6,9 +6,9 @@ use gpui_component::{Colorize as _, theme::Theme};
 use super::{WidgetInfo, claim};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 
-/// An `Alert` of `severity` reading `message`, at the default Size and not a
-/// banner.
-pub fn alert(t: &Theme, severity: Severity, message: &str) -> WidgetInfo {
+/// An `Alert` of `severity` at the default Size, a `banner` or not. The
+/// caller adds what the Alert says.
+pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
     // (text and icon, fill, edge), each read in its variant's arm of
     // AlertVariant. The fill and the edge are the variant's colour mixed
     // toward transparent white in Oklab -- `mix_oklab`'s factor is the first
@@ -96,23 +96,26 @@ pub fn alert(t: &Theme, severity: Severity, message: &str) -> WidgetInfo {
         ),
     };
     let name = severity.name();
-    WidgetInfo::new("Alert")
-        .variant(name)
-        .color(text)
-        .color(fill)
-        .color(edge)
-        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
-        .not_themeable("tints", "the variant colour mixed toward transparent white in Oklab: 4% of it for the fill and 30% for the edge -- one token at three strengths, the swatches showing what is painted (alert.rs, AlertVariant)")
+    let info = WidgetInfo::new("Alert").color(text).color(fill).color(edge);
+    let info = if banner {
+        info.variant(format!("{name}, banner")).not_themeable(
+            "banner",
+            "full width, with no corner radius and no title (alert.rs, banner)",
+        )
+    } else {
+        info.variant(name)
+            .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+    };
+    info.not_themeable("tints", "the variant colour mixed toward transparent white in Oklab: 4% of it for the fill and 30% for the edge -- one token at three strengths, the swatches showing what is painted (alert.rs, AlertVariant)")
         .not_themeable("padding", "px literals per Size, but reachable: Alert is Styled and applies the caller's refinement after its own paddings (alert.rs, Alert::render). Its corner radius already comes from the theme (alert.rs, Alert::render radius). What is missing is a model -- native-theme states no alert widget, so there is nothing to carry. Our gap, not upstream's")
         .not_themeable("icon", format!("the {name} variant's default, not a fixed glyph: Alert::icon replaces it with any Icon (alert.rs, Alert::icon), and an Icon takes a path or raw SVG bytes (icon.rs, Icon::path, Icon::data), so a platform icon from this connector's loader can be handed to it"))
         .not_themeable("icon size", "the Alert's text size: an Icon given no size takes the font size it inherits (icon.rs, Icon::into_svg), and the Alert sets text_sm (alert.rs, Alert::render) -- a rem, so it follows the platform font. defaults.icon_sizes is in absolute px and there is no alert in the model to hang it on")
-        .instance("title", name)
-        .instance("message", message.to_string())
 }
 
-/// A `Progress` bar at `value` percent, labelled `label` beside it.
-pub fn progress(t: &Theme, label: &str, value: f32) -> WidgetInfo {
-    WidgetInfo::new("Progress")
+/// A `Progress` bar at `value` percent, labelled `label` beside it, drawn
+/// while gpui's `reduce_motion` is as given.
+pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("Progress")
         .color(claim(
             "bar",
             "progress_bar",
@@ -125,34 +128,56 @@ pub fn progress(t: &Theme, label: &str, value: f32) -> WidgetInfo {
             t.progress_bar.opacity(0.2),
             "gpui-component/progress/progress.rs:86",
         ))
-        .not_themeable("animation", "not hardcoded upstream: the fill transitions over the theme's duration_normal and easing_move (progress/progress.rs, Progress). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's")
-        .instance("value", format!("{value}%"))
+        .not_themeable("animation", "not hardcoded upstream: the fill transitions over the theme's duration_normal and easing_move (progress/progress.rs, Progress). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's");
+    let info = if reduce_motion {
+        info.instance("reduced motion", "on, so a change of value jumps to it, unanimated (gpui-base/motion.rs, transition_with_status)")
+    } else {
+        info
+    };
+    info.instance("value", format!("{value}%"))
         .instance("label", label.to_string())
 }
 
-/// A `ProgressCircle` of `kind`. `styled` is whether an indeterminate one
-/// took its size from `geometry::spinner_size`, whose line is recorded where
+/// A `ProgressCircle` of `kind`, drawn while gpui's `reduce_motion` is as
+/// given. `styled` is whether an indeterminate one took its size from
+/// `geometry::spinner_size`, whose line is recorded where
 /// `demo::progress_circle` applies it.
-pub fn progress_circle(t: &Theme, kind: CircleKind, styled: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("ProgressCircle")
-        .variant(kind.name())
-        .color(claim(
+pub fn progress_circle(
+    t: &Theme,
+    kind: CircleKind,
+    styled: bool,
+    reduce_motion: bool,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("ProgressCircle").variant(kind.name());
+    // Under reduced motion an indeterminate circle holds its loop's start,
+    // where both ends are at 0 (progress_circle.rs:201-205), and an arc of
+    // no length is not painted (:117): only the track shows.
+    let arc_drawn = kind != CircleKind::Indeterminate || !reduce_motion;
+    let info = if arc_drawn {
+        info.color(claim(
             "arc",
             "progress_bar",
             t.progress_bar,
             "gpui-component/progress/progress_circle.rs:176",
         ))
-        .color(claim(
-            "track, progress_bar at 20% (progress/progress_circle.rs:110)",
-            "progress_bar",
-            t.progress_bar.opacity(0.2),
-            "gpui-component/progress/progress_circle.rs:176",
-        ));
+    } else {
+        info
+    };
+    let info = info.color(claim(
+        "track, progress_bar at 20% (progress/progress_circle.rs:110)",
+        "progress_bar",
+        t.progress_bar.opacity(0.2),
+        "gpui-component/progress/progress_circle.rs:176",
+    ));
     let determinate_size = "size_2 to size_5 per Size, rems, so it follows the platform font; the model carries no circular-progress diameter";
     let info = match kind {
         CircleKind::Value | CircleKind::ValueLarge => info
             .not_themeable("size", determinate_size)
-            .instance("animation", "a change of value sweeps the arc over the theme's duration_normal and easing_move (progress/progress_circle.rs, ProgressCircle::render); this one's value never changes, so it stands still"),
+            .instance("animation", if reduce_motion {
+                "none: reduced motion is on, so a change of value jumps to it (gpui-base/motion.rs, transition_with_status); this one's value never changes either"
+            } else {
+                "a change of value sweeps the arc over the theme's duration_normal and easing_move (progress/progress_circle.rs, ProgressCircle::render); this one's value never changes, so it stands still"
+            }),
         CircleKind::Indeterminate if styled => info
             .not_themeable("size", "drawn at 75% of spinner.diameter, because a ProgressCircle scales a Size::Size by 0.75 where a Spinner takes it whole (progress/progress_circle.rs, ProgressCircle)"),
         CircleKind::Indeterminate => info.not_themeable("size", determinate_size),
@@ -160,7 +185,8 @@ pub fn progress_circle(t: &Theme, kind: CircleKind, styled: bool) -> WidgetInfo 
     let info = match kind {
         CircleKind::Value => info.instance("value", "73%, at the default Size"),
         CircleKind::ValueLarge => info.instance("value", "100%, at Size::Large"),
-        CircleKind::Indeterminate => info.instance("animation", "the arc's two ends chase each other round a 1s loop, a literal (progress/progress_circle.rs, ProgressCircle::render): the colours hold still and only the arc's extent moves"),
+        CircleKind::Indeterminate if reduce_motion => info.instance("animation", "none: reduced motion is on, so the 1s loop holds at its start, where both ends of the arc are at 0 and no arc is drawn -- only the track shows (progress/progress_circle.rs, ProgressCircle::render_circle; gpui-pre/elements/animation.rs, AnimationExt)"),
+        CircleKind::Indeterminate => info.instance("animation", "the arc's two ends chase each other round a 1s loop, a literal (progress/progress_circle.rs, ProgressCircle::render): the colours hold still and only the arc's extent moves. Under reduced motion the loop holds at its start, where no arc is drawn"),
     };
     info.not_themeable("track opacity", "the same progress_bar colour at 20%: the model states one bar colour, and the track is derived from it (progress/progress_circle.rs, ProgressCircle::render_circle)")
         .not_themeable("stroke width", "15% of the diameter, capped at 5px (progress/progress_circle.rs, ProgressCircle::render_circle stroke_width)")
@@ -168,8 +194,9 @@ pub fn progress_circle(t: &Theme, kind: CircleKind, styled: bool) -> WidgetInfo 
 
 /// A `Spinner` of `kind`. A Medium one takes `geometry::spinner_size` where
 /// a native theme is installed, whose line is recorded where `demo::spinner`
-/// applies it; `styled` is whether it did.
-pub fn spinner(t: &Theme, kind: SpinnerKind, styled: bool) -> WidgetInfo {
+/// applies it; `styled` is whether it did. It is drawn while gpui's
+/// `reduce_motion` is as given.
+pub fn spinner(t: &Theme, kind: SpinnerKind, styled: bool, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Spinner")
         .variant(kind.name())
         // No colour of its own: the Loader icon takes the text colour it
@@ -188,37 +215,55 @@ pub fn spinner(t: &Theme, kind: SpinnerKind, styled: bool) -> WidgetInfo {
         SpinnerKind::Medium => info.instance("size", "Medium, upstream's default (spinner.rs, Spinner::new): size_4, a rem (icon.rs, Icon::into_svg)"),
     };
     info.not_themeable("animation speed", "a 0.8s private field with no setter, and not one of the theme's motion tokens (spinner.rs, Spinner) -- nothing to write, upstream or here")
-        .instance("animation", "the Loader icon turns a full circle every 0.8s; only its angle moves, its colour holds (spinner.rs, Spinner::render)")
+        .instance("animation", if reduce_motion {
+            "none: reduced motion is on, so the Loader icon stands still at its start angle and no frames are drawn for it (spinner.rs, Spinner::render; gpui-pre/elements/animation.rs, AnimationExt)"
+        } else {
+            "the Loader icon turns a full circle every 0.8s; only its angle moves, its colour holds (spinner.rs, Spinner::render)"
+        })
 }
 
 /// A `Skeleton` placeholder, `secondary` or not, `height` tall and `width`
 /// wide where the showcase gives it one, rounded with `radius_lg` or with
-/// `radius`.
+/// `radius`, drawn while gpui's `reduce_motion` is as given.
 pub fn skeleton(
     t: &Theme,
     secondary: bool,
     height: f32,
     width: Option<f32>,
     radius_lg: bool,
+    reduce_motion: bool,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Skeleton");
     // The fill is what is painted at the top of the pulse: the whole
     // element's opacity then falls to half and rises again
-    // (skeleton.rs:48-56), a mid-pulse colour no swatch could hold.
-    let info = if secondary {
-        info.variant("secondary").color(claim(
+    // (skeleton.rs:48-56), a mid-pulse colour no swatch could hold. Under
+    // reduced motion the pulse holds its start, full opacity, so the fill
+    // is simply what is painted.
+    let info = match (secondary, reduce_motion) {
+        (true, false) => info.variant("secondary").color(claim(
             "bg, skeleton at 50% (skeleton.rs:43), at the pulse's peak",
             "skeleton",
             t.skeleton.opacity(0.5),
             "gpui-component/skeleton.rs:43",
-        ))
-    } else {
-        info.color(claim(
+        )),
+        (true, true) => info.variant("secondary").color(claim(
+            "bg, skeleton at 50% (skeleton.rs:43)",
+            "skeleton",
+            t.skeleton.opacity(0.5),
+            "gpui-component/skeleton.rs:43",
+        )),
+        (false, false) => info.color(claim(
             "bg, at the pulse's peak",
             "skeleton",
             t.skeleton,
             "gpui-component/skeleton.rs:45",
-        ))
+        )),
+        (false, true) => info.color(claim(
+            "bg",
+            "skeleton",
+            t.skeleton,
+            "gpui-component/skeleton.rs:45",
+        )),
     };
     let info = if radius_lg {
         info.config(
@@ -229,15 +274,20 @@ pub fn skeleton(
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
     info.not_themeable("animation", "a 2s literal, and unlike the Accordion's or the Switch's it is not one of the theme's motion tokens (skeleton.rs, Skeleton) -- nothing to write, upstream or here")
-        .instance("pulse", "the whole placeholder fades from full opacity to half and back on a bounced 2s loop (skeleton.rs, Skeleton::render); its fill holds, so the swatch is the fill at the top of the pulse")
+        .instance("pulse", if reduce_motion {
+            "none: reduced motion is on, so the placeholder holds the pulse's start, full opacity, and no frames are drawn for it (skeleton.rs, Skeleton::render; gpui-pre/elements/animation.rs, AnimationExt)"
+        } else {
+            "the whole placeholder fades from full opacity to half and back on a bounced 2s loop (skeleton.rs, Skeleton::render); its fill holds, so the swatch is the fill at the top of the pulse"
+        })
         .instance("shape", match width {
             Some(width) => format!("{height}px tall and {width}px wide, the showcase's sizes; its rounding is the theme's, not a number of its own"),
             None => format!("{height}px tall and as wide as its column, the showcase's sizes; its rounding is the theme's, not a number of its own"),
         })
 }
 
-/// A `ShimmerText` of `kind` reading `text`.
-pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str) -> WidgetInfo {
+/// A `ShimmerText` of `kind` reading `text`, drawn while gpui's
+/// `reduce_motion` is as given.
+pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("ShimmerText").variant(kind.name());
     let info = match kind {
         ShimmerKind::Default | ShimmerKind::Reverse => info.color(claim(
@@ -257,7 +307,11 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str) -> WidgetInfo {
         .not_themeable("highlight", "the text colour mixed with background (light) or foreground (dark), at 75%/60% peak (shimmer.rs, shimmer_highlight_color)")
         .not_themeable("reduced motion", "gpui's App::reduce_motion: the text renders once, unanimated (shimmer.rs, ShimmerText::render)")
         .not_themeable("sweep", "2s by default, a literal rather than a motion token (shimmer.rs, ShimmerStyle)")
-        .instance("animation", "only the highlight band moves, painted over glyphs whose own colour holds (shimmer.rs, ShimmerGlyphs::paint_highlight)");
+        .instance("animation", if reduce_motion {
+            "none: reduced motion is on, so the text is drawn plain, with no highlight (shimmer.rs, ShimmerText::render)"
+        } else {
+            "only the highlight band moves, painted over glyphs whose own colour holds (shimmer.rs, ShimmerGlyphs::paint_highlight)"
+        });
     let info = match kind {
         ShimmerKind::Default => info.instance("sweep", "the default: 2s, left to right, the highlight's half-width 30% of the text"),
         ShimmerKind::Slow => info.instance("sweep", "3s, left to right; the text is the showcase's muted_foreground, which the highlight is mixed from"),
@@ -296,9 +350,10 @@ pub fn empty(t: &Theme, title: &str, description: &str) -> WidgetInfo {
             "gpui-component/empty.rs:319",
         ))
         .config(
-            "border-radius",
-            format!("radius_tokens().xl: {}px", t.radius_tokens().xl.as_f32()),
+            "media frame radius",
+            format!("radius_tokens().lg: {}px", t.radius_tokens().lg.as_f32()),
         )
+        .not_themeable("corner radius", "radius_tokens().xl on the Empty itself, which rounds nothing visible: the Empty paints no fill and draws no edge (empty.rs, Empty::render). The rounding that shows is the media frame's (empty.rs, EmptyMedia)")
         .not_themeable("edge", "none drawn: Empty sets border_dashed and border_color(border) but no border width, so its edge is 0px wide (empty.rs, Empty::render). It is Styled and applies the caller's refinement last, so a caller's border width would draw it, dashed, in border")
         .not_themeable("media frame", "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, which is defaults.icon_sizes.large: 32px, or 48px on KDE, so the icon outgrows the frame wherever 2rem is smaller")
         .instance("title", title.to_string())
@@ -428,13 +483,13 @@ pub fn badge(t: &Theme, count: Option<usize>, label: &str) -> WidgetInfo {
             .not_themeable("size", "a 6px literal at every Size, on a pill no caller can reach: Badge applies its refinement to the wrapper around the badged element, and the pill is an absolute child built after it (badge.rs, Badge::render). native-theme states no badge widget either"),
     };
     info.not_themeable("fill, overridden", "Badge::color replaces it; red is only the default")
-        .instance("badged element", format!("a Default Button reading {label}. The Badge is exactly as large as the Button -- its pill is an absolute child -- so the Button reports through the Badge (badge.rs, Badge::render)"))
+        .instance("badged element", format!("a Default Button reading {label}. The Badge is exactly as large as the Button -- its pill is an absolute child -- so the Button reports through the Badge (badge.rs, Badge::render). Its own colours are a Default Button's, which the Buttons page's Default Button states"))
 }
 
 /// A `Marker` of `kind` reading `text`. A Plain one's icon takes
 /// `geometry::icon_size_small` where a native theme is installed, whose line
 /// is recorded where `demo::marker` applies it.
-pub fn marker(t: &Theme, kind: MarkerKind, text: &str) -> WidgetInfo {
+pub fn marker(t: &Theme, kind: MarkerKind, text: &str, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Marker").variant(kind.name()).color(claim(
         "text",
         "muted_foreground",
@@ -467,7 +522,14 @@ pub fn marker(t: &Theme, kind: MarkerKind, text: &str) -> WidgetInfo {
                 t.muted_foreground,
                 "gpui-component/marker.rs:185",
             ))
-            .instance("spinner", "added by the Marker itself, loading with no icon slot: an XSmall Spinner turning every 0.8s, a literal; only its angle moves (marker.rs, Marker::render; spinner.rs, Spinner)"),
+            .instance("spinner", if reduce_motion {
+                "added by the Marker itself, loading with no icon slot: an XSmall Spinner, standing still at its start angle while reduced motion is on (marker.rs, Marker::render; gpui-pre/elements/animation.rs, AnimationExt)"
+            } else {
+                "added by the Marker itself, loading with no icon slot: an XSmall Spinner turning every 0.8s, a literal; only its angle moves (marker.rs, Marker::render; spinner.rs, Spinner)"
+            }),
+        MarkerKind::Shimmer if reduce_motion => info
+            .not_themeable("shimmer", "none while reduced motion is on: the content slot falls back to plain text (marker.rs, MarkerContent::render)")
+            .instance("animation", "none: reduced motion is on, so the text is drawn plain, with no highlight (marker.rs, MarkerContent::render)"),
         MarkerKind::Shimmer => info
             .not_themeable("shimmer", "the loading highlight ShimmerText paints, on the content slot only (marker.rs, Marker::render MarkerChild::Content)")
             .instance("animation", "only the highlight band moves, painted over text whose own colour holds (shimmer.rs, ShimmerGlyphs::paint_highlight)"),
@@ -525,7 +587,7 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
     };
     info.instance(
         "trigger",
-        format!("a Default Button reading {label}, which reports through its tooltip"),
+        format!("a Default Button reading {label}, which reports through its tooltip. Its own colours are a Default Button's, which the Buttons page's Default Button states"),
     )
     .instance("text", text.to_string())
 }
@@ -575,6 +637,6 @@ pub fn notification(t: &Theme, severity: Severity, label: &str, message: &str) -
         .config("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32()))
         .not_themeable("animation", "module consts, 400ms in and 200ms out, not the theme's motion tokens (notification.rs, Notification)")
         .not_themeable("autohide", "after 5s, a literal, unless Notification::autohide(false) or an action keeps it open (notification.rs, ToastOptions)")
-        .instance("trigger", format!("a Default Button reading {label}: a click pushes the notification through WindowExt::push_notification"))
+        .instance("trigger", format!("a Default Button reading {label}: a click pushes the notification through WindowExt::push_notification. Its own colours are a Default Button's, which the Buttons page's Default Button states"))
         .instance("message", message.to_string())
 }

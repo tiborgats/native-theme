@@ -353,6 +353,11 @@ pub(crate) const FEEDBACK_BADGE_DOT: &str = "feedback-badge-updates";
 /// The id and debug selector of the Feedback page's Info Alert, whose fill
 /// `an_alerts_fill_swatch_is_the_painted_tint` reads.
 pub(crate) const FEEDBACK_ALERT_INFO: &str = "feedback-alert-info";
+/// The ids and debug selectors of the Feedback page's small Spinner and its
+/// indeterminate ProgressCircle, whose infos
+/// `an_animations_info_follows_reduced_motion` reads with motion on and off.
+pub(crate) const FEEDBACK_SPINNER_SMALL: &str = "feedback-spinner-small";
+pub(crate) const FEEDBACK_CIRCLE_LOADING: &str = "feedback-circle-loading";
 
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
