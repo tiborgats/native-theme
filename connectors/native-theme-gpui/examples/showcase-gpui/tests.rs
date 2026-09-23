@@ -11,7 +11,7 @@ use gpui::{
     VisualTestContext, point, prelude::*, px, size,
 };
 use gpui_base::ScrollbarHandle as _;
-use gpui_component::{Colorize as _, Root, theme::Theme};
+use gpui_component::{Colorize as _, Root, WindowExt as _, theme::Theme};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 use std::cell::RefCell;
 use std::ops::Deref as _;
@@ -30,18 +30,20 @@ use crate::inspector::InspectorTab;
 use crate::support::{CAROUSEL_SLIDES, native_geometry, native_value};
 use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
-    BUTTONS_TEXT, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CHROME_SIDEBAR,
-    CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
-    DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO,
-    FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL,
-    FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
+    BUTTONS_TEXT, CHARTS_BAR_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR,
+    CHROME_HANDLE_NAV, CHROME_SIDEBAR, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR, CHROME_TITLE_BAR,
+    CHROME_TOOLBAR, CHROME_TOOLBAR_INSPECTOR, CHROME_TOOLBAR_PALETTE, CONTENT_ALERT, CONTENT_PANEL,
+    CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER,
+    FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
+    FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
     INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INSPECTOR_COPY,
     INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_WIDTH, LAYOUT_BREADCRUMB,
     LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, LIST_DEMO, NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
-    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT,
+    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
+    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM,
+    OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT,
     PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
     PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION,
     PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED,
@@ -1296,38 +1298,38 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Overlays);
-    let alert = bounds_of(&mut cx, PROBE_ALERT_DIALOG).center();
-    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
-    hover(&mut cx, alert);
+    show(&mut cx, &showcase, Page::Charts);
+    let chart = bounds_of(&mut cx, CHARTS_BAR_CHART).center();
+    let item = bounds_of(&mut cx, Page::Overlays.nav_item()).center();
+    hover(&mut cx, chart);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("AlertDialog"),
-        "the AlertDialog block's text panel is not shown"
+        Some("BarChart"),
+        "the BarChart block's text panel is not shown"
     );
     hover(&mut cx, item);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Charts"),
+        Some("SidebarMenuItem · Overlays"),
         "a settled info did not replace the text panel"
     );
-    hover(&mut cx, alert);
+    hover(&mut cx, chart);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("AlertDialog"),
+        Some("BarChart"),
         "the text panel did not replace the settled info"
     );
     show(&mut cx, &showcase, Page::Inputs);
     assert_eq!(
         inspector_title(&mut cx, &showcase),
         None,
-        "the Overlays page's text panel stayed after the page changed"
+        "the Charts page's text panel stayed after the page changed"
     );
 }
 
@@ -1337,14 +1339,14 @@ fn a_pages_text_panel_shows_until_an_info_settles(cx: &mut TestAppContext) {
 #[gpui::test]
 fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Overlays);
-    let alert = bounds_of(&mut cx, PROBE_ALERT_DIALOG).center();
-    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
+    show(&mut cx, &showcase, Page::Charts);
+    let chart = bounds_of(&mut cx, CHARTS_BAR_CHART).center();
+    let item = bounds_of(&mut cx, Page::Overlays.nav_item()).center();
     let inspector = bounds_of(&mut cx, INSPECTOR_PANEL).center();
     hover(&mut cx, item);
     settle(&mut cx);
     draw(&mut cx);
-    hover(&mut cx, alert);
+    hover(&mut cx, chart);
     cx.executor().advance_clock(INFO_SETTLE / 2);
     cx.run_until_parked();
     hover(&mut cx, inspector);
@@ -1352,8 +1354,8 @@ fn crossing_a_pages_text_panel_keeps_the_info(cx: &mut TestAppContext) {
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Charts"),
-        "passing over the AlertDialog block replaced the Sidebar item's info"
+        Some("SidebarMenuItem · Overlays"),
+        "passing over the BarChart block replaced the Sidebar item's info"
     );
 }
 
@@ -2270,6 +2272,89 @@ fn toggling_the_collapsible_redraws_it(cx: &mut TestAppContext) {
     assert!(
         open.is_some() && toggle.is_some() && open != toggle,
         "the toggle's info did not follow the Collapsible closing: {open:?} / {toggle:?}"
+    );
+}
+
+/// Innermost wins inside an overlay (spec §4.3.1): the pointer over the
+/// Button in the Overlays page's Dialog shows the Button, and over the
+/// Dialog's surface beside it, the Dialog. Motion is reduced, so the
+/// Dialog's note about its entrance says it does not slide in.
+#[gpui::test]
+fn a_button_inside_the_dialog_shows_the_button_and_its_surface_the_dialog(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    show(&mut cx, &showcase, Page::Overlays);
+    click(&mut cx, OVERLAYS_DIALOG_TRIGGER);
+    draw(&mut cx);
+    assert!(a_dialog_is_open(&mut cx), "the Dialog did not open");
+    let button = settle_on(&mut cx, &showcase, OVERLAYS_DIALOG_CLOSE);
+    assert_eq!(
+        button.as_ref().map(|info| info.title()).as_deref(),
+        Some("Button · Default"),
+        "the pointer settled on the Dialog's Button, and the inspector does not show the Button"
+    );
+    let footer = bounds_of(&mut cx, OVERLAYS_DIALOG_FOOTER);
+    let close = bounds_of(&mut cx, OVERLAYS_DIALOG_CLOSE);
+    // Beside the Button, on the footer row of the Dialog's surface.
+    let beside = point(footer.left() + px(4.), close.center().y);
+    assert!(
+        !close.contains(&beside),
+        "the point beside the Button at {beside:?} is on the Button at {close:?}"
+    );
+    hover(&mut cx, beside);
+    settle(&mut cx);
+    draw(&mut cx);
+    let dialog = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().map(|info| (**info).clone())
+    });
+    assert_eq!(
+        dialog.as_ref().map(|info| info.title()).as_deref(),
+        Some("Dialog · Confirm Action"),
+        "the pointer settled on the Dialog's surface beside its Button, and the inspector does not show the Dialog"
+    );
+    let animation = dialog.as_ref().and_then(|info| {
+        info.not_themeable
+            .iter()
+            .find(|n| n.what == "animation")
+            .map(|n| n.text.clone())
+    });
+    assert!(
+        animation.as_deref().is_some_and(|t| t.starts_with("none")),
+        "motion is reduced, and the Dialog's animation note does not say it appears at once: {animation:?}"
+    );
+}
+
+/// The Overlays page's two Sheets show different infos (spec §4.3.2): the
+/// one at the right edge and the one at the bottom edge are edged on
+/// different sides, and only the right one clears the title bar.
+#[gpui::test]
+fn a_right_sheet_and_a_bottom_sheet_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    show(&mut cx, &showcase, Page::Overlays);
+    let mut texts = Vec::new();
+    for (trigger, title, expected) in [
+        (
+            OVERLAYS_SHEET_RIGHT,
+            OVERLAYS_SHEET_RIGHT_TITLE,
+            "Sheet · Right",
+        ),
+        (
+            OVERLAYS_SHEET_BOTTOM,
+            OVERLAYS_SHEET_BOTTOM_TITLE,
+            "Sheet · Bottom",
+        ),
+    ] {
+        click(&mut cx, trigger);
+        draw(&mut cx);
+        texts.extend(settle_on_each(&mut cx, &showcase, &[(title, expected)]));
+        cx.update(|window, cx| window.close_sheet(cx));
+        cx.run_until_parked();
+        draw(&mut cx);
+    }
+    assert!(
+        texts.first() != texts.get(1),
+        "the right and the bottom Sheet show the same info: {texts:?}"
     );
 }
 

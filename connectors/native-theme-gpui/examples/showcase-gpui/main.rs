@@ -388,6 +388,26 @@ pub(crate) const LAYOUT_COLLAPSIBLE: &str = "layout-collapsible";
 pub(crate) const LAYOUT_COLLAPSIBLE_TOGGLE: &str = "layout-collapsible-toggle";
 pub(crate) const LAYOUT_COLLAPSIBLE_CONTENT: &str = "layout-collapsible-content";
 
+/// The ids and debug selectors of the Overlays page's Dialog trigger, and of
+/// the Button and the footer inside the Dialog it opens, which
+/// `a_button_inside_the_dialog_shows_the_button_and_its_surface_the_dialog`
+/// hovers.
+pub(crate) const OVERLAYS_DIALOG_TRIGGER: &str = "overlays-dialog-trigger";
+pub(crate) const OVERLAYS_DIALOG_CLOSE: &str = "overlays-dialog-close";
+pub(crate) const OVERLAYS_DIALOG_FOOTER: &str = "overlays-dialog-footer";
+/// The ids and debug selectors of the Overlays page's two Sheet triggers and
+/// of the titles of the Sheets they open, which
+/// `a_right_sheet_and_a_bottom_sheet_show_different_infos` hovers.
+pub(crate) const OVERLAYS_SHEET_RIGHT: &str = "overlays-sheet-right";
+pub(crate) const OVERLAYS_SHEET_BOTTOM: &str = "overlays-sheet-bottom";
+pub(crate) const OVERLAYS_SHEET_RIGHT_TITLE: &str = "overlays-sheet-right-title";
+pub(crate) const OVERLAYS_SHEET_BOTTOM_TITLE: &str = "overlays-sheet-bottom-title";
+
+/// The debug selector of the Charts page's BarChart block, one of the blocks
+/// that still show a text panel, which the two tests of that panel hover.
+/// Task 24: delete, with the text panel.
+pub(crate) const CHARTS_BAR_CHART: &str = "charts-bar-chart";
+
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------

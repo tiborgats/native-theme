@@ -22,7 +22,7 @@ use gpui_component::{
     breadcrumb::{Breadcrumb, BreadcrumbItem},
     bubble::{Bubble, BubbleVariant},
     button::{
-        Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
+        Button, ButtonGroup, ButtonVariant, ButtonVariants, DropdownButton, Toggle, ToggleGroup,
         ToggleVariants as _,
     },
     calendar::{Calendar, CalendarState},
@@ -37,7 +37,10 @@ use gpui_component::{
     command::{Command, CommandGroup, CommandState},
     date_picker::{DatePicker, DatePickerState},
     description_list::DescriptionList,
-    dialog::{Dialog, DialogDescription, DialogTitle},
+    dialog::{
+        AlertDialog, Dialog, DialogButtonProps, DialogClose, DialogDescription, DialogFooter,
+        DialogTitle,
+    },
     empty::{
         Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyMediaVariant,
         EmptyTitle,
@@ -45,6 +48,7 @@ use gpui_component::{
     form::{Field, Form},
     group_box::{GroupBox, GroupBoxVariant, GroupBoxVariants as _},
     h_flex,
+    hover_card::HoverCard,
     input::{
         Editor, EditorState, Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment,
         InputGroupButton, InputGroupText, InputGroupTextarea, InputState, NumberInput, OtpInput,
@@ -55,11 +59,12 @@ use gpui_component::{
     link::Link,
     list::{List, ListItem, ListState},
     marker::{Marker, MarkerContent, MarkerIcon, MarkerLoadingStyle, MarkerVariant},
-    menu::{AppMenuBar, PopupMenu},
+    menu::{AppMenuBar, ContextMenuExt as _, DropdownMenu as _, PopupMenu},
     message::{Message, MessageAlignment, MessageContent},
     message_scroller::{MessageScroller, MessageScrollerState},
     notification::Notification,
     pagination::Pagination,
+    popover::Popover,
     progress::{Progress, ProgressCircle},
     radio::{Radio, RadioGroup},
     rating::Rating,
@@ -96,8 +101,9 @@ use crate::support::{
 use crate::{
     CHROME_APP_MENU_BAR, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
     OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
-    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST,
-    PROBE_SETTINGS_ROW, Page, STATUS_HOVERED, TREE_DEMO, probe,
+    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION,
+    PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_HOVERED,
+    TREE_DEMO, probe,
 };
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
@@ -565,7 +571,7 @@ pub(crate) fn command_palette(
     state: &Entity<CommandState>,
     groups: Vec<CommandGroup>,
 ) -> Dialog {
-    let mut dialog_info = info::palette_dialog(cx.theme());
+    let mut dialog_info = info::palette_dialog(cx.theme(), cx.reduce_motion());
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Command Palette", &mut dialog_info)
         .info(ui, "overlay-palette-dialog", dialog_info)
@@ -596,7 +602,7 @@ pub(crate) fn about(
     compatibility: &'static str,
     gap: Option<Pixels>,
 ) -> Dialog {
-    let mut dialog_info = info::about_dialog(cx.theme(), gap.is_some());
+    let mut dialog_info = info::about_dialog(cx.theme(), gap.is_some(), cx.reduce_motion());
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "About", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
@@ -814,7 +820,7 @@ pub(crate) fn preferences(
         .title(div().child("Preferences").info(
             ui,
             "overlay-preferences-sheet",
-            info::preferences_sheet(cx.theme()),
+            info::preferences_sheet(cx.theme(), cx.reduce_motion()),
         ))
         .size(width)
         .child(
@@ -3632,4 +3638,455 @@ pub(crate) fn settings(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) ->
         .info(ui, id, settings_info)
         .size_full()
         .debug_selector(move || id.into())
+}
+
+// ---------------------------------------------------------------------------
+// The Overlays page
+// ---------------------------------------------------------------------------
+
+/// The edges of the window a Sheet of the showcase slides in at, so the
+/// matches over them in `info` are exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum SheetSide {
+    Right,
+    Bottom,
+}
+
+impl SheetSide {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Right => "Right",
+            Self::Bottom => "Bottom",
+        }
+    }
+}
+
+/// The overlays the Overlays page's Buttons open.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Overlay {
+    Dialog,
+    AlertDialog,
+    Sheet(SheetSide),
+}
+
+impl Overlay {
+    /// The variant of the Button that opens it: the AlertDialog asks to
+    /// discard, so its Button is a Danger one.
+    pub(crate) fn button_kind(self) -> ButtonKind {
+        match self {
+            Self::AlertDialog => ButtonKind::Danger,
+            Self::Dialog | Self::Sheet(_) => ButtonKind::Default,
+        }
+    }
+}
+
+/// The items of the Overlays page's two menus: a group, then, after a
+/// separator, one more.
+pub(crate) const SAMPLE_MENU: ([&str; 3], &str) = (["Cut", "Copy", "Paste"], "Select All");
+
+/// `menu` holding `SAMPLE_MENU`, each item running `gpui::NoAction`.
+fn sample_menu(menu: PopupMenu) -> PopupMenu {
+    let (first, last) = SAMPLE_MENU;
+    first
+        .iter()
+        .fold(menu, |menu, &label| {
+            menu.menu(label, Box::new(gpui::NoAction))
+        })
+        .separator()
+        .menu(last, Box::new(gpui::NoAction))
+}
+
+/// A Button of the variant `overlay` asks for, refined by `geometry::button`,
+/// reading `label`; a click runs `on_click`, which opens `overlay`.
+pub(crate) fn overlay_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+    overlay: Overlay,
+    on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    // What `native_info` applies the builder under.
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut button_info = info::overlays::trigger(cx.theme(), overlay, styled);
+    let button = native_info(
+        overlay.button_kind().apply(Button::new(id), cx),
+        cx,
+        geometry::button,
+        "button",
+        &mut button_info,
+    )
+    .label(label)
+    .on_click(on_click);
+    // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
+    InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
+}
+
+/// The Overlays page's Dialog: `dialog`, titled, holding a dialog icon beside
+/// a description, `gap` apart, over a footer whose Close Button closes it.
+///
+/// The Dialog reports itself on its title, its content and its footer; the
+/// Button in the footer reports itself (spec §4.3.1).
+pub(crate) fn confirm_dialog(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    dialog: Dialog,
+    gap: Option<Pixels>,
+) -> Dialog {
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut dialog_info = info::overlays::dialog(cx.theme(), cx.reduce_motion(), styled);
+    let dialog = dialog_frame(dialog, cx, &mut dialog_info);
+    let title = dialog_title(cx, "Confirm Action", &mut dialog_info);
+    // A `DialogDescription` is built anew for every frame, so what the
+    // refinement records is recorded once, here, and applied there.
+    let description_style = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::dialog_description,
+        "dialog_description",
+        &mut dialog_info,
+    );
+    if native_value(cx, geometry::icon_size_dialog).is_some() {
+        dialog_info = dialog_info.geometry("icon_size_dialog");
+    }
+    if gap.is_some() {
+        dialog_info = dialog_info.geometry("widget_gap");
+    }
+    let footer = native_info(
+        DialogFooter::new(),
+        cx,
+        geometry::dialog_footer,
+        "dialog_footer",
+        &mut dialog_info,
+    );
+    let mut close_info = info::overlays::dialog_close(cx.theme(), styled);
+    // DialogClose builds the Button and hands it over
+    // (dialog/footer.rs:83-88), so the refinement is made here and applied
+    // there.
+    let close_style = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::button,
+        "button",
+        &mut close_info,
+    );
+    let close = DialogClose::new().trigger({
+        let ui = ui.clone();
+        move |button| {
+            // In a row, so the Button's info is as wide as the Button:
+            // DialogClose puts its trigger in a block, which would stretch
+            // it across the footer (gpui-base dialog.rs, DialogClose).
+            h_flex().justify_end().child(
+                InfoExt::info(
+                    button.refine_style(&close_style).label("Close"),
+                    &ui,
+                    OVERLAYS_DIALOG_CLOSE,
+                    close_info,
+                )
+                .debug_selector(|| OVERLAYS_DIALOG_CLOSE.into()),
+            )
+        }
+    });
+    let title = title
+        .info(ui, "overlays-dialog-title", dialog_info.clone())
+        .debug_selector(|| "overlays-dialog-title".into());
+    let footer = footer
+        .child(close)
+        .info(ui, OVERLAYS_DIALOG_FOOTER, dialog_info.clone())
+        .debug_selector(|| OVERLAYS_DIALOG_FOOTER.into());
+    let ui = ui.clone();
+    dialog
+        .title(title)
+        .footer(footer)
+        .content(move |content, _window, cx| {
+            content.child(
+                with_gap(h_flex(), gap)
+                    .items_start()
+                    .child(native_icon(
+                        cx,
+                        IconName::CircleX,
+                        geometry::icon_size_dialog,
+                    ))
+                    .child(
+                        DialogDescription::new()
+                            .refine_style(&description_style)
+                            .child("This cannot be undone."),
+                    )
+                    .info(&ui, "overlays-dialog-content", dialog_info.clone())
+                    .debug_selector(|| "overlays-dialog-content".into()),
+            )
+        })
+}
+
+/// The Overlays page's AlertDialog: `alert`, refined by `geometry::dialog`
+/// and capped at `geometry::dialog_max_width`, with a dialog icon, a title,
+/// a description, and Keep and Discard buttons. It reports itself on the
+/// icon, the title and the description, the parts the showcase builds.
+pub(crate) fn alert_dialog(ui: &Entity<InfoRegistry>, cx: &App, alert: AlertDialog) -> AlertDialog {
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut alert_info = info::overlays::alert_dialog(cx.theme(), cx.reduce_motion(), styled);
+    let alert = native_info(alert, cx, geometry::dialog, "dialog", &mut alert_info);
+    // An AlertDialog has no `max_w` of its own; `Styled::max_w` lands on the
+    // surface through the refinement (dialog/dialog.rs:621).
+    let alert = match native_value(cx, geometry::dialog_max_width) {
+        Some(width) => {
+            alert_info = alert_info.geometry("dialog_max_width");
+            alert.max_w(width)
+        }
+        None => alert,
+    };
+    if native_value(cx, geometry::icon_size_dialog).is_some() {
+        alert_info = alert_info.geometry("icon_size_dialog");
+    }
+    alert
+        .icon(
+            native_icon(cx, IconName::TriangleAlert, geometry::icon_size_dialog)
+                .info(ui, "overlays-alert-dialog-icon", alert_info.clone())
+                .debug_selector(|| "overlays-alert-dialog-icon".into()),
+        )
+        .title(
+            "Discard changes?"
+                .info(ui, "overlays-alert-dialog-title", alert_info.clone())
+                .debug_selector(|| "overlays-alert-dialog-title".into()),
+        )
+        .description(
+            "The edits made since the last save will be lost."
+                .info(ui, "overlays-alert-dialog-description", alert_info)
+                .debug_selector(|| "overlays-alert-dialog-description".into()),
+        )
+        .button_props(
+            DialogButtonProps::default()
+                .ok_text("Discard")
+                .ok_variant(ButtonVariant::Danger)
+                .cancel_text("Keep")
+                .show_cancel(true),
+        )
+}
+
+/// `sheet`, at the window's `side` edge, titled `title`: the one part of it
+/// the showcase builds, so the Sheet reports itself there, as `id`.
+pub(crate) fn sheet(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    sheet: Sheet,
+    side: SheetSide,
+    id: &'static str,
+    title: &'static str,
+) -> Sheet {
+    sheet.title(
+        title
+            .info(
+                ui,
+                id,
+                info::overlays::sheet(cx.theme(), side, cx.reduce_motion()),
+            )
+            .debug_selector(move || id.into()),
+    )
+}
+
+/// The width the Overlays page's Popover content takes: the showcase's own,
+/// as the model states no popover width.
+const POPOVER_WIDTH: Pixels = px(200.);
+
+/// A `Popover` refined by `geometry::popover`, opened by a Default Button
+/// refined by `geometry::button`, holding a title over a muted line, `gap`
+/// apart. The trigger and the content report the Popover: the surface
+/// around the content is upstream's.
+pub(crate) fn popover(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    gap: Option<Pixels>,
+) -> Stateful<Div> {
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut popover_info = info::overlays::popover(cx.theme(), styled);
+    let trigger = native_info(
+        Button::new("overlays-popover-trigger"),
+        cx,
+        geometry::button,
+        "button",
+        &mut popover_info,
+    )
+    .label("Click for Popover");
+    let popover = native_info(
+        Popover::new(id),
+        cx,
+        geometry::popover,
+        "popover",
+        &mut popover_info,
+    )
+    .trigger(trigger);
+    if gap.is_some() {
+        popover_info = popover_info.geometry("widget_gap");
+    }
+    let (content_ui, content_info) = (ui.clone(), popover_info.clone());
+    popover
+        .content(move |_state, _window, cx| {
+            with_gap(v_flex(), gap)
+                .w(POPOVER_WIDTH)
+                .child(div().font_semibold().child("Popover Content"))
+                .child(
+                    div()
+                        .text_sm()
+                        .text_color(cx.theme().muted_foreground)
+                        .child("This is a popover panel."),
+                )
+                .info(
+                    &content_ui,
+                    "overlays-popover-content",
+                    content_info.clone(),
+                )
+                .debug_selector(|| "overlays-popover-content".into())
+        })
+        .info(ui, id, popover_info)
+        .debug_selector(move || id.into())
+}
+
+/// The width the Overlays page's HoverCard content takes: the showcase's
+/// own, as the model states no popover width.
+const HOVER_CARD_WIDTH: Pixels = px(260.);
+
+/// A `HoverCard` refined by `geometry::popover`, over a Button styled with
+/// `variants::ghost_button` and refined by `geometry::button`, holding a
+/// title over a muted line, padded by `padding` and `gap` apart -- the card's
+/// own spacing is the application's to set, so it takes the platform's
+/// container margin and widget gap. The trigger and the content report the
+/// HoverCard.
+pub(crate) fn hover_card(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    padding: Option<Pixels>,
+    gap: Option<Pixels>,
+) -> Stateful<Div> {
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut card_info = info::overlays::hover_card(cx.theme(), styled);
+    let trigger = native_info(
+        ButtonKind::Ghost.apply(Button::new("overlays-hover-card-trigger"), cx),
+        cx,
+        geometry::button,
+        "button",
+        &mut card_info,
+    )
+    .label("KDE Breeze");
+    let card = native_info(
+        HoverCard::new(id),
+        cx,
+        geometry::popover,
+        "popover",
+        &mut card_info,
+    )
+    .trigger(trigger);
+    if padding.is_some() {
+        card_info = card_info.geometry("container_margin");
+    }
+    if gap.is_some() {
+        card_info = card_info.geometry("widget_gap");
+    }
+    let (content_ui, content_info) = (ui.clone(), card_info.clone());
+    card.content(move |_state, _window, cx| {
+        with_padding(with_gap(v_flex(), gap), padding)
+            .w(HOVER_CARD_WIDTH)
+            .child(div().font_semibold().child("KDE Breeze"))
+            .child(
+                div()
+                    .text_sm()
+                    .text_color(cx.theme().muted_foreground)
+                    .child("The Plasma preset: the palette of Breeze's own colour schemes, and the Breeze icon theme."),
+            )
+            .info(&content_ui, "overlays-hover-card-content", content_info.clone())
+            .debug_selector(|| "overlays-hover-card-content".into())
+    })
+    .info(ui, id, card_info)
+    .debug_selector(move || id.into())
+}
+
+/// The Overlays page's ContextMenu: the showcase's own framed area, which a
+/// right-click opens `SAMPLE_MENU` over. The menu's items are upstream's, on
+/// a layer above the page, so the area reports the menu.
+pub(crate) fn context_menu_area(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+) -> Stateful<Div> {
+    let t = cx.theme();
+    div()
+        .id("overlays-context-menu-area")
+        .p_6()
+        .w_full()
+        .demo_frame(cx)
+        .bg(t.secondary)
+        .child(
+            div()
+                .text_sm()
+                .text_color(t.muted_foreground)
+                .child("Right-click anywhere in this area"),
+        )
+        .context_menu(|menu, _window, _cx| sample_menu(menu))
+        .info(ui, id, info::overlays::context_menu(t))
+        .debug_selector(move || id.into())
+}
+
+/// A Default Button refined by `geometry::button`, reading `label`, whose
+/// click opens `SAMPLE_MENU` as a dropdown menu. The menu's items are
+/// upstream's, on a layer above the page, so the Button reports the menu.
+pub(crate) fn dropdown_menu(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+) -> Stateful<Div> {
+    let mut menu_info = info::overlays::dropdown_menu(cx.theme());
+    native_info(
+        Button::new(id),
+        cx,
+        geometry::button,
+        "button",
+        &mut menu_info,
+    )
+    .label(label)
+    .dropdown_menu(|menu, _window, _cx| sample_menu(menu))
+    .info(ui, id, menu_info)
+    .debug_selector(move || id.into())
+}
+
+/// The width of the Overlays page's frame of application-drawn menu rows:
+/// the showcase's own, as the model states no menu width.
+const MENU_ROWS_WIDTH: Pixels = px(220.);
+
+/// The menu rows an application draws itself, one per `(id, icon, label)`
+/// of `rows`, in a frame painted as a menu is. Upstream's `MenuItemElement`
+/// is crate-private and `PopupMenu` builds its own rows, so
+/// `geometry::menu_item` has no widget to refine: these rows are the
+/// receiver it documents.
+pub(crate) fn menu_rows(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    rows: &[(&'static str, IconName, &'static str)],
+) -> Div {
+    let t = cx.theme();
+    let (hover_bg, hover_text) = (t.accent, t.accent_foreground);
+    v_flex()
+        .w(MENU_ROWS_WIDTH)
+        .bg(t.popover)
+        .text_color(t.popover_foreground)
+        .demo_frame(cx)
+        .children(rows.iter().map(|(id, icon, label)| {
+            let (id, label) = (*id, *label);
+            let mut row_info = info::overlays::menu_row(t, label);
+            if native_value(cx, geometry::icon_size_small).is_some() {
+                row_info = row_info.geometry("icon_size_small");
+            }
+            // Plain text, not a Label: a Label paints foreground on its
+            // own element (label.rs:211), over the frame's colour.
+            let row = div()
+                .flex()
+                .items_center()
+                .hover(move |this| this.bg(hover_bg).text_color(hover_text))
+                .child(native_icon(cx, icon.clone(), geometry::icon_size_small))
+                .child(label);
+            native_info(row, cx, geometry::menu_item, "menu_item", &mut row_info)
+                .info(ui, id, row_info)
+                .debug_selector(move || id.into())
+        }))
 }

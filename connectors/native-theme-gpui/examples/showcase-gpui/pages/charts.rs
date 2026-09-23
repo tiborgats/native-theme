@@ -7,6 +7,7 @@ use gpui_component::{
     v_flex,
 };
 
+use crate::CHARTS_BAR_CHART;
 use crate::app::Showcase;
 use crate::support::{format_font_info, section};
 
@@ -168,6 +169,7 @@ impl Showcase {
             .child(
                 div()
                     .id("tt-bar-chart")
+                    .debug_selector(|| CHARTS_BAR_CHART.into())
                     .h(px(220.0))
                     .w_full()
                     .child(

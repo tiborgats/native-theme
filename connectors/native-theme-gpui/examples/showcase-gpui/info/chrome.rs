@@ -3,7 +3,7 @@
 use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{ColorClaim, WidgetInfo, claim};
-use crate::demo::{SeparatorKind, Severity};
+use crate::demo::{SeparatorKind, Severity, SheetSide};
 
 /// The window's `TitleBar` (spec §2.1). Its geometry line is recorded by
 /// `native_info` where `demo::title_bar` applies the builder.
@@ -106,19 +106,20 @@ pub fn title_bar(t: &Theme) -> WidgetInfo {
 
 /// The `AppMenuBar` inside the window's title bar (spec §2.2).
 pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("AppMenuBar")
+    let info = WidgetInfo::new("AppMenuBar")
         .color(claim(
             "item text",
             "secondary_foreground",
             t.secondary_foreground,
             "gpui-component/button/button.rs:964",
         ))
-        .color(ghost_hover(t))
+        .color(ghost_hover(t));
+    popup_menu(info, t)
         .color(claim(
-            "menu bg",
-            "popover",
-            t.popover,
-            "gpui-component/styled.rs:197",
+            "menu shortcut text",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/kbd.rs:237",
         ))
         .not_themeable(
             "fill",
@@ -136,6 +137,74 @@ pub fn app_menu_bar(t: &Theme) -> WidgetInfo {
             "menus",
             "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding, the binding runs the same action",
         )
+}
+
+/// What every `PopupMenu` the showcase opens paints -- the AppMenuBar's, the
+/// Overlays page's ContextMenu's and its dropdown menu's -- and what cannot
+/// be given to it. Its menus hold plain items and separators, so every row
+/// is one `MenuItemElement` of upstream's.
+pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+    info.color(claim(
+        "menu bg",
+        "popover",
+        t.popover,
+        "gpui-component/styled.rs:197",
+    ))
+    // POPOVER_RING_INK, a literal 0.1 (styled.rs:26).
+    .color(claim(
+        "menu edge ring, at 10%",
+        "foreground",
+        t.foreground.alpha(0.1),
+        "gpui-component/styled.rs:35",
+    ))
+    .color(claim(
+        "menu item text",
+        "foreground",
+        t.foreground,
+        "gpui-component/menu/menu_item.rs:107",
+    ))
+    .color(claim(
+        "menu item hover",
+        "accent",
+        t.accent,
+        "gpui-component/menu/menu_item.rs:117",
+    ))
+    .color(claim(
+        "menu item hover text",
+        "accent_foreground",
+        t.accent_foreground,
+        "gpui-component/menu/menu_item.rs:118",
+    ))
+    .color(claim(
+        "menu separator",
+        "border",
+        t.border,
+        "gpui-component/menu/popup_menu.rs:1253",
+    ))
+    .config(
+        "menu border-radius",
+        format!("radius: {}px", t.radius.as_f32()),
+    )
+    .not_themeable(
+        "menu text",
+        "foreground on every item: the menu sets popover_foreground on itself (menu/popup_menu.rs, PopupMenu::render) and each item sets foreground over it (menu/menu_item.rs, MenuItemElement::render), so popover_foreground reaches none of its text",
+    )
+    .not_themeable(
+        "menu edge",
+        "no border: popover_style draws a shadow ring, foreground at 10%, a literal (styled.rs, popover_ring); the border token is the separator between items (menu/popup_menu.rs)",
+    )
+    .not_themeable(
+        "menu separator",
+        "2px tall, a literal (menu/popup_menu.rs, PopupMenu::render_item)",
+    )
+    .not_themeable(
+        "menu items",
+        "PopupMenu builds its own; geometry::menu_item has no receiver here (geometry.rs, menu/menu_item.rs: MenuItemElement is pub(crate)). An item is 26px tall at the default Size, rounded with the theme radius up to 8px (menu/popup_menu.rs, RenderOptions)",
+    )
+    .instance(
+        "menu shortcut",
+        "a Kbd, shown when the item's action has a key binding (menu/popup_menu.rs, binding_for_action_in)",
+    )
 }
 
 /// The window's toolbar row (spec §2.3). Its geometry line is recorded by
@@ -740,8 +809,17 @@ pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetIn
 }
 
 /// The Dialog's own colours, which every Dialog the showcase opens paints:
-/// the surface, its edge, and the backdrop behind it.
-fn dialog_surface(info: WidgetInfo, t: &Theme) -> WidgetInfo {
+/// the surface, its edge, and the backdrop behind it; and what upstream
+/// builds around the parts it is given. `close_button` is whether the Dialog
+/// draws its close button, `reported` the parts that report it, and
+/// `reduce_motion` gpui's reduced motion while it is drawn.
+pub(super) fn dialog_surface(
+    info: WidgetInfo,
+    t: &Theme,
+    reduce_motion: bool,
+    close_button: bool,
+    reported: &str,
+) -> WidgetInfo {
     info.color(claim(
         "bg",
         "background",
@@ -770,27 +848,46 @@ fn dialog_surface(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
     .not_themeable(
         "animation",
-        "a 0.25s slide and fade on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION)",
+        if reduce_motion {
+            "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)"
+        } else {
+            "a 0.25s slide and fade on a literal curve, not the theme's motion tokens (dialog/dialog.rs, ANIMATION_DURATION)"
+        },
     )
     .instance(
         "unreported",
-        "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 608-725), so only the title and the content report",
+        if close_button {
+            format!(
+                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 608-725), so only {reported} report"
+            )
+        } else {
+            format!(
+                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 608-725), so only {reported} report"
+            )
+        },
     )
 }
 
-/// The command palette's Dialog (spec §2.8). Its geometry lines are recorded
-/// where `demo::command_palette` applies the builders; its info target is the
+/// The command palette's Dialog (spec §2.8), drawn while gpui's
+/// `reduce_motion` is as given. Its geometry lines are recorded where
+/// `demo::command_palette` applies the builders; its info target is the
 /// title, because the Command fills the rest of its content.
-pub fn palette_dialog(t: &Theme) -> WidgetInfo {
-    dialog_surface(WidgetInfo::new("Dialog").variant("Command Palette"), t)
-        .instance(
-            "opens",
-            "on OpenCommandPalette: View > Command Palette, Ctrl+K, or the toolbar's Command Palette button",
-        )
-        .instance(
-            "closes",
-            "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop below the title bar (dialog/dialog.rs, Dialog::render)",
-        )
+pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
+    dialog_surface(
+        WidgetInfo::new("Dialog").variant("Command Palette"),
+        t,
+        reduce_motion,
+        true,
+        "the title and the content",
+    )
+    .instance(
+        "opens",
+        "on OpenCommandPalette: View > Command Palette, Ctrl+K, or the toolbar's Command Palette button",
+    )
+    .instance(
+        "closes",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop below the title bar (dialog/dialog.rs, Dialog::render)",
+    )
 }
 
 /// The command palette's `Command` (spec §2.8), unbordered inside its Dialog.
@@ -880,10 +977,18 @@ pub fn command_palette(t: &Theme) -> WidgetInfo {
         )
 }
 
-/// The Preferences `Sheet` (spec §2.8); its info target is its title.
-pub fn preferences_sheet(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Sheet")
-        .variant("Preferences")
+/// What every `Sheet` the showcase opens paints -- at the `side` edge of the
+/// window, drawn while gpui's `reduce_motion` is as given -- and what upstream
+/// builds around its title, which alone reports it; `rest` names the part of
+/// the surface that shows no info.
+pub(super) fn sheet_surface(
+    info: WidgetInfo,
+    t: &Theme,
+    side: SheetSide,
+    reduce_motion: bool,
+    rest: &str,
+) -> WidgetInfo {
+    let info = info
         .color(claim(
             "bg",
             "background",
@@ -905,31 +1010,65 @@ pub fn preferences_sheet(t: &Theme) -> WidgetInfo {
         .not_themeable(
             "fill",
             "the window's own background, not the popover colour, as a Dialog's (sheet.rs, Sheet)",
-        )
-        .not_themeable(
-            "top margin",
-            "Theme::sheet.margin_top, a gpui-component setting the connector leaves at its default of TITLE_BAR_HEIGHT, 34px (sheet.rs, SheetSettings). native-theme states no sheet",
-        )
-        .not_themeable(
-            "scrollbar",
-            "the body scrolls on an element the Sheet builds itself, and a Sheet's refinement lands on its surface, not there -- Tier U (sheet.rs, Sheet)",
-        )
-        .not_themeable(
-            "animation",
-            "a 0.15s literal slide, not the theme's motion tokens (sheet.rs, Sheet)",
-        )
-        .instance(
-            "unreported",
-            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (sheet.rs, Sheet::render, lines 167-245), so the rest of the surface around the Settings shows no info",
-        )
-        .instance(
-            "width",
-            "PREFERENCES_WIDTH, the showcase's own: the model states no sheet",
-        )
-        .instance(
-            "opens",
-            "on OpenPreferences: Theme > Preferences… or Ctrl+,",
-        )
+        );
+    let info = match side {
+        SheetSide::Right => info
+            .not_themeable(
+                "edge",
+                "a 1px rule of border along its left edge, the one facing the window, a literal (sheet.rs, Sheet::render)",
+            )
+            .not_themeable(
+                "top margin",
+                "Theme::sheet.margin_top, a gpui-component setting the connector leaves at its default of TITLE_BAR_HEIGHT, 34px (sheet.rs, SheetSettings). native-theme states no sheet",
+            ),
+        SheetSide::Bottom => info
+            .not_themeable(
+                "edge",
+                "a 1px rule of border along its top edge, the one facing the window, a literal (sheet.rs, Sheet::render)",
+            )
+            .not_themeable(
+                "top margin",
+                "none: a bottom Sheet sits on the window's bottom edge and spans its width, so Theme::sheet.margin_top does not reach it (sheet.rs, Sheet::render)",
+            ),
+    };
+    info.not_themeable(
+        "scrollbar",
+        "the body scrolls on an element the Sheet builds itself, and a Sheet's refinement lands on its surface, not there -- Tier U (sheet.rs, Sheet)",
+    )
+    .not_themeable(
+        "animation",
+        if reduce_motion {
+            "none: reduced motion is on, so the Sheet appears in place at once, where it would slide in over 0.15s, a literal, not the theme's motion tokens (sheet.rs, Sheet::render; gpui-pre/elements/animation.rs, AnimationExt)"
+        } else {
+            "a 0.15s literal slide, not the theme's motion tokens (sheet.rs, Sheet)"
+        },
+    )
+    .instance(
+        "unreported",
+        format!(
+            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (sheet.rs, Sheet::render, lines 167-245), so {rest} shows no info"
+        ),
+    )
+}
+
+/// The Preferences `Sheet` (spec §2.8), drawn while gpui's `reduce_motion`
+/// is as given; its info target is its title.
+pub fn preferences_sheet(t: &Theme, reduce_motion: bool) -> WidgetInfo {
+    sheet_surface(
+        WidgetInfo::new("Sheet").variant("Preferences"),
+        t,
+        SheetSide::Right,
+        reduce_motion,
+        "the rest of the surface around the Settings",
+    )
+    .instance(
+        "width",
+        "PREFERENCES_WIDTH, the showcase's own: the model states no sheet",
+    )
+    .instance(
+        "opens",
+        "on OpenPreferences: Theme > Preferences… or Ctrl+,",
+    )
 }
 
 /// What every `Settings` the showcase builds paints and cannot be given:
@@ -1062,10 +1201,17 @@ pub fn preference_switch(
 
 /// The About dialog (spec §2.8). Its geometry lines are recorded where
 /// `demo::about` applies the builders; its title and its content report it.
-/// `gapped` is whether the installed theme states the gap between its lines.
-pub fn about_dialog(t: &Theme, gapped: bool) -> WidgetInfo {
-    dialog_surface(WidgetInfo::new("Dialog").variant("About"), t)
-        .instance(
+/// `gapped` is whether the installed theme states the gap between its lines,
+/// `reduce_motion` gpui's reduced motion while it is drawn.
+pub fn about_dialog(t: &Theme, gapped: bool, reduce_motion: bool) -> WidgetInfo {
+    dialog_surface(
+        WidgetInfo::new("Dialog").variant("About"),
+        t,
+        reduce_motion,
+        true,
+        "the title and the content",
+    )
+    .instance(
             "content",
             "this crate's name and the version Cargo built it at. Upstream's versions are not repeated: the link opens the README's Compatibility table, which states them",
         )
