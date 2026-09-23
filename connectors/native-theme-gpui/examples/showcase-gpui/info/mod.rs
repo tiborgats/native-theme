@@ -12,6 +12,7 @@ pub mod feedback;
 pub mod inputs;
 pub mod registry;
 pub mod text;
+pub mod typography;
 pub use chrome::*;
 pub use registry::*;
 
@@ -288,6 +289,14 @@ pub fn native_info<W: Styled>(
         *info = std::mem::take(info).geometry(name);
     }
     refined(w, style.as_ref())
+}
+
+/// A size in logical pixels to two decimals, trailing zeros dropped: a rem
+/// multiple of a 13.333333px font_size prints as what it is to the eye,
+/// not as float noise.
+pub fn px_text(v: f32) -> String {
+    let s = format!("{v:.2}");
+    s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
 /// `c` as `#rrggbb`, or as `#rrggbbaa` where it is not opaque: a colour

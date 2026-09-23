@@ -1086,35 +1086,13 @@ pub fn about_dialog(t: &Theme, gapped: bool) -> WidgetInfo {
         .instance("opens", "on OpenAbout: Help > About")
 }
 
-/// The About dialog's link to the README's Compatibility table.
+/// The About dialog's link to the README's Compatibility table: the
+/// Typography page's Link, pointing somewhere else.
 pub fn about_link(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Link")
-        .color(claim(
-            "text",
-            "link",
-            t.link,
-            "gpui-component/link.rs:76",
-        ))
-        .color(claim(
-            "underline, at 50%",
-            "link",
-            t.link.opacity(0.5),
-            "gpui-component/link.rs:78",
-        ))
-        .color(claim(
-            "hover text, at 80%",
-            "link",
-            t.link.opacity(0.8),
-            "gpui-component/link.rs:80",
-        ))
-        .not_themeable(
-            "hover and pressed",
-            "link at literal opacities: a Link reads no link_hover or link_active, which the connector fills from link.hover_text_color and active_text_color (link.rs, Link)",
-        )
-        .instance(
-            "target",
-            "the connector README at this version's tag, v-prefixed as the text says, at its Compatibility heading. The tag exists once the version is released; before that the page is missing",
-        )
+    super::typography::link(t).instance(
+        "target",
+        "the connector README at this version's tag, v-prefixed as the text says, at its Compatibility heading. The tag exists once the version is released; before that the page is missing",
+    )
 }
 
 /// The Alert that reports a theme that failed to load (spec §2.5): the

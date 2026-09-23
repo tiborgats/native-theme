@@ -359,6 +359,16 @@ pub(crate) const FEEDBACK_ALERT_INFO: &str = "feedback-alert-info";
 pub(crate) const FEEDBACK_SPINNER_SMALL: &str = "feedback-spinner-small";
 pub(crate) const FEEDBACK_CIRCLE_LOADING: &str = "feedback-circle-loading";
 
+/// The ids and debug selectors of the Typography page's plain Label and its
+/// Label with secondary text, which
+/// `a_plain_label_and_a_secondary_one_show_different_infos` hovers.
+pub(crate) const TYPOGRAPHY_LABEL_PLAIN: &str = "typography-label-plain";
+pub(crate) const TYPOGRAPHY_LABEL_SECONDARY: &str = "typography-label-secondary";
+/// The ids and debug selectors of the Typography page's first two heading
+/// levels, which `two_heading_levels_show_different_infos` hovers.
+pub(crate) const TYPOGRAPHY_H1: &str = "typography-h1";
+pub(crate) const TYPOGRAPHY_H2: &str = "typography-h2";
+
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls
 // ---------------------------------------------------------------------------

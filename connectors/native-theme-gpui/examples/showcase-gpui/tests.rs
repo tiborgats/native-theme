@@ -42,7 +42,8 @@ use crate::{
     OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
     PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
     PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, WINDOW_SIZE,
+    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_HOVERED, TREE_DEMO, TYPOGRAPHY_H1,
+    TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -2114,6 +2115,56 @@ fn an_alerts_fill_swatch_is_the_painted_tint(cx: &mut TestAppContext) {
         fill.map(|c| c.value),
         Some(painted),
         "the Info Alert's fill swatch is not info at 4%: {info:?}"
+    );
+}
+
+/// A plain Label and a Label with secondary text show different infos (spec
+/// §4.3.2): only the second paints part of its text in muted_foreground
+/// (label.rs:171), and only its info says so.
+#[gpui::test]
+fn a_plain_label_and_a_secondary_one_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Typography);
+    let muted = |selector: &'static str, cx: &mut VisualTestContext| {
+        settle_on(cx, &showcase, selector)
+            .map(|info| info.colors.iter().any(|c| c.field == "muted_foreground"))
+    };
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (TYPOGRAPHY_LABEL_PLAIN, "Label · plain"),
+            (TYPOGRAPHY_LABEL_SECONDARY, "Label · with secondary"),
+        ],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the plain and the secondary Label show the same info: {texts:?}"
+    );
+    assert_eq!(
+        (
+            muted(TYPOGRAPHY_LABEL_PLAIN, &mut cx),
+            muted(TYPOGRAPHY_LABEL_SECONDARY, &mut cx)
+        ),
+        (Some(false), Some(true)),
+        "only the secondary Label paints muted_foreground"
+    );
+}
+
+/// Two heading levels show different infos (spec §4.3.2): each states its
+/// own rem and the size it renders at.
+#[gpui::test]
+fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Typography);
+    let texts = settle_on_each(
+        &mut cx,
+        &showcase,
+        &[(TYPOGRAPHY_H1, "Text · H1"), (TYPOGRAPHY_H2, "Text · H2")],
+    );
+    assert!(
+        texts.first() != texts.get(1),
+        "the H1 and the H2 show the same info: {texts:?}"
     );
 }
 

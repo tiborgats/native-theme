@@ -3,8 +3,9 @@
 use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
-    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, Pixels, RenderOnce,
-    SharedString, Stateful, StyleRefinement, Window, div, prelude::*, px,
+    Action, AnyElement, App, Axis, ClickEvent, Context, Div, ElementId, Entity, FontWeight,
+    Keystroke, Pixels, RenderOnce, SharedString, Stateful, StyleRefinement, Window, div,
+    prelude::*, px, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
@@ -37,10 +38,11 @@ use gpui_component::{
     },
     h_flex,
     input::{
-        Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment, InputGroupButton,
-        InputGroupText, InputGroupTextarea, InputState, NumberInput, OtpInput, OtpState, Textarea,
-        TextareaState,
+        Editor, EditorState, Input, InputGroup, InputGroupAddon, InputGroupAddonAlignment,
+        InputGroupButton, InputGroupText, InputGroupTextarea, InputState, NumberInput, OtpInput,
+        OtpState, Textarea, TextareaState,
     },
+    kbd::Kbd,
     label::Label,
     link::Link,
     list::{List, ListItem, ListState},
@@ -67,6 +69,7 @@ use gpui_component::{
     tab::{Tab, TabBar},
     table::{DataTable, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableState},
     tag::{Tag, TagVariant},
+    text::TextView,
     tooltip::Tooltip,
     tree::{Tree, TreeState},
     v_flex,
@@ -2678,4 +2681,381 @@ pub(crate) fn notification_button(
         window.push_notification(notification.title(severity.name()).autohide(true), cx);
     });
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
+}
+
+// ---------------------------------------------------------------------------
+// The Typography page
+// ---------------------------------------------------------------------------
+
+/// The Labels of the Typography page's Label gallery, so the match over
+/// them in `info::text` is exhaustive and the compiler rejects one without
+/// an arm.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LabelKind {
+    Plain,
+    /// With the given secondary text after it.
+    Secondary(&'static str),
+    Masked,
+}
+
+impl LabelKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Plain => "plain",
+            Self::Secondary(_) => "with secondary",
+            Self::Masked => "masked",
+        }
+    }
+}
+
+/// A `Label` of `kind` reading `text`.
+pub(crate) fn gallery_label(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    kind: LabelKind,
+    text: &'static str,
+) -> Stateful<Div> {
+    let label = Label::new(text);
+    let label = match kind {
+        LabelKind::Plain => label,
+        LabelKind::Secondary(secondary) => label.secondary(secondary),
+        LabelKind::Masked => label.masked(true),
+    };
+    label
+        .info(ui, id, info::text::gallery_label(cx.theme(), kind, text))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The text sizes of the Font Sizes gallery, so the match over them in
+/// `info::text` is exhaustive.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TextSize {
+    Xs,
+    Sm,
+    /// No size set: gpui's default.
+    Base,
+    Lg,
+    Xl,
+}
+
+impl TextSize {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Xs => "text_xs",
+            Self::Sm => "text_sm",
+            Self::Base => "text_base",
+            Self::Lg => "text_lg",
+            Self::Xl => "text_xl",
+        }
+    }
+    /// The size in rems each sets (gpui-pre styled.rs:545-576), and gpui's
+    /// default text size where none is set (gpui-pre style.rs:493).
+    pub(crate) fn rems(self) -> f32 {
+        match self {
+            Self::Xs => 0.75,
+            Self::Sm => 0.875,
+            Self::Base => 1.0,
+            Self::Lg => 1.125,
+            Self::Xl => 1.25,
+        }
+    }
+}
+
+/// A `Label` reading `text` at `size`.
+pub(crate) fn sized_label(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    size: TextSize,
+    text: &'static str,
+) -> Stateful<Div> {
+    let label = Label::new(text);
+    let label = match size {
+        TextSize::Xs => label.text_xs(),
+        TextSize::Sm => label.text_sm(),
+        TextSize::Base => label,
+        TextSize::Lg => label.text_lg(),
+        TextSize::Xl => label.text_xl(),
+    };
+    label
+        .info(ui, id, info::text::sized_label(cx.theme(), size))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The showcase's own heading ladder, H1 to H6.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum HeadingLevel {
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
+}
+
+impl HeadingLevel {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::H1 => "H1",
+            Self::H2 => "H2",
+            Self::H3 => "H3",
+            Self::H4 => "H4",
+            Self::H5 => "H5",
+            Self::H6 => "H6",
+        }
+    }
+    pub(crate) fn rems(self) -> f32 {
+        match self {
+            Self::H1 => 1.875,
+            Self::H2 => 1.5,
+            Self::H3 => 1.25,
+            Self::H4 => 1.125,
+            Self::H5 => 1.0,
+            Self::H6 => 0.875,
+        }
+    }
+    fn weight(self) -> FontWeight {
+        match self {
+            Self::H1 | Self::H2 => FontWeight::BOLD,
+            Self::H3 | Self::H4 => FontWeight::SEMIBOLD,
+            Self::H5 | Self::H6 => FontWeight::MEDIUM,
+        }
+    }
+    /// The name of the `FontWeight` constant `weight` returns.
+    pub(crate) fn weight_name(self) -> &'static str {
+        match self {
+            Self::H1 | Self::H2 => "BOLD",
+            Self::H3 | Self::H4 => "SEMIBOLD",
+            Self::H5 | Self::H6 => "MEDIUM",
+        }
+    }
+}
+
+/// Plain text reading `text` at heading `level`.
+pub(crate) fn heading_level(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    level: HeadingLevel,
+    text: &'static str,
+) -> Stateful<Div> {
+    div()
+        .text_size(rems(level.rems()))
+        .font_weight(level.weight())
+        .child(text)
+        .info(ui, id, info::typography::heading_level(cx.theme(), level))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The weights of the Font Weights list, Thin to Black.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum WeightKind {
+    Thin,
+    ExtraLight,
+    Light,
+    Normal,
+    Medium,
+    Semibold,
+    Bold,
+    ExtraBold,
+    Black,
+}
+
+impl WeightKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Thin => "Thin (100)",
+            Self::ExtraLight => "Extra Light (200)",
+            Self::Light => "Light (300)",
+            Self::Normal => "Normal (400)",
+            Self::Medium => "Medium (500)",
+            Self::Semibold => "Semibold (600)",
+            Self::Bold => "Bold (700)",
+            Self::ExtraBold => "Extra Bold (800)",
+            Self::Black => "Black (900)",
+        }
+    }
+    fn weight(self) -> FontWeight {
+        match self {
+            Self::Thin => FontWeight::THIN,
+            Self::ExtraLight => FontWeight::EXTRA_LIGHT,
+            Self::Light => FontWeight::LIGHT,
+            Self::Normal => FontWeight::NORMAL,
+            Self::Medium => FontWeight::MEDIUM,
+            Self::Semibold => FontWeight::SEMIBOLD,
+            Self::Bold => FontWeight::BOLD,
+            Self::ExtraBold => FontWeight::EXTRA_BOLD,
+            Self::Black => FontWeight::BLACK,
+        }
+    }
+    /// The name of the `FontWeight` constant `weight` returns.
+    pub(crate) fn constant_name(self) -> &'static str {
+        match self {
+            Self::Thin => "THIN",
+            Self::ExtraLight => "EXTRA_LIGHT",
+            Self::Light => "LIGHT",
+            Self::Normal => "NORMAL",
+            Self::Medium => "MEDIUM",
+            Self::Semibold => "SEMIBOLD",
+            Self::Bold => "BOLD",
+            Self::ExtraBold => "EXTRA_BOLD",
+            Self::Black => "BLACK",
+        }
+    }
+}
+
+/// Plain text at `weight`, reading its name.
+pub(crate) fn weight_sample(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    weight: WeightKind,
+) -> Stateful<Div> {
+    div()
+        .font_weight(weight.weight())
+        .child(weight.name())
+        .info(ui, id, info::typography::weight(cx.theme(), weight))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The styles of the Text Decorations list.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum DecorationKind {
+    Bold,
+    Underline,
+    Strikethrough,
+    Italic,
+}
+
+impl DecorationKind {
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::Bold => "bold",
+            Self::Underline => "underlined",
+            Self::Strikethrough => "struck through",
+            Self::Italic => "italic",
+        }
+    }
+}
+
+/// Plain text reading `text`, styled `decoration`.
+pub(crate) fn decoration_sample(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    decoration: DecorationKind,
+    text: &'static str,
+) -> Stateful<Div> {
+    let sample = div();
+    let sample = match decoration {
+        DecorationKind::Bold => sample.font_weight(FontWeight::BOLD),
+        DecorationKind::Underline => sample.underline().text_decoration_1(),
+        DecorationKind::Strikethrough => sample.line_through().text_decoration_1(),
+        DecorationKind::Italic => sample.italic(),
+    };
+    sample
+        .child(text)
+        .info(ui, id, info::typography::decoration(cx.theme(), decoration))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// Plain text reading `text` in the muted colour.
+pub(crate) fn muted_text(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: &'static str,
+) -> Stateful<Div> {
+    div()
+        .text_color(cx.theme().muted_foreground)
+        .child(text)
+        .info(ui, id, info::typography::muted_text(cx.theme()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// Plain text reading `text` in the mono family.
+pub(crate) fn mono_text(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: &'static str,
+) -> Stateful<Div> {
+    div()
+        .font_family(cx.theme().mono_font_family.clone())
+        .child(text)
+        .info(ui, id, info::typography::mono_text(cx.theme()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// A `Link` reading `text` that opens `href`.
+pub(crate) fn link(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: &'static str,
+    href: &'static str,
+) -> Stateful<Div> {
+    Link::new(id)
+        .child(text)
+        .href(href)
+        .info(
+            ui,
+            id,
+            info::typography::link(cx.theme())
+                .instance("text", text)
+                .instance("target", href),
+        )
+        .debug_selector(move || id.into())
+}
+
+/// A `Kbd` for `keys`, in gpui's keystroke syntax; `None` where they do not
+/// parse.
+pub(crate) fn kbd(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    keys: &'static str,
+) -> Option<Stateful<Div>> {
+    let stroke = Keystroke::parse(keys).ok()?;
+    let drawn = Kbd::format(&stroke);
+    Some(
+        Kbd::new(stroke)
+            .info(ui, id, info::typography::kbd(cx.theme(), keys, &drawn))
+            .debug_selector(move || id.into()),
+    )
+}
+
+/// The Rust code `Editor` over `state`, `height` tall.
+pub(crate) fn editor(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<EditorState>,
+    height: Pixels,
+) -> Stateful<Div> {
+    Editor::new(state)
+        .h(height)
+        .info(ui, id, info::typography::editor(cx.theme()))
+        .debug_selector(move || id.into())
+}
+
+/// A Markdown `TextView` of `source`, selectable.
+pub(crate) fn markdown(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    source: &'static str,
+) -> Stateful<Div> {
+    TextView::markdown(id, source)
+        .selectable(true)
+        .info(ui, id, info::typography::markdown(cx.theme()))
+        .debug_selector(move || id.into())
 }
