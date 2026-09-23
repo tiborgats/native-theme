@@ -109,15 +109,18 @@
 
 ### native-theme-gpui connector
 
-- [ ] **v0.5.9: the showcase as an application** — real chrome (the
+- [x] **v0.5.9: the showcase as an application** — real chrome (the
       TitleBar as the window's title bar with menus, a toolbar sized by a new
       `geometry::toolbar`, Sidebar navigation, draggable panels, an inspector,
       a status bar) and Widget Info per widget instance, innermost wins.
       Rationale, spec and plan:
-      [`todo_v0.5.9_showcase-app-rationale.md`](todo_v0.5.9_showcase-app-rationale.md),
-      [`-spec.md`](todo_v0.5.9_showcase-app-spec.md),
-      [`-plan.md`](todo_v0.5.9_showcase-app-plan.md). Written 2026-09-22 at
+      [`todo_v0.5.9_showcase-app-rationale.md`](archive/todo_v0.5.9_showcase-app-rationale.md),
+      [`-spec.md`](archive/todo_v0.5.9_showcase-app-spec.md),
+      [`-plan.md`](archive/todo_v0.5.9_showcase-app-plan.md). Written 2026-09-22 at
       the maintainer's request, awaiting approval; nothing implemented.
+      **Implemented 2026-09-23** (plan Tasks 1–25, from 1e159a7 on the
+      v0.5.9 branch, not pushed); the three documents are archived, the spec
+      with *As built* notes where the build departed from it.
 - [x] Map `WidgetMetrics` → gpui-component per-widget styling — done in
       v0.5.8 for every widget with a reachable seam (`geometry` module,
       `base_layer`); the inner-element remainder is the upstream PR list
@@ -326,10 +329,11 @@
       stored value and the status bar's flag. Decide what it should change
       (a high-contrast preset, or the contrast rule's thresholds) or say in
       the connector's docs that it is carried and not applied.
-- [ ] spec v0.5.9 §2.2's action table lacks `SetPreset(key)`, which the
+- [x] spec v0.5.9 §2.2's action table lacks `SetPreset(key)`, which the
       command palette's preset entries run (Task 12): add it with the
       palette as its one caller (the toolbar's Combobox installs a preset
-      through its own `Change` event).
+      through its own `Change` event). Added to the archived spec's §2.2 as
+      an *As built* note (Task 25).
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -512,11 +516,15 @@ What is still open on the iced side:
 
 - [ ] Scrollbar thumb radius per platform: platform-facts records none, so the
       connector mirrors gpui-component's `radius` for the thumb.
-- [ ] The showcase's "Text Input" tooltip claims the input background is
+- [x] The showcase's "Text Input" tooltip claims the input background is
       `background`; `Input` paints `Theme::input_background()`, which equals
       `background` only in light mode (gpui-component 0.6.4
       `src/theme/mod.rs:379-385`). Noticed while adding the InputGroup section
       in v0.5.9; correct the tooltip (and check the sibling widgets' claims).
+      **Done in the v0.5.9 showcase-app work:** the Input, Textarea,
+      NumberInput, OtpInput, Checkbox, Radio, Select and Combobox infos take
+      their fill claim from one mode-aware helper (`info/chrome.rs`,
+      `input_background`).
 - [ ] gpui-component's `Theme::motion` (`MotionTokens`, eleven fields: four
       durations, three easings, two springs and two `Rems` travel distances,
       `src/theme/motion.rs:8-20`) stays at upstream's default, because
@@ -915,7 +923,7 @@ the gap — closing it is a change, and each wants its own decision.
       code from notes (`without_comments_or_strings`, `string_literals_only`),
       so they are clean; the citation gate reads only string literals by
       design. This one was the outlier, but nothing checked that.
-- [ ] **"Not themeable" has become a bucket, and that is the volume complaint.**
+- [x] **"Not themeable" has become a bucket, and that is the volume complaint.**
       Of its 247 entries, 207 now carry an upstream citation, a Tier U verdict
       or a named model gap — the audit's output. The other **40 are not
       resolvability claims at all**: they are API and demo facts that no theme
@@ -946,6 +954,12 @@ the gap — closing it is a change, and each wants its own decision.
       `muted_foreground` on a caret is even right: the platform states
       `combo_box.font.color` for the trigger, and a dimmed arrow is upstream's
       choice, not the platform's.
+      **Closed by the v0.5.9 showcase-app work:** the per-instance
+      `WidgetInfo` has a fourth section, *This instance*, for the API and
+      demo facts, and *Not themeable* keeps the resolvability verdicts. The
+      parts question stays open: a Select's and a Combobox's caret are
+      still a *Not themeable* note that says its colour is themed
+      (`muted_foreground`), not a colour claim with a swatch.
 - [ ] **A sidebar width and a tooltip delay are missing from the model.** Both
       have receivers: `Sidebar` reads the caller's own style width and falls
       back to 255px only when none is set (`sidebar/mod.rs:195-201`), and gpui
@@ -1015,14 +1029,18 @@ the gap — closing it is a change, and each wants its own decision.
       outside `theme/`. So the platform's shadow preference reaches nothing
       an application builds by default. Found 2026-09-22 from eleven panels
       that listed it as theme config.
-- [ ] **The showcase's animated icons read the platform, not gpui's switch.**
+- [x] **The showcase's animated icons read the platform, not gpui's switch.**
       The frame timer checks `detect::prefers_reduced_motion()`
-      (`showcase-gpui.rs:1947`), while the spinning icons go through
+      (`showcase-gpui.rs:1947`, before the example became a module tree),
+      while the spinning icons go through
       `with_animation`, which honours `App::reduce_motion`
       (`gpui-pre elements/animation.rs:74-80`) -- the switch `apply_system_theme`
       forwards the platform's preference into, and one an application can
       also set itself. Reading `cx.reduce_motion()` would make the two agree.
-- [ ] **The model's toolbar is read by nothing.** `ToolbarTheme` states
+      **Done (d1045eb):** the Icons page and the frame timer both read
+      `cx.reduce_motion()`. Under reduced motion the timer still wakes; each
+      tick returns without advancing a frame (`app.rs`, the frame timer).
+- [x] **The model's toolbar is read by nothing.** `ToolbarTheme` states
       `bar_height`, `item_gap`, `icon_size`, `font`, `border` and
       `background_color`, every bundled preset states the first two (KDE 40px
       and 0, Adwaita 47px and 6, iOS 44px and 8), and the KDE reader fills
@@ -1036,6 +1054,12 @@ the gap — closing it is a change, and each wants its own decision.
       platform states a toolbar-specific size). A toolbar is the textbook
       application-drawn row, so this is the builder an application needs
       most. Found 2026-09-22.
+      **Done (b3dea4f):** `geometry::toolbar` carries `bar_height` (as a
+      minimum height), `item_gap`, the `border` padding, `background_color`
+      and the `font` size and weight, and `icon_size_toolbar` reads
+      `toolbar.icon_size`. The showcase's toolbar is drawn with both. What
+      checking the presets against platform-facts §2.13 found is the next
+      item.
 - [ ] **KDE's toolbar height has no source, and no preset states a toolbar
       padding.** Checked 2026-09-22 against platform-facts §2.13 before
       `geometry::toolbar` relied on the presets:
@@ -1123,6 +1147,20 @@ the gap — closing it is a change, and each wants its own decision.
       would need the render path -- but the audit of the remaining claims is
       not, and the rate says it is due: of the ~45 claims this pass read, ten
       named the wrong token.
+      **Spike outcome (v0.5.9 showcase-app plan, Task 22):** the painted
+      scene is reachable. gpui-pre 0.3.6 exposes the last frame's quads to
+      tests (`Window::painted_quads`, `window.rs:2718-2725`, under
+      `test-support`, which the connector's dev-dependency enables), and
+      three windowed tests compare a painted fill with its claim:
+      `a_tags_painted_fill_is_its_bg_claim` (the Primary Tag at rest),
+      `a_hovered_tags_info_names_its_painted_fill` (the same Tag at 90%) and
+      `a_swatchs_painted_fill_is_its_value_claim` (a Theme Map swatch). The
+      gap that remains: those are three instances, not every claim. Every
+      other claim is still checked only against the line it cites, and a
+      general check would have to find each claim's painted quad —
+      `painted_fill` (`tests.rs`) takes the largest opaque quad inside an
+      element's bounds, which suits a filled widget and not a text colour,
+      an edge or a state the test does not put the widget in.
 - [ ] `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
       The connector writes both on every `apply` and both have contract rows
       (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
@@ -1171,7 +1209,9 @@ the gap — closing it is a change, and each wants its own decision.
       skip it because its output is the screenshots the asset stamp checks.
 - [ ] Split the showcases into modules: `showcase-gpui.rs` and
       `showcase-iced.rs` are several thousand lines each after gaining every
-      widget and their self-tests.
+      widget and their self-tests. The gpui half is done: the example is
+      `examples/showcase-gpui/`, a module tree (ab3f7d6). `showcase-iced.rs`
+      remains one file.
 - [ ] `scripts/check-widget-coverage.py` still accepts weak evidence of
       "shown" on the **iced** side: an import of the module is enough. The
       gpui side no longer does — `shows_gpui` requires a constructor, a call,
@@ -1201,6 +1241,57 @@ the gap — closing it is a change, and each wants its own decision.
       have no Widget Info. Either build the group in a `chrome::` helper that
       reports it, or extend the gate to upstream free functions returning a
       widget, or both.
+- [ ] **Regenerate the gpui screenshots and review the showcase's visible
+      changes.** The v0.5.9 showcase-app plan (Tasks 1–25) changed what the
+      gpui showcase draws, and nobody has looked at it on screen: the plan's
+      tasks lay it out headlessly and never ran
+      `scripts/generate_gpui_screenshots.sh`, which is maintainer-run because
+      it drives the desktop. Changes to check, by task:
+      - Task 9, the toolbar: the preset Combobox and the icon-set Select have
+        no literal width (they take `combo_box.min_width` and grow with their
+        content, where both were 260px); the icon buttons are laid out at a
+        labelled Button's height, `h_8` (2rem); on kde-breeze the items touch,
+        because `toolbar.item_gap` and the toolbar padding are 0 there, and a
+        vertical Separator's line overflows its 0px box.
+      - Task 10: the window is 1380px wide (`NAV_WIDTH` 200 + 880 for the
+        page + `INSPECTOR_WIDTH` 300), with the Sidebar, the resizable panels
+        and the inspector.
+      - Task 12: the Preferences sheet is 600px wide (`PREFERENCES_WIDTH`).
+      - Task 14: page headings are sized to their text (`self_start`), not
+        the page's width.
+      - Task 16: List, Tree and DataTable row text takes the theme's list
+        font; the alignment of the standalone outgoing Bubble (`ml_auto` in
+        its block wrapper).
+      - Task 18: the strikethrough sample is no longer also underlined; the
+        masked sample masks only the secret, with its caption as page text.
+      - Task 19: the Layout page's Settings sidebar is upstream's 250px (the
+        showcase's `sidebar_width(140)`, which upstream clamped to 160, is
+        gone); GroupBox content is plain text, so it takes the GroupBox's
+        colour.
+      - Task 20: the Dialog and the two Sheets take upstream's default sizes
+        (448px, 350px); the Popover content lost its extra `p_4`; the Open
+        Dialog and Click for Menu triggers take `geometry::button`; the
+        Dialog's Close button sits at the footer's right; menu rows turn
+        their text `accent_foreground` on hover.
+      - Task 21: the HoverCard content lost its `container_margin` inset
+        inside the card's own padding.
+      - Task 22: the Spin card turns (a Transform indicator, drawn as a mask
+        in the foreground colour) where it pulsed; choosing gpui-component's
+        built-in icon set shows its icons.
+      - Task 24: section headings are `text_base` (1rem), where they were
+        13px.
+- [ ] **The iced showcase: per-instance Widget Info.** The gpui showcase now
+      builds every widget through a helper that attaches a `WidgetInfo` and
+      shows the innermost hovered instance's info in an inspector (the v0.5.9
+      showcase-app work, [spec](archive/todo_v0.5.9_showcase-app-spec.md)
+      §3–§5); the iced showcase still builds one info string per demo block
+      (`widget_tooltip`, `showcase-iced.rs`), with three of the four sections
+      `WidgetInfo::to_text` writes and no citation per colour. Rationale D13
+      put it out of scope and filed it for later. iced has no chrome widgets
+      to promote, so this is the info half only: decide how an iced
+      showcase can tell which instance is innermost under the pointer, and
+      whether the citation gates in `src/showcase.rs` can be shared or need
+      an iced twin.
 
 #### Upstream PR to gpui
 
@@ -1257,6 +1348,19 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       cannot get scroll chaining (the page moving on once the inner scroller
       reaches its end), because nothing reports that end to the ancestor.
 - [ ] Additional PRs as gaps are discovered during connector implementation
+- [ ] Report: a single-select `Combobox` misses a change after a search.
+      It decides that the selection changed by comparing the selection's
+      `IndexPath`s before and after `on_will_change`
+      (gpui-component 0.6.6 `src/combobox.rs:183-196`, and `:459-468` in
+      `handle_item_select`), and the default `on_will_change` stores the
+      row in the *filtered* list. Choosing, after a search, an item that
+      lands in the row the current selection has — typing "nord" and
+      pressing Enter while `default`, also row 0, is selected — emits no
+      `Change` and no `Confirm` and leaves the popup open. The gpui
+      showcase works around it in `PresetDelegate::on_will_change`
+      (`examples/showcase-gpui/support.rs`), which records each chosen preset at
+      its row in the unfiltered list. Upstream could compare by value, or
+      store unfiltered indices. Found 2026-09-22 (showcase-app plan, Task 9).
 
 ---
 

@@ -405,7 +405,11 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-138-field colour map and a 101-icon gallery.
+138-field colour map and a 101-icon gallery. The window is built from the
+same widgets — a title bar with menus, a toolbar, a Sidebar of pages,
+resizable panels and a status bar — and resting the pointer on any widget
+shows in the inspector what the theme sets on it, with the upstream line each
+colour is read at.
 
 ## Gallery
 

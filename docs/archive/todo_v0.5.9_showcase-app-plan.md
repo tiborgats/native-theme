@@ -724,6 +724,8 @@ The `(true, None)` case falls to the unoutlined arm on purpose and is unreachabl
 | 22 | Icons | Icon, the native icon grid, animated icons |
 | 23 | Theme Map | the swatch table |
 
+*As built:* Bubble (7) and Attachment (3) are on the Data page, not Feedback, so Task 16 migrated them with the Data page and Task 17 found them done.
+
 **Task 22 also carries the paint-level spike** (rationale §3.6), time-boxed to one working session: determine whether `VisualTestContext` exposes the painted scene (search gpui-pre `test` and `scene` modules for a public accessor of the last frame's primitives). If it does, write one test that reads the fill painted inside a Tag instance's bounds and compares it with its `bg` claim's value; if it does not, record the finding in docs/todo.md under "The colour gate cannot tell whose line it is". Either outcome closes the spike.
 
 ---

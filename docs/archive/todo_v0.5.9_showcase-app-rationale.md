@@ -1,12 +1,12 @@
 # v0.5.9 — The gpui showcase as an application: Rationale
 
-Status: Design (2026-09-22); nothing implemented
+Status: Implemented (2026-09-23) and archived; see *As built* at the end.
 Companion specification:
 [`todo_v0.5.9_showcase-app-spec.md`](todo_v0.5.9_showcase-app-spec.md)
 Companion plan:
 [`todo_v0.5.9_showcase-app-plan.md`](todo_v0.5.9_showcase-app-plan.md)
 Predecessor, already implemented and archived:
-[`archive/todo_v0.5.9_widget-info-rationale.md`](archive/todo_v0.5.9_widget-info-rationale.md)
+[`todo_v0.5.9_widget-info-rationale.md`](todo_v0.5.9_widget-info-rationale.md)
 — the citation gates this work keeps, and the per-block panel it replaces.
 
 ---
@@ -264,3 +264,23 @@ in what they check. Every new gate ships a discrimination proof.
 **D13 — Out of scope.** The iced showcase (it has no chrome widgets to
 promote; it should get per-instance info later, filed); pinning an info
 panel; gpui's inspector as a user-facing feature; screenshot diffing.
+
+---
+
+## As built
+
+The decisions held. Three outcomes differ from the text above.
+
+- **§3.6:** the spike succeeded. gpui-pre's test-only
+  `Window::painted_quads` (window.rs:2718-2725) returns the last frame's
+  quads, and three windowed tests compare a painted fill with its claim: a
+  Tag at rest and hovered, and a Theme Map swatch. Every other claim is
+  still checked only against the line it cites.
+- **D7:** the command palette offers the toolbar's presets — `default` and
+  the presets for this platform — not every bundled preset, so a showcase
+  on Linux offers no macOS or Windows preset.
+- **D12:** one gate was added. The registry keys an instance by its local
+  id, so an id drawn twice in one frame is caught at run time, by the
+  registry in test builds and asserted by the windowed test harness; a
+  lexical version of that gate was written first and replaced, because it
+  could not follow every way an id is built.

@@ -1688,7 +1688,7 @@ fn view(state: &State) -> Element<'_, Message> {
         ]
         .spacing(sp.xs);
 
-        // Theme config inspector (matches gpui sidebar)
+        // Theme config inspector (the gpui showcase's counterpart: its inspector's Theme tab)
         let fi = format_font_info(&state.current_resolved);
         let metrics_info = {
             let r = format!("radius: {radius:.0}px");

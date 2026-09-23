@@ -1,13 +1,14 @@
 # v0.5.9 — The gpui showcase as an application: Specification
 
-Status: Design (2026-09-22); nothing implemented
+Status: Implemented (2026-09-23, plan Tasks 1–25) and archived. Where the
+build departed from the design, the section says so under *As built*.
 Companion rationale:
 [`todo_v0.5.9_showcase-app-rationale.md`](todo_v0.5.9_showcase-app-rationale.md)
 (decisions D1–D13)
 Companion plan:
 [`todo_v0.5.9_showcase-app-plan.md`](todo_v0.5.9_showcase-app-plan.md)
 Builds on the archived widget-info work
-([`archive/todo_v0.5.9_widget-info-spec.md`](archive/todo_v0.5.9_widget-info-spec.md)):
+([`todo_v0.5.9_widget-info-spec.md`](todo_v0.5.9_widget-info-spec.md)):
 its citation gates are kept and move; its block convention is replaced.
 
 ---
@@ -98,6 +99,17 @@ is no inspector in the model). Nothing else in the chrome is a literal
 size: text uses the platform's text scale or rems, spacing uses
 `geometry::widget_gap`, `container_margin`, `window_margin`, `section_gap`.
 
+*As built:* four more named constants, each with the same kind of comment.
+`PREFERENCES_WIDTH` (600px) is the Preferences sheet's width: the Settings
+inside it has a fixed 250px sidebar (setting/settings.rs:54) and upstream's
+Sheet defaults to 350px (sheet.rs:63), which would leave the preferences at
+most 67px beside that sidebar. `PAGE_WIDTH_PX` (880) is the width the pages
+were laid out for, and `WINDOW_SIZE` is `NAV_WIDTH` + `PAGE_WIDTH_PX` +
+`INSPECTOR_WIDTH` wide, so the chrome does not squeeze every page.
+`HANDLE_PADDING` and `HANDLE_SIZE` repeat gpui-base's `pub(crate)` resize
+handle constants (resizable/resize_handle.rs:11-12), so a handle's info
+target covers the handle's real hit area.
+
 ---
 
 ## 2 -- The chrome
@@ -124,6 +136,10 @@ entry. The menus are built once and given to both `cx.set_menus` and
 | Theme | Reload System Theme (`ReloadTheme`), System / Light / Dark (`SetColorMode`), Preferences… (`OpenPreferences`, `ctrl-,`) |
 | Help | About (`OpenAbout`) |
 
+*As built:* one more action, `SetPreset(key)`, with no menu item: the
+command palette's preset entries run it (§2.8). The toolbar's Combobox
+installs a preset through its own `Change` event.
+
 ### 2.3 Toolbar (D5)
 
 An application-drawn row styled by `geometry::toolbar` (§9). Children, in
@@ -134,6 +150,24 @@ Buttons with Tooltips for `OpenCommandPalette`, `ReloadTheme`,
 `ToggleInspector`, their icons at `geometry::icon_size_toolbar`, their
 gap `toolbar.item_gap`. The three Selects that live in the left column
 today move here.
+
+*As built:* the children are in this order. The SidebarToggleButton arrived
+with the Sidebar it collapses (plan Task 10), not with the toolbar (Task
+9): upstream's SidebarToggleButton has no `disabled` (sidebar/mod.rs), so it
+could not stand in the row before it had something to toggle. The theme and
+colour-mode Selects became the preset Combobox — listing `default` and the
+presets for this platform (`Theme::list_presets_for_platform`) — and an
+outline, segmented ToggleGroup; the icon-set Select moved as it was. The
+Combobox and Select have no literal width: they take `combo_box.min_width`
+through their geometry builders and grow with their content. An icon
+Button's icon is its child, at `geometry::icon_size_toolbar`, because
+`Button::icon` resizes the icon to the button's own size
+(button/button.rs); the Button is therefore laid out at a labelled
+Button's height, `h_8` (2rem). The Combobox works around an upstream defect in
+`PresetDelegate::on_will_change`: a single-select Combobox decides that
+the selection changed by comparing row indices in the *filtered* list
+(combobox.rs:183-196, :459-468), so a search that puts the chosen preset in the row the
+current one had changes nothing (docs/todo.md).
 
 ### 2.4 Navigation (D3)
 
@@ -168,8 +202,8 @@ The inspector's content carries no info; its TabBar does (§4.4).
 ### 2.7 Status bar (D6)
 
 A `StatusBar` styled by `geometry::status_bar`. Left: detected desktop,
-preset and mode, the platform font in its defined unit
-(`defined_size`, showcase-gpui.rs:674), the text-scale factor, and the
+preset and mode, the installed theme's `defaults.font` in its defined unit
+(`defined_size`, support.rs:155), the text-scale factor, and the
 accessibility flags that are set. Right: the title of the `WidgetInfo`
 currently shown, then the crate version.
 
@@ -177,7 +211,10 @@ currently shown, then the crate version.
 
 - **Command palette**: the Command widget in a Dialog, opened by
   `OpenCommandPalette`; entries: every page, every bundled preset, the
-  three colour modes.
+  three colour modes. *As built:* the presets are the toolbar Combobox's
+  list — `default` and the presets for this platform — not every bundled
+  preset, because a showcase on Linux does not offer macOS or Windows
+  presets.
 - **Preferences**: a Sheet holding a Settings page with the four
   accessibility preferences (`AccessibilityPreferences`); a change calls
   `native_theme_gpui::apply_accessibility`.
@@ -430,6 +467,30 @@ exemption (§4.4). Discrimination proof: a seeded `Tag::primary()` in a page
 fails naming the file and line; a seeded helper without `.info(` fails
 naming the helper.
 
+*As built:* `every_widget_reports_itself` reads the widget types from
+upstream — every type gpui-component or gpui-base implements `RenderOnce`,
+`Render`, `Element` or `IntoElement` for, `…State` models excepted — and a
+file's names from its own `use` items. Rule 1 covers every showcase file but
+`demo.rs`, `chrome.rs`, `inspector.rs`, `tests.rs` and `info/`; the calls
+that return something other than a widget (`AppMenuBar::new`, the `Root`
+layers, `Root::new`, `TitleBar::window_options`) are listed with the reason
+in `NOT_WIDGET_CONSTRUCTORS`, and a stale entry fails. Rule 2 follows a
+helper into the private functions of its file that it calls. Not read: a
+constructor passed as a function item, and free functions that return a
+widget — so the body's `h_resizable` group and its panels, built in
+app.rs, report nothing (docs/todo.md).
+
+The registry keys targets by their local `ElementId`, so two instances
+drawn under one id would be taken for one widget. That is checked where it
+happens, not lexically: in test builds `InfoRegistry::record_target` notes
+an id that already carries the current epoch — a second target drawn under
+it in the same frame — and the windowed test harness's `draw()` asserts
+after every frame it draws that no id was noted, as does
+`every_page_lays_out` after each page. It therefore covers every frame the
+windowed tests draw through the harness, including the overlays they open, part ids a
+helper generates, resize handles and accordion answers; an overlay no test
+opens is not checked.
+
 ### 10.2 The citation gates move
 
 `every_colour_claim_is_read_at_the_line_it_cites` and
@@ -438,6 +499,15 @@ the `info/` files instead of `hover_info(` arrays. Their checks are
 unchanged. `the_omission_report` reads the same claims.
 `every_builder_has_a_geometry_note` (new) requires one `GEOMETRY_NOTES`
 entry per `pub fn` of geometry.rs that returns a `StyleRefinement`.
+
+*As built:* the gate is `every_geometry_builder_has_a_note`, and it
+requires one entry for **every** `pub fn` of geometry.rs and none for
+anything else — the value builders (`icon_size_*`, `widget_gap`, …) as well
+as the refinements, because a value builder is recorded with
+`.geometry("name")` too. Two gates keep the records true:
+`native_info_names_the_builder_it_applies` (the builder `native_info`
+applies is the one it records) and `every_recorded_builder_has_a_note` (a
+literal `.geometry("x")` names an entry).
 
 ### 10.3 Behaviour (windowed tests)
 
