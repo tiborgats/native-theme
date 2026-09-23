@@ -1,7 +1,8 @@
 //! The Layout page.
 
 use gpui::{
-    Context, IntoElement, ParentElement, SharedString, Styled, Window, div, prelude::*, px,
+    Context, IntoElement, ParentElement, Rems, SharedString, Styled, Window, div, prelude::*, px,
+    rems,
 };
 use gpui_component::{h_flex, v_flex};
 
@@ -9,13 +10,15 @@ use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{
-    self, ButtonKind, ButtonState, DemoButton, GroupBoxKind, SeparatorKind, SpacingBox, StepperKind,
+    self, ButtonKind, ButtonState, DemoButton, GroupBoxKind, SeparatorKind, SidebarSample,
+    SpacingBox, StepperKind,
 };
 use crate::support::{NativeStyled as _, STEPPER_STEPS, layout_value, with_gap};
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
-    LAYOUT_SEPARATOR_SOLID, PROBE_STEPPER, Page, probe,
+    LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
+    LAYOUT_SIDEBAR_ITEMS, PROBE_STEPPER, Page, probe,
 };
 
 /// The Separators, as `(id, kind)`.
@@ -56,6 +59,16 @@ const SPACING_BUTTONS: [(&str, &str); 3] = [
     ("layout-spacing-two", "Two"),
     ("layout-spacing-three", "Three"),
 ];
+
+/// The Sidebar samples' header text.
+const SIDEBAR_HEADER: &str = "Workspace";
+
+/// The Sidebar samples' height. A Sidebar lays its items out as a list,
+/// which takes the height it is given (sidebar/mod.rs, `RenderOnce for
+/// Sidebar`), so a sample needs one. The model states none, so this is the
+/// showcase's own: room for the header and the three items, in rems, so it
+/// grows with the text as the rows do (`h_7`, sidebar/menu.rs:308).
+const SIDEBAR_HEIGHT: Rems = rems(12.);
 
 /// The pages the Breadcrumb leads through to this one.
 const BREADCRUMB_PAGES: [Page; 4] = [Page::Buttons, Page::Inputs, Page::Data, Page::Feedback];
@@ -159,6 +172,37 @@ impl Showcase {
                 v_flex()
                     .gap_3()
                     .children(SEPARATORS.map(|(id, kind)| demo::separator(ui, cx, id, kind))),
+            )
+            .child(demo::heading(
+                ui,
+                cx,
+                "layout-heading-sidebar",
+                "Sidebar (expanded / collapsed to its icons)",
+            ))
+            .child(
+                h_flex().items_start().gap_4().children(
+                    [
+                        (LAYOUT_SIDEBAR_EXPANDED, false),
+                        (LAYOUT_SIDEBAR_COLLAPSED, true),
+                    ]
+                    .map(|(id, collapsed)| {
+                        demo::sidebar(
+                            ui,
+                            cx,
+                            SidebarSample {
+                                id,
+                                collapsed,
+                                header: SIDEBAR_HEADER,
+                                items: LAYOUT_SIDEBAR_ITEMS.map(|(label, icon, expanded, rail)| {
+                                    let item = if collapsed { rail } else { expanded };
+                                    (item, label, icon.clone(), self.chrome_icon(&icon))
+                                }),
+                                set: self.icon_set_label().into(),
+                                height: SIDEBAR_HEIGHT,
+                            },
+                        )
+                    }),
+                ),
             )
             .child(demo::heading(
                 ui,

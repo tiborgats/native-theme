@@ -55,8 +55,8 @@ use crate::support::{
     load_gpui_icons, parse_icon_set_choice, release_sources,
 };
 use crate::{
-    CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL,
-    INSPECTOR_WIDTH, NAV_WIDTH, PAGE_ROOT, Page, demo,
+    CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT, Page,
+    demo,
 };
 
 /// gpui-component's mode for the showcase's light/dark flag.
@@ -79,8 +79,7 @@ actions!(
     showcase,
     [
         Quit,
-        ToggleSidebar,
-        ToggleInspector,
+        ToggleSidePanel,
         OpenCommandPalette,
         ReloadTheme,
         OpenPreferences,
@@ -97,13 +96,13 @@ actions!(
 #[action(namespace = showcase, no_json)]
 pub(crate) struct ShowPage(pub usize);
 
-/// Install a colour mode, as the Sidebar's colour-mode Select does.
+/// Install a colour mode, as the theme settings' colour-mode Select does.
 #[derive(Clone, PartialEq, Debug, Action)]
 #[action(namespace = showcase, no_json)]
 pub(crate) struct SetColorMode(pub AppColorMode);
 
-/// Install the preset of this key, as the Sidebar's preset switch does, and
-/// show it chosen there.
+/// Install the preset of this key, as the theme settings' preset switch
+/// does, and show it chosen there.
 #[derive(Clone, PartialEq, Debug, Action)]
 #[action(namespace = showcase, no_json)]
 pub(crate) struct SetPreset(pub SharedString);
@@ -116,8 +115,7 @@ pub(crate) struct SetPreset(pub SharedString);
 pub(crate) fn init(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("ctrl-q", Quit, None),
-        KeyBinding::new("ctrl-b", ToggleSidebar, None),
-        KeyBinding::new("ctrl-i", ToggleInspector, None),
+        KeyBinding::new("ctrl-b", ToggleSidePanel, None),
         KeyBinding::new("ctrl-k", OpenCommandPalette, None),
         KeyBinding::new("ctrl-,", OpenPreferences, None),
     ]);
@@ -186,7 +184,7 @@ impl AppColorMode {
 // ---------------------------------------------------------------------------
 
 pub(crate) struct Showcase {
-    /// The Sidebar header's preset switch (spec §3.3).
+    /// The theme settings' preset switch (spec §3.3).
     pub(crate) preset_combobox: Entity<ComboboxState<PresetDelegate>>,
     pub(crate) current_theme_name: String,
     /// Dynamic label for the "default" theme entry, updated on color mode change.
@@ -203,21 +201,20 @@ pub(crate) struct Showcase {
     pub(crate) original_mono_font: native_theme::theme::ResolvedFontSpec,
 
     pub(crate) active_page: Page,
-    /// Whether the Sidebar is collapsed to its icons (spec §2.4).
-    pub(crate) nav_collapsed: bool,
-    /// Whether the inspector's panel is shown (spec §1.1, §2.6).
-    pub(crate) inspector_visible: bool,
+    /// Whether the side panel -- the theme settings and the inspector -- is
+    /// shown (spec S4).
+    pub(crate) side_panel_visible: bool,
     /// The window's resizable group's state, owned here so a change of its
     /// arrangement can start it afresh (`Showcase::rearrange`).
     body_layout: Entity<ResizableState>,
-    /// The Sidebar's and the inspector's widths, as dragged, which a panel
-    /// that leaves the group and comes back takes again.
-    nav_width: Pixels,
-    inspector_width: Pixels,
+    /// The side panel's width, as dragged, which it takes again when it
+    /// leaves the group and comes back.
+    side_panel_width: Pixels,
 
     /// Where the showcase's widgets report their info (spec §4).
     pub(crate) info_ui: Entity<InfoRegistry>,
-    /// The inspector panel, which shows the info the registry settles on.
+    /// The inspector, in the side panel, which shows the info the registry
+    /// settles on.
     pub(crate) inspector: Entity<Inspector>,
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
@@ -310,11 +307,11 @@ pub(crate) struct Showcase {
     /// and `on_cancel` so the section reports a real outcome.
     pub(crate) alert_choice: Option<SharedString>,
 
-    /// The Sidebar header's colour-mode Select (spec §3.3): a row per
+    /// The theme settings' colour-mode Select (spec §3.3): a row per
     /// `AppColorMode::ALL`, reading its `short_label`.
     pub(crate) color_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
 
-    // Icon set selector state
+    /// The theme settings' icon-theme Select.
     pub(crate) icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
     pub(crate) icon_set_name: String,
     /// Parsed `IconSet` for the current selection (`None` for "gpui-builtin").
@@ -327,7 +324,7 @@ pub(crate) struct Showcase {
     pub(crate) gpui_icon_sources: Vec<Option<ImageSource>>,
     /// Foreground color used when building the image source caches.
     pub(crate) icon_cache_fg: Hsla,
-    /// The user's icon set selection intent (library type).
+    /// The user's icon-theme choice (library type).
     pub(crate) icon_set_choice: IconSetChoice,
     /// Cached list of installed freedesktop icon themes (populated once at init).
     pub(crate) installed_themes: Vec<String>,
@@ -413,7 +410,7 @@ impl Showcase {
 
     /// Rebuild cached animated icon data from `load_icon_indicator()`.
     ///
-    /// Called at init and whenever the icon set changes so that animated icon
+    /// Called at init and whenever the icon theme changes so that animated icon
     /// rendering can use pre-built `ImageSource` objects without re-rasterizing
     /// SVGs on every frame tick.
     pub(crate) fn rebuild_animation_caches(&mut self, window: &mut Window, cx: &mut App) {
@@ -532,7 +529,7 @@ impl Showcase {
             .or(self.icon_set_choice.freedesktop_theme())
     }
 
-    /// The icon set as the Icons page names it: a freedesktop set with the
+    /// The icon theme as the Icons page names it: a freedesktop set with the
     /// theme its icons load from.
     pub(crate) fn icon_set_label(&self) -> String {
         match self.icon_set_enum {
@@ -566,8 +563,8 @@ impl Showcase {
         self.reload_icons(window, cx);
     }
 
-    /// Load the icon set the icon-set Select names `display`, as the Select
-    /// does when it is confirmed.
+    /// Load the icon theme the icon-theme Select names `display`, as the
+    /// Select does when it is confirmed.
     pub(crate) fn select_icon_set(
         &mut self,
         display: &str,
@@ -627,7 +624,7 @@ impl Showcase {
         cx.notify();
     }
 
-    /// Build the list of icon set dropdown names.
+    /// Build the icon-theme Select's rows.
     pub(crate) fn icon_set_dropdown_names(&self) -> Vec<SharedString> {
         let icon_theme_opt = if self.has_toml_icon_theme {
             Some(self.current_icon_theme.as_str())
@@ -1120,11 +1117,9 @@ impl Showcase {
             original_font,
             original_mono_font,
             active_page: Page::Buttons,
-            nav_collapsed: false,
-            inspector_visible: true,
+            side_panel_visible: true,
             body_layout,
-            nav_width: NAV_WIDTH,
-            inspector_width: INSPECTOR_WIDTH,
+            side_panel_width: LEFT_PANEL_WIDTH,
             info_ui,
             inspector,
             status_title_drawn: None,
@@ -1365,7 +1360,7 @@ impl Showcase {
         }
     }
 
-    /// Show the current colour mode chosen in the Sidebar's colour-mode
+    /// Show the current colour mode chosen in the theme settings' colour-mode
     /// Select, whichever way it was chosen.
     pub(crate) fn show_color_mode(&self, window: &mut Window, cx: &mut Context<Self>) {
         let label = SharedString::from(self.color_mode.short_label());
@@ -1384,8 +1379,9 @@ impl Showcase {
         self.apply_theme_by_name(&name, window, cx);
     }
 
-    /// Show `page`. Every way to a page -- the Sidebar, the View menu, the
-    /// Layout page's Breadcrumb -- goes through here, so the info of what
+    /// Show `page`. Every way to a page -- the page TabBar, the View menu,
+    /// the command palette, the Layout page's Breadcrumb -- goes through
+    /// here, so the info of what
     /// the page change takes off the screen does not stay on show (spec
     /// §4.3.4).
     pub(crate) fn show_page(&mut self, page: Page, cx: &mut Context<Self>) {
@@ -1402,41 +1398,39 @@ impl Showcase {
         }
     }
 
-    fn on_toggle_sidebar(&mut self, _: &ToggleSidebar, _: &mut Window, cx: &mut Context<Self>) {
-        self.rearrange(cx, |this| this.nav_collapsed = !this.nav_collapsed);
+    fn on_toggle_side_panel(
+        &mut self,
+        _: &ToggleSidePanel,
+        _: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.rearrange(cx, |this| {
+            this.side_panel_visible = !this.side_panel_visible
+        });
     }
 
-    fn on_toggle_inspector(&mut self, _: &ToggleInspector, _: &mut Window, cx: &mut Context<Self>) {
-        self.rearrange(cx, |this| this.inspector_visible = !this.inspector_visible);
-    }
-
-    /// Add or take away the Sidebar's or the inspector's panel.
+    /// Add or take away the side panel.
     ///
     /// The group's state keeps its sizes by panel position (gpui-base
     /// resizable/mod.rs, `ResizableState::sync_panels_count`), so a panel
     /// leaving the group would hand its width to its neighbour; and a panel
     /// kept but hidden (`ResizablePanel::visible`) keeps bounds that a drag of
     /// another handle still counts (`ResizableState::resize_panel_at_handle`).
-    /// So the widths the two side panels have now are kept here, and a new
-    /// state takes over, the panels taking those widths again as their first
-    /// sizes. A new state, not the old one cleared: `ResizableState::clear`
-    /// leaves the index of a handle being dragged (gpui-base
-    /// resizable/mod.rs:242-245), and the next pointer move would look that
-    /// panel up in a state that no longer has it (resizable/panel.rs:452). The
-    /// old state stays with the listeners the last frame painted, whole.
+    /// So the width the side panel has now is kept here, and a new state
+    /// takes over, the panel taking that width again as its first size. A new
+    /// state, not the old one cleared: `ResizableState::clear` leaves the
+    /// index of a handle being dragged (gpui-base resizable/mod.rs:242-245),
+    /// and the next pointer move would look that panel up in a state that no
+    /// longer has it (resizable/panel.rs:452). The old state stays with the
+    /// listeners the last frame painted, whole.
     fn rearrange(&mut self, cx: &mut Context<Self>, change: impl FnOnce(&mut Self)) {
         let sizes = self.body_layout.read(cx).sizes().clone();
-        let has_nav = !self.nav_collapsed;
-        let panels = usize::from(has_nav) + 1 + usize::from(self.inspector_visible);
-        if sizes.len() == panels {
-            if has_nav && let Some(&width) = sizes.first() {
-                self.nav_width = width;
-            }
-            if self.inspector_visible
-                && let Some(&width) = sizes.last()
-            {
-                self.inspector_width = width;
-            }
+        let panels = usize::from(self.side_panel_visible) + 1;
+        if self.side_panel_visible
+            && sizes.len() == panels
+            && let Some(&width) = sizes.first()
+        {
+            self.side_panel_width = width;
         }
         change(self);
         self.body_layout = cx.new(|_| ResizableState::default());
@@ -1514,7 +1508,7 @@ impl Render for Showcase {
         let active_page = self.active_page;
 
         // The content panel: the Alert of a theme that failed to load, then
-        // the page, scrolling.
+        // the page TabBar, then the page, scrolling.
         let content = v_flex()
             .size_full()
             .overflow_hidden()
@@ -1530,6 +1524,7 @@ impl Render for Showcase {
                 )
                 .debug_selector(|| CONTENT_ALERT.into())
             }))
+            .child(chrome::page_tabs(self, cx))
             .child(
                 div()
                     .id("content-scroll-outer")
@@ -1592,48 +1587,24 @@ impl Render for Showcase {
                     }),
             );
 
-        // The body: Sidebar | content | inspector, one resizable group
-        // (spec §1.1). A collapsed Sidebar is an icon rail beside the group
-        // rather than a panel in it: upstream's rail has a fixed width
-        // (sidebar/mod.rs, `COLLAPSED_WIDTH`) that no panel size can name.
-        let nav = chrome::sidebar(self, cx).into_any_element();
-        let (rail, nav_panel) = if self.nav_collapsed {
-            (Some(nav), None)
-        } else {
-            (
-                None,
-                Some(
-                    resizable_panel()
-                        .size(self.nav_width)
-                        .flex_none()
-                        .child(nav),
-                ),
-            )
-        };
-        let inspector_panel = self.inspector_visible.then(|| {
+        // The body: the side panel | content, one resizable group (spec S1).
+        // A hidden side panel leaves the group, the content taking its room.
+        let side_panel = self.side_panel_visible.then(|| {
             resizable_panel()
-                .size(self.inspector_width)
+                .size(self.side_panel_width)
                 .flex_none()
-                .child(self.inspector.clone())
+                .child(chrome::side_panel(self, cx))
         });
-        // The handles in panel order: each panel after the first carries the
-        // one on its left edge (gpui-base resizable/panel.rs,
-        // `ResizablePanel::render`).
-        let handles = [
-            nav_panel
-                .is_some()
-                .then_some((CHROME_HANDLE_NAV, "Sidebar | content")),
-            inspector_panel
-                .is_some()
-                .then_some((CHROME_HANDLE_INSPECTOR, "content | inspector")),
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
-        let panels: Vec<_> = nav_panel
+        // The content panel carries the handle on its left edge (gpui-base
+        // resizable/panel.rs, `ResizablePanel::render`).
+        let handles = side_panel
+            .is_some()
+            .then_some((CHROME_HANDLE, "side panel | content"))
+            .into_iter()
+            .collect();
+        let panels: Vec<_> = side_panel
             .into_iter()
             .chain([resizable_panel().child(content)])
-            .chain(inspector_panel)
             .collect();
         let body = h_resizable("body")
             .with_state(&self.body_layout)
@@ -1663,8 +1634,7 @@ impl Render for Showcase {
             .on_action(cx.listener(Self::on_show_page))
             .on_action(cx.listener(Self::on_set_color_mode))
             .on_action(cx.listener(Self::on_reload_theme))
-            .on_action(cx.listener(Self::on_toggle_sidebar))
-            .on_action(cx.listener(Self::on_toggle_inspector))
+            .on_action(cx.listener(Self::on_toggle_side_panel))
             .on_action(cx.listener(Self::on_set_preset))
             .on_action(cx.listener(Self::on_open_command_palette))
             .on_action(cx.listener(Self::on_open_preferences))
@@ -1685,7 +1655,6 @@ impl Render for Showcase {
                             // unless it clips; the body has to fit under the
                             // title bar, not push the window taller.
                             .overflow_hidden()
-                            .children(rail)
                             .child(div().flex_1().min_w_0().h_full().child(body)),
                     )
                     .child(chrome::status_bar(self, cx, shown)),

@@ -20,6 +20,7 @@ use gpui_component::{
 use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
 
 use crate::app::Showcase;
+use crate::demo::TabBarKind;
 use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex};
 use crate::support::{NativeStyled, defined_size, with_gap, with_padding};
 use crate::{
@@ -48,6 +49,14 @@ impl InspectorTab {
         match self {
             Self::Widget => "Widget",
             Self::Theme => "Theme",
+        }
+    }
+
+    /// The debug selector of the view's tab.
+    fn tab(self) -> &'static str {
+        match self {
+            Self::Widget => "inspector-tab-widget",
+            Self::Theme => "inspector-tab-theme",
         }
     }
 }
@@ -337,7 +346,8 @@ impl Render for Inspector {
         let tabs = demo::tab_bar(
             &self.ui,
             cx,
-            InspectorTab::ALL.map(InspectorTab::label),
+            TabBarKind::Inspector,
+            InspectorTab::ALL.map(|tab| (tab.label(), tab.tab())),
             self.tab.index(),
             cx.listener(|this, ix: &usize, _window, cx| {
                 if let Some(&tab) = InspectorTab::ALL.get(*ix) {

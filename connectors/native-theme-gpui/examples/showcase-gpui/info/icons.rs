@@ -115,7 +115,7 @@ pub fn role_icon(
             "geometry",
             "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout",
         )
-        .instance("icon set", set.to_string());
+        .instance("icon theme", set.to_string());
     match (builtin, name) {
         (true, Some(name)) => info.instance(
             "icon",
@@ -149,7 +149,7 @@ pub fn gpui_icon(
             "geometry",
             "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout",
         )
-        .instance("icon set", set.to_string());
+        .instance("icon theme", set.to_string());
     match (icon, role) {
         (IconDrawn::Builtin, _) => info.instance(
             "lookup",
@@ -211,7 +211,7 @@ pub fn animated_icon(
             .color(claim("icon", "foreground", t.foreground, "showcase"))
             .not_themeable(
                 "icon pixels",
-                "the icon set's one indicator icon, drawn as a mask in the showcase's foreground: gpui turns an SVG element but not an image, so every shape takes that one colour (native-theme-gpui/icons.rs, with_spin_animation)",
+                "the icon theme's one indicator icon, drawn as a mask in the showcase's foreground: gpui turns an SVG element but not an image, so every shape takes that one colour (native-theme-gpui/icons.rs, with_spin_animation)",
             )
             .instance(
                 "animation",
@@ -249,7 +249,7 @@ fn icon_size_context(context: IconSizeContext) -> &'static str {
             "a toolbar's icons: 32pt regular and 24pt small on macOS, Fluent's AppBarButton 20 on Windows, KDE's MainToolbar group 22, GNOME's GTK_ICON_SIZE_NORMAL 16 (platform-facts §2.1.8)"
         }
         IconSizeContext::Small => {
-            "small icons: macOS's sidebar icons, 16-20pt; SM_CXSMICON 16 on Windows; KDE's Small group 16; GNOME's GTK_ICON_SIZE_NORMAL 16 (platform-facts §2.1.8). The Sidebar's page icons take this size"
+            "small icons: macOS's sidebar icons, 16-20pt; SM_CXSMICON 16 on Windows; KDE's Small group 16; GNOME's GTK_ICON_SIZE_NORMAL 16 (platform-facts §2.1.8). The status bar's side-panel toggle and the items of the Layout page's Sidebar samples take this size"
         }
         IconSizeContext::Large => {
             "large icons: SM_CXICON 32 on Windows; KDE's Desktop group, 48 by Breeze's default; GNOME's GTK_ICON_SIZE_LARGE 32. macOS documents none (platform-facts §2.1.8)"

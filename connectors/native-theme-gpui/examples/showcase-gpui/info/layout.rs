@@ -5,12 +5,12 @@ use gpui_component::theme::Theme;
 
 use super::{
     WidgetInfo,
-    chrome::{GhostContent, ghost_colours},
+    chrome::{GhostContent, chrome_icon_note, ghost_colours},
     claim, px_text,
 };
 use crate::Page;
 use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
-use crate::support::layout_value;
+use crate::support::{ChromeIcon, layout_value};
 
 /// One of the Layout page's two spacing boxes, `kind`, padded by `padding`
 /// and spacing its children by `gap`, each `None` where the platform states
@@ -624,4 +624,145 @@ pub fn settings(t: &Theme) -> WidgetInfo {
         .not_themeable("layout", "the label above the field wherever the page is at most 480px wide, and beside it where it is wider (setting/settings.rs, STACKED_LAYOUT_MAX_WIDTH)")
         .instance("pages", "Appearance, open, with the groups Theme and Editor, and Keyboard, with Shortcuts; the sidebar lists the pages")
         .instance("fields", "switch, checkbox, input, number input, dropdown, or an element of the application's own (setting/fields/mod.rs, SettingFieldType). This sample shows the first three and a dropdown, which upstream builds inside each SettingItem, so they report through the Settings. The Theme group also holds a whole-row item of the showcase's own, a 1px strip built with SettingItem::render (setting/item.rs, SettingItem::render), whose right edge is where a row ends: the self-tests measure it against the page's scrollbar")
+}
+
+/// One of the Layout page's `Sidebar` samples (spec S5), `collapsed` to its
+/// icon rail or expanded, its header reading `header`.
+pub fn sidebar(t: &Theme, collapsed: bool, header: &str) -> WidgetInfo {
+    let info = WidgetInfo::new("Sidebar")
+        .variant(if collapsed { "collapsed" } else { "expanded" })
+        .color(claim(
+            "bg",
+            "sidebar",
+            t.sidebar,
+            "gpui-component/sidebar/mod.rs:413",
+        ))
+        .color(claim(
+            "text",
+            "sidebar_foreground",
+            t.sidebar_foreground,
+            "gpui-component/sidebar/mod.rs:414",
+        ))
+        .color(claim(
+            "border",
+            "sidebar_border",
+            t.sidebar_border,
+            "gpui-component/sidebar/mod.rs:415",
+        ))
+        .not_themeable(
+            "width",
+            "SidebarTheme states no width -- our model's gap. The sample sets none, so upstream's own apply: its default width expanded (sidebar/mod.rs, DEFAULT_WIDTH) and its fixed icon rail collapsed (sidebar/mod.rs, COLLAPSED_WIDTH)",
+        )
+        .not_themeable(
+            "padding",
+            "px_3 around the items, p_2 while collapsed -- rems, so the platform's font -- and not settable: upstream drops the caller's padding before it lays the Sidebar out (sidebar/mod.rs, RenderOnce for Sidebar)",
+        )
+        .instance(
+            "items",
+            "three SidebarMenuItems, each with its icon from the chosen icon theme, the first active",
+        )
+        .instance(
+            "header",
+            if collapsed {
+                format!("{header}, as plain text truncated with an ellipsis to the rail's width: upstream draws the header in the rail too, padded pt_2 and px_2 (sidebar/mod.rs, RenderOnce for Sidebar)")
+            } else {
+                format!("{header}, as plain text in the slot upstream pads with pt_3 and px_3 (sidebar/mod.rs, RenderOnce for Sidebar)")
+            },
+        )
+        .instance(
+            "height",
+            "the sample's own, in rems, so it grows with the text as the rows do: the items are a list that takes the height it is given (sidebar/mod.rs, RenderOnce for Sidebar)",
+        )
+        .instance(
+            "children",
+            "must implement SidebarItem, which asks for Collapsible + Clone (sidebar/mod.rs, SidebarItem)",
+        );
+    if collapsed {
+        info.instance(
+            "collapsed",
+            "to its icons: each item shows its icon alone, its label as a tooltip (sidebar/menu.rs, collapsed_tooltip)",
+        )
+    } else {
+        info
+    }
+}
+
+/// A Sidebar sample's item labelled `label`, `active` or not, `collapsed`
+/// while its Sidebar is, showing `icon` of the icon theme named `set`. Its
+/// icon-size line is recorded where the item is built.
+pub fn sidebar_item(
+    t: &Theme,
+    label: &'static str,
+    active: bool,
+    collapsed: bool,
+    icon: &ChromeIcon,
+    set: &str,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("SidebarMenuItem").variant(if active {
+        format!("{label}, active")
+    } else {
+        label.to_string()
+    });
+    let info = if active {
+        info.color(claim(
+            "bg",
+            "sidebar_accent",
+            t.sidebar_accent,
+            "gpui-component/sidebar/menu.rs:297",
+        ))
+        .color(claim(
+            "text",
+            "sidebar_accent_foreground",
+            t.sidebar_accent_foreground,
+            "gpui-component/sidebar/menu.rs:298",
+        ))
+    } else {
+        info.color(claim(
+            "text (the Sidebar's)",
+            "sidebar_foreground",
+            t.sidebar_foreground,
+            "gpui-component/sidebar/mod.rs:414",
+        ))
+        .color(claim(
+            "hover bg, at 80%",
+            "sidebar_accent",
+            t.sidebar_accent.opacity(0.8),
+            "gpui-component/sidebar/menu.rs:291",
+        ))
+        .color(claim(
+            "hover text",
+            "sidebar_accent_foreground",
+            t.sidebar_accent_foreground,
+            "gpui-component/sidebar/menu.rs:292",
+        ))
+    };
+    let info = info
+        .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        .not_themeable(
+            "hover",
+            "sidebar_accent at 80%, the selection colour: the model's sidebar.hover_background reaches no slot, because the connector reads it nowhere (sidebar/menu.rs, SidebarMenuItem)",
+        )
+        .not_themeable(
+            "font",
+            "text_sm, and font_medium while active -- sidebar.font's size and weight have no route, as no geometry:: builder carries them (sidebar/menu.rs, SidebarMenuItem)",
+        )
+        .not_themeable(
+            "height",
+            "h_7 while expanded, set after the caller's refinement, so nothing reaches it -- rems, so the platform's font. SidebarTheme states no row height (sidebar/menu.rs, SidebarMenuItem)",
+        )
+        .instance(
+            "icon",
+            chrome_icon_note(icon, set, "the item shows its label alone"),
+        );
+    match (collapsed, icon) {
+        (true, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_)) => info.instance(
+            "collapsed",
+            "the label is hidden, and with no icon the item shows nothing, and has no tooltip either: upstream gives a collapsed item its label as a tooltip only when it has an icon (sidebar/menu.rs, collapsed_tooltip)",
+        ),
+        (true, _) => info.instance(
+            "collapsed",
+            "only the icon shows, and the label becomes a tooltip at its right (sidebar/menu.rs, collapsed_tooltip)",
+        ),
+        (false, _) => info,
+    }
 }

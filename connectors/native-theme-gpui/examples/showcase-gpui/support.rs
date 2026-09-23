@@ -738,10 +738,10 @@ pub(crate) fn load_gpui_icons(
         .collect()
 }
 
-/// One of the chrome's own icons -- a toolbar button's, a status-bar panel
-/// toggle's, a Sidebar page's, a command-palette entry's -- as the chosen
-/// icon set gives it. Sets are
-/// never mixed: where the chosen set has no icon for it, nothing is drawn.
+/// One of the chrome's own icons -- a toolbar button's, the status bar's
+/// side-panel toggle's, a command-palette entry's, a Layout page Sidebar
+/// sample item's -- as the chosen icon theme gives it. Icon themes are never
+/// mixed: where the chosen one has no icon for it, nothing is drawn.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum ChromeIcon {
     /// gpui-component's own icon of this name, its built-in set being the
@@ -947,7 +947,7 @@ impl ListDelegate for SampleListDelegate {
 }
 
 // ---------------------------------------------------------------------------
-// The Sidebar's preset Combobox
+// The theme settings' preset Combobox
 // ---------------------------------------------------------------------------
 
 /// One row of the preset Combobox: a preset, by key and display name.
@@ -959,9 +959,9 @@ pub(crate) struct PresetItem {
 
 /// The presets the showcase offers, in the order it offers them: the
 /// desktop's own theme, keyed `default` and labelled with the preset it
-/// builds on, then the presets meant for this platform. The Sidebar's preset
-/// switch and the command palette both list these, so neither can offer a
-/// preset the other does not.
+/// builds on, then the presets meant for this platform. The theme settings'
+/// preset switch and the command palette both list these, so neither can
+/// offer a preset the other does not.
 pub(crate) fn preset_items() -> Vec<PresetItem> {
     let default = PresetItem {
         key: "default".into(),
@@ -999,7 +999,7 @@ impl SearchableListItem for PresetItem {
 }
 
 /// `Combobox` is generic over a `SearchableListDelegate` (`combobox.rs:749`),
-/// so the Sidebar's preset switch takes a delegate: [`preset_items`],
+/// so the theme settings' preset switch takes a delegate: [`preset_items`],
 /// filtered as the user types.
 pub(crate) struct PresetDelegate {
     items: Vec<PresetItem>,
@@ -1057,7 +1057,7 @@ impl SearchableListDelegate for PresetDelegate {
     /// Typing "nord" puts Nord in row 0, where `default` already is, so the
     /// choice would change nothing that upstream compares: no `Change`, and
     /// the popup stays open. A preset's row in the full list is its own.
-    /// Single selection only, which is how the Sidebar builds it.
+    /// Single selection only, which is how the theme settings build it.
     fn on_will_change(
         &mut self,
         selection: &mut Vec<(IndexPath, Self::Item)>,

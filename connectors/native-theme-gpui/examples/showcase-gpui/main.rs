@@ -13,8 +13,8 @@
 //!
 //! # What to look for
 //!
-//! - The Sidebar's header switches theme presets, color modes and icon sets
-//!   without restarting the app. Watch how the entire widget tree re-themes
+//! - The side panel's theme settings switch theme presets, color modes and
+//!   icon themes without restarting the app. Watch how the entire widget tree re-themes
 //!   on each change — no manual rewiring per widget.
 //! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
 //!   drive its appearance.
@@ -30,7 +30,7 @@
 //! capture; `app.rs` the `Showcase` view, its state and theme switching;
 //! `pages/` one module per page; `chrome.rs` and `demo.rs` the window's
 //! chrome and the helpers that build a widget with its info; `info/` what
-//! each widget reports; `inspector.rs` the inspector panel; and
+//! each widget reports; `inspector.rs` the inspector; and
 //! `support.rs` the sample content, helpers, icon loading and delegates
 //! the pages share. Within a file, section-divider blocks (`// ─────`)
 //! separate one widget category, page or view from the next.
@@ -59,11 +59,11 @@ use crate::app::{AppColorMode, Showcase};
 // Pages
 // ---------------------------------------------------------------------------
 
-/// The pages the Sidebar navigates between (spec §2.4).
+/// The pages the content panel's TabBar switches between (spec §2.4).
 ///
 /// `Showcase::render` matches on this, so a new variant cannot be added without
-/// the compiler asking what it renders, and the Sidebar's items, the View
-/// menu, the `--tab` names and the layout self-test all read [`Page::ALL`].
+/// the compiler asking what it renders, and the TabBar's tabs, the View menu,
+/// the `--tab` names and the layout self-test all read [`Page::ALL`].
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Page {
     Buttons,
@@ -79,10 +79,10 @@ pub(crate) enum Page {
 }
 
 impl Page {
-    /// Every page, in the order the Sidebar lists them.
+    /// Every page, in the order the TabBar lists them.
     ///
     /// A new variant forces an arm in [`Page::index`], [`Page::label`],
-    /// [`Page::icon`] and [`Page::nav_item`], whose matches are exhaustive,
+    /// [`Page::icon`] and [`Page::tab`], whose matches are exhaustive,
     /// and the index it is given there has to be its position in this array
     /// — the `const` block below rejects the build otherwise. The one thing
     /// neither the compiler nor that block can see is a variant added to the
@@ -101,7 +101,7 @@ impl Page {
         Self::ThemeMap,
     ];
 
-    /// The page's position in the Sidebar, which is what `ShowPage` carries.
+    /// The page's position in the TabBar, which is what `ShowPage` carries.
     const fn index(self) -> usize {
         match self {
             Self::Buttons => 0,
@@ -117,12 +117,12 @@ impl Page {
         }
     }
 
-    /// The page at a Sidebar position; `None` past the end.
+    /// The page at a TabBar position; `None` past the end.
     fn at(index: usize) -> Option<Self> {
         Self::ALL.get(index).copied()
     }
 
-    /// The label the Sidebar and the View menu show.
+    /// The label the page's tab, the View menu and the command palette show.
     const fn label(self) -> &'static str {
         match self {
             Self::Buttons => "Buttons",
@@ -138,7 +138,7 @@ impl Page {
         }
     }
 
-    /// The icon the page's Sidebar item shows.
+    /// The icon the page's command-palette entry shows.
     const fn icon(self) -> IconName {
         match self {
             Self::Buttons => IconName::CircleCheck,
@@ -154,54 +154,50 @@ impl Page {
         }
     }
 
-    /// The id and debug selector of the page's Sidebar item, so
-    /// `the_sidebar_navigates` can click the item the render code built.
-    const fn nav_item(self) -> &'static str {
+    /// The debug selector of the page's tab in the content panel's TabBar,
+    /// so `the_page_tabs_navigate` can click the tab the render code built.
+    const fn tab(self) -> &'static str {
         match self {
-            Self::Buttons => "chrome-nav-buttons",
-            Self::Inputs => "chrome-nav-inputs",
-            Self::Data => "chrome-nav-data",
-            Self::Feedback => "chrome-nav-feedback",
-            Self::Typography => "chrome-nav-typography",
-            Self::Layout => "chrome-nav-layout",
-            Self::Overlays => "chrome-nav-overlays",
-            Self::Charts => "chrome-nav-charts",
-            Self::Icons => "chrome-nav-icons",
-            Self::ThemeMap => "chrome-nav-theme-map",
+            Self::Buttons => "chrome-page-tab-buttons",
+            Self::Inputs => "chrome-page-tab-inputs",
+            Self::Data => "chrome-page-tab-data",
+            Self::Feedback => "chrome-page-tab-feedback",
+            Self::Typography => "chrome-page-tab-typography",
+            Self::Layout => "chrome-page-tab-layout",
+            Self::Overlays => "chrome-page-tab-overlays",
+            Self::Charts => "chrome-page-tab-charts",
+            Self::Icons => "chrome-page-tab-icons",
+            Self::ThemeMap => "chrome-page-tab-theme-map",
         }
     }
 }
 
-/// `Page::ALL` is in Sidebar order and holds each page once.
+/// `Page::ALL` is in TabBar order and holds each page once.
 const _: () = {
     let mut i = 0;
     while i < Page::ALL.len() {
         assert!(
             Page::ALL[i].index() == i,
-            "Page::ALL is not the pages in Sidebar order"
+            "Page::ALL is not the pages in TabBar order"
         );
         i += 1;
     }
 };
 
 /// The width, in logical pixels, the pages were laid out for: the content
-/// area the window gave them before the Sidebar and the inspector flanked it.
-/// The model states no such value (spec §1.3); it is the showcase's own
-/// layout default.
+/// area the window gave them before the side panel flanked it. The model
+/// states no such value (spec §1.3); it is the showcase's own layout default.
 pub(crate) const PAGE_WIDTH_PX: f32 = 880.;
 
-/// The window the showcase opens: `NAV_WIDTH` + the pages' width +
-/// `INSPECTOR_WIDTH` wide, so the content panel starts at the width the pages
-/// were laid out for, and 850px tall. The model states no window size (spec
-/// §1.3), so both are the showcase's own layout defaults; a page taller than
-/// the window scrolls. The sum is taken over the `f32`s, because gpui's
-/// `Pixels` has no `const` arithmetic. The self-tests lay the interface out
-/// at this width, so a measurement they take is a measurement of the real
-/// thing.
-pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> = size(
-    px(NAV_WIDTH_PX + PAGE_WIDTH_PX + INSPECTOR_WIDTH_PX),
-    px(850.),
-);
+/// The window the showcase opens: `LEFT_PANEL_WIDTH` + the pages' width
+/// wide, so the content panel starts at the width the pages were laid out
+/// for, and 850px tall. The model states no window size (spec §1.3), so both
+/// are the showcase's own layout defaults; a page taller than the window
+/// scrolls. The sum is taken over the `f32`s, because gpui's `Pixels` has no
+/// `const` arithmetic. The self-tests lay the interface out at this width, so
+/// a measurement they take is a measurement of the real thing.
+pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> =
+    size(px(LEFT_PANEL_WIDTH_PX + PAGE_WIDTH_PX), px(850.));
 
 /// The window's title: this crate's name and version. The title bar's label,
 /// the title the OS shows, and the Windows screenshot capture, which finds
@@ -230,52 +226,38 @@ pub(crate) const CHROME_APP_MENU_BAR: &str = "chrome-app-menu-bar";
 /// `the_toolbar_is_the_models_toolbar` can measure it.
 pub(crate) const CHROME_TOOLBAR: &str = "chrome-toolbar";
 
-/// The debug selector the Sidebar carries, so the toggle test can measure it.
-pub(crate) const CHROME_SIDEBAR: &str = "chrome-sidebar";
+/// The id and debug selector of the side panel: the theme settings, a
+/// Separator and the inspector, the body's first panel.
+pub(crate) const CHROME_SIDE_PANEL: &str = "chrome-side-panel";
 
-/// The debug selector the status bar's left-panel toggle carries, the
+/// The debug selector the status bar's side-panel toggle carries, the
 /// status bar's first item.
-pub(crate) const CHROME_SIDEBAR_TOGGLE: &str = "chrome-sidebar-toggle";
+pub(crate) const CHROME_SIDE_PANEL_TOGGLE: &str = "chrome-side-panel-toggle";
 
-/// The debug selector the status bar's inspector toggle carries, the status
-/// bar's last item.
-pub(crate) const CHROME_INSPECTOR_TOGGLE: &str = "chrome-inspector-toggle";
+/// The id and debug selector of the theme settings at the top of the side
+/// panel, one labelled row each.
+pub(crate) const CHROME_THEME_SETTINGS: &str = "chrome-theme-settings";
 
-/// The debug selector the Sidebar's header carries: the theme settings, one
-/// labelled row each.
-pub(crate) const CHROME_SIDEBAR_HEADER: &str = "chrome-sidebar-header";
-
-/// The ids and debug selectors of the Sidebar header's three labels, in
-/// their order: Theme, Mode, Icon set.
+/// The ids and debug selectors of the theme settings' three labels, in
+/// their order: Theme, Mode, Icon theme.
 pub(crate) const CHROME_LABEL_THEME: &str = "chrome-label-theme";
 pub(crate) const CHROME_LABEL_MODE: &str = "chrome-label-mode";
-pub(crate) const CHROME_LABEL_ICON_SET: &str = "chrome-label-icon-set";
+pub(crate) const CHROME_LABEL_ICON_THEME: &str = "chrome-label-icon-theme";
 
-/// The initial width of the Sidebar's panel. The model states no such value:
-/// `SidebarTheme` has no width (spec §1.3), so this is the showcase's own
-/// layout default, and dragging the panel's handle changes it.
+/// The id and debug selector of the Separator between the theme settings
+/// and the inspector.
+pub(crate) const CHROME_SIDE_PANEL_SEPARATOR: &str = "chrome-side-panel-separator";
+
+/// The initial width of the side panel. The model states no such width
+/// (spec §1.3), so this is the showcase's own layout default, and dragging
+/// the panel's handle changes it.
 ///
-/// It is 200px, the width the Sidebar had before its header held the theme
-/// settings (spec §3.3). The header's three controls are a Combobox and two
-/// Selects, triggers that take the panel's width and truncate their text, so
-/// their text forces no width on the panel; what does is the minimum width
-/// `geometry::select` and `geometry::combobox` give the triggers,
-/// `combo_box.min_width`, against the panel less the header slot's padding,
-/// which is rem-based (sidebar/mod.rs:431-432) and so grows with the text.
-/// Measured by `the_sidebar_header_holds_the_theme_settings` -- each native
-/// preset resolved at its own platform's DPI, at text scale 1 and at 2 --
-/// the header fits at 200px and down to 172px; at 171px, under ios at text
-/// scale 2, the header is 119px wide, narrower than the triggers' 120px
-/// minimum. The test lays text out with gpui's test text system, which
-/// advances every glyph 0.6em (gpui-pre platform.rs, `NoopTextSystem`).
-pub(crate) const NAV_WIDTH: Pixels = px(NAV_WIDTH_PX);
-const NAV_WIDTH_PX: f32 = 200.;
-
-/// The initial width of the inspector's panel. The model states no such
-/// value: it has no inspector at all (spec §1.3), so this is the showcase's
-/// own layout default, and dragging the panel's handle changes it.
-pub(crate) const INSPECTOR_WIDTH: Pixels = px(INSPECTOR_WIDTH_PX);
-const INSPECTOR_WIDTH_PX: f32 = 300.;
+/// It is 300px, the width the inspector's content was laid out for when it
+/// had a panel of its own. `the_side_panel_holds_the_theme_settings_and_the_inspector`
+/// checks that the theme settings and the inspector fit it under every
+/// offered preset, at text scale 1 and at 2.
+pub(crate) const LEFT_PANEL_WIDTH: Pixels = px(LEFT_PANEL_WIDTH_PX);
+const LEFT_PANEL_WIDTH_PX: f32 = 300.;
 
 /// The debug selector the active page's root carries, so `every_page_lays_out`
 /// can find the page it switched to.
@@ -288,10 +270,14 @@ pub(crate) const PAGE_ROOT: &str = "page-root";
 /// reaches under the bar.
 pub(crate) const CONTENT_SCROLL: &str = "content-scroll";
 
-/// The debug selectors the content column and the inspector carry, each as
-/// wide as its resizable panel, so `dragging_a_handle_resizes_its_neighbours`
-/// can measure both panels.
+/// The debug selector the content column carries, as wide as its resizable
+/// panel, so `dragging_the_handle_resizes_both_panels` can measure it.
 pub(crate) const CONTENT_PANEL: &str = "content-panel";
+
+/// The debug selector the content panel's TabBar carries, above the page.
+pub(crate) const CHROME_PAGE_TABS: &str = "chrome-page-tabs";
+
+/// The debug selector the inspector's root carries, in the side panel.
 pub(crate) const INSPECTOR_PANEL: &str = "inspector-panel";
 
 /// The debug selector the label with the shown info's title carries.
@@ -307,10 +293,9 @@ pub(crate) const INSPECTOR_COPY: &str = "inspector-copy";
 /// installed, the swatches may not be the colours painted.
 pub(crate) const INSPECTOR_TOKENS_NOTE: &str = "inspector-tokens-note";
 
-/// The ids and debug selectors of the resizable group's two handles: between
-/// the Sidebar and the content, and between the content and the inspector.
-pub(crate) const CHROME_HANDLE_NAV: &str = "chrome-resize-sidebar-content";
-pub(crate) const CHROME_HANDLE_INSPECTOR: &str = "chrome-resize-content-inspector";
+/// The id and debug selector of the resizable group's handle, between the
+/// side panel and the content.
+pub(crate) const CHROME_HANDLE: &str = "chrome-resize-side-panel-content";
 
 /// The debug selectors the toolbar's three buttons carry, in their order:
 /// Command Palette, Reload System Theme and Preferences.
@@ -448,6 +433,32 @@ pub(crate) const LAYOUT_BREADCRUMB: &str = "layout-breadcrumb";
 pub(crate) const LAYOUT_COLLAPSIBLE: &str = "layout-collapsible";
 pub(crate) const LAYOUT_COLLAPSIBLE_TOGGLE: &str = "layout-collapsible-toggle";
 pub(crate) const LAYOUT_COLLAPSIBLE_CONTENT: &str = "layout-collapsible-content";
+/// The ids and debug selectors of the Layout page's two Sidebar samples,
+/// expanded and collapsed, and of their items, as `(label, icon, id in the
+/// expanded sample, id in the collapsed one)`, which
+/// `the_sidebar_samples_icons_fit_their_items` measures.
+pub(crate) const LAYOUT_SIDEBAR_EXPANDED: &str = "layout-sidebar-expanded";
+pub(crate) const LAYOUT_SIDEBAR_COLLAPSED: &str = "layout-sidebar-collapsed";
+pub(crate) const LAYOUT_SIDEBAR_ITEMS: [(&str, IconName, &str, &str); 3] = [
+    (
+        "Dashboard",
+        IconName::LayoutDashboard,
+        "layout-sidebar-expanded-dashboard",
+        "layout-sidebar-collapsed-dashboard",
+    ),
+    (
+        "Inbox",
+        IconName::Inbox,
+        "layout-sidebar-expanded-inbox",
+        "layout-sidebar-collapsed-inbox",
+    ),
+    (
+        "Settings",
+        IconName::Settings,
+        "layout-sidebar-expanded-settings",
+        "layout-sidebar-collapsed-settings",
+    ),
+];
 
 /// The ids and debug selectors of the Overlays page's Dialog trigger, and of
 /// the Button and the footer inside the Dialog it opens, which
@@ -481,9 +492,9 @@ pub(crate) const CHARTS_CANDLESTICK_CHART: &str = "charts-candlestick-chart";
 // the self-tests drive; the name is shared by the render code and the tests,
 // so neither can drift onto an element the other does not mean.
 pub(crate) const PROBE_RATING: &str = "probe-rating";
-/// The Sidebar header's preset Combobox, which
-/// `the_sidebar_header_switches_the_preset` drives and
-/// `the_sidebar_header_holds_the_theme_settings` measures.
+/// The theme settings' preset Combobox, which
+/// `the_theme_settings_switch_the_preset` drives and
+/// `the_side_panel_holds_the_theme_settings_and_the_inspector` measures.
 pub(crate) const PROBE_COMBOBOX: &str = "probe-combobox";
 pub(crate) const PROBE_CLIPBOARD: &str = "probe-clipboard";
 pub(crate) const PROBE_PAGINATION: &str = "probe-pagination";
@@ -493,12 +504,12 @@ pub(crate) const PROBE_STEPPER: &str = "probe-stepper";
 pub(crate) const PROBE_CAROUSEL_LAST: &str = "probe-carousel-last";
 pub(crate) const PROBE_ALERT_DIALOG: &str = "probe-alert-dialog";
 pub(crate) const PROBE_NOTIFICATION: &str = "probe-notification";
-/// The Sidebar header's colour-mode Select, which
+/// The theme settings' colour-mode Select, which
 /// `interactive_controls_respond` drives.
 pub(crate) const PROBE_COLOR_MODE: &str = "probe-color-mode";
-/// The Sidebar header's icon-set Select, which
-/// `the_sidebar_header_switches_the_icon_set` drives.
-pub(crate) const PROBE_ICON_SET: &str = "probe-icon-set";
+/// The theme settings' icon-theme Select, which
+/// `the_theme_settings_switch_the_icon_theme` drives.
+pub(crate) const PROBE_ICON_THEME: &str = "probe-icon-theme";
 
 /// The debug selector a full-width item in the Settings demo's first group
 /// carries. Nothing clicks it: its right edge is where a Settings row ends,
@@ -929,7 +940,7 @@ fn main() {
                     if let Some(ref theme_name) = cli_args.theme {
                         s.current_theme_name = theme_name.clone();
                         s.apply_theme_by_name(theme_name, window, cx);
-                        // Show the overridden theme in the Sidebar's preset switch
+                        // Show the overridden theme in the preset switch
                         let key = SharedString::from(theme_name.clone());
                         s.preset_combobox.update(cx, |combobox, cx| {
                             combobox.set_selected_values(&[key], window, cx);

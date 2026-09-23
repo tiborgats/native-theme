@@ -4,7 +4,7 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
-    FontWeight, Hsla, ImageSource, Keystroke, Pixels, RenderOnce, SharedString, Stateful,
+    FontWeight, Hsla, ImageSource, Keystroke, Pixels, Rems, RenderOnce, SharedString, Stateful,
     StyleRefinement, Window, div, prelude::*, px, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
@@ -102,7 +102,7 @@ use crate::support::{
     with_padding,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_SIDEBAR_HEADER, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK,
+    CHROME_APP_MENU_BAR, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, LIST_DEMO, OVERLAY_ABOUT_LINK,
     OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
     OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST,
     PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page,
@@ -207,16 +207,14 @@ pub(crate) fn toolbar(
 }
 
 /// The window's `StatusBar` (spec §2.7, §3.2), refined by
-/// `geometry::status_bar`: on the left `left_toggle`, then `environment`; on
-/// the right `shown`, the title of what the inspector shows, where it shows
-/// one, then `right_toggle`.
+/// `geometry::status_bar`: on the left `toggle`, then `environment`; on the
+/// right `shown`, the title of what the inspector shows, where it shows one.
 pub(crate) fn status_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    left_toggle: impl IntoElement,
+    toggle: impl IntoElement,
     environment: impl Into<SharedString>,
     shown: Option<SharedString>,
-    right_toggle: impl IntoElement,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
@@ -228,7 +226,7 @@ pub(crate) fn status_bar(
         "status_bar",
         &mut bar_info,
     )
-    .left(left_toggle)
+    .left(toggle)
     // Plain text, not Labels, as in the title bar: a Label would paint
     // foreground over the colour `geometry::status_bar` gives the bar.
     .left(
@@ -241,13 +239,12 @@ pub(crate) fn status_bar(
     .child(div().flex_1().debug_selector(|| STATUS_MIDDLE.into()))
     .when_some(shown, |bar, title| {
         bar.right(div().debug_selector(|| STATUS_HOVERED.into()).child(title))
-    })
-    .right(right_toggle);
+    });
     bar.info(ui, "chrome-status-bar", bar_info)
 }
 
 /// The preset switch: a searchable `Combobox` over `state`'s presets,
-/// refined by `geometry::combobox`, as wide as the Sidebar header it is in.
+/// refined by `geometry::combobox`, as wide as the theme settings it is in.
 pub(crate) fn preset_combobox(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -264,11 +261,11 @@ pub(crate) fn preset_combobox(
         &mut combobox_info,
     )
     .w_full();
-    combobox.info(ui, "chrome-sidebar-preset", combobox_info)
+    combobox.info(ui, "chrome-settings-preset", combobox_info)
 }
 
 /// The colour-mode `Select` over `state`, refined by `geometry::select`, as
-/// wide as the Sidebar header it is in: System, Light and Dark, and the
+/// wide as the theme settings it is in: System, Light and Dark, and the
 /// choice dispatches `SetColorMode` (`Showcase::new`).
 pub(crate) fn color_mode_select(
     ui: &Entity<InfoRegistry>,
@@ -284,11 +281,11 @@ pub(crate) fn color_mode_select(
         &mut select_info,
     )
     .w_full();
-    select.info(ui, "chrome-sidebar-color-mode", select_info)
+    select.info(ui, "chrome-settings-color-mode", select_info)
 }
 
-/// The icon-set `Select` over `state`, refined by `geometry::select`, as
-/// wide as the Sidebar header it is in.
+/// The icon-theme `Select` over `state`, refined by `geometry::select`, as
+/// wide as the theme settings it is in.
 pub(crate) fn icon_set_select(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -303,7 +300,7 @@ pub(crate) fn icon_set_select(
         &mut select_info,
     )
     .w_full();
-    select.info(ui, "chrome-sidebar-icon-set", select_info)
+    select.info(ui, "chrome-settings-icon-theme", select_info)
 }
 
 /// One of the toolbar's icon Buttons.
@@ -311,9 +308,9 @@ pub(crate) struct ToolbarButton<'a> {
     pub button_id: &'static str,
     /// gpui-component's icon of the button, which `drawn` is of.
     pub icon: IconName,
-    /// That icon as the chosen icon set gives it.
+    /// That icon as the chosen icon theme gives it.
     pub drawn: ChromeIcon,
-    /// The chosen icon set, as the Icons page names it.
+    /// The chosen icon theme, as the Icons page names it.
     pub set: &'a str,
     /// The tooltip's text; the action's key binding follows it. The button's
     /// label where the chosen set has no icon for it.
@@ -325,9 +322,9 @@ pub(crate) struct ToolbarButton<'a> {
 
 /// A Ghost `Button` for the toolbar -- the Buttons page's, built with
 /// `variants::ghost_button` -- dispatching its action, its icon of the
-/// chosen set at `geometry::icon_size_toolbar` and its tooltip showing the
-/// action's key binding. Where the set has no icon for it, it shows its
-/// tooltip's text instead, never another set's icon.
+/// chosen icon theme at `geometry::icon_size_toolbar` and its tooltip showing
+/// the action's key binding. Where the icon theme has no icon for it, it
+/// shows its tooltip's text instead, never another icon theme's icon.
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
 /// whatever it is given to a size derived from the Button's own
@@ -371,14 +368,14 @@ pub(crate) fn toolbar_button(
     )
 }
 
-/// One of the status bar's two panel toggles (spec §3.2).
+/// The status bar's panel toggle (spec §3.2, S4).
 pub(crate) struct PanelToggle<'a> {
     pub button_id: &'static str,
     /// gpui-component's icon of the toggle, which `drawn` is of.
     pub icon: IconName,
-    /// That icon as the chosen icon set gives it.
+    /// That icon as the chosen icon theme gives it.
     pub drawn: ChromeIcon,
-    /// The chosen icon set, as the Icons page names it.
+    /// The chosen icon theme, as the Icons page names it.
     pub set: &'a str,
     /// The tooltip's text; the action's key binding follows it. The toggle's
     /// label where the chosen set has no icon for it.
@@ -394,11 +391,11 @@ pub(crate) struct PanelToggle<'a> {
 
 /// A small Ghost `Button` for the status bar -- built with
 /// `variants::ghost_button`, as the toolbar's are -- dispatching its action,
-/// selected while its panel is open, its icon of the chosen set at
+/// selected while its panel is open, its icon of the chosen icon theme at
 /// `geometry::icon_size_small` and its tooltip showing the action's key
-/// binding. Where the set has no icon for it, it shows its tooltip's text
-/// instead, never another set's icon. The icon is the Button's child, not
-/// its `icon`, for the reason `toolbar_button` gives.
+/// binding. Where the icon theme has no icon for it, it shows its tooltip's
+/// text instead, never another icon theme's icon. The icon is the Button's
+/// child, not its `icon`, for the reason `toolbar_button` gives.
 pub(crate) fn panel_toggle(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -442,33 +439,29 @@ pub(crate) fn panel_toggle(
     )
 }
 
-/// The gap between the Sidebar header's rows, and between each row's label
+/// The gap between the theme settings' rows, and between each row's label
 /// and its control, where `layout.widget_gap` is unstated (spec §3.1). The
-/// header is the showcase's own element, with no toolkit default to fall
+/// settings are the showcase's own element, with no toolkit default to fall
 /// back on, so this is the showcase's own choice, not a platform's value,
-/// and the header's info says so.
-pub(crate) const SIDEBAR_HEADER_GAP: Pixels = px(8.);
+/// and the settings' info says so.
+pub(crate) const THEME_SETTINGS_GAP: Pixels = px(8.);
 
-/// The Sidebar's header (spec §3.3): `rows`, each `(id, text, control)`, a
+/// The theme settings (spec §3.3, S2): `rows`, each `(id, text, control)`, a
 /// `label` reading `text` above `control`. The rows, and each row's label and
-/// control, are `widget_gap` apart, or [`SIDEBAR_HEADER_GAP`] where that is
-/// unstated. The Sidebar pads its header slot itself (sidebar/mod.rs:431-432),
-/// so the header adds no margin; it takes the slot's width, and so do the
+/// control, are `widget_gap` apart, or [`THEME_SETTINGS_GAP`] where that is
+/// unstated. The side panel pads around them (`side_panel`), so they add no
+/// margin of their own; they take the width they are given, and so do the
 /// controls.
-///
-/// Plain elements, not upstream's `SidebarHeader`, which is one row that
-/// highlights under the pointer and when selected, and opens a dropdown
-/// menu (sidebar/header.rs), not a container for controls.
-pub(crate) fn sidebar_header<const N: usize>(
+pub(crate) fn theme_settings<const N: usize>(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     widget_gap: Option<Pixels>,
     rows: [(&'static str, &'static str, AnyElement); N],
 ) -> Stateful<Div> {
-    let gap = widget_gap.unwrap_or(SIDEBAR_HEADER_GAP);
-    let mut header_info = info::sidebar_header(widget_gap, SIDEBAR_HEADER_GAP);
+    let gap = widget_gap.unwrap_or(THEME_SETTINGS_GAP);
+    let mut settings_info = info::theme_settings(widget_gap, THEME_SETTINGS_GAP);
     if widget_gap.is_some() {
-        header_info = header_info.geometry("widget_gap");
+        settings_info = settings_info.geometry("widget_gap");
     }
     v_flex()
         .w_full()
@@ -480,68 +473,118 @@ pub(crate) fn sidebar_header<const N: usize>(
                 .child(label(ui, cx, id, text))
                 .child(control)
         }))
-        .info(ui, "chrome-sidebar-header", header_info)
+        .info(ui, CHROME_THEME_SETTINGS, settings_info)
         .w_full()
         .min_w_0()
-        .debug_selector(|| CHROME_SIDEBAR_HEADER.into())
+        .debug_selector(|| CHROME_THEME_SETTINGS.into())
 }
 
-/// The window's `Sidebar` (spec §2.4): `header` above one item per page
-/// with its icon as `icons` gives it from the icon set named `set`, the item
-/// of `active` marked active, collapsed to icons while `collapsed`. The
-/// caller passes no header for the rail (spec §3.3): upstream draws one in
-/// the rail too (sidebar/mod.rs:427-437), which has no room for it.
+/// The side panel (spec S2): `settings`, padded by `container_margin` where
+/// the installed layout states one, over `separator`, over `inspector`, which
+/// fills the rest of the panel's height and scrolls its own content.
 ///
-/// Its width is its container's: a width that is not an absolute pixel
-/// length keeps upstream from animating it to a width of its own
-/// (sidebar/mod.rs, `sidebar_expanded_width`), so expanded it fills the
-/// resizable panel it is in, and collapsed it is upstream's icon rail.
-pub(crate) fn sidebar(
+/// Plain elements, not upstream's `Sidebar`: a Sidebar's children must
+/// implement `SidebarItem` (sidebar/mod.rs:211), and neither the settings
+/// nor the inspector is an item.
+pub(crate) fn side_panel(
     ui: &Entity<InfoRegistry>,
-    cx: &App,
-    active: Page,
-    collapsed: bool,
-    icons: impl Fn(Page) -> ChromeIcon,
-    set: SharedString,
-    header: Option<AnyElement>,
+    container_margin: Option<Pixels>,
+    settings: impl IntoElement,
+    separator: impl IntoElement,
+    inspector: impl IntoElement,
 ) -> Stateful<Div> {
-    let items = Page::ALL.map(|page| NavItem {
-        ui: ui.clone(),
-        page,
-        active: page == active,
-        collapsed: false,
-        icon: icons(page),
-        set: set.clone(),
-    });
-    Sidebar::new("chrome-sidebar")
-        .collapsed(collapsed)
-        .w_full()
-        .when_some(header, Sidebar::header)
-        .children(items)
-        .info(ui, "chrome-sidebar", info::sidebar(cx.theme(), collapsed))
-        .h_full()
-        .when(!collapsed, |sidebar| sidebar.w_full())
+    let mut panel_info = info::side_panel(container_margin);
+    if container_margin.is_some() {
+        panel_info = panel_info.geometry("container_margin");
+    }
+    v_flex()
+        .size_full()
+        .child(with_padding(div().w_full(), container_margin).child(settings))
+        .child(separator)
+        .child(div().w_full().flex_1().min_h_0().child(inspector))
+        .info(ui, "chrome-side-panel", panel_info)
+        .size_full()
 }
 
-/// A page's item in the window's Sidebar.
+/// One of the Layout page's `Sidebar` samples (spec S5).
+pub(crate) struct SidebarSample {
+    /// Its info's id and its debug selector.
+    pub id: &'static str,
+    /// Whether it is collapsed to its icon rail.
+    pub collapsed: bool,
+    /// The text its header reads.
+    pub header: &'static str,
+    /// Its items, as `(id, label, icon, drawn)`: `drawn` is `icon` as the
+    /// chosen icon theme gives it. The first is active.
+    pub items: [(&'static str, &'static str, IconName, ChromeIcon); 3],
+    /// The chosen icon theme, as the Icons page names it.
+    pub set: SharedString,
+    /// Its height, which a Sidebar needs, its items being a list that takes
+    /// the height it is given (sidebar/mod.rs, `RenderOnce for Sidebar`).
+    pub height: Rems,
+}
+
+/// A `Sidebar` sample (spec S5): its header above its items, collapsed to
+/// its icon rail where the sample says so. No width is given: upstream's own
+/// apply, its default expanded width and its fixed rail
+/// (sidebar/mod.rs:27-28).
+pub(crate) fn sidebar(ui: &Entity<InfoRegistry>, cx: &App, sample: SidebarSample) -> Stateful<Div> {
+    let SidebarSample {
+        id,
+        collapsed,
+        header,
+        items,
+        set,
+        height,
+    } = sample;
+    let items = items
+        .into_iter()
+        .enumerate()
+        .map(|(ix, (item_id, label, icon, drawn))| SampleItem {
+            ui: ui.clone(),
+            id: item_id,
+            label,
+            active: ix == 0,
+            collapsed: false,
+            icon,
+            drawn,
+            set: set.clone(),
+        });
+    // Plain text, not a Label: `Label::render` sets `foreground` on its own
+    // element (label.rs:211), which would hide the sidebar_foreground the
+    // Sidebar gives its content.
+    Sidebar::new(id)
+        .collapsed(collapsed)
+        .header(div().min_w_0().truncate().child(header))
+        .children(items)
+        .info(ui, id, info::layout::sidebar(cx.theme(), collapsed, header))
+        .h(height)
+        .debug_selector(move || id.into())
+}
+
+/// An item of a Layout page `Sidebar` sample.
 ///
 /// A `Sidebar` renders its items itself, as it lays out its list
 /// (sidebar/mod.rs, `RenderOnce for Sidebar`), so an item's info cannot be
 /// wrapped around it from outside; this item builds its `SidebarMenuItem`
 /// and wraps the info around what that renders.
 #[derive(Clone)]
-pub(crate) struct NavItem {
+pub(crate) struct SampleItem {
     ui: Entity<InfoRegistry>,
-    page: Page,
+    /// The item's info id and debug selector.
+    id: &'static str,
+    label: &'static str,
     active: bool,
     collapsed: bool,
-    /// The page's icon as the chosen icon set gives it.
-    icon: ChromeIcon,
-    /// The chosen icon set, as the Icons page names it.
+    /// gpui-component's icon of the item, which `drawn` is of.
+    icon: IconName,
+    /// That icon as the chosen icon theme gives it.
+    drawn: ChromeIcon,
+    /// The chosen icon theme, as the Icons page names it.
     set: SharedString,
 }
 
-impl Collapsible for NavItem {
+impl Collapsible for SampleItem {
     fn collapsed(mut self, collapsed: bool) -> Self {
         self.collapsed = collapsed;
         self
@@ -551,45 +594,40 @@ impl Collapsible for NavItem {
     }
 }
 
-impl SidebarItem for NavItem {
+impl SidebarItem for SampleItem {
     fn render(
         self,
         id: impl Into<ElementId>,
         window: &mut Window,
         cx: &mut App,
     ) -> impl IntoElement {
-        let page = self.page;
-        let mut item_info = info::sidebar_item(
+        let mut item_info = info::layout::sidebar_item(
             cx.theme(),
-            page.label(),
+            self.label,
             self.active,
             self.collapsed,
-            &self.icon,
+            &self.drawn,
             &self.set,
         );
-        let icon = chrome_icon(&self.icon, &page.icon()).map(|icon| nav_icon_sized(cx, icon));
+        let icon = chrome_icon(&self.drawn, &self.icon).map(|icon| sidebar_icon_sized(cx, icon));
         if icon.is_some() && native_value(cx, geometry::icon_size_small).is_some() {
             item_info = item_info.geometry("icon_size_small");
         }
-        let item = SidebarMenuItem::new(page.label());
+        let item = SidebarMenuItem::new(self.label);
         let item = match icon {
             Some(icon) => item.icon(icon),
             None => item,
         };
-        let item =
-            item.active(self.active)
-                .collapsed(self.collapsed)
-                .on_click(move |_, window, cx| {
-                    window.dispatch_action(Box::new(ShowPage(page.index())), cx)
-                });
+        let item = item.active(self.active).collapsed(self.collapsed);
+        let selector = self.id;
         SidebarItem::render(item, id, window, cx)
-            .info(&self.ui, page.nav_item(), item_info)
+            .info(&self.ui, self.id, item_info)
             .w_full()
-            .debug_selector(move || page.nav_item().into())
+            .debug_selector(move || selector.into())
     }
 }
 
-/// `icon` at the size a page's Sidebar item shows it at: the platform's
+/// `icon` at the size a Sidebar sample's item shows it at: the platform's
 /// small icon size.
 ///
 /// Platform-facts §2.1.8 names macOS's small size the sidebar's, and states
@@ -604,34 +642,60 @@ impl SidebarItem for NavItem {
 /// It takes the Icon built: a public helper that builds one and does not
 /// report it fails `every_widget_reports_itself`, and the item it is handed
 /// to reports it.
-pub(crate) fn nav_icon_sized(cx: &App, icon: Icon) -> Icon {
+pub(crate) fn sidebar_icon_sized(cx: &App, icon: Icon) -> Icon {
     match native_value(cx, geometry::icon_size_small) {
         Some(Size::Size(size)) => icon.size(size),
         _ => icon,
     }
 }
 
-/// The inspector's `TabBar` (spec §2.6): Underline at `Size::Small`, `labels`
-/// its tabs, `selected` the one shown; a click hands `on_click` the index of
-/// the tab clicked.
+/// The showcase's two `TabBar`s.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TabBarKind {
+    /// The inspector's (spec §2.6): Widget and Theme.
+    Inspector,
+    /// The content panel's (spec S3): a tab per page, with upstream's menu of
+    /// every tab (tab/tab_bar.rs, `TabBar::menu`).
+    Pages,
+}
+
+/// A `TabBar` of `kind`, Underline at `Size::Small`, over `tabs`, each
+/// `(label, selector)`, `selected` the one shown; a click hands `on_click`
+/// the index of the tab clicked.
 pub(crate) fn tab_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    labels: impl IntoIterator<Item = &'static str>,
+    kind: TabBarKind,
+    tabs: impl IntoIterator<Item = (&'static str, &'static str)>,
     selected: usize,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    TabBar::new("inspector-tabs")
+    let (id, info_id, menu, bar_info) = match kind {
+        TabBarKind::Inspector => (
+            "inspector-tabs",
+            "chrome-inspector-tabs",
+            false,
+            info::inspector_tab_bar(cx.theme()),
+        ),
+        TabBarKind::Pages => (
+            "page-tabs",
+            "chrome-page-tabs",
+            true,
+            info::page_tab_bar(cx.theme()),
+        ),
+    };
+    TabBar::new(id)
         .underline()
         .with_size(Size::Small)
-        .children(labels.into_iter().map(|label| Tab::new().label(label)))
+        .menu(menu)
+        .children(tabs.into_iter().map(|(label, selector)| {
+            Tab::new()
+                .label(label)
+                .debug_selector(move || selector.into())
+        }))
         .selected_index(selected)
         .on_click(on_click)
-        .info(
-            ui,
-            "chrome-inspector-tabs",
-            info::inspector_tab_bar(cx.theme()),
-        )
+        .info(ui, info_id, bar_info)
 }
 
 /// gpui-base's `HANDLE_PADDING` (resizable/resize_handle.rs:11): the padding

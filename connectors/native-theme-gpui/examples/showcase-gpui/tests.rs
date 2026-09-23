@@ -20,7 +20,7 @@ use std::rc::Rc;
 
 use crate::app::{
     AppColorMode, OpenCommandPalette, OpenPreferences, Quit, SetColorMode, ShowPage, Showcase,
-    ToggleInspector, ToggleSidebar,
+    ToggleSidePanel,
 };
 use crate::chrome::menus;
 use crate::demo::{AREA_FILL_OPACITY, IconSizeContext};
@@ -35,27 +35,28 @@ use crate::support::{
 use crate::{
     BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
     BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
-    CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE_INSPECTOR, CHROME_HANDLE_NAV,
-    CHROME_INSPECTOR_TOGGLE, CHROME_LABEL_ICON_SET, CHROME_LABEL_MODE, CHROME_LABEL_THEME,
-    CHROME_SIDEBAR, CHROME_SIDEBAR_HEADER, CHROME_SIDEBAR_TOGGLE, CHROME_STATUS_BAR,
-    CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES,
-    CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, DATA_PAGINATION,
-    DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT,
-    FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER,
-    FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
-    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
-    INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, INSPECTOR_WIDTH, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
-    LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_GROUP_BOX_NORMAL,
-    LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID, LIST_DEMO,
-    NAV_WIDTH, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
-    OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
-    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_SET, PROBE_NOTIFICATION, PROBE_PAGINATION,
-    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
-    STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
-    TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
+    CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE, CHROME_LABEL_ICON_THEME,
+    CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_PAGE_TABS, CHROME_SIDE_PANEL,
+    CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE, CHROME_STATUS_BAR,
+    CHROME_THEME_SETTINGS, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE,
+    CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL,
+    CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER,
+    FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
+    FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
+    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA,
+    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE,
+    LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
+    LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
+    LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
+    LAYOUT_SIDEBAR_ITEMS, LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME,
+    OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
+    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM,
+    OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT,
+    PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST,
+    PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME,
+    PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page,
+    STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2,
+    TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
 };
 
 /// The window the interaction test lays the showcase out in.
@@ -189,7 +190,7 @@ fn read<R>(
     cx.update(|_window, cx| f(showcase.read(cx), cx))
 }
 
-/// Every page lays out: the Sidebar's ten pages each render on the test
+/// Every page lays out: the TabBar's ten pages each render on the test
 /// platform, each leaves a page root behind, and that root has a size.
 ///
 /// And no frame draws two info targets under one id (info/registry.rs,
@@ -203,7 +204,7 @@ fn read<R>(
 #[gpui::test]
 fn every_page_lays_out(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    assert_eq!(Page::ALL.len(), 10, "the Sidebar no longer has ten pages");
+    assert_eq!(Page::ALL.len(), 10, "the TabBar no longer has ten pages");
     for page in Page::ALL {
         show(&mut cx, &showcase, page);
         assert_eq!(read(&mut cx, &showcase, |this, _| this.active_page), page);
@@ -577,7 +578,7 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
         "Notification: nothing was pushed"
     );
 
-    // --- The Sidebar header's colour-mode Select ------------------------
+    // --- The theme settings' colour-mode Select ------------------------
     //
     // Its rows are System, Light and Dark, and they are not searchable, so
     // the keyboard walks from the chosen row to Dark and back to System, and
@@ -611,8 +612,8 @@ fn interactive_controls_respond(cx: &mut TestAppContext) {
     );
     let select = bounds_of(&mut cx, PROBE_COLOR_MODE);
     assert!(
-        within(select, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
-        "the colour-mode Select at {select:?} is not in the Sidebar header"
+        within(select, bounds_of(&mut cx, CHROME_THEME_SETTINGS)),
+        "the colour-mode Select at {select:?} is not in the theme settings"
     );
     click(&mut cx, PROBE_COLOR_MODE);
     let steps = if start == AppColorMode::Light { 1 } else { 2 };
@@ -806,7 +807,7 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
 
 /// The toolbar holds the actions and nothing else (spec §3.3): the Command
 /// Palette, Reload System Theme and Preferences buttons, in that order. The
-/// theme settings and the panel toggles are drawn elsewhere, clear of it,
+/// theme settings and the side-panel toggle are drawn elsewhere, clear of it,
 /// and the Preferences button opens the Preferences sheet.
 #[gpui::test]
 fn the_toolbar_holds_the_actions(cx: &mut TestAppContext) {
@@ -835,9 +836,8 @@ fn the_toolbar_holds_the_actions(cx: &mut TestAppContext) {
     for selector in [
         PROBE_COMBOBOX,
         PROBE_COLOR_MODE,
-        PROBE_ICON_SET,
-        CHROME_SIDEBAR_TOGGLE,
-        CHROME_INSPECTOR_TOGGLE,
+        PROBE_ICON_THEME,
+        CHROME_SIDE_PANEL_TOGGLE,
     ] {
         let elsewhere = bounds_of(&mut cx, selector);
         assert!(
@@ -963,15 +963,15 @@ fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
     );
 }
 
-/// The Sidebar header's Combobox is the real preset switch: choosing a
-/// preset in it installs that preset.
+/// The theme settings' Combobox is the real preset switch: choosing a preset
+/// in it installs that preset.
 #[gpui::test]
-fn the_sidebar_header_switches_the_preset(cx: &mut TestAppContext) {
+fn the_theme_settings_switch_the_preset(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let combobox = bounds_of(&mut cx, PROBE_COMBOBOX);
     assert!(
-        within(combobox, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
-        "the preset Combobox at {combobox:?} is not in the Sidebar header"
+        within(combobox, bounds_of(&mut cx, CHROME_THEME_SETTINGS)),
+        "the preset Combobox at {combobox:?} is not in the theme settings"
     );
     assert_ne!(
         read(&mut cx, &showcase, |this, _| this
@@ -996,11 +996,11 @@ fn the_sidebar_header_switches_the_preset(cx: &mut TestAppContext) {
             .current_theme_name
             .clone()),
         "nord",
-        "choosing nord in the Sidebar header's Combobox did not install it"
+        "choosing nord in the theme settings' Combobox did not install it"
     );
 }
 
-/// The presets the Sidebar header's fit is checked under, each with the font
+/// The presets the side panel's fit is checked under, each with the font
 /// DPI it is resolved at. A native preset is resolved at its own platform's
 /// DPI, as the seams test does (tests/seams.rs, `NATIVE`): macOS at 72,
 /// where a point is a pixel (native-theme `detect.rs`,
@@ -1012,7 +1012,7 @@ fn the_sidebar_header_switches_the_preset(cx: &mut TestAppContext) {
 /// preset lists `platforms = ["macos", "ios"]`), so it is resolved at 72.
 /// The colour-scheme preset, offered everywhere, keeps the host's DPI
 /// (`None`), as `ResolutionContext::from_system` reads it.
-const SIDEBAR_HEADER_PRESETS: [(&str, Option<f32>); 6] = [
+const SIDE_PANEL_PRESETS: [(&str, Option<f32>); 6] = [
     ("kde-breeze", Some(96.0)),
     ("adwaita", Some(96.0)),
     ("macos-sonoma", Some(72.0)),
@@ -1022,23 +1022,13 @@ const SIDEBAR_HEADER_PRESETS: [(&str, Option<f32>); 6] = [
 ];
 
 /// Install `preset` as `use_preset` does, then re-install its theme resolved
-/// at `dpi`, or at the host's DPI where it is `None`: the point sizes it
-/// states become pixels at that DPI, as they do on the platform whose DPI it
-/// is. The accessibility preferences are the defaults, a text scale of 1,
-/// not the host's: `AccessibilityPreferences::from_system`, which the
-/// showcase's own preset path reads, would scale the text by whatever the
-/// desktop the test runs on is set to (native-theme-gpui lib.rs, `to_theme`).
-fn use_preset_at(
-    cx: &mut VisualTestContext,
-    showcase: &Entity<Showcase>,
-    preset: &str,
-    dpi: Option<f32>,
-) {
-    use_preset_scaled(cx, showcase, preset, dpi, 1.0);
-}
-
-/// [`use_preset_at`], with the text scaled by `text_scale`, the
-/// accessibility preferences' only other difference from the defaults.
+/// at `dpi`, or at the host's DPI where it is `None`, with the text scaled by
+/// `text_scale`: the point sizes it states become pixels at that DPI, as they
+/// do on the platform whose DPI it is. The accessibility preferences are
+/// otherwise the defaults, not the host's: `AccessibilityPreferences::from_system`,
+/// which the showcase's own preset path reads, would scale the text by
+/// whatever the desktop the test runs on is set to (native-theme-gpui
+/// lib.rs, `to_theme`).
 fn use_preset_scaled(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
@@ -1079,13 +1069,13 @@ fn use_preset_scaled(
     draw(cx);
 }
 
-/// The narrowest the Sidebar header's triggers can be: the minimum width
+/// The narrowest the theme settings' triggers can be: the minimum width
 /// `geometry::select` and `geometry::combobox` give them, `None` where no
-/// native theme is installed or they give none. A trigger takes the header's
-/// width and this minimum where that is wider, and its wrapper, which the
-/// probes are on, is the header's width either way, so a trigger wider than
-/// the header does not show in the wrapper's bounds.
-fn header_trigger_min_width(
+/// native theme is installed or they give none. A trigger takes the
+/// settings' width and this minimum where that is wider, and its wrapper,
+/// which the probes are on, is the settings' width either way, so a trigger
+/// wider than the settings does not show in the wrapper's bounds.
+fn settings_trigger_min_width(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
 ) -> Option<Pixels> {
@@ -1104,108 +1094,115 @@ fn header_trigger_min_width(
     })
 }
 
-/// The Sidebar header holds the theme settings (spec §3.3): Theme, Mode and
-/// Icon set, each a label above its control, in that order, the gaps
-/// `layout.widget_gap`. Each control is a trigger that takes the panel's
-/// width and truncates its text (select.rs, `SelectState::render`;
-/// combobox.rs, `Combobox`), so its text never widens it; the narrowest it
-/// can be is the minimum its builder gives it, which the header has to be at
-/// least as wide as (`header_trigger_min_width`). Checked under
-/// every native preset, at its platform's DPI, and one colour-scheme preset
-/// at the host's (`SIDEBAR_HEADER_PRESETS`), whose font sizes differ -- at a
-/// text scale of 1, whatever the host's, so the measurement is the same on
-/// every machine (`use_preset_at`) -- and again at a text scale of 2, where
-/// the header's rem-based padding and every text grow: no row's label or
-/// control may extend past the panel, and the triggers' minimum still has to
-/// fit the header.
+/// The side panel holds, top to bottom (spec S2): the theme settings --
+/// Theme, Mode and Icon theme, each a label above its control, the gaps
+/// `layout.widget_gap` -- then a Separator, then the inspector, its TabBar
+/// first, down to the panel's bottom. The panel opens `LEFT_PANEL_WIDTH`
+/// wide, and everything in it fits that width: each control is a trigger
+/// that takes the settings' width and truncates its text (select.rs,
+/// `SelectState::render`; combobox.rs, `Combobox`), so its text never widens
+/// it, and the narrowest it can be is the minimum its builder gives it,
+/// which the settings have to be at least as wide as
+/// (`settings_trigger_min_width`). Checked under every native preset, at its
+/// platform's DPI, and one colour-scheme preset at the host's
+/// (`SIDE_PANEL_PRESETS`), whose font sizes differ -- at a text scale of 1,
+/// whatever the host's, so the measurement is the same on every machine
+/// (`use_preset_scaled`) -- and again at a text scale of 2, where every text
+/// grows.
 #[gpui::test]
-fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
+fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let rows = [
         (CHROME_LABEL_THEME, PROBE_COMBOBOX),
         (CHROME_LABEL_MODE, PROBE_COLOR_MODE),
-        (CHROME_LABEL_ICON_SET, PROBE_ICON_SET),
+        (CHROME_LABEL_ICON_THEME, PROBE_ICON_THEME),
     ];
-    for (preset, dpi) in SIDEBAR_HEADER_PRESETS {
-        use_preset_at(&mut cx, &showcase, preset, dpi);
-        let sidebar = bounds_of(&mut cx, CHROME_SIDEBAR);
-        assert_eq!(
-            sidebar.size.width, NAV_WIDTH,
-            "{preset}: the Sidebar is not NAV_WIDTH wide, so this is not its fit at NAV_WIDTH"
-        );
-        let header = bounds_of(&mut cx, CHROME_SIDEBAR_HEADER);
-        assert!(
-            within(header, sidebar),
-            "{preset}: the header at {header:?} is not in the Sidebar at {sidebar:?}"
-        );
-        let gap = read(&mut cx, &showcase, |this, _| {
-            geometry::widget_gap(&this.layout)
-        });
-        assert!(gap.is_some(), "{preset} states no widget_gap");
-        let mut above: Option<Bounds<Pixels>> = None;
-        for (label, control) in rows {
-            let (l, c) = (bounds_of(&mut cx, label), bounds_of(&mut cx, control));
+    for text_scale in [1.0, 2.0] {
+        for (preset, dpi) in SIDE_PANEL_PRESETS {
+            use_preset_scaled(&mut cx, &showcase, preset, dpi, text_scale);
+            let at = format!("{preset} at text scale {text_scale}");
+            let panel = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+            assert_eq!(
+                panel.size.width, LEFT_PANEL_WIDTH,
+                "{at}: the side panel is not LEFT_PANEL_WIDTH wide, so this is not its fit there"
+            );
+            let settings = bounds_of(&mut cx, CHROME_THEME_SETTINGS);
             assert!(
-                within(l, header) && within(c, header),
-                "{preset}: {label} at {l:?} or {control} at {c:?} is not in the header at {header:?}"
+                within(settings, panel),
+                "{at}: the theme settings at {settings:?} are not in the side panel at {panel:?}"
             );
-            if let Some(above) = above {
-                assert_eq!(
-                    Some(l.top() - above.bottom()),
-                    gap,
-                    "{preset}: {label} is not widget_gap under the row above"
-                );
-            }
-            assert_eq!(
-                Some(c.top() - l.bottom()),
-                gap,
-                "{preset}: {control} is not widget_gap under its label {label}"
-            );
-            assert_eq!(
-                c.size.width, header.size.width,
-                "{preset}: {control} does not take the panel's width"
-            );
-            above = Some(c);
-        }
-        let min = header_trigger_min_width(&mut cx, &showcase);
-        assert!(
-            min.is_some_and(|min| min <= header.size.width),
-            "{preset}: the header's triggers are at least {min:?} wide, wider than the header's \
-             {:?}",
-            header.size.width
-        );
-    }
-
-    for (preset, dpi) in SIDEBAR_HEADER_PRESETS {
-        use_preset_scaled(&mut cx, &showcase, preset, dpi, 2.0);
-        let sidebar = bounds_of(&mut cx, CHROME_SIDEBAR);
-        let header = bounds_of(&mut cx, CHROME_SIDEBAR_HEADER);
-        assert!(
-            within(header, sidebar),
-            "{preset} at text scale 2: the header at {header:?} runs past the Sidebar at {sidebar:?}"
-        );
-        for (label, control) in rows {
-            for part in [label, control] {
-                let b = bounds_of(&mut cx, part);
+            let gap = read(&mut cx, &showcase, |this, _| {
+                geometry::widget_gap(&this.layout)
+            });
+            assert!(gap.is_some(), "{preset} states no widget_gap");
+            let mut above: Option<Bounds<Pixels>> = None;
+            for (label, control) in rows {
+                let (l, c) = (bounds_of(&mut cx, label), bounds_of(&mut cx, control));
                 assert!(
-                    within(b, sidebar) && b.right() <= header.right() + px(0.01),
-                    "{preset} at text scale 2: {part} at {b:?} runs past the panel at {sidebar:?} \
-                     (its header ends at {:?})",
-                    header.right()
+                    within(l, settings) && within(c, settings),
+                    "{at}: {label} at {l:?} or {control} at {c:?} is not in the settings at \
+                     {settings:?}"
+                );
+                if let Some(above) = above {
+                    assert_eq!(
+                        Some(l.top() - above.bottom()),
+                        gap,
+                        "{at}: {label} is not widget_gap under the row above"
+                    );
+                }
+                assert_eq!(
+                    Some(c.top() - l.bottom()),
+                    gap,
+                    "{at}: {control} is not widget_gap under its label {label}"
+                );
+                assert_eq!(
+                    c.size.width, settings.size.width,
+                    "{at}: {control} does not take the settings' width"
+                );
+                above = Some(c);
+            }
+            let min = settings_trigger_min_width(&mut cx, &showcase);
+            assert!(
+                min.is_some_and(|min| min <= settings.size.width),
+                "{at}: the settings' triggers are at least {min:?} wide, wider than the \
+                 settings' {:?}",
+                settings.size.width
+            );
+
+            let separator = bounds_of(&mut cx, CHROME_SIDE_PANEL_SEPARATOR);
+            let tabs = bounds_of(&mut cx, INSPECTOR_TABS);
+            let inspector = bounds_of(&mut cx, INSPECTOR_PANEL);
+            for (part, b) in [
+                ("the Separator", separator),
+                ("the inspector's TabBar", tabs),
+                ("the inspector", inspector),
+            ] {
+                assert!(
+                    within(b, panel),
+                    "{at}: {part} at {b:?} runs past the side panel at {panel:?}"
                 );
             }
+            assert!(
+                above.is_some_and(|last| separator.top() >= last.bottom()),
+                "{at}: the Separator at {separator:?} is not below the last row, which ends at \
+                 {above:?}"
+            );
+            assert!(
+                tabs.top() >= separator.bottom() && inspector.top() >= separator.bottom(),
+                "{at}: the inspector at {inspector:?}, its TabBar at {tabs:?}, is not below the \
+                 Separator at {separator:?}"
+            );
+            assert!(
+                (inspector.bottom() - panel.bottom()).abs() <= px(0.01),
+                "{at}: the inspector ends at {:?}, not at the side panel's bottom {:?}",
+                inspector.bottom(),
+                panel.bottom()
+            );
         }
-        let min = header_trigger_min_width(&mut cx, &showcase);
-        assert!(
-            min.is_some_and(|min| min <= header.size.width),
-            "{preset} at text scale 2: the header's triggers are at least {min:?} wide, wider \
-             than the header's {:?}",
-            header.size.width
-        );
     }
 
     // With widget_gap unstated, the gaps are the showcase's own, and the
-    // header's info says so.
+    // settings' info says so.
     cx.update(|_window, cx| {
         showcase.update(cx, |this, cx| {
             this.layout = native_theme::theme::LayoutTheme::default();
@@ -1220,16 +1217,16 @@ fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
     );
     assert_eq!(
         control.top() - label.bottom(),
-        crate::demo::SIDEBAR_HEADER_GAP,
-        "with widget_gap unstated, the header's gap is not the showcase's own SIDEBAR_HEADER_GAP"
+        crate::demo::THEME_SETTINGS_GAP,
+        "with widget_gap unstated, the settings' gap is not the showcase's own THEME_SETTINGS_GAP"
     );
     let above = bounds_of(&mut cx, PROBE_COMBOBOX);
     assert_eq!(
         label.top() - above.bottom(),
-        crate::demo::SIDEBAR_HEADER_GAP,
-        "with widget_gap unstated, the header's rows are not SIDEBAR_HEADER_GAP apart"
+        crate::demo::THEME_SETTINGS_GAP,
+        "with widget_gap unstated, the settings' rows are not THEME_SETTINGS_GAP apart"
     );
-    // Right of the Mode label, which is as wide as its text: the header's
+    // Right of the Mode label, which is as wide as its text: the settings'
     // own ground.
     hover(&mut cx, point(label.right() + px(8.), label.center().y));
     settle(&mut cx);
@@ -1244,21 +1241,56 @@ fn the_sidebar_header_holds_the_theme_settings(cx: &mut TestAppContext) {
     });
     assert!(
         gaps.as_deref()
-            .is_some_and(|g| g.contains("SIDEBAR_HEADER_GAP") && g.contains("the showcase's own")),
-        "the header's info does not say its gaps are the showcase's own SIDEBAR_HEADER_GAP: {gaps:?}"
+            .is_some_and(|g| g.contains("THEME_SETTINGS_GAP") && g.contains("the showcase's own")),
+        "the settings' info does not say its gaps are the showcase's own THEME_SETTINGS_GAP: \
+         {gaps:?}"
     );
 }
 
-/// The Sidebar header's icon-set Select is the real icon-set switch:
-/// choosing a set in it loads that set. The rows are not searchable, so the
-/// keyboard walks down to the last, Material, and Enter takes it.
+/// The theme settings' third row reads "Icon theme" (spec S6): what it
+/// chooses among -- the preset's own theme, the system's, the installed
+/// freedesktop themes, gpui-component's built-in icons, Lucide and Material
+/// -- are icon themes. The frame's text is not readable from the test, so
+/// the label's width shows it: `demo::label` gives its Label `text_sm`,
+/// 0.875rem, and `self_start` keeps it as wide as its text, and "Icon theme"
+/// and "Icon set" differ in width.
 #[gpui::test]
-fn the_sidebar_header_switches_the_icon_set(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let select = bounds_of(&mut cx, PROBE_ICON_SET);
+fn the_third_row_reads_icon_theme(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let label = bounds_of(&mut cx, CHROME_LABEL_ICON_THEME);
+    let width = |cx: &mut VisualTestContext, text: &'static str| {
+        cx.update(|window, _| {
+            let text = gpui::SharedString::from(text);
+            let run = window.text_style().to_run(text.len());
+            window
+                .text_system()
+                .shape_line(text, rems(0.875).to_pixels(window.rem_size()), &[run], None)
+                .width()
+        })
+    };
+    let (theme, set) = (width(&mut cx, "Icon theme"), width(&mut cx, "Icon set"));
+    assert_ne!(
+        theme, set,
+        "the two texts are as wide, so this proves nothing"
+    );
     assert!(
-        within(select, bounds_of(&mut cx, CHROME_SIDEBAR_HEADER)),
-        "the icon-set Select at {select:?} is not in the Sidebar header"
+        (label.size.width - theme).abs() <= device_pixel(&mut cx),
+        "the third row's label is {:?} wide, not \"Icon theme\" at {theme:?} (\"Icon set\" is \
+         {set:?})",
+        label.size.width
+    );
+}
+
+/// The theme settings' icon-theme Select is the real icon-theme switch:
+/// choosing a theme in it loads that theme. The rows are not searchable, so
+/// the keyboard walks down to the last, Material, and Enter takes it.
+#[gpui::test]
+fn the_theme_settings_switch_the_icon_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let select = bounds_of(&mut cx, PROBE_ICON_THEME);
+    assert!(
+        within(select, bounds_of(&mut cx, CHROME_THEME_SETTINGS)),
+        "the icon-theme Select at {select:?} is not in the theme settings"
     );
     let (count, current) = read(&mut cx, &showcase, |this, cx| {
         (
@@ -1273,9 +1305,9 @@ fn the_sidebar_header_switches_the_icon_set(cx: &mut TestAppContext) {
     assert_ne!(
         current,
         Some(last),
-        "the showcase starts on the last icon set, so choosing it proves nothing"
+        "the showcase starts on the last icon theme, so choosing it proves nothing"
     );
-    click(&mut cx, PROBE_ICON_SET);
+    click(&mut cx, PROBE_ICON_THEME);
     for _ in current.unwrap_or(0)..last {
         cx.simulate_keystrokes("down");
     }
@@ -1285,7 +1317,7 @@ fn the_sidebar_header_switches_the_icon_set(cx: &mut TestAppContext) {
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.icon_set_name.clone()),
         "material",
-        "choosing Material in the Sidebar header's icon-set Select did not load it"
+        "choosing Material in the theme settings' icon-theme Select did not load it"
     );
 }
 
@@ -1404,10 +1436,9 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
         "Theme > {item} did not reach Theme::mode"
     );
 
-    let bound: [(&str, &dyn gpui::Action); 5] = [
+    let bound: [(&str, &dyn gpui::Action); 4] = [
         ("ctrl-q", &Quit),
-        ("ctrl-b", &ToggleSidebar),
-        ("ctrl-i", &ToggleInspector),
+        ("ctrl-b", &ToggleSidePanel),
         ("ctrl-k", &OpenCommandPalette),
         ("ctrl-,", &OpenPreferences),
     ];
@@ -1432,6 +1463,58 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
     }
 }
 
+/// The inspector has no panel of its own to hide (spec S4): it hides with
+/// the side panel it is in. So no `ToggleInspector` action is registered, no
+/// menu item names the inspector, and Ctrl+I, which ran it, is bound to
+/// nothing.
+#[gpui::test]
+fn no_inspector_toggle_remains(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let (names, ctrl_i) = cx.update(|_window, cx| {
+        let names: Vec<&'static str> = cx.all_action_names().to_vec();
+        let ctrl_i: Vec<&'static str> = cx
+            .key_bindings()
+            .borrow()
+            .bindings()
+            .filter(|b| {
+                b.keystrokes()
+                    .iter()
+                    .map(|k| k.unparse())
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    == "ctrl-i"
+            })
+            .map(|b| b.action().name())
+            .collect();
+        (names, ctrl_i)
+    });
+    assert!(
+        names.contains(&"showcase::ToggleSidePanel"),
+        "the showcase's actions are not among the registered ones, so their absence proves \
+         nothing: {names:?}"
+    );
+    assert!(
+        !names.contains(&"showcase::ToggleInspector"),
+        "ToggleInspector is still a registered action"
+    );
+    assert_eq!(ctrl_i, Vec::<&str>::new(), "Ctrl+I is still bound");
+    let inspector_items: Vec<String> = menus()
+        .into_iter()
+        .flat_map(|m| m.items)
+        .filter_map(|i| match i {
+            gpui::MenuItem::Action { name, .. } if name.contains("Inspector") => {
+                Some(name.to_string())
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        inspector_items,
+        Vec::<String>::new(),
+        "a menu item still toggles the inspector"
+    );
+}
+
 /// Whether the menu item named `item` in the menu named `menu` is disabled.
 fn menu_item_disabled(menu: &str, item: &str) -> bool {
     menus()
@@ -1447,71 +1530,58 @@ fn menu_item_disabled(menu: &str, item: &str) -> bool {
         .unwrap_or_else(|| panic!("no {menu} > {item} menu item"))
 }
 
-/// Dragging the handle between the content and the inspector moves their
-/// boundary by the distance dragged (spec §1.1, §10.3).
+/// Dragging the handle between the side panel and the content moves their
+/// boundary by the distance dragged (spec S1).
 ///
-/// The handle is the inspector panel's, laid over its left edge (gpui-base
-/// resizable/panel.rs, `ResizablePanel::render`), and a drag puts the content
+/// The handle is the content panel's, laid over its left edge (gpui-base
+/// resizable/panel.rs, `ResizablePanel::render`), and a drag puts the side
 /// panel's right edge where the pointer is (`ResizePanelGroupElement::paint`),
 /// so pressing on the boundary itself makes the distance dragged the distance
-/// moved. The first move starts the drag; the second is the one measured.
+/// moved.
 #[gpui::test]
-fn dragging_a_handle_resizes_its_neighbours(cx: &mut TestAppContext) {
+fn dragging_the_handle_resizes_both_panels(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let content = bounds_of(&mut cx, CONTENT_PANEL);
-    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL);
+    let panel = bounds_of(&mut cx, CHROME_SIDE_PANEL);
     assert_eq!(
-        content.right(),
-        inspector.left(),
-        "the content panel ends at {:?} and the inspector starts at {:?}",
-        content.right(),
-        inspector.left()
+        panel.right(),
+        content.left(),
+        "the side panel ends at {:?} and the content starts at {:?}",
+        panel.right(),
+        content.left()
     );
-    let (from, y) = (inspector.left(), inspector.center().y);
     let dragged = px(40.);
-    cx.simulate_mouse_down(point(from, y), MouseButton::Left, Modifiers::default());
-    cx.simulate_mouse_move(
-        point(from - px(10.), y),
-        Some(MouseButton::Left),
-        Modifiers::default(),
-    );
-    cx.simulate_mouse_move(
-        point(from - dragged, y),
-        Some(MouseButton::Left),
-        Modifiers::default(),
-    );
-    cx.simulate_mouse_up(
-        point(from - dragged, y),
-        MouseButton::Left,
-        Modifiers::default(),
-    );
-    cx.run_until_parked();
-    draw(&mut cx);
-
+    drag_handle(&mut cx, content.left(), content.center().y, dragged);
     let content_after = bounds_of(&mut cx, CONTENT_PANEL);
-    let inspector_after = bounds_of(&mut cx, INSPECTOR_PANEL);
-    let grew = inspector_after.size.width - inspector.size.width;
+    let panel_after = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+    let grew = panel_after.size.width - panel.size.width;
     let shrank = content.size.width - content_after.size.width;
     assert!(
         (grew - dragged).abs() <= px(1.),
-        "dragging the handle {dragged:?} left widened the inspector by {grew:?}"
+        "dragging the handle {dragged:?} right widened the side panel by {grew:?}"
     );
     assert!(
         (shrank - dragged).abs() <= px(1.),
-        "dragging the handle {dragged:?} left narrowed the content by {shrank:?}"
+        "dragging the handle {dragged:?} right narrowed the content by {shrank:?}"
     );
 }
 
-/// The window is as wide as the Sidebar, a page and the inspector, and the
-/// content panel opens at the width the pages were laid out for.
+/// The window is two panels wide (spec S1): the side panel, which opens at
+/// `LEFT_PANEL_WIDTH`, and the content panel, which opens at the width the
+/// pages were laid out for.
 #[gpui::test]
-fn the_window_fits_the_panels_and_a_page(cx: &mut TestAppContext) {
+fn the_window_fits_the_side_panel_and_a_page(cx: &mut TestAppContext) {
     assert_eq!(
         WINDOW_SIZE.width,
-        NAV_WIDTH + px(PAGE_WIDTH_PX) + INSPECTOR_WIDTH,
-        "WINDOW_SIZE is not NAV_WIDTH + PAGE_WIDTH_PX + INSPECTOR_WIDTH"
+        LEFT_PANEL_WIDTH + px(PAGE_WIDTH_PX),
+        "WINDOW_SIZE is not LEFT_PANEL_WIDTH + PAGE_WIDTH_PX"
     );
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_eq!(
+        bounds_of(&mut cx, CHROME_SIDE_PANEL).size.width,
+        LEFT_PANEL_WIDTH,
+        "the side panel does not open at LEFT_PANEL_WIDTH"
+    );
     assert_eq!(
         bounds_of(&mut cx, CONTENT_PANEL).size.width,
         px(PAGE_WIDTH_PX),
@@ -1519,9 +1589,44 @@ fn the_window_fits_the_panels_and_a_page(cx: &mut TestAppContext) {
     );
 }
 
-/// Drag the handle whose line is at `x` by `by` along the row, the way
-/// `dragging_a_handle_resizes_its_neighbours` does: the first move starts
-/// the drag, the second is the one that lands.
+/// The body is two panels, the side panel and the content, and one handle
+/// between them (spec S1): the inspector sits in the side panel, not in a
+/// panel of its own, so its right edge is the side panel's, and the content
+/// panel runs to the window's right edge.
+#[gpui::test]
+fn the_body_is_two_panels(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let viewport = cx.update(|window, _| window.viewport_size());
+    let panel = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL);
+    assert_eq!(
+        panel.left(),
+        px(0.),
+        "the side panel is not the body's first panel"
+    );
+    assert_eq!(
+        content.left(),
+        panel.right(),
+        "the content panel does not follow the side panel"
+    );
+    assert_eq!(
+        content.right(),
+        viewport.width,
+        "the content panel does not run to the window's right edge: a panel follows it"
+    );
+    assert!(
+        within(inspector, panel),
+        "the inspector at {inspector:?} is not in the side panel at {panel:?}"
+    );
+    assert!(
+        cx.debug_bounds(CHROME_HANDLE).is_some(),
+        "the handle between the two panels was not laid out"
+    );
+}
+
+/// Drag the handle whose line is at `x` by `by` along the row: the first move
+/// starts the drag, the second is the one that lands.
 fn drag_handle(cx: &mut VisualTestContext, x: Pixels, y: Pixels, by: Pixels) {
     let start = if by < px(0.) { px(-10.) } else { px(10.) };
     cx.simulate_mouse_down(point(x, y), MouseButton::Left, Modifiers::default());
@@ -1540,97 +1645,76 @@ fn drag_handle(cx: &mut VisualTestContext, x: Pixels, y: Pixels, by: Pixels) {
     draw(cx);
 }
 
-/// The widths the handles were dragged to survive the Sidebar collapsing and
-/// expanding and the inspector hiding and showing again.
+/// The width the side panel was dragged to survives hiding it and showing
+/// it again (spec S4).
 #[gpui::test]
-fn dragged_widths_survive_the_toggles(cx: &mut TestAppContext) {
+fn the_dragged_width_survives_the_toggle(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let y = bounds_of(&mut cx, CONTENT_PANEL).center().y;
-
-    let nav = bounds_of(&mut cx, CHROME_SIDEBAR).size.width;
-    let at = bounds_of(&mut cx, CONTENT_PANEL).left();
-    drag_handle(&mut cx, at, y, px(30.));
-    let dragged_nav = bounds_of(&mut cx, CHROME_SIDEBAR).size.width;
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    let width = bounds_of(&mut cx, CHROME_SIDE_PANEL).size.width;
+    drag_handle(&mut cx, content.left(), content.center().y, px(30.));
+    let dragged = bounds_of(&mut cx, CHROME_SIDE_PANEL).size.width;
     assert!(
-        (dragged_nav - nav - px(30.)).abs() <= px(1.),
-        "dragging the Sidebar's handle 30px right made it {dragged_nav:?} from {nav:?}"
+        (dragged - width - px(30.)).abs() <= px(1.),
+        "dragging the side panel's handle 30px right made it {dragged:?} from {width:?}"
     );
-
-    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL).size.width;
-    let at = bounds_of(&mut cx, INSPECTOR_PANEL).left();
-    drag_handle(&mut cx, at, y, px(-40.));
-    let dragged_inspector = bounds_of(&mut cx, INSPECTOR_PANEL).size.width;
-    assert!(
-        (dragged_inspector - inspector - px(40.)).abs() <= px(1.),
-        "dragging the inspector's handle 40px left made it {dragged_inspector:?} from {inspector:?}"
-    );
-
-    run_menu_item(&mut cx, "View", "Toggle Inspector");
-    run_menu_item(&mut cx, "View", "Toggle Inspector");
+    run_menu_item(&mut cx, "View", "Toggle Side Panel");
     assert_eq!(
-        bounds_of(&mut cx, INSPECTOR_PANEL).size.width,
-        dragged_inspector,
-        "the inspector came back at another width than it was dragged to"
+        cx.debug_bounds(CHROME_SIDE_PANEL),
+        None,
+        "View > Toggle Side Panel did not hide the side panel"
+    );
+    run_menu_item(&mut cx, "View", "Toggle Side Panel");
+    assert_eq!(
+        bounds_of(&mut cx, CHROME_SIDE_PANEL).size.width,
+        dragged,
+        "the side panel came back at another width than it was dragged to"
     );
     assert_eq!(
-        bounds_of(&mut cx, CHROME_SIDEBAR).size.width,
-        dragged_nav,
-        "hiding and showing the inspector moved the Sidebar's width"
-    );
-
-    run_menu_item(&mut cx, "View", "Toggle Sidebar");
-    run_menu_item(&mut cx, "View", "Toggle Sidebar");
-    assert_eq!(
-        bounds_of(&mut cx, CHROME_SIDEBAR).size.width,
-        dragged_nav,
-        "the Sidebar expanded to another width than it was dragged to"
-    );
-    assert_eq!(
-        bounds_of(&mut cx, INSPECTOR_PANEL).size.width,
-        dragged_inspector,
-        "collapsing and expanding the Sidebar moved the inspector's width"
+        bounds_of(&mut cx, CONTENT_PANEL).left(),
+        dragged,
+        "the content does not start where the side panel came back to"
     );
 }
 
-/// Toggling both side panels in the middle of a drag, then moving the
-/// pointer, leaves nothing holding the dragged handle's index.
+/// Hiding the side panel in the middle of a drag of its handle, then moving
+/// the pointer, leaves nothing holding the dragged handle's index.
 ///
 /// The drag records which handle it is on in the group's state
 /// (gpui-base resizable/panel.rs, `ResizablePanel::render`), and the group
 /// looks that panel up on every move (`ResizePanelGroupElement::paint`); a
 /// state emptied under a live drag would hand it an index it no longer has.
 #[gpui::test]
-fn toggling_the_panels_mid_drag_is_safe(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let inspector = bounds_of(&mut cx, INSPECTOR_PANEL);
-    let (x, y) = (inspector.left(), inspector.center().y);
+fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    let (x, y) = (content.left(), content.center().y);
     cx.simulate_mouse_down(point(x, y), MouseButton::Left, Modifiers::default());
     cx.simulate_mouse_move(
-        point(x - px(10.), y),
+        point(x + px(10.), y),
         Some(MouseButton::Left),
         Modifiers::default(),
     );
     cx.simulate_mouse_move(
-        point(x - px(20.), y),
+        point(x + px(20.), y),
         Some(MouseButton::Left),
         Modifiers::default(),
     );
     cx.simulate_keystrokes("ctrl-b");
-    cx.simulate_keystrokes("ctrl-i");
     cx.run_until_parked();
     draw(&mut cx);
-    assert!(
-        read(&mut cx, &showcase, |this, _| this.nav_collapsed
-            && !this.inspector_visible),
-        "Ctrl+B and Ctrl+I did not collapse the Sidebar and hide the inspector"
+    assert_eq!(
+        cx.debug_bounds(CHROME_SIDE_PANEL),
+        None,
+        "Ctrl+B did not hide the side panel"
     );
     cx.simulate_mouse_move(
-        point(x - px(40.), y),
+        point(x + px(40.), y),
         Some(MouseButton::Left),
         Modifiers::default(),
     );
     cx.simulate_mouse_up(
-        point(x - px(40.), y),
+        point(x + px(40.), y),
         MouseButton::Left,
         Modifiers::default(),
     );
@@ -1640,81 +1724,108 @@ fn toggling_the_panels_mid_drag_is_safe(cx: &mut TestAppContext) {
         bounds_of(&mut cx, CONTENT_PANEL).size.width > px(0.),
         "the content panel was not laid out after the drag"
     );
+    cx.simulate_keystrokes("ctrl-b");
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert!(
+        cx.debug_bounds(CHROME_SIDE_PANEL).is_some(),
+        "Ctrl+B did not show the side panel again after the drag"
+    );
 }
 
-/// Each handle of the resizable group reports itself (spec §4.3.5), over
-/// its whole hit area, not only its 1px line.
+/// The resizable group's handle reports itself (spec §4.3.5), over its
+/// whole hit area, not only its 1px line.
 #[gpui::test]
-fn the_resize_handles_report_themselves(cx: &mut TestAppContext) {
+fn the_resize_handle_reports_itself(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let boundary = bounds_of(&mut cx, CONTENT_PANEL).left();
+    let title = "ResizeHandle · side panel | content";
+    let target = bounds_of(&mut cx, CHROME_HANDLE);
+    // The handle's hit area: 4px either side of the boundary, the line
+    // taking the first pixel right of it (demo.rs, resize_handles).
+    assert_eq!(
+        (target.left(), target.right()),
+        (boundary - px(4.), boundary + px(4.)),
+        "the target at {target:?} is not the hit area around {boundary:?}"
+    );
+    // Just past the hit area, where no handle takes a press.
+    let y = target.center().y;
+    hover(&mut cx, point(boundary + px(4.5), y));
+    settle(&mut cx);
+    assert_ne!(
+        read(&mut cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().map(|info| info.title())
+        })
+        .as_deref(),
+        Some(title),
+        "a hover past the handle's hit area showed its info"
+    );
+    // Off the line, in the hit area beside it.
+    hover(&mut cx, point(boundary + px(3.5), y));
+    settle(&mut cx);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().map(|info| info.title())
+        })
+        .as_deref(),
+        Some(title),
+        "hovering the handle's hit area did not show its info"
+    );
+}
+
+/// The title the page TabBar's info shows.
+const PAGE_TABS_TITLE: &str = "TabBar · Underline, small, menu";
+
+/// The page TabBar sits at the top of the content panel, above the page's
+/// scroll area, across the panel (spec S3); it reports itself, and clicking a
+/// tab shows its page.
+#[gpui::test]
+fn the_page_tabs_navigate(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let content = bounds_of(&mut cx, CONTENT_PANEL);
-    for (selector, boundary, title) in [
-        (
-            CHROME_HANDLE_NAV,
-            content.left(),
-            "ResizeHandle · Sidebar | content",
-        ),
-        (
-            CHROME_HANDLE_INSPECTOR,
-            content.right(),
-            "ResizeHandle · content | inspector",
-        ),
-    ] {
-        let target = bounds_of(&mut cx, selector);
-        // The handle's hit area: 4px either side of the boundary, the line
-        // taking the first pixel right of it (demo.rs, resize_handles).
-        assert_eq!(
-            (target.left(), target.right()),
-            (boundary - px(4.), boundary + px(4.)),
-            "{selector}: the target at {target:?} is not the hit area around {boundary:?}"
+    let tabs = bounds_of(&mut cx, CHROME_PAGE_TABS);
+    let scroll = bounds_of(&mut cx, CONTENT_SCROLL);
+    assert!(
+        within(tabs, content),
+        "the page TabBar at {tabs:?} is not in the content panel at {content:?}"
+    );
+    assert_eq!(
+        (tabs.top(), tabs.size.width),
+        (content.top(), content.size.width),
+        "the page TabBar is not across the top of the content panel"
+    );
+    assert!(
+        tabs.bottom() <= scroll.top(),
+        "the page TabBar at {tabs:?} is not above the page's scroll area at {scroll:?}"
+    );
+    let info = settle_on(&mut cx, &showcase, Page::Charts.tab());
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some(PAGE_TABS_TITLE),
+        "the pointer settled on a page tab, and the inspector does not show the page TabBar"
+    );
+    for page in [Page::Charts, Page::Buttons] {
+        if read(&mut cx, &showcase, |this, _| this.active_page) == page {
+            continue;
+        }
+        let tab = bounds_of(&mut cx, page.tab());
+        assert!(
+            within(tab, tabs),
+            "the {page:?} tab at {tab:?} is not in the page TabBar at {tabs:?}"
         );
-        // Just past the hit area, where no handle takes a press.
-        let y = target.center().y;
-        hover(&mut cx, point(boundary + px(4.5), y));
-        settle(&mut cx);
-        assert_ne!(
-            read(&mut cx, &showcase, |this, cx| {
-                this.info_ui.read(cx).shown().map(|info| info.title())
-            })
-            .as_deref(),
-            Some(title),
-            "{selector}: a hover past the handle's hit area showed its info"
-        );
-        // Off the line, in the hit area beside it.
-        hover(&mut cx, point(boundary + px(3.5), y));
-        settle(&mut cx);
+        click(&mut cx, page.tab());
         assert_eq!(
-            read(&mut cx, &showcase, |this, cx| {
-                this.info_ui.read(cx).shown().map(|info| info.title())
-            })
-            .as_deref(),
-            Some(title),
-            "{selector}: hovering the handle's hit area did not show its info"
+            read(&mut cx, &showcase, |this, _| this.active_page),
+            page,
+            "clicking the {page:?} tab did not show the {page:?} page"
+        );
+        let root = bounds_of(&mut cx, PAGE_ROOT);
+        assert!(
+            root.size.width > px(0.) && root.size.height > px(0.),
+            "the {page:?} page laid out at {:?}",
+            root.size
         );
     }
-}
-
-/// Clicking a Sidebar item shows its page (spec §2.4).
-#[gpui::test]
-fn the_sidebar_navigates(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    assert_ne!(
-        read(&mut cx, &showcase, |this, _| this.active_page),
-        Page::Charts,
-        "the showcase starts on Charts, so showing it proves nothing"
-    );
-    click(&mut cx, Page::Charts.nav_item());
-    assert_eq!(
-        read(&mut cx, &showcase, |this, _| this.active_page),
-        Page::Charts,
-        "clicking the Sidebar's Charts item did not show the Charts page"
-    );
-    let page = bounds_of(&mut cx, PAGE_ROOT);
-    assert!(
-        page.size.width > px(0.) && page.size.height > px(0.),
-        "the Charts page laid out at {:?}",
-        page.size
-    );
 }
 
 /// The title of the info the inspector drew in the last frame, and whether
@@ -1734,7 +1845,7 @@ fn inspector_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> O
 
 /// The inspector shows the info the pointer has settled on (spec §2.6, §4.2).
 ///
-/// A Sidebar item is hovered.
+/// A page tab is hovered.
 #[gpui::test]
 fn the_inspector_shows_the_settled_info(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1743,38 +1854,41 @@ fn the_inspector_shows_the_settled_info(cx: &mut TestAppContext) {
         None,
         "the inspector shows an info before anything was hovered"
     );
-    let item = bounds_of(&mut cx, Page::Charts.nav_item());
-    hover(&mut cx, item.center());
+    let tab = bounds_of(&mut cx, Page::Charts.tab());
+    hover(&mut cx, tab.center());
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Charts"),
-        "the inspector does not show the Sidebar item the pointer settled on"
+        Some(PAGE_TABS_TITLE),
+        "the inspector does not show the page TabBar the pointer settled on"
     );
 }
 
 /// A shown info follows the state of its widget while the pointer stays
-/// still: clicking the hovered Sidebar item makes it active, and the
+/// still: clicking the hovered, unchecked Checkbox checks it, and the
 /// inspector says so without another hover event.
 #[gpui::test]
 fn a_shown_info_follows_its_widgets_state(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
-    hover(&mut cx, item);
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Inputs);
+    // The leading edge, where the box is, as `click` presses.
+    let bounds = bounds_of(&mut cx, INPUTS_CHECKBOX_AUTOSAVE);
+    let at = point(bounds.left() + px(8.), bounds.center().y);
+    hover(&mut cx, at);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Charts")
+        Some("Checkbox · unchecked")
     );
-    click_at(&mut cx, item);
+    click_at(&mut cx, at);
     cx.run_until_parked();
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some("SidebarMenuItem · Charts, active"),
-        "the item the pointer rests on became active, and the inspector did not follow"
+        Some("Checkbox · checked"),
+        "the Checkbox the pointer rests on was checked, and the inspector did not follow"
     );
 }
 
@@ -1783,8 +1897,8 @@ fn a_shown_info_follows_its_widgets_state(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let item = bounds_of(&mut cx, Page::Charts.nav_item());
-    hover(&mut cx, item.center());
+    let tab = bounds_of(&mut cx, Page::Charts.tab());
+    hover(&mut cx, tab.center());
     settle(&mut cx);
     draw(&mut cx);
     let shown = read(&mut cx, &showcase, |this, cx| {
@@ -1807,8 +1921,8 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let item = bounds_of(&mut cx, Page::Charts.nav_item());
-    hover(&mut cx, item.center());
+    let tab = bounds_of(&mut cx, Page::Charts.tab());
+    hover(&mut cx, tab.center());
     settle(&mut cx);
     draw(&mut cx);
     let before = inspector_title(&mut cx, &showcase);
@@ -1824,24 +1938,22 @@ fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
     assert_eq!(
         inspector_title(&mut cx, &showcase),
         before,
-        "the page change cleared the info of a Sidebar item that is still drawn"
+        "the page change cleared the info of the page TabBar, which is still drawn"
     );
 }
 
 /// A page change clears an info whose target the new frame no longer draws
 /// (spec §4.3.4 as ruled), through every route to a page: here the View
 /// menu. The inspector's own TabBar is the target, taken off the screen by
-/// hiding the inspector, which no hover end reports.
+/// hiding the side panel it is in, which no hover end reports.
 ///
 /// Once the TabBar is gone the pointer moves into the page's own padding,
-/// which no page draws a widget in, so what the page draws where the
-/// inspector was cannot settle in its place.
+/// which no page draws a widget in, so what the page draws where the side
+/// panel was cannot settle in its place.
 #[gpui::test]
 fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let tabs = bounds_of(&mut cx, INSPECTOR_TABS);
-    // Clear of the handle on the inspector's left edge, whose hit area
-    // reaches into the panel.
     hover(&mut cx, point(tabs.left() + px(16.), tabs.center().y));
     settle(&mut cx);
     let shown = |cx: &mut VisualTestContext| {
@@ -1854,7 +1966,7 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
         Some("TabBar · Underline, small"),
         "the inspector's TabBar did not report itself"
     );
-    run_menu_item(&mut cx, "View", "Toggle Inspector");
+    run_menu_item(&mut cx, "View", "Toggle Side Panel");
     // Every page root pads its content by p_4 (16px), so 4px in from its
     // corner is empty on every page.
     let page = bounds_of(&mut cx, PAGE_ROOT);
@@ -1863,7 +1975,7 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
     assert_eq!(
         shown(&mut cx).as_deref(),
         Some("TabBar · Underline, small"),
-        "hiding the inspector alone already cleared the info: leaving keeps it"
+        "hiding the side panel alone already cleared the info: leaving keeps it"
     );
     run_menu_item(&mut cx, "View", "Charts");
     settle(&mut cx);
@@ -1881,8 +1993,8 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
 fn the_inspector_warns_of_tokens_only_without_a_native_theme(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    let item = bounds_of(&mut cx, Page::Charts.nav_item());
-    hover(&mut cx, item.center());
+    let tab = bounds_of(&mut cx, Page::Charts.tab());
+    hover(&mut cx, tab.center());
     settle(&mut cx);
     draw(&mut cx);
     assert!(
@@ -1915,8 +2027,8 @@ fn the_inspector_warns_of_tokens_only_without_a_native_theme(cx: &mut TestAppCon
 #[gpui::test]
 fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let item = bounds_of(&mut cx, Page::Charts.nav_item()).center();
-    hover(&mut cx, item);
+    let tab = bounds_of(&mut cx, Page::Charts.tab()).center();
+    hover(&mut cx, tab);
     settle(&mut cx);
     draw(&mut cx);
     assert!(cx.debug_bounds(INSPECTOR_TITLE).is_some());
@@ -1966,84 +2078,81 @@ fn within(inner: Bounds<Pixels>, outer: Bounds<Pixels>) -> bool {
         && inner.bottom() <= outer.bottom() + slack
 }
 
-/// The status bar's left-panel toggle collapses the Sidebar to its icon rail
-/// and expands it again (spec §3.2), through `ToggleSidebar`, and is
-/// selected while the Sidebar is expanded. The rail draws no theme settings
-/// (spec §3.3).
+/// The status bar's side-panel toggle hides the side panel and shows it
+/// again (spec S4), through `ToggleSidePanel`, and is selected while the
+/// panel is shown. Hidden, nothing of the panel is drawn -- no rail -- and
+/// the content takes the whole body.
 #[gpui::test]
-fn the_sidebar_toggle_collapses_the_sidebar(cx: &mut TestAppContext) {
+fn the_side_panel_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     assert!(
-        !menu_item_disabled("View", "Toggle Sidebar"),
-        "View > Toggle Sidebar is still disabled"
+        !menu_item_disabled("View", "Toggle Side Panel"),
+        "View > Toggle Side Panel is disabled"
     );
-    let toggle = bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE);
+    let toggle = bounds_of(&mut cx, CHROME_SIDE_PANEL_TOGGLE);
     assert!(
         within(toggle, bounds_of(&mut cx, CHROME_STATUS_BAR)),
-        "the left-panel toggle at {toggle:?} is not in the status bar"
+        "the side-panel toggle at {toggle:?} is not in the status bar"
     );
     let selected = selected_fill(&mut cx);
     assert_eq!(
-        toggle_fill(&mut cx, CHROME_SIDEBAR_TOGGLE),
+        toggle_fill(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
         Some(selected),
-        "the left-panel toggle is not selected while the Sidebar is expanded"
+        "the side-panel toggle is not selected while the side panel is shown"
     );
-    let expanded = bounds_of(&mut cx, CHROME_SIDEBAR);
-    click(&mut cx, CHROME_SIDEBAR_TOGGLE);
-    assert!(
-        read(&mut cx, &showcase, |this, _| this.nav_collapsed),
-        "the left-panel toggle did not collapse the Sidebar"
-    );
-    let collapsed = bounds_of(&mut cx, CHROME_SIDEBAR);
-    assert!(
-        collapsed.size.width < expanded.size.width,
-        "the collapsed Sidebar is {:?} wide, the expanded one {:?}",
-        collapsed.size.width,
-        expanded.size.width
-    );
-    let content = bounds_of(&mut cx, CONTENT_PANEL);
-    assert_eq!(
-        content.left(),
-        collapsed.right(),
-        "the content does not take the room the collapsed Sidebar gave up"
-    );
+    let shown = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+    click(&mut cx, CHROME_SIDE_PANEL_TOGGLE);
     for selector in [
-        CHROME_SIDEBAR_HEADER,
+        CHROME_SIDE_PANEL,
+        CHROME_THEME_SETTINGS,
         PROBE_COMBOBOX,
         PROBE_COLOR_MODE,
-        PROBE_ICON_SET,
+        PROBE_ICON_THEME,
+        CHROME_SIDE_PANEL_SEPARATOR,
+        INSPECTOR_PANEL,
+        INSPECTOR_TABS,
+        CHROME_HANDLE,
     ] {
         assert_eq!(
             cx.debug_bounds(selector),
             None,
-            "{selector} is drawn in the icon rail"
+            "{selector} is still drawn with the side panel hidden"
+        );
+    }
+    let viewport = cx.update(|window, _| window.viewport_size());
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    assert_eq!(
+        (content.left(), content.size.width),
+        (px(0.), viewport.width),
+        "the content does not take the whole body with the side panel hidden"
+    );
+    assert_eq!(
+        toggle_fill(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
+        None,
+        "the side-panel toggle is still selected with the side panel hidden"
+    );
+    run_menu_item(&mut cx, "View", "Toggle Side Panel");
+    assert_eq!(
+        bounds_of(&mut cx, CHROME_SIDE_PANEL).size.width,
+        shown.size.width,
+        "View > Toggle Side Panel did not show the side panel at its width again"
+    );
+    for selector in [CHROME_THEME_SETTINGS, INSPECTOR_TABS] {
+        assert!(
+            cx.debug_bounds(selector).is_some(),
+            "the side panel came back without {selector}"
         );
     }
     assert_eq!(
-        toggle_fill(&mut cx, CHROME_SIDEBAR_TOGGLE),
-        None,
-        "the left-panel toggle is still selected with the Sidebar collapsed to its rail"
-    );
-    run_menu_item(&mut cx, "View", "Toggle Sidebar");
-    assert_eq!(
-        bounds_of(&mut cx, CHROME_SIDEBAR).size.width,
-        expanded.size.width,
-        "View > Toggle Sidebar did not expand the Sidebar to its width again"
-    );
-    assert!(
-        cx.debug_bounds(CHROME_SIDEBAR_HEADER).is_some(),
-        "the expanded Sidebar did not draw its header again"
-    );
-    assert_eq!(
-        toggle_fill(&mut cx, CHROME_SIDEBAR_TOGGLE),
+        toggle_fill(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
         Some(selected),
-        "the left-panel toggle is not selected again with the Sidebar expanded"
+        "the side-panel toggle is not selected again with the side panel shown"
     );
 }
 
-/// The presets the Sidebar's icons are checked under: every native preset
-/// and one colour-scheme preset.
+/// The presets the Sidebar samples' icons are checked under: every native
+/// preset and one colour-scheme preset.
 const SIDEBAR_ICON_PRESETS: [&str; 5] = [
     "kde-breeze",
     "adwaita",
@@ -2052,15 +2161,15 @@ const SIDEBAR_ICON_PRESETS: [&str; 5] = [
     "nord",
 ];
 
-/// The Sidebar's page icons fit their items (spec §3.5), expanded and in
-/// the rail.
+/// The Layout page's Sidebar samples' icons fit their items (spec S5),
+/// expanded and in the collapsed sample's rail.
 ///
 /// Upstream gives no hook to measure the drawn icon: `SidebarMenuItem`
 /// places the `Icon` it is given itself (sidebar/menu.rs:300), and an `Icon`
 /// builds its `svg()` with nothing of it reachable but its style
 /// (icon.rs:169-177), so no debug selector gets there. What is checked:
 ///
-/// - the Icon `demo::nav_icon_sized` hands an item has the size
+/// - the Icon `demo::sidebar_icon_sized` hands an item has the size
 ///   `geometry::icon_size_small` gives, read off its style;
 /// - in the rail, every item's measured bounds lie within the rail's width,
 ///   and no two items overlap. Neither catches an oversized icon on its
@@ -2078,11 +2187,11 @@ const SIDEBAR_ICON_PRESETS: [&str; 5] = [
 ///   check, not a measurement: an icon taller than its row overflows it
 ///   without moving any bound a test can read.
 ///
-/// gpui-component's own set is chosen, so every page has an icon to check:
-/// with a set that has none for a page, its item shows nothing.
+/// gpui-component's own icons are chosen, so every item has an icon to
+/// check: with an icon theme that has none for an item, it shows nothing.
 #[gpui::test]
-fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+fn the_sidebar_samples_icons_fit_their_items(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     cx.update(|window, cx| {
         showcase.update(cx, |this, cx| {
             this.select_icon_set("gpui-component built-in (Lucide)", window, cx);
@@ -2090,6 +2199,7 @@ fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
     });
     cx.run_until_parked();
     draw(&mut cx);
+    show(&mut cx, &showcase, Page::Layout);
     for preset in SIDEBAR_ICON_PRESETS {
         use_preset(&mut cx, &showcase, preset);
         let (small, rem) = read(&mut cx, &showcase, |_this, cx| {
@@ -2103,73 +2213,119 @@ fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
             other => panic!("{preset}: geometry::icon_size_small gives {other:?}, not a size"),
         };
         let row = rems(1.75).to_pixels(rem);
-        for page in Page::ALL {
+        let expanded = bounds_of(&mut cx, LAYOUT_SIDEBAR_EXPANDED);
+        let rail = bounds_of(&mut cx, LAYOUT_SIDEBAR_COLLAPSED);
+        assert!(
+            rail.size.width < expanded.size.width,
+            "{preset}: the collapsed sample is {:?} wide, the expanded one {:?}",
+            rail.size.width,
+            expanded.size.width
+        );
+        for (label, icon, expanded_id, _) in LAYOUT_SIDEBAR_ITEMS {
             let mut icon = read(&mut cx, &showcase, |_this, cx| {
-                crate::demo::nav_icon_sized(cx, gpui_component::Icon::new(page.icon()))
+                crate::demo::sidebar_icon_sized(cx, gpui_component::Icon::new(icon))
             });
             let size = Styled::style(&mut icon).size.clone();
             assert_eq!(
                 (size.width, size.height),
                 (Some(small.into()), Some(small.into())),
-                "{preset}: the {page:?} item's icon is not icon_size_small's {small:?}"
+                "{preset}: the {label} item's icon is not icon_size_small's {small:?}"
             );
             let Some(Length::Definite(DefiniteLength::Absolute(AbsoluteLength::Pixels(height)))) =
                 size.height
             else {
-                panic!("{preset}: the {page:?} item's icon has no pixel height");
+                panic!("{preset}: the {label} item's icon has no pixel height");
             };
             assert!(
                 height <= row,
-                "{preset}: the {page:?} item's icon is {height:?} tall, over the expanded row's h_7, {row:?}"
+                "{preset}: the {label} item's icon is {height:?} tall, over the expanded row's h_7, {row:?}"
             );
-        }
-
-        for page in Page::ALL {
-            let item = bounds_of(&mut cx, page.nav_item());
+            let item = bounds_of(&mut cx, expanded_id);
+            assert!(
+                within(item, expanded),
+                "{preset}: the expanded {label} item at {item:?} is not in its Sidebar at {expanded:?}"
+            );
             assert!(
                 (item.size.height - row).abs() < px(1.),
-                "{preset}: the expanded {page:?} item is {:?} tall, not h_7's {row:?}",
+                "{preset}: the expanded {label} item is {:?} tall, not h_7's {row:?}",
                 item.size.height
             );
         }
 
-        run_menu_item(&mut cx, "View", "Toggle Sidebar");
-        assert!(
-            read(&mut cx, &showcase, |this, _| this.nav_collapsed),
-            "{preset}: View > Toggle Sidebar did not collapse the Sidebar"
-        );
-        let rail = bounds_of(&mut cx, CHROME_SIDEBAR);
-        let items: Vec<(Page, Bounds<Pixels>)> = Page::ALL
+        let items: Vec<(&str, Bounds<Pixels>)> = LAYOUT_SIDEBAR_ITEMS
             .into_iter()
-            .map(|page| (page, bounds_of(&mut cx, page.nav_item())))
+            .map(|(label, _, _, collapsed_id)| (label, bounds_of(&mut cx, collapsed_id)))
             .collect();
         let padding = rems(0.5).to_pixels(rem);
-        for (page, item) in &items {
+        for (label, item) in &items {
             assert!(
                 item.left() >= rail.left() && item.right() <= rail.right(),
-                "{preset}: in the rail, the {page:?} item at {item:?} is wider than the rail at {rail:?}"
+                "{preset}: in the rail, the {label} item at {item:?} is wider than the rail at {rail:?}"
             );
             let icon = item.size.height - padding * 2.;
             assert!(
                 icon <= item.size.width,
-                "{preset}: in the rail, the {page:?} item is {:?} tall, so its icon is {icon:?}, \
+                "{preset}: in the rail, the {label} item is {:?} tall, so its icon is {icon:?}, \
                  wider than the item's {:?}",
                 item.size.height,
                 item.size.width
             );
         }
-        for (i, (page, item)) in items.iter().enumerate() {
+        for (i, (label, item)) in items.iter().enumerate() {
             for (other, next) in items.iter().skip(i + 1) {
                 assert!(
                     !item.intersects(next),
-                    "{preset}: in the rail, the {page:?} item at {item:?} overlaps the {other:?} item at {next:?}"
+                    "{preset}: in the rail, the {label} item at {item:?} overlaps the {other} item at {next:?}"
                 );
             }
         }
-        run_menu_item(&mut cx, "View", "Toggle Sidebar");
-        assert!(
-            !read(&mut cx, &showcase, |this, _| this.nav_collapsed),
-            "{preset}: View > Toggle Sidebar did not expand the Sidebar again"
+    }
+}
+
+/// The Layout page's two Sidebars and their items report themselves (spec
+/// S5): the pointer on an item settles on that item's info, active or not,
+/// and below the items, on the Sidebar's own.
+#[gpui::test]
+fn the_sidebar_samples_report_themselves(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    let [
+        (first, _, first_expanded, first_collapsed),
+        (second, _, _, second_collapsed),
+        _,
+    ] = LAYOUT_SIDEBAR_ITEMS;
+    let (active, inactive) = (
+        format!("SidebarMenuItem · {first}, active"),
+        format!("SidebarMenuItem · {second}"),
+    );
+    settle_on_each(
+        &mut cx,
+        &showcase,
+        &[
+            (first_expanded, active.as_str()),
+            (first_collapsed, active.as_str()),
+            (second_collapsed, inactive.as_str()),
+        ],
+    );
+    for (selector, title) in [
+        (LAYOUT_SIDEBAR_EXPANDED, "Sidebar · expanded"),
+        (LAYOUT_SIDEBAR_COLLAPSED, "Sidebar · collapsed"),
+    ] {
+        let sidebar = bounds_of(&mut cx, selector);
+        // Below the last item, which the Sidebar's own ground fills.
+        hover(
+            &mut cx,
+            point(sidebar.center().x, sidebar.bottom() - px(4.)),
+        );
+        settle(&mut cx);
+        draw(&mut cx);
+        assert_eq!(
+            read(&mut cx, &showcase, |this, cx| {
+                this.info_ui.read(cx).shown().map(|info| info.title())
+            })
+            .as_deref(),
+            Some(title),
+            "the pointer settled on {selector}'s ground, and the inspector does not show it"
         );
     }
 }
@@ -2182,7 +2338,7 @@ fn the_sidebar_icons_fit_their_items(cx: &mut TestAppContext) {
 /// A size platform-facts §2.1.8 documents none for on the installed native
 /// preset's platform says it has no platform source: adwaita's dialog and
 /// panel (platform-facts.md:1135-1136), and none of kde-breeze's. The preset
-/// is named the way the Sidebar's Combobox names it, which `use_preset`
+/// is named the way the preset Combobox names it, which `use_preset`
 /// leaves alone. Under `default` the caveat is the preset's the desktop
 /// theme is built on: `default` standing for adwaita, as it does on GNOME,
 /// marks adwaita's dialog and panel too.
@@ -2267,69 +2423,6 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
             );
         }
     }
-}
-
-/// `ToggleInspector` hides the inspector's panel and shows it again, from the
-/// View menu and from the status bar's inspector toggle (spec §3.2), which is
-/// selected while the inspector is shown.
-#[gpui::test]
-fn the_inspector_toggle_hides_and_shows_it(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "kde-breeze");
-    assert!(
-        !menu_item_disabled("View", "Toggle Inspector"),
-        "View > Toggle Inspector is still disabled"
-    );
-    let toggle = bounds_of(&mut cx, CHROME_INSPECTOR_TOGGLE);
-    assert!(
-        within(toggle, bounds_of(&mut cx, CHROME_STATUS_BAR)),
-        "the inspector toggle at {toggle:?} is not in the status bar"
-    );
-    let selected = selected_fill(&mut cx);
-    assert_eq!(
-        toggle_fill(&mut cx, CHROME_INSPECTOR_TOGGLE),
-        Some(selected),
-        "the inspector toggle is not selected while the inspector is shown"
-    );
-    let content = bounds_of(&mut cx, CONTENT_PANEL);
-    run_menu_item(&mut cx, "View", "Toggle Inspector");
-    assert!(
-        !read(&mut cx, &showcase, |this, _| this.inspector_visible),
-        "View > Toggle Inspector did not hide the inspector"
-    );
-    assert_eq!(
-        cx.debug_bounds(INSPECTOR_PANEL),
-        None,
-        "the hidden inspector was still laid out"
-    );
-    assert!(
-        bounds_of(&mut cx, CONTENT_PANEL).size.width > content.size.width,
-        "the content did not take the room the inspector gave up"
-    );
-    assert_eq!(
-        toggle_fill(&mut cx, CHROME_INSPECTOR_TOGGLE),
-        None,
-        "the inspector toggle is still selected with the inspector hidden"
-    );
-    click(&mut cx, CHROME_INSPECTOR_TOGGLE);
-    assert!(
-        read(&mut cx, &showcase, |this, _| this.inspector_visible),
-        "the status bar's inspector toggle did not show the inspector again"
-    );
-    assert!(
-        cx.debug_bounds(INSPECTOR_PANEL).is_some(),
-        "the shown inspector was not laid out"
-    );
-    assert_eq!(
-        toggle_fill(&mut cx, CHROME_INSPECTOR_TOGGLE),
-        Some(selected),
-        "the inspector toggle is not selected again with the inspector shown"
-    );
-    click(&mut cx, CHROME_INSPECTOR_TOGGLE);
-    assert!(
-        !read(&mut cx, &showcase, |this, _| this.inspector_visible),
-        "the status bar's inspector toggle did not hide the inspector"
-    );
 }
 
 /// The title the status bar's hover label drew in the last frame, and
@@ -2443,7 +2536,8 @@ fn the_status_bar_is_the_bottom_of_the_window(cx: &mut TestAppContext) {
 }
 
 /// The status bar's first and last children are inset from its edges by the
-/// padding it draws (spec §3.6), the reported defect. Under kde-breeze that
+/// padding it draws (spec §3.6), the reported defect. With nothing shown,
+/// the last is the middle region, which runs to the bar's right end. Under kde-breeze that
 /// is `status_bar.border`'s 2px left and 0px right, Qt's status-bar item
 /// layout (platform-facts §2.14). The bar has no side border
 /// (status_bar.rs:91, `border_t_1`), so its edges are its padding's.
@@ -2464,18 +2558,18 @@ fn the_status_bars_ends_are_inset_by_its_padding(cx: &mut TestAppContext) {
     );
     let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
     let (first, last) = (
-        bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE),
-        bounds_of(&mut cx, CHROME_INSPECTOR_TOGGLE),
+        bounds_of(&mut cx, CHROME_SIDE_PANEL_TOGGLE),
+        bounds_of(&mut cx, STATUS_MIDDLE),
     );
     assert_eq!(
         Some(first.left() - bar.left()),
         left.map(px),
-        "the status bar's first child, the left-panel toggle, is not its left padding in"
+        "the status bar's first child, the side-panel toggle, is not its left padding in"
     );
     assert_eq!(
         Some(bar.right() - last.right()),
         right.map(px),
-        "the status bar's last child, the inspector toggle, is not its right padding in"
+        "the status bar's last child, its middle region, is not its right padding in"
     );
 }
 
@@ -2506,11 +2600,11 @@ fn status_text_width(cx: &mut VisualTestContext, text: &str) -> Option<Pixels> {
 }
 
 /// The status bar no longer carries the version (spec §3.2): the title bar
-/// does. What it draws is read off the frame, end to end: the left-panel
-/// toggle, the environment text, the empty middle region, the shown title
-/// where one is shown, and the inspector toggle, each next to the one before
-/// it by the bar's `gap_2` (status_bar.rs:84, :88), the last ending the bar's
-/// right padding in. So nothing else is drawn between them. The environment
+/// does. What it draws is read off the frame, end to end: the side-panel
+/// toggle, the environment text, the empty middle region, and the shown
+/// title where one is shown (spec S4), each next to the one before it by the
+/// bar's `gap_2` (status_bar.rs:84, :88), the last ending the bar's right
+/// padding in. So nothing else is drawn between them. The environment
 /// text is as wide as gpui's text system lays out the environment the
 /// showcase names (`chrome::status_environment`), and the shown title as its
 /// title, so neither carries more. Its info says the same.
@@ -2550,17 +2644,16 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
             draw(&mut cx);
         }
         let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
-        let left = bounds_of(&mut cx, CHROME_SIDEBAR_TOGGLE);
+        let left = bounds_of(&mut cx, CHROME_SIDE_PANEL_TOGGLE);
         let env = bounds_of(&mut cx, STATUS_ENVIRONMENT);
         let middle = bounds_of(&mut cx, STATUS_MIDDLE);
-        let right = bounds_of(&mut cx, CHROME_INSPECTOR_TOGGLE);
         assert_eq!(
             Some(env.size.width),
             expected,
             "the status bar's environment text is not the environment alone"
         );
         let mut drawn = vec![
-            ("left-panel toggle", left),
+            ("side-panel toggle", left),
             ("environment", env),
             ("middle", middle),
         ];
@@ -2577,7 +2670,6 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
             );
             drawn.push(("shown title", label));
         }
-        drawn.push(("inspector toggle", right));
         for pair in drawn.windows(2) {
             if let [(a, before), (b, after)] = pair {
                 assert!(
@@ -2587,10 +2679,11 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
                 );
             }
         }
+        let (name, last) = drawn.last().copied().unwrap_or(("middle", middle));
         assert_eq!(
-            Some(bar.right() - right.right()),
+            Some(bar.right() - last.right()),
             right_padding.map(px),
-            "the status bar draws something after its inspector toggle"
+            "the status bar draws something after its {name}"
         );
     }
 
@@ -2612,10 +2705,10 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
     );
 }
 
-/// Where the chosen icon set has no `PanelLeft` or `PanelRight`, the panel
-/// toggle shows its tooltip's text as its label, never another set's icon
-/// (spec §3.2): with Material's two taken out of the loaded gallery, each
-/// toggle is as wide as its tooltip's text at a Small Button's `text_sm`
+/// Where the chosen icon theme has no `PanelLeft`, the side-panel toggle
+/// shows its tooltip's text as its label, never another icon theme's icon
+/// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
+/// is as wide as its tooltip's text at a Small Button's `text_sm`
 /// (sizing.rs:322) plus the `px_2` on either side (button/button.rs:629-631),
 /// and says why in its info.
 #[gpui::test]
@@ -2628,20 +2721,12 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
     });
     cx.run_until_parked();
     draw(&mut cx);
-    let cases = [
-        (
-            CHROME_SIDEBAR_TOGGLE,
-            IconName::PanelLeft,
-            "PanelLeft",
-            "Toggle Sidebar",
-        ),
-        (
-            CHROME_INSPECTOR_TOGGLE,
-            IconName::PanelRight,
-            "PanelRight",
-            "Toggle Inspector",
-        ),
-    ];
+    let cases = [(
+        CHROME_SIDE_PANEL_TOGGLE,
+        IconName::PanelLeft,
+        "PanelLeft",
+        "Toggle Side Panel",
+    )];
     let mut iconic = Vec::new();
     for (selector, icon, name, _) in &cases {
         let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(icon));
@@ -2654,7 +2739,7 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
     cx.update(|_window, cx| {
         showcase.update(cx, |this, cx| {
             for entry in &mut this.gpui_icons {
-                if entry.0 == "PanelLeft" || entry.0 == "PanelRight" {
+                if entry.0 == "PanelLeft" {
                     entry.3 = None;
                 }
             }
@@ -2749,23 +2834,24 @@ fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<P
         .max_by(|a, b| a.as_f32().total_cmp(&b.as_f32()))
 }
 
-/// Each panel toggle's tooltip names its key binding (spec §3.2): the
-/// actions are bound to Ctrl+B and Ctrl+I, and each tooltip is wider while
-/// its action has that binding than once the bindings are gone -- upstream's
-/// Tooltip adds the binding's Kbd beside the text only where the action has
-/// one (tooltip.rs:94-106, :133-141). The tooltip's text is not readable
-/// from the test's frame, so its width is what shows the Kbd.
+/// The side-panel toggle's tooltip names its key binding (spec S4): the
+/// action is bound to Ctrl+B, and the tooltip is wider while the action has
+/// that binding than once the bindings are gone -- upstream's Tooltip adds
+/// the binding's Kbd beside the text only where the action has one
+/// (tooltip.rs:94-106, :133-141). The tooltip's text is not readable from
+/// the test's frame, so its width is what shows the Kbd.
 #[gpui::test]
-fn the_panel_toggles_tooltips_name_their_keys(cx: &mut TestAppContext) {
+fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
     // A tooltip fades in (tooltip.rs:178-181); without motion it is drawn
     // in full at once.
     without_motion(&mut cx);
-    let cases: [(&'static str, Box<dyn gpui::Action>, &str); 2] = [
-        (CHROME_SIDEBAR_TOGGLE, Box::new(ToggleSidebar), "ctrl-b"),
-        (CHROME_INSPECTOR_TOGGLE, Box::new(ToggleInspector), "ctrl-i"),
-    ];
+    let cases: [(&'static str, Box<dyn gpui::Action>, &str); 1] = [(
+        CHROME_SIDE_PANEL_TOGGLE,
+        Box::new(ToggleSidePanel),
+        "ctrl-b",
+    )];
     let mut bound = Vec::new();
     for (selector, action, keys) in &cases {
         let binding = cx.update(|window, _| {
@@ -3815,29 +3901,31 @@ fn a_missing_icon_says_it_is_missing(cx: &mut TestAppContext) {
     );
 }
 
-/// The chrome's own icons: the toolbar buttons', the status bar's panel
-/// toggles', the Sidebar's page icons, the command palette's entries' and
-/// the theme-error Alert's. The toolbar's are named in chrome::toolbar, the
-/// toggles' in chrome::status_bar, the pages' in `Page::icon`, the
-/// palette's in chrome::palette_groups, the Alert's where app.rs draws it.
+/// The icons taken from the chosen icon theme: the toolbar buttons', the
+/// status bar's side-panel toggle's, the command palette's entries', the
+/// theme-error Alert's and the Layout page's Sidebar samples' items'. The
+/// toolbar's are named in chrome::toolbar, the toggle's in
+/// chrome::status_bar, the pages' in `Page::icon`, the palette's in
+/// chrome::palette_groups, the Alert's where app.rs draws it, and the
+/// samples' in `LAYOUT_SIDEBAR_ITEMS`.
 fn chrome_icon_names() -> Vec<IconName> {
     let mut names = vec![
         IconName::CircleX,
         IconName::SquareTerminal,
         IconName::RotateCw,
         IconName::PanelLeft,
-        IconName::PanelRight,
         IconName::Palette,
         IconName::Settings,
         IconName::Sun,
         IconName::Moon,
     ];
     names.extend(Page::ALL.map(Page::icon));
+    names.extend(LAYOUT_SIDEBAR_ITEMS.map(|(_, icon, ..)| icon));
     names
 }
 
-/// The chrome's icons come from the chosen icon set, and from no other
-/// (the maintainer's rule: never mix icon sets). With Material chosen, every
+/// The chrome's icons come from the chosen icon theme, and from no other
+/// (the maintainer's rule: never mix icon themes). With Material chosen, every
 /// chrome icon is the SVG Material's gallery holds for its IconName, as the
 /// Icons page loads it, or none -- never gpui-component's own -- and the
 /// toolbar's Command Palette button says which. With gpui-component's
@@ -3889,8 +3977,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
     for (selector, name) in [
         (CHROME_TOOLBAR_PALETTE, "SquareTerminal"),
-        (CHROME_SIDEBAR_TOGGLE, "PanelLeft"),
-        (CHROME_INSPECTOR_TOGGLE, "PanelRight"),
+        (CHROME_SIDE_PANEL_TOGGLE, "PanelLeft"),
     ] {
         let info = settle_on(&mut cx, &showcase, selector);
         let note = info.as_ref().and_then(|info| {
@@ -4309,7 +4396,7 @@ fn the_palette_switches_page(cx: &mut TestAppContext) {
     );
 }
 
-/// The palette's preset entries install the preset, and the Sidebar's
+/// The palette's preset entries install the preset, and the theme settings'
 /// preset switch shows the one installed.
 #[gpui::test]
 fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
@@ -4332,28 +4419,28 @@ fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
         })
         .as_deref(),
         Some("nord"),
-        "the Sidebar's preset switch does not show the preset the palette installed"
+        "the preset switch does not show the preset the palette installed"
     );
 }
 
-/// The palette's preset entries are the Sidebar's (ledger ruling for T12):
+/// The palette's preset entries are the preset switch's (ledger ruling for T12):
 /// the rows the preset Combobox's delegate holds, in its order -- `default`,
 /// then only presets meant for this platform.
 #[test]
-fn the_palette_offers_the_sidebars_presets() {
+fn the_palette_offers_the_preset_switchs_presets() {
     use gpui_component::searchable_list::{SearchableListDelegate as _, SearchableListItem as _};
     let offered: Vec<String> = crate::chrome::palette_presets()
         .into_iter()
         .map(|(key, _)| key.to_string())
         .collect();
     let delegate = crate::support::PresetDelegate::new();
-    let sidebar: Vec<String> = (0..delegate.items_count(0))
+    let switch: Vec<String> = (0..delegate.items_count(0))
         .filter_map(|row| delegate.item(gpui_component::IndexPath::default().row(row)))
         .map(|item| item.value().to_string())
         .collect();
     assert_eq!(
-        offered, sidebar,
-        "the palette's presets are not the Sidebar Combobox's rows"
+        offered, switch,
+        "the palette's presets are not the preset Combobox's rows"
     );
     assert_eq!(
         offered.first().map(String::as_str),

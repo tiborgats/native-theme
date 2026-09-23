@@ -96,7 +96,7 @@ impl Showcase {
                 ui,
                 cx,
                 "icons-no-animations",
-                "No animated icons available for the current icon set",
+                "No animated icons available for the current icon theme",
             )
             .into_any_element()
         } else {
@@ -171,7 +171,7 @@ impl Showcase {
         let elsewhere = if is_native_icon_set(&self.icon_set_name) {
             ""
         } else {
-            " (not this platform's set)"
+            " (not this platform's icon theme)"
         };
         let title = format!(
             "Native Theme Icons: {set} [{loaded}/{} loaded]{elsewhere}",
