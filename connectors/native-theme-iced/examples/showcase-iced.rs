@@ -1996,10 +1996,14 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             ],
             &[
                 ("border-radius", &radius_s),
+                (
+                    "padding",
+                    "button_padding — button.border.padding's stated sides, \
+                     iced's button::DEFAULT_PADDING for the others",
+                ),
                 ("shadow", "iced's own — the model has no shadow geometry"),
             ],
             &[
-                ("padding", "set by iced per widget instance"),
                 ("font-weight", "hardcoded"),
                 ("min-height", "hardcoded by iced"),
             ],
@@ -2164,9 +2168,15 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                         to_color(i.selection_background),
                     ),
                 ],
-                &[("border-radius", &radius_s)],
                 &[
-                    ("padding", "set per widget instance"),
+                    ("border-radius", &radius_s),
+                    (
+                        "padding",
+                        "input_padding — input.border.padding's stated sides, \
+                         iced's text_input::DEFAULT_PADDING for the others",
+                    ),
+                ],
+                &[
                     ("height", "set by iced"),
                     ("icon color", "no native source — iced's own"),
                 ],
@@ -2277,7 +2287,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
     let label_gap_s = format!("{:.0}px", c.label_gap);
     // `checkbox.indicator_width` is the indicator's side length, square for a
-    // checkbox and a diameter for a radio (platform-facts.md:969), and both
+    // checkbox and a diameter for a radio (platform-facts.md:980), and both
     // `Checkbox::size` (checkbox.rs:176, laid out at :287) and `Radio::size`
     // (radio.rs:200, :300) take exactly that.
     let indicator_width_s = format!("{:.0}px", c.indicator_width);
@@ -2984,7 +2994,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 tooltip(
                     button("Hover: Top")
                         .on_press(Message::ButtonPressed)
-                        .style(styles::button_primary(resolved)),
+                        .style(styles::button_primary(resolved))
+                        .padding(native_theme_iced::button_padding(resolved)),
                     text("Tooltip on top!"),
                     tooltip::Position::Top,
                 )
@@ -2993,7 +3004,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 tooltip(
                     button("Hover: Bottom")
                         .on_press(Message::ButtonPressed)
-                        .style(styles::button(resolved)),
+                        .style(styles::button(resolved))
+                        .padding(native_theme_iced::button_padding(resolved)),
                     text("Tooltip on bottom!"),
                     tooltip::Position::Bottom,
                 )
@@ -3002,7 +3014,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 tooltip(
                     button("Hover: Left")
                         .on_press(Message::ButtonPressed)
-                        .style(styles::button_success(resolved)),
+                        .style(styles::button_success(resolved))
+                        .padding(native_theme_iced::button_padding(resolved)),
                     text("Tooltip on left!"),
                     tooltip::Position::Left,
                 )
@@ -3011,7 +3024,8 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 tooltip(
                     button("Hover: Right")
                         .on_press(Message::ButtonPressed)
-                        .style(styles::button_danger(resolved)),
+                        .style(styles::button_danger(resolved))
+                        .padding(native_theme_iced::button_padding(resolved)),
                     text("Tooltip on right!"),
                     tooltip::Position::Right,
                 )
@@ -3030,18 +3044,28 @@ fn view_display(state: &State) -> Element<'_, Message> {
         if state.is_dark { "Dark" } else { "Light" },
     );
 
+    // The sizes the showcase draws at, which are the theme's own: no text here
+    // is scaled by the OS text-scaling factor. That factor is the OS theme's
+    // alone -- a preset has no OS reading -- so only there is what
+    // `font_size` would scale to shown beside it, and only where it differs.
     let font_info = {
-        let ff = native_theme_iced::font_family(&state.current_resolved);
-        let fs = format!(
-            "{:.1}px",
-            native_theme_iced::font_size(&state.current_resolved, &state.accessibility)
+        let r = &state.current_resolved;
+        let ff = native_theme_iced::font_family(r);
+        let mf = native_theme_iced::mono_font_family(r);
+        let drawn = format!(
+            "Font: {ff} @ {:.1}px  |  Mono: {mf} @ {:.1}px",
+            r.defaults.font.size, r.defaults.mono_font.size
         );
-        let mf = native_theme_iced::mono_font_family(&state.current_resolved);
-        let ms = format!(
-            "{:.1}px",
-            native_theme_iced::mono_font_size(&state.current_resolved, &state.accessibility)
-        );
-        format!("Font: {ff} @ {fs}  |  Mono: {mf} @ {ms}")
+        let scaled = native_theme_iced::font_size(r, &state.accessibility);
+        let os_theme = matches!(state.current_choice, ThemeChoice::OsTheme(_));
+        if os_theme && scaled != r.defaults.font.size {
+            format!(
+                "{drawn}  |  OS text scaling: font_size() gives {scaled:.1}px, \
+                 which the showcase does not apply"
+            )
+        } else {
+            drawn
+        }
     };
 
     let info_box = container(
@@ -3248,15 +3272,15 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             button(text("split |").size(ts.caption.size))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
                 .style(styles::button(resolved))
-                .padding(Padding::from([sp.xxs, sp.xs])),
+                .padding(native_theme_iced::button_padding(resolved)),
             button(text("split —").size(ts.caption.size))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Horizontal, pane))
                 .style(styles::button(resolved))
-                .padding(Padding::from([sp.xxs, sp.xs])),
+                .padding(native_theme_iced::button_padding(resolved)),
             button(text("close").size(ts.caption.size))
                 .on_press(Message::PaneClosed(pane))
                 .style(styles::button_danger(resolved))
-                .padding(Padding::from([sp.xxs, sp.xs])),
+                .padding(native_theme_iced::button_padding(resolved)),
         ]
         .spacing(sp.xs);
 
@@ -3834,12 +3858,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 button(text("Dismiss").size(ts.caption.size))
                     .on_press(Message::AwCardToggled)
                     .style(styles::button(resolved))
-                    .padding(Padding::from([sp.xxs, sp.s])),
+                    .padding(native_theme_iced::button_padding(resolved)),
             ]
             .spacing(sp.xs),
         ))
-        .on_close(Message::AwCardToggled)
-        .close_size(resolved.defaults.icon_sizes.small)
         .padding_head(Padding::from(sp.s))
         .padding_body(Padding::from(sp.s))
         .padding_foot(Padding::from(sp.s))
@@ -3850,7 +3872,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         button(text("Show the card again").size(ts.caption.size))
             .on_press(Message::AwCardToggled)
             .style(styles::button_primary(resolved))
-            .padding(Padding::from([sp.xs, sp.s]))
+            .padding(native_theme_iced::button_padding(resolved))
             .into()
     };
 
@@ -3871,13 +3893,22 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ),
             ],
             &[
-                ("close icon", "defaults.icon_sizes.small"),
                 ("radius", "card.border.corner_radius"),
+                ("Dismiss padding", "button_padding"),
             ],
-            &[(
-                "section padding",
-                "the showcase's own scale — CardTheme states none",
-            )],
+            &[
+                (
+                    "section padding",
+                    "the showcase's own scale — CardTheme states none",
+                ),
+                (
+                    "close icon",
+                    "not drawn: iced_aw 0.14.1 styles Card::on_close's button \
+                     with its default class, whose icon is white whatever \
+                     styles::aw::card sets (widget/card.rs:193-206), so the \
+                     themed Dismiss button closes the card instead",
+                ),
+            ],
         ),
         column![text("Card").size(ts.dialog_title.size), card_section,]
             .spacing(gap.widget)
@@ -5964,6 +5995,131 @@ mod tests {
         }
     }
 
+    /// The widgets the showcase draws as a `button` to stand in for another
+    /// native widget, each with why `button_padding` is not its padding.
+    const STAND_INS: &[(&str, &str)] = &[
+        (
+            "tabs",
+            "the page tabs: navigation drawn as buttons, not a push button",
+        ),
+        (
+            "menu_entry",
+            "a menu item, not a push button: its padding is not the button's",
+        ),
+        ("menu_root", "the same, on the menu bar"),
+        ("context_demo", "the same, in the context menu"),
+    ];
+
+    /// Every push button dressed in a `styles::button*` class takes the
+    /// theme's padding, through `button_padding`, rather than a spacing of the
+    /// showcase's own or iced's default.
+    #[test]
+    fn themed_push_buttons_take_the_themes_padding() {
+        let source = strip_comments_and_strings(SHOWCASE);
+        let classes = [
+            "styles::button",
+            "styles::button_primary",
+            "styles::button_danger",
+            "styles::button_success",
+            "styles::button_warning",
+            "styles::button_link",
+        ];
+
+        let mut checked = 0usize;
+        let mut unpadded = Vec::new();
+        for site in call_sites(&source, "button") {
+            if !is_dressed(&source, site, &classes) {
+                continue;
+            }
+            let lets = enclosing_lets(&source, site);
+            if STAND_INS.iter().any(|(name, _)| lets.contains(name)) {
+                continue;
+            }
+            checked += 1;
+            if source[..site].trim_end().ends_with("apply_pad(") {
+                continue;
+            }
+            let padded = close_of_call(&source, site).is_some_and(|end| {
+                method_calls(&source, end).iter().any(|(name, args)| {
+                    *name == "padding"
+                        && (args.contains("button_padding") || args.contains("btn_pad"))
+                })
+            });
+            if !padded {
+                unpadded.push(format!("showcase-iced.rs:{}", line_at(&source, site)));
+            }
+        }
+        assert!(checked > 0, "no themed push button was found");
+        assert!(
+            unpadded.is_empty(),
+            "themed push buttons not padded by button_padding: {}",
+            unpadded.join(", ")
+        );
+    }
+
+    /// The `Card` is dismissed by a themed button of its own, never by
+    /// `Card::on_close`: `iced_aw` 0.14.1 styles that close button with its
+    /// default class (`widget/card.rs:193-206`), so the icon is white whatever
+    /// `styles::aw::card` says.
+    #[test]
+    fn the_card_has_no_iced_aw_close_button() {
+        let source = strip_comments_and_strings(SHOWCASE);
+        if let Some(at) = source.find(".on_close(") {
+            panic!(
+                "Card::on_close is called at showcase-iced.rs:{}",
+                line_at(&source, at)
+            );
+        }
+    }
+
+    /// The names of the `let` statements whose initialiser contains `site`,
+    /// innermost last.
+    fn enclosing_lets(source: &str, site: usize) -> Vec<&str> {
+        let mut names = Vec::new();
+        for (at, _) in source[..site].match_indices("let ") {
+            let joined_before = source[..at]
+                .chars()
+                .next_back()
+                .is_some_and(|c| c.is_alphanumeric() || c == '_');
+            if joined_before {
+                continue;
+            }
+            let rest = &source[at + 4..];
+            let rest = rest.strip_prefix("mut ").unwrap_or(rest);
+            let name_len = rest
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '_')
+                .count();
+            if name_len == 0 {
+                continue;
+            }
+            let name_at = source.len() - rest.len();
+            let mut depth = 0i32;
+            let mut end = source.len();
+            for (offset, c) in source[name_at..].char_indices() {
+                match c {
+                    '(' | '[' | '{' => depth += 1,
+                    ')' | ']' | '}' => {
+                        depth -= 1;
+                        if depth < 0 {
+                            end = name_at + offset;
+                            break;
+                        }
+                    }
+                    ';' if depth == 0 => {
+                        end = name_at + offset;
+                        break;
+                    }
+                    _ => {}
+                }
+            }
+            if end > site {
+                names.push(&rest[..name_len]);
+            }
+        }
+        names
+    }
+
     /// The names of the `pub fn` items a module declares.
     fn public_functions(source: &str) -> Vec<String> {
         strip_comments_and_strings(source)
@@ -6287,6 +6443,15 @@ thing(0);
     /// The arguments of every `.method(..)` chained onto the value that ends
     /// at `from`.
     fn method_chain(source: &str, from: usize) -> Vec<&str> {
+        method_calls(source, from)
+            .into_iter()
+            .map(|(_, args)| args)
+            .collect()
+    }
+
+    /// Every `.method(..)` chained onto the value that ends at `from`: its
+    /// name, and its arguments with their parentheses.
+    fn method_calls(source: &str, from: usize) -> Vec<(&str, &str)> {
         let mut calls = Vec::new();
         let mut at = from;
         loop {
@@ -6307,7 +6472,7 @@ thing(0);
             }
             match close_of_call(source, open) {
                 Some(end) => {
-                    calls.push(&source[open..end]);
+                    calls.push((&source[name_start..open], &source[open..end]));
                     at = end;
                 }
                 None => return calls,
