@@ -15,6 +15,14 @@ use crate::support::ChromeIcon;
 pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
     // macOS draws no window controls of upstream's (title_bar.rs:254-256).
     let info = title_bar_colours(t, cfg!(not(target_os = "macos")));
+    let info = if cfg!(target_os = "macos") {
+        info
+    } else {
+        info.not_themeable(
+            "own icons",
+            super::own_icons("the window controls' WindowMinimize, WindowMaximize or WindowRestore, and WindowClose (title_bar.rs, ControlIcon)"),
+        )
+    };
     title_bar_notes(info)
     .instance(
         "window",
@@ -52,6 +60,14 @@ pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
     // Upstream draws its controls on Windows in any window, on Linux only in
     // a client-decorated one, and on macOS never (title_bar.rs:254-270).
     let info = title_bar_colours(t, cfg!(target_os = "windows"));
+    let info = if cfg!(target_os = "windows") {
+        info.not_themeable(
+            "own icons",
+            super::own_icons("the window controls' WindowMinimize, WindowMaximize or WindowRestore, and WindowClose (title_bar.rs, ControlIcon)"),
+        )
+    } else {
+        info
+    };
     title_bar_notes(info)
         .instance(
             "sample",
@@ -606,6 +622,10 @@ pub fn page_tab_bar(t: &Theme) -> WidgetInfo {
             "menu",
             "menu(true): after the tabs, an extra-small ghost Button with a caret opens a menu of every page, the shown one checked, whose rows show their pages too. Upstream adds that Button whether or not the tabs overflow, and the tabs scroll sideways where they do not fit (tab/tab_bar.rs, TabBar::render)",
         )
+        .not_themeable(
+            "own icons",
+            super::own_icons("the menu Button's caret, ChevronDown (select.rs, Caret), and Check beside the shown page in its menu (menu/popup_menu.rs, PopupMenu)"),
+        )
 }
 
 /// What an upstream Ghost Button (`.ghost()`) holds, which its content's
@@ -730,6 +750,10 @@ pub(super) fn input_background(t: &Theme) -> ColorClaim {
 pub fn preset_combobox(t: &Theme) -> WidgetInfo {
     WidgetInfo::new("Combobox")
         .variant("searchable")
+        .not_themeable(
+            "own icons",
+            super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the search matches nothing (combobox.rs, ComboboxState::new)"),
+        )
         .color(input_background(t))
         .color(claim(
             "trigger border",
@@ -819,19 +843,23 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "follows the choice",
-            "the Icons page's galleries, the chrome's own icons -- the toolbar's Command Palette, Reload System Theme and Preferences buttons, the status bar's side-panel toggle, the command palette's entries, and the icon of the Alert that reports a theme that failed to load -- and the items of the Layout page's Sidebar samples. Each shows the chosen icon theme's icon for its IconName -- gpui-component's own where its built-in icons are chosen -- and none where the icon theme has none: no other icon theme's icon stands in",
+            "the Icons page's galleries, the chrome's own icons -- the toolbar's Command Palette, Reload System Theme and Preferences buttons, the status bar's side-panel toggle, the command palette's entries, and the icon of the Alert that reports a theme that failed to load -- the items of the Layout page's Sidebar samples, and every icon the pages' samples are given: the Buttons page's icon Buttons, its loading Button's spinner and its Toggles, the input groups' Search icon and Copy button, the Attachments, the Empty state, the Plain Marker, the Collapsible's toggle, the icon Stepper, the Dialog's and the AlertDialog's icons and the menu rows. Each shows the chosen icon theme's icon for its IconName -- gpui-component's own where its built-in icons are chosen -- and none where the icon theme has none: no other icon theme's icon stands in",
         )
         .instance(
             "raster sets",
-            "on macOS and Windows the system icon sets come as pixels, not SVG -- native-theme's loaders there return IconData::Rgba (sficons.rs:110 and winicons.rs:173, native-theme 0.5.9) -- and an Icon draws only a path or SVG bytes (icon.rs, Icon::data), so with the system icon theme chosen there the chrome shows none of its icons",
+            "on macOS and Windows the system icon sets come as pixels, not SVG -- native-theme's loaders there return IconData::Rgba (sficons.rs:110 and winicons.rs:173, native-theme 0.5.9) -- and an Icon draws only a path or SVG bytes (icon.rs, Icon::data), so with the system icon theme chosen there the chrome and the pages' samples show none of their icons",
         )
         .not_themeable(
             "upstream's icons",
-            "gpui-component's built-in Lucide whatever is chosen, wherever a widget names its icon as it renders, with no setter: this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (select.rs, SelectState::new; combobox.rs, ComboboxState::new); the page TabBar's menu Button's caret, a Caret too (button/button.rs, RenderOnce for Button) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
+            "the icons a widget names as it renders, with no setter: this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (select.rs, SelectState::new; combobox.rs, ComboboxState::new); the page TabBar's menu Button's caret, a Caret too (button/button.rs, RenderOnce for Button) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
+        )
+        .not_themeable(
+            "why they stay",
+            super::own_icons("those icons, and every icon a sample's widget draws of its own, which that sample's info names"),
         )
         .instance(
             "pages",
-            "the samples on the other pages keep the icons they name, gpui-component's own: they show the widgets, and the Icons page shows the sets",
+            "the samples on the other pages show the chosen icon theme's icons for the icons they are given, as the chrome does, and none where it has none; only the icons their widgets draw of their own stay gpui-component's",
         )
 }
 
@@ -1014,6 +1042,14 @@ pub(super) fn dialog_surface(
     close_button: bool,
     reported: &str,
 ) -> WidgetInfo {
+    let info = if close_button {
+        info.not_themeable(
+            "own icons",
+            super::own_icons("the close button's Close (dialog/dialog.rs, Dialog::render)"),
+        )
+    } else {
+        info
+    };
     info.color(claim(
         "bg",
         "background",
@@ -1088,6 +1124,10 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
 /// Dialog, its entries' icons from the icon theme named `set`.
 pub fn command_palette(t: &Theme, set: &str) -> WidgetInfo {
     WidgetInfo::new("Command")
+        .not_themeable(
+            "own icons",
+            super::own_icons("Search before its query field, and Check beside a checked entry (command/state.rs, CommandState)"),
+        )
         .color(claim(
             "surface bg",
             "popover",
@@ -1209,6 +1249,10 @@ pub(super) fn sheet_surface(
         .not_themeable(
             "fill",
             "the window's own background, not the popover colour, as a Dialog's (sheet.rs, Sheet)",
+        )
+        .not_themeable(
+            "own icons",
+            super::own_icons("the close button's Close (sheet.rs, Sheet::render)"),
         );
     let info = match side {
         SheetSide::Right => info
@@ -1325,6 +1369,10 @@ pub(super) fn settings(t: &Theme, variant: &'static str) -> WidgetInfo {
 /// is recorded where `demo::preferences` applies the builder to its group.
 pub fn preferences_settings(t: &Theme) -> WidgetInfo {
     settings(t, "Preferences")
+        .not_themeable(
+            "own icons",
+            super::own_icons("Search before its sidebar's search field (setting/settings.rs, Settings), Undo2 on the reset button a page shows while one of its settings can be reset (setting/page.rs, SettingPage), and Minus and Plus on the text scale's step buttons (setting/fields/number.rs, NumberField; input/number_input.rs, NumberInput)"),
+        )
         .not_themeable(
             "layout",
             "the label above the field wherever the page is at most 480px wide, as it is in this sheet (setting/settings.rs, STACKED_LAYOUT_MAX_WIDTH)",

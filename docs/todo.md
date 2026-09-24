@@ -1561,6 +1561,42 @@ the gap — closing it is a change, and each wants its own decision.
       `screenshot()` method would enable headless CI screenshot capture on all
       platforms (like iced's `--screenshot` flag). Without this, gpui showcase
       screenshots are Linux-only (via external spectacle capture).
+- [ ] PR: let an application drop the SVGs a window has drawn, so the icons
+      gpui-component's widgets build for themselves can follow a theme
+      switch. Measured in the v0.5.9 pre-merge fixes (Task 6's spike,
+      2026-09-24, gpui-pre 0.3.6, gpui-component 0.6.6): gpui-component
+      names those icons as asset paths (`icon.rs:30-33`, `:189`;
+      `checkbox.rs:211` sets the path on an `svg()` directly), so an
+      application's `AssetSource` could answer `icons/<name>.svg` from the
+      chosen icon theme. It cannot make a switch show: `Window::paint_svg`
+      keys the window's sprite atlas by `RenderSvgParams { path, size }`
+      (`window.rs:4823-4833`, `svg_renderer.rs:85-88`), and the atlas
+      returns an occupied key without calling the build closure
+      (`platform.rs:1483-1490`, `AtlasState::get_or_insert_with`), which is
+      the only place `SvgRenderer::render_alpha_mask` asks the asset source
+      (`svg_renderer.rs:257`). The atlas is a private field of `Window`
+      (`window.rs:1165`); `Window::drop_image` removes only image keys
+      (`window.rs:4996-5007`), and only gpui itself clears an atlas, as its
+      renderers recover from GPU errors and a lost device (gpui-pre-wgpu
+      `wgpu_renderer.rs:1300`, `:2120`; gpui-pre-windows
+      `directx_atlas.rs:61`). A test against the `HeadlessAtlas` the test
+      platform uses built a path at a size once for two paints. The path
+      cannot vary per theme either: each call site builds a fixed
+      `IconName`. So after a switch every path and size already drawn keeps
+      the old theme's icon while any new size gets the new one -- two icon
+      themes in one window. What would do it: a public
+      `Window::drop_svg(path)` (or a generation in `RenderSvgParams`) that
+      removes the path's tiles at every size, which an application calls
+      for `icons/*` after it changes what its asset source answers. The
+      rendering side is not the obstacle: an SVG is drawn as an alpha mask
+      in the element's text colour (`svg_renderer.rs:231-261`), and
+      Breeze's and Adwaita's symbolic icons rasterise to non-empty masks
+      through `SvgRenderer` (measured: 318 and 678 covered pixels of 4096).
+      Until then the gpui showcase's page samples and chrome draw the chosen
+      theme's icons where the showcase builds the icon, and each widget's
+      Widget Info says which of its icons are gpui-component's own
+      (`info::own_icons`); the icon-provider hook in "Upstream PRs to
+      gpui-component" below is the other way in.
 
 #### Upstream PRs to gpui-component
 

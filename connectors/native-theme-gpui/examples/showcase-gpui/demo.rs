@@ -2748,7 +2748,7 @@ pub(crate) fn severity_alert(
         .info(
             ui,
             id,
-            info::feedback::alert(cx.theme(), severity, false)
+            info::feedback::severity_alert(cx.theme(), severity)
                 .instance("title", severity.name())
                 .instance("message", message),
         )

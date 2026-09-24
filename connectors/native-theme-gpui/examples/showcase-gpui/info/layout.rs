@@ -164,6 +164,10 @@ pub fn group_box(t: &Theme, kind: GroupBoxKind, styled: bool, title: &str) -> Wi
 /// the builder.
 pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
     WidgetInfo::new("Accordion")
+        .not_themeable(
+            "own icons",
+            super::own_icons("ChevronDown on each item's header, turned while the item is open (accordion.rs, AccordionItem::render)"),
+        )
         .color(claim(
             "bg",
             "accordion",
@@ -294,6 +298,7 @@ pub fn carousel(t: &Theme, reduce_motion: bool) -> WidgetInfo {
         } else {
             "a change of slide springs the track to it on spring_move (carousel/carousel.rs, CarouselContent)"
         })
+        .not_themeable("own icons", super::own_icons("ChevronLeft and ChevronRight on its Previous and Next Buttons (carousel/carousel.rs, carousel_control)"))
         .instance("controls", "the Previous and Next Buttons place themselves outside the frame, positioned against the Carousel (carousel/carousel.rs, carousel_control), so a wrapper around one would become what it is positioned against: they report through the Carousel. The slides and the page buttons report themselves")
 }
 
@@ -560,6 +565,7 @@ pub fn breadcrumb(t: &Theme, pages: &[Page], current: Page) -> WidgetInfo {
             t.muted_foreground,
             "gpui-component/breadcrumb.rs:144",
         ))
+        .not_themeable("own icons", super::own_icons("the ChevronRight between its items (breadcrumb.rs, Breadcrumb)"))
         .not_themeable("separator icon", "a ChevronRight built inline with no setter to replace it (breadcrumb.rs, Breadcrumb) -- unlike an Alert's icon, which Alert::icon takes")
         .not_themeable("spacing", "gap_1p5 (breadcrumb.rs, Breadcrumb) -- rems again -- and applied before the caller's refinement. native-theme states no breadcrumb widget. Our gap")
         .instance("items", format!("{links} and {current}: a click on one of the first {} shows that page, and {current}, the last, is this page. Breadcrumb::child takes a BreadcrumbItem that the Breadcrumb renders itself (breadcrumb.rs, Breadcrumb::child), so an item cannot be wrapped: the Breadcrumb reports for its items", pages.len()))
@@ -651,6 +657,7 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
 /// `demo::settings` applies the builder to its groups.
 pub fn settings(t: &Theme) -> WidgetInfo {
     super::chrome::settings(t, "two pages")
+        .not_themeable("own icons", super::own_icons("Search before its sidebar's search field (setting/settings.rs, Settings), Undo2 on the reset button a page shows while one of its settings can be reset (setting/page.rs, SettingPage), the checkbox field's Check while it is checked (setting/fields/bool.rs, BoolField; checkbox.rs, checkbox_check_icon), and the dropdown field's caret, ChevronDown, and Check beside the chosen option in its menu (setting/fields/dropdown.rs, DropdownField; select.rs, Caret; menu/popup_menu.rs, PopupMenu)"))
         .color(claim(
             "group title",
             "muted_foreground",

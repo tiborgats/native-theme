@@ -291,6 +291,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
         .not_themeable("text colour", "none of its own: the block's foreground reaches only the current line's number, and unhighlighted text takes the colour it inherits (gpui-base/input/base/element.rs, prepaint), which is the one the showcase sets on its window. A syntax-highlighted run takes its colour from highlight_theme instead")
         .not_themeable("line height", "1.5 is only what the widget sets first: Editor is Styled and applies the caller's refinement last, on purpose (input/editor.rs, Editor::render -- the comment there says a text style set on the editor refines over them). defaults.line_height is modelled (1.4 on the bundled defaults) and no builder carries it yet")
         .not_themeable("line numbers / search", "on by default (gpui-base/input/base/state.rs, EditorMode)")
+        .not_themeable("own icons", super::own_icons("ChevronDown and ChevronRight on the fold buttons in its gutter (input/input.rs, fold_icon_renderer), and the icons of the search panel it opens (input/search.rs, SearchPanel)"))
 }
 
 /// The Markdown `TextView`.

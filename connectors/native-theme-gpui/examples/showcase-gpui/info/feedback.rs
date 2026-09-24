@@ -116,6 +116,27 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
         .not_themeable("icon size", "the Alert's text size: an Icon given no size takes the font size it inherits (icon.rs, Icon::into_svg), and the Alert sets text_sm (alert.rs, Alert::render) -- a rem, so it follows the platform font. defaults.icon_sizes is in absolute px and there is no alert in the model to hang it on")
 }
 
+/// One of the Feedback page's Alerts, of `severity`, at the default Size,
+/// with the icon upstream gives that severity. The caller adds what the
+/// Alert says.
+pub fn severity_alert(t: &Theme, severity: Severity) -> WidgetInfo {
+    alert(t, severity, false).not_themeable(
+        "own icons",
+        match severity {
+            Severity::Info => super::own_icons("its severity's icon, Info (alert.rs, Alert::info)"),
+            Severity::Success => {
+                super::own_icons("its severity's icon, CircleCheck (alert.rs, Alert::success)")
+            }
+            Severity::Warning => {
+                super::own_icons("its severity's icon, TriangleAlert (alert.rs, Alert::warning)")
+            }
+            Severity::Error => {
+                super::own_icons("its severity's icon, CircleX (alert.rs, Alert::error)")
+            }
+        },
+    )
+}
+
 /// A `Progress` bar at `value` percent, labelled `label` beside it, drawn
 /// while gpui's `reduce_motion` is as given.
 pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> WidgetInfo {
@@ -203,6 +224,10 @@ pub fn progress_circle(
 pub fn spinner(t: &Theme, kind: SpinnerKind, styled: bool, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Spinner")
         .variant(kind.name())
+        .not_themeable(
+            "own icons",
+            super::own_icons("Loader, the icon it turns (spinner.rs, Spinner::new)"),
+        )
         // No colour of its own: the Loader icon takes the text colour it
         // inherits (spinner.rs:64-66, icon.rs:219), which the showcase sets
         // on its window.
@@ -566,6 +591,10 @@ pub fn marker(
             "gpui-component/marker.rs:191",
         )),
         MarkerKind::Spinner => info
+            .not_themeable(
+                "own icons",
+                super::own_icons("the Loader of the Spinner it adds (spinner.rs, Spinner::new)"),
+            )
             .color(claim(
                 "spinner, the row's text colour",
                 "muted_foreground",
@@ -683,8 +712,23 @@ pub fn notification(t: &Theme, severity: Severity, label: &str, message: &str) -
             "gpui-component/notification.rs:45",
         ),
     };
+    let own = match severity {
+        Severity::Info => super::own_icons(
+            "its kind's icon, Info (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
+        ),
+        Severity::Success => super::own_icons(
+            "its kind's icon, CircleCheck (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
+        ),
+        Severity::Warning => super::own_icons(
+            "its kind's icon, TriangleAlert (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
+        ),
+        Severity::Error => super::own_icons(
+            "its kind's icon, CircleX (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
+        ),
+    };
     WidgetInfo::new("Notification")
         .variant(severity.name())
+        .not_themeable("own icons", own)
         .color(claim(
             "bg",
             "popover",

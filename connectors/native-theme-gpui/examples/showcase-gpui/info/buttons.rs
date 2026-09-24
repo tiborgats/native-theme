@@ -639,6 +639,7 @@ pub fn dropdown_button(t: &Theme, kind: ButtonKind) -> WidgetInfo {
             "gpui-component/styled.rs:197",
         ))
         .not_themeable("dropdown arrow", "a Caret, not an icon the caller passes: the right half is a Button::dropdown_caret and the glyph comes from select.rs, Caret. The shape is fixed, but its colour is not -- upstream paints it with the button variant's own text colour at 75% (button/button.rs, Button::render dropdown_caret), so it follows the platform through the same token the label does")
+        .not_themeable("own icons", super::own_icons("the dropdown arrow's ChevronDown (select.rs, Caret)"))
         .instance("halves", "both take the variant of the Button the showcase gives it: DropdownButton passes it on to the caret half (button/dropdown_button.rs, DropdownButton::effective_variant)")
 }
 
@@ -723,5 +724,6 @@ pub fn clipboard(t: &Theme, value: &'static str) -> WidgetInfo {
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("surface", "a Clipboard is a ghost Button and reads no theme field of its own (clipboard.rs, Clipboard::render): transparent until hovered, when it takes accent (at half alpha in dark mode) -- the menu highlight, not the button family. Its icon takes the Ghost variant's secondary_foreground")
         .not_themeable("copy icon", "Copy and Check, built inline with no setter to replace them (clipboard.rs, Clipboard)")
+        .not_themeable("own icons", super::own_icons("Copy, and Check once it has copied (clipboard.rs, Clipboard)"))
         .instance("value", value)
 }

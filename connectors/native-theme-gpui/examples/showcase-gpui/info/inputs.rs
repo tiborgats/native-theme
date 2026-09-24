@@ -168,17 +168,23 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
         ))
         .instance("padding", "none from geometry::input: the showcase leaves out its padding sides, because the refinement lands on the frame round the buttons (input/number_input.rs, NumberInput::render) and the Input inside it keeps upstream's own padding")
         .not_themeable("step buttons", "hardcoded +/- icons; the Size enum sets their min width (input/number_input.rs, NumberInput::render: min_w_6 / min_w_8), not the field's height")
+        .not_themeable("own icons", super::own_icons("Minus and Plus on its step buttons (input/number_input.rs, NumberInput)"))
 }
 
 /// A `Checkbox` reading `label`, `checked` or not, `disabled` or not. Its
 /// geometry line is recorded where `demo::checkbox` applies the builder.
 pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("Checkbox").variant(match (checked, disabled) {
-        (true, false) => "checked",
-        (false, false) => "unchecked",
-        (true, true) => "checked, disabled",
-        (false, true) => "unchecked, disabled",
-    });
+    let info = WidgetInfo::new("Checkbox")
+        .variant(match (checked, disabled) {
+            (true, false) => "checked",
+            (false, false) => "unchecked",
+            (true, true) => "checked, disabled",
+            (false, true) => "unchecked, disabled",
+        })
+        .not_themeable(
+            "own icons",
+            super::own_icons("the check mark, Check, drawn while it is checked (checkbox.rs, checkbox_check_icon)"),
+        );
     // The disabled style is resolved after the checked one, so it wins
     // (gpui-base checkbox.rs:302-316).
     let info = match (checked, disabled) {
@@ -403,7 +409,10 @@ pub fn slider(t: &Theme) -> WidgetInfo {
 /// A `Rating` at `value` of its five stars, `disabled` or not. Its star-size
 /// line is recorded where `demo::rating` applies `geometry::icon_size_small`.
 pub fn rating(t: &Theme, value: usize, disabled: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("Rating");
+    let info = WidgetInfo::new("Rating").not_themeable(
+        "own icons",
+        super::own_icons("Star, and StarFill for a star at or below the value (rating.rs, Rating)"),
+    );
     let info = if disabled {
         info.variant("disabled")
     } else {
@@ -508,6 +517,7 @@ pub fn select(t: &Theme) -> WidgetInfo {
         .not_themeable("fill", "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)")
         .not_themeable("carried colour", "the one difference from a Combobox, such as the theme settings' preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)")
         .not_themeable("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size")
+        .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the list is empty (select.rs, SelectState::new)"))
 }
 
 /// A `ColorPicker`.
@@ -619,6 +629,7 @@ pub fn date_picker(t: &Theme) -> WidgetInfo {
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("calendar icon", "an IconName::Calendar built inline with no setter (time/date_picker.rs, DatePicker)")
+        .not_themeable("own icons", super::own_icons("the trigger's Calendar (time/date_picker.rs, DatePicker), and ChevronLeft and ChevronRight on the month buttons of the Calendar it opens (time/calendar.rs, Calendar)"))
         .not_themeable("format", "%Y/%m/%d unless the application sets another, whatever the locale (time/date_picker.rs, DatePickerState::date_format)")
 }
 
@@ -652,4 +663,5 @@ pub fn calendar(t: &Theme) -> WidgetInfo {
         .config("border-radius", format!("radius_lg: {}px", t.radius_lg.as_f32()))
         .not_themeable("fill", "none: a Calendar sets an edge, a radius and a padding but no background, so the window shows through (time/calendar.rs, Calendar)")
         .not_themeable("month navigation", "ChevronLeft and ChevronRight built inline with no setter (time/calendar.rs, Calendar)")
+        .not_themeable("own icons", super::own_icons("ChevronLeft and ChevronRight on its month buttons (time/calendar.rs, Calendar)"))
 }

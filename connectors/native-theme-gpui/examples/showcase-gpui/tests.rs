@@ -4917,6 +4917,84 @@ fn the_dialog_samples_icons_follow_the_chosen_set(cx: &mut TestAppContext) {
     }
 }
 
+/// Every sample whose gpui-component widget draws icons of its own says
+/// they are gpui-component's whichever icon theme is chosen (decision D1):
+/// upstream loads them by asset path, and gpui keeps the first SVG it drew
+/// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
+/// chosen theme. The widgets are those whose shown configuration draws one
+/// (gpui-component 0.6.6): a DropdownButton's caret, a Clipboard's Copy, a
+/// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's
+/// and a Combobox's caret, a DatePicker's Calendar, a Calendar's month
+/// buttons, the command palette's Search, a Dialog's and a Sheet's close
+/// button, a Settings page's search and reset, a Pagination's arrows, the
+/// MessageScroller's jump button, an Alert's and a Notification's severity
+/// icon, a Spinner's Loader, the Marker's spinner, an Accordion's chevrons,
+/// the Carousel's controls, the Breadcrumb's separators and the Editor's
+/// fold buttons.
+#[gpui::test]
+fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
+    use crate::demo::{ButtonKind, MarkerKind, Severity, SheetSide, SpinnerKind};
+    use crate::info::{buttons, chrome, data, feedback, inputs, layout, overlays, typography};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let t = cx.update(|_window, cx| Theme::global(cx).clone());
+    let icon = read(&mut cx, &showcase, |this, _| {
+        this.sample_icon(IconName::CircleX)
+    });
+    let infos: Vec<(&str, WidgetInfo)> = vec![
+        (
+            "DropdownButton",
+            buttons::dropdown_button(&t, ButtonKind::Primary),
+        ),
+        ("Clipboard", buttons::clipboard(&t, "value")),
+        ("NumberInput", inputs::number_input(&t)),
+        ("Checkbox", inputs::checkbox(&t, "label", true, false)),
+        ("Rating", inputs::rating(&t, 3, false)),
+        ("Select", inputs::select(&t)),
+        ("DatePicker", inputs::date_picker(&t)),
+        ("Calendar", inputs::calendar(&t)),
+        ("preset Combobox", chrome::preset_combobox(&t)),
+        ("colour-mode Select", chrome::color_mode_select(&t)),
+        ("icon-theme Select", chrome::icon_set_select(&t)),
+        ("command palette", chrome::command_palette(&t, "set")),
+        ("Preferences Sheet", chrome::preferences_sheet(&t, false)),
+        ("About Dialog", chrome::about_dialog(&t, false, false)),
+        ("Settings", layout::settings(&t)),
+        ("Pagination", data::pagination(&t, false, 1, 12, false)),
+        ("MessageScroller", data::message_scroller(&t, 3)),
+        ("Alert", feedback::severity_alert(&t, Severity::Info)),
+        (
+            "Notification",
+            feedback::notification(&t, Severity::Success, "label", "message"),
+        ),
+        (
+            "Spinner",
+            feedback::spinner(&t, SpinnerKind::Small, false, false),
+        ),
+        (
+            "Marker spinner",
+            feedback::marker(&t, MarkerKind::Spinner, "text", false, None),
+        ),
+        ("Accordion", layout::accordion(&t, false, 3)),
+        ("Carousel", layout::carousel(&t, false)),
+        (
+            "Breadcrumb",
+            layout::breadcrumb(&t, &[Page::Buttons], Page::Layout),
+        ),
+        ("Dialog", overlays::dialog(&t, false, false, &icon)),
+        ("Sheet", overlays::sheet(&t, SheetSide::Right, false)),
+        ("Editor", typography::editor(&t)),
+    ];
+    for (name, info) in infos {
+        let note = info.not_themeable.iter().find(|n| n.what == "own icons");
+        assert!(
+            note.is_some_and(|n| n
+                .text
+                .contains("gpui-component's own icons whichever icon theme is chosen")),
+            "{name} does not say the icons it draws of its own are gpui-component's: {info:?}"
+        );
+    }
+}
+
 /// Paint-level check (rationale §3.6): the fill gpui painted inside the
 /// Primary Tag at rest is the colour its info's bg claim shows. The colour
 /// gate reads the line a claim cites; this reads the frame. At rest, because

@@ -373,7 +373,8 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
     } else {
         info.not_themeable("gap", "gap_1, upstream's own -- a rem, so the platform's font (pagination.rs, Pagination::render)")
     };
-    info.instance("page", format!("{page} of {pages}"))
+    info.not_themeable("own icons", super::own_icons("ChevronLeft and ChevronRight on its previous and next buttons (pagination.rs, render_nav_button), and Ellipsis where it leaves pages out (pagination.rs, Pagination::render)"))
+        .instance("page", format!("{page} of {pages}"))
         .instance("click", "a page or an arrow moves to that page; the showcase keeps it, and both Paginations follow it")
 }
 
@@ -715,6 +716,7 @@ pub fn message_scroller(t: &Theme, messages: usize) -> WidgetInfo {
         ))
         .color(claim("frame", "border", t.border, "showcase"))
         .not_themeable("jump button", "appears once the user scrolls away from the tail, fading over a 200ms module const rather than the theme's motion tokens (message_scroller.rs, JUMP_BUTTON_TRANSITION)")
+        .not_themeable("own icons", super::own_icons("ArrowDown on the jump button it shows once the thread is scrolled away from its end (message_scroller.rs, MessageScroller)"))
         .instance("rows", format!("{messages} Message rows, rendered on demand; each reports itself"))
         .instance("follow", "FollowMode::Tail: Send scrolls the thread to the new row (message_scroller.rs, MessageScrollerState::new)")
         .instance("frame", "the showcase's own frame around the scroller, not the widget's")
