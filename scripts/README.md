@@ -182,10 +182,12 @@ feature in its `[features]` table except `default`, and with
 the extra tool. A combination fails when it does not build or when cargo
 prints a `warning:` line; cargo caps lints for dependencies, so those come
 from the workspace's own crates, and no `RUSTFLAGS` is set, so the
-dependencies are not rebuilt. Colour is turned off inside the script. Prints
-one line per combination with an excerpt under each failure; exits 1 when any
-fails, naming each failure at the end, and 2 when `jq` is missing. `pre-release-check.sh` (a hard failure), `ci.yml`, `publish.yml` and
-`dependency-canary.yml` run it.
+dependencies are not rebuilt. Colour is turned off inside the script, and so
+is cargo's future-incompatibility notice, a `warning:` line about a
+dependency rather than a workspace crate. Prints one line per combination
+with an excerpt under each failure; exits 1 when any fails, naming each
+failure at the end, and 2 when `jq` is missing. `pre-release-check.sh` (a
+hard failure), `ci.yml`, `publish.yml` and `dependency-canary.yml` run it.
 
 Requires jq.
 

@@ -28,6 +28,10 @@ cd "$ROOT"
 # CI sets CARGO_TERM_COLOR=always; the excerpts and the warning scan read
 # cargo's lines from their first character.
 export CARGO_TERM_COLOR=never
+# Cargo ends a build with a `warning:` notice when a dependency has code a
+# future Rust will reject. The notice is about a dependency, not a workspace
+# crate, and the warning scan would fail on it; `never` turns it off.
+export CARGO_FUTURE_INCOMPAT_REPORT_FREQUENCY=never
 
 METADATA=$(cargo metadata --no-deps --format-version 1)
 CRATES=$(printf "%s" "$METADATA" | jq -r '
