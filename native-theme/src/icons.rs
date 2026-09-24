@@ -152,8 +152,8 @@ impl<'a> FreedesktopLoader<'a> {
     }
 
     /// Override the freedesktop icon theme (e.g. "Adwaita", "breeze").
-    /// When unset, uses the system-detected theme, and loads nothing where
-    /// detection fails (see [`Self::load`]).
+    /// When unset, uses the system-detected theme, and searches no theme
+    /// where detection fails (see [`Self::load`]).
     pub fn theme(mut self, theme: &'a str) -> Self {
         self.theme = Some(theme);
         self
@@ -165,10 +165,12 @@ impl<'a> FreedesktopLoader<'a> {
     /// icon (see [`FreedesktopLoader`]).
     ///
     /// With no [`theme`](Self::theme) set, the icon comes from the system's
-    /// icon theme, and where that cannot be detected this is `None`: no
-    /// icons, as no theme stands in for the undetected one.
-    /// [`system_icon_theme()`](crate::theme::system_icon_theme) gives the
-    /// reason.
+    /// icon theme, and where that cannot be detected no theme is searched,
+    /// as none stands in for the undetected one: a role or a name gives
+    /// `None`, and a custom [`IconProvider`] gives only its own freedesktop
+    /// SVG ([`IconProvider::icon_svg`]), which depends on no theme, where it
+    /// has one. [`system_icon_theme()`](crate::theme::system_icon_theme)
+    /// gives the reason.
     ///
     /// Requires the `system-icons` feature, and Linux; `None` otherwise.
     #[must_use]
@@ -183,11 +185,11 @@ impl<'a> FreedesktopLoader<'a> {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         {
             let detected;
-            let theme: &str = match self.theme {
-                Some(t) => t,
+            let theme: Option<&str> = match self.theme {
+                Some(t) => Some(t),
                 None => {
-                    detected = detect().ok()?;
-                    &detected
+                    detected = detect().ok();
+                    detected.as_deref()
                 }
             };
             match self.id {
@@ -195,19 +197,20 @@ impl<'a> FreedesktopLoader<'a> {
                     let name = icon_name(role, IconSet::Freedesktop)?;
                     crate::freedesktop::load_freedesktop_icon_by_name(
                         name,
-                        theme,
+                        theme?,
                         self.size,
                         self.fg_color,
                     )
                 }
                 IconId::Name(name) => crate::freedesktop::load_freedesktop_icon_by_name(
                     name,
-                    theme,
+                    theme?,
                     self.size,
                     self.fg_color,
                 ),
                 IconId::Custom(provider) => {
-                    if let Some(name) = provider.icon_name(IconSet::Freedesktop)
+                    if let Some(theme) = theme
+                        && let Some(name) = provider.icon_name(IconSet::Freedesktop)
                         && let Some(data) = crate::freedesktop::load_freedesktop_icon_by_name(
                             name,
                             theme,
@@ -638,7 +641,7 @@ pub enum IconSetChoice {
     /// from [`system_icon_theme()`](crate::model::icons::system_icon_theme),
     /// so it tracks runtime OS theme changes. Where detection fails the
     /// label gives the reason, `system (unavailable: <reason>)`, and the
-    /// freedesktop loaders load nothing for this choice.
+    /// freedesktop loaders search no theme for this choice.
     System,
 
     /// User explicitly picked a specific installed freedesktop icon theme.
@@ -865,19 +868,43 @@ mod load_icon_tests {
         }
     }
 
-    /// An explicit theme needs no detection, so a failed one changes nothing.
+    /// A custom provider's own freedesktop SVG depends on no theme, so it
+    /// still loads where no icon theme was detected; only the lookup of its
+    /// freedesktop name in a theme is skipped.
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn freedesktop_loader_without_a_detected_theme_gives_a_providers_own_svg() {
+        #[derive(Debug)]
+        struct AppIcon;
+        impl IconProvider for AppIcon {
+            fn icon_name(&self, _set: IconSet) -> Option<&str> {
+                Some("edit-copy")
+            }
+            fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>> {
+                (set == IconSet::Freedesktop).then_some(Cow::Borrowed(b"<svg>app</svg>"))
+            }
+        }
+
+        let provider: &dyn IconProvider = &AppIcon;
+        assert_eq!(
+            FreedesktopLoader::new(provider).load_with(undetected),
+            Some(IconData::Svg(Cow::Borrowed(b"<svg>app</svg>"))),
+            "the provider's own SVG did not load without a detected icon theme"
+        );
+    }
+
+    /// An explicit theme needs no detection: the detector never runs.
     #[test]
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     fn freedesktop_loader_with_a_theme_does_not_detect() {
-        let with_theme = |detect: fn() -> crate::Result<String>| {
-            FreedesktopLoader::new("edit-copy")
-                .theme("Adwaita")
-                .load_with(detect)
-        };
-        assert_eq!(
-            with_theme(undetected),
-            with_theme(|| Ok("unused".to_string()))
-        );
+        let runs = std::cell::Cell::new(0);
+        let _ = FreedesktopLoader::new("edit-copy")
+            .theme("Adwaita")
+            .load_with(|| {
+                runs.set(runs.get() + 1);
+                undetected()
+            });
+        assert_eq!(runs.get(), 0, "an explicit theme ran the detection");
     }
 
     #[test]
