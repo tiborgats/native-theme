@@ -114,7 +114,7 @@
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
 //! | `styles` (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input padding (the stated sides, iced's own default for the others; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
+//! | Widget metrics | button/input padding (the stated sides, iced's own default for the others; `widgets` feature), any other widget's padding over a default the caller names (`padding_or`) or where every side is stated (`stated_padding`), border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
@@ -273,9 +273,20 @@ impl SystemThemeExt for native_theme::SystemTheme {
     }
 }
 
-/// Each side the theme states, and `default`'s side where it states none.
-#[cfg(feature = "widgets")]
-fn padding_or(
+/// Returns each side a resolved padding states, and `default`'s side where it
+/// states none.
+///
+/// For a widget whose padding iced sets side by side, with a default the
+/// application can name: [`button_padding()`] and [`input_padding()`] are
+/// this with the button's and the text input's own defaults. A consumer does
+/// the same for any other widget the theme states a padding for, passing
+/// that widget's default -- a menu item drawn as a button takes
+/// `menu.border.padding` over `iced_widget::button::DEFAULT_PADDING`, a card
+/// drawn as a container takes `card.border.padding` over `Padding::ZERO`,
+/// the padding a `container` has unless given one (iced_widget 0.14.2
+/// `src/container.rs:95`).
+#[must_use]
+pub fn padding_or(
     stated: &native_theme::theme::ResolvedPadding,
     default: iced_core::Padding,
 ) -> iced_core::Padding {
@@ -285,6 +296,24 @@ fn padding_or(
         bottom: stated.bottom.unwrap_or(default.bottom),
         left: stated.left.unwrap_or(default.left),
     }
+}
+
+/// Returns a resolved padding as an iced [`Padding`](iced_core::Padding) when
+/// it states every side, and `None` when it leaves any side unstated.
+///
+/// For a widget whose default padding the application cannot read, so an
+/// unstated side has nothing to be filled from: `iced_aw` keeps its `Card`'s
+/// and its `TabBar`'s defaults private (iced_aw 0.14.1
+/// `src/widget/card.rs:21`, `src/widget/tab_bar.rs:41`) and takes a padding
+/// whole. With `None`, leave the widget's padding unset, so it keeps its own.
+#[must_use]
+pub fn stated_padding(stated: &native_theme::theme::ResolvedPadding) -> Option<iced_core::Padding> {
+    Some(iced_core::Padding {
+        top: stated.top?,
+        right: stated.right?,
+        bottom: stated.bottom?,
+        left: stated.left?,
+    })
 }
 
 /// Returns button padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
@@ -657,6 +686,56 @@ mod tests {
         assert_eq!(pad.left, 7.0, "a stated side is the theme's");
         assert_eq!(pad.right, default.right, "an unstated side is iced's");
         assert_eq!(pad.bottom, default.bottom, "an unstated side is iced's");
+    }
+
+    #[test]
+    fn padding_or_takes_each_stated_side_and_the_default_elsewhere() {
+        let stated = native_theme::theme::ResolvedPadding {
+            top: Some(0.0),
+            right: None,
+            bottom: None,
+            left: Some(7.0),
+        };
+        let default = iced_core::Padding {
+            top: 1.0,
+            right: 2.0,
+            bottom: 3.0,
+            left: 4.0,
+        };
+        let pad = padding_or(&stated, default);
+        assert_eq!(pad.top, 0.0, "a stated zero is the theme's");
+        assert_eq!(pad.left, 7.0, "a stated side is the theme's");
+        assert_eq!(pad.right, 2.0, "an unstated side is the default's");
+        assert_eq!(pad.bottom, 3.0, "an unstated side is the default's");
+    }
+
+    #[test]
+    fn stated_padding_is_some_only_when_every_side_is_stated() {
+        let every = native_theme::theme::ResolvedPadding {
+            top: Some(3.0),
+            right: Some(8.0),
+            bottom: Some(0.0),
+            left: Some(8.0),
+        };
+        let pad = stated_padding(&every);
+        assert_eq!(
+            pad.map(|p| (p.top, p.right, p.bottom, p.left)),
+            Some((3.0, 8.0, 0.0, 8.0))
+        );
+        for missing in 0..4 {
+            let mut sides = [every.top, every.right, every.bottom, every.left];
+            sides[missing] = None;
+            let partial = native_theme::theme::ResolvedPadding {
+                top: sides[0],
+                right: sides[1],
+                bottom: sides[2],
+                left: sides[3],
+            };
+            assert!(
+                stated_padding(&partial).is_none(),
+                "side {missing} unstated"
+            );
+        }
     }
 
     /// Where the theme states every side, every side is the theme's.

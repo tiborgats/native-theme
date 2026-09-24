@@ -194,7 +194,8 @@ let radius  = border_radius(&resolved);
 // Apply with .padding(padding), .border(...) on your widget builders.
 ```
 
-Full helper list: `button_padding`, `input_padding`, `border_radius`,
+Full helper list: `button_padding`, `input_padding`, `padding_or`,
+`stated_padding`, `border_radius`,
 `border_radius_lg`, `scrollbar_width`, `font_family`, `font_size`,
 `font_weight`, `mono_font_family`, `mono_font_size`, `mono_font_weight`,
 `line_height_multiplier`, plus `to_iced_weight(css_weight)` for converting
@@ -204,6 +205,16 @@ CSS weight values to iced's `Weight` enum.
 default). Each side is the theme's where it states that side; a side it does
 not state is iced's own default, `iced_widget::button::DEFAULT_PADDING` or
 `iced_widget::text_input::DEFAULT_PADDING`.
+
+For any other widget the theme states a padding for, `padding_or(&stated,
+default)` does the same over a default you name — a menu item drawn as a
+button takes `padding_or(&resolved.menu.border.padding,
+button::DEFAULT_PADDING)`, a card drawn as a container
+`padding_or(&resolved.card.border.padding, Padding::ZERO)`. Where the
+widget's default is not public, `stated_padding(&stated)` returns the
+padding only when every side is stated: `iced_aw`'s `Card` and `TabBar` keep
+theirs private, so pass `Some` to their `padding` setter and leave them
+alone on `None`.
 
 ### Text scaling
 
