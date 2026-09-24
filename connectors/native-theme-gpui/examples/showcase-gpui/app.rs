@@ -1272,17 +1272,27 @@ impl Showcase {
         self.error_message = Some(msg.to_string());
     }
 
-    /// Install the light/dark choice into whatever theme is currently up.
+    /// What a theme that failed to load -- the OS theme unread, a preset
+    /// unread or unresolved -- leaves on screen.
     ///
-    /// A theme that fails to load -- the OS theme unread, a preset unread or
-    /// unresolved -- reaches this: it leaves the installed theme alone, which
-    /// is right, but the user's light/dark
-    /// choice still has to land. `Showcase::new` falls back to
-    /// gpui-component's built-in theme when the OS read fails, and that theme
-    /// has both variants; without this the selector moved `is_dark` and
+    /// With a native theme installed, the window stays exactly as that
+    /// theme drew it: its mode too, so `is_dark` goes back to the mode drawn.
+    /// Upstream's mode switch would rebuild the palette from its stored
+    /// configs, which recomputes upstream's derived colours and, where the
+    /// native theme was installed with one variant (`apply`), shows
+    /// upstream's own colours for the other mode.
+    ///
+    /// With none installed -- `Showcase::new` falls back to gpui-component's
+    /// built-in theme when the OS read fails, and that theme has both
+    /// variants -- the user's light/dark choice still lands through
+    /// upstream's mode switch; without it the selector moved `is_dark` and
     /// nothing else, and the interface stayed in the mode it started in.
-    fn apply_color_mode(&self, window: &mut Window, cx: &mut Context<Self>) {
-        Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
+    fn keep_installed_theme(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if cx.native_theme().is_some() {
+            self.is_dark = cx.theme().mode.is_dark();
+        } else {
+            Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
+        }
     }
 
     /// The accessibility preferences a theme is installed with: the ones the
@@ -1381,14 +1391,14 @@ impl Showcase {
     /// Install the theme of `name`: `default`, the desktop's own, or a
     /// preset's. Every preset, colour-mode, reload and palette switch
     /// installs through here. A theme that fails to load leaves the
-    /// installed one -- its name, layout and everything shown -- and only
-    /// the colour mode changes.
+    /// installed one -- its name, layout, mode and every colour
+    /// (`Showcase::keep_installed_theme`) -- and false is returned.
     pub(crate) fn apply_theme_by_name(
         &mut self,
         name: &str,
         window: &mut Window,
         cx: &mut Context<Self>,
-    ) {
+    ) -> bool {
         self.info_ui.update(cx, |r, _| r.screen_changed());
         let installed = if name == "default" {
             match native_theme::SystemTheme::from_system() {
@@ -1407,13 +1417,14 @@ impl Showcase {
         if installed {
             self.current_theme_name = name.to_string();
         } else {
-            self.apply_color_mode(window, cx);
+            self.keep_installed_theme(window, cx);
         }
         self.show_installed_theme(window, cx);
         self.show_icon_choice(window, cx);
         // Always, whichever set is chosen: a recoloured icon takes the new
         // theme's text colour.
         self.reload_icons(window, cx);
+        installed
     }
 
     /// Show the installed theme chosen in the preset switch, whichever way
@@ -1462,12 +1473,18 @@ impl Showcase {
         .detach();
     }
 
+    /// Install `mode`: the current theme again, in that mode. Where that
+    /// fails with a native theme installed, the window keeps the mode it
+    /// was drawn in, and so does the colour-mode Select.
     fn set_color_mode(&mut self, mode: AppColorMode, window: &mut Window, cx: &mut Context<Self>) {
+        let before = self.color_mode;
         self.color_mode = mode;
-        self.show_color_mode(window, cx);
         self.is_dark = mode.is_dark();
         let name = self.current_theme_name.clone();
-        self.apply_theme_by_name(&name, window, cx);
+        if !self.apply_theme_by_name(&name, window, cx) && cx.native_theme().is_some() {
+            self.color_mode = before;
+        }
+        self.show_color_mode(window, cx);
     }
 
     /// The key of the preset the installed theme is: the current theme's,

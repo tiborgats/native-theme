@@ -5172,6 +5172,112 @@ fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
     check(&mut cx, "--theme no-such-preset");
 }
 
+/// What the window draws with: gpui-component's mode, every `ThemeColor`
+/// and `ThemeTokens` value, and the showcase's own colour mode, light/dark
+/// flag, theme name and layout.
+fn drawn_state(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> (bool, String, String, AppColorMode, bool, String, String) {
+    read(cx, showcase, |this, cx| {
+        let theme = Theme::global(cx);
+        (
+            theme.mode.is_dark(),
+            format!("{:?}", theme.colors),
+            format!("{:?}", theme.tokens),
+            this.color_mode,
+            this.is_dark,
+            this.current_theme_name.clone(),
+            format!("{:?}", this.layout),
+        )
+    })
+}
+
+/// A theme that fails to load while a native theme is installed leaves the
+/// window exactly as the installed theme drew it: its mode, every colour
+/// and token, and the showcase's colour mode, name and layout. kde-breeze
+/// is installed through `apply`, one variant, so a switch of upstream's
+/// mode would show upstream's own colours for the other.
+///
+/// Two failures: a preset that does not exist, and a colour-mode switch
+/// whose re-install fails -- as it does under `default` where the OS theme
+/// cannot be read, which a test cannot bring about, so the installed
+/// theme's name is made one that fails to load.
+#[gpui::test]
+fn a_failed_install_leaves_the_window_as_the_installed_theme_drew_it(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "kde-breeze");
+    let before = drawn_state(&mut cx, &showcase);
+
+    set_preset(&mut cx, "no-such-preset");
+    let after = drawn_state(&mut cx, &showcase);
+    assert!(
+        after == before,
+        "a preset that failed to load changed what the window draws: {:?}",
+        changed_fields(&before, &after)
+    );
+
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            this.current_theme_name = "no-such-preset".into()
+        })
+    });
+    let other = if before.0 {
+        AppColorMode::Light
+    } else {
+        AppColorMode::Dark
+    };
+    cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(other)), cx));
+    cx.run_until_parked();
+    draw(&mut cx);
+    let after = drawn_state(&mut cx, &showcase);
+    assert!(
+        (after.0, &after.1, &after.2, after.3, after.4)
+            == (before.0, &before.1, &before.2, before.3, before.4),
+        "a colour-mode switch whose re-install failed changed what the window draws: {:?}",
+        changed_fields(&before, &after)
+    );
+}
+
+/// The parts of two `drawn_state`s that differ, as `name: before -> after`,
+/// the colours and tokens field by field.
+fn changed_fields(
+    before: &(bool, String, String, AppColorMode, bool, String, String),
+    after: &(bool, String, String, AppColorMode, bool, String, String),
+) -> Vec<String> {
+    let fields = |debug: &str| -> Vec<String> {
+        debug.split("}, ").map(|field| field.to_string()).collect()
+    };
+    let mut changed = Vec::new();
+    for (name, b, a) in [
+        ("mode dark", before.0.to_string(), after.0.to_string()),
+        (
+            "color_mode",
+            format!("{:?}", before.3),
+            format!("{:?}", after.3),
+        ),
+        ("is_dark", before.4.to_string(), after.4.to_string()),
+        ("name", before.5.clone(), after.5.clone()),
+    ] {
+        if b != a {
+            changed.push(format!("{name}: {b} -> {a}"));
+        }
+    }
+    for (b, a) in [(&before.1, &after.1), (&before.2, &after.2)] {
+        changed.extend(
+            fields(b)
+                .into_iter()
+                .zip(fields(a))
+                .filter(|(b, a)| b != a)
+                .map(|(b, a)| format!("{b} -> {a}")),
+        );
+    }
+    if before.6 != after.6 {
+        changed.push("layout".to_string());
+    }
+    changed
+}
+
 /// Hiding the side panel takes its widgets off the screen, so an info of
 /// one of them is no longer shown (spec §4.3.4): the status bar would
 /// otherwise name a widget nothing draws.
