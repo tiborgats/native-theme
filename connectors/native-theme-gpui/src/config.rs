@@ -2,7 +2,8 @@
 //!
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
-//! shadow settings, and optionally all 138 color fields as hex strings.
+//! shadow settings, and the colours as hex strings: 126 of `ThemeColor`'s 138
+//! fields (see [`theme_color_to_config_colors`]).
 //!
 //! Upstream citations in this module are verified against gpui-component 0.6.6,
 //! gpui-base 0.6.6 and gpui-pre 0.3.6.
@@ -87,9 +88,13 @@ pub fn to_theme_config(
 /// `#rrggbbaa` when its alpha is below 1 (D36), so translucent colours such as
 /// `overlay`, `drag_border` and `drop_target` survive `Theme::change`.
 ///
-/// All 138 ThemeColor fields are exported except the 12 private base colours
-/// (`red`, `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light`
-/// variants) plus `group_box_title_foreground`, which stay `None`.
+/// `ThemeColor` has 138 fields (gpui-component 0.6.6
+/// `src/theme/theme_color.rs:59-341`) and `ThemeConfigColors` 139: the same
+/// 138 plus `group_box_title_foreground` (`src/theme/schema.rs:361`), which no
+/// `ThemeColor` field feeds. 126 are exported. The 12 base colours (`red`,
+/// `blue`, `green`, `yellow`, `magenta`, `cyan` and their `_light` variants)
+/// are private in `ThemeConfigColors` (`schema.rs:640-674`) and stay `None`,
+/// as does `group_box_title_foreground`.
 fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> ThemeConfigColors {
     let h = |c: gpui::Hsla| -> Option<SharedString> { Some(SharedString::from(hsla_to_hex(c))) };
 

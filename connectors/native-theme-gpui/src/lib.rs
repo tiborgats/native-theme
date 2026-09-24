@@ -57,10 +57,10 @@
 //! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
 //! | `sidebar` | 4 of 6 | background, font.color, selection_background, selection_text_color |
-//! | `window` | 3 of 6 | background_color, title_bar_background, border |
+//! | `window` | 4 of 6 | background_color, title_bar_background, border colour; title_bar_font size, weight and colour via `geometry::title_bar` |
 //! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text via `geometry::input` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
-//! | `status_bar` | 2 of 3 | background, border |
+//! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's size, weight and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
@@ -232,7 +232,8 @@ pub fn to_theme(
 /// access per-widget metrics (button padding, scrollbar width, etc.) that the
 /// flat `ThemeColor` cannot represent.
 ///
-/// The preset name is used as the theme display name.
+/// The theme's display name is the preset's `name` field (`"Dracula"` for
+/// `"dracula"`), not the name passed in.
 ///
 /// Pass `&AccessibilityPreferences::default()` for no scaling, or
 /// `&AccessibilityPreferences::from_system()` to honour the OS preferences
@@ -284,9 +285,8 @@ pub fn from_preset(
 /// `SystemTheme::from_system()` directly and call [`to_theme()`] on each.
 ///
 /// **Performance note:** `SystemTheme::from_system()` resolves both light
-/// and dark variants before this function picks one. If you only need one
-/// variant and want to avoid the cost of resolving both, use
-/// `SystemTheme::from_system()` directly and resolve only the variant you need.
+/// and dark variants before this function picks one; native-theme has no
+/// system read that resolves only one variant.
 ///
 /// # Errors
 ///

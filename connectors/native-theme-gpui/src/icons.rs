@@ -1115,12 +1115,14 @@ fn svg_bytes_to_image_source(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
+/// use native_theme::icons::load_icon_indicator;
+/// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::{animated_frames_to_image_sources, AnimatedImageSources};
 ///
-/// let anim = native_theme::loading_indicator();
 /// if let Some(AnimatedImageSources { sources, frame_duration_ms }) =
-///     animated_frames_to_image_sources(&anim, None, None)
+///     load_icon_indicator(IconSet::Lucide)
+///         .and_then(|anim| animated_frames_to_image_sources(&anim, None, None))
 /// {
 ///     // Cache `sources`, then on each timer tick (every `frame_duration_ms` ms):
 ///     // frame_index = (frame_index + 1) % sources.len();
