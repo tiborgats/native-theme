@@ -43,7 +43,7 @@ are needed to use bundled presets.
 ## Core concepts
 
 - **`Theme`** — sparse, TOML-shaped definition (fields are `Option<T>`). Load via `Theme::preset(…)`, `Theme::from_toml(…)`, or `Theme::from_file(…)`.
-- **`ResolvedTheme`** — resolved variant: every colour and font has a value, and so does every size the model requires; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, combobox arrow width) are `None` where the theme states none, and the toolkit's own value then applies. Safe to hand to UI code.
+- **`ResolvedTheme`** — resolved variant: every font has a value, and so does every colour but 25 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, combobox arrow width) are `None` where the theme states none, and the toolkit's own value then applies. Safe to hand to UI code.
 - **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
 - **Preset** — a named bundled theme. 16 ship today:
   - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios`

@@ -339,7 +339,9 @@ gnome    = "preset"
 # ─── No inheritance ───────────────────────────────────────────────────────
 #
 # These fields have no default inheritance — they MUST come from the OS
-# reader or preset TOML. If still None after resolve(), validate() errors.
+# reader or preset TOML. If still None after resolve(), validate() errors,
+# except for the interactive state colors of batches 1 and 2 below, which are
+# `soft_option`: they stay `Option` in the resolved theme and may stay None.
 
 [no_inheritance]
 fields = [

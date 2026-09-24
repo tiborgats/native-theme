@@ -168,9 +168,11 @@ Steps:
    (`corner_radius_px`, `corner_radius_lg_px`, `shadow_enabled`, etc.).
 3. Update the per-widget tables (`[light.button]`, `[light.button.border]`, …)
    if widget sizing changed. State a new or changed size only from a source in
-   `docs/platform-facts.md`, and leave one the platform does not document
-   unstated; sizes the presets state today without a source are listed in
-   `docs/todo.md`, Table B.
+   `docs/platform-facts.md`. Where the platform documents none, leave it
+   unstated only if it is a gated size (a padding side, a menu or list
+   `row_height`, the toolbar `bar_height` and `item_gap`, the combobox
+   `arrow_area_width`); every other size is required, and those the presets
+   state today without a source are listed in `docs/todo.md`, Table B.
 4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
    for preset-only changes).
 
