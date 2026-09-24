@@ -13,7 +13,7 @@ use crate::support::{IconSource, is_native_icon_set};
 pub(crate) const ICON_SIZES_ICON: IconName = IconName::Folder;
 
 impl Showcase {
-    /// The Icon Sizes section: the chosen set's `ICON_SIZES_ICON` at each
+    /// The Icon Sizes section: the chosen icon theme's `ICON_SIZES_ICON` at each
     /// size `defaults.icon_sizes` names, each through its own builder.
     fn render_icon_sizes_section(&self, cx: &App) -> impl IntoElement {
         let ui = &self.info_ui;
@@ -29,7 +29,7 @@ impl Showcase {
             .child(h_flex().items_end().flex_wrap().gap_2().children(cells))
     }
 
-    /// The Animated Icons section: the loading indicator the icon set ships,
+    /// The Animated Icons section: the loading indicator the chosen icon theme ships,
     /// frame by frame or turning, or a caption saying it ships none.
     fn render_animated_icons_section(&self, cx: &App) -> impl IntoElement {
         let ui = &self.info_ui;
@@ -168,7 +168,7 @@ impl Showcase {
             .iter()
             .filter(|(_, art, _)| !matches!(art, IconArt::Missing))
             .count();
-        let elsewhere = if is_native_icon_set(&self.icon_set_name) {
+        let elsewhere = if is_native_icon_set(&self.icon_theme_name) {
             ""
         } else {
             " (not this platform's icon theme)"

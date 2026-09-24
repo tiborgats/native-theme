@@ -20,7 +20,6 @@ use native_theme::icons::{
     FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
     SfSymbolsLoader, load_icon,
 };
-use native_theme::pipeline::platform_preset_name;
 use native_theme::theme::{IconData, IconRole, IconSet};
 #[cfg(target_os = "linux")]
 use native_theme::theme::{icon_name as native_icon_name, system_icon_theme};
@@ -303,7 +302,6 @@ pub(crate) enum IconSource {
     NotFound,
 }
 
-/// Pre-load all 42 icons for the given icon set, tracking source.
 /// Parse a dropdown display string back into an `IconSetChoice`.
 ///
 /// The GPUI dropdown gives us a display string, and we need to reconstruct
@@ -328,20 +326,26 @@ pub(crate) fn parse_icon_set_choice(display: &str) -> IconSetChoice {
     }
 }
 
+/// Pre-load the icon of each of the 42 `IconRole`s from the given icon set,
+/// tracking its source.
 ///
 /// `default_theme`: when this is `Some(theme_name)` and `icon_set` is
 /// `Freedesktop`, icons are loaded via `FreedesktopLoader` with `.theme()` so they come
 /// from the specific theme rather than the system default.  This is used for
 /// the "default" dropdown selection.  `None` means use the plain `load_icon(role, icon_set)`.
 ///
-/// `cli_override`: CLI `--icon-theme` override, takes priority when the user
-/// explicitly selects the system icon set entry.
+/// `cli_override`: the `--icon-theme` theme while it stands
+/// (`Showcase::icon_theme_override`), which a freedesktop set loads from in
+/// place of `default_theme`. Freedesktop themes load on Linux only
+/// (native-theme `FreedesktopLoader::load`), so elsewhere it is unused.
 pub(crate) fn load_all_icons(
     icon_set: IconSet,
     default_theme: Option<&str>,
     cli_override: Option<&str>,
     fg_color: Option<[u8; 3]>,
 ) -> Vec<(IconRole, Option<IconData>, IconSource)> {
+    #[cfg(not(target_os = "linux"))]
+    let _ = cli_override;
     let is_system_set = matches!(
         icon_set,
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
@@ -457,7 +461,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     }
 }
 
-/// The 101 gpui-component 0.6.4 IconName variants shown in the gallery.
+/// The 101 gpui-component 0.6.6 IconName variants shown in the gallery.
 const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),
@@ -578,8 +582,10 @@ pub(crate) type IconEntry = (
 /// `FreedesktopLoader` with `.theme()` to load from the specified theme (for the "default"
 /// dropdown selection).
 ///
-/// `cli_override`: CLI `--icon-theme` override that takes priority (for explicit
-/// user overrides via `--icon-theme` flag).
+/// `cli_override`: the `--icon-theme` theme while it stands
+/// (`Showcase::icon_theme_override`), which a freedesktop set loads from in
+/// place of `default_theme`. Freedesktop themes load on Linux only
+/// (native-theme `FreedesktopLoader::load`), so elsewhere it is unused.
 pub(crate) fn load_gpui_icons(
     icon_set: Option<IconSet>,
     default_theme: Option<&str>,
@@ -600,6 +606,8 @@ pub(crate) fn load_gpui_icons(
         }
     };
 
+    #[cfg(not(target_os = "linux"))]
+    let _ = cli_override;
     let is_system_set = matches!(
         icon_set,
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
@@ -957,15 +965,23 @@ pub(crate) struct PresetItem {
     pub(crate) display_name: SharedString,
 }
 
+/// The name the preset switch, the command palette and the status bar give
+/// `default`, the desktop's own theme, built on the platform preset
+/// `default_preset`.
+pub(crate) fn default_label(default_preset: &str) -> String {
+    format!("default ({default_preset})")
+}
+
 /// The presets the showcase offers, in the order it offers them: the
-/// desktop's own theme, keyed `default` and labelled with the preset it
-/// builds on, then the presets meant for this platform. The theme settings'
-/// preset switch and the command palette both list these, so neither can
-/// offer a preset the other does not.
-pub(crate) fn preset_items() -> Vec<PresetItem> {
+/// desktop's own theme, keyed `default` and labelled with `default_preset`,
+/// the preset it builds on (`Showcase::default_preset`), then the presets
+/// meant for this platform. The theme settings' preset switch and the
+/// command palette both list these, so neither can offer a preset the other
+/// does not.
+pub(crate) fn preset_items(default_preset: &str) -> Vec<PresetItem> {
     let default = PresetItem {
         key: "default".into(),
-        display_name: format!("default ({})", platform_preset_name().name).into(),
+        display_name: default_label(default_preset).into(),
     };
     std::iter::once(default)
         .chain(
@@ -1007,8 +1023,9 @@ pub(crate) struct PresetDelegate {
 }
 
 impl PresetDelegate {
-    pub(crate) fn new() -> Self {
-        let items = preset_items();
+    /// The rows of [`preset_items`], `default` labelled with `default_preset`.
+    pub(crate) fn new(default_preset: &str) -> Self {
+        let items = preset_items(default_preset);
         Self {
             matched: items.clone(),
             items,

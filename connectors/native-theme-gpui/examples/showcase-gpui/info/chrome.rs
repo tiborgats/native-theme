@@ -510,7 +510,7 @@ fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
             "active underline",
             "primary",
             t.primary,
-            "gpui-component/tab/tab.rs:260",
+            "gpui-component/tab/tab_bar.rs:275",
         ))
         .color(claim(
             "bottom rule",
@@ -524,7 +524,7 @@ fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
         )
         .not_themeable(
             "fill",
-            "none, on the bar or on a tab: an Underline bar is transparent and marks the active tab with a primary underline. tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
+            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:268-275). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:681-686). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
         )
         .not_themeable(
             "corners",
@@ -781,6 +781,10 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
             "the icon theme the showcase loads its icons from: the preset's own where it names one, the system's, each installed freedesktop theme, gpui-component's built-in Lucide, and the bundled Lucide and Material",
         )
         .instance(
+            "on a theme switch",
+            "the rows are built again, the default row the installed preset's. A choice that follows the preset -- its default row, or the system's where the preset's own icon theme is not installed, as native_theme::icons::default_icon_choice decides -- becomes the new preset's; any other row the user picked stays chosen",
+        )
+        .instance(
             "follows the choice",
             "the Icons page's galleries, the chrome's own icons -- the toolbar's Command Palette, Reload System Theme and Preferences buttons, the status bar's side-panel toggle, the command palette's entries, and the icon of the Alert that reports a theme that failed to load -- and the items of the Layout page's Sidebar samples. Each shows the chosen icon theme's icon for its IconName -- gpui-component's own where its built-in icons are chosen -- and none where the icon theme has none: no other icon theme's icon stands in",
         )
@@ -895,7 +899,11 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
     };
     info.not_themeable(
         "region gap",
-        "gap_2, 0.5rem, between the regions and between the items of each, on region children the refinement does not reach (status_bar.rs, StatusBar::render); the model states no status-bar item gap",
+        "gap_2, 0.5rem, between the regions: upstream sets it on the bar before refine_style (status_bar.rs:88, :96), so a refinement could replace it, but the model states no status-bar item gap and geometry::status_bar sets none",
+    )
+    .not_themeable(
+        "item gap",
+        "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84)",
     )
     .not_themeable(
         "edge",
@@ -1039,7 +1047,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop below the title bar (dialog/dialog.rs, Dialog::render)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:586; gpui-base dialog.rs:601)",
     )
 }
 

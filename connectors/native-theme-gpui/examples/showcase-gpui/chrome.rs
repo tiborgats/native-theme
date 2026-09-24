@@ -85,12 +85,13 @@ fn menu_bar(app: &Showcase, cx: &App) -> impl IntoElement {
 }
 
 /// The installed preset, the default one by the platform preset it stands
-/// for, and the colour mode, as the status bar names them.
-fn preset_and_mode(app: &Showcase) -> (&str, &str) {
+/// for (`Showcase::default_label`, as the preset switch names it), and the
+/// colour mode, as the status bar names them.
+fn preset_and_mode(app: &Showcase) -> (String, &str) {
     let preset = if app.current_theme_name == "default" {
-        app.default_label.as_str()
+        app.default_label()
     } else {
-        app.current_theme_name.as_str()
+        app.current_theme_name.clone()
     };
     (preset, if app.is_dark { "dark" } else { "light" })
 }
@@ -186,7 +187,7 @@ pub(crate) fn side_panel(app: &Showcase, cx: &App) -> impl IntoElement {
             (
                 CHROME_LABEL_ICON_THEME,
                 "Icon theme",
-                demo::icon_set_select(ui, cx, &app.icon_set_select)
+                demo::icon_set_select(ui, cx, &app.icon_theme_select)
                     .debug_selector(|| PROBE_ICON_THEME.into())
                     .into_any_element(),
             ),
@@ -340,9 +341,10 @@ pub(crate) const COMPATIBILITY_URL: &str = concat!(
 const PREFERENCES_WIDTH: Pixels = px(600.);
 
 /// The presets the command palette offers, as `(key, display name)`: the
-/// preset switch's, from the same list (`support::preset_items`).
-pub(crate) fn palette_presets() -> Vec<(SharedString, SharedString)> {
-    preset_items()
+/// preset switch's, from the same list (`support::preset_items`), `default`
+/// labelled with `default_preset`, the preset it is built on.
+pub(crate) fn palette_presets(default_preset: &str) -> Vec<(SharedString, SharedString)> {
+    preset_items(default_preset)
         .into_iter()
         .map(|item| (item.key, item.display_name))
         .collect()
@@ -382,7 +384,7 @@ fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
         })
         .into_iter()
         .collect();
-    let presets = palette_presets()
+    let presets = palette_presets(&app.default_preset)
         .into_iter()
         .map(|(key, name)| {
             palette_entry(

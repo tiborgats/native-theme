@@ -917,7 +917,7 @@ pub(crate) struct PaletteEntry {
     pub keywords: Vec<SharedString>,
     /// gpui-component's icon of the entry, which `drawn` is of.
     pub icon: IconName,
-    /// That icon as the chosen icon set gives it.
+    /// That icon as the chosen icon theme gives it.
     pub drawn: ChromeIcon,
     pub action: Box<dyn Action>,
 }
@@ -935,7 +935,7 @@ impl Clone for PaletteEntry {
 }
 
 /// The palette's groups, as `(label, entries)`, each entry with its icon of
-/// the chosen set, or with none where the set has none.
+/// the chosen icon theme, or with none where that theme has none.
 fn palette_groups(groups: Vec<(&'static str, Vec<PaletteEntry>)>) -> Vec<CommandGroup> {
     groups
         .into_iter()
@@ -957,7 +957,7 @@ fn palette_groups(groups: Vec<(&'static str, Vec<PaletteEntry>)>) -> Vec<Command
 }
 
 /// The command palette (spec §2.8): `dialog`, titled, holding an unbordered
-/// `Command` over `state` with `groups`, whose icons are of the icon set
+/// `Command` over `state` with `groups`, whose icons are of the icon theme
 /// named `set`. Running an entry dispatches its action, then closes the
 /// palette.
 ///
@@ -4728,12 +4728,12 @@ impl IconArt {
     }
 }
 
-/// One cell of an Icons page gallery: the icon a set gives for `label`,
-/// labelled with it.
+/// One cell of an Icons page gallery: the icon the chosen icon theme gives
+/// for `label`, labelled with it.
 pub(crate) struct IconCell<'a> {
     /// The role's or the IconName's name.
     pub(crate) label: &'a str,
-    /// The icon set, as the page names it.
+    /// The chosen icon theme, as the page names it.
     pub(crate) set: &'a str,
     pub(crate) art: IconArt,
 }

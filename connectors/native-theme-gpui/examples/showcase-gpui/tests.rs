@@ -19,8 +19,8 @@ use std::ops::Deref as _;
 use std::rc::Rc;
 
 use crate::app::{
-    AppColorMode, OpenCommandPalette, OpenPreferences, Quit, SetColorMode, ShowPage, Showcase,
-    ToggleSidePanel,
+    AppColorMode, OpenCommandPalette, OpenPreferences, Quit, ReloadTheme, SetColorMode, SetPreset,
+    ShowPage, Showcase, ToggleSidePanel,
 };
 use crate::chrome::menus;
 use crate::demo::{AREA_FILL_OPACITY, IconSizeContext};
@@ -59,6 +59,7 @@ use crate::{
     TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
     WINDOW_SIZE, WINDOW_TITLE,
 };
+use native_theme::icons::IconSetChoice;
 
 /// The window the interaction test lays the showcase out in.
 ///
@@ -1168,9 +1169,9 @@ fn the_toolbar_holds_the_actions(cx: &mut TestAppContext) {
 /// each side is `layout.container_margin`; with that unstated too, the
 /// showcase's own `TOOLBAR_PADDING`, which the row's info names. Under
 /// kde-breeze and windows-11, which state their sides, the stated left side
-/// stands. The row is as tall as its buttons and its padding -- none of the
-/// three states a `toolbar.bar_height` for nord -- so the first button's top
-/// is the top padding.
+/// stands. nord states no `toolbar.bar_height` (windows-11 does, 48px), so
+/// under nord the row is as tall as its buttons and its padding, and the
+/// first button's top is the top padding.
 #[gpui::test]
 fn the_toolbar_is_padded_where_the_theme_states_none(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1625,7 +1626,7 @@ fn the_theme_settings_switch_the_icon_theme(cx: &mut TestAppContext) {
     let (count, current) = read(&mut cx, &showcase, |this, cx| {
         (
             this.icon_set_dropdown_names().len(),
-            this.icon_set_select
+            this.icon_theme_select
                 .read(cx)
                 .selected_index(cx)
                 .map(|ix| ix.row),
@@ -1645,7 +1646,7 @@ fn the_theme_settings_switch_the_icon_theme(cx: &mut TestAppContext) {
     cx.run_until_parked();
     draw(&mut cx);
     assert_eq!(
-        read(&mut cx, &showcase, |this, _| this.icon_set_name.clone()),
+        read(&mut cx, &showcase, |this, _| this.icon_theme_name.clone()),
         "material",
         "choosing Material in the theme settings' icon-theme Select did not load it"
     );
@@ -1793,10 +1794,21 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
     }
 }
 
+/// Every item of `items` and of the submenus among them, depth first.
+fn all_menu_items(items: Vec<gpui::MenuItem>) -> Vec<gpui::MenuItem> {
+    items
+        .into_iter()
+        .flat_map(|item| match item {
+            gpui::MenuItem::Submenu(menu) => all_menu_items(menu.items),
+            item => vec![item],
+        })
+        .collect()
+}
+
 /// The inspector has no panel of its own to hide (spec S4): it hides with
 /// the side panel it is in. So no `ToggleInspector` action is registered, no
-/// menu item names the inspector, and Ctrl+I, which ran it, is bound to
-/// nothing.
+/// menu item names the inspector, in a menu or a submenu of one, and Ctrl+I,
+/// which ran it, is bound to nothing.
 #[gpui::test]
 fn no_inspector_toggle_remains(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1828,9 +1840,15 @@ fn no_inspector_toggle_remains(cx: &mut TestAppContext) {
         "ToggleInspector is still a registered action"
     );
     assert_eq!(ctrl_i, Vec::<&str>::new(), "Ctrl+I is still bound");
-    let inspector_items: Vec<String> = menus()
+    let items = all_menu_items(menus().into_iter().flat_map(|m| m.items).collect());
+    assert!(
+        items.len() > menus().len(),
+        "the walk found {} items in {} menus, so it walked nothing",
+        items.len(),
+        menus().len()
+    );
+    let inspector_items: Vec<String> = items
         .into_iter()
-        .flat_map(|m| m.items)
         .filter_map(|i| match i {
             gpui::MenuItem::Action { name, .. } if name.contains("Inspector") => {
                 Some(name.to_string())
@@ -2158,12 +2176,78 @@ fn the_page_tabs_navigate(cx: &mut TestAppContext) {
     }
 }
 
+/// The widest box painted inside `within` with a bottom border in the
+/// theme's `border` colour: an Underline TabBar's bottom rule (tab/tab_bar.rs:
+/// 505-513).
+fn bottom_rule(cx: &mut VisualTestContext, within: Bounds<Pixels>) -> Option<Bounds<Pixels>> {
+    cx.update(|window, cx| {
+        let border = Theme::global(cx).border;
+        let scale = window.scale_factor();
+        let within = within.scale(scale);
+        window
+            .painted_quads()
+            .into_iter()
+            .filter(|q| {
+                q.border_widths.bottom.0 > 0.
+                    && q.border_color == border
+                    && q.bounds.top() >= within.top()
+                    && q.bounds.bottom() <= within.bottom()
+            })
+            .map(|q| q.bounds)
+            .max_by(|a, b| a.size.width.0.total_cmp(&b.size.width.0))
+            .map(|b| Bounds {
+                origin: point(px(b.origin.x.0 / scale), px(b.origin.y.0 / scale)),
+                size: size(px(b.size.width.0 / scale), px(b.size.height.0 / scale)),
+            })
+    })
+}
+
+/// The smallest box that hovering `at` paints and that was not painted
+/// before, and that holds `at`: the hovered element's hover fill.
+fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pixels>> {
+    let painted = |cx: &mut VisualTestContext| {
+        cx.update(|window, _| {
+            let scale = window.scale_factor();
+            window
+                .painted_quads()
+                .into_iter()
+                .filter(|q| !q.background.is_transparent())
+                .map(|q| Bounds {
+                    origin: point(
+                        px(q.bounds.origin.x.0 / scale),
+                        px(q.bounds.origin.y.0 / scale),
+                    ),
+                    size: size(
+                        px(q.bounds.size.width.0 / scale),
+                        px(q.bounds.size.height.0 / scale),
+                    ),
+                })
+                .collect::<Vec<_>>()
+        })
+    };
+    let before = painted(cx);
+    hover(cx, at);
+    draw(cx);
+    painted(cx)
+        .into_iter()
+        .filter(|b| !before.contains(b) && b.contains(&at))
+        .min_by(|a, b| {
+            let area = |b: &Bounds<Pixels>| b.size.width.as_f32() * b.size.height.as_f32();
+            area(a).total_cmp(&area(b))
+        })
+}
+
 /// Upstream's Underline TabBar pads neither itself nor its tabs
 /// (tab/tab.rs:79-81, tab/tab_bar.rs:393-402): it leaves the inset to the
 /// container it is in. So each of the showcase's two TabBars is inset by
 /// `layout.container_margin`, the padding the side panel's settings and the
 /// inspector's content take: its first tab starts that far from the edge of
 /// its panel, not against the resize handle's line or the window's edge.
+///
+/// On the right, the page TabBar's menu Button (tab/tab_bar.rs, `menu`)
+/// ends that far from the panel's right edge, and the inspector's last tab
+/// ends no nearer to it. The bar's bottom rule is drawn on the bar itself,
+/// under its padding, so it spans the panel's whole width.
 #[gpui::test]
 fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -2176,9 +2260,21 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
         let Some(margin) = margin else {
             panic!("{preset} states no layout.container_margin");
         };
-        for (bar, panel, first) in [
-            ("page", CONTENT_PANEL, Page::ALL[0].tab()),
-            ("inspector", INSPECTOR_PANEL, InspectorTab::Widget.tab()),
+        for (bar, selector, panel, first, last) in [
+            (
+                "page",
+                CHROME_PAGE_TABS,
+                CONTENT_PANEL,
+                Page::ALL[0].tab(),
+                None,
+            ),
+            (
+                "inspector",
+                INSPECTOR_TABS,
+                INSPECTOR_PANEL,
+                InspectorTab::Widget.tab(),
+                Some(InspectorTab::Theme.tab()),
+            ),
         ] {
             let panel = bounds_of(&mut cx, panel);
             let tab = bounds_of(&mut cx, first);
@@ -2189,6 +2285,40 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                 tab.left(),
                 tab.left() - panel.left()
             );
+            let tabs = bounds_of(&mut cx, selector);
+            let rule = bottom_rule(&mut cx, tabs);
+            assert!(
+                rule.is_some_and(|rule| (rule.left() - panel.left()).abs() <= slack
+                    && (rule.right() - panel.right()).abs() <= slack),
+                "{preset}: the {bar} TabBar's bottom rule at {rule:?} does not span its panel \
+                 at {panel:?}"
+            );
+            match last {
+                Some(last) => {
+                    let last = bounds_of(&mut cx, last);
+                    assert!(
+                        last.right() <= panel.right() - margin + slack,
+                        "{preset}: the {bar} TabBar's last tab ends at {:?}, within \
+                         layout.container_margin, {margin:?}, of its panel's right edge at {:?}",
+                        last.right(),
+                        panel.right()
+                    );
+                }
+                None => {
+                    let menu = hover_box(
+                        &mut cx,
+                        point(panel.right() - margin - px(4.), tabs.center().y),
+                    );
+                    assert!(
+                        menu.is_some_and(
+                            |menu| (panel.right() - menu.right() - margin).abs() <= slack
+                        ),
+                        "{preset}: the {bar} TabBar's menu Button at {menu:?} does not end \
+                         layout.container_margin, {margin:?}, from its panel's right edge at {:?}",
+                        panel.right()
+                    );
+                }
+            }
         }
     }
 }
@@ -2309,45 +2439,46 @@ fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
 
 /// A page change clears an info whose target the new frame no longer draws
 /// (spec §4.3.4 as ruled), through every route to a page: here the View
-/// menu. The inspector's own TabBar is the target, taken off the screen by
-/// hiding the side panel it is in, which no hover end reports.
+/// menu. The target is a Buttons page Button, which the Charts page does not
+/// draw.
 ///
-/// Once the TabBar is gone the pointer moves into the page's own padding,
-/// which no page draws a widget in, so what the page draws where the side
-/// panel was cannot settle in its place.
+/// The pointer first moves into the page's own padding, which no page draws
+/// a widget in: leaving the Button keeps its info (§4.3.3), so what clears
+/// it is the page change, and what the Charts page draws there cannot settle
+/// in its place.
 #[gpui::test]
 fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let tabs = bounds_of(&mut cx, INSPECTOR_TABS);
-    hover(&mut cx, point(tabs.left() + px(16.), tabs.center().y));
+    show(&mut cx, &showcase, Page::Buttons);
+    let button = bounds_of(&mut cx, BUTTONS_PRIMARY);
+    hover(&mut cx, button.center());
     settle(&mut cx);
     let shown = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |this, cx| {
             this.info_ui.read(cx).shown().map(|info| info.title())
         })
     };
-    assert_eq!(
-        shown(&mut cx).as_deref(),
-        Some("TabBar · Underline, small"),
-        "the inspector's TabBar did not report itself"
+    let before = shown(&mut cx);
+    assert!(
+        before.as_deref().is_some_and(|t| t.starts_with("Button")),
+        "the Buttons page's Primary Button did not report itself: {before:?}"
     );
-    run_menu_item(&mut cx, "View", "Toggle Side Panel");
     // Every page root pads its content by p_4 (16px), so 4px in from its
     // corner is empty on every page.
     let page = bounds_of(&mut cx, PAGE_ROOT);
     hover(&mut cx, point(page.left() + px(4.), page.top() + px(4.)));
     settle(&mut cx);
     assert_eq!(
-        shown(&mut cx).as_deref(),
-        Some("TabBar · Underline, small"),
-        "hiding the side panel alone already cleared the info: leaving keeps it"
+        shown(&mut cx),
+        before,
+        "leaving the Button already cleared its info: leaving keeps it"
     );
     run_menu_item(&mut cx, "View", "Charts");
     settle(&mut cx);
     assert_eq!(
         shown(&mut cx),
         None,
-        "after the page change the info of a TabBar no longer drawn is still shown"
+        "after the page change the info of a Button no longer drawn is still shown"
     );
 }
 
@@ -2728,13 +2859,15 @@ fn the_icon_sizes_section_shows_every_icon_size(cx: &mut TestAppContext) {
             &[IconSizeContext::Dialog, IconSizeContext::Panel][..],
         ),
     ] {
+        use_preset(&mut cx, &showcase, preset);
+        // After the install, which names the theme it installed: `default`
+        // stands for the desktop's own theme built on `preset`.
         cx.update(|_window, cx| {
             showcase.update(cx, |this, _cx| {
                 this.current_theme_name = chosen.to_string();
                 this.default_preset = preset.to_string();
             });
         });
-        use_preset(&mut cx, &showcase, preset);
         let preset = if chosen == preset {
             preset.to_string()
         } else {
@@ -3560,7 +3693,8 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
 }
 
 /// A Switch's corner line follows upstream's condition: the theme's radius
-/// under 4px, the track's own height from 4px up (switch.rs:158-162).
+/// under 4px, the track's own height from 4px up (switch.rs:158-162), 4px
+/// itself included (`radius >= px(4.)`, switch.rs:158).
 #[gpui::test]
 fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -3575,6 +3709,11 @@ fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
             .map(|n| n.text)
     };
     assert_eq!(corner(2.).as_deref(), Some("radius: 2px"));
+    assert!(
+        corner(4.).is_some_and(|text| text.starts_with("fully round")),
+        "at a 4px radius upstream rounds the track by its height, and the line says {:?}",
+        corner(4.)
+    );
     assert!(
         corner(6.).is_some_and(|text| text.starts_with("fully round")),
         "at a 6px radius the track is rounded by its height, and the line says {:?}",
@@ -4688,6 +4827,374 @@ fn the_icon_theme_override_reloads_the_icons(cx: &mut TestAppContext) {
     );
 }
 
+/// Install the preset of `key` as the theme settings' preset switch and the
+/// command palette do, through `SetPreset`, and draw the frame after.
+fn set_preset(cx: &mut VisualTestContext, key: &str) {
+    let action = SetPreset(key.to_string().into());
+    cx.update(|window, cx| window.dispatch_action(Box::new(action), cx));
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// The accessibility preferences the installed native theme carries.
+fn installed_preferences(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> Option<native_theme_gpui::AccessibilityPreferences> {
+    read(cx, showcase, |_this, cx| {
+        cx.native_theme().map(|nt| nt.accessibility().clone())
+    })
+}
+
+/// A theme install keeps the accessibility preferences installed before it
+/// (spec §7.1): the Preferences sheet sets them, and a preset switch, a
+/// reload or the desktop's own theme must not put the OS's back in their
+/// place. The OS's are read for the first theme installed, and only then.
+#[gpui::test]
+fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "kde-breeze");
+    let chosen = native_theme_gpui::AccessibilityPreferences {
+        text_scaling_factor: 1.75,
+        reduce_motion: true,
+        high_contrast: true,
+        reduce_transparency: true,
+    };
+    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&chosen, cx));
+    cx.run_until_parked();
+    assert_eq!(
+        installed_preferences(&mut cx, &showcase).as_ref(),
+        Some(&chosen),
+        "the chosen preferences were not installed, so keeping them proves nothing"
+    );
+    set_preset(&mut cx, "adwaita");
+    assert_eq!(
+        installed_preferences(&mut cx, &showcase).as_ref(),
+        Some(&chosen),
+        "switching the preset replaced the preferences the user chose"
+    );
+    cx.update(|window, cx| window.dispatch_action(Box::new(ReloadTheme), cx));
+    cx.run_until_parked();
+    assert_eq!(
+        installed_preferences(&mut cx, &showcase).as_ref(),
+        Some(&chosen),
+        "reloading the theme, as the theme watcher does, replaced the preferences the user \
+         chose"
+    );
+    // The desktop's own theme, where this host has one to read.
+    if let Ok(system) = native_theme::SystemTheme::from_system() {
+        cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| this.install_system_theme(system, window, cx))
+        });
+        cx.run_until_parked();
+        assert_eq!(
+            installed_preferences(&mut cx, &showcase).as_ref(),
+            Some(&chosen),
+            "installing the desktop's own theme replaced the preferences the user chose"
+        );
+    }
+}
+
+/// `--variant` without `--theme` installs the current theme again in the
+/// mode it names: gpui-component's mode and the native variant installed
+/// follow it, not only the colour-mode Select.
+#[gpui::test]
+fn a_variant_alone_reinstalls_the_theme_in_its_mode(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "kde-breeze");
+    let was_dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
+    let (variant, wanted) = match was_dark {
+        true => ("light", AppColorMode::Light),
+        false => ("dark", AppColorMode::Dark),
+    };
+    let args = crate::CliArgs {
+        variant: Some(variant.to_string()),
+        ..Default::default()
+    };
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            crate::apply_cli_args(this, &args, window, cx)
+        })
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.color_mode),
+        wanted,
+        "--variant {variant} did not set the colour mode"
+    );
+    assert_eq!(
+        cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        !was_dark,
+        "--variant {variant} alone did not install the theme in that mode"
+    );
+    assert!(
+        read(&mut cx, &showcase, |_this, cx| cx
+            .native_theme()
+            .and_then(|nt| nt.native(cx))
+            .is_some()),
+        "--variant {variant} alone left no native variant installed for its mode"
+    );
+}
+
+/// Whether the icon-theme Select has a row reading `label`. The Select
+/// shows its rows only in its popup, so this chooses `label` and asks
+/// whether that found a row: it changes what is chosen.
+fn icon_theme_row_exists(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    label: &str,
+) -> bool {
+    let label = gpui::SharedString::from(label.to_string());
+    cx.update(|window, cx| {
+        let select = showcase.read(cx).icon_theme_select.clone();
+        select.update(cx, |select, cx| {
+            select.set_selected_value(&label, window, cx);
+            select.selected_index(cx).is_some()
+        })
+    })
+}
+
+/// The icon-theme Select follows the preset: its rows are rebuilt on every
+/// preset change, a choice that followed the preset keeps following it --
+/// `default`, or `system` where the preset's own icon theme is not installed
+/// (`default_icon_choice`) -- and an icon theme the user chose stays chosen,
+/// its rows offering the new preset's default and not the last one's.
+#[gpui::test]
+fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let choice = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            (
+                this.icon_set_choice.clone(),
+                this.icon_theme_select.read(cx).selected_value().cloned(),
+            )
+        })
+    };
+    // A choice that followed the preset onto `system`, as it does where the
+    // preset's own icon theme is not installed.
+    set_preset(&mut cx, "kde-breeze");
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| this.icon_set_choice = IconSetChoice::System)
+    });
+    set_preset(&mut cx, "nord");
+    assert_eq!(
+        choice(&mut cx),
+        (
+            IconSetChoice::Default("lucide".into()),
+            Some("default (lucide)".into())
+        ),
+        "a choice that followed kde-breeze onto system did not follow nord"
+    );
+
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("Material (bundled)", window, cx)
+        })
+    });
+    set_preset(&mut cx, "kde-breeze");
+    assert_eq!(
+        choice(&mut cx),
+        (IconSetChoice::Material, Some("Material (bundled)".into())),
+        "an icon theme the user chose did not stay chosen across a preset change"
+    );
+    let fresh = read(
+        &mut cx,
+        &showcase,
+        |this, _| match native_theme::icons::default_icon_choice(
+            this.current_icon_set,
+            Some(this.current_icon_theme.as_str()),
+        ) {
+            choice @ IconSetChoice::Default(_) => Some(choice.to_string()),
+            _ => None,
+        },
+    );
+    assert!(
+        !icon_theme_row_exists(&mut cx, &showcase, "default (lucide)"),
+        "under kde-breeze the icon-theme Select still offers nord's default row"
+    );
+    if let Some(fresh) = fresh {
+        assert!(
+            icon_theme_row_exists(&mut cx, &showcase, &fresh),
+            "under kde-breeze the icon-theme Select does not offer its default row, {fresh}"
+        );
+    }
+}
+
+/// `--icon-theme` applies until the user picks an icon theme in the theme
+/// settings' Select: from then on the icons load from the one picked.
+#[gpui::test]
+fn picking_an_icon_theme_ends_the_icon_theme_override(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.set_icon_theme_override("hicolor".to_string(), window, cx);
+            this.select_icon_set("Adwaita", window, cx);
+        })
+    });
+    cx.run_until_parked();
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this
+            .freedesktop_theme()
+            .map(str::to_string)),
+        Some("Adwaita".to_string()),
+        "after the user picked Adwaita the icons still load from --icon-theme's hicolor"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.icon_set_label()),
+        "freedesktop (Adwaita)",
+        "the Icons page does not name the icon theme the user picked"
+    );
+}
+
+/// The preset switch's `default` row and the status bar name the same
+/// preset: the one the pipeline settled on (`SystemTheme::preset`), which
+/// on a desktop `native_theme::detect` does not recognise can differ from
+/// `platform_preset_name`'s guess (native-theme pipeline.rs, `select_reader`).
+#[gpui::test]
+fn the_default_row_and_the_status_bar_name_one_preset(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let Ok(mut system) = native_theme::SystemTheme::from_system() else {
+        return;
+    };
+    // A platform preset other than the one platform_preset_name gives, as
+    // the pipeline settles on where the desktop is not recognised.
+    let guessed = native_theme::pipeline::platform_preset_name().name;
+    let settled = if guessed == "adwaita" {
+        "kde-breeze"
+    } else {
+        "adwaita"
+    };
+    system.preset = settled.to_string();
+    set_preset(&mut cx, "default");
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| this.install_system_theme(system, window, cx))
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let wanted = format!("default ({settled})");
+    let status = read(&mut cx, &showcase, |this, cx| {
+        crate::chrome::status_environment(this, cx)
+    });
+    assert!(
+        status
+            .get(1)
+            .is_some_and(|item| item.starts_with(&format!("{wanted} "))),
+        "the status bar does not name {wanted}: {status:?}"
+    );
+    let row = read(&mut cx, &showcase, |this, cx| {
+        this.preset_combobox
+            .read(cx)
+            .selection()
+            .first()
+            .map(|(_, item)| item.display_name.to_string())
+    });
+    assert_eq!(
+        row.as_deref(),
+        Some(wanted.as_str()),
+        "the preset switch's default row does not name the preset the status bar names"
+    );
+}
+
+/// A theme that fails to load leaves the installed one in charge of
+/// everything shown: its name in the status bar and the preset switch, and
+/// its layout.
+#[gpui::test]
+fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "nord");
+    let nord_layout = native_theme::theme::Theme::preset("nord")
+        .map(|t| t.layout)
+        .ok();
+    let named = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            (
+                this.current_theme_name.clone(),
+                this.preset_combobox
+                    .read(cx)
+                    .selected_value()
+                    .map(|v| v.to_string()),
+                crate::chrome::status_environment(this, cx)
+                    .get(1)
+                    .cloned()
+                    .unwrap_or_default(),
+                Some(this.layout.clone()),
+            )
+        })
+    };
+    let check = |cx: &mut VisualTestContext, how: &str| {
+        let (name, row, status, layout) = named(cx);
+        assert_eq!(
+            name, "nord",
+            "{how}: the showcase names the theme that failed"
+        );
+        assert_eq!(
+            row.as_deref(),
+            Some("nord"),
+            "{how}: the preset switch shows the theme that failed"
+        );
+        assert!(
+            status.starts_with("nord "),
+            "{how}: the status bar does not name nord: {status}"
+        );
+        assert!(
+            layout == nord_layout,
+            "{how}: the layout is no longer nord's"
+        );
+    };
+    set_preset(&mut cx, "no-such-preset");
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.error_message.is_some()),
+        "no-such-preset loaded, so nothing failed"
+    );
+    check(&mut cx, "SetPreset(no-such-preset)");
+    let args = crate::CliArgs {
+        theme: Some("no-such-preset".to_string()),
+        ..Default::default()
+    };
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            crate::apply_cli_args(this, &args, window, cx)
+        })
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    check(&mut cx, "--theme no-such-preset");
+}
+
+/// Hiding the side panel takes its widgets off the screen, so an info of
+/// one of them is no longer shown (spec §4.3.4): the status bar would
+/// otherwise name a widget nothing draws.
+#[gpui::test]
+fn hiding_the_side_panel_clears_what_left_the_screen(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let tabs = bounds_of(&mut cx, INSPECTOR_TABS);
+    hover(&mut cx, point(tabs.left() + px(16.), tabs.center().y));
+    settle(&mut cx);
+    let shown = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().map(|info| info.title())
+        })
+    };
+    assert_eq!(
+        shown(&mut cx).as_deref(),
+        Some("TabBar · Underline, small"),
+        "the inspector's TabBar did not report itself"
+    );
+    run_menu_item(&mut cx, "View", "Toggle Side Panel");
+    // Every page root pads its content by p_4 (16px), so 4px in from its
+    // corner is empty on every page.
+    let page = bounds_of(&mut cx, PAGE_ROOT);
+    hover(&mut cx, point(page.left() + px(4.), page.top() + px(4.)));
+    settle(&mut cx);
+    draw(&mut cx);
+    assert_eq!(
+        shown(&mut cx),
+        None,
+        "with the side panel hidden the info of its TabBar is still shown"
+    );
+}
+
 /// The status bar reports the installed accessibility preferences (spec
 /// §2.7): the text-scale factor always, and a flag only while it is set.
 #[gpui::test]
@@ -4818,24 +5325,28 @@ fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
 #[test]
 fn the_palette_offers_the_preset_switchs_presets() {
     use gpui_component::searchable_list::{SearchableListDelegate as _, SearchableListItem as _};
-    let offered: Vec<String> = crate::chrome::palette_presets()
+    // Any platform preset will do: both lists label `default` with the one
+    // they are given.
+    let default_preset = "adwaita";
+    let rows: Vec<(String, String)> = crate::chrome::palette_presets(default_preset)
         .into_iter()
-        .map(|(key, _)| key.to_string())
+        .map(|(key, name)| (key.to_string(), name.to_string()))
         .collect();
-    let delegate = crate::support::PresetDelegate::new();
-    let switch: Vec<String> = (0..delegate.items_count(0))
+    let delegate = crate::support::PresetDelegate::new(default_preset);
+    let switch: Vec<(String, String)> = (0..delegate.items_count(0))
         .filter_map(|row| delegate.item(gpui_component::IndexPath::default().row(row)))
-        .map(|item| item.value().to_string())
+        .map(|item| (item.value().to_string(), item.title().to_string()))
         .collect();
     assert_eq!(
-        offered, switch,
+        rows, switch,
         "the palette's presets are not the preset Combobox's rows"
     );
     assert_eq!(
-        offered.first().map(String::as_str),
-        Some("default"),
-        "the palette's first preset is not the desktop's own"
+        rows.first(),
+        Some(&("default".to_string(), "default (adwaita)".to_string())),
+        "the palette's first preset is not the desktop's own, named by its preset"
     );
+    let offered: Vec<String> = rows.into_iter().map(|(key, _)| key).collect();
     let platform: Vec<&str> = native_theme::theme::Theme::list_presets_for_platform()
         .iter()
         .map(|info| info.key)

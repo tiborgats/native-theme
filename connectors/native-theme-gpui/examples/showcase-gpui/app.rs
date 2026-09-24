@@ -44,15 +44,15 @@ use native_theme::theme::{
 };
 use native_theme_gpui::icons::{animated_frames_to_image_sources, to_image_source};
 use native_theme_gpui::to_theme;
-use native_theme_gpui::{AccessibilityPreferences, geometry};
+use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
 
 use crate::chrome;
 use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::Inspector;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
-    PresetDelegate, SampleListDelegate, SampleTableDelegate, initial_chat_messages, load_all_icons,
-    load_gpui_icons, parse_icon_set_choice, release_sources,
+    PresetDelegate, SampleListDelegate, SampleTableDelegate, default_label, initial_chat_messages,
+    load_all_icons, load_gpui_icons, parse_icon_set_choice, release_sources,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT, Page,
@@ -186,12 +186,15 @@ impl AppColorMode {
 pub(crate) struct Showcase {
     /// The theme settings' preset switch (spec §3.3).
     pub(crate) preset_combobox: Entity<ComboboxState<PresetDelegate>>,
+    /// The key of the installed theme: `default`, the desktop's own, or a
+    /// preset's. Set once a theme installs, so a theme that fails to load
+    /// leaves the one still installed named.
     pub(crate) current_theme_name: String,
-    /// Dynamic label for the "default" theme entry, updated on color mode change.
-    pub(crate) default_label: String,
-    /// The platform preset the "default" theme is built on, as its label
-    /// names it: `SystemTheme::preset`, or `platform_preset_name` where the
-    /// OS theme could not be read.
+    /// The platform preset the "default" theme is built on, which the preset
+    /// switch's `default` row and the status bar both name
+    /// (`Showcase::default_label`): `SystemTheme::preset`, the preset the
+    /// pipeline settled on, or `platform_preset_name` where the OS theme
+    /// could not be read.
     pub(crate) default_preset: String,
     pub(crate) is_dark: bool,
     pub(crate) color_mode: AppColorMode,
@@ -317,9 +320,12 @@ pub(crate) struct Showcase {
     /// `AppColorMode::ALL`, reading its `short_label`.
     pub(crate) color_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
 
-    /// The theme settings' icon-theme Select.
-    pub(crate) icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
-    pub(crate) icon_set_name: String,
+    /// The theme settings' icon-theme Select, its rows rebuilt on every
+    /// theme install (`Showcase::show_icon_choice`).
+    pub(crate) icon_theme_select: Entity<SelectState<SearchableVec<SharedString>>>,
+    /// The chosen icon theme's name as the Icons page gives it: its
+    /// `IconSet`'s name, or "gpui-builtin" for gpui-component's own icons.
+    pub(crate) icon_theme_name: String,
     /// Parsed `IconSet` for the current selection (`None` for "gpui-builtin").
     pub(crate) icon_set_enum: Option<IconSet>,
     pub(crate) loaded_icons: Vec<(IconRole, Option<IconData>, IconSource)>,
@@ -330,8 +336,14 @@ pub(crate) struct Showcase {
     pub(crate) gpui_icon_sources: Vec<Option<ImageSource>>,
     /// Foreground color used when building the image source caches.
     pub(crate) icon_cache_fg: Hsla,
-    /// The user's icon-theme choice (library type).
+    /// The icon-theme choice (library type).
     pub(crate) icon_set_choice: IconSetChoice,
+    /// Whether the choice follows the preset: it is `default_icon_choice`'s
+    /// for the installed theme -- its `default`, or `system` where the
+    /// preset's own icon theme is not installed -- and is taken again on
+    /// every theme install. False once the user picks any other row of the
+    /// icon-theme Select, or `--icon-set` names a set: that choice stays.
+    pub(crate) icon_choice_follows_preset: bool,
     /// Cached list of installed freedesktop icon themes (populated once at init).
     pub(crate) installed_themes: Vec<String>,
     /// The current resolved theme's preferred icon theme (e.g. "breeze", "Lucide").
@@ -340,7 +352,9 @@ pub(crate) struct Showcase {
     pub(crate) current_icon_set: IconSet,
     /// Whether the current theme's TOML specified `icon_theme` (before resolution).
     pub(crate) has_toml_icon_theme: bool,
-    /// CLI override for the freedesktop icon theme (e.g. "breeze", "breeze-dark", "adwaita").
+    /// The freedesktop icon theme `--icon-theme` names (e.g. "breeze",
+    /// "breeze-dark", "adwaita"), which the icons load from until the user
+    /// picks an icon theme in the icon-theme Select.
     pub(crate) icon_theme_override: Option<String>,
 
     // Animated Icons state
@@ -367,6 +381,40 @@ pub(crate) struct Showcase {
     pub(crate) _theme_watcher: Option<native_theme::watch::ThemeSubscription>,
     /// Set by the watcher polling task; checked in render() where window access is available.
     pub(crate) pending_system_theme_change: bool,
+}
+
+/// The icon-theme Select's row for gpui-component's own icons, which no
+/// `IconSetChoice` names.
+const GPUI_BUILTIN_ROW: &str = "gpui-component built-in (Lucide)";
+
+/// The icon-theme Select's rows for a theme of `icon_set` naming
+/// `icon_theme`: its `default` row, where the theme names an icon theme that
+/// is available (`default_icon_choice`), then `system`, the installed
+/// freedesktop themes, gpui-component's own icons and the bundled sets.
+fn icon_theme_rows(
+    icon_set: IconSet,
+    icon_theme: Option<&str>,
+    installed: &[String],
+) -> Vec<SharedString> {
+    let default = match default_icon_choice(icon_set, icon_theme) {
+        choice @ IconSetChoice::Default(_) => Some(choice),
+        _ => None,
+    };
+    default
+        .into_iter()
+        .chain([IconSetChoice::System])
+        .chain(
+            installed
+                .iter()
+                .map(|name| IconSetChoice::Freedesktop(name.clone())),
+        )
+        .map(|choice| SharedString::from(choice.to_string()))
+        .chain([SharedString::from(GPUI_BUILTIN_ROW)])
+        .chain(
+            [IconSetChoice::Lucide, IconSetChoice::Material]
+                .map(|choice| SharedString::from(choice.to_string())),
+        )
+        .collect()
 }
 
 impl Showcase {
@@ -441,7 +489,7 @@ impl Showcase {
             Some(icon_set) => load_icon_indicator(icon_set),
             None => None,
         };
-        let set_name = &self.icon_set_name;
+        let set_name = &self.icon_theme_name;
         let fg = self.icon_cache_fg;
         if let Some(anim) = anim {
             match &anim {
@@ -527,8 +575,8 @@ impl Showcase {
     }
 
     /// The freedesktop theme the page's icons load from where the set is
-    /// freedesktop: the `--icon-theme` override, else the theme the choice
-    /// names; `None` is the system's own.
+    /// freedesktop: the `--icon-theme` override while it stands, else the
+    /// theme the choice names; `None` is the system's own.
     pub(crate) fn freedesktop_theme(&self) -> Option<&str> {
         self.icon_theme_override
             .as_deref()
@@ -544,7 +592,7 @@ impl Showcase {
                 self.freedesktop_theme()
                     .map_or_else(system_icon_theme, str::to_string)
             ),
-            _ => self.icon_set_name.clone(),
+            _ => self.icon_theme_name.clone(),
         }
     }
 
@@ -566,8 +614,8 @@ impl Showcase {
         ChromeIcon::of(&self.gpui_icons, self.icon_set_enum.is_none(), icon)
     }
 
-    /// Load the freedesktop icons from `theme` from now on: what
-    /// `--icon-theme` asks for.
+    /// Load the freedesktop icons from `theme` until the user picks an icon
+    /// theme in the icon-theme Select: what `--icon-theme` asks for.
     pub(crate) fn set_icon_theme_override(
         &mut self,
         theme: String,
@@ -581,21 +629,25 @@ impl Showcase {
     }
 
     /// Load the icon theme the icon-theme Select names `display`, as the
-    /// Select does when it is confirmed.
+    /// Select does when it is confirmed. The user's pick: it ends the
+    /// `--icon-theme` override, and only its `default` row follows the preset
+    /// from now on.
     pub(crate) fn select_icon_set(
         &mut self,
         display: &str,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let is_gpui_builtin = display == "gpui-component built-in (Lucide)";
+        let is_gpui_builtin = display == GPUI_BUILTIN_ROW;
         self.icon_set_choice = parse_icon_set_choice(display);
+        self.icon_choice_follows_preset = matches!(self.icon_set_choice, IconSetChoice::Default(_));
+        self.icon_theme_override = None;
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
         // The page tells gpui-component's own icons by this name, which
         // `effective` (Lucide, for the built-in entry) would not give.
-        self.icon_set_name = if is_gpui_builtin {
+        self.icon_theme_name = if is_gpui_builtin {
             "gpui-builtin".to_string()
         } else {
             effective.name().to_string()
@@ -611,7 +663,7 @@ impl Showcase {
     }
 
     /// Load the icons of the chosen set -- from the `--icon-theme` override
-    /// where one is set -- and rebuild what the Icons page draws from them.
+    /// while it stands -- and rebuild what the Icons page draws from them.
     pub(crate) fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let effective = self
             .icon_set_choice
@@ -641,62 +693,52 @@ impl Showcase {
         cx.notify();
     }
 
-    /// Build the icon-theme Select's rows.
+    /// The icon-theme Select's rows for the installed theme.
     pub(crate) fn icon_set_dropdown_names(&self) -> Vec<SharedString> {
-        let icon_theme_opt = if self.has_toml_icon_theme {
-            Some(self.current_icon_theme.as_str())
-        } else {
-            None
-        };
-        let mut names: Vec<SharedString> = Vec::new();
-        // "default (X)" -- only when TOML specifies icon_theme and it's available
-        if let choice @ IconSetChoice::Default(_) =
-            default_icon_choice(self.current_icon_set, icon_theme_opt)
-        {
-            names.push(choice.to_string().into());
+        icon_theme_rows(
+            self.current_icon_set,
+            self.preset_icon_theme(),
+            &self.installed_themes,
+        )
+    }
+
+    /// The icon theme the installed theme names, where it names one.
+    fn preset_icon_theme(&self) -> Option<&str> {
+        self.has_toml_icon_theme
+            .then_some(self.current_icon_theme.as_str())
+    }
+
+    /// The icon-theme Select's row for the current choice.
+    fn icon_choice_row(&self) -> SharedString {
+        match self.icon_set_enum {
+            None => GPUI_BUILTIN_ROW.into(),
+            Some(_) => self.icon_set_choice.to_string().into(),
         }
-        // "system (Y)" -- always
-        names.push(IconSetChoice::System.to_string().into());
-        // Installed freedesktop themes
-        for name in &self.installed_themes {
-            names.push(IconSetChoice::Freedesktop(name.clone()).to_string().into());
+    }
+
+    /// Take the installed theme's icon choice where the choice follows the
+    /// preset, then rebuild the icon-theme Select's rows for the installed
+    /// theme -- its `default` row is the installed preset's, never an
+    /// earlier one's -- and show the current choice chosen in it.
+    pub(crate) fn show_icon_choice(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.icon_choice_follows_preset {
+            self.icon_set_choice =
+                default_icon_choice(self.current_icon_set, self.preset_icon_theme());
+            let effective = self
+                .icon_set_choice
+                .effective_icon_set(self.current_icon_set);
+            self.icon_theme_name = effective.name().to_string();
+            self.icon_set_enum = Some(effective);
         }
-        // GPUI-specific built-in
-        names.push("gpui-component built-in (Lucide)".into());
-        // Bundled
-        names.push(IconSetChoice::Lucide.to_string().into());
-        names.push(IconSetChoice::Material.to_string().into());
-        names
+        let rows = SearchableVec::new(self.icon_set_dropdown_names());
+        let chosen = self.icon_choice_row();
+        self.icon_theme_select.update(cx, |select, cx| {
+            select.set_items(rows, window, cx);
+            select.set_selected_value(&chosen, window, cx);
+        });
     }
 
     pub(crate) fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let preset_combobox = cx.new(|cx| {
-            ComboboxState::new(
-                PresetDelegate::new(),
-                vec![gpui_component::IndexPath::default().row(0)],
-                window,
-                cx,
-            )
-            .searchable(true)
-        });
-
-        // `Change`, not `Confirm`: the Combobox confirms whenever its popup
-        // closes, chosen or not (combobox.rs, ComboboxState::toggle_menu).
-        cx.subscribe_in(
-            &preset_combobox,
-            window,
-            |this: &mut Self, _entity, event: &ComboboxEvent<PresetDelegate>, window, cx| {
-                if let ComboboxEvent::Change(values) = event
-                    && let Some(name) = values.first()
-                {
-                    this.current_theme_name = name.to_string();
-                    this.apply_theme_by_name(name, window, cx);
-                    cx.notify();
-                }
-            },
-        )
-        .detach();
-
         let color_mode = AppColorMode::System;
         let color_mode_select = cx.new(|cx| {
             SelectState::new(
@@ -831,7 +873,7 @@ impl Showcase {
         let (
             original_font,
             original_mono_font,
-            (initial_default_label, initial_default_preset),
+            initial_default_preset,
             initial_icon_theme,
             initial_icon_set,
             initial_has_toml_icon_theme,
@@ -856,12 +898,11 @@ impl Showcase {
                 if is_dark != system.mode.is_dark() {
                     Theme::change(gpui_theme_mode(is_dark), Some(window), cx);
                 }
-                let label = format!("default ({})", system.preset);
                 // Platform presets always specify icon_theme
                 (
                     font,
                     mono_font,
-                    (label, system.preset.clone()),
+                    system.preset.clone(),
                     icon_theme,
                     icon_set,
                     true,
@@ -890,14 +931,12 @@ impl Showcase {
                     style: native_theme::theme::FontStyle::Normal,
                     color: native_theme::color::Rgba::TRANSPARENT,
                 };
-                let preset = platform_preset_name();
-                let label = format!("default ({})", preset.name);
                 let icon_theme = system_icon_theme().to_string();
                 let icon_set = system_icon_set();
                 (
                     font,
                     mono_font,
-                    (label, preset.name.to_string()),
+                    platform_preset_name().name.to_string(),
                     icon_theme,
                     icon_set,
                     false,
@@ -908,6 +947,32 @@ impl Showcase {
                 )
             }
         };
+        let preset_combobox = cx.new(|cx| {
+            ComboboxState::new(
+                PresetDelegate::new(&initial_default_preset),
+                vec![gpui_component::IndexPath::default().row(0)],
+                window,
+                cx,
+            )
+            .searchable(true)
+        });
+
+        // `Change`, not `Confirm`: the Combobox confirms whenever its popup
+        // closes, chosen or not (combobox.rs, ComboboxState::toggle_menu).
+        cx.subscribe_in(
+            &preset_combobox,
+            window,
+            |this: &mut Self, _entity, event: &ComboboxEvent<PresetDelegate>, window, cx| {
+                if let ComboboxEvent::Change(values) = event
+                    && let Some(name) = values.first()
+                {
+                    this.apply_theme_by_name(name, window, cx);
+                    cx.notify();
+                }
+            },
+        )
+        .detach();
+
         // Use the library's IconSetChoice to compute the initial icon selection.
         let icon_theme_opt = if initial_has_toml_icon_theme {
             Some(initial_icon_theme.as_str())
@@ -938,24 +1003,7 @@ impl Showcase {
 
         // Icon theme selector -- build dropdown list using IconSetChoice
         let initial_icon_label = initial_icon_set_choice.to_string();
-        let mut icon_theme_names: Vec<SharedString> = Vec::new();
-        // "default (X)" -- only when TOML specifies icon_theme and it's available
-        if let choice @ IconSetChoice::Default(_) =
-            default_icon_choice(initial_icon_set, icon_theme_opt)
-        {
-            icon_theme_names.push(choice.to_string().into());
-        }
-        // "system (Y)" -- always
-        icon_theme_names.push(IconSetChoice::System.to_string().into());
-        // Installed freedesktop themes
-        for name in &installed_themes {
-            icon_theme_names.push(IconSetChoice::Freedesktop(name.clone()).to_string().into());
-        }
-        // GPUI-specific built-in
-        icon_theme_names.push("gpui-component built-in (Lucide)".into());
-        // Bundled
-        icon_theme_names.push(IconSetChoice::Lucide.to_string().into());
-        icon_theme_names.push(IconSetChoice::Material.to_string().into());
+        let icon_theme_names = icon_theme_rows(initial_icon_set, icon_theme_opt, &installed_themes);
 
         // Find the index of the initial selection label
         let initial_icon_idx = icon_theme_names
@@ -963,7 +1011,7 @@ impl Showcase {
             .position(|n| n.as_ref() == initial_icon_label)
             .unwrap_or(0);
         let icon_set_delegate = SearchableVec::new(icon_theme_names);
-        let icon_set_select = cx.new(|cx| {
+        let icon_theme_select = cx.new(|cx| {
             SelectState::new(
                 icon_set_delegate,
                 Some(gpui_component::IndexPath::default().row(initial_icon_idx)),
@@ -973,7 +1021,7 @@ impl Showcase {
         });
 
         cx.subscribe_in(
-            &icon_set_select,
+            &icon_theme_select,
             window,
             |this: &mut Self,
              _entity,
@@ -1127,7 +1175,6 @@ impl Showcase {
         let mut showcase = Self {
             preset_combobox,
             current_theme_name: "default".into(),
-            default_label: initial_default_label,
             default_preset: initial_default_preset,
             is_dark,
             color_mode,
@@ -1185,8 +1232,8 @@ impl Showcase {
             toggle_italic: false,
             alert_choice: None,
             color_mode_select,
-            icon_set_select,
-            icon_set_name: initial_resolved_name,
+            icon_theme_select,
+            icon_theme_name: initial_resolved_name,
             icon_set_enum: Some(initial_effective_set),
             loaded_icons,
             gpui_icons,
@@ -1194,6 +1241,7 @@ impl Showcase {
             gpui_icon_sources: Vec::new(),
             icon_cache_fg: fg,
             icon_set_choice: initial_icon_set_choice,
+            icon_choice_follows_preset: true,
             installed_themes,
             current_icon_theme: initial_icon_theme,
             current_icon_set: initial_icon_set,
@@ -1222,8 +1270,9 @@ impl Showcase {
 
     /// Install the light/dark choice into whatever theme is currently up.
     ///
-    /// The three paths below that cannot read a theme reach this: they leave
-    /// the installed theme alone, which is right, but the user's light/dark
+    /// A theme that fails to load -- the OS theme unread, a preset unread or
+    /// unresolved -- reaches this: it leaves the installed theme alone, which
+    /// is right, but the user's light/dark
     /// choice still has to land. `Showcase::new` falls back to
     /// gpui-component's built-in theme when the OS read fails, and that theme
     /// has both variants; without this the selector moved `is_dark` and
@@ -1232,106 +1281,154 @@ impl Showcase {
         Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
     }
 
+    /// The accessibility preferences a theme is installed with: the ones the
+    /// installed theme carries -- the Preferences sheet sets them, and a
+    /// theme install must not undo that -- or, for the first theme
+    /// installed, `os`, the OS's (spec §7.1).
+    fn install_preferences(
+        cx: &App,
+        os: impl FnOnce() -> AccessibilityPreferences,
+    ) -> AccessibilityPreferences {
+        cx.native_theme()
+            .map_or_else(os, |nt| nt.accessibility().clone())
+    }
+
+    /// Install `system`, the desktop's own theme as `SystemTheme::from_system`
+    /// read it: what `default` installs. Its accessibility preferences are
+    /// the installed theme's, where one is installed.
+    ///
+    /// The preset the pipeline settled on is what the preset switch's
+    /// `default` row and the status bar name, so a change of it relabels
+    /// that row.
+    pub(crate) fn install_system_theme(
+        &mut self,
+        mut system: native_theme::SystemTheme,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let os = std::mem::take(&mut system.accessibility);
+        system.accessibility = Self::install_preferences(cx, || os);
+        let resolved = system.pick(if self.is_dark {
+            native_theme_gpui::ColorMode::Dark
+        } else {
+            native_theme_gpui::ColorMode::Light
+        });
+        self.original_font = resolved.defaults.font.clone();
+        self.original_mono_font = resolved.defaults.mono_font.clone();
+        self.current_icon_theme = system.icon_theme.clone().into_owned();
+        self.current_icon_set = system.icon_set;
+        self.layout = system.layout.clone();
+        // Platform presets always specify icon_theme
+        self.has_toml_icon_theme = true;
+        native_theme_gpui::apply_system_theme(&system, cx);
+        if self.is_dark != system.mode.is_dark() {
+            Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
+        }
+        if self.default_preset != system.preset {
+            self.default_preset = system.preset;
+            let rows = PresetDelegate::new(&self.default_preset);
+            self.preset_combobox.update(cx, |combobox, cx| {
+                let chosen = combobox.selected_values();
+                combobox.set_items(rows, window, cx);
+                combobox.set_selected_values(&chosen, window, cx);
+            });
+        }
+        self.error_message = None;
+    }
+
+    /// Install the preset of `name`. False, with the error reported and the
+    /// installed theme left as it is, where it cannot be read or resolved.
+    fn install_preset(&mut self, name: &str, cx: &mut Context<Self>) -> bool {
+        let nt = match native_theme::theme::Theme::preset(name) {
+            Ok(t) => t,
+            Err(e) => {
+                self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));
+                return false;
+            }
+        };
+        let mode = if self.is_dark {
+            native_theme_gpui::ColorMode::Dark
+        } else {
+            native_theme_gpui::ColorMode::Light
+        };
+        let r = match nt.resolve(mode) {
+            Ok(r) => r,
+            Err(e) => {
+                self.show_theme_error(&format!("Theme '{name}' resolution failed: {e}"));
+                return false;
+            }
+        };
+        self.layout = nt.layout.clone();
+        self.has_toml_icon_theme = r.icon_theme_explicit;
+        self.current_icon_set = r.icon_set;
+        self.current_icon_theme = r.icon_theme.into_owned();
+        self.original_font = r.variant.defaults.font.clone();
+        self.original_mono_font = r.variant.defaults.mono_font.clone();
+        // Accessibility is orthogonal to the theme choice, so the preferences
+        // stand under a preset too: the installed theme's, or the OS's for
+        // the first theme installed.
+        let prefs = Self::install_preferences(cx, AccessibilityPreferences::from_system);
+        let theme = to_theme(&r.variant, name, self.is_dark, &prefs);
+        native_theme_gpui::apply(theme, &r.variant, &prefs, cx);
+        self.error_message = None;
+        true
+    }
+
+    /// Install the theme of `name`: `default`, the desktop's own, or a
+    /// preset's. Every preset, colour-mode, reload and palette switch
+    /// installs through here. A theme that fails to load leaves the
+    /// installed one -- its name, layout and everything shown -- and only
+    /// the colour mode changes.
     pub(crate) fn apply_theme_by_name(
         &mut self,
         name: &str,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        // Every preset, colour-mode, reload and palette switch installs
-        // through here, the failed ones too: those change the colour mode.
         self.info_ui.update(cx, |r, _| r.screen_changed());
-        if name == "default" {
+        let installed = if name == "default" {
             match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
-                    let resolved = system.pick(if self.is_dark {
-                        native_theme_gpui::ColorMode::Dark
-                    } else {
-                        native_theme_gpui::ColorMode::Light
-                    });
-                    self.original_font = resolved.defaults.font.clone();
-                    self.original_mono_font = resolved.defaults.mono_font.clone();
-                    self.current_icon_theme = system.icon_theme.clone().into_owned();
-                    self.current_icon_set = system.icon_set;
-                    self.layout = system.layout.clone();
-                    // Platform presets always specify icon_theme
-                    self.has_toml_icon_theme = true;
-                    native_theme_gpui::apply_system_theme(&system, cx);
-                    if self.is_dark != system.mode.is_dark() {
-                        Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
-                    }
-                    self.default_label = format!("default ({})", system.preset);
-                    self.default_preset = system.preset.clone();
-                    self.error_message = None;
+                    self.install_system_theme(system, window, cx);
+                    true
                 }
                 Err(e) => {
                     self.show_theme_error(&format!("Failed to load OS theme: {e}"));
-                    self.apply_color_mode(window, cx);
+                    false
                 }
             }
         } else {
-            let nt = match native_theme::theme::Theme::preset(name) {
-                Ok(t) => t,
-                Err(e) => {
-                    self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));
-                    self.apply_color_mode(window, cx);
-                    return;
-                }
-            };
-            self.layout = nt.layout.clone();
-
-            let mode = if self.is_dark {
-                native_theme_gpui::ColorMode::Dark
-            } else {
-                native_theme_gpui::ColorMode::Light
-            };
-            let r = match nt.resolve(mode) {
-                Ok(r) => r,
-                Err(e) => {
-                    self.show_theme_error(&format!("Theme '{name}' resolution failed: {e}"));
-                    self.apply_color_mode(window, cx);
-                    return;
-                }
-            };
-            self.has_toml_icon_theme = r.icon_theme_explicit;
-            self.current_icon_set = r.icon_set;
-            self.current_icon_theme = r.icon_theme.into_owned();
-            self.original_font = r.variant.defaults.font.clone();
-            self.original_mono_font = r.variant.defaults.mono_font.clone();
-            // Preset path: accessibility is orthogonal to the theme choice, so the
-            // OS preferences are honoured under a preset too (spec §7.1).
-            let prefs = AccessibilityPreferences::from_system();
-            let theme = to_theme(&r.variant, name, self.is_dark, &prefs);
-            native_theme_gpui::apply(theme, &r.variant, &prefs, cx);
-            self.error_message = None;
+            self.install_preset(name, cx)
+        };
+        if installed {
+            self.current_theme_name = name.to_string();
+        } else {
+            self.apply_color_mode(window, cx);
         }
-
-        // Only re-derive icon choice when user is in "follow preset" mode
-        if self.icon_set_choice.follows_preset() {
-            let icon_theme_opt = if self.has_toml_icon_theme {
-                Some(self.current_icon_theme.as_str())
-            } else {
-                None
-            };
-            self.icon_set_choice = default_icon_choice(self.current_icon_set, icon_theme_opt);
-            let effective = self
-                .icon_set_choice
-                .effective_icon_set(self.current_icon_set);
-            self.icon_set_name = effective.name().to_string();
-            self.icon_set_enum = Some(effective);
-
-            // Update the icon theme dropdown to reflect the new effective icon theme
-            let selected_label: SharedString = self.icon_set_choice.to_string().into();
-            let icon_names = self.icon_set_dropdown_names();
-            let new_delegate = SearchableVec::new(icon_names);
-            self.icon_set_select.update(cx, |select, cx| {
-                select.set_items(new_delegate, window, cx);
-                select.set_selected_value(&selected_label, window, cx);
-            });
-        }
+        self.show_installed_theme(window, cx);
+        self.show_icon_choice(window, cx);
         // Always, whichever set is chosen: a recoloured icon takes the new
         // theme's text colour.
         self.reload_icons(window, cx);
+    }
+
+    /// Show the installed theme chosen in the preset switch, whichever way
+    /// it was installed -- and the one still installed where another failed
+    /// to load.
+    fn show_installed_theme(&self, window: &mut Window, cx: &mut Context<Self>) {
+        let key = SharedString::from(self.current_theme_name.clone());
+        if self.preset_combobox.read(cx).selected_value().as_ref() == Some(&key) {
+            return;
+        }
+        self.preset_combobox.update(cx, |combobox, cx| {
+            combobox.set_selected_values(&[key], window, cx)
+        });
+    }
+
+    /// The preset switch's and the status bar's name for `default`: the
+    /// platform preset it is built on.
+    pub(crate) fn default_label(&self) -> String {
+        default_label(&self.default_preset)
     }
 
     /// Spawn a background task that polls the theme change flag and triggers
@@ -1417,6 +1514,9 @@ impl Showcase {
         }
     }
 
+    /// Hide the side panel or show it again. Hidden, its widgets leave the
+    /// screen, so the info of one of them does not stay on show (spec
+    /// §4.3.4), as on a page change.
     fn on_toggle_side_panel(
         &mut self,
         _: &ToggleSidePanel,
@@ -1426,6 +1526,7 @@ impl Showcase {
         self.rearrange(cx, |this| {
             this.side_panel_visible = !this.side_panel_visible
         });
+        self.info_ui.update(cx, |r, _| r.screen_changed());
     }
 
     /// Add or take away the side panel.
@@ -1472,12 +1573,7 @@ impl Showcase {
     }
 
     fn on_set_preset(&mut self, action: &SetPreset, window: &mut Window, cx: &mut Context<Self>) {
-        let key = action.0.clone();
-        self.current_theme_name = key.to_string();
-        self.apply_theme_by_name(&key, window, cx);
-        self.preset_combobox.update(cx, |combobox, cx| {
-            combobox.set_selected_values(&[key], window, cx)
-        });
+        self.apply_theme_by_name(&action.0, window, cx);
         cx.notify();
     }
 

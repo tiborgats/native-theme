@@ -1,7 +1,8 @@
 //! native-theme-gpui — comprehensive widget showcase and designer reference.
 //!
-//! A full gpui-component widget gallery with tooltip-based documentation for
-//! every theme-controlled property. Demonstrates all gpui-component widgets,
+//! A full gpui-component widget gallery that documents, in the inspector's
+//! Widget tab, every theme-controlled property of the widget under the
+//! pointer. Demonstrates all gpui-component widgets,
 //! every `ThemeColor` field, every `IconName` variant, and live theme
 //! switching across all bundled `native-theme` presets.
 //!
@@ -16,8 +17,8 @@
 //! - The side panel's theme settings switch theme presets, color modes and
 //!   icon themes without restarting the app. Watch how the entire widget tree re-themes
 //!   on each change — no manual rewiring per widget.
-//! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
-//!   drive its appearance.
+//! - Hover any widget and the inspector's Widget tab, in the side panel,
+//!   shows which `ResolvedTheme` fields drive its appearance.
 //! - The Theme Map page exposes the full 138-field `ThemeColor` palette that
 //!   gpui-component exposes, with each field's current value and the
 //!   `native-theme` field it was derived from.
@@ -44,10 +45,10 @@ mod pages;
 mod support;
 
 use gpui::{
-    App, Bounds, Div, IntoElement, ParentElement, Pixels, SharedString, WindowBounds,
-    WindowDecorations, WindowOptions, div, prelude::*, px, size,
+    App, Bounds, Div, IntoElement, ParentElement, Pixels, WindowBounds, WindowDecorations,
+    WindowOptions, div, prelude::*, px, size,
 };
-use gpui_component::{IconName, Root, select::SearchableVec};
+use gpui_component::{IconName, Root};
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 use {gpui::Window, std::time::Duration};
 
@@ -259,8 +260,8 @@ pub(crate) const CHROME_SIDE_PANEL_SEPARATOR: &str = "chrome-side-panel-separato
 /// (spec §1.3), so this is the showcase's own layout default, and dragging
 /// the panel's handle changes it.
 ///
-/// It is 300px, the width the inspector's content was laid out for when it
-/// had a panel of its own. `the_side_panel_holds_the_theme_settings_and_the_inspector`
+/// It is 300px, the width the inspector's content was laid out for.
+/// `the_side_panel_holds_the_theme_settings_and_the_inspector`
 /// checks that the theme settings and the inspector fit it under every
 /// bundled preset, a native one at its own platform's DPI, at text scale 1
 /// and at 2. `default`, the desktop's own theme, is built on one of them.
@@ -680,19 +681,6 @@ fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
     }
 }
 
-/// Force the Metal drawable to update by nudging the window content size.
-///
-/// gpui initialises the Metal drawable at logical-pixel dimensions, ignoring
-/// the Retina backing scale factor.  The correct device-pixel size is only
-/// set inside the `setFrameSize:` callback, which early-returns when the
-/// old size equals the new size.  A 1 px nudge-and-restore forces two real
-/// resize events so `update_drawable_size` runs with the correct scale.
-///
-/// IMPORTANT: calls `[NSWindow setContentSize:]` directly via ObjC because
-/// gpui's `window.resize()` spawns an async task that may not execute before
-/// the screenshot capture.  Must be called **outside** `cx.update_window` to
-/// avoid deadlocking the window-state mutex (since `setFrameSize:` acquires
-/// it internally).
 /// Minimal Core Graphics types for ObjC interop.
 /// Based on objc2's encode_core_graphics example.
 #[cfg(target_os = "macos")]
@@ -731,6 +719,19 @@ mod cg_types {
     }
 }
 
+/// Force the Metal drawable to update by nudging the window content size.
+///
+/// gpui initialises the Metal drawable at logical-pixel dimensions, ignoring
+/// the Retina backing scale factor.  The correct device-pixel size is only
+/// set inside the `setFrameSize:` callback, which early-returns when the
+/// old size equals the new size.  A 1 px nudge-and-restore forces two real
+/// resize events so `update_drawable_size` runs with the correct scale.
+///
+/// IMPORTANT: calls `[NSWindow setContentSize:]` directly via ObjC because
+/// gpui's `window.resize()` spawns an async task that may not execute before
+/// the screenshot capture.  Must be called **outside** `cx.update_window` to
+/// avoid deadlocking the window-state mutex (since `setFrameSize:` acquires
+/// it internally).
 #[cfg(target_os = "macos")]
 fn nudge_content_size(delta_w: f64, delta_h: f64) {
     if let Some(main_window) = get_main_window_ptr() {
@@ -922,6 +923,65 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
     }
 }
 
+/// Put the showcase `main` opened into the state the command line asks for:
+/// its colour mode, theme, page and icons.
+///
+/// `--variant` installs the theme in the mode it names: the one `--theme`
+/// names, or, without `--theme`, the one `Showcase::new` installed. A theme
+/// that fails to load leaves the one installed, as the preset switch does.
+fn apply_cli_args(
+    s: &mut Showcase,
+    cli_args: &CliArgs,
+    window: &mut gpui::Window,
+    cx: &mut gpui::Context<Showcase>,
+) {
+    if let Some(variant) = cli_args.variant.as_deref() {
+        let mode = if variant == "dark" {
+            AppColorMode::Dark
+        } else {
+            AppColorMode::Light
+        };
+        s.color_mode = mode;
+        s.is_dark = mode == AppColorMode::Dark;
+        s.show_color_mode(window, cx);
+    }
+    let theme = cli_args.theme.clone().or_else(|| {
+        cli_args
+            .variant
+            .as_ref()
+            .map(|_| s.current_theme_name.clone())
+    });
+    if let Some(theme) = theme {
+        s.apply_theme_by_name(&theme, window, cx);
+    }
+
+    if let Some(ref page_name) = cli_args.tab
+        && let Some(page) = CliArgs::page(page_name)
+    {
+        s.active_page = page;
+    }
+
+    if let Some(ref theme_name) = cli_args.icon_theme {
+        s.set_icon_theme_override(theme_name.clone(), window, cx);
+    }
+
+    // `--icon-set` names a set, which stays chosen across theme switches
+    // as a pick in the icon-theme Select does.
+    if let Some(ref set_name) = cli_args.icon_set {
+        s.icon_set_choice = match set_name.as_str() {
+            "material" => IconSetChoice::Material,
+            "lucide" => IconSetChoice::Lucide,
+            _ => IconSetChoice::System,
+        };
+        s.icon_choice_follows_preset = false;
+        let effective = s.icon_set_choice.effective_icon_set(s.current_icon_set);
+        s.icon_theme_name = effective.name().to_string();
+        s.icon_set_enum = Some(effective);
+        s.show_icon_choice(window, cx);
+        s.reload_icons(window, cx);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -936,78 +996,11 @@ fn main() {
             gpui_kit::init(cx);
             app::init(cx);
 
-            // Apply CLI variant override before window opens so the initial
-            // theme is resolved with the correct light/dark setting.
-            let variant_override = cli_args.variant.as_deref().map(|v| v == "dark");
-
             let bounds = Bounds::centered(None, WINDOW_SIZE, cx);
             let window_handle = cx.open_window(window_options(bounds), |window, cx| {
                 let showcase = cx.new(|cx| {
                     let mut s = Showcase::new(window, cx);
-
-                    // Override color mode if --variant was specified
-                    if let Some(is_dark) = variant_override {
-                        let mode = if is_dark {
-                            AppColorMode::Dark
-                        } else {
-                            AppColorMode::Light
-                        };
-                        s.color_mode = mode;
-                        s.is_dark = is_dark;
-                        s.show_color_mode(window, cx);
-                    }
-
-                    // Override theme if --theme was specified
-                    if let Some(ref theme_name) = cli_args.theme {
-                        s.current_theme_name = theme_name.clone();
-                        s.apply_theme_by_name(theme_name, window, cx);
-                        // Show the overridden theme in the preset switch
-                        let key = SharedString::from(theme_name.clone());
-                        s.preset_combobox.update(cx, |combobox, cx| {
-                            combobox.set_selected_values(&[key], window, cx);
-                        });
-                    }
-
-                    // Override the page if --tab was specified
-                    if let Some(ref page_name) = cli_args.tab
-                        && let Some(page) = CliArgs::page(page_name)
-                    {
-                        s.active_page = page;
-                    }
-
-                    // Override icon theme if --icon-theme was specified
-                    if let Some(ref theme_name) = cli_args.icon_theme {
-                        s.set_icon_theme_override(theme_name.clone(), window, cx);
-                    }
-
-                    // Override icon set if --icon-set was specified
-                    if let Some(ref set_name) = cli_args.icon_set {
-                        // Map CLI set name to an IconSetChoice
-                        s.icon_set_choice = match set_name.as_str() {
-                            "material" => IconSetChoice::Material,
-                            "lucide" => IconSetChoice::Lucide,
-                            "freedesktop" => IconSetChoice::System,
-                            _ => IconSetChoice::System,
-                        };
-                        let effective = s.icon_set_choice.effective_icon_set(s.current_icon_set);
-                        s.icon_set_name = effective.name().to_string();
-                        s.icon_set_enum = Some(effective);
-                        s.reload_icons(window, cx);
-
-                        // Update the icon theme selector dropdown
-                        let icon_display: SharedString = s.icon_set_choice.to_string().into();
-                        let mut icon_names = s.icon_set_dropdown_names();
-                        // Add the override display name if not already in list
-                        if !icon_names.contains(&icon_display) {
-                            icon_names.push(icon_display.clone());
-                        }
-                        let new_delegate = SearchableVec::new(icon_names);
-                        s.icon_set_select.update(cx, |select, cx| {
-                            select.set_items(new_delegate, window, cx);
-                            select.set_selected_value(&icon_display, window, cx);
-                        });
-                    }
-
+                    apply_cli_args(&mut s, &cli_args, window, cx);
                     s
                 });
                 cx.new(|cx| Root::new(showcase, window, cx))
