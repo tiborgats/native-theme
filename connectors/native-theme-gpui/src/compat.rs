@@ -8,7 +8,8 @@
 //! `Cargo.toml` are read here with `include_str!` -- paths known at compile
 //! time, so no test has to find them at run time -- and compared in both
 //! directions: a floor the README misstates fails, and so does a floor it
-//! leaves out.
+//! leaves out. The dependency lines of the README's **Quick start** are held
+//! to the same floors.
 //!
 //! The manifest is the authority. Nothing in this module carries a version of
 //! its own; `REQUIRED` names the crates whose floor the README must state, and
@@ -101,8 +102,8 @@ fn manifest_versions(manifest: &str) -> BTreeMap<String, BTreeSet<String>> {
 /// version of its own.
 ///
 /// Three shapes appear in this workspace: `iced_core = "0.14"`,
-/// `gpui-kit = { version = "0.6.4", features = [..] }` and
-/// `gpui = { package = "gpui-pre", version = "0.3.5" }`, whose package name is
+/// `gpui-kit = { version = "0.6.6", features = [..] }` and
+/// `gpui = { package = "gpui-pre", version = "0.3.6" }`, whose package name is
 /// not its key. A dependency inherited from the workspace
 /// (`native-theme = { workspace = true }`) states no version and is not one of
 /// these floors.
@@ -204,6 +205,35 @@ fn required_rows(readme: &str) -> Vec<(usize, &str, &str)> {
     rows
 }
 
+/// The dependency lines of the README's **Quick start**, as (line number,
+/// package name, version): the `toml` blocks of that section, read with the
+/// same parser as the manifest.
+fn quick_start_versions(readme: &str) -> Vec<(usize, String, String)> {
+    let mut found = Vec::new();
+    let (mut inside, mut in_toml) = (false, false);
+    for (ix, line) in readme.lines().enumerate() {
+        if line.starts_with("## ") {
+            inside = line.trim_end() == "## Quick start";
+            in_toml = false;
+            continue;
+        }
+        if !inside {
+            continue;
+        }
+        if line.starts_with("```") {
+            in_toml = line.trim_end() == "```toml";
+            continue;
+        }
+        if !in_toml {
+            continue;
+        }
+        if let Some((package, version)) = dependency_on(line) {
+            found.push((ix + 1, package, version));
+        }
+    }
+    found
+}
+
 /// The first backticked word of a table cell.
 fn backticked(cell: &str) -> Option<&str> {
     let body = cell.split_once('`')?.1;
@@ -273,6 +303,37 @@ fn the_readme_states_the_manifest_floors() {
     assert!(
         findings.is_empty(),
         "the README's Compatibility table disagrees with Cargo.toml in {} place(s):\n{}",
+        findings.len(),
+        findings.join("\n")
+    );
+}
+
+/// The README's **Quick start** names each upstream crate at the floor
+/// Cargo.toml requires: it is the version a consumer copies, and an older one
+/// resolves to a set this crate does not build against.
+#[test]
+fn the_quick_start_states_the_manifest_floors() {
+    let floors = manifest_floors();
+    let stated = quick_start_versions(README);
+    assert!(
+        stated.iter().any(|(_, package, _)| package == "gpui-kit"),
+        "the README's Quick start names no `gpui-kit` version, so this test would pass vacuously"
+    );
+    let findings: Vec<String> = stated
+        .iter()
+        .filter_map(|(line, package, version)| {
+            let required = floors.get(package.as_str())?;
+            (required != version).then(|| {
+                format!(
+                    "README.md:{line}: the Quick start states `{package}` {version}, \
+                     Cargo.toml requires {required}"
+                )
+            })
+        })
+        .collect();
+    assert!(
+        findings.is_empty(),
+        "the README's Quick start disagrees with Cargo.toml in {} place(s):\n{}",
         findings.len(),
         findings.join("\n")
     );
@@ -414,6 +475,37 @@ fn the_manifest_and_table_parsers_do_their_jobs() {
                   ## Quick start\n\
                   \n\
                   | `gamma` | 9.9 |\n";
+    assert_eq!(
+        quick_start_versions(readme),
+        Vec::<(usize, String, String)>::new(),
+        "a Quick start with no toml block states no version"
+    );
+    let quick_start = "## Quick start\n\
+                       \n\
+                       ```toml\n\
+                       [dependencies]\n\
+                       alpha = \"0.5\"\n\
+                       beta = \"0.6.4\"        # or gamma directly\n\
+                       ```\n\
+                       \n\
+                       ```rust,ignore\n\
+                       let delta = \"1.0\";\n\
+                       ```\n\
+                       \n\
+                       ## Later\n\
+                       \n\
+                       ```toml\n\
+                       epsilon = \"2.0\"\n\
+                       ```\n";
+    assert_eq!(
+        quick_start_versions(quick_start),
+        vec![
+            (5, "alpha".to_string(), "0.5".to_string()),
+            (6, "beta".to_string(), "0.6.4".to_string()),
+        ],
+        "a Rust block and a toml block in another section are not the Quick start's"
+    );
+
     assert_eq!(
         required_rows(readme),
         vec![
