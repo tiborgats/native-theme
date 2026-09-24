@@ -319,28 +319,38 @@ impl CliArgs {
             }
             other => Err(format!(
                 "--icon-set {other}: not material, lucide, system, freedesktop or an \
-                 installed icon theme; the installed icon themes are: {}",
-                installed_themes.join(", ")
+                 installed icon theme; {}",
+                if installed_themes.is_empty() {
+                    "none are installed".to_string()
+                } else {
+                    format!(
+                        "the installed icon themes are: {}",
+                        installed_themes.join(", ")
+                    )
+                }
             )),
         }
     }
 
-    /// Map a tab name string to the corresponding `Tab` variant.
-    fn parse_tab(name: &str) -> Option<Tab> {
-        match name {
-            "buttons" => Some(Tab::Buttons),
-            "text-inputs" | "textinputs" => Some(Tab::TextInputs),
-            "selection" => Some(Tab::Selection),
-            "range" => Some(Tab::Range),
-            "display" => Some(Tab::Display),
-            "layout" => Some(Tab::Layout),
-            "graphics" => Some(Tab::Graphics),
-            #[cfg(feature = "iced_aw")]
-            "extra" => Some(Tab::Extra),
-            "icons" => Some(Tab::Icons),
-            "theme-map" | "thememap" => Some(Tab::ThemeMap),
-            _ => None,
-        }
+    /// The tab `--tab` names: a tab's [`Tab::flag`], or `textinputs` or
+    /// `thememap` for the two tabs whose name has a hyphen.
+    fn parse_tab(name: &str) -> Result<Tab, String> {
+        let flag = match name {
+            "textinputs" => "text-inputs",
+            "thememap" => "theme-map",
+            other => other,
+        };
+        Tab::ALL
+            .iter()
+            .copied()
+            .find(|tab| tab.flag() == flag)
+            .ok_or_else(|| {
+                let tabs: Vec<&str> = Tab::ALL.iter().map(|tab| tab.flag()).collect();
+                format!(
+                    "--tab {name}: no such tab; the tabs are: {}",
+                    tabs.join(", ")
+                )
+            })
     }
 }
 
@@ -387,6 +397,23 @@ impl Tab {
         Tab::Icons,
         Tab::ThemeMap,
     ];
+
+    /// The name `--tab` takes for the tab.
+    fn flag(self) -> &'static str {
+        match self {
+            Tab::Buttons => "buttons",
+            Tab::TextInputs => "text-inputs",
+            Tab::Selection => "selection",
+            Tab::Range => "range",
+            Tab::Display => "display",
+            Tab::Layout => "layout",
+            Tab::Graphics => "graphics",
+            #[cfg(feature = "iced_aw")]
+            Tab::Extra => "extra",
+            Tab::Icons => "icons",
+            Tab::ThemeMap => "theme-map",
+        }
+    }
 
     fn label(self) -> &'static str {
         match self {
@@ -1131,8 +1158,10 @@ fn apply_cli_args(state: &mut State, cli: &CliArgs) {
     }
 
     // Override tab
-    if let Some(ref tab_name) = cli.tab
-        && let Some(tab) = CliArgs::parse_tab(tab_name)
+    if let Some(tab) = cli
+        .tab
+        .as_deref()
+        .and_then(|name| reported(CliArgs::parse_tab(name)))
     {
         state.active_tab = tab;
     }
@@ -6064,6 +6093,36 @@ mod tests {
             IconSetChoice::Freedesktop(listed.to_string()),
             "--icon-set {listed}, which the picker offers, is not chosen"
         );
+    }
+
+    /// `--tab` takes each tab's name, and `textinputs` and `thememap` for
+    /// two of them; another name is reported with the tabs it could have
+    /// been.
+    #[test]
+    fn the_tab_flag_names_every_tab() {
+        for &tab in Tab::ALL {
+            assert_eq!(CliArgs::parse_tab(tab.flag()), Ok(tab));
+        }
+        assert_eq!(CliArgs::parse_tab("textinputs"), Ok(Tab::TextInputs));
+        assert_eq!(CliArgs::parse_tab("thememap"), Ok(Tab::ThemeMap));
+        match CliArgs::parse_tab("no-such-tab") {
+            Ok(tab) => panic!("--tab no-such-tab opened {tab:?}"),
+            Err(error) => {
+                for tab in Tab::ALL {
+                    assert!(error.contains(tab.flag()), "{error}");
+                }
+            }
+        }
+    }
+
+    /// Where no freedesktop icon theme is installed -- off Linux, always --
+    /// `--icon-set` says so, rather than end its report on an empty list.
+    #[test]
+    fn the_icon_set_flag_says_when_no_icon_theme_is_installed() {
+        match CliArgs::icon_set_choice("no-such-icon-theme", &[]) {
+            Ok(choice) => panic!("--icon-set no-such-icon-theme chose {choice:?}"),
+            Err(error) => assert!(error.ends_with("; none are installed"), "{error}"),
+        }
     }
 
     /// A freedesktop icon theme's spinner is that theme's own, and a theme

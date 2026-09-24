@@ -6032,6 +6032,41 @@ fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
     }
 }
 
+/// `--tab` takes each page's name, and `text-inputs` for the Inputs page;
+/// another name is reported with the pages it could have been.
+#[test]
+fn the_tab_flag_names_every_page() {
+    for page in Page::ALL {
+        assert_eq!(crate::CliArgs::page(page.flag()), Ok(page));
+    }
+    assert_eq!(crate::CliArgs::page("text-inputs"), Ok(Page::Inputs));
+    match crate::CliArgs::page("no-such-page") {
+        Ok(page) => panic!("--tab no-such-page opened {page:?}"),
+        Err(error) => {
+            for page in Page::ALL {
+                assert!(error.contains(page.flag()), "{error}");
+            }
+        }
+    }
+}
+
+/// Where no freedesktop icon theme is installed -- off Linux, always --
+/// `--icon-set` and `--icon-theme` say so, rather than end their report on
+/// an empty list.
+#[test]
+fn the_icon_flags_say_when_no_icon_theme_is_installed() {
+    let errors = [
+        crate::CliArgs::icon_set_row("no-such-icon-theme", &[]).err(),
+        crate::CliArgs::icon_theme("no-such-icon-theme", &[]).err(),
+    ];
+    for error in errors {
+        let Some(error) = error else {
+            panic!("an icon theme was taken with none installed");
+        };
+        assert!(error.ends_with("; none are installed"), "{error}");
+    }
+}
+
 /// With `--icon-theme` in effect, the icon-theme Select names the theme the
 /// icons load from, across a preset switch too. `--icon-theme` takes a
 /// freedesktop theme the Select lists; another is ignored.

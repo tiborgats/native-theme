@@ -139,6 +139,22 @@ impl Page {
         }
     }
 
+    /// The name `--tab` takes for the page.
+    const fn flag(self) -> &'static str {
+        match self {
+            Self::Buttons => "buttons",
+            Self::Inputs => "inputs",
+            Self::Data => "data",
+            Self::Feedback => "feedback",
+            Self::Typography => "typography",
+            Self::Layout => "layout",
+            Self::Overlays => "overlays",
+            Self::Charts => "charts",
+            Self::Icons => "icons",
+            Self::ThemeMap => "theme-map",
+        }
+    }
+
     /// The icon the page's command-palette entry shows.
     const fn icon(self) -> IconName {
         match self {
@@ -679,8 +695,8 @@ impl CliArgs {
             }
             other => Err(format!(
                 "--icon-set {other}: not material, lucide, gpui-builtin, system, freedesktop \
-                 or an installed icon theme; the installed icon themes are: {}",
-                installed_themes.join(", ")
+                 or an installed icon theme; {}",
+                Self::installed_icon_themes(installed_themes)
             )),
         }
     }
@@ -693,29 +709,43 @@ impl CliArgs {
             Ok(name.to_string())
         } else {
             Err(format!(
-                "--icon-theme {name}: not an installed icon theme; the installed icon \
-                 themes are: {}",
-                installed_themes.join(", ")
+                "--icon-theme {name}: not an installed icon theme; {}",
+                Self::installed_icon_themes(installed_themes)
             ))
         }
     }
 
-    /// Map a `--tab` name to the page it names. The flag keeps its name:
-    /// the screenshot scripts pass it.
-    fn page(name: &str) -> Option<Page> {
-        match name {
-            "buttons" => Some(Page::Buttons),
-            "inputs" | "text-inputs" => Some(Page::Inputs),
-            "data" => Some(Page::Data),
-            "feedback" => Some(Page::Feedback),
-            "typography" => Some(Page::Typography),
-            "layout" => Some(Page::Layout),
-            "overlays" => Some(Page::Overlays),
-            "charts" => Some(Page::Charts),
-            "icons" => Some(Page::Icons),
-            "theme-map" => Some(Page::ThemeMap),
-            _ => None,
+    /// The end of an icon flag's report: the freedesktop themes the
+    /// icon-theme Select lists, or that there are none.
+    fn installed_icon_themes(installed_themes: &[String]) -> String {
+        if installed_themes.is_empty() {
+            "none are installed".to_string()
+        } else {
+            format!(
+                "the installed icon themes are: {}",
+                installed_themes.join(", ")
+            )
         }
+    }
+
+    /// The page `--tab` names: a page's [`Page::flag`], or `text-inputs`
+    /// for the Inputs page. The flag keeps its name: the screenshot scripts
+    /// pass it.
+    fn page(name: &str) -> Result<Page, String> {
+        let flag = match name {
+            "text-inputs" => "inputs",
+            other => other,
+        };
+        Page::ALL
+            .into_iter()
+            .find(|page| page.flag() == flag)
+            .ok_or_else(|| {
+                let pages: Vec<&str> = Page::ALL.iter().map(|page| page.flag()).collect();
+                format!(
+                    "--tab {name}: no such page; the pages are: {}",
+                    pages.join(", ")
+                )
+            })
     }
 }
 
@@ -1037,8 +1067,10 @@ fn apply_cli_args(
         (None, None) => {}
     }
 
-    if let Some(ref page_name) = cli_args.tab
-        && let Some(page) = CliArgs::page(page_name)
+    if let Some(page) = cli_args
+        .tab
+        .as_deref()
+        .and_then(|name| reported(CliArgs::page(name)))
     {
         s.active_page = page;
     }
