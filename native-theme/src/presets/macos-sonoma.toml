@@ -291,7 +291,7 @@ stroke_width_px = 2.0
 min_height_px = 21.0
 min_width_px = 120.0
 arrow_icon_size_px =17.0
-arrow_area_width_px = 17.0
+# arrow_area_width not stated: platform-facts.md:1554 (§2.24), ~16–18px (measured) is a range
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 disabled_text_color = "#c7c7cc"
 # soft_option: NSPopUpButton hover -- subtle highlight
@@ -637,7 +637,7 @@ stroke_width_px = 2.0
 min_height_px = 21.0
 min_width_px = 120.0
 arrow_icon_size_px =17.0
-arrow_area_width_px = 17.0
+# arrow_area_width not stated: platform-facts.md:1554 (§2.24), ~16–18px (measured) is a range
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 disabled_text_color = "#48484a"
 # soft_option: NSPopUpButton hover -- subtle highlight

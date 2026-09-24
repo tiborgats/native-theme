@@ -233,7 +233,8 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", Some(24.0), 1389)]),
     row(Macos, "popover", NONE, &[1412, 1413], "(none)"),
     row(Macos, "dialog", all(20.0), &[1491, 1492], "~20 (measured)"),
-    row(Macos, "combo_box", [Some(3.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; ~3 (measured)"),
+    row(Macos, "combo_box", [Some(3.0), None, Some(3.0), None], &[1552, 1557], "horizontal is a range; ~3 (measured)")
+        .with(&[("arrow_area_width", None, 1554)]),
     row(Macos, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
     row(Macos, "card", NONE, &[1592, 1593], "(none)"),
     row(Macos, "expander", NONE, &[1607, 1608], "(none), app-defined"),

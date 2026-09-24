@@ -597,7 +597,7 @@ fn a_negative_bar_height_is_a_validation_error() {
 
 #[test]
 fn row_heights_and_arrow_area_width_are_none_where_absent() {
-    let mut v = Theme::preset("macos-sonoma")
+    let mut v = Theme::preset("windows-11")
         .unwrap()
         .into_variant(ColorMode::Light)
         .unwrap();
@@ -606,7 +606,7 @@ fn row_heights_and_arrow_area_width_are_none_where_absent() {
         stated.menu.row_height.is_some()
             && stated.list.row_height.is_some()
             && stated.combo_box.arrow_area_width.is_some(),
-        "precondition: macos-sonoma states both row heights and the arrow area width"
+        "precondition: windows-11 states both row heights and the arrow area width"
     );
     v.menu.row_height = None;
     v.list.row_height = None;
