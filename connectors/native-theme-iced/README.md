@@ -285,8 +285,9 @@ weight but a face's `wght` axis covers it, push a copy of that face's
 `fontdb::FaceInfo` at the weight into the database iced draws from
 (`iced::advanced::graphics::text::font_system()`, `raw().db_mut()`, behind
 iced's `advanced` feature); cosmic-text sets the matched face's `wght` axis
-to the weight asked for, so the platform's own font is drawn at the true
-weight. Where no face covers it, ask for the family's nearest weight. The
+to the weight asked for, both when it shapes the text (cosmic-text 0.15
+`font/mod.rs:139-142`) and when it rasterises the glyphs (`swash.rs:20-40`),
+so the platform's own font is drawn at the true weight. Where no face covers it, ask for the family's nearest weight. The
 showcase does both (`drawable_font` and `register_weight`); the crate docs'
 *Font Configuration* section cites the sources. cosmic-text 0.19 matches a
 variable face at any weight its axis covers, which makes filing faces
