@@ -108,7 +108,14 @@ through `asset-stamp.sh`. Refuses to start while HEAD is unpushed or a path
 the assets depend on has uncommitted changes, because the captures must come
 from the commit CI builds.
 
-Requires: gh CLI (authenticated), spectacle, Python 3, Pillow, ImageMagick 7
+Its last step runs `compat-check.sh run` (below), which needs the network,
+runs both connectors' tests, clippy and documentation on the newest upstream
+releases, runs `check-widget-coverage.py` (Python 3.11+), and rewrites
+`docs/COMPATIBILITY.toml` and the Verified line in both connector READMEs. A
+connector that fails on the newest set fails the script.
+
+Requires: gh CLI (authenticated), spectacle, Python 3.11+, Pillow,
+ImageMagick 7, network access
 
 ```sh
 ./scripts/pre-release.sh
@@ -131,6 +138,39 @@ uncommitted changes; `hash` prints the current value.
 ./scripts/asset-stamp.sh check
 ```
 
+## compat-check.sh
+
+The upstream versions each connector has been verified against, recorded in
+`docs/COMPATIBILITY.toml` and stated on each connector README's Verified line.
+
+- `run [gpui|iced]` (both when none is named) refuses to start while the
+  connector's `Cargo.toml`, `src`, `examples` or `tests` have uncommitted
+  changes, then runs `cargo update` on the connector's upstream family
+  (gpui-base, gpui-component, gpui-kit, gpui-kit-assets, gpui-pre; or iced,
+  iced_aw, iced_core, iced_test, iced_widget) and that connector's gates on
+  the result with `--locked`: tests (for iced also `--no-default-features`
+  and `--features iced_aw`), clippy with `-D warnings` (for iced with
+  `--all-features`), documentation with `RUSTDOCFLAGS="-D warnings"` (for
+  iced also `--all-features`) and `check-widget-coverage.py`. Only when every gate passes does it write the
+  versions the lockfile resolved, the commit and a sources hash into the
+  stamp and rewrite the README's Verified line between its
+  `<!-- compat:begin -->` / `<!-- compat:end -->` markers. `Cargo.lock` is
+  restored on exit, pass or fail. Needs the network, and Python 3.11+ for the
+  coverage script.
+- `check` exits 0 when the stamp exists and each connector's sources hash at
+  HEAD matches the recorded one, and 1 with a message otherwise. It reads git
+  and the stamp only, no network. `pre-release-check.sh` runs it: a warning
+  while the CHANGELOG entry says "Unreleased", a failure once it is dated.
+- `hash <gpui|iced>` prints a connector's sources hash at HEAD: a SHA-256
+  over the git object ids of its `Cargo.toml`, `src`, `examples` and `tests`.
+
+There is no verb that writes the stamp without the run.
+
+```sh
+./scripts/compat-check.sh run iced
+./scripts/compat-check.sh check
+```
+
 ## check-widget-coverage.py
 
 Checks that every widget the toolkits offer is rendered by the matching
@@ -139,9 +179,9 @@ showcase. Discovers the widgets from the dependencies' own sources through
 dependency is in the graph), then requires each one to be either shown in the
 showcase or listed with a reason in `docs/showcase-exceptions.toml`. Exits 0
 when clean, 1 on a missing widget or a stale exception, 2 when a toolkit's
-package is absent from the metadata. `pre-release-check.sh`, `ci.yml` and
-`dependency-canary.yml` run it, so an upstream release that adds a widget is
-reported the evening it appears.
+package is absent from the metadata. `pre-release-check.sh`, `ci.yml`,
+`publish.yml`, `dependency-canary.yml` and `compat-check.sh run` run it, so an
+upstream release that adds a widget is reported the evening it appears.
 
 Requires Python 3.11+ (for `tomllib`); no network of its own once the registry
 is populated.

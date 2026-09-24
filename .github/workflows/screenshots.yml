@@ -15,15 +15,21 @@ jobs:
           - os: macos-latest
             os_name: macos
             toolkit: iced
+            # The showcase's iced_aw pages, as scripts/generate_screenshots.sh builds it.
+            features: --features iced_aw
           - os: macos-latest
             os_name: macos
             toolkit: gpui
+            features: ""
           - os: windows-latest
             os_name: windows
             toolkit: iced
+            # The showcase's iced_aw pages, as scripts/generate_screenshots.sh builds it.
+            features: --features iced_aw
           - os: windows-latest
             os_name: windows
             toolkit: gpui
+            features: ""
 
     runs-on: ${{ matrix.os }}
 
@@ -54,7 +60,7 @@ jobs:
              VALUES ('kTCCServiceScreenCapture', '/bin/zsh', 1, 2, 4, 1);"
 
       - name: Build showcase
-        run: cargo build -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release
+        run: cargo build -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release ${{ matrix.features }}
 
       - name: Create output directory
         run: mkdir -p connectors/native-theme-${{ matrix.toolkit }}/docs/assets
@@ -70,7 +76,7 @@ jobs:
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"
             echo "Capturing ${{ matrix.toolkit }}: $theme $variant (icons: $icon_set)"
-            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release -- \
+            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release ${{ matrix.features }} -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
               --tab buttons \
               --screenshot "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-${theme}-${variant}.png"
@@ -87,7 +93,7 @@ jobs:
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"
             echo "Capturing ${{ matrix.toolkit }}: $theme $variant (icons: $icon_set)"
-            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release -- \
+            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release ${{ matrix.features }} -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
               --tab buttons \
               --screenshot "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-${theme}-${variant}.png"

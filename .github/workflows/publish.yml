@@ -52,6 +52,7 @@ jobs:
           cargo clippy -p native-theme-build --all-targets
           cargo clippy -p native-theme --all-targets
           cargo clippy -p native-theme-iced --all-targets
+          cargo clippy -p native-theme-iced --all-targets --features iced_aw
 
       - name: Clippy native-theme-gpui
         env:
@@ -68,10 +69,21 @@ jobs:
         run: cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize
 
       - name: Test native-theme-iced
-        run: cargo test -p native-theme-iced
+        run: |
+          cargo test -p native-theme-iced
+          cargo test -p native-theme-iced --no-default-features
+          cargo test -p native-theme-iced --features iced_aw
 
       - name: Test native-theme-gpui
         run: cargo test -p native-theme-gpui
+
+      # Fails when an upstream release adds a widget that neither showcase
+      # renders nor docs/showcase-exceptions.toml excepts. ubuntu-latest ships
+      # Python 3.12, above the 3.11 the script's `tomllib` import requires.
+      - name: Widget coverage
+        run: |
+          python3 --version
+          python3 scripts/check-widget-coverage.py
 
       - name: Documentation (core)
         env:
@@ -81,16 +93,33 @@ jobs:
           cargo doc -p native-theme-build --no-deps
           cargo doc -p native-theme --no-deps
           cargo doc -p native-theme-iced --no-deps
+          # docs.rs builds native-theme-iced with every feature.
+          cargo doc -p native-theme-iced --no-deps --all-features
 
       - name: Documentation native-theme-gpui
         env:
           RUSTDOCFLAGS: -Dwarnings
         run: cargo doc -p native-theme-gpui --no-deps
 
+  # Both connectors enable `system-icons` by default, and its icon code
+  # imports the platform crates, so it must build alone on each platform.
+  system-icons:
+    name: system-icons (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p native-theme --no-default-features --features system-icons
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    needs: ci
+    needs: [ci, system-icons]
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable

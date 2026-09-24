@@ -324,7 +324,9 @@ cmd_check() {
         echo "connectors verified against their upstream sets (${verified[*]})"
         return 0
     fi
-    echo "compatibility claims are stale: ${stale[*]}; ./scripts/compat-check.sh run re-verifies and refreshes them"
+    local joined
+    joined=$(printf '%s; ' "${stale[@]}")
+    echo "compatibility claims are stale: ${joined%; }. ./scripts/compat-check.sh run re-verifies and refreshes them"
     return 1
 }
 
