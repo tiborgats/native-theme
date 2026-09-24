@@ -47,7 +47,8 @@ use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
     FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
-    SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
+    SfSymbolsLoader, default_icon_choice, is_freedesktop_theme_available, list_freedesktop_themes,
+    load_icon_indicator,
 };
 use native_theme::theme::{
     AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedTheme, TransformAnimation,
@@ -257,6 +258,70 @@ impl CliArgs {
             i += 1;
         }
         args
+    }
+
+    /// The colour mode `--variant` names: `light`, `dark`, or `system`,
+    /// which follows the OS.
+    fn color_mode(variant: &str) -> Result<AppColorMode, String> {
+        match variant {
+            "light" => Ok(AppColorMode::Light),
+            "dark" => Ok(AppColorMode::Dark),
+            "system" => Ok(AppColorMode::System),
+            other => Err(format!("--variant {other}: not light, dark or system")),
+        }
+    }
+
+    /// The theme `--theme` names: `default`, the OS theme, or a preset the
+    /// theme picker offers on this platform (`theme_choices`), which offers
+    /// only the platform's own presets and the community ones.
+    fn theme_choice(name: &str, default_label: &str) -> Result<ThemeChoice, String> {
+        if name == "default" {
+            return Ok(ThemeChoice::OsTheme(default_label.to_string()));
+        }
+        let offered = theme_choices(default_label);
+        let choice = ThemeChoice::Preset(name.to_string());
+        if offered.contains(&choice) {
+            return Ok(choice);
+        }
+        let names: Vec<String> = offered
+            .iter()
+            .map(|choice| match choice {
+                ThemeChoice::OsTheme(_) => "default".to_string(),
+                ThemeChoice::Preset(key) => key.clone(),
+            })
+            .collect();
+        let names = names.join(", ");
+        if native_theme::theme::Theme::list_presets()
+            .iter()
+            .any(|info| info.key == name)
+        {
+            Err(format!(
+                "--theme {name}: a preset of another platform; only this platform's \
+                 presets run here: {names}"
+            ))
+        } else {
+            Err(format!(
+                "--theme {name}: no such preset; the presets are: {names}"
+            ))
+        }
+    }
+
+    /// The icon set `--icon-set` names: a bundled set, `system` or
+    /// `freedesktop` (the system icon theme), or an installed freedesktop
+    /// icon theme.
+    fn icon_set_choice(name: &str) -> Result<IconSetChoice, String> {
+        match name {
+            "material" => Ok(IconSetChoice::Material),
+            "lucide" => Ok(IconSetChoice::Lucide),
+            "system" | "freedesktop" => Ok(IconSetChoice::System),
+            theme if is_freedesktop_theme_available(theme) => {
+                Ok(IconSetChoice::Freedesktop(theme.to_string()))
+            }
+            other => Err(format!(
+                "--icon-set {other}: not material, lucide, system, freedesktop \
+                 or an installed freedesktop icon theme"
+            )),
+        }
     }
 
     /// Map a tab name string to the corresponding `Tab` variant.
@@ -619,12 +684,16 @@ fn load_all_icons(
 // Animated icon cache builder
 // ---------------------------------------------------------------------------
 
-/// Build animation caches for all known icon sets.
+/// Build the animation caches for the spinner of `icon_set`: for a
+/// freedesktop set, the spinner of `freedesktop_theme` (the system's where
+/// `None`), so the page never shows another theme's spinner; none where the
+/// theme has none.
 ///
 /// Returns the full set of animation state fields that go into `State`.
 #[allow(clippy::type_complexity)]
 fn build_animation_caches(
     icon_set: native_theme::theme::IconSet,
+    freedesktop_theme: Option<&str>,
 ) -> (
     Vec<(String, AnimatedSvgHandles)>,          // animated_frames
     Vec<usize>,                                 // animated_frame_indices
@@ -640,7 +709,11 @@ fn build_animation_caches(
 
     let set_name = icon_set.name().to_string();
     {
-        if let Some(anim) = load_icon_indicator(icon_set) {
+        let indicator = match icon_set {
+            IconSet::Freedesktop => FreedesktopLoader::load_indicator(freedesktop_theme),
+            other => load_icon_indicator(other),
+        };
+        if let Some(anim) = indicator {
             // Cache static first-frame for reduced motion
             if let Some(handle) = to_svg_handle(anim.first_frame(), None) {
                 animated_static.push((set_name.clone(), handle));
@@ -775,6 +848,12 @@ struct State {
 
     // Icons tab
     icon_set_choice: IconSetChoice,
+    /// Whether `icon_set_choice` is re-derived from each theme installed:
+    /// until the user picks an icon theme, and after a pick of the
+    /// `default` row. Not `IconSetChoice::follows_preset`: a choice that
+    /// followed the preset onto `system`, where the preset's own icon theme
+    /// is not installed (`default_icon_choice`), keeps following it.
+    icon_choice_follows_preset: bool,
     icon_set_choices: Vec<IconSetChoice>,
     loaded_icons: Vec<LoadedIcon>,
     /// Cached list of installed freedesktop icon themes (populated once at init).
@@ -899,7 +978,7 @@ impl Default for State {
             animation_start,
             reduced_motion,
             animated_static,
-        ) = build_animation_caches(anim_set);
+        ) = build_animation_caches(anim_set, icon_set_choice.freedesktop_theme());
 
         let default_label = format!("default ({})", system_preset);
 
@@ -993,6 +1072,7 @@ impl Default for State {
             #[cfg(feature = "iced_aw")]
             aw_last_action: String::new(),
             icon_set_choice,
+            icon_choice_follows_preset: true,
             icon_set_choices,
             loaded_icons,
             installed_themes,
@@ -1010,152 +1090,93 @@ impl Default for State {
             _theme_watcher,
         };
 
-        // Apply CLI overrides (if any)
         if let Some(cli) = CLI_ARGS.get() {
-            // Override color mode first so theme resolution uses the right variant
-            if let Some(ref v) = cli.variant {
-                state.color_mode = if v == "dark" {
-                    AppColorMode::Dark
-                } else {
-                    AppColorMode::Light
-                };
-                state.is_dark = state.color_mode.is_dark();
-            }
-
-            // Override theme
-            if let Some(ref theme_name) = cli.theme {
-                state.current_choice = ThemeChoice::Preset(theme_name.clone());
-                state.rebuild_theme();
-            } else if cli.variant.is_some() {
-                // Re-apply the default theme with the new variant
-                state.rebuild_theme();
-            }
-
-            // Override tab
-            if let Some(ref tab_name) = cli.tab
-                && let Some(tab) = CliArgs::parse_tab(tab_name)
-            {
-                state.active_tab = tab;
-            }
-
-            // Override icon set
-            if let Some(ref set_name) = cli.icon_set {
-                let choice = match set_name.as_str() {
-                    "material" => IconSetChoice::Material,
-                    "lucide" => IconSetChoice::Lucide,
-                    "system" => IconSetChoice::System,
-                    other => IconSetChoice::Freedesktop(other.to_string()),
-                };
-                state.icon_set_choice = choice.clone();
-                state.loaded_icons =
-                    load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
-                let anim_set = choice.effective_icon_set(state.current_icon_set);
-                let (frames, indices, elapsed, spins, start, rm, statics) =
-                    build_animation_caches(anim_set);
-                state.animated_frames = frames;
-                state.animated_frame_indices = indices;
-                state.animated_frame_elapsed = elapsed;
-                state.animated_spins = spins;
-                state.animation_start = start;
-                state.reduced_motion = rm;
-                state.animated_static = statics;
-            }
-
-            // Apply screenshot settings
-            if let Some(ref path) = cli.screenshot {
-                state.screenshot_path = Some(path.clone());
-                state.screenshot_countdown = 60; // 60 ticks × 50ms = 3s render delay
-            }
+            apply_cli_args(&mut state, cli);
         }
 
         state
     }
 }
 
-impl State {
-    fn rebuild_theme(&mut self) {
-        self.is_dark = self.color_mode.is_dark();
-        let is_default = matches!(self.current_choice, ThemeChoice::OsTheme(_));
-        // Track icon_theme as Option<&str> — None means the TOML didn't specify one.
-        let mut icon_theme_opt: Option<String> = None;
-        match &self.current_choice {
-            ThemeChoice::OsTheme(_) => {
-                match native_theme::SystemTheme::from_system() {
-                    Ok(system) => {
-                        // Platform presets always specify icon_theme.
-                        self.current_icon_set = system.icon_set;
-                        self.accessibility = system.accessibility.clone();
-                        self.layout = system.layout.clone();
-                        self.current_icon_theme = system.icon_theme.clone().into_owned();
-                        icon_theme_opt = Some(self.current_icon_theme.clone());
-                        self.current_resolved = system
-                            .pick(if self.is_dark {
-                                native_theme_iced::ColorMode::Dark
-                            } else {
-                                native_theme_iced::ColorMode::Light
-                            })
-                            .clone();
-                        self.current_theme =
-                            native_theme_iced::to_theme(&self.current_resolved, &system.name);
-                        self.default_label = format!("default ({})", system.preset);
-                        self.error_message = None;
-                    }
-                    Err(e) => {
-                        self.error_message =
-                            Some(format!("OS theme failed: {e}. Using adwaita fallback."));
-                        if let Some((r, t, lay)) = load_adwaita_fallback(self.is_dark) {
-                            self.current_icon_set = IconSet::Freedesktop;
-                            self.current_icon_theme = "Adwaita".to_string();
-                            icon_theme_opt = Some("Adwaita".to_string());
-                            self.current_resolved = r;
-                            self.current_theme = t;
-                            self.layout = lay;
-                        }
-                    }
-                }
-            }
-            ThemeChoice::Preset(name) => {
-                let name = name.clone();
-                let mode = if self.is_dark {
-                    native_theme_iced::ColorMode::Dark
-                } else {
-                    native_theme_iced::ColorMode::Light
-                };
-                match native_theme::theme::Theme::preset(&name) {
-                    Ok(nt) => match nt.resolve(mode) {
-                        Ok(r) => {
-                            let theme_name = nt.name.clone();
-                            let icon_theme_string = r.icon_theme.into_owned();
-                            icon_theme_opt =
-                                r.icon_theme_explicit.then(|| icon_theme_string.clone());
-                            self.current_icon_set = r.icon_set;
-                            self.current_icon_theme = icon_theme_string;
-                            self.current_resolved = r.variant;
-                            self.layout = nt.layout.clone();
-                            self.current_theme =
-                                native_theme_iced::to_theme(&self.current_resolved, &theme_name);
-                            self.error_message = None;
-                        }
-                        Err(e) => {
-                            self.error_message =
-                                Some(format!("Theme '{name}' resolution failed: {e}"));
-                        }
-                    },
-                    Err(e) => {
-                        self.error_message = Some(format!("Failed to load preset '{name}': {e}"));
-                    }
-                }
-            }
-        }
-        if is_default {
-            self.current_choice = ThemeChoice::OsTheme(self.default_label.clone());
-        }
+/// Put the showcase into the state the command line asks for: its colour
+/// mode, theme, tab and icons.
+///
+/// A value the showcase cannot honour is reported on stderr and ignored:
+/// the setting stays what it would have been without the flag. `--variant`
+/// installs the theme in the mode it names: the one `--theme` names, or,
+/// without `--theme`, the one installed. A theme that fails to load leaves
+/// the installed one, in the mode it is drawn in (`State::install_in_mode`).
+fn apply_cli_args(state: &mut State, cli: &CliArgs) {
+    let mode = cli
+        .variant
+        .as_deref()
+        .and_then(|variant| reported(CliArgs::color_mode(variant)));
+    let choice = cli
+        .theme
+        .as_deref()
+        .and_then(|name| reported(CliArgs::theme_choice(name, &state.default_label)));
+    if mode.is_some() || choice.is_some() {
+        let choice = choice.unwrap_or_else(|| state.current_choice.clone());
+        let mode = mode.unwrap_or(state.color_mode);
+        state.install_in_mode(choice, mode);
+    }
 
-        // Only re-derive the choice when the user is in "follow preset" mode.
-        // All other variants (System, Freedesktop, Material, Lucide) represent
-        // an explicit user choice that must be preserved across theme re-applications.
-        let it_opt = icon_theme_opt.as_deref();
-        if self.icon_set_choice.follows_preset() {
+    // Override tab
+    if let Some(ref tab_name) = cli.tab
+        && let Some(tab) = CliArgs::parse_tab(tab_name)
+    {
+        state.active_tab = tab;
+    }
+
+    // `--icon-set` names a set, which stays chosen across theme switches as
+    // a pick in the icon-theme picker does.
+    if let Some(choice) = cli
+        .icon_set
+        .as_deref()
+        .and_then(|name| reported(CliArgs::icon_set_choice(name)))
+    {
+        state.choose_icon_set(choice);
+    }
+
+    // Apply screenshot settings
+    if let Some(ref path) = cli.screenshot {
+        state.screenshot_path = Some(path.clone());
+        state.screenshot_countdown = 60; // 60 ticks × 50ms = 3s render delay
+    }
+}
+
+/// The value of `result`; its error reported on stderr, and `None`.
+fn reported<T>(result: Result<T, String>) -> Option<T> {
+    result.map_err(|error| eprintln!("{error}; ignored")).ok()
+}
+
+impl State {
+    /// Install `choice` in `mode`: every theme and colour-mode switch
+    /// installs through here. The pickers then show `choice` and `mode`.
+    ///
+    /// A theme that fails to load leaves the installed one on screen, and
+    /// the pickers showing it and the mode it is drawn in, with the error in
+    /// the banner; false is returned.
+    fn install_in_mode(&mut self, choice: ThemeChoice, mode: AppColorMode) -> bool {
+        let is_dark = mode.is_dark();
+        let icon_theme = match self.load_theme(&choice, is_dark) {
+            Ok(icon_theme) => icon_theme,
+            Err(error) => {
+                self.error_message = Some(error);
+                return false;
+            }
+        };
+        self.current_choice = match choice {
+            ThemeChoice::OsTheme(_) => ThemeChoice::OsTheme(self.default_label.clone()),
+            preset @ ThemeChoice::Preset(_) => preset,
+        };
+        self.color_mode = mode;
+        self.is_dark = is_dark;
+
+        // Only a choice that follows the preset is re-derived; the user's
+        // pick of an icon theme stays chosen across theme switches.
+        let it_opt = icon_theme.as_deref();
+        if self.icon_choice_follows_preset {
             self.icon_set_choice = default_icon_choice(self.current_icon_set, it_opt);
         }
         // Always rebuild the choices list (theme name in "default (X)" may have changed).
@@ -1164,24 +1185,107 @@ impl State {
 
         // Always reload icons — the resolved text_color may have changed (light↔dark)
         // even when the icon set choice is the same.
-        {
-            self.loaded_icons = load_all_icons(
-                &self.icon_set_choice,
-                &self.current_resolved,
-                self.current_icon_set,
-            );
-            let anim_set = self
-                .icon_set_choice
-                .effective_icon_set(self.current_icon_set);
-            let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(anim_set);
-            self.animated_frames = af;
-            self.animated_frame_indices = afi;
-            self.animated_frame_elapsed = afe;
-            self.animated_spins = asp;
-            self.animation_start = astart;
-            self.reduced_motion = rm;
-            self.animated_static = ast;
+        self.reload_icons();
+        true
+    }
+
+    /// Install the current theme again in the current mode.
+    fn rebuild_theme(&mut self) {
+        self.install_in_mode(self.current_choice.clone(), self.color_mode);
+    }
+
+    /// Load `choice` in the mode `is_dark` names into the theme fields.
+    ///
+    /// `Ok` holds the icon theme the theme states (`None` where its TOML
+    /// states none); `Err` the error, with the theme fields untouched.
+    fn load_theme(
+        &mut self,
+        choice: &ThemeChoice,
+        is_dark: bool,
+    ) -> Result<Option<String>, String> {
+        let mode = if is_dark {
+            native_theme_iced::ColorMode::Dark
+        } else {
+            native_theme_iced::ColorMode::Light
+        };
+        match choice {
+            ThemeChoice::OsTheme(_) => match native_theme::SystemTheme::from_system() {
+                Ok(system) => {
+                    // Platform presets always specify icon_theme.
+                    self.current_icon_set = system.icon_set;
+                    self.accessibility = system.accessibility.clone();
+                    self.layout = system.layout.clone();
+                    self.current_icon_theme = system.icon_theme.clone().into_owned();
+                    self.current_resolved = system.pick(mode).clone();
+                    self.current_theme =
+                        native_theme_iced::to_theme(&self.current_resolved, &system.name);
+                    self.default_label = format!("default ({})", system.preset);
+                    self.error_message = None;
+                    Ok(Some(self.current_icon_theme.clone()))
+                }
+                Err(e) => match load_adwaita_fallback(is_dark) {
+                    Some((r, t, lay)) => {
+                        self.error_message =
+                            Some(format!("OS theme failed: {e}. Using adwaita fallback."));
+                        self.current_icon_set = IconSet::Freedesktop;
+                        self.current_icon_theme = "Adwaita".to_string();
+                        self.current_resolved = r;
+                        self.current_theme = t;
+                        self.layout = lay;
+                        Ok(Some(self.current_icon_theme.clone()))
+                    }
+                    None => Err(format!(
+                        "OS theme failed: {e}, and so did the adwaita fallback."
+                    )),
+                },
+            },
+            ThemeChoice::Preset(name) => {
+                let nt = native_theme::theme::Theme::preset(name)
+                    .map_err(|e| format!("Failed to load preset '{name}': {e}"))?;
+                let r = nt
+                    .resolve(mode)
+                    .map_err(|e| format!("Theme '{name}' resolution failed: {e}"))?;
+                let icon_theme_string = r.icon_theme.into_owned();
+                let icon_theme = r.icon_theme_explicit.then(|| icon_theme_string.clone());
+                self.current_icon_set = r.icon_set;
+                self.current_icon_theme = icon_theme_string;
+                self.current_resolved = r.variant;
+                self.layout = nt.layout.clone();
+                self.current_theme = native_theme_iced::to_theme(&self.current_resolved, &nt.name);
+                self.error_message = None;
+                Ok(icon_theme)
+            }
         }
+    }
+
+    /// Load the icons and the spinner of the chosen icon set, recoloured for
+    /// the installed theme.
+    fn reload_icons(&mut self) {
+        self.loaded_icons = load_all_icons(
+            &self.icon_set_choice,
+            &self.current_resolved,
+            self.current_icon_set,
+        );
+        let anim_set = self
+            .icon_set_choice
+            .effective_icon_set(self.current_icon_set);
+        let (af, afi, afe, asp, astart, rm, ast) =
+            build_animation_caches(anim_set, self.icon_set_choice.freedesktop_theme());
+        self.animated_frames = af;
+        self.animated_frame_indices = afi;
+        self.animated_frame_elapsed = afe;
+        self.animated_spins = asp;
+        self.animation_start = astart;
+        self.reduced_motion = rm;
+        self.animated_static = ast;
+    }
+
+    /// Choose `choice`, the user's pick of an icon theme: only its
+    /// `default` row follows the preset from now on.
+    fn choose_icon_set(&mut self, choice: IconSetChoice) {
+        self.icon_choice_follows_preset = choice.follows_preset();
+        self.icon_set_choice = choice;
+        self.reload_icons();
     }
 }
 
@@ -1508,12 +1612,12 @@ fn update_inner(state: &mut State, message: Message) {
             state.active_tab = tab;
         }
         Message::ThemeSelected(choice) => {
-            state.current_choice = choice;
-            state.rebuild_theme();
+            let mode = state.color_mode;
+            state.install_in_mode(choice, mode);
         }
         Message::ColorModeSelected(mode) => {
-            state.color_mode = mode;
-            state.rebuild_theme();
+            let choice = state.current_choice.clone();
+            state.install_in_mode(choice, mode);
         }
         Message::WidgetHovered(info) => {
             state.widget_info = info;
@@ -1579,22 +1683,7 @@ fn update_inner(state: &mut State, message: Message) {
         Message::AwCardToggled => state.aw_card_open = !state.aw_card_open,
         #[cfg(feature = "iced_aw")]
         Message::AwActionChosen(what) => state.aw_last_action = what,
-        Message::IconSetSelected(choice) => {
-            state.loaded_icons =
-                load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
-
-            // Rebuild animation caches when icon set changes
-            let anim_set = choice.effective_icon_set(state.current_icon_set);
-            let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(anim_set);
-            state.icon_set_choice = choice;
-            state.animated_frames = af;
-            state.animated_frame_indices = afi;
-            state.animated_frame_elapsed = afe;
-            state.animated_spins = asp;
-            state.animation_start = astart;
-            state.reduced_motion = rm;
-            state.animated_static = ast;
-        }
+        Message::IconSetSelected(choice) => state.choose_icon_set(choice),
         Message::ThemeWatcherTick if state.theme_change_flag.swap(false, Ordering::AcqRel) => {
             native_theme::detect::invalidate_caches();
             state.rebuild_theme();
@@ -5809,6 +5898,292 @@ mod tests {
             theme(state).extended_palette().background.base.color,
             expected.extended_palette().background.base.color,
             "theme preset: the installed theme did not follow the choice"
+        );
+    }
+
+    // -----------------------------------------------------------------------
+    // Theme installs and the command line
+    // -----------------------------------------------------------------------
+
+    /// The colour mode the state is not drawn in: installing in it changes
+    /// what is on screen, so an install that failed and kept it is caught.
+    fn other_mode(state: &State) -> AppColorMode {
+        if state.is_dark {
+            AppColorMode::Light
+        } else {
+            AppColorMode::Dark
+        }
+    }
+
+    /// What the theme and colour-mode pickers show, and what is drawn.
+    fn shown(state: &State) -> (ThemeChoice, AppColorMode, bool, String, Color) {
+        let drawn = theme(state);
+        (
+            state.current_choice.clone(),
+            state.color_mode,
+            state.is_dark,
+            drawn.to_string(),
+            drawn.extended_palette().background.base.color,
+        )
+    }
+
+    /// The command line of `args`, each flag with the value `main` would
+    /// have parsed for it.
+    fn command_line(args: &[(&str, &str)]) -> CliArgs {
+        let mut cli = CliArgs::default();
+        for (flag, value) in args {
+            let value = Some(value.to_string());
+            match *flag {
+                "--theme" => cli.theme = value,
+                "--variant" => cli.variant = value,
+                "--icon-set" => cli.icon_set = value,
+                other => panic!("the tests do not pass {other}"),
+            }
+        }
+        cli
+    }
+
+    /// The icon choice a preset's install derives where the choice follows
+    /// the preset (`default_icon_choice`).
+    fn preset_icon_choice(key: &str, is_dark: bool) -> Option<IconSetChoice> {
+        let mode = if is_dark {
+            native_theme_iced::ColorMode::Dark
+        } else {
+            native_theme_iced::ColorMode::Light
+        };
+        let resolved = native_theme::theme::Theme::preset(key)
+            .ok()?
+            .resolve(mode)
+            .ok()?;
+        let icon_theme = resolved.icon_theme.into_owned();
+        Some(default_icon_choice(
+            resolved.icon_set,
+            resolved.icon_theme_explicit.then_some(icon_theme.as_str()),
+        ))
+    }
+
+    /// A theme that fails to load leaves the installed one on screen, and
+    /// the theme and colour-mode pickers showing it and the mode it is drawn
+    /// in, never a choice nothing on screen follows.
+    #[test]
+    fn a_failed_install_keeps_the_theme_and_mode_shown() {
+        let mut state = State::default();
+        let before = shown(&state);
+        let failing = ThemeChoice::Preset("no-such-preset".to_string());
+
+        let mode = other_mode(&state);
+        assert!(
+            !state.install_in_mode(failing.clone(), mode),
+            "no-such-preset installed"
+        );
+        assert_eq!(
+            shown(&state),
+            before,
+            "a failed install in {mode} changed what the pickers show or what is drawn"
+        );
+        assert!(
+            state.error_message.is_some(),
+            "a failed install reported nothing"
+        );
+
+        let _ = update(&mut state, Message::ThemeSelected(failing));
+        assert_eq!(
+            shown(&state),
+            before,
+            "the theme picker shows a theme that failed to load"
+        );
+    }
+
+    /// `--icon-set freedesktop` is the system icon theme; another name that
+    /// is no bundled set is an installed freedesktop theme or is reported
+    /// and ignored.
+    #[test]
+    fn the_icon_set_flag_names_a_set_or_is_ignored() {
+        let mut state = State::default();
+        apply_cli_args(&mut state, &command_line(&[("--icon-set", "freedesktop")]));
+        assert_eq!(
+            state.icon_set_choice,
+            IconSetChoice::System,
+            "--icon-set freedesktop is not the system icon theme"
+        );
+
+        apply_cli_args(&mut state, &command_line(&[("--icon-set", "material")]));
+        assert_eq!(state.icon_set_choice, IconSetChoice::Material);
+        let unknown = "no-such-icon-theme";
+        assert!(!native_theme::icons::is_freedesktop_theme_available(
+            unknown
+        ));
+        apply_cli_args(&mut state, &command_line(&[("--icon-set", unknown)]));
+        assert_eq!(
+            state.icon_set_choice,
+            IconSetChoice::Material,
+            "--icon-set {unknown}, which is not installed, replaced the icon set"
+        );
+
+        let installed = state
+            .installed_themes
+            .iter()
+            .find(|name| native_theme::icons::is_freedesktop_theme_available(name))
+            .cloned();
+        if let Some(name) = installed {
+            apply_cli_args(&mut state, &command_line(&[("--icon-set", &name)]));
+            assert_eq!(
+                state.icon_set_choice,
+                IconSetChoice::Freedesktop(name.clone()),
+                "--icon-set {name}, which is installed, is not chosen"
+            );
+        }
+    }
+
+    /// A freedesktop icon theme's spinner is that theme's own, and a theme
+    /// that has none shows none: never the system theme's.
+    #[test]
+    fn the_spinner_comes_from_the_chosen_icon_theme() {
+        let mut state = State::default();
+        for name in state.installed_themes.clone() {
+            let _ = update(
+                &mut state,
+                Message::IconSetSelected(IconSetChoice::Freedesktop(name.clone())),
+            );
+            let expected = FreedesktopLoader::load_indicator(Some(&name))
+                .and_then(|anim| to_svg_handle(anim.first_frame(), None));
+            let spinners = state.animated_frames.len() + state.animated_spins.len();
+            assert_eq!(
+                state.animated_static.first().map(|(_, handle)| handle),
+                expected.as_ref(),
+                "{name}: the spinner is not the one {name} has"
+            );
+            assert_eq!(
+                spinners,
+                usize::from(expected.is_some()),
+                "{name}: {spinners} spinners animate"
+            );
+        }
+    }
+
+    /// A choice that followed the preset keeps following it, also where it
+    /// followed it onto `system` (`default_icon_choice`, where the preset's
+    /// own icon theme is not installed); the user's pick, `system` too,
+    /// stays chosen across a preset change.
+    #[test]
+    fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
+        let mut state = State::default();
+        let is_dark = state.is_dark;
+        let followed = native_theme::theme::Theme::list_presets_for_platform()
+            .iter()
+            .find_map(|info| match preset_icon_choice(info.key, is_dark) {
+                Some(choice @ IconSetChoice::Default(_)) => Some((info.key.to_string(), choice)),
+                _ => None,
+            });
+        let (preset, expected) = match followed {
+            Some(followed) => followed,
+            None => panic!("no preset of this platform names an available icon theme"),
+        };
+
+        state.icon_set_choice = IconSetChoice::System;
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset(preset.clone())),
+        );
+        assert_eq!(
+            state.icon_set_choice, expected,
+            "a choice that followed the preset onto system did not follow {preset}"
+        );
+
+        let _ = update(&mut state, Message::IconSetSelected(IconSetChoice::System));
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
+        );
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset(preset.clone())),
+        );
+        assert_eq!(
+            state.icon_set_choice,
+            IconSetChoice::System,
+            "the user's pick of system did not stay chosen across a preset change"
+        );
+    }
+
+    /// `--variant` and `--theme` values the showcase cannot honour are
+    /// reported and ignored: the state stays what it would have been
+    /// without the flag. `--variant system` follows the OS, `--theme
+    /// default` is the OS theme, and a preset of another platform is not
+    /// installed.
+    #[test]
+    fn the_command_line_rejects_what_it_cannot_honour() {
+        let mut state = State::default();
+        let before = shown(&state);
+        apply_cli_args(&mut state, &command_line(&[("--variant", "sideways")]));
+        assert_eq!(
+            shown(&state),
+            before,
+            "--variant sideways changed the state"
+        );
+
+        let other = other_mode(&state);
+        let other_name = if other == AppColorMode::Dark {
+            "dark"
+        } else {
+            "light"
+        };
+        apply_cli_args(&mut state, &command_line(&[("--variant", other_name)]));
+        assert_eq!(state.color_mode, other, "--variant {other_name}");
+        apply_cli_args(&mut state, &command_line(&[("--variant", "system")]));
+        assert_eq!(state.color_mode, AppColorMode::System, "--variant system");
+
+        let offered = native_theme::theme::Theme::list_presets_for_platform();
+        let foreign = native_theme::theme::Theme::list_presets()
+            .iter()
+            .find(|info| !offered.iter().any(|o| o.key == info.key))
+            .map(|info| info.key);
+        let foreign = match foreign {
+            Some(key) => key,
+            None => panic!("every bundled preset is offered on this platform"),
+        };
+        let before = shown(&state);
+        apply_cli_args(&mut state, &command_line(&[("--theme", foreign)]));
+        assert_eq!(
+            shown(&state),
+            before,
+            "--theme {foreign} installed a preset of another platform"
+        );
+        apply_cli_args(&mut state, &command_line(&[("--theme", "no-such-preset")]));
+        assert_eq!(
+            shown(&state),
+            before,
+            "--theme no-such-preset changed the state"
+        );
+
+        apply_cli_args(
+            &mut state,
+            &command_line(&[("--theme", foreign), ("--variant", other_name)]),
+        );
+        assert_eq!(
+            (&state.current_choice, state.color_mode),
+            (&before.0, other),
+            "--theme {foreign} --variant {other_name}: not the variant alone"
+        );
+
+        let preset = match offered.first() {
+            Some(info) => info.key,
+            None => panic!("this platform offers no preset"),
+        };
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset(preset.to_string())),
+        );
+        apply_cli_args(&mut state, &command_line(&[("--theme", "default")]));
+        assert!(
+            matches!(state.current_choice, ThemeChoice::OsTheme(_)),
+            "--theme default: {:?}",
+            state.current_choice
+        );
+        assert!(
+            state.error_message.is_none(),
+            "--theme default: {:?}",
+            state.error_message
         );
     }
 
