@@ -817,11 +817,39 @@ mod tests {
     fn side(v: Option<f32>) -> Option<DefiniteLength> {
         v.map(|v| px(v).into())
     }
-    fn assert_padding(out: &StyleRefinement, p: &ResolvedPadding, what: &str) {
+    /// Asserts the refinement carries exactly the stated sides, and returns
+    /// how many sides were stated: comparing `None` with `None` checks nothing,
+    /// so a caller has to see that some side was compared as `Some`.
+    #[must_use]
+    fn assert_padding(out: &StyleRefinement, p: &ResolvedPadding, what: &str) -> usize {
         assert_eq!(out.padding.top, side(p.top), "{what}: top");
         assert_eq!(out.padding.right, side(p.right), "{what}: right");
         assert_eq!(out.padding.bottom, side(p.bottom), "{what}: bottom");
         assert_eq!(out.padding.left, side(p.left), "{what}: left");
+        [p.top, p.right, p.bottom, p.left]
+            .iter()
+            .filter(|v| v.is_some())
+            .count()
+    }
+    /// The stated sides [`assert_padding`] compared, per builder, over a
+    /// test's cases.
+    #[derive(Default)]
+    struct StatedSides(std::collections::BTreeMap<String, usize>);
+    impl StatedSides {
+        fn padding(&mut self, out: &StyleRefinement, p: &ResolvedPadding, what: &str) {
+            *self.0.entry(what.to_owned()).or_default() += assert_padding(out, p, what);
+        }
+        /// Fails for a builder whose cases stated no side: its padding
+        /// assertions compared `None` with `None` and tested nothing.
+        fn assert_each_compared(&self) {
+            for (what, n) in &self.0 {
+                assert!(
+                    *n > 0,
+                    "{what}: no case states a padding side, so the builder's \
+                     padding was compared with nothing; add a case that states one"
+                );
+            }
+        }
     }
     /// The control-height rule: the platform's line height; the stated
     /// height at s <= 1, above 1 a stated minimum and an automatic height.
@@ -859,13 +887,19 @@ mod tests {
         }
     }
 
+    /// The catppuccin pair states no padding, `row_height` or `item_gap`;
+    /// windows-11 and kde-breeze state padding sides, and windows-11 both row
+    /// heights, so each builder is compared with stated values as well as
+    /// with unstated ones.
     const CASES: &[(&str, ColorMode)] = &[
         ("catppuccin-mocha", ColorMode::Dark),
         ("catppuccin-latte", ColorMode::Light),
+        ("windows-11", ColorMode::Light),
+        ("kde-breeze", ColorMode::Dark),
     ];
     const FACTORS: &[f32] = &[1.0, 1.5, 0.8];
 
-    /// Runs `check` for both presets and both factors with a `Native` view.
+    /// Runs `check` for every case and every factor with a `Native` view.
     fn for_each_case(mut check: impl FnMut(&ResolvedTheme, f32, Native<'_>)) {
         for (preset, mode) in CASES {
             let r = resolved(preset, *mode);
@@ -893,12 +927,13 @@ mod tests {
 
     #[test]
     fn button_refinement_matches_theme_values() {
+        let mut stated = StatedSides::default();
         for_each_case(|r, s, n| {
             let b = &r.button;
             let out = button(n);
             assert_height_rule(&out, r, Some(b.min_height), s, "button");
             assert_eq!(out.min_size.width, len(b.min_width));
-            assert_padding(&out, &b.border.padding, "button");
+            stated.padding(&out, &b.border.padding, "button");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(b.border.corner_radius.max(0.0))
@@ -919,15 +954,17 @@ mod tests {
                  overrides it, so the builder carries it"
             );
         });
+        stated.assert_each_compared();
     }
 
     #[test]
     fn input_refinement_matches_theme_values() {
+        let mut stated = StatedSides::default();
         for_each_case(|r, s, n| {
             let i = &r.input;
             let out = input(n);
             assert_height_rule(&out, r, Some(i.min_height), s, "input");
-            assert_padding(&out, &i.border.padding, "input");
+            stated.padding(&out, &i.border.padding, "input");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(i.border.corner_radius.max(0.0))
@@ -935,6 +972,7 @@ mod tests {
             assert_eq!(out.border_widths.top, abs(i.border.line_width));
             assert_text(&out, &i.font, s);
         });
+        stated.assert_each_compared();
     }
 
     /// `input_height` is the height rule [`input`] applies, and nothing else
@@ -957,11 +995,12 @@ mod tests {
 
     #[test]
     fn menu_and_list_items_match_theme_values() {
+        let mut stated = StatedSides::default();
         for_each_case(|r, s, n| {
             let m = &r.menu;
             let out = menu_item(n);
             assert_height_rule(&out, r, m.row_height, s, "menu_item");
-            assert_padding(&out, &m.border.padding, "menu_item");
+            stated.padding(&out, &m.border.padding, "menu_item");
             assert_eq!(out.gap.width, def(m.icon_text_gap));
             assert_eq!(out.gap.height, None, "gap_x sets the column gap only");
             assert_text(&out, &m.font, s);
@@ -969,13 +1008,15 @@ mod tests {
             let l = &r.list;
             let out = list_item(n);
             assert_height_rule(&out, r, l.row_height, s, "list_item");
-            assert_padding(&out, &l.border.padding, "list_item");
+            stated.padding(&out, &l.border.padding, "list_item");
             assert_text(&out, &l.item_font, s);
         });
+        stated.assert_each_compared();
     }
 
     #[test]
     fn tooltip_popover_status_bar_match_theme_values() {
+        let mut stated = StatedSides::default();
         for_each_case(|r, s, n| {
             let t = &r.tooltip;
             let out = tooltip(n);
@@ -991,7 +1032,7 @@ mod tests {
                     - 2.0 * TOOLTIP_BORDER)
                     .max(0.0))
             );
-            assert_padding(&out, &t.border.padding, "tooltip");
+            stated.padding(&out, &t.border.padding, "tooltip");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(t.border.corner_radius.max(0.0))
@@ -1000,7 +1041,7 @@ mod tests {
 
             let p = &r.popover;
             let out = popover(n);
-            assert_padding(&out, &p.border.padding, "popover");
+            stated.padding(&out, &p.border.padding, "popover");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(p.border.corner_radius.max(0.0))
@@ -1008,14 +1049,15 @@ mod tests {
 
             let sb = &r.status_bar;
             let out = status_bar(n);
-            assert_padding(&out, &sb.border.padding, "status_bar");
+            stated.padding(&out, &sb.border.padding, "status_bar");
             assert_text(&out, &sb.font, s);
         });
+        stated.assert_each_compared();
     }
 
     /// The gutter is the width the base layer installed, and only where the
     /// platform's scrollbars are not overlays. Over every preset in both modes,
-    /// because the two `CASES` names are on one side of that line; both sides
+    /// because the `CASES` names are all on one side of that line; both sides
     /// have to occur, or the builder's condition is never exercised.
     #[test]
     fn the_scrollbar_gutter_is_the_installed_groove_where_bars_are_not_overlays() {
@@ -1059,7 +1101,7 @@ mod tests {
     /// upstream either sets a token of its own on the very element the
     /// refinement lands on and re-applies its state colours after it, or sets
     /// no colour on that element at all. Seven do, over every preset in both
-    /// modes, not just the two `CASES` names.
+    /// modes, not just the `CASES` names.
     ///
     /// The `assert_ne!`s below are the reason the first three exist: each of
     /// those native colours differs from the token upstream would otherwise
@@ -1262,10 +1304,11 @@ mod tests {
 
     #[test]
     fn dialog_family_matches_theme_values() {
+        let mut stated = StatedSides::default();
         for_each_case(|r, s, n| {
             let d = &r.dialog;
             let out = dialog(n);
-            assert_padding(&out, &d.border.padding, "dialog");
+            stated.padding(&out, &d.border.padding, "dialog");
             assert_eq!(out.min_size.height, len(d.min_height));
             assert_eq!(out.max_size.height, len(d.max_height));
             assert_eq!(
@@ -1280,6 +1323,7 @@ mod tests {
             assert_text(&table(n), &r.list.item_font, s);
             assert_text(&title_bar(n), &r.window.title_bar_font, s);
         });
+        stated.assert_each_compared();
     }
 
     /// The dialog's radius is its own field, not `radius_lg`: adwaita is where
@@ -1320,6 +1364,7 @@ mod tests {
 
     #[test]
     fn progress_group_box_accordion_match_theme_values() {
+        let mut stated = StatedSides::default();
         for_each_case(|r, _s, n| {
             let p = &r.progress_bar;
             let out = progress(n);
@@ -1332,7 +1377,7 @@ mod tests {
 
             let c = &r.card;
             let out = group_box_content(n);
-            assert_padding(&out, &c.border.padding, "group_box_content");
+            stated.padding(&out, &c.border.padding, "group_box_content");
             assert_eq!(
                 out.corner_radii.top_left,
                 abs(c.border.corner_radius.max(0.0))
@@ -1345,10 +1390,12 @@ mod tests {
                 len(r.expander.header_height)
             );
         });
+        stated.assert_each_compared();
     }
 
     #[test]
     fn checkbox_radio_select_match_theme_values() {
+        let mut stated = StatedSides::default();
         for_each_case(|r, s, n| {
             let c = &r.checkbox;
             let out = checkbox(n);
@@ -1359,9 +1406,18 @@ mod tests {
             assert_text(&radio(n), &c.font, s);
 
             let cb = &r.combo_box;
+            // Beside a stated arrow column the right side is upstream's (D2,
+            // `select_and_combobox_leave_the_right_side_beside_an_arrow_column`).
+            let p = match cb.arrow_area_width {
+                Some(_) => ResolvedPadding {
+                    right: None,
+                    ..cb.border.padding
+                },
+                None => cb.border.padding,
+            };
             let out = select(n);
             assert_height_rule(&out, r, Some(cb.min_height), s, "select");
-            assert_padding(&out, &cb.border.padding, "select");
+            stated.padding(&out, &p, "select");
             assert_eq!(out.min_size.width, len(cb.min_width));
             assert_eq!(
                 out.corner_radii.top_left,
@@ -1370,8 +1426,9 @@ mod tests {
             assert_text(&out, &cb.font, s);
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
             assert_height_rule(&combobox(n), r, Some(cb.min_height), s, "combobox");
-            assert_padding(&combobox(n), &cb.border.padding, "combobox");
+            stated.padding(&combobox(n), &p, "combobox");
         });
+        stated.assert_each_compared();
     }
 
     /// D2: where `combo_box.arrow_area_width` is stated, the right side is
@@ -1410,7 +1467,11 @@ mod tests {
                 ("select", select(Native::unscaled(&r))),
                 ("combobox", combobox(Native::unscaled(&r))),
             ] {
-                assert_padding(&out, &p, &format!("{preset} {what} without the column"));
+                let what = format!("{preset} {what} without the column");
+                assert!(
+                    assert_padding(&out, &p, &what) > 0,
+                    "{what}: no side stated"
+                );
             }
         }
     }
@@ -1434,6 +1495,7 @@ mod tests {
     /// and no edge.
     #[test]
     fn toolbar_carries_the_models_toolbar() {
+        let mut stated = 0usize;
         for info in Theme::list_presets() {
             for mode in [ColorMode::Light, ColorMode::Dark] {
                 let r = resolved(info.key, mode);
@@ -1452,7 +1514,7 @@ mod tests {
                 );
                 assert_eq!(out.size.height, None, "{at}: the height is a floor");
                 assert_eq!(out.gap.width, t.item_gap.and_then(def), "{at}: item gap");
-                assert_padding(&out, &t.border.padding, &at);
+                stated += assert_padding(&out, &t.border.padding, &at);
                 assert_eq!(
                     out.background,
                     Some(rgba_to_hsla(t.background_color).into()),
@@ -1468,6 +1530,11 @@ mod tests {
                 assert_eq!(out.border_color, None, "{at}: §2.13 states no edge");
             }
         }
+        assert!(
+            stated > 0,
+            "no preset states a toolbar padding side, so the builder's padding \
+             was compared with nothing"
+        );
     }
 
     /// `toolbar.icon_size` inherits `defaults.icon_sizes.toolbar`, so over the
