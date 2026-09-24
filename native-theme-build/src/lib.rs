@@ -1,10 +1,10 @@
 //! Build-time code generation for native-theme custom icon roles.
 //!
 //! This crate reads TOML icon definitions at build time and generates a Rust
-//! enum that implements `native_theme::IconProvider`. The generated enum maps
-//! each icon role to platform-specific identifiers (SF Symbols, Segoe Fluent,
-//! freedesktop, Material, Lucide) and optionally embeds bundled SVG data via
-//! `include_bytes!`.
+//! enum that implements `native_theme::theme::IconProvider`. The generated
+//! enum maps each icon role to platform-specific identifiers (SF Symbols,
+//! Segoe Fluent, freedesktop, Material, Lucide) and optionally embeds bundled
+//! SVG data via `include_bytes!`.
 //!
 //! # TOML Schema
 //!
