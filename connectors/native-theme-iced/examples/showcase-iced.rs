@@ -909,9 +909,9 @@ struct State {
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
-    /// Reads the OS theme when the `default` entry is installed after
-    /// startup: `SystemTheme::from_system`, which a test replaces with a
-    /// read that fails.
+    /// Reads the OS theme at startup and when the `default` entry is
+    /// installed after it: `SystemTheme::from_system`, which a test replaces
+    /// with a read that fails.
     read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
 
     // Theme watcher (runtime dark/light toggle detection)
@@ -923,6 +923,16 @@ struct State {
 
 impl Default for State {
     fn default() -> Self {
+        Self::starting_with(native_theme::SystemTheme::from_system)
+    }
+}
+
+impl State {
+    /// The showcase at startup, with the OS theme `read_system_theme` reads
+    /// installed, or adwaita where that read fails.
+    fn starting_with(
+        read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
+    ) -> Self {
         let color_mode = AppColorMode::System;
         let is_dark = color_mode.is_dark();
         let (
@@ -934,7 +944,8 @@ impl Default for State {
             init_icon_theme,
             accessibility,
             layout,
-        ) = match native_theme::SystemTheme::from_system() {
+            fallback_choice,
+        ) = match read_system_theme() {
             Ok(system) => {
                 let r = system
                     .pick(if is_dark {
@@ -949,10 +960,12 @@ impl Default for State {
                 let it = system.icon_theme.into_owned();
                 let acc = system.accessibility;
                 let lay = system.layout.clone();
-                (r, t, None, preset, is, it, acc, lay)
+                (r, t, None, preset, is, it, acc, lay, None)
             }
             Err(e) => {
-                // Fallback: load adwaita preset through resolve pipeline
+                // Fallback: load adwaita preset through resolve pipeline. The
+                // theme picker names what is drawn, so a mode change installs
+                // adwaita again instead of reading the OS theme.
                 match load_adwaita_fallback(is_dark) {
                     Some((r, t, lay)) => (
                         r,
@@ -963,6 +976,7 @@ impl Default for State {
                         "Adwaita".to_string(),
                         native_theme_iced::AccessibilityPreferences::default(),
                         lay,
+                        Some(ThemeChoice::Preset("adwaita".to_string())),
                     ),
                     None => {
                         // This is the only safe fallback when both OS theme
@@ -1045,7 +1059,8 @@ impl Default for State {
         };
 
         let mut state = Self {
-            current_choice: ThemeChoice::OsTheme(default_label.clone()),
+            current_choice: fallback_choice
+                .unwrap_or_else(|| ThemeChoice::OsTheme(default_label.clone())),
             current_theme: theme,
             color_mode,
             is_dark,
@@ -1118,7 +1133,7 @@ impl Default for State {
             screenshot_path: None,
             screenshot_countdown: 0,
             error_message: initial_error,
-            read_system_theme: native_theme::SystemTheme::from_system,
+            read_system_theme,
             theme_change_flag,
             _theme_watcher,
         };
@@ -6054,6 +6069,61 @@ mod tests {
         assert!(
             state.error_message.is_some(),
             "a failed OS-theme read reported nothing"
+        );
+    }
+
+    /// An OS theme that fails to read at startup leaves adwaita drawn, and
+    /// the theme picker naming adwaita, with the failed read in the banner:
+    /// a colour-mode change, from the picker or `--variant`, and a rebuild
+    /// by the theme watcher install adwaita again, in the mode chosen.
+    #[test]
+    fn the_startup_fallback_is_adwaita_in_every_mode() {
+        fn failing_read() -> native_theme::Result<native_theme::SystemTheme> {
+            Err(native_theme::error::Error::PlatformUnsupported {
+                platform: "the test's failing read",
+            })
+        }
+        fn installed(state: &State) -> (ThemeChoice, AppColorMode, Option<String>) {
+            (
+                state.current_choice.clone(),
+                state.color_mode,
+                state.error_message.clone(),
+            )
+        }
+        let adwaita = ThemeChoice::Preset("adwaita".to_string());
+        let mut state = State::starting_with(failing_read);
+        assert_eq!(state.current_choice, adwaita, "the picker at startup");
+        assert!(
+            state.error_message.is_some(),
+            "the failed OS-theme read at startup reported nothing"
+        );
+
+        let (other, other_name) = if state.is_dark {
+            (AppColorMode::Light, "light")
+        } else {
+            (AppColorMode::Dark, "dark")
+        };
+        let _ = update(&mut state, Message::ColorModeSelected(other));
+        assert_eq!(
+            installed(&state),
+            (adwaita.clone(), other, None),
+            "a colour-mode change after the startup fallback"
+        );
+
+        let mut state = State::starting_with(failing_read);
+        apply_cli_args(&mut state, &command_line(&[("--variant", other_name)]));
+        assert_eq!(
+            installed(&state),
+            (adwaita.clone(), other, None),
+            "--variant {other_name} after the startup fallback"
+        );
+
+        state.error_message = Some("the banner before the rebuild".to_string());
+        state.rebuild_theme();
+        assert_eq!(
+            installed(&state),
+            (adwaita, other, None),
+            "the theme watcher's rebuild after the startup fallback"
         );
     }
 
