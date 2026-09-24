@@ -35,14 +35,15 @@ pub struct ResolvedIconSizes {
 /// `crate::resolve::validate_helpers::require_text_scale_entry` (private).
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedTextScaleEntry {
-    /// Font size in logical pixels (converted from points during resolution
-    /// if `font_dpi` was set).
+    /// Font size in logical pixels. A size stated in points is converted at
+    /// the resolution context's
+    /// [`font_dpi`](crate::resolve::ResolutionContext::font_dpi).
     pub size: f32,
     /// CSS font weight (100-900).
     pub weight: u16,
     /// Line height in logical pixels. Computed as `defaults.line_height * size`
-    /// when not explicitly set. Explicit values from presets are converted from
-    /// points to pixels along with sizes when `font_dpi` is set.
+    /// when not explicitly set. An explicit value stated in points is converted
+    /// at the same `font_dpi` as the size.
     pub line_height: f32,
 }
 

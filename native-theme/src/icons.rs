@@ -145,6 +145,8 @@ impl<'a> FreedesktopLoader<'a> {
     }
 
     /// Load the icon, returning its data.
+    ///
+    /// Requires the `system-icons` feature, and Linux; `None` otherwise.
     #[must_use]
     #[allow(unused_variables)]
     pub fn load(self) -> Option<IconData> {
@@ -200,6 +202,8 @@ impl<'a> FreedesktopLoader<'a> {
     /// `theme` of `None` uses the system-detected theme; `Some(t)` overrides.
     /// Associated function (no `self`) — the spinner is a property of the
     /// theme, not of any particular icon id.
+    ///
+    /// Requires the `system-icons` feature, and Linux; `None` otherwise.
     #[must_use]
     #[allow(unused_variables)]
     pub fn load_indicator(theme: Option<&str>) -> Option<AnimatedIcon> {
@@ -231,7 +235,9 @@ impl<'a> SfSymbolsLoader<'a> {
         Self { id: id.into() }
     }
 
-    /// Load the icon, returning its data. Returns `None` on non-macOS targets.
+    /// Load the icon, returning its data.
+    ///
+    /// Requires the `system-icons` feature, and macOS; `None` otherwise.
     #[must_use]
     #[allow(unused_variables)]
     pub fn load(self) -> Option<IconData> {
@@ -277,7 +283,9 @@ impl<'a> SegoeIconsLoader<'a> {
         Self { id: id.into() }
     }
 
-    /// Load the icon, returning its data. Returns `None` on non-Windows targets.
+    /// Load the icon, returning its data.
+    ///
+    /// Requires the `system-icons` feature, and Windows; `None` otherwise.
     #[must_use]
     #[allow(unused_variables)]
     pub fn load(self) -> Option<IconData> {
@@ -323,7 +331,9 @@ impl<'a> MaterialLoader<'a> {
         Self { id: id.into() }
     }
 
-    /// Load the icon, returning its data. Requires `feature = "material-icons"`.
+    /// Load the icon, returning its data.
+    ///
+    /// Requires the `material-icons` feature; `None` otherwise.
     #[must_use]
     #[allow(unused_variables)]
     pub fn load(self) -> Option<IconData> {
@@ -351,6 +361,8 @@ impl<'a> MaterialLoader<'a> {
     }
 
     /// Load the Material animated spinner. Associated function; no `self`.
+    ///
+    /// Requires the `material-icons` feature; `None` otherwise.
     #[must_use]
     pub fn load_indicator() -> Option<AnimatedIcon> {
         #[cfg(feature = "material-icons")]
@@ -378,7 +390,9 @@ impl<'a> LucideLoader<'a> {
         Self { id: id.into() }
     }
 
-    /// Load the icon, returning its data. Requires `feature = "lucide-icons"`.
+    /// Load the icon, returning its data.
+    ///
+    /// Requires the `lucide-icons` feature; `None` otherwise.
     #[must_use]
     #[allow(unused_variables)]
     pub fn load(self) -> Option<IconData> {
@@ -407,6 +421,8 @@ impl<'a> LucideLoader<'a> {
     }
 
     /// Load the Lucide animated spinner. Associated function; no `self`.
+    ///
+    /// Requires the `lucide-icons` feature; `None` otherwise.
     #[must_use]
     pub fn load_indicator() -> Option<AnimatedIcon> {
         #[cfg(feature = "lucide-icons")]
@@ -428,6 +444,8 @@ impl<'a> LucideLoader<'a> {
 ///
 /// For set-specific options (freedesktop theme, fg_color), construct the
 /// specific loader directly and chain the relevant methods.
+///
+/// Each set needs its loader's feature (see the loaders); `None` without it.
 #[must_use]
 pub fn load_icon<'a>(id: impl Into<IconId<'a>>, set: IconSet) -> Option<IconData> {
     let id = id.into();
@@ -445,6 +463,8 @@ pub fn load_icon<'a>(id: impl Into<IconId<'a>>, set: IconSet) -> Option<IconData
 /// Returns `None` for sets without an animated spinner (SfSymbols, SegoeIcons).
 /// For a freedesktop spinner from a specific theme, use
 /// [`FreedesktopLoader::load_indicator`] directly.
+///
+/// Each set needs its loader's feature (see the loaders); `None` without it.
 #[must_use]
 pub fn load_icon_indicator(set: IconSet) -> Option<AnimatedIcon> {
     match set {

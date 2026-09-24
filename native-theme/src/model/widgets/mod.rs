@@ -735,9 +735,10 @@ pub struct ComboBoxTheme {
     #[serde(rename = "arrow_icon_size_px")]
     #[theme(check = "non_negative")]
     pub arrow_icon_size: Option<f32>,
-    /// Width of the arrow clickable area. `None` where the platform has no
-    /// arrow column: GNOME's dropdown draws its arrow inline
-    /// (docs/platform-facts.md §2.24).
+    /// Width of the arrow clickable area, in logical pixels. `None` where the
+    /// theme states no width (docs/platform-facts.md §2.24): GNOME's dropdown
+    /// draws its arrow inline, macOS's width is only a measured range
+    /// (~16–18px), and iOS, Material and the colour-scheme presets cite none.
     #[serde(rename = "arrow_area_width_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub arrow_area_width: Option<f32>,

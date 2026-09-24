@@ -91,11 +91,15 @@ pub mod detect;
 /// Error types for theme operations.
 pub mod error;
 /// GNOME portal theme reader.
+///
+/// Requires the `portal` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "portal"))]
 pub mod gnome;
 /// Icon loading and dispatch.
 pub mod icons;
 /// KDE theme reader.
+///
+/// Requires the `kde` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub mod kde;
 /// Breeze widget sizing constants. Compiled on every target and feature set,
@@ -128,6 +132,8 @@ pub mod resolve;
 ))]
 mod spinners;
 /// Runtime theme change watching.
+///
+/// Requires the `watch` feature.
 #[cfg(feature = "watch")]
 pub mod watch;
 
@@ -151,6 +157,8 @@ pub mod theme {
 }
 
 /// Freedesktop icon theme lookup (Linux).
+///
+/// Requires the `system-icons` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub mod freedesktop;
 /// macOS platform helpers.
@@ -159,9 +167,13 @@ pub mod macos;
 #[cfg(not(target_os = "macos"))]
 pub(crate) mod macos;
 /// SVG-to-RGBA rasterization utilities.
+///
+/// Requires the `svg-rasterize` feature.
 #[cfg(feature = "svg-rasterize")]
 pub mod rasterize;
 /// SF Symbols icon loader (macOS).
+///
+/// Requires the `system-icons` feature, and macOS.
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
 /// Windows platform theme reader.
@@ -172,6 +184,8 @@ pub mod windows;
 #[allow(dead_code, unused_variables)]
 pub(crate) mod windows;
 /// Windows Segoe Fluent / stock icon loader.
+///
+/// Requires the `system-icons` feature, and Windows.
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub mod winicons;
 #[cfg(all(not(target_os = "windows"), feature = "system-icons"))]

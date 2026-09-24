@@ -69,20 +69,21 @@ pub enum FontStyle {
 /// A font size with an explicit unit.
 ///
 /// In TOML presets, this appears as either `size_pt` (typographic points)
-/// or `size_px` (logical pixels). Serde mapping is handled by the parent
-/// struct (`FontSpec`, `TextScaleEntry`) — `FontSize` itself has no
-/// `Serialize`/`Deserialize` impl.
+/// or `size_px` (logical pixels). That mapping is done by the parent structs
+/// (`FontSpec`, `TextScaleEntry`); `FontSize` derives `Serialize` and
+/// `Deserialize` of its own for [`ResolvedFontSpec::defined_size`].
 ///
 /// During validation, all `FontSize` values are converted to logical pixels
 /// via `FontSize::to_logical_px(dpi)`, producing a plain `f32` for the resolved model.
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum FontSize {
-    /// Typographic points (1/72 inch). Used by platform presets where the OS
-    /// reports font sizes in points (KDE, GNOME, Windows).
+    /// Typographic points (1/72 inch). Stated by the OS readers (KDE, GNOME,
+    /// macOS, Windows) and by the platform presets (Adwaita, KDE Breeze,
+    /// macOS, Windows 11, iOS).
     /// Converted to px during validation: `px = pt * dpi / 72`.
     Pt(f32),
-    /// Logical pixels. Used by community/non-platform presets where font sizes
-    /// are hand-authored in pixels.
+    /// Logical pixels. Stated by the colour-scheme presets (Catppuccin,
+    /// Dracula, Gruvbox, Material, Nord, One Dark, Solarized, Tokyo Night).
     Px(f32),
 }
 
@@ -228,8 +229,9 @@ impl_merge!(FontSpec {
 
 /// A resolved (non-optional) font specification produced after theme resolution.
 ///
-/// Unlike [`FontSpec`], all fields are required (non-optional)
-/// because resolution has already filled in all defaults.
+/// Unlike [`FontSpec`], every field but [`defined_size`](Self::defined_size)
+/// is required (non-optional) because resolution has already filled in all
+/// defaults.
 ///
 /// Phase 93-01 (G1): no `Default` derive. `ResolvedFontSpec` is always
 /// constructed from a fully populated unresolved source; any "zero"
@@ -239,15 +241,16 @@ impl_merge!(FontSpec {
 pub struct ResolvedFontSpec {
     /// Font family name.
     pub family: Arc<str>,
-    /// Font size in logical pixels. Converted from platform points during
-    /// resolution if `font_dpi` was set on the source `ThemeDefaults`.
+    /// Font size in logical pixels. A size stated in points is converted at
+    /// the resolution context's
+    /// [`font_dpi`](crate::resolve::ResolutionContext::font_dpi).
     pub size: f32,
     /// The size as its source stated it, before conversion.
     ///
     /// [`size`](Self::size) is always logical pixels, which is what a toolkit
     /// lays out with. This is the unit and number the preset or the platform
-    /// reader actually gave: KDE, GNOME and Windows state points, and
-    /// hand-authored presets state pixels.
+    /// reader actually gave: the OS readers and the platform presets state
+    /// points, and the colour-scheme presets state pixels.
     ///
     /// Anything that shows a size to a person should show **this**. The two
     /// cannot be told apart after conversion -- a 14px preset and a 10.5pt
