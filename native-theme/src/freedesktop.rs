@@ -13,6 +13,7 @@ use std::num::NonZeroU32;
 use std::sync::{Mutex, OnceLock};
 
 use crate::IconData;
+use crate::icons::{has_theme_index, icon_base_dirs};
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use std::path::{Component, Path, PathBuf};
 
@@ -29,63 +30,6 @@ const FREEDESKTOP_SPIN_DURATION_MS: u32 = 1000;
 /// is cached by [`DetectionContext`](crate::detect::DetectionContext).
 fn detect_theme() -> String {
     crate::system_icon_theme()
-}
-
-/// The icon base directories freedesktop-icons 0.4.0 searches for themes,
-/// in its order (`freedesktop-icons-0.4.0/src/theme/paths.rs:13-32`): each
-/// `$XDG_DATA_DIRS` entry's `icons`, `$XDG_DATA_HOME/icons`, then
-/// `~/.icons`, keeping those that exist. freedesktop-icons also searches
-/// the `pixmaps` directory beside each `icons` one; no UI icon may come
-/// from there, so it is left out.
-///
-/// Read once per process, as freedesktop-icons reads its own list once.
-fn icon_base_dirs() -> &'static [PathBuf] {
-    static DIRS: OnceLock<Vec<PathBuf>> = OnceLock::new();
-    DIRS.get_or_init(xdg_icon_base_dirs)
-}
-
-/// Build [`icon_base_dirs`] from the environment the way freedesktop-icons'
-/// `xdg` 2.5.2 does (`xdg-2.5.2/src/base_directories.rs:268-309`): a
-/// relative or unset `$XDG_DATA_HOME` is `~/.local/share`, relative
-/// `$XDG_DATA_DIRS` entries are dropped, and none left is
-/// `/usr/local/share:/usr/share`. Without a home directory `xdg` gives no
-/// data dirs at all, and there is no `~/.icons` either.
-fn xdg_icon_base_dirs() -> Vec<PathBuf> {
-    let Some(home) = std::env::home_dir() else {
-        return Vec::new();
-    };
-    let data_dirs: Vec<PathBuf> = std::env::var_os("XDG_DATA_DIRS")
-        .map(|dirs| {
-            std::env::split_paths(&dirs)
-                .filter(|dir| dir.is_absolute())
-                .collect::<Vec<_>>()
-        })
-        .filter(|dirs| !dirs.is_empty())
-        .unwrap_or_else(|| {
-            vec![
-                PathBuf::from("/usr/local/share"),
-                PathBuf::from("/usr/share"),
-            ]
-        });
-    let data_home = std::env::var_os("XDG_DATA_HOME")
-        .map(PathBuf::from)
-        .filter(|dir| dir.is_absolute())
-        .unwrap_or_else(|| home.join(".local/share"));
-    let mut dirs: Vec<PathBuf> = data_dirs.iter().map(|dir| dir.join("icons")).collect();
-    dirs.push(data_home.join("icons"));
-    dirs.push(home.join(".icons"));
-    dirs.retain(|dir| dir.exists());
-    dirs
-}
-
-/// Whether `name` can name a theme directory: one plain path component,
-/// so joining it to a base dir stays inside that base dir.
-fn is_theme_name(name: &str) -> bool {
-    let mut components = Path::new(name).components();
-    matches!(
-        (components.next(), components.next()),
-        (Some(Component::Normal(_)), None)
-    )
 }
 
 /// The themes listed by the `Inherits=` key of an `index.theme`'s
@@ -111,39 +55,50 @@ fn inherits(index: &str) -> Vec<&str> {
     Vec::new()
 }
 
-/// The themes an icon for `theme` may come from: `theme` and every theme
-/// in its declared `Inherits=` chain, transitively, except `hicolor`
-/// unless it is `theme` itself. A theme's parents are read from every
-/// `index.theme` it has in `bases`, as freedesktop-icons reads each of
-/// them (`freedesktop-icons-0.4.0/src/lib.rs:309-327`).
-///
-/// `None` when `theme` has no `index.theme` in any of `bases`: the theme
-/// does not exist, and nothing may stand in for it.
-fn theme_chain(theme: &str, bases: &[PathBuf]) -> Option<Vec<String>> {
-    if !is_theme_name(theme)
-        || !bases
-            .iter()
-            .any(|base| base.join(theme).join("index.theme").exists())
-    {
-        return None;
-    }
-    let mut chain = vec![theme.to_string()];
-    let mut next = 0usize;
-    while let Some(name) = chain.get(next).cloned() {
-        next = next.saturating_add(1);
-        for base in bases {
-            let Ok(index) = std::fs::read_to_string(base.join(&name).join("index.theme")) else {
-                continue;
-            };
-            for parent in inherits(&index) {
-                if parent != "hicolor"
-                    && is_theme_name(parent)
-                    && !chain.iter().any(|known| known == parent)
-                {
-                    chain.push(parent.to_string());
-                }
+/// The parents `theme` declares, from every `index.theme` it has in
+/// `bases` (in base-dir order), as freedesktop-icons reads each of them
+/// (`freedesktop-icons-0.4.0/src/lib.rs:309-320`).
+fn declared_parents(theme: &str, bases: &[PathBuf]) -> Vec<String> {
+    let mut parents: Vec<String> = Vec::new();
+    for base in bases {
+        let Ok(index) = std::fs::read_to_string(base.join(theme).join("index.theme")) else {
+            continue;
+        };
+        for parent in inherits(&index) {
+            if !parents.iter().any(|known| known == parent) {
+                parents.push(parent.to_string());
             }
         }
+    }
+    parents
+}
+
+/// The themes an icon for `theme` may come from, in the order the Icon
+/// Theme Specification's `FindIconHelper` searches them: `theme`, then
+/// each parent it declares in `Inherits=`, in declared order, each
+/// followed depth-first by its own parents. A theme reached twice is
+/// searched once, so a cycle ends. `hicolor` is left out unless it is
+/// `theme` itself, and so is a parent that is not installed.
+///
+/// `None` when `theme` is not installed: nothing may stand in for it.
+fn theme_chain(theme: &str, bases: &[PathBuf]) -> Option<Vec<String>> {
+    if !has_theme_index(theme, bases) {
+        return None;
+    }
+    let mut chain: Vec<String> = Vec::new();
+    let mut pending = vec![theme.to_string()];
+    while let Some(name) = pending.pop() {
+        if chain.contains(&name) {
+            continue;
+        }
+        let parents = declared_parents(&name, bases);
+        chain.push(name);
+        pending.extend(
+            parents
+                .into_iter()
+                .rev()
+                .filter(|parent| parent != "hicolor" && has_theme_index(parent, bases)),
+        );
     }
     Some(chain)
 }
@@ -166,13 +121,13 @@ fn cached_theme_chain(theme: &str) -> Option<Vec<String>> {
     chain
 }
 
-/// Whether `path` lies inside the directory of one of `themes` under one
-/// of `bases`, compared by path component, so `breeze` does not take a
-/// file of `breeze-dark`. The path is not canonicalized: the theme
-/// directory freedesktop-icons searched is what decides, even where it
-/// links into another theme. A path with a `..` component is refused, as
-/// it could leave the directory it names.
-fn is_in_theme_dirs(path: &Path, themes: &[String], bases: &[PathBuf]) -> bool {
+/// Whether `path` lies inside `theme`'s own directory under one of
+/// `bases`, compared by path component, so `breeze` does not take a file
+/// of `breeze-dark`. The path is not canonicalized: the theme directory
+/// freedesktop-icons searched is what decides, even where it links into
+/// another theme. A path with a `..` component is refused, as it could
+/// leave the directory it names.
+fn is_in_theme_dir(path: &Path, theme: &str, bases: &[PathBuf]) -> bool {
     if path
         .components()
         .any(|component| component == Component::ParentDir)
@@ -186,27 +141,42 @@ fn is_in_theme_dirs(path: &Path, themes: &[String], bases: &[PathBuf]) -> bool {
         let mut rest = rest.components();
         let in_theme = matches!(
             rest.next(),
-            Some(Component::Normal(dir)) if themes.iter().any(|theme| dir == OsStr::new(theme))
+            Some(Component::Normal(dir)) if dir == OsStr::new(theme)
         );
         in_theme && rest.next().is_some()
     })
 }
 
-/// Look `name` up in `theme` through freedesktop-icons, keeping the result
-/// only when it lies in a directory of `chain` (see [`theme_chain`]).
+/// The first icon `lookup` finds for a theme of `chain`, in chain order,
+/// counting only a file in the directory of the theme it was looked up
+/// in.
 ///
-/// freedesktop-icons falls back to `hicolor` when the theme does not
-/// exist or it and its parents lack the icon, then to loose files in the
-/// icon base dirs and `/usr/share/pixmaps`
-/// (`freedesktop-icons-0.4.0/src/lib.rs:297-347`); each would be an icon
-/// from another set, so each gives `None` here.
-fn lookup_in_theme(name: &str, theme: &str, size: u16, chain: &[String]) -> Option<PathBuf> {
-    freedesktop_icons::lookup(name)
-        .with_theme(theme)
-        .with_size(size)
-        .force_svg()
-        .find()
-        .filter(|path| is_in_theme_dirs(path, chain, icon_base_dirs()))
+/// freedesktop-icons, asked for one theme, goes on to its direct parents
+/// (not theirs), then to `hicolor`, loose files in the icon base dirs and
+/// `/usr/share/pixmaps` (`freedesktop-icons-0.4.0/src/lib.rs:297-347`).
+/// Asking it for each theme of the chain in turn and keeping only that
+/// theme's own files reaches every depth of the chain in the
+/// specification's order, and none of those fallbacks.
+fn first_in_chain(
+    chain: &[String],
+    bases: &[PathBuf],
+    mut lookup: impl FnMut(&str) -> Option<PathBuf>,
+) -> Option<PathBuf> {
+    chain
+        .iter()
+        .find_map(|theme| lookup(theme).filter(|path| is_in_theme_dir(path, theme, bases)))
+}
+
+/// Look `name` up at `size` in the themes of `chain` (see
+/// [`theme_chain`] and [`first_in_chain`]).
+fn lookup_in_chain(name: &str, size: u16, chain: &[String]) -> Option<PathBuf> {
+    first_in_chain(chain, icon_base_dirs(), |theme| {
+        freedesktop_icons::lookup(name)
+            .with_theme(theme)
+            .with_size(size)
+            .force_svg()
+            .find()
+    })
 }
 
 /// Look up an icon by freedesktop name using a two-pass strategy.
@@ -219,22 +189,23 @@ fn lookup_in_theme(name: &str, theme: &str, size: u16, chain: &[String]) -> Opti
 /// The symbolic-first order also naturally handles Adwaita, which stores
 /// most action icons only as `*-symbolic.svg`.
 ///
-/// Each pass finds only an icon of `theme` or of a theme it declares in
-/// its `Inherits=` chain, never of `hicolor` unless `theme` is `hicolor`
-/// (see [`lookup_in_theme`]). `None` when `theme` is not installed.
+/// Each pass searches `theme` and the themes of its `Inherits=` chain, in
+/// the specification's order, never `hicolor` unless `theme` is `hicolor`
+/// (see [`theme_chain`]); the symbolic pass searches the whole chain
+/// before the plain pass starts. `None` when `theme` is not installed.
 fn find_icon(name: &str, theme: &str, size: u16) -> Option<(PathBuf, bool)> {
     let chain = cached_theme_chain(theme)?;
     // First try: symbolic variant (e.g., "edit-copy-symbolic")
     // Symbolic icons are always single-frame, avoiding sprite sheets
     // in themes like Breeze that put animation strips under plain names.
     let symbolic = format!("{name}-symbolic");
-    if let Some(path) = lookup_in_theme(&symbolic, theme, size, &chain) {
+    if let Some(path) = lookup_in_chain(&symbolic, size, &chain) {
         return Some((path, true));
     }
     // Second try: plain name (e.g., "edit-copy")
     // If the name itself already ends with "-symbolic" (caller passed it
     // explicitly via load_freedesktop_icon_by_name), mark as symbolic.
-    lookup_in_theme(name, theme, size, &chain).map(|path| (path, name.ends_with("-symbolic")))
+    lookup_in_chain(name, size, &chain).map(|path| (path, name.ends_with("-symbolic")))
 }
 
 /// Load a freedesktop icon by name from the given theme.
@@ -454,11 +425,12 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
 /// 1. Try "process-working" (plain) at size 22 -- may be a sprite sheet -> Frames
 /// 2. If found but single-frame (parse_sprite_sheet returns None) -> Transform::Spin
 /// 3. Try "process-working-symbolic" at size 22 -- single frame -> Transform::Spin
-/// 4. Return None if neither found (caller falls back to bundled Adwaita)
+/// 4. Return None if neither found; no other icon set stands in
 ///
-/// Each pass finds only a spinner of the theme or of a theme in its
-/// `Inherits=` chain, never of `hicolor` unless the theme is `hicolor`
-/// (see [`lookup_in_theme`]).
+/// Each pass searches the theme and the themes of its `Inherits=` chain,
+/// in the specification's order, never `hicolor` unless the theme is
+/// `hicolor` (see [`theme_chain`]); the plain pass searches the whole
+/// chain before the symbolic pass starts.
 pub(crate) fn load_freedesktop_spinner(theme: Option<&str>) -> Option<AnimatedIcon> {
     let detected;
     let theme: &str = match theme {
@@ -471,7 +443,7 @@ pub(crate) fn load_freedesktop_spinner(theme: Option<&str>) -> Option<AnimatedIc
     let chain = cached_theme_chain(theme)?;
 
     // First pass: plain name (finds sprite sheets in animations/ dirs)
-    if let Some(path) = lookup_in_theme("process-working", theme, 22, &chain) {
+    if let Some(path) = lookup_in_chain("process-working", 22, &chain) {
         let bytes = std::fs::read(&path).ok()?;
         let frame_dur = NonZeroU32::new(FREEDESKTOP_FRAME_DURATION_MS)?;
         let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
@@ -492,7 +464,7 @@ pub(crate) fn load_freedesktop_spinner(theme: Option<&str>) -> Option<AnimatedIc
     }
 
     // Second pass: symbolic name (always single frame)
-    if let Some(path) = lookup_in_theme("process-working-symbolic", theme, 22, &chain) {
+    if let Some(path) = lookup_in_chain("process-working-symbolic", 22, &chain) {
         let bytes = std::fs::read(&path).ok()?;
         let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
         return Some(AnimatedIcon::transform(
@@ -647,9 +619,11 @@ mod tests {
 
     /// A throwaway tree of icon base dirs, removed on drop:
     ///
-    /// - `share/icons/`: `child` (`Inherits=parent,hicolor`), `parent`,
-    ///   `hicolor`, `breeze`, `breeze-dark`, `cycle-a` and `cycle-b`
-    ///   (each inheriting the other), and a loose `loose.svg`;
+    /// - `share/icons/`: `child` (`Inherits=parent,hicolor`), `parent`
+    ///   (`Inherits=grand`), `grand`, `hicolor`, `breeze`, `breeze-dark`,
+    ///   `cycle-a` and `cycle-b` (each inheriting the other), `fork`
+    ///   (`Inherits=left,right`), `left` (`Inherits=deep`), `right`,
+    ///   `deep`, and a loose `loose.svg`;
     /// - `home/.icons/`: `child/` again, without an `index.theme`;
     /// - `share/pixmaps/`: `pixmap.svg`, outside every base dir.
     struct Fixture {
@@ -677,7 +651,12 @@ mod tests {
                 .unwrap();
             };
             theme(&icons, "child", Some("parent,hicolor"));
-            theme(&icons, "parent", None);
+            theme(&icons, "parent", Some("grand"));
+            theme(&icons, "grand", None);
+            theme(&icons, "fork", Some("left,right"));
+            theme(&icons, "left", Some("deep"));
+            theme(&icons, "right", None);
+            theme(&icons, "deep", None);
             theme(&icons, "hicolor", None);
             theme(&icons, "breeze", None);
             theme(&icons, "breeze-dark", None);
@@ -697,10 +676,47 @@ mod tests {
             self.root.join("share/icons").join(rest)
         }
 
-        /// Whether `path` passes the filter for `theme`.
+        /// Whether `path` lies in the own directory of a theme of
+        /// `theme`'s chain.
         fn accepts(&self, theme: &str, path: &Path) -> bool {
-            theme_chain(theme, &self.bases)
-                .is_some_and(|names| is_in_theme_dirs(path, &names, &self.bases))
+            theme_chain(theme, &self.bases).is_some_and(|names| {
+                names
+                    .iter()
+                    .any(|name| is_in_theme_dir(path, name, &self.bases))
+            })
+        }
+
+        /// Put `<name>.svg` in `theme`'s `actions` directory.
+        fn add_icon(&self, theme: &str, name: &str) -> PathBuf {
+            let path = self.icons(&format!("{theme}/actions/{name}.svg"));
+            std::fs::write(&path, "<svg/>").unwrap();
+            path
+        }
+
+        /// What freedesktop-icons 0.4.0 returns for `name` asked of
+        /// `theme`: the file in `theme`, else in a theme it names in
+        /// `Inherits=` (not their parents), else in `hicolor`.
+        fn freedesktop_icons_lookup(&self, name: &str, theme: &str) -> Option<PathBuf> {
+            let mut searched = vec![theme.to_string()];
+            searched.extend(declared_parents(theme, &self.bases));
+            searched.push("hicolor".to_string());
+            searched
+                .iter()
+                .flat_map(|t| {
+                    self.bases
+                        .iter()
+                        .map(move |base| base.join(t).join("actions").join(format!("{name}.svg")))
+                })
+                .find(|path| path.exists())
+        }
+
+        /// [`first_in_chain`] for `name` over `theme`'s chain, with
+        /// [`Self::freedesktop_icons_lookup`] as the lookup.
+        fn find(&self, name: &str, theme: &str) -> Option<PathBuf> {
+            let chain = theme_chain(theme, &self.bases)?;
+            first_in_chain(&chain, &self.bases, |t| {
+                self.freedesktop_icons_lookup(name, t)
+            })
         }
     }
 
@@ -766,6 +782,51 @@ mod tests {
     }
 
     #[test]
+    fn theme_chain_is_depth_first_in_declared_order() {
+        let fx = Fixture::new("order");
+        assert_eq!(
+            theme_chain("child", &fx.bases).unwrap(),
+            ["child", "parent", "grand"]
+        );
+        assert_eq!(
+            theme_chain("fork", &fx.bases).unwrap(),
+            ["fork", "left", "deep", "right"]
+        );
+    }
+
+    #[test]
+    fn chain_lookup_reaches_a_grandparent() {
+        let fx = Fixture::new("grand");
+        let grand = fx.add_icon("grand", "grand-only");
+        fx.add_icon("hicolor", "grand-only");
+        assert_eq!(fx.find("grand-only", "child"), Some(grand));
+    }
+
+    #[test]
+    fn chain_lookup_takes_a_theme_s_own_file_only() {
+        let fx = Fixture::new("own-file");
+        fx.add_icon("parent", "parent-only");
+        fx.add_icon("hicolor", "hicolor-only");
+        let child_only = ["child".to_string()];
+        let lookup = |t: &str| fx.freedesktop_icons_lookup("parent-only", t);
+        assert_eq!(first_in_chain(&child_only, &fx.bases, lookup), None);
+        let lookup = |t: &str| fx.freedesktop_icons_lookup("hicolor-only", t);
+        assert_eq!(first_in_chain(&child_only, &fx.bases, lookup), None);
+        assert_eq!(fx.find("hicolor-only", "child"), None);
+    }
+
+    #[test]
+    fn chain_lookup_takes_the_nearer_theme() {
+        let fx = Fixture::new("nearer");
+        let parent = fx.add_icon("parent", "both");
+        fx.add_icon("grand", "both");
+        assert_eq!(fx.find("both", "child"), Some(parent));
+        let deep = fx.add_icon("deep", "split");
+        fx.add_icon("right", "split");
+        assert_eq!(fx.find("split", "fork"), Some(deep));
+    }
+
+    #[test]
     fn theme_chain_terminates_on_a_cycle() {
         let fx = Fixture::new("cycle");
         let mut names = theme_chain("cycle-a", &fx.bases).unwrap();
@@ -821,6 +882,59 @@ mod tests {
                     path.display()
                 );
             }
+        }
+    }
+
+    /// `default` inherits Adwaita, which inherits AdwaitaLegacy: an icon
+    /// only AdwaitaLegacy has is two parents away, and still found.
+    #[test]
+    fn find_icon_reaches_a_grandparent_theme() {
+        let icons = Path::new("/usr/share/icons");
+        let default_index = std::fs::read_to_string(icons.join("default/index.theme"));
+        let inherits_adwaita = default_index
+            .as_deref()
+            .is_ok_and(|index| inherits(index).contains(&"Adwaita"));
+        let legacy = icons.join("AdwaitaLegacy");
+        if !inherits_adwaita || !legacy.join("index.theme").exists() {
+            eprintln!("skipped: needs `default` inheriting Adwaita, and AdwaitaLegacy");
+            return;
+        }
+        fn stems(dir: &Path, out: &mut std::collections::BTreeSet<String>) {
+            for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    stems(&path, out);
+                } else if let (Some(stem), Some("png" | "svg")) = (
+                    path.file_stem().and_then(|s| s.to_str()),
+                    path.extension().and_then(|e| e.to_str()),
+                ) {
+                    out.insert(stem.to_string());
+                }
+            }
+        }
+        let mut legacy_names = std::collections::BTreeSet::new();
+        stems(&legacy, &mut legacy_names);
+        let mut adwaita_names = std::collections::BTreeSet::new();
+        stems(&icons.join("Adwaita"), &mut adwaita_names);
+        stems(&icons.join("default"), &mut adwaita_names);
+        let legacy_only: Vec<&String> = legacy_names
+            .iter()
+            .filter(|name| {
+                !name.ends_with("-symbolic")
+                    && !adwaita_names.contains(name.as_str())
+                    && !adwaita_names.contains(&format!("{name}-symbolic"))
+            })
+            .take(20)
+            .collect();
+        assert!(!legacy_only.is_empty(), "no AdwaitaLegacy-only icon found");
+        for name in legacy_only {
+            let found = find_icon(name, "default", 24);
+            assert!(
+                found
+                    .as_ref()
+                    .is_some_and(|(path, _)| path.starts_with(&legacy)),
+                "{name} for default: {found:?}"
+            );
         }
     }
 

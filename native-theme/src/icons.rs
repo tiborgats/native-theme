@@ -78,11 +78,18 @@ impl<'a> From<&'a dyn IconProvider> for IconId<'a> {
 /// drop the theme override.
 ///
 /// An icon comes only from the theme or from a theme in the `Inherits=`
-/// chain its `index.theme` declares, never from `hicolor`
-/// unless `hicolor` is the theme asked for, nor from a loose file in an
-/// icon directory or `/usr/share/pixmaps`. An icon the theme and its
-/// parents lack is `None`, and so is every icon of a theme that is not
-/// installed.
+/// chain its `index.theme` declares, searched depth-first in declared
+/// order as the Icon Theme Specification's lookup does, never from
+/// `hicolor` unless `hicolor` is the theme asked for, nor from a loose
+/// file in an icon directory or `/usr/share/pixmaps`. An icon the theme
+/// and its parents lack is `None`, and so is every icon of a theme that
+/// is not installed.
+///
+/// The installed themes are read once, at the process's first freedesktop
+/// lookup (freedesktop-icons caches them the same way), and a theme's
+/// `Inherits=` chain at its own first lookup, so a theme installed after
+/// that is not searched, and a changed `Inherits=` is not seen, until the
+/// process restarts.
 ///
 /// ```
 /// # #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -487,42 +494,95 @@ pub fn load_icon_indicator(set: IconSet) -> Option<AnimatedIcon> {
     }
 }
 
+/// The icon base directories freedesktop-icons 0.4.0 searches for themes,
+/// in its order (`freedesktop-icons-0.4.0/src/theme/paths.rs:13-32`): each
+/// `$XDG_DATA_DIRS` entry's `icons`, `$XDG_DATA_HOME/icons`, then
+/// `~/.icons`, keeping those that exist. freedesktop-icons also searches
+/// the `pixmaps` directory beside each `icons` one; no UI icon may come
+/// from there, so it is left out.
+///
+/// The freedesktop icon lookup, [`is_freedesktop_theme_available`] and
+/// [`list_freedesktop_themes`] all read this one list, so a theme listed
+/// or available is one the lookup searches. Read once per process, as
+/// freedesktop-icons reads its own list once.
+#[cfg(target_os = "linux")]
+pub(crate) fn icon_base_dirs() -> &'static [std::path::PathBuf] {
+    static DIRS: std::sync::OnceLock<Vec<std::path::PathBuf>> = std::sync::OnceLock::new();
+    DIRS.get_or_init(xdg_icon_base_dirs)
+}
+
+/// Build [`icon_base_dirs`] from the environment the way freedesktop-icons'
+/// `xdg` 2.5.2 does (`xdg-2.5.2/src/base_directories.rs:268-309`): a
+/// relative or unset `$XDG_DATA_HOME` is `~/.local/share`, relative
+/// `$XDG_DATA_DIRS` entries are dropped, and none left is
+/// `/usr/local/share:/usr/share`. Without a home directory `xdg` gives no
+/// data dirs at all, and there is no `~/.icons` either.
+#[cfg(target_os = "linux")]
+fn xdg_icon_base_dirs() -> Vec<std::path::PathBuf> {
+    use std::path::PathBuf;
+
+    let Some(home) = std::env::home_dir() else {
+        return Vec::new();
+    };
+    let data_dirs: Vec<PathBuf> = std::env::var_os("XDG_DATA_DIRS")
+        .map(|dirs| {
+            std::env::split_paths(&dirs)
+                .filter(|dir| dir.is_absolute())
+                .collect::<Vec<_>>()
+        })
+        .filter(|dirs| !dirs.is_empty())
+        .unwrap_or_else(|| {
+            vec![
+                PathBuf::from("/usr/local/share"),
+                PathBuf::from("/usr/share"),
+            ]
+        });
+    let data_home = std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .filter(|dir| dir.is_absolute())
+        .unwrap_or_else(|| home.join(".local/share"));
+    let mut dirs: Vec<PathBuf> = data_dirs.iter().map(|dir| dir.join("icons")).collect();
+    dirs.push(data_home.join("icons"));
+    dirs.push(home.join(".icons"));
+    dirs.retain(|dir| dir.exists());
+    dirs
+}
+
+/// Whether `name` can name a theme directory: one plain path component,
+/// so joining it to a base dir stays inside that base dir.
+#[cfg(target_os = "linux")]
+fn is_theme_name(name: &str) -> bool {
+    use std::path::{Component, Path};
+
+    let mut components = Path::new(name).components();
+    matches!(
+        (components.next(), components.next()),
+        (Some(Component::Normal(_)), None)
+    )
+}
+
+/// Whether `theme` is installed: a theme name with an `index.theme` in
+/// one of `bases`.
+#[cfg(target_os = "linux")]
+pub(crate) fn has_theme_index(theme: &str, bases: &[std::path::PathBuf]) -> bool {
+    is_theme_name(theme)
+        && bases
+            .iter()
+            .any(|base| base.join(theme).join("index.theme").exists())
+}
+
 /// Check whether a freedesktop icon theme is installed on this system.
 ///
-/// Looks for the theme's `index.theme` file in the standard XDG icon
-/// directories (`$XDG_DATA_DIRS/icons/<theme>/` and
-/// `$XDG_DATA_HOME/icons/<theme>/`).
+/// Looks for the theme's `index.theme` file in the icon base directories
+/// the freedesktop icon lookup searches: `$XDG_DATA_DIRS/icons/<theme>/`,
+/// `$XDG_DATA_HOME/icons/<theme>/` and `~/.icons/<theme>/`.
 ///
 /// Always returns `false` on non-Linux platforms.
 #[must_use]
 pub fn is_freedesktop_theme_available(theme: &str) -> bool {
     #[cfg(target_os = "linux")]
     {
-        let data_dirs = std::env::var("XDG_DATA_DIRS")
-            .unwrap_or_else(|_| "/usr/share:/usr/local/share".to_string());
-        for dir in data_dirs.split(':') {
-            if std::path::Path::new(dir)
-                .join("icons")
-                .join(theme)
-                .join("index.theme")
-                .exists()
-            {
-                return true;
-            }
-        }
-        let data_home = std::env::var("XDG_DATA_HOME").unwrap_or_else(|_| {
-            std::env::var("HOME")
-                .map(|h| format!("{h}/.local/share"))
-                .unwrap_or_default()
-        });
-        if !data_home.is_empty() {
-            return std::path::Path::new(&data_home)
-                .join("icons")
-                .join(theme)
-                .join("index.theme")
-                .exists();
-        }
-        false
+        has_theme_index(theme, icon_base_dirs())
     }
     #[cfg(not(target_os = "linux"))]
     {
@@ -674,12 +734,14 @@ pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconS
 
 /// List installed freedesktop icon themes.
 ///
-/// Scans `$XDG_DATA_DIRS/icons/` and `$XDG_DATA_HOME/icons/` for
+/// Scans the icon base directories the freedesktop icon lookup searches
+/// (`$XDG_DATA_DIRS/icons/`, `$XDG_DATA_HOME/icons/` and `~/.icons/`) for
 /// subdirectories containing an `index.theme` file with a `Directories=`
 /// line (per the freedesktop Icon Theme Specification).  This filters
 /// out cursor-only themes that lack application icons.
 ///
-/// Excludes `hicolor` (mandatory fallback) and `default` (typically a
+/// Excludes `hicolor` (the specification's shared theme for application
+/// icons, which native-theme's icon lookup never falls back to) and `default` (typically a
 /// symlink).  Returns a sorted, deduplicated list of theme directory
 /// names.
 ///
@@ -697,27 +759,7 @@ pub fn list_freedesktop_themes() -> Vec<String> {
 
         let mut themes = BTreeSet::new();
 
-        // Collect icon base directories from XDG paths.
-        let mut icon_dirs = Vec::new();
-
-        let data_dirs = std::env::var("XDG_DATA_DIRS")
-            .unwrap_or_else(|_| "/usr/share:/usr/local/share".to_string());
-        for dir in data_dirs.split(':') {
-            if !dir.is_empty() {
-                icon_dirs.push(std::path::PathBuf::from(dir).join("icons"));
-            }
-        }
-
-        let data_home = std::env::var("XDG_DATA_HOME").unwrap_or_else(|_| {
-            std::env::var("HOME")
-                .map(|h| format!("{h}/.local/share"))
-                .unwrap_or_default()
-        });
-        if !data_home.is_empty() {
-            icon_dirs.push(std::path::PathBuf::from(&data_home).join("icons"));
-        }
-
-        for icon_dir in &icon_dirs {
+        for icon_dir in icon_base_dirs() {
             let entries = match std::fs::read_dir(icon_dir) {
                 Ok(e) => e,
                 Err(_) => continue,
@@ -732,7 +774,8 @@ pub fn list_freedesktop_themes() -> Vec<String> {
                     Err(_) => continue,
                 };
 
-                // Exclude hicolor (mandatory fallback) and default (symlink).
+                // Exclude hicolor (application icons, never a UI set) and
+                // default (symlink).
                 if name == "hicolor" || name == "default" {
                     continue;
                 }
