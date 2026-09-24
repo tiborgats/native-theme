@@ -356,6 +356,8 @@ pub(crate) const OVERLAY_PALETTE: &str = "overlay-palette";
 pub(crate) const OVERLAY_PALETTE_TITLE: &str = "overlay-palette-title";
 pub(crate) const OVERLAY_PREFERENCES: &str = "overlay-preferences";
 pub(crate) const OVERLAY_ABOUT_LINK: &str = "overlay-about-link";
+/// The debug selector of the About dialog's title.
+pub(crate) const OVERLAY_ABOUT_TITLE: &str = "overlay-about-title";
 /// The debug selector of the About dialog's line with this crate's name and
 /// version.
 pub(crate) const OVERLAY_ABOUT_NAME: &str = "overlay-about-name";

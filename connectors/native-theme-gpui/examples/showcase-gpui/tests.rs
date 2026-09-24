@@ -49,15 +49,15 @@ use crate::{
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
     LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK,
-    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE,
-    OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER,
-    OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT,
-    OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG,
-    PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE,
-    PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING,
-    PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE,
-    TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY,
-    WINDOW_SIZE, WINDOW_TITLE,
+    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE,
+    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
+    OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
+    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
+    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
+    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION,
+    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
+    STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
+    TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
 };
 use native_theme::icons::IconSetChoice;
 
@@ -6814,27 +6814,30 @@ fn the_about_dialog_follows_a_theme_switch(cx: &mut TestAppContext) {
 }
 
 /// The About dialog's title reports the Dialog, as the palette's does.
+///
+/// Under each preset the pointer is placed on the title itself: adwaita's
+/// dialog pads its top by 32px, so a point placed by the dialog's frame
+/// lands in padding the title does not cover.
 #[gpui::test]
 fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     without_motion(&mut cx);
-    run_menu_item(&mut cx, "Help", "About");
-    draw(&mut cx);
-    let surface = bounds_of(&mut cx, "dialog-0");
-    let name = bounds_of(&mut cx, OVERLAY_ABOUT_NAME);
-    // Above the content, clear of the close button at the surface's right.
-    let at = point(
-        name.left() + px(4.),
-        surface.top() + (name.top() - surface.top()) / 2.,
-    );
-    hover(&mut cx, at);
-    settle(&mut cx);
-    draw(&mut cx);
-    assert_eq!(
-        inspector_title(&mut cx, &showcase).as_deref(),
-        Some("Dialog · About"),
-        "the pointer settled on the About dialog's title, and the inspector does not show it"
-    );
+    for preset in ["kde-breeze", "adwaita"] {
+        use_preset(&mut cx, &showcase, preset);
+        run_menu_item(&mut cx, "Help", "About");
+        draw(&mut cx);
+        let at = bounds_of(&mut cx, OVERLAY_ABOUT_TITLE).center();
+        hover(&mut cx, at);
+        settle(&mut cx);
+        draw(&mut cx);
+        assert_eq!(
+            inspector_title(&mut cx, &showcase).as_deref(),
+            Some("Dialog · About"),
+            "under {preset}, the pointer settled on the About dialog's title, and the inspector does not show it"
+        );
+        press(&mut cx, "escape");
+        draw(&mut cx);
+    }
 }
 
 /// The About dialog's content is inset from its frame by the dialog's

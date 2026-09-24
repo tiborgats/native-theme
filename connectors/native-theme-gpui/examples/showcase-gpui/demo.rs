@@ -103,10 +103,11 @@ use crate::support::{
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, LIST_DEMO,
-    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
-    PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST,
-    PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
+    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE,
+    OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE,
+    OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY,
+    PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
+    STATUS_MIDDLE, TREE_DEMO, probe,
 };
 
 /// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
@@ -1057,7 +1058,9 @@ pub(crate) fn about(
     if gap.is_some() {
         dialog_info = dialog_info.geometry("widget_gap");
     }
-    let title = title.info(ui, "overlay-about-title", dialog_info.clone());
+    let title = title
+        .info(ui, "overlay-about-title", dialog_info.clone())
+        .debug_selector(|| OVERLAY_ABOUT_TITLE.into());
     let ui = ui.clone();
     dialog.title(title).content(move |content, _window, cx| {
         let link = Link::new("about-compatibility")
