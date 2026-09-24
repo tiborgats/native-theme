@@ -292,7 +292,7 @@ Note: Win11 uses Segoe UI Variable internally in WinUI3/XAML controls,
 but the Win32 `SystemParametersInfoW` API always returns "Segoe UI".
 
 Size conversion: `points = abs(lfHeight) * 72 / dpi` ↕. ✅ derived from LOGFONTW docs
-At 96 DPI: abs(-12) * 72 / 96 = 9pt. ✅
+At 96 DPI: abs(-12) * 72 / 96 = 9pt. ✅ native-theme's Windows reader reads these fonts at 96 DPI (`SystemParametersInfoForDpi(SPI_GETNONCLIENTMETRICS, …, 96)`) and reports a `font_dpi` of 96 (`LOGICAL_DPI`, `native-theme/src/windows.rs`), so its sizes are logical pixels (a point is 96/72 epx) at any display scale, not device pixels at the system DPI.
 
 **WinUI3 Fluent Design type ramp** (design guidelines, not system API):
 
@@ -309,7 +309,7 @@ At 96 DPI: abs(-12) * 72 / 96 = 9pt. ✅
 | Display    | 68px  | SemiBold(600)| 92px        | ✅ |
 
 All confirmed via MS Typography docs. All sizes are in effective pixels
-(epx), which equal physical pixels at 100% scaling (96 DPI).
+(epx), which equal physical pixels at 100% scaling (96 DPI). The model's sizes are logical pixels, which are epx; the Windows reader's `font_dpi` of 96 (above) keeps a converted point size in that unit.
 
 There is **no system monospace font setting** on Windows. ✅ Applications
 choose their own (typically Consolas or Cascadia Mono).

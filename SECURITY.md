@@ -51,7 +51,8 @@ should be reported to those projects directly.
 
 ## Dependency auditing
 
-[`cargo audit`](https://rustsec.org/) runs in CI via
-[`rustsec/audit-check`](https://github.com/rustsec/audit-check) on every
-pull request, flagging known advisories against locked dependencies before
-they merge.
+[`cargo audit`](https://rustsec.org/) runs in CI (the `audit` job of
+`.github/workflows/ci.yml`) on every pull request, every push to `main` and
+every pushed `v*` tag, flagging known advisories against the locked
+dependencies before they merge or are released. `./pre-release-check.sh` runs
+it locally too.

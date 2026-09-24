@@ -49,7 +49,7 @@ WinUI3 Fluent Design specifications
 **Files to update:**
 
 - `native-theme/src/windows.rs` -- WinUI3 spacing constants, system metric mappings,
-  `winui3_spacing()`, DPI-aware geometry reader
+  `winui3_widget_sizing()`, the DPI-aware `read_widget_sizing()`
 - `native-theme/src/presets/windows-11.toml` -- bundled preset data
 
 **What to look for:**
@@ -87,8 +87,8 @@ Xcode Interface Builder measurements
 
 **Files to update:**
 
-- `native-theme/src/macos.rs` -- the `macos_widget_metrics()` function and
-  `from_macos()` reader
+- `native-theme/src/macos.rs` -- the `macos_widget_defaults()` function and the
+  `MacosReader` reader (`read_appearance_colors()` holds the `NSColor` mappings)
 - `native-theme/src/presets/macos-sonoma.toml` -- bundled preset data (or create a
   new preset for the new macOS version)
 
@@ -107,9 +107,9 @@ Xcode Interface Builder measurements
 2. Review AppKit release notes for changed/deprecated `NSColor` names.
 3. Measure updated control sizes in Xcode Interface Builder if HIG does not
    provide exact values.
-4. Update constants in `macos_widget_metrics()` in `native-theme/src/macos.rs`.
-5. If semantic color names changed, update the `from_macos()` function's
-   NSColor mappings.
+4. Update constants in `macos_widget_defaults()` in `native-theme/src/macos.rs`.
+5. If semantic color names changed, update the NSColor mappings in
+   `read_appearance_colors()`, which `MacosReader` calls.
 6. Update or create the preset TOML file.
 7. Test on the target macOS version: `cargo test -p native-theme --features macos`.
 
@@ -125,8 +125,12 @@ GTK4 source, freedesktop portal specification
 
 **Files to update:**
 
-- `native-theme/src/gnome/mod.rs` -- the `adwaita_widget_metrics()` function,
-  hardcoded Adwaita color/geometry/spacing defaults, `from_gnome()` reader
+- `native-theme/src/gnome/mod.rs` -- the `GnomeReader` reader: it overlays the
+  portal's and gsettings' values (accent, color scheme, contrast, fonts,
+  accessibility) onto the bundled `adwaita` preset in `build_theme()` and
+  `build_gnome_variant_pure()`; it holds no color or size constants
+- `native-theme/src/presets/adwaita-live.toml` -- the live pipeline's merge base:
+  the Adwaita geometry and spacing
 - `native-theme/src/presets/adwaita.toml` -- bundled preset data
 
 **What to look for:**
@@ -141,10 +145,11 @@ GTK4 source, freedesktop portal specification
 **Process:**
 
 1. Clone or pull latest libadwaita from <https://gitlab.gnome.org/GNOME/libadwaita>.
-2. Compare CSS variable defaults with the hardcoded values in `gnome/mod.rs`.
-3. Compare widget sizing values with those in `adwaita_widget_metrics()`.
-4. Update any changed constants.
-5. Update `native-theme/src/presets/adwaita.toml`.
+2. Compare CSS variable defaults with the colors in `adwaita.toml`.
+3. Compare widget sizing values with those in `adwaita.toml` and
+   `adwaita-live.toml`.
+4. Update any changed values in both files.
+5. If the portal or gsettings keys changed, update `gnome/mod.rs`.
 6. Run the test suite: `cargo test -p native-theme --features portal`.
 
 ---
@@ -156,15 +161,18 @@ After updating reader constants, also update the corresponding preset TOML files
 
 Steps:
 
-1. Update color values in the `[light.colors]` and `[dark.colors]` sections.
-2. Update geometry values (`radius`, `radius_lg`, `shadow`, etc.).
-3. Update `[light.widget_metrics]` / `[dark.widget_metrics]` sections if widget
-   sizing changed.
+1. Update color values in the `[light.defaults]` and `[dark.defaults]` sections
+   and the per-widget tables (`[light.button]`, `[dark.input]`, …).
+2. Update geometry values in `[light.defaults.border]` / `[dark.defaults.border]`
+   (`corner_radius_px`, `corner_radius_lg_px`, `shadow_enabled`, etc.).
+3. Update the per-widget tables (`[light.button]`, `[light.button.border]`, …)
+   if widget sizing changed. A size needs a source in `docs/platform-facts.md`;
+   one the platform does not document stays unstated.
 4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
    for preset-only changes).
 
-Community color presets (Catppuccin, Nord, Dracula, etc.) use generic widget_metrics
-defaults and are not affected by platform-specific changes.
+Community color presets (Catppuccin, Nord, Dracula, etc.) state no platform's
+sizes and are not affected by platform-specific changes.
 
 ---
 

@@ -43,7 +43,7 @@ are needed to use bundled presets.
 ## Core concepts
 
 - **`Theme`** — sparse, TOML-shaped definition (fields are `Option<T>`). Load via `Theme::preset(…)`, `Theme::from_toml(…)`, or `Theme::from_file(…)`.
-- **`ResolvedTheme`** — fully-populated variant where every field has a value. Safe to hand to UI code.
+- **`ResolvedTheme`** — resolved variant: every colour, font and required metric has a value; a size the platform does not state (a padding side, a row height, a toolbar height) is `None`, and the toolkit's own applies. Safe to hand to UI code.
 - **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
 - **Preset** — a named bundled theme. 16 ship today:
   - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios`
@@ -165,9 +165,11 @@ native-theme = { version = "0.5", features = ["native"] }
 | Feature | Role |
 |---|---|
 | `kde` / `portal` / `macos` / `windows` | Platform-specific theme readers |
-| `linux` | Meta-feature: `kde` + `portal` |
+| `linux-kde` / `linux-portal` | Aliases: `kde` and `portal` |
+| `linux` | Meta-feature: `linux-kde` + `linux-portal` |
+| `native` | Meta-feature: `linux` + `macos` + `windows` |
 | `watch` | Runtime theme-change notifications |
-| `system-icons` | Linux freedesktop icon-theme lookups |
+| `system-icons` | Platform icon lookups: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent and stock icons (Windows), each platform's dependencies on that platform only; also enables `material-icons` |
 | `material-icons` / `lucide-icons` | Bundle those icon sets |
 | `svg-rasterize` | Rasterize SVG icons to RGBA via resvg |
 

@@ -77,9 +77,8 @@ Load a bundled preset:
 ```rust,ignore
 use native_theme_iced::from_preset;
 
-let (theme, resolved) = from_preset("dracula", true)?;
+let (theme, resolved) = from_preset("dracula", true)?; // true: is_dark
 // `theme` is the iced Theme; `resolved` has metric fields for widget sizing.
-//                          ^ is_dark
 ```
 
 Or read the OS theme at runtime:
@@ -195,11 +194,13 @@ let radius  = border_radius(&resolved);
 ```
 
 Full helper list: `button_padding`, `input_padding`, `padding_or`,
-`stated_padding`, `border_radius`,
-`border_radius_lg`, `scrollbar_width`, `font_family`, `font_size`,
-`font_weight`, `mono_font_family`, `mono_font_size`, `mono_font_weight`,
-`line_height_multiplier`, plus `to_iced_weight(css_weight)` for converting
-CSS weight values to iced's `Weight` enum.
+`stated_padding`, `border_radius`, `border_radius_lg`, `scrollbar_width`,
+`font_family`, `font_size`, `font_weight`, `mono_font_family`,
+`mono_font_size`, `mono_font_weight`, `line_height_multiplier`,
+`border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
+`selection_color`, `info_color`, `info_foreground_color`,
+`warning_foreground_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
+for converting CSS weight values to iced's `Weight` enum.
 
 `button_padding` and `input_padding` need the `widgets` feature (on by
 default). Each side is the theme's where it states that side; a side it does
