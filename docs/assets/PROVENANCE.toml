@@ -6,10 +6,10 @@
 
 # Workspace version and commit the assets were captured from.
 version = "0.5.9"
-commit = "25f5c6ed4c033eb7364de4e8e74b5023bcd2d375"
+commit = "33fea0f73db4860921cce591785c95104ff68e5c"
 generated = "2026-09-24"
 
 # SHA-256 over the git object ids of every path that feeds the showcases
 # (SOURCE_PATHS in scripts/asset-stamp.sh). The gates recompute it at HEAD;
 # a difference means the assets were captured from other sources.
-sources = "53a1137e1f4ba34ef3891846b3c9bf7fd726e60d6e59106022384ef5409189d9"
+sources = "a7b42e60f8c1a0d85d53a9602b6bc1d3f5d26c450ec9b9ce5ab3eb542aecce10"
