@@ -47,8 +47,7 @@ use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
     FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
-    SfSymbolsLoader, default_icon_choice, is_freedesktop_theme_available, list_freedesktop_themes,
-    load_icon_indicator,
+    SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
     AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedTheme, TransformAnimation,
@@ -306,20 +305,22 @@ impl CliArgs {
         }
     }
 
-    /// The icon set `--icon-set` names: a bundled set, `system` or
-    /// `freedesktop` (the system icon theme), or an installed freedesktop
-    /// icon theme.
-    fn icon_set_choice(name: &str) -> Result<IconSetChoice, String> {
+    /// The icon set `--icon-set` names, which the icon-theme picker offers
+    /// (`build_icon_choices`): a bundled set, `system` or `freedesktop` (the
+    /// system icon theme), or one of `installed_themes`, the freedesktop
+    /// themes the picker lists.
+    fn icon_set_choice(name: &str, installed_themes: &[String]) -> Result<IconSetChoice, String> {
         match name {
             "material" => Ok(IconSetChoice::Material),
             "lucide" => Ok(IconSetChoice::Lucide),
             "system" | "freedesktop" => Ok(IconSetChoice::System),
-            theme if is_freedesktop_theme_available(theme) => {
+            theme if installed_themes.iter().any(|installed| installed == theme) => {
                 Ok(IconSetChoice::Freedesktop(theme.to_string()))
             }
             other => Err(format!(
-                "--icon-set {other}: not material, lucide, system, freedesktop \
-                 or an installed freedesktop icon theme"
+                "--icon-set {other}: not material, lucide, system, freedesktop or an \
+                 installed icon theme; the installed icon themes are: {}",
+                installed_themes.join(", ")
             )),
         }
     }
@@ -1101,11 +1102,14 @@ impl Default for State {
 /// Put the showcase into the state the command line asks for: its colour
 /// mode, theme, tab and icons.
 ///
-/// A value the showcase cannot honour is reported on stderr and ignored:
-/// the setting stays what it would have been without the flag. `--variant`
-/// installs the theme in the mode it names: the one `--theme` names, or,
-/// without `--theme`, the one installed. A theme that fails to load leaves
-/// the installed one, in the mode it is drawn in (`State::install_in_mode`).
+/// Each flag takes exactly what the matching picker offers. A value the
+/// showcase cannot honour is reported on stderr and ignored: the setting
+/// stays what it would have been without the flag. `--variant` installs
+/// the theme in the mode it names: the one `--theme` names, or, where
+/// `--theme` is absent or rejected here, the one installed. A `--theme`
+/// accepted here that then fails to load changes neither the theme nor the
+/// mode, `--variant`'s included: the install is all or nothing
+/// (`State::install_in_mode`).
 fn apply_cli_args(state: &mut State, cli: &CliArgs) {
     let mode = cli
         .variant
@@ -1133,7 +1137,7 @@ fn apply_cli_args(state: &mut State, cli: &CliArgs) {
     if let Some(choice) = cli
         .icon_set
         .as_deref()
-        .and_then(|name| reported(CliArgs::icon_set_choice(name)))
+        .and_then(|name| reported(CliArgs::icon_set_choice(name, &state.installed_themes)))
     {
         state.choose_icon_set(choice);
     }
@@ -5994,12 +5998,18 @@ mod tests {
         );
     }
 
-    /// `--icon-set freedesktop` is the system icon theme; another name that
-    /// is no bundled set is an installed freedesktop theme or is reported
-    /// and ignored.
+    /// `--icon-set` takes exactly what the icon-theme picker offers: a
+    /// bundled set, `system` or `freedesktop` (the system icon theme), or an
+    /// installed theme the picker lists (`installed_themes`). Anything else
+    /// is reported and ignored, also a theme with an `index.theme` the
+    /// picker does not list, such as `hicolor`. The picker's list is set
+    /// here, so the test does not depend on the themes of the host.
     #[test]
-    fn the_icon_set_flag_names_a_set_or_is_ignored() {
+    fn the_icon_set_flag_takes_what_the_picker_offers() {
         let mut state = State::default();
+        let listed = "a-listed-icon-theme";
+        state.installed_themes = vec![listed.to_string()];
+
         apply_cli_args(&mut state, &command_line(&[("--icon-set", "freedesktop")]));
         assert_eq!(
             state.icon_set_choice,
@@ -6009,30 +6019,21 @@ mod tests {
 
         apply_cli_args(&mut state, &command_line(&[("--icon-set", "material")]));
         assert_eq!(state.icon_set_choice, IconSetChoice::Material);
-        let unknown = "no-such-icon-theme";
-        assert!(!native_theme::icons::is_freedesktop_theme_available(
-            unknown
-        ));
-        apply_cli_args(&mut state, &command_line(&[("--icon-set", unknown)]));
-        assert_eq!(
-            state.icon_set_choice,
-            IconSetChoice::Material,
-            "--icon-set {unknown}, which is not installed, replaced the icon set"
-        );
-
-        let installed = state
-            .installed_themes
-            .iter()
-            .find(|name| native_theme::icons::is_freedesktop_theme_available(name))
-            .cloned();
-        if let Some(name) = installed {
-            apply_cli_args(&mut state, &command_line(&[("--icon-set", &name)]));
+        for unlisted in ["no-such-icon-theme", "hicolor"] {
+            apply_cli_args(&mut state, &command_line(&[("--icon-set", unlisted)]));
             assert_eq!(
                 state.icon_set_choice,
-                IconSetChoice::Freedesktop(name.clone()),
-                "--icon-set {name}, which is installed, is not chosen"
+                IconSetChoice::Material,
+                "--icon-set {unlisted}, which the picker does not offer, replaced the icon set"
             );
         }
+
+        apply_cli_args(&mut state, &command_line(&[("--icon-set", listed)]));
+        assert_eq!(
+            state.icon_set_choice,
+            IconSetChoice::Freedesktop(listed.to_string()),
+            "--icon-set {listed}, which the picker offers, is not chosen"
+        );
     }
 
     /// A freedesktop icon theme's spinner is that theme's own, and a theme
@@ -6040,6 +6041,12 @@ mod tests {
     #[test]
     fn the_spinner_comes_from_the_chosen_icon_theme() {
         let mut state = State::default();
+        if state.installed_themes.is_empty() {
+            eprintln!(
+                "the_spinner_comes_from_the_chosen_icon_theme: this host has no freedesktop \
+                 icon theme, so no theme's spinner was checked"
+            );
+        }
         for name in state.installed_themes.clone() {
             let _ = update(
                 &mut state,
@@ -6059,6 +6066,22 @@ mod tests {
                 "{name}: {spinners} spinners animate"
             );
         }
+    }
+
+    /// A freedesktop theme without a spinner gets none, never the system
+    /// theme's: checked with a theme that does not exist, so on every host.
+    #[test]
+    fn a_freedesktop_theme_without_a_spinner_gets_none() {
+        let theme = "no-such-icon-theme";
+        let (frames, _, _, spins, _, _, statics) =
+            build_animation_caches(IconSet::Freedesktop, Some(theme));
+        assert!(
+            frames.is_empty() && spins.is_empty() && statics.is_empty(),
+            "{theme} has a spinner: {} frame animations, {} spins, {} static frames",
+            frames.len(),
+            spins.len(),
+            statics.len()
+        );
     }
 
     /// A choice that followed the preset keeps following it, also where it
