@@ -193,3 +193,38 @@ separator; CHANGELOG: `:74` 108, `table_row_border`/`link` entry, the two
 ### Task 8: final review, archive
 Whole-branch review of Tasks 1-7; pre-release check; this document moves to
 `docs/archive/` with an "As built" note.
+
+## As built (2026-09-24)
+
+All eight tasks done, 943891d..c33261c plus the archiving commit; nothing
+pushed. Where the implementation departed from or went beyond the text above:
+
+- Task 1: only native-theme-iced was affected; the gpui connector enables the
+  platform features per target. iced 0.5.8 had no features, so no released
+  build broke.
+- Task 2: `combo_box.arrow_area_width`, `menu.row_height`, `list.row_height`
+  and `toolbar.item_gap` became optional (soft options), and the gate covers
+  `arrow_area_width` too. The Windows reader no longer reads `SM_CYMENU`
+  (the menu bar's height) for a menu row. macos-sonoma's arrow width (17, from
+  a measured range) went as well, in the final-review round.
+- Task 3: every native preset's text fits the stated Select/Combobox height at
+  scale 1 (measured), so D6 applies everywhere.
+- Task 4: D2 needed nothing in iced (nothing pads its pick list). Beyond the
+  plan: `padding_or` became public and `stated_padding` was added, and the
+  iced showcase's card, menu stand-ins, tabs and iced_aw TabBar take the
+  theme's padding; UNREACHABLE lists ten values.
+- Task 5: a failed install no longer calls upstream's `Theme::change`, which
+  recomputed derived colours even in the same mode. After the final review the
+  showcase's accessibility is the OS's with the user's Preferences overrides
+  on top, at every install.
+- Task 6: D1's upstream-internal icons cannot follow a switch: gpui caches a
+  drawn SVG in the window's private sprite atlas keyed by path and size, with
+  no public invalidation. Those widgets' infos say their icons are
+  gpui-component's own; `docs/todo.md` records the upstream API that would
+  allow it.
+- Task 7: also fixed a flaky `native-theme-build` test (two tests raced on
+  `OUT_DIR`; the code now takes the environment as a parameter).
+- Task 8: the final review found no blocker; its findings (a failed
+  `--theme` with `--variant`, the accessibility semantics above, the macOS
+  arrow width, a Python check in `pre-release.sh`, CHANGELOG entries that
+  described fixes to things new in this release) are fixed.

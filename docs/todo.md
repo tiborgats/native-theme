@@ -1453,7 +1453,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `combo_box.min_height` | KDE (none); GNOME a derivation, "← button min-height (24+pad)" (§2.24) | kde-breeze 32, adwaita 34 |
       | `combo_box.min_width` | macOS, KDE, GNOME (none) (§2.24) | macos-sonoma, kde-breeze, adwaita 120 |
       | `combo_box.arrow_icon_size` | macOS range ~16–18 (§2.24) | macos-sonoma 17 |
-      | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | macos-sonoma 17, adwaita 28 |
+      | `combo_box.arrow_area_width` | macOS range ~16–18; GNOME (none) (§2.24) | done 2026-09-24: both removed, and the gate checks the field (docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `segmented_control.segment_height` | Windows, GNOME (none); KDE the tab bar as proxy (§2.25) | windows-11 28, adwaita 28, kde-breeze 30 |
       | `segmented_control.separator_width` | Windows, GNOME (none) (§2.25) | windows-11 1, adwaita 1 |
       | `expander.header_height` | macOS, KDE (none) (§2.27) | macos-sonoma 40, kde-breeze 40 |

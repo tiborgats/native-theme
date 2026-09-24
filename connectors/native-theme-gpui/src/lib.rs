@@ -220,7 +220,8 @@ pub fn to_theme(
 ///
 /// Pass `&AccessibilityPreferences::default()` for no scaling, or
 /// `&AccessibilityPreferences::from_system()` to honour the OS preferences
-/// under a preset (spec §7.1).
+/// under a preset: accessibility is orthogonal to the theme choice, and a
+/// user with large text wants it under a preset too.
 ///
 /// # Errors
 ///
