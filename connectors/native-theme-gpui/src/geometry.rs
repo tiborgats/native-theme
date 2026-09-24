@@ -831,22 +831,37 @@ mod tests {
             .filter(|v| v.is_some())
             .count()
     }
-    /// The stated sides [`assert_padding`] compared, per builder, over a
-    /// test's cases.
+    /// The stated values a test's assertions compared, per builder and kind,
+    /// over its cases: padding sides through [`assert_padding`], optional
+    /// heights through [`assert_height_rule`].
     #[derive(Default)]
-    struct StatedSides(std::collections::BTreeMap<String, usize>);
-    impl StatedSides {
+    struct Stated(std::collections::BTreeMap<(String, &'static str), usize>);
+    impl Stated {
         fn padding(&mut self, out: &StyleRefinement, p: &ResolvedPadding, what: &str) {
-            *self.0.entry(what.to_owned()).or_default() += assert_padding(out, p, what);
+            *self.0.entry((what.to_owned(), "padding side")).or_default() +=
+                assert_padding(out, p, what);
         }
-        /// Fails for a builder whose cases stated no side: its padding
-        /// assertions compared `None` with `None` and tested nothing.
+        fn height(
+            &mut self,
+            out: &StyleRefinement,
+            r: &ResolvedTheme,
+            stated: Option<f32>,
+            s: f32,
+            what: &str,
+        ) {
+            assert_height_rule(out, r, stated, s, what);
+            *self.0.entry((what.to_owned(), "height")).or_default() +=
+                usize::from(stated.is_some());
+        }
+        /// Fails for a builder whose cases stated none of a kind: its
+        /// assertions of that kind compared `None` with `None` and tested
+        /// nothing.
         fn assert_each_compared(&self) {
-            for (what, n) in &self.0 {
+            for ((what, kind), n) in &self.0 {
                 assert!(
                     *n > 0,
-                    "{what}: no case states a padding side, so the builder's \
-                     padding was compared with nothing; add a case that states one"
+                    "{what}: no case states a {kind}, so the builder's {kind} \
+                     was compared with nothing; add a case that states one"
                 );
             }
         }
@@ -927,7 +942,7 @@ mod tests {
 
     #[test]
     fn button_refinement_matches_theme_values() {
-        let mut stated = StatedSides::default();
+        let mut stated = Stated::default();
         for_each_case(|r, s, n| {
             let b = &r.button;
             let out = button(n);
@@ -959,7 +974,7 @@ mod tests {
 
     #[test]
     fn input_refinement_matches_theme_values() {
-        let mut stated = StatedSides::default();
+        let mut stated = Stated::default();
         for_each_case(|r, s, n| {
             let i = &r.input;
             let out = input(n);
@@ -995,11 +1010,11 @@ mod tests {
 
     #[test]
     fn menu_and_list_items_match_theme_values() {
-        let mut stated = StatedSides::default();
+        let mut stated = Stated::default();
         for_each_case(|r, s, n| {
             let m = &r.menu;
             let out = menu_item(n);
-            assert_height_rule(&out, r, m.row_height, s, "menu_item");
+            stated.height(&out, r, m.row_height, s, "menu_item");
             stated.padding(&out, &m.border.padding, "menu_item");
             assert_eq!(out.gap.width, def(m.icon_text_gap));
             assert_eq!(out.gap.height, None, "gap_x sets the column gap only");
@@ -1007,7 +1022,7 @@ mod tests {
 
             let l = &r.list;
             let out = list_item(n);
-            assert_height_rule(&out, r, l.row_height, s, "list_item");
+            stated.height(&out, r, l.row_height, s, "list_item");
             stated.padding(&out, &l.border.padding, "list_item");
             assert_text(&out, &l.item_font, s);
         });
@@ -1016,7 +1031,7 @@ mod tests {
 
     #[test]
     fn tooltip_popover_status_bar_match_theme_values() {
-        let mut stated = StatedSides::default();
+        let mut stated = Stated::default();
         for_each_case(|r, s, n| {
             let t = &r.tooltip;
             let out = tooltip(n);
@@ -1304,7 +1319,7 @@ mod tests {
 
     #[test]
     fn dialog_family_matches_theme_values() {
-        let mut stated = StatedSides::default();
+        let mut stated = Stated::default();
         for_each_case(|r, s, n| {
             let d = &r.dialog;
             let out = dialog(n);
@@ -1364,7 +1379,7 @@ mod tests {
 
     #[test]
     fn progress_group_box_accordion_match_theme_values() {
-        let mut stated = StatedSides::default();
+        let mut stated = Stated::default();
         for_each_case(|r, _s, n| {
             let p = &r.progress_bar;
             let out = progress(n);
@@ -1395,7 +1410,7 @@ mod tests {
 
     #[test]
     fn checkbox_radio_select_match_theme_values() {
-        let mut stated = StatedSides::default();
+        let mut stated = Stated::default();
         for_each_case(|r, s, n| {
             let c = &r.checkbox;
             let out = checkbox(n);
