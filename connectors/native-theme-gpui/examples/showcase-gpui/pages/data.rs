@@ -65,8 +65,8 @@ impl Showcase {
                 2,
                 &[
                     ("Name", "native-theme", 1),
-                    ("Version", "0.1.0", 1),
-                    ("License", "MIT OR Apache-2.0 OR BSD-0", 1),
+                    ("Version", env!("CARGO_PKG_VERSION"), 1),
+                    ("License", env!("CARGO_PKG_LICENSE"), 1),
                     ("Platforms", "Linux, macOS, Windows", 1),
                     ("Description", "Universal theme abstraction layer", 2),
                 ],

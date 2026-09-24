@@ -227,11 +227,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "select",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height as a minimum at a text scale of 1 or less, where upstream's own trigger height stands if larger, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font -- and, unlike geometry::combobox, the font's colour as well (native-theme-gpui geometry.rs, select)",
     ),
     (
         "combobox",
-        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height as a minimum at a text scale of 1 or less, where upstream's own trigger height stands if larger, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states, border.corner_radius, combo_box.font",
+        "combo_box.min_height by the control-height rule (defaults.line_height as the line height; the stated height itself at a text scale of 1 or less, and a minimum with an automatic height above 1), min_width, the border.padding sides the theme states -- but not the right side where combo_box.arrow_area_width is stated: the platform measures it to an arrow column the trigger does not have, its caret sitting inside the padded row, so upstream's own right padding stands --, border.corner_radius, combo_box.font (native-theme-gpui geometry.rs, combobox)",
     ),
     (
         "title_bar",

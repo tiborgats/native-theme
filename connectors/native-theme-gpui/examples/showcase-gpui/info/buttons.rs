@@ -579,8 +579,9 @@ fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
 }
 
 /// `info` with what the page's Ghost Button paints, unrefined, and its
-/// variant line: the window's toolbar buttons and status-bar toggles are
-/// that Ghost too, and take it from here so they cannot drift apart.
+/// variant line: the window's toolbar buttons and the status bar's
+/// side-panel toggle are that Ghost too, and take it from here so they
+/// cannot drift apart.
 pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     ghost_variant(colours(info, t, ButtonKind::Ghost, false))
 }

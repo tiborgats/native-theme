@@ -300,7 +300,7 @@ impl Showcase {
                     (
                         "Supported toolkits",
                         "layout-accordion-answer-2",
-                        "gpui-component, iced, egui, and more planned.".into(),
+                        "gpui-component and iced; an egui connector is planned for v0.6.0.".into(),
                     ),
                     (
                         "How many presets?",

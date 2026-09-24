@@ -96,7 +96,7 @@ pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool) -> WidgetInfo {
         )
         .instance(
             "closes",
-            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop below the title bar (dialog/dialog.rs, Dialog::render)",
+            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:15; dialog/dialog.rs:586; gpui-base dialog.rs:601)",
         )
 }
 

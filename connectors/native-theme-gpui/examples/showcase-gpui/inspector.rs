@@ -318,14 +318,23 @@ fn row(what: &'static str, value: String, cx: &gpui::App) -> gpui::Div {
         .child(Label::new(value).text_xs())
 }
 
+/// The side of a swatch's square. A swatch is the inspector's own element,
+/// which the model states nothing of, so this is the showcase's own choice,
+/// not a platform's.
+const SWATCH_SIZE: gpui::Pixels = gpui::px(16.);
+
+/// The gap between a swatch's square and its label, gpui's `gap_2`: the
+/// showcase's own choice, as [`SWATCH_SIZE`] is.
+const SWATCH_GAP: gpui::Rems = gpui::rems(0.5);
+
 /// A colour swatch labelled `name` and the colour's hex value, its square
 /// in `frame`, the showcase's frame, built once by the caller.
 fn swatch(name: &str, color: gpui::Hsla, frame: &gpui::StyleRefinement) -> gpui::Div {
     let label = SharedString::from(format!("{name} {}", hsla_to_hex(color)));
     h_flex()
-        .gap_2()
+        .gap(SWATCH_GAP)
         .items_center()
-        .child(div().size(gpui::px(16.0)).bg(color).refine_style(frame))
+        .child(div().size(SWATCH_SIZE).bg(color).refine_style(frame))
         .child(Label::new(label).text_sm())
 }
 

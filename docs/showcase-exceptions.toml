@@ -12,8 +12,9 @@
 # icon sets (v0.5.9 chrome-UX rationale §9). Each was read in the
 # vendored source on 2026-09-21 -- `Loading` and `Text` on 2026-09-22, when
 # the gpui matching rule stopped accepting a bare path segment and reported
-# them -- and cites the file and line it was read at: gpui-component 0.6.4,
-# iced_widget 0.14.2, iced_aw 0.14.1.
+# them -- and cites the file and line it was read at: gpui-component 0.6.6
+# (first read at 0.6.4; no file cited here changed in 0.6.6), iced_widget
+# 0.14.2, iced_aw 0.14.1.
 
 # Composition slots and internal parts of gpui-component widgets. Each is a
 # piece of a parent widget, not a widget of its own, so the parent's own
