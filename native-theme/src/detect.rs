@@ -272,7 +272,7 @@ fn read_xft_dpi() -> Option<f32> {
 /// or the output cannot be parsed.
 ///
 /// This is a last-resort fallback: prefer `forceFontDPI` (KDE), `Xft.dpi`
-/// (X resources), or `GetDpiForSystem` (Windows) before calling this.
+/// (X resources) before calling this.
 #[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn detect_physical_dpi() -> Option<f32> {
     use std::io::Read;
@@ -424,7 +424,8 @@ mod xrandr_dpi_tests {
 /// - **Linux (KDE)**: `forceFontDPI` from kdeglobals/kcmfontsrc → `Xft.dpi` → xrandr → 96.0
 /// - **Linux (other)**: `Xft.dpi` → xrandr → 96.0
 /// - **macOS**: 72.0 (Apple coordinate system: 1pt = 1px)
-/// - **Windows**: `GetDpiForSystem()` → 96.0
+/// - **Windows**: 96.0, the Windows reader's `font_dpi`: a point is 96/72
+///   logical (effective) pixels at any display scale
 /// - **Other**: 96.0
 #[allow(unreachable_code)]
 fn detect_system_font_dpi() -> f32 {
@@ -435,7 +436,7 @@ fn detect_system_font_dpi() -> f32 {
 
     #[cfg(all(target_os = "windows", feature = "windows"))]
     {
-        return crate::windows::read_dpi() as f32;
+        return crate::windows::LOGICAL_DPI as f32;
     }
 
     // KDE: check forceFontDPI first (same chain as the KDE reader)

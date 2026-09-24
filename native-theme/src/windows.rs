@@ -3,12 +3,14 @@
 //! GetSysColor per-widget colors, accessibility from UISettings and SystemParametersInfoW,
 //! icon sizes from GetSystemMetricsForDpi, WinUI3 spacing defaults, and geometry
 //! metrics from UISettings (WinRT) and Win32 APIs. Every system metric is read
-//! in logical pixels (see [`logical_system_metric`]).
+//! in logical pixels (see [`logical_system_metric`]), and the fonts are read at
+//! 96 DPI and reported with a `font_dpi` of 96, so their points resolve to
+//! logical pixels too (see [`LOGICAL_DPI`]).
 
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};
 #[cfg(all(target_os = "windows", feature = "windows"))]
-use ::windows::Win32::UI::HiDpi::{GetDpiForSystem, GetSystemMetricsForDpi};
+use ::windows::Win32::UI::HiDpi::{GetSystemMetricsForDpi, SystemParametersInfoForDpi};
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::Win32::UI::WindowsAndMessaging::{
     NONCLIENTMETRICSW, SM_CXBORDER, SM_CXFOCUSBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL,
@@ -91,14 +93,22 @@ fn read_accent_shades(settings: &UISettings) -> [Option<crate::Rgba>; 6] {
     variants.map(|ct| settings.GetColorValue(ct).ok().map(win_color_to_rgba))
 }
 
-/// Convert a LOGFONTW to a FontSpec.
+/// The reader's `font_dpi`: 96, `USER_DEFAULT_SCREEN_DPI` (100 % scaling).
+///
+/// The model's sizes are logical pixels, and WinUI's effective pixels are
+/// logical pixels, at 96 per inch: a point is 96/72 of them at any display
+/// scale. The fonts are read at this DPI too, so their points are the
+/// unscaled ones.
+pub(crate) const LOGICAL_DPI: u32 = 96;
+
+/// Convert a LOGFONTW read at [`LOGICAL_DPI`] to a FontSpec.
 ///
 /// Extracts font family from `lfFaceName` (null-terminated UTF-16),
-/// size in points from `abs(lfHeight) * 72 / dpi`, and weight from `lfWeight`
+/// size in points from `abs(lfHeight) * 72 / 96`, and weight from `lfWeight`
 /// (already CSS 100-900 scale, clamped).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-fn logfont_to_fontspec(lf: &::windows::Win32::Graphics::Gdi::LOGFONTW, dpi: u32) -> FontSpec {
-    logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight, dpi)
+fn logfont_to_fontspec(lf: &::windows::Win32::Graphics::Gdi::LOGFONTW) -> FontSpec {
+    logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight, LOGICAL_DPI)
 }
 
 /// Testable core of logfont_to_fontspec: takes raw field values.
@@ -127,31 +137,34 @@ fn logfont_to_fontspec_raw(
     }
 }
 
-/// Read all system fonts from NONCLIENTMETRICSW (WIN-01).
+/// Read all system fonts from NONCLIENTMETRICSW (WIN-01), at [`LOGICAL_DPI`].
 ///
 /// Extracts lfMessageFont, lfCaptionFont, lfMenuFont, and lfStatusFont
-/// as FontSpec values. Returns default fonts if the system call fails.
+/// as FontSpec values. `SystemParametersInfoForDpi` at 96 DPI gives the
+/// unscaled fonts; `SystemParametersInfoW` in a DPI-aware process would give
+/// them at the system DPI. Returns default fonts if the system call fails.
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
-fn read_all_system_fonts(dpi: u32) -> AllFonts {
+fn read_all_system_fonts() -> AllFonts {
     let mut ncm = NONCLIENTMETRICSW::default();
     ncm.cbSize = std::mem::size_of::<NONCLIENTMETRICSW>() as u32;
 
     let success = unsafe {
-        SystemParametersInfoW(
-            SPI_GETNONCLIENTMETRICS,
+        SystemParametersInfoForDpi(
+            SPI_GETNONCLIENTMETRICS.0,
             ncm.cbSize,
             Some(&mut ncm as *mut _ as *mut _),
-            SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+            0,
+            USER_DEFAULT_SCREEN_DPI,
         )
     };
 
     if success.is_ok() {
         AllFonts {
-            msg: logfont_to_fontspec(&ncm.lfMessageFont, dpi),
-            caption: logfont_to_fontspec(&ncm.lfCaptionFont, dpi),
-            menu: logfont_to_fontspec(&ncm.lfMenuFont, dpi),
-            status: logfont_to_fontspec(&ncm.lfStatusFont, dpi),
+            msg: logfont_to_fontspec(&ncm.lfMessageFont),
+            caption: logfont_to_fontspec(&ncm.lfCaptionFont),
+            menu: logfont_to_fontspec(&ncm.lfMenuFont),
+            status: logfont_to_fontspec(&ncm.lfStatusFont),
         }
     } else {
         AllFonts {
@@ -164,15 +177,6 @@ fn read_all_system_fonts(dpi: u32) -> AllFonts {
 }
 
 // REMOVED(spacing): // WinUI3 Fluent Design spacing scale removed -- ThemeSpacing_DELETED deleted in Plan 01.
-
-/// Read DPI-aware system DPI value.
-///
-/// Returns the system DPI (96 = standard 100% scaling).
-#[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-pub(crate) fn read_dpi() -> u32 {
-    unsafe { GetDpiForSystem() }
-}
 
 /// Read a system metric in logical pixels, the unit of every length in the
 /// model.
@@ -429,7 +433,6 @@ fn build_theme(
     inactive_title_bar: Option<crate::Rgba>,
     icon_sizes: Option<(f32, f32)>,
     accessibility: Option<&AccessibilityData>,
-    dpi: u32,
 ) -> crate::ReaderResult {
     let dark = is_dark_mode(&fg);
 
@@ -520,7 +523,7 @@ fn build_theme(
     } else {
         crate::AccessibilityPreferences::default()
     };
-    let font_dpi = Some(dpi as f32);
+    let font_dpi = Some(LOGICAL_DPI as f32);
 
     let output = crate::ReaderOutput::Single {
         mode: Box::new(variant),
@@ -594,8 +597,7 @@ fn read_windows() -> crate::Result<crate::ReaderResult> {
         })?;
 
     let accent_shades = read_accent_shades(&settings);
-    let dpi = read_dpi();
-    let fonts = read_all_system_fonts(dpi);
+    let fonts = read_all_system_fonts();
     let sys_colors = read_sys_colors();
     let dwm_title_bar = read_dwm_colorization();
     let inactive_title_bar = Some(read_inactive_caption_color());
@@ -613,7 +615,6 @@ fn read_windows() -> crate::Result<crate::ReaderResult> {
         inactive_title_bar,
         Some((small, large)),
         Some(&accessibility),
-        dpi,
     ))
 }
 
@@ -685,7 +686,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         )
     }
 
@@ -708,7 +708,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         )
     }
 
@@ -839,7 +838,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.accent_color, Some(accent));
@@ -871,7 +869,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         // In light mode, AccentDark1 is not directly used in ThemeMode (old primary_background
         // is no longer a field). But the logic still selects primary_background -- which is not set on the
@@ -898,7 +895,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.accent_color, Some(accent));
@@ -920,7 +916,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         let title_font = variant
@@ -946,7 +941,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         let menu_font = variant.menu.font.as_ref().expect("menu.font");
@@ -969,7 +963,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Segoe UI"));
@@ -1011,7 +1004,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(
@@ -1118,6 +1110,68 @@ mod tests {
         assert_eq!(large, at_96(SM_CXICON));
     }
 
+    /// The fonts' point sizes resolve, at the reader's `font_dpi`, to logical
+    /// pixels: the message font's `lfHeight` at 96 DPI (100 % scaling). At the
+    /// system DPI they would be device pixels, 1.5 times as large at 150 %.
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    #[allow(unsafe_code)]
+    #[test]
+    fn fonts_resolve_to_logical_pixels_at_any_system_dpi() {
+        // Per-monitor aware, as in `system_metrics_are_logical_at_any_system_dpi`.
+        let _ = unsafe {
+            ::windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
+                ::windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+            )
+        };
+        let mut ncm = NONCLIENTMETRICSW {
+            cbSize: std::mem::size_of::<NONCLIENTMETRICSW>() as u32,
+            ..Default::default()
+        };
+        unsafe {
+            ::windows::Win32::UI::HiDpi::SystemParametersInfoForDpi(
+                SPI_GETNONCLIENTMETRICS.0,
+                ncm.cbSize,
+                Some(&mut ncm as *mut _ as *mut _),
+                0,
+                USER_DEFAULT_SCREEN_DPI,
+            )
+        }
+        .unwrap();
+        let logical = ncm.lfMessageFont.lfHeight.unsigned_abs() as f32;
+        assert!(logical > 0.0, "no message font at 96 DPI");
+        assert_eq!(LOGICAL_DPI, USER_DEFAULT_SCREEN_DPI);
+
+        let result = build_theme(
+            crate::Rgba::rgb(0, 120, 215),
+            crate::Rgba::rgb(0, 0, 0),
+            crate::Rgba::rgb(255, 255, 255),
+            [None; 6],
+            read_all_system_fonts(),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+        let font_dpi = result.font_dpi.unwrap();
+        let size = reader_mode(&result)
+            .defaults
+            .font
+            .size
+            .unwrap()
+            .to_logical_px(font_dpi);
+        assert!(
+            (size - logical).abs() < 1e-3,
+            "message font resolves to {size}px at font_dpi {font_dpi}; logical is {logical}px"
+        );
+    }
+
+    /// The reader states points that resolve to logical pixels: `font_dpi` 96.
+    #[test]
+    fn build_theme_reports_logical_font_dpi() {
+        assert_eq!(light_reader().font_dpi, Some(96.0));
+    }
+
     // === Border line width test ===
 
     #[test]
@@ -1146,7 +1200,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.window.title_bar_background, Some(dwm_color));
@@ -1166,7 +1219,6 @@ mod tests {
             Some(inactive),
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.window.inactive_title_bar_background, Some(inactive));
@@ -1187,7 +1239,6 @@ mod tests {
             None,
             Some((16.0, 32.0)),
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.icon_sizes.small, Some(16.0));
@@ -1214,7 +1265,6 @@ mod tests {
             None,
             None,
             Some(&accessibility),
-            96,
         );
         // Accessibility fields are no longer on ThemeDefaults;
         // they live on AccessibilityPreferences (constructed by pipeline).
@@ -1279,7 +1329,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.surface_color, Some(bg));
@@ -1298,7 +1347,6 @@ mod tests {
             None,
             None,
             None,
-            96,
         );
         let variant = reader_mode(&theme);
         // midpoint of (0,0,0) and (255,255,255) = (127,127,127)

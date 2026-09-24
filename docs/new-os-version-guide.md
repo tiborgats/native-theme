@@ -73,7 +73,10 @@ WinUI3 Fluent Design specifications
 length, focus border, border width, icon sizes) through `GetSystemMetricsForDpi`
 at 96 DPI (`USER_DEFAULT_SCREEN_DPI`), which gives the unscaled value in logical
 pixels, the model's unit; at the system DPI it would be device pixels. Verify
-these still return correct values on the new Windows version.
+these still return correct values on the new Windows version. The fonts
+(`NONCLIENTMETRICSW`) are likewise read through `SystemParametersInfoForDpi` at
+96 DPI, and the reader reports a `font_dpi` of 96, so a point resolves to 96/72
+logical pixels at any display scale.
 
 ---
 
