@@ -32,12 +32,13 @@ and [`docs/todo_v0.6.0_egui-connector-rationale.md`](docs/todo_v0.6.0_egui-conne
 ## v0.6.1 — Full theme geometry in the iced connector
 
 v0.5.9 ships most of it. `native_theme_iced::styles` (feature `widgets`, on by
-default) replaces twenty of iced's style functions with closures built from
-the resolved theme: every `Style` field — colours, border radius and width
-included — of the button (neutral, primary, danger, success, warning and
-link classes), text input, text editor, checkbox, radio, toggler, pick list,
-menu, slider, scrollable, progress bar, rule, tooltip and a card container,
-plus the scrollbar's widths and embedding. `styles::aw` (feature `iced_aw`)
+default) replaces nineteen of iced's style functions with closures built
+from the resolved theme: every `Style` field — colours, border radius and
+width included — of the button (neutral, primary, danger, success, warning
+and link classes), text input, text editor, checkbox, radio, toggler, pick
+list, menu, slider, scrollable, progress bar, rule, tooltip and a card
+container; its twentieth item, `styles::scrollbar`, is the scrollbar's
+configuration, its widths and embedding. `styles::aw` (feature `iced_aw`)
 does the same for `iced_aw`'s card, menu bar, tab bar, sidebar, selection
 list and spinner. Padding, which iced takes through each widget's builder
 rather than its `Style`, comes from `button_padding`, `input_padding` and, for

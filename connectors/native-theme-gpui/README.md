@@ -250,7 +250,8 @@ that a `Textarea` refined with the padding cleared draws none, and that a real
 `Button`, `Input`, `Select`, `Combobox`, `ListItem` and an application-drawn
 menu row are their stated height at a text-scaling factor of 1 and keep their
 text inside them at 1, 1.1 and 2. Under kde-breeze and windows-11, which state
-an arrow column, a `Select` and a `Combobox` keep upstream's own right inset.
+an arrow column and a right side of 0, a `Select` and a `Combobox` keep
+upstream's own right inset.
 
 ### Flat buttons
 
