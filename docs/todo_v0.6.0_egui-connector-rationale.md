@@ -1649,7 +1649,7 @@ question is closed.
 | Raise the workspace floor | A dependency bump forces it, caught by the MSRV job. Raise to the new measured maximum, never to whatever stable happens to be |
 | Publish a memory-footprint number for the atlas | `size_of::<egui::Style>()` is measured in both profiles. It **cannot** be stated today because `Style::debug` is `#[cfg(debug_assertions)]` (`style.rs:322-323`); no such claim appears in either document |
 | Carry per-widget font **weight** and **slant** (18 leaves, specification §5.8 item 2) | `FontId` gains the fields (§4.2). Until then applications reach per-call weight with `RichText::variation(..)` (`widget_text.rs:200-205`) and `text_role_weight()` tells them what to ask for |
-| Fabricate `Spacing::icon_width_inner` on the base style | A platform reports a check-*mark* size. `docs/platform-facts.md:969` defines `indicator_width` as the **box**, so deriving a mark size from it by ratio would be an invented value; the field stays at egui's `8.0` (`style.rs:1466`) |
+| Fabricate `Spacing::icon_width_inner` on the base style | A platform reports a check-*mark* size. `docs/platform-facts.md:980` defines `indicator_width` as the **box**, so deriving a mark size from it by ratio would be an invented value; the field stays at egui's `8.0` (`style.rs:1466`) |
 
 Two of these deserve a note about *why the temptation is strong*, because a
 future reader will feel it.
@@ -1662,7 +1662,7 @@ reports a check-mark size, so the result is a synthesised control dimension
 presented as theme data. Leaving egui's value is the truthful option, and the
 mistake this replaced was worse in the other direction: an earlier rule wrote
 `indicator_width` into `icon_width_inner` and left the checkbox **box** pinned to
-egui's literal `14.0` on platforms that report 20 (`docs/platform-facts.md:1201`).
+egui's literal `14.0` on platforms that report 20 (`docs/platform-facts.md:1212`).
 
 **A widget for the switch.** `ResolvedSwitchTheme` is 13 leaves of which 8 are
 UNMAPPABLE, and a switch is perhaps forty lines of paint code. The charter still
@@ -1681,7 +1681,7 @@ a proposal or a matrix knows it was checked and rejected, and does not
 
 | # | Claim in an input | Correct, with evidence |
 |---|---|---|
-| 1 | `checkbox.indicator_width` maps to `Spacing::icon_width_inner` | It maps to `Spacing::icon_width`. `docs/platform-facts.md:969` defines the leaf as the **box** (14/20/20/14 at `:1201`); egui reads the box as `checkbox_size: self.spacing.icon_width` (`widget_style.rs:179`) and the mark as `check_size: self.spacing.icon_width_inner` (`:180`) |
+| 1 | `checkbox.indicator_width` maps to `Spacing::icon_width_inner` | It maps to `Spacing::icon_width`. `docs/platform-facts.md:980` defines the leaf as the **box** (14/20/20/14 at `:1212`); egui reads the box as `checkbox_size: self.spacing.icon_width` (`widget_style.rs:179`) and the mark as `check_size: self.spacing.icon_width_inner` (`:180`) |
 | 2 | `menu_style` overwrites three `bg_stroke`s | **Four**: `active` (`containers/menu.rs:24`), `open` (`:25`), `hovered` (`:26`), `inactive` (`:28`), plus `spacing.button_padding` (`:23`) and `widgets.inactive.weak_bg_fill` (`:27`) |
 | 3 | `text_styles[Button]` ← `button.font.size` is a live DIRECT mapping | `egui::Button` never reads it (§4.4). Per-widget typography travels on `override_font_id`; `text_styles[Button]` is still written for its four other readers |
 | 4 | `Ui::disable` can fire `Color32::gamma_multiply`'s `debug_assert` | It cannot. `Painter::multiply_opacity` drops non-finite and clamps (`painter.rs:100-104`). The only caller of `Visuals::disable` is `Ui::dnd_drop_zone` (`ui.rs:2725-2726`) |
