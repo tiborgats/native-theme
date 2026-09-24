@@ -63,12 +63,14 @@
 //!
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
-//! | `widgets` | yes | `styles`, through `iced_widget` |
+//! | `widgets` | yes | `styles`, `button_padding` and `input_padding`, through `iced_widget` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
 //!
 //! Every feature adds coverage. `default-features = false` leaves the palette
-//! and the metric helpers, which need `iced_core` only.
+//! and the metric helpers that need `iced_core` only; `button_padding` and
+//! `input_padding` read iced's own default padding from `iced_widget`, so
+//! `widgets` gates them as well.
 //!
 //! # Accessibility
 //!
@@ -161,10 +163,13 @@ pub use native_theme::detect::LinuxDesktop;
 ///    via `extended::apply_overrides()`
 ///
 /// The resulting theme carries the mapped Palette and Extended palette. iced's
-/// built-in Catalog trait implementations for all 8 core widgets (Button,
-/// Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
-/// automatically derive their Style structs from this palette. No explicit
-/// Catalog implementations are needed.
+/// built-in `Catalog` implementations for `Theme` -- one in each
+/// `iced_widget` module that has a style, among them `button`, `container`,
+/// `text_input`, `scrollable`, `checkbox`, `slider` and `progress_bar` --
+/// derive their `Style` structs from this palette, so no `Catalog`
+/// implementation of ours is needed. A `Tooltip` has no `Catalog` of its own:
+/// it is styled as a container (`Theme: container::Catalog`, iced_widget
+/// 0.14.2 `src/tooltip.rs:70`, `:139-148`).
 ///
 /// The `name` sets the theme's display name (visible in theme pickers).
 /// For the common case, use [`from_preset()`] to derive the name automatically.
@@ -287,7 +292,7 @@ fn padding_or(
 /// Each side is `button.border.padding`'s side where the theme states it,
 /// and iced's own button padding where it does not:
 /// `iced_widget::button::DEFAULT_PADDING` (iced_widget 0.14.2
-/// `src/button.rs:461`), 5 top and bottom, 10 left and right.
+/// `src/button.rs:462`), 5 top and bottom, 10 left and right.
 #[cfg(feature = "widgets")]
 #[must_use]
 pub fn button_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {

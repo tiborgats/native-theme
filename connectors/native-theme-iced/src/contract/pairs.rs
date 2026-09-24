@@ -640,7 +640,9 @@ pub(super) const TOOLTIP_PAIRS: &[StylePair<()>] = &[StylePair {
 // control both sides of anything either one paints (section 7).
 
 /// An `iced_aw` card states a label for each of its three sections and the
-/// fill under it, so all three are pairs, and so is the close icon on the head.
+/// fill under it, so all three are pairs. The close icon is not: `iced_aw`
+/// paints it with its default class's color, never the one this function
+/// emits (`UNREACHABLE`, `styles::aw::card.close_color`).
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_CARD_PAIRS: &[StylePair<AwStatus>] = &[
     StylePair {
@@ -699,28 +701,6 @@ pub(super) const AW_CARD_PAIRS: &[StylePair<AwStatus>] = &[
                 (
                     style.foot_text_color,
                     foot,
-                    to_color(r.defaults.background_color),
-                )
-            })
-        },
-        native: |r, _| {
-            (
-                to_color(r.defaults.text_color),
-                to_color(r.card.background_color),
-                to_color(r.defaults.background_color),
-            )
-        },
-    },
-    StylePair {
-        what: "aw card close icon",
-        indicator: true,
-        statuses: AW_CARD_STATUSES,
-        emitted: |t, r, s| {
-            let style = styles::aw::card(r)(t, s);
-            fill(style.head_background).map(|head| {
-                (
-                    style.close_color,
-                    head,
                     to_color(r.defaults.background_color),
                 )
             })

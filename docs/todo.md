@@ -438,6 +438,17 @@ What is still open on the iced side:
       carries no selected flag, so a hovered *selected* tab loses its selected
       look and no style function can prevent it (`SelectionList` tests the
       selection first and is fine).
+- [ ] File upstream iced_aw issue: Card close button ignores the caller's
+      class. `Card::on_close` styles its button with a closure that reads
+      `<Theme as Catalog>::default()` rather than the card's `class`
+      (iced_aw 0.14.1 `widget/card.rs:193-206`), and an iced button draws its
+      content in its own style's `text_color`, ignoring the `close_color` the
+      card hands it at `widget/card.rs:942-948` (iced_widget 0.14.2
+      `button.rs:368`, `:401-407`). The default class is `primary`, white
+      (`style/card.rs:78-80`, `:141-149`), so `card::Style::close_color` never
+      reaches the icon. The connector lists it as `UNREACHABLE` and the iced
+      showcase dismisses its card with its own button; both go once upstream
+      reads the card's class.
 
 #### Research
 

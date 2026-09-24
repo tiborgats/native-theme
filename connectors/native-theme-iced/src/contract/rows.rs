@@ -1454,7 +1454,7 @@ pub(super) const AW_MENU_STATUSES: &[AwStatus] = AW_STATUSES;
 
 /// The three statuses a `TabBar` asks for, and the only ones its label rows
 /// cover: `Hovered` is the tab under the pointer, `Active` the selected tab,
-/// `Disabled` a tab that is merely not selected (`tab_bar.rs:588-594`).
+/// `Disabled` a tab that is merely not selected (`tab_bar.rs:589-595`).
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_TAB_BAR_NATIVE_STATUSES: &[AwStatus] =
     &[AwStatus::Active, AwStatus::Hovered, AwStatus::Disabled];
@@ -1466,7 +1466,7 @@ pub(super) const AW_TAB_BAR_ICED_STATUSES: &[AwStatus] =
     &[AwStatus::Pressed, AwStatus::Focused, AwStatus::Selected];
 
 /// The same three for a `Sidebar`, which reads the enum the way a `TabBar`
-/// does (`sidebar/sidebar.rs:979-985`).
+/// does (`sidebar/sidebar.rs:980-986`).
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_SIDEBAR_NATIVE_STATUSES: &[AwStatus] = AW_TAB_BAR_NATIVE_STATUSES;
 
@@ -1488,9 +1488,10 @@ pub(super) const AW_SELECTION_LIST_NATIVE_STATUSES: &[AwStatus] = &[
 pub(super) const AW_SELECTION_LIST_ICED_STATUSES: &[AwStatus] =
     &[AwStatus::Pressed, AwStatus::Focused];
 
-/// Every color field of `styles::aw::card`. The card is one surface, so its
-/// three sections carry the same fill, and its labels are the platform's own
-/// text color -- `CardTheme` carries no font.
+/// Every color field of `styles::aw::card` but `close_color`, which `iced_aw`
+/// never paints with and `UNREACHABLE` accounts for. The card is one surface,
+/// so its three sections carry the same fill, and its labels are the
+/// platform's own text color -- `CardTheme` carries no font.
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_CARD_ROWS: &[StyleRow<AwStatus>] = &[
     StyleRow {
@@ -1540,12 +1541,6 @@ pub(super) const AW_CARD_ROWS: &[StyleRow<AwStatus>] = &[
         statuses: AW_CARD_STATUSES,
         native: |r, _| to_color(r.defaults.text_color),
         get: |t, r, s| Ok(styles::aw::card(r)(t, s).foot_text_color),
-    },
-    StyleRow {
-        field: "styles::aw::card.close_color",
-        statuses: AW_CARD_STATUSES,
-        native: |r, _| to_color(r.defaults.text_color),
-        get: |t, r, s| Ok(styles::aw::card(r)(t, s).close_color),
     },
 ];
 

@@ -1,9 +1,12 @@
 //! The two declared-data tables that say what the rows do *not* claim: every
-//! emitted field iced fills for us, and the one native value iced cannot take.
+//! emitted field iced fills for us, and the native values iced cannot take.
 //!
-//! Test-only, like the rest of `contract`. Nothing here is logic: the tests
-//! that read these tables live in the parent module with the rows they are
-//! checked against.
+//! Test-only, like the rest of `contract`. Nothing here is logic beyond the
+//! one-line readers `UNREACHABLE` names its values with: the tests that read
+//! these tables live in the parent module with the rows they are checked
+//! against.
+
+use super::*;
 
 /// How many of the 32 preset/mode combinations emit a substitute for the
 /// platform's own label in `extended.secondary.base.text`, and which ones do
@@ -23,7 +26,8 @@ pub(super) const SECONDARY_LABEL_AS_STATED: &[&str] = &["ios/light"];
 
 /// Every field the tripwire walks that no row claims, with the derivation that
 /// fills it instead. A field is in the rows or here, never both and never
-/// neither -- that is the whole of the tripwire (section 5.2).
+/// neither -- that is the whole of the tripwire (section 5.2) -- save the one
+/// emitted field `UNREACHABLE` names, which is in neither and there instead.
 pub(super) const DERIVED: &[(&str, &str)] = &[
     (
         "extended.background.base.color",
@@ -748,19 +752,53 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     ),
 ];
 
-/// Native values iced 0.14 has no receiver for, each with its evidence.
+/// One native value iced cannot carry: its name, the evidence, and what each
+/// preset states that iced does not draw.
+pub(super) struct Unreachable {
+    /// The value's path in the model -- or, for a `Style` field the connector
+    /// fills and the widget never paints with, that field's emitted path.
+    pub(super) field: &'static str,
+    pub(super) evidence: &'static str,
+    /// What the combination states that iced does not draw, as the report
+    /// prints it; `None` where what iced draws is the platform's value anyway.
+    pub(super) lost: fn(&Theme, &ResolvedTheme) -> Option<String>,
+    /// The combinations where `lost` is `None`, each with its reason.
+    pub(super) exceptions: &'static [(&'static str, &'static str)],
+}
+
+/// A length iced draws as nothing: lost wherever the platform states more.
+fn lost_length(length: f32) -> Option<String> {
+    (length > 0.0).then(|| format!("{length}px"))
+}
+
+/// A color iced has nowhere to paint: lost wherever the platform states it.
+#[cfg(feature = "iced_aw")]
+fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
+    Some(show(to_color(color)))
+}
+
+/// Native values iced 0.14 and `iced_aw` 0.14.1 have no receiver for, each
+/// with its evidence.
 ///
 /// Not a way out of a row: an entry here says the toolkit cannot carry the
-/// value at all, so approximating it would state something untrue. One entry
-/// this release, `scrollbar.min_thumb_length` (section 3.3).
+/// value at all, so approximating it would state something untrue. Every
+/// native value a `styles` doc comment calls receiverless is here, but one:
+/// `sidebar.border.corner_radius` has no receiver either -- `iced_aw` rounds
+/// the panel and its items with a hardcoded `(0.0).into()`
+/// (`sidebar/sidebar.rs:616`, `:992`) -- yet every bundled preset states 0,
+/// which is what `iced_aw` draws, so no preset loses it and
+/// `every_unreachable_value_is_one_a_preset_loses` would reject the entry.
+/// One entry names an emitted field rather than a native one:
+/// `styles::aw::card.close_color` is filled, and `iced_aw` paints the close
+/// icon with another class's.
 ///
 /// The list is part of the accounting rather than beside it:
 /// `every_named_field_has_exactly_one_declared_source` requires an unreachable
 /// name to be claimed by no row *and* no `DERIVED` entry, so a value cannot be
 /// called unreachable and mapped at the same time, and
-/// `the_unreachable_native_value_is_stated_by_every_preset` reads the field
-/// itself, so an entry about a value the model no longer carries fails to
-/// compile.
+/// `every_unreachable_value_is_one_a_preset_loses` reads each field through
+/// `lost`, so an entry about a value the model no longer carries fails to
+/// compile, and one no preset loses fails the test.
 ///
 /// What does *not* belong here is native geometry whose only iced receiver is
 /// a **builder method** rather than a `Style` field -- `Checkbox::spacing` for
@@ -771,12 +809,125 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
 /// `styles::*` returns a `Style`. They are neither unreachable nor a gap in
 /// the contract, and the tripwire never sees them because it walks emitted
 /// `Style` fields.
-pub(super) const UNREACHABLE: &[(&str, &str)] = &[(
-    "scrollbar.min_thumb_length",
-    "iced sizes the scroller itself and exposes no minimum: \
-     `let scroller_length = (scrollbar_bounds.width * ratio).max(2.0);` \
-     (`scrollable.rs:2068` horizontally, `:1997-1998` vertically), a hardcoded \
-     floor under its own comment \"min width for easier grabbing\". `Scrollbar` \
-     takes a width, a margin, a scroller width, an anchor and a spacing \
-     (`scrollable.rs:342-387`) and no length at all",
-)];
+pub(super) const UNREACHABLE: &[Unreachable] = &[
+    Unreachable {
+        field: "scrollbar.min_thumb_length",
+        evidence: "iced sizes the scroller itself and exposes no minimum: \
+             `let scroller_length = (scrollbar_bounds.width * ratio).max(2.0);` \
+             (`scrollable.rs:2068` horizontally, `:1997-1998` vertically), a \
+             hardcoded floor under its own comment \"min width for easier \
+             grabbing\". `Scrollbar` takes a width, a margin, a scroller width, \
+             an anchor and a spacing (`scrollable.rs:342-387`) and no length at \
+             all",
+        lost: |_, r| lost_length(r.scrollbar.min_thumb_length),
+        exceptions: &[],
+    },
+    Unreachable {
+        field: "progress_bar.min_width",
+        evidence: "`ProgressBar::length(..)` (`progress_bar.rs:91`) takes the \
+             `Length` the consumer lays the bar out with, and nothing in the \
+             widget states a floor under it",
+        lost: |_, r| lost_length(r.progress_bar.min_width),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "spinner.stroke_width",
+        evidence: "`iced_aw`'s `Spinner` is four fields -- width, height, rate \
+             and `circle_radius` (`spinner.rs:18-27`) -- and draws one filled \
+             dot orbiting the centre, `fill_circle(renderer, position, \
+             self.circle_radius, style.text_color)` (`spinner.rs:151`), not a \
+             stroked arc, so there is no stroke to size",
+        lost: |_, r| lost_length(r.spinner.stroke_width),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "spinner.min_diameter",
+        evidence: "the same four fields (`spinner.rs:18-27`): the orbit is half \
+             the smaller side of the bounds the consumer gives it \
+             (`spinner.rs:137-144`), and nothing states a minimum",
+        lost: |_, r| lost_length(r.spinner.min_diameter),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "list.alternate_row_background",
+        evidence: "`selection_list::Style` is four fields -- text_color, \
+             background, border_width, border_color \
+             (`style/selection_list.rs:10-19`) -- and a row is filled only \
+             while selected or hovered (`selection_list/list.rs:226-248`); \
+             every other row shows the list's one background \
+             (`selection_list.rs:302-315`), so there is no striping",
+        lost: |_, r| lost_color(r.list.alternate_row_background),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "list.header_background",
+        evidence: "a `SelectionList` draws rows and nothing above them \
+             (`selection_list/list.rs:215-275`): it has no column header, and \
+             its `Style` no field for one (`style/selection_list.rs:10-19`)",
+        lost: |_, r| lost_color(r.list.header_background),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "list.header_font",
+        evidence: "the same: a `SelectionList` has no column header to set \
+             in it (`selection_list/list.rs:215-275`)",
+        lost: |_, r| {
+            let f = &r.list.header_font;
+            Some(format!("{} {}px weight {}", f.family, f.size, f.weight))
+        },
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "list.grid_color",
+        evidence: "a `SelectionList` draws no line between its rows or \
+             columns (`selection_list/list.rs:215-275`), and its `Style` has \
+             no color for one (`style/selection_list.rs:10-19`)",
+        lost: |_, r| lost_color(r.list.grid_color),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "list.border.corner_radius",
+        evidence: "`selection_list::Style` carries no radius, and `iced_aw` \
+             outlines the list with a hardcoded `radius: (0.0).into()` \
+             (`selection_list.rs:309`)",
+        lost: |_, r| lost_length(r.list.border.corner_radius),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "styles::aw::card.close_color",
+        evidence: "set, and never painted: `Card::on_close` builds its close \
+             button with a style closure that reads `iced_aw`'s *default* card \
+             class, `<Theme as Catalog>::style(theme, &<Theme as \
+             Catalog>::default(), Status::Active)`, and takes that style's \
+             `close_color` as the button's `text_color` (`widget/card.rs:193-206`). \
+             The card does hand the button the caller's `close_color` \
+             (`widget/card.rs:942-948`), but an iced button ignores the style \
+             it is handed (`_style`, `button.rs:368`) and draws its content in \
+             its own style's `text_color` (`button.rs:401-407`). The default \
+             class is `primary` (`style/card.rs:78-80`), whose close color is \
+             `colors::WHITE` (`:89-91`, `:141-149`), so the icon is white on \
+             every theme",
+        lost: |t, r| {
+            let drawn = iced_aw::style::card::primary(t, AwStatus::Active).close_color;
+            let native = to_color(r.defaults.text_color);
+            (native != drawn).then(|| format!("{} drawn as {}", show(native), show(drawn)))
+        },
+        exceptions: &[
+            (
+                "adwaita/dark",
+                "defaults.text_color is white, the color iced_aw paints",
+            ),
+            ("windows-11/dark", "the same"),
+            ("macos-sonoma/dark", "the same"),
+            ("ios/dark", "the same"),
+        ],
+    },
+];

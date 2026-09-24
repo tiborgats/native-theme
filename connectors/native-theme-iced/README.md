@@ -158,6 +158,12 @@ so `spinner` styles a wrapping container:
 container(Spinner::new()).style(styles::aw::spinner(&resolved))
 ```
 
+`Card::on_close` is the one receiver `iced_aw` 0.14.1 does not honour: it
+styles the close button with its *default* card class, not the one
+`.style(..)` was given (`widget/card.rs:193-206`), so the icon is that class's
+white on every theme and `card`'s `close_color` never reaches it. Give a card
+that needs dismissing a themed button of its own instead.
+
 ### Features
 
 | You want | You write |

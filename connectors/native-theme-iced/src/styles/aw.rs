@@ -46,10 +46,20 @@ use native_theme::theme::ResolvedTheme;
 ///
 /// The card is one surface: `card.background_color` fills it and its head,
 /// body and foot alike, because `CardTheme` states a single fill, and
-/// `card.border.*` outlines it. The three section labels and the close icon
-/// are `defaults.text_color` -- `CardTheme` carries no font, so the text on a
+/// `card.border.*` outlines it. The three section labels are
+/// `defaults.text_color` -- `CardTheme` carries no font, so the text on a
 /// card is the platform's own, which is what `styles::container_card` leaves
 /// inherited for the same reason.
+///
+/// `close_color` is set to `defaults.text_color` as well, but `iced_aw` 0.14.1
+/// does not use it for the close button. `Card::on_close` styles that button
+/// with a closure that reads `iced_aw`'s *default* card class rather than the
+/// one passed to `.style(..)` (`widget/card.rs:193-206`), and an iced button
+/// draws its content in its own style's `text_color`, ignoring the one the
+/// card hands it (`button.rs:368`, `:401-407`). The default class is
+/// `primary`, whose close color is white (`style/card.rs:78-80`, `:141-149`),
+/// so the icon is white on every theme. A card that must be dismissible on a
+/// light theme is better given a button of its own in the head or the foot.
 ///
 /// A `Card` asks for `Status::Active` and nothing else (`card.rs:194-197`,
 /// `:601`), and `iced_aw`'s own class ignores the status as well, so this

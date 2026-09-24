@@ -497,7 +497,7 @@ pub fn text_editor(
 ///
 /// Two native fields are the consumer's builder geometry rather than `Style`
 /// fields: `checkbox.indicator_width` is the indicator's side length
-/// (`platform-facts.md:969`) and belongs to `Checkbox::size(..)`
+/// (`platform-facts.md:980`) and belongs to `Checkbox::size(..)`
 /// (`checkbox.rs:176`), which lays the box out as a square of exactly that
 /// (`:287`); `checkbox.label_gap` belongs to `Checkbox::spacing(..)`
 /// (`checkbox.rs:188`).
@@ -592,7 +592,7 @@ pub fn checkbox(
 ///
 /// The same two native fields are builder geometry here as on a checkbox:
 /// `checkbox.indicator_width` is the radio indicator's diameter
-/// (`platform-facts.md:969`) -- the whole circle, not the selected dot, which
+/// (`platform-facts.md:980`) -- the whole circle, not the selected dot, which
 /// iced draws at half of it (`radio.rs:409`) -- and belongs to
 /// `Radio::size(..)` (`radio.rs:200`, laid out at `:300`), and
 /// `checkbox.label_gap` to `Radio::spacing(..)` (`radio.rs:212`).

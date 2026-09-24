@@ -11,7 +11,8 @@
 //!
 //! The coverage tripwire (section 5.2) closes the table: every field it walks
 //! -- by exhaustive destructuring, so an upstream addition fails to compile
-//! here first -- must appear in exactly one of the rows and `DERIVED`.
+//! here first -- must appear in exactly one of the rows, `DERIVED` and
+//! `UNREACHABLE`.
 
 use crate::extended::contrast_ratio;
 use crate::palette::to_color;
@@ -46,7 +47,9 @@ mod derived;
 mod pairs;
 mod rows;
 
-use derived::{DERIVED, SECONDARY_LABEL_AS_STATED, SECONDARY_LABEL_SUBSTITUTED, UNREACHABLE};
+use derived::{
+    DERIVED, SECONDARY_LABEL_AS_STATED, SECONDARY_LABEL_SUBSTITUTED, UNREACHABLE, Unreachable,
+};
 use pairs::*;
 use rows::*;
 
@@ -976,8 +979,8 @@ fn palette_contrast_report() -> native_theme::Result<()> {
 //
 // Each enumerator destructures its target with no `..`, so a field added
 // upstream fails to compile here until someone classifies it; the test then
-// requires each name it yields to sit in exactly one of the rows and
-// `DERIVED`.
+// requires each name it yields to sit in exactly one of the rows, `DERIVED`
+// and `UNREACHABLE`.
 
 /// Destructure `$value` with no `..` and push one dotted path per field into
 /// `$out`, from a single list of field names.
@@ -1666,14 +1669,15 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
         for field in named_fields(&c.theme, &c.resolved) {
             let rows = rows_claiming(&field);
             let derived = DERIVED.iter().filter(|(name, _)| *name == field).count();
-            match (rows, derived) {
-                (1, 0) | (0, 1) => {}
-                (0, 0) => failures.push(format!("{field}: in neither the rows nor DERIVED")),
-                (r, d) if r > 0 && d > 0 => {
-                    failures.push(format!("{field}: claimed by {r} row(s) and by {d} DERIVED"));
-                }
-                (r, _) if r > 1 => failures.push(format!("{field}: {r} rows claim it")),
-                (_, d) => failures.push(format!("{field}: {d} DERIVED entries")),
+            let unreachable = UNREACHABLE.iter().filter(|u| u.field == field).count();
+            match (rows, derived, unreachable) {
+                (1, 0, 0) | (0, 1, 0) | (0, 0, 1) => {}
+                (0, 0, 0) => failures.push(format!(
+                    "{field}: in none of the rows, DERIVED and UNREACHABLE"
+                )),
+                (r, d, u) => failures.push(format!(
+                    "{field}: claimed by {r} row(s), {d} DERIVED and {u} UNREACHABLE"
+                )),
             }
         }
     }
@@ -1687,15 +1691,17 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
         failures.join("\n")
     );
 
-    // These two cross-checks cannot fire while the naming convention holds: an
-    // `UNREACHABLE` entry names a *native* field (`scrollbar.min_thumb_length`)
-    // and every row and `DERIVED` name is an emitted one -- `palette.*`,
-    // `extended.*` or `styles::*` -- so the two namespaces never meet. What
-    // they guard is the convention itself -- a row or a `DERIVED` entry
-    // written under a native name would be caught here. The live protection
-    // for the entry's own claim is
-    // `the_unreachable_native_value_is_stated_by_every_preset`.
-    for (field, evidence) in UNREACHABLE {
+    // Most `UNREACHABLE` entries name a *native* field
+    // (`scrollbar.min_thumb_length`), which the walk above never meets, so
+    // these two cross-checks are what keeps a row or a `DERIVED` entry from
+    // mapping one. An entry that names an emitted field
+    // (`styles::aw::card.close_color`) is walked, and the match above already
+    // lets it be claimed once; the checks hold it too. The live protection for
+    // each entry's own claim is `every_unreachable_value_is_one_a_preset_loses`.
+    for Unreachable {
+        field, evidence, ..
+    } in UNREACHABLE
+    {
         assert_eq!(
             rows_claiming(field),
             0,
@@ -1711,44 +1717,81 @@ fn every_named_field_has_exactly_one_declared_source() -> native_theme::Result<(
     Ok(())
 }
 
-/// The one native value iced 0.14 has no receiver for is a value the presets
-/// actually state.
+/// Every value `UNREACHABLE` lists is one the presets actually state and iced
+/// does not draw.
 ///
-/// `UNREACHABLE` is a claim about a native field, not about an emitted one, so
-/// the coverage tripwire cannot see it: it walks what `styles::*` returns. What
-/// can be checked is that the entry is about something real -- the field is
-/// read here, so removing it from the model breaks this file, and its value is
-/// printed for every combination so the record says what was dropped rather
-/// than only that something was.
-#[cfg(feature = "widgets")]
+/// `UNREACHABLE` is mostly a claim about native fields, which the coverage
+/// tripwire cannot see: it walks what `styles::*` returns. What can be checked
+/// is that each entry is about something real -- its `lost` reader names the
+/// field, so removing it from the model breaks this file, and it answers per
+/// combination what the platform states that iced does not draw. That answer
+/// must be `None` exactly on the entry's declared exceptions, so a preset
+/// change that moves it fails here rather than leaving the list stale, and an
+/// entry every combination is an exception to would be about nothing. An
+/// entry that names an emitted field must also be one the tripwire walks.
 #[test]
-fn the_unreachable_native_value_is_stated_by_every_preset() -> native_theme::Result<()> {
+fn every_unreachable_value_is_one_a_preset_loses() -> native_theme::Result<()> {
     let combinations = combinations()?;
-    let mut missing = Vec::new();
-    let mut stated = Vec::new();
+    let mut failures = Vec::new();
 
-    for c in &combinations {
-        let length = c.resolved.scrollbar.min_thumb_length;
-        if length > 0.0 {
-            stated.push(format!("{}: {length}", c.label()));
-        } else {
-            missing.push(format!("{}: {length}", c.label()));
+    for entry in UNREACHABLE {
+        let mut lost = Vec::new();
+        for c in &combinations {
+            let label = c.label();
+            let excepted = entry.exceptions.iter().any(|(key, _)| *key == label);
+            match ((entry.lost)(&c.theme, &c.resolved), excepted) {
+                (Some(value), false) => lost.push(format!("{label}: {value}")),
+                (None, true) => {}
+                (Some(value), true) => failures.push(format!(
+                    "{}: {label} is a declared exception yet loses {value}",
+                    entry.field
+                )),
+                (None, false) => failures.push(format!(
+                    "{}: {label} loses nothing and is not a declared exception",
+                    entry.field
+                )),
+            }
+        }
+        println!(
+            "{}, which iced cannot draw, lost on {} of {} combinations:\n{}",
+            entry.field,
+            lost.len(),
+            combinations.len(),
+            lost.join("\n")
+        );
+        if lost.is_empty() {
+            failures.push(format!(
+                "{}: no combination loses it, so the entry is about nothing",
+                entry.field
+            ));
+        }
+        for (key, _) in entry.exceptions {
+            if !combinations.iter().any(|c| c.label() == *key) {
+                failures.push(format!(
+                    "{}: the exception {key} is no bundled combination",
+                    entry.field
+                ));
+            }
+        }
+        if entry.field.starts_with("styles::")
+            && !combinations.iter().any(|c| {
+                named_fields(&c.theme, &c.resolved)
+                    .iter()
+                    .any(|f| f == entry.field)
+            })
+        {
+            failures.push(format!(
+                "{}: names an emitted field the tripwire never walks",
+                entry.field
+            ));
         }
     }
 
-    println!(
-        "scrollbar.min_thumb_length, which iced 0.14 cannot take, stated by \
-         {} of {} combinations:\n{}",
-        stated.len(),
-        combinations.len(),
-        stated.join("\n")
-    );
     assert!(
-        missing.is_empty(),
-        "{} combination(s) state no minimum thumb length, so the UNREACHABLE \
-         entry no longer describes a value the platform gives:\n{}",
-        missing.len(),
-        missing.join("\n")
+        failures.is_empty(),
+        "{} UNREACHABLE claim(s) do not hold:\n{}",
+        failures.len(),
+        failures.join("\n")
     );
     Ok(())
 }
