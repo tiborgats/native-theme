@@ -162,8 +162,8 @@ impl ThemeMode {
     ///
     /// **Note:** this does *not* handle `font_dpi`. Pass the DPI value to
     /// [`validate_with_dpi()`](Self::validate_with_dpi) or use
-    /// [`into_resolved()`](Self::into_resolved) which accepts an optional
-    /// DPI parameter.
+    /// [`into_resolved()`](Self::into_resolved), which takes the DPI from its
+    /// [`ResolutionContext`].
     #[doc(hidden)]
     pub fn resolve_all(&mut self) {
         self.resolve();

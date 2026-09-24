@@ -9,8 +9,10 @@
 //! a ruling leaves it unstated. Each row cites the platform-facts lines it
 //! reads.
 //!
-//! Presets that name no platform (the colour schemes and `ios`) state none of
-//! these sizes: nothing cites a source for them, so the toolkit's own stand.
+//! Presets that platform-facts does not cover (the colour schemes, and the
+//! `material` and `ios` platform presets, which no platform-facts column
+//! documents) state none of these sizes: nothing cites a source for them, so
+//! the toolkit's own stand.
 //!
 //! A second table, one row per (platform, field), gives the text scale's
 //! sizes and weights, the dialog title font's size and weight, the slider's
@@ -628,8 +630,9 @@ fn full_and_live_presets_state_the_same_sizes() {
     );
 }
 
-/// Presets that name no platform: the colour schemes, and `ios`, which no
-/// platform-facts column covers.
+/// Presets that platform-facts does not cover: the colour schemes, and the
+/// `material` and `ios` platform presets, which no platform-facts column
+/// documents.
 const UNSOURCED_PRESETS: [&str; 12] = [
     "catppuccin-latte",
     "catppuccin-frappe",
@@ -645,8 +648,8 @@ const UNSOURCED_PRESETS: [&str; 12] = [
     "ios",
 ];
 
-/// A preset without a platform cites no source for a size, so it states no
-/// padding side, `row_height`, `bar_height`, `item_gap` or
+/// A preset platform-facts does not cover cites no source for a size, so it
+/// states no padding side, `row_height`, `bar_height`, `item_gap` or
 /// `arrow_area_width`, and the toolkit's own sizes stand.
 #[test]
 fn unsourced_presets_state_no_gated_size() {

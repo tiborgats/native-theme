@@ -421,8 +421,8 @@ mod xrandr_dpi_tests {
 /// has provided `font_dpi`. Returns the platform-appropriate DPI for
 /// converting typographic points to logical pixels.
 ///
-/// - **Linux (KDE)**: `forceFontDPI` from kdeglobals/kcmfontsrc → `Xft.dpi` → xrandr → 96.0
-/// - **Linux (other)**: `Xft.dpi` → xrandr → 96.0
+/// - **Linux, `kde` feature** (any desktop): `forceFontDPI` → `Xft.dpi` → xrandr → 96.0
+/// - **Linux, `portal` feature without `kde`**: `Xft.dpi` → xrandr → 96.0; neither: 96.0
 /// - **macOS**: 72.0 (Apple coordinate system: 1pt = 1px)
 /// - **Windows**: 96.0, the Windows reader's `font_dpi`: a point is 96/72
 ///   logical (effective) pixels at any display scale
