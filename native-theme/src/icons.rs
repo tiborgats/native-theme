@@ -637,7 +637,7 @@ pub enum IconSetChoice {
     /// The display label ("system (breeze-dark)") is computed dynamically
     /// from [`system_icon_theme()`](crate::model::icons::system_icon_theme),
     /// so it tracks runtime OS theme changes. Where detection fails the
-    /// label gives the reason, "system (unavailable: <reason>)", and the
+    /// label gives the reason, `system (unavailable: <reason>)`, and the
     /// freedesktop loaders load nothing for this choice.
     System,
 
