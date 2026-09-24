@@ -13,9 +13,9 @@
 # Do not edit by hand.
 
 [native-theme-gpui]
-commit = "0704de5480979a1776956e20c822eeb04291c485"
-generated = "2026-09-21"
-sources = "6bb7ad91e0b287657b155735b93bb6e5c492a9c07228fd8bb1534a2910f4dd14"
+commit = "25f5c6ed4c033eb7364de4e8e74b5023bcd2d375"
+generated = "2026-09-24"
+sources = "6dcadd42cc3fce891e87a9e449f0203e1cc80945270ee9dcaddf55ced8672ea9"
 
 [native-theme-gpui.verified]
 gpui-base = "0.6.6"
@@ -25,9 +25,9 @@ gpui-kit-assets = "0.6.6"
 gpui-pre = "0.3.6"
 
 [native-theme-iced]
-commit = "0704de5480979a1776956e20c822eeb04291c485"
-generated = "2026-09-21"
-sources = "ec703a9580dd788a13b973584fce16b9e65334e216c2f54ccc0d76ba8827dbfc"
+commit = "25f5c6ed4c033eb7364de4e8e74b5023bcd2d375"
+generated = "2026-09-24"
+sources = "b9c117cedaf55f641dc055422594fe74205f13bb487ec3f2a7de059577e60ede"
 
 [native-theme-iced.verified]
 iced = "0.14.0"
