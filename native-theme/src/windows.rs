@@ -227,9 +227,11 @@ pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     // platform-facts.md:1196 (§2.4): TextControlThemePadding=10,5,6,6
     border.padding_left = Some(10.0);
     border.padding_right = Some(6.0);
+    // platform-facts.md:1292-1293 (§2.9)
     variant.slider.track_height = Some(4.0);
-    variant.slider.thumb_diameter = Some(22.0);
-    variant.progress_bar.track_height = Some(4.0);
+    variant.slider.thumb_diameter = Some(18.0);
+    // platform-facts.md:1303 (§2.10): the groove, ProgressBarTrackHeight
+    variant.progress_bar.track_height = Some(1.0);
     variant.tab.min_height = Some(32.0);
     let border = variant.tab.border.get_or_insert_default();
     // platform-facts.md:1318 (§2.11): without-close-button context, 8,3,8,3
@@ -1254,7 +1256,8 @@ mod tests {
         assert_eq!(variant.button.min_height, Some(32.0));
         assert_eq!(variant.checkbox.indicator_width, Some(20.0));
         assert_eq!(variant.input.min_height, Some(32.0));
-        assert_eq!(variant.slider.thumb_diameter, Some(22.0));
+        assert_eq!(variant.slider.thumb_diameter, Some(18.0));
+        assert_eq!(variant.progress_bar.track_height, Some(1.0));
         assert!(variant.scrollbar.groove_width.is_some());
         assert_eq!(variant.menu.row_height, Some(23.0));
         assert_eq!(variant.splitter.divider_width, Some(4.0));

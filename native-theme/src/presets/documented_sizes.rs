@@ -12,6 +12,12 @@
 //! Presets that name no platform (the colour schemes and `ios`) state none of
 //! these sizes: nothing cites a source for them, so the toolkit's own stand.
 //!
+//! A second table, one row per (platform, field), gives the text scale's
+//! sizes and weights, the dialog title font's size and weight, the slider's
+//! `track_height` and `thumb_diameter`, and the progress bar's
+//! `track_height`. A cell that leaves the field to inheritance
+//! ("← `defaults.font`", "(none)") is checked as not stated.
+//!
 //! Every row is checked in both variants against two resolutions:
 //!
 //! - **static**: the platform's full preset;
@@ -662,6 +668,378 @@ fn unsourced_presets_state_no_gated_size() {
     assert!(
         failures.is_empty(),
         "{} unsourced sizes:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+/// What platform-facts gives for one number.
+#[derive(Clone, Copy, Debug)]
+enum Want {
+    /// A font size in points, resolved to logical pixels at the gate's 96 dpi.
+    Pt(f32),
+    /// A size in logical pixels (Windows' effective pixels).
+    Px(f32),
+    /// The resolved body font's size times a factor (Kirigami's heading levels).
+    BodyTimes(f32),
+    /// A CSS font weight.
+    Weight(u16),
+    /// The cell leaves it to inheritance ("← `defaults.font`", "(none)"): the
+    /// merged variant states nothing and the resolver fills it.
+    Unstated,
+}
+
+struct FieldRow {
+    platform: Platform,
+    /// `text_scale.<role>.size` / `.weight`, `dialog.title_font.size` /
+    /// `.weight`, `slider.track_height`, `slider.thumb_diameter` or
+    /// `progress_bar.track_height`.
+    field: &'static str,
+    want: Want,
+    /// The platform-facts.md line of the cell.
+    line: usize,
+    /// How the cell was read.
+    note: &'static str,
+}
+
+const fn field(
+    platform: Platform,
+    field: &'static str,
+    want: Want,
+    line: usize,
+    note: &'static str,
+) -> FieldRow {
+    FieldRow {
+        platform,
+        field,
+        want,
+        line,
+        note,
+    }
+}
+
+use Want::{BodyTimes, Pt, Px, Unstated, Weight};
+
+#[rustfmt::skip]
+const FIELD_ROWS: &[FieldRow] = &[
+    // --- KDE ---
+    field(Kde, "text_scale.caption.size", Pt(8.0), 1435, "smallestReadableFont; its default is 8pt (:573)"),
+    field(Kde, "text_scale.caption.weight", Weight(400), 1435, "smallestReadableFont; its default is 400 (:573)"),
+    field(Kde, "text_scale.section_heading.size", BodyTimes(1.20), 1436, "Kirigami Heading level 2: body × 1.20"),
+    field(Kde, "text_scale.section_heading.weight", Weight(400), 1436, "Font.Normal unless type: Primary"),
+    field(Kde, "text_scale.dialog_title.size", BodyTimes(1.35), 1437, "Kirigami Heading level 1: body × 1.35"),
+    field(Kde, "text_scale.dialog_title.weight", Weight(400), 1437, "Font.Normal unless type: Primary"),
+    field(Kde, "text_scale.display.size", Unstated, 1438, "(none): resolves from the body font"),
+    field(Kde, "text_scale.display.weight", Unstated, 1438, "(none): resolves from the body font"),
+    field(Kde, "dialog.title_font.size", Unstated, 1496, "← defaults.font"),
+    field(Kde, "dialog.title_font.weight", Unstated, 1497, "← defaults.font"),
+    field(Kde, "slider.track_height", Px(6.0), 1292, "Slider_GrooveThickness = 6"),
+    field(Kde, "slider.thumb_diameter", Px(20.0), 1293, "Slider_ControlThickness = 20"),
+    field(Kde, "progress_bar.track_height", Px(6.0), 1303, "ProgressBar_Thickness = 6"),
+    // --- GNOME ---
+    field(Gnome, "text_scale.caption.size", Pt(9.0), 1435, ".caption: ≈9pt"),
+    field(Gnome, "text_scale.caption.weight", Weight(400), 1435, ".caption: 400"),
+    field(Gnome, "text_scale.section_heading.size", Pt(11.0), 1436, ".heading: 11pt"),
+    field(Gnome, "text_scale.section_heading.weight", Weight(700), 1436, ".heading: 700"),
+    field(Gnome, "text_scale.dialog_title.size", Pt(15.0), 1437, ".title-2: ≈15pt"),
+    field(Gnome, "text_scale.dialog_title.weight", Weight(800), 1437, ".title-2: 800"),
+    field(Gnome, "text_scale.display.size", Pt(20.0), 1438, ".title-1: ≈20pt"),
+    field(Gnome, "text_scale.display.weight", Weight(800), 1438, ".title-1: 800"),
+    field(Gnome, "dialog.title_font.size", Pt(15.0), 1496, "136% of base ≈15pt (.title-2)"),
+    field(Gnome, "dialog.title_font.weight", Weight(800), 1497, "800 (.title-2)"),
+    field(Gnome, "slider.track_height", Px(10.0), 1292, "libadwaita .scale: 10"),
+    field(Gnome, "slider.thumb_diameter", Px(20.0), 1293, "libadwaita: 20"),
+    field(Gnome, "progress_bar.track_height", Px(8.0), 1303, "libadwaita .progressbar: 8"),
+    // --- macOS ---
+    field(Macos, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt"),
+    field(Macos, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
+    field(Macos, "text_scale.section_heading.size", Pt(13.0), 1436, ".headline: 13pt"),
+    field(Macos, "text_scale.section_heading.weight", Weight(700), 1436, ".headline: 700"),
+    field(Macos, "text_scale.dialog_title.size", Pt(22.0), 1437, ".title1: 22pt"),
+    field(Macos, "text_scale.dialog_title.weight", Weight(400), 1437, ".title1: 400"),
+    field(Macos, "text_scale.display.size", Pt(26.0), 1438, ".largeTitle: 26pt"),
+    field(Macos, "text_scale.display.weight", Weight(400), 1438, ".largeTitle: 400"),
+    field(Macos, "dialog.title_font.size", Pt(13.0), 1496, "emphasized system font: systemFontSize, 13pt"),
+    field(Macos, "dialog.title_font.weight", Weight(700), 1497, "emphasized system font: Bold (700)"),
+    field(Macos, "slider.track_height", Px(5.0), 1292, "NSSlider: 5"),
+    field(Macos, "slider.thumb_diameter", Px(21.0), 1293, "NSSlider knob: 21"),
+    field(Macos, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
+    // --- Windows ---
+    field(Windows, "text_scale.caption.size", Px(12.0), 1435, "Caption: 12epx"),
+    field(Windows, "text_scale.caption.weight", Weight(400), 1435, "Caption: 400"),
+    field(Windows, "text_scale.section_heading.size", Px(20.0), 1436, "Subtitle: 20epx"),
+    field(Windows, "text_scale.section_heading.weight", Weight(600), 1436, "Subtitle: 600"),
+    field(Windows, "text_scale.dialog_title.size", Px(28.0), 1437, "Title: 28epx"),
+    field(Windows, "text_scale.dialog_title.weight", Weight(600), 1437, "Title: 600"),
+    field(Windows, "text_scale.display.size", Px(68.0), 1438, "Display: 68epx"),
+    field(Windows, "text_scale.display.weight", Weight(600), 1438, "Display: 600"),
+    field(Windows, "dialog.title_font.size", Px(20.0), 1496, "20px (ContentDialog template)"),
+    field(Windows, "dialog.title_font.weight", Weight(600), 1497, "SemiBold (600)"),
+    field(Windows, "slider.track_height", Px(4.0), 1292, "WinUI3: 4"),
+    field(Windows, "slider.thumb_diameter", Px(18.0), 1293, "WinUI3: 18"),
+    field(Windows, "progress_bar.track_height", Px(1.0), 1303, "the groove, ProgressBarTrackHeight: 1"),
+];
+
+/// Every field a [`FieldRow`] may name.
+const FIELDS: [&str; 13] = [
+    "text_scale.caption.size",
+    "text_scale.caption.weight",
+    "text_scale.section_heading.size",
+    "text_scale.section_heading.weight",
+    "text_scale.dialog_title.size",
+    "text_scale.dialog_title.weight",
+    "text_scale.display.size",
+    "text_scale.display.weight",
+    "dialog.title_font.size",
+    "dialog.title_font.weight",
+    "slider.track_height",
+    "slider.thumb_diameter",
+    "progress_bar.track_height",
+];
+
+/// The platform-facts section and row key of a field's cell.
+fn field_cell(field: &str) -> Option<(&'static str, &'static str)> {
+    Some(match field {
+        "text_scale.caption.size" | "text_scale.caption.weight" => ("2.19", "caption"),
+        "text_scale.section_heading.size" | "text_scale.section_heading.weight" => {
+            ("2.19", "section_heading")
+        }
+        "text_scale.dialog_title.size" | "text_scale.dialog_title.weight" => {
+            ("2.19", "dialog_title")
+        }
+        "text_scale.display.size" | "text_scale.display.weight" => ("2.19", "display"),
+        "dialog.title_font.size" => ("2.22", "title_font.size"),
+        "dialog.title_font.weight" => ("2.22", "title_font.weight"),
+        "slider.track_height" => ("2.9", "track_height"),
+        "slider.thumb_diameter" => ("2.9", "thumb_diameter"),
+        "progress_bar.track_height" => ("2.10", "track_height"),
+        _ => return None,
+    })
+}
+
+fn stated_entry<'a>(v: &'a ThemeMode, role: &str) -> Option<&'a crate::TextScaleEntry> {
+    match role {
+        "caption" => v.text_scale.caption.as_ref(),
+        "section_heading" => v.text_scale.section_heading.as_ref(),
+        "dialog_title" => v.text_scale.dialog_title.as_ref(),
+        "display" => v.text_scale.display.as_ref(),
+        _ => None,
+    }
+}
+
+/// Whether the unresolved variant states the field; `None` for an unknown field.
+fn states_field(v: &ThemeMode, field: &str) -> Option<bool> {
+    let title = v.dialog.title_font.as_ref();
+    Some(match field {
+        "dialog.title_font.size" => title.and_then(|f| f.size).is_some(),
+        "dialog.title_font.weight" => title.and_then(|f| f.weight).is_some(),
+        "slider.track_height" => v.slider.track_height.is_some(),
+        "slider.thumb_diameter" => v.slider.thumb_diameter.is_some(),
+        "progress_bar.track_height" => v.progress_bar.track_height.is_some(),
+        _ => {
+            let (role, sub) = field.strip_prefix("text_scale.")?.split_once('.')?;
+            let entry = stated_entry(v, role);
+            match sub {
+                "size" => entry.and_then(|e| e.size).is_some(),
+                "weight" => entry.and_then(|e| e.weight).is_some(),
+                _ => return None,
+            }
+        }
+    })
+}
+
+/// The field resolved: sizes in logical pixels, weights as numbers.
+fn resolved_field(theme: &ResolvedTheme, field: &str) -> Option<f32> {
+    let ts = &theme.text_scale;
+    Some(match field {
+        "text_scale.caption.size" => ts.caption.size,
+        "text_scale.caption.weight" => f32::from(ts.caption.weight),
+        "text_scale.section_heading.size" => ts.section_heading.size,
+        "text_scale.section_heading.weight" => f32::from(ts.section_heading.weight),
+        "text_scale.dialog_title.size" => ts.dialog_title.size,
+        "text_scale.dialog_title.weight" => f32::from(ts.dialog_title.weight),
+        "text_scale.display.size" => ts.display.size,
+        "text_scale.display.weight" => f32::from(ts.display.weight),
+        "dialog.title_font.size" => theme.dialog.title_font.size,
+        "dialog.title_font.weight" => f32::from(theme.dialog.title_font.weight),
+        "slider.track_height" => theme.slider.track_height,
+        "slider.thumb_diameter" => theme.slider.thumb_diameter,
+        "progress_bar.track_height" => theme.progress_bar.track_height,
+        _ => return None,
+    })
+}
+
+/// The gate's variants of one platform, unresolved: `(source, variant name, variant)`.
+fn gate_variants(platform: Platform) -> Vec<Result<(String, &'static str, ThemeMode), String>> {
+    let mut out = Vec::new();
+    for (mode, name) in [(ColorMode::Light, "light"), (ColorMode::Dark, "dark")] {
+        for live in [false, true] {
+            let variant = (|| {
+                let mut theme = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
+                if live {
+                    theme.merge(&Theme::preset(platform.live_preset()).map_err(|e| e.to_string())?);
+                }
+                let mut variant = theme.into_variant(mode).map_err(|e| e.to_string())?;
+                if live && let Some(reader) = platform.reader_constants() {
+                    variant.merge(&reader);
+                }
+                Ok::<_, String>(variant)
+            })();
+            out.push(
+                variant
+                    .map(|v| (source(platform, live), name, v))
+                    .map_err(|e| format!("{} {name}: {e}", source(platform, live))),
+            );
+        }
+    }
+    out
+}
+
+/// The text-scale, dialog-title, slider and progress-bar numbers of the
+/// native themes, static and live, against platform-facts.
+#[test]
+fn native_themes_state_documented_fields() {
+    let mut failures = Vec::new();
+    for platform in Platform::ALL {
+        for variant in gate_variants(platform) {
+            let (source, name, variant) = match variant {
+                Ok(v) => v,
+                Err(e) => {
+                    failures.push(e);
+                    continue;
+                }
+            };
+            let theme = match resolve(variant.clone()) {
+                Ok(t) => t,
+                Err(e) => {
+                    failures.push(format!("{source} {name}: {e}"));
+                    continue;
+                }
+            };
+            let body = theme.defaults.font.size;
+            for row in FIELD_ROWS.iter().filter(|r| r.platform == platform) {
+                let at = format!(
+                    "{}: {source} {name} ({}; {})",
+                    row.field,
+                    cite(&[row.line]),
+                    row.note
+                );
+                if let Want::Unstated = row.want {
+                    match states_field(&variant, row.field) {
+                        Some(false) => {}
+                        Some(true) => failures.push(format!(
+                            "{at}: stated, but platform-facts leaves it to inheritance"
+                        )),
+                        None => failures.push(format!("{at}: unknown field")),
+                    }
+                    continue;
+                }
+                let expected = match row.want {
+                    Want::Pt(v) => v * ResolutionContext::for_tests().font_dpi / 72.0,
+                    Want::Px(v) => v,
+                    Want::BodyTimes(f) => body * f,
+                    Want::Weight(w) => f32::from(w),
+                    Want::Unstated => continue,
+                };
+                match resolved_field(&theme, row.field) {
+                    Some(got) if (got - expected).abs() < 1e-3 => {}
+                    Some(got) => failures.push(format!(
+                        "{at}: resolved {got}, platform-facts gives {:?} = {expected}",
+                        row.want
+                    )),
+                    None => failures.push(format!("{at}: unknown field")),
+                }
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} documented-field mismatches:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+#[test]
+fn every_platform_and_field_has_one_row() {
+    for platform in Platform::ALL {
+        for f in FIELDS {
+            let n = FIELD_ROWS
+                .iter()
+                .filter(|r| r.platform == platform && r.field == f)
+                .count();
+            assert_eq!(n, 1, "{platform:?} {f}: {n} rows");
+        }
+    }
+    for f in FIELDS {
+        assert!(field_cell(f).is_some(), "{f}: no platform-facts cell");
+    }
+    assert_eq!(FIELD_ROWS.len(), Platform::ALL.len() * FIELDS.len());
+}
+
+/// Each field row cites its own cell's line, inside the cell's section.
+#[test]
+fn every_field_citation_names_its_platform_facts_row() {
+    let facts: Vec<&str> = PLATFORM_FACTS.lines().collect();
+    let line = |n: usize| facts.get(n.wrapping_sub(1)).copied().unwrap_or("");
+    let heading = |n: usize| {
+        facts
+            .iter()
+            .take(n)
+            .rev()
+            .find(|l| l.starts_with("### 2."))
+            .copied()
+            .unwrap_or("")
+    };
+    for row in FIELD_ROWS {
+        let (section, key) = field_cell(row.field).unwrap_or(("?", "?"));
+        assert!(
+            heading(row.line).starts_with(&format!("### {section} ")),
+            "{:?} {}: platform-facts.md:{} is outside §{section}",
+            row.platform,
+            row.field,
+            row.line,
+        );
+        let text = line(row.line);
+        assert!(
+            text.starts_with(&format!("| `{key}`")),
+            "{:?} {}: platform-facts.md:{} is not the `{key}` row: {text:?}",
+            row.platform,
+            row.field,
+            row.line,
+        );
+    }
+}
+
+/// Platform-facts gives no text-scale line height, so no native preset states
+/// one and the resolver computes it from `defaults.line_height` (E5).
+#[test]
+fn native_presets_state_no_text_scale_line_height() {
+    let mut failures = Vec::new();
+    for platform in Platform::ALL {
+        for name in [platform.preset(), platform.live_preset()] {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let variant = match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        failures.push(format!("{name} {mode:?}: {e}"));
+                        continue;
+                    }
+                };
+                for role in ["caption", "section_heading", "dialog_title", "display"] {
+                    if let Some(lh) = stated_entry(&variant, role).and_then(|e| e.line_height) {
+                        failures.push(format!(
+                            "{name} {mode:?}: states text_scale.{role}.line_height = {lh:?}, \
+                             with no source"
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} unsourced line heights:\n{}",
         failures.len(),
         failures.join("\n")
     );

@@ -175,7 +175,7 @@ disabled_track_color = "#71717150"
 disabled_thumb_color = "#ffffff80"
 
 [light.progress_bar]
-track_height_px = 3.0
+track_height_px = 1.0
 min_width_px = 100.0
 
 [light.tab]
@@ -555,7 +555,7 @@ disabled_track_color = "#9a9a9a50"
 disabled_thumb_color = "#2d2d2d80"
 
 [dark.progress_bar]
-track_height_px = 3.0
+track_height_px = 1.0
 min_width_px = 100.0
 
 [dark.tab]

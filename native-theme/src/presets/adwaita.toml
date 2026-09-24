@@ -271,6 +271,12 @@ button_gap_px = 12.0
 icon_size_px =32.0
 
 
+[light.dialog.title_font]
+# platform-facts.md:1496-1497 (§2.22): .title-2, ≈15pt ExtraBold
+size_pt =15.0
+weight = 800
+
+
 [light.dialog.border]
 corner_radius_px = 18.0
 # platform-facts.md:1491-1492 (§2.22): 24; 32 top / 24 bottom
@@ -591,6 +597,12 @@ min_height_px = 140.0
 max_height_px = 600.0
 button_gap_px = 12.0
 icon_size_px =32.0
+
+
+[dark.dialog.title_font]
+# platform-facts.md:1496-1497 (§2.22): .title-2, ≈15pt ExtraBold
+size_pt =15.0
+weight = 800
 
 
 [dark.dialog.border]

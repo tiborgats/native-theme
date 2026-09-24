@@ -29,24 +29,20 @@ dialog_px = 22.0
 panel_px = 20.0
 
 [light.text_scale.caption]
-size_pt =10.7
+size_pt =10.0
 weight = 400
-line_height_pt = 12.7
 
 [light.text_scale.section_heading]
 size_pt =13.0
 weight = 700
-line_height_pt = 15.5
 
 [light.text_scale.dialog_title]
-size_pt =15.6
-weight = 700
-line_height_pt = 18.6
+size_pt =22.0
+weight = 400
 
 [light.text_scale.display]
 size_pt =26.0
-weight = 700
-line_height_pt = 30.9
+weight = 400
 
 [light.button]
 min_width_px = 64.0
@@ -150,6 +146,12 @@ button_gap_px = 12.0
 icon_size_px =64.0
 
 
+[light.dialog.title_font]
+# platform-facts.md:1496-1497 (§2.22): the emphasized system font, Bold;
+# its size is the system font's, which the reader provides
+weight = 700
+
+
 [light.dialog.border]
 # platform-facts.md:1491-1492 (§2.22): ~20 (measured)
 padding_horizontal_px = 20.0
@@ -210,24 +212,20 @@ dialog_px = 22.0
 panel_px = 20.0
 
 [dark.text_scale.caption]
-size_pt =10.7
+size_pt =10.0
 weight = 400
-line_height_pt = 12.7
 
 [dark.text_scale.section_heading]
 size_pt =13.0
 weight = 700
-line_height_pt = 15.5
 
 [dark.text_scale.dialog_title]
-size_pt =15.6
-weight = 700
-line_height_pt = 18.6
+size_pt =22.0
+weight = 400
 
 [dark.text_scale.display]
 size_pt =26.0
-weight = 700
-line_height_pt = 30.9
+weight = 400
 
 [dark.button]
 min_width_px = 64.0
@@ -329,6 +327,12 @@ min_height_px = 140.0
 max_height_px = 600.0
 button_gap_px = 12.0
 icon_size_px =64.0
+
+
+[dark.dialog.title_font]
+# platform-facts.md:1496-1497 (§2.22): the emphasized system font, Bold;
+# its size is the system font's, which the reader provides
+weight = 700
 
 
 [dark.dialog.border]

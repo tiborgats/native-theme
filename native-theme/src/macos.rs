@@ -284,7 +284,7 @@ pub(crate) fn macos_widget_defaults() -> crate::ThemeMode {
             ..Default::default()
         },
         slider: crate::SliderTheme {
-            track_height: Some(4.0), // NSSlider circular knob
+            track_height: Some(5.0), // platform-facts.md:1292 (§2.9): NSSlider
             thumb_diameter: Some(21.0),
             ..Default::default()
         },
@@ -761,6 +761,7 @@ mod tests {
             Some(21.0),
             "NSSlider circular knob"
         );
+        assert_eq!(wv.slider.track_height, Some(5.0), "NSSlider track");
     }
 
     #[test]
