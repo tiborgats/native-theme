@@ -235,6 +235,13 @@ pub(crate) struct Showcase {
     /// reaches the client-side arm of `Showcase::frame`.
     #[cfg(test)]
     pub(crate) frame_for_test: Option<Decorations>,
+    /// The accessibility preferences the self-tests say the OS has, which a
+    /// preset install then reads in place of the host's
+    /// (`Showcase::os_preferences`): a test cannot change the desktop's.
+    /// `install_system_theme` takes the desktop's theme, preferences and
+    /// all, from its caller, so it needs none.
+    #[cfg(test)]
+    pub(crate) os_preferences_for_test: Option<AccessibilityPreferences>,
     /// The command palette's query and highlighted row (spec §2.8).
     pub(crate) palette_state: Entity<CommandState>,
     /// The view's focus, so an action dispatched with nothing else focused
@@ -1210,6 +1217,8 @@ impl Showcase {
             menu_bar,
             #[cfg(test)]
             frame_for_test: None,
+            #[cfg(test)]
+            os_preferences_for_test: None,
             palette_state,
             focus_handle,
             _refocus,
@@ -1312,21 +1321,28 @@ impl Showcase {
         }
     }
 
-    /// The accessibility preferences a theme is installed with: the ones the
-    /// installed theme carries -- the Preferences sheet sets them, and a
-    /// theme install must not undo that -- or, for the first theme
-    /// installed, `os`, the OS's (spec §7.1).
-    fn install_preferences(
-        cx: &App,
-        os: impl FnOnce() -> AccessibilityPreferences,
-    ) -> AccessibilityPreferences {
-        cx.native_theme()
-            .map_or_else(os, |nt| nt.accessibility().clone())
+    /// The accessibility preferences a theme is installed with: `os`, the
+    /// OS's as read for this install, with the ones the user set in the
+    /// Preferences sheet put over them (`PreferenceOverrides`). A preference
+    /// the user set stays; one the user did not follows the OS, read again
+    /// at every install.
+    fn install_preferences(cx: &App, os: AccessibilityPreferences) -> AccessibilityPreferences {
+        demo::PreferenceOverrides::of(cx).over(os)
+    }
+
+    /// The OS's accessibility preferences, read now; in the self-tests, the
+    /// ones `os_preferences_for_test` holds, where it holds any.
+    fn os_preferences(&self) -> AccessibilityPreferences {
+        #[cfg(test)]
+        if let Some(prefs) = &self.os_preferences_for_test {
+            return prefs.clone();
+        }
+        AccessibilityPreferences::from_system()
     }
 
     /// Install `system`, the desktop's own theme as `SystemTheme::from_system`
     /// read it: what `default` installs. Its accessibility preferences are
-    /// the installed theme's, where one is installed.
+    /// the OS's it read, with the user's over them.
     ///
     /// The preset the pipeline settled on is what the preset switch's
     /// `default` row and the status bar name, so a change of it relabels
@@ -1338,7 +1354,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) {
         let os = std::mem::take(&mut system.accessibility);
-        system.accessibility = Self::install_preferences(cx, || os);
+        system.accessibility = Self::install_preferences(cx, os);
         let resolved = system.pick(if self.is_dark {
             native_theme_gpui::ColorMode::Dark
         } else {
@@ -1395,10 +1411,10 @@ impl Showcase {
         self.current_icon_theme = r.icon_theme.into_owned();
         self.original_font = r.variant.defaults.font.clone();
         self.original_mono_font = r.variant.defaults.mono_font.clone();
-        // Accessibility is orthogonal to the theme choice, so the preferences
-        // stand under a preset too: the installed theme's, or the OS's for
-        // the first theme installed.
-        let prefs = Self::install_preferences(cx, AccessibilityPreferences::from_system);
+        // Accessibility is orthogonal to the theme choice, so a preset is
+        // installed with the OS's preferences and the user's over them, as
+        // the desktop's own theme is.
+        let prefs = Self::install_preferences(cx, self.os_preferences());
         let theme = to_theme(&r.variant, name, self.is_dark, &prefs);
         native_theme_gpui::apply(theme, &r.variant, &prefs, cx);
         self.error_message = None;

@@ -1379,7 +1379,7 @@ pub fn preferences_settings(t: &Theme) -> WidgetInfo {
         )
         .instance(
             "preferences",
-            "the four AccessibilityPreferences fields of the installed native theme; a change is installed with native_theme_gpui::apply_accessibility, which rebuilds the theme from its stored variant (native-theme-gpui lib.rs, apply_accessibility). The desktop's own settings are not changed, and switching or reloading the theme installs the desktop's preferences again",
+            "the four AccessibilityPreferences fields of the installed native theme; a change is installed with native_theme_gpui::apply_accessibility, which rebuilds the theme from its stored variant (native-theme-gpui lib.rs, apply_accessibility). The desktop's own settings are not changed. A preference set here stays across theme switches and reloads; the others are the desktop's, read again at every theme install, so a change made on the desktop while the showcase runs lands with the next switch or reload",
         )
         .instance(
             "text scale",

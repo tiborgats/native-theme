@@ -4,8 +4,8 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
-    FontWeight, Hsla, ImageSource, Keystroke, Pixels, Rems, RenderOnce, SharedString, Stateful,
-    StyleRefinement, Window, div, prelude::*, px, rems,
+    FontWeight, Global, Hsla, ImageSource, Keystroke, Pixels, Rems, RenderOnce, SharedString,
+    Stateful, StyleRefinement, Window, div, prelude::*, px, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
@@ -1104,11 +1104,11 @@ impl Preference {
             Self::ReduceTransparency => prefs.reduce_transparency,
         }
     }
-    fn set(self, prefs: &mut AccessibilityPreferences, on: bool) {
+    fn set(self, overrides: &mut PreferenceOverrides, on: bool) {
         match self {
-            Self::ReduceMotion => prefs.reduce_motion = on,
-            Self::HighContrast => prefs.high_contrast = on,
-            Self::ReduceTransparency => prefs.reduce_transparency = on,
+            Self::ReduceMotion => overrides.reduce_motion = Some(on),
+            Self::HighContrast => overrides.high_contrast = Some(on),
+            Self::ReduceTransparency => overrides.reduce_transparency = Some(on),
         }
     }
     /// The field's name, which its info names.
@@ -1135,17 +1135,60 @@ fn installed_preferences(cx: &App) -> Option<AccessibilityPreferences> {
     cx.native_theme().map(|nt| nt.accessibility().clone())
 }
 
-/// Install `prefs` with `change` made, where a native theme is installed,
-/// and tell `ui`: the theme is rebuilt, so an info shown for a target no
-/// longer drawn would keep the colours of the theme before.
-fn change_preferences(
+/// The accessibility preferences the user set in the Preferences sheet, each
+/// `None` until set there. Every theme install reads the OS's preferences
+/// and puts these over them (`PreferenceOverrides::over`), so a preference
+/// the user set stays across theme switches and reloads, and one the user
+/// did not set follows the OS, as a native application's does.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub(crate) struct PreferenceOverrides {
+    pub(crate) text_scaling_factor: Option<f32>,
+    pub(crate) reduce_motion: Option<bool>,
+    pub(crate) high_contrast: Option<bool>,
+    pub(crate) reduce_transparency: Option<bool>,
+}
+
+impl Global for PreferenceOverrides {}
+
+impl PreferenceOverrides {
+    /// `prefs` with every preference the user set replaced by the user's.
+    pub(crate) fn over(&self, mut prefs: AccessibilityPreferences) -> AccessibilityPreferences {
+        if let Some(scale) = self.text_scaling_factor {
+            prefs.text_scaling_factor = scale;
+        }
+        if let Some(on) = self.reduce_motion {
+            prefs.reduce_motion = on;
+        }
+        if let Some(on) = self.high_contrast {
+            prefs.high_contrast = on;
+        }
+        if let Some(on) = self.reduce_transparency {
+            prefs.reduce_transparency = on;
+        }
+        prefs
+    }
+
+    /// The preferences the user set; none before the Preferences sheet set
+    /// one.
+    pub(crate) fn of(cx: &App) -> Self {
+        cx.try_global::<Self>().cloned().unwrap_or_default()
+    }
+}
+
+/// Record the user's preferences with `change` made, and install them over
+/// the installed theme's, where a native theme is installed; tell `ui`: the
+/// theme is rebuilt, so an info shown for a target no longer drawn would
+/// keep the colours of the theme before.
+pub(crate) fn change_preferences(
     ui: &Entity<InfoRegistry>,
     cx: &mut App,
-    change: impl FnOnce(&mut AccessibilityPreferences),
+    change: impl FnOnce(&mut PreferenceOverrides),
 ) {
-    if let Some(mut prefs) = installed_preferences(cx) {
-        change(&mut prefs);
-        native_theme_gpui::apply_accessibility(&prefs, cx);
+    if let Some(prefs) = installed_preferences(cx) {
+        let mut overrides = PreferenceOverrides::of(cx);
+        change(&mut overrides);
+        native_theme_gpui::apply_accessibility(&overrides.over(prefs), cx);
+        cx.set_global(overrides);
         ui.update(cx, |r, _| r.screen_changed());
     }
 }
@@ -1179,7 +1222,7 @@ fn preference_item(
             .disabled(options.is_disabled())
             .with_size(options.size())
             .on_click(move |on: &bool, _window, cx| {
-                change_preferences(&clicked, cx, |prefs| pref.set(prefs, *on));
+                change_preferences(&clicked, cx, |overrides| pref.set(overrides, *on));
             })
             .info(
                 &ui,
@@ -1225,8 +1268,8 @@ pub(crate) fn preferences(
                 )
             },
             move |scale, cx| {
-                change_preferences(&scaled, cx, |prefs| {
-                    prefs.text_scaling_factor = scale as f32
+                change_preferences(&scaled, cx, |overrides| {
+                    overrides.text_scaling_factor = Some(scale as f32)
                 })
             },
         ),

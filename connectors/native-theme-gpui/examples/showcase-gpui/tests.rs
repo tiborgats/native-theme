@@ -5200,25 +5200,47 @@ fn installed_preferences(
     })
 }
 
-/// A theme install keeps the accessibility preferences installed before it
-/// (spec §7.1): the Preferences sheet sets them, and a preset switch, a
-/// reload or the desktop's own theme must not put the OS's back in their
-/// place. The OS's are read for the first theme installed, and only then.
+/// A theme install keeps the accessibility preferences the user set in the
+/// Preferences sheet: a preset switch, a reload or the
+/// desktop's own theme must not put the OS's back in their place. The ones
+/// the user did not set are the OS's, read again at the install
+/// (`an_untouched_preference_follows_the_os_on_reinstall`); here the OS's
+/// differ from the user's in every field, so each field shows whose it is.
 #[gpui::test]
 fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, "kde-breeze");
-    let chosen = native_theme_gpui::AccessibilityPreferences {
-        text_scaling_factor: 1.75,
-        reduce_motion: true,
+    let os = native_theme_gpui::AccessibilityPreferences {
+        text_scaling_factor: 1.25,
+        reduce_motion: false,
         high_contrast: true,
         reduce_transparency: true,
     };
-    cx.update(|_window, cx| native_theme_gpui::apply_accessibility(&chosen, cx));
+    cx.update(|_window, cx| {
+        let ui = showcase.read(cx).info_ui.clone();
+        crate::demo::change_preferences(&ui, cx, |overrides| {
+            overrides.text_scaling_factor = Some(1.75);
+            overrides.reduce_motion = Some(true);
+            overrides.high_contrast = Some(false);
+        });
+        showcase.update(cx, |this, _| {
+            this.os_preferences_for_test = Some(os.clone())
+        });
+    });
     cx.run_until_parked();
+    let chosen = native_theme_gpui::AccessibilityPreferences {
+        text_scaling_factor: 1.75,
+        reduce_motion: true,
+        high_contrast: false,
+        reduce_transparency: os.reduce_transparency,
+    };
     assert_eq!(
-        installed_preferences(&mut cx, &showcase).as_ref(),
-        Some(&chosen),
+        installed_preferences(&mut cx, &showcase).map(|p| (
+            p.text_scaling_factor,
+            p.reduce_motion,
+            p.high_contrast
+        )),
+        Some((1.75, true, false)),
         "the chosen preferences were not installed, so keeping them proves nothing"
     );
     set_preset(&mut cx, "adwaita");
@@ -5235,8 +5257,10 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
         "reloading the theme, as the theme watcher does, replaced the preferences the user \
          chose"
     );
-    // The desktop's own theme, where this host has one to read.
-    if let Ok(system) = native_theme::SystemTheme::from_system() {
+    // The desktop's own theme, where this host has one to read, with the
+    // OS's preferences it carries made the test's.
+    if let Ok(mut system) = native_theme::SystemTheme::from_system() {
+        system.accessibility = os.clone();
         cx.update(|window, cx| {
             showcase.update(cx, |this, cx| this.install_system_theme(system, window, cx))
         });
@@ -5247,6 +5271,52 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
             "installing the desktop's own theme replaced the preferences the user chose"
         );
     }
+}
+
+/// A preference the user did not set in the Preferences sheet follows the
+/// OS: every theme install -- a preset switch, a reload as the theme
+/// watcher's -- reads the OS's preferences again, so one changed while the
+/// showcase runs lands with the next install, as it does in a native
+/// application. The OS's are the test's (`os_preferences_for_test`).
+#[gpui::test]
+fn an_untouched_preference_follows_the_os_on_reinstall(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "kde-breeze");
+    let changed = native_theme_gpui::AccessibilityPreferences {
+        text_scaling_factor: 1.5,
+        reduce_motion: true,
+        high_contrast: true,
+        reduce_transparency: true,
+    };
+    assert_ne!(
+        installed_preferences(&mut cx, &showcase).as_ref(),
+        Some(&changed),
+        "the preferences the OS changes to were installed before it changed them, so \
+         following them proves nothing"
+    );
+    let os_has = |cx: &mut VisualTestContext,
+                  prefs: &native_theme_gpui::AccessibilityPreferences| {
+        let prefs = prefs.clone();
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, _| this.os_preferences_for_test = Some(prefs))
+        });
+    };
+    os_has(&mut cx, &changed);
+    set_preset(&mut cx, "adwaita");
+    assert_eq!(
+        installed_preferences(&mut cx, &showcase).as_ref(),
+        Some(&changed),
+        "a preset switch kept preferences the OS no longer has"
+    );
+    let back = native_theme_gpui::AccessibilityPreferences::default();
+    os_has(&mut cx, &back);
+    cx.update(|window, cx| window.dispatch_action(Box::new(ReloadTheme), cx));
+    cx.run_until_parked();
+    assert_eq!(
+        installed_preferences(&mut cx, &showcase).as_ref(),
+        Some(&back),
+        "reloading the theme, as the theme watcher does, kept preferences the OS no longer has"
+    );
 }
 
 /// `--variant` without `--theme` installs the current theme again in the
