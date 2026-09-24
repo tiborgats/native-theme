@@ -52,9 +52,10 @@ pub struct ResolutionContext {
     /// Dialog button ordering (`PrimaryLeft` on KDE, `PrimaryRight`
     /// elsewhere).
     pub button_order: DialogButtonOrder,
-    /// Fallback icon theme name used when the preset and per-variant
-    /// `icon_theme` fields are both `None`. Three-tier precedence in the
-    /// pipeline: per-variant → `Theme`-level shared → this fallback.
+    /// Runtime-detected icon theme name, used when the preset and
+    /// per-variant `icon_theme` fields are both `None`. Three-tier
+    /// precedence in the pipeline: per-variant → `Theme`-level shared →
+    /// this runtime detection.
     ///
     /// [`from_system`](Self::from_system) puts the detected system icon
     /// theme here, or `None` where detection failed;
@@ -88,7 +89,7 @@ impl ResolutionContext {
     }
 
     /// Deterministic values for tests: 96 DPI, `PrimaryRight` button
-    /// order, no `icon_theme` fallback.
+    /// order, no detected `icon_theme`.
     ///
     /// Tests that need a specific DPI (e.g. 72.0 for Apple point→pixel)
     /// can construct the struct via a literal:

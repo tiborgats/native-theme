@@ -412,7 +412,7 @@ pub(crate) struct OverlaySource {
     pub(crate) preset_name: String,
     /// Resolution-time inputs captured at detection time. Replaces the
     /// old `font_dpi: Option<f32>` field; the context bundles
-    /// `font_dpi` + `button_order` + `icon_theme` fallback and is cloned
+    /// `font_dpi` + `button_order` + detected `icon_theme` and is cloned
     /// into `with_overlay` replays so resolution is deterministic across
     /// overlay applications.
     pub(crate) context: crate::resolve::ResolutionContext,

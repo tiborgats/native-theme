@@ -416,7 +416,7 @@ impl Theme {
     /// fails — [`Resolved::icon_theme`] is `None`; the resolution itself
     /// does not fail over it, and [`system_icon_theme()`] gives the reason.
     /// [`Resolved::icon_theme_explicit`] reports whether tiers 1 or 2
-    /// fired (value came from TOML) versus tier 3 (runtime fallback).
+    /// fired (value came from TOML) versus tier 3 (runtime detection).
     ///
     /// Uses [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
     /// for DPI and button-order. For custom contexts, construct the
