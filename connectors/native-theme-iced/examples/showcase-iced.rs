@@ -50,7 +50,8 @@ use native_theme::icons::{
     SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedTheme, TransformAnimation,
+    AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedTextScale,
+    ResolvedTextScaleEntry, ResolvedTheme, TransformAnimation,
 };
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
@@ -1792,13 +1793,13 @@ fn view(state: &State) -> Element<'_, Message> {
     let sidebar = {
         let sp = &SP;
         let ts = &state.current_resolved.text_scale;
-        let title = text("native-theme").size(ts.dialog_title.size);
+        let title = text("native-theme").role(&ts.dialog_title);
         let subtitle =
-            text(format!("iced showcase v{}", env!("CARGO_PKG_VERSION"))).size(ts.caption.size);
+            text(format!("iced showcase v{}", env!("CARGO_PKG_VERSION"))).role(&ts.caption);
 
         // Theme selector
         let theme_section = column![
-            text("Theme Selector").size(ts.caption.size),
+            text("Theme Selector").role(&ts.caption),
             probe(
                 probes::THEME,
                 Fill,
@@ -1817,7 +1818,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
         // Color mode selector (System / Light / Dark)
         let color_mode_section = column![
-            text("Color Mode").size(ts.caption.size),
+            text("Color Mode").role(&ts.caption),
             probe(
                 probes::COLOR_MODE,
                 Fill,
@@ -1836,7 +1837,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
         // Icon theme selector
         let icon_theme_section = column![
-            text("Icon Theme").size(ts.caption.size),
+            text("Icon Theme").role(&ts.caption),
             pick_list(
                 state.icon_set_choices.clone(),
                 Some(&state.icon_set_choice),
@@ -1874,14 +1875,14 @@ fn view(state: &State) -> Element<'_, Message> {
                 layout_value(state.layout.section_gap, SP.xl),
             );
             column![
-                text("Theme Config Inspector").size(ts.caption.size),
-                text(r).size(ts.caption.size),
-                text(rlg).size(ts.caption.size),
-                text(sw).size(ts.caption.size),
-                text(bp).size(ts.caption.size),
-                text(ip).size(ts.caption.size),
-                text(lay).size(ts.caption.size),
-                text(fi).size(ts.caption.size),
+                text("Theme Config Inspector").role(&ts.caption),
+                text(r).role(&ts.caption),
+                text(rlg).role(&ts.caption),
+                text(sw).role(&ts.caption),
+                text(bp).role(&ts.caption),
+                text(ip).role(&ts.caption),
+                text(lay).role(&ts.caption),
+                text(fi).role(&ts.caption),
             ]
             .spacing(sp.xxs)
         };
@@ -1894,9 +1895,9 @@ fn view(state: &State) -> Element<'_, Message> {
                 state.widget_info.clone()
             };
             column![
-                text("Widget Info").size(ts.caption.size),
+                text("Widget Info").role(&ts.caption),
                 container(
-                    scrollable(text(info_text).size(ts.caption.size))
+                    scrollable(text(info_text).role(&ts.caption))
                         .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
                         .style(styles::scrollable(resolved)),
                 )
@@ -1947,7 +1948,7 @@ fn view(state: &State) -> Element<'_, Message> {
                 let label = tab.label();
                 // A tab is padded like the platform's tabs: the sides
                 // tab.border.padding states, a button's own elsewhere.
-                let btn = button(text(label).size(ts.caption.size)).padding(tab_pad);
+                let btn = button(text(label).role(&ts.caption)).padding(tab_pad);
                 // The open tab is the call to action; the rest are plain.
                 let btn = if tab == state.active_tab {
                     btn.style(styles::button_primary(resolved))
@@ -2003,7 +2004,7 @@ fn view(state: &State) -> Element<'_, Message> {
         // from it.
         let danger = to_color(resolved.defaults.danger_color);
         right_panel = right_panel.push(
-            container(text(msg.as_str()).color(danger).size(ts.caption.size))
+            container(text(msg.as_str()).color(danger).role(&ts.caption))
                 .padding(
                     Padding::ZERO
                         .top(sp.xs)
@@ -2172,7 +2173,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             ],
         ),
         column![
-            text("Primary Actions").size(ts.dialog_title.size),
+            text("Primary Actions").role(section_title(ts)),
             row![
                 apply_pad(
                     button("Primary")
@@ -2238,9 +2239,8 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             ],
         ),
         column![
-            text("Disabled State").size(ts.dialog_title.size),
-            text("Buttons without on_press are rendered as disabled:")
-                .size(ts.section_heading.size),
+            text("Disabled State").role(section_title(ts)),
+            text("Buttons without on_press are rendered as disabled:").body(resolved),
             row![
                 apply_pad(button("Disabled Primary").style(styles::button_primary(resolved))),
                 apply_pad(button("Disabled Secondary").style(styles::button(resolved))),
@@ -2255,14 +2255,14 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let counter_text = format!("Button presses this session: {}", state.button_press_count);
 
     let interactive = column![
-        text("Interactive Demo").size(ts.dialog_title.size),
+        text("Interactive Demo").role(section_title(ts)),
         row![
             apply_pad(
-                button(text("Click me!").size(ts.section_heading.size))
+                button("Click me!")
                     .on_press(Message::ButtonPressed)
                     .style(styles::button_primary(resolved))
             ),
-            text(counter_text).size(ts.section_heading.size),
+            text(counter_text).body(resolved),
         ]
         .spacing(sp.m)
         .align_y(iced::Center),
@@ -2345,13 +2345,13 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 ],
             ),
             column![
-                text("TextInput (single line)").size(ts.dialog_title.size),
+                text("TextInput (single line)").role(section_title(ts)),
                 input,
                 text(format!(
                     "Characters: {}  |  input.border.corner_radius: {radius:.0}px",
                     state.text_input_value.len()
                 ))
-                .size(ts.caption.size),
+                .role(&ts.caption),
             ]
             .spacing(gap.widget)
             .into(),
@@ -2378,7 +2378,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 &[("mode", "password / secure — dots replace chars")],
             ),
             column![
-                text("TextInput (secure / password)").size(ts.dialog_title.size),
+                text("TextInput (secure / password)").role(section_title(ts)),
                 input,
             ]
             .spacing(gap.widget)
@@ -2406,7 +2406,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
             ],
         ),
         column![
-            text("TextEditor (multi-line)").size(ts.dialog_title.size),
+            text("TextEditor (multi-line)").role(section_title(ts)),
             probe(
                 probes::TEXT_EDITOR,
                 Fill,
@@ -2415,7 +2415,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                     .style(styles::text_editor(resolved))
                     .height(Length::Fixed(180.0)),
             ),
-            text("Supports multi-line editing, selection, and scrolling").size(ts.caption.size),
+            text("Supports multi-line editing, selection, and scrolling").role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -2505,7 +2505,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             )],
         ),
         column![
-            text("Checkboxes").size(ts.dialog_title.size),
+            text("Checkboxes").role(section_title(ts)),
             checkbox(state.checkbox_a)
                 .label("Enable notifications")
                 .spacing(c.label_gap)
@@ -2537,7 +2537,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 .collect::<Vec<_>>()
                 .join(", ")
             ))
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -2578,7 +2578,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Radio Buttons").size(ts.dialog_title.size),
+            text("Radio Buttons").role(section_title(ts)),
             probe(
                 probes::RADIO_APPLE,
                 Length::Shrink,
@@ -2625,7 +2625,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     .map(|f| f.to_string())
                     .unwrap_or_else(|| "None".to_string())
             ))
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -2663,7 +2663,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Toggler (Switch)").size(ts.dialog_title.size),
+            text("Toggler (Switch)").role(section_title(ts)),
             probe(
                 probes::TOGGLER,
                 Length::Shrink,
@@ -2677,7 +2677,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 "State: {}",
                 if state.toggler_enabled { "ON" } else { "OFF" }
             ))
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -2734,7 +2734,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("PickList (dropdown)").size(ts.dialog_title.size),
+            text("PickList (dropdown)").role(section_title(ts)),
             probe(
                 probes::PICK_LIST,
                 Length::Shrink,
@@ -2752,7 +2752,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 "Selected: {}",
                 state.pick_list_selected.as_deref().unwrap_or("None")
             ))
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -2790,7 +2790,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("ComboBox (searchable dropdown)").size(ts.dialog_title.size),
+            text("ComboBox (searchable dropdown)").role(section_title(ts)),
             probe(
                 probes::COMBO_BOX,
                 Length::Shrink,
@@ -2808,7 +2808,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 "Selected: {}",
                 state.combo_selected.as_deref().unwrap_or("None")
             ))
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -2889,7 +2889,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Horizontal Slider").size(ts.dialog_title.size),
+            text("Horizontal Slider").role(section_title(ts)),
             row![
                 probe(
                     probes::SLIDER,
@@ -2899,13 +2899,13 @@ fn view_range(state: &State) -> Element<'_, Message> {
                         .width(Fill)
                 ),
                 text(format!("{:.1}", state.slider_value))
-                    .size(ts.section_heading.size)
+                    .body(resolved)
                     .width(Length::Fixed(50.0)),
             ]
             .spacing(sp.m)
             .align_y(iced::Center),
             text("Drag to change value. This slider drives the first progress bar below.")
-                .size(ts.caption.size),
+                .role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -2919,14 +2919,14 @@ fn view_range(state: &State) -> Element<'_, Message> {
             &[("snap behavior", "hardcoded step increments")],
         ),
         column![
-            text("Slider with Step (5-unit increments)").size(ts.dialog_title.size),
+            text("Slider with Step (5-unit increments)").role(section_title(ts)),
             row![
                 slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
                     .step(5.0_f32)
                     .style(styles::slider(resolved))
                     .width(Fill),
                 text(format!("{:.0}", state.slider_step))
-                    .size(ts.section_heading.size)
+                    .body(resolved)
                     .width(Length::Fixed(50.0)),
             ]
             .spacing(sp.m)
@@ -2948,7 +2948,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             &[("widget width", "no native source — iced's own")],
         ),
         column![
-            text("Vertical Slider").size(ts.dialog_title.size),
+            text("Vertical Slider").role(section_title(ts)),
             row![
                 probe(
                     probes::VERTICAL_SLIDER,
@@ -2961,11 +2961,10 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     .center_x(Length::Fixed(60.0))
                 ),
                 column![
-                    text(format!("Value: {:.1}", state.vslider_value))
-                        .size(ts.section_heading.size),
+                    text(format!("Value: {:.1}", state.vslider_value)).body(resolved),
                     space().height(Length::Fixed(8.0)),
                     text("Vertical sliders are useful\nfor volume controls,\nequalizers, etc.")
-                        .size(ts.caption.size),
+                        .role(&ts.caption),
                 ]
                 .spacing(sp.xs),
             ]
@@ -2998,19 +2997,19 @@ fn view_range(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Progress Bars").size(ts.dialog_title.size),
-            text("Driven by horizontal slider value:").size(ts.section_heading.size),
+            text("Progress Bars").role(section_title(ts)),
+            text("Driven by horizontal slider value:").body(resolved),
             progress_bar(0.0..=100.0, state.slider_value)
                 .girth(Length::Fixed(pb.track_height))
                 .style(styles::progress_bar(resolved)),
             space().height(Length::Fixed(4.0)),
-            text("Separate progress control:").size(ts.section_heading.size),
+            text("Separate progress control:").body(resolved),
             row![
                 slider(0.0..=100.0, state.progress_value, Message::ProgressChanged)
                     .style(styles::slider(resolved))
                     .width(Fill),
                 text(format!("{:.0}%", state.progress_value))
-                    .size(ts.section_heading.size)
+                    .body(resolved)
                     .width(Length::Fixed(50.0)),
             ]
             .spacing(sp.m)
@@ -3088,15 +3087,15 @@ fn view_display(state: &State) -> Element<'_, Message> {
             &[("text", "CardTheme carries no font — the label is inherited")],
         ),
         column![
-            text("Styled Containers").size(ts.dialog_title.size),
+            text("Styled Containers").role(section_title(ts)),
             container(
                 column![
-                    text("Container (card fill)").size(ts.section_heading.size),
+                    text("Container (card fill)").body(resolved),
                     text(format!(
                         "This container uses styles::container_card. \
                          card.border.corner_radius: {card_radius:.0}px."
                     ))
-                    .size(ts.caption.size),
+                    .role(&ts.caption),
                 ]
                 .spacing(sp.xs),
             )
@@ -3108,7 +3107,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     "A second container dressed as a card. Containers take their \
                       background, border and padding from the resolved card theme."
                 )
-                .size(ts.caption.size),
+                .role(&ts.caption),
             )
             .padding(card_pad)
             .style(styles::container_card(resolved))
@@ -3119,20 +3118,20 @@ fn view_display(state: &State) -> Element<'_, Message> {
     );
 
     let rules = column![
-        text("Divider Rules").size(ts.dialog_title.size),
+        text("Divider Rules").role(section_title(ts)),
         text(format!(
             "iced takes a rule's thickness as the constructor's argument, and the \
              platform states exactly one: separator.line_width ({line_width_s}). \
              Three rules at that width would be three copies of the same line, so \
              here is the one:"
         ))
-        .size(ts.section_heading.size),
+        .body(resolved),
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         text(
             "Its colour is separator.line_color; its radius and its fill mode have \
              no native source and are iced's own."
         )
-        .size(ts.caption.size),
+        .role(&ts.caption),
     ]
     .spacing(gap.widget);
 
@@ -3159,7 +3158,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Tooltips").size(ts.dialog_title.size),
+            text("Tooltips").role(section_title(ts)),
             row![
                 tooltip(
                     button("Hover: Top")
@@ -3240,14 +3239,14 @@ fn view_display(state: &State) -> Element<'_, Message> {
 
     let info_box = container(
         column![
-            text("Theme Information").size(ts.section_heading.size),
-            text(theme_info_text).size(ts.caption.size),
-            text(font_info).size(ts.caption.size),
+            text("Theme Information").role(section_title(ts)),
+            text(theme_info_text).role(&ts.caption),
+            text(font_info).role(&ts.caption),
             text(format!(
                 "Available presets: {} | All presets have both light and dark variants.",
                 native_theme::theme::Theme::list_presets().len(),
             ))
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(sp.xs),
     )
@@ -3256,25 +3255,25 @@ fn view_display(state: &State) -> Element<'_, Message> {
     .width(Fill);
 
     let spacing_demo = column![
-        text("Spacing & Layout").size(ts.dialog_title.size),
+        text("Spacing & Layout").role(section_title(ts)),
         row![
-            container(text("A").size(ts.section_heading.size))
+            container(text("A").body(resolved))
                 .padding(Padding::from(sp.m))
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
-            container(text("B").size(ts.section_heading.size))
+            container(text("B").body(resolved))
                 .padding(Padding::from(sp.m))
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
-            container(text("C").size(ts.section_heading.size))
+            container(text("C").body(resolved))
                 .padding(Padding::from(sp.m))
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             space().width(Fill),
-            container(text("Right-aligned").size(ts.caption.size))
+            container(text("Right-aligned").role(&ts.caption))
                 .padding(Padding::from(sp.m))
                 .style(styles::container_card(resolved)),
         ]
@@ -3335,7 +3334,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     let swatch_border = native_theme_iced::border_color(resolved);
     let swatch_bw = resolved.defaults.border.line_width;
     let swatch_r = native_theme_iced::border_radius(resolved);
-    let caption_sz = ts.caption.size;
+    let caption = &ts.caption;
     let xxs_sp = sp.xxs;
     let cell = |label: &'static str, color: Color| -> Element<'_, Message> {
         color_swatch(
@@ -3344,7 +3343,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             swatch_border,
             swatch_bw,
             swatch_r,
-            caption_sz,
+            caption,
             xxs_sp,
         )
     };
@@ -3379,12 +3378,12 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Grid (cells in columns)").size(ts.dialog_title.size),
+            text("Grid (cells in columns)").role(section_title(ts)),
             text(
                 "iced_widget::grid distributes its children over a fixed number of \
                  columns. Here: the eight colors ResolvedDefaults names."
             )
-            .size(ts.section_heading.size),
+            .body(resolved),
             grid([
                 cell("accent_color", to_color(d.accent_color)),
                 cell("danger_color", to_color(d.danger_color)),
@@ -3439,22 +3438,22 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         let focused = state.focused_pane == Some(pane);
         let title = format!("Pane {label}");
         let controls = row![
-            button(text("split |").size(ts.caption.size))
+            button(text("split |").role(&ts.caption))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
                 .style(styles::button(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
-            button(text("split —").size(ts.caption.size))
+            button(text("split —").role(&ts.caption))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Horizontal, pane))
                 .style(styles::button(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
-            button(text("close").size(ts.caption.size))
+            button(text("close").role(&ts.caption))
                 .on_press(Message::PaneClosed(pane))
                 .style(styles::button_danger(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
         ]
         .spacing(sp.xs);
 
-        let title_bar = pane_grid::TitleBar::new(text(title).size(ts.section_heading.size))
+        let title_bar = pane_grid::TitleBar::new(text(title).body(resolved))
             .controls(Element::from(controls))
             .always_show_controls()
             .padding(Padding::from([sp.xs, sp.s]))
@@ -3466,7 +3465,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             } else {
                 "Drag the split between the panes to resize."
             })
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(sp.xs)
         .padding(Padding::from(sp.s));
@@ -3513,12 +3512,12 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("PaneGrid (split, drag and resize)").size(ts.dialog_title.size),
+            text("PaneGrid (split, drag and resize)").role(section_title(ts)),
             text(
                 "Split a pane, drag its title bar onto another one, or drag the \
                  divider between two panes."
             )
-            .size(ts.section_heading.size),
+            .body(resolved),
             panes,
         ]
         .spacing(gap.widget)
@@ -3556,24 +3555,24 @@ fn view_layout(state: &State) -> Element<'_, Message> {
 
     let scale_table = table(
         [
-            table::column(text("text_scale role").size(ts.section_heading.size), {
-                let size = ts.caption.size;
-                move |r: ScaleRow| text(r.0).size(size)
+            table::column(text("text_scale role").body(resolved), {
+                let caption = ts.caption.clone();
+                move |r: ScaleRow| text(r.0).role(&caption)
             })
             .width(Length::Fixed(160.0)),
-            table::column(text("size").size(ts.section_heading.size), {
-                let size = ts.caption.size;
-                move |r: ScaleRow| text(r.1).size(size)
+            table::column(text("size").body(resolved), {
+                let caption = ts.caption.clone();
+                move |r: ScaleRow| text(r.1).role(&caption)
             })
             .width(Length::Fixed(90.0)),
-            table::column(text("weight").size(ts.section_heading.size), {
-                let size = ts.caption.size;
-                move |r: ScaleRow| text(r.2).size(size)
+            table::column(text("weight").body(resolved), {
+                let caption = ts.caption.clone();
+                move |r: ScaleRow| text(r.2).role(&caption)
             })
             .width(Length::Fixed(90.0)),
-            table::column(text("line height").size(ts.section_heading.size), {
-                let size = ts.caption.size;
-                move |r: ScaleRow| text(r.3).size(size)
+            table::column(text("line height").body(resolved), {
+                let caption = ts.caption.clone();
+                move |r: ScaleRow| text(r.3).role(&caption)
             })
             .width(Length::Fixed(110.0)),
         ],
@@ -3618,8 +3617,8 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Table (columns and rows)").size(ts.dialog_title.size),
-            text("The four typographic roles this theme resolves:").size(ts.section_heading.size),
+            text("Table (columns and rows)").role(section_title(ts)),
+            text("The four typographic roles this theme resolves:").body(resolved),
             scale_table,
         ]
         .spacing(gap.widget)
@@ -3661,6 +3660,45 @@ below from `link.font.color`.
 let settings = markdown::Settings::with_text_size(size, style);
 ```
 ";
+
+/// A `markdown` viewer whose `h1` and `h2` take their roles' weights.
+///
+/// `markdown::Settings` carries a size per heading level but one font for all
+/// of the text (`markdown.rs:1033-1054`), and iced's `heading` draws a
+/// heading's spans in that font (`:1273-1313`). So each of the two swaps in a
+/// font at its role's weight before handing the heading to iced's `heading`.
+struct RoleHeadings {
+    h1: iced::Font,
+    h2: iced::Font,
+}
+
+impl<'a> markdown::Viewer<'a, Message> for RoleHeadings {
+    fn on_link_click(url: markdown::Uri) -> Message {
+        Message::MarkdownLinkClicked(url)
+    }
+
+    fn heading(
+        &self,
+        settings: markdown::Settings,
+        level: &'a markdown::HeadingLevel,
+        text: &'a markdown::Text,
+        index: usize,
+    ) -> Element<'a, Message> {
+        let font = match level {
+            markdown::HeadingLevel::H1 => self.h1,
+            markdown::HeadingLevel::H2 => self.h2,
+            _ => settings.style.font,
+        };
+        let settings = markdown::Settings {
+            style: markdown::Style {
+                font,
+                ..settings.style
+            },
+            ..settings
+        };
+        markdown::heading(settings, level, text, index, Self::on_link_click)
+    }
+}
 
 /// What the QR code encodes.
 const QR_PAYLOAD: &str = "https://github.com/tiborgats/native-theme";
@@ -3785,12 +3823,12 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             )],
         ),
         column![
-            text("Canvas (a drawing from the theme)").size(ts.dialog_title.size),
+            text("Canvas (a drawing from the theme)").role(section_title(ts)),
             text(
                 "Every colour and every width below is a ResolvedTheme field, \
                  captured when the program is built."
             )
-            .size(ts.section_heading.size),
+            .body(resolved),
             canvas(sketch)
                 .width(Length::Fixed(280.0))
                 .height(Length::Fixed(120.0)),
@@ -3811,7 +3849,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             })
             .into(),
         None => text("The payload could not be encoded as a QR code.")
-            .size(ts.caption.size)
+            .role(&ts.caption)
             .into(),
     };
 
@@ -3829,9 +3867,9 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             )],
         ),
         column![
-            text("QRCode").size(ts.dialog_title.size),
+            text("QRCode").role(section_title(ts)),
             text("Its two-colour Style is the platform's foreground on its background:")
-                .size(ts.section_heading.size),
+                .body(resolved),
             qr_demo,
         ]
         .spacing(gap.widget)
@@ -3867,9 +3905,10 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             link_color: to_color(resolved.link.font.color),
         };
         let mut settings = markdown::Settings::with_text_size(d.font.size, style);
-        settings.h1_size = ts.display.size.into();
-        settings.h2_size = ts.dialog_title.size.into();
-        settings.h3_size = ts.section_heading.size.into();
+        settings.h1_size = page_title(ts).size.into();
+        settings.h2_size = section_title(ts).size.into();
+        settings.h3_size = d.font.size.into();
+        settings.h4_size = d.font.size.into();
         settings.code_size = d.mono_font.size.into();
         settings
     };
@@ -3902,16 +3941,17 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             &[
                 ("base size", "defaults.font.size"),
                 (
-                    "h1 / h2 / h3",
-                    "text_scale display / dialog_title / section_heading",
+                    "h1 / h2",
+                    "text_scale dialog_title / section_heading, size and weight",
+                ),
+                (
+                    "h3 – h6",
+                    "defaults.font: the model names no role between section_heading \
+                     and body text",
                 ),
                 ("code size", "defaults.mono_font.size"),
             ],
             &[
-                (
-                    "h4 / h5 / h6",
-                    "the model names four typographic roles, not six — iced's own",
-                ),
                 (
                     "block spacing",
                     "Settings::spacing is iced's own, derived from the native base \
@@ -3934,15 +3974,19 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Markdown").size(ts.dialog_title.size),
-            container(
-                markdown::view(state.markdown_content.items(), md_settings)
-                    .map(Message::MarkdownLinkClicked)
-            )
+            text("Markdown").role(section_title(ts)),
+            container(markdown::view_with(
+                state.markdown_content.items(),
+                md_settings,
+                &RoleHeadings {
+                    h1: weighted(page_title(ts).weight),
+                    h2: weighted(section_title(ts).weight),
+                },
+            ))
             .padding(Padding::from(gap.container))
             .style(styles::container_card(resolved))
             .width(Fill),
-            text(link_line).size(ts.caption.size),
+            text(link_line).role(&ts.caption),
         ]
         .spacing(gap.widget)
         .into(),
@@ -4012,20 +4056,20 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     let card_section: Element<'_, Message> = if state.aw_card_open {
         let card = Card::new(
-            text("Card").size(ts.dialog_title.size),
+            text("Card").role(section_title(ts)),
             column![
                 text(
                     "CardTheme states one fill and one border, so the head, the body \
                      and the foot are the same surface, and the three labels are \
                      defaults.text_color."
                 )
-                .size(ts.caption.size),
+                .role(&ts.caption),
             ]
             .spacing(sp.xs),
         )
         .foot(Element::from(
             row![
-                button(text("Dismiss").size(ts.caption.size))
+                button(text("Dismiss").role(&ts.caption))
                     .on_press(Message::AwCardToggled)
                     .style(styles::button(resolved))
                     .padding(native_theme_iced::button_padding(resolved)),
@@ -4043,7 +4087,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         }
         .into()
     } else {
-        button(text("Show the card again").size(ts.caption.size))
+        button(text("Show the card again").role(&ts.caption))
             .on_press(Message::AwCardToggled)
             .style(styles::button_primary(resolved))
             .padding(native_theme_iced::button_padding(resolved))
@@ -4084,7 +4128,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                      themed Dismiss button closes the card instead",
             )],
         ),
-        column![text("Card").size(ts.dialog_title.size), card_section,]
+        column![text("Card").role(section_title(ts)), card_section,]
             .spacing(gap.widget)
             .into(),
     );
@@ -4186,7 +4230,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("MenuBar and its Menus").size(ts.dialog_title.size),
+            text("MenuBar and its Menus").role(section_title(ts)),
             menu_bar,
         ]
         .spacing(gap.widget)
@@ -4197,7 +4241,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     let context_underlay = container(
         column![
-            text("Right-click inside this panel").size(ts.section_heading.size),
+            text("Right-click inside this panel").body(resolved),
             text(
                 "ContextMenu gets no styles::aw function: its own Style is a one-field \
                  backdrop scrim and its default class already emits alpha 0 \
@@ -4205,7 +4249,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                  its entries are padded like the menu bar's items, by \
                  menu.border.padding."
             )
-            .size(ts.caption.size),
+            .role(&ts.caption),
         ]
         .spacing(sp.xs),
     )
@@ -4215,7 +4259,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     let context_demo = ContextMenu::new(context_underlay, move || {
         let entry = |label: &'static str| -> Element<'_, Message> {
-            button(text(label).size(ts.caption.size))
+            button(text(label).role(&ts.caption))
                 .on_press(Message::AwActionChosen(format!("Context menu: {label}")))
                 .style(styles::button(resolved))
                 .width(Fill)
@@ -4253,7 +4297,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         1 => "The second tab. Its label colour is tab.active_text_color.",
         _ => "An unselected tab is Status::Disabled to iced_aw, not a dead one.",
     })
-    .size(ts.caption.size);
+    .role(&ts.caption);
 
     let tabs = Tabs::new(Message::AwTabsSelected)
         .push(
@@ -4261,7 +4305,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             TabLabel::Text("Colours".to_string()),
             container(
                 text("Tabs owns its content and forwards the bar's style to the TabBar it holds.")
-                    .size(ts.caption.size),
+                    .role(&ts.caption),
             )
             .padding(Padding::from(sp.s)),
         )
@@ -4273,7 +4317,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     "tab.min_width {:.0}px · tab.min_height {:.0}px",
                     tab_t.min_width, tab_t.min_height
                 ))
-                .size(ts.caption.size),
+                .role(&ts.caption),
             )
             .padding(Padding::from(sp.s)),
         )
@@ -4330,7 +4374,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             )],
         ),
         column![
-            text("TabBar (stand-alone) and Tabs (with content)").size(ts.dialog_title.size),
+            text("TabBar (stand-alone) and Tabs (with content)").role(section_title(ts)),
             tab_bar.style(styles::aw::tab_bar(resolved)),
             tab_bar_body,
             tabs,
@@ -4394,7 +4438,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             )],
         ),
         column![
-            text("Sidebar").size(ts.dialog_title.size),
+            text("Sidebar").role(section_title(ts)),
             row![
                 side_bar,
                 container(
@@ -4405,7 +4449,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                         1 => "Appearance: the selected item is sidebar.selection_background.",
                         _ => "Icons: hovering an item paints sidebar.hover_background.",
                     })
-                    .size(ts.caption.size),
+                    .role(&ts.caption),
                 )
                 .padding(Padding::from(gap.container))
                 .style(styles::container_card(resolved))
@@ -4443,7 +4487,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Spinner (styled through its container)").size(ts.dialog_title.size),
+            text("Spinner (styled through its container)").role(section_title(ts)),
             container(
                 Spinner::new()
                     .width(Length::Fixed(spin_t.diameter))
@@ -4536,7 +4580,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             )],
         ),
         column![
-            text("SelectionList").size(ts.dialog_title.size),
+            text("SelectionList").role(section_title(ts)),
             probe(probes::SELECTION_LIST, Length::Shrink, selection_list),
         ]
         .spacing(gap.widget)
@@ -4551,12 +4595,12 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     column![
         header,
-        text(action_line).size(ts.caption.size),
+        text(action_line).role(&ts.caption),
         card_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         menu_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
-        column![text("ContextMenu").size(ts.dialog_title.size), context_demo,].spacing(gap.widget),
+        column![text("ContextMenu").role(section_title(ts)), context_demo,].spacing(gap.widget),
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         tab_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
@@ -4598,19 +4642,19 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     let total_count = state.loaded_icons.len();
 
     let header = column![
-        text("Icons").size(ts.display.size),
+        text("Icons").role(page_title(ts)),
         text(format!(
             "All {total_count} IconRole variants — \
              {loaded_count} loaded, {system_count} system, {fallback_count} fallback"
         ))
-        .size(ts.section_heading.size),
+        .body(resolved),
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
     ]
     .spacing(sp.xs);
 
     let icon_set_info = column![
-        text(format!("Active icon set: {}", state.icon_set_choice)).size(ts.section_heading.size),
-        text(state.system_icon_theme_label()).size(ts.caption.size),
+        text(format!("Active icon set: {}", state.icon_set_choice)).body(resolved),
+        text(state.system_icon_theme_label()).role(&ts.caption),
     ]
     .spacing(sp.xs);
 
@@ -4630,8 +4674,8 @@ fn view_icons(state: &State) -> Element<'_, Message> {
                     loaded,
                     resolved,
                     fg_color,
-                    ts.caption.size,
-                    ts.section_heading.size,
+                    &ts.caption,
+                    &ts.section_heading,
                     sp.xxs,
                 )
             })
@@ -4664,7 +4708,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let icon_px = resolved.defaults.icon_sizes.large;
-    let section_title = text("Animated Icons").size(ts.display.size);
+    let title = text("Animated Icons").role(section_title(ts));
     let divider = rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved));
 
     // Collect spinner columns into a row
@@ -4679,8 +4723,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 .style(move |_theme, _status| iced::widget::svg::Style {
                     color: Some(fg_color),
                 });
-            let label =
-                text(format!("{} - Static (reduced motion)", set_name)).size(ts.caption.size);
+            let label = text(format!("{} - Static (reduced motion)", set_name)).role(&ts.caption);
             spinners.push(
                 column![icon, label]
                     .spacing(sp.xs)
@@ -4704,7 +4747,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 anim_handles.handles.len(),
                 anim_handles.frame_duration_ms,
             ))
-            .size(ts.caption.size);
+            .role(&ts.caption);
             spinners.push(
                 column![icon, label]
                     .spacing(sp.xs)
@@ -4723,8 +4766,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 .style(move |_theme, _status| iced::widget::svg::Style {
                     color: Some(fg_color),
                 });
-            let label =
-                text(format!("{} - Spin ({}ms)", set_name, duration_ms)).size(ts.caption.size);
+            let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).role(&ts.caption);
             spinners.push(
                 column![icon, label]
                     .spacing(sp.xs)
@@ -4734,17 +4776,16 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         }
     }
 
-    let mut content = column![section_title, divider].spacing(gap.widget);
+    let mut content = column![title, divider].spacing(gap.widget);
 
     if state.reduced_motion {
-        content = content
-            .push(text("prefers-reduced-motion: showing static frames").size(ts.caption.size));
+        content =
+            content.push(text("prefers-reduced-motion: showing static frames").role(&ts.caption));
     }
 
     if spinners.is_empty() {
-        content = content.push(
-            text("No animated icons available for this configuration.").size(ts.caption.size),
-        );
+        content = content
+            .push(text("No animated icons available for this configuration.").role(&ts.caption));
     } else {
         content = content.push(row(spinners).spacing(gap.widget));
     }
@@ -4756,8 +4797,8 @@ fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     resolved: &ResolvedTheme,
     fg_color: Color,
-    caption_size: f32,
-    heading_size: f32,
+    caption: &ResolvedTextScaleEntry,
+    heading: &ResolvedTextScaleEntry,
     xxs_spacing: f32,
 ) -> Element<'a, Message> {
     let role_name = format!("{:?}", loaded.role);
@@ -4775,7 +4816,7 @@ fn build_icon_cell<'a>(
                         .width(Length::Fixed(icon_px))
                         .height(Length::Fixed(icon_px))
                         .into(),
-                    None => placeholder_icon(heading_size, icon_px),
+                    None => placeholder_icon(heading, icon_px),
                 }
             } else {
                 // Bundled/fallback: colorize with theme foreground
@@ -4784,7 +4825,7 @@ fn build_icon_cell<'a>(
                         .width(Length::Fixed(icon_px))
                         .height(Length::Fixed(icon_px))
                         .into(),
-                    None => placeholder_icon(heading_size, icon_px),
+                    None => placeholder_icon(heading, icon_px),
                 }
             }
         }
@@ -4794,10 +4835,10 @@ fn build_icon_cell<'a>(
                     .width(Length::Fixed(icon_px))
                     .height(Length::Fixed(icon_px))
                     .into(),
-                None => placeholder_icon(heading_size, icon_px),
+                None => placeholder_icon(heading, icon_px),
             }
         }
-        _ => placeholder_icon(heading_size, icon_px),
+        _ => placeholder_icon(heading, icon_px),
     };
 
     let info = format!("{role_name}\nicon: {icon_name_str}\nsource: {source_label}");
@@ -4809,8 +4850,8 @@ fn build_icon_cell<'a>(
                 container(icon_element)
                     .center_x(Length::Fixed(cell_px))
                     .center_y(Length::Fixed(cell_px)),
-                text(role_name.clone()).size(caption_size),
-                text(source_label).size(caption_size),
+                text(role_name.clone()).role(caption),
+                text(source_label).role(caption),
             ]
             .spacing(xxs_spacing)
             .align_x(iced::Center),
@@ -4824,8 +4865,8 @@ fn build_icon_cell<'a>(
     .into()
 }
 
-fn placeholder_icon<'a>(size: f32, box_size: f32) -> Element<'a, Message> {
-    container(text("?").size(size))
+fn placeholder_icon<'a>(heading: &ResolvedTextScaleEntry, box_size: f32) -> Element<'a, Message> {
+    container(text("?").role(heading))
         .center_x(Length::Fixed(box_size))
         .center_y(Length::Fixed(box_size))
         .into()
@@ -4854,7 +4895,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let swatch_bw = state.current_resolved.defaults.border.line_width;
     let swatch_r = native_theme_iced::border_radius(&state.current_resolved);
     // Local closure for concise swatch calls
-    let caption_sz = ts.caption.size;
+    let caption = &ts.caption;
     let xxs_sp = sp.xxs;
     let cs = |label: &'static str, color: Color| -> Element<'_, Message> {
         color_swatch(
@@ -4863,7 +4904,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             swatch_border,
             swatch_bw,
             swatch_r,
-            caption_sz,
+            caption,
             xxs_sp,
         )
     };
@@ -4872,8 +4913,8 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         border_color: swatch_border,
         border_width: swatch_bw,
         radius: swatch_r,
-        heading_size: ts.dialog_title.size,
-        caption_size: ts.caption.size,
+        heading: section_title(ts),
+        caption: &ts.caption,
         xxs_spacing: sp.xxs,
         swatch_spacing: sp.m,
         column_spacing: sp.s,
@@ -4895,7 +4936,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             &[],
         ),
         column![
-            text("Base Palette (6 fields)").size(ts.dialog_title.size),
+            text("Base Palette (6 fields)").role(section_title(ts)),
             row![
                 cs("background", palette.background),
                 cs("text", palette.text),
@@ -5012,7 +5053,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
                         swatch_border,
                         swatch_bw,
                         swatch_r,
-                        ts.caption.size,
+                        &ts.caption,
                         sp.xxs,
                     )
                 })
@@ -5021,10 +5062,9 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             idx = end;
         }
 
-        let mut col = column![
-            text("Resolved Theme Colors (defaults + per-widget)").size(ts.dialog_title.size),
-        ]
-        .spacing(gap.widget);
+        let mut col =
+            column![text("Resolved Theme Colors (defaults + per-widget)").role(section_title(ts))]
+                .spacing(gap.widget);
         for r in rows {
             col = col.push(r);
         }
@@ -5073,7 +5113,7 @@ fn color_swatch<'a>(
     border_color: Color,
     border_width: f32,
     radius: f32,
-    caption_size: f32,
+    caption: &ResolvedTextScaleEntry,
     xxs_spacing: f32,
 ) -> Element<'a, Message> {
     let hex = color_to_hex(color);
@@ -5095,7 +5135,7 @@ fn color_swatch<'a>(
         .right(xxs_spacing * 2.0);
 
     column![
-        container(text(hex.clone()).size(caption_size).color(text_color))
+        container(text(hex.clone()).role(caption).color(text_color))
             .padding(swatch_pad)
             .style(move |_theme: &Theme| container::Style {
                 background: Some(color.into()),
@@ -5108,7 +5148,7 @@ fn color_swatch<'a>(
             })
             .center_x(Length::Fixed(80.0))
             .center_y(Length::Fixed(32.0)),
-        text(label).size(caption_size),
+        text(label).role(caption),
     ]
     .spacing(xxs_spacing)
     .align_x(iced::Center)
@@ -5120,12 +5160,12 @@ fn color_swatch<'a>(
 // ---------------------------------------------------------------------------
 
 /// Swatch rendering parameters shared across extended palette sections.
-struct SwatchStyle {
+struct SwatchStyle<'s> {
     border_color: Color,
     border_width: f32,
     radius: f32,
-    heading_size: f32,
-    caption_size: f32,
+    heading: &'s ResolvedTextScaleEntry,
+    caption: &'s ResolvedTextScaleEntry,
     xxs_spacing: f32,
     swatch_spacing: f32,
     column_spacing: f32,
@@ -5141,14 +5181,14 @@ fn hoverable_ext_section<'a>(
     base: iced_core::theme::palette::Pair,
     weak: iced_core::theme::palette::Pair,
     strong: iced_core::theme::palette::Pair,
-    style: &SwatchStyle,
+    style: &SwatchStyle<'_>,
 ) -> Element<'a, Message> {
     let SwatchStyle {
         border_color,
         border_width,
         radius,
-        heading_size,
-        caption_size,
+        heading,
+        caption,
         xxs_spacing,
         swatch_spacing,
         column_spacing,
@@ -5160,7 +5200,7 @@ fn hoverable_ext_section<'a>(
             border_color,
             border_width,
             radius,
-            caption_size,
+            caption,
             xxs_spacing,
         )
     };
@@ -5178,7 +5218,7 @@ fn hoverable_ext_section<'a>(
         &[],
     );
     let content: Element<'a, Message> = column![
-        text(label).size(heading_size),
+        text(label).role(heading),
         row![
             cs("base.color", base.color),
             cs("base.text", base.text),
@@ -5206,16 +5246,55 @@ fn arrow_handle(resolved: &ResolvedTheme) -> pick_list::Handle<iced::Font> {
     }
 }
 
+/// The role a page's title is set in: `dialog_title`, the dialog or page title
+/// (`docs/platform-facts.md` §2.19). Not `display`, the hero text of
+/// onboarding and banners, which KDE does not have.
+fn page_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
+    &ts.dialog_title
+}
+
+/// The role a section title within a page is set in: `section_heading`, the
+/// section divider (`docs/platform-facts.md` §2.19).
+fn section_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
+    &ts.section_heading
+}
+
+/// Sets text in a `text_scale` role, or in the theme's body font: the size,
+/// and a font at the weight that comes with it.
+trait Typeset {
+    fn role(self, entry: &ResolvedTextScaleEntry) -> Self;
+    fn body(self, resolved: &ResolvedTheme) -> Self;
+}
+
+impl Typeset for iced::widget::Text<'_> {
+    fn role(self, entry: &ResolvedTextScaleEntry) -> Self {
+        self.size(entry.size).font(weighted(entry.weight))
+    }
+
+    fn body(self, resolved: &ResolvedTheme) -> Self {
+        let font = &resolved.defaults.font;
+        self.size(font.size).font(weighted(font.weight))
+    }
+}
+
+/// The default font at a CSS weight.
+fn weighted(weight: u16) -> iced::Font {
+    iced::Font {
+        weight: native_theme_iced::to_iced_weight(weight),
+        ..iced::Font::DEFAULT
+    }
+}
+
 fn section_header<'a>(
     title: &'a str,
     description: &'a str,
     resolved: &ResolvedTheme,
-    ts: &native_theme::theme::ResolvedTextScale,
+    ts: &ResolvedTextScale,
     sp: &Spacing,
 ) -> Element<'a, Message> {
     column![
-        text(title).size(ts.display.size),
-        text(description).size(ts.section_heading.size),
+        text(title).role(page_title(ts)),
+        text(description).body(resolved),
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
     ]
     .spacing(sp.xs)
@@ -6748,6 +6827,76 @@ mod tests {
                 line_at(&source, at)
             );
         }
+    }
+
+    /// A page's title outranks its section titles, and a section title the
+    /// body text, on the native presets in both modes: each takes the role
+    /// `docs/platform-facts.md` §2.19 defines for it -- `dialog_title` for a
+    /// page, `section_heading` for a section -- and body text is the theme's
+    /// font. KDE has no `display` role; set in it, a page title fell to body
+    /// size, below its own description.
+    #[test]
+    fn page_and_section_titles_take_their_defined_roles() {
+        for preset in ["kde-breeze", "adwaita", "macos-sonoma", "windows-11"] {
+            for is_dark in [false, true] {
+                let at = format!("{preset} (dark: {is_dark})");
+                let resolved = match native_theme_iced::from_preset(preset, is_dark) {
+                    Ok((_, resolved)) => resolved,
+                    Err(error) => panic!("{at}: {error}"),
+                };
+                let ts = &resolved.text_scale;
+                let page = page_title(ts).size;
+                let section = section_title(ts).size;
+                let body = resolved.defaults.font.size;
+                assert!(
+                    page >= section && section >= body,
+                    "{at}: page title {page}px, section title {section}px, body {body}px"
+                );
+                assert!(
+                    std::ptr::eq(page_title(ts), &ts.dialog_title),
+                    "{at}: a page title is not set in dialog_title"
+                );
+                assert!(
+                    std::ptr::eq(section_title(ts), &ts.section_heading),
+                    "{at}: a section title is not set in section_heading"
+                );
+            }
+        }
+    }
+
+    /// Text set in a `text_scale` role takes the role's weight with its size,
+    /// which `.role(..)` applies together, so no role's size or weight is read
+    /// on its own outside the text-scale table's `format!` rows.
+    #[test]
+    fn text_roles_carry_their_weight() {
+        let source = strip_comments_and_strings(SHOWCASE);
+        for role in ["caption", "section_heading", "dialog_title", "display"] {
+            for field in ["size", "weight"] {
+                let read = format!("ts.{role}.{field}");
+                for (at, _) in source.match_indices(read.as_str()) {
+                    let line = match source[..at].rfind('\n') {
+                        Some(newline) => &source[newline..at],
+                        None => &source[..at],
+                    };
+                    assert!(
+                        line.contains("format!("),
+                        "{read} is read on its own at showcase-iced.rs:{}",
+                        line_at(&source, at)
+                    );
+                }
+            }
+        }
+        let header = match source.find("fn section_header") {
+            Some(start) => match source[start..].find("\n}") {
+                Some(len) => &source[start..start + len],
+                None => &source[start..],
+            },
+            None => panic!("section_header is gone"),
+        };
+        assert!(
+            header.contains("page_title(ts)"),
+            "section_header does not set its title in page_title"
+        );
     }
 
     /// The names `let` binds to a padding one of `PADDING_HELPERS` returns.
