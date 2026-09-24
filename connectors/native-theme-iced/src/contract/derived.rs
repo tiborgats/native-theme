@@ -800,9 +800,6 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 ///   `radio::Status` has no disabled variant (`radio.rs:474-487`); on a
 ///   checkbox, `styles::checkbox` emits `.disabled_background` and
 ///   `.disabled_text_color`.
-/// - `tab.min_width` and `.min_height` are left to the fixed extents
-///   `iced_aw`'s `TabBar` takes (`tab_width(..)`, `height(..)`), the closest
-///   receiver it has for a minimum, as `styles::aw::tab_bar` says.
 /// - `sidebar.border.corner_radius` has no receiver either -- `iced_aw` rounds
 ///   the panel and its items with a hardcoded `(0.0).into()`
 ///   (`sidebar/sidebar.rs:616`, `:992`) -- yet every bundled preset states 0,
@@ -869,6 +866,27 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
              the smaller side of the bounds the consumer gives it \
              (`spinner.rs:137-144`), and nothing states a minimum",
         lost: |_, r| lost_length(r.spinner.min_diameter),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "tab.min_width",
+        evidence: "`TabBar::tab_width(Length)` (`tab_bar.rs:309`) takes the \
+             one width every tab gets, and nothing in `TabBar` or `Tabs` \
+             states a floor under a tab's width: a platform minimum passed \
+             there makes each tab exactly that wide, not at least that wide",
+        lost: |_, r| lost_length(r.tab.min_width),
+        exceptions: &[],
+    },
+    #[cfg(feature = "iced_aw")]
+    Unreachable {
+        field: "tab.min_height",
+        evidence: "`TabBar::height(..)` (`tab_bar.rs:223`) and \
+             `Tabs::tab_bar_height(Length)` (`tabs.rs:225`) take the bar's \
+             height as a `Length`, and nothing states a floor under it: a \
+             platform minimum passed there makes the bar exactly that tall, \
+             not at least that tall",
+        lost: |_, r| lost_length(r.tab.min_height),
         exceptions: &[],
     },
     #[cfg(feature = "iced_aw")]
