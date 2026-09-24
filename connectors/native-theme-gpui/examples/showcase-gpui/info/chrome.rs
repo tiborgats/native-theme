@@ -446,7 +446,7 @@ pub fn side_panel(container_margin: Option<Pixels>) -> WidgetInfo {
         )
         .instance(
             "hidden",
-            "by the status bar's side-panel toggle, View > Toggle Side Panel or Ctrl+B, the whole panel at once: no rail stays. Shown again, it takes the width it had",
+            "by the status bar's side-panel toggle, View > Toggle Side Panel or Ctrl+B (Cmd+B on macOS), the whole panel at once: no rail stays. Shown again, it takes the width it had",
         )
 }
 
@@ -1043,7 +1043,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
     .instance(
         "opens",
-        "on OpenCommandPalette: View > Command Palette, Ctrl+K, or the toolbar's Command Palette button",
+        "on OpenCommandPalette: View > Command Palette, Ctrl+K (Cmd+K on macOS), or the toolbar's Command Palette button",
     )
     .instance(
         "closes",
@@ -1233,7 +1233,7 @@ pub fn preferences_sheet(t: &Theme, reduce_motion: bool) -> WidgetInfo {
     )
     .instance(
         "opens",
-        "on OpenPreferences: Theme > Preferences…, Ctrl+, or the toolbar's Preferences button",
+        "on OpenPreferences: Theme > Preferences…, Ctrl+, (Cmd+, on macOS) or the toolbar's Preferences button",
     )
 }
 

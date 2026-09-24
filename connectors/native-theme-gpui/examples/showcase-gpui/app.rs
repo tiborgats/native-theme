@@ -109,15 +109,19 @@ pub(crate) struct SetPreset(pub SharedString);
 
 /// Bind the showcase's keys (spec §2.2) and quit on [`Quit`].
 ///
+/// The bindings take gpui's `secondary` modifier, Cmd on macOS and Ctrl
+/// elsewhere (gpui-pre keystroke.rs:143-150), as gpui-component's own do,
+/// so the menus show each platform's own shortcut.
+///
 /// `Quit` is handled here, for the whole application, so it quits whatever
 /// has the focus; the actions that change the showcase are handled on its
 /// view (`Showcase::render`).
 pub(crate) fn init(cx: &mut App) {
     cx.bind_keys([
-        KeyBinding::new("ctrl-q", Quit, None),
-        KeyBinding::new("ctrl-b", ToggleSidePanel, None),
-        KeyBinding::new("ctrl-k", OpenCommandPalette, None),
-        KeyBinding::new("ctrl-,", OpenPreferences, None),
+        KeyBinding::new("secondary-q", Quit, None),
+        KeyBinding::new("secondary-b", ToggleSidePanel, None),
+        KeyBinding::new("secondary-k", OpenCommandPalette, None),
+        KeyBinding::new("secondary-,", OpenPreferences, None),
     ]);
     cx.on_action(|_: &Quit, cx| cx.quit());
 }

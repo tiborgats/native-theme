@@ -1767,11 +1767,11 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
         "Theme > {item} did not reach Theme::mode"
     );
 
-    let bound: [(&str, &dyn gpui::Action); 4] = [
-        ("ctrl-q", &Quit),
-        ("ctrl-b", &ToggleSidePanel),
-        ("ctrl-k", &OpenCommandPalette),
-        ("ctrl-,", &OpenPreferences),
+    let bound: [(String, &dyn gpui::Action); 4] = [
+        (secondary("q"), &Quit),
+        (secondary("b"), &ToggleSidePanel),
+        (secondary("k"), &OpenCommandPalette),
+        (secondary(","), &OpenPreferences),
     ];
     for (keys, action) in bound {
         let got = cx.update(|window, _cx| {
@@ -1787,11 +1787,20 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
         });
         assert_eq!(
             got.as_deref(),
-            Some(keys),
+            Some(keys.as_str()),
             "{} is not bound to {keys}",
             action.name()
         );
     }
+}
+
+/// `key` with gpui's `secondary` modifier, as a binding of it unparses:
+/// `ctrl-` here, `cmd-` on macOS (gpui-pre keystroke.rs:143-150). Empty
+/// where gpui cannot parse it, which no binding then equals.
+fn secondary(key: &str) -> String {
+    gpui::Keystroke::parse(&format!("secondary-{key}"))
+        .map(|k| k.unparse())
+        .unwrap_or_default()
 }
 
 /// Every item of `items` and of the submenus among them, depth first.
@@ -1808,7 +1817,8 @@ fn all_menu_items(items: Vec<gpui::MenuItem>) -> Vec<gpui::MenuItem> {
 /// The inspector has no panel of its own to hide (spec S4): it hides with
 /// the side panel it is in. So no `ToggleInspector` action is registered, no
 /// menu item names the inspector, in a menu or a submenu of one, and Ctrl+I,
-/// which ran it, is bound to nothing.
+/// which ran it -- or the secondary modifier's I, as the bindings are now
+/// written -- is bound to nothing.
 #[gpui::test]
 fn no_inspector_toggle_remains(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1824,7 +1834,7 @@ fn no_inspector_toggle_remains(cx: &mut TestAppContext) {
                     .map(|k| k.unparse())
                     .collect::<Vec<_>>()
                     .join(" ")
-                    == "ctrl-i"
+                    == secondary("i")
             })
             .map(|b| b.action().name())
             .collect();
@@ -2048,7 +2058,7 @@ fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
         Some(MouseButton::Left),
         Modifiers::default(),
     );
-    cx.simulate_keystrokes("ctrl-b");
+    cx.simulate_keystrokes("secondary-b");
     cx.run_until_parked();
     draw(&mut cx);
     assert_eq!(
@@ -2072,7 +2082,7 @@ fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
         bounds_of(&mut cx, CONTENT_PANEL).size.width > px(0.),
         "the content panel was not laid out after the drag"
     );
-    cx.simulate_keystrokes("ctrl-b");
+    cx.simulate_keystrokes("secondary-b");
     cx.run_until_parked();
     draw(&mut cx);
     assert!(
@@ -3333,7 +3343,7 @@ fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<P
 }
 
 /// The side-panel toggle's tooltip names its key binding (spec S4): the
-/// action is bound to Ctrl+B, and the tooltip is wider while the action has
+/// action is bound to Ctrl+B (Cmd+B on macOS), and the tooltip is wider while the action has
 /// that binding than once the bindings are gone -- upstream's Tooltip adds
 /// the binding's Kbd beside the text only where the action has one
 /// (tooltip.rs:94-106, :133-141). The tooltip's text is not readable from
@@ -3345,10 +3355,10 @@ fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
     // A tooltip fades in (tooltip.rs:178-181); without motion it is drawn
     // in full at once.
     without_motion(&mut cx);
-    let cases: [(&'static str, Box<dyn gpui::Action>, &str); 1] = [(
+    let cases: [(&'static str, Box<dyn gpui::Action>, String); 1] = [(
         CHROME_SIDE_PANEL_TOGGLE,
         Box::new(ToggleSidePanel),
-        "ctrl-b",
+        secondary("b"),
     )];
     let mut bound = Vec::new();
     for (selector, action, keys) in &cases {
@@ -3365,7 +3375,7 @@ fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
         });
         assert_eq!(
             binding.as_deref(),
-            Some(*keys),
+            Some(keys.as_str()),
             "{selector}'s action is not bound to {keys}"
         );
         let width = tooltip_width(&mut cx, selector);
@@ -5253,7 +5263,7 @@ fn a_dialog_is_open(cx: &mut VisualTestContext) -> bool {
 fn ctrl_k_opens_the_command_palette(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     assert!(!a_dialog_is_open(&mut cx), "a dialog is open at start");
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     assert!(
         cx.debug_bounds("dialog-layer").is_some(),
         "Ctrl+K drew no dialog layer"
@@ -5276,7 +5286,7 @@ fn the_palette_switches_page(cx: &mut TestAppContext) {
         Page::Charts,
         "the showcase starts on Charts, so showing it proves nothing"
     );
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     cx.simulate_input("Charts");
     cx.run_until_parked();
     draw(&mut cx);
@@ -5297,7 +5307,7 @@ fn the_palette_switches_page(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_palette_installs_a_preset(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     cx.simulate_input("Nord");
     cx.run_until_parked();
     draw(&mut cx);
@@ -5369,9 +5379,9 @@ fn the_palette_offers_the_preset_switchs_presets() {
 #[gpui::test]
 fn an_overlay_opens_once(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     assert!(a_dialog_is_open(&mut cx), "Ctrl+K opened nothing");
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     assert!(
         cx.debug_bounds("dialog-1").is_none(),
         "a second Ctrl+K opened a second palette over the first"
@@ -5381,13 +5391,13 @@ fn an_overlay_opens_once(cx: &mut TestAppContext) {
         cx.debug_bounds("dialog-1").is_none(),
         "Help > About opened over the palette"
     );
-    press(&mut cx, "ctrl-,");
+    press(&mut cx, "secondary-,");
     assert!(
         cx.debug_bounds(OVERLAY_PREFERENCES).is_none(),
         "Ctrl+, opened the Preferences sheet under the palette"
     );
     press(&mut cx, "escape");
-    press(&mut cx, "ctrl-,");
+    press(&mut cx, "secondary-,");
     assert!(
         cx.debug_bounds(OVERLAY_PREFERENCES).is_some(),
         "Ctrl+, did not open the Preferences sheet"
@@ -5397,7 +5407,7 @@ fn an_overlay_opens_once(cx: &mut TestAppContext) {
         !a_dialog_is_open(&mut cx),
         "Help > About opened over the Preferences sheet"
     );
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     assert!(
         !a_dialog_is_open(&mut cx),
         "Ctrl+K opened the palette over the Preferences sheet"
@@ -5414,7 +5424,7 @@ fn an_overlay_opens_once(cx: &mut TestAppContext) {
 fn a_theme_switch_clears_what_left_the_screen(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     without_motion(&mut cx);
-    press(&mut cx, "ctrl-,");
+    press(&mut cx, "secondary-,");
     let info = settle_on(&mut cx, &showcase, PREF_REDUCE_MOTION);
     assert!(
         info.as_ref().is_some_and(|info| info.kind == "Switch"),
@@ -5460,7 +5470,7 @@ fn a_theme_switch_clears_what_left_the_screen(cx: &mut TestAppContext) {
 #[gpui::test]
 fn escape_clears_the_query_then_closes_the_palette(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     cx.simulate_input("Charts");
     cx.run_until_parked();
     draw(&mut cx);
@@ -5489,7 +5499,7 @@ fn escape_clears_the_query_then_closes_the_palette(cx: &mut TestAppContext) {
 #[gpui::test]
 fn closing_the_palette_keeps_the_actions_working(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     assert!(a_dialog_is_open(&mut cx), "Ctrl+K opened nothing");
     press(&mut cx, "escape");
     assert!(
@@ -5502,7 +5512,7 @@ fn closing_the_palette_keeps_the_actions_working(cx: &mut TestAppContext) {
         Page::Charts,
         "View > Charts did nothing after the palette closed"
     );
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     assert!(
         a_dialog_is_open(&mut cx),
         "Ctrl+K did nothing after the palette closed"
@@ -5539,7 +5549,7 @@ fn the_overlays_are_reachable(cx: &mut TestAppContext) {
 fn the_palette_reports_itself(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     without_motion(&mut cx);
-    press(&mut cx, "ctrl-k");
+    press(&mut cx, "secondary-k");
     let cases = [
         ("Dialog · Command Palette", OVERLAY_PALETTE_TITLE),
         ("Command", OVERLAY_PALETTE),
@@ -5576,7 +5586,7 @@ fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
         !cx.update(|_window, cx| cx.reduce_motion()),
         "motion is reduced before the switch is clicked, so the click could prove nothing"
     );
-    press(&mut cx, "ctrl-,");
+    press(&mut cx, "secondary-,");
     assert!(
         cx.debug_bounds(OVERLAY_PREFERENCES).is_some(),
         "Ctrl+, did not open the Preferences sheet"

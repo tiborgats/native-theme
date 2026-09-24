@@ -118,7 +118,7 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                     set: &set,
                     tooltip: "Command Palette",
                     action: &OpenCommandPalette,
-                    about: "dispatches OpenCommandPalette, the action View > Command Palette and Ctrl+K run: the command palette opens",
+                    about: "dispatches OpenCommandPalette, the action View > Command Palette and Ctrl+K (Cmd+K on macOS) run: the command palette opens",
                 },
             )
             .debug_selector(|| CHROME_TOOLBAR_PALETTE.into())
@@ -148,7 +148,7 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
                     set: &set,
                     tooltip: "Preferences",
                     action: &OpenPreferences,
-                    about: "dispatches OpenPreferences, the action Theme > Preferences… and Ctrl+, run: the Preferences sheet opens",
+                    about: "dispatches OpenPreferences, the action Theme > Preferences… and Ctrl+, (Cmd+, on macOS) run: the Preferences sheet opens",
                 },
             )
             .debug_selector(|| CHROME_TOOLBAR_PREFERENCES.into())
@@ -249,7 +249,7 @@ pub(crate) fn status_bar(
             tooltip: "Toggle Side Panel",
             action: &ToggleSidePanel,
             open: visible,
-            about: "dispatches ToggleSidePanel, the action View > Toggle Side Panel and Ctrl+B run: the side panel -- the theme settings and the inspector -- is hidden, or shown again at the width it had",
+            about: "dispatches ToggleSidePanel, the action View > Toggle Side Panel and Ctrl+B (Cmd+B on macOS) run: the side panel -- the theme settings and the inspector -- is hidden, or shown again at the width it had",
             state: if visible {
                 "selected: the side panel is shown"
             } else {
