@@ -573,6 +573,7 @@ pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
 
 /// Build a `ReaderResult` from a preset (for fallback paths where no
 /// platform reader is available).
+#[cfg(any(target_os = "linux", test))]
 fn preset_as_reader(preset_name: &str, mode: crate::ColorMode) -> crate::Result<ReaderResult> {
     let theme = Theme::preset(preset_name)?;
     let is_dark = mode == crate::ColorMode::Dark;

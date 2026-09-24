@@ -173,7 +173,8 @@ pub(crate) fn read_dpi() -> u32 {
     unsafe { GetDpiForSystem() }
 }
 
-/// Read DPI-aware frame width.
+/// Read the DPI-aware border width, `SM_CXBORDER`: the Windows source of
+/// `defaults.border.line_width` (`docs/platform-facts.md:1114`).
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_frame_width(dpi: u32) -> f32 {
@@ -190,6 +191,7 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeMode) {
         variant.defaults.focus_ring_width =
             Some(GetSystemMetricsForDpi(SM_CXFOCUSBORDER, dpi) as f32);
     }
+    variant.defaults.border.line_width = Some(read_frame_width(dpi));
     winui3_widget_sizing(variant);
 }
 
@@ -199,6 +201,7 @@ fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeMode) {
     variant.scrollbar.groove_width = Some(17.0);
     variant.scrollbar.min_thumb_length = Some(40.0);
     variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
+    variant.defaults.border.line_width = Some(1.0); // SM_CXBORDER default, platform-facts.md:378
     winui3_widget_sizing(variant);
 }
 
@@ -316,15 +319,10 @@ fn read_dwm_colorization() -> Option<crate::Rgba> {
     let mut colorization: u32 = 0;
     let mut opaque_blend = ::windows::core::BOOL::default();
     unsafe { DwmGetColorizationColor(&mut colorization, &mut opaque_blend) }.ok()?;
-    // DWM colorization is 0xAARRGGBB (NOT COLORREF format)
-    let a = ((colorization >> 24) & 0xFF) as u8;
-    let r = ((colorization >> 16) & 0xFF) as u8;
-    let g = ((colorization >> 8) & 0xFF) as u8;
-    let b = (colorization & 0xFF) as u8;
-    Some(crate::Rgba::new(r, g, b, a))
+    Some(dwm_color_to_rgba(colorization))
 }
 
-/// Convert a DWM colorization u32 (0xAARRGGBB) to Rgba. Testable helper.
+/// Convert a DWM colorization u32 (0xAARRGGBB, NOT COLORREF format) to Rgba.
 fn dwm_color_to_rgba(c: u32) -> crate::Rgba {
     let a = ((c >> 24) & 0xFF) as u8;
     let r = ((c >> 16) & 0xFF) as u8;
@@ -1075,6 +1073,18 @@ mod tests {
         assert!(
             variant.defaults.focus_ring_width.is_some(),
             "focus_ring_width should be set from SM_CXFOCUSBORDER"
+        );
+    }
+
+    // === Border line width test ===
+
+    #[test]
+    fn build_theme_sets_border_line_width() {
+        let result = light_reader();
+        let variant = reader_mode(&result);
+        assert!(
+            variant.defaults.border.line_width.is_some(),
+            "defaults.border.line_width should be set from SM_CXBORDER"
         );
     }
 

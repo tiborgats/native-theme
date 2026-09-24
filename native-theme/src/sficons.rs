@@ -1,13 +1,14 @@
 // macOS SF Symbols icon loader
 //
-// Resolves IconRole variants to RGBA pixel data by loading SF Symbols
-// via NSImage and rasterizing through CGBitmapContext. Returns None
-// when the role has no SF Symbols mapping or the symbol cannot be loaded.
+// Resolves SF Symbol names (the names `icon_name` gives each IconRole in
+// IconSet::SfSymbols) to RGBA pixel data by loading them via NSImage and
+// rasterizing through CGBitmapContext. Returns None when the symbol cannot
+// be loaded.
 
 // CoreGraphics FFI -- no safe alternative
 #![allow(unsafe_code)]
 
-use crate::{IconData, IconRole, IconSet, icon_name};
+use crate::IconData;
 use objc2::rc::Retained;
 use objc2_app_kit::{NSFontWeightRegular, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
 use objc2_core_foundation::{CGPoint, CGRect, CGSize};
@@ -88,7 +89,7 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
 /// Load an SF Symbol by its name string as RGBA pixel data.
 ///
 /// This is the low-level loader for arbitrary SF Symbol names beyond
-/// the built-in [`IconRole`] mappings. Use this when you know the
+/// the built-in [`IconRole`](crate::IconRole) mappings. Use this when you know the
 /// exact SF Symbol name (e.g., from a custom icon mapping).
 ///
 /// Returns `None` if the symbol name doesn't exist on this macOS version.
@@ -114,33 +115,17 @@ pub(crate) fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
     })
 }
 
-/// Load an SF Symbols icon for the given role as RGBA pixel data.
-///
-/// Resolves the role to an SF Symbol name and renders it via NSImage.
-///
-/// Returns `None` if the role has no SF Symbols mapping or the symbol
-/// cannot be loaded on this macOS version.
-#[must_use]
-pub(crate) fn load_sf_icon(role: IconRole) -> Option<IconData> {
-    let name = icon_name(role, IconSet::SfSymbols)?;
-    let size = DEFAULT_ICON_SIZE;
-    let image = load_symbol(name, size as f64)?;
-    let cg_image = extract_cgimage(&image)?;
-    let w = CGImage::width(Some(&cg_image)) as u32;
-    let h = CGImage::height(Some(&cg_image)) as u32;
-    let mut data = rasterize(&cg_image, w, h)?;
-    crate::color::unpremultiply_alpha(&mut data);
-    Some(IconData::Rgba {
-        width: w,
-        height: h,
-        data,
-    })
-}
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::{IconRole, IconSet, icon_name};
+
+    /// Load a role's icon the way `IconLoader::load` does: by the name
+    /// `icon_name` gives it in the SF Symbols set.
+    fn load_role(role: IconRole) -> Option<IconData> {
+        load_sf_icon_by_name(icon_name(role, IconSet::SfSymbols)?)
+    }
 
     #[test]
     fn unpremultiply_correctness() {
@@ -163,7 +148,7 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn load_icon_returns_some() {
-        let result = load_sf_icon(IconRole::ActionCopy);
+        let result = load_role(IconRole::ActionCopy);
         assert!(result.is_some(), "ActionCopy should resolve to an icon");
     }
 
@@ -171,7 +156,7 @@ mod tests {
     #[test]
     fn unmapped_role_returns_none() {
         // FolderOpen has no SF Symbols mapping (known gap), should return None
-        let result = load_sf_icon(IconRole::FolderOpen);
+        let result = load_role(IconRole::FolderOpen);
         assert!(
             result.is_none(),
             "FolderOpen should return None (no SF Symbol, no fallback)"
@@ -185,7 +170,7 @@ mod tests {
             width,
             height,
             data,
-        }) = load_sf_icon(IconRole::ActionCopy)
+        }) = load_role(IconRole::ActionCopy)
         {
             assert_eq!(
                 (width * height * 4) as usize,

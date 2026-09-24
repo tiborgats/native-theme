@@ -494,6 +494,7 @@ pub fn is_freedesktop_theme_available(theme: &str) -> bool {
     }
     #[cfg(not(target_os = "linux"))]
     {
+        let _ = theme;
         false
     }
 }

@@ -1,12 +1,13 @@
 // Windows icon loader
 //
-// Resolves IconRole variants to RGBA pixel data via two pipelines:
+// Resolves Segoe icon names (the names `icon_name` gives each IconRole in
+// IconSet::SegoeIcons) to RGBA pixel data via two pipelines:
 // 1. Stock icons via SHGetStockIconInfo (18 SIID_ prefixed roles)
 // 2. Font glyphs via GetGlyphOutlineW from Segoe Fluent Icons (22 glyph roles)
 //
 // Both pipelines produce IconData::Rgba with correct RGBA byte order and
-// straight (non-premultiplied) alpha. Returns None when the role has no
-// Segoe mapping or the icon cannot be loaded on this system.
+// straight (non-premultiplied) alpha. Returns None when the name is not
+// one of them or the icon cannot be loaded on this system.
 //
 // This module is compiled on all platforms (gated by feature = "system-icons")
 // so that platform-independent logic like `parse_hex_codepoint` can be tested
@@ -14,7 +15,7 @@
 
 // Win32 GDI FFI -- no safe alternative
 #![allow(unsafe_code)]
-use crate::{IconData, IconRole, IconSet, icon_name};
+use crate::IconData;
 
 #[cfg(target_os = "windows")]
 use std::mem;
@@ -134,8 +135,9 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
         let height = bmp.bmHeight as u32;
 
         if width == 0 || height == 0 {
-            DeleteObject(icon_info.hbmColor.into());
-            DeleteObject(icon_info.hbmMask.into());
+            // A failed delete of a bitmap we own has no recovery.
+            let _ = DeleteObject(icon_info.hbmColor.into());
+            let _ = DeleteObject(icon_info.hbmMask.into());
             return None;
         }
 
@@ -162,9 +164,9 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
         );
         let _ = DeleteDC(hdc);
 
-        // Cleanup bitmaps
-        DeleteObject(icon_info.hbmColor.into());
-        DeleteObject(icon_info.hbmMask.into());
+        // Cleanup bitmaps. A failed delete of a bitmap we own has no recovery.
+        let _ = DeleteObject(icon_info.hbmColor.into());
+        let _ = DeleteObject(icon_info.hbmMask.into());
 
         // Convert BGRA to RGBA and fix premultiplied alpha
         bgra_to_rgba(&mut pixels);
@@ -358,41 +360,6 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
     }
 }
 
-/// Load a Windows icon for the given role as RGBA pixel data.
-///
-/// # Dispatch
-///
-/// - Names starting with `SIID_`: stock icon via SHGetStockIconInfo
-/// - `IDI_QUESTION`: system dialog icon via LoadIconW
-/// - Other names: font glyph via GetGlyphOutlineW (Segoe Fluent/MDL2)
-///
-/// Returns `None` if the role has no Segoe mapping or the icon cannot
-/// be loaded on this system.
-#[must_use]
-pub(crate) fn load_windows_icon(role: IconRole) -> Option<IconData> {
-    #[cfg(target_os = "windows")]
-    if let Some(name) = icon_name(role, IconSet::SegoeIcons) {
-        if name.starts_with("SIID_") {
-            if let Some(data) = load_stock_icon(name) {
-                return Some(data);
-            }
-        } else if name == "IDI_QUESTION" {
-            if let Some(data) = load_idi_icon() {
-                return Some(data);
-            }
-        } else if let Some(codepoint) = glyph_codepoint(name) {
-            if let Some(data) = load_glyph_icon(codepoint, DEFAULT_ICON_SIZE) {
-                return Some(data);
-            }
-        }
-    }
-
-    #[cfg(not(target_os = "windows"))]
-    let _ = role;
-
-    None
-}
-
 /// Parse a hex codepoint string like "0xE8BB" or "0xe8bb" to a u32.
 ///
 /// Requires the `0x` or `0X` prefix to avoid ambiguity with named glyphs
@@ -451,6 +418,13 @@ pub(crate) fn load_windows_icon_by_name(name: &str) -> Option<IconData> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::{IconRole, IconSet, icon_name};
+
+    /// Load a role's icon the way `IconLoader::load` does: by the name
+    /// `icon_name` gives it in the Segoe set.
+    fn load_role(role: IconRole) -> Option<IconData> {
+        load_windows_icon_by_name(icon_name(role, IconSet::SegoeIcons)?)
+    }
 
     // === Platform-independent unit tests ===
 
@@ -504,7 +478,7 @@ mod tests {
     #[test]
     fn unmapped_role_returns_none() {
         // StatusBusy has no Segoe mapping (known gap), should return None
-        let result = load_windows_icon(IconRole::StatusBusy);
+        let result = load_role(IconRole::StatusBusy);
         assert!(
             result.is_none(),
             "StatusBusy should return None (no Segoe mapping, no fallback)"
@@ -516,7 +490,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn stock_icon_returns_rgba() {
-        let result = load_windows_icon(IconRole::DialogWarning);
+        let result = load_role(IconRole::DialogWarning);
         assert!(result.is_some(), "DialogWarning should return an icon");
         if let Some(IconData::Rgba { .. }) = result {
             // Stock icons should return RGBA
@@ -528,7 +502,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn glyph_icon_returns_rgba() {
-        let result = load_windows_icon(IconRole::ActionCopy);
+        let result = load_role(IconRole::ActionCopy);
         assert!(result.is_some(), "ActionCopy should return an icon");
         if let Some(IconData::Rgba { .. }) = result {
             // Font glyph icons should return RGBA
@@ -544,7 +518,7 @@ mod tests {
             width,
             height,
             data,
-        }) = load_windows_icon(IconRole::DialogWarning)
+        }) = load_role(IconRole::DialogWarning)
         {
             assert_eq!(
                 (width * height * 4) as usize,
@@ -557,7 +531,7 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn idi_question_returns_some() {
-        let result = load_windows_icon(IconRole::DialogQuestion);
+        let result = load_role(IconRole::DialogQuestion);
         assert!(
             result.is_some(),
             "DialogQuestion should return an icon via LoadIconW"

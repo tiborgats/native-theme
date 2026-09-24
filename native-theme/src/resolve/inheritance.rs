@@ -63,15 +63,21 @@ pub(crate) fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
         if crate::detect::detect_linux_desktop() == crate::detect::LinuxDesktop::Kde {
-            return DialogButtonOrder::PrimaryLeft;
+            DialogButtonOrder::PrimaryLeft
+        } else {
+            // GNOME uses primary-right (trailing-affirmative)
+            DialogButtonOrder::PrimaryRight
         }
     }
     #[cfg(target_os = "windows")]
     {
-        return DialogButtonOrder::PrimaryLeft;
+        DialogButtonOrder::PrimaryLeft
     }
-    // GNOME, macOS, iOS use primary-right (trailing-affirmative)
-    DialogButtonOrder::PrimaryRight
+    // macOS, iOS use primary-right (trailing-affirmative)
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        DialogButtonOrder::PrimaryRight
+    }
 }
 
 impl ThemeMode {

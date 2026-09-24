@@ -87,6 +87,11 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         background_color: nscolor_to_rgba(&window_bg, &srgb),
         text_color: label,
         surface_color: nscolor_to_rgba(&control_bg, &srgb),
+        // platform-facts.md:1051: border.color is separatorColor on macOS.
+        border: crate::model::border::DefaultsBorderSpec {
+            color: nscolor_to_rgba(&separator_c, &srgb),
+            ..Default::default()
+        },
         muted_color: nscolor_to_rgba(&secondary_label, &srgb),
         shadow_color: nscolor_to_rgba(&shadow_c, &srgb),
         danger_color: nscolor_to_rgba(&system_red, &srgb),
@@ -926,6 +931,16 @@ mod tests {
     // The trait object coercion is the structural object-safety probe. Body
     // is gated on `cfg(all(target_os = "macos", feature = "macos"))` so that
     // the non-macOS build only compile-checks the trait path reference.
+    #[cfg(all(target_os = "macos", feature = "macos"))]
+    #[test]
+    fn read_appearance_colors_reads_border_color_from_separator_color() {
+        let (defaults, _) = super::read_appearance_colors();
+        assert!(
+            defaults.border.color.is_some(),
+            "defaults.border.color should be read from NSColor.separatorColor"
+        );
+    }
+
     #[test]
     fn macos_reader_exists() {
         // Reference the trait path once so name resolution fires on all
