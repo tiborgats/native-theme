@@ -86,6 +86,7 @@ jobs:
           cargo test -p native-theme-iced --no-default-features
           cargo test -p native-theme-iced --features iced_aw
           cargo test -p native-theme-gpui
+          cargo test -p native-theme-gpui --lib --no-default-features
 
       # Every crate's library with no default features, each feature alone and
       # all features, as CI runs it: an upstream release can break a

@@ -75,7 +75,9 @@ jobs:
           cargo test -p native-theme-iced --features iced_aw
 
       - name: Test native-theme-gpui
-        run: cargo test -p native-theme-gpui
+        run: |
+          cargo test -p native-theme-gpui
+          cargo test -p native-theme-gpui --lib --no-default-features
 
       # Fails when an upstream release adds a widget that neither showcase
       # renders nor docs/showcase-exceptions.toml excepts. ubuntu-latest ships

@@ -528,6 +528,11 @@ for crate in $WORKSPACE_CRATES; do
         run_tests "test ($crate)" cargo test -p "$crate"
     fi
 done
+# The loop above runs the gpui connector with its default features, which
+# include `svg-rasterize`; its tests for the SVG path without rasterization only
+# compile without it. Same soft class as the connector's default test.
+run_tests_soft "test (native-theme-gpui, no features)" \
+    cargo test -p native-theme-gpui --lib --no-default-features
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: iced connector configurations

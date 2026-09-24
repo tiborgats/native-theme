@@ -135,6 +135,11 @@ jobs:
         run: |
           cargo test -p native-theme-iced --no-default-features
           cargo test -p native-theme-iced --features iced_aw
+      # Without `svg-rasterize` the gpui connector hands gpui the SVG itself;
+      # the tests for that path compile only without the default features.
+      - name: Test the gpui connector without default features
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo test -p native-theme-gpui --lib --no-default-features
       # Reads the toolkits' sources through `cargo metadata` and fails when an
       # upstream release adds a widget that neither showcase renders nor
       # docs/showcase-exceptions.toml excepts. Runs here because this leg already
