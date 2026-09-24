@@ -435,9 +435,11 @@ Controller rulings, each with its cost if wrong:
 - `tab.min_width` and `tab.min_height` joined `UNREACHABLE`, as
   `progress_bar.min_width` is there. Cost: two list entries.
 - The `UNREACHABLE` minima sentence names only the listed entries; the
-  other minima were not moved into the contract list. Cost: none if their
-  sources are right (the final review then moved button's and combo_box's
-  in).
+  other minima were not moved into the contract list. Cost: the ruling
+  assumed they had declared sources; they had none anywhere in the iced
+  contract, and the final review moved button's and combo_box's into
+  `UNREACHABLE` (`input.min_height` has `TextEditor::min_height`; dialog is
+  unmapped in iced, recorded in `docs/todo.md`).
 - The plan's README wording for unstated sizes was over-broad; it names the
   `Option` fields only. Cost: none.
 - `input.min_height` stays out of `UNREACHABLE` (`TextEditor::min_height`
