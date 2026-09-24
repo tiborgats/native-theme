@@ -5653,42 +5653,400 @@ fn a_failed_install_leaves_the_window_as_the_installed_theme_drew_it(cx: &mut Te
     );
 }
 
-/// `--theme X --variant V` where X fails to load leaves the window in the
-/// mode the installed theme drew, and the colour-mode Select shows that
-/// mode, as a failed colour-mode switch does.
+/// Put the showcase into the state `args` asks for, as `main` does.
+fn apply_cli(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, args: &crate::CliArgs) {
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| crate::apply_cli_args(this, args, window, cx))
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// The colour mode the colour-mode Select shows.
+fn color_mode_shown(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Option<String> {
+    read(cx, showcase, |this, cx| {
+        this.color_mode_select
+            .read(cx)
+            .selected_value()
+            .map(|v| v.to_string())
+    })
+}
+
+/// `--theme X --variant V` where the preset switch does not offer X ignores
+/// X, as if `--theme` were not given: V installs the theme installed, in
+/// its mode, and the colour-mode Select shows V.
 #[gpui::test]
-fn a_failed_cli_theme_keeps_the_colour_mode_shown(cx: &mut TestAppContext) {
+fn a_rejected_cli_theme_leaves_the_variant_to_apply(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "kde-breeze");
+    let was_dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
+    let (variant, wanted) = if was_dark {
+        ("light", AppColorMode::Light)
+    } else {
+        ("dark", AppColorMode::Dark)
+    };
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            theme: Some("no-such-preset".to_string()),
+            variant: Some(variant.to_string()),
+            ..Default::default()
+        },
+    );
+    let how = format!("--theme no-such-preset --variant {variant}");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| (
+            this.current_theme_name.clone(),
+            this.color_mode
+        )),
+        ("kde-breeze".to_string(), wanted),
+        "{how}: not kde-breeze in the mode --variant names"
+    );
+    assert_eq!(
+        cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+        !was_dark,
+        "{how}: the window is not drawn in the mode --variant names"
+    );
+    assert_eq!(
+        color_mode_shown(&mut cx, &showcase),
+        Some(wanted.short_label().to_string()),
+        "{how}: the colour-mode Select does not show the mode --variant names"
+    );
+}
+
+/// `--variant V` whose install fails leaves the window in the mode the
+/// installed theme drew, and the colour-mode Select shows that mode, as a
+/// failed colour-mode switch does. A `--theme` the preset switch offers
+/// fails to load only where the OS theme cannot be read, which a test
+/// cannot bring about; `--variant` alone installs through the same
+/// `Showcase::install_in_mode`, so the installed theme's name is made one
+/// that fails to load.
+#[gpui::test]
+fn a_cli_variant_whose_install_fails_keeps_the_colour_mode_shown(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     set_preset(&mut cx, "kde-breeze");
     let before = drawn_state(&mut cx, &showcase);
     let variant = if before.0 { "light" } else { "dark" };
-    let args = crate::CliArgs {
-        theme: Some("no-such-preset".to_string()),
-        variant: Some(variant.to_string()),
-        ..Default::default()
-    };
-    cx.update(|window, cx| {
-        showcase.update(cx, |this, cx| {
-            crate::apply_cli_args(this, &args, window, cx)
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            this.current_theme_name = "no-such-preset".into()
         })
     });
-    cx.run_until_parked();
-    draw(&mut cx);
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            variant: Some(variant.to_string()),
+            ..Default::default()
+        },
+    );
     let after = drawn_state(&mut cx, &showcase);
     assert!(
         (after.0, &after.1, &after.2, after.3, after.4)
             == (before.0, &before.1, &before.2, before.3, before.4),
-        "--theme no-such-preset --variant {variant} changed what the window draws: {:?}",
+        "--variant {variant} whose install failed changed what the window draws: {:?}",
         changed_fields(&before, &after)
     );
-    let shown = read(&mut cx, &showcase, |this, cx| {
-        this.color_mode_select.read(cx).selected_value().cloned()
-    });
     assert_eq!(
-        shown,
-        Some(gpui::SharedString::from(before.3.short_label())),
-        "--theme no-such-preset --variant {variant}: the colour-mode Select shows a mode \
+        color_mode_shown(&mut cx, &showcase),
+        Some(before.3.short_label().to_string()),
+        "--variant {variant} whose install failed: the colour-mode Select shows a mode \
          the window is not drawn in"
+    );
+}
+
+/// `--variant` takes `light`, `dark` or `system` (follow the OS); `--theme`
+/// takes what the preset switch offers, which is only this platform's
+/// presets. Anything else is ignored: the theme and mode stay, and the
+/// preset switch still shows the theme installed.
+#[gpui::test]
+fn the_command_line_rejects_what_it_cannot_honour(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let offered = native_theme::theme::Theme::list_presets_for_platform();
+    let Some(home) = offered.first().map(|info| info.key.to_string()) else {
+        panic!("no preset is offered on this platform");
+    };
+    set_preset(&mut cx, &home);
+    let state = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            (
+                this.current_theme_name.clone(),
+                this.preset_combobox
+                    .read(cx)
+                    .selected_value()
+                    .map(|v| v.to_string()),
+                this.color_mode,
+                this.is_dark,
+            )
+        })
+    };
+    let before = state(&mut cx);
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            variant: Some("sideways".to_string()),
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        state(&mut cx),
+        before,
+        "--variant sideways changed the state"
+    );
+
+    for (variant, wanted) in [
+        ("dark", AppColorMode::Dark),
+        ("light", AppColorMode::Light),
+        ("system", AppColorMode::System),
+    ] {
+        apply_cli(
+            &mut cx,
+            &showcase,
+            &crate::CliArgs {
+                variant: Some(variant.to_string()),
+                ..Default::default()
+            },
+        );
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| (
+                this.current_theme_name.clone(),
+                this.color_mode
+            )),
+            (home.clone(), wanted),
+            "--variant {variant} did not install {home} in its mode"
+        );
+    }
+
+    let foreign = native_theme::theme::Theme::list_presets()
+        .iter()
+        .map(|info| info.key)
+        .find(|key| !offered.iter().any(|info| info.key == *key));
+    let before = state(&mut cx);
+    match foreign {
+        Some(foreign) => {
+            apply_cli(
+                &mut cx,
+                &showcase,
+                &crate::CliArgs {
+                    theme: Some(foreign.to_string()),
+                    ..Default::default()
+                },
+            );
+            assert_eq!(
+                state(&mut cx),
+                before,
+                "--theme {foreign}, a preset of another platform, changed the state"
+            );
+        }
+        None => eprintln!("every preset is offered on this platform: no foreign preset checked"),
+    }
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            theme: Some("no-such-preset".to_string()),
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        state(&mut cx),
+        before,
+        "--theme no-such-preset changed the state"
+    );
+}
+
+/// Make `names` the installed freedesktop themes the icon-theme Select
+/// lists, whatever the host has installed, and rebuild its rows.
+fn list_icon_themes(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, names: &[&str]) {
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.installed_themes = names.iter().map(|name| name.to_string()).collect();
+            this.show_icon_choice(window, cx);
+        })
+    });
+    cx.run_until_parked();
+}
+
+/// The icon choice, the set drawn from (`None` for gpui-component's own),
+/// the Icons page's name for it and the icon-theme Select's row.
+fn icon_choice_state(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> (
+    IconSetChoice,
+    Option<native_theme::theme::IconSet>,
+    String,
+    Option<String>,
+) {
+    read(cx, showcase, |this, cx| {
+        (
+            this.icon_set_choice.clone(),
+            this.icon_set_enum,
+            this.icon_theme_name.clone(),
+            this.icon_theme_select
+                .read(cx)
+                .selected_value()
+                .map(|v| v.to_string()),
+        )
+    })
+}
+
+/// `--icon-set` takes what the icon-theme Select offers -- a bundled set,
+/// `gpui-builtin`, `system` or `freedesktop` (the system icon theme), or a
+/// freedesktop theme the Select lists -- and the Select shows it. Anything
+/// else is ignored: the icon choice stays.
+#[gpui::test]
+fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
+    use native_theme::theme::IconSet;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let listed = "a-listed-icon-theme";
+    list_icon_themes(&mut cx, &showcase, &[listed]);
+    let icon_set = |cx: &mut VisualTestContext, name: &str| {
+        apply_cli(
+            cx,
+            &showcase,
+            &crate::CliArgs {
+                icon_set: Some(name.to_string()),
+                ..Default::default()
+            },
+        );
+        icon_choice_state(cx, &showcase)
+    };
+    let system = IconSetChoice::System.effective_icon_set(IconSet::Material);
+    let cases = [
+        (
+            "material",
+            (
+                IconSetChoice::Material,
+                Some(IconSet::Material),
+                IconSet::Material.name().to_string(),
+                Some(IconSetChoice::Material.to_string()),
+            ),
+        ),
+        (
+            "freedesktop",
+            (
+                IconSetChoice::System,
+                Some(system),
+                system.name().to_string(),
+                Some(IconSetChoice::System.to_string()),
+            ),
+        ),
+        (
+            "gpui-builtin",
+            (
+                IconSetChoice::Lucide,
+                None,
+                "gpui-builtin".to_string(),
+                Some(crate::app::GPUI_BUILTIN_ROW.to_string()),
+            ),
+        ),
+        (
+            "lucide",
+            (
+                IconSetChoice::Lucide,
+                Some(IconSet::Lucide),
+                IconSet::Lucide.name().to_string(),
+                Some(IconSetChoice::Lucide.to_string()),
+            ),
+        ),
+        (
+            listed,
+            (
+                IconSetChoice::Freedesktop(listed.to_string()),
+                Some(IconSet::Freedesktop),
+                IconSet::Freedesktop.name().to_string(),
+                Some(listed.to_string()),
+            ),
+        ),
+    ];
+    for (name, wanted) in cases {
+        assert_eq!(
+            icon_set(&mut cx, name),
+            wanted,
+            "--icon-set {name} did not choose, and show, the row the Select offers for it"
+        );
+        for unlisted in ["no-such-icon-theme", "hicolor"] {
+            assert_eq!(
+                icon_set(&mut cx, unlisted),
+                wanted,
+                "--icon-set {unlisted}, which the Select does not offer, replaced --icon-set \
+                 {name}'s choice"
+            );
+        }
+    }
+}
+
+/// With `--icon-theme` in effect, the icon-theme Select names the theme the
+/// icons load from, across a preset switch too. `--icon-theme` takes a
+/// freedesktop theme the Select lists; another is ignored.
+#[gpui::test]
+fn the_icon_theme_select_shows_the_icon_theme_override(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let listed = ["a-listed-icon-theme", "another-listed-icon-theme"];
+    list_icon_themes(&mut cx, &showcase, &listed);
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            icon_theme: Some("hicolor".to_string()),
+            ..Default::default()
+        },
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this
+            .icon_theme_override
+            .clone()),
+        None,
+        "--icon-theme hicolor, which the Select does not list, was taken"
+    );
+
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            icon_set: Some(listed[0].to_string()),
+            icon_theme: Some(listed[1].to_string()),
+            ..Default::default()
+        },
+    );
+    let shown = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            (
+                this.icon_theme_select
+                    .read(cx)
+                    .selected_value()
+                    .map(|v| v.to_string()),
+                this.icon_set_label(),
+            )
+        })
+    };
+    let wanted = (
+        Some(listed[1].to_string()),
+        format!("freedesktop ({})", listed[1]),
+    );
+    assert_eq!(
+        shown(&mut cx),
+        wanted,
+        "--icon-set {} --icon-theme {}: the icon-theme Select does not name the theme the \
+         icons load from",
+        listed[0],
+        listed[1]
+    );
+    let Some(preset) = native_theme::theme::Theme::list_presets_for_platform()
+        .first()
+        .map(|info| info.key)
+    else {
+        panic!("no preset is offered on this platform");
+    };
+    set_preset(&mut cx, preset);
+    assert_eq!(
+        shown(&mut cx),
+        wanted,
+        "after a switch to {preset} the icon-theme Select does not name the theme the \
+         icons load from"
     );
 }
 

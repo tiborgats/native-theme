@@ -626,6 +626,80 @@ impl CliArgs {
         args
     }
 
+    /// The colour mode `--variant` names: `light`, `dark`, or `system`,
+    /// which follows the OS.
+    fn color_mode(variant: &str) -> Result<AppColorMode, String> {
+        match variant {
+            "light" => Ok(AppColorMode::Light),
+            "dark" => Ok(AppColorMode::Dark),
+            "system" => Ok(AppColorMode::System),
+            other => Err(format!("--variant {other}: not light, dark or system")),
+        }
+    }
+
+    /// The key of the theme `--theme` names: one the preset switch offers
+    /// (`preset_items`) -- `default`, the desktop's own, or a preset meant
+    /// for this platform. A preset of another platform is not offered.
+    fn theme_key(name: &str, default_preset: &str) -> Result<String, String> {
+        let offered: Vec<String> = support::preset_items(default_preset)
+            .into_iter()
+            .map(|item| item.key.to_string())
+            .collect();
+        if offered.iter().any(|key| key == name) {
+            return Ok(name.to_string());
+        }
+        let names = offered.join(", ");
+        if native_theme::theme::Theme::list_presets()
+            .iter()
+            .any(|info| info.key == name)
+        {
+            Err(format!(
+                "--theme {name}: a preset of another platform; only this platform's \
+                 presets run here: {names}"
+            ))
+        } else {
+            Err(format!(
+                "--theme {name}: no such preset; the presets are: {names}"
+            ))
+        }
+    }
+
+    /// The icon-theme Select's row `--icon-set` names: a bundled set,
+    /// `gpui-builtin` (gpui-component's own icons), `system` or
+    /// `freedesktop` (the system icon theme), or one of `installed_themes`,
+    /// the freedesktop themes the Select lists.
+    fn icon_set_row(name: &str, installed_themes: &[String]) -> Result<String, String> {
+        match name {
+            "material" => Ok(IconSetChoice::Material.to_string()),
+            "lucide" => Ok(IconSetChoice::Lucide.to_string()),
+            "gpui-builtin" => Ok(app::GPUI_BUILTIN_ROW.to_string()),
+            "system" | "freedesktop" => Ok(IconSetChoice::System.to_string()),
+            theme if installed_themes.iter().any(|installed| installed == theme) => {
+                Ok(IconSetChoice::Freedesktop(theme.to_string()).to_string())
+            }
+            other => Err(format!(
+                "--icon-set {other}: not material, lucide, gpui-builtin, system, freedesktop \
+                 or an installed icon theme; the installed icon themes are: {}",
+                installed_themes.join(", ")
+            )),
+        }
+    }
+
+    /// The freedesktop theme `--icon-theme` names: one of
+    /// `installed_themes`, the freedesktop themes the icon-theme Select
+    /// lists.
+    fn icon_theme(name: &str, installed_themes: &[String]) -> Result<String, String> {
+        if installed_themes.iter().any(|installed| installed == name) {
+            Ok(name.to_string())
+        } else {
+            Err(format!(
+                "--icon-theme {name}: not an installed icon theme; the installed icon \
+                 themes are: {}",
+                installed_themes.join(", ")
+            ))
+        }
+    }
+
     /// Map a `--tab` name to the page it names. The flag keeps its name:
     /// the screenshot scripts pass it.
     fn page(name: &str) -> Option<Page> {
@@ -926,6 +1000,13 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
 /// Put the showcase `main` opened into the state the command line asks for:
 /// its colour mode, theme, page and icons.
 ///
+/// Each flag takes exactly what its Select offers: `--variant` a row of the
+/// colour-mode Select, `--theme` one of the preset switch, `--icon-set` and
+/// `--icon-theme` one of the icon-theme Select. A value it does not offer is
+/// reported on stderr and ignored, so the setting stays what it would have
+/// been without the flag: a rejected `--theme` leaves `--variant` to install
+/// the theme `Showcase::new` installed, in its mode.
+///
 /// `--variant` installs the theme in the mode it names: the one `--theme`
 /// names, or, without `--theme`, the one `Showcase::new` installed. A theme
 /// that fails to load leaves the one installed, in the mode it was drawn in
@@ -937,23 +1018,23 @@ fn apply_cli_args(
     window: &mut gpui::Window,
     cx: &mut gpui::Context<Showcase>,
 ) {
+    let mode = cli_args
+        .variant
+        .as_deref()
+        .and_then(|variant| reported(CliArgs::color_mode(variant)));
     let theme = cli_args
         .theme
-        .clone()
-        .unwrap_or_else(|| s.current_theme_name.clone());
-    match cli_args.variant.as_deref() {
-        Some(variant) => {
-            let mode = if variant == "dark" {
-                AppColorMode::Dark
-            } else {
-                AppColorMode::Light
-            };
+        .as_deref()
+        .and_then(|name| reported(CliArgs::theme_key(name, &s.default_preset)));
+    match (theme, mode) {
+        (theme, Some(mode)) => {
+            let theme = theme.unwrap_or_else(|| s.current_theme_name.clone());
             s.install_in_mode(&theme, mode, window, cx);
         }
-        None if cli_args.theme.is_some() => {
+        (Some(theme), None) => {
             s.apply_theme_by_name(&theme, window, cx);
         }
-        None => {}
+        (None, None) => {}
     }
 
     if let Some(ref page_name) = cli_args.tab
@@ -962,25 +1043,30 @@ fn apply_cli_args(
         s.active_page = page;
     }
 
-    if let Some(ref theme_name) = cli_args.icon_theme {
-        s.set_icon_theme_override(theme_name.clone(), window, cx);
+    if let Some(theme) = cli_args
+        .icon_theme
+        .as_deref()
+        .and_then(|name| reported(CliArgs::icon_theme(name, &s.installed_themes)))
+    {
+        s.set_icon_theme_override(theme, window, cx);
     }
 
     // `--icon-set` names a set, which stays chosen across theme switches
     // as a pick in the icon-theme Select does.
-    if let Some(ref set_name) = cli_args.icon_set {
-        s.icon_set_choice = match set_name.as_str() {
-            "material" => IconSetChoice::Material,
-            "lucide" => IconSetChoice::Lucide,
-            _ => IconSetChoice::System,
-        };
-        s.icon_choice_follows_preset = false;
-        let effective = s.icon_set_choice.effective_icon_set(s.current_icon_set);
-        s.icon_theme_name = effective.name().to_string();
-        s.icon_set_enum = Some(effective);
+    if let Some(row) = cli_args
+        .icon_set
+        .as_deref()
+        .and_then(|name| reported(CliArgs::icon_set_row(name, &s.installed_themes)))
+    {
+        s.choose_icon_row(&row);
         s.show_icon_choice(window, cx);
         s.reload_icons(window, cx);
     }
+}
+
+/// The value of `result`; its error reported on stderr, and `None`.
+fn reported<T>(result: Result<T, String>) -> Option<T> {
+    result.map_err(|error| eprintln!("{error}; ignored")).ok()
 }
 
 // ---------------------------------------------------------------------------

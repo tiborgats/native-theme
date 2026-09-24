@@ -368,9 +368,9 @@ pub(crate) struct Showcase {
     pub(crate) current_icon_set: IconSet,
     /// Whether the current theme's TOML specified `icon_theme` (before resolution).
     pub(crate) has_toml_icon_theme: bool,
-    /// The freedesktop icon theme `--icon-theme` names (e.g. "breeze",
-    /// "breeze-dark", "adwaita"), which the icons load from until the user
-    /// picks an icon theme in the icon-theme Select.
+    /// The freedesktop icon theme `--icon-theme` names, one the icon-theme
+    /// Select lists (e.g. "breeze", "breeze-dark"), which the icons load
+    /// from until the user picks an icon theme in the icon-theme Select.
     pub(crate) icon_theme_override: Option<String>,
 
     // Animated Icons state
@@ -401,7 +401,7 @@ pub(crate) struct Showcase {
 
 /// The icon-theme Select's row for gpui-component's own icons, which no
 /// `IconSetChoice` names.
-const GPUI_BUILTIN_ROW: &str = "gpui-component built-in (Lucide)";
+pub(crate) const GPUI_BUILTIN_ROW: &str = "gpui-component built-in (Lucide)";
 
 /// The icon-theme Select's rows for a theme of `icon_set` naming
 /// `icon_theme`: its `default` row, where the theme names an icon theme that
@@ -642,7 +642,9 @@ impl Showcase {
     }
 
     /// Load the freedesktop icons from `theme` until the user picks an icon
-    /// theme in the icon-theme Select: what `--icon-theme` asks for.
+    /// theme in the icon-theme Select: what `--icon-theme` asks for. The
+    /// Select shows `theme` while the override stands and a freedesktop set
+    /// is chosen (`icon_choice_row`).
     pub(crate) fn set_icon_theme_override(
         &mut self,
         theme: String,
@@ -650,6 +652,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) {
         self.icon_theme_override = Some(theme);
+        self.show_icon_choice(window, cx);
         // The icons on show were loaded before the override, so the page
         // would name this theme over another theme's icons.
         self.reload_icons(window, cx);
@@ -665,10 +668,18 @@ impl Showcase {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        self.icon_theme_override = None;
+        self.choose_icon_row(display);
+        self.reload_icons(window, cx);
+    }
+
+    /// Choose the icon theme of the icon-theme Select's row `display`,
+    /// without loading its icons: only its `default` row follows the preset
+    /// from now on.
+    pub(crate) fn choose_icon_row(&mut self, display: &str) {
         let is_gpui_builtin = display == GPUI_BUILTIN_ROW;
         self.icon_set_choice = parse_icon_set_choice(display);
         self.icon_choice_follows_preset = matches!(self.icon_set_choice, IconSetChoice::Default(_));
-        self.icon_theme_override = None;
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
@@ -686,7 +697,6 @@ impl Showcase {
         } else {
             Some(effective)
         };
-        self.reload_icons(window, cx);
     }
 
     /// Load the icons of the chosen set -- from the `--icon-theme` override
@@ -735,11 +745,18 @@ impl Showcase {
             .then_some(self.current_icon_theme.as_str())
     }
 
-    /// The icon-theme Select's row for the current choice.
+    /// The icon-theme Select's row for the icons drawn: the `--icon-theme`
+    /// override's while it stands and a freedesktop set is chosen, as the
+    /// icons load from it, else the current choice's.
     fn icon_choice_row(&self) -> SharedString {
-        match self.icon_set_enum {
-            None => GPUI_BUILTIN_ROW.into(),
-            Some(_) => self.icon_set_choice.to_string().into(),
+        match (self.icon_set_enum, self.icon_theme_override.as_deref()) {
+            (None, _) => GPUI_BUILTIN_ROW.into(),
+            (Some(IconSet::Freedesktop), Some(theme)) => {
+                IconSetChoice::Freedesktop(theme.to_string())
+                    .to_string()
+                    .into()
+            }
+            (Some(_), _) => self.icon_set_choice.to_string().into(),
         }
     }
 
