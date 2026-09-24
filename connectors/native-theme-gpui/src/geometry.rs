@@ -1,4 +1,4 @@
-//! Per-widget geometry for gpui-component 0.6.4 widgets (spec §9).
+//! Per-widget geometry for gpui-component 0.6.6 widgets (spec §9).
 //!
 //! Every builder is a pure function of a [`Native`] view and returns a
 //! [`StyleRefinement`] the application applies with
@@ -31,19 +31,17 @@
 //! **Control heights.** [`button`], [`input`], [`select`], [`combobox`],
 //! [`menu_item`] and [`list_item`] share one rule. Each applies the
 //! platform's `defaults.line_height` as the control's line height, so text
-//! lays out with the platform's metrics. [`select`] and [`combobox`] take the
-//! stated height as a minimum (`min_h`) at every text-scaling factor and
-//! leave upstream's own height in place: `h_8` for `Size::Medium`
-//! (`sizing.rs:236-237`, `:261-264`), 2 rem, where the rem is the installed
-//! `Theme::font_size` (`root.rs:582`), which [`to_theme`](crate::to_theme)
-//! scales by the text-scaling factor (`lib.rs:170`), so upstream's height
-//! grows with the text. The other four take their stated height (`h`) at a
-//! factor of 1 or less; above 1 they take it as a minimum and an automatic
-//! height, so layout grows the control around its drawn text and padding.
-//! Where the theme states no height (`menu.row_height` and `list.row_height`
-//! are optional, and KDE states neither), the builder sets the line height
-//! alone and the row keeps the toolkit's own height. The rule is for
-//! single-line controls.
+//! lays out with the platform's metrics, and takes its stated height (`h`)
+//! at a text-scaling factor of 1 or less, in place of upstream's own (for a
+//! Select or Combobox trigger, `h_8` for `Size::Medium`, `sizing.rs:236-237`,
+//! `:261-264`). Above 1 each takes the stated height as a minimum and an
+//! automatic height, so layout grows the control around its drawn text and
+//! padding. `tests/seams.rs` lays each control out under every native preset,
+//! at its platform's DPI, and checks that the text lies inside it at factors
+//! 1, 1.1 and 2. Where the theme states no height (`menu.row_height` and
+//! `list.row_height` are optional, and KDE states neither), the builder sets
+//! the line height alone and the row keeps the toolkit's own height. The rule
+//! is for single-line controls.
 //!
 //! Geometry, with one exception that is not geometry: seven builders also
 //! carry the platform's text colour. A builder carries it only where the
@@ -72,15 +70,23 @@
 //! either never arrive or displace the disabled one (`checkbox.rs:334-339` and
 //! `:252-256`, `input/input.rs:99-103` through `combobox.rs:997`).
 //!
+//! `tests/seams.rs` lays real gpui-component widgets out headlessly, with and
+//! without a builder's refinement, and checks what arrives: the heights of
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
-//! [`progress`] are verified against real gpui-component widgets in
-//! `tests/seams.rs`, which lays each one out headlessly with and without the
-//! refinement; the other builders rest on the source citations in their doc
-//! comments.
+//! [`progress`]; [`tooltip`] and [`tooltip_content`] keeping a tooltip's text
+//! inside its bubble; and, under every native preset at its own DPI, the
+//! drawn left padding of an [`input`], a [`select`] and a [`combobox`], an
+//! [`input`]'s right padding, a Textarea refined by [`input`] with its padding
+//! cleared, and six single-line controls -- a Button, an Input, a Select, a
+//! Combobox, a ListItem and an application-drawn row under [`menu_item`] --
+//! at their stated height with their text inside them at text scales 1, 1.1
+//! and 2. It also checks that [`select`] and [`combobox`]
+//! keep upstream's right padding beside a stated arrow column and apply a
+//! stated one without it. The other builders rest on the source citations in
+//! their doc comments.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.6.4,
-//! gpui-base 0.6.4 and gpui-pre 0.3.5; the per-side padding and height-rule
-//! citations against gpui-component 0.6.6 and gpui-pre 0.3.6.
+//! Upstream citations in this module are verified against gpui-component 0.6.6,
+//! gpui-base 0.6.6 and gpui-pre 0.3.6.
 
 use gpui::{FontWeight, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
@@ -144,45 +150,26 @@ fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
     }
 }
 
-/// The style property a control's stated height goes through.
-#[derive(Clone, Copy)]
-enum HeightProp {
-    /// `Styled::h`: the button, input, menu row and list row.
-    Height,
-    /// `Styled::min_h`, at every text-scaling factor: the select and
-    /// combobox.
-    MinHeight,
-}
-
 /// The control-height rule (module doc, rationale §5 point 3).
 ///
 /// The platform's `defaults.line_height` becomes the control's line height:
 /// each receiving widget takes the refinement after its own line height
 /// (`button/button.rs:689` → `:690`, `input/input.rs:699` → `:719`) or sets
 /// none (`list/list_item.rs:182-193`, `select.rs:535-546`,
-/// `combobox.rs:980-997`), so the platform's wins. Through `min_h`, `stated`
-/// is the control's minimum at every text-scaling factor, and upstream's own
-/// height stays: an automatic height would drop upstream's `h_8`, which
-/// grows with the scaled rem, and the trigger could come out shorter just
-/// above a factor of 1 than at 1. Through `h`, `stated` is the control's
-/// height at a factor of 1 or less; above 1 it is its minimum and the height
-/// is automatic, so layout grows the control around its drawn text and
-/// padding. Without a stated height, the line height alone: the control
-/// keeps the toolkit's own height.
-fn with_height_rule(
-    r: StyleRefinement,
-    stated: Option<f32>,
-    prop: HeightProp,
-    n: Native<'_>,
-) -> StyleRefinement {
+/// `combobox.rs:980-997`), so the platform's wins. `stated` is the control's
+/// height at a text-scaling factor of 1 or less; above 1 it is its minimum
+/// and the height is automatic, so layout grows the control around its drawn
+/// text and padding. Without a stated height, the line height alone: the
+/// control keeps the toolkit's own height.
+fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> StyleRefinement {
     let r = r.line_height(relative(n.resolved.defaults.line_height));
     let Some(stated) = stated else {
         return r;
     };
-    match prop {
-        HeightProp::MinHeight => r.min_h(px(stated)),
-        HeightProp::Height if text_scale_factor(n.accessibility) <= 1.0 => r.h(px(stated)),
-        HeightProp::Height => r.min_h(px(stated)).h_auto(),
+    if text_scale_factor(n.accessibility) <= 1.0 {
+        r.h(px(stated))
+    } else {
+        r.min_h(px(stated)).h_auto()
     }
 }
 
@@ -193,12 +180,7 @@ fn with_height_rule(
 #[must_use]
 pub fn button(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
-    let r = with_height_rule(
-        StyleRefinement::default(),
-        Some(b.min_height),
-        HeightProp::Height,
-        n,
-    );
+    let r = with_height_rule(StyleRefinement::default(), Some(b.min_height), n);
     with_padding(r.min_w(px(b.min_width)), &b.border.padding)
         .rounded(px(b.border.corner_radius.max(0.0)))
         .border(px(b.border.line_width))
@@ -221,8 +203,12 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// Height by the control-height rule (module doc), through `h`. The rule is
 /// for a single-line field: a multi-line `Input` sets its own height before
 /// this refinement (`input/input.rs:706-709`), which the rule's `h` would
-/// replace, so a caller that wants a multi-line height applies its own
-/// `Styled::h` after this builder. The padding is a single-line field's too:
+/// replace, so a caller that wants a multi-line height sets it after this
+/// builder, fully qualified as `Styled::h(input, height)`. Method syntax
+/// reaches `Input::h` instead (`input/input.rs:256-260`, "Multi-line only"),
+/// which shadows `Styled::h` and only records the height that upstream
+/// applies at `:708`, before the caller's refinement at `:719`, so the
+/// rule's `h` would still replace it. The padding is a single-line field's too:
 /// upstream pads only a single-line root (`input/input.rs:700-702`), so a
 /// caller that refines a multi-line `Input` or a `Textarea` clears the
 /// refinement's padding as well.
@@ -242,12 +228,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
-    let r = with_height_rule(
-        StyleRefinement::default(),
-        Some(i.min_height),
-        HeightProp::Height,
-        n,
-    );
+    let r = with_height_rule(StyleRefinement::default(), Some(i.min_height), n);
     with_text(
         with_padding(r, &i.border.padding)
             .rounded(px(i.border.corner_radius.max(0.0)))
@@ -270,12 +251,7 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn menu_item(n: Native<'_>) -> StyleRefinement {
     let m = &n.resolved.menu;
-    let r = with_height_rule(
-        StyleRefinement::default(),
-        m.row_height,
-        HeightProp::Height,
-        n,
-    );
+    let r = with_height_rule(StyleRefinement::default(), m.row_height, n);
     with_text(
         with_padding(r, &m.border.padding).gap_x(px(m.icon_text_gap)),
         &m.font,
@@ -296,12 +272,7 @@ pub fn menu_item(n: Native<'_>) -> StyleRefinement {
 #[must_use]
 pub fn list_item(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.list;
-    let r = with_height_rule(
-        StyleRefinement::default(),
-        l.row_height,
-        HeightProp::Height,
-        n,
-    );
+    let r = with_height_rule(StyleRefinement::default(), l.row_height, n);
     with_coloured_text(with_padding(r, &l.border.padding), &l.item_font, n)
 }
 
@@ -564,50 +535,52 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// The metrics `Select` and `Combobox` share; only the text colour separates
 /// the two.
 ///
-/// Height by the control-height rule (module doc), through `min_h` at every
-/// text-scaling factor: upstream gives both triggers their own `h_8` for
-/// `Size::Medium` (`input_size`, `sizing.rs:236-237`, `:261-264`), 2 rem at
-/// the rem the `Root` installs, `Theme::font_size` (`root.rs:582`), which
-/// [`to_theme`](crate::to_theme) scales by the text-scaling factor
-/// (`lib.rs:170`). So the
-/// trigger is the larger of the stated minimum and upstream's height, which
-/// grows with the text.
+/// Height by the control-height rule (module doc): the stated height at a
+/// text-scaling factor of 1 or less replaces upstream's own `h_8` for
+/// `Size::Medium` (`input_size`, `sizing.rs:236-237`, `:261-264`), which the
+/// trigger sets before the refinement (`select.rs:544` → `:546`,
+/// `combobox.rs:995` → `:997`).
 ///
 /// The stated padding sides reach the trigger: upstream pads it
 /// (`input_size`, `select.rs:544`, `combobox.rs:995`) before the refinement
 /// (`select.rs:546`, `combobox.rs:997`), so the refinement wins, and no inner
-/// element pads again. The caret sits inside that padded trigger
-/// (`select.rs:57-66`, `combobox.rs:1009-1026`), so the right side has no
-/// receiver in gpui where the platform measures it to a separate arrow
-/// column: WinUI does (spec v0.5.9 unstated-sizes §1.4,
-/// docs/platform-facts.md §2.24), so that platform's value is not applied.
+/// element pads again. The right side is the exception where the theme
+/// states `combo_box.arrow_area_width`: the platform then measures its right
+/// side to a separate arrow column (WinUI's 38px column, Breeze's 20px one;
+/// docs/platform-facts.md §2.24), and gpui's trigger has none — its caret
+/// sits inside the padded row (`select.rs:592-593` in the row at
+/// `:557-599`, `combobox.rs:654-655` in the row at `:1008-1027`). A right
+/// side measured to a column the trigger does not have is not applied, and
+/// upstream's own right padding (`input_px`, `select.rs:544`,
+/// `combobox.rs:995`) stands. Without an arrow column the stated right side
+/// is measured to the text, and is applied like the others.
 fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
-    let r = with_height_rule(
-        StyleRefinement::default(),
-        Some(c.min_height),
-        HeightProp::MinHeight,
-        n,
-    );
-    with_padding(r, &c.border.padding)
+    let r = with_height_rule(StyleRefinement::default(), Some(c.min_height), n);
+    let padding = match c.arrow_area_width {
+        Some(_) => ResolvedPadding {
+            right: None,
+            ..c.border.padding
+        },
+        None => c.border.padding,
+    };
+    with_padding(r, &padding)
         .min_w(px(c.min_width))
         .rounded(px(c.border.corner_radius.max(0.0)))
 }
 
 /// `Select` (`src/select.rs:535-545` → `:546`); the arrow is inner, Tier U.
-/// Height by the control-height rule (module doc), through `min_h` at every
-/// text-scaling factor: upstream gives the trigger its own `h_8` for
-/// `Size::Medium` (`input_size`, `sizing.rs:236-237`, `:261-264`), 2 rem,
-/// which grows with the scaled rem (`root.rs:582`), so the trigger is the
-/// larger of the two.
+/// Height by the control-height rule (module doc), through `h`, in place of
+/// upstream's `h_8` at a text-scaling factor of 1 or less.
 ///
 /// The stated padding sides reach the trigger: upstream pads it
 /// (`input_size`, `select.rs:544`) before the refinement (`:546`), so the
-/// refinement wins, and no inner element pads again. The caret sits inside
-/// that padded trigger (`select.rs:57-66`), so the right side has no receiver
-/// in gpui where the platform measures it to a separate arrow column: WinUI
-/// does (spec v0.5.9 unstated-sizes §1.4, docs/platform-facts.md §2.24), so
-/// that platform's value is not applied.
+/// refinement wins, and no inner element pads again. Where the theme states
+/// `combo_box.arrow_area_width`, the right side is not applied and
+/// upstream's own stands: the platform measures it to an arrow column, and
+/// the caret sits inside the padded trigger (`select.rs:592-593`, in the row
+/// at `:557-599`), which has none (see the shared metrics, and
+/// docs/platform-facts.md §2.24).
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the trigger with `foreground` through `input_style`
@@ -623,6 +596,11 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
 
 /// `Combobox` (`src/combobox.rs:980-996` → `:997`): [`select`]'s metrics, and
 /// the colour [`select`] can take but this cannot.
+///
+/// The metrics are the height and the padding sides, and the right side
+/// follows the same rule: beside a stated `combo_box.arrow_area_width` it is
+/// upstream's own, because the caret sits inside the padded trigger
+/// (`combobox.rs:654-655`, in the row at `:1008-1027`).
 ///
 /// Upstream labels the trigger with the same `input_style` `foreground`
 /// (`:990`), but its disabled branch (`src/input/input.rs:99-103`) delivers
@@ -767,7 +745,6 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
     with_height_rule(
         StyleRefinement::default(),
         Some(n.resolved.input.min_height),
-        HeightProp::Height,
         n,
     )
 }
@@ -846,16 +823,13 @@ mod tests {
         assert_eq!(out.padding.bottom, side(p.bottom), "{what}: bottom");
         assert_eq!(out.padding.left, side(p.left), "{what}: left");
     }
-    /// The control-height rule: the platform's line height; through `min_h`
-    /// the stated minimum at every scale, with no height of its own; through
-    /// `h` the stated height at s <= 1, above 1 a stated minimum and an
-    /// automatic height.
+    /// The control-height rule: the platform's line height; the stated
+    /// height at s <= 1, above 1 a stated minimum and an automatic height.
     fn assert_height_rule(
         out: &StyleRefinement,
         r: &ResolvedTheme,
         stated: Option<f32>,
         s: f32,
-        through_min_h: bool,
         what: &str,
     ) {
         assert_eq!(
@@ -868,10 +842,7 @@ mod tests {
             assert_eq!(out.min_size.height, None, "{what}: no stated minimum");
             return;
         };
-        if through_min_h {
-            assert_eq!(out.min_size.height, len(stated), "{what}: min height");
-            assert_eq!(out.size.height, None, "{what}: no height of its own");
-        } else if s <= 1.0 {
+        if s <= 1.0 {
             assert_eq!(out.size.height, len(stated), "{what}: height");
             assert_eq!(out.min_size.height, None, "{what}: no minimum");
         } else {
@@ -925,7 +896,7 @@ mod tests {
         for_each_case(|r, s, n| {
             let b = &r.button;
             let out = button(n);
-            assert_height_rule(&out, r, Some(b.min_height), s, false, "button");
+            assert_height_rule(&out, r, Some(b.min_height), s, "button");
             assert_eq!(out.min_size.width, len(b.min_width));
             assert_padding(&out, &b.border.padding, "button");
             assert_eq!(
@@ -955,7 +926,7 @@ mod tests {
         for_each_case(|r, s, n| {
             let i = &r.input;
             let out = input(n);
-            assert_height_rule(&out, r, Some(i.min_height), s, false, "input");
+            assert_height_rule(&out, r, Some(i.min_height), s, "input");
             assert_padding(&out, &i.border.padding, "input");
             assert_eq!(
                 out.corner_radii.top_left,
@@ -972,7 +943,7 @@ mod tests {
     fn input_height_is_the_height_rule_alone() {
         for_each_case(|r, s, n| {
             let out = input_height(n);
-            assert_height_rule(&out, r, Some(r.input.min_height), s, false, "input_height");
+            assert_height_rule(&out, r, Some(r.input.min_height), s, "input_height");
             let full = input(n);
             assert_eq!(out.size.height, full.size.height);
             assert_eq!(out.min_size.height, full.min_size.height);
@@ -989,7 +960,7 @@ mod tests {
         for_each_case(|r, s, n| {
             let m = &r.menu;
             let out = menu_item(n);
-            assert_height_rule(&out, r, m.row_height, s, false, "menu_item");
+            assert_height_rule(&out, r, m.row_height, s, "menu_item");
             assert_padding(&out, &m.border.padding, "menu_item");
             assert_eq!(out.gap.width, def(m.icon_text_gap));
             assert_eq!(out.gap.height, None, "gap_x sets the column gap only");
@@ -997,7 +968,7 @@ mod tests {
 
             let l = &r.list;
             let out = list_item(n);
-            assert_height_rule(&out, r, l.row_height, s, false, "list_item");
+            assert_height_rule(&out, r, l.row_height, s, "list_item");
             assert_padding(&out, &l.border.padding, "list_item");
             assert_text(&out, &l.item_font, s);
         });
@@ -1272,7 +1243,7 @@ mod tests {
                 assert_eq!(
                     r.checkbox.font.color, r.defaults.text_color,
                     "{at}: this preset states a checkbox label text colour \
-                     that gpui-component 0.6.4 gives no route for \
+                     that gpui-component 0.6.6 gives no route for \
                      (checkbox.rs:334-339) -- record it as a Tier U candidate; \
                      do NOT carry it in the builder, it would displace the \
                      disabled colour (checkbox.rs:252-256)"
@@ -1280,7 +1251,7 @@ mod tests {
                 assert_eq!(
                     r.combo_box.font.color, r.defaults.text_color,
                     "{at}: this preset states a combo box text colour that \
-                     gpui-component 0.6.4 gives no route for \
+                     gpui-component 0.6.6 gives no route for \
                      (combobox.rs:990 -> :997) -- record it as a Tier U \
                      candidate; do NOT carry it in the builder, it would \
                      displace the disabled colour (input/input.rs:99-103)"
@@ -1389,7 +1360,7 @@ mod tests {
 
             let cb = &r.combo_box;
             let out = select(n);
-            assert_height_rule(&out, r, Some(cb.min_height), s, true, "select");
+            assert_height_rule(&out, r, Some(cb.min_height), s, "select");
             assert_padding(&out, &cb.border.padding, "select");
             assert_eq!(out.min_size.width, len(cb.min_width));
             assert_eq!(
@@ -1398,9 +1369,50 @@ mod tests {
             );
             assert_text(&out, &cb.font, s);
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
-            assert_height_rule(&combobox(n), r, Some(cb.min_height), s, true, "combobox");
+            assert_height_rule(&combobox(n), r, Some(cb.min_height), s, "combobox");
             assert_padding(&combobox(n), &cb.border.padding, "combobox");
         });
+    }
+
+    /// D2: where `combo_box.arrow_area_width` is stated, the right side is
+    /// measured to an arrow column gpui's triggers do not have, so neither
+    /// builder sets it and upstream's own right padding stands; the other
+    /// sides are the stated ones. Without the column, the right side is
+    /// stated to the text and set.
+    #[test]
+    fn select_and_combobox_leave_the_right_side_beside_an_arrow_column() {
+        for preset in ["kde-breeze", "windows-11"] {
+            let mut r = resolved(preset, ColorMode::Light);
+            assert!(
+                r.combo_box.arrow_area_width.is_some(),
+                "{preset} no longer states an arrow column; pick another preset"
+            );
+            let p = r.combo_box.border.padding;
+            assert!(
+                p.right.is_some(),
+                "{preset} no longer states a right side; pick another preset"
+            );
+            for (what, out) in [
+                ("select", select(Native::unscaled(&r))),
+                ("combobox", combobox(Native::unscaled(&r))),
+            ] {
+                assert_eq!(out.padding.right, None, "{preset} {what}: right");
+                assert_eq!(out.padding.top, side(p.top), "{preset} {what}: top");
+                assert_eq!(
+                    out.padding.bottom,
+                    side(p.bottom),
+                    "{preset} {what}: bottom"
+                );
+                assert_eq!(out.padding.left, side(p.left), "{preset} {what}: left");
+            }
+            r.combo_box.arrow_area_width = None;
+            for (what, out) in [
+                ("select", select(Native::unscaled(&r))),
+                ("combobox", combobox(Native::unscaled(&r))),
+            ] {
+                assert_padding(&out, &p, &format!("{preset} {what} without the column"));
+            }
+        }
     }
 
     #[test]

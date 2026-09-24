@@ -12,18 +12,20 @@
 //! run at text scale 1, where the control-height rule gives each control its
 //! stated height.
 //!
-//! `button`, `input` and `progress` set the same `size.height` their widget
-//! sets for itself, so they also prove the ordering of the two writes.
-//! `select` and `combobox` set `min_size.height` and `list_item` a height the
-//! widget leaves content-driven, so those three prove that the refinement
-//! reaches the widget's root box and wins there, not an ordering claim.
+//! `button`, `input`, `select`, `combobox` and `progress` set the same
+//! `size.height` their widget sets for itself, so they also prove the
+//! ordering of the two writes. `list_item` sets a height the widget leaves
+//! content-driven, so it proves that the refinement reaches the widget's root
+//! box and wins there, not an ordering claim.
 //!
 //! Four sweeps run every native preset at its own font DPI: the drawn content
 //! inset of an Input, a Select and a Combobox is the stated left padding
 //! side; an Input with no suffix is laid out with the stated right side; a
 //! Textarea whose refinement has its padding cleared draws none; and six
 //! single-line controls are their stated height at text scale 1, no shorter
-//! at 1.1 and at 2, with their text inside them at all three.
+//! at 1.1 and at 2, with their text inside them at all three. Beside a stated
+//! arrow column (kde-breeze, windows-11) a Select's and a Combobox's right
+//! inset is upstream's own, and without one the stated right side is drawn.
 //! Every other builder rests on the source citation in its doc comment.
 
 use std::num::NonZeroU32;
@@ -260,7 +262,7 @@ fn first_animation_frame() -> Option<ImageSource> {
 /// A view that shows the frame only once it is asked to.
 ///
 /// `add_window_view` runs the executor to a standstill before it returns
-/// (gpui-pre `src/app/test_context.rs:303-328`), so an element built in the
+/// (gpui-pre `src/app/test_context.rs:342-367`), so an element built in the
 /// opening frame has had every asynchronous decode finish behind it. Holding
 /// the frame back means the draw the test asks for is the first one that ever
 /// needs the image, which is the frame the maintainer sees blink.
@@ -397,22 +399,21 @@ seam!(
     geometry::input,
     size.height
 );
-// kde-breeze's combo box minimum equals upstream's own height; adwaita's is larger.
 seam!(
-    select_takes_the_native_min_height,
+    select_takes_the_native_height,
     "adwaita",
     select,
     geometry::select,
-    min_size.height
+    size.height
 );
 // `select`'s metrics on a different upstream seam (`combobox.rs`); only the
 // text colour separates the two builders, and the height is what is measured.
 seam!(
-    combobox_takes_the_native_min_height,
+    combobox_takes_the_native_height,
     "adwaita",
     combobox,
     geometry::combobox,
-    min_size.height
+    size.height
 );
 // kde-breeze states no list row height (its rows size to their content).
 seam!(
@@ -436,7 +437,7 @@ seam!(
 /// (`src/tooltip.rs:126-132`), so it is a flex item with an automatic minimum
 /// size, and gpui measures text under `AvailableSpace::MinContent` without
 /// wrapping it — the wrap width is taken only from a *definite* available
-/// width (`gpui-pre-0.3.5/src/elements/text.rs:649-656`). The item's minimum is
+/// width (`gpui-pre-0.3.6/src/elements/text.rs:649-656`). The item's minimum is
 /// therefore the whole unwrapped line: a max width on the bubble alone clamps
 /// the bubble and not the text, and the text runs out of it.
 #[gpui::test]
@@ -643,6 +644,148 @@ fn input_select_and_combobox_draw_the_stated_padding(cx: &mut TestAppContext) {
     }
 }
 
+/// The debug selector on an element that fills the space a trigger leaves
+/// its title.
+const FILL: &str = "fill";
+
+/// An item whose trigger title fills the title's box, so the title's right
+/// edge can be measured.
+#[derive(Clone)]
+struct Filling(SharedString);
+
+impl SelectItem for Filling {
+    type Value = SharedString;
+    fn title(&self) -> SharedString {
+        self.0.clone()
+    }
+    fn display_title(&self) -> Option<AnyElement> {
+        Some(
+            div()
+                .debug_selector(|| FILL.into())
+                .w_full()
+                .child(self.0.clone())
+                .into_any_element(),
+        )
+    }
+    fn value(&self) -> &SharedString {
+        &self.0
+    }
+}
+
+/// A Select showing a selected item whose title fills the title's box.
+fn filled_select(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let items = vec![Filling(SAMPLE.into())];
+    let state =
+        cx.new(|cx| SelectState::new(SearchableVec::new(items), Some(IndexPath::default()), w, cx));
+    styled(Select::new(&state), s)
+}
+/// A Combobox whose trigger body fills the space before its trailing slot.
+fn filled_combobox(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    let items: Vec<SharedString> = vec!["a".into(), "b".into()];
+    let state = cx.new(|cx| ComboboxState::new(SearchableVec::new(items), vec![], w, cx));
+    styled(
+        Combobox::new(&state)
+            .render_trigger(|_, _, _| div().debug_selector(|| FILL.into()).w_full()),
+        s,
+    )
+}
+
+/// The drawn right inset of a Select's or Combobox's title: from where the
+/// title's box ends to where the trigger ends. It is the trailing slot (the
+/// caret, or a Combobox's empty slot under a custom trigger), the row's gap
+/// before it, the right padding and the border, all inside the trigger
+/// (`select.rs:557-599`, `combobox.rs:1008-1027`), so two layouts of the same
+/// widget differ in it by their right padding alone.
+fn right_inset(
+    cx: &mut TestAppContext,
+    preset: &str,
+    r: &ResolvedTheme,
+    style: Option<StyleRefinement>,
+    build: Build,
+) -> Pixels {
+    let [fill, probe] = laid_out_as(cx, preset, r, &scaled(), style, build, [FILL, "probe"]);
+    probe.right() - fill.right()
+}
+
+/// D2: where the theme states `combo_box.arrow_area_width`, the right padding
+/// side is measured to an arrow column, and gpui's triggers have none: the
+/// caret sits inside the padded row (`select.rs:592-593` in the row at
+/// `:557-599`, `combobox.rs:654-655` in the row at `:1008-1027`). So under
+/// kde-breeze and windows-11, which state the column and a right side of 0,
+/// the right inset a Select and a Combobox draw is upstream's own, measured
+/// on the unstyled widget. A theme that states no arrow column states its
+/// right side to the text, and the builder applies it: kde-breeze without its
+/// column draws the stated side, measured as the inset the side adds against
+/// the same refinement with a right side of 0.
+#[gpui::test]
+fn select_and_combobox_keep_upstreams_right_side_beside_an_arrow_column(cx: &mut TestAppContext) {
+    type Case = (&'static str, Build, fn(Native<'_>) -> StyleRefinement);
+    let cases: [Case; 2] = [
+        ("select", filled_select, geometry::select),
+        ("combobox", filled_combobox, geometry::combobox),
+    ];
+    for (widget, build, geom) in cases {
+        for preset in ["kde-breeze", "windows-11"] {
+            let r = resolved(preset);
+            assert!(
+                r.combo_box.arrow_area_width.is_some(),
+                "{preset} no longer states an arrow column; pick another preset"
+            );
+            let style = geom(Native {
+                resolved: &r,
+                accessibility: &scaled(),
+            });
+            let own = right_inset(cx, preset, &r, None, build);
+            let drawn = right_inset(cx, preset, &r, Some(style.clone()), build);
+            assert_eq!(
+                drawn, own,
+                "{preset} {widget}: the right inset is {drawn:?}, not upstream's own {own:?}"
+            );
+            // The stated side, applied, would draw something else, or this
+            // case proves nothing.
+            let applied = right_inset(cx, preset, &r, Some(without_right(&style)), build);
+            assert_ne!(
+                applied, own,
+                "{preset} {widget}: a right side of 0 draws upstream's own inset too"
+            );
+        }
+
+        let preset = "kde-breeze";
+        let mut r = resolved(preset);
+        r.combo_box.arrow_area_width = None;
+        let Some(stated) = r.combo_box.border.padding.right else {
+            panic!("{preset} no longer states a combobox right side; pick another preset");
+        };
+        let style = geom(Native {
+            resolved: &r,
+            accessibility: &scaled(),
+        });
+        let drawn = right_inset(cx, preset, &r, Some(style.clone()), build)
+            - right_inset(cx, preset, &r, Some(without_right(&style)), build);
+        assert_eq!(
+            drawn,
+            px(stated),
+            "{preset} {widget} without an arrow column: the right side adds {drawn:?}, not \
+             the stated {stated}px"
+        );
+        let own = right_inset(cx, preset, &r, None, build);
+        let zero = right_inset(cx, preset, &r, Some(without_right(&style)), build);
+        assert_ne!(
+            own, zero,
+            "{preset} {widget}: upstream's own right side is the stated one, so this case \
+             proves nothing"
+        );
+    }
+}
+
 /// A Textarea: it renders as a multi-line `Input` (`input/textarea.rs:162-165`).
 fn textarea(s: Option<&StyleRefinement>, w: &mut Window, cx: &mut Context<Harness>) -> AnyElement {
     let state = cx.new(|cx| TextareaState::new(w, cx));
@@ -753,16 +896,6 @@ fn a_textarea_draws_no_padding(cx: &mut TestAppContext) {
     );
 }
 
-/// Where upstream's own Select or Combobox trigger is taller than the
-/// platform's stated minimum, `geometry::select`/`combobox` (through `min_h`,
-/// as they always have) leave upstream's height: upstream's `input_size` sets
-/// `h_8`, 2 rem, for `Size::Medium` (`sizing.rs:236-237`, `:261-264`), and a
-/// minimum below it changes nothing. These are the (preset, widget) pairs
-/// where that happens at text scale 1; the stated heights themselves are the
-/// follow-up plan's (spec v0.5.9 unstated-sizes rationale §7).
-const TRIGGER_TALLER_THAN_STATED: &[(&str, &str)] =
-    &[("macos-sonoma", "select"), ("macos-sonoma", "combobox")];
-
 /// Under every native preset, at its own DPI: at text scale 1 each single-line
 /// control is its stated height where the preset states one (KDE's menu and
 /// list rows and GNOME's list row size to their content), and its text lies
@@ -800,7 +933,6 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
             r.list.row_height
         }),
     ];
-    let mut taller = Vec::new();
     for (widget, build, geom, stated_of) in cases {
         for (preset, dpi) in NATIVE {
             let r = resolved_at(preset, dpi);
@@ -824,15 +956,8 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
             // A row with no stated height sizes to its content; only that
             // its text fits is checked.
             if let Some(stated) = stated {
-                let expected =
-                    if matches!(widget, "select" | "combobox") && own.size.height > stated {
-                        taller.push((preset, widget));
-                        own.size.height
-                    } else {
-                        stated
-                    };
                 assert_eq!(
-                    control.size.height, expected,
+                    control.size.height, stated,
                     "{preset} {widget}: at text scale 1 the control is not its stated height \
                      {stated:?} (upstream's own: {:?})",
                     own.size.height
@@ -875,8 +1000,4 @@ fn single_line_controls_are_their_stated_height_and_fit_the_text_at_every_scale(
             );
         }
     }
-    assert_eq!(
-        taller, TRIGGER_TALLER_THAN_STATED,
-        "the triggers upstream draws taller than the stated minimum changed"
-    );
 }

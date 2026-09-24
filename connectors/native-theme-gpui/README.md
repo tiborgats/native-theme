@@ -176,15 +176,15 @@ unstated side leaves the widget's own padding in place.
 
 Control heights follow one rule in `button`, `input`, `select`, `combobox`,
 `menu_item` and `list_item`. Each applies the platform's `defaults.line_height`
-as the control's line height. `select` and `combobox` take the stated height
-as a minimum (`min_h`) at every text-scaling factor, and their trigger keeps
-upstream's own `h_8` where that is larger: 2 rem, and the rem is the theme's
-font size, which the connector scales, so that height grows with the text.
-The other four are their stated height (`h`) at a factor of 1 or less; above
-1 the stated height is a minimum and the height is automatic, so the control
-grows around its drawn text and padding. The rule is for single-line
-controls: a multi-line `Input` takes its caller's own `Styled::h` after the
-builder.
+as the control's line height and is its stated height (`h`) at a text-scaling
+factor of 1 or less, in place of upstream's own (a `Select` or `Combobox`
+trigger's `h_8`); above 1 the stated height is a minimum and the height is
+automatic, so the control grows around its drawn text and padding. The rule
+is for single-line controls: for a multi-line `Input`, set the height after
+the builder as `Styled::h(input, height)`, fully qualified. In method syntax
+`input.h(..)` is `Input::h`, which shadows `Styled::h` and only records a
+height upstream applies before the caller's refinement, so the builder's
+height would replace it.
 
 A builder sets a text colour only where the colour reaches the text *and*
 upstream's disabled colour still wins: either upstream labels the caller's own
@@ -228,7 +228,7 @@ test over every preset and mode says so.
 | `group_box_content` | `card.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `GroupBox::content_style` |
 | `accordion_title` | `expander.header_height` | `AccordionItem::title_style` |
 | `checkbox`, `radio` | `checkbox.label_gap`, `checkbox.font` (radio metrics are the checkbox's on every platform) | `Checkbox`, `Radio` |
-| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `combo_box.border.padding` (the stated sides), `.corner_radius`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. The caret sits inside the padded trigger, so a right side measured to a separate arrow column has no receiver |
+| `select`, `combobox` | `combo_box.min_height`, `.min_width`, `.arrow_area_width` (whether it is stated), `combo_box.border.padding` (the stated sides), `.corner_radius`, `combo_box.font`, `defaults.line_height` | `Select`, `Combobox`. Where the theme states `combo_box.arrow_area_width`, the right padding side is not applied and upstream's own stands: the platform measures that side to a separate arrow column, and gpui's caret sits inside the padded trigger, which has none. Without an arrow column the stated right side is applied |
 | `title_bar` | `window.title_bar_font` | `TitleBar` |
 | `toolbar` | `toolbar.bar_height` (as a minimum height, where stated), `.item_gap` (where stated), `.border.padding` (the stated sides), `.background_color`, `toolbar.font` | a toolbar row the application draws with its own elements — gpui-component has no toolbar widget. No edge: the platforms state none |
 | `spinner_size`, `icon_size_*` | `spinner.diameter`, `toolbar.icon_size` (which inherits `defaults.icon_sizes.toolbar`), `defaults.icon_sizes.*` for the others | `Spinner::with_size`, `Icon::with_size` |
@@ -242,10 +242,12 @@ compares the measured height with the refinement's own field. The same file
 lays a real `Tooltip` out and checks that its text keeps inside the bubble.
 Under every native preset, at its own platform's DPI, it also checks that a
 real `Input`, `Select` and `Combobox` draw their content inset by the stated
-left padding, and that a real `Button`, `Input`, `Select`, `Combobox`,
-`ListItem` and an application-drawn menu row are their stated height at a
-text-scaling factor of 1 (macOS's `Select` and `Combobox` excepted, whose
-upstream trigger is taller) and keep their text inside them at 2.
+left padding, that an `Input` without a suffix draws the stated right side,
+that a `Textarea` refined with the padding cleared draws none, and that a real
+`Button`, `Input`, `Select`, `Combobox`, `ListItem` and an application-drawn
+menu row are their stated height at a text-scaling factor of 1 and keep their
+text inside them at 1, 1.1 and 2. Under kde-breeze and windows-11, which state
+an arrow column, a `Select` and a `Combobox` keep upstream's own right inset.
 
 ### Flat buttons
 
