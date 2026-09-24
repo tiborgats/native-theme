@@ -480,25 +480,36 @@ impl PartialEq for ThemeChoice {
 
 impl Eq for ThemeChoice {}
 
+/// The bundled adwaita preset, resolved, as the last-resort fallback: what
+/// is drawn, with the icon set and icon theme the preset states.
+struct AdwaitaFallback {
+    resolved: native_theme::theme::ResolvedTheme,
+    theme: Theme,
+    layout: LayoutTheme,
+    icon_set: IconSet,
+    icon_theme: Option<String>,
+}
+
 /// Load the bundled adwaita preset as a last-resort fallback.
 ///
 /// Returns `None` if any step fails (should not happen for bundled data,
 /// but we never panic).
-fn load_adwaita_fallback(
-    is_dark: bool,
-) -> Option<(native_theme::theme::ResolvedTheme, Theme, LayoutTheme)> {
+fn load_adwaita_fallback(is_dark: bool) -> Option<AdwaitaFallback> {
     let nt = native_theme::theme::Theme::preset("adwaita").ok()?;
-    let variant = nt
-        .pick_variant(if is_dark {
+    let r = nt
+        .resolve(if is_dark {
             native_theme_iced::ColorMode::Dark
         } else {
             native_theme_iced::ColorMode::Light
         })
-        .ok()?
-        .clone();
-    let r = variant.resolve_system().ok()?;
-    let t = native_theme_iced::to_theme(&r, &nt.name);
-    Some((r, t, nt.layout.clone()))
+        .ok()?;
+    Some(AdwaitaFallback {
+        theme: native_theme_iced::to_theme(&r.variant, &nt.name),
+        resolved: r.variant,
+        layout: nt.layout.clone(),
+        icon_set: r.icon_set,
+        icon_theme: r.icon_theme.map(Cow::into_owned),
+    })
 }
 
 fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
@@ -973,15 +984,15 @@ impl State {
                 // theme picker names what is drawn, so a mode change installs
                 // adwaita again instead of reading the OS theme.
                 match load_adwaita_fallback(is_dark) {
-                    Some((r, t, lay)) => (
-                        r,
-                        t,
+                    Some(fallback) => (
+                        fallback.resolved,
+                        fallback.theme,
                         Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
                         "adwaita".to_string(),
-                        IconSet::Freedesktop,
-                        Some("Adwaita".to_string()),
+                        fallback.icon_set,
+                        fallback.icon_theme,
                         native_theme_iced::AccessibilityPreferences::default(),
-                        lay,
+                        fallback.layout,
                         Some(ThemeChoice::Preset("adwaita".to_string())),
                     ),
                     None => {
@@ -6133,6 +6144,15 @@ mod tests {
         assert!(
             state.error_message.is_some(),
             "the failed OS-theme read at startup reported nothing"
+        );
+        let preset = native_theme::theme::Theme::preset("adwaita")
+            .and_then(|t| t.resolve(native_theme_iced::ColorMode::Light))
+            .map(|r| (r.icon_set, r.icon_theme.map(Cow::into_owned)))
+            .ok();
+        assert_eq!(
+            Some((state.current_icon_set, state.current_icon_theme.clone())),
+            preset,
+            "the startup fallback's icons are not the adwaita preset's"
         );
 
         let (other, other_name) = if state.is_dark {
