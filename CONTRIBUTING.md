@@ -27,7 +27,8 @@ the feature-combination check (`scripts/check-features.sh`: every crate's
 library with no default features, with each feature alone and with all
 features, failing on a warning), the cross-target checks on
 `x86_64-pc-windows-gnu` and `x86_64-apple-darwin` where the target is
-installed (`native-theme` with `system-icons` alone, and with all features
+installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too
+(`native-theme` with `system-icons` alone, and with all features
 under `RUSTFLAGS="-D warnings"`), `cargo fmt --all` (formats in place; CI uses
 `--check`), per-crate `cargo clippy --all-targets -- -D warnings`, the strict
 panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`

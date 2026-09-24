@@ -11,15 +11,15 @@ Standalone theme specifications: colors, fonts, geometry and
 platform-specific values like `button_order`. Any app can load a regular
 preset and get a resolved theme without needing a platform reader.
 
-A preset states a size only where it has a source. The native presets
-(`kde-breeze`, `adwaita`, `macos-sonoma`, `windows-11`) state the sizes
-`docs/platform-facts.md` documents for their platform and leave the others
-unstated. The color-scheme presets, `material` and `ios` have no
-platform-facts column, so they state colors and fonts, and none of the sizes
-a source would have to give: no padding side, menu or list row height,
-toolbar height or item gap, or combobox arrow width (checked by
-`documented_sizes.rs`). Those resolve to `None`, and the toolkit's own sizes
-apply.
+Gated sizes (padding sides, menu and list row heights, toolbar `bar_height`
+and `item_gap`, combobox `arrow_area_width`): a native preset states one only
+where `docs/platform-facts.md` gives it for its platform; the color-scheme
+presets, `material` and `ios`, which have no platform-facts column, state none
+(`documented_sizes.rs` checks both). An unstated gated size resolves to `None`
+and the toolkit's own applies. The presets' other sizes (`min_height_px`,
+`max_width_px`, …) are stated, often without a source, and are still being
+audited (`docs/todo.md`, Table B); the color-scheme presets state many of them
+too.
 
 Files: `kde-breeze.toml`, `macos-sonoma.toml`, `windows-11.toml`,
 `adwaita.toml`, `material.toml`, `ios.toml`, and the community presets

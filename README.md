@@ -33,7 +33,7 @@ dependency for the common case.
 ## Core concepts
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
-- **`ResolvedTheme`** — the resolved variant `Theme::resolve(mode)` produces. Every colour, font and required metric has a value; a size the platform does not state, such as a padding side or a row height, is `None`, and the toolkit's own size applies. Your UI code reads from this.
+- **`ResolvedTheme`** — the resolved variant `Theme::resolve(mode)` produces. Every colour and font has a value, and so does every size the model requires; the sizes it treats as optional (padding sides, menu and list row heights, toolbar height and item gap, combobox arrow width) are `None` where the theme states none, and the toolkit's own value then applies. Your UI code reads from this.
 - **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-sonoma`). Load with `Theme::preset("name")`.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 

@@ -49,7 +49,8 @@ WinUI3 Fluent Design specifications
 **Files to update:**
 
 - `native-theme/src/windows.rs` -- WinUI3 spacing constants, system metric mappings,
-  `winui3_widget_sizing()`, the DPI-aware `read_widget_sizing()`
+  `winui3_widget_sizing()`, and `read_widget_sizing()`, which reads the system
+  metrics at 96 DPI, in logical pixels
 - `native-theme/src/presets/windows-11.toml` -- bundled preset data
 
 **What to look for:**
@@ -166,13 +167,15 @@ Steps:
 2. Update geometry values in `[light.defaults.border]` / `[dark.defaults.border]`
    (`corner_radius_px`, `corner_radius_lg_px`, `shadow_enabled`, etc.).
 3. Update the per-widget tables (`[light.button]`, `[light.button.border]`, …)
-   if widget sizing changed. A size needs a source in `docs/platform-facts.md`;
-   one the platform does not document stays unstated.
+   if widget sizing changed. State a new or changed size only from a source in
+   `docs/platform-facts.md`, and leave one the platform does not document
+   unstated; sizes the presets state today without a source are listed in
+   `docs/todo.md`, Table B.
 4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
    for preset-only changes).
 
-Community color presets (Catppuccin, Nord, Dracula, etc.) state no platform's
-sizes and are not affected by platform-specific changes.
+Community color presets (Catppuccin, Nord, Dracula, etc.) state sizes of their
+own, taken from no platform, and are not affected by platform-specific changes.
 
 ---
 
