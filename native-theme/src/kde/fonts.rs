@@ -59,11 +59,42 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
     })
 }
 
+/// Kirigami `Heading` level 1 (the default level): the body font's point size
+/// times this (kirigami `8319acc`, `src/controls/Heading.qml:17-18,32`).
+const HEADING_LEVEL_1_FACTOR: f32 = 1.35;
+
+/// Kirigami `Heading` level 2: the body font's point size times this
+/// (kirigami `8319acc`, `src/controls/Heading.qml:20-21,32`).
+const HEADING_LEVEL_2_FACTOR: f32 = 1.20;
+
+/// Kirigami `Heading`'s weight for its default `type: Heading.Type.Normal`
+/// (kirigami `8319acc`, `src/templates/Heading.qml:89`): `Font.Normal`, CSS
+/// 400 (`src/controls/Heading.qml:35`).
+const HEADING_WEIGHT: u16 = 400;
+
+/// A Kirigami heading of the body font `body` at a level's factor.
+fn heading(body: crate::model::font::FontSize, factor: f32) -> crate::TextScaleEntry {
+    use crate::model::font::FontSize;
+    let size = match body {
+        FontSize::Pt(v) => FontSize::Pt(v * factor),
+        FontSize::Px(v) => FontSize::Px(v * factor),
+    };
+    crate::TextScaleEntry {
+        size: Some(size),
+        weight: Some(HEADING_WEIGHT),
+        line_height: None,
+    }
+}
+
 /// Populate per-widget font fields on a ThemeMode from KDE INI.
 ///
 /// Reads font keys from [General] and [WM] sections:
-/// - defaults.font from [General] font
+/// - defaults.font from [General] font, and from its size the Kirigami
+///   heading sizes of text_scale.section_heading (level 2) and
+///   text_scale.dialog_title (level 1), `docs/platform-facts.md:1436-1437`
 /// - defaults.mono_font from [General] fixed
+/// - text_scale.caption from [General] smallestReadableFont
+///   (`docs/platform-facts.md:1435`)
 /// - menu.font from [General] menuFont (KDE-03)
 /// - toolbar.font from [General] toolBarFont (KDE-03)
 /// - window.title_bar_font from [WM] activeFont (KDE-01)
@@ -73,7 +104,21 @@ pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::
     if let Some(font_str) = ini.get("General", "font")
         && let Some(spec) = parse_qt_font_with_weight(&font_str)
     {
+        if let Some(body) = spec.size {
+            variant.text_scale.section_heading = Some(heading(body, HEADING_LEVEL_2_FACTOR));
+            variant.text_scale.dialog_title = Some(heading(body, HEADING_LEVEL_1_FACTOR));
+        }
         variant.defaults.font = spec;
+    }
+
+    if let Some(smallest_str) = ini.get("General", "smallestReadableFont")
+        && let Some(spec) = parse_qt_font_with_weight(&smallest_str)
+    {
+        variant.text_scale.caption = Some(crate::TextScaleEntry {
+            size: spec.size,
+            weight: spec.weight,
+            line_height: None,
+        });
     }
 
     if let Some(fixed_str) = ini.get("General", "fixed")
@@ -281,6 +326,61 @@ mod tests {
         assert_eq!(tbf.family.as_deref(), Some("Noto Sans"));
         assert_eq!(tbf.size, Some(FontSize::Pt(10.0)));
         assert_eq!(tbf.weight, Some(700)); // Qt5 75 -> CSS 700
+    }
+
+    /// A non-default body (11pt) and smallest readable font (9pt, Qt6 weight 300).
+    const NON_DEFAULT_FONTS: &str = "[General]\n\
+         font=Noto Sans,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n\
+         smallestReadableFont=Noto Sans,9,-1,5,300,0,0,0,0,0,0,0,0,0,0,1\n";
+
+    fn size_pt(entry: Option<&crate::TextScaleEntry>) -> Option<f32> {
+        match entry?.size? {
+            FontSize::Pt(v) => Some(v),
+            FontSize::Px(_) => None,
+        }
+    }
+
+    #[test]
+    fn populate_fonts_sets_caption_from_smallest_readable_font() {
+        let mut ini = super::super::create_kde_parser();
+        ini.read(NON_DEFAULT_FONTS.to_string()).unwrap();
+        let mut variant = ThemeMode::default();
+        populate_fonts(&ini, &mut variant);
+        let caption = variant.text_scale.caption.as_ref();
+        assert_eq!(size_pt(caption), Some(9.0));
+        assert_eq!(caption.and_then(|c| c.weight), Some(300));
+        assert_eq!(caption.and_then(|c| c.line_height), None);
+    }
+
+    /// Kirigami's heading levels of an 11pt body: level 2 is 13.2pt, level 1
+    /// 14.85pt, both `Font.Normal`.
+    #[test]
+    fn populate_fonts_derives_headings_from_body_font() {
+        let mut ini = super::super::create_kde_parser();
+        ini.read(NON_DEFAULT_FONTS.to_string()).unwrap();
+        let mut variant = ThemeMode::default();
+        populate_fonts(&ini, &mut variant);
+        let ts = &variant.text_scale;
+        let section = size_pt(ts.section_heading.as_ref()).unwrap();
+        let title = size_pt(ts.dialog_title.as_ref()).unwrap();
+        assert!((section - 13.2).abs() < 1e-4, "section_heading {section}");
+        assert!((title - 14.85).abs() < 1e-4, "dialog_title {title}");
+        for entry in [&ts.section_heading, &ts.dialog_title] {
+            let entry = entry.as_ref().unwrap();
+            assert_eq!(entry.weight, Some(400));
+            assert_eq!(entry.line_height, None);
+        }
+        assert!(ts.display.is_none());
+    }
+
+    #[test]
+    fn populate_fonts_without_fonts_states_no_text_scale() {
+        let mut ini = super::super::create_kde_parser();
+        ini.read("[General]\nColorScheme=BreezeLight\n".to_string())
+            .unwrap();
+        let mut variant = ThemeMode::default();
+        populate_fonts(&ini, &mut variant);
+        assert_eq!(variant.text_scale, crate::TextScale::default());
     }
 
     #[test]

@@ -40,6 +40,20 @@ fn breeze_dark_fixture_colors_and_fonts() {
     assert_eq!(v.defaults.font.size, Some(FontSize::Pt(10.0)));
     assert_eq!(v.defaults.mono_font.family.as_deref(), Some("Hack"));
 
+    // Text scale: caption is smallestReadableFont (7pt here); the headings
+    // are Kirigami's levels 2 and 1 of the 10pt body, Font.Normal
+    let ts = &v.text_scale;
+    let caption = ts.caption.as_ref().unwrap();
+    assert_eq!(caption.size, Some(FontSize::Pt(7.0)));
+    assert_eq!(caption.weight, Some(400));
+    let section = ts.section_heading.as_ref().unwrap();
+    assert_eq!(section.size, Some(FontSize::Pt(12.0)));
+    assert_eq!(section.weight, Some(400));
+    let title = ts.dialog_title.as_ref().unwrap();
+    assert_eq!(title.size, Some(FontSize::Pt(13.5)));
+    assert_eq!(title.weight, Some(400));
+    assert!(ts.display.is_none());
+
     // Accessibility: AnimationDurationFactor=0 -> reduce_motion=true
     assert!(accessibility.reduce_motion);
 
