@@ -166,6 +166,7 @@ pub mod rasterize;
 pub mod sficons;
 /// Windows platform theme reader.
 #[cfg(target_os = "windows")]
+#[cfg_attr(not(feature = "windows"), allow(dead_code))]
 pub mod windows;
 #[cfg(not(target_os = "windows"))]
 #[allow(dead_code, unused_variables)]
@@ -325,6 +326,7 @@ pub(crate) struct ReaderResult {
 pub(crate) enum ReaderOutput {
     /// Reader provides only the OS-active variant. The pipeline fills the
     /// inactive variant from the platform preset.
+    #[cfg_attr(all(target_os = "windows", not(feature = "windows")), allow(dead_code))]
     Single {
         /// The reader-provided variant (OS-active).
         mode: Box<ThemeMode>,

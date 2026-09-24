@@ -4,7 +4,7 @@
 //! parsing logic without any KDE desktop or I/O access.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
-#![cfg(feature = "kde")]
+#![cfg(all(target_os = "linux", feature = "kde"))]
 
 use native_theme::color::Rgba;
 use native_theme::kde::from_kde_content_pure;

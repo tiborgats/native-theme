@@ -148,6 +148,14 @@ impl ThemeSubscription {
     /// channel is dropped during `Drop`, allowing platform backends to wake
     /// their blocked event loops so the thread can observe the disconnect.
     /// Pass `None` on Linux where the channel disconnect alone suffices.
+    ///
+    /// Compiled where a backend exists to call it, and for tests.
+    #[cfg(any(
+        test,
+        all(target_os = "linux", any(feature = "kde", feature = "portal")),
+        all(target_os = "macos", feature = "macos"),
+        all(target_os = "windows", feature = "windows"),
+    ))]
     pub(crate) fn new(
         shutdown_tx: mpsc::Sender<()>,
         thread: JoinHandle<()>,
@@ -211,6 +219,8 @@ pub fn on_theme_change(
 ) -> crate::Result<ThemeSubscription> {
     #[cfg(target_os = "linux")]
     {
+        #[cfg(not(any(feature = "kde", feature = "portal")))]
+        let _ = callback;
         let de = crate::detect_linux_desktop();
         match de {
             #[cfg(feature = "kde")]

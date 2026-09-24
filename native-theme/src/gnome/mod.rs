@@ -37,7 +37,8 @@ const WEIGHT_MODIFIERS: &[(&str, u16)] = &[
 
 /// Convert an ashpd portal Color to an Rgba, returning None if any
 /// component is outside the [0.0, 1.0] range (per XDG spec: out-of-range
-/// means "unset").
+/// means "unset"). Used by the KDE-with-portal reader.
+#[cfg(any(feature = "kde", test))]
 pub(crate) fn portal_color_to_rgba(color: &Color) -> Option<crate::Rgba> {
     let r = color.red();
     let g = color.green();
