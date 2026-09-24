@@ -781,13 +781,34 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// with its evidence.
 ///
 /// Not a way out of a row: an entry here says the toolkit cannot carry the
-/// value at all, so approximating it would state something untrue. Every
-/// native value a `styles` doc comment calls receiverless is here, but one:
-/// `sidebar.border.corner_radius` has no receiver either -- `iced_aw` rounds
-/// the panel and its items with a hardcoded `(0.0).into()`
-/// (`sidebar/sidebar.rs:616`, `:992`) -- yet every bundled preset states 0,
-/// which is what `iced_aw` draws, so no preset loses it and
-/// `every_unreachable_value_is_one_a_preset_loses` would reject the entry.
+/// value at all, so approximating it would state something untrue. The list
+/// holds values with no receiver anywhere in iced or `iced_aw`, which is
+/// narrower than what the `styles` doc comments call receiverless: those
+/// speak of one widget's `Style`, and several of their values are carried
+/// elsewhere or left to the consumer on purpose.
+///
+/// - `menu.font.color` and `.hover_text_color` have no receiver in `iced_aw`'s
+///   `menu_bar::Style`, but iced's own menu takes both: `styles::menu` emits
+///   them as the `PickList` / `ComboBox` menu's `text_color` and
+///   `selected_text_color`.
+/// - `menu.disabled_text_color`, `.separator_color`, `.row_height`,
+///   `.icon_size` and `.icon_text_gap` belong to the menu's items, and an
+///   `iced_aw` menu's items are the consumer's own widgets, built with their
+///   own colors and sizes.
+/// - A radio's disabled fields are the checkbox's (the model states one
+///   `CheckboxTheme` for both) and have no receiver on a radio because
+///   `radio::Status` has no disabled variant (`radio.rs:474-487`); on a
+///   checkbox, `styles::checkbox` emits `.disabled_background` and
+///   `.disabled_text_color`.
+/// - `tab.min_width` and `.min_height` are left to the fixed extents
+///   `iced_aw`'s `TabBar` takes (`tab_width(..)`, `height(..)`), the closest
+///   receiver it has for a minimum, as `styles::aw::tab_bar` says.
+/// - `sidebar.border.corner_radius` has no receiver either -- `iced_aw` rounds
+///   the panel and its items with a hardcoded `(0.0).into()`
+///   (`sidebar/sidebar.rs:616`, `:992`) -- yet every bundled preset states 0,
+///   which is what `iced_aw` draws, so no preset loses it and
+///   `every_unreachable_value_is_one_a_preset_loses` would reject the entry.
+///
 /// One entry names an emitted field rather than a native one:
 /// `styles::aw::card.close_color` is filled, and `iced_aw` paints the close
 /// icon with another class's.
