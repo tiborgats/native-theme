@@ -901,7 +901,7 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
              text size and line height, and a `menu_height` that is the open \
              menu's -- and a `PickList` lays its trigger out \
              `Length::Shrink` tall, one text line plus its padding \
-             (`pick_list.rs:420-431`)",
+             (`pick_list.rs:421-432`)",
         lost: |_, r| lost_length(r.combo_box.min_height),
         exceptions: &[],
     },
