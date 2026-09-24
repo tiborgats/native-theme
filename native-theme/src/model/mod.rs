@@ -296,7 +296,8 @@ pub struct Theme {
     /// Precedence at resolve time:
     /// 1. [`ThemeMode::defaults.icon_theme`](crate::model::ThemeDefaults::icon_theme) — per-variant override (if set)
     /// 2. `Theme::icon_theme` — this field (if set)
-    /// 3. [`system_icon_theme()`](crate::model::icons::system_icon_theme) — runtime fallback
+    /// 3. [`system_icon_theme()`](crate::model::icons::system_icon_theme) — runtime
+    ///    detection; none where it fails
     ///
     /// See doc 1 §20 and `docs/todo_v0.5.7_gaps.md` §G4 for the design rationale.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -411,6 +412,9 @@ impl Theme {
     /// 2. [`Theme::icon_theme`] (shared across variants).
     /// 3. [`system_icon_theme()`] (runtime detect).
     ///
+    /// Where no tier gives a name — the TOML states none and detection
+    /// fails — [`Resolved::icon_theme`] is `None`; the resolution itself
+    /// does not fail over it, and [`system_icon_theme()`] gives the reason.
     /// [`Resolved::icon_theme_explicit`] reports whether tiers 1 or 2
     /// fired (value came from TOML) versus tier 3 (runtime fallback).
     ///
@@ -434,30 +438,38 @@ impl Theme {
     /// // Theme-level `icon_theme` (tier 2) — applies to both modes.
     /// let material = Theme::preset("material")?;
     /// let r = material.resolve(ColorMode::Dark)?;
-    /// assert_eq!(r.icon_theme.as_ref(), "material");
+    /// assert_eq!(r.icon_theme.as_deref(), Some("material"));
     /// assert!(r.icon_theme_explicit);
     ///
     /// // Per-variant `icon_theme` (tier 1) — differs by mode.
     /// let breeze = Theme::preset("kde-breeze")?;
-    /// assert_eq!(breeze.resolve(ColorMode::Light)?.icon_theme.as_ref(), "breeze");
-    /// assert_eq!(breeze.resolve(ColorMode::Dark)?.icon_theme.as_ref(), "breeze-dark");
+    /// assert_eq!(breeze.resolve(ColorMode::Light)?.icon_theme.as_deref(), Some("breeze"));
+    /// assert_eq!(breeze.resolve(ColorMode::Dark)?.icon_theme.as_deref(), Some("breeze-dark"));
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn resolve(&self, mode: ColorMode) -> crate::Result<Resolved> {
+        self.resolve_in(mode, &crate::resolve::ResolutionContext::from_system())
+    }
+
+    /// [`resolve`](Self::resolve) with the resolution-time inputs of `ctx`,
+    /// whose `icon_theme` is tier 3.
+    pub(crate) fn resolve_in(
+        &self,
+        mode: ColorMode,
+        ctx: &crate::resolve::ResolutionContext,
+    ) -> crate::Result<Resolved> {
         let variant_ref = self.pick_variant(mode)?;
 
         let tier1 = variant_ref.defaults.icon_theme.clone();
         let tier2 = self.icon_theme.clone();
         let icon_theme_explicit = tier1.is_some() || tier2.is_some();
-        let icon_theme = tier1
-            .or(tier2)
-            .unwrap_or_else(|| Cow::Owned(crate::model::icons::system_icon_theme()));
+        let icon_theme = tier1.or(tier2).or_else(|| ctx.icon_theme.clone());
 
         let icon_set = self
             .icon_set
             .unwrap_or_else(crate::model::icons::system_icon_set);
 
-        let variant = variant_ref.clone().resolve_system()?;
+        let variant = variant_ref.clone().into_resolved(ctx)?;
 
         Ok(Resolved {
             variant,
@@ -1338,8 +1350,8 @@ accent_color = "#ff0000"
         for mode in [ColorMode::Light, ColorMode::Dark] {
             let r = theme.resolve(mode).unwrap();
             assert_eq!(
-                r.icon_theme.as_ref(),
-                "material",
+                r.icon_theme.as_deref(),
+                Some("material"),
                 "material (tier 2) for {mode:?}"
             );
             assert!(
@@ -1357,21 +1369,19 @@ accent_color = "#ff0000"
         let theme = Theme::preset("kde-breeze").unwrap();
 
         let light = theme.resolve(ColorMode::Light).unwrap();
-        assert_eq!(light.icon_theme.as_ref(), "breeze");
+        assert_eq!(light.icon_theme.as_deref(), Some("breeze"));
         assert!(light.icon_theme_explicit);
 
         let dark = theme.resolve(ColorMode::Dark).unwrap();
-        assert_eq!(dark.icon_theme.as_ref(), "breeze-dark");
+        assert_eq!(dark.icon_theme.as_deref(), Some("breeze-dark"));
         assert!(dark.icon_theme_explicit);
 
         assert_eq!(light.icon_set, IconSet::Freedesktop);
         assert_eq!(dark.icon_set, IconSet::Freedesktop);
     }
 
-    #[test]
-    fn resolve_minimal_theme_falls_back_to_system_icon_theme() {
-        // No icon_theme anywhere → tier 3 fires. The exact string is
-        // OS-dependent, but icon_theme_explicit must be false.
+    /// adwaita with no icon theme stated anywhere, so tier 3 decides.
+    fn adwaita_without_icon_theme() -> Theme {
         let mut theme = Theme::preset("adwaita").unwrap();
         theme.icon_theme = None;
         if let Some(v) = theme.light.as_mut() {
@@ -1380,13 +1390,53 @@ accent_color = "#ff0000"
         if let Some(v) = theme.dark.as_mut() {
             v.defaults.icon_theme = None;
         }
-        let r = theme.resolve(ColorMode::Light).unwrap();
+        theme
+    }
+
+    #[test]
+    fn resolve_minimal_theme_takes_the_detected_icon_theme() {
+        // No icon_theme anywhere → tier 3, the context's detected theme.
+        let ctx = crate::resolve::ResolutionContext::with_detected_icon_theme(Ok(
+            "detected-theme".to_string()
+        ));
+        let r = adwaita_without_icon_theme()
+            .resolve_in(ColorMode::Light, &ctx)
+            .unwrap();
+        assert_eq!(r.icon_theme.as_deref(), Some("detected-theme"));
         assert!(
             !r.icon_theme_explicit,
             "tier 3 fallback must report explicit = false"
         );
-        // Tier 3 string comes from runtime detection — just confirm non-empty.
-        assert!(!r.icon_theme.is_empty());
+    }
+
+    #[test]
+    fn resolve_minimal_theme_without_detection_has_no_icon_theme() {
+        // No icon_theme anywhere and detection failed → None, and the
+        // resolution itself still succeeds.
+        let ctx = crate::resolve::ResolutionContext::with_detected_icon_theme(Err(
+            crate::Error::PlatformUnsupported {
+                platform: "the test's failing detection",
+            },
+        ));
+        let r = adwaita_without_icon_theme()
+            .resolve_in(ColorMode::Light, &ctx)
+            .expect("a failed icon-theme detection must not fail resolution");
+        assert_eq!(r.icon_theme, None);
+        assert!(!r.icon_theme_explicit);
+    }
+
+    #[test]
+    fn resolve_minimal_theme_resolves_whatever_detection_gives() {
+        // Through `resolve` itself: detection's outcome is host-dependent,
+        // but the resolution succeeds and reports tier 3 either way.
+        let r = adwaita_without_icon_theme()
+            .resolve(ColorMode::Light)
+            .unwrap();
+        assert!(!r.icon_theme_explicit);
+        assert_eq!(
+            r.icon_theme.as_deref(),
+            crate::model::icons::system_icon_theme().ok().as_deref()
+        );
     }
 
     #[test]
@@ -1397,7 +1447,7 @@ accent_color = "#ff0000"
         theme.icon_theme = Some(Cow::Borrowed("theme-level"));
         theme.light.as_mut().unwrap().defaults.icon_theme = Some(Cow::Borrowed("per-variant"));
         let r = theme.resolve(ColorMode::Light).unwrap();
-        assert_eq!(r.icon_theme.as_ref(), "per-variant");
+        assert_eq!(r.icon_theme.as_deref(), Some("per-variant"));
         assert!(r.icon_theme_explicit);
     }
 
@@ -1410,7 +1460,7 @@ accent_color = "#ff0000"
         theme.icon_theme = None;
         theme.light.as_mut().unwrap().defaults.icon_theme = Some(Cow::Borrowed("only-one"));
         let r = theme.resolve(ColorMode::Dark).unwrap();
-        assert_eq!(r.icon_theme.as_ref(), "only-one");
+        assert_eq!(r.icon_theme.as_deref(), Some("only-one"));
         assert!(r.icon_theme_explicit);
     }
 

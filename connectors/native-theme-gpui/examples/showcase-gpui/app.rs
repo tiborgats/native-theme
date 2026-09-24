@@ -26,6 +26,7 @@ use gpui_component::{
     tree::{TreeItem, TreeState},
     v_flex,
 };
+use std::borrow::Cow;
 use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -242,6 +243,11 @@ pub(crate) struct Showcase {
     /// all, from its caller, so it needs none.
     #[cfg(test)]
     pub(crate) os_preferences_for_test: Option<AccessibilityPreferences>,
+    /// The system icon theme's detection as the self-tests say it went,
+    /// which the Icons page's label then shows in place of the host's
+    /// (`Showcase::detected_icon_theme`): a test cannot change the desktop's.
+    #[cfg(test)]
+    pub(crate) icon_theme_detection_for_test: Option<fn() -> native_theme::Result<String>>,
     /// The command palette's query and highlighted row (spec §2.8).
     pub(crate) palette_state: Entity<CommandState>,
     /// The view's focus, so an action dispatched with nothing else focused
@@ -362,8 +368,9 @@ pub(crate) struct Showcase {
     pub(crate) icon_choice_follows_preset: bool,
     /// Cached list of installed freedesktop icon themes (populated once at init).
     pub(crate) installed_themes: Vec<String>,
-    /// The current resolved theme's preferred icon theme (e.g. "breeze", "Lucide").
-    pub(crate) current_icon_theme: String,
+    /// The current resolved theme's preferred icon theme (e.g. "breeze", "Lucide");
+    /// `None` where the theme names none and the system's cannot be detected.
+    pub(crate) current_icon_theme: Option<String>,
     /// The current resolved theme's icon set (loading mechanism).
     pub(crate) current_icon_set: IconSet,
     /// Whether the current theme's TOML specified `icon_theme` (before resolution).
@@ -600,16 +607,29 @@ impl Showcase {
     }
 
     /// The icon theme as the Icons page names it: a freedesktop set with the
-    /// theme its icons load from.
+    /// theme its icons load from -- where that is the system's and it cannot
+    /// be detected, why, as no theme's icons load then.
     pub(crate) fn icon_set_label(&self) -> String {
         match self.icon_set_enum {
-            Some(IconSet::Freedesktop) => format!(
-                "freedesktop ({})",
-                self.freedesktop_theme()
-                    .map_or_else(system_icon_theme, str::to_string)
-            ),
+            Some(IconSet::Freedesktop) => match self.freedesktop_theme() {
+                Some(theme) => format!("freedesktop ({theme})"),
+                None => match self.detected_icon_theme() {
+                    Ok(theme) => format!("freedesktop ({theme})"),
+                    Err(e) => format!("freedesktop (unavailable: {e})"),
+                },
+            },
             _ => self.icon_theme_name.clone(),
         }
+    }
+
+    /// The system icon theme, or why none was detected; in the self-tests,
+    /// what `icon_theme_detection_for_test` gives, where it is set.
+    fn detected_icon_theme(&self) -> native_theme::Result<String> {
+        #[cfg(test)]
+        if let Some(detect) = self.icon_theme_detection_for_test {
+            return detect();
+        }
+        system_icon_theme()
     }
 
     /// The decorations the window was granted (spec S8), which decide who
@@ -741,8 +761,9 @@ impl Showcase {
 
     /// The icon theme the installed theme names, where it names one.
     fn preset_icon_theme(&self) -> Option<&str> {
-        self.has_toml_icon_theme
-            .then_some(self.current_icon_theme.as_str())
+        self.current_icon_theme
+            .as_deref()
+            .filter(|_| self.has_toml_icon_theme)
     }
 
     /// The icon-theme Select's row for the icons drawn: the `--icon-theme`
@@ -932,7 +953,7 @@ impl Showcase {
                 });
                 let font = resolved.defaults.font.clone();
                 let mono_font = resolved.defaults.mono_font.clone();
-                let icon_theme = system.icon_theme.clone().into_owned();
+                let icon_theme = system.icon_theme.clone().map(Cow::into_owned);
                 let icon_set = system.icon_set;
                 let layout = system.layout.clone();
                 // Install the OS theme with both variants stored; the showcase's own
@@ -975,7 +996,7 @@ impl Showcase {
                     style: native_theme::theme::FontStyle::Normal,
                     color: native_theme::color::Rgba::TRANSPARENT,
                 };
-                let icon_theme = system_icon_theme().to_string();
+                let icon_theme = system_icon_theme().ok();
                 let icon_set = system_icon_set();
                 (
                     font,
@@ -1018,11 +1039,9 @@ impl Showcase {
         .detach();
 
         // Use the library's IconSetChoice to compute the initial icon selection.
-        let icon_theme_opt = if initial_has_toml_icon_theme {
-            Some(initial_icon_theme.as_str())
-        } else {
-            None
-        };
+        let icon_theme_opt = initial_icon_theme
+            .as_deref()
+            .filter(|_| initial_has_toml_icon_theme);
         let initial_icon_set_choice = default_icon_choice(initial_icon_set, icon_theme_opt);
         let initial_effective_set = initial_icon_set_choice.effective_icon_set(initial_icon_set);
         let initial_default_theme = initial_icon_set_choice
@@ -1236,6 +1255,8 @@ impl Showcase {
             frame_for_test: None,
             #[cfg(test)]
             os_preferences_for_test: None,
+            #[cfg(test)]
+            icon_theme_detection_for_test: None,
             palette_state,
             focus_handle,
             _refocus,
@@ -1379,7 +1400,7 @@ impl Showcase {
         });
         self.original_font = resolved.defaults.font.clone();
         self.original_mono_font = resolved.defaults.mono_font.clone();
-        self.current_icon_theme = system.icon_theme.clone().into_owned();
+        self.current_icon_theme = system.icon_theme.clone().map(Cow::into_owned);
         self.current_icon_set = system.icon_set;
         self.layout = system.layout.clone();
         // Platform presets always specify icon_theme
@@ -1425,7 +1446,7 @@ impl Showcase {
         self.layout = nt.layout.clone();
         self.has_toml_icon_theme = r.icon_theme_explicit;
         self.current_icon_set = r.icon_set;
-        self.current_icon_theme = r.icon_theme.into_owned();
+        self.current_icon_theme = r.icon_theme.map(Cow::into_owned);
         self.original_font = r.variant.defaults.font.clone();
         self.original_mono_font = r.variant.defaults.mono_font.clone();
         // Accessibility is orthogonal to the theme choice, so a preset is

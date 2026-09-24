@@ -467,7 +467,11 @@ pub struct SystemTheme {
     pub(crate) live_preset: String,
     /// Which icon loading mechanism to use for this theme.
     pub icon_set: IconSet,
-    /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`).
+    /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`):
+    /// the active variant's, else the theme's, else the detected system
+    /// icon theme. `None` where the theme states none and detection fails;
+    /// [`system_icon_theme()`](crate::theme::system_icon_theme) gives the
+    /// reason.
     ///
     /// # Ownership type
     ///
@@ -476,7 +480,7 @@ pub struct SystemTheme {
     /// §G9. Each resolved theme carries a single icon-theme name (KDE has
     /// exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
     /// other platforms have one), so the `Arc<str>` dedup benefit does not apply.
-    pub icon_theme: Cow<'static, str>,
+    pub icon_theme: Option<Cow<'static, str>>,
     /// Layout spacing shared by both variants: the platform reader's values
     /// merged field-wise over the preset's, the same precedence the pipeline
     /// uses for colours. `None` in a field means neither the platform nor the
@@ -724,7 +728,7 @@ mod system_theme_tests {
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
-            icon_theme: "lucide".into(),
+            icon_theme: Some("lucide".into()),
             layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
@@ -765,7 +769,7 @@ mod system_theme_tests {
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
-            icon_theme: "lucide".into(),
+            icon_theme: Some("lucide".into()),
             layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
@@ -806,7 +810,7 @@ mod system_theme_tests {
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
-            icon_theme: "lucide".into(),
+            icon_theme: Some("lucide".into()),
             layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };

@@ -5427,7 +5427,7 @@ fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
         &showcase,
         |this, _| match native_theme::icons::default_icon_choice(
             this.current_icon_set,
-            Some(this.current_icon_theme.as_str()),
+            this.current_icon_theme.as_deref(),
         ) {
             choice @ IconSetChoice::Default(_) => Some(choice.to_string()),
             _ => None,
@@ -5443,6 +5443,32 @@ fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
             "under kde-breeze the icon-theme Select does not offer its default row, {fresh}"
         );
     }
+}
+
+/// A system icon theme that cannot be detected is shown as such: the Icons
+/// page's label gives the reason where it would name the theme, never a
+/// theme nothing detected. Linux only, where the system's icons are a
+/// freedesktop theme.
+#[cfg(target_os = "linux")]
+#[gpui::test]
+fn a_failed_icon_theme_detection_is_shown_as_a_failure(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.icon_theme_detection_for_test = Some(|| {
+                Err(native_theme::error::Error::PlatformUnsupported {
+                    platform: "the test's failing detection",
+                })
+            });
+            this.select_icon_set(&IconSetChoice::System.to_string(), window, cx);
+        })
+    });
+    cx.run_until_parked();
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.icon_set_label()),
+        "freedesktop (unavailable: platform not supported: the test's failing detection)",
+        "the Icons page names an icon theme though its detection failed"
+    );
 }
 
 /// `--icon-theme` applies until the user picks an icon theme in the theme

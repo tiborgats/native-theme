@@ -23,15 +23,6 @@ const FREEDESKTOP_FRAME_DURATION_MS: u32 = 80;
 /// Spin duration for single-frame icons animated with rotation (1 second).
 const FREEDESKTOP_SPIN_DURATION_MS: u32 = 1000;
 
-/// Detect the current freedesktop icon theme name.
-///
-/// Delegates to [`crate::system_icon_theme()`] which handles DE-specific
-/// detection (KDE reads kdeglobals, GNOME uses gsettings, etc.). The result
-/// is cached by [`DetectionContext`](crate::detect::DetectionContext).
-fn detect_theme() -> String {
-    crate::system_icon_theme()
-}
-
 /// The themes listed by the `Inherits=` key of an `index.theme`'s
 /// `[Icon Theme]` group, in order.
 fn inherits(index: &str) -> Vec<&str> {
@@ -431,12 +422,24 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
 /// in the specification's order, never `hicolor` unless the theme is
 /// `hicolor` (see [`theme_chain`]); the plain pass searches the whole
 /// chain before the symbolic pass starts.
+///
+/// A `theme` of `None` is the system's icon theme, and where that cannot be
+/// detected there is no spinner.
 pub(crate) fn load_freedesktop_spinner(theme: Option<&str>) -> Option<AnimatedIcon> {
+    load_freedesktop_spinner_with(theme, crate::system_icon_theme)
+}
+
+/// [`load_freedesktop_spinner`], with `detect` giving the system's icon
+/// theme where `theme` is `None`.
+fn load_freedesktop_spinner_with(
+    theme: Option<&str>,
+    detect: impl FnOnce() -> crate::Result<String>,
+) -> Option<AnimatedIcon> {
     let detected;
     let theme: &str = match theme {
         Some(t) => t,
         None => {
-            detected = detect_theme();
+            detected = detect().ok()?;
             &detected
         }
     };
@@ -553,7 +556,7 @@ mod tests {
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_some_for_dialog_error() {
-        let theme = detect_theme();
+        let theme = crate::system_icon_theme().expect("requires a detected icon theme");
         let name = icon_name(IconRole::DialogError, IconSet::Freedesktop).unwrap();
         let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
         assert!(result.is_some(), "DialogError should resolve to an icon");
@@ -571,8 +574,9 @@ mod tests {
         // Notification is mapped to "notification-active" (KDE convention).
         // Result depends on whether the active theme ships this icon.
         // This test verifies the loader does not panic and does not fall back to Material.
-        let theme = detect_theme();
-        if let Some(name) = icon_name(IconRole::Notification, IconSet::Freedesktop) {
+        if let Ok(theme) = crate::system_icon_theme()
+            && let Some(name) = icon_name(IconRole::Notification, IconSet::Freedesktop)
+        {
             let _result = load_freedesktop_icon_by_name(name, &theme, 24, None);
         }
         // No assertion on Some/None -- theme-dependent
@@ -581,7 +585,7 @@ mod tests {
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_svg_variant() {
-        let theme = detect_theme();
+        let theme = crate::system_icon_theme().expect("requires a detected icon theme");
         let name = icon_name(IconRole::ActionCopy, IconSet::Freedesktop).unwrap();
         let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
         assert!(result.is_some(), "ActionCopy should resolve to an icon");
@@ -591,10 +595,19 @@ mod tests {
         );
     }
 
+    /// With no theme given and no icon theme detected, there is no spinner:
+    /// no theme stands in for the one that could not be detected.
     #[test]
-    fn detect_theme_returns_non_empty() {
-        let theme = detect_theme();
-        assert!(!theme.is_empty(), "Theme name should not be empty");
+    fn spinner_without_a_detected_theme_is_none() {
+        let spinner = load_freedesktop_spinner_with(None, || {
+            Err(crate::Error::PlatformUnsupported {
+                platform: "the test's failing detection",
+            })
+        });
+        assert!(
+            spinner.is_none(),
+            "a spinner loaded though no icon theme was detected"
+        );
     }
 
     #[test]
@@ -606,7 +619,7 @@ mod tests {
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_by_name_finds_edit_copy() {
-        let theme = detect_theme();
+        let theme = crate::system_icon_theme().expect("requires a detected icon theme");
         let result = load_freedesktop_icon_by_name("edit-copy", &theme, 24, None);
         assert!(
             result.is_some(),

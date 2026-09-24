@@ -231,7 +231,9 @@ pub struct ResolvedTheme {
 ///    across light and dark).
 /// 3. [`system_icon_theme()`](super::system_icon_theme) (runtime detect).
 ///
-/// The first value that is `Some` wins.
+/// The first value that is `Some` wins. Where none is — the TOML states no
+/// icon theme and detection fails — the field is `None`: no theme stands in,
+/// and [`system_icon_theme()`](super::system_icon_theme) gives the reason.
 /// [`icon_theme_explicit`](Self::icon_theme_explicit) reports whether the
 /// value came from the TOML (tiers 1 or 2) or from runtime detection
 /// (tier 3) — useful for UI code that labels the theme-author's choice as
@@ -244,7 +246,7 @@ pub struct ResolvedTheme {
 ///
 /// let theme = Theme::preset("material")?;
 /// let r = theme.resolve(ColorMode::Light)?;
-/// assert_eq!(r.icon_theme.as_ref(), "material");
+/// assert_eq!(r.icon_theme.as_deref(), Some("material"));
 /// assert!(r.icon_theme_explicit);
 /// # Ok::<(), native_theme::error::Error>(())
 /// ```
@@ -256,10 +258,13 @@ pub struct Resolved {
     /// [`system_icon_set()`](super::system_icon_set) when the TOML omits it.
     pub icon_set: super::IconSet,
     /// The icon theme name, resolved through the three-tier precedence
-    /// documented on the struct.
-    pub icon_theme: std::borrow::Cow<'static, str>,
+    /// documented on the struct. `None` when the TOML states none and
+    /// detection fails; the app can call
+    /// [`system_icon_theme()`](super::system_icon_theme) for the reason.
+    pub icon_theme: Option<std::borrow::Cow<'static, str>>,
     /// `true` if [`icon_theme`](Self::icon_theme) came from the TOML (tiers 1
-    /// or 2); `false` if it was filled from runtime system detection (tier 3).
+    /// or 2); `false` if it was left to runtime system detection (tier 3),
+    /// whether or not that detection named a theme.
     pub icon_theme_explicit: bool,
 }
 

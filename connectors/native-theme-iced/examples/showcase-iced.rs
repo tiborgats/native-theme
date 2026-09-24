@@ -57,6 +57,7 @@ use native_theme_iced::icons::{
 };
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
+use std::borrow::Cow;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
@@ -800,8 +801,9 @@ struct State {
     accessibility: native_theme_iced::AccessibilityPreferences,
     /// Icon set for the current theme (from Theme or SystemTheme, not ResolvedTheme).
     current_icon_set: IconSet,
-    /// Icon theme name for the current theme.
-    current_icon_theme: String,
+    /// Icon theme name for the current theme; `None` where the theme names
+    /// none and the system's cannot be detected.
+    current_icon_theme: Option<String>,
     /// Dynamic label for the default theme entry, updated on color mode change.
     default_label: String,
 
@@ -913,6 +915,10 @@ struct State {
     /// installed after it: `SystemTheme::from_system`, which a test replaces
     /// with a read that fails.
     read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
+    /// Detects the system icon theme the Icons page names:
+    /// `system_icon_theme`, which a test replaces with a detection that
+    /// fails.
+    detect_icon_theme: fn() -> native_theme::Result<String>,
 
     // Theme watcher (runtime dark/light toggle detection)
     /// Flag set by the ThemeSubscription background thread when the OS theme changes.
@@ -957,7 +963,7 @@ impl State {
                 let t = native_theme_iced::to_theme(&r, &system.name);
                 let preset = system.preset.clone();
                 let is = system.icon_set;
-                let it = system.icon_theme.into_owned();
+                let it = system.icon_theme.map(Cow::into_owned);
                 let acc = system.accessibility;
                 let lay = system.layout.clone();
                 (r, t, None, preset, is, it, acc, lay, None)
@@ -973,7 +979,7 @@ impl State {
                         Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
                         "adwaita".to_string(),
                         IconSet::Freedesktop,
-                        "Adwaita".to_string(),
+                        Some("Adwaita".to_string()),
                         native_theme_iced::AccessibilityPreferences::default(),
                         lay,
                         Some(ThemeChoice::Preset("adwaita".to_string())),
@@ -1009,7 +1015,7 @@ impl State {
 
         // Populate installed freedesktop themes once at init.
         let installed_themes = list_freedesktop_themes();
-        let init_icon_theme_opt: Option<&str> = Some(&init_icon_theme);
+        let init_icon_theme_opt: Option<&str> = init_icon_theme.as_deref();
         let icon_set_choice = default_icon_choice(init_icon_set, init_icon_theme_opt);
         let icon_set_choices =
             build_icon_choices(init_icon_set, init_icon_theme_opt, &installed_themes);
@@ -1134,6 +1140,7 @@ impl State {
             screenshot_countdown: 0,
             error_message: initial_error,
             read_system_theme,
+            detect_icon_theme: native_theme::theme::system_icon_theme,
             theme_change_flag,
             _theme_watcher,
         };
@@ -1268,13 +1275,13 @@ impl State {
                     self.current_icon_set = system.icon_set;
                     self.accessibility = system.accessibility.clone();
                     self.layout = system.layout.clone();
-                    self.current_icon_theme = system.icon_theme.clone().into_owned();
+                    self.current_icon_theme = system.icon_theme.clone().map(Cow::into_owned);
                     self.current_resolved = system.pick(mode).clone();
                     self.current_theme =
                         native_theme_iced::to_theme(&self.current_resolved, &system.name);
                     self.default_label = format!("default ({})", system.preset);
                     self.error_message = None;
-                    Ok(Some(self.current_icon_theme.clone()))
+                    Ok(self.current_icon_theme.clone())
                 }
                 // Only startup falls back to adwaita, with nothing installed
                 // yet; here the installed theme stays.
@@ -1286,16 +1293,29 @@ impl State {
                 let r = nt
                     .resolve(mode)
                     .map_err(|e| format!("Theme '{name}' resolution failed: {e}"))?;
-                let icon_theme_string = r.icon_theme.into_owned();
-                let icon_theme = r.icon_theme_explicit.then(|| icon_theme_string.clone());
+                let icon_theme_explicit = r.icon_theme_explicit;
+                self.current_icon_theme = r.icon_theme.map(Cow::into_owned);
+                let icon_theme = self
+                    .current_icon_theme
+                    .clone()
+                    .filter(|_| icon_theme_explicit);
                 self.current_icon_set = r.icon_set;
-                self.current_icon_theme = icon_theme_string;
                 self.current_resolved = r.variant;
                 self.layout = nt.layout.clone();
                 self.current_theme = native_theme_iced::to_theme(&self.current_resolved, &nt.name);
                 self.error_message = None;
                 Ok(icon_theme)
             }
+        }
+    }
+
+    /// The Icons page's line for the system icon theme: its name, or why
+    /// none was detected -- then no system icon loads, and no other theme
+    /// is named in its place.
+    fn system_icon_theme_label(&self) -> String {
+        match (self.detect_icon_theme)() {
+            Ok(theme) => format!("System icon theme: {theme}"),
+            Err(e) => format!("System icon theme: unavailable ({e})"),
         }
     }
 
@@ -4579,11 +4599,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 
     let icon_set_info = column![
         text(format!("Active icon set: {}", state.icon_set_choice)).size(ts.section_heading.size),
-        text(format!(
-            "System icon theme: {}",
-            native_theme::theme::system_icon_theme()
-        ))
-        .size(ts.caption.size),
+        text(state.system_icon_theme_label()).size(ts.caption.size),
     ]
     .spacing(sp.xs);
 
@@ -5996,10 +6012,12 @@ mod tests {
             .ok()?
             .resolve(mode)
             .ok()?;
-        let icon_theme = resolved.icon_theme.into_owned();
+        let icon_theme = resolved.icon_theme.map(Cow::into_owned);
         Some(default_icon_choice(
             resolved.icon_set,
-            resolved.icon_theme_explicit.then_some(icon_theme.as_str()),
+            icon_theme
+                .as_deref()
+                .filter(|_| resolved.icon_theme_explicit),
         ))
     }
 
@@ -6032,6 +6050,23 @@ mod tests {
             shown(&state),
             before,
             "the theme picker shows a theme that failed to load"
+        );
+    }
+
+    /// A system icon theme that cannot be detected is shown as such: the
+    /// Icons page gives the reason where it would name the theme, never a
+    /// theme nothing detected.
+    #[test]
+    fn a_failed_icon_theme_detection_is_shown_as_a_failure() {
+        let mut state = State::default();
+        state.detect_icon_theme = || {
+            Err(native_theme::error::Error::PlatformUnsupported {
+                platform: "the test's failing detection",
+            })
+        };
+        assert_eq!(
+            state.system_icon_theme_label(),
+            "System icon theme: unavailable (platform not supported: the test's failing detection)"
         );
     }
 

@@ -152,7 +152,8 @@ impl<'a> FreedesktopLoader<'a> {
     }
 
     /// Override the freedesktop icon theme (e.g. "Adwaita", "breeze").
-    /// When unset, uses the system-detected theme.
+    /// When unset, uses the system-detected theme, and loads nothing where
+    /// detection fails (see [`Self::load`]).
     pub fn theme(mut self, theme: &'a str) -> Self {
         self.theme = Some(theme);
         self
@@ -163,17 +164,29 @@ impl<'a> FreedesktopLoader<'a> {
     /// `None` when neither the theme nor a theme it inherits from has the
     /// icon (see [`FreedesktopLoader`]).
     ///
+    /// With no [`theme`](Self::theme) set, the icon comes from the system's
+    /// icon theme, and where that cannot be detected this is `None`: no
+    /// icons, as no theme stands in for the undetected one.
+    /// [`system_icon_theme()`](crate::theme::system_icon_theme) gives the
+    /// reason.
+    ///
     /// Requires the `system-icons` feature, and Linux; `None` otherwise.
     #[must_use]
-    #[allow(unused_variables)]
     pub fn load(self) -> Option<IconData> {
+        self.load_with(system_icon_theme)
+    }
+
+    /// [`Self::load`], with `detect` giving the system's icon theme where no
+    /// theme is set.
+    #[allow(unused_variables)]
+    fn load_with(self, detect: impl FnOnce() -> crate::Result<String>) -> Option<IconData> {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         {
             let detected;
             let theme: &str = match self.theme {
                 Some(t) => t,
                 None => {
-                    detected = system_icon_theme();
+                    detected = detect().ok()?;
                     &detected
                 }
             };
@@ -216,7 +229,9 @@ impl<'a> FreedesktopLoader<'a> {
 
     /// Load the theme's animated process-working spinner.
     ///
-    /// `theme` of `None` uses the system-detected theme; `Some(t)` overrides.
+    /// `theme` of `None` uses the system-detected theme, and gives `None`
+    /// where detection fails — no theme stands in for the undetected one;
+    /// `Some(t)` overrides.
     /// Associated function (no `self`) — the spinner is a property of the
     /// theme, not of any particular icon id. Found only where
     /// [`Self::load`] would find an icon: in the theme or a theme it
@@ -621,7 +636,9 @@ pub enum IconSetChoice {
     /// Resolved at load time via [`system_icon_set()`](crate::model::icons::system_icon_set).
     /// The display label ("system (breeze-dark)") is computed dynamically
     /// from [`system_icon_theme()`](crate::model::icons::system_icon_theme),
-    /// so it tracks runtime OS theme changes.
+    /// so it tracks runtime OS theme changes. Where detection fails the
+    /// label gives the reason, "system (unavailable: <reason>)", and the
+    /// freedesktop loaders load nothing for this choice.
     System,
 
     /// User explicitly picked a specific installed freedesktop icon theme.
@@ -642,14 +659,20 @@ impl fmt::Display for IconSetChoice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Default(name) => write!(f, "default ({name})"),
-            Self::System => {
-                let name = system_icon_theme();
-                write!(f, "system ({name})")
-            }
+            Self::System => f.write_str(&system_choice_label(&system_icon_theme())),
             Self::Freedesktop(name) => write!(f, "{name}"),
             Self::Material => write!(f, "Material (bundled)"),
             Self::Lucide => write!(f, "Lucide (bundled)"),
         }
+    }
+}
+
+/// [`IconSetChoice::System`]'s label for the `detected` system icon theme:
+/// its name, or why there is none.
+fn system_choice_label(detected: &crate::Result<String>) -> String {
+    match detected {
+        Ok(name) => format!("system ({name})"),
+        Err(e) => format!("system (unavailable: {e})"),
     }
 }
 
@@ -816,6 +839,46 @@ pub fn list_freedesktop_themes() -> Vec<String> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod load_icon_tests {
     use super::*;
+
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn undetected() -> crate::Result<String> {
+        Err(crate::Error::PlatformUnsupported {
+            platform: "the test's failing detection",
+        })
+    }
+
+    /// With no theme set and no icon theme detected, nothing loads: no
+    /// theme stands in for the one that could not be detected.
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn freedesktop_loader_without_a_detected_theme_loads_nothing() {
+        let custom: &dyn IconProvider = &IconRole::ActionCopy;
+        for id in [
+            IconId::Role(IconRole::ActionCopy),
+            IconId::Name("edit-copy"),
+            IconId::Custom(custom),
+        ] {
+            assert!(
+                FreedesktopLoader::new(id).load_with(undetected).is_none(),
+                "an icon loaded though no icon theme was detected"
+            );
+        }
+    }
+
+    /// An explicit theme needs no detection, so a failed one changes nothing.
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn freedesktop_loader_with_a_theme_does_not_detect() {
+        let with_theme = |detect: fn() -> crate::Result<String>| {
+            FreedesktopLoader::new("edit-copy")
+                .theme("Adwaita")
+                .load_with(detect)
+        };
+        assert_eq!(
+            with_theme(undetected),
+            with_theme(|| Ok("unused".to_string()))
+        );
+    }
 
     #[test]
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -1247,6 +1310,25 @@ mod spinner_rasterize_tests {
 #[cfg(test)]
 mod icon_set_choice_tests {
     use super::*;
+
+    #[test]
+    fn system_choice_names_the_detected_theme() {
+        assert_eq!(
+            system_choice_label(&Ok("breeze-dark".to_string())),
+            "system (breeze-dark)"
+        );
+    }
+
+    #[test]
+    fn system_choice_shows_a_failed_detection_as_unavailable() {
+        let label = system_choice_label(&Err(crate::Error::PlatformUnsupported {
+            platform: "the test's failing detection",
+        }));
+        assert_eq!(
+            label,
+            "system (unavailable: platform not supported: the test's failing detection)"
+        );
+    }
 
     #[test]
     fn test_icon_set_choice_display_default() {

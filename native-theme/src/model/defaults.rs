@@ -129,7 +129,8 @@ pub struct ThemeDefaults {
     /// Precedence at resolve time:
     /// 1. `ThemeDefaults::icon_theme` (this field, per-variant override) — if set
     /// 2. [`crate::Theme::icon_theme`] (shared across variants) — if set
-    /// 3. [`crate::model::icons::system_icon_theme()`] (runtime fallback)
+    /// 3. [`crate::model::icons::system_icon_theme()`] (runtime detection;
+    ///    none where it fails)
     ///
     /// See doc 1 §20, `docs/todo_v0.5.7_gaps.md` §G4, and the Phase 80-fix
     /// decision for the full rationale.

@@ -2561,7 +2561,13 @@ mod freedesktop_mapping_tests {
     #[cfg(feature = "system-icons")]
     #[test]
     fn all_kde_names_resolve_in_breeze() {
-        let theme = native_theme::theme::system_icon_theme();
+        let theme = match native_theme::theme::system_icon_theme() {
+            Ok(theme) => theme,
+            Err(e) => {
+                eprintln!("Skipping: no system icon theme detected ({e})");
+                return;
+            }
+        };
         // Only meaningful on a KDE system with Breeze installed
         if !theme.to_lowercase().contains("breeze") {
             eprintln!("Skipping: system theme is '{}', not Breeze", theme);

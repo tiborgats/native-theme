@@ -143,7 +143,9 @@ pub fn system_is_dark() -> bool {
 }
 
 /// Reset all process-wide caches so the next call to [`system_is_dark()`],
-/// [`prefers_reduced_motion()`], or [`crate::system_icon_theme()`] re-queries the OS.
+/// [`prefers_reduced_motion()`], or
+/// [`system_icon_theme()`](crate::theme::system_icon_theme) re-queries the OS; a
+/// cached failure to detect the icon theme is cleared too.
 ///
 /// Call this when you detect that the user has changed system settings (e.g.,
 /// dark mode toggle, icon theme switch, accessibility preferences).
@@ -737,7 +739,7 @@ fn detect_reduced_motion_inner() -> bool {
 pub struct DetectionContext {
     is_dark: ArcSwapOption<bool>,
     reduced_motion: ArcSwapOption<bool>,
-    icon_theme: ArcSwapOption<String>,
+    icon_theme: ArcSwapOption<Result<String, crate::model::icons::IconThemeFailure>>,
     #[cfg(target_os = "linux")]
     linux_desktop: ArcSwapOption<LinuxDesktop>,
 }
@@ -785,21 +787,41 @@ impl DetectionContext {
         value
     }
 
-    /// The current icon theme name (cached).
+    /// The current icon theme name (cached), or why none was detected.
     ///
-    /// Returns a clone of the cached `String`. The first call
-    /// detects the theme from the OS; subsequent calls return the
-    /// cached value. Call
+    /// The first call detects the theme from the OS and caches the
+    /// outcome, a failure included, so a failed detection is not
+    /// repeated on every call; subsequent calls return the cached
+    /// outcome. Call
     /// [`invalidate_icon_theme()`](Self::invalidate_icon_theme) to
     /// force a re-read.
-    #[must_use]
-    pub fn icon_theme(&self) -> Arc<String> {
-        if let Some(v) = self.icon_theme.load_full() {
-            return v;
+    ///
+    /// # Errors
+    ///
+    /// As [`system_icon_theme()`](crate::theme::system_icon_theme): no
+    /// theme stands in for one that could not be detected.
+    pub fn icon_theme(&self) -> crate::Result<String> {
+        self.icon_theme_with(detect_icon_theme_inner)
+    }
+
+    /// [`icon_theme()`](Self::icon_theme), with `detect` run where
+    /// nothing is cached.
+    fn icon_theme_with(
+        &self,
+        detect: impl FnOnce() -> Result<String, crate::model::icons::IconThemeFailure>,
+    ) -> crate::Result<String> {
+        let outcome = match self.icon_theme.load_full() {
+            Some(cached) => cached,
+            None => {
+                let detected = Arc::new(detect());
+                self.icon_theme.store(Some(Arc::clone(&detected)));
+                detected
+            }
+        };
+        match outcome.as_ref() {
+            Ok(theme) => Ok(theme.clone()),
+            Err(failure) => Err(failure.to_error()),
         }
-        let value = Arc::new(detect_icon_theme_inner());
-        self.icon_theme.store(Some(Arc::clone(&value)));
-        value
     }
 
     /// The current Linux desktop environment (cached).
@@ -829,7 +851,7 @@ impl DetectionContext {
         self.reduced_motion.store(None);
     }
 
-    /// Clear the cached icon theme.
+    /// Clear the cached icon theme, or the cached failure to detect one.
     pub fn invalidate_icon_theme(&self) {
         self.icon_theme.store(None);
     }
@@ -861,11 +883,10 @@ pub fn system() -> &'static DetectionContext {
 
 /// Inner icon theme detection, delegating to platform-specific logic.
 ///
-/// On Linux, dispatches by desktop environment. On macOS/Windows/other,
-/// returns the compile-time constant.
-#[allow(unreachable_code)]
-fn detect_icon_theme_inner() -> String {
-    crate::model::icons::detect_icon_theme()
+/// On Linux, dispatches by desktop environment. On macOS/iOS/Windows,
+/// returns the compile-time constant; elsewhere, the platform's failure.
+fn detect_icon_theme_inner() -> Result<String, crate::model::icons::IconThemeFailure> {
+    crate::model::icons::detect_icon_theme_outcome()
 }
 
 // === Crate-internal accessors ===
@@ -979,6 +1000,52 @@ mod detection_context_tests {
         let _ = ctx.is_dark();
         let _ = ctx.prefers_reduced_motion();
         let _ = ctx.icon_theme();
+    }
+
+    fn undetected() -> Result<String, crate::model::icons::IconThemeFailure> {
+        Err(crate::model::icons::IconThemeFailure::for_tests(
+            "the test's failing detection",
+        ))
+    }
+
+    #[test]
+    fn a_failed_icon_theme_detection_is_cached_and_reported() {
+        let ctx = DetectionContext::new();
+        let runs = std::cell::Cell::new(0);
+        let detect = || {
+            runs.set(runs.get() + 1);
+            undetected()
+        };
+        let first = ctx.icon_theme_with(detect);
+        let second = ctx.icon_theme_with(detect);
+        assert_eq!(runs.get(), 1, "a failed detection ran again");
+        for outcome in [first, second] {
+            match outcome {
+                Ok(name) => panic!("a failed detection gave the theme {name}"),
+                Err(e) => assert!(
+                    e.to_string().contains("the test's failing detection"),
+                    "got: {e}"
+                ),
+            }
+        }
+    }
+
+    #[test]
+    fn invalidate_icon_theme_clears_a_cached_failure() {
+        let ctx = DetectionContext::new();
+        assert!(ctx.icon_theme_with(undetected).is_err());
+        ctx.invalidate_icon_theme();
+        let theme = ctx.icon_theme_with(|| Ok("breeze".to_string()));
+        assert_eq!(theme.ok().as_deref(), Some("breeze"));
+    }
+
+    #[test]
+    fn invalidate_all_clears_a_cached_failure() {
+        let ctx = DetectionContext::new();
+        assert!(ctx.icon_theme_with(undetected).is_err());
+        ctx.invalidate_all();
+        let theme = ctx.icon_theme_with(|| Ok("breeze".to_string()));
+        assert_eq!(theme.ok().as_deref(), Some("breeze"));
     }
 
     #[cfg(target_os = "linux")]

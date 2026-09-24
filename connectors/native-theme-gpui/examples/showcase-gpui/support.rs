@@ -619,15 +619,16 @@ pub(crate) fn load_gpui_icons(
     // Use the CLI override first, then the default_theme, then system fallback.
     #[cfg(target_os = "linux")]
     let (linux_de, fd_theme) = if is_system_set && icon_set == IconSet::Freedesktop {
+        // No theme where the system's cannot be detected: then no icon loads.
         let theme = cli_override
             .or(default_theme)
             .map(|s| s.to_string())
-            .unwrap_or_else(|| system_icon_theme().to_string());
+            .or_else(|| system_icon_theme().ok());
         (
             Some(parse_linux_desktop(
                 &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default(),
             )),
-            Some(theme),
+            theme,
         )
     } else {
         (None, None)

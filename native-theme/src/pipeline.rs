@@ -77,7 +77,9 @@ pub(crate) fn run_pipeline(
     //   Tier 2: shared Theme-level value (`Theme::icon_theme`)
     //   Tier 3: runtime system detect (from `ctx.icon_theme`)
     // Must read before variants are consumed by unwrap_or_default().
-    let icon_theme: std::borrow::Cow<'static, str> = {
+    // None where no tier names a theme: the TOML states none and detection
+    // failed (`ctx.icon_theme` is then None). No theme stands in for it.
+    let icon_theme: Option<std::borrow::Cow<'static, str>> = {
         let active = if mode == crate::ColorMode::Dark {
             &merged.dark
         } else {
@@ -88,7 +90,6 @@ pub(crate) fn run_pipeline(
             .and_then(|v| v.defaults.icon_theme.clone()) // tier 1: per-variant override
             .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
             .or_else(|| ctx.icon_theme.clone()) // tier 3: pre-detected system
-            .unwrap_or_else(|| std::borrow::Cow::Owned(crate::model::icons::system_icon_theme()))
     };
 
     // Shared across variants; read before the variants are moved out of `merged`.
@@ -1242,7 +1243,7 @@ mod pipeline_tests {
     // Per docs/todo_v0.5.7_gaps.md §G4 and doc 1 §20 Option C:
     //   Tier 1 (highest): ThemeMode::defaults.icon_theme (per-variant override)
     //   Tier 2:           Theme::icon_theme (shared across variants)
-    //   Tier 3 (fallback): system_icon_theme() (runtime detect)
+    //   Tier 3 (fallback): system_icon_theme() (runtime detect), none where it fails
 
     /// Helper: construct a ReaderResult that carries only the active variant
     /// (light) with no per-variant icon_theme. The pipeline must then consult
@@ -1270,8 +1271,8 @@ mod pipeline_tests {
         let reader = reader_with_empty_variant(false);
         let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
         assert_eq!(
-            st.icon_theme.as_ref(),
-            "Adwaita",
+            st.icon_theme.as_deref(),
+            Some("Adwaita"),
             "tier 2: Theme.icon_theme should be used when per-variant is None"
         );
     }
@@ -1297,8 +1298,8 @@ mod pipeline_tests {
         // Adwaita preset has Theme.icon_theme = "Adwaita" after migration.
         let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
         assert_eq!(
-            st.icon_theme.as_ref(),
-            "custom-override",
+            st.icon_theme.as_deref(),
+            Some("custom-override"),
             "tier 1: per-variant icon_theme override must win over Theme-level"
         );
     }
@@ -1329,8 +1330,8 @@ mod pipeline_tests {
         };
         let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
         assert_eq!(
-            st.icon_theme.as_ref(),
-            "breeze-dark",
+            st.icon_theme.as_deref(),
+            Some("breeze-dark"),
             "KDE per-variant icon_theme must still win (Phase 80-fix invariant)"
         );
     }
