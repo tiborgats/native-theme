@@ -324,6 +324,26 @@ geometry is still restored). The default registry holds two themes,
 
 Non-finite or non-positive scaling factors count as 1.0.
 
+## Features
+
+All four are on by default; `default-features = false` is the way to narrow.
+
+| Feature | Enables |
+|---|---|
+| `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
+| `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
+| `system-icons` | the platform's own icons (`native-theme/system-icons`) |
+| `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
+
+Without `svg-rasterize` an SVG icon is still an icon: the `icons` module hands
+gpui the SVG bytes (colorized first when a colour is given) as an
+`ImageSource::Image` of `ImageFormat::Svg`, and gpui decodes it with the resvg
+it always depends on. It saves building native-theme's own resvg, at two
+costs: gpui decodes the image in the background, so an element holding it
+paints nothing the first time it comes up (an animation flickers through its
+first pass), and gpui picks the raster size, twice the SVG's own, so the `size`
+argument has no effect. `icons::to_image_source` documents it.
+
 ## Common recipes
 
 ### Apply user overrides to the OS theme
@@ -378,8 +398,9 @@ if let Some(anim) = MaterialLoader::load_indicator() {
 }
 ```
 
-Every `ImageSource` the `icons` module builds is an `ImageSource::Render`: an
-image gpui draws from as it stands. The other shape, `ImageSource::Image`,
+With `svg-rasterize` (see [Features](#features)), every `ImageSource` the
+`icons` module builds is an `ImageSource::Render`: an image gpui draws from as
+it stands. The other shape, `ImageSource::Image`,
 hands gpui encoded bytes it decodes in the background, and an element holding
 one paints nothing until that finishes — which makes an animation flicker its
 way through its first pass, one blank frame at a time. The price of the decoded
@@ -399,7 +420,8 @@ arrive as patch releases. This crate names the same package
 (`gpui = { package = "gpui-pre", version = "0.3.6" }`) so its `Hsla`, `Pixels`
 and `StyleRefinement` are gpui-component's types; its GPUI surface is small
 (`Hsla`, `hsla`, `Rgba`, `SharedString`, `px`, `Pixels`, `svg`, `img`,
-`ImageSource`, `RenderImage`, `ElementId`, `IntoElement`, `StyleRefinement`,
+`ImageSource`, `RenderImage`, `Image` and `ImageFormat` (without
+`svg-rasterize`), `ElementId`, `IntoElement`, `StyleRefinement`,
 `FontWeight`, `App`, `Global`, `Subscription`). To freeze a snapshot in an
 application, pin
 `gpui-pre = "=0.3.N"` there; a library must not, because an exact pin would

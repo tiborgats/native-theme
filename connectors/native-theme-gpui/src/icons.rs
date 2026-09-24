@@ -25,12 +25,18 @@
 //! atlas until it is handed to `App::drop_image`; see
 //! [`to_image_source`] for what that asks of an application that rebuilds its
 //! icons.
+//!
+//! That holds with the `svg-rasterize` feature (on by default), which
+//! rasterizes SVG icons here. Without it, an SVG icon becomes an
+//! `ImageSource::Image` holding the (colorized) SVG bytes, which gpui decodes
+//! itself: it paints nothing the first time it comes up, and gpui chooses the
+//! raster size. RGBA icons are decoded images either way.
 
 use gpui::{
     Animation, AnimationExt, Hsla, ImageSource, RenderImage, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
-#[cfg(all(test, target_os = "linux"))]
+#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
 use native_theme::icons::FreedesktopLoader;
 use native_theme::icons::load_icon;
 use native_theme::theme::{AnimatedIcon, IconData, IconProvider, IconRole};
@@ -870,7 +876,23 @@ const MAX_ICON_SIZE: u32 = 512;
 ///   SVG fill/stroke attributes only accept opaque hex (`#rrggbb`).
 /// - `size`: Rasterize size in pixels for SVG icons. `None` defaults to 48px
 ///   (2x HiDPI at 24px logical). Clamped to 1..=512 range. Pass
-///   `logical_size * scale_factor` for DPI-correct rendering.
+///   `logical_size * scale_factor` for DPI-correct rendering. Not used
+///   without `svg-rasterize` (below).
+///
+/// # Without `svg-rasterize`
+///
+/// The `svg-rasterize` feature (on by default) rasterizes SVG icons in this
+/// crate. Without it an SVG icon is still converted, never `None` for want
+/// of the feature: the source is an
+/// `ImageSource::Image(Image::from_bytes(ImageFormat::Svg, bytes))` holding
+/// the SVG bytes, colorized first when `color` is `Some`, and gpui decodes it
+/// with its own resvg (gpui-pre `src/platform.rs:3034-3037`). That costs two
+/// things. gpui decodes it in the background, so an element holding it paints
+/// nothing the first time it comes up (gpui-pre `src/elements/img.rs:534-553`).
+/// And gpui chooses the raster size, twice the SVG's own size
+/// (`src/svg_renderer.rs:81, 200-206`), so `size` has no effect. The bytes are
+/// not parsed here, so a corrupt SVG yields `Some` and paints nothing. RGBA
+/// icons are unaffected.
 ///
 /// # Memory
 ///
@@ -931,7 +953,8 @@ pub fn to_image_source(
 /// Returns `None` if the icon data cannot be converted (corrupt SVG,
 /// unknown variant).
 ///
-/// See [`to_image_source()`] for details on the `color` and `size` parameters.
+/// See [`to_image_source()`] for details on the `color` and `size` parameters,
+/// and for what an SVG becomes without the `svg-rasterize` feature.
 #[must_use]
 pub fn into_image_source(
     data: IconData,
@@ -949,7 +972,8 @@ pub fn into_image_source(
 /// Returns `None` if the provider has no icon for the given set or if
 /// conversion fails.
 ///
-/// See [`to_image_source()`] for details on the `color` and `size` parameters.
+/// See [`to_image_source()`] for details on the `color` and `size` parameters,
+/// and for what an SVG becomes without the `svg-rasterize` feature.
 #[must_use]
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
@@ -990,7 +1014,8 @@ fn load_custom_via_builder(
 /// Returns `None` for other icon sets (use [`to_image_source`] with
 /// [`native_theme::icons::FreedesktopLoader`] for freedesktop system icons).
 ///
-/// See [`to_image_source()`] for details on the `color` and `size` parameters.
+/// See [`to_image_source()`] for details on the `color` and `size` parameters,
+/// and for what an SVG becomes without the `svg-rasterize` feature.
 ///
 /// # Examples
 ///
@@ -1030,7 +1055,8 @@ pub fn bundled_icon_to_image_source(
 /// (e.g. from a typed per-set loader in [`native_theme::icons`]) and want to skip
 /// the `IconData` intermediate.
 ///
-/// See [`to_image_source()`] for details on the `color` and `size` parameters.
+/// See [`to_image_source()`] for details on the `color` and `size` parameters,
+/// and for what an SVG becomes without the `svg-rasterize` feature.
 #[must_use]
 pub fn bundled_svg_to_image_source(
     svg_bytes: &[u8],
@@ -1073,6 +1099,11 @@ fn svg_bytes_to_image_source(
 /// **Call this once and cache the result.** Do not call on every frame tick --
 /// SVG rasterization is expensive. Index into the cached `Vec` using a
 /// timer-driven frame counter.
+///
+/// Without the `svg-rasterize` feature each SVG frame is an undecoded
+/// `ImageSource::Image` that gpui decodes in the background (see
+/// [`to_image_source()`]), so each frame is blank the first time it is shown
+/// and the animation flickers through its first pass.
 ///
 /// Callers should check [`native_theme::detect::prefers_reduced_motion()`] and fall
 /// back to [`AnimatedIcon::first_frame()`] for a static display when the user
@@ -1163,6 +1194,7 @@ pub fn with_spin_animation(
 /// Rasterize SVG bytes and return them as a decoded [`ImageSource`].
 ///
 /// Returns `None` if rasterization fails (corrupt SVG, empty data).
+#[cfg(feature = "svg-rasterize")]
 fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
     let Ok(IconData::Rgba {
         width,
@@ -1173,6 +1205,22 @@ fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
         return None;
     };
     rgba_to_render_source(width, height, &data)
+}
+
+/// Hand SVG bytes to gpui as an undecoded [`ImageSource::Image`].
+///
+/// Without `svg-rasterize` this crate has no rasterizer of its own; gpui
+/// decodes `ImageFormat::Svg` itself (gpui-pre `src/platform.rs:3034-3037`),
+/// in the background and at twice the SVG's own size
+/// (`src/svg_renderer.rs:81, 200-206`), so `size` is not used. The bytes are
+/// not parsed here: this returns `Some` for any input, and an SVG gpui cannot
+/// parse paints nothing.
+#[cfg(not(feature = "svg-rasterize"))]
+fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
+    Some(ImageSource::Image(Arc::new(gpui::Image::from_bytes(
+        gpui::ImageFormat::Svg,
+        svg_bytes.to_vec(),
+    ))))
 }
 
 /// Wrap RGBA pixels in a [`RenderImage`], which is what gpui draws from.
@@ -1464,6 +1512,7 @@ mod tests {
     }
 
     /// §10.1: a table may only name a file that is actually bundled.
+    #[cfg(all(feature = "lucide-icons", feature = "material-icons"))]
     #[test]
     fn every_some_resolves_in_its_bundle() {
         use native_theme::theme::IconSet;
@@ -1825,6 +1874,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "svg-rasterize")]
     #[test]
     fn to_image_source_svg_returns_a_decoded_image() {
         // Valid SVG that resvg can parse
@@ -1910,6 +1960,36 @@ mod tests {
         // Size 0 should clamp to 1
         let result = to_image_source(&svg, None, Some(0));
         assert!(result.is_some(), "zero size should clamp to 1 and convert");
+    }
+
+    /// Without `svg-rasterize` an SVG is still an icon: gpui gets the
+    /// (colorized) SVG bytes and decodes them itself.
+    #[cfg(not(feature = "svg-rasterize"))]
+    #[test]
+    fn to_image_source_svg_without_rasterize_hands_gpui_the_svg() {
+        let svg = IconData::Svg(
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M0 0' stroke='currentColor'/></svg>"),
+        );
+        let Some(ImageSource::Image(image)) = to_image_source(&svg, None, None) else {
+            panic!("an SVG without svg-rasterize should become an undecoded SVG image");
+        };
+        assert_eq!(image.format, gpui::ImageFormat::Svg);
+        assert_eq!(image.bytes.as_slice(), svg_bytes(&svg));
+
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let Some(ImageSource::Image(colored)) = to_image_source(&svg, Some(color), None) else {
+            panic!("a colorized SVG without svg-rasterize should become an undecoded SVG image");
+        };
+        assert_eq!(colored.format, gpui::ImageFormat::Svg);
+        assert_eq!(colored.bytes, colorize_svg(svg_bytes(&svg), color));
+    }
+
+    #[cfg(not(feature = "svg-rasterize"))]
+    fn svg_bytes(data: &IconData) -> &[u8] {
+        match data {
+            IconData::Svg(bytes) => bytes,
+            _ => panic!("not an SVG"),
+        }
     }
 
     // --- decoded-image tests ---
@@ -2255,6 +2335,7 @@ mod tests {
 
     // --- bundled_icon_to_image_source tests ---
 
+    #[cfg(feature = "lucide-icons")]
     #[test]
     fn bundled_icon_lucide_returns_some() {
         let result = bundled_icon_to_image_source(
@@ -2266,6 +2347,7 @@ mod tests {
         assert!(result.is_some(), "Lucide search icon should convert");
     }
 
+    #[cfg(feature = "material-icons")]
     #[test]
     fn bundled_icon_material_returns_some() {
         let result = bundled_icon_to_image_source(
@@ -2291,6 +2373,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "lucide-icons")]
     #[test]
     fn bundled_icon_with_color() {
         let color = Hsla {
@@ -2313,6 +2396,7 @@ mod tests {
     /// Every frame arrives decoded. An undecoded one would be blank on the
     /// first pass through the animation, which is what made an animated icon
     /// flicker for its first few seconds.
+    #[cfg(feature = "svg-rasterize")]
     #[test]
     fn animated_frames_returns_decoded_sources() {
         let anim = AnimatedIcon::frames(
@@ -2464,6 +2548,7 @@ mod freedesktop_mapping_tests {
         );
     }
 
+    #[cfg(feature = "system-icons")]
     #[test]
     fn all_kde_names_resolve_in_breeze() {
         let theme = native_theme::theme::system_icon_theme();
@@ -2495,6 +2580,7 @@ mod freedesktop_mapping_tests {
         );
     }
 
+    #[cfg(feature = "system-icons")]
     #[test]
     fn gnome_names_resolve_in_adwaita() {
         // Verify GNOME mappings resolve against installed Adwaita theme.

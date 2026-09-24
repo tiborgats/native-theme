@@ -86,6 +86,22 @@
 //! work; §14 of the v0.5.8 specification
 //! (<https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable.
+//!
+//! # Features
+//!
+//! All four are on by default.
+//!
+//! | Feature | Enables |
+//! |---------|---------|
+//! | `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
+//! | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
+//! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
+//! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
+//!
+//! Without `svg-rasterize` an SVG icon is still converted: [`icons`] hands
+//! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
+//! paints nothing the first time it comes up and is rasterized at a size gpui
+//! chooses. [`icons::to_image_source`] documents it.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
