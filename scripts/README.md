@@ -173,14 +173,18 @@ There is no verb that writes the stamp without the run.
 
 ## check-features.sh
 
-Checks that every workspace crate builds in every feature combination the
-gate names: for each member of `cargo metadata --no-deps`, `cargo check -p
-<crate> --lib` with `--no-default-features`, with `--no-default-features
---features <F>` for each feature in its `[features]` table except `default`,
-and with `--all-features` — the coverage of `cargo hack check
---each-feature`, without the extra tool. Prints one line per combination;
-exits 1 when any fails, naming each failure at the end, and 2 when `jq` is
-missing. `pre-release-check.sh` (a hard failure), `ci.yml`, `publish.yml` and
+Checks that every workspace crate builds, without warnings, in every feature
+combination the gate names: for each member of `cargo metadata --no-deps`
+with a library target, `cargo check -p <crate> --lib` with
+`--no-default-features`, with `--no-default-features --features <F>` for each
+feature in its `[features]` table except `default`, and with
+`--all-features` — the coverage of `cargo hack check --each-feature`, without
+the extra tool. A combination fails when it does not build or when cargo
+prints a `warning:` line; cargo caps lints for dependencies, so those come
+from the workspace's own crates, and no `RUSTFLAGS` is set, so the
+dependencies are not rebuilt. Colour is turned off inside the script. Prints
+one line per combination with an excerpt under each failure; exits 1 when any
+fails, naming each failure at the end, and 2 when `jq` is missing. `pre-release-check.sh` (a hard failure), `ci.yml`, `publish.yml` and
 `dependency-canary.yml` run it.
 
 Requires jq.

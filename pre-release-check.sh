@@ -401,9 +401,10 @@ done
 #
 # scripts/check-features.sh checks every workspace crate's library with no
 # default features, with each feature alone and with all features (the
-# coverage of `cargo hack check --each-feature`). The per-crate loops above
-# build the default set only, and a crate that stops compiling without one of
-# its default features is otherwise first seen by the user who turns it off.
+# coverage of `cargo hack check --each-feature`), and fails on an error or a
+# warning. The per-crate loops above build the default set only, and a crate
+# that stops compiling without one of its default features is otherwise first
+# seen by the user who turns it off.
 # Hard failure. CI, the publish gate and the nightly canary run the same
 # script.
 # ─────────────────────────────────────────────────────────────────────────────
