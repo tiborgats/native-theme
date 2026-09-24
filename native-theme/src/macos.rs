@@ -921,16 +921,8 @@ mod tests {
         );
     }
 
-    // === Plan 94-03 (G8): MacosReader ThemeReader impl ===
-    //
-    // Locks the G8 contract on the macOS side: a unit struct `MacosReader`
-    // exists at the module root and implements `crate::reader::ThemeReader`.
-    // Before Task 2 lands, this fails to compile (`no struct MacosReader` /
-    // `unresolved module crate::reader`).
-    //
-    // The trait object coercion is the structural object-safety probe. Body
-    // is gated on `cfg(all(target_os = "macos", feature = "macos"))` so that
-    // the non-macOS build only compile-checks the trait path reference.
+    // === Border colour (platform-facts.md:1051: separatorColor) ===
+
     #[cfg(all(target_os = "macos", feature = "macos"))]
     #[test]
     fn read_appearance_colors_reads_border_color_from_separator_color() {
@@ -941,6 +933,16 @@ mod tests {
         );
     }
 
+    // === Plan 94-03 (G8): MacosReader ThemeReader impl ===
+    //
+    // Locks the G8 contract on the macOS side: a unit struct `MacosReader`
+    // exists at the module root and implements `crate::reader::ThemeReader`.
+    // Before Task 2 lands, this fails to compile (`no struct MacosReader` /
+    // `unresolved module crate::reader`).
+    //
+    // The trait object coercion is the structural object-safety probe. Body
+    // is gated on `cfg(all(target_os = "macos", feature = "macos"))` so that
+    // the non-macOS build only compile-checks the trait path reference.
     #[test]
     fn macos_reader_exists() {
         // Reference the trait path once so name resolution fires on all

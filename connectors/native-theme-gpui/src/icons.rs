@@ -896,14 +896,18 @@ const MAX_ICON_SIZE: u32 = 512;
 ///
 /// # Memory
 ///
-/// The returned source carries a decoded [`gpui::RenderImage`], which takes a
-/// tile in each window's sprite atlas from the first frame that draws it and
+/// With `svg-rasterize`, and for RGBA icons always, the returned source
+/// carries a decoded [`gpui::RenderImage`], which takes a tile in each
+/// window's sprite atlas from the first frame that draws it and
 /// keeps it until the image is handed to `App::drop_image` /
 /// `Window::drop_image` (gpui-pre `src/app.rs:2841-2851`,
 /// `src/window.rs:4997-5008`); nothing releases it on its own. An application
 /// that rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should drop each replaced source through `drop_image`
-/// before it lets go of it.
+/// before it lets go of it. Without `svg-rasterize`, an SVG icon's source is
+/// an `ImageSource::Image`, which gpui decodes through its own asset cache
+/// (`window.use_asset`, gpui-pre `src/elements/img.rs:550`): the caller holds
+/// no `RenderImage` to hand to `drop_image`.
 ///
 /// # Examples
 ///
@@ -1932,6 +1936,7 @@ mod tests {
         assert!(result.is_some(), "colorized SVG should convert");
     }
 
+    #[cfg(feature = "svg-rasterize")]
     #[test]
     fn to_image_source_with_custom_size() {
         let svg = IconData::Svg(
@@ -1942,6 +1947,7 @@ mod tests {
     }
 
     // Issue 28: size clamping
+    #[cfg(feature = "svg-rasterize")]
     #[test]
     fn to_image_source_clamps_oversized() {
         let svg = IconData::Svg(
@@ -1952,6 +1958,7 @@ mod tests {
         assert!(result.is_some(), "oversized should clamp and still convert");
     }
 
+    #[cfg(feature = "svg-rasterize")]
     #[test]
     fn to_image_source_clamps_zero_size() {
         let svg = IconData::Svg(
@@ -1981,6 +1988,7 @@ mod tests {
             panic!("a colorized SVG without svg-rasterize should become an undecoded SVG image");
         };
         assert_eq!(colored.format, gpui::ImageFormat::Svg);
+        assert_ne!(colored.bytes.as_slice(), svg_bytes(&svg));
         assert_eq!(colored.bytes, colorize_svg(svg_bytes(&svg), color));
     }
 
