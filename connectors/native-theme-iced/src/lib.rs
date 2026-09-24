@@ -738,11 +738,13 @@ mod tests {
         }
     }
 
-    /// Where the theme states every side, every side is the theme's.
+    /// Every side the theme states is the theme's. windows-11 states button
+    /// and input padding; catppuccin states neither, so it would compare
+    /// nothing.
     #[cfg(feature = "widgets")]
     #[test]
     fn stated_padding_sides_are_the_themes() {
-        let resolved = make_resolved(false);
+        let resolved = make_resolved_preset("windows-11", false);
         for (what, stated, pad) in [
             (
                 "button",
@@ -755,6 +757,7 @@ mod tests {
                 input_padding(&resolved),
             ),
         ] {
+            let mut compared = 0usize;
             for (side, stated, got) in [
                 ("top", stated.top, pad.top),
                 ("right", stated.right, pad.right),
@@ -763,8 +766,13 @@ mod tests {
             ] {
                 if let Some(stated) = stated {
                     assert_eq!(got, stated, "{what} {side}");
+                    compared += 1;
                 }
             }
+            assert!(
+                compared > 0,
+                "{what}: the preset states no padding side, so nothing was compared"
+            );
         }
     }
 
