@@ -6,14 +6,14 @@
 //! list. iced itself has no card widget, menu bar, tab bar, sidebar, spinner
 //! or selection list; its drop-down menu is styled by [`crate::styles::menu`]
 //! and a container drawn as a card by [`crate::styles::container_card`].
-//! `iced_aw` 0.14 supplies the missing widgets, and its styling is iced's own shape: a `Style` struct
-//! of public fields, a `Catalog` whose `Class` is a `StyleFn`, and a
-//! `.style(..)` setter on the widget. So these functions follow the same rules
-//! as [`crate::styles`] -- every field named, native values captured by value,
-//! and a field the model does not carry read from `iced_aw`'s own default class
-//! rather than written as a literal. Every closure here is
-//! `Clone`, as [`crate::styles`]' are, because `SelectionList::new_with`
-//! demands it.
+//! `iced_aw` 0.14 supplies the missing widgets, and its styling is iced's own
+//! shape: a `Style` struct of public fields, a `Catalog` whose `Class` is a
+//! `StyleFn`, and a `.style(..)` setter on the widget. So these functions
+//! follow the same rules as [`crate::styles`] -- every field named, native
+//! values captured by value, and a field the model does not carry read from
+//! `iced_aw`'s own default class rather than written as a literal. Every
+//! closure here is `Clone`, as [`crate::styles`]' are, because
+//! `SelectionList::new_with` demands it.
 //!
 //! `iced_aw` states one `Status` enum for every widget
 //! (`iced_aw/src/style/status.rs`), of which each widget requests only the

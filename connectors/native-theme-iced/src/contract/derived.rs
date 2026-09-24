@@ -828,13 +828,16 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// the contract, and the tripwire never sees them because it walks emitted
 /// `Style` fields.
 ///
-/// Minima are the exception, and are listed: `tab.min_width`,
-/// `tab.min_height`, `progress_bar.min_width` and `spinner.min_diameter`.
-/// Their widgets' builder methods take the extent itself -- a `Length` or
-/// bounds the widget fills -- and none states a floor under it, so a platform
-/// minimum passed there would make the widget exactly that size rather than at
-/// least that size. A fixed extent is not a floor, so a minimum has no
-/// receiver.
+/// Four entries below have a builder method for their widget's size and are
+/// listed all the same: `progress_bar.min_width`, `tab.min_width`,
+/// `tab.min_height` and `spinner.min_diameter`. Each is a minimum, and the
+/// method takes the extent itself -- `ProgressBar::length`,
+/// `TabBar::tab_width`, `TabBar::height` and `Tabs::tab_bar_height` take a
+/// `Length`, and a `Spinner` fills the bounds it is given -- with no floor
+/// under it, so the platform's minimum passed there would make the widget
+/// exactly that size rather than at least that size.
+/// `scrollbar.min_thumb_length` is listed for another reason: iced sizes the
+/// scroller itself and takes no length for it at all.
 pub(super) const UNREACHABLE: &[Unreachable] = &[
     Unreachable {
         field: "scrollbar.min_thumb_length",

@@ -4,8 +4,9 @@
 //! Each is mapped directly from the corresponding resolved theme color -- no
 //! fallbacks needed since all fields are guaranteed populated.
 //!
-//! Note: `to_color()` preserves the alpha channel. The 6 palette colors are
-//! always fully opaque in resolved themes (`a = 1.0`). Other resolved fields
+//! Note: `to_color()` preserves the alpha channel. The bundled presets state
+//! the 6 palette colors opaque; a reader may not (the macOS reader keeps each
+//! `NSColor`'s alpha), and whatever alpha arrives is kept. Other resolved fields
 //! (e.g., `defaults.shadow_color`, `defaults.selection_inactive_background`)
 //! may carry meaningful alpha values; use [`to_color()`] to convert them when
 //! needed.
