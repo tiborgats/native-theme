@@ -40,6 +40,11 @@ echo ""
 info "Checking prerequisites..."
 command -v gh >/dev/null 2>&1 || fail "gh CLI not found"
 command -v python3 >/dev/null 2>&1 || fail "python3 not found"
+# The last step, compat-check.sh run, runs scripts/check-widget-coverage.py,
+# whose tomllib import needs Python 3.11; fail here rather than after the
+# captures.
+python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
+    || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check-widget-coverage.py needs 3.11+ (tomllib)"
 command -v spectacle >/dev/null 2>&1 || fail "spectacle not found (needed for gpui captures)"
 python3 -c "from PIL import Image" 2>/dev/null || fail "Pillow not installed (pip install Pillow)"
 gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
