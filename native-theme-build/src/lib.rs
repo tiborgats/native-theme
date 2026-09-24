@@ -291,14 +291,25 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 /// the icon pipeline detects missing roles, SVGs, or invalid mappings.
 #[must_use = "this returns the generated output; call .emit_cargo_directives() to complete the build"]
 pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, BuildErrors> {
-    let toml_path = toml_path.as_ref();
+    generate_icons_with_env(toml_path.as_ref(), &|name| std::env::var(name))
+}
+
+/// Reads an environment variable. [`generate_icons()`] and
+/// [`IconGenerator::generate()`] pass `std::env::var`; the tests pass a
+/// fixed table, so that no test has to set the process-wide environment that
+/// the others read concurrently.
+type EnvLookup<'a> = &'a dyn Fn(&str) -> Result<String, std::env::VarError>;
+
+fn generate_icons_with_env(
+    toml_path: &Path,
+    env: EnvLookup<'_>,
+) -> Result<GenerateOutput, BuildErrors> {
     let manifest_dir = PathBuf::from(
-        std::env::var("CARGO_MANIFEST_DIR")
+        env("CARGO_MANIFEST_DIR")
             .map_err(|e| BuildErrors::io_env("CARGO_MANIFEST_DIR", e.to_string()))?,
     );
-    let out_dir = PathBuf::from(
-        std::env::var("OUT_DIR").map_err(|e| BuildErrors::io_env("OUT_DIR", e.to_string()))?,
-    );
+    let out_dir =
+        PathBuf::from(env("OUT_DIR").map_err(|e| BuildErrors::io_env("OUT_DIR", e.to_string()))?);
     let resolved = manifest_dir.join(toml_path);
 
     let content = std::fs::read_to_string(&resolved)
@@ -442,6 +453,10 @@ impl IconGenerator {
     /// relative source path is used, or if neither
     /// [`output_dir()`](Self::output_dir) nor `OUT_DIR` is set.
     pub fn generate(self) -> Result<GenerateOutput, BuildErrors> {
+        self.generate_with_env(&|name| std::env::var(name))
+    }
+
+    fn generate_with_env(self, env: EnvLookup<'_>) -> Result<GenerateOutput, BuildErrors> {
         if self.sources.is_empty() {
             return Err(BuildErrors::io_other(
                 "no source files added to IconGenerator (call .source() before .generate())",
@@ -477,18 +492,17 @@ impl IconGenerator {
         let needs_manifest_dir = self.sources.iter().any(|s| !s.is_absolute())
             || self.base_dir.as_ref().is_some_and(|b| !b.is_absolute());
         let manifest_dir = if needs_manifest_dir {
-            Some(PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").map_err(
-                |e| BuildErrors::io_env("CARGO_MANIFEST_DIR", e.to_string()),
-            )?))
+            Some(PathBuf::from(env("CARGO_MANIFEST_DIR").map_err(|e| {
+                BuildErrors::io_env("CARGO_MANIFEST_DIR", e.to_string())
+            })?))
         } else {
-            std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from)
+            env("CARGO_MANIFEST_DIR").ok().map(PathBuf::from)
         };
 
         let out_dir = match self.output_dir {
             Some(dir) => dir,
             None => PathBuf::from(
-                std::env::var("OUT_DIR")
-                    .map_err(|e| BuildErrors::io_env("OUT_DIR", e.to_string()))?,
+                env("OUT_DIR").map_err(|e| BuildErrors::io_env("OUT_DIR", e.to_string()))?,
             ),
         };
 
@@ -3223,5 +3237,100 @@ bundled-themes = ["material"]
         );
 
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Environment fallbacks ===
+    //
+    // The environment is passed in as a table: `std::env::set_var` would
+    // change it for every test running at the same time, so two tests each
+    // setting `OUT_DIR` to their own directory would race.
+
+    fn env_table<'a>(
+        vars: &'a [(&'a str, &'a Path)],
+    ) -> impl Fn(&str) -> Result<String, std::env::VarError> + 'a {
+        move |name| {
+            vars.iter()
+                .find(|(key, _)| *key == name)
+                .map(|(_, value)| value.to_string_lossy().into_owned())
+                .ok_or(std::env::VarError::NotPresent)
+        }
+    }
+
+    #[test]
+    fn generate_icons_reads_manifest_dir_and_out_dir() {
+        let out = create_fixture_dir("simple_api_out");
+        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let vars = [
+            ("CARGO_MANIFEST_DIR", manifest_dir),
+            ("OUT_DIR", out.as_path()),
+        ];
+
+        let output = generate_icons_with_env(
+            Path::new("tests/fixtures/sample-icons.toml"),
+            &env_table(&vars),
+        )
+        .unwrap_or_else(|e| panic!("generate_icons failed: {e}"));
+
+        assert!(output.code.contains("pub enum SampleIcon"));
+        assert_eq!(output.role_count, 2);
+        assert!(
+            output.output_path.starts_with(&out),
+            "output_path {:?} should be under OUT_DIR {:?}",
+            output.output_path,
+            out
+        );
+
+        let _ = fs::remove_dir_all(&out);
+    }
+
+    #[test]
+    fn generate_icons_without_out_dir_is_an_error() {
+        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let vars = [("CARGO_MANIFEST_DIR", manifest_dir)];
+
+        let result = generate_icons_with_env(
+            Path::new("tests/fixtures/sample-icons.toml"),
+            &env_table(&vars),
+        );
+
+        let errors = result.err().unwrap_or_else(|| panic!("expected an error"));
+        assert!(errors.to_string().contains("OUT_DIR"), "{errors}");
+    }
+
+    #[test]
+    fn output_dir_falls_back_to_out_dir() {
+        let dir = create_fixture_dir("outdir_fallback");
+        let out = create_fixture_dir("outdir_fallback_out");
+        write_fixture(
+            &dir,
+            "icons.toml",
+            r#"
+name = "fallback-test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        );
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
+        write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
+        let vars = [("OUT_DIR", out.as_path())];
+
+        let output = IconGenerator::new()
+            .source(dir.join("icons.toml"))
+            .generate_with_env(&env_table(&vars))
+            .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+        assert!(
+            output.output_path.starts_with(&out),
+            "output_path {:?} should be under OUT_DIR {:?}",
+            output.output_path,
+            out
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+        let _ = fs::remove_dir_all(&out);
     }
 }

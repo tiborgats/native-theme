@@ -590,34 +590,6 @@ bundled-themes = ["material"]
 // Additional test coverage
 // =============================================================================
 
-/// #28: Test generate_icons() simple API with a valid fixture TOML.
-#[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-fn generate_icons_simple_api() {
-    let out = create_temp_dir("simple_api_out");
-
-    // generate_icons() requires CARGO_MANIFEST_DIR and OUT_DIR env vars.
-    // CARGO_MANIFEST_DIR is set by cargo test. We set OUT_DIR explicitly.
-    unsafe { std::env::set_var("OUT_DIR", &out) };
-
-    let result = native_theme_build::generate_icons(
-        // Path relative to CARGO_MANIFEST_DIR
-        "tests/fixtures/sample-icons.toml",
-    );
-
-    let output = result.unwrap_or_else(|e| panic!("generate_icons() failed: {e}"));
-    assert!(!output.code.is_empty(), "should generate code");
-    assert!(
-        output.code.contains("pub enum SampleIcon"),
-        "should produce SampleIcon enum"
-    );
-    assert_eq!(output.role_count, 2);
-
-    if let Err(e) = fs::remove_dir_all(&out) {
-        eprintln!("test cleanup warning: {e}");
-    }
-}
-
 /// #29: Test that base_dir() affects the generated include_bytes! paths.
 #[test]
 fn base_dir_affects_include_bytes_paths() {
@@ -661,53 +633,6 @@ bundled-themes = ["material"]
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
-        eprintln!("test cleanup warning: {e}");
-    }
-}
-
-/// #35: Test output_dir fallback to OUT_DIR env var.
-#[test]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
-fn output_dir_fallback_to_out_dir_env() {
-    let dir = create_temp_dir("outdir_fallback");
-    let out = create_temp_dir("outdir_fallback_out");
-
-    write_file(
-        &dir,
-        "icons.toml",
-        r#"
-name = "fallback-test"
-roles = ["play-pause"]
-bundled-themes = ["material"]
-"#,
-    );
-    write_file(
-        &dir,
-        "material/mapping.toml",
-        "play-pause = \"play_pause\"\n",
-    );
-    write_file(&dir, "material/play_pause.svg", SVG_STUB);
-
-    // Don't call .output_dir() -- rely on OUT_DIR env var
-    unsafe { std::env::set_var("OUT_DIR", &out) };
-
-    let output = IconGenerator::new()
-        .source(dir.join("icons.toml"))
-        .generate()
-        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
-
-    // Output path should be inside the OUT_DIR directory
-    assert!(
-        output.output_path.starts_with(&out),
-        "output_path {:?} should be under OUT_DIR {:?}",
-        output.output_path,
-        out
-    );
-
-    if let Err(e) = fs::remove_dir_all(&dir) {
-        eprintln!("test cleanup warning: {e}");
-    }
-    if let Err(e) = fs::remove_dir_all(&out) {
         eprintln!("test cleanup warning: {e}");
     }
 }
