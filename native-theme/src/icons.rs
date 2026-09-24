@@ -77,6 +77,13 @@ impl<'a> From<&'a dyn IconProvider> for IconId<'a> {
 /// the previous single-struct design, no dispatch layer can silently
 /// drop the theme override.
 ///
+/// An icon comes only from the theme or from a theme in the `Inherits=`
+/// chain its `index.theme` declares, never from `hicolor`
+/// unless `hicolor` is the theme asked for, nor from a loose file in an
+/// icon directory or `/usr/share/pixmaps`. An icon the theme and its
+/// parents lack is `None`, and so is every icon of a theme that is not
+/// installed.
+///
 /// ```
 /// # #[cfg(all(target_os = "linux", feature = "system-icons"))]
 /// # {
@@ -146,6 +153,9 @@ impl<'a> FreedesktopLoader<'a> {
 
     /// Load the icon, returning its data.
     ///
+    /// `None` when neither the theme nor a theme it inherits from has the
+    /// icon (see [`FreedesktopLoader`]).
+    ///
     /// Requires the `system-icons` feature, and Linux; `None` otherwise.
     #[must_use]
     #[allow(unused_variables)]
@@ -201,7 +211,9 @@ impl<'a> FreedesktopLoader<'a> {
     ///
     /// `theme` of `None` uses the system-detected theme; `Some(t)` overrides.
     /// Associated function (no `self`) — the spinner is a property of the
-    /// theme, not of any particular icon id.
+    /// theme, not of any particular icon id. Found only where
+    /// [`Self::load`] would find an icon: in the theme or a theme it
+    /// inherits from, never in `hicolor` unless that is the theme.
     ///
     /// Requires the `system-icons` feature, and Linux; `None` otherwise.
     #[must_use]
