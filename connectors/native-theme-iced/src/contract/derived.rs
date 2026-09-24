@@ -822,20 +822,26 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// a **builder method** rather than a `Style` field -- `Checkbox::spacing` for
 /// `checkbox.label_gap`, `Toggler::size` for `switch.track_height`,
 /// `pick_list::Handle::Arrow { size }` for `combo_box.arrow_icon_size`, a
-/// menu's padding for `menu.row_height`. iced can carry those perfectly well;
-/// they are simply the consumer's layout, set where the widget is built, and
-/// `styles::*` returns a `Style`. They are neither unreachable nor a gap in
-/// the contract, and the tripwire never sees them because it walks emitted
-/// `Style` fields.
+/// menu's padding for `menu.row_height`, and one minimum,
+/// `TextEditor::min_height` (`text_editor.rs:201`) for `input.min_height`,
+/// since `styles::text_editor` reads the input's fields. iced can carry those
+/// perfectly well; they are simply the consumer's layout, set where the widget
+/// is built, and `styles::*` returns a `Style`. They are neither unreachable
+/// nor a gap in the contract, and the tripwire never sees them because it
+/// walks emitted `Style` fields.
 ///
-/// Four entries below have a builder method for their widget's size and are
-/// listed all the same: `progress_bar.min_width`, `tab.min_width`,
+/// Seven entries below have a builder method for their widget's size and are
+/// listed all the same: `button.min_width`, `button.min_height`,
+/// `combo_box.min_width`, `progress_bar.min_width`, `tab.min_width`,
 /// `tab.min_height` and `spinner.min_diameter`. Each is a minimum, and the
-/// method takes the extent itself -- `ProgressBar::length`,
+/// method takes the extent itself -- `Button::width`, `Button::height`,
+/// `PickList::width`, `ComboBox::width`, `ProgressBar::length`,
 /// `TabBar::tab_width`, `TabBar::height` and `Tabs::tab_bar_height` take a
 /// `Length`, and a `Spinner` fills the bounds it is given -- with no floor
 /// under it, so the platform's minimum passed there would make the widget
-/// exactly that size rather than at least that size.
+/// exactly that size rather than at least that size. `combo_box.min_height`
+/// has no builder method at all: neither `PickList` nor `ComboBox` takes a
+/// height.
 /// `scrollbar.min_thumb_length` is listed for another reason: iced sizes the
 /// scroller itself and takes no length for it at all.
 pub(super) const UNREACHABLE: &[Unreachable] = &[
@@ -857,6 +863,46 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
              `Length` the consumer lays the bar out with, and nothing in the \
              widget states a floor under it",
         lost: |_, r| lost_length(r.progress_bar.min_width),
+        exceptions: &[],
+    },
+    Unreachable {
+        field: "button.min_width",
+        evidence: "`Button::width(..)` (`button.rs:125`) takes the `Length` \
+             the consumer lays the button out with, and `Button` has no \
+             minimum setter: a platform minimum passed there makes the button \
+             exactly that wide, not at least that wide",
+        lost: |_, r| lost_length(r.button.min_width),
+        exceptions: &[],
+    },
+    Unreachable {
+        field: "button.min_height",
+        evidence: "`Button::height(..)` (`button.rs:131`) takes the button's \
+             `Length`, with no minimum setter beside it: a platform minimum \
+             passed there makes the button exactly that tall, not at least \
+             that tall",
+        lost: |_, r| lost_length(r.button.min_height),
+        exceptions: &[],
+    },
+    Unreachable {
+        field: "combo_box.min_width",
+        evidence: "`PickList::width(..)` (`pick_list.rs:224`) and \
+             `ComboBox::width(..)` (`combo_box.rs:273`) take the trigger's \
+             `Length`, and neither widget has a minimum setter: a platform \
+             minimum passed there makes the trigger exactly that wide, not at \
+             least that wide",
+        lost: |_, r| lost_length(r.combo_box.min_width),
+        exceptions: &[],
+    },
+    Unreachable {
+        field: "combo_box.min_height",
+        evidence: "neither `PickList` nor `ComboBox` has a height setter at \
+             all -- beside `PickList::width` (`pick_list.rs:224`) and \
+             `ComboBox::width` (`combo_box.rs:273`) they take a padding, a \
+             text size and line height, and a `menu_height` that is the open \
+             menu's -- and a `PickList` lays its trigger out \
+             `Length::Shrink` tall, one text line plus its padding \
+             (`pick_list.rs:420-431`)",
+        lost: |_, r| lost_length(r.combo_box.min_height),
         exceptions: &[],
     },
     #[cfg(feature = "iced_aw")]

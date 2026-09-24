@@ -120,12 +120,16 @@
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
 //! Per-widget geometry that is not a `Style` field (e.g. an indicator's size,
-//! a track's height, a label gap, a minimum width) is not mapped, because iced
-//! takes it through inline widget configuration rather than through the theme.
-//! Read it from the `ResolvedTheme` you pass to [`to_theme()`] and hand it to
-//! the widget's builder -- `Checkbox::size`, `Toggler::size`,
-//! `ProgressBar::girth`, the thickness argument of `rule::horizontal`. Where a
-//! widget has such a receiver, its `styles` function's doc comment names it.
+//! a track's height, a label gap) is not mapped, because iced takes it through
+//! inline widget configuration rather than through the theme. Read it from the
+//! `ResolvedTheme` you pass to [`to_theme()`] and hand it to the widget's
+//! builder -- `Checkbox::size`, `Toggler::size`, `ProgressBar::girth`, the
+//! thickness argument of `rule::horizontal`, `TextEditor::min_height` for
+//! `input.min_height`. Where a widget has such a receiver, its `styles`
+//! function's doc comment names it. Most minimum sizes have none: a button's,
+//! a combo box's or a progress bar's width setter takes the extent itself,
+//! with no minimum form, so a platform minimum passed there makes the widget
+//! exactly that size.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
