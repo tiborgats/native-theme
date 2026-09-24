@@ -128,7 +128,7 @@
 - [ ] Key the icon tables by `gpui_kit_assets::IconName` (gpui-kit 0.6.1:
       `ALL`, `PartialEq`, `Debug`, `Hash`) so the hand audit and the
       101-count tripwire in `icons.rs` become a compile-time check over
-      `ALL`; the floor is gpui-component 0.6.4 since v0.5.9, so nothing blocks
+      `ALL`; the floor is gpui-component 0.6.6 since v0.5.9, so nothing blocks
       this. Verified 2026-09-09 that the released 0.5.8 connector builds and
       passes its tests unchanged on gpui-kit 0.6.1 with gpui-pre 0.3.3 and
       0.3.4.
@@ -1559,8 +1559,10 @@ the gap — closing it is a change, and each wants its own decision.
       capture the rendered framebuffer. The underlying blade-graphics backend
       has `copy_texture_to_buffer()` but gpui doesn't expose it. A public
       `screenshot()` method would enable headless CI screenshot capture on all
-      platforms (like iced's `--screenshot` flag). Without this, gpui showcase
-      screenshots are Linux-only (via external spectacle capture).
+      platforms (like iced's `--screenshot` flag). Without this, the gpui
+      showcase captures itself through OS tools on macOS (`screencapture -l`)
+      and Windows (`BitBlt` on its own window), which the screenshots
+      workflow runs, and Linux screenshots need external spectacle capture.
 - [ ] PR: let an application drop the SVGs a window has drawn, so the icons
       gpui-component's widgets build for themselves can follow a theme
       switch. Measured in the v0.5.9 pre-merge fixes (Task 6's spike,
@@ -1704,7 +1706,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ## Publishing Prep
 
-- [ ] Publish to crates.io
+- [x] Publish to crates.io (v0.5.8 released 2026-09-07, tag `v0.5.8`)
 
 ---
 

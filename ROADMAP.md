@@ -31,19 +31,38 @@ and [`docs/todo_v0.6.0_egui-connector-rationale.md`](docs/todo_v0.6.0_egui-conne
 
 ## v0.6.1 — Full theme geometry in the iced connector
 
-Right now `native-theme-iced` maps **colors only**: radii, border widths,
-padding, and shadows exist in `ResolvedTheme` but iced widgets ignore them
-because iced applies geometry via per-widget inline configuration, not through
-its `Catalog` color system. Apps that want platform-accurate geometry have to
-read each metric helper (`border_radius`, `button_padding`, …) and wire it
-manually per widget.
+v0.5.9 ships most of it. `native_theme_iced::styles` (feature `widgets`, on by
+default) replaces twenty of iced's style functions with closures built from
+the resolved theme: every `Style` field — colours, border radius and width
+included — of the button (neutral, primary, danger, success, warning and
+link classes), text input, text editor, checkbox, radio, toggler, pick list,
+menu, slider, scrollable, progress bar, rule, tooltip and a card container,
+plus the scrollbar's widths and embedding. `styles::aw` (feature `iced_aw`)
+does the same for `iced_aw`'s card, menu bar, tab bar, sidebar, selection
+list and spinner. Padding, which iced takes through each widget's builder
+rather than its `Style`, comes from `button_padding`, `input_padding` and, for
+any other widget, `padding_or` and `stated_padding`, each keeping iced's own
+default for a side the theme does not state. A `Style` field the model does
+not carry is read from iced's default for that widget, and the ten theme
+values iced 0.14 and `iced_aw` 0.14.1 have no receiver for are listed, with
+the upstream lines that show it, in the connector's mapping contract.
 
-**Planned deliverable:** drop-in style-function replacements — e.g.
-`native_theme_iced::button::primary(&resolved)` — that bake radius, border
-width, padding, and disabled opacity into the returned `Style`. Apps keep
-using `iced::Theme` as-is; geometry becomes a per-widget choice between
-iced's built-in style and the native-theme style at runtime (no Cargo
-feature flag, no wrapper type).
+**What remains** of the plan:
+
+- replacements for the iced classes it lists that still paint from the
+  palette: `button::background`, `checkbox::{secondary, success, danger}`,
+  `progress_bar::{secondary, success, warning, danger}`,
+  `container::{rounded_box, dark, primary, secondary, success, warning,
+  danger}` and `pane_grid::default`. `container::bordered_box` and
+  `button::subtle` stay iced's on purpose: they paint `background.weakest`,
+  a colour iced derives and no platform states;
+- helpers for the sizes iced takes through widget builders
+  (`Checkbox::size`, `Toggler::size`, `ProgressBar::girth`, a rule's
+  thickness), which an application reads from the `ResolvedTheme` itself
+  today, and a helper that sets iced's `Settings` default font and text size
+  from the theme's font;
+- shadows: the model carries a shadow colour but no offset or blur, so every
+  style keeps iced's own `shadow`.
 
 Detailed design: [`docs/todo_iced-full-theme-geometry.md`](docs/todo_iced-full-theme-geometry.md).
 
