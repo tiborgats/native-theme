@@ -87,6 +87,14 @@ jobs:
           cargo test -p native-theme-iced --features iced_aw
           cargo test -p native-theme-gpui
 
+      # Every crate's library with no default features, each feature alone and
+      # all features, as CI runs it: an upstream release can break a
+      # configuration the default-feature steps above never build. `if:
+      # always()` for the reason given at Widget coverage below.
+      - name: Feature combinations
+        if: always()
+        run: bash scripts/check-features.sh
+
       # On the updated lockfile, so an upstream release that adds a widget is
       # reported the evening it appears rather than at the next release. The
       # script reads the toolkits' sources through `cargo metadata` and needs

@@ -171,6 +171,24 @@ There is no verb that writes the stamp without the run.
 ./scripts/compat-check.sh check
 ```
 
+## check-features.sh
+
+Checks that every workspace crate builds in every feature combination the
+gate names: for each member of `cargo metadata --no-deps`, `cargo check -p
+<crate> --lib` with `--no-default-features`, with `--no-default-features
+--features <F>` for each feature in its `[features]` table except `default`,
+and with `--all-features` — the coverage of `cargo hack check
+--each-feature`, without the extra tool. Prints one line per combination;
+exits 1 when any fails, naming each failure at the end, and 2 when `jq` is
+missing. `pre-release-check.sh` (a hard failure), `ci.yml`, `publish.yml` and
+`dependency-canary.yml` run it.
+
+Requires jq.
+
+```sh
+./scripts/check-features.sh
+```
+
 ## check-widget-coverage.py
 
 Checks that every widget the toolkits offer is rendered by the matching

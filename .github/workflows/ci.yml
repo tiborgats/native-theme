@@ -78,6 +78,27 @@ jobs:
       - name: Check system-icons alone
         if: runner.os != 'Linux' && matrix.flags == '--no-default-features'
         run: cargo check -p native-theme --no-default-features --features system-icons
+      # The platform readers and icon loaders compile only on their own
+      # target, so their dead code and unchecked results show only here.
+      - name: Check all features, warnings denied
+        if: runner.os != 'Linux' && matrix.flags == '--no-default-features'
+        env:
+          RUSTFLAGS: -Dwarnings
+        run: cargo check -p native-theme --all-features
+
+  features:
+    name: Feature combinations
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install system dependencies (gpui)
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # Every crate's library with no default features, each feature alone and
+      # all features; pre-release-check.sh runs the same script.
+      - run: bash scripts/check-features.sh
 
   test-build-crate:
     name: Test native-theme-build

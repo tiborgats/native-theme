@@ -397,13 +397,30 @@ for crate in $WORKSPACE_CRATES; do
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: feature combinations
+#
+# scripts/check-features.sh checks every workspace crate's library with no
+# default features, with each feature alone and with all features (the
+# coverage of `cargo hack check --each-feature`). The per-crate loops above
+# build the default set only, and a crate that stops compiling without one of
+# its default features is otherwise first seen by the user who turns it off.
+# Hard failure. CI, the publish gate and the nightly canary run the same
+# script.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Feature combinations"
+run_check "feature combinations (every crate)" bash scripts/check-features.sh
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section: system-icons on macOS and Windows
 #
 # Both connectors enable `system-icons` by default, and its icon code imports
-# the platform crates, so the feature must build alone on each platform. A
+# the platform crates, so the feature must build alone on each platform. The
+# platform readers and icon loaders compile only on their own target, so
+# native-theme with all features is checked there too, with warnings denied:
+# dead code or an unchecked result in them is invisible to a Linux build. A
 # cross-target `cargo check` needs the target's standard library (and, for
 # windows-gnu, the MinGW linker toolchain); where one is missing the check is
-# skipped and says why. CI's Windows and macOS test legs run the same check.
+# skipped and says why. CI's Windows and macOS test legs run the same checks.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "system-icons (cross-target)"
 if command -v rustup &>/dev/null; then
@@ -422,6 +439,8 @@ for target in x86_64-pc-windows-gnu x86_64-apple-darwin; do
     fi
     run_check "system-icons ($target)" \
         cargo check --target "$target" -p native-theme --no-default-features --features system-icons
+    run_check "all features, -D warnings ($target)" \
+        env RUSTFLAGS="-D warnings" cargo check --target "$target" -p native-theme --all-features
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
