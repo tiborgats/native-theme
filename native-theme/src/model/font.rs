@@ -78,12 +78,13 @@ pub enum FontStyle {
 #[derive(Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum FontSize {
     /// Typographic points (1/72 inch). Stated by the OS readers (KDE, GNOME,
-    /// macOS, Windows) and by the platform presets (Adwaita, KDE Breeze,
-    /// macOS, Windows 11, iOS).
+    /// macOS, Windows) and by the platform presets other than Material
+    /// (Adwaita, KDE Breeze, macOS, Windows 11, iOS).
     /// Converted to px during validation: `px = pt * dpi / 72`.
     Pt(f32),
-    /// Logical pixels. Stated by the colour-scheme presets (Catppuccin,
-    /// Dracula, Gruvbox, Material, Nord, One Dark, Solarized, Tokyo Night).
+    /// Logical pixels. Stated by the Material platform preset and the
+    /// community colour-scheme presets (Catppuccin, Dracula, Gruvbox, Nord,
+    /// One Dark, Solarized, Tokyo Night).
     Px(f32),
 }
 
@@ -249,8 +250,9 @@ pub struct ResolvedFontSpec {
     ///
     /// [`size`](Self::size) is always logical pixels, which is what a toolkit
     /// lays out with. This is the unit and number the preset or the platform
-    /// reader actually gave: the OS readers and the platform presets state
-    /// points, and the colour-scheme presets state pixels.
+    /// reader actually gave: the OS readers and the platform presets other
+    /// than Material state points, and Material and the community
+    /// colour-scheme presets state pixels.
     ///
     /// Anything that shows a size to a person should show **this**. The two
     /// cannot be told apart after conversion -- a 14px preset and a 10.5pt

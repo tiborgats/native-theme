@@ -738,7 +738,8 @@ pub struct ComboBoxTheme {
     /// Width of the arrow clickable area, in logical pixels. `None` where the
     /// theme states no width (docs/platform-facts.md §2.24): GNOME's dropdown
     /// draws its arrow inline, macOS's width is only a measured range
-    /// (~16–18px), and iOS, Material and the colour-scheme presets cite none.
+    /// (~16–18px), and the iOS and Material platform presets and the community
+    /// colour-scheme presets cite none.
     #[serde(rename = "arrow_area_width_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub arrow_area_width: Option<f32>,

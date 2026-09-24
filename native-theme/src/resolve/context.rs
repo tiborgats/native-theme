@@ -38,8 +38,16 @@ use crate::model::DialogButtonOrder;
 /// ```
 #[derive(Clone, Debug)]
 pub struct ResolutionContext {
-    /// Font DPI for pt-to-px conversion. 96.0 on Linux/Windows, 72.0 on
-    /// macOS, or reader-supplied for KDE `forceFontDPI`.
+    /// Font DPI for pt-to-px conversion.
+    ///
+    /// [`from_system`](Self::from_system) detects it: 72.0 on macOS, 96.0 on
+    /// Windows, and on Linux KDE's `forceFontDPI` (with the `kde` feature),
+    /// then `Xft.dpi`, then xrandr's physical DPI (with `kde` or `portal`),
+    /// then 96.0; 96.0 elsewhere. When the OS theme is read
+    /// ([`SystemTheme::from_system`](crate::SystemTheme::from_system)), the
+    /// reader's own DPI replaces it: KDE's `forceFontDPI` → `Xft.dpi` →
+    /// xrandr → 96.0, GNOME's `Xft.dpi` → xrandr → 96.0, macOS's 72.0 and
+    /// Windows' 96.0.
     pub font_dpi: f32,
     /// Dialog button ordering (`PrimaryLeft` on KDE, `PrimaryRight`
     /// elsewhere).
