@@ -112,7 +112,7 @@
 //! | Target | Fields | Source |
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
-//! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | input.placeholder, defaults.surface/foreground, `*_foreground` |
+//! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
 //! | `styles` (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
 //! | Widget metrics | button/input padding (the stated sides, iced's own default for the others; `widgets` feature), any other widget's padding over a default the caller names (`padding_or`) or where every side is stated (`stated_padding`), border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
@@ -322,6 +322,8 @@ pub fn stated_padding(stated: &native_theme::theme::ResolvedPadding) -> Option<i
 /// and iced's own button padding where it does not:
 /// `iced_widget::button::DEFAULT_PADDING` (iced_widget 0.14.2
 /// `src/button.rs:462`), 5 top and bottom, 10 left and right.
+///
+/// Requires the `widgets` feature (on by default).
 #[cfg(feature = "widgets")]
 #[must_use]
 pub fn button_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
@@ -337,6 +339,8 @@ pub fn button_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_cor
 /// and iced's own text-input padding where it does not:
 /// `iced_widget::text_input::DEFAULT_PADDING` (iced_widget 0.14.2
 /// `src/text_input.rs:125`), 5 on every side.
+///
+/// Requires the `widgets` feature (on by default).
 #[cfg(feature = "widgets")]
 #[must_use]
 pub fn input_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {

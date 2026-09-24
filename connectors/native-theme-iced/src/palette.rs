@@ -6,8 +6,9 @@
 //!
 //! Note: `to_color()` preserves the alpha channel. The 6 palette colors are
 //! always fully opaque in resolved themes (`a = 1.0`). Other resolved fields
-//! (e.g., `shadow`, `selection_inactive`) may carry meaningful alpha values;
-//! use [`to_color()`] to convert them when needed.
+//! (e.g., `defaults.shadow_color`, `defaults.selection_inactive_background`)
+//! may carry meaningful alpha values; use [`to_color()`] to convert them when
+//! needed.
 
 use native_theme::color::Rgba;
 

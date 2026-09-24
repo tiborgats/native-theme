@@ -1,5 +1,7 @@
 //! Style functions that give iced's widgets the platform's own colors.
 //!
+//! Requires the `widgets` feature (on by default).
+//!
 //! iced derives every widget style from the six-color `Palette`, so a widget
 //! it has no palette slot for -- a button's pressed fill, an input's focus
 //! border -- is a value iced invents by lightening or darkening. The palette
@@ -168,11 +170,13 @@ pub fn button(
 ///
 /// The model gives the accent and the three status colors a fill and a label
 /// and nothing else -- no hovered and no pressed variant of either -- and the
-/// neutral `button.hover_background` is not theirs to borrow: it is an opaque
-/// grey on fifteen of the sixteen presets, which would turn a hovered accent
-/// button grey. So those two states follow the no-source rule and come from
-/// `class` at run time, which derives them from the same color through the
-/// palette.
+/// neutral `button.hover_background` is not theirs to borrow: it is the neutral
+/// button's hover colour, an opaque grey or tinted neutral on fourteen of the
+/// sixteen presets, a pale blue (`#93cee9`) on kde-breeze and a translucent
+/// overlay on windows-11, which would paint a hovered accent button in the
+/// neutral button's hover colour. So those two states follow the no-source
+/// rule and come from `class` at run time, which derives them from the same
+/// color through the palette.
 ///
 /// The border is the button's, not iced's `border::rounded(2)`
 /// (`button.rs:739`), so such a button sits beside a native one instead of

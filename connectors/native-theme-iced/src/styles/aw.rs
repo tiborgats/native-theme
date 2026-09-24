@@ -1,8 +1,12 @@
 //! Style functions for the `iced_aw` widgets iced core does not have.
 //!
+//! Requires the `iced_aw` feature.
+//!
 //! native-theme models a card, a menu, a tab bar, a sidebar, a spinner and a
-//! list, and iced itself has a receiver for none of them. `iced_aw` 0.14
-//! supplies the widgets, and its styling is iced's own shape: a `Style` struct
+//! list. iced itself has no card widget, menu bar, tab bar, sidebar, spinner
+//! or selection list; its drop-down menu is styled by [`crate::styles::menu`]
+//! and a container drawn as a card by [`crate::styles::container_card`].
+//! `iced_aw` 0.14 supplies the missing widgets, and its styling is iced's own shape: a `Style` struct
 //! of public fields, a `Catalog` whose `Class` is a `StyleFn`, and a
 //! `.style(..)` setter on the widget. So these functions follow the same rules
 //! as [`crate::styles`] -- every field named, native values captured by value,

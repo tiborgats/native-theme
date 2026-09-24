@@ -827,6 +827,14 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// `styles::*` returns a `Style`. They are neither unreachable nor a gap in
 /// the contract, and the tripwire never sees them because it walks emitted
 /// `Style` fields.
+///
+/// Minima are the exception, and are listed: `tab.min_width`,
+/// `tab.min_height`, `progress_bar.min_width` and `spinner.min_diameter`.
+/// Their widgets' builder methods take the extent itself -- a `Length` or
+/// bounds the widget fills -- and none states a floor under it, so a platform
+/// minimum passed there would make the widget exactly that size rather than at
+/// least that size. A fixed extent is not a floor, so a minimum has no
+/// receiver.
 pub(super) const UNREACHABLE: &[Unreachable] = &[
     Unreachable {
         field: "scrollbar.min_thumb_length",
