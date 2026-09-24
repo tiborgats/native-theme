@@ -6058,11 +6058,13 @@ mod tests {
     /// theme nothing detected.
     #[test]
     fn a_failed_icon_theme_detection_is_shown_as_a_failure() {
-        let mut state = State::default();
-        state.detect_icon_theme = || {
-            Err(native_theme::error::Error::PlatformUnsupported {
-                platform: "the test's failing detection",
-            })
+        let state = State {
+            detect_icon_theme: || {
+                Err(native_theme::error::Error::PlatformUnsupported {
+                    platform: "the test's failing detection",
+                })
+            },
+            ..State::default()
         };
         assert_eq!(
             state.system_icon_theme_label(),
