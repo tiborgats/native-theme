@@ -5522,7 +5522,9 @@ fn the_default_row_and_the_status_bar_name_one_preset(cx: &mut TestAppContext) {
 
 /// A theme that fails to load leaves the installed one in charge of
 /// everything shown: its name in the status bar and the preset switch, and
-/// its layout.
+/// its layout. (`--theme` with a name the preset switch does not offer is
+/// rejected before anything is loaded:
+/// `the_command_line_rejects_what_it_cannot_honour`.)
 #[gpui::test]
 fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -5572,18 +5574,6 @@ fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
         "no-such-preset loaded, so nothing failed"
     );
     check(&mut cx, "SetPreset(no-such-preset)");
-    let args = crate::CliArgs {
-        theme: Some("no-such-preset".to_string()),
-        ..Default::default()
-    };
-    cx.update(|window, cx| {
-        showcase.update(cx, |this, cx| {
-            crate::apply_cli_args(this, &args, window, cx)
-        })
-    });
-    cx.run_until_parked();
-    draw(&mut cx);
-    check(&mut cx, "--theme no-such-preset");
 }
 
 /// What the window draws with: gpui-component's mode, every `ThemeColor`
@@ -5855,6 +5845,69 @@ fn the_command_line_rejects_what_it_cannot_honour(cx: &mut TestAppContext) {
         before,
         "--theme no-such-preset changed the state"
     );
+}
+
+/// `--theme` installs what the preset switch offers, which the screenshot
+/// workflow passes: each preset meant for this platform, and `default`, the
+/// desktop's own theme. The theme is installed, and the preset switch and
+/// the status bar name it. `default` is skipped where the host's OS theme
+/// cannot be read.
+#[gpui::test]
+fn the_command_line_installs_what_it_accepts(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let mut accepted: Vec<String> = native_theme::theme::Theme::list_presets_for_platform()
+        .iter()
+        .map(|info| info.key.to_string())
+        .collect();
+    assert!(
+        !accepted.is_empty(),
+        "no preset is offered on this platform"
+    );
+    match native_theme::SystemTheme::from_system() {
+        Ok(_) => accepted.push("default".to_string()),
+        Err(e) => eprintln!("the OS theme cannot be read here ({e}): --theme default not checked"),
+    }
+    for key in accepted {
+        apply_cli(
+            &mut cx,
+            &showcase,
+            &crate::CliArgs {
+                theme: Some(key.clone()),
+                ..Default::default()
+            },
+        );
+        let (name, row, status, error, native) = read(&mut cx, &showcase, |this, cx| {
+            (
+                this.current_theme_name.clone(),
+                this.preset_combobox
+                    .read(cx)
+                    .selected_value()
+                    .map(|v| v.to_string()),
+                crate::chrome::status_environment(this, cx)
+                    .get(1)
+                    .cloned()
+                    .unwrap_or_default(),
+                this.error_message.clone(),
+                cx.native_theme().and_then(|nt| nt.native(cx)).is_some(),
+            )
+        });
+        assert_eq!(name, key, "--theme {key} did not install it");
+        assert_eq!(error, None, "--theme {key} reported an error");
+        assert!(native, "--theme {key} left no native variant installed");
+        assert_eq!(
+            row.as_deref(),
+            Some(key.as_str()),
+            "--theme {key}: the preset switch does not show it"
+        );
+        let named = match key.as_str() {
+            "default" => status.starts_with("default ("),
+            preset => status.starts_with(&format!("{preset} ")),
+        };
+        assert!(
+            named,
+            "--theme {key}: the status bar does not name it: {status}"
+        );
+    }
 }
 
 /// Make `names` the installed freedesktop themes the icon-theme Select
