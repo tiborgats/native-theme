@@ -264,7 +264,7 @@
 - [ ] `Size::Size` honoured by `Checkbox` and `Switch`
 - [ ] inner geometry exposed: checkbox/radio indicator, switch track and thumb,
       slider track and thumb, separator thickness, resize-handle width, button
-      icon gap, input padding, popup-menu items, select arrow, accordion arrow
+      icon gap, popup-menu items, select arrow, accordion arrow
 - [ ] a disabled `Button` should read the platform's disabled colours.
       `ButtonVariant::disabled` (`button/button.rs:1273-1284`) derives the
       whole state by multiplying: the variant's own token at 0.15 for the
@@ -1431,8 +1431,8 @@ the gap — closing it is a change, and each wants its own decision.
       | `button.min_width` | macOS, Windows (none); GNOME "none" (§2.3) | macos-sonoma, windows-11, adwaita 64 |
       | `button.min_height` | KDE (none), sizes to content (§2.3) | kde-breeze 32. Also Windows: platform-facts "27 (derived)" against windows-11 32 and the reader's 32, a value mismatch |
       | `input.min_height` | KDE (none) (§2.4) | kde-breeze 32 |
-      | `menu.row_height` | KDE (none), sizes to font (§2.6) | kde-breeze 28 |
-      | `menu.row_height` | Windows per context: touch 31, mouse 23 (§2.6) | windows-11 36, which matches neither. The reader reads `SM_CYMENU` (its testable build states 32), which Ch. 1 of platform-facts calls the menu *bar* height, not an item's |
+      | `menu.row_height` | KDE (none), sizes to font (§2.6) | done 2026-09-24: kde-breeze's 28 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
+      | `menu.row_height` | Windows per context: touch 31, mouse 23 (§2.6) | done 2026-09-24: windows-11 and the reader state the mouse context's 23, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `tooltip.max_width` | KDE "(none) — preset: 300"; GNOME "(none) — preset: 360" (§2.7) | kde-breeze 300, adwaita 360 |
       | `scrollbar.groove_width` | GNOME "slider: 8 + margins", no total; macOS per context, legacy 16 / overlay 7 (§2.8) | adwaita 12, macos-sonoma 16. The macOS reader states 15, which matches neither context |
       | `scrollbar.thumb_width` | macOS per context; Windows "↕ `SM_CXVSCROLL` (same)" (§2.8) | macos-sonoma 7 and the reader's 7; windows-11 6 against the API value |
@@ -1440,7 +1440,7 @@ the gap — closing it is a change, and each wants its own decision.
       | `slider.tick_mark_length` | GNOME (none), no ticks (§2.9) | adwaita 4 |
       | `progress_bar.min_width` | macOS, Windows, KDE (none) (§2.10) | macos-sonoma 100, windows-11 100, kde-breeze 6 (the KDE reader's comment says "Preset provides the value") |
       | `tab.min_width` | macOS, Windows (none); GNOME "none" (§2.11) | macos-sonoma, windows-11, adwaita 64 |
-      | `list.row_height` | KDE (none); GNOME per context, rich list 32 / plain list none (§2.15) | kde-breeze 28; adwaita 34, which matches neither context |
+      | `list.row_height` | KDE (none); GNOME per context, rich list 32 / plain list none (§2.15) | done 2026-09-24: kde-breeze's 28 and adwaita's 34 removed, and the gate checks the field (D3 of docs/archive/todo_v0.5.9_pre-merge-fixes.md) |
       | `splitter.divider_width` | GNOME per context, 1 / 5 (§2.17) | adwaita 1. Value mismatches: the macOS reader's 9 against platform-facts' and the preset's 6; the Windows reader's 4 against platform-facts' and the preset's 1 |
       | `layout.widget_gap` | Windows (none) (§2.20) | windows-11 6 |
       | `layout.container_margin` | macOS, Windows (none) (§2.20) | macos-sonoma 8, windows-11 6 |
@@ -1713,20 +1713,23 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 ## Post-1.0 / Deferred
 
 ### Change notification
-Ship without it. Users can poll `from_system()` or use their toolkit's
-appearance observer. Add when there's demand.
+Done: the `watch` feature's `on_theme_change()` has a backend on each
+platform (`native-theme/src/watch/`).
 
-- [ ] Linux portal: `SettingChanged` D-Bus signal via ashpd stream
-- [ ] Linux KDE: `notify` crate file watching (`watch` feature)
-- [ ] macOS: ObjC notification observers
-- [ ] Windows: `UISettings.ColorValuesChanged` event
+- [x] Linux portal: `SettingChanged` D-Bus signal, through `zbus::blocking` (`watch/gnome.rs`)
+- [x] Linux KDE: `notify` crate watching the directory of `kdeglobals` (`watch/kde.rs`)
+- [x] macOS: `AppleInterfaceThemeChangedNotification` observer on the distributed notification center (`watch/macos.rs`)
+- [x] Windows: `UISettings.ColorValuesChanged` event (`watch/windows.rs`)
 
 ### Mobile readers
 - [ ] iOS: `from_ios()` via `objc2-ui-kit`
 - [ ] Android: `from_android()` via `jni` + `ndk`, Material You (API 31+)
 
 ### Live presets
-- [ ] `windows-11-live.toml` still states fields the Windows reader provides: `focus_ring_width_px` (light :14, dark :216, reader: `SM_CXFOCUSBORDER`) and the scrollbar `groove_width_px` / `min_thumb_length_px` (:80-81, :282-283, reader: `SM_CXVSCROLL` / `SM_CYVTHUMB`). Live presets omit reader-provided fields (`native-theme/src/presets/README.md:23-24`).
+- [ ] `windows-11-live.toml` still states fields the Windows reader provides: `focus_ring_width_px` (light :14, dark :216, reader: `SM_CXFOCUSBORDER`) and the scrollbar `groove_width_px` / `min_thumb_length_px` (:80-81, :282-283, reader: `SM_CXVSCROLL` / `SM_CYVTHUMB`). Live presets omit reader-provided fields (`native-theme/src/presets/README.md:34-35`).
 
 ### Font DPI
 - [ ] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session.
+
+### docs.rs feature badges
+- [ ] docs.rs `doc(cfg)` badges: mark each feature-gated item on docs.rs with the feature it needs. It needs nightly's `doc_cfg` (`#![cfg_attr(docsrs, feature(doc_cfg))]` and `--cfg docsrs` in `[package.metadata.docs.rs]`); until then the item's rustdoc names the feature in prose (the v0.5.9 second pre-merge review's Task 6).
