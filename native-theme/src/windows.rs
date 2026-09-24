@@ -1089,6 +1089,14 @@ mod tests {
 
         // A per-monitor-aware process is told the real system DPI; an unaware
         // one is told 96 and would pass whatever the reader does.
+        //
+        // The awareness is the process's, so it holds for every test in this
+        // binary from here on, and it cannot be undone. No other test depends
+        // on it: the reader asks for its metrics and fonts at an explicit
+        // 96 DPI (`GetSystemMetricsForDpi`, `SystemParametersInfoForDpi`),
+        // which awareness does not change, its `SystemParametersInfoW` calls
+        // read accessibility flags, which have no size, and the icon tests in
+        // `winicons.rs` check that an icon loads, not its pixel size.
         let _ = unsafe {
             ::windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
                 ::windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
@@ -1117,7 +1125,8 @@ mod tests {
     #[allow(unsafe_code)]
     #[test]
     fn fonts_resolve_to_logical_pixels_at_any_system_dpi() {
-        // Per-monitor aware, as in `system_metrics_are_logical_at_any_system_dpi`.
+        // Per-monitor aware, as in `system_metrics_are_logical_at_any_system_dpi`,
+        // which says why setting it for the whole test binary is safe.
         let _ = unsafe {
             ::windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
                 ::windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
