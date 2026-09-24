@@ -882,6 +882,10 @@ struct State {
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
+    /// Reads the OS theme when the `default` entry is installed after
+    /// startup: `SystemTheme::from_system`, which a test replaces with a
+    /// read that fails.
+    read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
 
     // Theme watcher (runtime dark/light toggle detection)
     /// Flag set by the ThemeSubscription background thread when the OS theme changes.
@@ -1087,6 +1091,7 @@ impl Default for State {
             screenshot_path: None,
             screenshot_countdown: 0,
             error_message: initial_error,
+            read_system_theme: native_theme::SystemTheme::from_system,
             theme_change_flag,
             _theme_watcher,
         };
@@ -1213,7 +1218,7 @@ impl State {
             native_theme_iced::ColorMode::Light
         };
         match choice {
-            ThemeChoice::OsTheme(_) => match native_theme::SystemTheme::from_system() {
+            ThemeChoice::OsTheme(_) => match (self.read_system_theme)() {
                 Ok(system) => {
                     // Platform presets always specify icon_theme.
                     self.current_icon_set = system.icon_set;
@@ -1227,21 +1232,9 @@ impl State {
                     self.error_message = None;
                     Ok(Some(self.current_icon_theme.clone()))
                 }
-                Err(e) => match load_adwaita_fallback(is_dark) {
-                    Some((r, t, lay)) => {
-                        self.error_message =
-                            Some(format!("OS theme failed: {e}. Using adwaita fallback."));
-                        self.current_icon_set = IconSet::Freedesktop;
-                        self.current_icon_theme = "Adwaita".to_string();
-                        self.current_resolved = r;
-                        self.current_theme = t;
-                        self.layout = lay;
-                        Ok(Some(self.current_icon_theme.clone()))
-                    }
-                    None => Err(format!(
-                        "OS theme failed: {e}, and so did the adwaita fallback."
-                    )),
-                },
+                // Only startup falls back to adwaita, with nothing installed
+                // yet; here the installed theme stays.
+                Err(e) => Err(format!("Failed to load OS theme: {e}")),
             },
             ThemeChoice::Preset(name) => {
                 let nt = native_theme::theme::Theme::preset(name)
@@ -5995,6 +5988,43 @@ mod tests {
             shown(&state),
             before,
             "the theme picker shows a theme that failed to load"
+        );
+    }
+
+    /// After startup, an OS theme that fails to read is a failed install
+    /// like any other: the installed theme stays drawn and named, never
+    /// adwaita under the `default` entry. Only at startup, with nothing
+    /// installed yet, is adwaita the fallback.
+    #[test]
+    fn a_failed_os_theme_read_keeps_the_installed_theme() {
+        let mut state = State::default();
+        let preset = match native_theme::theme::Theme::list_presets_for_platform().first() {
+            Some(info) => info.key,
+            None => panic!("this platform offers no preset"),
+        };
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset(preset.to_string())),
+        );
+        state.read_system_theme = || {
+            Err(native_theme::error::Error::PlatformUnsupported {
+                platform: "the test's failing read",
+            })
+        };
+        let before = shown(&state);
+
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
+        );
+        assert_eq!(
+            shown(&state),
+            before,
+            "a failed OS-theme read replaced {preset}"
+        );
+        assert!(
+            state.error_message.is_some(),
+            "a failed OS-theme read reported nothing"
         );
     }
 
