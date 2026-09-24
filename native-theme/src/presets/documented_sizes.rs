@@ -412,19 +412,30 @@ fn resolve(variant: ThemeMode) -> Result<ResolvedTheme, String> {
         .map_err(|e| format!("resolution failed: {e}"))
 }
 
-fn static_theme(platform: Platform, mode: ColorMode) -> Result<ResolvedTheme, String> {
+/// The static resolution's input: the platform's full preset, unresolved.
+fn static_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, String> {
     let full = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
-    resolve(full.into_variant(mode).map_err(|e| e.to_string())?)
+    full.into_variant(mode).map_err(|e| e.to_string())
 }
 
-fn live_theme(platform: Platform, mode: ColorMode) -> Result<ResolvedTheme, String> {
+/// The live resolution's input, unresolved: the full preset, the `-live`
+/// preset merged over it, then the reader's size constants.
+fn live_variant(platform: Platform, mode: ColorMode) -> Result<ThemeMode, String> {
     let mut merged = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
     merged.merge(&Theme::preset(platform.live_preset()).map_err(|e| e.to_string())?);
     let mut variant = merged.into_variant(mode).map_err(|e| e.to_string())?;
     if let Some(reader) = platform.reader_constants() {
         variant.merge(&reader);
     }
-    resolve(variant)
+    Ok(variant)
+}
+
+fn gate_variant(platform: Platform, mode: ColorMode, live: bool) -> Result<ThemeMode, String> {
+    if live {
+        live_variant(platform, mode)
+    } else {
+        static_variant(platform, mode)
+    }
 }
 
 fn source(platform: Platform, live: bool) -> String {
@@ -439,6 +450,21 @@ fn source(platform: Platform, live: bool) -> String {
     }
 }
 
+/// Line `n` (1-based) of platform-facts.md, or "" past its end.
+fn facts_line(n: usize) -> &'static str {
+    PLATFORM_FACTS.lines().nth(n.wrapping_sub(1)).unwrap_or("")
+}
+
+/// The `### 2.` section heading line `n` of platform-facts.md sits under.
+fn facts_heading(n: usize) -> &'static str {
+    PLATFORM_FACTS
+        .lines()
+        .take(n)
+        .filter(|l| l.starts_with("### 2."))
+        .last()
+        .unwrap_or("")
+}
+
 fn cite(lines: &[usize]) -> String {
     let lines: Vec<String> = lines.iter().map(|l| format!(":{l}")).collect();
     format!("docs/platform-facts.md{}", lines.join(", "))
@@ -450,12 +476,7 @@ fn native_themes_state_documented_sizes() {
     for platform in Platform::ALL {
         for (mode, variant) in [(ColorMode::Light, "light"), (ColorMode::Dark, "dark")] {
             for live in [false, true] {
-                let theme = if live {
-                    live_theme(platform, mode)
-                } else {
-                    static_theme(platform, mode)
-                };
-                let theme = match theme {
+                let theme = match gate_variant(platform, mode, live).and_then(resolve) {
                     Ok(t) => t,
                     Err(e) => {
                         failures.push(format!("{} {variant}: {e}", source(platform, live)));
@@ -526,23 +547,12 @@ fn every_platform_and_widget_has_one_row() {
 /// or the named toolbar field.
 #[test]
 fn every_citation_names_its_platform_facts_row() {
-    let facts: Vec<&str> = PLATFORM_FACTS.lines().collect();
-    let line = |n: usize| facts.get(n.wrapping_sub(1)).copied().unwrap_or("");
-    let heading = |n: usize| {
-        facts
-            .iter()
-            .take(n)
-            .rev()
-            .find(|l| l.starts_with("### 2."))
-            .copied()
-            .unwrap_or("")
-    };
     for row in ROWS {
         let title = format!("### {} ", section(row.widget));
         let extra_lines = row.extra.iter().map(|&(_, _, n)| n);
         for n in row.lines.iter().copied().chain(extra_lines) {
             assert!(
-                heading(n).starts_with(&title),
+                facts_heading(n).starts_with(&title),
                 "{:?} {}: platform-facts.md:{n} is outside §{}",
                 row.platform,
                 row.widget,
@@ -550,7 +560,7 @@ fn every_citation_names_its_platform_facts_row() {
             );
         }
         for &n in row.lines {
-            let text = line(n);
+            let text = facts_line(n);
             assert!(
                 text.starts_with("| `border.padding_") || text.starts_with(&title),
                 "{:?} {}: platform-facts.md:{n} is neither a padding row nor the \
@@ -560,7 +570,7 @@ fn every_citation_names_its_platform_facts_row() {
             );
         }
         for &(field, _, n) in row.extra {
-            let text = line(n);
+            let text = facts_line(n);
             assert!(
                 text.starts_with(&format!("| `{field}`")),
                 "{:?} {}.{field}: platform-facts.md:{n} is not the `{field}` row: {text:?}",
@@ -765,6 +775,10 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Macos, "slider.thumb_diameter", Px(21.0), 1293, "NSSlider knob: 21"),
     field(Macos, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
     // --- Windows ---
+    // The presets state the type ramp and title in points, each epx × 72/96
+    // (Caption 9pt, Subtitle 15, Title 21, Display 51, dialog title 15). The
+    // Windows reader's font_dpi is 96 (`windows::LOGICAL_DPI`), as is the
+    // gate's, so they resolve to the epx below at any display scale.
     field(Windows, "text_scale.caption.size", Px(12.0), 1435, "Caption: 12epx"),
     field(Windows, "text_scale.caption.weight", Weight(400), 1435, "Caption: 400"),
     field(Windows, "text_scale.section_heading.size", Px(20.0), 1436, "Subtitle: 20epx"),
@@ -874,19 +888,8 @@ fn gate_variants(platform: Platform) -> Vec<Result<(String, &'static str, ThemeM
     let mut out = Vec::new();
     for (mode, name) in [(ColorMode::Light, "light"), (ColorMode::Dark, "dark")] {
         for live in [false, true] {
-            let variant = (|| {
-                let mut theme = Theme::preset(platform.preset()).map_err(|e| e.to_string())?;
-                if live {
-                    theme.merge(&Theme::preset(platform.live_preset()).map_err(|e| e.to_string())?);
-                }
-                let mut variant = theme.into_variant(mode).map_err(|e| e.to_string())?;
-                if live && let Some(reader) = platform.reader_constants() {
-                    variant.merge(&reader);
-                }
-                Ok::<_, String>(variant)
-            })();
             out.push(
-                variant
+                gate_variant(platform, mode, live)
                     .map(|v| (source(platform, live), name, v))
                     .map_err(|e| format!("{} {name}: {e}", source(platform, live))),
             );
@@ -960,6 +963,16 @@ fn native_themes_state_documented_fields() {
     );
 }
 
+/// The Windows rows state effective pixels, which the presets' points reach
+/// only at the Windows reader's `font_dpi`: it is the gate's 96.
+#[test]
+fn windows_reader_font_dpi_is_the_gates() {
+    assert_eq!(
+        crate::windows::LOGICAL_DPI as f32,
+        ResolutionContext::for_tests().font_dpi
+    );
+}
+
 #[test]
 fn every_platform_and_field_has_one_row() {
     for platform in Platform::ALL {
@@ -980,27 +993,16 @@ fn every_platform_and_field_has_one_row() {
 /// Each field row cites its own cell's line, inside the cell's section.
 #[test]
 fn every_field_citation_names_its_platform_facts_row() {
-    let facts: Vec<&str> = PLATFORM_FACTS.lines().collect();
-    let line = |n: usize| facts.get(n.wrapping_sub(1)).copied().unwrap_or("");
-    let heading = |n: usize| {
-        facts
-            .iter()
-            .take(n)
-            .rev()
-            .find(|l| l.starts_with("### 2."))
-            .copied()
-            .unwrap_or("")
-    };
     for row in FIELD_ROWS {
         let (section, key) = field_cell(row.field).unwrap_or(("?", "?"));
         assert!(
-            heading(row.line).starts_with(&format!("### {section} ")),
+            facts_heading(row.line).starts_with(&format!("### {section} ")),
             "{:?} {}: platform-facts.md:{} is outside §{section}",
             row.platform,
             row.field,
             row.line,
         );
-        let text = line(row.line);
+        let text = facts_line(row.line);
         assert!(
             text.starts_with(&format!("| `{key}`")),
             "{:?} {}: platform-facts.md:{} is not the `{key}` row: {text:?}",

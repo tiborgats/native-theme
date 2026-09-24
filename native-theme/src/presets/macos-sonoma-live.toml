@@ -147,8 +147,9 @@ icon_size_px =64.0
 
 
 [light.dialog.title_font]
-# platform-facts.md:1496-1497 (§2.22): the emphasized system font, Bold;
-# its size is the system font's, which the reader provides
+# platform-facts.md:1496-1497 (§2.22): the emphasized system font, Bold.
+# No size here: the pipeline merges this preset over the full macos-sonoma,
+# whose title_font.size (13pt, the system font size) is the one that applies.
 weight = 700
 
 
@@ -330,8 +331,9 @@ icon_size_px =64.0
 
 
 [dark.dialog.title_font]
-# platform-facts.md:1496-1497 (§2.22): the emphasized system font, Bold;
-# its size is the system font's, which the reader provides
+# platform-facts.md:1496-1497 (§2.22): the emphasized system font, Bold.
+# No size here: the pipeline merges this preset over the full macos-sonoma,
+# whose title_font.size (13pt, the system font size) is the one that applies.
 weight = 700
 
 

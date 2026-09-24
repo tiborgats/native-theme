@@ -46,11 +46,15 @@ fn breeze_dark_fixture_colors_and_fonts() {
     let caption = ts.caption.as_ref().unwrap();
     assert_eq!(caption.size, Some(FontSize::Pt(7.0)));
     assert_eq!(caption.weight, Some(400));
+    let pt = |size: Option<FontSize>| match size {
+        Some(FontSize::Pt(v)) => v,
+        other => panic!("expected a point size, got {other:?}"),
+    };
     let section = ts.section_heading.as_ref().unwrap();
-    assert_eq!(section.size, Some(FontSize::Pt(12.0)));
+    assert!((pt(section.size) - 12.0).abs() < 1e-4, "{:?}", section.size);
     assert_eq!(section.weight, Some(400));
     let title = ts.dialog_title.as_ref().unwrap();
-    assert_eq!(title.size, Some(FontSize::Pt(13.5)));
+    assert!((pt(title.size) - 13.5).abs() < 1e-4, "{:?}", title.size);
     assert_eq!(title.weight, Some(400));
     assert!(ts.display.is_none());
 

@@ -25,7 +25,8 @@ pub(crate) fn qt5_to_css_weight(qt5: i32) -> u16 {
 /// Qt6 (>=16 fields, field[4] is CSS 100-900 scale) formats.
 ///
 /// Extracts: family (field 0), point size (field 1), weight (field 4).
-/// Returns None if fewer than 5 fields, empty family, or invalid/non-positive size.
+/// Returns None if fewer than 5 fields, empty family, or an invalid,
+/// non-finite or non-positive size.
 pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpec> {
     let fields: Vec<&str> = font_str.split(',').collect();
     let family_str = fields.first()?.trim();
@@ -33,7 +34,7 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
         return None;
     }
     let size = fields.get(1)?.trim().parse::<f32>().ok()?;
-    if size <= 0.0 {
+    if !size.is_finite() || size <= 0.0 {
         return None;
     }
     let raw_weight = fields.get(4)?.trim().parse::<i32>().ok()?;
@@ -259,6 +260,14 @@ mod tests {
     #[test]
     fn parse_zero_size_returns_none() {
         assert!(parse_qt_font_with_weight("Noto Sans,0,-1,5,400,0,0,0,0,0").is_none());
+    }
+
+    #[test]
+    fn parse_non_finite_size_returns_none() {
+        for size in ["NaN", "nan", "inf", "-inf", "infinity"] {
+            let font = format!("Noto Sans,{size},-1,5,400,0,0,0,0,0,0,0,0,0,0,1");
+            assert!(parse_qt_font_with_weight(&font).is_none(), "{size}");
+        }
     }
 
     #[test]

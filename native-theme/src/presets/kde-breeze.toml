@@ -61,16 +61,24 @@ dialog_px = 32.0
 panel_px = 48.0
 
 [light.text_scale.caption]
+# platform-facts.md:1435 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
 size_pt =8.0
 weight = 400
 
 [light.text_scale.section_heading]
+# platform-facts.md:1436 (§2.19): Kirigami Heading level 2, the 10pt body
+# (:571) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
 size_pt =12.0
 weight = 400
 
 [light.text_scale.dialog_title]
+# platform-facts.md:1437 (§2.19): Kirigami Heading level 1, the 10pt body
+# (:571) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
 size_pt =13.5
 weight = 400
+
+# No display: platform-facts.md:1438 (§2.19) gives KDE none; it resolves
+# from the body font.
 
 [light.window]
 inactive_title_bar_background = "#eff0f1"
@@ -361,16 +369,24 @@ dialog_px = 32.0
 panel_px = 48.0
 
 [dark.text_scale.caption]
+# platform-facts.md:1435 (§2.19): smallestReadableFont, default 8pt, 400 (:573)
 size_pt =8.0
 weight = 400
 
 [dark.text_scale.section_heading]
+# platform-facts.md:1436 (§2.19): Kirigami Heading level 2, the 10pt body
+# (:571) × 1.20, Font.Normal (kirigami 8319acc, controls/Heading.qml:20-21,35)
 size_pt =12.0
 weight = 400
 
 [dark.text_scale.dialog_title]
+# platform-facts.md:1437 (§2.19): Kirigami Heading level 1, the 10pt body
+# (:571) × 1.35, Font.Normal (kirigami 8319acc, controls/Heading.qml:17-18,35)
 size_pt =13.5
 weight = 400
+
+# No display: platform-facts.md:1438 (§2.19) gives KDE none; it resolves
+# from the body font.
 
 [dark.window]
 inactive_title_bar_background = "#2d3035"
