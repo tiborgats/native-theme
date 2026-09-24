@@ -432,6 +432,19 @@ pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTex
     &resolved.text_scale
 }
 
+/// Scales a text size from the resolved theme by the user's text-scaling
+/// preference, as [`to_theme`] scales `font_size` and the `geometry` builders
+/// scale the widget fonts they apply.
+///
+/// For a size the connector does not apply itself: a `text_scale` role's
+/// (`resolved.text_scale.caption.size`, …) or a widget font set by hand. The
+/// factor applies to every text size alike. A factor that is not finite and
+/// positive is ignored.
+#[must_use]
+pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
+    size * text_scale_factor(prefs)
+}
+
 /// Text-scaling multiplier from the preferences: the factor when it is finite
 /// and positive, else `1.0` (spec §7.2). Named `text_scale_factor` because
 /// [`text_scale()`], the public typography-scale accessor, already owns the
@@ -1182,6 +1195,23 @@ mod tests {
             theme.dark_theme.mono_font_size,
             Some(resolved.defaults.mono_font.size * 1.5)
         );
+    }
+
+    /// A text size the connector does not apply itself scales as the ones it
+    /// does, and a degenerate factor leaves it as the theme states it.
+    #[test]
+    fn scaled_text_size_scales_every_size_alike() {
+        let resolved = test_resolved();
+        for size in [resolved.button.font.size, resolved.text_scale.caption.size] {
+            assert_eq!(scaled_text_size(size, &scaled(1.5)), size * 1.5);
+            for factor in [0.0, -1.0, f32::NAN, f32::INFINITY] {
+                assert_eq!(
+                    scaled_text_size(size, &scaled(factor)),
+                    size,
+                    "factor {factor}"
+                );
+            }
+        }
     }
 
     /// §7.2: a non-finite or non-positive factor means "no scaling".

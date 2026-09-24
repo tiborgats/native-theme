@@ -196,7 +196,8 @@ let radius  = border_radius(&resolved);
 Full helper list: `button_padding`, `input_padding`, `padding_or`,
 `stated_padding`, `border_radius`, `border_radius_lg`, `scrollbar_width`,
 `font_family`, `font_size`, `font_weight`, `mono_font_family`,
-`mono_font_size`, `mono_font_weight`, `line_height_multiplier`,
+`mono_font_size`, `mono_font_weight`, `scaled_text_size`,
+`line_height_multiplier`,
 `border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
 `selection_color`, `info_color`, `info_foreground_color`,
 `warning_foreground_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
@@ -219,15 +220,18 @@ alone on `None`.
 
 ### Text scaling
 
-`font_size` and `mono_font_size` take the user's accessibility preferences and
-apply the OS text-scaling factor (a factor that is not finite and positive is
-ignored):
+The OS text-scaling factor applies to every text size: the body font's, each
+widget's font and each `text_scale` role's. The resolved theme holds the
+theme's own sizes, unscaled; `scaled_text_size(size, &prefs)` scales any of
+them, and `font_size` and `mono_font_size` are that for `defaults.font` and
+`defaults.mono_font` (a factor that is not finite and positive is ignored):
 
 ```rust,ignore
-use native_theme_iced::{font_size, from_system};
+use native_theme_iced::{font_size, from_system, scaled_text_size};
 
 let (theme, resolved, _is_dark, accessibility) = from_system()?;
-let size = font_size(&resolved, &accessibility);
+let body = font_size(&resolved, &accessibility);
+let label = scaled_text_size(resolved.button.font.size, &accessibility);
 ```
 
 With a preset there is no OS reading; pass
@@ -240,8 +244,9 @@ iced fixes its default text size when the renderer is created (`iced_wgpu`
 0.14.0 `window/compositor.rs:294-300`; `text::Renderer` only reads it back),
 so `Settings::default_text_size` cannot follow a theme installed later, and
 text given no size stays at iced's default under every theme. Size each
-text-bearing widget from the theme: body text from `defaults.font`
-(`font_size`), and a widget whose font the model states from that font —
+text-bearing widget from the theme, scaled as above: body text from
+`defaults.font` (`font_size`), and a widget whose font the model states from
+that font (`scaled_text_size`) —
 `button.font`, `input.font`, `checkbox.font` (checkboxes and radios),
 `combo_box.font` (`pick_list` and `combo_box`), `menu.font`, `tab.font`,
 `sidebar.font`, `tooltip.font`, `list.item_font` and `list.header_font`; a

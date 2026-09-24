@@ -317,7 +317,7 @@ geometry is still restored). The default registry holds two themes,
 
 | Preference | Effect |
 |---|---|
-| `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); `Root` sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights |
+| `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); `Root` sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights; `scaled_text_size(size, &prefs)` scales a text size the connector does not apply itself, such as a `text_scale` role's |
 | `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations and gpui-component's spinner, shimmer, progress and marker honour the flag |
 | `reduce_transparency` | the overlay behind a dialog or sheet is not drawn (`overlay` becomes transparent): macOS asks for no semitransparent backgrounds, and an opaque overlay would hide the window. The dialog or sheet stays modal |
 | `high_contrast` | no receiver in GPUI or gpui-component yet |

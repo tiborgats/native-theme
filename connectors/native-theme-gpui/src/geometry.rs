@@ -97,7 +97,7 @@ use crate::{Native, text_scale_factor};
 
 /// `font.size × s` in pixels (spec §9.4).
 fn scaled_text_size(font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
-    px(font.size * text_scale_factor(n.accessibility))
+    px(crate::scaled_text_size(font.size, n.accessibility))
 }
 
 /// CSS weight (100–900) as GPUI's `FontWeight`.

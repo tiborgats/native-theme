@@ -75,9 +75,11 @@
 //! # Accessibility
 //!
 //! [`from_system()`] returns the user's [`AccessibilityPreferences`] as its
-//! fourth value. [`font_size()`] and [`mono_font_size()`] take them and apply
-//! the OS text-scaling factor; a factor that is not finite and positive is
-//! ignored. With a preset there is no OS reading:
+//! fourth value. The OS text-scaling factor applies to every text size:
+//! [`scaled_text_size()`] scales any size the resolved theme states (a
+//! widget's font, a `text_scale` role), and [`font_size()`] and
+//! [`mono_font_size()`] are that for the default fonts; a factor that is not
+//! finite and positive is ignored. With a preset there is no OS reading:
 //! `AccessibilityPreferences::default()` scales by one.
 //!
 //! The other two preferences, reduced transparency and reduced motion, have no
@@ -379,7 +381,7 @@ pub fn font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 }
 
 /// Returns the primary UI font size in logical pixels, scaled by the user's
-/// text-scaling preference.
+/// text-scaling preference: [`scaled_text_size`] of `defaults.font.size`.
 ///
 /// ResolvedFontSpec.size is in logical pixels (conversion from platform points
 /// is handled by the resolution step).
@@ -388,19 +390,20 @@ pub fn font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 /// (`iced_wgpu` 0.14.0 `window/compositor.rs:294-300`; `text::Renderer` only
 /// reads it back), so text given no size stays at that default whatever theme
 /// is installed later. Size every text-bearing widget from the theme instead:
-/// body text with this size, and a widget whose font the model states with
-/// that font's `size` and weight (`button.font`, `input.font`,
-/// `checkbox.font`, `combo_box.font`, `menu.font`, `tab.font`, …). The
-/// receivers are `Text::size` and `font`; `text_size` and `font` on
-/// `checkbox`, `radio`, `toggler` and `pick_list`; `size` and `font` on
-/// `text_input`, `combo_box` and `text_editor`. [`to_iced_weight`] turns the
-/// weight into iced's.
+/// body text with this size, and a widget whose font the model states, or
+/// text in a `text_scale` role, with [`scaled_text_size`] of that font's or
+/// role's `size` (`button.font`, `input.font`, `checkbox.font`,
+/// `combo_box.font`, `menu.font`, `tab.font`, …), so the text-scaling factor
+/// reaches every text alike. The receivers are `Text::size` and `font`;
+/// `text_size` and `font` on `checkbox`, `radio`, `toggler` and `pick_list`;
+/// `size` and `font` on `text_input`, `combo_box` and `text_editor`.
+/// [`to_iced_weight`] turns the weight into iced's.
 #[must_use]
 pub fn font_size(
     resolved: &native_theme::theme::ResolvedTheme,
     prefs: &AccessibilityPreferences,
 ) -> f32 {
-    resolved.defaults.font.size * text_scale_factor(prefs)
+    scaled_text_size(resolved.defaults.font.size, prefs)
 }
 
 /// Returns the monospace font family name from the resolved theme.
@@ -419,7 +422,27 @@ pub fn mono_font_size(
     resolved: &native_theme::theme::ResolvedTheme,
     prefs: &AccessibilityPreferences,
 ) -> f32 {
-    resolved.defaults.mono_font.size * text_scale_factor(prefs)
+    scaled_text_size(resolved.defaults.mono_font.size, prefs)
+}
+
+/// Scales a text size from the resolved theme by the user's text-scaling
+/// preference.
+///
+/// The factor applies to every text size, not only the body font's: a
+/// widget's font (`resolved.button.font.size`, …) and a `text_scale` role's
+/// size (`resolved.text_scale.caption.size`, …) are the theme's own sizes,
+/// unscaled, as `defaults.font.size` is. A factor that is not finite and
+/// positive is ignored.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// let (_, resolved, _, prefs) = native_theme_iced::from_system().unwrap();
+/// let label = native_theme_iced::scaled_text_size(resolved.button.font.size, &prefs);
+/// ```
+#[must_use]
+pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
+    size * text_scale_factor(prefs)
 }
 
 /// Text-scaling multiplier from the preferences: the factor when it is finite
@@ -920,6 +943,21 @@ mod tests {
                 resolved.defaults.font.size,
                 "factor {factor} should leave the size unscaled"
             );
+        }
+    }
+
+    #[test]
+    fn scaled_text_size_scales_every_size_alike() {
+        let resolved = make_resolved(false);
+        for size in [resolved.button.font.size, resolved.text_scale.caption.size] {
+            assert_eq!(scaled_text_size(size, &scaled_prefs(1.5)), size * 1.5);
+            for factor in [0.0, f32::NAN, -1.0, f32::INFINITY] {
+                assert_eq!(
+                    scaled_text_size(size, &scaled_prefs(factor)),
+                    size,
+                    "factor {factor} should leave the size unscaled"
+                );
+            }
         }
     }
 
