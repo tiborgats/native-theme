@@ -458,7 +458,8 @@ fn size_name(size: Size) -> &'static str {
     }
 }
 
-/// A Button of `kind` in `state`, with an icon where `icon` is set.
+/// A Button of `kind` in `state`, with an icon where `icon` is set: an icon
+/// of the chosen icon theme, which a loading Button's spinner turns.
 ///
 /// `size` is `Some` only in the row that shows upstream's size scale, which
 /// is built without `geometry::button`; every other Button is built at the
@@ -553,8 +554,11 @@ pub fn button(
             .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.disabled_text_color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")
             .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
+        ButtonState::Loading if icon => info
+            .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it. This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of upstream's own Loader (button/button.rs, Button::loading_icon; button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (spinner.rs, Spinner::new)")
+            .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
         ButtonState::Loading => info
-            .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it -- this one's is set to be replaced. It inherits the button's text colour and turns every 0.8s, a literal (button/button_icon.rs, ButtonIcon; spinner.rs, Spinner::new)")
+            .not_themeable("spinner", "none: a Button shows its spinner in place of its icon, so only a button with one shows it (button/button_icon.rs, ButtonIcon), and the chosen icon theme has no loading icon to give this one; upstream's own Loader would be another icon theme's")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
     };
     let info = if icon && state == ButtonState::Idle {
@@ -684,9 +688,16 @@ fn ghost_toggle_fill(info: WidgetInfo) -> WidgetInfo {
     info.not_themeable("unchecked fill", "none: ToggleVariant defaults to Ghost (button/toggle.rs, ToggleVariant), which paints no background and no border; only .outline() fills")
 }
 
-/// A `Toggle` showing the icon named `icon`, `checked` or not.
-pub fn toggle(t: &Theme, icon: &'static str, checked: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("Toggle").variant(if checked { "Ghost, checked" } else { "Ghost" });
+/// A `Toggle`, `checked` or not, showing its icon where `drawn`, and its
+/// icon's name as its label where the chosen icon theme has none; `icon`
+/// says which.
+pub fn toggle(t: &Theme, drawn: bool, icon: String, checked: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("Toggle").variant(match (drawn, checked) {
+        (true, true) => "Ghost, checked",
+        (true, false) => "Ghost",
+        (false, true) => "Ghost, labelled, checked",
+        (false, false) => "Ghost, labelled",
+    });
     let info = if checked {
         toggle_checked(info, t)
     } else {

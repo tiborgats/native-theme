@@ -50,9 +50,10 @@ use crate::chrome;
 use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::Inspector;
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, EDITOR_SAMPLE, IconEntry, IconSource, NativeStyled,
-    PresetDelegate, SampleListDelegate, SampleTableDelegate, default_label, initial_chat_messages,
-    load_all_icons, load_gpui_icons, parse_icon_set_choice, release_sources,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DialogIcons, EDITOR_SAMPLE, IconEntry, IconSource,
+    NativeStyled, PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate,
+    SharedDialogIcons, default_label, initial_chat_messages, load_all_icons, load_gpui_icons,
+    parse_icon_set_choice, release_sources,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT, Page,
@@ -251,6 +252,10 @@ pub(crate) struct Showcase {
     /// is how the gap they read is the installed theme's, not the one they
     /// opened under.
     pub(crate) overlay_gap: Rc<Cell<Option<Pixels>>>,
+
+    /// The icons of the Overlays page's dialogs, of the chosen icon theme,
+    /// set as each frame starts for the reason `overlay_gap` is.
+    pub(crate) dialog_icons: SharedDialogIcons,
 
     /// Layout spacing of the installed theme. It lives on the model, not on
     /// `ResolvedTheme`, so the geometry accessors take it from here rather
@@ -616,6 +621,17 @@ impl Showcase {
     /// set's.
     pub(crate) fn chrome_icon(&self, icon: &IconName) -> ChromeIcon {
         ChromeIcon::of(&self.gpui_icons, self.icon_set_enum.is_none(), icon)
+    }
+
+    /// A page sample's icon for gpui-component's `icon`: the chosen icon
+    /// theme's, found as the chrome's are (`chrome_icon`), with the name the
+    /// sample's info gives that theme.
+    pub(crate) fn sample_icon(&self, icon: IconName) -> SampleIcon {
+        SampleIcon {
+            drawn: self.chrome_icon(&icon),
+            icon,
+            set: self.icon_set_label().into(),
+        }
     }
 
     /// Load the freedesktop icons from `theme` until the user picks an icon
@@ -1198,6 +1214,7 @@ impl Showcase {
             focus_handle,
             _refocus,
             overlay_gap: Rc::new(Cell::new(None)),
+            dialog_icons: SharedDialogIcons::default(),
             layout: initial_layout,
             input_state,
             input_height_state,
@@ -1635,6 +1652,10 @@ impl Render for Showcase {
         }
 
         self.overlay_gap.set(geometry::widget_gap(&self.layout));
+        self.dialog_icons.set(DialogIcons {
+            dialog: self.sample_icon(IconName::CircleX),
+            alert: self.sample_icon(IconName::TriangleAlert),
+        });
         let theme = cx.theme().clone();
         // Ensure icon image caches match the current foreground color
         if theme.foreground != self.icon_cache_fg {

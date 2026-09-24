@@ -1,7 +1,7 @@
 //! The Feedback page.
 
 use gpui::{Context, IntoElement, ParentElement, Styled, Window, prelude::*, px};
-use gpui_component::{h_flex, v_flex};
+use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme_gpui::geometry;
 
@@ -169,6 +169,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
+        let marker_icon = self.sample_icon(IconName::CircleCheck);
         let widget_gap = geometry::widget_gap(&self.layout);
         v_flex()
             .gap_5()
@@ -352,6 +353,7 @@ impl Showcase {
                     "feedback-empty-refresh",
                     "No notifications",
                     "Anything the application reports shows up here.",
+                    &self.sample_icon(IconName::Inbox),
                 )
                 .w(px(360.0)),
             )
@@ -376,11 +378,9 @@ impl Showcase {
                 "feedback-heading-marker",
                 "Marker (3 variants, 2 loading styles)",
             ))
-            .child(
-                with_gap(v_flex(), widget_gap)
-                    .w(px(360.0))
-                    .children(MARKERS.map(|(id, kind, text)| demo::marker(ui, cx, id, kind, text))),
-            )
+            .child(with_gap(v_flex(), widget_gap).w(px(360.0)).children(
+                MARKERS.map(|(id, kind, text)| demo::marker(ui, cx, id, kind, text, &marker_icon)),
+            ))
             .child(demo::heading(ui, cx, "feedback-heading-tooltip", "Tooltip"))
             .child(
                 h_flex()

@@ -13,7 +13,8 @@ use crate::{
 };
 
 /// The menu rows the application draws itself, as `(id, icon, label)`: each
-/// label names what its icon shows.
+/// label names what its icon shows, and each icon is the chosen icon
+/// theme's.
 const MENU_ROWS: [(&str, IconName, &str); 3] = [
     ("overlays-menu-row-undo", IconName::Undo, "Undo"),
     ("overlays-menu-row-copy", IconName::Copy, "Copy"),
@@ -31,17 +32,32 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let widget_gap = geometry::widget_gap(&self.layout);
+        // A dialog's icon is read as each frame builds it
+        // (`Showcase::dialog_icons`), and is the one it opened with only
+        // until the view has set one.
         let open_dialog = cx.listener(|this, _ev, window, cx| {
             let (ui, gap) = (this.info_ui.clone(), this.overlay_gap.clone());
+            let (opened, icons) = (
+                this.sample_icon(IconName::CircleX),
+                this.dialog_icons.clone(),
+            );
             window.open_dialog(cx, move |dialog, _window, cx| {
-                demo::confirm_dialog(&ui, cx, dialog, gap.get())
+                let icon = icons
+                    .get()
+                    .map_or_else(|| opened.clone(), |icons| icons.dialog.clone());
+                demo::confirm_dialog(&ui, cx, dialog, gap.get(), &icon)
             });
         });
         let open_alert_dialog = cx.listener(|this, _ev, window, cx| {
+            let opened = this.sample_icon(IconName::TriangleAlert);
+            let icons = this.dialog_icons.clone();
             let (ui, this) = (this.info_ui.clone(), cx.weak_entity());
             window.open_alert_dialog(cx, move |alert, _window, cx| {
                 let (ok, cancel) = (this.clone(), this.clone());
-                demo::alert_dialog(&ui, cx, alert)
+                let icon = icons
+                    .get()
+                    .map_or_else(|| opened.clone(), |icons| icons.alert.clone());
+                demo::alert_dialog(&ui, cx, alert, &icon)
                     .on_ok(move |_ev, _window, cx| {
                         ok.update(cx, |this, cx| {
                             this.alert_choice = Some("Discard".into());
@@ -192,6 +208,10 @@ impl Showcase {
                 "overlays-heading-menu-rows",
                 "Menu rows (drawn by the application)",
             ))
-            .child(demo::menu_rows(ui, cx, &MENU_ROWS))
+            .child(demo::menu_rows(
+                ui,
+                cx,
+                &MENU_ROWS.map(|(id, icon, label)| (id, self.sample_icon(icon), label)),
+            ))
     }
 }

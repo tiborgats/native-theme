@@ -342,7 +342,7 @@ impl Showcase {
                         DemoAttachment {
                             id: "data-attachment-complete",
                             status: AttachmentStatus::Complete,
-                            icon: IconName::Inbox,
+                            icon: self.sample_icon(IconName::Inbox),
                             file: "platform-facts.md",
                             description: "48 KB".into(),
                         },
@@ -354,7 +354,7 @@ impl Showcase {
                         DemoAttachment {
                             id: "data-attachment-uploading",
                             status: AttachmentStatus::Uploading,
-                            icon: IconName::Copy,
+                            icon: self.sample_icon(IconName::Copy),
                             file: "breeze-palette.png",
                             description: "uploading…".into(),
                         },
@@ -368,7 +368,7 @@ impl Showcase {
                             DemoAttachment {
                                 id: "data-attachment-cycle",
                                 status: self.attachment_status,
-                                icon: IconName::Settings,
+                                icon: self.sample_icon(IconName::Settings),
                                 file: "kdeglobals",
                                 description: SharedString::from(format!("{:?}", self.attachment_status)),
                             },

@@ -98,8 +98,8 @@ use crate::app::{Quit, ShowPage};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
-    SampleListDelegate, SampleTableDelegate, native_geometry, native_value, refined, with_gap,
-    with_padding,
+    SampleIcon, SampleListDelegate, SampleTableDelegate, native_geometry, native_value, refined,
+    with_gap, with_padding,
 };
 use crate::{
     CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, LIST_DEMO,
@@ -108,12 +108,6 @@ use crate::{
     PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST,
     PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
 };
-
-/// An icon at the platform's size for the role the builder names; upstream's
-/// own size before `apply` ran. A part: the helper that places it reports.
-fn native_icon(cx: &App, name: IconName, role: fn(Native<'_>) -> Size) -> Icon {
-    native_sized(cx, Icon::new(name), role)
-}
 
 /// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
 /// chosen, the chosen set's SVG otherwise, and `None` where that set has
@@ -125,6 +119,21 @@ fn chrome_icon(drawn: &ChromeIcon, icon: &IconName) -> Option<Icon> {
         ChromeIcon::Builtin(_) => Some(Icon::new(icon.clone())),
         ChromeIcon::Loaded(_, bytes) => Some(Icon::default().data(bytes)),
         ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => None,
+    }
+}
+
+impl SampleIcon {
+    /// The `Icon` a page sample draws, as `chrome_icon` gives it: `None`
+    /// where the chosen icon theme has none. A part: the sample that shows
+    /// it reports.
+    fn icon(&self) -> Option<Icon> {
+        chrome_icon(&self.drawn, &self.icon)
+    }
+
+    /// The `Icon` at the platform's size for the role the builder names, as
+    /// `native_sized` sizes it; `None` where the chosen icon theme has none.
+    fn sized(&self, cx: &App, role: fn(Native<'_>) -> Size) -> Option<Icon> {
+        self.icon().map(|icon| native_sized(cx, icon, role))
     }
 }
 
@@ -1433,7 +1442,9 @@ pub(crate) struct DemoButton {
     pub label: &'static str,
     pub kind: ButtonKind,
     pub state: ButtonState,
-    pub icon: Option<IconName>,
+    /// Its icon, of the chosen icon theme. A loading Button shows its
+    /// spinner in place of its icon, turning this one.
+    pub icon: Option<SampleIcon>,
 }
 
 /// A Button refined by `geometry::button`.
@@ -1447,8 +1458,20 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
     } = spec;
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let drawn = icon.as_ref().and_then(SampleIcon::icon);
     let mut button_info =
-        info::buttons::button(cx.theme(), kind, state, icon.is_some(), None, styled);
+        info::buttons::button(cx.theme(), kind, state, drawn.is_some(), None, styled);
+    if let Some(icon) = &icon {
+        button_info = match state {
+            ButtonState::Loading => button_info.instance(
+                "spinner icon",
+                icon.note("the Button shows no spinner, only the fade"),
+            ),
+            ButtonState::Idle | ButtonState::Disabled => {
+                button_info.instance("icon", icon.note("the Button shows its label alone"))
+            }
+        };
+    }
     let button = native_info(
         kind.apply(Button::new(id), cx),
         cx,
@@ -1457,7 +1480,10 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         &mut button_info,
     )
     .label(label)
-    .when_some(icon, |button, icon| button.icon(icon))
+    .when_some(drawn, |button, icon| match state {
+        ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
+        ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
+    })
     .disabled(state == ButtonState::Disabled)
     .loading(state == ButtonState::Loading);
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
@@ -1526,26 +1552,37 @@ pub(crate) fn dropdown_button(
     )
 }
 
-/// A `Toggle` showing `icon`, named `icon_name` in its info, `checked` or
-/// not; a click hands `on_click` the state it asks for.
+/// A `Toggle` showing `icon`, of the chosen icon theme, `checked` or not; a
+/// click hands `on_click` the state it asks for. Where the icon theme has
+/// no such icon the Toggle shows `icon_name` as its label instead. `id` is
+/// its info's id and its debug selector.
 pub(crate) fn toggle(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
-    icon: IconName,
+    icon: &SampleIcon,
     icon_name: &'static str,
     checked: bool,
     on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    Toggle::new(id)
-        .icon(icon)
+    let toggle = match icon.icon() {
+        Some(drawn) => Toggle::new(id).icon(drawn),
+        None => Toggle::new(id).label(icon_name),
+    };
+    toggle
         .checked(checked)
         .on_click(on_click)
         .info(
             ui,
             id,
-            info::buttons::toggle(cx.theme(), icon_name, checked),
+            info::buttons::toggle(
+                cx.theme(),
+                icon.shown(),
+                icon.note("the Toggle shows the icon's name as its label instead"),
+                checked,
+            ),
         )
+        .debug_selector(move || id.into())
 }
 
 /// A `ToggleGroup` of unchecked Toggles reading `labels`.
@@ -1645,7 +1682,8 @@ pub(crate) fn textarea(
         .debug_selector(move || id.into())
 }
 
-/// The states of the three `InputGroup`s.
+/// The states of the three `InputGroup`s, and the icons of the chosen icon
+/// theme the first two show.
 pub(crate) struct InputGroupStates<'a> {
     /// The field behind the Search icon.
     pub search: &'a Entity<InputState>,
@@ -1653,12 +1691,19 @@ pub(crate) struct InputGroupStates<'a> {
     pub copy: &'a Entity<InputState>,
     /// The textarea above the note.
     pub notes: &'a Entity<TextareaState>,
+    /// The icon before the first field.
+    pub search_icon: SampleIcon,
+    /// The Copy button's icon.
+    pub copy_icon: SampleIcon,
 }
 
 /// Three `InputGroup`s, `width` wide, one above the other: a field behind a
 /// Search icon, a field with a Copy button after it, which puts the field's
 /// text on the clipboard and says so in a notification, and a textarea with
-/// a note under it. They report as one.
+/// a note under it. Where the chosen icon theme has no Search icon the first
+/// field's addon is empty, and where it has no Copy icon the button shows
+/// its label alone. They report as one; `id` is their info's id and debug
+/// selector.
 pub(crate) fn input_groups(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1666,7 +1711,17 @@ pub(crate) fn input_groups(
     states: InputGroupStates<'_>,
     width: Pixels,
 ) -> Stateful<Div> {
-    let mut groups_info = info::inputs::input_groups(cx.theme());
+    let mut groups_info = info::inputs::input_groups(cx.theme())
+        .instance(
+            "search icon",
+            states.search_icon.note("the first field's addon is empty"),
+        )
+        .instance(
+            "copy icon",
+            states
+                .copy_icon
+                .note("the Copy button shows its label alone"),
+        );
     // One refinement, recorded once, for both single-line groups; the
     // textarea group keeps upstream's frame. Without its padding: the frame
     // is not the Input, which sits inside it and keeps its own padding
@@ -1693,7 +1748,7 @@ pub(crate) fn input_groups(
         &mut groups_info,
     )
     .custom(variants::ghost_button(cx))
-    .icon(IconName::Copy)
+    .when_some(states.copy_icon.icon(), |button, icon| button.icon(icon))
     .label("Copy")
     .tooltip("Copy the field to the clipboard")
     .on_click({
@@ -1715,7 +1770,7 @@ pub(crate) fn input_groups(
                 .input(Input::new(states.search))
                 .addon(
                     InputGroupAddon::new("input-group-inline-addon")
-                        .child(Icon::new(IconName::Search)),
+                        .children(states.search_icon.icon()),
                 )
                 .refine_style(&frame),
         )
@@ -1739,6 +1794,7 @@ pub(crate) fn input_groups(
                 ),
         )
         .info(ui, id, groups_info)
+        .debug_selector(move || id.into())
 }
 
 /// A `NumberInput` over `state`, `width` wide, refined by `geometry::input`.
@@ -2598,18 +2654,19 @@ pub(crate) fn action_button(
 }
 
 /// One `Attachment` card of the Data page: `file`, described by
-/// `description`, in `status`, its media `icon`. `id` is its info's id and
-/// its debug selector.
+/// `description`, in `status`, its media `icon` of the chosen icon theme.
+/// `id` is its info's id and its debug selector.
 pub(crate) struct DemoAttachment {
     pub id: &'static str,
     pub status: AttachmentStatus,
-    pub icon: IconName,
+    pub icon: SampleIcon,
     pub file: &'static str,
     pub description: SharedString,
 }
 
-/// An `Attachment` card, its media icon at `geometry::icon_size_small`. A
-/// card given `on_click` is clickable as a whole.
+/// An `Attachment` card, its media icon at `geometry::icon_size_small`, or
+/// an empty media frame where the chosen icon theme has none. A card given
+/// `on_click` is clickable as a whole.
 pub(crate) fn attachment(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2623,13 +2680,13 @@ pub(crate) fn attachment(
         file,
         description,
     } = spec;
-    let mut card_info = info::data::attachment(cx.theme(), status, file, on_click.is_some());
-    if native_value(cx, geometry::icon_size_small).is_some() {
+    let mut card_info = info::data::attachment(cx.theme(), status, file, on_click.is_some(), &icon);
+    if icon.shown() && native_value(cx, geometry::icon_size_small).is_some() {
         card_info = card_info.geometry("icon_size_small");
     }
     let card = Attachment::new()
         .status(status)
-        .media(AttachmentMedia::new().child(native_icon(cx, icon, geometry::icon_size_small)))
+        .media(AttachmentMedia::new().children(icon.sized(cx, geometry::icon_size_small)))
         .content(
             AttachmentContent::new()
                 .title(AttachmentTitle::new(file).status(status))
@@ -2900,8 +2957,9 @@ pub(crate) fn shimmer_text(
         .debug_selector(move || id.into())
 }
 
-/// The `Empty` state, titled `title` over `description`, its media the
-/// Inbox icon at the platform's large icon size and its action an outlined
+/// The `Empty` state, titled `title` over `description`, its media `icon`,
+/// of the chosen icon theme, at the platform's large icon size -- an empty
+/// media frame where that theme has none -- and its action an outlined
 /// Refresh Button, which reports itself as `refresh`.
 pub(crate) fn empty(
     ui: &Entity<InfoRegistry>,
@@ -2910,9 +2968,10 @@ pub(crate) fn empty(
     refresh: &'static str,
     title: &'static str,
     description: &'static str,
+    icon: &SampleIcon,
 ) -> Stateful<Div> {
-    let empty_info = info::feedback::empty(cx.theme(), title, description);
-    let empty_info = if native_value(cx, geometry::icon_size_large).is_some() {
+    let empty_info = info::feedback::empty(cx.theme(), title, description, icon);
+    let empty_info = if icon.shown() && native_value(cx, geometry::icon_size_large).is_some() {
         empty_info.geometry("icon_size_large")
     } else {
         empty_info
@@ -2925,7 +2984,7 @@ pub(crate) fn empty(
                         .with_variant(EmptyMediaVariant::Icon)
                         // An empty state's icon is the large one; `EmptyMedia`
                         // takes it as a plain child, so the size survives.
-                        .child(native_icon(cx, IconName::Inbox, geometry::icon_size_large)),
+                        .children(icon.sized(cx, geometry::icon_size_large)),
                 )
                 .title(EmptyTitle::new().child(title))
                 .description(EmptyDescription::new().child(description)),
@@ -3047,28 +3106,31 @@ impl MarkerKind {
     }
 }
 
-/// A `Marker` of `kind` reading `text`; a Plain one shows the CircleCheck
-/// icon at the platform's small icon size.
+/// A `Marker` of `kind` reading `text`; a Plain one shows `icon`, of the
+/// chosen icon theme, at the platform's small icon size, and its text alone
+/// where that theme has none.
 pub(crate) fn marker(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     kind: MarkerKind,
     text: &'static str,
+    icon: &SampleIcon,
 ) -> Stateful<Div> {
-    let mut marker_info = info::feedback::marker(cx.theme(), kind, text, cx.reduce_motion());
+    let plain_icon = (kind == MarkerKind::Plain).then_some(icon);
+    let mut marker_info =
+        info::feedback::marker(cx.theme(), kind, text, cx.reduce_motion(), plain_icon);
     let marker = Marker::new();
     let marker = match kind {
-        MarkerKind::Plain => {
-            if native_value(cx, geometry::icon_size_small).is_some() {
-                marker_info = marker_info.geometry("icon_size_small");
+        MarkerKind::Plain => match icon.sized(cx, geometry::icon_size_small) {
+            Some(drawn) => {
+                if native_value(cx, geometry::icon_size_small).is_some() {
+                    marker_info = marker_info.geometry("icon_size_small");
+                }
+                marker.icon(MarkerIcon::new().child(drawn))
             }
-            marker.icon(MarkerIcon::new().child(native_icon(
-                cx,
-                IconName::CircleCheck,
-                geometry::icon_size_small,
-            )))
-        }
+            None => marker,
+        },
         MarkerKind::Separator => marker.with_variant(MarkerVariant::Separator),
         MarkerKind::Border => marker.with_variant(MarkerVariant::Border),
         MarkerKind::Spinner => marker.id(id).loading(true),
@@ -3785,18 +3847,34 @@ pub(crate) fn accordion(
         .debug_selector(move || id.into())
 }
 
-/// A `Collapsible`, `open` or not, toggled by an upstream Ghost Button
-/// `toggle` that runs `on_toggle`, over a small Label `content`. The
-/// Collapsible, the Button and the Label each report themselves.
+/// The Layout page's `Collapsible`, `open` or not: `id` is its info's id
+/// and debug selector, `toggle` its toggle Button's and `content` its
+/// Label's. The Button shows `icon`, of the chosen icon theme: ChevronDown
+/// while `open`, ChevronRight while not.
+pub(crate) struct DemoCollapsible {
+    pub id: &'static str,
+    pub toggle: &'static str,
+    pub content: &'static str,
+    pub open: bool,
+    pub icon: SampleIcon,
+}
+
+/// A `Collapsible` toggled by an upstream Ghost Button that runs
+/// `on_toggle`, over a small Label, as `spec` describes it. The Collapsible,
+/// the Button and the Label each report themselves.
 pub(crate) fn collapsible(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    id: &'static str,
-    toggle: &'static str,
-    content: &'static str,
-    open: bool,
+    spec: DemoCollapsible,
     on_toggle: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    let DemoCollapsible {
+        id,
+        toggle,
+        content,
+        open,
+        icon,
+    } = spec;
     let text = if open {
         "Click to collapse"
     } else {
@@ -3805,18 +3883,14 @@ pub(crate) fn collapsible(
     let button = Button::new(toggle)
         .label(text)
         .ghost()
-        .icon(if open {
-            IconName::ChevronDown
-        } else {
-            IconName::ChevronRight
-        })
+        .when_some(icon.icon(), |button, icon| button.icon(icon))
         .on_click(on_toggle);
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     let button = InfoExt::info(
         button,
         ui,
         toggle,
-        info::layout::collapsible_toggle(cx.theme(), open, text),
+        info::layout::collapsible_toggle(cx.theme(), open, text, &icon),
     )
     .debug_selector(move || toggle.into());
     gpui_component::collapsible::Collapsible::new()
@@ -3932,20 +4006,34 @@ impl StepperKind {
 }
 
 /// A `Stepper` of `kind` through `STEPPER_STEPS`, `step` the current one; a
-/// click on a step hands `on_click` its index. Each step's label is a small
-/// Label that reports itself.
+/// click on a step hands `on_click` its index. An Icons Stepper's steps show
+/// `icons`, one per step, of the chosen icon theme, and their number where
+/// that theme has none. Each step's label is a small Label that reports
+/// itself.
 pub(crate) fn stepper(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     kind: StepperKind,
     step: usize,
+    icons: &[SampleIcon],
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let mut stepper_info = info::layout::stepper(cx.theme(), kind, step, STEPPER_STEPS.len());
+    let labelled: Vec<(&str, SampleIcon)> = match kind {
+        StepperKind::Icons => STEPPER_STEPS
+            .iter()
+            .map(|(text, _)| *text)
+            .zip(icons.iter().cloned())
+            .collect(),
+        StepperKind::Numbers => Vec::new(),
+    };
+    let mut stepper_info =
+        info::layout::stepper(cx.theme(), kind, step, STEPPER_STEPS.len(), &labelled);
     // The indicator is a circle (stepper/trigger.rs:118-123) around the
     // icon it is given, which keeps its size (`:138-139`).
-    if kind == StepperKind::Icons && native_value(cx, geometry::icon_size_small).is_some() {
+    if labelled.iter().any(|(_, icon)| icon.shown())
+        && native_value(cx, geometry::icon_size_small).is_some()
+    {
         stepper_info = stepper_info.geometry("icon_size_small");
     }
     let stepper = match kind {
@@ -3954,14 +4042,15 @@ pub(crate) fn stepper(
     };
     stepper
         .selected_index(step)
-        .items(STEPPER_STEPS.iter().enumerate().map(|(ix, (text, icon))| {
+        .items(STEPPER_STEPS.iter().enumerate().map(|(ix, (text, _))| {
             let item =
                 StepperItem::new().child(label(ui, cx, format!("{id}-step-{}", ix + 1), *text));
-            match kind {
-                StepperKind::Icons => {
-                    item.icon(native_icon(cx, icon.clone(), geometry::icon_size_small))
-                }
-                StepperKind::Numbers => item,
+            let icon = labelled
+                .get(ix)
+                .and_then(|(_, icon)| icon.sized(cx, geometry::icon_size_small));
+            match icon {
+                Some(icon) => item.icon(icon),
+                None => item,
             }
         }))
         .on_click(on_click)
@@ -4203,8 +4292,10 @@ pub(crate) fn overlay_button(
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }
 
-/// The Overlays page's Dialog: `dialog`, titled, holding a dialog icon beside
-/// a description, `gap` apart, over a footer whose Close Button closes it.
+/// The Overlays page's Dialog: `dialog`, titled, holding `icon`, of the
+/// chosen icon theme, beside a description, `gap` apart -- the description
+/// alone where that theme has none -- over a footer whose Close Button
+/// closes it.
 ///
 /// The Dialog reports itself on its title, its content and its footer; the
 /// Button in the footer reports itself (spec §4.3.1).
@@ -4213,9 +4304,10 @@ pub(crate) fn confirm_dialog(
     cx: &App,
     dialog: Dialog,
     gap: Option<Pixels>,
+    icon: &SampleIcon,
 ) -> Dialog {
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut dialog_info = info::overlays::dialog(cx.theme(), cx.reduce_motion(), styled);
+    let mut dialog_info = info::overlays::dialog(cx.theme(), cx.reduce_motion(), styled, icon);
     let dialog = dialog_frame(dialog, cx, &mut dialog_info);
     let title = dialog_title(cx, "Confirm Action", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
@@ -4227,10 +4319,10 @@ pub(crate) fn confirm_dialog(
         "dialog_description",
         &mut dialog_info,
     );
-    if native_value(cx, geometry::icon_size_dialog).is_some() {
+    if icon.shown() && native_value(cx, geometry::icon_size_dialog).is_some() {
         dialog_info = dialog_info.geometry("icon_size_dialog");
     }
-    if gap.is_some() {
+    if icon.shown() && gap.is_some() {
         dialog_info = dialog_info.geometry("widget_gap");
     }
     let footer = native_info(
@@ -4276,6 +4368,7 @@ pub(crate) fn confirm_dialog(
         .info(ui, OVERLAYS_DIALOG_FOOTER, dialog_info.clone())
         .debug_selector(|| OVERLAYS_DIALOG_FOOTER.into());
     let ui = ui.clone();
+    let icon = icon.clone();
     dialog
         .title(title)
         .footer(footer)
@@ -4283,11 +4376,7 @@ pub(crate) fn confirm_dialog(
             content.child(
                 with_gap(h_flex(), gap)
                     .items_start()
-                    .child(native_icon(
-                        cx,
-                        IconName::CircleX,
-                        geometry::icon_size_dialog,
-                    ))
+                    .children(icon.sized(cx, geometry::icon_size_dialog))
                     .child(
                         DialogDescription::new()
                             .refine_style(&description_style)
@@ -4300,12 +4389,18 @@ pub(crate) fn confirm_dialog(
 }
 
 /// The Overlays page's AlertDialog: `alert`, refined by `geometry::dialog`
-/// and capped at `geometry::dialog_max_width`, with a dialog icon, a title,
-/// a description, and Keep and Discard buttons. It reports itself on the
-/// icon, the title and the description, the parts the showcase builds.
-pub(crate) fn alert_dialog(ui: &Entity<InfoRegistry>, cx: &App, alert: AlertDialog) -> AlertDialog {
+/// and capped at `geometry::dialog_max_width`, with `icon`, of the chosen
+/// icon theme -- none where that theme has none -- a title, a description,
+/// and Keep and Discard buttons. It reports itself on the icon, the title
+/// and the description, the parts the showcase builds.
+pub(crate) fn alert_dialog(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    alert: AlertDialog,
+    icon: &SampleIcon,
+) -> AlertDialog {
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut alert_info = info::overlays::alert_dialog(cx.theme(), cx.reduce_motion(), styled);
+    let mut alert_info = info::overlays::alert_dialog(cx.theme(), cx.reduce_motion(), styled, icon);
     let alert = native_info(alert, cx, geometry::dialog, "dialog", &mut alert_info);
     // An AlertDialog has no `max_w` of its own; `Styled::max_w` lands on the
     // surface through the refinement (dialog/dialog.rs:621).
@@ -4316,15 +4411,19 @@ pub(crate) fn alert_dialog(ui: &Entity<InfoRegistry>, cx: &App, alert: AlertDial
         }
         None => alert,
     };
-    if native_value(cx, geometry::icon_size_dialog).is_some() {
+    let drawn = icon.sized(cx, geometry::icon_size_dialog);
+    if drawn.is_some() && native_value(cx, geometry::icon_size_dialog).is_some() {
         alert_info = alert_info.geometry("icon_size_dialog");
     }
-    alert
-        .icon(
-            native_icon(cx, IconName::TriangleAlert, geometry::icon_size_dialog)
+    let alert = match drawn {
+        Some(drawn) => alert.icon(
+            drawn
                 .info(ui, "overlays-alert-dialog-icon", alert_info.clone())
                 .debug_selector(|| "overlays-alert-dialog-icon".into()),
-        )
+        ),
+        None => alert,
+    };
+    alert
         .title(
             "Discard changes?"
                 .info(ui, "overlays-alert-dialog-title", alert_info.clone())
@@ -4532,14 +4631,15 @@ pub(crate) fn dropdown_menu(
 const MENU_ROWS_WIDTH: Pixels = px(220.);
 
 /// The menu rows an application draws itself, one per `(id, icon, label)`
-/// of `rows`, in a frame painted as a menu is. Upstream's `MenuItemElement`
-/// is crate-private and `PopupMenu` builds its own rows, so
-/// `geometry::menu_item` has no widget to refine: these rows are the
-/// receiver it documents.
+/// of `rows`, in a frame painted as a menu is. Each icon is the chosen icon
+/// theme's, and a row whose icon that theme lacks shows its label alone.
+/// Upstream's `MenuItemElement` is crate-private and `PopupMenu` builds its
+/// own rows, so `geometry::menu_item` has no widget to refine: these rows
+/// are the receiver it documents.
 pub(crate) fn menu_rows(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    rows: &[(&'static str, IconName, &'static str)],
+    rows: &[(&'static str, SampleIcon, &'static str)],
 ) -> Div {
     let t = cx.theme();
     let (hover_bg, hover_text) = (t.accent, t.accent_foreground);
@@ -4550,8 +4650,8 @@ pub(crate) fn menu_rows(
         .demo_frame(cx)
         .children(rows.iter().map(|(id, icon, label)| {
             let (id, label) = (*id, *label);
-            let mut row_info = info::overlays::menu_row(t, label);
-            if native_value(cx, geometry::icon_size_small).is_some() {
+            let mut row_info = info::overlays::menu_row(t, label, icon);
+            if icon.shown() && native_value(cx, geometry::icon_size_small).is_some() {
                 row_info = row_info.geometry("icon_size_small");
             }
             // Plain text, not a Label: a Label paints foreground on its
@@ -4560,7 +4660,7 @@ pub(crate) fn menu_rows(
                 .flex()
                 .items_center()
                 .hover(move |this| this.bg(hover_bg).text_color(hover_text))
-                .child(native_icon(cx, icon.clone(), geometry::icon_size_small))
+                .children(icon.sized(cx, geometry::icon_size_small))
                 .child(label);
             native_info(row, cx, geometry::menu_item, "menu_item", &mut row_info)
                 .info(ui, id, row_info)

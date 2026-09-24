@@ -8,6 +8,7 @@ use super::{
     claim,
 };
 use crate::demo::{ButtonKind, ButtonState, Overlay, SAMPLE_MENU, SheetSide};
+use crate::support::SampleIcon;
 
 /// The page's Button that opens `overlay`. `styled` is whether
 /// `geometry::button` refined it; its geometry line is recorded by
@@ -61,7 +62,7 @@ fn dialog_corners(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
 /// reached it, which decides the description's colour and the corners. Its
 /// geometry lines are recorded where `demo::confirm_dialog` applies the
 /// builders.
-pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool) -> WidgetInfo {
+pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -> WidgetInfo {
     let info = dialog_surface(
         WidgetInfo::new("Dialog").variant("Confirm Action"),
         t,
@@ -88,8 +89,13 @@ pub fn dialog(t: &Theme, reduce_motion: bool, styled: bool) -> WidgetInfo {
         )
         .instance(
             "content",
-            "a CircleX icon beside a DialogDescription reading This cannot be undone.",
+            if icon.shown() {
+                "the icon beside a DialogDescription reading This cannot be undone."
+            } else {
+                "a DialogDescription reading This cannot be undone."
+            },
         )
+        .instance("icon", icon.note("the content is the description alone"))
         .instance(
             "footer",
             "a DialogClose holding a Default Button reading Close, which reports itself: DialogClose makes it dispatch Cancel, which closes the Dialog (dialog/footer.rs, DialogClose::trigger)",
@@ -119,16 +125,21 @@ pub fn dialog_close(t: &Theme, styled: bool) -> WidgetInfo {
 }
 
 /// The AlertDialog the page's Discard changes… Button opens, drawn while
-/// gpui's `reduce_motion` is as given; `styled` as `dialog`'s. Its geometry
-/// lines are recorded where `demo::alert_dialog` applies the builders.
-pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool) -> WidgetInfo {
+/// gpui's `reduce_motion` is as given, showing `icon` of the chosen icon
+/// theme; `styled` as `dialog`'s. Its geometry lines are recorded where
+/// `demo::alert_dialog` applies the builders.
+pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool, icon: &SampleIcon) -> WidgetInfo {
     dialog_corners(
         dialog_surface(
             WidgetInfo::new("AlertDialog"),
             t,
             reduce_motion,
             false,
-            "the icon, the title and the description",
+            if icon.shown() {
+                "the icon, the title and the description"
+            } else {
+                "the title and the description"
+            },
         ),
         t,
         styled,
@@ -164,6 +175,10 @@ pub fn alert_dialog(t: &Theme, reduce_motion: bool, styled: bool) -> WidgetInfo 
     .instance(
         "buttons",
         "Keep, of the Default variant, and Discard, of the Danger variant: upstream builds both from the button props (dialog/dialog.rs, DialogButtonProps::render_ok), so they show no info of their own and report here. Enter confirms and Escape cancels",
+    )
+    .instance(
+        "icon",
+        icon.note("the AlertDialog is given none, and shows none: it draws an icon only where it is given one (dialog/alert_dialog.rs, AlertDialog::icon)"),
     )
 }
 
@@ -360,9 +375,10 @@ pub fn dropdown_menu(t: &Theme) -> WidgetInfo {
     )
 }
 
-/// One of the menu rows the application draws itself, reading `label`. Its
-/// geometry lines are recorded where `demo::menu_rows` applies the builders.
-pub fn menu_row(t: &Theme, label: &'static str) -> WidgetInfo {
+/// One of the menu rows the application draws itself, reading `label`,
+/// with `icon` of the chosen icon theme. Its geometry lines are recorded
+/// where `demo::menu_rows` applies the builders.
+pub fn menu_row(t: &Theme, label: &'static str, icon: &SampleIcon) -> WidgetInfo {
     WidgetInfo::new("Menu row")
         .variant(label)
         .color(claim("bg (the frame's)", "popover", t.popover, "showcase"))
@@ -387,4 +403,5 @@ pub fn menu_row(t: &Theme, label: &'static str) -> WidgetInfo {
             "label",
             "plain text rather than a Label: a Label paints foreground on its own element and sets its own line height (label.rs, Label::render), which would hide the frame's text colour; plain text takes menu.font from the row",
         )
+        .instance("icon", icon.note("the row shows its label alone"))
 }

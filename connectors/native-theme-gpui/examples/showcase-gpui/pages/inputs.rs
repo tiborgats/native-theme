@@ -1,7 +1,7 @@
 //! The Inputs page.
 
 use gpui::{Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*, px};
-use gpui_component::{h_flex, v_flex};
+use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme_gpui::geometry;
 
@@ -110,6 +110,8 @@ impl Showcase {
                         search: &self.input_group_state,
                         copy: &self.input_group_button_state,
                         notes: &self.input_group_textarea_state,
+                        search_icon: self.sample_icon(IconName::Search),
+                        copy_icon: self.sample_icon(IconName::Copy),
                     },
                     px(360.0),
                 )

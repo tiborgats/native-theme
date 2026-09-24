@@ -5,6 +5,7 @@ use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
+use crate::support::SampleIcon;
 
 /// The opacity a hovered Tag paints at: upstream's literal (tag.rs:265).
 const TAG_HOVER_OPACITY: f32 = 0.9;
@@ -323,10 +324,15 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: boo
     info.instance("text", text.to_string())
 }
 
-/// The `Empty` state, its media icon at `geometry::icon_size_large` where a
-/// native theme is installed, whose line is recorded where `demo::empty`
-/// applies it.
-pub fn empty(t: &Theme, title: &str, description: &str) -> WidgetInfo {
+/// The `Empty` state, its media `icon` of the chosen icon theme at
+/// `geometry::icon_size_large` where a native theme is installed, whose line
+/// is recorded where `demo::empty` applies it.
+pub fn empty(t: &Theme, title: &str, description: &str, icon: &SampleIcon) -> WidgetInfo {
+    let media_frame = if icon.shown() {
+        "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, which is defaults.icon_sizes.large: 32px, or 48px on KDE, so the icon outgrows the frame wherever 2rem is smaller"
+    } else {
+        "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). It is empty: the chosen icon theme has no icon for it"
+    };
     WidgetInfo::new("Empty")
         .color(claim(
             "media bg",
@@ -334,12 +340,12 @@ pub fn empty(t: &Theme, title: &str, description: &str) -> WidgetInfo {
             t.muted,
             "gpui-component/empty.rs:219",
         ))
-        .color(claim(
+        .colors(icon.shown().then(|| claim(
             "media icon",
             "foreground",
             t.foreground,
             "gpui-component/empty.rs:220",
-        ))
+        )))
         .color(claim(
             "title",
             "foreground",
@@ -358,7 +364,8 @@ pub fn empty(t: &Theme, title: &str, description: &str) -> WidgetInfo {
         )
         .not_themeable("corner radius", "radius_tokens().xl on the Empty itself, which rounds nothing visible: the Empty paints no fill and draws no edge (empty.rs, Empty::render). The rounding that shows is the media frame's (empty.rs, EmptyMedia)")
         .not_themeable("edge", "none drawn: Empty sets border_dashed and border_color(border) but no border width, so its edge is 0px wide (empty.rs, Empty::render). It is Styled and applies the caller's refinement last, so a caller's border width would draw it, dashed, in border")
-        .not_themeable("media frame", "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, which is defaults.icon_sizes.large: 32px, or 48px on KDE, so the icon outgrows the frame wherever 2rem is smaller")
+        .not_themeable("media frame", media_frame)
+        .instance("media icon", icon.note("the media frame is empty"))
         .instance("title", title.to_string())
         .instance("description", description.to_string())
         .instance("action", "the Refresh Button, which reports itself")
@@ -513,23 +520,39 @@ pub fn badge(t: &Theme, count: Option<usize>, label: &str) -> WidgetInfo {
         .instance("badged element", format!("a Default Button reading {label}. The Badge is exactly as large as the Button -- its pill is an absolute child -- so the Button reports through the Badge (badge.rs, Badge::render). Its own colours are a Default Button's, which the Buttons page's Default Button states"))
 }
 
-/// A `Marker` of `kind` reading `text`. A Plain one's icon takes
-/// `geometry::icon_size_small` where a native theme is installed, whose line
-/// is recorded where `demo::marker` applies it.
-pub fn marker(t: &Theme, kind: MarkerKind, text: &str, reduce_motion: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("Marker").variant(kind.name()).color(claim(
+/// A `Marker` of `kind` reading `text`. A Plain one shows `plain_icon`, of
+/// the chosen icon theme, which takes `geometry::icon_size_small` where a
+/// native theme is installed, whose line is recorded where `demo::marker`
+/// applies it.
+pub fn marker(
+    t: &Theme,
+    kind: MarkerKind,
+    text: &str,
+    reduce_motion: bool,
+    plain_icon: Option<&SampleIcon>,
+) -> WidgetInfo {
+    let variant = match plain_icon {
+        Some(icon) if !icon.shown() => "Plain, its text alone",
+        _ => kind.name(),
+    };
+    let info = WidgetInfo::new("Marker").variant(variant).color(claim(
         "text",
         "muted_foreground",
         t.muted_foreground,
         "gpui-component/marker.rs:185",
     ));
+    let info = match plain_icon {
+        Some(icon) => info.instance("icon", icon.note("the Marker shows its text alone")),
+        None => info,
+    };
     let info = match kind {
-        MarkerKind::Plain => info.color(claim(
+        MarkerKind::Plain if plain_icon.is_some_and(SampleIcon::shown) => info.color(claim(
             "icon, the row's text colour",
             "muted_foreground",
             t.muted_foreground,
             "gpui-component/marker.rs:185",
         )),
+        MarkerKind::Plain => info,
         MarkerKind::Separator => info.color(claim(
             "separator line",
             "border",

@@ -10,7 +10,7 @@ use super::{
 };
 use crate::Page;
 use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
-use crate::support::{ChromeIcon, layout_value};
+use crate::support::{ChromeIcon, SampleIcon, layout_value};
 
 /// One of the Layout page's two spacing boxes, `kind`, padded by `padding`
 /// and spacing its children by `gap`, each `None` where the platform states
@@ -227,11 +227,17 @@ pub fn collapsible(open: bool) -> WidgetInfo {
 }
 
 /// The Collapsible's toggle: an upstream Ghost `Button` reading `label`,
-/// its chevron pointing down while the Collapsible is `open`.
-pub fn collapsible_toggle(t: &Theme, open: bool, label: &str) -> WidgetInfo {
+/// with `icon`, of the chosen icon theme: a chevron pointing down while the
+/// Collapsible is `open`.
+pub fn collapsible_toggle(t: &Theme, open: bool, label: &str, icon: &SampleIcon) -> WidgetInfo {
+    let (variant, content) = if icon.shown() {
+        ("Ghost, icon", GhostContent::TextAndIcon)
+    } else {
+        ("Ghost", GhostContent::Text)
+    };
     WidgetInfo::new("Button")
-        .variant("Ghost, icon")
-        .colors(ghost_colours(t, GhostContent::TextAndIcon))
+        .variant(variant)
+        .colors(ghost_colours(t, content))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable(
             "fill",
@@ -241,11 +247,11 @@ pub fn collapsible_toggle(t: &Theme, open: bool, label: &str) -> WidgetInfo {
         .instance("label", label.to_string())
         .instance(
             "icon",
-            if open {
-                "ChevronDown, while the content shows"
+            icon.note(if open {
+                "the Button shows its label alone while the content shows"
             } else {
-                "ChevronRight, while the content is hidden"
-            },
+                "the Button shows its label alone while the content is hidden"
+            }),
         )
 }
 
@@ -387,10 +393,18 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
 }
 
 /// A `Stepper` of `kind` with `count` steps, step `step` the current one
-/// (0-based). A horizontal one's icons take `geometry::icon_size_small`
+/// (0-based). A horizontal one shows `icons`, one per step as `(label,
+/// icon)`, of the chosen icon theme, which take `geometry::icon_size_small`
 /// where a native theme is installed, whose line is recorded where
-/// `demo::stepper` applies it.
-pub fn stepper(t: &Theme, kind: StepperKind, step: usize, count: usize) -> WidgetInfo {
+/// `demo::stepper` applies it; a step whose icon that theme lacks shows its
+/// number.
+pub fn stepper(
+    t: &Theme,
+    kind: StepperKind,
+    step: usize,
+    count: usize,
+    icons: &[(&str, SampleIcon)],
+) -> WidgetInfo {
     // Steps up to the current one are checked (stepper/trigger.rs:106), so
     // there is always one; a pending one only before the last step. The
     // separator after step i is passed while i is before the current step
@@ -399,8 +413,9 @@ pub fn stepper(t: &Theme, kind: StepperKind, step: usize, count: usize) -> Widge
     let passed = step > 0 && count > 1;
     // (on a checked step, on a pending one): the icon or the number the
     // indicator holds takes the indicator's text colour (icon.rs, Icon).
+    let shown = icons.iter().filter(|(_, icon)| icon.shown()).count();
     let (checked_mark, pending_mark) = match kind {
-        StepperKind::Icons => (
+        StepperKind::Icons if shown == icons.len() => (
             claim(
                 "icon, completed / current",
                 "primary_foreground",
@@ -414,7 +429,21 @@ pub fn stepper(t: &Theme, kind: StepperKind, step: usize, count: usize) -> Widge
                 "gpui-component/stepper/trigger.rs:131",
             ),
         ),
-        StepperKind::Numbers => (
+        StepperKind::Icons if shown > 0 => (
+            claim(
+                "icon or number, completed / current",
+                "primary_foreground",
+                t.primary_foreground,
+                "gpui-component/stepper/trigger.rs:134",
+            ),
+            claim(
+                "icon or number, pending",
+                "secondary_foreground",
+                t.secondary_foreground,
+                "gpui-component/stepper/trigger.rs:131",
+            ),
+        ),
+        StepperKind::Icons | StepperKind::Numbers => (
             claim(
                 "number, completed / current",
                 "primary_foreground",
@@ -481,7 +510,16 @@ pub fn stepper(t: &Theme, kind: StepperKind, step: usize, count: usize) -> Widge
         .not_themeable("indicator size", "24px for Size::Medium (stepper/item.rs, StepperItem::render icon_size)")
         .not_themeable("separator", "drawn by the item, absolute (stepper/item.rs: StepperItem::render builds it, StepperSeparator::render positions it)");
     let info = match kind {
-        StepperKind::Icons => info.instance("indicator", "each step's icon, which keeps its own size inside the circle (stepper/trigger.rs, StepperTrigger)"),
+        StepperKind::Icons => info
+            .instance("indicator", "each step's icon, which keeps its own size inside the circle; a step given no icon shows its number (stepper/trigger.rs, StepperTrigger)")
+            .instance(
+                "icons",
+                icons
+                    .iter()
+                    .map(|(label, icon)| format!("{label}: {}", icon.note("the step shows its number")))
+                    .collect::<Vec<_>>()
+                    .join("; "),
+            ),
         StepperKind::Numbers => info.instance("indicator", "no icon is given, so each step shows its number (stepper/trigger.rs, StepperTrigger)"),
     };
     info.instance(

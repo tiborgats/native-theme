@@ -8,6 +8,7 @@ use super::{
     claim,
 };
 use crate::demo::{BubbleKind, DataTableRow, ListRowState};
+use crate::support::SampleIcon;
 
 /// A `DescriptionList` of `items` items, `columns` wide, bordered as upstream
 /// draws it by default.
@@ -719,9 +720,16 @@ pub fn message_scroller(t: &Theme, messages: usize) -> WidgetInfo {
         .instance("frame", "the showcase's own frame around the scroller, not the widget's")
 }
 
-/// An `Attachment` card for `file` in `status`; `clickable` is whether a
-/// click steps it to the next status.
-pub fn attachment(t: &Theme, status: AttachmentStatus, file: &str, clickable: bool) -> WidgetInfo {
+/// An `Attachment` card for `file` in `status`, its media `icon` of the
+/// chosen icon theme; `clickable` is whether a click steps it to the next
+/// status.
+pub fn attachment(
+    t: &Theme,
+    status: AttachmentStatus,
+    file: &str,
+    clickable: bool,
+    icon: &SampleIcon,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Attachment")
         .variant(format!("{status:?}"))
         .color(claim(
@@ -751,12 +759,12 @@ pub fn attachment(t: &Theme, status: AttachmentStatus, file: &str, clickable: bo
             t.danger.opacity(0.1),
             "gpui-component/theme/mod.rs:428",
         ))
-        .color(claim(
+        .colors(icon.shown().then(|| claim(
             "media icon, destructive (attachment.rs:378)",
             "danger",
             t.danger,
             "gpui-component/theme/mod.rs:428",
-        ))
+        )))
         .color(claim(
             "description, destructive at 80% (attachment.rs:594)",
             "danger",
@@ -777,12 +785,14 @@ pub fn attachment(t: &Theme, status: AttachmentStatus, file: &str, clickable: bo
             t.muted,
             "gpui-component/attachment.rs:375",
         ))
-        .color(claim(
-            "media icon",
-            "foreground",
-            t.foreground,
-            "gpui-component/attachment.rs:380",
-        ))
+        .colors(icon.shown().then(|| {
+            claim(
+                "media icon",
+                "foreground",
+                t.foreground,
+                "gpui-component/attachment.rs:380",
+            )
+        }))
         .color(claim(
             "description",
             "muted_foreground",
@@ -811,4 +821,5 @@ pub fn attachment(t: &Theme, status: AttachmentStatus, file: &str, clickable: bo
         format!("radius_2xl(): {}px", t.radius_2xl().as_f32()),
     )
     .instance("file", file.to_string())
+    .instance("media icon", icon.note("the media frame is empty"))
 }

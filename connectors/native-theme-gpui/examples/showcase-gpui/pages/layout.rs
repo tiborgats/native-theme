@@ -4,16 +4,16 @@ use gpui::{
     Context, Decorations, IntoElement, ParentElement, Rems, SharedString, Styled, Window, div,
     prelude::*, px, rems,
 };
-use gpui_component::{h_flex, v_flex};
+use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{
-    self, ButtonKind, ButtonState, DemoButton, GroupBoxKind, SeparatorKind, SidebarSample,
-    SpacingBox, StepperKind,
+    self, ButtonKind, ButtonState, DemoButton, DemoCollapsible, GroupBoxKind, SeparatorKind,
+    SidebarSample, SpacingBox, StepperKind,
 };
-use crate::support::{NativeStyled as _, STEPPER_STEPS, layout_value, with_gap};
+use crate::support::{NativeStyled as _, STEPPER_STEPS, SampleIcon, layout_value, with_gap};
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
@@ -100,6 +100,10 @@ impl Showcase {
         );
         let steps = STEPPER_STEPS.len();
         let step = self.step;
+        let step_icons: Vec<SampleIcon> = STEPPER_STEPS
+            .iter()
+            .map(|(_, icon)| self.sample_icon(icon.clone()))
+            .collect();
         let presets = native_theme::theme::Theme::list_presets().len();
         let toggle_collapsible = cx.listener(|this, _ev, _w, cx| {
             this.collapsible_open = !this.collapsible_open;
@@ -322,10 +326,17 @@ impl Showcase {
             .child(demo::collapsible(
                 ui,
                 cx,
-                LAYOUT_COLLAPSIBLE,
-                LAYOUT_COLLAPSIBLE_TOGGLE,
-                LAYOUT_COLLAPSIBLE_CONTENT,
-                collapsible_open,
+                DemoCollapsible {
+                    id: LAYOUT_COLLAPSIBLE,
+                    toggle: LAYOUT_COLLAPSIBLE_TOGGLE,
+                    content: LAYOUT_COLLAPSIBLE_CONTENT,
+                    open: collapsible_open,
+                    icon: self.sample_icon(if collapsible_open {
+                        IconName::ChevronDown
+                    } else {
+                        IconName::ChevronRight
+                    }),
+                },
                 toggle_collapsible,
             ))
             .child(demo::heading(
@@ -401,6 +412,7 @@ impl Showcase {
                             "layout-stepper-horizontal",
                             StepperKind::Icons,
                             step,
+                            &step_icons,
                             pick_step,
                         ),
                     ))
@@ -410,6 +422,7 @@ impl Showcase {
                         "layout-stepper-vertical",
                         StepperKind::Numbers,
                         step,
+                        &[],
                         pick_step_vertical,
                     )),
             )

@@ -4651,6 +4651,272 @@ fn the_theme_error_alerts_icon_follows_the_chosen_set(cx: &mut TestAppContext) {
     );
 }
 
+/// The page samples that show an icon, as (the page they are on, the
+/// selector of the info that reports the icon, the IconName they show): the
+/// Buttons page's icon Button, its loading Button's spinner and its Toggle,
+/// the Inputs page's input groups, the Data page's Attachment, the Feedback
+/// page's Empty state and Plain Marker, the Layout page's Collapsible toggle
+/// (open at start) and icon Stepper, and the Overlays page's menu rows.
+const PAGE_SAMPLE_ICONS: [(Page, &str, IconName); 14] = [
+    (Page::Buttons, "buttons-icon-search", IconName::Search),
+    (Page::Buttons, "buttons-loading", IconName::Loader),
+    (Page::Buttons, "buttons-toggle-star", IconName::Star),
+    (Page::Inputs, "inputs-input-groups", IconName::Search),
+    (Page::Inputs, "inputs-input-groups", IconName::Copy),
+    (Page::Data, "data-attachment-complete", IconName::Inbox),
+    (Page::Feedback, "feedback-empty", IconName::Inbox),
+    (
+        Page::Feedback,
+        "feedback-marker-plain",
+        IconName::CircleCheck,
+    ),
+    (
+        Page::Layout,
+        LAYOUT_COLLAPSIBLE_TOGGLE,
+        IconName::ChevronDown,
+    ),
+    (Page::Layout, "layout-stepper-horizontal", IconName::Search),
+    (
+        Page::Layout,
+        "layout-stepper-horizontal",
+        IconName::Settings,
+    ),
+    (
+        Page::Layout,
+        "layout-stepper-horizontal",
+        IconName::CircleCheck,
+    ),
+    (Page::Overlays, "overlays-menu-row-undo", IconName::Undo),
+    (Page::Overlays, "overlays-menu-row-delete", IconName::Delete),
+];
+
+/// How a Widget Info's note on `drawn`, of the icon theme named `set`,
+/// begins (`info::chrome::chrome_icon_note`).
+fn icon_note_start(drawn: &ChromeIcon, set: &str) -> String {
+    match drawn {
+        ChromeIcon::Builtin(name) => format!("gpui-component's own {name}"),
+        ChromeIcon::Loaded(name, _) => format!("{set}'s icon for {name}"),
+        ChromeIcon::Missing(name) => format!("none: {set} holds no SVG for {name}"),
+        ChromeIcon::Unlisted(path) => format!("none: {path} is not in the Icons page's gallery"),
+    }
+}
+
+/// Whether a note of `info` -- a not-themeable line or an instance note --
+/// holds `text`.
+fn info_says(info: &WidgetInfo, text: &str) -> bool {
+    info.not_themeable
+        .iter()
+        .chain(&info.instance)
+        .any(|n| n.text.contains(text))
+}
+
+/// Choose the icon theme the theme settings' Select names `display`.
+fn choose_icon_theme(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, display: &str) {
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| this.select_icon_set(display, window, cx));
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// Take `names` out of the loaded gallery, as if the chosen icon theme had
+/// no icon for them.
+fn remove_icons(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, names: &[&str]) {
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            for entry in &mut this.gpui_icons {
+                if names.contains(&entry.0) {
+                    entry.3 = None;
+                }
+            }
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// Every page sample's icon is the chosen icon theme's, as the chrome's
+/// are (the maintainer's decision D1): with gpui-component's built-in set
+/// chosen, gpui-component's own; with Material chosen, the SVG Material's
+/// gallery holds for its IconName, or none -- and each sample's info says
+/// which. An `Icon`'s source is private to gpui-component, and gpui keeps
+/// no record of the SVG sprites a frame paints that a test can read
+/// (gpui-pre window.rs has `painted_quads` and `painted_underlines` only),
+/// so the check is on the `SampleIcon` the page hands its sample, which
+/// both the drawing and the info are built from.
+#[gpui::test]
+fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    for (page, selector, name) in PAGE_SAMPLE_ICONS {
+        show(&mut cx, &showcase, page);
+        let icon = read(&mut cx, &showcase, |this, _| this.sample_icon(name.clone()));
+        assert!(
+            matches!(icon.drawn, ChromeIcon::Builtin(_)),
+            "with the built-in set chosen, {selector}'s icon is not gpui-component's own: {:?}",
+            icon.drawn
+        );
+        let info = settle_on(&mut cx, &showcase, selector);
+        let start = icon_note_start(&icon.drawn, &icon.set);
+        assert!(
+            info.as_ref().is_some_and(|info| info_says(info, &start)),
+            "{selector} does not say its icon is {start:?}: {info:?}"
+        );
+    }
+
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    let material = load_gpui_icons(
+        Some(native_theme::theme::IconSet::Material),
+        None,
+        None,
+        None,
+    );
+    for (page, selector, name) in PAGE_SAMPLE_ICONS {
+        show(&mut cx, &showcase, page);
+        let icon = read(&mut cx, &showcase, |this, _| this.sample_icon(name.clone()));
+        let path = gpui_component::IconNamed::path(name.clone());
+        let expected = match material
+            .iter()
+            .find(|(_, icon, ..)| gpui_component::IconNamed::path(icon.clone()) == path)
+        {
+            Some((n, _, _, Some(native_theme::theme::IconData::Svg(bytes)), _)) => {
+                ChromeIcon::Loaded(n, bytes.clone())
+            }
+            Some((n, ..)) => ChromeIcon::Missing(n),
+            None => ChromeIcon::Unlisted(path),
+        };
+        assert_eq!(
+            icon.drawn, expected,
+            "with Material chosen, {selector}'s icon is not Material's own, or not absent"
+        );
+        let info = settle_on(&mut cx, &showcase, selector);
+        let start = icon_note_start(&icon.drawn, "material");
+        assert!(
+            info.as_ref().is_some_and(|info| info_says(info, &start)),
+            "with Material chosen, {selector} does not say its icon is {start:?}: {info:?}"
+        );
+    }
+}
+
+/// A page sample whose icon the chosen icon theme lacks draws none, never
+/// another icon theme's, and says so: with the samples' icons taken out of
+/// Material's loaded gallery, every sample's info reports none, the icon
+/// Button loses the width its icon took, and the Toggle shows its icon's
+/// name instead.
+#[gpui::test]
+fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    show(&mut cx, &showcase, Page::Buttons);
+    let (button, toggle) = (
+        bounds_of(&mut cx, "buttons-icon-search"),
+        bounds_of(&mut cx, "buttons-toggle-star"),
+    );
+
+    let names: Vec<&'static str> = PAGE_SAMPLE_ICONS
+        .iter()
+        .filter_map(
+            |(.., name)| match read(&mut cx, &showcase, |this, _| this.chrome_icon(name)) {
+                ChromeIcon::Loaded(n, _) | ChromeIcon::Missing(n) => Some(n),
+                _ => None,
+            },
+        )
+        .collect();
+    assert_eq!(
+        names.len(),
+        PAGE_SAMPLE_ICONS.len(),
+        "a sample's icon is not in the gallery, so taking it out proves nothing"
+    );
+    remove_icons(&mut cx, &showcase, &names);
+
+    for (page, selector, name) in PAGE_SAMPLE_ICONS {
+        show(&mut cx, &showcase, page);
+        let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
+        assert!(
+            matches!(drawn, ChromeIcon::Missing(_)),
+            "{selector}'s icon was taken out of the gallery, and it is still {drawn:?}"
+        );
+        let info = settle_on(&mut cx, &showcase, selector);
+        let start = icon_note_start(&drawn, "material");
+        assert!(
+            info.as_ref().is_some_and(|info| info_says(info, &start)),
+            "{selector} does not say it has no icon, {start:?}: {info:?}"
+        );
+    }
+
+    show(&mut cx, &showcase, Page::Buttons);
+    let without = bounds_of(&mut cx, "buttons-icon-search");
+    assert!(
+        without.size.width < button.size.width,
+        "the Search Button at {without:?} is no narrower than with its icon at {button:?}"
+    );
+    let info = settle_on(&mut cx, &showcase, "buttons-toggle-star");
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some("Toggle · Ghost, labelled"),
+        "the Star Toggle with no icon of the chosen set is not labelled"
+    );
+    let labelled = bounds_of(&mut cx, "buttons-toggle-star");
+    assert!(
+        labelled.size.width != toggle.size.width,
+        "the Star Toggle at {labelled:?} is as wide as with its icon at {toggle:?}, so it shows no label"
+    );
+}
+
+/// The Overlays page's dialogs show the chosen icon theme's icon, or none:
+/// the Dialog's CircleX beside its description and the AlertDialog's
+/// TriangleAlert, each reported by the dialog's info, with Material chosen
+/// and then with those icons taken out of its loaded gallery.
+#[gpui::test]
+fn the_dialog_samples_icons_follow_the_chosen_set(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    let dialogs = [
+        (
+            OVERLAYS_DIALOG_TRIGGER,
+            "overlays-dialog-content",
+            IconName::CircleX,
+        ),
+        (
+            PROBE_ALERT_DIALOG,
+            "overlays-alert-dialog-title",
+            IconName::TriangleAlert,
+        ),
+    ];
+    for removed in [false, true] {
+        if removed {
+            remove_icons(&mut cx, &showcase, &["CircleX", "TriangleAlert"]);
+        }
+        for (trigger, selector, name) in dialogs.clone() {
+            show(&mut cx, &showcase, Page::Overlays);
+            click(&mut cx, trigger);
+            draw(&mut cx);
+            assert!(a_dialog_is_open(&mut cx), "{trigger} opened no dialog");
+            let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
+            assert_eq!(
+                drawn.shown(),
+                !removed,
+                "{selector}'s icon is {drawn:?} with the gallery's taken out: {removed}"
+            );
+            let info = settle_on(&mut cx, &showcase, selector);
+            let start = icon_note_start(&drawn, "material");
+            assert!(
+                info.as_ref().is_some_and(|info| info_says(info, &start)),
+                "{selector} does not say its icon is {start:?}: {info:?}"
+            );
+            press(&mut cx, "escape");
+            assert!(
+                !a_dialog_is_open(&mut cx),
+                "Escape did not close {trigger}'s dialog"
+            );
+        }
+    }
+}
+
 /// Paint-level check (rationale §3.6): the fill gpui painted inside the
 /// Primary Tag at rest is the colour its info's bg claim shows. The colour
 /// gate reads the line a claim cites; this reads the frame. At rest, because

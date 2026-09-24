@@ -142,7 +142,7 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
         ))
         .not_themeable("addon padding", "inner (Tier U)")
         .not_themeable("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs, InputGroupButton::render_in_group)")
-        .instance("groups", "a Search icon before the field, a Copy button after it, and a note under a textarea. geometry::input refines the two single-line groups; the textarea group keeps upstream's frame")
+        .instance("groups", "a Search icon of the chosen icon theme before the field, a Copy button after it, and a note under a textarea. geometry::input refines the two single-line groups; the textarea group keeps upstream's frame")
         .instance("padding", "none from geometry::input: the showcase leaves out its padding sides, because the refinement lands on the group's frame and the Input inside it keeps its own padding (input/group.rs, render_control) -- padding the frame too would inset the field twice")
         .instance("copy", "puts the second group's text on the clipboard and says so in a notification")
 }

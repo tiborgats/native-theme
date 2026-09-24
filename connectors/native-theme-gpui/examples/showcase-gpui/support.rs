@@ -1,6 +1,8 @@
 //! What the pages share: sample content, layout helpers, icon loading, and the list and table delegates.
 
 use std::borrow::Cow;
+use std::cell::Cell;
+use std::rc::Rc;
 
 use gpui::{
     App, Context, Div, Entity, ImageSource, IntoElement, Pixels, SharedString, Stateful,
@@ -783,6 +785,63 @@ impl ChromeIcon {
             Some((name, ..)) => Self::Missing(name),
             None => Self::Unlisted(path),
         }
+    }
+
+    /// Whether the chosen set gives an icon to draw.
+    pub(crate) fn shown(&self) -> bool {
+        !matches!(self, Self::Missing(_) | Self::Unlisted(_))
+    }
+}
+
+/// An icon a page sample shows: gpui-component's `icon` as the chosen icon
+/// theme, named `set`, gives it (`drawn`), looked up as the chrome's icons
+/// are (`Showcase::sample_icon`). Where that theme has none, the sample
+/// draws none and its info says so -- never another icon theme's.
+#[derive(Clone)]
+pub(crate) struct SampleIcon {
+    pub(crate) icon: IconName,
+    pub(crate) drawn: ChromeIcon,
+    pub(crate) set: SharedString,
+}
+
+impl SampleIcon {
+    /// Whether the chosen icon theme gives the sample an icon to draw.
+    pub(crate) fn shown(&self) -> bool {
+        self.drawn.shown()
+    }
+
+    /// What the sample's info says its icon is, `absent` being what the
+    /// sample shows where the chosen icon theme has none.
+    pub(crate) fn note(&self, absent: &str) -> String {
+        crate::info::chrome::chrome_icon_note(&self.drawn, &self.set, absent)
+    }
+}
+
+/// The icons of the Overlays page's dialogs, of the chosen icon theme: the
+/// Dialog's beside its description and the AlertDialog's.
+pub(crate) struct DialogIcons {
+    pub(crate) dialog: SampleIcon,
+    pub(crate) alert: SampleIcon,
+}
+
+/// The dialogs' icons as the view last set them, which it does as each
+/// frame starts: `Root` builds a dialog anew for every frame, from a builder
+/// that cannot borrow the view (root.rs, `Root::render_dialog_layer`), so
+/// this is how a dialog shows the icon theme installed now, not the one it
+/// opened under. `Showcase::overlay_gap` does the same for the gap.
+#[derive(Clone, Default)]
+pub(crate) struct SharedDialogIcons(Rc<Cell<Option<Rc<DialogIcons>>>>);
+
+impl SharedDialogIcons {
+    pub(crate) fn set(&self, icons: DialogIcons) {
+        self.0.set(Some(Rc::new(icons)));
+    }
+
+    /// The icons last set; `None` before the first frame.
+    pub(crate) fn get(&self) -> Option<Rc<DialogIcons>> {
+        let icons = self.0.take();
+        self.0.set(icons.clone());
+        icons
     }
 }
 

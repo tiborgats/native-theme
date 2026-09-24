@@ -52,7 +52,8 @@ const DISABLED: [(&str, &str, ButtonKind); 3] = [
     ),
 ];
 
-/// The icon row, as `(id, label, variant, icon)`.
+/// The icon row, as `(id, label, variant, icon)`: each icon is the chosen
+/// icon theme's.
 const WITH_ICONS: [(&str, &str, ButtonKind, IconName); 3] = [
     (
         "buttons-icon-save",
@@ -148,10 +149,10 @@ impl Showcase {
                     kind: ButtonKind::Primary,
                     state: ButtonState::Loading,
                     // `Button` draws its spinner in place of its icon
-                    // (`button/button_icon.rs`), so a loading button
-                    // needs one to show it; this one is never seen while
-                    // `loading` is true.
-                    icon: Some(IconName::Check),
+                    // (`button/button_icon.rs`), so a loading button needs
+                    // one to show it: the chosen icon theme's loading
+                    // icon, which the spinner turns.
+                    icon: Some(self.sample_icon(IconName::Loader)),
                 },
             )))
             .child(demo::heading(ui, cx, "buttons-heading-icons", "Buttons with Icons"))
@@ -167,7 +168,7 @@ impl Showcase {
                                 label,
                                 kind,
                                 state: ButtonState::Idle,
-                                icon: Some(icon),
+                                icon: Some(self.sample_icon(icon)),
                             },
                         )
                     })),
@@ -210,7 +211,7 @@ impl Showcase {
                         ui,
                         cx,
                         "buttons-toggle-star",
-                        IconName::Star,
+                        &self.sample_icon(IconName::Star),
                         "Star",
                         self.toggle_bold,
                         on_bold,
@@ -219,7 +220,7 @@ impl Showcase {
                         ui,
                         cx,
                         "buttons-toggle-heart",
-                        IconName::Heart,
+                        &self.sample_icon(IconName::Heart),
                         "Heart",
                         self.toggle_italic,
                         on_italic,
