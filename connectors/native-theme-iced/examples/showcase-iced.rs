@@ -50,7 +50,7 @@ use native_theme::icons::{
     SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedTextScale,
+    AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale,
     ResolvedTextScaleEntry, ResolvedTheme, TransformAnimation,
 };
 use native_theme_iced::icons::{
@@ -1809,6 +1809,8 @@ fn view(state: &State) -> Element<'_, Message> {
                     Message::ThemeSelected,
                 )
                 .handle(arrow_handle(resolved))
+                .text_size(resolved.combo_box.font.size)
+                .font(weighted(resolved.combo_box.font.weight))
                 .style(styles::pick_list(resolved))
                 .menu_style(styles::menu(resolved))
                 .width(Fill),
@@ -1828,6 +1830,8 @@ fn view(state: &State) -> Element<'_, Message> {
                     Message::ColorModeSelected,
                 )
                 .handle(arrow_handle(resolved))
+                .text_size(resolved.combo_box.font.size)
+                .font(weighted(resolved.combo_box.font.weight))
                 .style(styles::pick_list(resolved))
                 .menu_style(styles::menu(resolved))
                 .width(Fill),
@@ -1844,6 +1848,8 @@ fn view(state: &State) -> Element<'_, Message> {
                 Message::IconSetSelected,
             )
             .handle(arrow_handle(resolved))
+            .text_size(resolved.combo_box.font.size)
+            .font(weighted(resolved.combo_box.font.weight))
             .style(styles::pick_list(resolved))
             .menu_style(styles::menu(resolved))
             .width(Fill),
@@ -1939,7 +1945,6 @@ fn view(state: &State) -> Element<'_, Message> {
     // ---- Tab bar ----
     let tab_bar: Element<'_, Message> = {
         let sp = &SP;
-        let ts = &state.current_resolved.text_scale;
         let tab_pad =
             native_theme_iced::padding_or(&resolved.tab.border.padding, button::DEFAULT_PADDING);
         let tabs: Vec<Element<'_, Message>> = Tab::ALL
@@ -1948,7 +1953,7 @@ fn view(state: &State) -> Element<'_, Message> {
                 let label = tab.label();
                 // A tab is padded like the platform's tabs: the sides
                 // tab.border.padding states, a button's own elsewhere.
-                let btn = button(text(label).role(&ts.caption)).padding(tab_pad);
+                let btn = button(text(label).typeset(&resolved.tab.font)).padding(tab_pad);
                 // The open tab is the call to action; the rest are plain.
                 let btn = if tab == state.active_tab {
                     btn.style(styles::button_primary(resolved))
@@ -2166,42 +2171,40 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
                      iced's button::DEFAULT_PADDING for the others",
                 ),
                 ("shadow", "iced's own — the model has no shadow geometry"),
+                ("label", "button.font, size and weight"),
             ],
-            &[
-                ("font-weight", "hardcoded"),
-                ("min-height", "hardcoded by iced"),
-            ],
+            &[("min-height", "hardcoded by iced")],
         ),
         column![
             text("Primary Actions").role(section_title(ts)),
             row![
                 apply_pad(
-                    button("Primary")
+                    button(text("Primary").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_primary(resolved))
                 ),
                 apply_pad(
-                    button("Secondary")
+                    button(text("Secondary").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button(resolved))
                 ),
                 apply_pad(
-                    button("Success")
+                    button(text("Success").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_success(resolved))
                 ),
                 apply_pad(
-                    button("Warning")
+                    button(text("Warning").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_warning(resolved))
                 ),
                 apply_pad(
-                    button("Danger")
+                    button(text("Danger").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_danger(resolved))
                 ),
                 apply_pad(
-                    button("Text Style")
+                    button(text("Text Style").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_link(resolved))
                 ),
@@ -2242,9 +2245,18 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             text("Disabled State").role(section_title(ts)),
             text("Buttons without on_press are rendered as disabled:").body(resolved),
             row![
-                apply_pad(button("Disabled Primary").style(styles::button_primary(resolved))),
-                apply_pad(button("Disabled Secondary").style(styles::button(resolved))),
-                apply_pad(button("Disabled Danger").style(styles::button_danger(resolved))),
+                apply_pad(
+                    button(text("Disabled Primary").typeset(&resolved.button.font))
+                        .style(styles::button_primary(resolved))
+                ),
+                apply_pad(
+                    button(text("Disabled Secondary").typeset(&resolved.button.font))
+                        .style(styles::button(resolved))
+                ),
+                apply_pad(
+                    button(text("Disabled Danger").typeset(&resolved.button.font))
+                        .style(styles::button_danger(resolved))
+                ),
             ]
             .spacing(gap.widget),
         ]
@@ -2258,7 +2270,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
         text("Interactive Demo").role(section_title(ts)),
         row![
             apply_pad(
-                button("Click me!")
+                button(text("Click me!").typeset(&resolved.button.font))
                     .on_press(Message::ButtonPressed)
                     .style(styles::button_primary(resolved))
             ),
@@ -2307,6 +2319,8 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         let mut input = text_input("Type something here...", &state.text_input_value)
             .id(TEXT_INPUT_ID)
             .on_input(Message::TextInputChanged)
+            .size(resolved.input.font.size)
+            .font(weighted(resolved.input.font.weight))
             .style(styles::text_input(resolved));
         {
             input = input.padding(inp_pad);
@@ -2338,9 +2352,13 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                         "input_padding — input.border.padding's stated sides, \
                          iced's text_input::DEFAULT_PADDING for the others",
                     ),
+                    ("text", "input.font, size and weight"),
                 ],
                 &[
-                    ("height", "set by iced"),
+                    (
+                        "height",
+                        "iced's: a line of input.font.size, plus the padding",
+                    ),
                     ("icon color", "no native source — iced's own"),
                 ],
             ),
@@ -2362,6 +2380,8 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         let mut input = text_input("Password field...", &state.text_input_value)
             .on_input(Message::TextInputChanged)
             .secure(true)
+            .size(resolved.input.font.size)
+            .font(weighted(resolved.input.font.weight))
             .style(styles::text_input(resolved));
         {
             input = input.padding(inp_pad);
@@ -2374,7 +2394,10 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                     ("border", "input.border.color", to_color(i.border.color)),
                     ("bg", "input.background_color", to_color(i.background_color)),
                 ],
-                &[("border-radius", &radius_s)],
+                &[
+                    ("border-radius", &radius_s),
+                    ("text", "input.font, size and weight"),
+                ],
                 &[("mode", "password / secure — dots replace chars")],
             ),
             column![
@@ -2399,7 +2422,10 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                     to_color(i.selection_background),
                 ),
             ],
-            &[("border-radius", &radius_s)],
+            &[
+                ("border-radius", &radius_s),
+                ("text", "input.font, size and weight"),
+            ],
             &[
                 ("line numbers", "not built-in"),
                 ("syntax highlighting", "requires iced_highlighter"),
@@ -2412,6 +2438,8 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 Fill,
                 text_editor(&state.text_editor_content)
                     .on_action(Message::EditorAction)
+                    .size(resolved.input.font.size)
+                    .font(weighted(resolved.input.font.weight))
                     .style(styles::text_editor(resolved))
                     .height(Length::Fixed(180.0)),
             ),
@@ -2497,6 +2525,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 ("border-radius", &checkbox_radius_s),
                 ("label gap", &label_gap_s),
                 ("box size", &indicator_width_s),
+                ("label", "checkbox.font, size and weight"),
             ],
             &[(
                 "check mark",
@@ -2510,18 +2539,24 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 .label("Enable notifications")
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
+                .text_size(c.font.size)
+                .font(weighted(c.font.weight))
                 .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxAToggled),
             checkbox(state.checkbox_b)
                 .label("Dark mode auto-detect")
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
+                .text_size(c.font.size)
+                .font(weighted(c.font.weight))
                 .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxBToggled),
             checkbox(state.checkbox_c)
                 .label("Remember preferences")
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
+                .text_size(c.font.size)
+                .font(weighted(c.font.weight))
                 .style(styles::checkbox(resolved))
                 .on_toggle(Message::CheckboxCToggled),
             text(format!(
@@ -2571,6 +2606,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[
                 ("label gap", &label_gap_s),
                 ("indicator diameter", &indicator_width_s),
+                ("label", "checkbox.font, size and weight"),
             ],
             &[
                 ("border-radius", "radio::Style carries no corner radius"),
@@ -2590,6 +2626,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 )
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
+                .text_size(c.font.size)
+                .font(weighted(c.font.weight))
                 .style(styles::radio(resolved))
             ),
             probe(
@@ -2603,6 +2641,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 )
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
+                .text_size(c.font.size)
+                .font(weighted(c.font.weight))
                 .style(styles::radio(resolved))
             ),
             probe(
@@ -2616,6 +2656,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 )
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
+                .text_size(c.font.size)
+                .font(weighted(c.font.weight))
                 .style(styles::radio(resolved))
             ),
             text(format!(
@@ -2655,6 +2697,10 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 ("border-radius", &track_radius_s),
                 ("track height", &track_height_s),
                 ("thumb diameter", &thumb_diameter_s),
+                (
+                    "label",
+                    "defaults.font, size and weight — the model states no font for a switch",
+                ),
             ],
             &[
                 ("track width", "iced lays the track out as 2 x its height"),
@@ -2670,6 +2716,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 toggler(state.toggler_enabled)
                     .label("Feature flag enabled")
                     .size(sw.track_height)
+                    .text_size(resolved.defaults.font.size)
+                    .font(weighted(resolved.defaults.font.weight))
                     .style(styles::toggler(resolved))
                     .on_toggle(Message::TogglerToggled)
             ),
@@ -2726,6 +2774,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[
                 ("border-radius", &combo_radius_s),
                 ("arrow size", &arrow_size_s),
+                ("label and menu rows", "combo_box.font, size and weight"),
             ],
             &[
                 ("dropdown arrow", "iced's own chevron glyph"),
@@ -2744,6 +2793,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     Message::PickListSelected,
                 )
                 .handle(arrow_handle(resolved))
+                .text_size(resolved.combo_box.font.size)
+                .font(weighted(resolved.combo_box.font.weight))
                 .style(styles::pick_list(resolved))
                 .menu_style(styles::menu(resolved))
                 .width(Length::Fixed(250.0))
@@ -2783,7 +2834,10 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     to_color(resolved.menu.background_color),
                 ),
             ],
-            &[("border-radius", &input_radius_s)],
+            &[
+                ("border-radius", &input_radius_s),
+                ("text and menu rows", "combo_box.font, size and weight"),
+            ],
             &[
                 ("search", "built-in text filter"),
                 ("field style", "a ComboBox takes a text_input style"),
@@ -2800,6 +2854,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     state.combo_selected.as_ref(),
                     Message::ComboBoxSelected,
                 )
+                .size(cb.font.size)
+                .font(weighted(cb.font.weight))
                 .input_style(styles::text_input(resolved))
                 .menu_style(styles::menu(resolved))
                 .width(Length::Fixed(250.0))
@@ -3150,6 +3206,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             &[
                 ("positions", "Top / Bottom / Left / Right"),
                 ("border-radius", &tip_radius_s),
+                ("label", "tooltip.font, size and weight"),
             ],
             &[
                 ("gap", "set per widget instance"),
@@ -3161,41 +3218,41 @@ fn view_display(state: &State) -> Element<'_, Message> {
             text("Tooltips").role(section_title(ts)),
             row![
                 tooltip(
-                    button("Hover: Top")
+                    button(text("Hover: Top").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_primary(resolved))
                         .padding(native_theme_iced::button_padding(resolved)),
-                    text("Tooltip on top!"),
+                    text("Tooltip on top!").typeset(&resolved.tooltip.font),
                     tooltip::Position::Top,
                 )
                 .gap(sp.xs)
                 .style(styles::tooltip(resolved)),
                 tooltip(
-                    button("Hover: Bottom")
+                    button(text("Hover: Bottom").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button(resolved))
                         .padding(native_theme_iced::button_padding(resolved)),
-                    text("Tooltip on bottom!"),
+                    text("Tooltip on bottom!").typeset(&resolved.tooltip.font),
                     tooltip::Position::Bottom,
                 )
                 .gap(sp.xs)
                 .style(styles::tooltip(resolved)),
                 tooltip(
-                    button("Hover: Left")
+                    button(text("Hover: Left").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_success(resolved))
                         .padding(native_theme_iced::button_padding(resolved)),
-                    text("Tooltip on left!"),
+                    text("Tooltip on left!").typeset(&resolved.tooltip.font),
                     tooltip::Position::Left,
                 )
                 .gap(sp.xs)
                 .style(styles::tooltip(resolved)),
                 tooltip(
-                    button("Hover: Right")
+                    button(text("Hover: Right").typeset(&resolved.button.font))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_danger(resolved))
                         .padding(native_theme_iced::button_padding(resolved)),
-                    text("Tooltip on right!"),
+                    text("Tooltip on right!").typeset(&resolved.tooltip.font),
                     tooltip::Position::Right,
                 )
                 .gap(sp.xs)
@@ -3438,15 +3495,15 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         let focused = state.focused_pane == Some(pane);
         let title = format!("Pane {label}");
         let controls = row![
-            button(text("split |").role(&ts.caption))
+            button(text("split |").typeset(&resolved.button.font))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
                 .style(styles::button(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
-            button(text("split —").role(&ts.caption))
+            button(text("split —").typeset(&resolved.button.font))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Horizontal, pane))
                 .style(styles::button(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
-            button(text("close").role(&ts.caption))
+            button(text("close").typeset(&resolved.button.font))
                 .on_press(Message::PaneClosed(pane))
                 .style(styles::button_danger(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
@@ -3494,6 +3551,8 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 ("split width", &divider_width_s),
                 ("pane surface", "styles::container_card"),
                 ("title bar", "styles::container_card"),
+                ("title", "defaults.font, size and weight"),
+                ("controls", "button.font, size and weight"),
             ],
             &[
                 (
@@ -3555,24 +3614,27 @@ fn view_layout(state: &State) -> Element<'_, Message> {
 
     let scale_table = table(
         [
-            table::column(text("text_scale role").body(resolved), {
-                let caption = ts.caption.clone();
-                move |r: ScaleRow| text(r.0).role(&caption)
-            })
+            table::column(
+                text("text_scale role").typeset(&resolved.list.header_font),
+                {
+                    let cell = resolved.list.item_font.clone();
+                    move |r: ScaleRow| text(r.0).typeset(&cell)
+                },
+            )
             .width(Length::Fixed(160.0)),
-            table::column(text("size").body(resolved), {
-                let caption = ts.caption.clone();
-                move |r: ScaleRow| text(r.1).role(&caption)
+            table::column(text("size").typeset(&resolved.list.header_font), {
+                let cell = resolved.list.item_font.clone();
+                move |r: ScaleRow| text(r.1).typeset(&cell)
             })
             .width(Length::Fixed(90.0)),
-            table::column(text("weight").body(resolved), {
-                let caption = ts.caption.clone();
-                move |r: ScaleRow| text(r.2).role(&caption)
+            table::column(text("weight").typeset(&resolved.list.header_font), {
+                let cell = resolved.list.item_font.clone();
+                move |r: ScaleRow| text(r.2).typeset(&cell)
             })
             .width(Length::Fixed(90.0)),
-            table::column(text("line height").body(resolved), {
-                let caption = ts.caption.clone();
-                move |r: ScaleRow| text(r.3).role(&caption)
+            table::column(text("line height").typeset(&resolved.list.header_font), {
+                let cell = resolved.list.item_font.clone();
+                move |r: ScaleRow| text(r.3).typeset(&cell)
             })
             .width(Length::Fixed(110.0)),
         ],
@@ -3600,6 +3662,8 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             &[
                 ("separator_x / separator_y", &line_width_s),
                 ("cell padding", "the showcase's own scale"),
+                ("header", "list.header_font, size and weight"),
+                ("cells", "list.item_font, size and weight"),
             ],
             &[
                 (
@@ -3883,10 +3947,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         // time from the theme the connector produced.
         let iced_style = markdown::Style::from(&state.current_theme);
         let style = markdown::Style {
-            font: iced::Font {
-                weight: native_theme_iced::to_iced_weight(native_theme_iced::font_weight(resolved)),
-                ..iced::Font::DEFAULT
-            },
+            font: weighted(native_theme_iced::font_weight(resolved)),
             inline_code_highlight: iced_style.inline_code_highlight,
             inline_code_padding: iced_style.inline_code_padding,
             inline_code_color: iced_style.inline_code_color,
@@ -4069,7 +4130,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         )
         .foot(Element::from(
             row![
-                button(text("Dismiss").role(&ts.caption))
+                button(text("Dismiss").typeset(&resolved.button.font))
                     .on_press(Message::AwCardToggled)
                     .style(styles::button(resolved))
                     .padding(native_theme_iced::button_padding(resolved)),
@@ -4087,7 +4148,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         }
         .into()
     } else {
-        button(text("Show the card again").role(&ts.caption))
+        button(text("Show the card again").typeset(&resolved.button.font))
             .on_press(Message::AwCardToggled)
             .style(styles::button_primary(resolved))
             .padding(native_theme_iced::button_padding(resolved))
@@ -4119,6 +4180,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                      iced_aw's own, which it keeps private (widget/card.rs:21)",
                 ),
                 ("Dismiss padding", "button_padding"),
+                ("Dismiss label", "button.font, size and weight"),
             ],
             &[(
                 "close icon",
@@ -4141,7 +4203,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // its own height.
     let item_pad = native_theme_iced::padding_or(&menu_t.border.padding, button::DEFAULT_PADDING);
     let menu_entry = move |label: &'static str| -> Element<'_, Message> {
-        let entry = button(text(label).size(menu_t.font.size))
+        let entry = button(text(label).typeset(&menu_t.font))
             .on_press(Message::AwActionChosen(format!("Menu: {label}")))
             .style(styles::button(resolved))
             .width(Fill)
@@ -4153,7 +4215,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .into()
     };
     let menu_root = move |label: &'static str| {
-        button(text(label).size(menu_t.font.size))
+        button(text(label).typeset(&menu_t.font))
             .on_press(Message::AwActionChosen(format!("Menu: {label}")))
             .style(styles::button(resolved))
             .padding(item_pad)
@@ -4214,7 +4276,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     "menu.border.padding's stated sides, iced's \
                      button::DEFAULT_PADDING for the others, on the item button",
                 ),
-                ("item label size", "menu.font.size"),
+                (
+                    "item label",
+                    "menu.font, size and weight, the context menu's too",
+                ),
             ],
             &[
                 (
@@ -4259,7 +4324,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     let context_demo = ContextMenu::new(context_underlay, move || {
         let entry = |label: &'static str| -> Element<'_, Message> {
-            button(text(label).role(&ts.caption))
+            button(text(label).typeset(&menu_t.font))
                 .on_press(Message::AwActionChosen(format!("Context menu: {label}")))
                 .style(styles::button(resolved))
                 .width(Fill)
@@ -4281,6 +4346,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .push(2usize, TabLabel::Text("About".to_string()))
         .set_active_tab(&state.aw_tab_bar_active)
         .text_size(tab_t.font.size)
+        .text_font(weighted(tab_t.font.weight))
         .tab_width(Length::Fixed(tab_t.min_width))
         .height(Length::Fixed(tab_t.min_height))
         .spacing(sp.xxs);
@@ -4323,6 +4389,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         )
         .set_active_tab(&state.aw_tabs_active)
         .text_size(tab_t.font.size)
+        .text_font(weighted(tab_t.font.weight))
         .tab_bar_height(Length::Fixed(tab_t.min_height))
         .tab_bar_style(styles::aw::tab_bar(resolved))
         .height(Length::Shrink);
@@ -4357,7 +4424,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ),
             ],
             &[
-                ("label size", "tab.font.size"),
+                ("label", "tab.font, size and weight"),
                 ("tab width", "tab.min_width"),
                 ("bar height", "tab.min_height"),
                 (
@@ -4401,6 +4468,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         )
         .set_active_tab(&state.aw_sidebar_active)
         .text_size(side_t.font.size)
+        .text_font(weighted(side_t.font.weight))
         .width(Length::Fixed(200.0))
         .height(Length::Shrink)
         .style(styles::aw::sidebar(resolved));
@@ -4430,7 +4498,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     to_color(side_t.hover_background),
                 ),
             ],
-            &[("label size", "sidebar.font.size")],
+            &[("label", "sidebar.font, size and weight")],
             &[(
                 "corner radius",
                 "sidebar::Style carries none but the close icon's; iced_aw rounds \
@@ -4537,7 +4605,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         list_padding,
         styles::aw::selection_list(resolved),
         state.aw_list_selected,
-        iced::Font::DEFAULT,
+        weighted(list_t.item_font.weight),
     )
     .width(Length::Fixed(260.0))
     .height(Length::Fixed(180.0));
@@ -4568,7 +4636,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ),
             ],
             &[
-                ("row label size", "list.item_font.size"),
+                ("row label", "list.item_font, size and weight"),
                 ("row height", &row_height_s),
             ],
             &[(
@@ -4669,16 +4737,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         let end = (idx + icons_per_row).min(state.loaded_icons.len());
         let row_icons: Vec<Element<'_, Message>> = state.loaded_icons[idx..end]
             .iter()
-            .map(|loaded| {
-                build_icon_cell(
-                    loaded,
-                    resolved,
-                    fg_color,
-                    &ts.caption,
-                    &ts.section_heading,
-                    sp.xxs,
-                )
-            })
+            .map(|loaded| build_icon_cell(loaded, resolved, fg_color, &ts.caption, sp.xxs))
             .collect();
         grid_rows.push(row(row_icons).spacing(gap.widget).into());
         idx = end;
@@ -4798,7 +4857,6 @@ fn build_icon_cell<'a>(
     resolved: &ResolvedTheme,
     fg_color: Color,
     caption: &ResolvedTextScaleEntry,
-    heading: &ResolvedTextScaleEntry,
     xxs_spacing: f32,
 ) -> Element<'a, Message> {
     let role_name = format!("{:?}", loaded.role);
@@ -4816,7 +4874,7 @@ fn build_icon_cell<'a>(
                         .width(Length::Fixed(icon_px))
                         .height(Length::Fixed(icon_px))
                         .into(),
-                    None => placeholder_icon(heading, icon_px),
+                    None => placeholder_icon(icon_px),
                 }
             } else {
                 // Bundled/fallback: colorize with theme foreground
@@ -4825,7 +4883,7 @@ fn build_icon_cell<'a>(
                         .width(Length::Fixed(icon_px))
                         .height(Length::Fixed(icon_px))
                         .into(),
-                    None => placeholder_icon(heading, icon_px),
+                    None => placeholder_icon(icon_px),
                 }
             }
         }
@@ -4835,10 +4893,10 @@ fn build_icon_cell<'a>(
                     .width(Length::Fixed(icon_px))
                     .height(Length::Fixed(icon_px))
                     .into(),
-                None => placeholder_icon(heading, icon_px),
+                None => placeholder_icon(icon_px),
             }
         }
-        _ => placeholder_icon(heading, icon_px),
+        _ => placeholder_icon(icon_px),
     };
 
     let info = format!("{role_name}\nicon: {icon_name_str}\nsource: {source_label}");
@@ -4865,10 +4923,12 @@ fn build_icon_cell<'a>(
     .into()
 }
 
-fn placeholder_icon<'a>(heading: &ResolvedTextScaleEntry, box_size: f32) -> Element<'a, Message> {
-    container(text("?").role(heading))
-        .center_x(Length::Fixed(box_size))
-        .center_y(Length::Fixed(box_size))
+/// A "?" in the slot of an icon that did not load, drawn at the icon's own
+/// size: it stands in for an icon, not for text in any role.
+fn placeholder_icon<'a>(icon_px: f32) -> Element<'a, Message> {
+    container(text("?").size(icon_px))
+        .center_x(Length::Fixed(icon_px))
+        .center_y(Length::Fixed(icon_px))
         .into()
 }
 
@@ -5259,10 +5319,16 @@ fn section_title(ts: &ResolvedTextScale) -> &ResolvedTextScaleEntry {
     &ts.section_heading
 }
 
-/// Sets text in a `text_scale` role, or in the theme's body font: the size,
-/// and a font at the weight that comes with it.
+/// Sets text in a `text_scale` role, in a widget's font, or in the theme's
+/// body font: the size, and a font at the weight that comes with it.
+///
+/// Every text the showcase draws is sized here or through its widget's own
+/// `text_size`/`size` and `font`: iced fixes its default text size when the
+/// renderer is created, so text given no size would stay at iced's default
+/// whatever theme is installed.
 trait Typeset {
     fn role(self, entry: &ResolvedTextScaleEntry) -> Self;
+    fn typeset(self, font: &ResolvedFontSpec) -> Self;
     fn body(self, resolved: &ResolvedTheme) -> Self;
 }
 
@@ -5271,9 +5337,12 @@ impl Typeset for iced::widget::Text<'_> {
         self.size(entry.size).font(weighted(entry.weight))
     }
 
-    fn body(self, resolved: &ResolvedTheme) -> Self {
-        let font = &resolved.defaults.font;
+    fn typeset(self, font: &ResolvedFontSpec) -> Self {
         self.size(font.size).font(weighted(font.weight))
+    }
+
+    fn body(self, resolved: &ResolvedTheme) -> Self {
+        self.typeset(&resolved.defaults.font)
     }
 }
 
@@ -5440,18 +5509,41 @@ mod tests {
     /// Opens the `pick_list` tagged `id` and chooses its `nth` option.
     ///
     /// A `pick_list` pads its menu with `button::DEFAULT_PADDING`
-    /// (`pick_list.rs:204`).
-    fn pick_list_option(ui: &mut Simulator<'_, Message>, id: &'static str, nth: usize) {
-        pick_option(ui, id, nth, iced::widget::button::DEFAULT_PADDING);
+    /// (`pick_list.rs:204`); `text_size` is the one the showcase gives it.
+    fn pick_list_option(
+        ui: &mut Simulator<'_, Message>,
+        id: &'static str,
+        nth: usize,
+        text_size: f32,
+    ) {
+        pick_option(
+            ui,
+            id,
+            nth,
+            text_size,
+            iced::widget::button::DEFAULT_PADDING,
+        );
     }
 
     /// Opens the `combo_box` tagged `id` and chooses its `nth` option.
     ///
     /// A `combo_box` pads its menu with `text_input::DEFAULT_PADDING`
     /// (`combo_box.rs:190`), which is as tall as a `pick_list`'s today but is
-    /// not the same constant and need not stay equal.
-    fn combo_box_option(ui: &mut Simulator<'_, Message>, id: &'static str, nth: usize) {
-        pick_option(ui, id, nth, iced::widget::text_input::DEFAULT_PADDING);
+    /// not the same constant and need not stay equal; `text_size` is the one
+    /// the showcase gives it.
+    fn combo_box_option(
+        ui: &mut Simulator<'_, Message>,
+        id: &'static str,
+        nth: usize,
+        text_size: f32,
+    ) {
+        pick_option(
+            ui,
+            id,
+            nth,
+            text_size,
+            iced::widget::text_input::DEFAULT_PADDING,
+        );
     }
 
     /// Opens the picker tagged `id` and chooses its `nth` option, counting
@@ -5463,18 +5555,18 @@ mod tests {
     /// the widget that opened it (`overlay/menu.rs:241-262`), one row per
     /// option, each `line_height + padding.y()` tall
     /// (`overlay/menu.rs:375-397`), where the padding is the one the picker
-    /// gives it. Both terms are read from iced's own defaults, which the
-    /// showcase overrides for none of its pickers, rather than copied as
-    /// numbers.
+    /// gives it and the line is the picker's text size: the theme's
+    /// `combo_box.font.size`, which the showcase gives every picker. The
+    /// padding is iced's own default, which the showcase overrides for none of
+    /// its pickers, read rather than copied as a number.
     fn pick_option(
         ui: &mut Simulator<'_, Message>,
         id: &'static str,
         nth: usize,
+        text_size: f32,
         menu_padding: Padding,
     ) {
-        let text_size = Settings::default().default_text_size;
-        let row = f32::from(iced_core::text::LineHeight::default().to_absolute(text_size))
-            + menu_padding.y();
+        let row = line_of(text_size) + menu_padding.y();
         let field = probe_bounds(ui, id);
         let at = Point::new(
             field.center().x,
@@ -5704,7 +5796,10 @@ mod tests {
         // open, so the click that opens it and the click that picks an entry
         // share one simulator.
         assert_eq!(state.pick_list_selected.as_deref(), Some("Rust"));
-        let messages = drive(&mut state, |ui| pick_list_option(ui, probes::PICK_LIST, 1));
+        let size = state.current_resolved.combo_box.font.size;
+        let messages = drive(&mut state, |ui| {
+            pick_list_option(ui, probes::PICK_LIST, 1, size)
+        });
         let picked = match messages.as_slice() {
             [Message::PickListSelected(value)] => value.clone(),
             other => panic!("pick_list: {other:?}"),
@@ -5717,7 +5812,10 @@ mod tests {
         );
 
         assert_eq!(state.combo_selected, None);
-        let messages = drive(&mut state, |ui| combo_box_option(ui, probes::COMBO_BOX, 1));
+        let size = state.current_resolved.combo_box.font.size;
+        let messages = drive(&mut state, |ui| {
+            combo_box_option(ui, probes::COMBO_BOX, 1, size)
+        });
         let picked = match messages.as_slice() {
             [Message::ComboBoxSelected(value)] => value.clone(),
             other => panic!("combo_box: {other:?}"),
@@ -5981,7 +6079,10 @@ mod tests {
             Some(index) => index,
             None => panic!("{wanted} is not offered by the colour mode picker"),
         };
-        let messages = drive(state, |ui| pick_list_option(ui, probes::COLOR_MODE, nth));
+        let size = state.current_resolved.combo_box.font.size;
+        let messages = drive(state, |ui| {
+            pick_list_option(ui, probes::COLOR_MODE, nth, size)
+        });
         assert!(
             matches!(messages.as_slice(), [Message::ColorModeSelected(mode)] if *mode == wanted),
             "colour mode: {messages:?}"
@@ -6021,7 +6122,8 @@ mod tests {
             None => panic!("no preset of this platform resolves to another background"),
         };
 
-        let messages = drive(state, |ui| pick_list_option(ui, probes::THEME, nth));
+        let size = state.current_resolved.combo_box.font.size;
+        let messages = drive(state, |ui| pick_list_option(ui, probes::THEME, nth, size));
         assert!(
             matches!(messages.as_slice(), [Message::ThemeSelected(ThemeChoice::Preset(name))] if *name == preset),
             "theme preset: {messages:?}"
@@ -6866,20 +6968,23 @@ mod tests {
 
     /// Text set in a `text_scale` role takes the role's weight with its size,
     /// which `.role(..)` applies together, so no role's size or weight is read
-    /// on its own outside the text-scale table's `format!` rows.
+    /// on its own outside the text-scale table's rows, `scale_rows`.
     #[test]
     fn text_roles_carry_their_weight() {
         let source = strip_comments_and_strings(SHOWCASE);
+        let table = match source.find("let scale_rows") {
+            Some(start) => match source[start..].find("];") {
+                Some(len) => start..start + len,
+                None => panic!("scale_rows has no end"),
+            },
+            None => panic!("scale_rows is gone"),
+        };
         for role in ["caption", "section_heading", "dialog_title", "display"] {
             for field in ["size", "weight"] {
                 let read = format!("ts.{role}.{field}");
                 for (at, _) in source.match_indices(read.as_str()) {
-                    let line = match source[..at].rfind('\n') {
-                        Some(newline) => &source[newline..at],
-                        None => &source[..at],
-                    };
                     assert!(
-                        line.contains("format!("),
+                        table.contains(&at),
                         "{read} is read on its own at showcase-iced.rs:{}",
                         line_at(&source, at)
                     );
@@ -6896,6 +7001,139 @@ mod tests {
         assert!(
             header.contains("page_title(ts)"),
             "section_header does not set its title in page_title"
+        );
+    }
+
+    /// The height iced lays one line of text out in, at `size`.
+    fn line_of(size: f32) -> f32 {
+        f32::from(iced_core::text::LineHeight::default().to_absolute(iced::Pixels(size)))
+    }
+
+    /// The height of the widget found by `selector`.
+    fn height_of(ui: &mut Simulator<'_, Message>, selector: &'static str) -> f32 {
+        match ui.find(selector) {
+            Ok(target) => target.bounds().height,
+            Err(error) => panic!("{selector}: {error}"),
+        }
+    }
+
+    /// Button labels, inputs and body text are drawn at the theme's sizes.
+    /// iced fixes its default text size when the renderer is created, so text
+    /// given no size is drawn at iced's default under every theme.
+    #[test]
+    fn text_bearing_widgets_take_the_theme_sizes() {
+        for preset in ["kde-breeze", "adwaita"] {
+            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let button_line = line_of(resolved.button.font.size);
+            let body_line = line_of(resolved.defaults.font.size);
+            let input_height =
+                line_of(resolved.input.font.size) + native_theme_iced::input_padding(&resolved).y();
+            let mut state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                active_tab: Tab::Buttons,
+                ..State::default()
+            };
+
+            let mut ui = interface(&state);
+            let label = height_of(&mut ui, "Primary");
+            assert!(
+                (label - button_line).abs() < 0.01,
+                "{preset}: a button label is {label}px tall, button.font gives {button_line}px"
+            );
+            let body = height_of(&mut ui, "Interactive button styles from the resolved theme");
+            assert!(
+                (body - body_line).abs() < 0.01,
+                "{preset}: a page description is {body}px tall, defaults.font gives {body_line}px"
+            );
+            drop(ui);
+
+            state.active_tab = Tab::TextInputs;
+            let mut ui = interface(&state);
+            let input = match ui.find(selector::id(TEXT_INPUT_ID)) {
+                Ok(target) => target.bounds().height,
+                Err(error) => panic!("{preset}: {TEXT_INPUT_ID}: {error}"),
+            };
+            assert!(
+                (input - input_height).abs() < 0.01,
+                "{preset}: a text input is {input}px tall, input.font and its padding give \
+                 {input_height}px"
+            );
+        }
+    }
+
+    /// Every text-bearing widget is given its size from the theme, in the
+    /// font at the weight that comes with it: a `text` its role, its body font
+    /// or its widget's font; a `button` a `text` of its own, never a bare
+    /// label; the labelled controls and the fields their widget's font. The
+    /// one exception is the "?" that stands in for an icon, at the icon's size.
+    #[test]
+    fn text_bearing_widgets_are_sized_from_the_theme() {
+        let source = strip_comments_and_strings(SHOWCASE);
+        let mut by_iced = Vec::new();
+        let chained = |site: usize| -> Vec<&str> {
+            match close_of_call(&source, site) {
+                Some(end) => method_calls(&source, end)
+                    .into_iter()
+                    .map(|(name, _)| name)
+                    .collect(),
+                None => Vec::new(),
+            }
+        };
+        for site in call_sites(&source, "text") {
+            let calls = match close_of_call(&source, site) {
+                Some(end) => method_calls(&source, end),
+                None => Vec::new(),
+            };
+            // A glyph in an icon's slot is sized as the icon.
+            let sized = calls.iter().any(|(name, args)| {
+                ["role", "body", "typeset"].contains(name)
+                    || (*name == "size" && args.contains("icon"))
+            });
+            if !sized {
+                by_iced.push(format!("text at :{}", line_at(&source, site)));
+            }
+        }
+        for site in call_sites(&source, "button") {
+            let label = match close_of_call(&source, site) {
+                Some(end) => source[site + "button(".len()..end].trim_start(),
+                None => "",
+            };
+            if !label.starts_with("text(") {
+                by_iced.push(format!("button at :{}", line_at(&source, site)));
+            }
+        }
+        let receivers: [(&str, &[&str]); 10] = [
+            ("checkbox", &["text_size", "font"]),
+            ("radio", &["text_size", "font"]),
+            ("toggler", &["text_size", "font"]),
+            ("pick_list", &["text_size", "font"]),
+            ("text_input", &["size", "font"]),
+            ("combo_box", &["size", "font"]),
+            ("text_editor", &["size", "font"]),
+            ("TabBar::new", &["text_size", "text_font"]),
+            ("Tabs::new", &["text_size", "text_font"]),
+            ("Sidebar::new", &["text_size", "text_font"]),
+        ];
+        for (ctor, setters) in receivers {
+            for site in call_sites(&source, ctor) {
+                let calls = chained(site);
+                for setter in setters {
+                    if !calls.contains(setter) {
+                        by_iced.push(format!(
+                            "{ctor} at :{} has no {setter}",
+                            line_at(&source, site)
+                        ));
+                    }
+                }
+            }
+        }
+        assert!(
+            by_iced.is_empty(),
+            "sized by iced, not the theme: {by_iced:#?}"
         );
     }
 
@@ -7043,7 +7281,7 @@ mod tests {
                 Mode::Text => {
                     if c == '\\' {
                         out.push(' ');
-                        out.push(' ');
+                        out.push(if next == Some('\n') { '\n' } else { ' ' });
                         i += 2;
                         continue;
                     } else if c == '"' {

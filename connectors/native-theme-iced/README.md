@@ -236,6 +236,22 @@ The other two preferences, reduced transparency and reduced motion, have no
 receiver in iced's theme; read them from `AccessibilityPreferences` where your
 application draws translucent surfaces or animates.
 
+iced fixes its default text size when the renderer is created (`iced_wgpu`
+0.14.0 `window/compositor.rs:294-300`; `text::Renderer` only reads it back),
+so `Settings::default_text_size` cannot follow a theme installed later, and
+text given no size stays at iced's default under every theme. Size each
+text-bearing widget from the theme: body text from `defaults.font`
+(`font_size`), and a widget whose font the model states from that font —
+`button.font`, `input.font`, `checkbox.font` (checkboxes and radios),
+`combo_box.font` (`pick_list` and `combo_box`), `menu.font`, `tab.font`,
+`sidebar.font`, `tooltip.font`, `list.item_font` and `list.header_font`; a
+switch has none, so a `toggler`'s label takes `defaults.font`. The receivers
+are `Text::size` and `Text::font`; `text_size` and `font` on `checkbox`,
+`radio`, `toggler` and `pick_list`; `size` and `font` on `text_input`,
+`combo_box` and `text_editor`; and `text_size` and `text_font` on `iced_aw`'s
+`TabBar`, `Tabs` and `Sidebar`. `to_iced_weight` turns a font's CSS weight
+into the `Weight` of the `iced::Font`.
+
 ### Apply user overrides to the OS theme
 
 ```rust,ignore

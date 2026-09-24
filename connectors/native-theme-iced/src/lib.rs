@@ -383,6 +383,18 @@ pub fn font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 ///
 /// ResolvedFontSpec.size is in logical pixels (conversion from platform points
 /// is handled by the resolution step).
+///
+/// iced fixes its default text size when the renderer is created
+/// (`iced_wgpu` 0.14.0 `window/compositor.rs:294-300`; `text::Renderer` only
+/// reads it back), so text given no size stays at that default whatever theme
+/// is installed later. Size every text-bearing widget from the theme instead:
+/// body text with this size, and a widget whose font the model states with
+/// that font's `size` and weight (`button.font`, `input.font`,
+/// `checkbox.font`, `combo_box.font`, `menu.font`, `tab.font`, …). The
+/// receivers are `Text::size` and `font`; `text_size` and `font` on
+/// `checkbox`, `radio`, `toggler` and `pick_list`; `size` and `font` on
+/// `text_input`, `combo_box` and `text_editor`. [`to_iced_weight`] turns the
+/// weight into iced's.
 #[must_use]
 pub fn font_size(
     resolved: &native_theme::theme::ResolvedTheme,
