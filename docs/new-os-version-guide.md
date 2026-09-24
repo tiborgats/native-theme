@@ -69,9 +69,11 @@ WinUI3 Fluent Design specifications
    `windows-12.toml`, if the visual language changes significantly).
 5. Test on the target Windows version: `cargo test -p native-theme --features windows`.
 
-**Note:** Widget metrics in the Windows reader use `GetSystemMetricsForDpi` for
-DPI-aware values (scrollbar width, button sizes, menu metrics). Verify these still
-return correct values on the new Windows version.
+**Note:** The Windows reader reads its system metrics (scrollbar width and thumb
+length, focus border, border width, icon sizes) through `GetSystemMetricsForDpi`
+at 96 DPI (`USER_DEFAULT_SCREEN_DPI`), which gives the unscaled value in logical
+pixels, the model's unit; at the system DPI it would be device pixels. Verify
+these still return correct values on the new Windows version.
 
 ---
 

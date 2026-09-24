@@ -195,10 +195,19 @@ fn live_presets_geometry_matches_full_presets() {
                 live_var.defaults.border.corner_radius_lg,
                 "{full_name} {label} radius_lg mismatch with live"
             );
-            assert_eq!(
-                full_var.defaults.border.line_width, live_var.defaults.border.line_width,
-                "{full_name} {label} frame_width mismatch with live"
-            );
+            if live_name == "windows-11-live" {
+                // The Windows reader provides it (SM_CXBORDER), and a live
+                // preset omits what its reader provides.
+                assert_eq!(
+                    live_var.defaults.border.line_width, None,
+                    "{live_name} {label} states line_width, which the reader provides"
+                );
+            } else {
+                assert_eq!(
+                    full_var.defaults.border.line_width, live_var.defaults.border.line_width,
+                    "{full_name} {label} frame_width mismatch with live"
+                );
+            }
             // REMOVED: spacing comparison (ThemeSpacing deleted in Plan 01)
             // Button geometry
             assert_eq!(

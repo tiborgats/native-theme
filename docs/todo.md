@@ -1724,3 +1724,6 @@ appearance observer. Add when there's demand.
 ### Mobile readers
 - [ ] iOS: `from_ios()` via `objc2-ui-kit`
 - [ ] Android: `from_android()` via `jni` + `ndk`, Material You (API 31+)
+
+### Live presets
+- [ ] `windows-11-live.toml` still states fields the Windows reader provides: `focus_ring_width_px` (light :14, dark :216, reader: `SM_CXFOCUSBORDER`) and the scrollbar `groove_width_px` / `min_thumb_length_px` (:80-81, :282-283, reader: `SM_CXVSCROLL` / `SM_CYVTHUMB`). Live presets omit reader-provided fields (`native-theme/src/presets/README.md:23-24`).

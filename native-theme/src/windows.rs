@@ -1,8 +1,9 @@
 //! Windows theme reader: reads accent color, accent shades, foreground/background,
 //! per-widget fonts from NONCLIENTMETRICSW, DwmGetColorizationColor title bar colors,
 //! GetSysColor per-widget colors, accessibility from UISettings and SystemParametersInfoW,
-//! icon sizes from GetSystemMetricsForDpi, WinUI3 spacing defaults, and DPI-aware
-//! geometry metrics from UISettings (WinRT) and Win32 APIs.
+//! icon sizes from GetSystemMetricsForDpi, WinUI3 spacing defaults, and geometry
+//! metrics from UISettings (WinRT) and Win32 APIs. Every system metric is read
+//! in logical pixels (see [`logical_system_metric`]).
 
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};
@@ -11,8 +12,8 @@ use ::windows::Win32::UI::HiDpi::{GetDpiForSystem, GetSystemMetricsForDpi};
 #[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::Win32::UI::WindowsAndMessaging::{
     NONCLIENTMETRICSW, SM_CXBORDER, SM_CXFOCUSBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL,
-    SM_CYVTHUMB, SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
-    SystemParametersInfoW,
+    SM_CYVTHUMB, SPI_GETNONCLIENTMETRICS, SYSTEM_METRICS_INDEX,
+    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW, USER_DEFAULT_SCREEN_DPI,
 };
 
 use crate::model::FontSpec;
@@ -173,31 +174,35 @@ pub(crate) fn read_dpi() -> u32 {
     unsafe { GetDpiForSystem() }
 }
 
-/// Read the DPI-aware border width, `SM_CXBORDER`: the Windows source of
-/// `defaults.border.line_width` (`docs/platform-facts.md:1114`).
+/// Read a system metric in logical pixels, the unit of every length in the
+/// model.
+///
+/// `GetSystemMetricsForDpi` scales a metric to the DPI it is given. At
+/// `USER_DEFAULT_SCREEN_DPI` (96, 100 % scaling) that is the unscaled metric,
+/// in logical pixels; at the system DPI of a DPI-aware process it would be
+/// device pixels (26 instead of 17 for `SM_CXVSCROLL` at 150 %).
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
-fn read_frame_width(dpi: u32) -> f32 {
-    unsafe { GetSystemMetricsForDpi(SM_CXBORDER, dpi) as f32 }
+fn logical_system_metric(index: SYSTEM_METRICS_INDEX) -> f32 {
+    unsafe { GetSystemMetricsForDpi(index, USER_DEFAULT_SCREEN_DPI) as f32 }
 }
 
-/// Read DPI-aware scrollbar and widget metrics.
+/// Read the scrollbar, focus-ring and border metrics, in logical pixels.
+///
+/// `SM_CXBORDER` is the Windows source of `defaults.border.line_width`
+/// (`docs/platform-facts.md:1114`).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeMode) {
-    unsafe {
-        variant.scrollbar.groove_width = Some(GetSystemMetricsForDpi(SM_CXVSCROLL, dpi) as f32);
-        variant.scrollbar.min_thumb_length = Some(GetSystemMetricsForDpi(SM_CYVTHUMB, dpi) as f32);
-        variant.defaults.focus_ring_width =
-            Some(GetSystemMetricsForDpi(SM_CXFOCUSBORDER, dpi) as f32);
-    }
-    variant.defaults.border.line_width = Some(read_frame_width(dpi));
+fn read_widget_sizing(variant: &mut crate::ThemeMode) {
+    variant.scrollbar.groove_width = Some(logical_system_metric(SM_CXVSCROLL));
+    variant.scrollbar.min_thumb_length = Some(logical_system_metric(SM_CYVTHUMB));
+    variant.defaults.focus_ring_width = Some(logical_system_metric(SM_CXFOCUSBORDER));
+    variant.defaults.border.line_width = Some(logical_system_metric(SM_CXBORDER));
     winui3_widget_sizing(variant);
 }
 
 /// Apply WinUI3 Fluent Design widget sizing constants (non-Windows testable version).
 #[cfg(not(all(target_os = "windows", feature = "windows")))]
-fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeMode) {
+fn read_widget_sizing(variant: &mut crate::ThemeMode) {
     variant.scrollbar.groove_width = Some(17.0);
     variant.scrollbar.min_thumb_length = Some(40.0);
     variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
@@ -394,13 +399,13 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
     }
 }
 
-/// Read icon sizes from GetSystemMetricsForDpi (WIN-05).
+/// Read icon sizes from GetSystemMetricsForDpi, in logical pixels (WIN-05).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-#[allow(unsafe_code)]
-fn read_icon_sizes(dpi: u32) -> (f32, f32) {
-    let small = unsafe { GetSystemMetricsForDpi(SM_CXSMICON, dpi) } as f32;
-    let large = unsafe { GetSystemMetricsForDpi(SM_CXICON, dpi) } as f32;
-    (small, large)
+fn read_icon_sizes() -> (f32, f32) {
+    (
+        logical_system_metric(SM_CXSMICON),
+        logical_system_metric(SM_CXICON),
+    )
 }
 
 /// Testable core: given raw color values, accent shades, fonts, and sizing data,
@@ -467,7 +472,7 @@ fn build_theme(
     variant.defaults.border.shadow_enabled = Some(true);
 
     // --- Widget sizing ---
-    read_widget_sizing(dpi, &mut variant);
+    read_widget_sizing(&mut variant);
 
     // --- Dialog button order (Windows convention: primary leftmost) ---
     //
@@ -592,7 +597,7 @@ fn read_windows() -> crate::Result<crate::ReaderResult> {
     let sys_colors = read_sys_colors();
     let dwm_title_bar = read_dwm_colorization();
     let inactive_title_bar = Some(read_inactive_caption_color());
-    let (small, large) = read_icon_sizes(dpi);
+    let (small, large) = read_icon_sizes();
     let accessibility = read_accessibility(&settings);
 
     Ok(build_theme(
@@ -1074,6 +1079,41 @@ mod tests {
             variant.defaults.focus_ring_width.is_some(),
             "focus_ring_width should be set from SM_CXFOCUSBORDER"
         );
+    }
+
+    // === Logical system metrics ===
+
+    /// The model states lengths in logical pixels. `GetSystemMetricsForDpi`
+    /// at 96 DPI (100 % scaling) is the unscaled metric; at the system DPI it
+    /// would be device pixels, twice as large at 200 % scaling.
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    #[allow(unsafe_code)]
+    #[test]
+    fn system_metrics_are_logical_at_any_system_dpi() {
+        let at_96 =
+            |index| unsafe { GetSystemMetricsForDpi(index, USER_DEFAULT_SCREEN_DPI) } as f32;
+
+        // A per-monitor-aware process is told the real system DPI; an unaware
+        // one is told 96 and would pass whatever the reader does.
+        let _ = unsafe {
+            ::windows::Win32::UI::HiDpi::SetProcessDpiAwarenessContext(
+                ::windows::Win32::UI::HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2,
+            )
+        };
+
+        let mut variant = crate::ThemeMode::default();
+        read_widget_sizing(&mut variant);
+        assert_eq!(variant.scrollbar.groove_width, Some(at_96(SM_CXVSCROLL)));
+        assert_eq!(variant.scrollbar.min_thumb_length, Some(at_96(SM_CYVTHUMB)));
+        assert_eq!(
+            variant.defaults.focus_ring_width,
+            Some(at_96(SM_CXFOCUSBORDER))
+        );
+        assert_eq!(variant.defaults.border.line_width, Some(at_96(SM_CXBORDER)));
+
+        let (small, large) = read_icon_sizes();
+        assert_eq!(small, at_96(SM_CXSMICON));
+        assert_eq!(large, at_96(SM_CXICON));
     }
 
     // === Border line width test ===
