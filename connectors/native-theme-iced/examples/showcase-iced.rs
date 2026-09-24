@@ -2194,7 +2194,10 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
                      iced's button::DEFAULT_PADDING for the others",
                 ),
                 ("shadow", "iced's own — the model has no shadow geometry"),
-                ("label", "button.font, size and weight"),
+                (
+                    "label",
+                    font_row("button.font", &resolved.button.font).as_str(),
+                ),
             ],
             &[("min-height", "hardcoded by iced")],
         ),
@@ -2377,7 +2380,10 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                         "input_padding — input.border.padding's stated sides, \
                          iced's text_input::DEFAULT_PADDING for the others",
                     ),
-                    ("text", "input.font, size and weight"),
+                    (
+                        "text",
+                        font_row("input.font", &resolved.input.font).as_str(),
+                    ),
                 ],
                 &[
                     (
@@ -2421,7 +2427,10 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                 ],
                 &[
                     ("border-radius", &radius_s),
-                    ("text", "input.font, size and weight"),
+                    (
+                        "text",
+                        font_row("input.font", &resolved.input.font).as_str(),
+                    ),
                 ],
                 &[("mode", "password / secure — dots replace chars")],
             ),
@@ -2449,7 +2458,10 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
             ],
             &[
                 ("border-radius", &radius_s),
-                ("text", "input.font, size and weight"),
+                (
+                    "text",
+                    font_row("input.font", &resolved.input.font).as_str(),
+                ),
             ],
             &[
                 ("line numbers", "not built-in"),
@@ -2556,7 +2568,10 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 ("border-radius", &checkbox_radius_s),
                 ("label gap", &label_gap_s),
                 ("box size", &indicator_width_s),
-                ("label", "checkbox.font, size and weight"),
+                (
+                    "label",
+                    font_row("checkbox.font", &resolved.checkbox.font).as_str(),
+                ),
             ],
             &[(
                 "check mark",
@@ -2637,7 +2652,10 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[
                 ("label gap", &label_gap_s),
                 ("indicator diameter", &indicator_width_s),
-                ("label", "checkbox.font, size and weight"),
+                (
+                    "label",
+                    font_row("checkbox.font", &resolved.checkbox.font).as_str(),
+                ),
             ],
             &[
                 ("border-radius", "radio::Style carries no corner radius"),
@@ -2730,7 +2748,11 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 ("thumb diameter", &thumb_diameter_s),
                 (
                     "label",
-                    "defaults.font, size and weight — the model states no font for a switch",
+                    format!(
+                        "{} — the model states no font for a switch",
+                        font_row("defaults.font", &resolved.defaults.font)
+                    )
+                    .as_str(),
                 ),
             ],
             &[
@@ -2805,7 +2827,10 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[
                 ("border-radius", &combo_radius_s),
                 ("arrow size", &arrow_size_s),
-                ("label and menu rows", "combo_box.font, size and weight"),
+                (
+                    "label and menu rows",
+                    font_row("combo_box.font", &resolved.combo_box.font).as_str(),
+                ),
             ],
             &[
                 ("dropdown arrow", "iced's own chevron glyph"),
@@ -2867,7 +2892,10 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
             &[
                 ("border-radius", &input_radius_s),
-                ("text and menu rows", "combo_box.font, size and weight"),
+                (
+                    "text and menu rows",
+                    font_row("combo_box.font", &resolved.combo_box.font).as_str(),
+                ),
             ],
             &[
                 ("search", "built-in text filter"),
@@ -3246,7 +3274,10 @@ fn view_display(state: &State) -> Element<'_, Message> {
             &[
                 ("positions", "Top / Bottom / Left / Right"),
                 ("border-radius", &tip_radius_s),
-                ("label", "tooltip.font, size and weight"),
+                (
+                    "label",
+                    font_row("tooltip.font", &resolved.tooltip.font).as_str(),
+                ),
             ],
             &[
                 ("gap", "set per widget instance"),
@@ -3588,8 +3619,14 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 ("split width", &divider_width_s),
                 ("pane surface", "styles::container_card"),
                 ("title bar", "styles::container_card"),
-                ("title", "defaults.font, size and weight"),
-                ("controls", "button.font, size and weight"),
+                (
+                    "title",
+                    font_row("defaults.font", &resolved.defaults.font).as_str(),
+                ),
+                (
+                    "controls",
+                    font_row("button.font", &resolved.button.font).as_str(),
+                ),
             ],
             &[
                 (
@@ -3626,25 +3663,31 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         (
             "caption",
             format!("{:.0}px", ts.caption.size),
-            format!("{}", ts.caption.weight),
+            weight_label(ts.caption.weight, &role_drawn(&ts.caption, resolved)),
             format!("{:.1}px", ts.caption.line_height),
         ),
         (
             "section_heading",
             format!("{:.0}px", ts.section_heading.size),
-            format!("{}", ts.section_heading.weight),
+            weight_label(
+                ts.section_heading.weight,
+                &role_drawn(&ts.section_heading, resolved),
+            ),
             format!("{:.1}px", ts.section_heading.line_height),
         ),
         (
             "dialog_title",
             format!("{:.0}px", ts.dialog_title.size),
-            format!("{}", ts.dialog_title.weight),
+            weight_label(
+                ts.dialog_title.weight,
+                &role_drawn(&ts.dialog_title, resolved),
+            ),
             format!("{:.1}px", ts.dialog_title.line_height),
         ),
         (
             "display",
             format!("{:.0}px", ts.display.size),
-            format!("{}", ts.display.weight),
+            weight_label(ts.display.weight, &role_drawn(&ts.display, resolved)),
             format!("{:.1}px", ts.display.line_height),
         ),
     ];
@@ -3702,8 +3745,14 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             &[
                 ("separator_x / separator_y", &line_width_s),
                 ("cell padding", "the showcase's own scale"),
-                ("header", "list.header_font, size and weight"),
-                ("cells", "list.item_font, size and weight"),
+                (
+                    "header",
+                    font_row("list.header_font", &resolved.list.header_font).as_str(),
+                ),
+                (
+                    "cells",
+                    font_row("list.item_font", &resolved.list.item_font).as_str(),
+                ),
             ],
             &[
                 (
@@ -4039,8 +4088,16 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                 ),
                 (
                     "h1 / h2",
-                    "text_scale dialog_title / section_heading, size (times the \
-                     text-scaling factor) and weight",
+                    format!(
+                        "text_scale dialog_title / section_heading, size (times the \
+                         text-scaling factor), in defaults.font's family; weight {} / {}",
+                        weight_label(page_title(ts).weight, &role_drawn(page_title(ts), resolved)),
+                        weight_label(
+                            section_title(ts).weight,
+                            &role_drawn(section_title(ts), resolved)
+                        ),
+                    )
+                    .as_str(),
                 ),
                 (
                     "h3 – h6",
@@ -4068,10 +4125,11 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                 ),
                 (
                     "font weight",
-                    "a weight the family has no face of is drawn at its nearest \
-                     face's: iced 0.14's text engine takes a face only at the \
-                     weight asked for, and files a variable font at its default \
-                     weight alone (drawable_font)",
+                    "iced 0.14's text engine takes a face only at the weight \
+                     asked for, and files a variable font at its default weight \
+                     alone; the showcase files the weights a variable face's wght \
+                     axis covers (register_weight), and a weight no face has is \
+                     drawn at the family's nearest face, as the h1 / h2 row says",
                 ),
             ],
         ),
@@ -4223,7 +4281,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                      iced_aw's own, which it keeps private (widget/card.rs:21)",
                 ),
                 ("Dismiss padding", "button_padding"),
-                ("Dismiss label", "button.font, size and weight"),
+                (
+                    "Dismiss label",
+                    font_row("button.font", &resolved.button.font).as_str(),
+                ),
             ],
             &[(
                 "close icon",
@@ -4324,7 +4385,11 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ),
                 (
                     "item label",
-                    "menu.font, size and weight, the context menu's too",
+                    format!(
+                        "{}, the context menu's too",
+                        font_row("menu.font", &resolved.menu.font)
+                    )
+                    .as_str(),
                 ),
             ],
             &[
@@ -4470,7 +4535,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ),
             ],
             &[
-                ("label", "tab.font, size and weight"),
+                ("label", font_row("tab.font", &resolved.tab.font).as_str()),
                 ("tab width", "tab.min_width"),
                 ("bar height", "tab.min_height"),
                 (
@@ -4548,7 +4613,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     to_color(side_t.hover_background),
                 ),
             ],
-            &[("label", "sidebar.font, size and weight")],
+            &[(
+                "label",
+                font_row("sidebar.font", &resolved.sidebar.font).as_str(),
+            )],
             &[(
                 "corner radius",
                 "sidebar::Style carries none but the close icon's; iced_aw rounds \
@@ -4687,7 +4755,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ),
             ],
             &[
-                ("row label", "list.item_font, size and weight"),
+                (
+                    "row label",
+                    font_row("list.item_font", &resolved.list.item_font).as_str(),
+                ),
                 ("row height", &row_height_s),
             ],
             &[(
@@ -5452,21 +5523,84 @@ impl Typeset for iced::widget::Text<'_> {
 }
 
 /// A theme font, its family and weight, as iced can draw it
-/// ([`drawable_font`] over iced's own font database).
+/// ([`font_from_database`]).
 fn theme_font(font: &ResolvedFontSpec) -> iced::Font {
-    font_from_database(&font.family, font.weight, false)
+    font_drawn(font).font
 }
 
 /// A `text_scale` role's font: the role's weight in the body font's family,
 /// which a role does not state for itself.
 fn role_font(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> iced::Font {
-    font_from_database(&resolved.defaults.font.family, entry.weight, false)
+    role_drawn(entry, resolved).font
 }
 
 /// The theme's monospace font as iced can draw it.
 fn theme_mono_font(resolved: &ResolvedTheme) -> iced::Font {
     let mono = &resolved.defaults.mono_font;
-    font_from_database(&mono.family, mono.weight, true)
+    font_from_database(&mono.family, mono.weight, true).font
+}
+
+/// How a theme font is drawn.
+fn font_drawn(font: &ResolvedFontSpec) -> Drawn<'static> {
+    font_from_database(&font.family, font.weight, false)
+}
+
+/// How a `text_scale` role is drawn: its weight in the body font's family.
+fn role_drawn(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> Drawn<'static> {
+    font_from_database(&resolved.defaults.font.family, entry.weight, false)
+}
+
+/// A Widget Info row for text in a theme font: the field it comes from,
+/// and the weight it is drawn at where that is not the weight stated.
+fn font_row(field: &str, font: &ResolvedFontSpec) -> String {
+    let weight = weight_label(font.weight, &font_drawn(font));
+    if weight == font.weight.to_string() {
+        format!("{field}, family, size and weight")
+    } else {
+        format!("{field}, family and size; weight {weight}")
+    }
+}
+
+/// A theme weight as the showcase shows it: the number alone where iced
+/// draws it, and otherwise what is drawn instead and why.
+fn weight_label(stated: u16, drawn: &Drawn<'_>) -> String {
+    let asked = css_weight(native_theme_iced::to_iced_weight(stated));
+    let at = css_weight(drawn.font.weight);
+    if at == stated {
+        stated.to_string()
+    } else if at == asked {
+        format!("{stated} (drawn at {at}, iced's nearest weight)")
+    } else {
+        let family = drawn.family.unwrap_or("the generic family");
+        format!("{stated} (drawn at {at}: {family} has no {asked} face)")
+    }
+}
+
+/// The CSS weight iced asks cosmic-text for at one of its nine weights
+/// (`iced_graphics` `text.rs:278-290`).
+fn css_weight(weight: iced::font::Weight) -> u16 {
+    use cosmic_text::Weight as Css;
+    use iced::font::Weight;
+    match weight {
+        Weight::Thin => Css::THIN.0,
+        Weight::ExtraLight => Css::EXTRA_LIGHT.0,
+        Weight::Light => Css::LIGHT.0,
+        Weight::Normal => Css::NORMAL.0,
+        Weight::Medium => Css::MEDIUM.0,
+        Weight::Semibold => Css::SEMIBOLD.0,
+        Weight::Bold => Css::BOLD.0,
+        Weight::ExtraBold => Css::EXTRA_BOLD.0,
+        Weight::Black => Css::BLACK.0,
+    }
+}
+
+/// A font as iced draws it, and the family that draws it where the font
+/// database holds one: the theme's, or the one iced's generic family
+/// resolves to.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Drawn<'a> {
+    font: iced::Font,
+    family: Option<&'a str>,
 }
 
 /// The fonts built so far, by family, weight and whether monospace, and the
@@ -5474,8 +5608,8 @@ fn theme_mono_font(resolved: &ResolvedTheme) -> iced::Font {
 ///
 /// iced's `Family::Name` takes a `&'static str` (`iced_core` `font.rs:46`),
 /// so each family name is leaked once and reused; the showcase meets a few
-/// dozen at most. The font database is read once per font: it changes only
-/// when a font is loaded, which the showcase never does.
+/// dozen at most. A font is worked out once, the first time a view asks for
+/// it, which is at startup and after a theme change for that theme's fonts.
 static FONTS: Mutex<FontBook> = Mutex::new(FontBook {
     names: BTreeSet::new(),
     fonts: BTreeMap::new(),
@@ -5483,55 +5617,82 @@ static FONTS: Mutex<FontBook> = Mutex::new(FontBook {
 
 struct FontBook {
     names: BTreeSet<&'static str>,
-    fonts: BTreeMap<(&'static str, u16, bool), iced::Font>,
+    fonts: BTreeMap<(&'static str, u16, bool), Drawn<'static>>,
+}
+
+impl FontBook {
+    fn intern(&mut self, name: &str) -> &'static str {
+        match self.names.get(name) {
+            Some(&held) => held,
+            None => {
+                let held: &'static str = Box::leak(name.to_owned().into_boxed_str());
+                self.names.insert(held);
+                held
+            }
+        }
+    }
 }
 
 /// [`drawable_font`] over the database iced draws text from, and the
-/// platform fallback list cosmic-text walks.
-fn font_from_database(family: &str, weight: u16, mono: bool) -> iced::Font {
+/// platform fallback list cosmic-text walks, after [`register_weight`] has
+/// filed the weight a variable face of the drawing family covers.
+fn font_from_database(family: &str, weight: u16, mono: bool) -> Drawn<'static> {
     let mut book = FONTS.lock().unwrap_or_else(PoisonError::into_inner);
-    let name = match book.names.get(family) {
-        Some(&name) => name,
-        None => {
-            let name: &'static str = Box::leak(family.to_owned().into_boxed_str());
-            book.names.insert(name);
-            name
-        }
-    };
-    if let Some(&font) = book.fonts.get(&(name, weight, mono)) {
-        return font;
+    let name = book.intern(family);
+    if let Some(&drawn) = book.fonts.get(&(name, weight, mono)) {
+        return drawn;
     }
-    let font = {
+    let (font, drawing) = {
         let mut system = iced::advanced::graphics::text::font_system()
             .write()
             .unwrap_or_else(PoisonError::into_inner);
-        drawable_font(
-            system.raw().db(),
-            cosmic_text::PlatformFallback.common_fallback(),
-            name,
-            weight,
-            mono,
-        )
+        let raw = system.raw();
+        let platform = cosmic_text::PlatformFallback;
+        let fallbacks = platform.common_fallback();
+        let asked = css_weight(native_theme_iced::to_iced_weight(weight));
+        let first = drawable_font(raw.db(), fallbacks, name, weight, mono);
+        let unmatched = match first.family {
+            Some(drawing) if css_weight(first.font.weight) != asked => Some(drawing.to_owned()),
+            _ => None,
+        };
+        let first = (first.font, first.family.map(str::to_owned));
+        let filed = unmatched
+            .is_some_and(|drawing| register_weight(raw.db_mut(), &drawing, asked, weight_axis));
+        if filed {
+            let drawn = drawable_font(raw.db(), fallbacks, name, weight, mono);
+            (drawn.font, drawn.family.map(str::to_owned))
+        } else {
+            first
+        }
     };
-    book.fonts.insert((name, weight, mono), font);
-    font
+    let drawn = Drawn {
+        font,
+        family: drawing.map(|drawing| book.intern(&drawing)),
+    };
+    book.fonts.insert((name, weight, mono), drawn);
+    drawn
 }
 
 /// The font iced draws `family` at the CSS `weight` in, given the font
 /// database and the platform's fallback families: the family where the
-/// database holds it, at the weight where the family has a face of it, and
-/// otherwise at the weight of its nearest face.
+/// database holds it, at the weight iced asks for where the family has a
+/// face of it, and otherwise at the weight of its nearest face.
 ///
 /// iced 0.14 draws text with cosmic-text 0.15, which takes a face only at
 /// the weight asked for (`font/fallback/mod.rs:279-287`, `:299-303`,
-/// `:446-456`), and fontdb 0.23 files a variable font as one face at its
-/// default weight (`lib.rs:1034-1037`, `:1161`). A weight its family has no
-/// face of therefore falls through to the next fallback family that has
-/// one. On macOS the database holds the system family, `.SF NS`, first in
-/// cosmic-text's fallback list, at no bold weight, so bold was drawn in the
-/// monospace Menlo Bold, second in that list
-/// (`font/fallback/macos.rs:30-38`). The nearest face is the one fontdb's
-/// CSS matching picks (`lib.rs:1210`), so the text stays in its family.
+/// `:446-456`), and fontdb 0.23 files a face at the one weight its OS/2
+/// table states, a variable font too (`lib.rs:1034-1037`, `:1161`). A
+/// weight its family has no face of therefore falls through to the next
+/// fallback family that has one: on macOS cosmic-text's fallback list puts
+/// the system family, `.SF NS`, first and the monospace Menlo second
+/// (`font/fallback/macos.rs:30-38`), and bold section titles were drawn in
+/// a monospace bold. [`register_weight`] files the weights a variable face
+/// covers; where none does, the text stays in its family at the nearest
+/// face iced can ask for, one of its nine weights, chosen as fontdb's CSS
+/// matching chooses (`lib.rs:1278-1336`).
+///
+/// iced asks for one of nine weights (`iced_graphics` `text.rs:278-290`),
+/// so a weight between them is asked for at the nearest of them.
 ///
 /// A family the database does not hold is drawn in iced's generic family,
 /// which cosmic-text resolves to the database's sans-serif family
@@ -5540,21 +5701,14 @@ fn font_from_database(family: &str, weight: u16, mono: bool) -> iced::Font {
 /// A monospace one keeps its weight: cosmic-text takes a monospaced face at
 /// any weight, the nearest first (`font/fallback/mod.rs:299-303`,
 /// `:375-413`).
-fn drawable_font(
-    db: &fontdb::Database,
-    fallbacks: &[&str],
+fn drawable_font<'a>(
+    db: &'a fontdb::Database,
+    fallbacks: &[&'a str],
     family: &'static str,
     weight: u16,
     mono: bool,
-) -> iced::Font {
-    let holds = |name: &str| {
-        db.faces().any(|face| {
-            face.style == fontdb::Style::Normal
-                && face.stretch == fontdb::Stretch::Normal
-                && face.families.iter().any(|(held, _)| held == name)
-        })
-    };
-    let (drawn, deciding) = if holds(family) {
+) -> Drawn<'a> {
+    let (drawn, deciding) = if holds(db, family) {
         (iced::font::Family::Name(family), Some(family))
     } else if mono {
         (iced::font::Family::Monospace, None)
@@ -5562,24 +5716,116 @@ fn drawable_font(
         let generic = db.family_name(&fontdb::Family::SansSerif);
         let resolved = std::iter::once(generic)
             .chain(fallbacks.iter().copied())
-            .find(|name| holds(name));
+            .find(|name| holds(db, name));
         (iced::font::Family::SansSerif, resolved)
     };
+    let asked = native_theme_iced::to_iced_weight(weight);
     let weight = deciding
         .and_then(|name| {
-            db.query(&fontdb::Query {
-                families: &[fontdb::Family::Name(name)],
-                weight: fontdb::Weight(weight),
-                stretch: fontdb::Stretch::Normal,
-                style: fontdb::Style::Normal,
-            })
+            let faces: Vec<u16> = upright_faces(db, name)
+                .map(|face| face.weight.0)
+                .filter(|&held| css_weight(native_theme_iced::to_iced_weight(held)) == held)
+                .collect();
+            nearest_weight(css_weight(asked), &faces)
         })
-        .and_then(|id| db.face(id))
-        .map_or(weight, |face| face.weight.0);
-    iced::Font {
-        family: drawn,
-        weight: native_theme_iced::to_iced_weight(weight),
-        ..iced::Font::DEFAULT
+        .map_or(asked, native_theme_iced::to_iced_weight);
+    Drawn {
+        font: iced::Font {
+            family: drawn,
+            weight,
+            ..iced::Font::DEFAULT
+        },
+        family: deciding,
+    }
+}
+
+/// Whether the database holds an upright face of `family`.
+fn holds(db: &fontdb::Database, family: &str) -> bool {
+    upright_faces(db, family).next().is_some()
+}
+
+/// The upright faces of `family`: the only ones cosmic-text matches text
+/// that asks for no style or stretch against (`attrs.rs:323-327`).
+fn upright_faces<'a>(
+    db: &'a fontdb::Database,
+    family: &'a str,
+) -> impl Iterator<Item = &'a fontdb::FaceInfo> + 'a {
+    db.faces().filter(move |face| {
+        face.style == fontdb::Style::Normal
+            && face.stretch == fontdb::Stretch::Normal
+            && face.families.iter().any(|(held, _)| held == family)
+    })
+}
+
+/// The weight CSS font matching takes from `held` for `asked`, as fontdb
+/// implements it (`lib.rs:1278-1336`): the weight itself; for 400, 500 and
+/// for 500, 400 first; up to 500, the nearest lighter weight, else the
+/// nearest heavier; above 500, the nearest heavier, else the nearest
+/// lighter.
+fn nearest_weight(asked: u16, held: &[u16]) -> Option<u16> {
+    let has = |weight: u16| held.contains(&weight);
+    let lighter = || held.iter().copied().filter(|&w| w < asked).max();
+    let heavier = || held.iter().copied().filter(|&w| w > asked).min();
+    let normal = cosmic_text::Weight::NORMAL.0;
+    let medium = cosmic_text::Weight::MEDIUM.0;
+    if has(asked) {
+        Some(asked)
+    } else if asked == normal && has(medium) {
+        Some(medium)
+    } else if asked == medium && has(normal) {
+        Some(normal)
+    } else if asked <= medium {
+        lighter().or_else(heavier)
+    } else {
+        heavier().or_else(lighter)
+    }
+}
+
+/// The range of a face's `wght` axis, where its font varies in weight.
+fn weight_axis(db: &fontdb::Database, id: fontdb::ID) -> Option<(f32, f32)> {
+    use cosmic_text::skrifa::MetadataProvider as _;
+    db.with_face_data(id, |data, index| {
+        let font = cosmic_text::skrifa::FontRef::from_index(data, index).ok()?;
+        let axis = font
+            .axes()
+            .get_by_tag(cosmic_text::skrifa::Tag::new(b"wght"))?;
+        Some((axis.min_value(), axis.max_value()))
+    })
+    .flatten()
+}
+
+/// Files a face of `family` at the CSS `weight` where the family has none
+/// but a variable face of it covers that weight on its `wght` axis: a copy
+/// of that face's entry at `weight`, over the same font data. Returns
+/// whether it filed one.
+///
+/// cosmic-text 0.15 matches only the weight fontdb filed a face at, but it
+/// draws the face it matched at the weight asked for, setting the font's
+/// `wght` axis to it (`font/mod.rs:139-142`), so the filed face draws the
+/// platform's own font at the true weight. cosmic-text 0.19 matches a
+/// variable face this way itself (`variable_weight_match`,
+/// `font/system.rs:38-44`). `axis` reads a face's `wght` range,
+/// [`weight_axis`] outside the tests.
+fn register_weight(
+    db: &mut fontdb::Database,
+    family: &str,
+    weight: u16,
+    axis: impl Fn(&fontdb::Database, fontdb::ID) -> Option<(f32, f32)>,
+) -> bool {
+    if upright_faces(db, family).any(|face| face.weight.0 == weight) {
+        return false;
+    }
+    let wanted = f32::from(weight);
+    let variable = upright_faces(db, family)
+        .find(|face| axis(db, face.id).is_some_and(|(min, max)| min <= wanted && wanted <= max))
+        .cloned();
+    match variable {
+        Some(mut face) => {
+            face.weight = fontdb::Weight(weight);
+            db.push_face_info(face);
+            true
+        }
+        None => false,
     }
 }
 
@@ -7371,7 +7617,7 @@ mod tests {
     #[test]
     fn a_held_family_keeps_the_theme_family_and_weight() {
         let db = database(&[("Theme Sans", 400, false), ("Theme Sans", 700, false)]);
-        let font = drawable_font(&db, &[], "Theme Sans", 700, false);
+        let font = drawable_font(&db, &[], "Theme Sans", 700, false).font;
         assert_eq!(
             (font.family, font.weight),
             (
@@ -7387,7 +7633,7 @@ mod tests {
     #[test]
     fn a_weight_the_family_lacks_stays_in_the_family() {
         let db = database(&[("Theme Sans", 400, false), ("Mono Fallback", 700, true)]);
-        let font = drawable_font(&db, &["Mono Fallback"], "Theme Sans", 700, false);
+        let font = drawable_font(&db, &["Mono Fallback"], "Theme Sans", 700, false).font;
         assert_eq!(
             (font.family, font.weight),
             (
@@ -7409,7 +7655,7 @@ mod tests {
             ("Mono Fallback", 400, true),
             ("Mono Fallback", 700, true),
         ]);
-        let font = drawable_font(&db, &fallbacks, "Absent Sans", 700, false);
+        let font = drawable_font(&db, &fallbacks, "Absent Sans", 700, false).font;
         assert_eq!(
             (font.family, font.weight),
             (iced::font::Family::SansSerif, iced::font::Weight::Normal)
@@ -7417,7 +7663,7 @@ mod tests {
 
         let mut db = database(&[("Generic Sans", 400, false), ("Generic Sans", 700, false)]);
         db.set_sans_serif_family("Generic Sans");
-        let font = drawable_font(&db, &fallbacks, "Absent Sans", 700, false);
+        let font = drawable_font(&db, &fallbacks, "Absent Sans", 700, false).font;
         assert_eq!(
             (font.family, font.weight),
             (iced::font::Family::SansSerif, iced::font::Weight::Bold)
@@ -7430,10 +7676,87 @@ mod tests {
     #[test]
     fn an_absent_mono_family_keeps_its_weight() {
         let db = database(&[("Mono Fallback", 400, true)]);
-        let font = drawable_font(&db, &[], "Absent Mono", 700, true);
+        let font = drawable_font(&db, &[], "Absent Mono", 700, true).font;
         assert_eq!(
             (font.family, font.weight),
             (iced::font::Family::Monospace, iced::font::Weight::Bold)
+        );
+    }
+
+    /// A weight between iced's nine is asked for at the nearest of them, and
+    /// a face iced cannot ask for, at a weight between them, is passed over
+    /// for the nearest face it can.
+    #[test]
+    fn weights_are_ones_iced_can_ask_for() {
+        let db = database(&[("Theme Sans", 400, false), ("Theme Sans", 700, false)]);
+        let font = drawable_font(&db, &[], "Theme Sans", 350, false).font;
+        assert_eq!(font.weight, iced::font::Weight::Normal);
+
+        let db = database(&[("Theme Sans", 350, false), ("Theme Sans", 600, false)]);
+        let font = drawable_font(&db, &[], "Theme Sans", 400, false).font;
+        assert_eq!(font.weight, iced::font::Weight::Semibold);
+    }
+
+    /// A variable face whose `wght` axis covers a weight its family has no
+    /// face of gains one at that weight, over the same font data.
+    #[test]
+    fn a_variable_face_gains_the_weights_its_axis_covers() {
+        let mut db = database(&[("Theme Sans", 400, false)]);
+        let filed = register_weight(&mut db, "Theme Sans", 700, |_, _| Some((100.0, 900.0)));
+        assert!(filed, "no face was filed");
+        let font = drawable_font(&db, &[], "Theme Sans", 700, false).font;
+        assert_eq!(
+            (font.family, font.weight),
+            (
+                iced::font::Family::Name("Theme Sans"),
+                iced::font::Weight::Bold
+            )
+        );
+        let sources: Vec<_> = upright_faces(&db, "Theme Sans")
+            .map(|face| (face.post_script_name.as_str(), face.index))
+            .collect();
+        assert_eq!(sources, [("Theme Sans-400", 0), ("Theme Sans-400", 0)]);
+    }
+
+    /// An axis that stops short of the weight files nothing, and the text
+    /// stays at the family's nearest face.
+    #[test]
+    fn an_axis_short_of_the_weight_files_nothing() {
+        let mut db = database(&[("Theme Sans", 400, false)]);
+        let filed = register_weight(&mut db, "Theme Sans", 700, |_, _| Some((400.0, 600.0)));
+        assert!(!filed, "a face was filed beyond the axis");
+        assert_eq!(upright_faces(&db, "Theme Sans").count(), 1);
+    }
+
+    /// A face with no `wght` axis files nothing: here the axis is read from
+    /// the face's own data, which has no `fvar` table.
+    #[test]
+    fn a_static_face_files_nothing() {
+        let mut db = database(&[("Theme Sans", 400, false)]);
+        let filed = register_weight(&mut db, "Theme Sans", 700, weight_axis);
+        assert!(!filed, "a static face gained a weight");
+        assert_eq!(upright_faces(&db, "Theme Sans").count(), 1);
+    }
+
+    /// A weight is shown as the number alone where it is drawn, and with
+    /// what is drawn instead, and why, where it is not.
+    #[test]
+    fn a_substituted_weight_says_so() {
+        let drawn = |weight| Drawn {
+            font: iced::Font {
+                weight,
+                ..iced::Font::DEFAULT
+            },
+            family: Some("Theme Sans"),
+        };
+        assert_eq!(weight_label(700, &drawn(iced::font::Weight::Bold)), "700");
+        assert_eq!(
+            weight_label(700, &drawn(iced::font::Weight::Normal)),
+            "700 (drawn at 400: Theme Sans has no 700 face)"
+        );
+        assert_eq!(
+            weight_label(350, &drawn(iced::font::Weight::Normal)),
+            "350 (drawn at 400, iced's nearest weight)"
         );
     }
 
