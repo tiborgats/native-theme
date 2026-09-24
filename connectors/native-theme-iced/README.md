@@ -254,8 +254,43 @@ switch has none, so a `toggler`'s label takes `defaults.font`. The receivers
 are `Text::size` and `Text::font`; `text_size` and `font` on `checkbox`,
 `radio`, `toggler` and `pick_list`; `size` and `font` on `text_input`,
 `combo_box` and `text_editor`; and `text_size` and `text_font` on `iced_aw`'s
-`TabBar`, `Tabs` and `Sidebar`. `to_iced_weight` turns a font's CSS weight
-into the `Weight` of the `iced::Font`.
+`TabBar`, `Tabs` and `Sidebar`.
+
+Build each `iced::Font` from the theme font's family and weight. iced's
+`Family::Name` takes a `&'static str` (`iced_core` 0.14 `font.rs:46`), so
+leak each distinct family name once and reuse it, keyed by the `Arc<str>`
+`native_theme::theme::intern_font_family` gives per name; `to_iced_weight`
+turns the CSS weight into iced's `Weight`:
+
+```rust,ignore
+let family: &'static str = *families // HashMap<Arc<str>, &'static str>
+    .entry(intern_font_family(&spec.family))
+    .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
+let font = iced::Font {
+    family: iced::font::Family::Name(family),
+    weight: native_theme_iced::to_iced_weight(spec.weight),
+    ..iced::Font::DEFAULT
+};
+```
+
+iced 0.14 draws text with cosmic-text 0.15, which takes a face only where
+the family has one at exactly the weight asked for, and fontdb 0.23 files
+each face at the one weight its OS/2 table states, a variable font too. A
+weight the family has no face of, like a family the font database does not
+hold, falls through to the platform's fallback families: cosmic-text's macOS
+list has `.SF NS` first and the monospace Menlo second, so bold text asked of
+the system font can be drawn in Menlo Bold. To draw a stated weight of a
+variable family, file a face for it: where the family has no face at the
+weight but a face's `wght` axis covers it, push a copy of that face's
+`fontdb::FaceInfo` at the weight into the database iced draws from
+(`iced::advanced::graphics::text::font_system()`, `raw().db_mut()`, behind
+iced's `advanced` feature); cosmic-text sets the matched face's `wght` axis
+to the weight asked for, so the platform's own font is drawn at the true
+weight. Where no face covers it, ask for the family's nearest weight. The
+showcase does both (`drawable_font` and `register_weight`); the crate docs'
+*Font Configuration* section cites the sources. cosmic-text 0.19 matches a
+variable face at any weight its axis covers, which makes filing faces
+unnecessary once iced draws with it.
 
 ### Apply user overrides to the OS theme
 

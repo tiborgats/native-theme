@@ -89,23 +89,56 @@
 //!
 //! # Font Configuration
 //!
-//! Font family names use `Arc<str>`. For iced's `&'static str` requirement,
-//! use `intern_font_family` to deduplicate allocations:
+//! A font in the resolved theme is a family, a size and a CSS weight. iced's
+//! `Family::Name` takes a `&'static str` (`iced_core` 0.14 `font.rs:46`)
+//! while a family name is an `Arc<str>`, so leak each distinct family once
+//! and reuse it; `intern_font_family` gives one `Arc<str>` per name to key
+//! that by. [`to_iced_weight`] turns the weight into iced's:
 //!
 //! ```rust,no_run
 //! use native_theme::theme::intern_font_family;
+//! use std::collections::HashMap;
+//! use std::sync::Arc;
 //!
 //! let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true)?;
-//! let family: std::sync::Arc<str> = intern_font_family(
-//!     native_theme_iced::font_family(&resolved),
-//! );
-//! // For iced Font, convert Arc<str> to a String:
-//! let font_family: String = family.to_string();
+//! let mut families: HashMap<Arc<str>, &'static str> = HashMap::new();
+//! let spec = &resolved.defaults.font;
+//! let family: &'static str = *families
+//!     .entry(intern_font_family(&spec.family))
+//!     .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
+//! let font = iced_core::Font {
+//!     family: iced_core::font::Family::Name(family),
+//!     weight: native_theme_iced::to_iced_weight(spec.weight),
+//!     ..iced_core::Font::DEFAULT
+//! };
+//! # let _ = font;
 //! # Ok::<(), native_theme::error::Error>(())
 //! ```
 //!
-//! `intern_font_family` returns the same `Arc<str>` for repeated calls with
-//! the same family name, so resolving fonts many times allocates only once.
+//! iced 0.14 draws text with cosmic-text 0.15, which takes a face only where
+//! the family has one at exactly the weight asked for
+//! (`font/fallback/mod.rs:279-287`, `:446-456`), and fontdb 0.23 files each
+//! face at the one weight its OS/2 table states, a variable font too
+//! (`lib.rs:1034-1037`). A weight the family has no face of, like a family
+//! the font database does not hold, falls through to the platform's
+//! fallback families, whatever they are: cosmic-text's macOS list has
+//! `.SF NS` first and the monospace Menlo second
+//! (`font/fallback/macos.rs:30-38`), so bold text asked of the system font
+//! can be drawn in Menlo Bold.
+//!
+//! To draw a stated weight of a variable family, file a face for it: where
+//! the family has no face at the weight but a face's `wght` axis covers it,
+//! push a copy of that face's `fontdb::FaceInfo` at the weight into the
+//! database iced draws from (`iced::advanced::graphics::text::font_system()`,
+//! `raw().db_mut()`, behind iced's `advanced` feature). cosmic-text sets the
+//! `wght` axis of the face it matched to the weight asked for
+//! (`font/mod.rs:139-142`), so the platform's own font is drawn at the true
+//! weight. Where no face covers the weight, ask for the family's nearest
+//! weight instead. The showcase does both (`drawable_font` and
+//! `register_weight` in `examples/showcase-iced.rs`). cosmic-text 0.19
+//! matches a variable face at any weight its axis covers
+//! (`variable_weight_match`, `font/system.rs:38-44`), which makes filing
+//! faces unnecessary once iced draws with it.
 //!
 //! # Theme Field Coverage
 //!
@@ -397,7 +430,9 @@ pub fn font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 /// reaches every text alike. The receivers are `Text::size` and `font`;
 /// `text_size` and `font` on `checkbox`, `radio`, `toggler` and `pick_list`;
 /// `size` and `font` on `text_input`, `combo_box` and `text_editor`.
-/// [`to_iced_weight`] turns the weight into iced's.
+/// [`to_iced_weight`] turns the weight into iced's; the crate's *Font
+/// Configuration* section shows the whole `Font`, with the family, and what
+/// iced 0.14 draws for a weight the family has no face of.
 #[must_use]
 pub fn font_size(
     resolved: &native_theme::theme::ResolvedTheme,
@@ -453,6 +488,10 @@ fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
 }
 
 /// Returns the primary UI font weight (CSS 100-900) from the resolved theme.
+///
+/// iced 0.14 draws a weight only where the family has a face at exactly
+/// that weight, and otherwise falls through to another family; see the
+/// crate's *Font Configuration* section.
 #[must_use]
 pub fn font_weight(resolved: &native_theme::theme::ResolvedTheme) -> u16 {
     resolved.defaults.font.weight
@@ -544,6 +583,12 @@ pub fn line_height_multiplier(resolved: &native_theme::theme::ResolvedTheme) -> 
 ///
 /// Non-standard weights are rounded to the nearest standard value
 /// (e.g., 350 -> Normal, 550 -> Semibold).
+///
+/// The weight goes into an `iced_core::Font` with the theme's family, which
+/// the crate's *Font Configuration* section builds. iced 0.14 draws it only
+/// where the family has a face at exactly that weight; elsewhere the text
+/// falls through to another family, a monospace one on macOS, unless a face
+/// is filed for the weight as that section describes.
 ///
 /// # Example
 ///
