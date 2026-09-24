@@ -450,9 +450,11 @@ pub struct ToolbarTheme {
     #[serde(rename = "bar_height_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub bar_height: Option<f32>,
-    /// Horizontal space between toolbar items.
+    /// Horizontal space between toolbar items. `None` where the theme cites
+    /// no source for one (docs/platform-facts.md §2.13 states it for every
+    /// platform, but a colour scheme has none).
     #[serde(rename = "item_gap_px")]
-    #[theme(check = "non_negative")]
+    #[theme(category = "soft_option", check = "non_negative")]
     pub item_gap: Option<f32>,
     /// Toolbar icon size in logical pixels.
     #[serde(rename = "icon_size_px")]

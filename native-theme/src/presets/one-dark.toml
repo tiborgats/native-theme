@@ -163,7 +163,6 @@ disabled_text_color = "#e0e0e0"
 
 
 [light.toolbar]
-item_gap_px = 6.0
 
 [light.sidebar]
 background_color = "#f0f0f0"
@@ -407,7 +406,6 @@ disabled_text_color = "#3e4451"
 
 
 [dark.toolbar]
-item_gap_px = 6.0
 
 [dark.sidebar]
 background_color = "#21252b"

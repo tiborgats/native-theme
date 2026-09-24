@@ -391,7 +391,7 @@ fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option
 fn extra_field(theme: &ResolvedTheme, widget: &str, field: &str) -> Option<Option<f32>> {
     match (widget, field) {
         ("toolbar", "bar_height") => Some(theme.toolbar.bar_height),
-        ("toolbar", "item_gap") => Some(Some(theme.toolbar.item_gap)),
+        ("toolbar", "item_gap") => Some(theme.toolbar.item_gap),
         ("menu", "row_height") => Some(theme.menu.row_height),
         ("list", "row_height") => Some(theme.list.row_height),
         ("combo_box", "arrow_area_width") => Some(theme.combo_box.arrow_area_width),
@@ -629,9 +629,8 @@ const UNSOURCED_PRESETS: [&str; 12] = [
 ];
 
 /// A preset without a platform cites no source for a size, so it states no
-/// padding side, `row_height`, `bar_height` or `arrow_area_width`, and the
-/// toolkit's own sizes stand. (`toolbar.item_gap` is required, so every
-/// preset states it.)
+/// padding side, `row_height`, `bar_height`, `item_gap` or
+/// `arrow_area_width`, and the toolkit's own sizes stand.
 #[test]
 fn unsourced_presets_state_no_gated_size() {
     let mut failures = Vec::new();
@@ -650,9 +649,7 @@ fn unsourced_presets_state_no_gated_size() {
                     continue;
                 };
                 for (key, value) in sizes {
-                    if key != "item_gap"
-                        && let Some(value) = value
-                    {
+                    if let Some(value) = value {
                         failures.push(format!(
                             "{name} {mode:?}: states {widget}.{key} = {value}, with no source"
                         ));

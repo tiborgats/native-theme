@@ -239,7 +239,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap, the border.padding sides the theme states, background_color, font size and weight",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size and weight",
     ),
     ("spinner_size", "spinner.diameter"),
     (

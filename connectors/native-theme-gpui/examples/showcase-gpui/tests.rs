@@ -1041,7 +1041,8 @@ fn the_window_is_titled_with_the_crates_version(cx: &mut TestAppContext) {
 /// and Reload System Theme buttons, are measured.
 ///
 /// kde-breeze states a 0px gap and adwaita a 6px one, so a row that kept a
-/// gap of its own fails one of the two.
+/// gap of its own fails one of the two. Both state one, so the gap is
+/// measured under each.
 #[gpui::test]
 fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -1086,6 +1087,9 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
             "{preset}: the Command Palette button at {first:?} or the Reload button at \
              {second:?} is not inside the toolbar at {bar:?}"
         );
+        let Some(item_gap) = item_gap else {
+            panic!("{preset}: states no toolbar.item_gap, so nothing was measured");
+        };
         assert_eq!(
             second.left() - first.right(),
             px(item_gap),

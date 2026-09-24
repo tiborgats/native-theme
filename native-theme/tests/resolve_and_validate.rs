@@ -573,7 +573,9 @@ fn toolbar_bar_height_is_none_where_absent() {
         "precondition: macos-sonoma states a bar height"
     );
     v.toolbar.bar_height = None;
-    assert_eq!(resolve_mode(v).unwrap().toolbar.bar_height, None);
+    assert_eq!(resolve_mode(v.clone()).unwrap().toolbar.bar_height, None);
+    v.toolbar.item_gap = None;
+    assert_eq!(resolve_mode(v).unwrap().toolbar.item_gap, None);
 }
 
 #[test]

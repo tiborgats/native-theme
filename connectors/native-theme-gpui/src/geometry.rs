@@ -655,10 +655,10 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 /// `toolbar.bar_height` as its minimum height where the platform states one
 /// -- a toolbar that sizes to its content, as KDE's does, states none, and a
 /// fixed height would be an invention there --, `toolbar.item_gap` between
-/// items, the `toolbar.border` padding sides the platform states,
-/// `toolbar.background_color`, and `toolbar.font` size and weight. The row
-/// is the application's own, so an unstated side or height is left to the
-/// application. No edge: §2.13 states none; an application that wants a
+/// items where the theme states one, the `toolbar.border` padding sides the
+/// platform states, `toolbar.background_color`, and `toolbar.font` size and
+/// weight. The row is the application's own, so an unstated side, gap or
+/// height is left to the application. No edge: §2.13 states none; an application that wants a
 /// rule draws a Separator.
 #[must_use]
 pub fn toolbar(n: Native<'_>) -> StyleRefinement {
@@ -668,7 +668,11 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
         Some(h) => r.min_h(px(h)),
         None => r,
     };
-    with_padding(r.gap(px(t.item_gap)), &t.border.padding).bg(rgba_to_hsla(t.background_color))
+    let r = match t.item_gap {
+        Some(g) => r.gap(px(g)),
+        None => r,
+    };
+    with_padding(r, &t.border.padding).bg(rgba_to_hsla(t.background_color))
 }
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
@@ -1435,7 +1439,7 @@ mod tests {
                     "{at}: bar height"
                 );
                 assert_eq!(out.size.height, None, "{at}: the height is a floor");
-                assert_eq!(out.gap.width, def(t.item_gap), "{at}: item gap");
+                assert_eq!(out.gap.width, t.item_gap.and_then(def), "{at}: item gap");
                 assert_padding(&out, &t.border.padding, &at);
                 assert_eq!(
                     out.background,
@@ -1557,9 +1561,11 @@ mod tests {
     fn toolbar_leaves_min_height_unset_without_a_bar_height() {
         let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
         r.toolbar.bar_height = None;
+        r.toolbar.item_gap = None;
         let out = toolbar(Native::unscaled(&r));
         assert_eq!(out.min_size.height, None);
         assert_eq!(out.size.height, None);
+        assert_eq!(out.gap.width, None, "an unstated gap is the row's own");
         r.toolbar.bar_height = Some(40.0);
         assert_eq!(toolbar(Native::unscaled(&r)).min_size.height, len(40.0));
     }
