@@ -928,31 +928,32 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
 ///
 /// `--variant` installs the theme in the mode it names: the one `--theme`
 /// names, or, without `--theme`, the one `Showcase::new` installed. A theme
-/// that fails to load leaves the one installed, as the preset switch does.
+/// that fails to load leaves the one installed, in the mode it was drawn in
+/// and with the colour-mode Select showing that mode, as the colour-mode
+/// Select's own switch does (`Showcase::install_in_mode`).
 fn apply_cli_args(
     s: &mut Showcase,
     cli_args: &CliArgs,
     window: &mut gpui::Window,
     cx: &mut gpui::Context<Showcase>,
 ) {
-    if let Some(variant) = cli_args.variant.as_deref() {
-        let mode = if variant == "dark" {
-            AppColorMode::Dark
-        } else {
-            AppColorMode::Light
-        };
-        s.color_mode = mode;
-        s.is_dark = mode == AppColorMode::Dark;
-        s.show_color_mode(window, cx);
-    }
-    let theme = cli_args.theme.clone().or_else(|| {
-        cli_args
-            .variant
-            .as_ref()
-            .map(|_| s.current_theme_name.clone())
-    });
-    if let Some(theme) = theme {
-        s.apply_theme_by_name(&theme, window, cx);
+    let theme = cli_args
+        .theme
+        .clone()
+        .unwrap_or_else(|| s.current_theme_name.clone());
+    match cli_args.variant.as_deref() {
+        Some(variant) => {
+            let mode = if variant == "dark" {
+                AppColorMode::Dark
+            } else {
+                AppColorMode::Light
+            };
+            s.install_in_mode(&theme, mode, window, cx);
+        }
+        None if cli_args.theme.is_some() => {
+            s.apply_theme_by_name(&theme, window, cx);
+        }
+        None => {}
     }
 
     if let Some(ref page_name) = cli_args.tab

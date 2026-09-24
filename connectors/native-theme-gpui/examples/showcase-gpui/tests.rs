@@ -5583,6 +5583,45 @@ fn a_failed_install_leaves_the_window_as_the_installed_theme_drew_it(cx: &mut Te
     );
 }
 
+/// `--theme X --variant V` where X fails to load leaves the window in the
+/// mode the installed theme drew, and the colour-mode Select shows that
+/// mode, as a failed colour-mode switch does.
+#[gpui::test]
+fn a_failed_cli_theme_keeps_the_colour_mode_shown(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "kde-breeze");
+    let before = drawn_state(&mut cx, &showcase);
+    let variant = if before.0 { "light" } else { "dark" };
+    let args = crate::CliArgs {
+        theme: Some("no-such-preset".to_string()),
+        variant: Some(variant.to_string()),
+        ..Default::default()
+    };
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            crate::apply_cli_args(this, &args, window, cx)
+        })
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let after = drawn_state(&mut cx, &showcase);
+    assert!(
+        (after.0, &after.1, &after.2, after.3, after.4)
+            == (before.0, &before.1, &before.2, before.3, before.4),
+        "--theme no-such-preset --variant {variant} changed what the window draws: {:?}",
+        changed_fields(&before, &after)
+    );
+    let shown = read(&mut cx, &showcase, |this, cx| {
+        this.color_mode_select.read(cx).selected_value().cloned()
+    });
+    assert_eq!(
+        shown,
+        Some(gpui::SharedString::from(before.3.short_label())),
+        "--theme no-such-preset --variant {variant}: the colour-mode Select shows a mode \
+         the window is not drawn in"
+    );
+}
+
 /// The parts of two `drawn_state`s that differ, as `name: before -> after`,
 /// the colours and tokens field by field.
 fn changed_fields(

@@ -1494,11 +1494,24 @@ impl Showcase {
     /// fails with a native theme installed, the window keeps the mode it
     /// was drawn in, and so does the colour-mode Select.
     fn set_color_mode(&mut self, mode: AppColorMode, window: &mut Window, cx: &mut Context<Self>) {
+        let name = self.current_theme_name.clone();
+        self.install_in_mode(&name, mode, window, cx);
+    }
+
+    /// Install the theme of `name` in `mode`. Where that fails with a
+    /// native theme installed, the window keeps the mode it was drawn in,
+    /// and so does the colour-mode Select.
+    pub(crate) fn install_in_mode(
+        &mut self,
+        name: &str,
+        mode: AppColorMode,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
         let before = self.color_mode;
         self.color_mode = mode;
         self.is_dark = mode.is_dark();
-        let name = self.current_theme_name.clone();
-        if !self.apply_theme_by_name(&name, window, cx) && cx.native_theme().is_some() {
+        if !self.apply_theme_by_name(name, window, cx) && cx.native_theme().is_some() {
             self.color_mode = before;
         }
         self.show_color_mode(window, cx);
