@@ -1778,20 +1778,22 @@ fn view(state: &State) -> Element<'_, Message> {
     let tab_bar: Element<'_, Message> = {
         let sp = &SP;
         let ts = &state.current_resolved.text_scale;
+        let tab_pad =
+            native_theme_iced::padding_or(&resolved.tab.border.padding, button::DEFAULT_PADDING);
         let tabs: Vec<Element<'_, Message>> = Tab::ALL
             .iter()
             .map(|&tab| {
                 let label = tab.label();
-                let btn = button(text(label).size(ts.caption.size));
+                // A tab is padded like the platform's tabs: the sides
+                // tab.border.padding states, a button's own elsewhere.
+                let btn = button(text(label).size(ts.caption.size)).padding(tab_pad);
                 // The open tab is the call to action; the rest are plain.
                 let btn = if tab == state.active_tab {
                     btn.style(styles::button_primary(resolved))
                 } else {
                     btn.style(styles::button(resolved))
                 };
-                btn.on_press(Message::TabSelected(tab))
-                    .padding(Padding::from([sp.xs, sp.m]))
-                    .into()
+                btn.on_press(Message::TabSelected(tab)).into()
             })
             .collect();
         // More tabs than the window is wide: the strip scrolls sideways rather
@@ -2888,6 +2890,9 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let tip = &resolved.tooltip;
     let sep = &resolved.separator;
     let card_radius = card.border.corner_radius;
+    // A container is unpadded unless given a padding (container.rs:95), so a
+    // side the card's theme leaves unstated stays at zero.
+    let card_pad = native_theme_iced::padding_or(&card.border.padding, Padding::ZERO);
     let card_radius_s = format!("{card_radius:.0}px");
     let tip_radius_s = format!("{:.0}px", tip.border.corner_radius);
     let line_width_s = format!("{:.0}px", sep.line_width);
@@ -2911,11 +2916,15 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 ),
                 ("border", "card.border.color", to_color(card.border.color)),
             ],
-            &[("border-radius", &card_radius_s)],
             &[
-                ("padding", "set per widget instance"),
-                ("text", "CardTheme carries no font — the label is inherited"),
+                ("border-radius", &card_radius_s),
+                (
+                    "padding",
+                    "card.border.padding's stated sides, a container's own \
+                     Padding::ZERO for the others",
+                ),
             ],
+            &[("text", "CardTheme carries no font — the label is inherited")],
         ),
         column![
             text("Styled Containers").size(ts.dialog_title.size),
@@ -2930,17 +2939,17 @@ fn view_display(state: &State) -> Element<'_, Message> {
                 ]
                 .spacing(sp.xs),
             )
-            .padding(Padding::from(gap.container))
+            .padding(card_pad)
             .style(styles::container_card(resolved))
             .width(Fill),
             container(
                 text(
-                    "A secondary container with different padding. Containers take their \
-                      background and border from the resolved card theme."
+                    "A second container dressed as a card. Containers take their \
+                      background, border and padding from the resolved card theme."
                 )
                 .size(ts.caption.size),
             )
-            .padding(Padding::from([sp.m, sp.xl]))
+            .padding(card_pad)
             .style(styles::container_card(resolved))
             .width(Fill),
         ]
@@ -3841,7 +3850,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // ---- Card ----
 
     let card_section: Element<'_, Message> = if state.aw_card_open {
-        Card::new(
+        let card = Card::new(
             text("Card").size(ts.dialog_title.size),
             column![
                 text(
@@ -3862,11 +3871,15 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             ]
             .spacing(sp.xs),
         ))
-        .padding_head(Padding::from(sp.s))
-        .padding_body(Padding::from(sp.s))
-        .padding_foot(Padding::from(sp.s))
         .width(Length::Fixed(420.0))
-        .style(styles::aw::card(resolved))
+        .style(styles::aw::card(resolved));
+        // `Card::padding` sets the head, the body and the foot alike, and
+        // iced_aw keeps the default it replaces private (widget/card.rs:21),
+        // so a theme that leaves a side unstated leaves the card iced_aw's.
+        match native_theme_iced::stated_padding(&card_t.border.padding) {
+            Some(padding) => card.padding(padding),
+            None => card,
+        }
         .into()
     } else {
         button(text("Show the card again").size(ts.caption.size))
@@ -3894,21 +3907,21 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             ],
             &[
                 ("radius", "card.border.corner_radius"),
-                ("Dismiss padding", "button_padding"),
-            ],
-            &[
                 (
                     "section padding",
-                    "the showcase's own scale — CardTheme states none",
+                    "card.border.padding, on the head, the body and the foot \
+                     alike, where the theme states every side; otherwise \
+                     iced_aw's own, which it keeps private (widget/card.rs:21)",
                 ),
-                (
-                    "close icon",
-                    "not drawn: iced_aw 0.14.1 styles Card::on_close's button \
+                ("Dismiss padding", "button_padding"),
+            ],
+            &[(
+                "close icon",
+                "not drawn: iced_aw 0.14.1 styles Card::on_close's button \
                      with its default class, whose icon is white whatever \
                      styles::aw::card sets (widget/card.rs:193-206), so the \
                      themed Dismiss button closes the card instead",
-                ),
-            ],
+            )],
         ),
         column![text("Card").size(ts.dialog_title.size), card_section,]
             .spacing(gap.widget)
@@ -3917,26 +3930,28 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     // ---- MenuBar and Menu ----
 
-    // A theme that states no row height (KDE's items size to their font)
-    // leaves the item its own height, padded like the bar's roots.
-    let menu_entry = |label: &'static str| -> Element<'_, Message> {
+    // The items are buttons padded like the platform's menu items: the sides
+    // menu.border.padding states, a button's own elsewhere. A theme that
+    // states no row height (KDE's items size to their font) leaves the item
+    // its own height.
+    let item_pad = native_theme_iced::padding_or(&menu_t.border.padding, button::DEFAULT_PADDING);
+    let menu_entry = move |label: &'static str| -> Element<'_, Message> {
         let entry = button(text(label).size(menu_t.font.size))
             .on_press(Message::AwActionChosen(format!("Menu: {label}")))
             .style(styles::button(resolved))
-            .width(Fill);
+            .width(Fill)
+            .padding(item_pad);
         match menu_t.row_height {
-            Some(h) => entry
-                .height(Length::Fixed(h))
-                .padding(Padding::from([0.0, sp.s])),
-            None => entry.padding(Padding::from([sp.xxs, sp.s])),
+            Some(h) => entry.height(Length::Fixed(h)),
+            None => entry,
         }
         .into()
     };
-    let menu_root = |label: &'static str| {
+    let menu_root = move |label: &'static str| {
         button(text(label).size(menu_t.font.size))
             .on_press(Message::AwActionChosen(format!("Menu: {label}")))
             .style(styles::button(resolved))
-            .padding(Padding::from([sp.xxs, sp.s]))
+            .padding(item_pad)
     };
     let drop = |items| aw_menu(items, sp.xxs);
 
@@ -3989,6 +4004,11 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     "item height",
                     "menu.row_height where the theme states one, on the item button",
                 ),
+                (
+                    "item padding",
+                    "menu.border.padding's stated sides, iced's \
+                     button::DEFAULT_PADDING for the others, on the item button",
+                ),
                 ("item label size", "menu.font.size"),
             ],
             &[
@@ -4020,7 +4040,9 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             text(
                 "ContextMenu gets no styles::aw function: its own Style is a one-field \
                  backdrop scrim and its default class already emits alpha 0 \
-                 (style/context_menu.rs:48-59). The popup below is our own element."
+                 (style/context_menu.rs:48-59). The popup below is our own element; \
+                 its entries are padded like the menu bar's items, by \
+                 menu.border.padding."
             )
             .size(ts.caption.size),
         ]
@@ -4036,7 +4058,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 .on_press(Message::AwActionChosen(format!("Context menu: {label}")))
                 .style(styles::button(resolved))
                 .width(Fill)
-                .padding(Padding::from([sp.xxs, sp.s]))
+                .padding(item_pad)
                 .into()
         };
         container(column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(sp.xxs))
@@ -4057,6 +4079,13 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .tab_width(Length::Fixed(tab_t.min_width))
         .height(Length::Fixed(tab_t.min_height))
         .spacing(sp.xxs);
+    // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41) and
+    // takes a padding whole, so only a theme that states every side replaces it.
+    let tab_padding = native_theme_iced::stated_padding(&tab_t.border.padding);
+    let tab_bar = match tab_padding {
+        Some(padding) => tab_bar.padding(padding),
+        None => tab_bar,
+    };
 
     let tab_bar_body = text(match state.aw_tab_bar_active {
         0 => "A stand-alone TabBar reports the selection and shows nothing itself.",
@@ -4092,6 +4121,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .tab_bar_height(Length::Fixed(tab_t.min_height))
         .tab_bar_style(styles::aw::tab_bar(resolved))
         .height(Length::Shrink);
+    let tabs = match tab_padding {
+        Some(padding) => tabs.tab_label_padding(padding),
+        None => tabs,
+    };
 
     let tab_demo = hoverable(
         widget_tooltip(
@@ -4122,6 +4155,12 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ("label size", "tab.font.size"),
                 ("tab width", "tab.min_width"),
                 ("bar height", "tab.min_height"),
+                (
+                    "tab padding",
+                    "tab.border.padding where the theme states every side; \
+                     otherwise iced_aw's own, which it keeps private \
+                     (widget/tab_bar.rs:41)",
+                ),
             ],
             &[(
                 "min_width / min_height",
@@ -5995,26 +6034,17 @@ mod tests {
         }
     }
 
-    /// The widgets the showcase draws as a `button` to stand in for another
-    /// native widget, each with why `button_padding` is not its padding.
-    const STAND_INS: &[(&str, &str)] = &[
-        (
-            "tabs",
-            "the page tabs: navigation drawn as buttons, not a push button",
-        ),
-        (
-            "menu_entry",
-            "a menu item, not a push button: its padding is not the button's",
-        ),
-        ("menu_root", "the same, on the menu bar"),
-        ("context_demo", "the same, in the context menu"),
-    ];
+    /// The connector's padding helpers: each returns a padding whose stated
+    /// sides are the theme's.
+    const PADDING_HELPERS: &[&str] = &["button_padding(", "padding_or(", "stated_padding("];
 
-    /// Every push button dressed in a `styles::button*` class takes the
-    /// theme's padding, through `button_padding`, rather than a spacing of the
-    /// showcase's own or iced's default.
+    /// Every button dressed in a `styles::button*` class takes the theme's
+    /// padding through one of the connector's padding helpers, rather than a
+    /// spacing of the showcase's own or iced's default -- the push buttons
+    /// `button.border.padding`, and the buttons that stand in for a menu item
+    /// or a tab that widget's padding.
     #[test]
-    fn themed_push_buttons_take_the_themes_padding() {
+    fn themed_buttons_take_the_themes_padding() {
         let source = strip_comments_and_strings(SHOWCASE);
         let classes = [
             "styles::button",
@@ -6024,6 +6054,17 @@ mod tests {
             "styles::button_warning",
             "styles::button_link",
         ];
+        let derived = theme_padding_bindings(&source);
+        let from_theme = |args: &str| {
+            PADDING_HELPERS.iter().any(|helper| args.contains(helper))
+                || derived.iter().any(|name| {
+                    args.match_indices(name).any(|(at, _)| {
+                        let joined = |c: char| c.is_alphanumeric() || c == '_';
+                        !args[..at].chars().next_back().is_some_and(joined)
+                            && !args[at + name.len()..].chars().next().is_some_and(joined)
+                    })
+                })
+        };
 
         let mut checked = 0usize;
         let mut unpadded = Vec::new();
@@ -6031,30 +6072,53 @@ mod tests {
             if !is_dressed(&source, site, &classes) {
                 continue;
             }
-            let lets = enclosing_lets(&source, site);
-            if STAND_INS.iter().any(|(name, _)| lets.contains(name)) {
-                continue;
-            }
             checked += 1;
             if source[..site].trim_end().ends_with("apply_pad(") {
                 continue;
             }
             let padded = close_of_call(&source, site).is_some_and(|end| {
-                method_calls(&source, end).iter().any(|(name, args)| {
-                    *name == "padding"
-                        && (args.contains("button_padding") || args.contains("btn_pad"))
-                })
+                method_calls(&source, end)
+                    .iter()
+                    .any(|(name, args)| *name == "padding" && from_theme(args))
             });
             if !padded {
                 unpadded.push(format!("showcase-iced.rs:{}", line_at(&source, site)));
             }
         }
-        assert!(checked > 0, "no themed push button was found");
+        assert!(checked > 0, "no themed button was found");
         assert!(
             unpadded.is_empty(),
-            "themed push buttons not padded by button_padding: {}",
+            "themed buttons not padded from the theme: {}",
             unpadded.join(", ")
         );
+    }
+
+    /// The card surfaces and the `iced_aw` tabs take the padding the theme
+    /// states for them, not a spacing of the showcase's own: the `Card` and
+    /// the `TabBar`/`Tabs` where every side is stated (`iced_aw` keeps their
+    /// defaults private), the containers dressed as a card side by side.
+    #[test]
+    fn card_and_tab_padding_come_from_the_theme() {
+        let source = strip_comments_and_strings(SHOWCASE);
+        for per_section in [".padding_head(", ".padding_body(", ".padding_foot("] {
+            if let Some(at) = source.find(per_section) {
+                panic!(
+                    "the card's padding is set section by section at \
+                     showcase-iced.rs:{}, not from card.border.padding",
+                    line_at(&source, at)
+                );
+            }
+        }
+        for call in [
+            "stated_padding(&card_t.border.padding)",
+            "stated_padding(&tab_t.border.padding)",
+            "padding_or(&card.border.padding, Padding::ZERO)",
+        ] {
+            assert!(
+                source.contains(call),
+                "{call} has no call site in the showcase"
+            );
+        }
     }
 
     /// The `Card` is dismissed by a themed button of its own, never by
@@ -6072,11 +6136,10 @@ mod tests {
         }
     }
 
-    /// The names of the `let` statements whose initialiser contains `site`,
-    /// innermost last.
-    fn enclosing_lets(source: &str, site: usize) -> Vec<&str> {
+    /// The names `let` binds to a padding one of `PADDING_HELPERS` returns.
+    fn theme_padding_bindings(source: &str) -> Vec<&str> {
         let mut names = Vec::new();
-        for (at, _) in source[..site].match_indices("let ") {
+        for (at, _) in source.match_indices("let ") {
             let joined_before = source[..at]
                 .chars()
                 .next_back()
@@ -6113,7 +6176,11 @@ mod tests {
                     _ => {}
                 }
             }
-            if end > site {
+            let statement = &source[name_at..end];
+            if PADDING_HELPERS
+                .iter()
+                .any(|helper| statement.contains(helper))
+            {
                 names.push(&rest[..name_len]);
             }
         }
