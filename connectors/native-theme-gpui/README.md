@@ -30,15 +30,18 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   token of upstream's.
 - **Accessibility**: the platform's text-scaling factor scales the theme's
   fonts (and, through GPUI's rem, every rem-relative size in gpui-component);
-  reduce-motion is forwarded to GPUI; reduce-transparency keeps the overlay
-  opaque.
+  reduce-motion is forwarded to GPUI; under reduce-transparency no overlay
+  is drawn behind a dialog or sheet (it is transparent), and the dialog stays
+  modal.
 - **Icons**: mappings from every gpui-component `IconName` (101 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
   for the two a set lacks. gpui-component's `IconName` cannot be enumerated
   in code, so the tables are audited by hand: against 0.6.4's variant set,
   and again against 0.6.1, which keeps the same 101 variants (its full Lucide
-  catalog lives in `gpui_kit_assets::IconName`). The audit is repeated on
-  every gpui-component bump.
+  catalog lives in `gpui_kit_assets::IconName`). It holds for 0.6.6 too,
+  whose variant set is 0.6.4's: the list gpui-kit-assets generates the enum
+  from is unchanged between the two releases. The audit is repeated on every
+  gpui-component bump.
 
 ## How it fits
 
@@ -392,7 +395,7 @@ gpui-component 0.6 depends on GPUI published as the **`gpui-pre`** package:
 snapshots of Zed's `main` branch that the gpui-kit maintainer republishes as
 `0.3.N` patch bumps every other Sunday. Breaking changes from Zed therefore
 arrive as patch releases. This crate names the same package
-(`gpui = { package = "gpui-pre", version = "0.3.5" }`) so its `Hsla`, `Pixels`
+(`gpui = { package = "gpui-pre", version = "0.3.6" }`) so its `Hsla`, `Pixels`
 and `StyleRefinement` are gpui-component's types; its GPUI surface is small
 (`Hsla`, `hsla`, `Rgba`, `SharedString`, `px`, `Pixels`, `svg`, `img`,
 `ImageSource`, `RenderImage`, `ElementId`, `IntoElement`, `StyleRefinement`,
@@ -404,9 +407,11 @@ conflict with any other dependency wanting a later snapshot.
 ## What gets mapped
 
 - **All 138 `ThemeColor` fields.** The status button fields copy the semantic
-  colours their variant used before (solid surfaces); `table_foot*` mirror
-  `table_head*`; `status_bar*` come from the status-bar theme; the rest as
-  before (direct roles plus derived hover/active states).
+  colours their variant used before (solid surfaces); `table_head*` come
+  from the list header (`list.header_background`, `list.header_font`), while
+  `table_foot*` are the window background and the muted text colour, since
+  the model states no footer colour; `status_bar*` come from the status-bar
+  theme; the rest as before (direct roles plus derived hover/active states).
 - **Fonts and geometry** — `family`, `size` (scaled by the text-scaling
   factor), `radius`, `shadow`, `focus_ring`, `scrollbar_mode`.
 - **Base layer** — scrollbar track width, thumb width, thumb inset (centred),

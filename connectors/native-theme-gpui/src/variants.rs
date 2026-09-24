@@ -20,7 +20,7 @@
 //! (a dialog's close button, calendar navigation, the tab bar) stay upstream
 //! work; see "Upstream PR candidates" in `docs/todo.md`.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.6.4.
+//! Upstream citations in this module are verified against gpui-component 0.6.6.
 
 use gpui::App;
 use gpui_component::ActiveTheme as _;
@@ -40,13 +40,13 @@ use gpui_component::button::ButtonCustomVariant;
 /// InputGroupButton::new("copy").label("Copy").custom(variants::ghost_button(cx));
 /// ```
 ///
-/// The colours are read from the installed theme at call time
-/// (`secondary_foreground`, `secondary_hover`, `secondary_active`, which
-/// [`apply`](crate::apply) fills from the platform's `button.font.color`,
-/// `button.hover_background` and `button.active_background`), so a button
-/// built in `render` follows a light/dark switch without further work. The
-/// label keeps its colour on hover, as platform-facts records for all four
-/// platforms (§2.3 `hover_text_color`).
+/// Read from the installed theme at call time: `secondary_foreground`,
+/// `secondary_hover` and `secondary_active`, which [`apply`](crate::apply)
+/// fills from `button.font.color`, `button.hover_background` and, where
+/// stated, `button.active_background` (else derived from the button's
+/// background), so a button built in `render` follows a light/dark switch.
+/// The label keeps its colour on hover, as platform-facts records for all
+/// four platforms (§2.3 `hover_text_color`).
 #[must_use]
 pub fn ghost_button(cx: &App) -> ButtonCustomVariant {
     let theme = cx.theme();

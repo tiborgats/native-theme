@@ -52,11 +52,11 @@
 //!
 //! | Category | Mapped | Notes |
 //! |----------|--------|-------|
-//! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
+//! | `defaults` colors | 14 of 24 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button_*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
-//! | `sidebar` | 2 of 6 | background, font.color |
+//! | `sidebar` | 4 of 6 | background, font.color, selection_background, selection_text_color |
 //! | `window` | 3 of 6 | background_color, title_bar_background, border |
 //! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text via `geometry::input` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
@@ -65,6 +65,8 @@
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
 //! | `list` | 7 of 13 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item` |
+//! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
+//! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius via `geometry::popover` |
 //! | `link` | 3 of 8 | font.color, hover_text_color, active_text_color; `link.hover_background` has no receiver — gpui-component paints a link's background as `Theme::transparent` in every state, and that field is not one of the 138 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover via `base_layer::resizable_theme`; width upstream |
@@ -797,7 +799,8 @@ fn apply_inner(
     install_observer_once(cx);
     // D37: paint now. A change from a timer, portal signal or menu action must
     // not wait for the next input event; upstream refreshes only the window
-    // passed to Theme::change (gpui-pre src/app.rs:1091).
+    // passed to Theme::change (gpui-component src/theme/mod.rs:287-289), and
+    // `refresh_windows` schedules every window (gpui-pre src/app.rs:1153).
     cx.refresh_windows();
 }
 
@@ -878,7 +881,7 @@ fn handles_hold_native_values(cx: &App) -> bool {
 /// `src/theme/schema.rs:640-674`), so the config `apply` installs for a variant
 /// cannot carry them; every `Theme::change` / `sync_system_appearance` resets
 /// them to `ThemeColor::dark()` / `light()` (`:688-696`, `:1075-1079`) and
-/// ends in `cx.set_global` of `gpui_base::Theme` (`theme/mod.rs:271-280`,
+/// ends in `cx.set_global` of `gpui_base::Theme` (`theme/mod.rs:283-284`,
 /// `:367-371`), whose notification reaches the base-theme observer. Writes
 /// only when a field differs; the styled theme has no upstream observer, so
 /// the write triggers no rebuild. After `apply` the connector is the sole
@@ -904,11 +907,11 @@ fn repair_base_palette(cx: &mut App) {
 }
 
 /// Observe `gpui_base::Theme` (§3.3). Terminates because `global_mut` queues one
-/// deduplicated notification (gpui-pre `src/app.rs:1703-1705`), delivered
-/// after the pending mark is removed (`:1860-1864`): the observer's own write
+/// deduplicated notification (gpui-pre `src/app.rs:1767-1769`), delivered
+/// after the pending mark is removed (`:1924-1928`): the observer's own write
 /// yields exactly one further delivery, absorbed by `reapplying`.
 ///
-/// The subscription activates through a deferred effect (`src/app.rs:2130-2142`)
+/// The subscription activates through a deferred effect (`src/app.rs:2189-2201`)
 /// at the end of the flush that follows this call, so a base-theme write made by
 /// other code in the same update as the first `apply` (a
 /// `Theme::sync_system_appearance` right after it) would stand until the next
@@ -961,7 +964,7 @@ mod tests {
     use super::*;
 
     /// Compile-time tripwire: `gpui_component::Theme` has exactly these 20
-    /// fields in 0.6.4. Upstream carried three `tile_*` fields through 0.6.0
+    /// fields in 0.6.6. Upstream carried three `tile_*` fields through 0.6.0
     /// and 0.6.1 that this connector never set, and nothing noticed until
     /// 0.6.2 removed them again; a field *added* in a patch release would be
     /// left at upstream's default just as silently. Naming every field here

@@ -361,7 +361,7 @@ const ROWS: &[Row] = &[
     // differs from the window background in nearly every preset. Upstream
     // paints `table_head` as the header row (`table/column.rs:278`,
     // `table/state.rs:1528, :1768`, `table/table.rs:199`); `list_head` has no
-    // reader in 0.6.4 beyond a schema fallback (`theme/schema.rs:968, 1006`),
+    // reader in 0.6.6 beyond a schema fallback (`theme/schema.rs:968, 1006`),
     // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
@@ -1318,7 +1318,7 @@ struct Pair {
 /// layer lands on a surface the platform did not put it on.
 ///
 /// `PopupMenu::render` calls `.popover_style(cx)`, which is
-/// `bg(theme.popover)` (`gpui-component-0.6.4/src/menu/popup_menu.rs:1476`,
+/// `bg(theme.popover)` (`gpui-component-0.6.6/src/menu/popup_menu.rs:1476`,
 /// `styled.rs:193-199`), and upstream has no menu-surface token. The connector
 /// feeds `popover` from `popover.background_color`, the token's documented
 /// meaning, but `menu.background_color` differs from it in 30 of the 32
@@ -1338,7 +1338,7 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
 /// tokens -- a label that lands on a fill other than its own, a fill upstream
 /// composes itself -- the pair carries a comment with the upstream line; not
 /// every pair can, because some tokens have many readers (`muted_foreground`
-/// alone has 78 sites outside `theme/` in 0.6.4) and the surfaces
+/// alone has 78 sites outside `theme/` in 0.6.6) and the surfaces
 /// `INERT_SURFACES` names have no reader at all. The two need not read the
 /// same native fields -- `hovered button label` keeps `button_foreground` on
 /// `button_hover` where the platform states `hover_text_color` on
@@ -1538,7 +1538,7 @@ const PAIRS: &[Pair] = &[
     // (`tab/tab_bar.rs:369`, `tab/tab.rs:309`), which is what the emitted side
     // measures. The platform puts the same label on its own tab fill, and the
     // two surfaces differing is exactly what this pair is for. `tokens.tab`,
-    // which nothing in 0.6.4 reads, keeps its row but takes no part here.
+    // which nothing in 0.6.6 reads, keeps its row but takes no part here.
     Pair {
         what: "tab label",
         native: |r, _| {
@@ -1770,7 +1770,7 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
     }
 }
 
-/// Asserted pairs whose emitted side rests on a token 0.6.4 paints nowhere.
+/// Asserted pairs whose emitted side rests on a token 0.6.6 paints nowhere.
 ///
 /// The row that maps such a token stays -- it is the truth about the mapping
 /// for the day upstream reads it -- but a contrast pair over it is a claim
@@ -1793,7 +1793,7 @@ const INERT_SURFACES: &[(&str, &str)] = &[
     (
         "sidebar primary button label",
         "neither sidebar_primary nor sidebar_primary_foreground has a reader \
-         outside theme/ in 0.6.4",
+         outside theme/ in 0.6.6",
     ),
 ];
 
@@ -1955,7 +1955,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     }
 
     println!(
-        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.6.4 \
+        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.6.6 \
          paints nowhere, not counted as coverage: {} surfaces covered) x {} \
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \

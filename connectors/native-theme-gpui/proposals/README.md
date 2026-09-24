@@ -20,7 +20,7 @@ hardcoded within individual widget implementations.
 
 ## Problem
 
-Theme systems like [native-theme](https://github.com/nickmass/native-theme) extract
+Theme systems like [native-theme](https://github.com/tiborgats/native-theme) extract
 per-widget metrics from operating system theme data:
 
 - **Windows:** `GetSystemMetricsForDpi()` returns exact pixel values for scrollbar
@@ -56,8 +56,9 @@ The `native-theme` crate captures these values in a `WidgetMetrics` struct conta
 > in `ResolvedTheme` (`button`, `input`, `tab`, `menu`, …), and padding is
 > stated **per side**: a widget's `border.padding` is a `ResolvedPadding`
 > with `top`, `right`, `bottom` and `left`, each `Option<f32>`, `None` where
-> the platform states no value. `padding_horizontal` and `padding_vertical`
-> survive only as TOML shorthand that sets both sides of an axis. A
+> the platform states no value. `padding_horizontal_px` and
+> `padding_vertical_px` survive only as TOML shorthand that sets both sides
+> of an axis. A
 > `ThemeConfig` padding hook would therefore take four optional sides, and
 > `None` would keep the widget's own padding. Toolbar height
 > (`toolbar.bar_height`) is likewise `Option<f32>`, `None` where the toolbar

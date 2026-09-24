@@ -4,8 +4,8 @@
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
 //! shadow settings, and optionally all 138 color fields as hex strings.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.6.4,
-//! gpui-base 0.6.4 and gpui-pre 0.3.5.
+//! Upstream citations in this module are verified against gpui-component 0.6.6,
+//! gpui-base 0.6.6 and gpui-pre 0.3.6.
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};

@@ -6,8 +6,8 @@
 //! `src/theme/mod.rs:294-347`), so these values are written after every such
 //! rebuild by the observer `apply` installs (`crate::apply`, spec §3.3).
 //!
-//! Upstream citations in this module are verified against gpui-component 0.6.4,
-//! gpui-base 0.6.4 and gpui-pre 0.3.5.
+//! Upstream citations in this module are verified against gpui-component 0.6.6,
+//! gpui-base 0.6.6 and gpui-pre 0.3.6.
 
 use gpui::{App, Hsla, Pixels, px};
 use gpui_base::{ResizableTheme, Theme as BaseTheme};
