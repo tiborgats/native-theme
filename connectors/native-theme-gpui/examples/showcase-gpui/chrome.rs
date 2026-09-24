@@ -107,6 +107,7 @@ pub(crate) fn toolbar(app: &Showcase, cx: &App) -> impl IntoElement {
         ui,
         cx,
         geometry::container_margin(&app.layout),
+        geometry::widget_gap(&app.layout),
         [
             demo::toolbar_button(
                 ui,

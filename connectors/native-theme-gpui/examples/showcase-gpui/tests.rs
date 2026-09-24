@@ -5205,6 +5205,82 @@ fn hiding_the_side_panel_clears_what_left_the_screen(cx: &mut TestAppContext) {
     );
 }
 
+/// The toolbar's items are spaced where the theme states no
+/// `toolbar.item_gap` (spec §3.1): nord states none, so they are
+/// `layout.widget_gap` apart; with that unstated too, the showcase's own
+/// `TOOLBAR_GAP`. The row's info names which.
+#[gpui::test]
+fn the_toolbar_items_are_spaced_where_the_theme_states_no_gap(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "nord");
+    let (item_gap, widget_gap) = read(&mut cx, &showcase, |this, cx| {
+        (
+            cx.native_theme()
+                .and_then(|nt| nt.native(cx))
+                .map(|n| n.resolved.toolbar.item_gap),
+            geometry::widget_gap(&this.layout),
+        )
+    });
+    assert_eq!(
+        item_gap,
+        Some(None),
+        "nord states a toolbar.item_gap, or no native theme is installed, so the fallback is \
+         not what is measured"
+    );
+    let Some(widget_gap) = widget_gap else {
+        panic!("nord states no layout.widget_gap, so the showcase's constant is measured twice");
+    };
+    let gap = |cx: &mut VisualTestContext| {
+        bounds_of(cx, CHROME_TOOLBAR_RELOAD).left() - bounds_of(cx, CHROME_TOOLBAR_PALETTE).right()
+    };
+    assert_eq!(
+        gap(&mut cx),
+        widget_gap,
+        "nord: the toolbar's first two items are not layout.widget_gap apart"
+    );
+    let gap_line = |cx: &mut VisualTestContext| {
+        let bar = bounds_of(cx, CHROME_TOOLBAR);
+        hover(cx, point(bar.right() - px(8.), bar.center().y));
+        settle(cx);
+        draw(cx);
+        read(cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).shown().and_then(|info| {
+                info.instance
+                    .iter()
+                    .find(|n| n.what == "gap")
+                    .map(|n| n.text.clone())
+            })
+        })
+    };
+    let line = gap_line(&mut cx);
+    assert!(
+        line.as_deref()
+            .is_some_and(|l| l.starts_with("6px, layout.widget_gap")),
+        "nord: the toolbar's info does not say its gap is layout.widget_gap: {line:?}"
+    );
+
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.layout = native_theme::theme::LayoutTheme::default();
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        gap(&mut cx),
+        crate::demo::TOOLBAR_GAP,
+        "with neither toolbar.item_gap nor widget_gap stated, the toolbar's items are not the \
+         showcase's own TOOLBAR_GAP apart"
+    );
+    let line = gap_line(&mut cx);
+    assert!(
+        line.as_deref()
+            .is_some_and(|l| l.contains("TOOLBAR_GAP") && l.contains("the showcase's own")),
+        "the toolbar's info does not say its gap is the showcase's own TOOLBAR_GAP: {line:?}"
+    );
+}
+
 /// The status bar reports the installed accessibility preferences (spec
 /// §2.7): the text-scale factor always, and a flag only while it is set.
 #[gpui::test]

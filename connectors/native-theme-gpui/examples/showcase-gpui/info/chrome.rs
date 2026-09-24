@@ -310,11 +310,43 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
+/// Where the toolbar row's gap between items comes from: `stated` is the
+/// `toolbar.item_gap` the theme states, `widget_gap` its
+/// `layout.widget_gap`, and `own` the showcase's `TOOLBAR_GAP`.
+pub struct ToolbarGap {
+    pub stated: Option<f32>,
+    pub widget_gap: Option<Pixels>,
+    pub own: Pixels,
+}
+
+impl ToolbarGap {
+    /// The gap line: the first of the three that is stated.
+    fn text(&self) -> String {
+        match (self.stated, self.widget_gap) {
+            (Some(g), _) => format!("{}px, toolbar.item_gap", px_text(g)),
+            (None, Some(g)) => format!(
+                "{}px, layout.widget_gap: the theme states no toolbar.item_gap",
+                px_text(g.as_f32())
+            ),
+            (None, None) => format!(
+                "{}px, TOOLBAR_GAP, the showcase's own choice rather than a platform's: the theme states neither toolbar.item_gap nor layout.widget_gap, and the row is the application's own element, with no toolkit default to keep",
+                px_text(self.own.as_f32())
+            ),
+        }
+    }
+}
+
 /// The window's toolbar row (spec §2.3, §3.1, §3.3). Its geometry line is
 /// recorded by `native_info` where `demo::toolbar` applies the builder;
 /// `stated` is the `toolbar.border` padding the theme states, `margin` its
-/// `layout.container_margin`, and `own` the showcase's `TOOLBAR_PADDING`.
-pub fn toolbar(stated: ResolvedPadding, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
+/// `layout.container_margin`, `own` the showcase's `TOOLBAR_PADDING`, and
+/// `gap` where the gap between the items comes from.
+pub fn toolbar(
+    stated: ResolvedPadding,
+    margin: Option<Pixels>,
+    own: Pixels,
+    gap: ToolbarGap,
+) -> WidgetInfo {
     let side = |name: &str, value: Option<f32>| match (value, margin) {
         (Some(v), _) => format!("{name} {}px, toolbar.border's", px_text(v)),
         (None, Some(m)) => format!("{name} {}px, layout.container_margin", px_text(m.as_f32())),
@@ -326,7 +358,7 @@ pub fn toolbar(stated: ResolvedPadding, margin: Option<Pixels>, own: Pixels) -> 
     WidgetInfo::new("Toolbar")
         .not_themeable(
             "widget",
-            "gpui-component has no toolbar widget, so this row is the application's own h_flex: geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides the theme leaves unstated, which the padding line below names",
+            "gpui-component has no toolbar widget, so this row is the application's own h_flex: geometry::toolbar gives it the height, gap, fill and padding sides the theme states, and the showcase pads the sides and spaces the items where the theme leaves them unstated, which the padding and gap lines below name",
         )
         .not_themeable(
             "edge",
@@ -343,6 +375,7 @@ pub fn toolbar(stated: ResolvedPadding, margin: Option<Pixels>, own: Pixels) -> 
                 px_text(own.as_f32()),
             ),
         )
+        .instance("gap", gap.text())
         .instance(
             "items",
             "icon Buttons for the command palette, a theme reload and the Preferences sheet",

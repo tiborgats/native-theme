@@ -267,28 +267,54 @@ pub(crate) fn title_bar_sample(
 /// value, and the row's info says so.
 pub(crate) const TOOLBAR_PADDING: Pixels = px(8.);
 
+/// The gap between the toolbar row's items where the theme leaves it
+/// unstated twice over: neither `toolbar.item_gap` nor `layout.widget_gap`
+/// states it. The row is the showcase's own element, with no toolkit default
+/// to fall back on, so this is the showcase's own choice, not a platform's
+/// value, and the row's info says so.
+pub(crate) const TOOLBAR_GAP: Pixels = px(4.);
+
 /// The window's toolbar (spec §2.3): the application's own row, refined by
 /// `geometry::toolbar`, holding `items`.
 ///
 /// A side `toolbar.border` leaves unstated is padded with `container_margin`,
 /// the installed layout's `geometry::container_margin`, and where that is
-/// unstated too with [`TOOLBAR_PADDING`] (spec §3.1). That padding goes on
-/// first, so the refinement's stated sides land over it.
+/// unstated too with [`TOOLBAR_PADDING`] (spec §3.1). Where
+/// `toolbar.item_gap` is unstated the items are `widget_gap` apart, the
+/// installed layout's `geometry::widget_gap`, and where that is unstated too
+/// [`TOOLBAR_GAP`]. Both go on first, so the refinement's stated sides and
+/// gap land over them.
 pub(crate) fn toolbar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     container_margin: Option<Pixels>,
+    widget_gap: Option<Pixels>,
     items: impl IntoIterator<Item = AnyElement>,
 ) -> Stateful<Div> {
     let stated = native_value(cx, |n| n.resolved.toolbar.border.padding).unwrap_or_default();
-    let mut row_info = info::toolbar(stated, container_margin, TOOLBAR_PADDING);
+    let item_gap = native_value(cx, |n| n.resolved.toolbar.item_gap).flatten();
+    let mut row_info = info::toolbar(
+        stated,
+        container_margin,
+        TOOLBAR_PADDING,
+        info::ToolbarGap {
+            stated: item_gap,
+            widget_gap,
+            own: TOOLBAR_GAP,
+        },
+    );
     let unstated = [stated.top, stated.right, stated.bottom, stated.left]
         .iter()
         .any(Option::is_none);
     if unstated && container_margin.is_some() {
         row_info = row_info.geometry("container_margin");
     }
-    let row = h_flex().p(container_margin.unwrap_or(TOOLBAR_PADDING));
+    if item_gap.is_none() && widget_gap.is_some() {
+        row_info = row_info.geometry("widget_gap");
+    }
+    let row = h_flex()
+        .p(container_margin.unwrap_or(TOOLBAR_PADDING))
+        .gap(widget_gap.unwrap_or(TOOLBAR_GAP));
     let row = native_info(row, cx, geometry::toolbar, "toolbar", &mut row_info).children(items);
     row.info(ui, "chrome-toolbar", row_info)
 }
