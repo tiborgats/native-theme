@@ -65,6 +65,9 @@ iced = { version = "0.14", features = [
     "canvas",
     "markdown",
     "qr_code",
+    # `advanced` reaches the font database iced draws text from, which the
+    # showcase reads to build fonts iced can draw (`drawable_font`).
+    "advanced",
 ] }
 iced_aw = { version = "0.14", default-features = false, features = [
     "card",
