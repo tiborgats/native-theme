@@ -157,6 +157,10 @@ mod probes {
 /// self-tests type into.
 const TEXT_INPUT_ID: &str = "showcase-text-input";
 
+/// The `widget::Id` of the page tab strip's `scrollable`, which reports its
+/// own bounds and its content's to a selector (`scrollable.rs:548-560`).
+const TAB_STRIP_ID: &str = "showcase-tab-strip";
+
 /// The four layout distances the platform itself states.
 ///
 /// `LayoutTheme` is the one theme struct that is not per-variant, so it lives
@@ -1971,11 +1975,17 @@ fn view(state: &State) -> Element<'_, Message> {
             })
             .collect();
         // More tabs than the window is wide: the strip scrolls sideways rather
-        // than clipping the last ones.
+        // than clipping the last ones. The bar is laid out below the tabs even
+        // where the platform's scrollbar overlays what it scrolls: iced draws
+        // an overlay bar at all times, never only while scrolling
+        // (`scrollable.rs:1208-1270`), and over a strip no taller than its
+        // tabs it would cover their labels. An embedded bar takes its own
+        // room (`scrollable.rs:378-383`).
         scrollable(row(tabs).spacing(sp.xs))
-            .direction(scrollable::Direction::Horizontal(styles::scrollbar(
-                resolved,
-            )))
+            .id(TAB_STRIP_ID)
+            .direction(scrollable::Direction::Horizontal(
+                styles::scrollbar(resolved).spacing(0.0),
+            ))
             .style(styles::scrollable(resolved))
             .into()
     };
@@ -7463,6 +7473,62 @@ mod tests {
         assert!(
             generic.is_empty(),
             "a font built outside drawable_font: {generic:#?}"
+        );
+    }
+
+    /// The page tab strip's scrollbar is laid out below the tabs, not over
+    /// their labels, wherever the tabs overflow the strip. An overlay-mode
+    /// scrollbar floats over what it scrolls (`styles::scrollbar`); the tabs
+    /// overflowed the 1024px-wide window macOS captures, and every tab set
+    /// overflows one half as wide, so the check always runs.
+    #[test]
+    fn the_tab_strip_scrollbar_leaves_the_labels_clear() {
+        let mut scrolled = 0;
+        for preset in ["macos-sonoma", "kde-breeze"] {
+            for width in [1024.0, 512.0] {
+                let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("{preset}: {error}"),
+                };
+                let groove = resolved.scrollbar.groove_width;
+                let state = State {
+                    current_theme: theme,
+                    current_resolved: resolved,
+                    active_tab: Tab::Buttons,
+                    ..State::default()
+                };
+                let mut ui: Simulator<'_, Message> = Simulator::with_size(
+                    Settings::default(),
+                    Size::new(width, WINDOW_SIZE.1),
+                    view(&state),
+                );
+                let (strip, tabs) = match ui.find(selector::id(TAB_STRIP_ID)) {
+                    Ok(selector::Target::Scrollable {
+                        bounds,
+                        content_bounds,
+                        ..
+                    }) => (bounds, content_bounds),
+                    Ok(other) => {
+                        panic!("{preset}: {TAB_STRIP_ID} is not a scrollable: {other:?}")
+                    }
+                    Err(error) => panic!("{preset}: {TAB_STRIP_ID}: {error}"),
+                };
+                if tabs.width <= strip.width {
+                    continue;
+                }
+                scrolled += 1;
+                assert!(
+                    strip.height - tabs.height >= groove - 0.01,
+                    "{preset} at {width}px: the strip is {}px tall around {}px of tabs, \
+                     no room for the {groove}px scrollbar below them",
+                    strip.height,
+                    tabs.height
+                );
+            }
+        }
+        assert!(
+            scrolled > 0,
+            "the tabs overflowed no strip, so none scrolled"
         );
     }
 
