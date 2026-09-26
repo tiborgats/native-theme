@@ -3,6 +3,7 @@
 
 pub(crate) mod base;
 mod derived;
+mod frames;
 mod roles;
 mod states;
 mod variants;
@@ -10,7 +11,6 @@ mod variants;
 use std::sync::Arc;
 
 use crate::atlas::{Note, SchemeStyles};
-use crate::roles::SURFACES;
 use crate::{AccessibilityPreferences, LayoutTheme, ResolvedTheme, Role, Surface};
 
 /// Everything one scheme's styles are built from.
@@ -55,7 +55,10 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
             .map_or_else(|| Arc::clone(&normal), Arc::new);
         *slot = [normal, selected, disabled];
     }
-    let frames = SURFACES.map(|surface| egui_preset(surface, &base));
+    let mut frames = [egui::Frame::NONE; 11];
+    for (slot, surface) in frames.iter_mut().zip(Surface::all()) {
+        *slot = frames::surface_frame(*surface, &base, input, notes);
+    }
     SchemeStyles {
         base,
         cells,
