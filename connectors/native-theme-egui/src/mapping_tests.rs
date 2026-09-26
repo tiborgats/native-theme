@@ -892,7 +892,7 @@ pub(crate) fn preset_reads(surface: Surface) -> &'static [(&'static str, &'stati
 }
 
 /// `path` is `sink` itself or a field inside it.
-fn covers(sink: &str, path: &str) -> bool {
+pub(crate) fn covers(sink: &str, path: &str) -> bool {
     path == sink
         || path
             .strip_prefix(sink)
@@ -981,10 +981,9 @@ fn own_write(m: &Manifest, a: &Cached, at: impl Fn(&Sink) -> bool) -> Own {
     }
 }
 
-/// Whether the cell (`role`, `variant`) writes `path` itself: the sinks the manifest declares
-/// at that cell, or one of the no-row writes §6 makes there.
-fn cell_own(m: &Manifest, a: &Cached, role: Role, variant: RoleVariant, path: &str) -> Own {
-    let no_row = (variant == RoleVariant::Disabled
+/// Whether §6 writes `path` in the cell (`role`, `variant`) with no manifest row.
+pub(crate) fn no_row_write(role: Role, variant: RoleVariant, path: &str) -> bool {
+    (variant == RoleVariant::Disabled
         && DISABLED_CELLS.contains(&role)
         && path == "visuals.disabled_alpha")
         || (role == Role::Expander
@@ -993,8 +992,13 @@ fn cell_own(m: &Manifest, a: &Cached, role: Role, variant: RoleVariant, path: &s
                 || path == "visuals.widgets.open.weak_bg_fill"))
         || (role == Role::Menu
             && variant == RoleVariant::Normal
-            && MENU_STYLE_PATHS.iter().any(|p| covers(p, path)));
-    if no_row {
+            && MENU_STYLE_PATHS.iter().any(|p| covers(p, path)))
+}
+
+/// Whether the cell (`role`, `variant`) writes `path` itself: the sinks the manifest declares
+/// at that cell, or one of the no-row writes §6 makes there.
+fn cell_own(m: &Manifest, a: &Cached, role: Role, variant: RoleVariant, path: &str) -> Own {
+    if no_row_write(role, variant, path) {
         return Own::Overrides;
     }
     own_write(m, a, |s| {

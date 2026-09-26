@@ -1,4 +1,4 @@
-//! The mapping contract (spec §13 T10, T10b, T12; §13.1): `mapping.toml` checked against what
+//! The mapping contract (spec §13 T10, T10b, T10c, T12; §13.1): `mapping.toml` checked against what
 //! the atlas publishes, over every bundled preset in both modes, and the contrast of every
 //! text-on-fill pair egui paints against the native pair it was assembled from.
 #![allow(
@@ -18,9 +18,11 @@ use native_theme::theme::{ColorMode, ResolvedTheme, Theme as NativeTheme};
 use crate::convert::{self, Rgba};
 use crate::install_tests::resolved;
 use crate::mapping_tests::{
-    Manifest, Row, Sink, Verdict, role_by_key, surface_by_key, variant_by_key,
+    Manifest, Row, Sink, Verdict, covers, no_row_write, role_by_key, surface_by_key, variant_by_key,
 };
-use crate::style_diff::{all_frame_paths, all_frames, all_style_paths, all_styles, self_equal};
+use crate::style_diff::{
+    all_frame_paths, all_frames, all_style_paths, all_styles, frame_diff, self_equal, style_diff,
+};
 use crate::{Role, RoleVariant, Surface, ThemeAtlas};
 
 // ---- the 32 combinations (C6) ---------------------------------------------------------------
@@ -1083,6 +1085,107 @@ fn t10b_every_style_path_is_a_sink_or_unwritten() {
         "{} field(s) both a sink and `[unwritten]`:\n{}",
         both.len(),
         both.join("\n")
+    );
+}
+
+/// Whether `sinks` name `path`, with an `override_font_id` taken as one `FontId`: its family
+/// moves together with its declared size (`Option<FontId>`, `egui/src/style.rs:249`).
+fn names(sinks: &[&Sink], path: &str) -> bool {
+    let unit = |p: &str| {
+        if covers("override_font_id", p) {
+            "override_font_id".to_owned()
+        } else {
+            p.to_owned()
+        }
+    };
+    sinks
+        .iter()
+        .any(|s| covers(&s.path, path) || covers(&unit(&s.path), &unit(path)))
+}
+
+/// T10c: every field of every location that no row declares there — the `[unwritten]` paths and
+/// every field no sink at that location names — holds the value the location inherits (§3.4;
+/// §13.1, *Inheritance*): egui's own `Style` for the base style, the base style for a role's
+/// `Normal` cell (with egui's `menu_style` for `Role::Menu`), the `Normal` cell for its
+/// `Selected` and `Disabled` cells, and egui's preset frame over the base style for a `Surface`.
+/// §6's no-row writes in a cell (`mapping_tests::no_row_write`) count as declared there.
+#[test]
+fn t10c_every_undeclared_field_holds_its_inherited_value() {
+    let manifest = Manifest::load();
+    let sinks: Vec<&Sink> = manifest.rows.values().flat_map(|r| &r.sinks).collect();
+    let at = |scope: Option<&str>, variant: &str, surface: Option<&str>| -> Vec<&Sink> {
+        sinks
+            .iter()
+            .copied()
+            .filter(|s| {
+                s.scope.as_deref() == scope
+                    && s.variant.as_deref().unwrap_or("normal") == variant
+                    && s.surface.as_deref() == surface
+            })
+            .collect()
+    };
+    let mut failures = Vec::new();
+    for c in &combinations() {
+        let label = c.label();
+        let base = &c.styles().base;
+        let mut check = |location: String, declared: &[&Sink], moved: Vec<String>| {
+            for path in moved {
+                if !names(declared, &path) {
+                    failures.push(format!("{label}: {location}: `{path}`"));
+                }
+            }
+        };
+        // §6.1's one no-row write in the base style: every entry keeps `inactive`'s text-stroke
+        // width, egui's own there (`[unwritten]`), not egui's stock hovered and active widths.
+        let mut egui_own = c.scheme.default_style(); // egui/src/memory/theme.rs:24-29
+        let w = &mut egui_own.visuals.widgets;
+        let width = w.inactive.fg_stroke.width;
+        for e in [&mut w.hovered, &mut w.active, &mut w.open] {
+            e.fg_stroke.width = width;
+        }
+        check(
+            "base".to_owned(),
+            &at(None, "normal", None),
+            style_diff(&egui_own, base),
+        );
+        for role in Role::all() {
+            let mut inherited = Style::clone(base);
+            if *role == Role::Menu {
+                egui::containers::menu::menu_style(&mut inherited); // egui/src/containers/menu.rs:22
+            }
+            let normal = c.cell(*role, RoleVariant::Normal);
+            for variant in RoleVariant::all() {
+                let (from, cell) = match variant {
+                    RoleVariant::Normal => (&inherited, normal),
+                    _ => (normal, c.cell(*role, *variant)),
+                };
+                let moved: Vec<String> = style_diff(from, cell)
+                    .into_iter()
+                    .filter(|p| !no_row_write(*role, *variant, p))
+                    .collect();
+                check(
+                    format!("{}/{}", role.key(), variant.key()),
+                    &at(Some(role.key()), variant.key(), None),
+                    moved,
+                );
+            }
+        }
+        for surface in Surface::all() {
+            check(
+                format!("surface {}", surface.key()),
+                &at(None, "normal", Some(surface.key())),
+                frame_diff(
+                    &crate::style::egui_preset(*surface, base), // §3.4, the §4.5 table
+                    &c.styles().frame(*surface),
+                ),
+            );
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} undeclared field(s) moved from the value their location inherits:\n{}",
+        failures.len(),
+        failures.join("\n")
     );
 }
 
