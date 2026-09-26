@@ -79,8 +79,8 @@ pub(crate) fn run_pipeline(
     // Must read before variants are consumed by unwrap_or_default().
     // None where no tier names a theme: the TOML states none and detection
     // failed (`ctx.icon_theme` is then None). No theme stands in for it.
-    // Both variants are resolved: `icon_theme` is the active mode's, and
-    // `other_icon_theme` the other's (`SystemTheme::icon_theme_for`).
+    // Both variants are resolved, kept by variant (`SystemTheme::icon_theme_for`);
+    // `icon_theme` is the active mode's copy.
     let icon_theme_of =
         |variant: &Option<crate::model::ThemeMode>| -> Option<std::borrow::Cow<'static, str>> {
             variant
@@ -89,10 +89,11 @@ pub(crate) fn run_pipeline(
                 .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
                 .or_else(|| ctx.icon_theme.clone()) // tier 3: pre-detected system
         };
-    let (icon_theme, other_icon_theme) = if mode == crate::ColorMode::Dark {
-        (icon_theme_of(&merged.dark), icon_theme_of(&merged.light))
-    } else {
-        (icon_theme_of(&merged.light), icon_theme_of(&merged.dark))
+    let light_icon_theme = icon_theme_of(&merged.light);
+    let dark_icon_theme = icon_theme_of(&merged.dark);
+    let icon_theme = match mode {
+        crate::ColorMode::Light => light_icon_theme.clone(),
+        crate::ColorMode::Dark => dark_icon_theme.clone(),
     };
 
     // Shared across variants; read before the variants are moved out of `merged`.
@@ -144,7 +145,8 @@ pub(crate) fn run_pipeline(
         live_preset: preset_name.to_string(),
         icon_set,
         icon_theme,
-        other_icon_theme,
+        light_icon_theme,
+        dark_icon_theme,
         layout,
         accessibility,
     })
@@ -1457,6 +1459,22 @@ accent_color = "#0066cc"
                 theme.icon_theme_for(mode),
                 theme.icon_theme.as_deref(),
                 "the active mode's name is `icon_theme` itself"
+            );
+            // `mode` is a public field: changing it after the build must not swap the names.
+            let mut flipped = theme;
+            flipped.mode = match mode {
+                crate::ColorMode::Light => crate::ColorMode::Dark,
+                crate::ColorMode::Dark => crate::ColorMode::Light,
+            };
+            assert_eq!(
+                flipped.icon_theme_for(crate::ColorMode::Light),
+                Some("breeze"),
+                "built in {mode:?}, mode flipped"
+            );
+            assert_eq!(
+                flipped.icon_theme_for(crate::ColorMode::Dark),
+                Some("breeze-dark"),
+                "built in {mode:?}, mode flipped"
             );
         }
         Ok(())

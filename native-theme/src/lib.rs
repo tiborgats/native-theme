@@ -484,10 +484,13 @@ pub struct SystemTheme {
     /// exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
     /// other platforms have one), so the `Arc<str>` dedup benefit does not apply.
     pub icon_theme: Option<Cow<'static, str>>,
-    /// The other variant's icon theme, resolved by the same three tiers as
-    /// [`icon_theme`](Self::icon_theme) from the variant [`mode`](Self::mode)
-    /// does not select. Read through [`icon_theme_for`](Self::icon_theme_for).
-    pub(crate) other_icon_theme: Option<Cow<'static, str>>,
+    /// Each variant's icon theme, resolved by the same three tiers as
+    /// [`icon_theme`](Self::icon_theme), kept by variant rather than relative
+    /// to [`mode`](Self::mode), a public field a caller may change. Read
+    /// through [`icon_theme_for`](Self::icon_theme_for).
+    pub(crate) light_icon_theme: Option<Cow<'static, str>>,
+    /// The dark variant's counterpart of [`light_icon_theme`](Self::light_icon_theme).
+    pub(crate) dark_icon_theme: Option<Cow<'static, str>>,
     /// Layout spacing shared by both variants: the platform reader's values
     /// merged field-wise over the preset's, the same precedence the pipeline
     /// uses for colours. `None` in a field means neither the platform nor the
@@ -518,19 +521,18 @@ impl SystemTheme {
         }
     }
 
-    /// The icon-theme name for one colour mode: [`icon_theme`](Self::icon_theme)
-    /// for the active [`mode`](Self::mode), and the other variant's name —
-    /// resolved by the same three tiers (its `defaults.icon_theme`, then the
-    /// theme's, then the detected system theme) — for the other mode. KDE
-    /// names one theme per variant (`breeze`, `breeze-dark`); a toolkit that
-    /// keeps a style per colour scheme needs both. `None` where that
-    /// variant states none and detection failed; nothing is invented.
+    /// The icon-theme name for one colour mode, resolved for that mode's
+    /// variant by the same three tiers as [`icon_theme`](Self::icon_theme)
+    /// (its `defaults.icon_theme`, then the theme's, then the detected system
+    /// theme); for the mode the theme was built in it equals `icon_theme` as
+    /// built. KDE names one theme per variant (`breeze`, `breeze-dark`); a
+    /// toolkit that keeps a style per colour scheme needs both. `None` where
+    /// that variant states none and detection failed; nothing is invented.
     #[must_use]
     pub fn icon_theme_for(&self, mode: ColorMode) -> Option<&str> {
-        if mode == self.mode {
-            self.icon_theme.as_deref()
-        } else {
-            self.other_icon_theme.as_deref()
+        match mode {
+            ColorMode::Light => self.light_icon_theme.as_deref(),
+            ColorMode::Dark => self.dark_icon_theme.as_deref(),
         }
     }
 
@@ -624,7 +626,8 @@ impl SystemTheme {
             preset: self.preset.clone(),
             icon_set: self.icon_set,
             icon_theme: self.icon_theme.clone(),
-            other_icon_theme: self.other_icon_theme.clone(),
+            light_icon_theme: self.light_icon_theme.clone(),
+            dark_icon_theme: self.dark_icon_theme.clone(),
             layout,
             accessibility: self.accessibility.clone(),
         })
@@ -753,7 +756,8 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
-            other_icon_theme: None,
+            light_icon_theme: None,
+            dark_icon_theme: Some("lucide".into()),
             layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
@@ -795,7 +799,8 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
-            other_icon_theme: None,
+            light_icon_theme: Some("lucide".into()),
+            dark_icon_theme: None,
             layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
@@ -837,7 +842,8 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: Some("lucide".into()),
-            other_icon_theme: None,
+            light_icon_theme: Some("lucide".into()),
+            dark_icon_theme: None,
             layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
