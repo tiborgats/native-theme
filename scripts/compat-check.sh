@@ -5,20 +5,21 @@
 # against. The claim is only worth what the run behind it was, so the run is
 # here:
 #
-#   compat-check.sh run [gpui|iced]  resolve the newest upstream release on a
-#                                    throwaway lockfile, run that connector's
-#                                    gates on it, and -- only if they all pass
-#                                    -- stamp docs/COMPATIBILITY.toml with the
-#                                    versions the lockfile ended up with and
-#                                    rewrite the README's Verified line from it
-#   compat-check.sh check            exit 0 if the stamp exists, is
-#                                    well-formed, and each connector's sources
-#                                    are the ones it was verified from; exit 1
-#                                    with a message on stdout otherwise
-#   compat-check.sh hash <connector> print a connector's sources hash at HEAD
+#   compat-check.sh run [gpui|iced|egui]  resolve the newest upstream release on a
+#                                         throwaway lockfile, run that connector's
+#                                         gates on it, and -- only if they all pass
+#                                         -- stamp docs/COMPATIBILITY.toml with the
+#                                         versions the lockfile ended up with and
+#                                         rewrite the README's Verified line from it
+#   compat-check.sh check                 exit 0 if the stamp exists, is
+#                                         well-formed, and each connector's sources
+#                                         are the ones it was verified from; exit 1
+#                                         with a message on stdout otherwise
+#   compat-check.sh hash <connector>      print a connector's sources hash at HEAD
 #
 # The hash covers the git object ids of that connector's Cargo.toml, src,
-# examples and tests: a connector that has changed has not been verified, the
+# examples and tests (egui: Cargo.toml, src, examples and mapping.toml, the manifest
+# its showcase embeds): a connector that has changed has not been verified, the
 # rule scripts/asset-stamp.sh applies to the sources its screenshots came
 # from. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check` works
 # on a depth-1 checkout and needs no network.
@@ -35,7 +36,7 @@ set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 STAMP_REL="docs/COMPATIBILITY.toml"
 STAMP="$ROOT/$STAMP_REL"
-CONNECTORS=(gpui iced)
+CONNECTORS=(gpui iced egui)
 
 cd "$ROOT"
 
@@ -44,6 +45,7 @@ crate_of() {
     case "$1" in
         gpui) echo native-theme-gpui ;;
         iced) echo native-theme-iced ;;
+        egui) echo native-theme-egui ;;
         *) return 1 ;;
     esac
 }
@@ -55,6 +57,7 @@ family_of() {
     case "$1" in
         gpui) echo "gpui-base gpui-component gpui-kit gpui-kit-assets gpui-pre" ;;
         iced) echo "iced iced_aw iced_core iced_test iced_widget" ;;
+        egui) echo "ecolor eframe egui egui-wgpu egui-winit egui_extras egui_kittest emath epaint epaint_default_fonts kittest" ;;
         *) return 1 ;;
     esac
 }
@@ -62,7 +65,11 @@ family_of() {
 # The paths whose content the verdict is about.
 source_paths() {
     local dir="connectors/$(crate_of "$1")"
-    printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/tests"
+    case "$1" in
+        # No `tests` directory; the showcase embeds `mapping.toml`.
+        egui) printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/mapping.toml" ;;
+        *)    printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/tests" ;;
+    esac
 }
 
 readme_of() {
@@ -122,10 +129,10 @@ write_stamp() {
     local fresh blocks=() name block
     fresh=$(printf '[%s]\ncommit = "%s"\ngenerated = "%s"\nsources = "%s"\n\n[%s.verified]\n%s' \
         "$crate" "$commit" "$today" "$hash" "$crate" "$versions")
-    # Read the other connector's block before the redirection below truncates
-    # the file: a run is about one connector and leaves the other's claim as
-    # it found it.
-    for name in native-theme-gpui native-theme-iced; do
+    # Read the other connectors' blocks before the redirection below truncates
+    # the file: a run is about one connector and leaves the others' claims as
+    # it found them.
+    for name in native-theme-gpui native-theme-iced native-theme-egui; do
         if [ "$name" = "$crate" ]; then
             blocks+=("$fresh")
             continue
@@ -148,7 +155,8 @@ write_stamp() {
 # `src/compat.rs`, which requires the README's Verified line to be this file's.
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
-# Cargo.toml, src, examples and tests. A connector whose sources have changed
+# Cargo.toml, src, examples and tests (egui: Cargo.toml, src, examples and
+# mapping.toml, the manifest its showcase embeds). A connector whose sources have changed
 # has not been verified, whatever this file says about the set.
 # Do not edit by hand.
 EOF
@@ -240,6 +248,20 @@ gates_iced() {
     run_gate "widget coverage" python3 scripts/check-widget-coverage.py
 }
 
+gates_egui() {
+    run_gate "tests" cargo test -p native-theme-egui --locked
+    run_gate "tests (no default features)" \
+        cargo test -p native-theme-egui --locked --no-default-features
+    run_gate "tests (all features)" cargo test -p native-theme-egui --locked --all-features
+    run_gate "clippy" \
+        cargo clippy -p native-theme-egui --all-targets --all-features --locked -- -D warnings
+    run_gate "documentation" env RUSTDOCFLAGS="-D warnings" \
+        cargo doc -p native-theme-egui --no-deps --locked
+    run_gate "documentation (all features)" env RUSTDOCFLAGS="-D warnings" \
+        cargo doc -p native-theme-egui --no-deps --locked --all-features
+    run_gate "widget coverage" python3 scripts/check-widget-coverage.py
+}
+
 run_connector() {
     local connector="$1" crate update_args=() c version versions="" hash commit today
     crate=$(crate_of "$connector")
@@ -288,7 +310,7 @@ cmd_run() {
     fi
     for connector in "${requested[@]}"; do
         if ! crate_of "$connector" >/dev/null; then
-            echo "compat-check: unknown connector '$connector' (gpui, iced)" >&2
+            echo "compat-check: unknown connector '$connector' (gpui, iced, egui)" >&2
             exit 2
         fi
     done
@@ -300,7 +322,7 @@ cmd_run() {
 
 cmd_check() {
     if [ ! -f "$STAMP" ]; then
-        echo "no $STAMP_REL: neither connector states an upstream set it has been verified against; run ./scripts/compat-check.sh run"
+        echo "no $STAMP_REL: no connector states an upstream set it has been verified against; run ./scripts/compat-check.sh run"
         return 1
     fi
     local connector crate recorded generated pairs current stale=() verified=()
@@ -332,7 +354,7 @@ cmd_check() {
 
 cmd_hash() {
     if ! crate_of "${1:-}" >/dev/null 2>&1; then
-        echo "usage: $0 hash <gpui|iced>" >&2
+        echo "usage: $0 hash <gpui|iced|egui>" >&2
         exit 2
     fi
     sources_hash "$1" HEAD
@@ -349,7 +371,7 @@ case "${1:-}" in
         cmd_hash "${1:-}"
         ;;
     *)
-        echo "usage: $0 {run [gpui|iced] | check | hash <gpui|iced>}" >&2
+        echo "usage: $0 {run [gpui|iced|egui] | check | hash <gpui|iced|egui>}" >&2
         exit 2
         ;;
 esac

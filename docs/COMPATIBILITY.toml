@@ -8,7 +8,8 @@
 # `src/compat.rs`, which requires the README's Verified line to be this file's.
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
-# Cargo.toml, src, examples and tests. A connector whose sources have changed
+# Cargo.toml, src, examples and tests (egui: Cargo.toml, src, examples and
+# mapping.toml, the manifest its showcase embeds). A connector whose sources have changed
 # has not been verified, whatever this file says about the set.
 # Do not edit by hand.
 
@@ -35,3 +36,21 @@ iced_aw = "0.14.1"
 iced_core = "0.14.0"
 iced_test = "0.14.0"
 iced_widget = "0.14.2"
+
+[native-theme-egui]
+commit = "0545a9f1c63cc4b224988599c4901abad1681e54"
+generated = "2026-09-26"
+sources = "f8832e69a5d4da15b04660c0b9a23e3c429ca1e919d1e713b4ec068342311e88"
+
+[native-theme-egui.verified]
+ecolor = "0.36.2"
+eframe = "0.36.2"
+egui = "0.36.2"
+egui-wgpu = "0.36.2"
+egui-winit = "0.36.2"
+egui_extras = "0.36.2"
+egui_kittest = "0.36.2"
+emath = "0.36.2"
+epaint = "0.36.2"
+epaint_default_fonts = "0.36.2"
+kittest = "0.4.0"

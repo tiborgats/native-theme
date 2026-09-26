@@ -211,8 +211,8 @@ ok "docs/assets/PROVENANCE.toml written for $EXPECTED_SHA"
 # against, and a release should not carry a set that was verified before the
 # sources it names. This resolves the newest upstream release on a throwaway
 # lockfile, runs each connector's gates on it, and rewrites
-# docs/COMPATIBILITY.toml and the two Verified lines from what it resolved;
-# the committed Cargo.lock keeps its floors either way. It fails the script if
+# docs/COMPATIBILITY.toml and the connector READMEs' Verified lines from what
+# it resolved; the committed Cargo.lock keeps its floors either way. It fails the script if
 # a connector no longer passes on the newest set, which is the answer the
 # release needs before the tag, not after it.
 info "Verifying the connectors against the newest upstream releases..."

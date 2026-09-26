@@ -78,6 +78,8 @@
 mod accessors;
 mod atlas;
 #[cfg(test)]
+mod compat;
+#[cfg(test)]
 mod contract;
 pub mod convert;
 mod ext;
