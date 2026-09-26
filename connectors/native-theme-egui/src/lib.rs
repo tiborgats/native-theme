@@ -26,12 +26,19 @@
     reason = "link targets land by Task 26; Task 32 removes this line"
 )]
 
+mod accessors;
 mod atlas;
 pub mod convert;
+pub mod fonts;
 pub mod icons;
+#[cfg(test)]
+mod install_tests;
 mod roles;
+mod style;
 
+pub use accessors::scaled_text_size;
 pub use atlas::Note;
+pub use atlas::{Builder, ThemeAtlas};
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(test)]
 mod tripwires;
