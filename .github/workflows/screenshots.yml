@@ -30,6 +30,15 @@ jobs:
             os_name: windows
             toolkit: gpui
             features: ""
+          - os: macos-latest
+            os_name: macos
+            toolkit: egui
+            # Every connector feature, as the capture scripts build it.
+            features: --all-features
+          - os: windows-latest
+            os_name: windows
+            toolkit: egui
+            features: --all-features
 
     runs-on: ${{ matrix.os }}
 

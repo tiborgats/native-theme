@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Capture theme-switching GIFs for both iced and gpui showcases.
+# Capture theme-switching GIFs for the iced, gpui and egui showcases.
 #
-# Produces two GIFs:
+# Produces three GIFs:
 #   connectors/native-theme-iced/docs/assets/theme-switching.gif  (via spectacle on KDE Wayland)
 #   connectors/native-theme-gpui/docs/assets/theme-switching.gif  (via spectacle on KDE Wayland)
+#   connectors/native-theme-egui/docs/assets/theme-switching.gif  (via spectacle on KDE Wayland)
 #
-# Both use spectacle for external window capture to include window
+# All three use spectacle for external window capture to include window
 # decorations (title bar, buttons, borders) in the frames.
 #
 # Each GIF cycles through 4 Linux-native presets with matching icon sets.
@@ -18,6 +19,8 @@ ICED_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 GPUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 ICED_FRAME_DIR="$(mktemp -d)"
 GPUI_FRAME_DIR="$(mktemp -d)"
+EGUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
+EGUI_FRAME_DIR="$(mktemp -d)"
 DELAY=3
 
 # 4 visually distinct Linux-native presets with matching icon sets
@@ -30,7 +33,7 @@ THEMES=(
     "kde-breeze:light:freedesktop:breeze"
 )
 
-mkdir -p "$ICED_OUTPUT_DIR" "$GPUI_OUTPUT_DIR"
+mkdir -p "$ICED_OUTPUT_DIR" "$GPUI_OUTPUT_DIR" "$EGUI_OUTPUT_DIR"
 cd "$PROJECT_ROOT"
 
 # Kill any stale spectacle instances to avoid D-Bus singleton conflicts
@@ -121,9 +124,48 @@ python3 "$SCRIPT_DIR/generate_gifs.py" \
 echo ""
 ls -lh "$GPUI_OUTPUT_DIR/theme-switching.gif"
 
-# ── Cleanup ───────────────────────────────────────────────────────────
-
-rm -rf "$ICED_FRAME_DIR" "$GPUI_FRAME_DIR"
+# ── egui GIF ──────────────────────────────────────────────────────────
 
 echo ""
-echo "=== Done: both theme-switching GIFs generated ==="
+echo "=== Generating egui theme-switching GIF ==="
+echo ""
+
+echo "--- Building egui showcase binary (release mode) ---"
+cargo build -p native-theme-egui --example showcase-egui --release --all-features
+echo ""
+
+echo "--- Capturing egui frames ---"
+for i in "${!THEMES[@]}"; do
+    IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
+    frame_file="$EGUI_FRAME_DIR/frame-$(printf '%02d' "$i").png"
+    echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
+
+    # The egui showcase takes the preset's own icon theme; no --icon-theme.
+    cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
+        --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+        --tab buttons &
+    PID=$!
+
+    sleep "$DELAY"
+
+    spectacle -a -b -n -o "$frame_file"
+    sleep 1
+
+    kill "$PID" 2>/dev/null || true
+    wait "$PID" 2>/dev/null || true
+done
+
+echo ""
+echo "--- Assembling egui GIF ---"
+python3 "$SCRIPT_DIR/generate_gifs.py" \
+    --theme-switching "$EGUI_FRAME_DIR" \
+    --theme-switching-output "$EGUI_OUTPUT_DIR/theme-switching.gif"
+echo ""
+ls -lh "$EGUI_OUTPUT_DIR/theme-switching.gif"
+
+# ── Cleanup ───────────────────────────────────────────────────────────
+
+rm -rf "$ICED_FRAME_DIR" "$GPUI_FRAME_DIR" "$EGUI_FRAME_DIR"
+
+echo ""
+echo "=== Done: all three theme-switching GIFs generated ==="

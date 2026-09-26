@@ -16,9 +16,10 @@
 #   asset-stamp.sh hash          print the sources hash of HEAD
 #
 # The hash covers the git object ids of every path that feeds the showcases:
-# crate manifests and sources, presets, icon bundles, the lockfile, the
-# capture scripts and the screenshots workflow. `git rev-parse HEAD:<path>`
-# yields a tree or blob id, so `check` works on a depth-1 checkout.
+# crate manifests and sources, presets, icon bundles, the egui connector's
+# mapping.toml, the lockfile, the capture scripts and the screenshots
+# workflow. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check`
+# works on a depth-1 checkout.
 set -euo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -42,8 +43,13 @@ SOURCE_PATHS=(
     connectors/native-theme-iced/Cargo.toml
     connectors/native-theme-iced/src
     connectors/native-theme-iced/examples
+    connectors/native-theme-egui/Cargo.toml
+    connectors/native-theme-egui/src
+    connectors/native-theme-egui/examples
+    connectors/native-theme-egui/mapping.toml
     scripts/generate_screenshots.sh
     scripts/generate_gpui_screenshots.sh
+    scripts/generate_egui_screenshots.sh
     scripts/generate_theme_switching_gif.sh
     scripts/generate_gifs.py
     .github/workflows/screenshots.yml

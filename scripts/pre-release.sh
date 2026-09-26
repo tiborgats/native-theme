@@ -19,6 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 ICED_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 GPUI_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
+EGUI_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
 NT_DIR="$PROJECT_ROOT/native-theme/docs/assets"
 
 RED='\033[0;31m'
@@ -45,7 +46,7 @@ command -v python3 >/dev/null 2>&1 || fail "python3 not found"
 # captures.
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
     || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check-widget-coverage.py needs 3.11+ (tomllib)"
-command -v spectacle >/dev/null 2>&1 || fail "spectacle not found (needed for gpui captures)"
+command -v spectacle >/dev/null 2>&1 || fail "spectacle not found (needed for the Linux captures)"
 python3 -c "from PIL import Image" 2>/dev/null || fail "Pillow not installed (pip install Pillow)"
 gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
 ok "Prerequisites OK"
@@ -53,7 +54,7 @@ echo ""
 
 # ── Step 1: Trigger CI early (runs in parallel with local work) ──────
 
-echo "=== Step 1/5: Trigger macOS & Windows screenshots via CI ==="
+echo "=== Step 1/6: Trigger macOS & Windows screenshots via CI ==="
 echo ""
 
 # Ensure local changes are pushed so CI uses the latest code
@@ -100,22 +101,27 @@ echo ""
 
 # ── Step 2: Local Linux assets (while CI runs) ──────────────────────
 
-echo "=== Step 2/5: Spinner GIFs ==="
+echo "=== Step 2/6: Spinner GIFs ==="
 python3 "$SCRIPT_DIR/generate_gifs.py"
 ok "Spinner GIFs generated"
 echo ""
 
-echo "=== Step 3/5: Iced Linux screenshots ==="
+echo "=== Step 3/6: Iced Linux screenshots ==="
 bash "$SCRIPT_DIR/generate_screenshots.sh"
 ok "Iced Linux screenshots generated"
 echo ""
 
-echo "=== Step 4/5: gpui Linux screenshots ==="
+echo "=== Step 4/6: gpui Linux screenshots ==="
 bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
 ok "gpui Linux screenshots generated"
 echo ""
 
-echo "=== Step 5/5: Theme-switching GIFs (iced + gpui) ==="
+echo "=== Step 5/6: egui Linux screenshots ==="
+bash "$SCRIPT_DIR/generate_egui_screenshots.sh"
+ok "egui Linux screenshots generated"
+echo ""
+
+echo "=== Step 6/6: Theme-switching GIFs (iced + gpui + egui) ==="
 bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
 ok "Theme-switching GIFs generated"
 echo ""
@@ -168,12 +174,13 @@ TMPDIR=$(mktemp -d)
 gh run download "$RUN_ID" --dir "$TMPDIR"
 
 DOWNLOADED=0
-for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-macos "$TMPDIR"/screenshots-iced-windows "$TMPDIR"/screenshots-gpui-windows; do
+for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-macos "$TMPDIR"/screenshots-egui-macos "$TMPDIR"/screenshots-iced-windows "$TMPDIR"/screenshots-gpui-windows "$TMPDIR"/screenshots-egui-windows; do
     [ -d "$artifact_dir" ] || continue
     base=$(basename "$artifact_dir")   # e.g. screenshots-iced-macos
     case "$base" in
         screenshots-iced-*) dest="$ICED_DIR" ;;
         screenshots-gpui-*) dest="$GPUI_DIR" ;;
+        screenshots-egui-*) dest="$EGUI_DIR" ;;
         *) fail "Unexpected artifact dir: $base" ;;
     esac
     mkdir -p "$dest"
@@ -217,7 +224,7 @@ ok "docs/COMPATIBILITY.toml and the connector READMEs refreshed"
 echo ""
 echo "=== Pre-release assets complete ==="
 echo ""
-for dir in "$ICED_DIR" "$GPUI_DIR" "$NT_DIR"; do
+for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR" "$NT_DIR"; do
     [ -d "$dir" ] || continue
     rel=$(realpath --relative-to="$PROJECT_ROOT" "$dir")
     count=$(find "$dir" -maxdepth 1 -type f \( -name '*.png' -o -name '*.gif' \) 2>/dev/null | wc -l)

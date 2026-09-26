@@ -21,7 +21,11 @@ echo "--- Step 3: Generating gpui showcase screenshots ---"
 bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
 echo ""
 
-echo "--- Step 4: Generating theme-switching GIFs (iced + gpui) ---"
+echo "--- Step 4: Generating egui showcase screenshots ---"
+bash "$SCRIPT_DIR/generate_egui_screenshots.sh"
+echo ""
+
+echo "--- Step 5: Generating theme-switching GIFs (iced + gpui + egui) ---"
 bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
 echo ""
 
@@ -32,6 +36,7 @@ for dir in \
     "$PROJECT_ROOT/native-theme/docs/assets" \
     "$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets" \
     "$PROJECT_ROOT/connectors/native-theme-iced/docs/assets" \
+    "$PROJECT_ROOT/connectors/native-theme-egui/docs/assets" \
     "$PROJECT_ROOT/docs/assets"; do
     if [ -d "$dir" ]; then
         count=$(find "$dir" -maxdepth 1 -type f | wc -l)
