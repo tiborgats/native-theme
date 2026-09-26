@@ -1225,3 +1225,444 @@ mod t6_fonts {
         );
     }
 }
+
+/// §13 T18 (b)–(f), (h) and T4 (c) (plan Task 23).
+mod t18_accessors {
+    use std::sync::Arc;
+
+    use egui::FontId;
+    use native_theme::AccessibilityPreferences;
+    use native_theme::theme::{
+        ColorMode, FontStyle, ResolvedFontSpec, ResolvedPadding, ResolvedTheme,
+    };
+
+    // `resolved` (Task 11) and `pass` (Task 11, Global Constraints) are the file's own helpers.
+    use super::{pass, resolved};
+    use crate::convert::to_color32;
+    use crate::icons::IconContext;
+    use crate::{
+        NativeThemeUiExt, Note, Role, RoleVariant, TextRole, ThemeAtlas, scaled_text_size,
+    };
+
+    /// §4.7's table, spelled out here so the test does not read it through the accessor.
+    fn role_font_mut(t: &mut ResolvedTheme, role: Role) -> &mut ResolvedFontSpec {
+        match role {
+            Role::Button => &mut t.button.font,
+            Role::Input => &mut t.input.font,
+            Role::Checkbox => &mut t.checkbox.font,
+            Role::Menu => &mut t.menu.font,
+            Role::Tooltip => &mut t.tooltip.font,
+            Role::Tab => &mut t.tab.font,
+            Role::Sidebar => &mut t.sidebar.font,
+            Role::Toolbar => &mut t.toolbar.font,
+            Role::StatusBar => &mut t.status_bar.font,
+            Role::Popover => &mut t.popover.font,
+            Role::ComboBox => &mut t.combo_box.font,
+            Role::SegmentedControl => &mut t.segmented_control.font,
+            Role::Expander => &mut t.expander.font,
+            Role::Link => &mut t.link.font,
+            Role::List => &mut t.list.item_font,
+            Role::Dialog => &mut t.dialog.body_font,
+            Role::Window => &mut t.window.title_bar_font,
+            Role::Scrollbar
+            | Role::Slider
+            | Role::ProgressBar
+            | Role::Splitter
+            | Role::Separator
+            | Role::Switch
+            | Role::Spinner
+            | Role::Card => &mut t.defaults.font,
+        }
+    }
+
+    fn reads_the_defaults_font(role: Role) -> bool {
+        matches!(
+            role,
+            Role::Scrollbar
+                | Role::Slider
+                | Role::ProgressBar
+                | Role::Splitter
+                | Role::Separator
+                | Role::Switch
+                | Role::Spinner
+                | Role::Card
+        )
+    }
+
+    /// T18 (b): a stated side is the side plus the border's line width; `None` and `NaN` keep
+    /// egui's `Margin::symmetric(4, 2)` (`egui/src/widgets/text_edit/builder.rs:136`).
+    #[test]
+    fn t18_b_input_margin_adds_the_line_width_to_stated_sides_only() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.input.border.line_width = 1.5;
+        t.input.border.padding = ResolvedPadding {
+            top: Some(3.0),
+            right: None,
+            bottom: Some(f32::NAN),
+            left: Some(7.0),
+        };
+        let m = crate::input_margin(&t);
+        // 7 + 1.5 = 8.5 and 3 + 1.5 = 4.5, each rounded to a whole point, half away from zero
+        assert_eq!((m.left, m.top), (9, 5));
+        assert_eq!((m.right, m.bottom), (4, 2));
+    }
+
+    /// T18 (c): each role's weight is its own font's — `font` for the fourteen, `list.item_font`,
+    /// `dialog.body_font`, `window.title_bar_font`, and `defaults.font` for the other eight.
+    #[test]
+    fn t18_c_role_font_weight_reads_the_roles_own_font() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        let mut expected = Vec::new();
+        for (i, role) in Role::all().iter().enumerate() {
+            let weight = if reads_the_defaults_font(*role) {
+                900
+            } else {
+                100 + u16::try_from(i).unwrap()
+            };
+            role_font_mut(&mut t, *role).weight = weight;
+            expected.push((*role, weight));
+        }
+        // fonts no role reads stay out of the way
+        t.list.header_font.weight = 150;
+        t.dialog.title_font.weight = 160;
+        for (role, weight) in expected {
+            assert_eq!(crate::role_font_weight(&t, role), weight, "{role:?}");
+        }
+    }
+
+    /// T18 (d): `true` exactly when the role's font is slanted and `defaults.font` is upright.
+    #[test]
+    fn t18_d_role_font_is_italic_only_where_the_installed_face_is_upright() {
+        for role in Role::all() {
+            let mut t = resolved("adwaita", ColorMode::Light);
+            for r in Role::all() {
+                role_font_mut(&mut t, *r).style = FontStyle::Normal;
+            }
+            t.defaults.font.style = FontStyle::Normal;
+            assert!(
+                !crate::role_font_is_italic(&t, *role),
+                "{role:?}: every font upright"
+            );
+            for slant in [FontStyle::Italic, FontStyle::Oblique] {
+                role_font_mut(&mut t, *role).style = slant;
+                // the eight roles whose font is `defaults.font` slant the installed face itself
+                assert_eq!(
+                    crate::role_font_is_italic(&t, *role),
+                    !reads_the_defaults_font(*role),
+                    "{role:?} {slant:?}"
+                );
+                t.defaults.font.style = FontStyle::Oblique;
+                assert!(
+                    !crate::role_font_is_italic(&t, *role),
+                    "{role:?}: defaults.font slanted"
+                );
+                t.defaults.font.style = FontStyle::Normal;
+                role_font_mut(&mut t, *role).style = FontStyle::Normal;
+            }
+        }
+    }
+
+    /// T18 (e): the text accessors return their leaves, `scaled_text_size`d, as `Proportional`
+    /// `FontId`s; `icon_size` takes no preferences and returns its leaf as stated.
+    #[test]
+    fn t18_e_the_text_accessors_return_their_leaves_scaled() {
+        let t = resolved("windows-11", ColorMode::Dark);
+        for factor in [1.0_f32, 2.0] {
+            let prefs = AccessibilityPreferences {
+                text_scaling_factor: factor,
+                ..AccessibilityPreferences::default()
+            };
+            let s = |size: f32| scaled_text_size(size, &prefs);
+            let roles = [
+                (TextRole::Caption, &t.text_scale.caption),
+                (TextRole::SectionHeading, &t.text_scale.section_heading),
+                (TextRole::DialogTitle, &t.text_scale.dialog_title),
+                (TextRole::Display, &t.text_scale.display),
+            ];
+            for (role, entry) in roles {
+                assert_eq!(
+                    crate::text_role_font(&t, role, &prefs),
+                    FontId::proportional(s(entry.size)),
+                    "{role:?} at {factor}"
+                );
+                assert_eq!(
+                    crate::text_role_line_height(&t, role, &prefs),
+                    s(entry.line_height),
+                    "{role:?} at {factor}"
+                );
+                assert_eq!(crate::text_role_weight(&t, role), entry.weight, "{role:?}");
+            }
+            assert_eq!(
+                crate::window_title_bar_font(&t, &prefs),
+                FontId::proportional(s(t.window.title_bar_font.size))
+            );
+            assert_eq!(
+                crate::window_title_bar_text_color(&t, true),
+                to_color32(t.window.title_bar_font.color)
+            );
+            assert_eq!(
+                crate::window_title_bar_text_color(&t, false),
+                to_color32(t.window.inactive_title_bar_text_color)
+            );
+            assert_eq!(
+                crate::list_header_font(&t, &prefs),
+                FontId::proportional(s(t.list.header_font.size))
+            );
+            assert_eq!(crate::dialog_button_order(&t), t.dialog.button_order);
+            assert_eq!(crate::font_size(&t, &prefs), s(t.defaults.font.size));
+            assert_eq!(
+                crate::mono_font_size(&t, &prefs),
+                s(t.defaults.mono_font.size)
+            );
+        }
+        let sizes = &t.defaults.icon_sizes;
+        let contexts = [
+            (IconContext::Small, sizes.small),
+            (IconContext::Toolbar, sizes.toolbar),
+            (IconContext::Panel, sizes.panel),
+            (IconContext::Dialog, sizes.dialog),
+            (IconContext::Large, sizes.large),
+        ];
+        for (context, leaf) in contexts {
+            assert_eq!(crate::icons::icon_size(&t, context), leaf, "{context:?}");
+        }
+    }
+
+    /// T18 (f): the closure paints in `expander.arrow_color` and hands the `Ui` back the
+    /// `Arc<Style>` it held; egui's `convex_polygon` (`epaint/src/shapes/shape.rs:251-257`) is a
+    /// `Shape::Path` whose `fill` is that colour.
+    #[test]
+    fn t18_f_expander_icon_paints_the_arrow_colour_and_restores_the_style() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.expander.arrow_color = Some(t.defaults.accent_color);
+        let expected = to_color32(t.defaults.accent_color);
+        let icon = crate::expander_icon(&t);
+        let ctx = egui::Context::default();
+        let mut restored = None;
+        let out = pass(&ctx, egui::RawInput::default(), |ui| {
+            let before = Arc::clone(ui.style());
+            let response = ui.allocate_response(egui::vec2(16.0, 16.0), egui::Sense::hover());
+            icon(ui, 1.0, &response);
+            restored = Some(Arc::ptr_eq(ui.style(), &before));
+        });
+        assert_eq!(restored, Some(true));
+        let painted = out
+            .shapes
+            .iter()
+            .any(|s| matches!(&s.shape, egui::Shape::Path(p) if p.fill == expected));
+        assert!(
+            painted,
+            "no polygon in the arrow colour among {} shapes",
+            out.shapes.len()
+        );
+
+        // With no stated arrow colour the closure is egui's own arrow and touches no style.
+        t.expander.arrow_color = None;
+        let icon = crate::expander_icon(&t);
+        let mut restored = None;
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            let before = Arc::clone(ui.style());
+            let response = ui.allocate_response(egui::vec2(16.0, 16.0), egui::Sense::hover());
+            icon(ui, 0.0, &response);
+            restored = Some(Arc::ptr_eq(ui.style(), &before));
+        });
+        assert_eq!(restored, Some(true));
+    }
+
+    /// One pass with a `TextEdit` of `id` inside the `Role::Input` scope, returning the frame
+    /// `input_frame` computed before the field was added.
+    fn input_pass(
+        ctx: &egui::Context,
+        t: &ResolvedTheme,
+        id: egui::Id,
+        text: &mut String,
+    ) -> egui::Frame {
+        let mut frame = None;
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
+                let f = crate::input_frame(ui, id, t);
+                frame = Some(f);
+                ui.add(egui::TextEdit::singleline(text).id(id).frame(f));
+            });
+        });
+        frame.unwrap()
+    }
+
+    /// T18 (h): unfocused, the state's `bg_stroke`; focused, `input.focus_border_color` at the
+    /// state's own width; a field focused before its first pass takes `widgets.active`; with
+    /// the leaf `None`, the resting stroke.
+    #[test]
+    fn t18_h_input_frame_follows_focus_and_the_state() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.input.focus_border_color = Some(t.defaults.accent_color);
+        let focus = to_color32(t.defaults.accent_color);
+        let ctx = egui::Context::default();
+        let atlas = ThemeAtlas::builder("t18h", &t, &t).build();
+        atlas.install(&ctx);
+        let cell = Arc::clone(
+            atlas
+                .scheme(ctx.theme())
+                .cell(Role::Input, RoleVariant::Normal),
+        );
+        let id = egui::Id::new("t18h-field");
+        let mut text = String::new();
+
+        let unfocused = input_pass(&ctx, &t, id, &mut text);
+        assert_eq!(unfocused.stroke, cell.visuals.widgets.inactive.bg_stroke);
+        assert_eq!(unfocused.fill, cell.visuals.text_edit_bg_color());
+        assert_eq!(
+            unfocused.corner_radius,
+            cell.visuals.widgets.inactive.corner_radius
+        );
+
+        ctx.memory_mut(|m| m.request_focus(id));
+        let focused = input_pass(&ctx, &t, id, &mut text);
+        let active = &cell.visuals.widgets.active;
+        assert_eq!(
+            focused.stroke,
+            egui::Stroke::new(active.bg_stroke.width, focus)
+        );
+        assert_eq!(focused.corner_radius, active.corner_radius);
+
+        // focused before its first pass: `widgets.active` (`egui/src/style.rs:1276-1278`)
+        let first_id = egui::Id::new("t18h-focused-first");
+        ctx.memory_mut(|m| m.request_focus(first_id));
+        let mut first_text = String::new();
+        let first = input_pass(&ctx, &t, first_id, &mut first_text);
+        assert_eq!(
+            first.stroke,
+            egui::Stroke::new(active.bg_stroke.width, focus)
+        );
+        assert_eq!(first.corner_radius, active.corner_radius);
+
+        // the soft option `None`: the resting stroke, focused or not
+        let mut t_none = t.clone();
+        t_none.input.focus_border_color = None;
+        let atlas_none = ThemeAtlas::builder("t18h-none", &t_none, &t_none).build();
+        atlas_none.install(&ctx);
+        let resting = atlas_none
+            .scheme(ctx.theme())
+            .cell(Role::Input, RoleVariant::Normal)
+            .visuals
+            .widgets
+            .inactive
+            .bg_stroke;
+        let none_id = egui::Id::new("t18h-none");
+        let mut none_text = String::new();
+        let _ = input_pass(&ctx, &t_none, none_id, &mut none_text);
+        ctx.memory_mut(|m| m.request_focus(none_id));
+        let focused_none = input_pass(&ctx, &t_none, none_id, &mut none_text);
+        assert_eq!(focused_none.stroke, resting);
+    }
+
+    /// T18 (h), last clause: with `input.focus_border_color` equal to `input.selection_text_color`
+    /// and a `1.0` line width — egui's selection-stroke width — the field paints exactly the
+    /// shapes egui's own frame paints for the same `TextEdit` given `.margin(input_margin(t))`.
+    #[test]
+    fn t18_h_with_egui_s_own_colours_the_frame_is_egui_s_frame() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.input.focus_border_color = Some(t.input.selection_text_color);
+        t.input.border.line_width = 1.0;
+        let atlas = ThemeAtlas::builder("t18h-eq", &t, &t).build();
+        let id = egui::Id::new("t18h-equal");
+        let with_frame = egui::Context::default();
+        let with_margin = egui::Context::default();
+        atlas.install(&with_frame);
+        atlas.install(&with_margin);
+        let mut a = String::new();
+        let mut b = String::new();
+        let shapes_of = |ctx: &egui::Context, custom: bool, text: &mut String| {
+            pass(ctx, egui::RawInput::default(), |ui| {
+                ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
+                    let edit = egui::TextEdit::singleline(text).id(id);
+                    let edit = if custom {
+                        edit.frame(crate::input_frame(ui, id, &t))
+                    } else {
+                        edit.margin(crate::input_margin(&t))
+                    };
+                    ui.add(edit);
+                });
+            })
+            .shapes
+        };
+        for focused in [false, true] {
+            if focused {
+                with_frame.memory_mut(|m| m.request_focus(id));
+                with_margin.memory_mut(|m| m.request_focus(id));
+            }
+            assert_eq!(
+                shapes_of(&with_frame, true, &mut a),
+                shapes_of(&with_margin, false, &mut b),
+                "focused = {focused}"
+            );
+        }
+    }
+
+    /// T4 (c), with Review Focus 5's `0.0` and `-12.0`: a text size that is not a positive
+    /// normal `f32` keeps egui's own size for its slot, is a `Note::ValueSanitised`, lays out
+    /// without a panic, and every `FontId` accessor returns a positive normal size.
+    #[test]
+    fn t4_c_a_degenerate_text_size_is_sanitised_everywhere() {
+        let prefs = AccessibilityPreferences::default();
+        for hostile in [f32::NAN, f32::INFINITY, 1e-45_f32, 0.0, -12.0] {
+            let mut t = resolved("kde-breeze", ColorMode::Light);
+            t.defaults.font.size = hostile;
+            t.button.font.size = hostile;
+            let atlas = ThemeAtlas::builder("t4c", &t, &t).build();
+            for path in ["defaults.font.size", "button.font.size"] {
+                assert!(
+                    atlas.notes().contains(&Note::ValueSanitised { path }),
+                    "{hostile}: no note for {path}: {:?}",
+                    atlas.notes()
+                );
+            }
+            let ctx = egui::Context::default(); // egui's default fonts: text is laid out
+            atlas.install(&ctx);
+            let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+                ui.label("a label in Body");
+                ui.native_scope(Role::Button, RoleVariant::Normal, |ui| {
+                    let _ = ui.button("a button in its scope");
+                });
+            });
+            // Every leaf a `FontId` accessor reads is made hostile too, on a copy the atlas above
+            // never saw, so each accessor's own §8.5 fallback runs (the build's scope stays T4 (c)'s).
+            let mut u = t.clone();
+            for entry in [
+                &mut u.text_scale.caption,
+                &mut u.text_scale.section_heading,
+                &mut u.text_scale.dialog_title,
+                &mut u.text_scale.display,
+            ] {
+                entry.size = hostile;
+            }
+            u.window.title_bar_font.size = hostile;
+            u.list.header_font.size = hostile;
+            u.defaults.mono_font.size = hostile;
+            let positive_normal = |size: f32| size.is_normal() && size > 0.0;
+            for role in [
+                TextRole::Caption,
+                TextRole::SectionHeading,
+                TextRole::DialogTitle,
+                TextRole::Display,
+            ] {
+                assert!(
+                    positive_normal(crate::text_role_font(&u, role, &prefs).size),
+                    "{hostile} {role:?}"
+                );
+            }
+            assert!(
+                positive_normal(crate::window_title_bar_font(&u, &prefs).size),
+                "{hostile}"
+            );
+            assert!(
+                positive_normal(crate::list_header_font(&u, &prefs).size),
+                "{hostile}"
+            );
+            assert!(positive_normal(crate::font_size(&u, &prefs)), "{hostile}");
+            assert!(
+                positive_normal(crate::mono_font_size(&u, &prefs)),
+                "{hostile}"
+            );
+        }
+    }
+}
