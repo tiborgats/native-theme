@@ -213,19 +213,20 @@ impl FontPlan {
 /// and `Monospace` chains. Pure: needs no `Context`, so it is fully testable and the
 /// application may install the result itself. The starting point is the plan's base
 /// ([`FontPlan::with_base`]; `FontDefinitions::default()`, with egui's emoji fallbacks,
-/// without one, §8.1). If a resulting chain would be empty, the family is left as the base
-/// had it.
+/// without one, §8.1). A family the plan has no usable face for keeps the base's chain.
 ///
 /// **How a chain is reached is part of the contract**, because `FontDefinitions`'s two fields
 /// are both `pub` (`epaint/src/text/fonts.rs:435`, `:443`) and a plan may carry a base that
-/// binds neither family. Each chain is reached with
-/// `families.entry(family).or_default()` — **never** `get_mut` — so the result binds both
-/// `FontFamily::Proportional` and `FontFamily::Monospace` even when the base did not, which
-/// is what keeps the unbound-family panic (`epaint/src/text/fonts.rs:1025`) unreachable. And
+/// binds neither family. Both chains are reached with
+/// `families.entry(family).or_default()` — **never** `get_mut` — before any face is looked
+/// at, so the result binds both `FontFamily::Proportional` and `FontFamily::Monospace` even
+/// when the base did not and no face of the plan is used, which is what keeps the
+/// unbound-family panic (`epaint/src/text/fonts.rs:1025`) unreachable. And
 /// every name prepended to a chain is inserted into `font_data` in the same call, which is
 /// what keeps the missing-font-data panic (`:1033`) unreachable. Both epaint constructors
-/// already bind both families — `default()` at `:534-550` and `empty()` at `:563-564` — so the
-/// `or_default` only matters for a hand-built base.
+/// already bind both families — `default()` at `:534-550` and `empty()` at `:563-564`, the
+/// latter to empty chains, which lay text out without a panic — so the `or_default` only
+/// matters for a hand-built base.
 ///
 /// A face whose bytes fail epaint's parse, or whose `head` states a zero `unitsPerEm` (§8.2),
 /// is not added, and the returned `Vec` carries a [`crate::Note::FontDataInvalid`] for it; the
@@ -236,6 +237,11 @@ impl FontPlan {
 pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefinitions, Vec<Note>) {
     let mut defs = plan.base.clone().unwrap_or_default();
     let mut notes = plan.notes.clone();
+    // `entry(..).or_default()`, never `get_mut`, and before anything can return: the result
+    // binds both families even when the base did not and no face of the plan survives (§4.9).
+    for family in [FontFamily::Proportional, FontFamily::Monospace] {
+        defs.families.entry(family).or_default();
+    }
     if plan.faces.is_empty() {
         // An empty plan asks for nothing: the base alone, no note (§4.9, §8.2's first row).
         return (defs, notes);
@@ -288,8 +294,7 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
         }
         data.tweak.coords = weight_coords(spec.weight);
         defs.font_data.insert(key.to_owned(), Arc::new(data));
-        // `entry(..).or_default()`, never `get_mut`: the result binds the family even when the
-        // base did not (§4.9). Prepend without an index: the rest of the chain follows.
+        // Prepend without an index: the rest of the chain follows.
         let chain = defs.families.entry(family).or_default();
         let rest = std::mem::take(chain);
         chain.push(key.to_owned());

@@ -1069,6 +1069,63 @@ mod t6_fonts {
         }
     }
 
+    /// T6 (b): a base that binds neither family still gives definitions that bind both, however
+    /// few of the plan's faces survive, so the unbound-family panic
+    /// (`epaint/src/text/fonts.rs:1025`) stays unreachable; an empty chain lays text out.
+    #[test]
+    fn t6_b_both_families_are_bound_whatever_the_base_binds() {
+        let t = resolved("adwaita", ColorMode::Light);
+        let mut base = FontDefinitions::default();
+        base.families.clear();
+        let garbage = FontBytes::Static(b"this is not a font file");
+        let cases: Vec<(&str, FontPlan)> = vec![
+            ("an empty plan", FontPlan::new().with_base(base.clone())),
+            (
+                "a plan whose faces all fail the parse",
+                FontPlan::new()
+                    .face(
+                        &t.defaults.font.family,
+                        t.defaults.font.weight,
+                        t.defaults.font.style,
+                        garbage.clone(),
+                    )
+                    .face(
+                        &t.defaults.mono_font.family,
+                        t.defaults.mono_font.weight,
+                        t.defaults.mono_font.style,
+                        garbage,
+                    )
+                    .with_base(base.clone()),
+            ),
+            (
+                "a plan with no face of either family",
+                FontPlan::new()
+                    .face(
+                        "native-theme-egui no such family",
+                        400,
+                        FontStyle::Normal,
+                        FontBytes::Static(hack()),
+                    )
+                    .with_base(base),
+            ),
+        ];
+        for (label, plan) in cases {
+            let (defs, _) = font_definitions(&t, &plan);
+            for family in [FontFamily::Proportional, FontFamily::Monospace] {
+                assert!(defs.families.contains_key(&family), "{label}: {family}");
+            }
+            let ctx = egui::Context::default();
+            ctx.set_fonts(defs);
+            for _ in 0..2 {
+                let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+                    ui.label("proportional");
+                    ui.monospace("monospace");
+                    ui.heading("heading");
+                });
+            }
+        }
+    }
+
     /// T6 (c): a family the OS has no face of is reported, never replaced.
     #[cfg(feature = "system-fonts")]
     #[test]
