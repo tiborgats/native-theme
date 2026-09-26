@@ -26,7 +26,13 @@
     reason = "link targets land by Task 26; Task 32 removes this line"
 )]
 
+mod atlas;
 pub mod convert;
+pub mod icons;
+mod roles;
+
+pub use atlas::Note;
+pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(test)]
 mod tripwires;
 
