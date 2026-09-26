@@ -177,7 +177,9 @@ that needs dismissing a themed button of its own instead.
 enables `styles::aw`. It is off by default because `iced_aw` is a third-party
 crate with its own release cadence and an embedded icon font. The icon
 features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
-— are on by default. Every feature adds coverage; `default-features = false`
+— are on by default. `system-fonts` (default) enables
+`system_font_family`, the family iced's font database holds for a theme font — on macOS the
+system UI font's `.SF NS` for the stated "SF Pro". Every feature adds coverage; `default-features = false`
 is the way to narrow.
 
 ## Common recipes
@@ -196,7 +198,8 @@ let radius  = border_radius(&resolved);
 Full helper list: `button_padding`, `input_padding`, `padding_or`,
 `stated_padding`, `border_radius`, `border_radius_lg`, `scrollbar_width`,
 `font_family`, `font_size`, `font_weight`, `mono_font_family`,
-`mono_font_size`, `mono_font_weight`, `scaled_text_size`,
+`mono_font_size`, `mono_font_weight`, `system_font_family` (feature
+`system-fonts`), `scaled_text_size`,
 `line_height_multiplier`,
 `border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
 `selection_color`, `info_color`, `info_foreground_color`,

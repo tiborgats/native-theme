@@ -66,6 +66,7 @@
 //! | `widgets` | yes | `styles`, `button_padding` and `input_padding`, through `iced_widget` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
+//! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, through `native-theme/system-fonts` |
 //!
 //! Every feature adds coverage. `default-features = false` leaves the palette
 //! and the metric helpers that need `iced_core` only; `button_padding` and
@@ -103,8 +104,14 @@
 //! let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true)?;
 //! let mut families: HashMap<Arc<str>, &'static str> = HashMap::new();
 //! let spec = &resolved.defaults.font;
+//! // The family iced's font database holds for the face: on macOS the
+//! // system UI font, stated "SF Pro", is filed as `.SF NS`.
+//! #[cfg(feature = "system-fonts")]
+//! let family_name: Arc<str> = native_theme_iced::system_font_family(spec);
+//! #[cfg(not(feature = "system-fonts"))]
+//! let family_name: Arc<str> = spec.family.clone();
 //! let family: &'static str = *families
-//!     .entry(intern_font_family(&spec.family))
+//!     .entry(intern_font_family(&family_name))
 //!     .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
 //! let font = iced_core::Font {
 //!     family: iced_core::font::Family::Name(family),
@@ -408,7 +415,9 @@ pub fn scrollbar_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.scrollbar.groove_width
 }
 
-/// Returns the primary UI font family name from the resolved theme.
+/// Returns the primary UI font family name from the resolved theme: the
+/// stated name. To name the family iced's font database holds for it, use
+/// `system_font_family` (feature `system-fonts`).
 #[must_use]
 pub fn font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
     &resolved.defaults.font.family
@@ -442,10 +451,37 @@ pub fn font_size(
     scaled_text_size(resolved.defaults.font.size, prefs)
 }
 
-/// Returns the monospace font family name from the resolved theme.
+/// Returns the monospace font family name from the resolved theme: the
+/// stated name. To name the family iced's font database holds for it, use
+/// `system_font_family` (feature `system-fonts`).
 #[must_use]
 pub fn mono_font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
     &resolved.defaults.mono_font.family
+}
+
+/// The family iced's font database holds for a theme font: the family
+/// fontdb records for the face `native_theme::fonts::system_face` chooses
+/// for the stated family, weight and style, or the stated family where the
+/// system has no such face — which iced then draws as it draws any family
+/// its database lacks.
+///
+/// iced draws through cosmic-text over fontdb 0.23, the version
+/// native-theme selects the face with, and cosmic-text takes a face when any
+/// of its recorded family names equals the name asked for (fontdb 0.23.0
+/// `src/lib.rs` line 667); the returned name is the face's first, so it matches.
+/// On macOS the system UI font, stated "SF Pro", is filed under `.SF NS`,
+/// and that is what this returns for it.
+///
+/// The first call in a process loads the system font database, which
+/// native-theme keeps for the process; every call selects a face among it
+/// and copies its bytes, so call it when the theme changes, not per frame.
+#[cfg(feature = "system-fonts")]
+#[must_use]
+pub fn system_font_family(spec: &native_theme::theme::ResolvedFontSpec) -> std::sync::Arc<str> {
+    match native_theme::fonts::system_face(&spec.family, spec.weight, spec.style) {
+        Some(face) => face.family,
+        None => spec.family.clone(),
+    }
 }
 
 /// Returns the monospace font size in logical pixels, scaled by the user's
@@ -632,6 +668,19 @@ mod tests {
             .unwrap()
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap()
+    }
+
+    /// A family the system has no face of stays as stated: the family is
+    /// never substituted (egui spec §8.8, §8.2).
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn system_font_family_keeps_a_family_no_system_has() {
+        let mut spec = make_resolved_preset("catppuccin-mocha", true).defaults.font;
+        spec.family = std::sync::Arc::from("native-theme-no-such-family-7f3c1a");
+        assert_eq!(
+            system_font_family(&spec).as_ref(),
+            "native-theme-no-such-family-7f3c1a"
+        );
     }
 
     fn make_resolved(is_dark: bool) -> native_theme::theme::ResolvedTheme {

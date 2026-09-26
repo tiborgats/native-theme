@@ -2116,10 +2116,15 @@ fn widget_tooltip(
 fn format_font_info(resolved: &native_theme::theme::ResolvedTheme) -> String {
     let ff = family_label(
         &resolved.defaults.font.family,
+        resolved_family(&resolved.defaults.font),
         &font_drawn(&resolved.defaults.font),
     );
     let fs = format!("{:.0}px", resolved.defaults.font.size);
-    let mf = family_label(&resolved.defaults.mono_font.family, &mono_drawn(resolved));
+    let mf = family_label(
+        &resolved.defaults.mono_font.family,
+        resolved_family(&resolved.defaults.mono_font),
+        &mono_drawn(resolved),
+    );
     let ms = format!("{:.0}px", resolved.defaults.mono_font.size);
     format!("Font: {ff} {fs}  Mono: {mf} {ms}")
 }
@@ -2136,10 +2141,15 @@ fn widget_tooltip_themed(
     let resolved = &state.current_resolved;
     let ff = family_label(
         &resolved.defaults.font.family,
+        resolved_family(&resolved.defaults.font),
         &font_drawn(&resolved.defaults.font),
     );
     let fs = format!("{:.0}px", state.current_resolved.defaults.font.size);
-    let mf = family_label(&resolved.defaults.mono_font.family, &mono_drawn(resolved));
+    let mf = family_label(
+        &resolved.defaults.mono_font.family,
+        resolved_family(&resolved.defaults.mono_font),
+        &mono_drawn(resolved),
+    );
     let ms = format!("{:.0}px", state.current_resolved.defaults.mono_font.size);
     s.push_str(&format!(
         "\nTheme fonts:\n  Font: {ff} {fs}\n  Mono: {mf} {ms}\n"
@@ -3355,9 +3365,14 @@ fn view_display(state: &State) -> Element<'_, Message> {
         let r = &state.current_resolved;
         let ff = family_label(
             native_theme_iced::font_family(r),
+            resolved_family(&r.defaults.font),
             &font_drawn(&r.defaults.font),
         );
-        let mf = family_label(native_theme_iced::mono_font_family(r), &mono_drawn(r));
+        let mf = family_label(
+            native_theme_iced::mono_font_family(r),
+            resolved_family(&r.defaults.mono_font),
+            &mono_drawn(r),
+        );
         let drawn = format!(
             "Font: {ff} @ {:.1}px  |  Mono: {mf} @ {:.1}px",
             native_theme_iced::font_size(r, a11y),
@@ -4103,6 +4118,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                          text-scaling factor); defaults.font's family, {}; weight {} / {}",
                         family_label(
                             &resolved.defaults.font.family,
+                            role_family(section_title(ts), resolved),
                             &role_drawn(section_title(ts), resolved)
                         ),
                         weight_label(page_title(ts).weight, &role_drawn(page_title(ts), resolved)),
@@ -5555,18 +5571,18 @@ fn theme_mono_font(resolved: &ResolvedTheme) -> iced::Font {
 
 /// How a theme font is drawn.
 fn font_drawn(font: &ResolvedFontSpec) -> Drawn<'static> {
-    font_from_database(&font.family, font.weight, false)
+    font_from_database(resolved_family(font), font.weight, false)
 }
 
 /// How the theme's monospace font is drawn.
 fn mono_drawn(resolved: &ResolvedTheme) -> Drawn<'static> {
     let mono = &resolved.defaults.mono_font;
-    font_from_database(&mono.family, mono.weight, true)
+    font_from_database(resolved_family(mono), mono.weight, true)
 }
 
 /// How a `text_scale` role is drawn: its weight in the body font's family.
 fn role_drawn(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> Drawn<'static> {
-    font_from_database(&resolved.defaults.font.family, entry.weight, false)
+    font_from_database(role_family(entry, resolved), entry.weight, false)
 }
 
 /// A Widget Info row for text in a theme font: the field it comes from,
@@ -5577,7 +5593,7 @@ fn font_row(field: &str, font: &ResolvedFontSpec) -> String {
 
 /// [`font_row`], given how the font is drawn.
 fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn<'_>) -> String {
-    let family = family_label(&font.family, drawn);
+    let family = family_label(&font.family, resolved_family(font), drawn);
     let weight = weight_label(font.weight, drawn);
     match (family == *font.family, weight == font.weight.to_string()) {
         (true, true) => format!("{field}, family, size and weight"),
@@ -5587,12 +5603,13 @@ fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn<'_>) -> St
     }
 }
 
-/// A theme family as the showcase shows it: the name alone where iced draws
-/// text in it, and otherwise the generic family drawn instead and the
-/// family that resolves to.
-fn family_label(stated: &str, drawn: &Drawn<'_>) -> String {
+/// A theme family as the showcase shows it: the stated name alone where
+/// iced draws text in the family asked for it — the one the font database
+/// holds for the face, `.SF NS` for "SF Pro" on macOS — and otherwise the
+/// generic family drawn instead and the family that resolves to.
+fn family_label(stated: &str, asked: &str, drawn: &Drawn<'_>) -> String {
     let generic = match drawn.font.family {
-        iced::font::Family::Name(name) if name == stated => return stated.to_string(),
+        iced::font::Family::Name(name) if name == asked => return stated.to_string(),
         iced::font::Family::Monospace => "generic monospace",
         _ => "generic sans-serif",
     };
@@ -5654,11 +5671,14 @@ struct Drawn<'a> {
 static FONTS: Mutex<FontBook> = Mutex::new(FontBook {
     names: BTreeSet::new(),
     fonts: BTreeMap::new(),
+    resolved: BTreeMap::new(),
 });
 
 struct FontBook {
     names: BTreeSet<&'static str>,
     fonts: BTreeMap<(&'static str, u16, bool), Drawn<'static>>,
+    /// The family the database holds per stated family, weight and style.
+    resolved: BTreeMap<(&'static str, u16, u8), &'static str>,
 }
 
 impl FontBook {
@@ -5672,6 +5692,41 @@ impl FontBook {
             }
         }
     }
+}
+
+/// The family iced's font database holds for a theme font, worked out once
+/// per family, weight and style — `system_font_family` copies the chosen
+/// face's bytes on every call — and interned, as the drawn fonts are.
+fn resolved_family(font: &ResolvedFontSpec) -> &'static str {
+    let mut book = FONTS.lock().unwrap_or_else(PoisonError::into_inner);
+    let stated = book.intern(&font.family);
+    let key = (stated, font.weight, style_key(font.style));
+    if let Some(&held) = book.resolved.get(&key) {
+        return held;
+    }
+    let resolved = native_theme_iced::system_font_family(font);
+    let held = book.intern(&resolved);
+    book.resolved.insert(key, held);
+    held
+}
+
+/// A `FontStyle` as a map key.
+fn style_key(style: native_theme::theme::FontStyle) -> u8 {
+    match style {
+        native_theme::theme::FontStyle::Normal => 0,
+        native_theme::theme::FontStyle::Italic => 1,
+        native_theme::theme::FontStyle::Oblique => 2,
+    }
+}
+
+/// The family a `text_scale` role is drawn in: the body font's, at the
+/// role's weight.
+fn role_family(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> &'static str {
+    let at_weight = ResolvedFontSpec {
+        weight: entry.weight,
+        ..resolved.defaults.font.clone()
+    };
+    resolved_family(&at_weight)
 }
 
 /// [`drawable_font`] over the database iced draws text from, and the
@@ -5979,6 +6034,65 @@ mod tests {
     use iced::{Event, Point, Rectangle, Settings, Size};
     use iced_test::Simulator;
     use iced_test::selector::{self, Candidate};
+
+    /// The macOS system UI font, stated "SF Pro", is a family iced's font
+    /// database holds under the name `system_font_family` gives, and the
+    /// inspector shows the stated name alone (egui spec §8.8). Runs on the
+    /// screenshot workflow's `macos-latest` runner (plan Task 39).
+    #[test]
+    #[ignore = "needs macOS: run with --ignored on the macos-latest runner"]
+    fn macos_system_font_is_in_the_font_database() {
+        if !cfg!(target_os = "macos") {
+            eprintln!("macos_system_font_is_in_the_font_database: not macOS, nothing to check");
+            return;
+        }
+        let (_, resolved) =
+            native_theme_iced::from_preset("macos-sonoma", false).expect("macos-sonoma resolves");
+        let font = &resolved.defaults.font;
+        let family = native_theme_iced::system_font_family(font);
+        let held = {
+            let mut system = iced::advanced::graphics::text::font_system()
+                .write()
+                .unwrap_or_else(PoisonError::into_inner);
+            holds(system.raw().db(), &family)
+        };
+        assert!(
+            held,
+            "iced's font database holds {family:?} for the stated {:?}",
+            font.family
+        );
+        assert_eq!(
+            family_label(&font.family, resolved_family(font), &font_drawn(font)),
+            font.family.as_ref(),
+            "the inspector shows the stated name alone"
+        );
+    }
+
+    /// Whether the same holds for the monospace font, "SF Mono": printed,
+    /// not asserted — UNVERIFIED (egui spec §15) whether any font database
+    /// holds that name, so the outcome is recorded, not required.
+    #[test]
+    #[ignore = "needs macOS: run with --ignored on the macos-latest runner"]
+    fn macos_mono_font_in_the_font_database() {
+        if !cfg!(target_os = "macos") {
+            eprintln!("macos_mono_font_in_the_font_database: not macOS, nothing to check");
+            return;
+        }
+        let (_, resolved) =
+            native_theme_iced::from_preset("macos-sonoma", false).expect("macos-sonoma resolves");
+        let mono = &resolved.defaults.mono_font;
+        let family = native_theme_iced::system_font_family(mono);
+        let held = {
+            let mut system = iced::advanced::graphics::text::font_system()
+                .write()
+                .unwrap_or_else(PoisonError::into_inner);
+            holds(system.raw().db(), &family)
+        };
+        println!(
+            "SF Mono: stated {:?}, system_font_family gives {family:?}, in iced's font database: {held}",
+            mono.family
+        );
+    }
 
     /// The viewport the interaction test lays the interface out in.
     ///
@@ -7902,17 +8016,22 @@ mod tests {
             family: resolved,
         };
         let held = drawn(iced::font::Family::Name("Theme Sans"), Some("Theme Sans"));
-        assert_eq!(family_label("Theme Sans", &held), "Theme Sans");
+        assert_eq!(
+            family_label("Theme Sans", "Theme Sans", &held),
+            "Theme Sans"
+        );
         let generic = drawn(iced::font::Family::SansSerif, Some("System Sans"));
         assert_eq!(
-            family_label("Theme Sans", &generic),
+            family_label("Theme Sans", "Theme Sans", &generic),
             "Theme Sans (not found; drawn in generic sans-serif: System Sans)"
         );
         let mono = drawn(iced::font::Family::Monospace, None);
         assert_eq!(
-            family_label("Theme Mono", &mono),
+            family_label("Theme Mono", "Theme Mono", &mono),
             "Theme Mono (not found; drawn in generic monospace)"
         );
+        let alias = drawn(iced::font::Family::Name(".SF NS"), Some(".SF NS"));
+        assert_eq!(family_label("SF Pro", ".SF NS", &alias), "SF Pro");
     }
 
     /// A weight is shown as the number alone where it is drawn, and with

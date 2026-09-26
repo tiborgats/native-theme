@@ -539,7 +539,7 @@ run_tests_soft "test (native-theme-gpui, no features)" \
 #
 # The per-crate loops above run the connector with its default features only.
 # Its other two supported configurations are gated here: `--no-default-features`
-# (no icon support) and `--features iced_aw`, the optional widget set the
+# (no icon or system-font support) and `--features iced_aw`, the optional widget set the
 # showcase's `iced_aw` tab renders. Same hard class as the connector's default
 # test and clippy checks. .github/workflows/ci.yml runs the same two commands,
 # so no configuration reaches a release that CI never saw.

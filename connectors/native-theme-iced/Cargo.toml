@@ -20,7 +20,7 @@ targets = [
 ]
 
 [features]
-default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
 
 # Which iced crates this connector covers. Additive, never subtractive.
 widgets = ["dep:iced_widget"]            # enables `styles`
@@ -30,6 +30,7 @@ material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
 system-icons = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
+system-fonts = ["native-theme/system-fonts"]  # enables `system_font_family`
 
 [dependencies]
 native-theme.workspace = true
@@ -46,13 +47,14 @@ iced_aw = { version = "0.14", optional = true, default-features = false, feature
     "selection_list",
 ] }
 
-# The showcase calls `styles::*`, which `widgets` gates. `widgets` is a default
-# feature, so `cargo test -p native-theme-iced` and the screenshot scripts build
-# the example as before; `--no-default-features` skips it, and the `iced_aw`
-# sections inside it are `#[cfg(feature = "iced_aw")]`.
+# The showcase calls `styles::*`, which `widgets` gates, and
+# `system_font_family`, which `system-fonts` gates. Both are default
+# features, so `cargo test -p native-theme-iced` and the screenshot scripts
+# build the example as before; `--no-default-features` skips it, and the
+# `iced_aw` sections inside it are `#[cfg(feature = "iced_aw")]`.
 [[example]]
 name = "showcase-iced"
-required-features = ["widgets"]
+required-features = ["widgets", "system-fonts"]
 # The showcase's own `#[cfg(test)]` module (spec §6.2) then runs under a plain
 # `cargo test`, so CI and the dependency canary pick it up unchanged.
 test = true
