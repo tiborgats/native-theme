@@ -768,6 +768,48 @@ fn instances_are_distinct() {
     )));
 }
 
+/// A radio button and a check box take no selected flag of their own: the checked look is
+/// `RoleVariant::Selected` (§4.4), picked per instance from its state; the mixed box is painted
+/// as a checked one.
+#[test]
+fn a_checked_radio_or_box_is_drawn_selected() {
+    let variant_of = |harness: &Harness<'_, App>, kind: &str| {
+        let seams: Vec<Seam> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .flat_map(|r| r.info.seams.clone())
+            .collect();
+        match seams.as_slice() {
+            [Seam::Role(native_theme_egui::Role::Checkbox, variant)] => *variant,
+            other => panic!("{kind} recorded {other:?}"),
+        }
+    };
+    let mut harness = open_page(Page::Selection, egui::Theme::Light);
+    assert_eq!(
+        variant_of(&harness, "checkbox (indeterminate)"),
+        RoleVariant::Selected
+    );
+    for (kind, variant) in [
+        ("RadioButton", RoleVariant::Selected),
+        ("ui.radio", RoleVariant::Normal),
+        ("ui.radio_value", RoleVariant::Normal),
+    ] {
+        assert_eq!(variant_of(&harness, kind), variant, "{kind} at start");
+    }
+    harness.get_by_label("ui.radio_value").click();
+    harness.run_steps(2);
+    for (kind, variant) in [
+        ("RadioButton", RoleVariant::Normal),
+        ("ui.radio", RoleVariant::Normal),
+        ("ui.radio_value", RoleVariant::Selected),
+    ] {
+        assert_eq!(variant_of(&harness, kind), variant, "{kind} after a click");
+    }
+}
+
 fn manifest_and_json(harness: &Harness<'_, App>) -> (Manifest, serde_json::Value) {
     let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
     let json =

@@ -36,11 +36,12 @@ pub(crate) fn show(
             "checkbox (checked)",
             |ui| ui.add(egui::Checkbox::new(&mut checked, "Checked")),
         );
+        // The mixed mark is painted as a checked box's is, so it takes the checked look.
         demo::scoped(
             reg,
             ui,
             Role::Checkbox,
-            normal,
+            RoleVariant::Selected,
             "checkbox (indeterminate)",
             |ui| {
                 ui.add(
@@ -68,25 +69,49 @@ pub(crate) fn show(
         });
     });
 
+    // A radio button takes no selected flag of its own either: the selected one is drawn in
+    // `RoleVariant::Selected` (§4.4), picked from its state as `ui.checkbox`'s is.
+    let variant = |selected: bool| {
+        if selected {
+            RoleVariant::Selected
+        } else {
+            normal
+        }
+    };
     caption(reg, ui, "Radio button (Role::Checkbox)");
     ui.horizontal_wrapped(|ui| {
         let selected = state.radio == 0;
-        let r = demo::scoped(reg, ui, Role::Checkbox, normal, "RadioButton", |ui| {
-            ui.add(egui::RadioButton::new(selected, "RadioButton"))
-        });
+        let r = demo::scoped(
+            reg,
+            ui,
+            Role::Checkbox,
+            variant(selected),
+            "RadioButton",
+            |ui| ui.add(egui::RadioButton::new(selected, "RadioButton")),
+        );
         if r.clicked() {
             state.radio = 0;
         }
         let selected = state.radio == 1;
-        let r = demo::scoped(reg, ui, Role::Checkbox, normal, "ui.radio", |ui| {
-            ui.radio(selected, "ui.radio")
-        });
+        let r = demo::scoped(
+            reg,
+            ui,
+            Role::Checkbox,
+            variant(selected),
+            "ui.radio",
+            |ui| ui.radio(selected, "ui.radio"),
+        );
         if r.clicked() {
             state.radio = 1;
         }
-        demo::scoped(reg, ui, Role::Checkbox, normal, "ui.radio_value", |ui| {
-            ui.radio_value(&mut state.radio, 2, "ui.radio_value")
-        });
+        demo::scoped(
+            reg,
+            ui,
+            Role::Checkbox,
+            variant(state.radio == 2),
+            "ui.radio_value",
+            |ui| ui.radio_value(&mut state.radio, 2, "ui.radio_value"),
+        );
     });
 
     caption(reg, ui, "ComboBox (Role::ComboBox)");
