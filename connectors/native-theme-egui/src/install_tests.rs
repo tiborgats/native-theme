@@ -795,17 +795,26 @@ fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
         (Theme::Dark, vec![SystemTheme::Dark]),
         "an atlas with the other mode: sent once"
     );
-    ctx.set_theme(Theme::Dark);
+    // A pinned preference is checked against an OS mode of the other scheme, both ways: against
+    // the same scheme, a hook that rewrote egui's command to the OS mode would send the same one.
+    ctx.set_theme(Theme::Light);
     assert_eq!(
         pass_theme(&ctx, with_system_theme(None)),
-        (Theme::Dark, vec![SystemTheme::Dark]),
-        "a pinned preference: egui's own command passes through"
+        (Theme::Light, vec![SystemTheme::Light]),
+        "Light pinned over a Dark OS mode: egui's own command passes through"
     );
     ctx.set_theme(ThemePreference::System);
     assert_eq!(
         pass_theme(&ctx, with_system_theme(None)),
         (Theme::Dark, vec![SystemTheme::Dark]),
         "System again: the OS mode, never SystemDefault"
+    );
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    ctx.set_theme(Theme::Dark);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::Dark]),
+        "Dark pinned over a Light OS mode: egui's own command passes through"
     );
 
     // An integration that reports the scheme: egui's own `SystemDefault` passes through.
