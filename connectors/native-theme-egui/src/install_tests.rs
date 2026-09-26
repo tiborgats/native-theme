@@ -2281,7 +2281,7 @@ mod t13_accessibility {
     use super::{pass, resolved};
     use crate::convert::clamp_length;
     use crate::fonts::{FontBytes, FontPlan};
-    use crate::style_diff::{Location, all_styles, style_diff};
+    use crate::style_diff::{Change, Location, all_styles, atlas_diff, style_diff};
     use crate::{
         AccessibilityPreferences, ResolvedTheme, Role, RoleVariant, ThemeAtlas, scaled_text_size,
     };
@@ -2369,7 +2369,9 @@ mod t13_accessibility {
     /// T13 (b): `style_diff` between the two atlases reports the text sizes, `animation_time`,
     /// `scroll_animation` and — where their values move — the two values that follow the Body row
     /// height, `spacing.extra_text_line_spacing` (§6.15) and the `Role::Slider` cells' `expansion`
-    /// (§6.6), and nothing else: scaling never turns into a zoom of every length.
+    /// (§6.6), and nothing else — in the base styles, the 75 cells and the 11 surface frames
+    /// (`atlas_diff`), none of whose fields may move: scaling never turns into a zoom of every
+    /// length.
     #[test]
     fn t13b_scaling_moves_only_text_sizes_and_what_follows_them() {
         let prefs = scaled_prefs();
@@ -2378,19 +2380,19 @@ mod t13_accessibility {
             let scaled = ThemeAtlas::builder(key, &light, &dark)
                 .accessibility(&prefs)
                 .build();
-            for ((loc, a), (_, b)) in all_styles(&plain).into_iter().zip(all_styles(&scaled)) {
-                let is_slider = matches!(loc, Location::Cell(_, Role::Slider, _));
-                for path in style_diff(&a, &b) {
-                    let allowed = (path.starts_with("text_styles[") && path.ends_with(".size"))
+            for Change { location, path } in atlas_diff(&plain, &scaled) {
+                let is_slider = matches!(location, Location::Cell(_, Role::Slider, _));
+                let is_frame = matches!(location, Location::Frame(..));
+                let allowed = !is_frame
+                    && ((path.starts_with("text_styles[") && path.ends_with(".size"))
                         || path == "override_font_id.size"
                         || path == "animation_time"
                         || path.starts_with("scroll_animation.")
                         || path == "spacing.extra_text_line_spacing"
                         || (is_slider
                             && path.starts_with("visuals.widgets.")
-                            && path.ends_with(".expansion"));
-                    assert!(allowed, "{key} {loc:?}: scaling moved `{path}`");
-                }
+                            && path.ends_with(".expansion")));
+                assert!(allowed, "{key} {location:?}: scaling moved `{path}`");
             }
         }
     }
