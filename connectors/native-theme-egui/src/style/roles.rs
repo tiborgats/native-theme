@@ -344,10 +344,10 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
         &StateSource {
             fill: Some(FillSource {
                 field: FillField::Bg,
-                idle: Some((
-                    k.unchecked_background.unwrap_or(k.background_color),
-                    "checkbox.unchecked_background",
-                )),
+                idle: Some(match k.unchecked_background {
+                    Some(c) => (c, "checkbox.unchecked_background"),
+                    None => (k.background_color, "checkbox.background_color"),
+                }),
                 hover: k.hover_background.map(|h| (h, "checkbox.hover_background")),
                 active: None,
                 layer: Layer::Composite,
@@ -1158,6 +1158,44 @@ mod tests {
         assert_eq!(
             c.visuals.widgets.active.fg_stroke.color,
             to_color32(t.button.active_text_color)
+        );
+    }
+
+    /// §6.4: a transparent box fill is reported under the leaf whose value it is — the
+    /// widget's own `background_color` when `unchecked_background` is `None`.
+    #[test]
+    fn a_transparent_checkbox_fill_names_the_leaf_it_came_from() {
+        let mut t = resolved("kde-breeze", ColorMode::Light);
+        t.checkbox.unchecked_background = None;
+        t.checkbox.background_color = Rgba {
+            a: 0,
+            ..t.checkbox.background_color
+        };
+        let prefs = AccessibilityPreferences::default();
+        let layout = LayoutTheme::default();
+        let input = BuildInput {
+            scheme: egui::Theme::Light,
+            theme: &t,
+            prefs: &prefs,
+            layout: &layout,
+            row_height: None,
+            patch: None,
+        };
+        let mut notes = Vec::new();
+        let base = base_style(&input, &mut notes);
+        let mut notes = Vec::new();
+        let _ = role_cell(Role::Checkbox, &base, &input, &mut notes);
+        assert!(
+            notes.contains(&Note::TransparentFill {
+                path: "checkbox.background_color"
+            }),
+            "{notes:?}"
+        );
+        assert!(
+            !notes.contains(&Note::TransparentFill {
+                path: "checkbox.unchecked_background"
+            }),
+            "{notes:?}"
         );
     }
 
