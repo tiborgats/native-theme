@@ -38,9 +38,9 @@ iced_test = "0.14.0"
 iced_widget = "0.14.2"
 
 [native-theme-egui]
-commit = "0545a9f1c63cc4b224988599c4901abad1681e54"
+commit = "2bda7e339297562615e88fedbf4f0a60046aa538"
 generated = "2026-09-26"
-sources = "f8832e69a5d4da15b04660c0b9a23e3c429ca1e919d1e713b4ec068342311e88"
+sources = "f5054d53d98602bd41c0b57a1201ec7836815cd9fa73fa7fbe79a8ee892497ef"
 
 [native-theme-egui.verified]
 ecolor = "0.36.2"
