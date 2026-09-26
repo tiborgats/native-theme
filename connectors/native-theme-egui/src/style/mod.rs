@@ -4,6 +4,7 @@
 pub(crate) mod base;
 mod roles;
 mod states;
+mod variants;
 
 use std::sync::Arc;
 
@@ -47,7 +48,11 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
         std::array::from_fn(|_| [Arc::clone(&base), Arc::clone(&base), Arc::clone(&base)]);
     for (slot, role) in cells.iter_mut().zip(Role::all()) {
         let normal = Arc::new(roles::role_cell(*role, &base, input, notes));
-        *slot = [Arc::clone(&normal), Arc::clone(&normal), normal];
+        let selected = variants::selected_cell(*role, &normal, input, notes)
+            .map_or_else(|| Arc::clone(&normal), Arc::new);
+        let disabled = variants::disabled_cell(*role, &normal, input, notes)
+            .map_or_else(|| Arc::clone(&normal), Arc::new);
+        *slot = [normal, selected, disabled];
     }
     let frames = SURFACES.map(|surface| egui_preset(surface, &base));
     SchemeStyles {
