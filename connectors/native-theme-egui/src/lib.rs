@@ -33,6 +33,8 @@ pub mod fonts;
 pub mod icons;
 #[cfg(test)]
 mod install_tests;
+#[cfg(test)]
+mod mapping_tests;
 mod roles;
 mod style;
 
