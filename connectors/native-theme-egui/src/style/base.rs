@@ -221,7 +221,9 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     v.text_edit_bg_color = Some(to_color32(t.input.background_color));
     v.text_cursor.stroke.color = to_color32(t.input.caret_color); // width stays egui's (§5.4)
     v.slider_trailing_fill = true; // `slider.fill_color` is invisible without it (§5.5)
-    v.handle_shape = egui::style::HandleShape::Circle; // `slider.thumb_diameter` is a diameter (§5.9)
+    // `slider.thumb_diameter` is a diameter, so a round knob; egui's `Rect { aspect_ratio: 0.75 }`
+    // (`egui/src/style.rs:1553`) has no theme value behind it (§5.9, §6.6)
+    v.handle_shape = egui::style::HandleShape::Circle;
     v.window_corner_radius = radius(
         "window.border.corner_radius",
         own.visuals.window_corner_radius,

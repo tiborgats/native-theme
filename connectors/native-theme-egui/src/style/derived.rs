@@ -95,7 +95,6 @@ fn scrollbar_widths(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<
     let thumb = clamp_length(sb.thumb_width).min(g); // the thumb is never wider than the groove
     let pad = (g - thumb) * 0.5; // 0.5: the midpoint (§6.17); finite and >= 0.0, as g and thumb are
     let scroll = &mut style.spacing.scroll;
-    scroll.foreground_color = false; // `egui/src/style.rs:538`: the handle reads `bg_fill` (§5.5)
     if sb.overlay_mode {
         scroll.floating = true; // `:503`
         scroll.floating_allocated_width = 0.0; // `:535`: `ScrollStyle::floating()`'s own value; reserves nothing
@@ -197,9 +196,6 @@ fn slider_geometry(
     ] {
         entry.expansion = e;
     }
-    // A diameter presumes a round knob; egui's default `Rect { aspect_ratio: 0.75 }`
-    // (`egui/src/style.rs:1553`) has no theme value behind it.
-    style.visuals.handle_shape = egui::style::HandleShape::Circle; // `egui/src/style.rs:1237`
 }
 
 // ---- D3: spinner size (§6.7) -------------------------------------------------------------------
@@ -351,7 +347,6 @@ fn combo_box_arrow_area(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut 
     reason = "a test fails by panicking"
 )]
 mod tests {
-    use egui::style::HandleShape;
     use native_theme::color::Rgba;
     use native_theme::theme::{ColorMode, ResolvedTheme};
 
@@ -412,7 +407,6 @@ mod tests {
         scrollbar_widths(&mut s, &t, &mut notes);
         let sc = &s.spacing.scroll;
         assert!(!sc.floating);
-        assert!(!sc.foreground_color);
         assert_eq!(sc.bar_width, clamp_length(th));
         assert_eq!(
             sc.bar_inner_margin,
@@ -456,7 +450,6 @@ mod tests {
         let sc = &s.spacing.scroll;
         let own = start().spacing.scroll;
         assert!(sc.floating);
-        assert!(!sc.foreground_color);
         assert_eq!(sc.floating_allocated_width, 0.0);
         assert_eq!(sc.allocated_width(), 0.0);
         assert_eq!(
@@ -512,7 +505,6 @@ mod tests {
         for e in entries(&s.visuals.widgets) {
             assert_eq!(e.expansion, -w);
         }
-        assert_eq!(s.visuals.handle_shape, HandleShape::Circle);
         assert!(notes.is_empty());
     }
 
@@ -576,7 +568,6 @@ mod tests {
         );
         assert_eq!(s.visuals.widgets.active.expansion, -w);
         assert_eq!(sanitised(&notes, "slider.thumb_diameter"), 1);
-        assert_eq!(s.visuals.handle_shape, HandleShape::Circle);
     }
 
     // ---- D3, §6.7 -------------------------------------------------------------------------

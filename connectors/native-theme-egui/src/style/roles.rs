@@ -477,7 +477,6 @@ fn scrollbar(
         own.spacing.scroll.handle_min_length,
         notes,
     );
-    s.spacing.scroll.foreground_color = false; // the handle reads `bg_fill` (§5.5)
 }
 
 fn slider(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
@@ -1651,6 +1650,11 @@ mod tests {
                 "{preset}"
             );
             assert!(c.visuals.slider_trailing_fill, "{preset}");
+            assert_eq!(
+                c.visuals.handle_shape,
+                egui::style::HandleShape::Circle,
+                "{preset}"
+            );
             assert_eq!(w.inactive.bg_fill, to_color32(sl.track_color), "{preset}");
             assert_eq!(w.open.bg_fill, to_color32(sl.track_color), "{preset}");
             assert_eq!(
