@@ -35,7 +35,9 @@ pub(crate) fn show(
             Some((Role::Card, normal)),
             "card",
             |ui, reg| {
-                demo::base(reg, ui, "card label", |ui| ui.label("A card"));
+                demo::scoped(reg, ui, Role::Card, normal, "card label", |ui| {
+                    ui.label("A card")
+                });
                 let variant = if state.checked {
                     RoleVariant::Selected
                 } else {

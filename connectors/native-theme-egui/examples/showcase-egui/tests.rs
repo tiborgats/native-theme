@@ -810,6 +810,31 @@ fn a_checked_radio_or_box_is_drawn_selected() {
     }
 }
 
+/// §10.4: no widget is drawn with a seam its info does not name. A widget recorded with the
+/// base style is drawn on a `Ui` holding the base style, never inside a role's body (a status
+/// bar, a dialog, a window, a card), where its info would list the base style's rows while it
+/// is painted with the role's.
+#[test]
+fn a_base_widget_is_drawn_in_the_base_style() {
+    for page in Page::ALL {
+        let mut harness = open_page(page, egui::Theme::Light);
+        for label in ["Open window", "Open modal"] {
+            if harness.query_all_by_label(label).next().is_some() {
+                harness.get_by_label(label).click();
+                harness.run_steps(2);
+            }
+        }
+        let ctx = harness.ctx.clone();
+        harness.state_mut().run_action(Action::OpenAbout, &ctx);
+        harness.run_steps(2);
+        let off = &harness.state().registry.base_off_base;
+        assert!(
+            off.is_empty(),
+            "{page:?}: recorded as the base style, drawn in another: {off:?}"
+        );
+    }
+}
+
 /// The Icons page's `ui.image` is drawn at the toolbar icon size, not at the page's width,
 /// which would push every icon row below the fold.
 #[cfg(feature = "lucide-icons")]

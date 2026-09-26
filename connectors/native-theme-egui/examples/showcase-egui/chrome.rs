@@ -323,14 +323,21 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     "side panel toggle",
                     |ui| ui.toggle_value(side_panel_visible, "Side panel"),
                 );
-                for item in environment {
-                    demo::base(registry, ui, "status separator", |ui| ui.separator());
-                    demo::base(registry, ui, "status item", |ui| ui.label(item));
+                // The bar's own role, not the base style: its separator line and its text are
+                // `status_bar`'s (§10.4).
+                let bar = (Role::StatusBar, RoleVariant::Normal);
+                let mut item = |ui: &mut egui::Ui, kind: &'static str, text: String| {
+                    demo::scoped(registry, ui, bar.0, bar.1, "status separator", |ui| {
+                        ui.separator()
+                    });
+                    demo::scoped(registry, ui, bar.0, bar.1, kind, |ui| ui.label(text));
+                };
+                for text in environment {
+                    item(ui, "status item", text);
                 }
                 // The shown Widget Info's title, last (§10.4).
                 if !title.is_empty() {
-                    demo::base(registry, ui, "status separator", |ui| ui.separator());
-                    demo::base(registry, ui, "status title", |ui| ui.label(title));
+                    item(ui, "status title", title);
                 }
             });
         });
@@ -984,7 +991,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
     let mut close = false;
     let response = egui::Modal::new(egui::Id::new("about")).frame(frame).show(&ctx, |ui| {
         demo::styled(registry, ui, Role::Dialog, RoleVariant::Normal, "about");
-        demo::base(registry, ui, "about version", |ui| ui.label(version));
+        demo::scoped(registry, ui, Role::Dialog, RoleVariant::Normal, "about version", |ui| ui.label(version));
         demo::scoped(registry, ui, Role::Link, RoleVariant::Normal, "compatibility link", |ui| {
             ui.hyperlink_to(
                 "Compatibility",

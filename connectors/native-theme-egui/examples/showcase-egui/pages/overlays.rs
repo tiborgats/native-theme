@@ -65,7 +65,7 @@ pub(crate) fn show(
                 .show(ui.ctx(), |ui| {
                     demo::styled(reg, ui, Role::Window, normal, "window body");
                     for line in 0..WINDOW_LINES {
-                        demo::base(reg, ui, "window line", |ui| {
+                        demo::scoped(reg, ui, Role::Window, normal, "window line", |ui| {
                             ui.label(format!("A line of the window's body: {line}"))
                         });
                     }
@@ -100,7 +100,7 @@ pub(crate) fn show(
                     .frame(chrome.frame)
                     .show(ui.ctx(), |ui| {
                         demo::styled(reg, ui, Role::Dialog, normal, "modal body");
-                        demo::base(reg, ui, "modal message", |ui| {
+                        demo::scoped(reg, ui, Role::Dialog, normal, "modal message", |ui| {
                             ui.label("A modal dialog, its two buttons in the platform's order.")
                         });
                         let labels = match order {

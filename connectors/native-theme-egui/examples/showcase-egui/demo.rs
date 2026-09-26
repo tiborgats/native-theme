@@ -56,6 +56,10 @@ pub(crate) struct Registry {
     /// Ids recorded twice in one pass (§13.2 `no_id_is_recorded_twice`).
     #[cfg(test)]
     pub recorded_twice: std::collections::BTreeSet<String>,
+    /// Kinds `base` recorded on a `Ui` whose style is not the base style: a widget inside a
+    /// role's body, whose info would name rows it is not painted with.
+    #[cfg(test)]
+    pub base_off_base: std::collections::BTreeSet<&'static str>,
 }
 
 impl Registry {
@@ -229,6 +233,10 @@ pub(crate) fn base(
     kind: &'static str,
     add: impl FnOnce(&mut egui::Ui) -> egui::Response,
 ) -> egui::Response {
+    #[cfg(test)]
+    if ui.style().as_ref() != ui.ctx().global_style().as_ref() {
+        reg.base_off_base.insert(kind);
+    }
     let response = add(ui);
     reg.record(&response, info(kind, vec![Seam::Base]), false);
     response
