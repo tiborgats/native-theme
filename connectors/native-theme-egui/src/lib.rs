@@ -7,6 +7,62 @@
 //! interaction-state axis and provably no widget-type axis, so what one global
 //! `Style` can hold reaches every widget automatically, and the per-widget
 //! values reach the screen only where the application asks for them.
+//!
+//! # Quick start
+//!
+//! ```rust,no_run
+//! use native_theme_egui::from_system;
+//!
+//! # fn install(cc: &eframe::CreationContext<'_>) -> native_theme_egui::Result<()> {
+//! let (atlas, _resolved, _is_dark) = from_system()?;
+//! atlas.install(&cc.egui_ctx);
+//! cc.egui_ctx.set_theme(egui::ThemePreference::System);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! Or from a bundled preset:
+//!
+//! ```rust,no_run
+//! use native_theme_egui::{from_preset, AccessibilityPreferences};
+//!
+//! # fn install(ctx: &egui::Context) -> native_theme_egui::Result<()> {
+//! let (atlas, _resolved) = from_preset("catppuccin-mocha", true, &AccessibilityPreferences::default())?;
+//! atlas.install(ctx);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Where the theme reaches
+//!
+//! [`ThemeAtlas::install`] publishes the base style into both `egui::Theme`s; a role's
+//! style reaches a widget through [`NativeThemeUiExt::native_scope`],
+//! [`NativeThemeUiExt::native_set_style`] or [`ThemeAtlas::role_modifier`], and a
+//! container's frame through [`NativeThemeUiExt::native_frame`] or
+//! [`ThemeAtlas::surface_frame`]. The values no `Style` field carries are the free
+//! accessors of this crate root; fonts are [`fonts`]' and icons [`icons`]'.
+//!
+//! # Semver
+//!
+//! 1. The crate version equals the workspace version.
+//! 2. One egui minor per release line of this crate; an egui minor bump is a
+//!    **breaking change** for this crate.
+//! 3. **The numeric contents of a produced `egui::Style` are not covered.** A
+//!    mapping fix — electing a different base owner, correcting a sink, closing a
+//!    `Note` — is never a breaking change.
+//! 4. Every public enum is `#[non_exhaustive]` except `PanelSide`, so a new `Role`,
+//!    `Surface`, `RoleVariant`, `Note`, `TextRole`, `IconContext` or `FontBytes`
+//!    variant is additive; each of `Note`'s struct variants carries its own
+//!    `#[non_exhaustive]`, so enriching one stays additive too.
+//! 5. Adding a free accessor is additive.
+//! 6. `ThemeAtlas`, `Builder`, `FontPlan`, `IconKey` and — behind feature `watch` —
+//!    `ThemeWatcher` are opaque, and `NativeThemeUiExt` and `SystemThemeExt` are
+//!    sealed, so adding a method to any of them is additive.
+//!
+//! # Limits
+//!
+//! Every native leaf this crate cannot reach is a `mapping.toml` row marked `unmappable`;
+//! the mapping document below lists them all.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
