@@ -655,6 +655,68 @@ fn set_floats(v: &mut toml::Value, path: &str, only: Option<&str>, to: f64) {
     }
 }
 
+/// `t` with every unstated `Option<f32>` leaf — a `null` that deserialises from a number: the
+/// padding sides and rationale §3.23's optional sizes — stated as `0.0`, so that the all-at-once
+/// legs write their hostile `Some` into every one, including those no platform preset states.
+fn with_every_option_stated(t: &ResolvedTheme) -> ResolvedTheme {
+    fn nulls(pointer: &str, v: &serde_json::Value, out: &mut Vec<String>) {
+        match v {
+            serde_json::Value::Object(o) => {
+                for (k, v) in o {
+                    nulls(&format!("{pointer}/{k}"), v, out);
+                }
+            }
+            serde_json::Value::Null => out.push(pointer.to_owned()),
+            _ => {}
+        }
+    }
+    let mut json = serde_json::to_value(t).expect("ResolvedTheme serialises");
+    let mut pointers = Vec::new();
+    nulls("", &json, &mut pointers);
+    for p in pointers {
+        let mut trial = json.clone();
+        *trial.pointer_mut(&p).expect("the walk found it") = serde_json::json!(0.0);
+        if serde_json::from_value::<ResolvedTheme>(trial.clone()).is_ok() {
+            json = trial;
+        }
+    }
+    serde_json::from_value(json).expect("a ResolvedTheme with every option stated")
+}
+
+/// Every padding side of every widget border is an `f32` leaf of the stated theme, and some were
+/// unstated before (T4 (a)'s "every `Some`" reaches them only this way).
+#[test]
+fn every_option_stated_states_every_padding_side() {
+    let mut newly = BTreeSet::new();
+    for preset in PLATFORM {
+        for mode in MODES {
+            let t = resolved(preset, mode);
+            let before: BTreeSet<String> = float_leaves(&t).into_iter().collect();
+            let after: BTreeSet<String> = float_leaves(&with_every_option_stated(&t))
+                .into_iter()
+                .collect();
+            assert!(before.is_subset(&after), "{preset} {mode:?}");
+            let json = serde_json::to_value(&t).expect("ResolvedTheme serialises");
+            let widgets = json.as_object().expect("an object");
+            for (widget, v) in widgets {
+                if v.pointer("/border/padding").is_some() {
+                    for side in ["top", "right", "bottom", "left"] {
+                        let leaf = format!("{widget}.border.padding.{side}");
+                        assert!(after.contains(&leaf), "{preset} {mode:?} {leaf}");
+                        if !before.contains(&leaf) {
+                            newly.insert(leaf);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        !newly.is_empty(),
+        "no platform preset leaves a padding side unstated"
+    );
+}
+
 /// `t` with the float at `only` set to `v`, or every float when `only` is `None`.
 fn with_hostile(t: &ResolvedTheme, only: Option<&str>, v: f32) -> ResolvedTheme {
     let mut root = toml::Value::Table(as_table(t));
@@ -775,7 +837,7 @@ fn t4a_hostile_leaves_build_nan_free_and_report_exactly_the_predicted_notes() {
     }
     for preset in PLATFORM {
         for mode in MODES {
-            let t = resolved(preset, mode);
+            let t = with_every_option_stated(&resolved(preset, mode));
             let baseline = build(&t);
             for v in HOSTILE {
                 let ctx = format!("{preset} {mode:?} every leaf = {v}");
@@ -801,7 +863,7 @@ fn t4b_every_hostile_visuals_survives_egui_s_own_disable_assert() {
     let mut styles: Vec<(Location, Arc<egui::Style>)> = Vec::new();
     for preset in PLATFORM {
         for mode in MODES {
-            let t = resolved(preset, mode);
+            let t = with_every_option_stated(&resolved(preset, mode));
             for v in HOSTILE {
                 styles.extend(all_styles(&build(&with_hostile(&t, None, v))));
             }
