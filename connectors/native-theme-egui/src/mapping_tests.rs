@@ -17,7 +17,7 @@ use crate::style_diff::{Change, Location, all_frames, all_styles, atlas_diff, se
 use crate::{LayoutTheme, Note, ThemeAtlas};
 use crate::{ResolvedTheme, Role, RoleVariant, Surface};
 
-/// The crate's one `resolved` (Task 11), re-exported so a module reading the manifest takes
+/// The crate's one `resolved`, re-exported so a module reading the manifest takes
 /// both from here.
 pub(crate) use crate::install_tests::resolved;
 
@@ -731,7 +731,7 @@ fn build(t: &ResolvedTheme) -> ThemeAtlas {
 
 /// The `tested_by` leaves `Builder::build` itself reads and sanitises (§7.2 does not exempt a
 /// `tested_by` row): the focus ring's width and offset, which `build_focus_ring` reports when
-/// non-finite (§6.18; Task 21). `focus_ring_color` is a colour, not an `f32` leaf.
+/// non-finite (§6.18). `focus_ring_color` is a colour, not an `f32` leaf.
 const BUILD_READ_TESTED_BY: &[&str] = &["defaults.focus_ring_width", "defaults.focus_ring_offset"];
 
 /// What §7.2's emission rule predicts for one leaf set to `v`: `ValueSanitised` and

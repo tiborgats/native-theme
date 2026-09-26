@@ -58,7 +58,7 @@ impl Combination {
     }
     /// The Body size the atlas writes (§8.5): the theme's size scaled, egui's own where that
     /// is not a positive normal number — `None` only if egui's style had no Body slot, as
-    /// Task 13's `compile_scheme` reads it.
+    /// `compile_scheme` reads it.
     fn body_size(&self) -> Option<f32> {
         let scaled =
             crate::scaled_text_size(self.resolved.defaults.font.size, self.atlas.accessibility());
@@ -71,7 +71,7 @@ impl Combination {
             .get(&egui::TextStyle::Body)
             .map(|f| f.size)
     }
-    /// The Body row height the build measured for this scheme (§6.15; Task 13's
+    /// The Body row height the build measured for this scheme (§6.15;
     /// `compile_scheme`), recomputed the same way: `fonts::body_row_height` over the
     /// definitions the atlas installs — the plan's (`ThemeAtlas::fonts`), else egui's default —
     /// at the Body size the atlas writes (`body_size`).
@@ -131,7 +131,7 @@ fn with_layout(mut json: serde_json::Value, layout: &crate::LayoutTheme) -> serd
     json
 }
 
-// ---- the manifest (§13.1): Task 12's typed reader, `mapping_tests::Manifest::load()` ----------
+// ---- the manifest (§13.1): the typed reader, `mapping_tests::Manifest::load()` ----------------
 
 // ---- reading a sink at its location ---------------------------------------------------------
 
@@ -1191,7 +1191,7 @@ fn t10c_every_undeclared_field_holds_its_inherited_value() {
 
 /// T10's `NaN` sweep over the 32 combinations: `Style` derives `PartialEq` (`egui/src/style.rs:241`)
 /// and one `NaN` anywhere makes a value unequal to itself; `number_formatter` compares by
-/// `Arc::ptr_eq` (`:57-62`) and always equals itself. `self_equal` (Task 19) spells `v == v` so
+/// `Arc::ptr_eq` (`:57-62`) and always equals itself. `self_equal` spells `v == v` so
 /// that `clippy::eq_op`, deny-by-default, does not fire on it. One atlas per preset holds both
 /// schemes, so the even combinations cover every style.
 #[test]

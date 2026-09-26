@@ -1,5 +1,5 @@
-//! §13 T5, T6, T8, T13–T16 and T18 land here task by task. Task 11: the atlas's own
-//! accessors (T18 (a) among them), the builder's defaults and `role_modifier`'s merge.
+//! §13 T5, T6, T8, T13, T14, T16, T18 and T4 (c), with the atlas's own accessors (T18 (a)
+//! among them), the builder's defaults and `role_modifier`'s merge.
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,
@@ -97,7 +97,7 @@ fn the_atlas_is_send_and_sync() {
 }
 
 /// `surface_frame` is total over the eleven surfaces and both themes, and every frame equals
-/// itself (no `NaN`); Tasks 18 and 33 pin the values.
+/// itself (no `NaN`); `style::frames`'s tests and T10 pin the values.
 #[test]
 fn surface_frame_is_total_over_both_themes() {
     let light = resolved("kde-breeze", ColorMode::Light);
@@ -171,7 +171,7 @@ use std::sync::Arc;
 
 use crate::NativeThemeUiExt;
 
-/// A preset's atlas through the public builder (`from_preset` lands in Task 24), both variants
+/// A preset's atlas through the public builder, both variants
 /// through `resolved` above, named as the preset names itself (`native-theme/src/model/mod.rs:257`).
 pub(crate) fn preset_atlas(id: &str) -> ThemeAtlas {
     let name = native_theme::theme::Theme::preset(id)
@@ -193,7 +193,8 @@ pub(crate) fn bare_context() -> egui::Context {
     ctx
 }
 
-/// T14 (a), less its font-plan clause (Task 22) and its raster-icon clause (Task 26).
+/// T14 (a), less its font-plan clause (`t14_a_an_install_whose_plan_found_no_face_restores_egui_s_chain`)
+/// and its raster-icon clause (`install_leaves_no_stored_icon_texture_handle`).
 #[test]
 fn install_reaches_both_schemes_and_a_second_install_replaces_the_first() {
     let ctx = bare_context();
@@ -256,7 +257,7 @@ fn install_requests_a_repaint() {
     );
 }
 
-/// Review Focus 1: with no atlas, and again after `clear`, every seam is egui's own and nothing
+/// With no atlas, and again after `clear`, every seam is egui's own and nothing
 /// panics (§4.5). `role_modifier` needs an atlas to be called on, so it has no no-atlas path.
 #[test]
 fn without_an_atlas_every_seam_is_egui_s_own() {
@@ -296,7 +297,7 @@ fn without_an_atlas_every_seam_is_egui_s_own() {
     check(&ctx);
 }
 
-/// Review Focus 2: nested scopes — the inner role inside, the outer role again after.
+/// Nested scopes — the inner role inside, the outer role again after.
 #[test]
 fn a_nested_scope_takes_the_inner_role_and_gives_the_outer_back() {
     let ctx = bare_context();
@@ -331,8 +332,7 @@ fn a_nested_scope_takes_the_inner_role_and_gives_the_outer_back() {
 
 use egui::epaint::RectShape;
 
-/// `preset_atlas` with an OS colour mode (`Builder::os_mode`, §4.3); `pub(crate)` for Task 24's
-/// constructor tests.
+/// `preset_atlas` with an OS colour mode (`Builder::os_mode`, §4.3).
 pub(crate) fn preset_atlas_with_os_mode(id: &str, mode: ColorMode) -> ThemeAtlas {
     let name = native_theme::theme::Theme::preset(id)
         .expect("a bundled preset")
@@ -466,7 +466,7 @@ fn with_system_theme(theme: Option<egui::Theme>) -> egui::RawInput {
     }
 }
 
-/// One pass through Task 11's `pass`; `show` runs on the root `Ui` and returns the widget
+/// One pass through `pass`; `show` runs on the root `Ui` and returns the widget
 /// under test.
 fn pass_ui(
     ctx: &egui::Context,
@@ -637,7 +637,7 @@ fn the_ring_marks_keyboard_focus_only_while_the_window_has_it() {
     );
 }
 
-/// T14 (b), second half, and Review Focus 2's ring clause: the corners follow the innermost
+/// T14 (b), second half, and the ring in nested scopes: the corners follow the innermost
 /// scope, `native_set_style` on a window body, `native_set_style` on the root and a following
 /// `reset_style`, and a registered shape. Each case is a fresh harness on `adwaita`.
 #[test]
@@ -909,7 +909,7 @@ fn after_clear_the_plugin_is_inert() {
     assert_eq!(rings_on(&seen(&probe), first.layer_id, stroke), vec![]);
 }
 
-/// §13 T6 (a)–(e), T5's plan leg and T14 (a)'s font-plan clause (plan Task 22).
+/// §13 T6 (a)–(e), T5 at a factor of `1.0` and T14 (a)'s font-plan clause.
 mod t6_fonts {
     use std::borrow::Cow;
     use std::sync::Arc;
@@ -1425,7 +1425,7 @@ mod t6_fonts {
     }
 }
 
-/// §13 T18 (b)–(f), (h) and T4 (c) (plan Task 23).
+/// §13 T18 (b)–(f), (h) and T4 (c).
 mod t18_accessors {
     use std::sync::Arc;
 
@@ -1435,7 +1435,6 @@ mod t18_accessors {
         ColorMode, FontStyle, ResolvedFontSpec, ResolvedPadding, ResolvedTheme,
     };
 
-    // `resolved` (Task 11) and `pass` (Task 11, Global Constraints) are the file's own helpers.
     use super::{pass, resolved};
     use crate::convert::to_color32;
     use crate::icons::IconContext;
@@ -1848,7 +1847,7 @@ mod t18_accessors {
         }
     }
 
-    /// T4 (c), with Review Focus 5's `0.0` and `-12.0`: a text size that is not a positive
+    /// T4 (c), with `0.0` and `-12.0` besides: a text size that is not a positive
     /// normal `f32` keeps egui's own size for its slot, is a `Note::ValueSanitised`, lays out
     /// without a panic, and every `FontId` accessor returns a positive normal size.
     #[test]
@@ -1917,12 +1916,11 @@ mod t18_accessors {
     }
 }
 
-/// §13 T18 (g), T18 (a)'s `from_preset` clause and Review Focus 5's unknown preset (plan Task 24).
+/// §13 T18 (g), T18 (a)'s `from_preset` clause and an unknown preset.
 mod t18_constructors {
     use native_theme::theme::{ColorMode, Theme};
     use native_theme::{AccessibilityPreferences, SystemTheme};
 
-    // `resolved` is the file's own helper (Task 11); `atlas_diff` is Task 19's.
     use super::resolved;
     use crate::style_diff::atlas_diff;
     use crate::{Error, SystemThemeExt, ThemeAtlas, from_preset, from_system, to_theme};
@@ -1930,7 +1928,7 @@ mod t18_constructors {
     /// Every style of two atlases, compared field by field: both base styles, every cell in
     /// every variant, and every `Surface` frame. Not `==`: `Style`'s `PartialEq` compares
     /// `number_formatter` by `Arc::ptr_eq` (`egui/src/style.rs:57-62`), and each build starts
-    /// from a fresh `Style::default()` (`:1435`), so two builds are never `==` (Global Constraints).
+    /// from a fresh `Style::default()` (`:1435`), so two builds are never `==`.
     fn same_styles(a: &ThemeAtlas, b: &ThemeAtlas) -> bool {
         let changes = atlas_diff(a, b);
         assert!(changes.is_empty(), "the atlases differ at {changes:?}");
@@ -1992,7 +1990,7 @@ mod t18_constructors {
         }
     }
 
-    /// Review Focus 5: an unknown preset is an `Err`, never a panic.
+    /// An unknown preset is an `Err`, never a panic.
     #[test]
     fn from_preset_of_an_unknown_name_is_an_error() {
         let prefs = AccessibilityPreferences::default();
@@ -2141,7 +2139,7 @@ fn install_leaves_no_stored_icon_texture_handle() {
     assert_eq!(ctx.tex_manager().read().num_allocated(), before);
 }
 
-// ---- T8: the documented limits (spec §13 T8; T8 (c) is Task 26's) ------------------------
+// ---- T8: the documented limits (spec §13 T8; T8 (c) is `icons::tests`') -------------------
 
 fn kde_breeze() -> (ResolvedTheme, ResolvedTheme) {
     let theme = Theme::preset("kde-breeze").expect("bundled preset");
@@ -2304,7 +2302,7 @@ fn t8b_a_window_scrollbar_keeps_the_base_radius() {
     );
 }
 
-/// §13 T13, T16 and T5 at a factor of 2.0 (plan Task 32; spec §4.3, §6.6, §6.15).
+/// §13 T13, T16 and T5 at a factor of 2.0 (spec §4.3, §6.6, §6.15).
 mod t13_accessibility {
     use std::borrow::Cow;
 
