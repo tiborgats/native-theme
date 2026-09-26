@@ -63,7 +63,7 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
         base,
         cells,
         frames,
-        focus_ring: None,
+        focus_ring: crate::plugin::build_focus_ring(input.theme, notes),
     }
 }
 

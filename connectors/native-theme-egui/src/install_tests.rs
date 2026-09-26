@@ -328,3 +328,510 @@ fn a_nested_scope_takes_the_inner_role_and_gives_the_outer_back() {
         });
     });
 }
+
+use egui::epaint::RectShape;
+
+/// `preset_atlas` with an OS colour mode (`Builder::os_mode`, §4.3); `pub(crate)` for Task 24's
+/// constructor tests.
+pub(crate) fn preset_atlas_with_os_mode(id: &str, mode: ColorMode) -> ThemeAtlas {
+    let name = native_theme::theme::Theme::preset(id)
+        .expect("a bundled preset")
+        .name;
+    ThemeAtlas::builder(
+        &name,
+        &resolved(id, ColorMode::Light),
+        &resolved(id, ColorMode::Dark),
+    )
+    .os_mode(mode)
+    .build()
+}
+
+/// Copies, at the end of each pass, the shapes of the layers the test names. Plugins run in
+/// the order they were added (`egui/src/context.rs:2043`), so a probe added after `install`
+/// runs after the install plugin and sees its ring; `end_pass` drains the layers only
+/// afterwards (`egui/src/layers.rs:213`).
+#[derive(Default)]
+struct ProbeState {
+    layers: Vec<egui::LayerId>,
+    seen: Vec<(egui::LayerId, egui::Shape)>,
+}
+
+#[derive(Clone, Default)]
+struct LayerProbe(Arc<std::sync::Mutex<ProbeState>>);
+
+impl egui::plugin::Plugin for LayerProbe {
+    fn debug_name(&self) -> &'static str {
+        "native-theme-egui test layer probe"
+    }
+
+    fn on_end_pass(&mut self, ui: &mut egui::Ui) {
+        let mut state = self.0.lock().expect("the probe's lock");
+        let layers = state.layers.clone();
+        state.seen = ui.ctx().graphics(|graphics| {
+            let mut seen = Vec::new();
+            for layer in layers {
+                if let Some(list) = graphics.get(layer) {
+                    seen.extend(
+                        list.all_entries()
+                            .map(|clipped| (layer, clipped.shape.clone())),
+                    );
+                }
+            }
+            seen
+        });
+    }
+}
+
+fn watch(probe: &LayerProbe, layers: &[egui::LayerId]) {
+    probe.0.lock().expect("the probe's lock").layers = layers.to_vec();
+}
+
+fn seen(probe: &LayerProbe) -> Vec<(egui::LayerId, egui::Shape)> {
+    probe.0.lock().expect("the probe's lock").seen.clone()
+}
+
+/// The ring shapes among `seen` on `layer`: rect strokes in the ring's stroke, unfilled and
+/// painted outside their rect (`epaint/src/shapes/rect_shape.rs:114-122`).
+fn rings_on(
+    seen: &[(egui::LayerId, egui::Shape)],
+    layer: egui::LayerId,
+    stroke: egui::Stroke,
+) -> Vec<RectShape> {
+    seen.iter()
+        .filter(|(on, _)| *on == layer)
+        .filter_map(|(_, shape)| match shape {
+            egui::Shape::Rect(rect)
+                if rect.stroke == stroke
+                    && rect.fill == egui::Color32::TRANSPARENT
+                    && rect.stroke_kind == egui::StrokeKind::Outside =>
+            {
+                Some(rect.clone())
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// A widget's radius grown by the ring's offset — the concentric inner edge §6.18 states,
+/// recomputed here from the leaves so the test does not lean on the plugin's own helper.
+fn grown(radius: egui::CornerRadius, by: f32) -> egui::CornerRadius {
+    let g = |c: u8| crate::convert::u8_from_f32_saturating(f32::from(c) + by);
+    egui::CornerRadius {
+        nw: g(radius.nw),
+        ne: g(radius.ne),
+        sw: g(radius.sw),
+        se: g(radius.se),
+    }
+}
+
+fn tab_press() -> egui::RawInput {
+    egui::RawInput {
+        events: vec![egui::Event::Key {
+            key: egui::Key::Tab,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        }],
+        ..Default::default()
+    }
+}
+
+fn primary(pos: egui::Pos2, pressed: bool) -> egui::RawInput {
+    egui::RawInput {
+        events: vec![
+            egui::Event::PointerMoved(pos),
+            egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed,
+                modifiers: egui::Modifiers::NONE,
+            },
+        ],
+        ..Default::default()
+    }
+}
+
+fn window_focus(focused: bool) -> egui::RawInput {
+    egui::RawInput {
+        focused,
+        ..Default::default()
+    }
+}
+
+fn with_system_theme(theme: Option<egui::Theme>) -> egui::RawInput {
+    egui::RawInput {
+        system_theme: theme,
+        ..Default::default()
+    }
+}
+
+/// One pass through Task 11's `pass`; `show` runs on the root `Ui` and returns the widget
+/// under test.
+fn pass_ui(
+    ctx: &egui::Context,
+    input: egui::RawInput,
+    show: &mut dyn FnMut(&mut egui::Ui) -> egui::Response,
+) -> egui::Response {
+    let mut response = None;
+    let _ = pass(ctx, input, |ui| response = Some(show(ui)));
+    response.expect("the pass ran the closure")
+}
+
+/// `body` inside a window with no title bar — the title bar's collapse button would take the
+/// `Tab` first (`egui/src/containers/window.rs:1377-1388`) — and no resize handles.
+fn in_window(
+    ui: &mut egui::Ui,
+    body: impl FnOnce(&mut egui::Ui) -> egui::Response,
+) -> egui::Response {
+    egui::Window::new("ring")
+        .title_bar(false)
+        .resizable(false)
+        .show(ui.ctx(), body)
+        .and_then(|shown| shown.inner)
+        .expect("the window shows its widget")
+}
+
+/// An installed atlas and a probe registered after it.
+fn ring_harness(id: &str) -> (egui::Context, ThemeAtlas, LayerProbe) {
+    let ctx = bare_context();
+    let atlas = preset_atlas(id);
+    atlas.install(&ctx);
+    let probe = LayerProbe::default();
+    ctx.add_plugin(probe.clone());
+    (ctx, atlas, probe)
+}
+
+/// A fresh harness, one pass at rest and one with `Tab`: the focused widget's response and the
+/// ring shapes on its layer after the second pass.
+fn ring_after_tab(
+    id: &str,
+    show: &mut dyn FnMut(&mut egui::Ui) -> egui::Response,
+) -> (ThemeAtlas, egui::Theme, egui::Response, Vec<RectShape>) {
+    let (ctx, atlas, probe) = ring_harness(id);
+    let theme = ctx.theme();
+    let stroke = atlas
+        .focus_ring(theme)
+        .expect("the preset states a focus ring")
+        .stroke;
+    let first = pass_ui(&ctx, egui::RawInput::default(), show);
+    watch(&probe, &[first.layer_id]);
+    let focused = pass_ui(&ctx, tab_press(), show);
+    let rings = rings_on(&seen(&probe), first.layer_id, stroke);
+    (atlas, theme, focused, rings)
+}
+
+/// The first role whose `Normal` cell's active corner radius is not `not`, asserted to exist.
+fn role_with_radius_other_than(
+    atlas: &ThemeAtlas,
+    theme: egui::Theme,
+    not: egui::CornerRadius,
+) -> (Role, egui::CornerRadius) {
+    Role::all()
+        .iter()
+        .copied()
+        .find_map(|role| {
+            let radius = atlas
+                .scheme(theme)
+                .cell(role, RoleVariant::Normal)
+                .visuals
+                .widgets
+                .active
+                .corner_radius;
+            (radius != not).then_some((role, radius))
+        })
+        .expect("a role whose active corner radius differs")
+}
+
+/// T14 (b), first half: rest, a click, `Tab`, the OS focus lost and regained.
+#[test]
+fn the_ring_marks_keyboard_focus_only_while_the_window_has_it() {
+    let (ctx, atlas, probe) = ring_harness("kde-breeze");
+    let theme = ctx.theme();
+    let ring = atlas
+        .focus_ring(theme)
+        .expect("kde-breeze states a focus ring");
+    let t = atlas.resolved_for(theme);
+    assert_eq!(
+        ring.stroke.color,
+        crate::convert::to_color32(t.defaults.focus_ring_color)
+    );
+    assert_eq!(ring.stroke.width, t.defaults.focus_ring_width);
+    assert_eq!(ring.offset, t.defaults.focus_ring_offset);
+    let base_radius = atlas
+        .scheme(theme)
+        .base
+        .visuals
+        .widgets
+        .active
+        .corner_radius;
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.button("focus me"));
+
+    // At rest.
+    let button = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = button.layer_id;
+    assert_ne!(
+        layer,
+        egui::LayerId::background(),
+        "a Window paints on a layer of its own"
+    );
+    watch(&probe, &[layer, egui::LayerId::background()]);
+    let button = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    assert!(
+        rings_on(&seen(&probe), layer, ring.stroke).is_empty(),
+        "no ring at rest"
+    );
+
+    // A primary click: pressed in one pass, released in the next.
+    let centre = button.rect.center();
+    let _ = pass_ui(&ctx, primary(centre, true), &mut show);
+    assert!(
+        rings_on(&seen(&probe), layer, ring.stroke).is_empty(),
+        "no ring while pressed"
+    );
+    let button = pass_ui(&ctx, primary(centre, false), &mut show);
+    assert!(button.clicked(), "the release lands on the button");
+    assert!(
+        rings_on(&seen(&probe), layer, ring.stroke).is_empty(),
+        "no ring after a click"
+    );
+    let _ = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    assert!(
+        rings_on(&seen(&probe), layer, ring.stroke).is_empty(),
+        "and none a pass later"
+    );
+
+    // Tab: nothing has focus, so the first widget that wants it takes it in this pass
+    // (`egui/src/memory/mod.rs:672-678`), and the plugin paints the ring at the pass's end.
+    let button = pass_ui(&ctx, tab_press(), &mut show);
+    let rings = rings_on(&seen(&probe), layer, ring.stroke);
+    assert_eq!(
+        rings.len(),
+        1,
+        "exactly one ring after Tab, on the button's layer"
+    );
+    assert!(
+        rings_on(&seen(&probe), egui::LayerId::background(), ring.stroke).is_empty(),
+        "none on the background"
+    );
+    let painted = rings.first().expect("the one ring");
+    assert_eq!(painted.rect, button.rect.expand(ring.offset));
+    assert_eq!(painted.corner_radius, grown(base_radius, ring.offset));
+
+    // The window loses the OS keyboard focus: egui keeps the focused widget, the ring goes.
+    let button = pass_ui(&ctx, window_focus(false), &mut show);
+    assert_eq!(
+        ctx.memory(|m| m.focused()),
+        Some(button.id),
+        "egui still reports the button focused"
+    );
+    assert!(
+        rings_on(&seen(&probe), layer, ring.stroke).is_empty(),
+        "no ring without the OS focus"
+    );
+    let _ = pass_ui(&ctx, window_focus(true), &mut show);
+    assert_eq!(
+        rings_on(&seen(&probe), layer, ring.stroke).len(),
+        1,
+        "the ring is back with the focus"
+    );
+}
+
+/// T14 (b), second half, and Review Focus 2's ring clause: the corners follow the innermost
+/// scope, `native_set_style` on a window body, `native_set_style` on the root and a following
+/// `reset_style`, and a registered shape. Each case is a fresh harness on `adwaita`.
+#[test]
+fn the_ring_takes_the_innermost_scope_s_radius() {
+    let picker = preset_atlas("adwaita");
+    let theme = bare_context().theme();
+    let base = picker
+        .scheme(theme)
+        .base
+        .visuals
+        .widgets
+        .active
+        .corner_radius;
+    let (role, radius) = role_with_radius_other_than(&picker, theme, base);
+    let (outer, outer_radius) = role_with_radius_other_than(&picker, theme, radius);
+    assert_ne!(outer_radius, radius);
+    let offset = picker
+        .focus_ring(theme)
+        .expect("adwaita states a focus ring")
+        .offset;
+    let corner = |rings: &[RectShape]| rings.first().map(|r| r.corner_radius);
+
+    // Inside a scope.
+    let (_, _, _, rings) = ring_after_tab("adwaita", &mut |ui| {
+        in_window(ui, |ui| {
+            ui.native_scope(role, RoleVariant::Normal, |ui| ui.button("b"))
+                .inner
+        })
+    });
+    assert_eq!(rings.len(), 1);
+    assert_eq!(
+        corner(&rings),
+        Some(grown(radius, offset)),
+        "the scope's corners, not the base's"
+    );
+
+    // Nested: the inner scope wins.
+    let (_, _, _, rings) = ring_after_tab("adwaita", &mut |ui| {
+        in_window(ui, |ui| {
+            ui.native_scope(outer, RoleVariant::Normal, |ui| {
+                ui.native_scope(role, RoleVariant::Normal, |ui| ui.button("b"))
+                    .inner
+            })
+            .inner
+        })
+    });
+    assert_eq!(
+        corner(&rings),
+        Some(grown(radius, offset)),
+        "the innermost scope's corners"
+    );
+
+    // A window body that took the role with `native_set_style`.
+    let (_, _, _, rings) = ring_after_tab("adwaita", &mut |ui| {
+        in_window(ui, |ui| {
+            ui.native_set_style(role, RoleVariant::Normal);
+            ui.button("b")
+        })
+    });
+    assert_eq!(corner(&rings), Some(grown(radius, offset)));
+
+    // The root `Ui`: its record never matches (`egui/src/ui.rs:171`), so the ring reads the
+    // root's own style at the end of the pass.
+    let (_, _, _, rings) = ring_after_tab("adwaita", &mut |ui| {
+        ui.native_set_style(role, RoleVariant::Normal);
+        ui.button("b")
+    });
+    assert_eq!(
+        corner(&rings),
+        Some(grown(radius, offset)),
+        "a role left on the root"
+    );
+    let (_, _, _, rings) = ring_after_tab("adwaita", &mut |ui| {
+        ui.native_set_style(role, RoleVariant::Normal);
+        ui.reset_style();
+        ui.button("b")
+    });
+    assert_eq!(
+        corner(&rings),
+        Some(grown(base, offset)),
+        "the base style after reset_style"
+    );
+
+    // A registered shape takes precedence over the widget's rect and the scope's radius.
+    let custom_rect = egui::Rect::from_min_size(egui::pos2(10.0, 10.0), egui::vec2(40.0, 20.0));
+    let custom_radius = egui::CornerRadius {
+        nw: 3,
+        ne: 3,
+        sw: 3,
+        se: 3,
+    };
+    let (_, _, _, rings) = ring_after_tab("adwaita", &mut |ui| {
+        ui.native_scope(role, RoleVariant::Normal, |ui| {
+            let response = ui.button("b");
+            crate::register_focus_shape(ui.ctx(), response.id, custom_rect, custom_radius);
+            response
+        })
+        .inner
+    });
+    assert_eq!(
+        rings.first().map(|r| r.rect),
+        Some(custom_rect.expand(offset))
+    );
+    assert_eq!(corner(&rings), Some(grown(custom_radius, offset)));
+}
+
+fn set_theme_commands(out: &egui::FullOutput) -> Vec<egui::SystemTheme> {
+    out.viewport_output
+        .get(&egui::ViewportId::ROOT)
+        .map(|vo| {
+            vo.commands
+                .iter()
+                .filter_map(|c| match c {
+                    egui::ViewportCommand::SetTheme(theme) => Some(*theme),
+                    _ => None,
+                })
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// One pass: the theme egui drew in, and the `SetTheme` commands the root viewport carries.
+fn pass_theme(ctx: &egui::Context, input: egui::RawInput) -> (egui::Theme, Vec<egui::SystemTheme>) {
+    let mut drawn = None;
+    let out = pass(ctx, input, |ui| drawn = Some(ui.ctx().theme()));
+    (drawn.expect("the pass ran"), set_theme_commands(&out))
+}
+
+/// T14 (c).
+#[test]
+fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
+    use egui::{SystemTheme, Theme, ThemePreference};
+
+    // A Linux-shaped integration: `system_theme: None` every pass.
+    let ctx = bare_context();
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Light, vec![SystemTheme::Light]),
+        "first pass: the OS mode, and the title bar told once"
+    );
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Light, vec![]),
+        "second pass: nothing to send"
+    );
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(Some(Theme::Dark))),
+        (Theme::Dark, vec![]),
+        "a scheme the integration reports is left alone"
+    );
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Dark).install(&ctx);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::Dark]),
+        "an atlas with the other mode: sent once"
+    );
+    ctx.set_theme(Theme::Dark);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::Dark]),
+        "a pinned preference: egui's own command passes through"
+    );
+    ctx.set_theme(ThemePreference::System);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::Dark]),
+        "System again: the OS mode, never SystemDefault"
+    );
+
+    // An integration that reports the scheme: egui's own `SystemDefault` passes through.
+    let ctx = bare_context();
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(Some(Theme::Dark))),
+        (Theme::Dark, vec![SystemTheme::SystemDefault])
+    );
+
+    // No OS mode: egui's fallback (`egui/src/memory/mod.rs:331`) and egui's own command.
+    let ctx = bare_context();
+    preset_atlas("kde-breeze").install(&ctx);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::SystemDefault])
+    );
+
+    // `Options::sync_window_theme` off: no pass carries a `SetTheme`.
+    let ctx = bare_context();
+    ctx.options_mut(|o| o.sync_window_theme = false);
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    for _ in 0..2 {
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Light, vec![])
+        );
+    }
+}

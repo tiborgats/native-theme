@@ -46,6 +46,7 @@ pub use accessors::scaled_text_size;
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};
 pub use ext::NativeThemeUiExt;
+pub use plugin::register_focus_shape;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(test)]
 mod tripwires;

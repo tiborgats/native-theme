@@ -437,7 +437,8 @@ impl ThemeAtlas {
         ctx.data_mut(|data| {
             data.insert_temp(atlas_key(), published);
         });
-        // 4. The install plugin — Task 21.
+        // 4. The install plugin (`egui/src/context.rs:2047`).
+        ctx.add_plugin(crate::plugin::NativeThemePlugin::default());
         // 5. `icons::forget_icons(ctx)` — Task 26.
         // 6. The repaint, last (`egui/src/context.rs:1821`).
         ctx.request_repaint();
@@ -467,6 +468,13 @@ impl ThemeAtlas {
     /// through (`base`, `cell(role, variant)`, `frame(surface)`).
     pub(crate) fn scheme(&self, theme: egui::Theme) -> &SchemeStyles {
         self.0.scheme(theme)
+    }
+}
+
+impl ThemeAtlas {
+    /// The focus ring of one scheme, or `None` where the theme states none (§6.18).
+    pub(crate) fn focus_ring(&self, theme: egui::Theme) -> Option<&FocusRing> {
+        self.0.scheme(theme).focus_ring.as_ref()
     }
 }
 

@@ -658,8 +658,9 @@ fn build(t: &ResolvedTheme) -> ThemeAtlas {
 }
 
 /// The `tested_by` leaves `Builder::build` itself reads and sanitises (§7.2 does not exempt a
-/// `tested_by` row): none yet. Task 21 adds the focus ring's two `f32` leaves.
-const BUILD_READ_TESTED_BY: &[&str] = &[];
+/// `tested_by` row): the focus ring's width and offset, which `build_focus_ring` reports when
+/// non-finite (§6.18; Task 21). `focus_ring_color` is a colour, not an `f32` leaf.
+const BUILD_READ_TESTED_BY: &[&str] = &["defaults.focus_ring_width", "defaults.focus_ring_offset"];
 
 /// What §7.2's emission rule predicts for one leaf set to `v`: `ValueSanitised` and
 /// `ValueSaturated` only — the two kinds a hostile float causes.
