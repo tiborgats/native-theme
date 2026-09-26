@@ -857,15 +857,16 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
         ),
         true,
     );
-    // Escape: clear the query first; only an empty query lets the modal close (§10.4).
+    // Escape: clear the query first; only an empty query lets it close the modal (§10.4). It is
+    // consumed here, so `should_close` below sees it only when the query was already empty, and
+    // still answers a click on the backdrop, which closes whatever the query holds.
     let escape = ui.ctx().input_mut(|i| {
         !query.is_empty() && i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)
     });
     if escape {
         query.clear();
     }
-    let close =
-        chosen.is_some() || chosen_theme.is_some() || (query.is_empty() && response.should_close());
+    let close = chosen.is_some() || chosen_theme.is_some() || response.should_close();
     app.palette = if close {
         None
     } else {

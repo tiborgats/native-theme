@@ -835,6 +835,38 @@ fn a_base_widget_is_drawn_in_the_base_style() {
     }
 }
 
+/// §10.4's palette row: only Escape is two-step; a click on the backdrop closes the palette
+/// whatever its query holds (`ModalResponse::should_close`, `egui/src/containers/modal.rs:151`).
+#[test]
+fn a_click_on_the_palette_backdrop_closes_it() {
+    let mut harness = open_default();
+    harness.run();
+    harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
+    harness.run();
+    harness
+        .query_all_by_role(Role::TextInput)
+        .find(|n| n.is_focused())
+        .expect("the palette's field has focus")
+        .type_text("Pa");
+    harness.run();
+    assert_eq!(
+        harness.state().palette.as_ref().map(|p| p.query.as_str()),
+        Some("Pa")
+    );
+    // A corner of the window: the backdrop, outside the dialog's frame.
+    let corner = harness.ctx.viewport_rect().left_bottom() + egui::vec2(2.0, -2.0);
+    harness.hover_at(corner);
+    harness.step();
+    harness.drag_at(corner);
+    harness.step();
+    harness.drop_at(corner);
+    harness.run();
+    assert!(
+        harness.state().palette.is_none(),
+        "a backdrop click left the palette open while its query was not empty"
+    );
+}
+
 /// §10.4's side-panel row: a mode is egui's own theme call. The atlas carries both schemes, so
 /// a switch neither rebuilds nor reinstalls it — seen here as a selection changed behind the
 /// app's back that the switch does not install — from the Mode row as from the Theme menu.
