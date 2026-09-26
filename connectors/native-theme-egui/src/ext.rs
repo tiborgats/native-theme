@@ -138,7 +138,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// Compile an atlas from a bundled preset, including its [`LayoutTheme`](crate::LayoutTheme)
 /// (`native_theme::theme::Theme::layout`, `native-theme/src/model/mod.rs:269`) and, with
 /// feature `system-fonts`, the preset's typefaces through
-/// `fonts::FontPlan::from_system``(&light)` (`light` the resolved `ColorMode::Light`
+/// `fonts::FontPlan::from_system(&light)` (`light` the resolved `ColorMode::Light`
 /// variant), whose notes join [`ThemeAtlas::notes`](crate::ThemeAtlas::notes), as in [`from_system`]. Its
 /// [`ThemeAtlas::name`](crate::ThemeAtlas::name) is the preset's `Theme::name` (`native-theme/src/model/mod.rs:257`), as
 /// in both siblings (`connectors/native-theme-iced/src/lib.rs:260`,
@@ -264,7 +264,7 @@ pub trait SystemThemeExt: sealed::Sealed {
     /// `.icon_theme(egui::Theme::Light, light).icon_theme(egui::Theme::Dark, dark)`
     /// `.fonts(plan).build()` (each `icon_theme` only when
     /// `self.icon_theme_for(ColorMode::Light)` or `(ColorMode::Dark)` is `Some`, §9.2), `plan`
-    /// being `fonts::FontPlan::from_system``(&self.light)` with feature `system-fonts`, and no
+    /// being `fonts::FontPlan::from_system(&self.light)` with feature `system-fonts`, and no
     /// `.fonts(..)` call without. An application with fonts
     /// of its own builds through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with
     /// `.fonts(FontPlan::from_system(&light).with_base(its_defs))`; this constructor uses
