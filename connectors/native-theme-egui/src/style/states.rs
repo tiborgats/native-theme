@@ -519,6 +519,25 @@ mod tests {
         );
     }
 
+    /// §6.4, §7.2: the base style's `noninteractive.bg_fill` is a `bg_fill` like any other, so a
+    /// transparent `defaults.background_color` is written as given and reported.
+    #[test]
+    fn a_transparent_panel_colour_in_noninteractive_is_reported() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.defaults.background_color = Rgba {
+            a: 0,
+            ..t.defaults.background_color
+        };
+        let (s, notes) = base(egui::Theme::Light, &t);
+        assert_eq!(
+            s.visuals.widgets.noninteractive.bg_fill,
+            egui::Color32::TRANSPARENT
+        );
+        assert!(notes.contains(&Note::TransparentFill {
+            path: "defaults.background_color"
+        }));
+    }
+
     /// `Role::Menu`'s rule: `open` copies `hovered` (`egui/src/containers/menu.rs:382-384`).
     #[test]
     fn open_copies_hovered_when_asked() {

@@ -319,6 +319,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     // noninteractive: frames, separators, group boxes and plain labels (§5.9, §6.1)
     w.noninteractive.fg_stroke.color = to_color32(d.text_color);
     w.noninteractive.bg_fill = to_color32(d.background_color);
+    super::note_transparent_fill(w.noninteractive.bg_fill, "defaults.background_color", notes);
     w.noninteractive.weak_bg_fill = to_color32(d.background_color);
     w.noninteractive.bg_stroke = stroke(
         ["defaults.border.color", "defaults.border.line_width"],
