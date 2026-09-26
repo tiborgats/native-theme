@@ -71,6 +71,23 @@ jobs:
       - name: Build showcase
         run: cargo build -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release ${{ matrix.features }}
 
+      # The connector spec's runner checks: its two #[ignore]d tests behind
+      # `system-fonts` (`system_faces_resolve`, `system_line_spacing`) run only
+      # here, on the platforms whose fonts they resolve. `--lib`: they live in
+      # src/fonts.rs's test module. The name filter keeps the crate's other
+      # ignored test, `regenerate_mapping_md`, which rewrites src/mapping.md,
+      # out of the run. `--nocapture`: the lines they print are the evidence
+      # the spec's open verification items record.
+      - name: Runner checks (egui)
+        if: matrix.toolkit == 'egui'
+        run: cargo test -p native-theme-egui --all-features --lib -- --ignored --nocapture fonts::tests::system_
+
+      # The iced connector's macOS font checks: the showcase's two #[ignore]d
+      # runner tests, which no Linux run reaches.
+      - name: Runner checks (iced, macOS)
+        if: matrix.toolkit == 'iced' && runner.os == 'macOS'
+        run: cargo test -p native-theme-iced --example showcase-iced --features iced_aw -- --ignored --nocapture
+
       - name: Create output directory
         run: mkdir -p connectors/native-theme-${{ matrix.toolkit }}/docs/assets
         shell: bash
