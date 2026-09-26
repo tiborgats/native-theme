@@ -129,9 +129,24 @@ pub(crate) fn show(
     });
 
     caption(reg, ui, "Code view and its theme editor (the base style)");
-    let theme = state
+    // Made again when the scheme or the `Monospace` font changes — a mode switch, an install —
+    // and kept, with the editor's changes, until then.
+    let style = ui.style();
+    let font = style
+        .override_font_id
+        .clone()
+        .unwrap_or_else(|| egui::TextStyle::Monospace.resolve(style));
+    let key = (style.visuals.dark_mode, font);
+    if state
         .code_theme
-        .get_or_insert_with(|| CodeTheme::from_style(ui.style()));
+        .as_ref()
+        .is_some_and(|(held, _)| *held != key)
+    {
+        state.code_theme = None;
+    }
+    let (_, theme) = state
+        .code_theme
+        .get_or_insert_with(|| (key, CodeTheme::from_style(style)));
     let code = state.code.clone();
     demo::base(reg, ui, "code_view_ui", |ui| {
         code_view_ui(ui, theme, &code, "rs")

@@ -835,6 +835,66 @@ fn a_base_widget_is_drawn_in_the_base_style() {
     }
 }
 
+/// §10.4's Text row: the code view's colours are egui_extras's own for the scheme shown, and
+/// its font is the base style's `Monospace` slot, after a mode switch or an install as before.
+#[test]
+fn the_code_view_follows_the_scheme() {
+    let mut harness = open_page(Page::Text, egui::Theme::Light);
+    let is_dark = |h: &Harness<'_, App>| {
+        h.state()
+            .demo_state
+            .code_theme
+            .as_ref()
+            .map(|(_, t)| t.is_dark())
+    };
+    let font = |h: &Harness<'_, App>| {
+        h.state()
+            .demo_state
+            .code_theme
+            .as_ref()
+            .map(|((_, font), _)| font.clone())
+    };
+    let monospace =
+        |h: &Harness<'_, App>| egui::TextStyle::Monospace.resolve(&h.ctx.global_style());
+    assert_eq!(is_dark(&harness), Some(false));
+    let ctx = harness.ctx.clone();
+    harness
+        .state_mut()
+        .run_action(Action::SetMode(ModeChoice::Dark), &ctx);
+    harness.run_steps(3);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
+    assert_eq!(
+        is_dark(&harness),
+        Some(true),
+        "the code view kept the light scheme's colours"
+    );
+
+    // A preset whose `Monospace` slot differs from the test preset's, installed.
+    let before = monospace(&harness);
+    let prefs = AccessibilityPreferences::default();
+    let other = Theme::list_presets_for_platform()
+        .into_iter()
+        .map(|info| info.key)
+        .find(|key| {
+            from_preset(key, false, &prefs).is_ok_and(|(atlas, _)| {
+                let probe = egui::Context::default();
+                atlas.install(&probe);
+                probe.set_theme(egui::Theme::Dark);
+                egui::TextStyle::Monospace.resolve(&probe.global_style()) != before
+            })
+        })
+        .expect("a preset with another monospace font");
+    harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
+    harness.state_mut().install(&ctx);
+    harness.run_steps(3);
+    assert_ne!(monospace(&harness), before);
+    assert_eq!(
+        font(&harness),
+        Some(monospace(&harness)),
+        "the code view kept the previous preset's monospace font"
+    );
+}
+
 /// The Icons page's `ui.image` is drawn at the toolbar icon size, not at the page's width,
 /// which would push every icon row below the fold.
 #[cfg(feature = "lucide-icons")]

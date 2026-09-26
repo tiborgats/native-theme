@@ -19,6 +19,10 @@ use crate::demo::{self, Registry};
 /// `Date::constant` rejected would fail the build, never the run.
 const DEMO_DATE: jiff::civil::Date = jiff::civil::Date::constant(2026, 9, 26);
 
+/// What `CodeTheme::from_style` reads from a style: whether it is dark, and the font
+/// (`egui_extras/src/syntax_highlighting.rs:237-248`).
+pub(crate) type CodeThemeKey = (bool, egui::FontId);
+
 /// What the pages edit; the datum on display, never a theme value. Not `Debug`:
 /// egui_extras's `CodeTheme` is not.
 pub(crate) struct DemoState {
@@ -49,7 +53,8 @@ pub(crate) struct DemoState {
     pub srgba_unmultiplied: [u8; 4],
     pub rgba_premultiplied: [f32; 4],
     pub rgba_unmultiplied: [f32; 4],
-    pub code_theme: Option<egui_extras::syntax_highlighting::CodeTheme>,
+    /// The code view's theme, with the scheme and `Monospace` font it was made from.
+    pub code_theme: Option<(CodeThemeKey, egui_extras::syntax_highlighting::CodeTheme)>,
     pub table_selected: Option<usize>,
     pub window_open: bool,
     pub modal_open: bool,
