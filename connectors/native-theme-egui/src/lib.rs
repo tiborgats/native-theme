@@ -26,6 +26,8 @@
     reason = "link targets land by Task 26; Task 32 removes this line"
 )]
 
+pub mod convert;
+
 // ---- toolkit and source-crate re-exports -----------------------------------
 // Both are re-exported so a downstream `Cargo.toml` cannot introduce a second
 // copy of either crate. Two `egui` versions in one graph produce
