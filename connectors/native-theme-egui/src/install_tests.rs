@@ -2030,21 +2030,43 @@ mod t18_constructors {
             return;
         };
         // Values the detection did not return, so a field read from the wrong place shows.
+        let detected = sys.clone();
+        let factor = if detected.accessibility.text_scaling_factor == 1.5 {
+            1.75
+        } else {
+            1.5
+        };
+        let gap = if detected.layout.widget_gap == Some(11.0) {
+            12.0
+        } else {
+            11.0
+        };
         sys.mode = if sys.mode.is_dark() {
             ColorMode::Light
         } else {
             ColorMode::Dark
         };
         sys.accessibility = AccessibilityPreferences {
-            text_scaling_factor: 1.5,
+            text_scaling_factor: factor,
             reduce_motion: !sys.accessibility.reduce_motion,
             ..sys.accessibility.clone()
         };
-        sys.layout.widget_gap = Some(11.0);
+        sys.layout.widget_gap = Some(gap);
         sys.icon_set = match sys.icon_set {
             native_theme::theme::IconSet::Lucide => native_theme::theme::IconSet::Material,
             _ => native_theme::theme::IconSet::Lucide,
         };
+        assert_ne!(sys.mode, detected.mode);
+        assert_ne!(
+            sys.accessibility.text_scaling_factor,
+            detected.accessibility.text_scaling_factor
+        );
+        assert_ne!(
+            sys.accessibility.reduce_motion,
+            detected.accessibility.reduce_motion
+        );
+        assert_ne!(sys.layout.widget_gap, detected.layout.widget_gap);
+        assert_ne!(sys.icon_set, detected.icon_set);
 
         let atlas = sys.to_egui_atlas();
         assert_eq!(atlas.name(), sys.name);
@@ -2066,7 +2088,7 @@ mod t18_constructors {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             assert_eq!(
                 atlas.scheme(theme).base.spacing.item_spacing,
-                egui::vec2(11.0, 11.0)
+                egui::vec2(gap, gap)
             );
         }
         #[cfg(feature = "system-fonts")]
