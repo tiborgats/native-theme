@@ -14,6 +14,7 @@
 )]
 
 mod app;
+mod chrome;
 mod demo;
 mod pages;
 #[cfg(test)]
@@ -30,11 +31,15 @@ pub(crate) const WINDOW_TITLE: &str = concat!(
     " showcase"
 );
 
+/// The side panel's initial width. The model states no side-panel width (spec §10.4); this
+/// is the gpui showcase's `LEFT_PANEL_WIDTH_PX`
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:285`).
+pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
+
 /// The initial window size. The model states no such value (spec §10.4); this
 /// is the gpui showcase's, the side panel beside a page
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:207`, `:216-217`, `:285`).
-/// Task 34 spells the side panel's share as `LEFT_PANEL_WIDTH`.
-pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(300.0 + 880.0, 850.0);
+pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(LEFT_PANEL_WIDTH + 880.0, 850.0);
 
 /// How long `--screenshot` lets the showcase run before it captures, in seconds of
 /// `InputState::time`: the iced showcase's delay, "60 ticks × 50ms = 3s render delay"

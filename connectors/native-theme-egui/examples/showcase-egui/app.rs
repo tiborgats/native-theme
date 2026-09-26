@@ -6,6 +6,7 @@ use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
 use native_theme_egui::{SystemThemeExt as _, ThemeAtlas, from_preset};
 
+use crate::chrome::{self, Action, InspectorTab, PaletteState};
 use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, pages};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -222,6 +223,16 @@ pub(crate) struct App {
     pub(crate) theme_error: Option<String>,
     pub(crate) registry: demo::Registry,
     pub(crate) demo_state: pages::DemoState,
+    pub(crate) side_panel_visible: bool,
+    /// The command palette, while it is open.
+    pub(crate) palette: Option<PaletteState>,
+    pub(crate) preferences_open: bool,
+    pub(crate) about_open: bool,
+    pub(crate) inspector_tab: InspectorTab,
+    /// Quit was run; the close itself is `ViewportCommand::Close`.
+    pub(crate) quit_requested: bool,
+    /// Actions the chrome's widgets asked for this pass, run after the pass's input is read.
+    pub(crate) pending: Vec<Action>,
     /// The scheme the icon choice was last derived for; `None` forces a re-derive next pass.
     last_scheme: Option<egui::Theme>,
     screenshot: Option<Screenshot>,
@@ -265,6 +276,13 @@ impl App {
             theme_error,
             registry: demo::Registry::default(),
             demo_state: pages::DemoState::default(),
+            side_panel_visible: true,
+            palette: None,
+            preferences_open: false,
+            about_open: false,
+            inspector_tab: InspectorTab::Widget,
+            quit_requested: false,
+            pending: Vec::new(),
             last_scheme: None,
             screenshot,
             #[cfg(feature = "watch")]
@@ -367,8 +385,47 @@ impl App {
     }
 }
 
+impl App {
+    pub(crate) fn run_action(&mut self, action: Action, ctx: &egui::Context) {
+        match action {
+            Action::ShowPage(page) => self.settings.page = page,
+            Action::ToggleSidePanel => self.side_panel_visible = !self.side_panel_visible,
+            Action::OpenCommandPalette => self.palette = Some(PaletteState::default()),
+            Action::ReloadTheme => self.install(ctx),
+            Action::SetMode(mode) => {
+                self.settings.mode = mode;
+                self.install(ctx);
+            }
+            Action::OpenPreferences => self.preferences_open = true,
+            Action::OpenAbout => self.about_open = true,
+            Action::Quit => {
+                self.quit_requested = true;
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+            }
+        }
+        ctx.request_repaint();
+    }
+}
+
 impl eframe::App for App {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Before anything reads input (§10.4: the palette's Ctrl+K beats a focused field's own
+        // Ctrl+K). Task 35 compiles this block out on macOS outside `cfg(test)`, where the system
+        // menu owns the keys.
+        let shortcuts: Vec<Action> = ctx.input_mut(|i| {
+            Action::MENUS
+                .iter()
+                .flat_map(|(_, items)| items.iter().flatten())
+                .filter(|a| a.shortcut().is_some_and(|s| i.consume_shortcut(&s)))
+                .copied()
+                .collect()
+        });
+        for action in shortcuts
+            .into_iter()
+            .chain(std::mem::take(&mut self.pending))
+        {
+            self.run_action(action, ctx);
+        }
         #[cfg(feature = "watch")]
         if let Some(atlas) = self.watcher.as_ref().and_then(|w| w.take()) {
             atlas.install(ctx);
@@ -415,7 +472,21 @@ impl eframe::App for App {
 
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         self.registry.begin_pass();
-        egui::CentralPanel::default().show(ui, |ui| pages::show(self, ui));
+        chrome::chrome_bar(self, ui);
+        chrome::status_bar(self, ui);
+        chrome::side_panel(self, ui);
+        ui.reset_style();
+        chrome::central_panel(self, ui, |app, ui| {
+            egui::ScrollArea::vertical().show(ui, |ui| pages::show(app, ui));
+        });
+        chrome::command_palette(self, ui);
+        chrome::preferences(self, ui);
+        chrome::about(self, ui);
+        let pending = std::mem::take(&mut self.pending);
+        let ctx = ui.ctx().clone();
+        for action in pending {
+            self.run_action(action, &ctx);
+        }
     }
 
     fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {

@@ -11,8 +11,6 @@ pub(crate) mod range;
 pub(crate) mod selection;
 pub(crate) mod text;
 
-use native_theme_egui::Surface;
-
 use crate::app::{App, Page};
 use crate::demo::{self, Registry};
 
@@ -117,16 +115,9 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         demo_state,
         atlas,
         settings,
-        theme_error,
         ..
     } = app;
-    if let Some(error) = theme_error.as_deref() {
-        // Task 34 moves this card into the chrome's central panel.
-        demo::framed(registry, ui, Surface::Card, None, "theme error", |ui, _| {
-            ui.colored_label(ui.visuals().error_fg_color, error);
-        });
-    }
-    egui::ScrollArea::vertical().show(ui, |ui| match settings.page {
+    match settings.page {
         Page::Buttons => buttons::show(registry, demo_state, atlas, ui, &chosen),
         Page::Selection => selection::show(registry, demo_state, atlas, ui),
         Page::Inputs => inputs::show(registry, demo_state, atlas, ui),
@@ -137,5 +128,5 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         Page::Data => data::show(registry, demo_state, atlas, ui),
         Page::Overlays => overlays::show(registry, demo_state, atlas, ui, &chosen),
         Page::Icons => icons::show(registry, demo_state, atlas, ui, &chosen),
-    });
+    }
 }
