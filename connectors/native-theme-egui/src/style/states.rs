@@ -170,37 +170,41 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
 
     if let Some(b) = &src.border {
         let [color_path, radius_path, width_path] = b.paths;
-        let entries: Vec<&mut WidgetVisuals> = match b.entries {
-            BorderEntries::Interactive => vec![
-                &mut widgets.inactive,
-                &mut widgets.hovered,
-                &mut widgets.active,
-                &mut widgets.open,
-            ],
-            BorderEntries::All => vec![
-                &mut widgets.noninteractive,
-                &mut widgets.inactive,
-                &mut widgets.hovered,
-                &mut widgets.active,
-                &mut widgets.open,
-            ],
+        // one stroke and one radius per kind of entry, each over its resting entry's own:
+        // egui's stock entries differ (`egui/src/style.rs:1693-1720`), and a hover that
+        // fell back to its own would show egui's look, not the platform's (§6.1)
+        let over = |own: &WidgetVisuals, notes: &mut Vec<Note>| {
+            (
+                stroke(
+                    [color_path, width_path],
+                    own.bg_stroke,
+                    b.border.color,
+                    b.border.line_width,
+                    b.opacity,
+                    notes,
+                ),
+                radius(
+                    radius_path,
+                    own.corner_radius,
+                    b.border.corner_radius,
+                    notes,
+                ),
+            )
         };
-        for entry in entries {
-            // one stroke and one radius in every entry the role writes, each over that entry's own
-            entry.bg_stroke = stroke(
-                [color_path, width_path],
-                entry.bg_stroke,
-                b.border.color,
-                b.border.line_width,
-                b.opacity,
-                notes,
-            );
-            entry.corner_radius = radius(
-                radius_path,
-                entry.corner_radius,
-                b.border.corner_radius,
-                notes,
-            );
+        if matches!(b.entries, BorderEntries::All) {
+            let (bg_stroke, corner_radius) = over(&widgets.noninteractive, notes);
+            widgets.noninteractive.bg_stroke = bg_stroke;
+            widgets.noninteractive.corner_radius = corner_radius;
+        }
+        let (bg_stroke, corner_radius) = over(&widgets.inactive, notes);
+        for entry in [
+            &mut widgets.inactive,
+            &mut widgets.hovered,
+            &mut widgets.active,
+            &mut widgets.open,
+        ] {
+            entry.bg_stroke = bg_stroke;
+            entry.corner_radius = corner_radius;
         }
     }
 }
@@ -332,6 +336,78 @@ mod tests {
                     t.button.border.corner_radius
                 ),
                 "{preset}"
+            );
+        }
+    }
+
+    /// §6.1 with a non-finite border: the fallback is `inactive`'s own stroke width and radius,
+    /// taken once for every interactive entry, so egui's stock hovered radius `3` and its
+    /// `0` / `1` stroke widths (`egui/src/style.rs:1693-1720`, `:1737-1765`) never reappear.
+    #[test]
+    fn a_non_finite_border_falls_back_to_one_value_in_every_interactive_entry() {
+        for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+            let mut t = resolved("adwaita", ColorMode::Light);
+            t.button.border.corner_radius = f32::NAN;
+            t.button.border.line_width = f32::INFINITY;
+            let (s, _) = base(scheme, &t);
+            let w = &s.visuals.widgets;
+            for e in [&w.hovered, &w.active, &w.open] {
+                assert_eq!(e.bg_stroke, w.inactive.bg_stroke, "{scheme:?}");
+                assert_eq!(e.corner_radius, w.inactive.corner_radius, "{scheme:?}");
+            }
+
+            let mut widgets = scheme.default_style().visuals.widgets;
+            let own = widgets.clone();
+            let mut notes = Vec::new();
+            write_states(
+                &mut widgets,
+                &StateSource {
+                    fill: None,
+                    text: None,
+                    border: Some(BorderSource {
+                        border: &t.button.border,
+                        opacity: 1.0,
+                        paths: ["test.color", "test.corner_radius", "test.line_width"],
+                        entries: BorderEntries::All,
+                    }),
+                    open: OpenFrom::Inactive,
+                },
+                &mut notes,
+            );
+            for e in [&widgets.hovered, &widgets.active, &widgets.open] {
+                assert_eq!(e.bg_stroke, widgets.inactive.bg_stroke, "{scheme:?}");
+                assert_eq!(
+                    e.corner_radius, widgets.inactive.corner_radius,
+                    "{scheme:?}"
+                );
+            }
+            assert_eq!(
+                widgets.inactive.corner_radius, own.inactive.corner_radius,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                widgets.inactive.bg_stroke.width, own.inactive.bg_stroke.width,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                widgets.noninteractive.corner_radius, own.noninteractive.corner_radius,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                widgets.noninteractive.bg_stroke.width, own.noninteractive.bg_stroke.width,
+                "{scheme:?}"
+            );
+            assert_eq!(
+                notes,
+                vec![
+                    Note::ValueSanitised {
+                        path: "test.line_width"
+                    },
+                    Note::ValueSanitised {
+                        path: "test.corner_radius"
+                    },
+                ],
+                "{scheme:?}"
             );
         }
     }
