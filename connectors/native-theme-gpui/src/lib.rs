@@ -160,6 +160,11 @@ use std::rc::Rc;
 ///
 /// Note: `is_dark` is an explicit parameter here, unlike the iced connector
 /// which derives it from background luminance. Planned for unification in v0.6.0.
+///
+/// On macOS the stated family of the system UI font, "SF Pro", is passed to
+/// gpui as its own alias `.SystemUIFont`, so Core Text supplies the system
+/// font itself; `mono_font_family` and every other family are passed as
+/// stated (`ui_font_family`).
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
     resolved: &ResolvedTheme,
@@ -181,7 +186,7 @@ pub fn to_theme(
     // Hsla::transparent_black() and is intentionally left unchanged.
     // It's used internally by gpui-component for transparent overlays.
     theme.mode = mode;
-    theme.font_family = SharedString::from(d.font.family.clone());
+    theme.font_family = ui_font_family(&d.font.family, cfg!(target_os = "macos"));
     // §3.4: Root sets the window rem to font_size (gpui-component
     // src/root.rs:582), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
@@ -452,6 +457,28 @@ pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
 pub(crate) fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
     let s = prefs.text_scaling_factor;
     if s.is_finite() && s > 0.0 { s } else { 1.0 }
+}
+
+/// The family gpui is asked to draw `family` in. On macOS (`macos`), the
+/// system UI font's stated family — "SF Pro" caselessly,
+/// `native_theme::fonts::is_macos_system_ui_family` — becomes gpui's own
+/// alias `.SystemUIFont`, "used to identify the system UI font, which varies
+/// based on platform" (gpui-pre 0.3.6 `src/text_system.rs` line 1295): gpui's
+/// macOS text system maps it to `.AppleSystemUIFont` through
+/// `font_name_with_fallbacks` (gpui-pre 0.3.6 `src/text_system.rs` lines 1420–1430,
+/// gpui-pre-macos 0.3.6 `src/text_system.rs` line 282) and looks that up among
+/// its memory fonts first, then in the system source (lines 286–289), so Core
+/// Text supplies its own system UI font. Every other family, and every
+/// family elsewhere, is passed as stated: fontdb-style databases file the
+/// font under `.SF NS`, but gpui does not draw from one. The platform is a
+/// parameter so the unit test runs on every platform; the callers pass
+/// `cfg!(target_os = "macos")`.
+pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> SharedString {
+    if macos && native_theme::fonts::is_macos_system_ui_family(family) {
+        SharedString::from(".SystemUIFont")
+    } else {
+        SharedString::from(family.clone())
+    }
 }
 
 // --- Issue 36: Line height multiplier ---
@@ -1049,6 +1076,24 @@ mod tests {
         variant
             .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate")
+    }
+
+    /// On macOS the system UI font's stated family becomes gpui's own alias
+    /// for it, `.SystemUIFont`; every other family, and every family on
+    /// another platform, stays as stated (egui spec §8.8). The platform is
+    /// a parameter, so this runs everywhere.
+    #[test]
+    fn the_macos_system_ui_font_is_gpuis_alias_only_on_macos() {
+        for name in ["SF Pro", "sf pro"] {
+            let family = std::sync::Arc::<str>::from(name);
+            assert_eq!(ui_font_family(&family, true).as_ref(), ".SystemUIFont");
+            assert_eq!(ui_font_family(&family, false).as_ref(), name);
+        }
+        for name in ["SF Mono", "SF Pro Text", "Inter"] {
+            let family = std::sync::Arc::<str>::from(name);
+            assert_eq!(ui_font_family(&family, true).as_ref(), name);
+            assert_eq!(ui_font_family(&family, false).as_ref(), name);
+        }
     }
 
     fn scaled(factor: f32) -> AccessibilityPreferences {

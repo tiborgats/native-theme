@@ -188,7 +188,17 @@ impl Inspector {
         // out with.
         let font_rows = match &fonts {
             Some((font, mono)) => vec![
-                ("font_family", font.family.to_string()),
+                (
+                    "font_family",
+                    if theme.font_family.as_ref() == ".SystemUIFont" {
+                        format!(
+                            "{} (drawn as the system UI font, .SystemUIFont)",
+                            font.family
+                        )
+                    } else {
+                        font.family.to_string()
+                    },
+                ),
                 ("font_size", defined_size(font)),
                 ("mono_font_family", mono.family.to_string()),
                 ("mono_font_size", defined_size(mono)),

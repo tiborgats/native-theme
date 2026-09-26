@@ -1118,14 +1118,20 @@ fn main() {
             app::init(cx);
 
             let bounds = Bounds::centered(None, WINDOW_SIZE, cx);
+            let mut showcase_entity = None;
             let window_handle = cx.open_window(window_options(bounds), |window, cx| {
                 let showcase = cx.new(|cx| {
                     let mut s = Showcase::new(window, cx);
                     apply_cli_args(&mut s, &cli_args, window, cx);
                     s
                 });
+                showcase_entity = Some(showcase.clone());
                 cx.new(|cx| Root::new(showcase, window, cx))
             });
+            // Read only by the macOS `--screenshot` block below; elsewhere this
+            // read keeps rustc's "assigned to, but never used" warning away.
+            #[cfg(not(target_os = "macos"))]
+            let _ = &showcase_entity;
             let Ok(window_handle) = window_handle else {
                 eprintln!("Fatal: failed to open main application window");
                 cx.quit();
@@ -1149,6 +1155,21 @@ fn main() {
             if let Some(screenshot_path) = cli_args.screenshot.as_ref() {
                 #[cfg(target_os = "macos")]
                 {
+                    // Whether gpui's font names hold the stated monospace
+                    // family, "SF Mono" under macos-sonoma: UNVERIFIED (egui
+                    // spec §15). Printed for Task 39's log, never asserted.
+                    // In the application because a `#[gpui::test]` cannot
+                    // ask: `TestAppContext::build` gives gpui's
+                    // `NoopTextSystem` (gpui-pre 0.3.6
+                    // src/app/test_context.rs:131, src/platform/test/platform.rs:124-131).
+                    if let Some(showcase) = &showcase_entity {
+                        let mono = showcase.read(cx).original_mono_font.family.clone();
+                        let names = cx.text_system().all_font_names();
+                        let held = names.iter().any(|name| name.as_str() == mono.as_ref());
+                        println!(
+                            "font-names: stated mono family {mono:?} in gpui's font names: {held}"
+                        );
+                    }
                     let path = screenshot_path.clone();
                     let any_handle = *window_handle;
                     cx.spawn(async move |cx| {

@@ -24,6 +24,11 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// to hex strings, so the config can be serialized/deserialized losslessly.
 ///
 /// Fields not explicitly set inherit from `ThemeConfig::default()`.
+///
+/// On macOS the stated family of the system UI font, "SF Pro", is passed to
+/// gpui as its own alias `.SystemUIFont`, so Core Text supplies the system
+/// font itself; `mono_font_family` and every other family are passed as
+/// stated (`ui_font_family`).
 pub fn to_theme_config(
     resolved: &ResolvedTheme,
     name: &str,
@@ -60,7 +65,10 @@ pub fn to_theme_config(
         // Font sizes are in logical pixels (pt-to-px conversion handled during
         // resolution). Scaled (§3.4, §5.3) so Theme::change reproduces the
         // scaled sizes.
-        font_family: Some(SharedString::from(d.font.family.clone())),
+        font_family: Some(crate::ui_font_family(
+            &d.font.family,
+            cfg!(target_os = "macos"),
+        )),
         font_size: Some(d.font.size * s),
         mono_font_family: Some(SharedString::from(d.mono_font.family.clone())),
         mono_font_size: Some(d.mono_font.size * s),
