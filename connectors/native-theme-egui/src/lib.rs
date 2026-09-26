@@ -27,6 +27,8 @@
 )]
 
 pub mod convert;
+#[cfg(test)]
+mod tripwires;
 
 // ---- toolkit and source-crate re-exports -----------------------------------
 // Both are re-exported so a downstream `Cargo.toml` cannot introduce a second
