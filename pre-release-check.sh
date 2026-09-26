@@ -300,10 +300,10 @@ fi
 # panic-prone lint set using type-aware analysis.
 PANIC_FOUND=0
 PANIC_HITS_ALL=""
-for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src; do
+for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src; do
     if [ -d "$src_dir" ]; then
         HITS=$(python3 -c "
-import sys, re, glob
+import sys, re, glob, os
 
 def scan_file(path):
     issues = []
@@ -348,9 +348,31 @@ def scan_file(path):
             issues.append(f'{path}:{i}: [Instant::now() arithmetic; use checked_add/checked_sub] {s}')
     return issues
 
+# A file whose module its parent declares under #[cfg(test)] (mod name;) is a
+# #[cfg(test)] block kept in a file of its own: compiled for tests only, so it is
+# skipped as the in-file blocks are.
+def test_only_files(files):
+    skip = set()
+    for f in files:
+        base, name = os.path.split(f)
+        child_dir = base if name in ('lib.rs', 'main.rs', 'mod.rs') else os.path.join(base, name[:-3])
+        with open(f) as fh:
+            lines = fh.read().split('\n')
+        for i, line in enumerate(lines):
+            if not re.match(r'\s*#\[cfg\(test\)\]\s*$', line):
+                continue
+            nxt = next((x for x in lines[i + 1:] if x.strip()), '')
+            m = re.match(r'\s*(pub(\(crate\))?\s+)?mod\s+(\w+)\s*;', nxt)
+            if m:
+                skip.add(os.path.join(child_dir, m.group(3) + '.rs'))
+                skip.add(os.path.join(child_dir, m.group(3), 'mod.rs'))
+    return skip
+
 issues = []
-for f in glob.glob('${src_dir}/**/*.rs', recursive=True):
-    if f.endswith('/tests.rs'):
+files = glob.glob('${src_dir}/**/*.rs', recursive=True)
+skip = test_only_files(files)
+for f in files:
+    if f.endswith('/tests.rs') or f in skip:
         continue
     issues.extend(scan_file(f))
 for issue in issues:
@@ -516,6 +538,8 @@ run_check "strict-panic (native-theme-iced)" \
     cargo clippy -p native-theme-iced --lib -- "${STRICT_PANIC_LINTS[@]}"
 run_check_soft "strict-panic (native-theme-gpui)" \
     cargo clippy -p native-theme-gpui --lib -- "${STRICT_PANIC_LINTS[@]}"
+run_check "strict-panic (native-theme-egui)" \
+    cargo clippy -p native-theme-egui --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests
@@ -551,6 +575,26 @@ run_tests "test (native-theme-iced, iced_aw)" \
     cargo test -p native-theme-iced --features iced_aw
 run_check "clippy (native-theme-iced, iced_aw)" \
     cargo clippy -p native-theme-iced --all-targets --features iced_aw -- -D warnings
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: egui connector configurations
+#
+# The per-crate loops above run the connector with its default features only.
+# Its other two supported configurations are gated here: `--no-default-features`
+# (no icon or system-font support) and `--all-features` (`svg-rasterize` and
+# `watch` too) (spec §11); Task 37 adds the same two to CI. `cargo tree -d`
+# must list no second `skrifa`: this crate names skrifa at epaint's own
+# requirement so that one parser serves both (spec §11, §13 T7).
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "egui connector configurations"
+run_tests "test (native-theme-egui, no features)" \
+    cargo test -p native-theme-egui --no-default-features
+run_tests "test (native-theme-egui, all features)" \
+    cargo test -p native-theme-egui --all-features
+run_check "clippy (native-theme-egui, all features)" \
+    cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings
+run_check "one skrifa (native-theme-egui)" \
+    bash -c 'out=$(cargo tree -p native-theme-egui --target all -d) && ! grep -q "^skrifa " <<<"$out"'
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: examples (only crates with an examples/ directory)
@@ -619,6 +663,10 @@ done
 # feature gate can only break there. No other gate documents that configuration.
 run_check "docs (native-theme-iced, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-iced --no-deps --all-features
+# docs.rs builds native-theme-egui with every feature too (its
+# `[package.metadata.docs.rs]` says `all-features = true`).
+run_check "docs (native-theme-egui, all features)" \
+    env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui --no-deps --all-features
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: packaging

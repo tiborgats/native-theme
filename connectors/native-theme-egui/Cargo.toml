@@ -1,0 +1,78 @@
+[package]
+name = "native-theme-egui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# NOT `rust-version.workspace = true` — egui 0.36.2 declares 1.95, above the
+# 1.88.0 workspace floor. See §12.4.
+rust-version = "1.95"
+repository.workspace = true
+homepage.workspace = true
+keywords = ["theme", "egui", "gui", "native", "colors"]
+categories = ["gui", "config"]
+readme = "README.md"
+description = "egui toolkit connector for native-theme"
+
+[package.metadata.docs.rs]
+all-features = true
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+
+[features]
+# The native look is not opt-in (§12.1): everything that serves it without
+# application code is on by default. `svg-rasterize` and `watch` stay opt-in.
+default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]
+material-icons = ["native-theme/material-icons"]
+lucide-icons  = ["native-theme/lucide-icons"]
+system-icons  = ["native-theme/system-icons"]
+svg-rasterize = ["native-theme/svg-rasterize"]
+system-fonts  = ["native-theme/system-fonts"]
+watch         = ["native-theme/watch"]
+
+[dependencies]
+egui = "0.36.2"
+native-theme = { workspace = true }
+# `fonts::font_definitions` drops a face epaint could not parse before epaint
+# sees it (§8): `FontRef::from_index` is the one fallible step of epaint's
+# `FontFace::new` (`epaint/src/text/font.rs:386-388`). `Builder::build` reads
+# the face metrics epaint's row height is made of (§6.15). The requirement is
+# epaint 0.36.2's own (`epaint/Cargo.toml:149-155`), so cargo resolves one
+# `skrifa` for both — checked by `cargo tree -d` (§13 T7).
+skrifa = { version = "0.44.0", default-features = false, features = ["std"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+native-theme = { workspace = true, features = ["linux"] }
+[target.'cfg(target_os = "macos")'.dependencies]
+native-theme = { workspace = true, features = ["macos"] }
+[target.'cfg(target_os = "windows")'.dependencies]
+native-theme = { workspace = true, features = ["windows"] }
+
+[dev-dependencies]
+eframe = "0.36.2"
+# The showcase's palette is every widget egui_extras offers (§10.4): `svg` for
+# the icons, `datepicker` for `DatePickerButton`. Not `syntect`: without it
+# `code_view_ui` highlights with egui_extras's own fallback.
+egui_extras = { version = "0.36.2", default-features = false, features = ["svg", "datepicker"] }
+# `DatePickerButton::new` takes a `&mut jiff::civil::Date`
+# (`egui_extras/src/datepicker/button.rs:29`), and egui_extras re-exports no
+# `jiff`. Its `datepicker` feature turns on the `jiff` 0.2.35 dependency with
+# `std`, `tz-system` and `js` (`egui_extras/Cargo.toml:65`, `:127-135`), which
+# unifies with this one.
+jiff = { version = "0.2.35", default-features = false }
+# The showcase's self-tests (§13 T11) drive its real `eframe::App` headlessly
+# and click it through AccessKit. `eframe` enables `HarnessBuilder::build_eframe`;
+# neither `wgpu` nor `snapshot`: nothing is rasterised and no baseline is kept
+# (rationale §8, Q-3).
+egui_kittest = { version = "0.36.2", features = ["eframe"] }
+# `--screenshot` (§10.4) writes the captured frame as a PNG.
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+# §13 T2 and T10 parse `mapping.toml`; T3 walks `serde_json::to_value(&resolved)`;
+# the showcase's Widget Info does both (§10.4).
+# Neither crate is reachable transitively: `native-theme` depends on `toml`
+# (`native-theme/Cargo.toml:55`) but re-exports it nowhere, and its own
+# `serde_json` is dev-only (`native-theme/Cargo.toml:125`).
+serde_json = "1.0.151"
+toml = { workspace = true }
