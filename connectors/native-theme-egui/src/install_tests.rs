@@ -1069,6 +1069,56 @@ mod t6_fonts {
         }
     }
 
+    /// T6 (b): every face of the plan is validated before one is chosen (§8.2), so a broken
+    /// best match does not hide a valid face of its family, and a broken face the theme never
+    /// asks for still gets its note.
+    #[test]
+    fn t6_b_every_face_is_validated_before_one_is_chosen() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.defaults.font.family = Arc::from("Probe");
+        t.defaults.font.weight = 400;
+        t.defaults.font.style = FontStyle::Normal;
+        t.defaults.mono_font.family = Arc::from("Probe Mono");
+        t.defaults.mono_font.weight = 400;
+        t.defaults.mono_font.style = FontStyle::Normal;
+        let garbage = FontBytes::Static(b"this is not a font file");
+        let plan = FontPlan::new()
+            .face("Probe", 400, FontStyle::Normal, garbage.clone())
+            .face("Probe", 700, FontStyle::Normal, FontBytes::Static(hack()))
+            .face("Other", 400, FontStyle::Normal, garbage)
+            .face(
+                "Probe Mono",
+                400,
+                FontStyle::Normal,
+                FontBytes::Static(hack()),
+            );
+        let (defs, notes) = font_definitions(&t, &plan);
+        let head = defs
+            .families
+            .get(&FontFamily::Proportional)
+            .and_then(|chain| chain.first())
+            .and_then(|name| defs.font_data.get(name))
+            .unwrap();
+        assert!(
+            head.font.as_ref() == hack(),
+            "the valid 700 face heads the chain"
+        );
+        assert_eq!(
+            notes,
+            vec![
+                Note::FontDataInvalid {
+                    family: Arc::from("Probe")
+                },
+                Note::FontDataInvalid {
+                    family: Arc::from("Other")
+                },
+                Note::FontWeightAxisUnsupported {
+                    family: Arc::from("Probe")
+                },
+            ]
+        );
+    }
+
     /// T6 (b): a base that binds neither family still gives definitions that bind both, however
     /// few of the plan's faces survive, so the unbound-family panic
     /// (`epaint/src/text/fonts.rs:1025`) stays unreachable; an empty chain lays text out.

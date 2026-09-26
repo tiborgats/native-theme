@@ -48,6 +48,15 @@ pub(crate) struct PlannedFace {
     pub(crate) index: u32,
 }
 
+impl PlannedFace {
+    fn bytes(&self) -> &[u8] {
+        match &self.bytes {
+            FontBytes::Static(bytes) => bytes,
+            FontBytes::Shared(bytes) => bytes,
+        }
+    }
+}
+
 /// Which faces the application has bytes for, and the choice among them.
 ///
 /// The choice is made by `native_theme::fonts::select_face` (§8.2), the pure function
@@ -190,23 +199,25 @@ impl FontPlan {
             ..self
         }
     }
+}
 
-    /// The registered face `select_face` picks for `spec`, by the rule on [`FontPlan`]: every
-    /// face described at width `5`, its own weight, or the asked weight for a variable face.
-    fn select(&self, spec: &ResolvedFontSpec) -> Option<&PlannedFace> {
-        let names: Vec<[&str; 1]> = self.faces.iter().map(|f| [&*f.family]).collect();
-        let traits: Vec<FaceTraits<'_>> = names
-            .iter()
-            .zip(&self.faces)
-            .map(|(families, face)| FaceTraits {
-                families,
-                width: 5,
-                style: face.style,
-                weight: face.weight.unwrap_or(spec.weight),
-            })
-            .collect();
-        select_face(&traits, &spec.family, spec.weight, spec.style).and_then(|i| self.faces.get(i))
-    }
+/// The face among `faces` that `select_face` picks for `spec`, by the rule on [`FontPlan`]:
+/// every face described at width `5`, its own weight, or the asked weight for a variable face.
+fn select<'a>(faces: &[&'a PlannedFace], spec: &ResolvedFontSpec) -> Option<&'a PlannedFace> {
+    let names: Vec<[&str; 1]> = faces.iter().map(|f| [&*f.family]).collect();
+    let traits: Vec<FaceTraits<'_>> = names
+        .iter()
+        .zip(faces)
+        .map(|(families, face)| FaceTraits {
+            families,
+            width: 5,
+            style: face.style,
+            weight: face.weight.unwrap_or(spec.weight),
+        })
+        .collect();
+    select_face(&traits, &spec.family, spec.weight, spec.style)
+        .and_then(|i| faces.get(i))
+        .copied()
 }
 
 /// Build a `FontDefinitions` that puts the theme's faces at the head of egui's `Proportional`
@@ -228,9 +239,11 @@ impl FontPlan {
 /// latter to empty chains, which lay text out without a panic — so the `or_default` only
 /// matters for a hand-built base.
 ///
-/// A face whose bytes fail epaint's parse, or whose `head` states a zero `unitsPerEm` (§8.2),
-/// is not added, and the returned `Vec` carries a [`crate::Note::FontDataInvalid`] for it; the
-/// family's chain is then left as the base had it. The `Vec` also carries the notes the plan
+/// Every face of the plan is validated before one is chosen (§8.2): a face whose bytes fail
+/// epaint's parse, or whose `head` states a zero `unitsPerEm`, is never a candidate, and the
+/// returned `Vec` carries a [`crate::Note::FontDataInvalid`] for its family, whether or not
+/// the theme asks for it; the choice is made among the faces that remain, and a family none
+/// of whose faces remains is left as the base had it. The `Vec` also carries the notes the plan
 /// holds from `FontPlan::from_system`. Faces already in the base are the caller's and are
 /// not checked.
 #[must_use]
@@ -246,6 +259,22 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
         // An empty plan asks for nothing: the base alone, no note (§4.9, §8.2's first row).
         return (defs, notes);
     }
+    // Every face is validated before one is chosen (§8.2), so a face that fails the parse
+    // never hides a valid one of its family and is reported even when no spec asks for it.
+    let all: Vec<&PlannedFace> = plan.faces.iter().collect();
+    let mut valid = Vec::with_capacity(all.len());
+    for &face in &all {
+        if parses(face.bytes(), face.index) {
+            valid.push(face);
+        } else {
+            push_note(
+                &mut notes,
+                Note::FontDataInvalid {
+                    family: Arc::clone(&face.family),
+                },
+            );
+        }
+    }
     for (family, spec, key) in [
         (
             FontFamily::Proportional,
@@ -258,7 +287,7 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
             MONOSPACE_KEY,
         ),
     ] {
-        let Some(face) = plan.select(spec) else {
+        if select(&all, spec).is_none() {
             // `push_note`: a `from_system` plan already carries this note for a family the OS
             // has no face of (§4.9); it is reported once.
             push_note(
@@ -268,21 +297,16 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
                 },
             );
             continue;
+        }
+        // `None` here: every face of the family failed the parse, and each has its note.
+        let Some(face) = select(&valid, spec) else {
+            continue;
         };
         let mut data = match &face.bytes {
             FontBytes::Static(bytes) => FontData::from_static(bytes),
             FontBytes::Shared(bytes) => FontData::from_owned(bytes.to_vec()),
         };
         data.index = face.index;
-        if !parses(&data) {
-            push_note(
-                &mut notes,
-                Note::FontDataInvalid {
-                    family: Arc::clone(&face.family),
-                },
-            );
-            continue;
-        }
         let own_weight_serves = face.weight == Some(spec.weight);
         if !own_weight_serves && !supports_weight_axis(&data) {
             push_note(
@@ -306,9 +330,9 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
 /// The parse epaint makes when it loads a face — `skrifa::FontRef::from_index`
 /// (`epaint/src/text/font.rs:386-388`) — plus the zero-`unitsPerEm` check epaint does not
 /// make: its `px_scale_factor` divides by `units_per_em` (`epaint/src/text/font.rs:215-218`; §8.2).
-fn parses(data: &FontData) -> bool {
+fn parses(bytes: &[u8], index: u32) -> bool {
     use skrifa::MetadataProvider as _;
-    skrifa::FontRef::from_index(data.font.as_ref(), data.index).is_ok_and(|font| {
+    skrifa::FontRef::from_index(bytes, index).is_ok_and(|font| {
         font.metrics(
             skrifa::instance::Size::unscaled(),
             skrifa::instance::LocationRef::default(),
