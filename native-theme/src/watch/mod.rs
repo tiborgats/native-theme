@@ -32,8 +32,9 @@
 //! - [`ThemeSubscription::new(tx, handle, platform_shutdown)`] -- the optional
 //!   `platform_shutdown` closure wakes the background thread's event loop on
 //!   platforms where dropping the channel sender alone is not sufficient
-//!   (`CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on Windows).
-//!   Pass `None` on Linux where inotify/D-Bus poll the channel directly.
+//!   (`CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on Windows,
+//!   `Connection::close` on GNOME's D-Bus signal iterator). Pass `None` on
+//!   KDE, where inotify polls the channel directly.
 //!
 //! # Signal-only events
 //!
@@ -147,7 +148,8 @@ impl ThemeSubscription {
     /// The `platform_shutdown` closure (if `Some`) is called **before** the
     /// channel is dropped during `Drop`, allowing platform backends to wake
     /// their blocked event loops so the thread can observe the disconnect.
-    /// Pass `None` on Linux where the channel disconnect alone suffices.
+    /// Pass `None` on KDE, where the inotify loop polls the channel; GNOME's
+    /// backend closes its D-Bus connection here.
     ///
     /// Compiled where a backend exists to call it, and for tests.
     #[cfg(any(
@@ -172,8 +174,8 @@ impl ThemeSubscription {
 impl Drop for ThemeSubscription {
     fn drop(&mut self) {
         // Run the platform-specific shutdown action first (e.g. CFRunLoop::stop
-        // on macOS, PostThreadMessageW WM_QUIT on Windows) to wake the blocked
-        // event loop so it can observe the channel disconnect.
+        // on macOS, PostThreadMessageW WM_QUIT on Windows, Connection::close on
+        // GNOME) to wake the blocked event loop so it can observe the channel disconnect.
         if let Some(shutdown_fn) = self.platform_shutdown.take() {
             shutdown_fn();
         }

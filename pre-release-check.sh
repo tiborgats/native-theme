@@ -557,6 +557,11 @@ done
 # compile without it. Same soft class as the connector's default test.
 run_tests_soft "test (native-theme-gpui, no features)" \
     cargo test -p native-theme-gpui --lib --no-default-features
+# The GNOME watcher's shutdown (native-theme/src/watch/gnome.rs) is tested
+# only under `portal` + `watch`, which the default features leave off; the
+# test discriminates on a desktop whose session bus runs xdg-desktop-portal.
+run_tests "test (native-theme, portal+watch: the watch module)" \
+    cargo test -p native-theme --features portal,watch --lib watch::
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: iced connector configurations
