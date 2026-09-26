@@ -709,23 +709,14 @@ fn dedup(notes: &[Note]) -> Vec<&Note> {
     out
 }
 
-/// The notes a hostile float can cause. The others — `TransparentFill` (windows-11's
-/// `#f9f9f900` checkbox, `native-theme/src/presets/windows-11.toml:133`), the font notes — come
-/// from the preset itself, not from the value under test.
-fn value_notes(notes: &[Note]) -> Vec<Note> {
-    notes
-        .iter()
-        .filter(|n| matches!(n, Note::ValueSanitised { .. } | Note::ValueSaturated { .. }))
-        .cloned()
-        .collect()
-}
-
-/// `got`'s value notes equal the unmutated atlas's (`baseline`) plus `predicted`, as sets.
+/// `got` equals the unmutated atlas's notes (`baseline`) plus `predicted`, as sets, over every
+/// note kind: a kind a hostile float does not cause — `TransparentFill` (windows-11's
+/// `#f9f9f900` checkbox, `native-theme/src/presets/windows-11.toml:133`), the font notes — must
+/// be exactly the baseline's.
 fn assert_same_notes(got: &[Note], baseline: &[Note], predicted: Vec<Note>, ctx: &str) {
-    let got = value_notes(got);
-    let mut want = value_notes(baseline);
+    let mut want = baseline.to_vec();
     want.extend(predicted);
-    let (got, want) = (dedup(&got), dedup(&want));
+    let (got, want) = (dedup(got), dedup(&want));
     for n in &got {
         assert!(want.contains(n), "{ctx}: unexpected {n:?}");
     }
