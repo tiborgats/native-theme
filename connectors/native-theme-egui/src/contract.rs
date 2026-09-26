@@ -1186,6 +1186,31 @@ fn pair_ratio(fg: Straight, bg: Straight, surface: Straight) -> f32 {
     contrast_ratio(over(fg, bg), bg)
 }
 
+/// The rounding floor of a pair whose fill is a translucent layer (§13 T12): the lowest ratio
+/// over every fill composite whose red, green and blue each differ from the exact composite by
+/// at most one `u8` step — what `composite_over`'s rounding to `u8` (§7.2) can cost, and no more.
+fn rounding_floor(fg: Straight, bg: Straight, surface: Straight) -> f32 {
+    let exact = over(bg, surface);
+    let step = 1.0 / 255.0;
+    let nudged = |v: f32, k: f32| (v + k * step).clamp(0.0, 1.0);
+    let steps = [-1.0, 0.0, 1.0];
+    let mut floor = f32::INFINITY;
+    for kr in steps {
+        for kg in steps {
+            for kb in steps {
+                let fill = Straight {
+                    r: nudged(exact.r, kr),
+                    g: nudged(exact.g, kg),
+                    b: nudged(exact.b, kb),
+                    a: exact.a,
+                };
+                floor = floor.min(contrast_ratio(over(fg, fill), fill));
+            }
+        }
+    }
+    floor
+}
+
 struct Pair {
     what: &'static str,
     /// The egui painting site that combines the two.
@@ -1196,7 +1221,8 @@ struct Pair {
     native: fn(&ResolvedTheme) -> (Rgba, Rgba, Rgba),
     /// Both colours from one native widget's pair (§13 T12): asserted; else printed.
     asserted: bool,
-    /// `[("preset/mode", "why")]`: a combination on which the pair legitimately degrades.
+    /// `[("preset/mode", "why")]`: a combination on which the pair may fall below the native
+    /// ratio by `composite_over`'s `u8` rounding alone; it is held to its `rounding_floor`.
     exceptions: &'static [(&'static str, &'static str)],
 }
 
@@ -1287,9 +1313,10 @@ const PAIRS: &[Pair] = &[
             )
         },
         asserted: true,
-        // windows-11's button hover layer is translucent (§6.1): `composite_over` blends in premultiplied gamma space and rounds to `u8`
-        // (`ecolor/src/color32.rs:343-345`, §7.2), the native pair here in straight-alpha
-        // `f32`, so the two differ by rounding alone — 15.685 against 15.696, both far above AA.
+        // windows-11's button hover layer is translucent (§6.1): `composite_over` blends in
+        // premultiplied gamma space and rounds to `u8` (`ecolor/src/color32.rs:343-345`, §7.2),
+        // the native pair here in straight-alpha `f32`, so the two differ by rounding alone —
+        // 15.685 against 15.696, above the pair's rounding floor of 15.557.
         exceptions: &[(
             "windows-11/light",
             "composite_over's premultiplied u8 rounding of a translucent layer (§7.2)",
@@ -1670,8 +1697,18 @@ fn t12_no_pair_contrasts_worse_than_the_platforms_own() {
             }
             match pair.exceptions.iter().find(|(key, _)| *key == label) {
                 Some((_, why)) => {
+                    let floor = rounding_floor(
+                        straight_native(nfg),
+                        straight_native(nbg),
+                        straight_native(nsurface),
+                    );
+                    let line = format!("{line}, rounding floor {floor:.3}: excepted ({why})");
                     if emitted >= native {
-                        stale.push(format!("{line}: excepted ({why}) yet no longer degrades"));
+                        stale.push(format!("{line} yet no longer degrades"));
+                    } else if emitted < floor {
+                        failures.push(line);
+                    } else {
+                        report.push(line);
                     }
                 }
                 None => {
