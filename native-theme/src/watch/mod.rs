@@ -215,7 +215,12 @@ impl Drop for ThemeSubscription {
 ///
 /// Returns [`Error::WatchUnavailable`](crate::Error::WatchUnavailable) if no
 /// platform-specific backend is available for the current desktop
-/// environment or platform.
+/// environment or platform, and
+/// [`Error::ReaderFailed`](crate::Error::ReaderFailed) if the backend could
+/// not start: KDE, the `kdeglobals` path has no parent directory to watch;
+/// GNOME and Budgie, the watcher thread could not connect to the session bus;
+/// macOS and Windows, the watcher thread did not start. The GNOME, macOS and
+/// Windows backends return only once their thread has connected or started.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeSubscription> {
