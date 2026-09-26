@@ -41,6 +41,8 @@ mod roles;
 mod style;
 #[cfg(test)]
 mod style_diff;
+#[cfg(feature = "watch")]
+mod watch;
 
 pub use accessors::{
     border_color, border_radius, border_radius_lg, dialog_button_order, disabled_opacity,
@@ -58,6 +60,8 @@ pub use ext::NativeThemeUiExt;
 pub use ext::{SystemThemeExt, from_preset, from_system, to_theme};
 pub use plugin::register_focus_shape;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
+#[cfg(feature = "watch")]
+pub use watch::ThemeWatcher;
 #[cfg(test)]
 mod tripwires;
 

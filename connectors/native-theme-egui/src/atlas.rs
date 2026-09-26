@@ -445,7 +445,9 @@ impl ThemeAtlas {
         });
         // 4. The install plugin (`egui/src/context.rs:2047`).
         ctx.add_plugin(crate::plugin::NativeThemePlugin::default());
-        // 5. `icons::forget_icons(ctx)` — Task 26.
+        // 5. The icons this crate cached: a recoloured icon has new bytes and a URI of its own,
+        //    and egui drops a URI's texture and bytes only when told to (§10.3 step 5).
+        crate::icons::forget_icons(ctx);
         // 6. The repaint, last (`egui/src/context.rs:1821`).
         ctx.request_repaint();
     }

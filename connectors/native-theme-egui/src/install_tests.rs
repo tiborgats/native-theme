@@ -1843,3 +1843,28 @@ mod t18_constructors {
         assert!(same_styles(&again, &fresh.to_egui_atlas()));
     }
 }
+
+/// T14 (a), the raster-icon clause: an `install` after `to_image_source` stored a raster
+/// icon's `TextureHandle` leaves none in `ctx.data` (§10.3 step 5).
+#[test]
+fn install_leaves_no_stored_icon_texture_handle() {
+    use crate::icons::{IconKey, IconRegistry, handles_key, texture_id, to_image_source, uri};
+    let ctx = egui::Context::default();
+    let (atlas, _) =
+        crate::from_preset("adwaita", false, &AccessibilityPreferences::default()).unwrap();
+    atlas.install(&ctx);
+    let icon = crate::icons::IconData::Rgba {
+        width: 4,
+        height: 4,
+        data: vec![0; 64],
+    };
+    let key = IconKey::name("raster", IconSet::Freedesktop);
+    let before = ctx.tex_manager().read().num_allocated();
+    let _ = to_image_source(&ctx, &key, &icon).unwrap();
+    let handle_id = texture_id(&uri(&icon));
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_some()));
+    atlas.install(&ctx);
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_none()));
+    assert!(ctx.data(|d| d.get_temp::<IconRegistry>(handles_key()).is_none()));
+    assert_eq!(ctx.tex_manager().read().num_allocated(), before);
+}
