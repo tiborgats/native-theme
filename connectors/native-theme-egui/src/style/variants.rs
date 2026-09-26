@@ -187,6 +187,7 @@ mod tests {
             prefs: &prefs,
             layout: &layout,
             row_height: None,
+            patch: None,
         };
         let mut notes = Vec::new();
         let styles = compile(&input, &mut notes);

@@ -274,6 +274,7 @@ mod tests {
             prefs: &prefs,
             layout,
             row_height: None,
+            patch: None,
         };
         let mut notes = Vec::new();
         let f = surface_frame(surface, &base(), &input, &mut notes);

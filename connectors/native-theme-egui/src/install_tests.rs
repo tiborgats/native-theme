@@ -2031,3 +2031,301 @@ fn t8b_a_window_scrollbar_keeps_the_base_radius() {
         "the handle is painted from the outer Ui's style, the base style's (§14 item 2b)"
     );
 }
+
+/// §13 T13, T16 and T5 at a factor of 2.0 (plan Task 32; spec §4.3, §6.6, §6.15).
+mod t13_accessibility {
+    use std::borrow::Cow;
+
+    use egui::{FontId, TextStyle};
+    use native_theme::theme::{ColorMode, Theme as NativeTheme};
+
+    use super::{pass, resolved};
+    use crate::convert::clamp_length;
+    use crate::fonts::{FontBytes, FontPlan};
+    use crate::style_diff::{Location, all_styles, style_diff};
+    use crate::{
+        AccessibilityPreferences, ResolvedTheme, Role, RoleVariant, ThemeAtlas, scaled_text_size,
+    };
+
+    /// Every bundled preset (`native-theme/src/model/mod.rs:653`), both variants resolved.
+    fn presets() -> Vec<(&'static str, ResolvedTheme, ResolvedTheme)> {
+        NativeTheme::list_presets()
+            .iter()
+            .map(|info| {
+                (
+                    info.key,
+                    resolved(info.key, ColorMode::Light),
+                    resolved(info.key, ColorMode::Dark),
+                )
+            })
+            .collect()
+    }
+
+    fn scheme_of(loc: &Location) -> egui::Theme {
+        match loc {
+            Location::Base(t) | Location::Cell(t, _, _) | Location::Frame(t, _) => *t,
+        }
+    }
+
+    fn scaled_prefs() -> AccessibilityPreferences {
+        AccessibilityPreferences {
+            text_scaling_factor: 2.0,
+            reduce_motion: true,
+            ..AccessibilityPreferences::default()
+        }
+    }
+
+    /// T13 (a): every text size the atlas writes is `scaled_text_size` of the theme's size — the
+    /// unscaled atlas holds the theme's sizes, so the scaled one is its image under the factor.
+    /// `all_styles` lists both atlases in one order: the base and the 25 × 3 cells per scheme.
+    #[test]
+    fn t13a_every_text_size_is_scaled() {
+        let prefs = scaled_prefs();
+        for (key, light, dark) in presets() {
+            let plain = ThemeAtlas::builder(key, &light, &dark).build();
+            let scaled = ThemeAtlas::builder(key, &light, &dark)
+                .accessibility(&prefs)
+                .build();
+            for ((loc, a), (_, b)) in all_styles(&plain).into_iter().zip(all_styles(&scaled)) {
+                for (slot, font) in &a.text_styles {
+                    let got = b
+                        .text_styles
+                        .get(slot)
+                        .unwrap_or_else(|| panic!("{key} {loc:?}: {slot:?} missing"))
+                        .size;
+                    assert_eq!(
+                        got,
+                        scaled_text_size(font.size, &prefs),
+                        "{key} {loc:?} {slot:?}"
+                    );
+                }
+                match (&a.override_font_id, &b.override_font_id) {
+                    (Some(fa), Some(fb)) => assert_eq!(
+                        fb.size,
+                        scaled_text_size(fa.size, &prefs),
+                        "{key} {loc:?} override_font_id"
+                    ),
+                    (None, None) => {}
+                    _ => panic!("{key} {loc:?}: scaling added or removed override_font_id"),
+                }
+            }
+            // And the theme's own size once, directly: Body is defaults.font.size scaled (§8.5, §8.6).
+            for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+                let body = scaled
+                    .scheme(scheme)
+                    .base
+                    .text_styles
+                    .get(&TextStyle::Body)
+                    .expect("Body")
+                    .size;
+                assert_eq!(
+                    body,
+                    scaled_text_size(scaled.resolved_for(scheme).defaults.font.size, &prefs),
+                    "{key} {scheme:?}"
+                );
+            }
+        }
+    }
+
+    /// T13 (b): `style_diff` between the two atlases reports the text sizes, `animation_time`,
+    /// `scroll_animation` and — where their values move — the two values that follow the Body row
+    /// height, `spacing.extra_text_line_spacing` (§6.15) and the `Role::Slider` cells' `expansion`
+    /// (§6.6), and nothing else: scaling never turns into a zoom of every length.
+    #[test]
+    fn t13b_scaling_moves_only_text_sizes_and_what_follows_them() {
+        let prefs = scaled_prefs();
+        for (key, light, dark) in presets() {
+            let plain = ThemeAtlas::builder(key, &light, &dark).build();
+            let scaled = ThemeAtlas::builder(key, &light, &dark)
+                .accessibility(&prefs)
+                .build();
+            for ((loc, a), (_, b)) in all_styles(&plain).into_iter().zip(all_styles(&scaled)) {
+                let is_slider = matches!(loc, Location::Cell(_, Role::Slider, _));
+                for path in style_diff(&a, &b) {
+                    let allowed = (path.starts_with("text_styles[") && path.ends_with(".size"))
+                        || path == "override_font_id.size"
+                        || path == "animation_time"
+                        || path.starts_with("scroll_animation.")
+                        || path == "spacing.extra_text_line_spacing"
+                        || (is_slider
+                            && path.starts_with("visuals.widgets.")
+                            && path.ends_with(".expansion"));
+                    assert!(allowed, "{key} {loc:?}: scaling moved `{path}`");
+                }
+            }
+        }
+    }
+
+    /// T13 (c): with `reduce_motion`, every style — role styles included, because
+    /// `scroll_animation` is read from the `Ui`'s own style (`egui/src/ui.rs:1401`) — has
+    /// `animation_time == 0.0` and `scroll_animation == ScrollAnimation::none()`; without it both
+    /// keep egui's defaults (`egui/src/style.rs:1440`; `ScrollAnimation::default`).
+    #[test]
+    fn t13c_reduced_motion_stops_every_animation() {
+        let reduced = AccessibilityPreferences {
+            reduce_motion: true,
+            ..AccessibilityPreferences::default()
+        };
+        for (key, light, dark) in presets() {
+            let plain = ThemeAtlas::builder(key, &light, &dark).build();
+            let still = ThemeAtlas::builder(key, &light, &dark)
+                .accessibility(&reduced)
+                .build();
+            for (loc, s) in all_styles(&still) {
+                assert_eq!(s.animation_time, 0.0, "{key} {loc:?}");
+                assert_eq!(
+                    s.scroll_animation,
+                    egui::style::ScrollAnimation::none(),
+                    "{key} {loc:?}"
+                );
+            }
+            for (loc, s) in all_styles(&plain) {
+                let egui_own = scheme_of(&loc).default_style();
+                assert_eq!(s.animation_time, egui_own.animation_time, "{key} {loc:?}");
+                assert_eq!(
+                    s.scroll_animation, egui_own.scroll_animation,
+                    "{key} {loc:?}"
+                );
+            }
+        }
+    }
+
+    /// T13 (d): the three connectors' `scaled_text_size` are one function in three places (§4.7);
+    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:996-1004`).
+    #[test]
+    fn t13d_a_degenerate_factor_leaves_the_size() {
+        for factor in [0.0, -1.5, f32::NAN, f32::INFINITY] {
+            let prefs = AccessibilityPreferences {
+                text_scaling_factor: factor,
+                ..AccessibilityPreferences::default()
+            };
+            assert_eq!(scaled_text_size(13.0, &prefs), 13.0, "factor {factor}");
+        }
+        let prefs = AccessibilityPreferences {
+            text_scaling_factor: 1.5,
+            ..AccessibilityPreferences::default()
+        };
+        assert_eq!(scaled_text_size(12.0, &prefs), 18.0);
+    }
+
+    /// T16: the patch is applied last, to every style (§4.3). The first half proves "every" with a
+    /// field the atlas never writes (§5.10) — the two builds differ there and nowhere else, which
+    /// `style_diff` states (two builds' styles are never `==`: `number_formatter` compares by
+    /// `Arc::ptr_eq`, `egui/src/style.rs:57-62`); the second proves "last" with one it does write.
+    #[test]
+    fn t16_the_patch_is_applied_last_to_every_style() {
+        let colour = egui::Color32::from_rgb(1, 2, 3); // a datum, not a theme value
+        for (key, light, dark) in presets() {
+            let plain = ThemeAtlas::builder(key, &light, &dark).build();
+            let patched = ThemeAtlas::builder(key, &light, &dark)
+                .style_patch(|s| s.explanation_tooltips = true)
+                .build();
+            let over = ThemeAtlas::builder(key, &light, &dark)
+                .style_patch(move |s| s.visuals.hyperlink_color = colour)
+                .build();
+            for ((loc, a), (_, b)) in all_styles(&plain).into_iter().zip(all_styles(&patched)) {
+                assert!(b.explanation_tooltips, "{key} {loc:?}");
+                assert_eq!(
+                    style_diff(&a, &b),
+                    vec!["explanation_tooltips".to_owned()],
+                    "{key} {loc:?}"
+                );
+            }
+            for (loc, s) in all_styles(&over) {
+                assert_eq!(
+                    s.visuals.hyperlink_color, colour,
+                    "the patch runs last: {key} {loc:?}"
+                );
+            }
+        }
+    }
+
+    /// T5 at a text-scaling factor of `2.0`, with no plan and with a plan whose face is egui's
+    /// bundled `Hack` (`epaint/src/text/fonts.rs:506-532`): the line spacing of §6.15 and the
+    /// slider `expansion` of §6.6, with the Body row height taken from egui itself
+    /// (`epaint/src/text/fonts.rs:865-875`) on a `Context` given the definitions the atlas installs.
+    #[test]
+    fn t5_line_spacing_and_slider_expansion_at_factor_two() {
+        let prefs = AccessibilityPreferences {
+            text_scaling_factor: 2.0,
+            ..AccessibilityPreferences::default()
+        };
+        let hack = match &egui::FontDefinitions::default()
+            .font_data
+            .get("Hack")
+            .expect("egui bundles Hack")
+            .font
+        {
+            Cow::Borrowed(bytes) => *bytes,
+            Cow::Owned(_) => panic!("egui's bundled faces are `include_bytes!`, borrowed"),
+        };
+        for (key, light, dark) in presets() {
+            for with_plan in [false, true] {
+                let mut builder = ThemeAtlas::builder(key, &light, &dark).accessibility(&prefs);
+                if with_plan {
+                    let plan = FontPlan::new().face(
+                        &light.defaults.font.family,
+                        light.defaults.font.weight,
+                        light.defaults.font.style,
+                        FontBytes::Static(hack),
+                    );
+                    builder = builder.fonts(plan);
+                }
+                let atlas = builder.build();
+                // §6.15: the plan's definitions, else egui's default.
+                let defs = atlas.fonts().cloned().unwrap_or_default();
+                for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+                    let t = atlas.resolved_for(scheme);
+                    let size = scaled_text_size(t.defaults.font.size, &prefs);
+                    let ctx = egui::Context::default();
+                    ctx.set_fonts(defs.clone());
+                    let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+                    let row = ctx.fonts_mut(|f| f.row_height(&FontId::proportional(size))); // egui/src/context.rs:1114
+                    let want = t.defaults.line_height * size;
+                    let expected = if t.defaults.line_height.is_finite() {
+                        clamp_length(want - row)
+                    } else {
+                        0.0
+                    };
+                    for (loc, s) in all_styles(&atlas)
+                        .into_iter()
+                        .filter(|(loc, _)| scheme_of(loc) == scheme)
+                    {
+                        assert_eq!(
+                            s.spacing.extra_text_line_spacing, expected,
+                            "{key} plan={with_plan} {loc:?}"
+                        );
+                    }
+                    // §6.6 in the Role::Slider cells, with the same row height.
+                    for &variant in RoleVariant::all() {
+                        let cell = atlas.scheme(scheme).cell(Role::Slider, variant);
+                        let w = cell.visuals.widgets.inactive.fg_stroke.width;
+                        // `thumb_diameter` is a required size — `f32` on the resolved theme (§6.6).
+                        let d = t.slider.thumb_diameter;
+                        let expansion = if d.is_finite() {
+                            let thickness = row.max(cell.spacing.interact_size.y); // egui/src/widgets/slider.rs:957-959
+                            ((clamp_length(d) - 0.8 * thickness) * 0.5).min(0.0) - w
+                        } else {
+                            -w
+                        };
+                        let widgets = &cell.visuals.widgets;
+                        for (state, entry) in [
+                            ("noninteractive", &widgets.noninteractive),
+                            ("inactive", &widgets.inactive),
+                            ("hovered", &widgets.hovered),
+                            ("active", &widgets.active),
+                            ("open", &widgets.open),
+                        ] {
+                            assert_eq!(
+                                entry.expansion,
+                                expansion,
+                                "{key} {scheme:?} plan={with_plan} slider:{} {state}",
+                                variant.key()
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

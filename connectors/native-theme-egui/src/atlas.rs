@@ -660,6 +660,7 @@ impl<'a> Builder<'a> {
             &layout,
             &defs,
             &mut notes,
+            self.style_patch.as_deref(),
         );
         let dark = compile_scheme(
             egui::Theme::Dark,
@@ -668,9 +669,8 @@ impl<'a> Builder<'a> {
             &layout,
             &defs,
             &mut notes,
+            self.style_patch.as_deref(),
         );
-        // Task 32: the style patch over every style of both schemes, last.
-        let _patch = self.style_patch;
         ThemeAtlas(Arc::new(AtlasInner {
             name: self.name.to_owned(),
             light: self.light.clone(),
@@ -702,6 +702,7 @@ fn compile_scheme(
     layout: &LayoutTheme,
     defs: &egui::FontDefinitions,
     notes: &mut Vec<Note>,
+    patch: Option<&dyn Fn(&mut egui::Style)>,
 ) -> SchemeStyles {
     let row_height = scheme
         .default_style()
@@ -724,6 +725,7 @@ fn compile_scheme(
             prefs,
             layout,
             row_height,
+            patch,
         },
         notes,
     )

@@ -446,6 +446,7 @@ mod tests {
             prefs: &prefs,
             layout,
             row_height,
+            patch: None,
         };
         let mut notes = Vec::new();
         (base_style(&input, &mut notes), notes)
