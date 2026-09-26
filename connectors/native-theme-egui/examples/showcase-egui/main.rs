@@ -54,6 +54,11 @@ pub(crate) fn native_options() -> eframe::NativeOptions {
             .with_title(WINDOW_TITLE)
             .with_decorations(true)
             .with_inner_size(WINDOW_SIZE),
+        #[cfg(all(target_os = "macos", not(test)))]
+        event_loop_builder: Some(Box::new(|builder| {
+            use winit::platform::macos::EventLoopBuilderExtMacOS as _;
+            builder.with_default_menu(false);
+        })),
         ..Default::default()
     }
 }

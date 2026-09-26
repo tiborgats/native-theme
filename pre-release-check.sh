@@ -464,6 +464,10 @@ for target in x86_64-pc-windows-gnu x86_64-apple-darwin; do
         cargo check --target "$target" -p native-theme --no-default-features --features system-icons
     run_check "all features, -D warnings ($target)" \
         env RUSTFLAGS="-D warnings" cargo check --target "$target" -p native-theme --all-features
+    if [ "$target" = "x86_64-apple-darwin" ]; then
+        run_check "native-theme-egui, all targets ($target)" \
+            cargo check --target "$target" -p native-theme-egui --all-targets --all-features
+    fi
 done
 
 # ─────────────────────────────────────────────────────────────────────────────

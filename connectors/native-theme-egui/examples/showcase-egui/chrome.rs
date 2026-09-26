@@ -110,6 +110,8 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     let frame = ui.native_frame(Surface::Panel(PanelSide::Top));
     let out = egui::Panel::top("chrome-bar").frame(frame).show(ui, |ui| {
         ui.native_set_style(Role::Toolbar, RoleVariant::Normal);
+        // On macOS outside `cfg(test)` the menus are the system menu bar's (Task 35).
+        #[cfg(not(all(target_os = "macos", not(test))))]
         menu_bar(app, ui);
         toolbar(app, ui);
     });
@@ -130,6 +132,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
 /// gives macOS the system menu bar). `Role::Menu` through `role_modifier` to
 /// both `MenuBar::style` and `MenuConfig::style` (§4.2); each open menu's own
 /// `Ui` is recorded as `Role::Menu` too.
+#[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
     let App {
         registry,
@@ -970,5 +973,98 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
     );
     if close || response.should_close() {
         app.about_open = false;
+    }
+}
+
+#[cfg(all(target_os = "macos", not(test)))]
+pub(crate) mod system_menu {
+    //! The showcase's menus in the macOS system menu bar (spec §10.4).
+
+    use muda::{
+        IsMenuItem, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu,
+        accelerator::{Accelerator, Code, Modifiers},
+    };
+    use objc2::MainThreadMarker;
+    use objc2_app_kit::NSApplication;
+
+    use super::Action;
+
+    pub(crate) struct SystemMenu {
+        menu: Menu,
+    }
+
+    impl SystemMenu {
+        /// The number of top-level menus, which the readback compares with `mainMenu`'s count.
+        pub(crate) fn top_level(&self) -> usize {
+            self.menu.items().len()
+        }
+    }
+
+    /// `action`'s shortcut as muda's accelerator: egui's `Modifiers::COMMAND` is Cmd on macOS,
+    /// muda's `Modifiers::META`; a key this match does not map gets no accelerator.
+    fn accelerator(action: Action) -> Option<Accelerator> {
+        let code = match action.shortcut()?.logical_key {
+            egui::Key::Q => Code::KeyQ,
+            egui::Key::B => Code::KeyB,
+            egui::Key::K => Code::KeyK,
+            egui::Key::Comma => Code::Comma,
+            _ => return None,
+        };
+        Some(Accelerator::new(Modifiers::META, code))
+    }
+
+    /// Build File, View, Theme and Help from `Action::MENUS`, install them as the
+    /// application's main menu, and route every click to `tx` with a repaint,
+    /// so `logic` runs the action on the next pass.
+    pub(crate) fn build(
+        ctx: &egui::Context,
+        tx: std::sync::mpsc::Sender<Action>,
+    ) -> muda::Result<SystemMenu> {
+        let menu = Menu::new();
+        let mut actions = Vec::new();
+        for (title, items) in Action::MENUS {
+            let mut owned: Vec<Box<dyn IsMenuItem>> = Vec::new();
+            for item in *items {
+                match item {
+                    None => owned.push(Box::new(PredefinedMenuItem::separator())),
+                    Some(action) => {
+                        let id = MenuId::new(actions.len().to_string());
+                        actions.push(*action);
+                        owned.push(Box::new(MenuItem::with_id(
+                            id,
+                            action.label(),
+                            true,
+                            accelerator(*action),
+                        )));
+                    }
+                }
+            }
+            let refs: Vec<&dyn IsMenuItem> = owned.iter().map(|b| b.as_ref()).collect();
+            let submenu = Submenu::with_items(*title, true, &refs)?;
+            menu.append(&submenu)?;
+        }
+        menu.init_for_nsapp();
+        let ctx = ctx.clone();
+        MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
+            if let Some(action) = event
+                .id()
+                .0
+                .parse::<usize>()
+                .ok()
+                .and_then(|i| actions.get(i).copied())
+            {
+                let _ = tx.send(action);
+                ctx.request_repaint();
+            }
+        }));
+        Ok(SystemMenu { menu })
+    }
+
+    /// `NSApplication.mainMenu.numberOfItems`, on the main thread; `None` off it
+    /// or when no main menu is installed (§13's runner check).
+    pub(crate) fn main_menu_item_count() -> Option<isize> {
+        let mtm = MainThreadMarker::new()?;
+        let app = NSApplication::sharedApplication(mtm);
+        app.mainMenu().map(|menu| menu.numberOfItems())
     }
 }

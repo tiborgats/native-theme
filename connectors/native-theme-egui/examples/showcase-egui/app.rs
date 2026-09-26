@@ -241,6 +241,12 @@ pub(crate) struct App {
     selection: Arc<std::sync::RwLock<Settings>>,
     #[cfg(feature = "watch")]
     watcher: Option<native_theme_egui::ThemeWatcher>,
+    /// The macOS system menu bar, owned here: a muda `Menu` holds `Rc`s and is not `Send`.
+    #[cfg(all(target_os = "macos", not(test)))]
+    system_menu: Option<crate::chrome::system_menu::SystemMenu>,
+    /// The system menu's clicks, drained into `pending` by `logic`.
+    #[cfg(all(target_os = "macos", not(test)))]
+    menu_rx: Option<std::sync::mpsc::Receiver<Action>>,
 }
 
 impl App {
@@ -289,8 +295,23 @@ impl App {
             selection,
             #[cfg(feature = "watch")]
             watcher: None,
+            #[cfg(all(target_os = "macos", not(test)))]
+            system_menu: None,
+            #[cfg(all(target_os = "macos", not(test)))]
+            menu_rx: None,
         };
         app.apply(&cc.egui_ctx);
+        #[cfg(all(target_os = "macos", not(test)))]
+        {
+            let (tx, rx) = std::sync::mpsc::channel();
+            match crate::chrome::system_menu::build(&cc.egui_ctx, tx) {
+                Ok(menu) => {
+                    app.system_menu = Some(menu);
+                    app.menu_rx = Some(rx);
+                }
+                Err(error) => eprintln!("ERROR: the macOS menu bar did not install: {error}"),
+            }
+        }
         #[cfg(feature = "watch")]
         if !cfg!(test) && app.settings.screenshot.is_none() {
             app.start_watcher(&cc.egui_ctx);
@@ -386,6 +407,20 @@ impl App {
 }
 
 impl App {
+    /// Whether the system menu bar holds exactly the menus the showcase built:
+    /// `Some(true)` or `Some(false)` on macOS outside `cfg(test)`.
+    #[cfg(all(target_os = "macos", not(test)))]
+    pub(crate) fn menu_installed(&self) -> Option<bool> {
+        let built = self.system_menu.as_ref().map(|m| m.top_level())?;
+        let installed = crate::chrome::system_menu::main_menu_item_count()?;
+        Some(usize::try_from(installed).ok() == Some(built))
+    }
+    /// `None` wherever there is no system menu bar to read back.
+    #[cfg(not(all(target_os = "macos", not(test))))]
+    pub(crate) fn menu_installed(&self) -> Option<bool> {
+        None
+    }
+
     pub(crate) fn run_action(&mut self, action: Action, ctx: &egui::Context) {
         match action {
             Action::ShowPage(page) => self.settings.page = page,
@@ -409,9 +444,17 @@ impl App {
 
 impl eframe::App for App {
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // The system menu's clicks, as the in-window items' (§10.4).
+        #[cfg(all(target_os = "macos", not(test)))]
+        if let Some(rx) = &self.menu_rx {
+            self.pending.extend(rx.try_iter());
+        }
         // Before anything reads input (§10.4: the palette's Ctrl+K beats a focused field's own
-        // Ctrl+K). Task 35 compiles this block out on macOS outside `cfg(test)`, where the system
-        // menu owns the keys.
+        // Ctrl+K); compiled out on macOS outside `cfg(test)`, where the system menu's
+        // accelerators own the keys, so one route owns each key.
+        #[cfg(all(target_os = "macos", not(test)))]
+        let shortcuts: Vec<Action> = Vec::new();
+        #[cfg(not(all(target_os = "macos", not(test))))]
         let shortcuts: Vec<Action> = ctx.input_mut(|i| {
             Action::MENUS
                 .iter()
@@ -439,10 +482,19 @@ impl eframe::App for App {
             self.settings.theme_installed(&self.atlas, scheme);
             self.last_scheme = Some(scheme);
         }
+        // Read before the screenshot's `&mut` borrow of `self` (§10.4's fourth rule).
+        let menu_installed = self.menu_installed();
         if let Some(shot) = &mut self.screenshot {
             let now = ctx.input(|i| i.time);
             let started = *shot.started.get_or_insert(now);
             if !shot.sent && now - started >= SCREENSHOT_DELAY_S {
+                // The macOS runner's check (§13): a capture step fails when the menu did not install.
+                if menu_installed == Some(false) {
+                    eprintln!(
+                        "ERROR: the macOS main menu holds a different number of menus than the showcase built"
+                    );
+                    std::process::exit(1);
+                }
                 ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::default()));
                 shot.sent = true;
             }

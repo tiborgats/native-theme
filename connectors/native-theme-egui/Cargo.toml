@@ -85,3 +85,17 @@ path = "examples/showcase-egui/main.rs"
 # The showcase's own `#[cfg(test)]` module (§13 T11) then runs under a plain
 # `cargo test`, so CI and the dependency canary pick it up unchanged.
 test = true
+
+# The showcase's menus in the macOS system menu bar (§10.4): winit for
+# `EventLoopBuilderExtMacOS::with_default_menu`, which eframe does not
+# re-export, at eframe's own requirement (`eframe/Cargo.toml:266-268`); muda
+# for the menu; objc2 and objc2-app-kit, at the versions `native-theme`
+# requires (`native-theme/Cargo.toml:58`, `:68`), to read back
+# `NSApplication::mainMenu` for the macOS runner's check (§13).
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+winit = { version = "0.30.13", default-features = false }
+# Off: muda's default `libxdo` and `gtk3` are Linux/BSD-only (its `Cargo.toml` lines 45-51,
+# 96-107), change nothing on macOS, and would add the gtk-rs 0.18 stack to `Cargo.lock`.
+muda = { version = "0.20.0", default-features = false }
+objc2 = "0.6.4"
+objc2-app-kit = { version = "0.3.2", features = ["NSApplication", "NSMenu", "NSResponder"] }
