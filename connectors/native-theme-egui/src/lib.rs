@@ -29,12 +29,14 @@
 mod accessors;
 mod atlas;
 pub mod convert;
+mod ext;
 pub mod fonts;
 pub mod icons;
 #[cfg(test)]
 mod install_tests;
 #[cfg(test)]
 mod mapping_tests;
+mod plugin;
 mod roles;
 mod style;
 #[cfg(test)]
@@ -43,6 +45,7 @@ mod style_diff;
 pub use accessors::scaled_text_size;
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};
+pub use ext::NativeThemeUiExt;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(test)]
 mod tripwires;

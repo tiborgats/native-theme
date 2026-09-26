@@ -166,3 +166,165 @@ fn carry_name_keys_copies_only_when_a_name_key_is_missing() {
     );
     assert_eq!(merged.text_styles.len(), 6);
 }
+
+use std::sync::Arc;
+
+use crate::NativeThemeUiExt;
+
+/// A preset's atlas through the public builder (`from_preset` lands in Task 24), both variants
+/// through `resolved` above, named as the preset names itself (`native-theme/src/model/mod.rs:257`).
+pub(crate) fn preset_atlas(id: &str) -> ThemeAtlas {
+    let name = native_theme::theme::Theme::preset(id)
+        .expect("a bundled preset")
+        .name;
+    ThemeAtlas::builder(
+        &name,
+        &resolved(id, ColorMode::Light),
+        &resolved(id, ColorMode::Dark),
+    )
+    .build()
+}
+
+/// T14's `Context`: empty font definitions, so no face is parsed and no glyph laid out
+/// (`epaint/src/text/fonts.rs:561-570`, `:640-648`).
+pub(crate) fn bare_context() -> egui::Context {
+    let ctx = egui::Context::default();
+    ctx.set_fonts(egui::FontDefinitions::empty());
+    ctx
+}
+
+/// T14 (a), less its font-plan clause (Task 22) and its raster-icon clause (Task 26).
+#[test]
+fn install_reaches_both_schemes_and_a_second_install_replaces_the_first() {
+    let ctx = bare_context();
+    let breeze = preset_atlas("kde-breeze");
+    breeze.install(&ctx);
+    for n in 0..3 {
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            ui.label("pass");
+        });
+        for theme in [egui::Theme::Dark, egui::Theme::Light] {
+            // A fresh `Context` holds no `TextStyle::Name` key, so the atlas's own `Arc` is
+            // published unchanged (§10.3 step 2).
+            assert!(
+                Arc::ptr_eq(&ctx.style_of(theme), &breeze.scheme(theme).base),
+                "{theme:?} base style is not the atlas's after pass {n}"
+            );
+        }
+    }
+    let adwaita = preset_atlas("adwaita");
+    adwaita.install(&ctx);
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        assert!(Arc::ptr_eq(
+            &ctx.style_of(theme),
+            &adwaita.scheme(theme).base
+        ));
+        assert!(!Arc::ptr_eq(
+            &ctx.style_of(theme),
+            &breeze.scheme(theme).base
+        ));
+    }
+    let found = ThemeAtlas::from_ctx(&ctx).expect("an atlas is installed");
+    assert_eq!(found.name(), adwaita.name());
+    ThemeAtlas::clear(&ctx);
+    assert!(ThemeAtlas::from_ctx(&ctx).is_none());
+}
+
+/// T14 (d). A zero-delay request is served over two passes (`egui/src/context.rs:110-115`,
+/// `:138-141`), so the loop runs until egui reports none outstanding.
+#[test]
+fn install_requests_a_repaint() {
+    let ctx = bare_context();
+    let atlas = preset_atlas("kde-breeze");
+    atlas.install(&ctx);
+    let mut settled = false;
+    for _ in 0..10 {
+        let _ = pass(&ctx, egui::RawInput::default(), |_ui| {});
+        if !ctx.has_requested_repaint() {
+            settled = true;
+            break;
+        }
+    }
+    assert!(
+        settled,
+        "a pass that shows nothing must stop asking for repaints"
+    );
+    atlas.install(&ctx);
+    assert!(
+        ctx.has_requested_repaint(),
+        "install ends with a repaint request (§10.3 step 6)"
+    );
+}
+
+/// Review Focus 1: with no atlas, and again after `clear`, every seam is egui's own and nothing
+/// panics (§4.5). `role_modifier` needs an atlas to be called on, so it has no no-atlas path.
+#[test]
+fn without_an_atlas_every_seam_is_egui_s_own() {
+    let ctx = bare_context();
+    let check = |ctx: &egui::Context| {
+        assert!(ThemeAtlas::from_ctx(ctx).is_none());
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            let parent = Arc::clone(ui.style());
+            let same = ui
+                .native_scope(Role::Button, RoleVariant::Normal, |child| {
+                    Arc::ptr_eq(child.style(), &parent)
+                })
+                .inner;
+            assert!(same, "native_scope without an atlas is a plain scope");
+            ui.native_set_style(Role::Sidebar, RoleVariant::Normal);
+            assert!(
+                Arc::ptr_eq(ui.style(), &parent),
+                "native_set_style without an atlas is a no-op"
+            );
+            assert_eq!(
+                ui.native_frame(Surface::Window),
+                egui::Frame::window(ui.style())
+            );
+            assert_eq!(
+                ui.native_frame(Surface::Card),
+                egui::Frame::group(ui.style())
+            );
+            assert_eq!(
+                ui.native_frame(Surface::CentralPanel),
+                egui::Frame::central_panel(ui.style())
+            );
+        });
+    };
+    check(&ctx);
+    preset_atlas("kde-breeze").install(&ctx);
+    ThemeAtlas::clear(&ctx);
+    check(&ctx);
+}
+
+/// Review Focus 2: nested scopes — the inner role inside, the outer role again after.
+#[test]
+fn a_nested_scope_takes_the_inner_role_and_gives_the_outer_back() {
+    let ctx = bare_context();
+    let atlas = preset_atlas("kde-breeze");
+    atlas.install(&ctx);
+    let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+        let theme = ui.ctx().theme();
+        let sidebar = atlas.scheme(theme).cell(Role::Sidebar, RoleVariant::Normal);
+        let button = atlas.scheme(theme).cell(Role::Button, RoleVariant::Normal);
+        assert!(
+            !Arc::ptr_eq(sidebar, button),
+            "the two cells differ, or the test proves nothing"
+        );
+        ui.native_scope(Role::Sidebar, RoleVariant::Normal, |outer| {
+            assert!(
+                Arc::ptr_eq(outer.style(), sidebar),
+                "the outer scope holds the Sidebar cell"
+            );
+            outer.native_scope(Role::Button, RoleVariant::Normal, |inner| {
+                assert!(
+                    Arc::ptr_eq(inner.style(), button),
+                    "the inner scope holds the Button cell"
+                );
+            });
+            assert!(
+                Arc::ptr_eq(outer.style(), sidebar),
+                "the outer Ui keeps its cell after the inner scope"
+            );
+        });
+    });
+}

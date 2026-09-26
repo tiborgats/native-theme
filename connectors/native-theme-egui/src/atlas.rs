@@ -175,6 +175,12 @@ pub(crate) fn carry_name_keys(from: &egui::Style, into: &Arc<egui::Style>) -> Ar
     Arc::new(style)
 }
 
+/// The `Context` data key under which [`ThemeAtlas::install`] publishes the atlas
+/// (§10.3 step 3) and [`ThemeAtlas::from_ctx`] reads it back.
+pub(crate) fn atlas_key() -> egui::Id {
+    egui::Id::new("native-theme-egui/atlas")
+}
+
 /// A complete egui theme compiled from native-theme data.
 ///
 /// `Arc`-backed: cloning is one atomic increment, exactly like [`egui::Context`].
@@ -389,6 +395,72 @@ impl ThemeAtlas {
     #[must_use]
     pub fn notes(&self) -> &[Note] {
         &self.0.notes
+    }
+
+    /// Install into an [`egui::Context`]: the atlas's fonts, both colour schemes' base styles
+    /// (keeping the application's own `TextStyle::Name` keys), the atlas into `Context` data,
+    /// the install plugin, the icon-cache flush and a repaint — §10.3 lists the steps, their
+    /// order and what each must not touch. The plugin supplies the OS colour scheme where the
+    /// integration reports none, paints the focus ring (§6.18) and keeps the OS title bar on the
+    /// scheme the UI is drawn in (§10.3).
+    ///
+    /// Run it on every application start, even when egui memory is persisted:
+    /// `Options::dark_style` and `light_style` are `#[serde(skip)]`
+    /// (`egui/src/memory/mod.rs:195`, `:199`). Safe to call at any time, including inside a
+    /// pass; the new theme reaches the whole UI on the next pass.
+    ///
+    /// **The colour-scheme choice stays egui's.** `install` never touches
+    /// `Options::theme_preference`, which is serde-persisted (`egui/src/memory/mod.rs:206`
+    /// has no `serde(skip)`), so the user's in-app Light/Dark choice survives a restart.
+    /// Follow the OS with `ctx.set_theme(egui::ThemePreference::System)`; pin a scheme with
+    /// `ctx.set_theme(egui::ThemePreference::Dark)` or `Light`. The trap: `Context::set_theme`
+    /// takes `impl Into<ThemePreference>` (`egui/src/context.rs:2170`) and
+    /// `From<Theme> for ThemePreference` exists (`egui/src/memory/theme.rs:79-86`), so
+    /// `ctx.set_theme(egui::Theme::Dark)` compiles and *pins* dark — it never means "follow".
+    /// "The OS" is what the integration reports in `RawInput::system_theme` and, where it
+    /// reports `None` (Linux under winit 0.30.13), this atlas's [`ThemeAtlas::os_mode`].
+    ///
+    /// `Options::fallback_theme` (`egui/src/memory/mod.rs:212`, default `Theme::Dark` at
+    /// `:331`) and `Options::sync_window_theme` (`:229`, default `true` at `:333`) are egui's
+    /// too and `install` leaves them alone: set them with
+    /// `ctx.options_mut(|o| o.fallback_theme = ..)` (`egui/src/context.rs:1135`).
+    pub fn install(&self, ctx: &egui::Context) {
+        // 1. Fonts — Task 22 (`ctx.set_fonts` whenever the atlas was built with a plan).
+        // 2. Both base styles, each first given the `Name` keys of the style it replaces:
+        //    `style_of` (`egui/src/context.rs:2221`) then `set_style_of` (`:2250`); §7.5, §10.3.
+        for theme in [egui::Theme::Dark, egui::Theme::Light] {
+            let previous = ctx.style_of(theme);
+            ctx.set_style_of(theme, carry_name_keys(&previous, &self.scheme(theme).base));
+        }
+        // 3. The atlas published into `Context` data (`egui/src/context.rs:1033`).
+        let published = self.clone();
+        ctx.data_mut(|data| {
+            data.insert_temp(atlas_key(), published);
+        });
+        // 4. The install plugin — Task 21.
+        // 5. `icons::forget_icons(ctx)` — Task 26.
+        // 6. The repaint, last (`egui/src/context.rs:1821`).
+        ctx.request_repaint();
+    }
+
+    /// The atlas most recently published into this `Context` by [`ThemeAtlas::install`], or
+    /// `None` when none is (never installed, or removed by [`ThemeAtlas::clear`]).
+    #[must_use]
+    pub fn from_ctx(ctx: &egui::Context) -> Option<Self> {
+        let key = atlas_key();
+        ctx.data(|data| data.get_temp::<Self>(key))
+    }
+
+    /// Remove the atlas from `Context` data (`IdTypeMap::remove`,
+    /// `egui/src/util/id_type_map.rs:572`). The install plugin then finds nothing and does
+    /// nothing, and [`NativeThemeUiExt`](crate::NativeThemeUiExt) degrades as it does when nothing was installed. The
+    /// `Style`s already written into `Options` are left alone; call
+    /// `ctx.set_style_of(t, t.default_style())` (`egui/src/memory/theme.rs:24-29`) for each
+    /// `egui::Theme` `t`, and `ctx.set_fonts(egui::FontDefinitions::default())` if the atlas
+    /// installed a font plan, to get stock egui back.
+    pub fn clear(ctx: &egui::Context) {
+        let key = atlas_key();
+        ctx.data_mut(|data| data.remove::<Self>(key));
     }
 
     /// One scheme's compiled styles: the store every seam and every test module reads cells
