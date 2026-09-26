@@ -1312,16 +1312,27 @@ mod t6_fonts {
         );
     }
 
-    /// T5's plan leg at a text-scaling factor of `1.0`: §6.15 with egui's bundled `Hack` as
-    /// the Body face, egui's own `row_height` as the oracle, and §6.6's slider `expansion`.
+    /// T5 at a text-scaling factor of `1.0`, once with no plan — egui's default faces, the
+    /// default install — and once with egui's bundled `Hack` as the Body face: §6.15 with
+    /// egui's own `row_height` as the oracle, and §6.6's slider `expansion`.
     #[test]
-    fn t5_line_spacing_with_a_plan_matches_egui_row_height() {
+    fn t5_line_spacing_matches_egui_row_height_with_and_without_a_plan() {
         for preset in Theme::list_presets() {
-            for mode in [ColorMode::Light, ColorMode::Dark] {
+            for (mode, with_plan) in [
+                (ColorMode::Light, false),
+                (ColorMode::Light, true),
+                (ColorMode::Dark, false),
+                (ColorMode::Dark, true),
+            ] {
                 let t = resolved(preset.key, mode);
-                let plan = plan_for(&t, hack());
-                let (defs, _) = font_definitions(&t, &plan);
-                let atlas = ThemeAtlas::builder(preset.key, &t, &t).fonts(plan).build();
+                let builder = ThemeAtlas::builder(preset.key, &t, &t);
+                let (atlas, defs) = if with_plan {
+                    let plan = plan_for(&t, hack());
+                    let (defs, _) = font_definitions(&t, &plan);
+                    (builder.fonts(plan).build(), defs)
+                } else {
+                    (builder.build(), FontDefinitions::default())
+                };
                 let ctx = egui::Context::default();
                 ctx.set_fonts(defs);
                 let _ = pass(&ctx, egui::RawInput::default(), |_| {});
@@ -1335,7 +1346,7 @@ mod t6_fonts {
                     {
                         assert_eq!(
                             style.spacing.extra_text_line_spacing, expected,
-                            "{} {mode:?} {theme:?}",
+                            "{} {mode:?} {theme:?} plan={with_plan}",
                             preset.key
                         );
                     }
@@ -1360,7 +1371,7 @@ mod t6_fonts {
                         ] {
                             assert_eq!(
                                 state.expansion, expected_e,
-                                "{} {mode:?} {theme:?} {variant:?}",
+                                "{} {mode:?} {theme:?} {variant:?} plan={with_plan}",
                                 preset.key
                             );
                         }
