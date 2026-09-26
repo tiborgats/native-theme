@@ -566,6 +566,10 @@ run_tests_soft "test (native-theme-gpui, no features)" \
 # test discriminates on a desktop whose session bus runs xdg-desktop-portal.
 run_tests "test (native-theme, portal+watch: the watch module)" \
     cargo test -p native-theme --features portal,watch --lib watch::
+# native-theme has no default features, so the loop above compiles its
+# fontdb-backed font lookup (native-theme/src/fonts.rs, `system-fonts`) out.
+run_tests "test (native-theme, system-fonts: the fonts module)" \
+    cargo test -p native-theme --features system-fonts --lib fonts::
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: iced connector configurations
