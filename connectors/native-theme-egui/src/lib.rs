@@ -73,6 +73,7 @@
 #![deny(clippy::unreachable)]
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
+#![doc = include_str!("mapping.md")]
 #![allow(
     dead_code,
     reason = "the library is assembled over Tasks 8-32; Task 32 removes this line"
@@ -90,6 +91,8 @@ pub mod fonts;
 pub mod icons;
 #[cfg(test)]
 mod install_tests;
+#[cfg(test)]
+mod mapping_doc;
 #[cfg(test)]
 mod mapping_tests;
 mod plugin;
