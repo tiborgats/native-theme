@@ -919,7 +919,9 @@ mod t6_fonts {
 
     use super::{pass, resolved};
     use crate::convert::clamp_length;
-    use crate::fonts::{FontBytes, FontPlan, font_definitions, weight_coords};
+    use egui::epaint::text::{Tag, VariationCoords};
+
+    use crate::fonts::{FontBytes, FontPlan, font_definitions};
     use crate::{Note, Role, RoleVariant, ThemeAtlas};
 
     /// One of egui's bundled faces, `&'static` as `FontDefinitions::default()` registers them
@@ -1277,10 +1279,16 @@ mod t6_fonts {
         };
         let sans = head(FontFamily::Proportional);
         assert_eq!(sans.font.as_ref(), bundled("Ubuntu-Light"));
-        assert_eq!(sans.tweak.coords, weight_coords(700));
+        assert_eq!(
+            sans.tweak.coords,
+            VariationCoords::new([(Tag::new(b"wght"), 700.0)])
+        );
         let mono = head(FontFamily::Monospace);
         assert_eq!(mono.font.as_ref(), bundled("emoji-icon-font"));
-        assert_eq!(mono.tweak.coords, weight_coords(400));
+        assert_eq!(
+            mono.tweak.coords,
+            VariationCoords::new([(Tag::new(b"wght"), 400.0)])
+        );
     }
 
     /// T6 (e): a `FontFamily::Name` family of the plan's base survives, chain and data intact.

@@ -418,6 +418,18 @@ mod tests {
         assert_eq!(body_row_height(&egui::FontDefinitions::empty(), 13.0), None);
     }
 
+    /// `weight_coords` is the `wght` axis at the CSS weight, built independently here.
+    #[test]
+    fn weight_coords_is_the_wght_axis_at_the_weight() {
+        for (weight, value) in [(100_u16, 100.0), (400, 400.0), (900, 900.0)] {
+            assert_eq!(
+                weight_coords(weight),
+                VariationCoords::new([(Tag::new(b"wght"), value)]),
+                "{weight}"
+            );
+        }
+    }
+
     /// T6 (a): `supports_weight_axis` is `false` for garbage bytes and for a static face,
     /// without panicking — `FontData::variation_axes` (`epaint/src/text/fonts.rs:153-173`)
     /// answers an empty list for both.
