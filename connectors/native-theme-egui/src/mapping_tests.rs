@@ -185,30 +185,40 @@ pub(crate) fn leaf_paths(resolved: &ResolvedTheme) -> BTreeSet<String> {
     out
 }
 
-/// `tested_by` names a clause of §13's table: `T1` to `T18`, a `b` only on the two tests that
-/// have one (T1b, T10b), then an optional `(x)` clause letter.
+/// `tested_by` names a clause §13's table defines: a test `T1` to `T18`, T1b, T10's T10b and
+/// T10c, or one of the lettered clauses a test states — T4 (a)–(c), T6 (a)–(e), T8 (a)–(c),
+/// T11 (a)–(d), T13 (a)–(d), T14 (a)–(d), T15 (a)–(c) and T18 (a)–(h).
 fn is_clause(s: &str) -> bool {
-    let Some(rest) = s.strip_prefix('T') else {
-        return false;
-    };
-    let digits = rest.chars().take_while(char::is_ascii_digit).count();
-    let Some(n) = rest.get(..digits).and_then(|d| d.parse::<u8>().ok()) else {
-        return false;
-    };
-    if !(1..=18).contains(&n) {
-        return false;
+    const LETTERED: [(&str, &str); 8] = [
+        ("T4", "abc"),
+        ("T6", "abcde"),
+        ("T8", "abc"),
+        ("T11", "abcd"),
+        ("T13", "abcd"),
+        ("T14", "abcd"),
+        ("T15", "abc"),
+        ("T18", "abcdefgh"),
+    ];
+    let mut clauses: BTreeSet<String> = (1..=18).map(|n| format!("T{n}")).collect();
+    clauses.extend(["T1b", "T10b", "T10c"].map(str::to_owned));
+    for (test, letters) in LETTERED {
+        clauses.extend(letters.chars().map(|c| format!("{test}({c})")));
     }
-    let rest = rest.get(digits..).unwrap_or("");
-    let rest = match rest.strip_prefix('b') {
-        Some(after) if n == 1 || n == 10 => after,
-        Some(_) => return false,
-        None => rest,
-    };
-    rest.is_empty()
-        || (rest.len() == 3
-            && rest.starts_with('(')
-            && rest.ends_with(')')
-            && rest.chars().nth(1).is_some_and(|c| c.is_ascii_lowercase()))
+    clauses.contains(s)
+}
+
+#[test]
+fn is_clause_accepts_only_the_clauses_section_13_defines() {
+    for s in [
+        "T1", "T1b", "T10b", "T10c", "T14(b)", "T6(d)", "T18(h)", "T18",
+    ] {
+        assert!(is_clause(s), "{s}");
+    }
+    for s in [
+        "T3(z)", "T13(q)", "T2(a)", "T19", "T0", "T5b", "T18(i)", "t6(d)", "T6(d) ",
+    ] {
+        assert!(!is_clause(s), "{s}");
+    }
 }
 
 fn rows(manifest: &toml::Table) -> impl Iterator<Item = (&String, &toml::Table)> {
