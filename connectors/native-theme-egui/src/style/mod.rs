@@ -2,6 +2,7 @@
 //! §6). Task 11 builds egui's own values; Tasks 13–18 write the theme's into them.
 
 pub(crate) mod base;
+mod states;
 
 use std::sync::Arc;
 
@@ -56,6 +57,21 @@ pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeSt
 pub(crate) fn push_note(notes: &mut Vec<Note>, note: Note) {
     if !notes.contains(&note) {
         notes.push(note);
+    }
+}
+
+/// §6.4: a colour with alpha `0` written into a `WidgetVisuals::bg_fill` — which egui documents
+/// "Must never be `Color32::TRANSPARENT`" (`egui/src/style.rs:1292-1294`) — is real platform
+/// data, written as given and reported once per leaf (§7.2); nothing is substituted. `written`
+/// is the colour as it lands in the field, after any composite (§6.1), and `path` the leaf
+/// whose value it is.
+pub(crate) fn note_transparent_fill(
+    written: egui::Color32,
+    path: &'static str,
+    notes: &mut Vec<Note>,
+) {
+    if written.a() == 0 {
+        push_note(notes, Note::TransparentFill { path });
     }
 }
 

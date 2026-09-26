@@ -310,6 +310,92 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         }
     }
 
+    use super::states::{
+        BorderEntries, BorderSource, FillField, FillSource, Layer, OpenFrom, StateSource,
+        TextSource, write_states,
+    };
+    let b = &t.button;
+    let w = &mut s.visuals.widgets;
+    // noninteractive: frames, separators, group boxes and plain labels (§5.9, §6.1)
+    w.noninteractive.fg_stroke.color = to_color32(d.text_color);
+    w.noninteractive.bg_fill = to_color32(d.background_color);
+    w.noninteractive.weak_bg_fill = to_color32(d.background_color);
+    w.noninteractive.bg_stroke = stroke(
+        ["defaults.border.color", "defaults.border.line_width"],
+        own.visuals.widgets.noninteractive.bg_stroke,
+        d.border.color,
+        d.border.line_width,
+        opacity_fold,
+        notes,
+    );
+    w.noninteractive.corner_radius = radius(
+        "defaults.border.corner_radius",
+        own.visuals.widgets.noninteractive.corner_radius,
+        d.border.corner_radius,
+        notes,
+    );
+    // the four interactive entries: what every unscoped control draws with — `theme.button` (§6.1)
+    write_states(
+        w,
+        &StateSource {
+            fill: Some(FillSource {
+                field: FillField::Weak,
+                idle: Some((b.background_color, "button.background_color")),
+                hover: Some((b.hover_background, "button.hover_background")),
+                active: Some((
+                    b.active_background.unwrap_or(b.hover_background),
+                    "button.active_background",
+                )), // §6.4
+                layer: Layer::Composite,
+            }),
+            text: Some(TextSource {
+                idle: b.font.color,
+                hover: Some(b.hover_text_color),
+                active: Some(b.active_text_color),
+                in_noninteractive: false, // the base's plain text is `defaults.text_color`
+            }),
+            border: Some(BorderSource {
+                border: &b.border,
+                opacity: opacity_fold,
+                paths: [
+                    "button.border.color",
+                    "button.border.corner_radius",
+                    "button.border.line_width",
+                ],
+                entries: BorderEntries::Interactive,
+            }),
+            open: OpenFrom::Inactive,
+        },
+        notes,
+    );
+    // `bg_fill`: the scrollbar thumb, which every unscoped `ScrollArea` handle paints (§5.9)
+    let sb = &t.scrollbar;
+    write_states(
+        w,
+        &StateSource {
+            fill: Some(FillSource {
+                field: FillField::Bg,
+                idle: Some((sb.thumb_color, "scrollbar.thumb_color")),
+                hover: Some((sb.thumb_hover_color, "scrollbar.thumb_hover_color")),
+                active: None, // D5 (§6.9) is Task 17's `apply_base`; until then `active` copies `hovered`
+                layer: Layer::AsGiven,
+            }),
+            text: None,
+            border: None,
+            open: OpenFrom::Inactive,
+        },
+        notes,
+    );
+    // the topmost window's title bar reads `open.weak_bg_fill` (`egui/src/containers/window.rs:1427`)
+    w.open.weak_bg_fill = to_color32(t.window.title_bar_background);
+    // §6.1: a hover or press changes only what the platform states, so every entry keeps
+    // `inactive`'s stroke width — egui's stock 1.5 / 2.0 (`egui/src/style.rs:1703`, `:1711`) never
+    // appear; §6.6's slider knob relies on one width in every state. Every cell inherits it.
+    let width = w.inactive.fg_stroke.width;
+    for e in [&mut w.hovered, &mut w.active, &mut w.open] {
+        e.fg_stroke.width = width;
+    }
+
     // §6.15: the line spacing, from the Body size the atlas writes and the row `Builder::build` measured
     if !d.line_height.is_finite() {
         push_note(
@@ -494,10 +580,6 @@ mod tests {
             assert_eq!(v.dark_mode, own.visuals.dark_mode);
             assert_eq!(v.text_options, own.visuals.text_options);
             assert_eq!(v.code_bg_color, own.visuals.code_bg_color);
-            assert_eq!(
-                v.widgets, own.visuals.widgets,
-                "the five entries are Task 14's"
-            );
             assert_eq!(sp.menu_margin, own.spacing.menu_margin);
             assert_eq!(sp.combo_height, own.spacing.combo_height);
             assert_eq!(sp.text_edit_width, own.spacing.text_edit_width);
