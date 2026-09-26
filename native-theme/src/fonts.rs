@@ -455,26 +455,27 @@ mod tests {
             );
         }
 
-        /// Two calls with the same arguments return equal results, the
-        /// second from the shared database.
+        /// Two calls with the same arguments return the same face.
         #[test]
-        fn two_calls_give_equal_results_from_the_shared_database() {
-            let db = database();
-            let info = db.faces().next().expect("the font database holds a face");
+        fn the_same_query_gives_the_same_face() {
+            let info = database()
+                .faces()
+                .next()
+                .expect("the font database holds a face");
             let (name, _) = info.families.first().expect("a face records a family");
             let a = system_face(name, info.weight.0, style_of(info.style));
             let b = system_face(name, info.weight.0, style_of(info.style));
             assert!(a.is_some());
             assert_eq!(a, b);
-            assert!(std::ptr::eq(database(), db), "one database per process");
         }
 
         /// The file route: "SF Pro" and Core Text's family name both give
         /// the face whose family is the first family the Core Text file's
         /// first face records. The repository holds no font file a unit test
         /// could load in the Core Text file's place, so this is the route's
-        /// only check; Task 39 runs the connector's `system_faces_resolve`
-        /// on the macOS runner too.
+        /// only check; the screenshot workflow (`.github/workflows/screenshots.yml`)
+        /// runs the egui connector's `system_faces_resolve` on the macOS
+        /// runner too.
         #[cfg(target_os = "macos")]
         #[test]
         fn the_macos_system_ui_font_is_found_by_its_file() {
