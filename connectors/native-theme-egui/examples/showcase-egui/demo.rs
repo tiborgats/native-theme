@@ -1,0 +1,297 @@
+//! Demo helpers: each applies one seam and records the instance it drew (spec §10.4).
+
+use native_theme::icons::FreedesktopLoader;
+use native_theme::theme::{IconRole, IconSet};
+use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Seam {
+    Base,
+    Role(Role, RoleVariant),
+    Surface(Surface),
+}
+
+/// What one drawn instance says about itself; the rows come from the manifest (Task 36).
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct InstanceInfo {
+    /// The widget's kind, e.g. "Button", "TextEdit (password)".
+    pub kind: &'static str,
+    pub seams: Vec<Seam>,
+    /// The §4.7 accessors and `ResolvedTheme` leaves the helper read, with their values.
+    pub read: Vec<(&'static str, String)>,
+    /// *This instance* notes from the helper's own arguments, never a claim about the theme.
+    pub notes: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Record {
+    pub id: egui::Id,
+    pub rect: egui::Rect,
+    pub layer: egui::LayerId,
+    pub info: InstanceInfo,
+    /// One of §10.4's 21 container types, or a chrome panel.
+    pub container: bool,
+}
+
+/// The pass's registrations; live for one pass.
+#[derive(Default)]
+pub(crate) struct Registry {
+    records: Vec<Record>,
+    /// Ids recorded twice in one pass (§13.2 `no_id_is_recorded_twice`).
+    #[cfg(test)]
+    pub recorded_twice: std::collections::BTreeSet<String>,
+}
+
+impl Registry {
+    pub(crate) fn begin_pass(&mut self) {
+        self.records.clear();
+    }
+    pub(crate) fn record(
+        &mut self,
+        response: &egui::Response,
+        info: InstanceInfo,
+        container: bool,
+    ) {
+        #[cfg(test)]
+        if self.records.iter().any(|r| r.id == response.id) {
+            self.recorded_twice.insert(format!("{:?}", response.id));
+        }
+        self.records.push(Record {
+            id: response.id,
+            rect: response.interact_rect,
+            layer: response.layer_id,
+            info,
+            container,
+        });
+    }
+    pub(crate) fn records(&self) -> &[Record] {
+        &self.records
+    }
+    /// Add the accessors or leaves a page read, or a *This instance* note, to the last record.
+    pub(crate) fn amend_last(&mut self, f: impl FnOnce(&mut InstanceInfo)) {
+        if let Some(last) = self.records.last_mut() {
+            f(&mut last.info);
+        }
+    }
+}
+
+pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
+    InstanceInfo {
+        kind,
+        seams,
+        read: Vec::new(),
+        notes: Vec::new(),
+    }
+}
+
+/// `role`'s modifier from the installed atlas, `None` when none is installed (egui's own look).
+fn role_modifier(
+    ui: &egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+) -> Option<egui::style::StyleModifier> {
+    let theme = ui.ctx().theme();
+    ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.role_modifier(theme, role, variant))
+}
+
+/// A widget inside `ui.native_scope(role, variant, ..)`: the closure adds it and
+/// returns its `Response`, which is recorded with the role seam.
+pub(crate) fn scoped(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui) -> egui::Response,
+) -> egui::Response {
+    let response = ui.native_scope(role, variant, add).inner;
+    reg.record(
+        &response,
+        info(kind, vec![Seam::Role(role, variant)]),
+        false,
+    );
+    response
+}
+
+/// A widget in `role`'s scope whose popup is an `Area` the scope does not reach (§1.5) — a
+/// `ComboBox`: the closure gets the same role's modifier for `ComboBox::popup_style`
+/// (`egui/src/containers/combo_box.rs:199`); one role seam, applied twice and recorded once.
+pub(crate) fn scoped_popup(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, Option<egui::style::StyleModifier>) -> egui::Response,
+) -> egui::Response {
+    let modifier = role_modifier(ui, role, variant);
+    let response = ui.native_scope(role, variant, |ui| add(ui, modifier)).inner;
+    reg.record(
+        &response,
+        info(kind, vec![Seam::Role(role, variant)]),
+        false,
+    );
+    response
+}
+
+/// A widget drawn with the base style: recorded with `Seam::Base`.
+pub(crate) fn base(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui) -> egui::Response,
+) -> egui::Response {
+    let response = add(ui);
+    reg.record(&response, info(kind, vec![Seam::Base]), false);
+    response
+}
+
+/// A container drawn with the base style — `Resize`, `Scene`, `Area`, `ui.group` and the
+/// like, which no seam reaches: the closure gets the registry, so the body records its own
+/// widgets, and returns the container's `Response`, recorded as a container with `Seam::Base`.
+pub(crate) fn contained(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, &mut Registry) -> egui::Response,
+) -> egui::Response {
+    let response = add(ui, reg);
+    reg.record(&response, info(kind, vec![Seam::Base]), true);
+    response
+}
+
+/// A container framed with `ui.native_frame(surface)`, its body optionally in a
+/// role set with `native_set_style` as the first statement inside (§4.4, §1.5);
+/// recorded as a container with the surface seam and the body's role seam. The body gets
+/// the registry, so it records its own widgets.
+pub(crate) fn framed<R>(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    surface: Surface,
+    body: Option<(Role, RoleVariant)>,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, &mut Registry) -> R,
+) -> egui::InnerResponse<R> {
+    let frame = ui.native_frame(surface);
+    let out = frame.show(ui, |ui| {
+        if let Some((role, variant)) = body {
+            ui.native_set_style(role, variant);
+        }
+        add(ui, reg)
+    });
+    let mut seams = vec![Seam::Surface(surface)];
+    seams.extend(body.map(|(r, v)| Seam::Role(r, v)));
+    reg.record(&out.response, info(kind, seams), true);
+    out
+}
+
+/// What a container that takes its look as values is given (§1.5, §3.2).
+pub(crate) struct Chrome {
+    /// `surface`'s frame: `Window::frame`, `Modal::frame`, `Popup::frame`, the tooltip's
+    /// `popup.frame`, `Panel::frame`.
+    pub frame: egui::Frame,
+    /// `Surface::WindowTitleBar`'s frame for `Window::title_frame`; `None` unless asked for.
+    pub title_frame: Option<egui::Frame>,
+    /// `role`'s modifier for `Popup::style` (a tooltip's `popup.style`); `None` unless asked
+    /// for, or with no atlas installed.
+    pub modifier: Option<egui::style::StyleModifier>,
+}
+
+/// A `Window`, `Modal`, `Popup`, `Tooltip` or `Panel`: the helper makes the frames and the
+/// modifier the arguments name, hands them to `show`, which builds the container and returns
+/// its `Response` when it is shown, and records the container with exactly those seams. `show`
+/// also gets the registry, so the body records itself — `styled` as the body's first statement,
+/// the other helpers for its widgets.
+pub(crate) fn surfaced(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    surface: Surface,
+    title: bool,
+    role: Option<(Role, RoleVariant)>,
+    kind: &'static str,
+    show: impl FnOnce(&mut egui::Ui, Chrome, &mut Registry) -> Option<egui::Response>,
+) -> Option<egui::Response> {
+    let chrome = Chrome {
+        frame: ui.native_frame(surface),
+        title_frame: title.then(|| ui.native_frame(Surface::WindowTitleBar)),
+        modifier: role.and_then(|(r, v)| role_modifier(ui, r, v)),
+    };
+    let response = show(ui, chrome, reg)?;
+    let mut seams = vec![Seam::Surface(surface)];
+    if title {
+        seams.push(Seam::Surface(Surface::WindowTitleBar));
+    }
+    seams.extend(role.map(|(r, v)| Seam::Role(r, v)));
+    reg.record(&response, info(kind, seams), true);
+    Some(response)
+}
+
+/// A popup or menu whose style arrives as a `StyleModifier` alone — `Popup::context_menu`, a
+/// page `MenuBar`'s `style` and `MenuConfig::style` (§4.2): the closure passes the modifier to
+/// its acceptor and returns the `Response` to record; it also gets the registry, so a menu's
+/// items record themselves (a disabled item through `scoped` in `RoleVariant::Disabled`).
+pub(crate) fn modifier(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, Option<egui::style::StyleModifier>, &mut Registry) -> egui::Response,
+) -> egui::Response {
+    let modifier = role_modifier(ui, role, variant);
+    let response = add(ui, modifier, reg);
+    reg.record(
+        &response,
+        info(kind, vec![Seam::Role(role, variant)]),
+        false,
+    );
+    response
+}
+
+/// `native_set_style` on a `Ui` the application did not create — a `Window`'s
+/// or `Modal`'s body, an open menu (§1.5) — recorded on that `Ui`'s own response (`egui/src/ui.rs:944`).
+pub(crate) fn styled(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+    kind: &'static str,
+) {
+    ui.native_set_style(role, variant);
+    let response = ui.response();
+    reg.record(&response, info(kind, vec![Seam::Role(role, variant)]), true);
+}
+
+/// An icon of `role` from the chosen set and theme at `size` points (§10.4's icon rule, §9.2):
+/// a freedesktop icon is read from `icon_theme` — the chosen theme; the OS's own only when the
+/// choice is `system`, which passes `None` — in the text colour
+/// (`FreedesktopLoader::{new, theme, size, color, load}`, `native-theme/src/icons.rs:127`, `:157`,
+/// `:137`, `:143`, `:177`); a bundled icon is tinted the text colour. `None` where the set or
+/// theme lacks it: the caller shows it as absent, never from another set.
+pub(crate) fn role_image(
+    ui: &egui::Ui,
+    role: IconRole,
+    set: IconSet,
+    icon_theme: Option<&str>,
+    size: f32,
+) -> Option<egui::Image<'static>> {
+    let text = ui.visuals().text_color();
+    let mut key = icons::IconKey::role(role, set).size(size);
+    let data = if set == IconSet::Freedesktop {
+        let [r, g, b, _] = text.to_srgba_unmultiplied();
+        // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
+        let mut loader = FreedesktopLoader::new(role)
+            .size(size.round() as u16)
+            .color([r, g, b]);
+        if let Some(name) = icon_theme {
+            loader = loader.theme(name);
+            key = key.icon_theme(name);
+        }
+        loader.load()?
+    } else {
+        key = key.tint(text);
+        native_theme::icons::load_icon(role, set)?
+    };
+    icons::to_image(ui.ctx(), &key, &data)
+        .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
+}

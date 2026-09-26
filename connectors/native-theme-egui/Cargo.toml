@@ -76,3 +76,12 @@ image = { version = "0.25.10", default-features = false, features = ["png"] }
 # `serde_json` is dev-only (`native-theme/Cargo.toml:125`).
 serde_json = "1.0.151"
 toml = { workspace = true }
+
+[[example]]
+name = "showcase-egui"
+# A module tree, as the gpui showcase is: `main.rs`, `app.rs`, `chrome.rs`,
+# `demo.rs`, `info.rs`, `pages/`, `tests.rs` (§10.4).
+path = "examples/showcase-egui/main.rs"
+# The showcase's own `#[cfg(test)]` module (§13 T11) then runs under a plain
+# `cargo test`, so CI and the dependency canary pick it up unchanged.
+test = true
