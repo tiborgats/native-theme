@@ -7,11 +7,13 @@
 ### `SystemTheme` — expose layout metrics
 
 - [x] Add `pub layout: LayoutTheme` to `SystemTheme` (done in v0.5.8). Approved 2026-08-10; see
-      `docs/todo_v0.6.0_egui-connector-spec.md` §16 Q-2 and honesty-ledger item
-      21. Today `from_preset` can supply `Spacing::item_spacing` and
-      `Spacing::window_margin` but `from_system` cannot, because `SystemTheme`
-      has no `layout` field — so the two spacing values a toolkit user reaches
-      for first fall back to toolkit defaults on the system path.
+      Q-2 in `docs/todo_v0.6.0_egui-connector-rationale.md` §8. Before it, `from_preset` could supply `Spacing::item_spacing` (from
+      `layout.widget_gap`) but `from_system` could not, because `SystemTheme`
+      had no `layout` field — so on the system path that spacing fell back to
+      the toolkit's default. `Spacing::window_margin` never depended on it: the
+      egui connector writes it from `window.border.padding`, which every path
+      carries, and gives `layout.window_margin` to the central panel's frame
+      (`Surface::CentralPanel`, spec §5.1).
       One additive field on a struct that already carries `preset` and
       `icon_theme`; no resolver work, since `Theme::layout` is a plain
       `LayoutTheme` shared across the light and dark variants and all four of
@@ -29,8 +31,9 @@
       `org.gnome.desktop.interface font-hinting` / `font-antialiasing`,
       Windows ClearType, macOS font smoothing.
 
-      We already read `Xft.dpi` for scaling (`native-theme/src/kde/mod.rs:159`,
-      `:174-175`, via `detect::xft_dpi()`), but nothing reads the *rendering*
+      We already read `Xft.dpi` for scaling (`native-theme/src/kde/mod.rs:157`,
+      `:172-173`, via `detect::xft_dpi()`, `native-theme/src/detect.rs:902`),
+      but nothing reads the *rendering*
       preferences. A Qt or GTK app obeys the user's hinting and antialiasing
       choice; an app built on our connectors silently ignores it. Reading OS
       appearance settings is exactly this crate's remit, so this is a real gap
@@ -40,72 +43,521 @@
       Benefits every connector, not just egui: iced and gpui both rasterize
       their own glyphs too.
 
+### Checkbox: a checked checkbox's hover appearance
+
+- [ ] Research a checked checkbox's hover appearance on each platform in
+      `docs/platform-facts.md` **first**, cited to authoritative sources, then
+      add a `checkbox` checked-hover `soft_option` to the theme model.
+      `CheckboxTheme` (`native-theme/src/model/widgets/mod.rs:146-188`) has one
+      `hover_background` (`:170-172`), with no checked counterpart. All 16
+      presets that state colours state it, in both modes (the four `*-live`
+      presets carry geometry only), yet §2.5 of platform-facts has no hover row
+      at all, so none of those 32 values is sourced there, and
+      only `windows-11` says what its value is: "Fluent checkbox hover fill"
+      (`native-theme/src/presets/windows-11.toml:130-131`), without saying for
+      which box state. Native toolkits do style the checked box under the
+      pointer as a state of its own: WinUI3
+      gives `CheckBoxCheckBackgroundFillCheckedPointerOver` =
+      `AccentFillColorSecondaryBrush` against `AccentFillColorDefaultBrush` at
+      rest, in both the `Default` (dark) and `Light` dictionaries
+      ([CheckBox_themeresources.xaml:57-58](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/CheckBox_themeresources.xaml#L57-L58),
+      [:233-234](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/CheckBox_themeresources.xaml#L233-L234)),
+      and libadwaita lays a `color-mix(in srgb, currentColor 10%, transparent)`
+      image over a `:checked` check on `:hover`
+      ([_checks.scss:52-58](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/1.10.0/src/stylesheet/widgets/_checks.scss#L52-58)).
+      KDE Breeze (its source at tree `be6e137e`, which is an l10n commit, so
+      the tree is cited, not a change) marks hover on the checked and the
+      unchecked box alike, and not with a fill: `Style::drawIndicatorCheckBoxPrimitive` passes
+      `mouseOver` to `Helper::renderCheckBox`, which then draws a rounded
+      outline in `focusColor(palette)` (a neutral-highlight colour where the
+      widget asks for one) with no brush, whatever the check state
+      ([breezestyle.cpp:4900-4938](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezestyle.cpp#L4900-4938),
+      [breezehelper.cpp:897-908](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L897-908)),
+      so what Breeze needs is a hover *border* colour, which `CheckboxTheme`
+      has no field for either. Still to research: which Breeze release that
+      code shipped in and what `focusColor` resolves to in the Breeze colour
+      schemes, whether an AppKit checkbox has a hover state at all, the
+      resolved colour of each Fluent brush in light and dark, whether
+      `windows-11`'s stated `hover_background` is
+      `CheckBoxCheckBackgroundFillUncheckedPointerOver`
+      (`ControlAltFillColorTertiaryBrush`, `CheckBox_themeresources.xaml:54`,
+      and `CheckBox_themeresources.xaml:230` in `Light`), and which state each of the other presets'
+      stated values describes. Until the field exists the
+      iced connector (`connectors/native-theme-iced/src/styles.rs:544-547`)
+      and the egui connector (its rationale's Q-8, §8) show the plain checked box on
+      hover, copying the base state (C16); the new field then becomes the
+      value they show, with that copy as its `None` fallback.
+
+### Tab: an active-tab indicator
+
+- [ ] Research in `docs/platform-facts.md` **first**, cited to authoritative
+      sources, which platforms mark the active tab with an indicator line
+      (underline or similar) and at what thickness and colour, then add a `tab`
+      field for it. `TabTheme` (`native-theme/src/model/widgets/mod.rs:373-405`)
+      has no such field, so no connector paints an indicator until the model
+      states one — the egui connector marks the active tab only by the
+      `selection.*` colours of its `Tab` scope's `Normal` cell
+      (`tab.active_background`, `tab.active_text_color`; connector spec §6.2); no thickness is to be invented in the meantime.
+
+### Segmented control: the join and the divider
+
+- [ ] Research in `docs/platform-facts.md` **first**, cited to authoritative
+      sources, how each platform's segmented control joins its segments —
+      one outline around the row, and whether a segment's corners that meet a
+      divider are rounded — and the colour of the divider line between
+      segments, then add what the platforms state to `SegmentedControlTheme`
+      (`native-theme/src/model/widgets/mod.rs:773-803`), which states the
+      divider's width, `separator_width` (`docs/platform-facts.md:987`), and
+      no colour or join. Until the model states them, the egui widgets crate
+      draws its segments `separator_width` apart as separate segments, with no
+      divider line (`docs/todo_egui-widgets-spec.md` §4.4); nothing is to be
+      invented in the meantime.
+
+### Checkbox: KDE's checked checkbox is not a solid accent box
+
+- [ ] Re-research KDE's checked checkbox in `docs/platform-facts.md` §2.5.
+      Breeze (its source at tree `be6e137e`) paints the checked box as the unchecked one — a rounded rectangle
+      filled with the button colour, `palette.button()` — then fills it again
+      with the highlight colour made translucent at `highlightBackgroundAlpha`
+      (`Metrics::Blend_Value`), outlines it in the highlight colour, and draws
+      the check mark in the text colour, `palette.text()`
+      ([breezehelper.cpp:847-848](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L847-848),
+      [:853-854](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L853-854),
+      [:862](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L862),
+      [:869-873](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L869-873),
+      [:938](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L938); the constant at
+      [:40](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L40)).
+      §2.5 instead gives KDE `checked_background` ← `defaults.accent_color` and
+      `indicator_color` = `[Colors:Selection] ForegroundNormal`
+      (`docs/platform-facts.md:1211`, `:1218`), and `kde-breeze` states
+      neither, so it shows a solid accent box with an accent-text mark
+      (`docs/inheritance-rules.toml:174-175`). Still to research: the value of
+      `Metrics::Blend_Value` (`breezemetrics.h`, not read), which Breeze release
+      shipped this code, and whether the model states Breeze's box as one
+      composited `checked_background` or needs a layer of its own.
+
+### Checkbox: the check mark's glyph and size
+
+- [ ] Research each platform's check mark — its glyph, its size inside the
+      box and its stroke width — in `docs/platform-facts.md` §2.5 **first**,
+      then add to `CheckboxTheme` what the platforms state. The model has no
+      field for the mark: `indicator_width` is the box
+      (`docs/platform-facts.md:980`), and §2.5 says of the mark only that it
+      fills the indicator, except for GNOME's `padding: 3` (`:1216-1217`).
+      Each toolkit draws its own: egui a three-point line in an 8 px square
+      (`Spacing::icon_width_inner`, `egui/src/style.rs:1467`, read at
+      `widget_style.rs:180`; drawn at `widgets/checkbox.rs:149-158`) in the
+      widget's `fg_stroke` (`widget_style.rs:188`); Breeze (its source at tree
+      `be6e137e`) a three-point path
+      at fixed offsets inside the frame, in the text colour at twice the frame
+      pen width ([breezehelper.cpp:912-927](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L912-927),
+      [:938](https://invent.kde.org/plasma/breeze/-/blob/be6e137e169e246e67e9a9958d5a4f97bfa69e2e/kstyle/breezehelper.cpp#L938)). Still to read: WinUI 3's, libadwaita's and
+      AppKit's. Until the model states a mark, the egui connector leaves
+      `icon_width_inner` at egui's `8.0` on its base style, and in its
+      Checkbox cell writes `indicator_width` less the mean of the two stated
+      `checkbox.border.padding` pairs, the mark's inset, where a theme states
+      all four sides (`docs/todo_v0.6.0_egui-connector-spec.md` §6.11). Filling that
+      field from a number in `docs/platform-facts.md` that no model field
+      carries is rejected: the connector would then carry a theme value
+      the model does not, which is the hardcoded value the project's rules
+      forbid; a platform value reaches a connector only through a model field
+      that the readers and presets fill.
+
+### Theme watcher: OS changes it does not report
+
+- [ ] `watch::on_theme_change()` fires on fewer changes than the readers
+      read, so an application that rebuilds its theme on it — the egui
+      connector's `ThemeWatcher` (`docs/todo_v0.6.0_egui-connector-spec.md`)
+      — misses these:
+
+      - **GNOME and Budgie**: the watcher subscribes to the portal's
+        `SettingChanged` for the `org.freedesktop.appearance` namespace only
+        (`native-theme/src/watch/gnome.rs:46`), while the reader takes the
+        font, monospace font, text-scaling factor, animations, overlay
+        scrolling and icon theme from `org.gnome.desktop.interface`, the title
+        bar font from `org.gnome.desktop.wm.preferences` and high contrast from
+        `org.gnome.desktop.a11y.interface` (`native-theme/src/gnome/mod.rs:337-371`).
+        Changing any of them fires nothing.
+      - **macOS**: the watcher observes `AppleInterfaceThemeChangedNotification`
+        alone (`native-theme/src/watch/macos.rs:88-89`), while the reader also
+        reads the accent colour, `NSColor::controlAccentColor`
+        (`native-theme/src/macos.rs:57`), and the reduce-motion, contrast and
+        transparency flags (`:151-155`). Whether macOS posts that notification
+        on an accent change is unverified; AppKit declares
+        `NSSystemColorsDidChangeNotification` and
+        `NSWorkspaceAccessibilityDisplayOptionsDidChangeNotification` for these
+        (objc2-app-kit 0.3.2, `NSColor.rs:1068`, `NSAccessibility.rs:190`).
+      - **Windows**: the watcher subscribes to `UISettings::ColorValuesChanged`
+        alone (`native-theme/src/watch/windows.rs:77`), while the reader's
+        text-scaling factor (`native-theme/src/windows.rs:359`) has its own
+        event, `UISettings::TextScaleFactorChanged` (windows 0.62.2). Whether a
+        change of the non-client fonts, high contrast or client-area animation
+        (`:154`, `:369`, `:387`) raises `ColorValuesChanged` is unverified.
+      - **KDE**: the watcher sees `kdeglobals` and `kcmfontsrc` in the config
+        directory, non-recursively (`native-theme/src/watch/kde.rs:29-32`,
+        `:51`), while the reader falls back to `kdedefaults/kdeglobals` for the
+        icon theme (`native-theme/src/kde/mod.rs:395`), a file in a
+        subdirectory the watcher does not see.
+
+      Decide per platform which further notification to observe, keeping one
+      user action to one event.
+- [ ] **GNOME: dropping the watcher blocks until the next portal signal.**
+      The GNOME thread waits inside the blocking `SettingChanged` signal
+      iterator and checks the shutdown channel only after a signal arrives
+      (`native-theme/src/watch/gnome.rs:52-62`); the subscription is created
+      with no platform shutdown to wake it (`:65`), unlike the macOS and
+      Windows backends, and `ThemeSubscription`'s `Drop` joins the thread
+      (`native-theme/src/watch/mod.rs:183-185`). So dropping a GNOME or Budgie
+      watcher — at the latest when the application exits — returns only when
+      the next `org.freedesktop.appearance` change arrives. Register a
+      platform shutdown that wakes the thread (e.g. closes the D-Bus
+      connection's signal stream) so `Drop` returns at once; the egui
+      connector's plan, `docs/todo_v0.6.0_egui-connector-plan.md`, does this,
+      with a test that a started watcher drops within a bound.
+- [ ] **KDE: the 300 ms throttle keeps the first event of a burst and drops
+      the rest.** `last_fire` starts as `None` and the watcher fires on the
+      first relevant event, then ignores every relevant event until 300 ms
+      have passed (`native-theme/src/watch/kde.rs:59-60`, `:86`); nothing fires
+      after the burst. KDE writes its settings in several steps (the watcher's
+      own comment names `QSaveFile`'s multi-write pattern, `:14-15`), so a
+      consumer that re-reads on the first event can read the files before the
+      last write lands — or before `kcmfontsrc` changes, if `kdeglobals` changed
+      first — and nothing tells it to read again. Make it a trailing debounce
+      (fire once, 300 ms after the last relevant event), or fire again at the
+      end of the window when events were dropped in it.
+
+### windows-11: the disabled fills are fully transparent
+
+- [ ] `windows-11.toml` states the `disabled_background` of `button`, `input`,
+      `checkbox` and `combo_box` as `#f9f9f900` in light and `#33333300` in
+      dark (light `:92`, `:113`, `:133`, `:335`; dark `:472`, `:493`, `:513`,
+      `:715`): alpha `00`, so a disabled control shows no fill at all. The
+      button's comment names the source, "Fluent ControlFillColorDisabled"
+      (`:91`, `:471`), and WinUI 3 defines that brush as `#4DF9F9F9` in the
+      `Light` dictionary and `#0BFFFFFF` in `Default`, the dark one — ARGB,
+      so about 30 % and 4 % opaque, and white rather than `#333333` in dark
+      ([Common_themeresources_any.xaml:223](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L223),
+      [:19](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L19)). Run the `preset-validator` agent over `windows-11.toml`
+      against that source, record the brush in `docs/platform-facts.md`, where
+      it is not yet, and correct the eight values.
+
+### platform-facts: macOS vertical padding is measured outside the border
+
+- [ ] `docs/platform-facts.md` derives macOS `border.padding_vertical` as the
+      outer height less the content height, halved — "3 **(measured)**
+      (22−16)/2" for the button (`docs/platform-facts.md:1172`), and the same
+      shape for the text input (`:1197`), the menu (`:1236`), the tab
+      (`:1319`) and the list (`:1391`). Outer less content is border plus padding, yet the outer-box
+      rule counts border, padding and content as separate parts
+      (`docs/platform-facts.md:897-902`), and a padding is what lies inside the
+      border. So each of those cells includes the border's width on its side:
+      `macos-sonoma` states the button's `padding_vertical_px = 3.0`
+      (`native-theme/src/presets/macos-sonoma.toml:83`, `:439`) with a
+      `line_width_px = 0.5` border (`:43`, `:399`). Research first, from
+      source or measurement with citations, what the 22 and 16 measure — the
+      outer box with its border, and the text's line box or its glyph height —
+      then correct platform-facts' derivation of each cell and, from it, the
+      preset. Until then a connector that adds the border's width to the
+      stated padding, as the egui connector does, counts that border twice,
+      one border width too much on each side of those macOS controls.
+
+### Presets: a spinner stroke width platform-facts does not give
+
+- [ ] `docs/platform-facts.md` §2.23 gives the spinner a stroke width on
+      Windows only — macOS draws fins, KDE and GNOME rotate an icon — and
+      states **(none)** for the other three (`docs/platform-facts.md:1535`),
+      yet `macos-sonoma`, `kde-breeze` and `adwaita` each state
+      `stroke_width_px = 2.0` in both variants
+      (`native-theme/src/presets/macos-sonoma.toml:294`, `:650`;
+      `native-theme/src/presets/kde-breeze.toml:281`, `:589`;
+      `native-theme/src/presets/adwaita.toml:297`, `:625`). Run the
+      `preset-validator` agent over the three presets against §2.23. The
+      field is required in `ResolvedSpinnerTheme` — every preset must resolve
+      it — so removing the value needs a decision in the model first: make
+      `stroke_width` optional, with a connector keeping its toolkit's own
+      stroke for `None`, or record in §2.23 a source for a ring's stroke on
+      those platforms. The egui widgets crate paints its spinner arc from this
+      field where the icon set has no animated indicator
+      (`docs/todo_egui-widgets-spec.md` §4.3).
+
+### Presets: the scrollbar thumb colour platform-facts measures
+
+- [ ] `docs/platform-facts.md` §2.8 measures `scrollbar.thumb_color` for
+      macOS, `#80808080` (Sonoma), and for Windows, `#c2c2c2`
+      (`docs/platform-facts.md:1278`), yet neither `macos-sonoma` nor
+      `windows-11` states it: their scrollbar sections state
+      `thumb_hover_color` and `thumb_active_color` only
+      (`native-theme/src/presets/macos-sonoma.toml:133-142`, `:489-498`;
+      `native-theme/src/presets/windows-11.toml:152-161`, `:532-541`). No
+      bundled preset states it, and for KDE and GNOME §2.8 names a source,
+      "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
+      resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:191`),
+      a fallback the same file lists among its wrong safety nets, a text
+      colour for "a semi-transparent UI control" (`:468-470`), and the egui
+      connector's base style fills unscoped `ScrollArea` handles, checkbox
+      and radio boxes and slider rails with it
+      (`docs/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
+      value per platform, while the presets' hover colours differ by variant
+      on macOS (`#60606080` light, `#a0a0a080` dark,
+      `native-theme/src/presets/macos-sonoma.toml:140`, `:496`) and not on
+      Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:159`,
+      `:539`): state the measured value in the two light variants, find a
+      source for each dark one before stating it, and run the
+      `preset-validator` agent over both presets against §2.8.
+
+### Fonts: find a system face by family, weight and style
+
+- [ ] Add the feature `system-fonts` to `native-theme`: an optional `fontdb`
+      0.23 dependency (0.23.0 is already in `Cargo.lock`, through cosmic-text)
+      with `default-features = false` and the features `fs`, `fontconfig` and
+      `memmap`, fontdb's own default set (fontdb 0.23.0 `Cargo.toml`, lines
+      63–68) —
+      `memmap` because without it loading the system fonts reads every font
+      file in full — loaded once per process into a crate-private
+      `std::sync::OnceLock` that every call shares, and one public
+      function, `native_theme::fonts::system_face(family: &str, weight: u16,
+      style: native_theme::theme::FontStyle) -> Option<native_theme::fonts::SystemFace>`,
+      where a `SystemFace` carries the face's bytes (`std::sync::Arc<[u8]>`),
+      its index in a collection file, and the family (the first of
+      `FaceInfo::families`), weight and style fontdb records for the face.
+      It compares the family name case-insensitively, by Unicode default
+      caseless matching as CSS Fonts Level 4 §5.1 requires (`unicase` 2.9,
+      already in `Cargo.lock`), and never returns a face of another family;
+      among that family's faces it picks the width, then the style, then the
+      weight by the CSS Fonts Level 4 font-matching algorithm (§5.2). That selection is a
+      pure function over the candidate faces, exported without the feature
+      because it needs no fontdb, so `system_face` and the egui connector's
+      `FontPlan` match fonts through the one implementation. egui has no font
+      database and needs a font's bytes, so the egui connector's
+      `FontPlan::from_system` builds on it for `defaults.font` and
+      `defaults.mono_font` (`docs/todo_v0.6.0_egui-connector-spec.md` §4.9,
+      §8), and its own `system-fonts` feature, on by default, turns this one
+      on. On macOS the system UI font is found by its file instead of its
+      name, because fontdb holds it as `.SF NS` (see *macOS: the stated font
+      family "SF Pro" is not a family iced's font database holds*, below): a
+      `family` equal to "SF Pro" or to Core Text's family name for the system
+      font is resolved by asking Core Text for that font
+      (`CTFontCreateUIFontForLanguage`) and its file (`kCTFontURLAttribute`),
+      through `objc2-core-text` 0.3.2 in the `macos` module, which already
+      permits FFI `unsafe` (connector spec §8.2). Unverified until
+      run: that the other names the macOS and Windows readers report are names
+      fontdb records, and that the Core Text route finds the system font; the
+      connector's `system_faces_resolve` runs on the macOS and Windows CI
+      runners over the reader's theme and the platform's preset, in the runner
+      task of `docs/todo_v0.6.0_egui-connector-plan.md`.
+      The iced and gpui connectors build on it in that plan's Tasks 4 and 5.
+
+### `SystemTheme` — the icon theme of both variants
+
+- [ ] `SystemTheme::icon_theme` is the active variant's icon-theme name only
+      (`native-theme/src/lib.rs:470-483`), yet the variants can name different
+      ones (`kde-breeze`: `breeze` and `breeze-dark`,
+      `native-theme/src/presets/kde-breeze.toml:9`, `:317`), and a toolkit that
+      keeps a style per scheme, as egui does, needs both. Add
+      `SystemTheme::icon_theme_for(mode: ColorMode) -> Option<&str>`, the other
+      variant's name resolved by the same three tiers
+      (`native-theme/src/pipeline.rs:82-93`) and carried through `with_overlay`
+      — which the *with_overlay* fix below covers. The egui connector's
+      `ThemeAtlas::icon_theme` needs it for the scheme that is not active.
+
+### `SystemTheme::with_overlay` — the overlay's icon theme is never read
+
+- [ ] `SystemTheme::with_overlay` (`native-theme/src/lib.rs:538`) merges the
+      overlay's light and dark variants (`:581-586`) and re-resolves them, but
+      builds its result with `icon_theme: self.icon_theme.clone()` (`:603`):
+      the base theme's name, whatever the overlay states. Neither the
+      overlay's `Theme::icon_theme` (`native-theme/src/model/mod.rs:304`) nor
+      its active variant's `ThemeDefaults::icon_theme`
+      (`native-theme/src/model/defaults.rs:137`) is read, although
+      `from_system` ranks exactly those two above runtime detection
+      (`native-theme/src/pipeline.rs:82-92`) and `Theme::merge` lets an
+      overlay's `icon_theme` win (`native-theme/src/model/mod.rs:348-350`).
+      Expected: an icon theme the overlay states wins, like its other fields —
+      the same three tiers applied to the base merged with the overlay — and
+      an overlay that states none keeps the base's. The same function keeps
+      `icon_set` (`:602`) and `layout` (`:558`, read before the overlay is
+      applied) and ignores the overlay's `Theme::icon_set` and `Theme::layout`
+      in the same way, so the fix covers all three — and with them the other
+      variant's icon theme that `icon_theme_for` (above) returns, resolved by
+      the same tiers over the merged theme. Add regression tests
+      beside the tier tests in `native-theme/src/pipeline.rs` (`:1265`,
+      `:1281`).
+
+### Icons: one monochrome-SVG colouriser, in native-theme
+
+- [ ] The iced and gpui connectors each recolour a monochrome SVG icon with a
+      private copy of the same idea — iced's `colorize_monochrome_svg`
+      (`connectors/native-theme-iced/src/icons.rs:277`) and gpui's
+      `colorize_svg` (`connectors/native-theme-gpui/src/icons.rs:1299`) — and
+      the copies differ: iced returns as soon as it has replaced
+      `currentColor` (`connectors/native-theme-iced/src/icons.rs:292-293`),
+      while gpui goes on to replace the explicit black fills and strokes as
+      well (`connectors/native-theme-gpui/src/icons.rs:1312-1333`). The egui
+      connector's plan adds the one implementation to native-theme,
+      `native_theme::icons::colorize_monochrome_svg`, with gpui's algorithm
+      and gpui's unit tests. Switch both siblings to it, so an icon that mixes
+      `currentColor` with an explicit black is coloured alike in all three
+      connectors, and delete the two copies, moving into native-theme any
+      test case of theirs the core's tests lack.
+
+### Icons: recolour a Breeze `current-color-scheme` stylesheet from the theme, as KIconLoader does
+
+- [ ] A Breeze SVG icon carries a `<style id="current-color-scheme">` whose
+      `.ColorScheme-*` classes set the `color` its `currentColor` paints take
+      (`/usr/share/icons/breeze-dark/actions/16/document-open.svg`:
+      `.ColorScheme-Text { color: #fcfcfc; }`). KDE's own loader replaces that
+      stylesheet from the palette: KIconLoader colours SVG icons from
+      `QGuiApplication::palette()` and follows it
+      (`/usr/include/KF6/KIconThemes/kiconloader.h:748-754`, KIconThemes
+      6.30.0), and `KIconColors::stylesheet` specifies the `.ColorScheme-Text`,
+      `-Background`, `-Highlight`, `-HighlightedText`, `-PositiveText`,
+      `-NeutralText`, `-NegativeText` and `-Accent` classes
+      (`/usr/include/KF6/KIconThemes/kiconcolors.h:153-161`). native-theme's
+      `FreedesktopLoader` hands such an icon on unchanged
+      (`native-theme/src/freedesktop.rs:521-524`), so under a KDE colour
+      scheme other than Breeze's own every Breeze icon whose stylesheet sets
+      its `color` keeps Breeze's stock colours, in all three connectors.
+      KIconLoader does this only for an icon theme whose `index.theme` sets
+      `FollowsColorScheme=true`, as `breeze` and `breeze-dark` do
+      (`/usr/share/icons/breeze/index.theme:120`,
+      `/usr/share/icons/breeze-dark/index.theme:120`; `kiconloader.cpp:719-720`,
+      `kicontheme.cpp:440`; kiconthemes 6.30.0 source). It replaces the
+      `<style id="current-color-scheme">` element's text (`processSvg`,
+      `kiconloader.cpp:668-711`) with, in the normal state: Text ←
+      `palette.windowText`, Background ← `window`, Highlight ← `highlight`,
+      HighlightedText ← `highlightedText`, Accent ← `accent`, and
+      Positive/Neutral/NegativeText ←
+      `KColorScheme(QPalette::Active, KColorScheme::Window)`'s foregrounds
+      (`kiconcolors.cpp:82-100`, `:122-130`). In the selected state Text and
+      the three status classes take `highlightedText`, Background and
+      HighlightedText take `highlight`, Highlight takes `highlightedText`, and
+      Accent is mixed 85 % `accent`, 15 % `highlightedText` (`:114-130`). Map each class to its
+      `ResolvedTheme` leaf. The KDE reader takes `text_color` from
+      `[Colors:Window] ForegroundNormal` but the status colours from
+      `[Colors:View]` (`native-theme/src/kde/colors.rs:18`, `:23`, `:39-43`),
+      so check which group Qt's palette fills from. Then `FreedesktopLoader`
+      takes those colours, not the one colour `color` takes, which would turn
+      all eight classes into one colour
+      (`/usr/include/KF6/KIconThemes/kiconcolors.h:40-42`), and rewrites the
+      stylesheet for a theme that follows the colour scheme.
+
+### platform-facts: which part of a control the focus ring surrounds
+
+- [ ] `docs/platform-facts.md` states each platform's focus-ring colour, width
+      and offset (§2.1.5) but not which part of a checkbox, radio button or
+      slider the ring surrounds — the indicator or knob alone, or the whole
+      control with its label. The egui connector's focus ring surrounds those
+      three, and the egui widgets crate's painted `Slider`, around their whole
+      response until this is recorded (`docs/todo_egui-widgets-spec.md` §2.5).
+      Research it per platform from
+      source (Breeze's style, libadwaita's CSS, WinUI's templates, AppKit's
+      measured rendering) with citations, then register the shape there.
+
+### platform-facts: whether a progress bar draws a border
+
+- [ ] `docs/platform-facts.md` §2.10 states no `border.color` or
+      `border.line_width` for the progress bar, so both are `defaults.border`'s
+      by inheritance (`docs/inheritance-rules.toml:86-93`), and a connector
+      stroking them would outline the bar on every preset. The platforms
+      differ. KDE's Breeze strokes the groove with a 1.001 px pen of the
+      window text colour at its frame intensity, which over the window is its
+      frame outline colour (breeze master, `kstyle/breezehelper.cpp` lines
+      134–139, 144 and 1204–1219, `kstyle/breezestyle.cpp` lines 6302–6303,
+      `kstyle/breezemetrics.h` line 25). WinUI 3's
+      `ProgressBarBorderThemeThickness` is 0, and 1 in high contrast
+      (microsoft-ui-xaml `258a2e9b`,
+      `controls/dev/ProgressBar/ProgressBar_themeresources.xaml` lines 5, 13
+      and 21). libadwaita draws none, and an inset 1 px `box-shadow` under
+      `prefers-contrast: more` (libadwaita 1.10.0 `_scale.scss:1-10`, which
+      `_progress-bar.scss`'s `> trough` extends). macOS's
+      `NSProgressIndicator` is unread: a screenshot on `macos-latest` settles
+      it. Add the two rows to §2.10 with those sources, and state
+      `line_width_px = 0` in the presets of the platforms that draw none.
+      Then the egui connector's `Frame::stroke` route is exact on every
+      preset, and the decline in its spec's §5.8 item 8 can go
+      (`docs/todo_v0.6.0_egui-connector-spec.md` §5.8).
+
+### Selection: the text colour macOS pairs with the unemphasised selection
+
+- [ ] `defaults.selection_inactive_background` is the selection fill of a
+      window that has lost focus. Only macOS states it
+      (`docs/platform-facts.md:1057`, `unemphasizedSelectedContentBackgroundColor`;
+      the reader, `native-theme/src/macos.rs:107`), and `ResolvedTheme` has no
+      text colour to pair with it: a toolkit that swapped the fill in on focus
+      loss would paint the active `selection_text_color` on it. The egui
+      connector grades the leaf UNMAPPABLE `source-side gap` for that reason
+      (`docs/todo_v0.6.0_egui-connector-spec.md` §14). Research which text
+      colour AppKit draws on the unemphasised selection — `docs/platform-facts.md`
+      first, then Apple's documentation, with citations; it is unresearched,
+      and no `NSColor` name is assumed here — and add it as a leaf beside
+      `selection_inactive_background` (property registry, inheritance rules,
+      platform-facts, presets, the macOS reader). Then the egui connector's
+      install plugin swaps both, fill and text, while the window is unfocused
+      (`ctx.input(|i| i.focused)`).
+      A question, not a claim: the macOS reader also writes the unemphasised
+      colour into `input.selection_background` (`native-theme/src/macos.rs:490`,
+      `:502`), where platform-facts gives an input's selection as
+      `← defaults.text_selection_background` (`docs/platform-facts.md:1193`),
+      `selectedTextBackgroundColor` on macOS (`:1058`). Neither the reader's
+      comments nor the commit that added the assignment (`d87483c8`) say why a text
+      field's selection takes the unfocused colour. Is it intended? Fix the
+      reader or record the reason.
+
 ---
 
 ## Toolkit Connectors
 
 ### native-theme-egui connector
 
-- [ ] Implement the connector per `docs/todo_v0.6.0_egui-connector-spec.md`
-      (rationale: `docs/todo_v0.6.0_egui-connector-rationale.md`). Targets
-      egui 0.36.1.
+- [ ] Implement the connector by its plan,
+      `docs/todo_v0.6.0_egui-connector-plan.md` — tasks in execution order,
+      each with its gate and commit point — per
+      `docs/todo_v0.6.0_egui-connector-spec.md` (rationale:
+      `docs/todo_v0.6.0_egui-connector-rationale.md`). Targets egui 0.36.2.
+      Archiving the three documents is the plan's last task.
+- [ ] Implement the companion widget crate, `native-theme-egui-widgets`, per
+      `docs/todo_egui-widgets-spec.md` (rationale:
+      `docs/todo_egui-widgets-rationale.md`): a switch, a slider, a spinner, a
+      segmented control and link wrappers. Milestone undecided; it starts after
+      the connector, whose API it consumes. When it is scheduled, re-verify the
+      spec against the connector as built, then write its plan.
+- [ ] **The egui showcase: the gpui application, with per-instance Widget
+      Info.** Part of v0.6.0, not deferred
+      (`docs/todo_v0.6.0_egui-connector-spec.md` §10.4, §13.2; plan Tasks 31,
+      34–36). Tick when those tasks pass their gates; the iced showcase's
+      entry (*The iced showcase: per-instance Widget Info* below) stays open.
 - [ ] Map the platform font-rendering preferences (see Core API above) onto
-      `Visuals::text_options` (`egui/src/style.rs:1000`). Only **one** of its
-      four fields has a genuine platform source:
+      `Visuals::text_options` (`egui/src/style.rs:1001`) and the faces egui
+      draws with. Map `font_hinting` (default `true`,
+      `epaint/src/text/mod.rs:61`) from a stated no-hinting preference, and a
+      stated light hint style onto each face's `FontTweak::hinting_target`
+      (`epaint/src/text/fonts.rs:242`; `SmoothHinting::light`, `:340-348`) on
+      the faces `fonts::font_definitions` assembles (connector spec §4.9). The
+      other `TextOptions` fields and the two preferences egui cannot express
+      are settled in the connector spec (§3.4, §5.10, §14 items 41–42).
 
-      - `font_hinting: bool` — hardcoded `true` by `TextOptions::default()`
-        (`epaint/src/text/mod.rs:61`) regardless of the user's setting. This is
-        the mappable one: fontconfig `hintnone` → `false`, otherwise `true`.
-      - `subpixel_binning` — **not** a platform preference. It renders each
-        glyph at up to four fractional horizontal offsets for more even kerning
-        (`epaint/src/text/mod.rs:44-53`); it is *sub-pixel positioning*, not
-        LCD subpixel rendering. Do not map fontconfig `rgba` onto it. Leave at
-        egui's default.
-      - `color_transfer_function` — **already correct, do not write it.**
-        `Visuals::dark()` and `Visuals::light()` set the right per-mode curve
-        (`style.rs:1500`, `:1567`) and the connector inherits it by starting
-        each scheme from its own `Theme::default_style()` (spec §3.4).
-        Writing it from theme data would fabricate a value.
-      - `max_texture_side` — overruled by `RawInput::max_texture_side`
-        (`style.rs:997-999`). Never write it.
-
-      Two platform preferences have **no egui expression** and should be
-      recorded in the spec's §14 honesty ledger rather than faked: LCD subpixel
-      order (`rgba`) — epaint computes one coverage value per pixel, so it is
-      grayscale-antialiased only; and `antialias=false` — `HintingTarget`'s own
-      docs state egui always renders anti-aliased
-      (`epaint/src/text/fonts.rs:306-308`).
-
-      Also check whether `HintingTarget` (`epaint/src/text/fonts.rs:303-314`)
-      is reachable globally or only per-font via `FontTweak`; `TextOptions`
-      exposes only the `bool`.
-
-- [ ] Add an MSRV CI job (spec §12.4, task 22). The workspace floor of `1.88.0`
+- [ ] Add an MSRV CI job (spec §12.4; a task of
+      `docs/todo_v0.6.0_egui-connector-plan.md`). The workspace floor of `1.88.0`
       was measured on 2026-08-10, but nothing re-checks it: every CI job
       installs `@stable`, there is no `rust-toolchain.toml`, and
-      `pre-release-check.sh` has no MSRV check. The job must cover the
-      workspace at `1.88.0` (re-measured 2026-09-06, unchanged; since
-      2026-09-07 `native-theme` itself uses `slice::as_chunks`, stable since
-      1.88.0, so the floor cannot drop below that), the gpui connector
-      separately at `1.95.0` (re-measured 2026-09-19 on the 0.6.4 closure:
-      1.95.0 builds, 1.94.0 fails on `std::hint::cold_path` in gpui-pre 0.3.5,
-      `src/profiler.rs:473, 494`) and the egui connector at `1.95`.
+      `pre-release-check.sh` has no MSRV check. The job is the one spec §12.4
+      spells out, three `cargo check --all-features --locked` runs: the
+      workspace except the gpui and egui connectors at `1.88.0` (re-measured
+      2026-09-25, clean; since 2026-09-07 `native-theme` itself uses
+      `slice::as_chunks`, stable since 1.88.0, so the floor cannot drop below
+      that), the egui connector at `1.95`, and the gpui connector at `1.95.0`
+      after installing the gpui system libraries (re-measured 2026-09-19 on
+      the 0.6.4 closure: 1.95.0 builds, 1.94.0 fails on `std::hint::cold_path`
+      in gpui-pre 0.3.5's `src/profiler.rs`, lines 473 and 494).
 
-- [ ] Cross-target warning hygiene. `cargo check -p native-theme --features
-      windows --target x86_64-pc-windows-msvc` reports 5 warnings and
-      `--features macos --target x86_64-apple-darwin` 3 (measured 2026-09-07
-      on rustc 1.98.1: `resolve/inheritance.rs:74` unreachable tail after the
-      Windows `return`, `icons.rs:466` unused `theme` off Linux,
-      `pipeline.rs:576` `preset_as_reader` used only on Linux,
-      `windows.rs:179` `read_frame_width` and `:373` `dwm_color_to_rgba`
-      never called, `macos.rs:60` unused `separator_c`). On a Windows target
-      without the `windows` feature the whole `windows` module is dead code
-      (`lib.rs:165` gates it on `target_os` only; the `not(windows)` twin
-      carries `#[allow(dead_code)]`), which is what docs.rs and a Windows
-      `native-theme-iced` build compile. None of the sites changed in
-      v0.5.8; CI's test jobs do not deny warnings, so nothing fails. The
-      MSRV CI job above is the natural place for a cross-target
-      `cargo check -D warnings`.
+- [x] Cross-target warning hygiene (done 2026-09-24). The 5 Windows and 3
+      macOS warnings measured on 2026-09-07 are gone (1dc99f82), and CI's
+      Windows and macOS test legs now run `cargo check -p native-theme
+      --all-features` with warnings denied (`.github/workflows/ci.yml:83-87`,
+      b35432a9), as the cross-target section of `pre-release-check.sh` does.
+      Re-measured 2026-09-25 on rustc 1.98.1: `cargo check -p native-theme`
+      for `x86_64-pc-windows-msvc` and `x86_64-apple-darwin`, each with and
+      without its platform feature, reports no warning.
 
 ### native-theme-gpui connector
 
@@ -1468,7 +1920,11 @@ the gap — closing it is a change, and each wants its own decision.
       `defaults.border.corner_radius_lg` is "(none) — preset" (§2.1.6) while
       kde-breeze states 8. Two value mismatches the audit noticed and did
       not follow: adwaita's `checkbox.indicator_width` 20 against §2.5's
-      "libadwaita CSS: 14" (Ch. 1 gives 20 with padding), and windows-11's
+      "libadwaita CSS: 14" (Ch. 1 gives 20 with padding:
+      `docs/platform-facts.md:1212` gives GNOME 14, the CSS `min-width`,
+      which is the content box, while `adwaita.toml` states the 20-point box
+      that `:980` defines, 14 + 2 · `padding: 3px`, so the table cell should
+      read 20), and windows-11's
       menu `row_height` 36, which no platform-facts context gives. Also for
       this plan:
       - **KDE input vertical padding** (the audit's N4): platform-facts'
@@ -1757,3 +2213,6 @@ platform (`native-theme/src/watch/`).
 
 ### iced: filing variable-font weights is a workaround for cosmic-text 0.15
 - [ ] iced 0.14 draws text with cosmic-text 0.15, which matches a face only at the weight fontdb filed it at (`font/fallback/mod.rs:279-287`, `:299-303`, `:446-456`), and fontdb 0.23 files a variable font at its OS/2 weight alone (`lib.rs:1034-1037`, `:1161`). The iced showcase therefore files an extra face at each weight a variable face's `wght` axis covers (`register_weight` in `connectors/native-theme-iced/examples/showcase-iced.rs`), and the iced connector's README and *Font Configuration* docs teach consumers the same. cosmic-text 0.19 matches a variable face at any weight its axis covers itself (`variable_weight_match`, `font/system.rs:38-44`, used at `font/fallback/mod.rs:285`, `:301`). When iced moves to cosmic-text 0.19 or later, remove `register_weight` and the recipe, and check whether the nearest-face fallback in `drawable_font` is still needed for families with no face at a weight.
+
+### macOS: the stated font family "SF Pro" is not a family iced's font database holds
+- [ ] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-sonoma.toml:47`, `:403`, and the reader's non-macOS testable build, `macos.rs:565-624`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:59-67`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`macos.rs:205-206`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.

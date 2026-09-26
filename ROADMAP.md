@@ -11,23 +11,25 @@ See also:
 ## v0.6.0 — egui connector
 
 There is no `native-theme-egui` crate yet. egui is the most structurally
-difficult connector target so far: it holds a **single global `Style`**, whose
-entire widget appearance is five `WidgetVisuals` states of six fields each,
-whereas `ResolvedTheme` carries 25 per-widget structs. Expanded to leaves that
-is 463 properties competing for one `Style`, and 100 egui fields are claimed by
-two or more native-theme widgets at once — `selection.bg_fill` alone has ten
-claimants. A connector that only writes the global `Style` can serve 33 of the
-463.
+difficult connector target so far: it holds **one global `Style` per colour
+scheme**, whose widget appearance varies by interaction state and not by widget
+type, whereas `ResolvedTheme` carries a struct per widget. Many native-theme
+properties therefore compete for the same `Style` field, and a connector that
+only writes the global `Style` renders one winner per contested field and drops
+the rest.
 
 **Planned deliverable:** a `native-theme-egui` crate that pre-builds a `Style`
-per widget role and per interaction variant, applied through egui's own seams
-(`UiBuilder::style`, `Ui::style_mut`, `Frame`), so per-widget geometry survives
-the contested-field collisions. Coverage is enforced by an audited manifest that
+per widget role and per appearance variant (resting, selected, disabled),
+applied through egui's own seams (`UiBuilder::style`, `Ui::set_style`,
+`StyleModifier`, `Frame`), so per-widget geometry survives the contested-field
+collisions. Coverage is enforced by an audited manifest that
 a headless differential test checks against `ResolvedTheme`, rather than
-asserted in prose. Targets egui 0.36.1.
+asserted in prose. Targets egui 0.36.2.
 
-Detailed design: [`docs/todo_v0.6.0_egui-connector-spec.md`](docs/todo_v0.6.0_egui-connector-spec.md)
-and [`docs/todo_v0.6.0_egui-connector-rationale.md`](docs/todo_v0.6.0_egui-connector-rationale.md).
+Detailed design: [`docs/todo_v0.6.0_egui-connector-spec.md`](docs/todo_v0.6.0_egui-connector-spec.md),
+[`docs/todo_v0.6.0_egui-connector-rationale.md`](docs/todo_v0.6.0_egui-connector-rationale.md)
+and the implementation plan,
+[`docs/todo_v0.6.0_egui-connector-plan.md`](docs/todo_v0.6.0_egui-connector-plan.md).
 
 ## v0.6.1 — Full theme geometry in the iced connector
 
