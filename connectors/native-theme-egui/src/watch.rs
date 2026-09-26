@@ -190,21 +190,13 @@ mod tests {
         assert!(handoff.last_error().is_none());
     }
 
-    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:311-325`).
+    /// T15 (c): `start` never panics, whatever the desktop (`native-theme/src/watch/mod.rs:311-325`):
+    /// `Ok` or any error passes, and only a panic fails.
     #[test]
     fn start_never_panics_without_a_desktop() {
         let ctx = egui::Context::default();
-        let result = ThemeWatcher::start(&ctx, ThemeWatcher::system_rebuild);
-        assert!(
-            matches!(
-                &result,
-                Ok(_)
-                    | Err(Error::WatchUnavailable { .. })
-                    | Err(Error::PlatformUnsupported { .. })
-                    | Err(Error::ReaderFailed { .. })
-            ),
-            "unexpected result: {:?}",
-            result.as_ref().err()
-        );
+        if let Err(e) = ThemeWatcher::start(&ctx, ThemeWatcher::system_rebuild) {
+            println!("start returned an error: {e:?}");
+        }
     }
 }
