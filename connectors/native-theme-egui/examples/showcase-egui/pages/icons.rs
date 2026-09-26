@@ -34,16 +34,25 @@ pub(crate) fn show(
     caption(reg, ui, "The loading indicator");
     icons_indicator(reg, atlas, ui, chosen);
 
+    let toolbar = icons::icon_size(t, IconContext::Toolbar);
     if let Some(image) = demo::role_image(
         ui,
         IconRole::ActionSave,
         *set,
         icon_theme.as_deref(),
-        icons::icon_size(t, IconContext::Toolbar),
+        toolbar,
     ) {
         caption(reg, ui, "ui.image");
         let source = image.source(ui.ctx());
-        demo::base(reg, ui, "ui.image", |ui| ui.image(source));
+        // `ui.image` fills the room its `Ui` offers (`ImageSize::default`,
+        // `egui/src/widgets/image.rs:558-563`), so that room is the icon's size.
+        demo::base(reg, ui, "ui.image", |ui| {
+            ui.scope(|ui| {
+                ui.set_max_size(egui::Vec2::splat(toolbar));
+                ui.image(source)
+            })
+            .inner
+        });
     }
 
     for size in sizes {

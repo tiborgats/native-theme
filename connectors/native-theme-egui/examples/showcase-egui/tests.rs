@@ -810,6 +810,29 @@ fn a_checked_radio_or_box_is_drawn_selected() {
     }
 }
 
+/// The Icons page's `ui.image` is drawn at the toolbar icon size, not at the page's width,
+/// which would push every icon row below the fold.
+#[cfg(feature = "lucide-icons")]
+#[test]
+fn the_icons_page_image_is_icon_sized() {
+    let harness = open_page(Page::Icons, egui::Theme::Light);
+    let t = harness.state().atlas.resolved_for(harness.ctx.theme());
+    let size =
+        native_theme_egui::icons::icon_size(t, native_theme_egui::icons::IconContext::Toolbar);
+    let rect = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == "ui.image")
+        .map(|r| r.rect)
+        .expect("the preset's Lucide set has ActionSave");
+    assert!(
+        rect.width() <= size + 1.0 && rect.height() <= size + 1.0,
+        "ui.image is {rect:?}, the toolbar icon size {size}"
+    );
+}
+
 fn manifest_and_json(harness: &Harness<'_, App>) -> (Manifest, serde_json::Value) {
     let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
     let json =
