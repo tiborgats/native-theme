@@ -370,15 +370,29 @@ impl App {
     /// Install the held atlas and the mode's theme preference (egui's own call, §10.3).
     fn apply(&mut self, ctx: &egui::Context) {
         self.atlas.install(ctx);
-        ctx.set_theme(match self.settings.mode {
-            ModeChoice::System => egui::ThemePreference::System,
-            ModeChoice::Light => egui::ThemePreference::Light,
-            ModeChoice::Dark => egui::ThemePreference::Dark,
-        });
+        ctx.set_theme(self.theme_preference());
         self.last_scheme = None;
         self.registry.screen_changed();
         #[cfg(feature = "watch")]
         self.publish_selection();
+    }
+
+    /// Switch the mode: egui's own theme call and nothing else (§10.4's side-panel row). The
+    /// atlas carries both schemes and egui picks one (§4.6), so nothing is rebuilt, the OS is
+    /// not read again, and a mode switch cannot fail.
+    pub(crate) fn set_mode(&mut self, mode: ModeChoice, ctx: &egui::Context) {
+        self.settings.mode = mode;
+        ctx.set_theme(self.theme_preference());
+        #[cfg(feature = "watch")]
+        self.publish_selection();
+    }
+
+    fn theme_preference(&self) -> egui::ThemePreference {
+        match self.settings.mode {
+            ModeChoice::System => egui::ThemePreference::System,
+            ModeChoice::Light => egui::ThemePreference::Light,
+            ModeChoice::Dark => egui::ThemePreference::Dark,
+        }
     }
 
     /// The status bar's title: the shown Widget Info's kind, or nothing.
@@ -449,10 +463,7 @@ impl App {
             Action::ToggleSidePanel => self.side_panel_visible = !self.side_panel_visible,
             Action::OpenCommandPalette => self.palette = Some(PaletteState::default()),
             Action::ReloadTheme => self.install(ctx),
-            Action::SetMode(mode) => {
-                self.settings.mode = mode;
-                self.install(ctx);
-            }
+            Action::SetMode(mode) => self.set_mode(mode, ctx),
             Action::OpenPreferences => self.preferences_open = true,
             Action::OpenAbout => self.about_open = true,
             Action::Quit => {

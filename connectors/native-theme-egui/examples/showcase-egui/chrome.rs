@@ -566,8 +566,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
         app.install(&ctx);
     }
     if let Some(mode) = picked_mode {
-        app.settings.mode = mode;
-        app.install(&ctx);
+        app.set_mode(mode, &ctx);
     }
     if let Some(choice) = picked_icon {
         app.settings.pick_icon(Some(choice));

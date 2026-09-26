@@ -835,6 +835,43 @@ fn a_base_widget_is_drawn_in_the_base_style() {
     }
 }
 
+/// §10.4's side-panel row: a mode is egui's own theme call. The atlas carries both schemes, so
+/// a switch neither rebuilds nor reinstalls it — seen here as a selection changed behind the
+/// app's back that the switch does not install — from the Mode row as from the Theme menu.
+#[test]
+fn a_mode_switch_installs_nothing() {
+    let other = Theme::list_presets_for_platform()
+        .into_iter()
+        .map(|info| info.key)
+        .find(|key| *key != TEST_PRESET)
+        .expect("a second preset is offered on every platform");
+    let installed = Theme::preset(TEST_PRESET).expect("bundled").name;
+    let mut harness = open_default();
+    harness.run();
+    harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
+    harness.get_by_role_and_label(Role::Button, "Dark").click();
+    harness.run();
+    assert_eq!(harness.state().settings.mode, ModeChoice::Dark);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
+    assert_eq!(
+        harness.state().atlas.name(),
+        installed,
+        "the Mode row rebuilt the atlas"
+    );
+    let ctx = harness.ctx.clone();
+    harness
+        .state_mut()
+        .run_action(Action::SetMode(ModeChoice::Light), &ctx);
+    harness.run();
+    assert_eq!(harness.state().settings.mode, ModeChoice::Light);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Light);
+    assert_eq!(
+        harness.state().atlas.name(),
+        installed,
+        "Theme > Light rebuilt the atlas"
+    );
+}
+
 /// §10.4's Text row: the code view's colours are egui_extras's own for the scheme shown, and
 /// its font is the base style's `Monospace` slot, after a mode switch or an install as before.
 #[test]
