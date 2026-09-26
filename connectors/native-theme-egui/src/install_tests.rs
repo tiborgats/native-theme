@@ -834,6 +834,45 @@ fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
             (Theme::Light, vec![])
         );
     }
+
+    // An immediate viewport runs its whole pass, hooks included, inside the root's
+    // (`egui/src/context.rs:3988-3995` registers the renderer eframe calls); egui drains every
+    // viewport's commands only at the end of the outermost pass (`:2799-2811`), so the root's
+    // output hook must still know that the root's input was filled.
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = with_system_theme(None);
+        input.viewport_id = viewport.ids.this;
+        input
+            .viewports
+            .insert(viewport.ids.this, egui::ViewportInfo::default());
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("immediate child");
+    for n in 0..2 {
+        let out = pass(&ctx, with_system_theme(None), |ui| {
+            ui.ctx()
+                .show_viewport_immediate(child, egui::ViewportBuilder::default(), |_, _| {});
+        });
+        for (viewport, vo) in &out.viewport_output {
+            assert!(
+                !vo.commands
+                    .contains(&egui::ViewportCommand::SetTheme(SystemTheme::SystemDefault)),
+                "pass {n}, {viewport:?}: {:?}",
+                vo.commands
+            );
+        }
+        if n == 0 {
+            assert_eq!(
+                set_theme_commands(&out),
+                vec![SystemTheme::Light],
+                "the root's title bar follows the OS mode with an immediate viewport open"
+            );
+        }
+    }
 }
 
 /// §13 T6 (a)–(e), T5's plan leg and T14 (a)'s font-plan clause (plan Task 22).

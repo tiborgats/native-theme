@@ -177,8 +177,13 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// `SetTheme(<the OS mode>)`, and when the mode differs from the one last sent for that
     /// viewport — a rebuilt atlas after the desktop switched — the command is appended, because
     /// egui sends again only when the *preference* changes (§10.3).
+    ///
+    /// The `filled` map is read, never emptied: an immediate viewport runs its whole pass, hooks
+    /// included, inside its parent's, and the parent's commands reach the outermost pass's
+    /// output (`egui/src/context.rs:2799-2811`); `input_hook` overwrites each viewport's entry
+    /// every pass.
     fn output_hook(&mut self, ctx: &Context, output: &mut egui::FullOutput) {
-        let filled = std::mem::take(&mut self.filled);
+        let filled = &self.filled;
         let Some(mode) = os_mode(ctx) else {
             return;
         };
