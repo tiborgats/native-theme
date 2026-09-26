@@ -82,9 +82,10 @@ fn manifest_floors() -> BTreeMap<&'static str, String> {
 /// `[dependencies]`, `[dev-dependencies]` and `[target.'cfg(..)'.*]` tables
 /// alike, since a crate required on one platform is required.
 ///
-/// A name can be stated more than once -- `iced_aw` is both a dependency and a
-/// dev-dependency -- so the versions are collected as a set and the caller
-/// decides what more than one of them means.
+/// A name can be stated more than once -- as a dependency and a dev-dependency,
+/// or once per target table, as this manifest states `native-theme` -- so the
+/// versions are collected as a set and the caller decides what more than one of
+/// them means.
 fn manifest_versions(manifest: &str) -> BTreeMap<String, BTreeSet<String>> {
     let mut found: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     let mut in_dependencies = false;
@@ -106,10 +107,10 @@ fn manifest_versions(manifest: &str) -> BTreeMap<String, BTreeSet<String>> {
 /// The package name and version a dependency line states, if it states a
 /// version of its own.
 ///
-/// Three shapes appear in this workspace: `iced_core = "0.14"`,
-/// `iced_widget = { version = "0.14", optional = true }` and
-/// `gpui = { package = "gpui-pre", version = "0.3.5" }`, whose package name is
-/// not its key. A dependency inherited from the workspace
+/// The shapes read: `egui = "0.36.2"`, a table with a `version` such as
+/// `skrifa = { version = "0.44.0", default-features = false, features = ["std"] }`,
+/// and a table with a `package` key, whose package name is not its key and is
+/// the one returned. A dependency inherited from the workspace
 /// (`native-theme = { workspace = true }`) states no version and is not one of
 /// these floors.
 fn dependency_on(line: &str) -> Option<(String, String)> {
