@@ -103,6 +103,18 @@ jobs:
       # all features; pre-release-check.sh runs the same script.
       - run: bash scripts/check-features.sh
 
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - run: cargo check --workspace --exclude native-theme-gpui --exclude native-theme-egui --all-features --locked
+      - uses: dtolnay/rust-toolchain@1.95.0
+      - run: cargo check -p native-theme-egui --all-features --locked
+      - name: Install system dependencies (gpui)
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
+      - run: cargo check -p native-theme-gpui --all-features --locked
+
   test-build-crate:
     name: Test native-theme-build
     needs: fmt
