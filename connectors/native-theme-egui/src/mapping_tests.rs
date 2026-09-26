@@ -864,7 +864,7 @@ const MENU_STYLE_PATHS: [&str; 6] = [
 
 /// Which frame field each surface's preset reads from which base-style field (§3.2;
 /// `egui/src/containers/frame.rs:178-221`).
-fn preset_reads(surface: Surface) -> &'static [(&'static str, &'static str)] {
+pub(crate) fn preset_reads(surface: Surface) -> &'static [(&'static str, &'static str)] {
     match surface {
         Surface::Window | Surface::WindowTitleBar => &[
             ("inner_margin", "spacing.window_margin"),
@@ -900,7 +900,7 @@ fn covers(sink: &str, path: &str) -> bool {
 }
 
 /// The rest of `path` below `prefix`: `""` when equal, `.x` when a field inside it.
-fn below<'a>(prefix: &str, path: &'a str) -> Option<&'a str> {
+pub(crate) fn below<'a>(prefix: &str, path: &'a str) -> Option<&'a str> {
     if path == prefix {
         Some("")
     } else {

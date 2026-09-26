@@ -13,7 +13,7 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
-use crate::mapping_tests::{Manifest, Sink, Verdict};
+use crate::mapping_tests::{Manifest, Sink, Verdict, below, preset_reads, surface_by_key};
 
 const CURRENT: &str = include_str!("mapping.md");
 const REGENERATE: &str = "cargo test -p native-theme-egui --lib -- --ignored regenerate_mapping_md";
@@ -128,6 +128,40 @@ fn sink_text(sink: &Sink) -> String {
     out
 }
 
+/// A row of the base-owner table: a `Style` field, or a `Frame` field no preset reads from
+/// the `Style` (§3.2), keyed by its surface. `Style` rows sort first.
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum FieldKey {
+    Style(String),
+    Frame(String, String),
+}
+
+/// Who writes one field. Owners: the base-style sinks with no `when`, and those whose `when`
+/// is "stated; …" — the leaf holds the field whenever it is stated (§6.4); a DERIVED row's
+/// sink beside a non-DERIVED owner is a fold into that owner's value (§6.13), so an input.
+/// Inputs: every other `when` sink, a formula's other input or a fallback (§13.1). Forced:
+/// `when = "never: …"`. Displaced: the scoped and frame sinks.
+#[derive(Default)]
+struct Field {
+    /// The leaf, and whether its row is DERIVED.
+    owners: Vec<(String, bool)>,
+    inputs: Vec<String>,
+    forced: Vec<String>,
+    displaced: Vec<String>,
+}
+
+/// A `Frame` sink's row: the `Style` field its surface's preset reads for that frame field,
+/// or the frame field itself.
+fn frame_field(surface: &str, path: &str) -> FieldKey {
+    preset_reads(surface_by_key(surface))
+        .iter()
+        .find_map(|(frame, style)| below(frame, path).map(|rest| format!("{style}{rest}")))
+        .map_or_else(
+            || FieldKey::Frame(surface.to_owned(), path.to_owned()),
+            FieldKey::Style,
+        )
+}
+
 pub(crate) fn render() -> String {
     let manifest = Manifest::load();
 
@@ -223,39 +257,81 @@ pub(crate) fn render() -> String {
     }
 
     // ---- §5.9: base owners and what displaces them, from the sink locations ----------------
-    let mut owners: BTreeMap<&str, Vec<String>> = BTreeMap::new();
-    let mut displaced: BTreeMap<&str, Vec<String>> = BTreeMap::new();
+    let mut fields: BTreeMap<FieldKey, Field> = BTreeMap::new();
     for (leaf, row) in &manifest.rows {
         for sink in &row.sinks {
-            if sink.scope.is_none() && sink.surface.is_none() {
-                owners
-                    .entry(sink.path.as_str())
-                    .or_default()
-                    .push(format!("`{leaf}`"));
-            } else {
-                displaced
-                    .entry(sink.path.as_str())
-                    .or_default()
-                    .push(format!("`{leaf}` {}", sink_location(sink)));
+            match (&sink.scope, &sink.surface) {
+                (None, None) => {
+                    let field = fields
+                        .entry(FieldKey::Style(sink.path.clone()))
+                        .or_default();
+                    let derived = row.verdict == Verdict::Derived;
+                    match sink.when.as_deref() {
+                        None => field.owners.push((format!("`{leaf}`"), derived)),
+                        Some(when) if when.starts_with("stated; ") => {
+                            field.owners.push((format!("`{leaf}`"), derived));
+                        }
+                        Some(when) => match when.strip_prefix("never: ") {
+                            Some(why) => field
+                                .forced
+                                .push(format!("`{leaf}` forces it: {}", md_text(why))),
+                            None => field.inputs.push(format!("`{leaf}`")),
+                        },
+                    }
+                }
+                (_, surface) => {
+                    let key = match surface {
+                        Some(surface) if sink.scope.is_none() => frame_field(surface, &sink.path),
+                        _ => FieldKey::Style(sink.path.clone()),
+                    };
+                    fields
+                        .entry(key)
+                        .or_default()
+                        .displaced
+                        .push(format!("`{leaf}` {}", sink_location(sink)));
+                }
             }
         }
     }
     let _ = writeln!(
         md,
-        "## Base owners (§5.9)\n\nThe leaf that wins an egui field globally, and the leaves that displace it inside a role scope or a `Surface` frame.\n\n| egui field | base owner | displaced to a scope or a surface |\n|---|---|---|"
+        "## Base owners (§5.9)\n\nThe leaf that wins an egui field globally; the leaves that only feed its formula (a fold, a composite, a fallback), or force it to a constant; and the leaves that displace it inside a role scope or a `Surface` frame. A frame's field is listed under the `Style` field its egui preset reads (`egui/src/containers/frame.rs:178-221`), or by itself where the preset reads none.\n\n| egui field | base owner | formula inputs and forced constants | displaced to a scope or a surface |\n|---|---|---|---|"
     );
-    let mut fields: Vec<&str> = owners.keys().chain(displaced.keys()).copied().collect();
-    fields.sort_unstable();
-    fields.dedup();
-    for field in fields {
-        let owner = owners.get(field).map_or_else(
-            || "— (egui's own value stands)".to_owned(),
-            |o| o.join(", "),
+    for field in fields.values_mut() {
+        if field.owners.iter().any(|(_, derived)| !derived) {
+            let (owners, folds): (Vec<_>, Vec<_>) =
+                field.owners.drain(..).partition(|(_, derived)| !derived);
+            field.owners = owners;
+            field.inputs.extend(folds.into_iter().map(|(leaf, _)| leaf));
+            field.inputs.sort_unstable();
+        }
+    }
+    for (key, field) in &fields {
+        let (name, unowned) = match key {
+            FieldKey::Style(path) => (format!("`{path}`"), "— (egui's own value stands)"),
+            FieldKey::Frame(surface, path) => (
+                format!("\\[{surface}\\] `{path}`"),
+                "— (the `Frame` preset's own value)",
+            ),
+        };
+        let owner = if !field.owners.is_empty() {
+            let owners: Vec<&str> = field.owners.iter().map(|(leaf, _)| leaf.as_str()).collect();
+            owners.join(", ")
+        } else if !field.forced.is_empty() {
+            "— (a constant this crate writes)".to_owned()
+        } else if !field.inputs.is_empty() {
+            "— (a formula's result)".to_owned()
+        } else {
+            unowned.to_owned()
+        };
+        let mut formula = field.inputs.clone();
+        formula.extend(field.forced.iter().cloned());
+        let _ = writeln!(
+            md,
+            "| {name} | {owner} | {} | {} |",
+            formula.join(", "),
+            field.displaced.join(", ")
         );
-        let others = displaced
-            .get(field)
-            .map_or_else(String::new, |d| d.join(", "));
-        let _ = writeln!(md, "| `{field}` | {owner} | {others} |");
     }
     let _ = writeln!(
         md,

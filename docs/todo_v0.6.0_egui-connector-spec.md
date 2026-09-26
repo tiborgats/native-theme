@@ -3456,8 +3456,10 @@ The one set of totals for this mapping. At implementation they are generated
 from `mapping.toml` (§13.1), whose rows carry the verdicts of §5.1–§5.6: one
 generator writes `connectors/native-theme-egui/src/mapping.md` — the manifest's
 rows, these totals and §5.9's table as the manifest records it (each base-style
-field, the leaves that write it unscoped, and the leaves that write the same field
-in a role scope or a `Surface` frame) — which the crate's rustdoc includes, and a
+field, the leaf that owns it unscoped, the leaves that only feed its formula or force
+it to a constant, and the leaves that write the same field in a role scope or a
+`Surface` frame, a frame's field listed under the `Style` field its egui preset
+reads) — which the crate's rustdoc includes, and a
 test fails when the committed file differs from what the generator writes. Every
 other place in the crate's documents refers here instead of restating them.
 
