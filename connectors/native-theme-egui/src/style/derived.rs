@@ -1,8 +1,8 @@
-//! The derived formulas of spec §6.5–§6.12: the sinks no leaf reaches by a straight copy.
+//! The derived formulas of spec §6.5–§6.14: the sinks no leaf reaches by a straight copy.
 //!
 //! Every function is total. A non-finite leaf takes egui's own value — the one the style being
 //! built already carries at that sink (§6, §7.2) — and is reported once with
-//! `Note::ValueSanitised`; a `defaults.*` leaf is reported by the base style (Task 13), so a
+//! `Note::ValueSanitised`; a `defaults.*` leaf is reported by `base_style`, so a
 //! formula that reads one substitutes silently. Every length then passes `clamp_length`. The
 //! numeric literals are §6.17's structural constants (`0.0`, `1.0`) and its cited exemptions
 //! (`0.5`, `0.8`, `1.25`, `2.5`, `2.0`, `4.0 / 3.0`), each named at its use.
@@ -21,7 +21,7 @@ fn sanitised(path: &'static str, notes: &mut Vec<Note>) {
 }
 
 /// The derived writes of the base style: D1 (§6.5), D5 (§6.9) and the two shadow gates (§6.14,
-/// §5.9). Called last in `base_style` (Task 13); no earlier task writes these sinks.
+/// §5.9). Called last in `base_style`, over the values it wrote.
 pub(crate) fn apply_base(style: &mut egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     scrollbar_widths(style, t, notes);
@@ -41,7 +41,7 @@ pub(crate) fn apply_base(style: &mut egui::Style, input: &BuildInput<'_>, notes:
     );
 }
 
-/// The derived writes of one role cell, called last in `role_cell` (Task 15); a role with none
+/// The derived writes of one role cell, called last in `role_cell`; a role with none
 /// returns at once.
 pub(crate) fn apply_role(
     role: Role,
@@ -170,7 +170,8 @@ fn slider_geometry(
     notes: &mut Vec<Note>,
 ) {
     let d = t.slider.thumb_diameter;
-    let base_y = style.spacing.interact_size.y; // egui's own value for this sink: what the style carries
+    // the starting style's value: the base style's `button.min_height` in a cell
+    let base_y = style.spacing.interact_size.y;
     style.spacing.interact_size.y = if d.is_finite() {
         clamp_length(1.25 * d) // 0.8 · (1.25 d) == d; `slider.rs:885` (§6.17)
     } else {
@@ -203,7 +204,8 @@ fn slider_geometry(
 /// `Spinner` allocates `vec2(size, size)` exactly (`egui/src/widgets/spinner.rs:65-68`), so the
 /// minimum collapses to a `max`. Each operand passes `finite_or` **before** the `max`, because
 /// `f32::max` would silently drop a `NaN` instead of reporting it; the diameter's fallback is
-/// egui's own `interact_size.y`, the minimum's the `0.0` egui has as no floor (§6.17).
+/// the starting style's `interact_size.y` (the base style's `button.min_height` in a cell), the
+/// minimum's the `0.0` egui has as no floor (§6.17).
 fn spinner_size(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
     let base_y = style.spacing.interact_size.y;
     if !t.spinner.diameter.is_finite() {
@@ -251,9 +253,10 @@ fn slider_rail_radius(style: &mut egui::Style, t: &ResolvedTheme) {
 /// `Panel::show` sizes a top panel as `interact_size.y + frame.total_margin().sum().y`
 /// (`egui/src/containers/panel.rs:1068-1073`), the frame being the one `resolve_frame` builds
 /// from this scope (`:947-965`): egui's `side_top_panel` preset with the toolbar's padding — the
-/// same frame Task 18 builds for `Surface::Panel(PanelSide::Top)` — plus the separator room it
-/// reserves in the outer margin, `noninteractive.bg_stroke.width.round() as i8` (`:961-965`). So
-/// the stated height, less all of that, is what the scope's `interact_size.y` must hold.
+/// same frame `frames::surface_frame` builds for `Surface::Panel(PanelSide::Top)` — plus the
+/// separator room it reserves in the outer margin, `noninteractive.bg_stroke.width.round() as
+/// i8` (`:961-965`). So the stated height, less all of that, is what the scope's
+/// `interact_size.y` must hold.
 fn toolbar_bar_height(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
     let Some(h) = t.toolbar.bar_height else {
         return; // S2: no stated height; egui's own sizing stands
@@ -263,7 +266,7 @@ fn toolbar_bar_height(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Ve
         return; // egui's own value: what the style carries
     }
     let frame = egui::Frame::side_top_panel(style);
-    // A non-finite padding side keeps the preset's; the Panel(Top) frame reports it (Task 18).
+    // A non-finite padding side keeps the preset's; `frames::surface_frame` reports it.
     let inner = to_margin(frame.inner_margin, &t.toolbar.border.padding);
     let separator = f32::from(i8_from_f32_saturating(
         style.visuals.widgets.noninteractive.bg_stroke.width,
@@ -921,7 +924,7 @@ mod tests {
         assert_eq!(sanitised(&notes, "combo_box.arrow_area_width"), 1);
     }
 
-    // ---- §6.4, over the cells Task 15 builds ----------------------------------------------
+    // ---- §6.4, over the cells `role_cell` builds -------------------------------------------
 
     /// Every `None` soft option is a copy of the leaf its row names in §6.4's table, written as
     /// given; only `button.active_background` falls back to another *layer*, composited.
@@ -1013,7 +1016,7 @@ mod tests {
         );
     }
 
-    // ---- §6.13 and §6.14, over the base style Task 13 builds ------------------------------
+    // ---- §6.13 and §6.14, over the base style `base_style` builds -------------------------
 
     #[test]
     fn every_border_stroke_folds_the_defaults_opacity_into_its_alpha() {

@@ -27,7 +27,7 @@ pub(crate) fn role_cell(
     let mut s = base.clone();
     match role {
         Role::Window | Role::Card => {} // no entry, no field (§6.1): the surfaces carry them
-        Role::Splitter => {}            // its three strokes are D7 (§6.9), Task 17's `apply_role`
+        Role::Splitter => {}            // its three strokes are D7 (§6.9), in `derived::apply_role`
         Role::Button => button(&mut s, base, input, notes),
         Role::Input => input_role(&mut s, base, input, notes),
         Role::Checkbox => checkbox(&mut s, base, input, notes),
@@ -462,7 +462,7 @@ fn scrollbar(
                 field: FillField::Bg,
                 idle: Some((sb.thumb_color, "scrollbar.thumb_color")),
                 hover: Some((sb.thumb_hover_color, "scrollbar.thumb_hover_color")),
-                active: None, // the pressed thumb is D5 (§6.9), Task 17's
+                active: None, // the pressed thumb is D5 (§6.9), in `derived::apply_role`
                 layer: Layer::AsGiven,
             }),
             text: None,
@@ -488,7 +488,7 @@ fn slider(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             fill: Some(FillSource {
                 field: FillField::Bg,
                 idle: Some((sl.track_color, "slider.track_color")), // I1: the rail
-                hover: None, // the hovered and pressed handle is D6 (§6.9), Task 17's
+                hover: None, // the hovered and pressed handle: D6 (§6.9), `derived::apply_role`
                 active: None,
                 layer: Layer::AsGiven,
             }),
@@ -852,7 +852,8 @@ fn spinner(
     input: &BuildInput<'_>,
     _notes: &mut Vec<Note>,
 ) {
-    // the arc: `strong_text_color`, `active.fg_stroke.color` (I2); its size is D3 (§6.7), Task 17's
+    // the arc: `strong_text_color`, `active.fg_stroke.color` (I2); its size is D3 (§6.7), in
+    // `derived::apply_role`
     s.visuals.widgets.active.fg_stroke.color = to_color32(input.theme.spinner.fill_color);
 }
 
@@ -1457,7 +1458,7 @@ mod tests {
         assert_eq!(c.visuals.disabled_alpha, unit_interval(i.disabled_opacity));
         assert_eq!(
             c.visuals.text_edit_bg_color, base.visuals.text_edit_bg_color,
-            "the base owner's; the Disabled cell is Task 16's"
+            "the base owner's; the Disabled cell writes its own"
         );
     }
 
@@ -1606,7 +1607,7 @@ mod tests {
     }
 
     /// §5.5's Scrollbar rows: the base's own thumb and track values again; the pressed thumb
-    /// (D5) and the radius (§6.8) are Task 17's.
+    /// (D5) and the radius (§6.8) are `derived`'s, tested there.
     #[test]
     fn scrollbar_cell_writes_its_rows() {
         for (preset, mode) in PRESETS {
@@ -1635,8 +1636,8 @@ mod tests {
         }
     }
 
-    /// §5.5's Slider rows this task writes: the trailing fill on `selection.bg_fill`, the rail
-    /// on {inactive,open} `bg_fill`; the handle's hover and press (D6) are Task 17's.
+    /// §5.5's Slider rows the role function writes: the fill colour on `selection.bg_fill`, the
+    /// rail on {inactive,open} `bg_fill`; the handle's hover and press (D6) are `derived`'s.
     #[test]
     fn slider_cell_writes_its_rows() {
         for (preset, mode) in PRESETS {
@@ -2051,8 +2052,8 @@ mod tests {
         }
     }
 
-    /// §5.5's Spinner row this task writes: the arc on `active.fg_stroke.color` (I2); the size
-    /// (D3) is Task 17's.
+    /// §5.5's Spinner row the role function writes: the arc on `active.fg_stroke.color` (I2); the
+    /// size (D3) is `derived`'s.
     #[test]
     fn spinner_cell_writes_its_rows() {
         for (preset, mode) in PRESETS {

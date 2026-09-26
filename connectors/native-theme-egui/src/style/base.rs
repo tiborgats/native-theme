@@ -188,7 +188,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     let v = &mut s.visuals;
     v.panel_fill = to_color32(d.background_color);
     v.weak_text_color = Some(to_color32(d.muted_color));
-    v.window_shadow.color = to_color32(d.shadow_color); // geometry stays egui's (§6.14 gates it, Task 17)
+    v.window_shadow.color = to_color32(d.shadow_color); // geometry stays egui's; `apply_base` gates it (§6.14)
     v.popup_shadow.color = to_color32(d.shadow_color);
     v.hyperlink_color = to_color32(d.link_color);
     v.selection.bg_fill = to_color32(d.selection_background);
@@ -382,7 +382,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
                 field: FillField::Bg,
                 idle: Some((sb.thumb_color, "scrollbar.thumb_color")),
                 hover: Some((sb.thumb_hover_color, "scrollbar.thumb_hover_color")),
-                active: None, // D5 (§6.9) is Task 17's `apply_base`; until then `active` copies `hovered`
+                active: None, // D5 (§6.9): `derived::apply_base` writes `active.bg_fill`
                 layer: Layer::AsGiven,
             }),
             text: None,

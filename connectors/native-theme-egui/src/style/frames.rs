@@ -15,7 +15,7 @@ use crate::convert::{i8_from_f32_saturating, to_color32, to_shadow};
 use crate::style::{BuildInput, push_note, saturates_i8};
 use crate::{Note, PanelSide, Surface};
 
-/// The leaf paths of one widget's border, for Task 13's reporting helpers (§7.2's emission rule).
+/// The leaf paths of one widget's border, for `base`'s reporting helpers (§7.2's emission rule).
 struct BorderPaths {
     color: &'static str,
     line_width: &'static str,
@@ -50,7 +50,7 @@ const SIDEBAR: BorderPaths = border_paths!("sidebar");
 const TOOLBAR: BorderPaths = border_paths!("toolbar");
 const STATUS_BAR: BorderPaths = border_paths!("status_bar");
 
-/// A widget border's stroke over the preset frame's, through Task 13's `stroke`: the width by §6's
+/// A widget border's stroke over the preset frame's, through `base::stroke`: the width by §6's
 /// rule (a non-finite one keeps the preset's, reported), the colour folded with
 /// `defaults.border.opacity` (§6.13).
 fn border_stroke(

@@ -203,7 +203,7 @@ pub enum TextRole {
     Display,
 }
 
-/// Every `Role`, in declaration order: the layout of the atlas's cells (Task 11).
+/// Every `Role`, in declaration order: the layout of the atlas's cells (`SchemeStyles::cells`).
 pub(crate) const ROLES: [Role; 25] = [
     Role::Window,
     Role::Button,

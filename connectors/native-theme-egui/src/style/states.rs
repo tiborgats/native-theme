@@ -430,7 +430,7 @@ mod tests {
     }
 
     /// §5.9: `inactive`, `open` and `hovered` `bg_fill` are the scrollbar thumb's, written as
-    /// given; `active`'s is D5 (§6.9), Task 17's, and copies `hovered` here (§6.1).
+    /// given; `active`'s is D5 (§6.9), the pressed thumb or else the hovered one.
     #[test]
     fn the_thumb_colours_fill_bg_fill() {
         let t = resolved("adwaita", ColorMode::Light);
@@ -439,6 +439,14 @@ mod tests {
         assert_eq!(w.inactive.bg_fill, to_color32(t.scrollbar.thumb_color));
         assert_eq!(w.open.bg_fill, to_color32(t.scrollbar.thumb_color));
         assert_eq!(w.hovered.bg_fill, to_color32(t.scrollbar.thumb_hover_color));
+        assert_eq!(
+            w.active.bg_fill,
+            to_color32(
+                t.scrollbar
+                    .thumb_active_color
+                    .unwrap_or(t.scrollbar.thumb_hover_color)
+            )
+        );
     }
 
     /// §6.1's table: `noninteractive` takes `defaults.text_color`, `defaults.border` and the

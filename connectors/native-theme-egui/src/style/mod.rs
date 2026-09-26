@@ -1,5 +1,5 @@
 //! The mapping: base style → role cells → surface frames, per colour scheme (spec §3.4, §5,
-//! §6). Task 11 builds egui's own values; Tasks 13–18 write the theme's into them.
+//! §6): egui's own values, with the theme's written into them.
 
 pub(crate) mod base;
 mod derived;
@@ -19,8 +19,8 @@ pub(crate) struct BuildInput<'a> {
     pub theme: &'a ResolvedTheme,
     pub prefs: &'a AccessibilityPreferences,
     pub layout: &'a LayoutTheme,
-    /// epaint's row height for the Body face at the scaled Body size (§6.15); Task 13
-    /// computes it. `None` leaves egui's own `extra_text_line_spacing`.
+    /// epaint's row height for the Body face at the scaled Body size (§6.15), measured by
+    /// `fonts::body_row_height`. `None` leaves egui's own `extra_text_line_spacing`.
     pub row_height: Option<f32>,
     /// `Builder::style_patch`'s closure, applied last to every style (§4.3); `None` without one.
     pub patch: Option<&'a dyn Fn(&mut egui::Style)>,
@@ -58,9 +58,10 @@ pub(crate) fn egui_preset(surface: Surface, base: &egui::Style) -> egui::Frame {
     }
 }
 
-/// One scheme's styles. Task 11: egui's own style for the scheme in the base and every cell,
-/// and egui's own preset frame per surface — every value the theme does not supply keeps
-/// egui's by construction (§3.4). Tasks 13–18 write the theme's values.
+/// One scheme's styles: the base style, every role cell and every surface frame start from
+/// egui's own style for the scheme and egui's own preset frame, so every value the theme does
+/// not supply keeps egui's by construction (§3.4); `base_style`, `role_cell` and
+/// `surface_frame` write the theme's values.
 pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeStyles {
     let base = Arc::new(base::base_style(input, notes));
     let mut cells: [[Arc<egui::Style>; 3]; 25] =

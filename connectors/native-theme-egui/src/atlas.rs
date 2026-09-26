@@ -1,5 +1,5 @@
-//! The atlas handle, its builder and its diagnostics (spec §4.2, §4.3). Task 10: `Note`;
-//! Task 11: `ThemeAtlas`, `AtlasInner`, `SchemeStyles`, `Builder`.
+//! The atlas handle, its builder and its diagnostics (spec §4.2, §4.3): `Note`, `ThemeAtlas`,
+//! `AtlasInner`, `SchemeStyles`, `Builder`.
 
 use std::sync::Arc;
 
@@ -85,8 +85,8 @@ pub enum Note {
 /// `Option<Box<dyn Fn(&mut egui::Style) + 'a>>` is `clippy::type_complexity`.
 pub(crate) type StylePatch<'a> = Box<dyn Fn(&mut egui::Style) + 'a>;
 
-/// The focus ring of one scheme (§6.18): stroke and offset from `defaults.focus_ring_*`;
-/// filled by Task 21.
+/// The focus ring of one scheme (§6.18): stroke and offset from `defaults.focus_ring_*`,
+/// built by `plugin::build_focus_ring`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct FocusRing {
     pub(crate) stroke: egui::Stroke,
@@ -101,7 +101,8 @@ pub(crate) struct SchemeStyles {
     pub(crate) cells: [[Arc<egui::Style>; 3]; 25],
     /// `frames[surface.index()]`.
     pub(crate) frames: [egui::Frame; 11],
-    /// The ring the install plugin paints (§6.18); `None` until Task 21 builds it.
+    /// The ring the install plugin paints (§6.18); `None` for a zero or non-finite width or a
+    /// non-finite offset, which paints no ring.
     pub(crate) focus_ring: Option<FocusRing>,
 }
 
@@ -138,8 +139,7 @@ pub(crate) struct AtlasInner {
     pub(crate) os_mode: Option<ColorMode>,
     pub(crate) icon_set: IconSet,
     pub(crate) icon_theme: [Option<String>; 2],
-    /// The definitions `install` sets (§10.3 step 1); `None` when no plan was given. Task 22
-    /// fills it and adds the install step that reads it.
+    /// The definitions `install` sets (§10.3 step 1); `None` when no plan was given.
     pub(crate) fonts: Option<egui::FontDefinitions>,
     pub(crate) notes: Vec<Note>,
 }
@@ -657,7 +657,7 @@ impl<'a> Builder<'a> {
         let prefs = self.accessibility.cloned().unwrap_or_default();
         let layout = self.layout.cloned().unwrap_or_default();
         // §4.9, §10.3 step 1: the plan's definitions, validated once here, kept for `install`,
-        // and the definitions §6.15 measures the Body row height on (Task 13's `body_row_height`).
+        // and the definitions §6.15 measures the Body row height on (`fonts::body_row_height`).
         let fonts: Option<egui::FontDefinitions> = self.fonts.as_ref().map(|plan| {
             let (defs, plan_notes) = crate::fonts::font_definitions(self.light, plan);
             notes.extend(plan_notes);

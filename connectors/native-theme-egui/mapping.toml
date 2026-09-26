@@ -11,10 +11,10 @@
 #   `inner_margin.left`, `corner_radius`, `shadow.blur`); `when` = the condition, in words, under
 #   which another input of the formula can hold the sink still.
 # tested_by: in place of sinks, the §13 clause that checks a route with no Style/Frame field.
-# probe: a literal T2 splices when no bundled preset pair differentiates the leaf (Task 19).
-# exceptions: [[preset, reason], ..] on which T10 may find the sink different (Task 33).
+# probe: a literal T2 splices when no bundled preset pair differentiates the leaf.
+# exceptions: [[preset, reason], ..] on which T10 may find the sink different.
 # sub_tag + upstream: required exactly on an unmappable row.
-# [unwritten]: sink path → why egui's own value stands there (T10b, completed in Task 33).
+# [unwritten]: sink path → why egui's own value stands there (T10b).
 
 # ---- §5.1 Foundation — defaults, text_scale, layout
 
@@ -2723,8 +2723,8 @@ verdict  = "unmappable"
 sub_tag  = "egui-limited"
 upstream = "egui: a per-widget Margin (§14 item 35)"
 
-# Sinks no row writes, with the reason egui's own value stands (T10b); Task 33 completes
-# the list against every path style_diff can emit and every Frame field of every Surface.
+# Sinks no row writes, with the reason egui's own value stands (T10b): every path style_diff
+# can emit and every Frame field of every Surface that no row writes.
 [unwritten]
 "spacing.interact_size.x"    = "no native analogue: a Grid column floor, the DragValue and colour-swatch width (§7.5)"
 "spacing.combo_height"       = "no native leaf states a combo-box maximum height (§5.9)"
@@ -2753,8 +2753,8 @@ upstream = "egui: a per-widget Margin (§14 item 35)"
 "scroll_animation.points_per_second" = "the accessibility preference, not a theme leaf (§4.3)"
 "scroll_animation.duration.min"     = "as scroll_animation.points_per_second"
 "scroll_animation.duration.max"     = "as scroll_animation.points_per_second"
-# Completed against T10b in Task 33: every other `Style` path `style_diff` emits and every
-# `Frame` field of every `Surface` that no row writes.
+# The rest of T10b's list: every other `Style` path `style_diff` emits and every `Frame`
+# field of every `Surface` that no row writes.
 "override_text_style"   = "left at None: native-theme has no leaf forcing one TextStyle on all text; four scopes write override_font_id instead (§5.10)"
 "override_font_id.family" = "always FontFamily::Proportional where a scope writes the size: the family reaches egui as bytes, never as a name (§8.1)"
 "override_text_valign"  = "vertical placement of mixed text in a row is layout policy with no native leaf (§5.10)"
