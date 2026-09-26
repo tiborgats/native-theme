@@ -1616,45 +1616,96 @@ mod t18_accessors {
         }
     }
 
-    /// T18 (f): the closure paints in `expander.arrow_color` and hands the `Ui` back the
-    /// `Arc<Style>` it held; egui's `convex_polygon` (`epaint/src/shapes/shape.rs:251-257`) is a
-    /// `Shape::Path` whose `fill` is that colour.
+    /// One arrow painted by `icon` in each state a `CollapsingHeader`'s click-sensed header
+    /// response (`egui/src/containers/collapsing_header.rs:535`) can be in — at rest, hovered
+    /// and pressed — which `paint_default_icon` reads through `Style::interact` (`:337`):
+    /// `(state, that state's own fg_stroke colour, the fills of the pass's `Shape::Path`s,
+    /// whether the `Ui` got its `Arc<Style>` back)`. egui's `convex_polygon`
+    /// (`epaint/src/shapes/shape.rs:251-257`) is a `Shape::Path` whose `fill` is the colour.
+    fn expander_states(
+        icon: &dyn Fn(&mut egui::Ui, f32, &egui::Response),
+    ) -> Vec<(&'static str, egui::Color32, Vec<egui::Color32>, bool)> {
+        let ctx = egui::Context::default();
+        let size = egui::vec2(16.0, 16.0);
+        let mut rect = egui::Rect::NOTHING;
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            rect = ui.allocate_response(size, egui::Sense::click()).rect;
+        });
+        let at = rect.center();
+        let hover = egui::RawInput {
+            events: vec![egui::Event::PointerMoved(at)],
+            ..Default::default()
+        };
+        let press = super::primary(at, true);
+        let mut out = Vec::new();
+        for (state, input) in [
+            ("inactive", egui::RawInput::default()),
+            ("hovered", hover),
+            ("active", press),
+        ] {
+            let mut seen = None;
+            let full = pass(&ctx, input, |ui| {
+                let before = Arc::clone(ui.style());
+                let response = ui.allocate_response(size, egui::Sense::click());
+                let w = &before.visuals.widgets;
+                let reads = before.interact(&response);
+                let in_state = [
+                    ("inactive", &w.inactive),
+                    ("hovered", &w.hovered),
+                    ("active", &w.active),
+                ]
+                .into_iter()
+                .find(|(_, e)| std::ptr::eq(*e, reads))
+                .map(|(name, _)| name);
+                assert_eq!(in_state, Some(state), "the header response is {state}");
+                let own = reads.fg_stroke.color;
+                icon(ui, 1.0, &response);
+                seen = Some((own, Arc::ptr_eq(ui.style(), &before)));
+            });
+            let (own, restored) = seen.expect("the pass ran");
+            let fills = full
+                .shapes
+                .iter()
+                .filter_map(|s| match &s.shape {
+                    egui::Shape::Path(p) => Some(p.fill),
+                    _ => None,
+                })
+                .collect();
+            out.push((state, own, fills, restored));
+        }
+        out
+    }
+
+    /// T18 (f): the closure paints in `expander.arrow_color` in every state the header can be
+    /// in and hands the `Ui` back the `Arc<Style>` it held; with no stated colour it is egui's
+    /// own arrow, in each state's own colour.
     #[test]
     fn t18_f_expander_icon_paints_the_arrow_colour_and_restores_the_style() {
         let mut t = resolved("adwaita", ColorMode::Light);
         t.expander.arrow_color = Some(t.defaults.accent_color);
         let expected = to_color32(t.defaults.accent_color);
-        let icon = crate::expander_icon(&t);
-        let ctx = egui::Context::default();
-        let mut restored = None;
-        let out = pass(&ctx, egui::RawInput::default(), |ui| {
-            let before = Arc::clone(ui.style());
-            let response = ui.allocate_response(egui::vec2(16.0, 16.0), egui::Sense::hover());
-            icon(ui, 1.0, &response);
-            restored = Some(Arc::ptr_eq(ui.style(), &before));
-        });
-        assert_eq!(restored, Some(true));
-        let painted = out
-            .shapes
-            .iter()
-            .any(|s| matches!(&s.shape, egui::Shape::Path(p) if p.fill == expected));
-        assert!(
-            painted,
-            "no polygon in the arrow colour among {} shapes",
-            out.shapes.len()
-        );
+        for (state, own, fills, restored) in expander_states(&crate::expander_icon(&t)) {
+            assert!(restored, "{state}: the style is restored");
+            assert_ne!(
+                own, expected,
+                "{state}: egui's own colour differs from the arrow's"
+            );
+            assert_eq!(
+                fills,
+                vec![expected],
+                "{state}: one arrow, in the arrow colour"
+            );
+        }
 
-        // With no stated arrow colour the closure is egui's own arrow and touches no style.
         t.expander.arrow_color = None;
-        let icon = crate::expander_icon(&t);
-        let mut restored = None;
-        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
-            let before = Arc::clone(ui.style());
-            let response = ui.allocate_response(egui::vec2(16.0, 16.0), egui::Sense::hover());
-            icon(ui, 0.0, &response);
-            restored = Some(Arc::ptr_eq(ui.style(), &before));
-        });
-        assert_eq!(restored, Some(true));
+        for (state, own, fills, restored) in expander_states(&crate::expander_icon(&t)) {
+            assert!(restored, "{state}: the style is untouched");
+            assert_eq!(
+                fills,
+                vec![own],
+                "{state}: egui's own arrow, in the state's colour"
+            );
+        }
     }
 
     /// One pass with a `TextEdit` of `id` inside the `Role::Input` scope, returning the frame
