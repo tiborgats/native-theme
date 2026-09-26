@@ -5,7 +5,15 @@
 /// crate re-exports `egui`.
 pub use native_theme::theme::IconData;
 
-use crate::ResolvedTheme;
+use std::borrow::Cow;
+use std::collections::BTreeSet;
+use std::hash::{DefaultHasher, Hasher};
+use std::time::Duration;
+
+use native_theme::color::Rgba;
+use native_theme::theme::{AnimatedIcon, IconProvider, IconRole, IconSet, TransformAnimation};
+
+use crate::{ResolvedTheme, ThemeAtlas};
 
 /// Which of native-theme's five per-context icon sizes to use
 /// (`ResolvedIconSizes`, `native-theme/src/model/resolved.rs:15-26`). egui has no icon-size
@@ -39,20 +47,6 @@ pub fn icon_size(theme: &ResolvedTheme, context: IconContext) -> f32 {
         IconContext::Large => sizes.large,
     }
 }
-
-use std::borrow::Cow;
-use std::collections::BTreeSet;
-use std::hash::{DefaultHasher, Hasher};
-use std::time::Duration;
-
-use native_theme::color::Rgba;
-use native_theme::theme::{AnimatedIcon, IconProvider, IconRole, IconSet, TransformAnimation};
-
-use crate::ThemeAtlas;
-
-// Task 10's `pub use native_theme::theme::IconData;` (with its spec §4.10 doc)
-// and Task 23's `use crate::ResolvedTheme;` are already at the top of the file; adding either
-// again is E0252.
 
 const URI_PREFIX: &str = "bytes://native-theme/";
 
@@ -813,7 +807,6 @@ mod tests {
     /// §13 T8 (c) — §9.3: a side above `max_texture_side` (2048 on a bare `Context`,
     /// `egui/src/input_state/mod.rs:268`, `:349`) is a deliberate `None`, from `to_image_source`
     /// and `to_image` alike, not `load_texture`'s `debug_assert!` (`egui/src/context.rs:2399-2405`).
-    /// This is T8 (c)'s one test; Task 28 proves it discriminates.
     #[test]
     fn t8c_an_oversized_raster_icon_is_none() {
         let ctx = egui::Context::default();

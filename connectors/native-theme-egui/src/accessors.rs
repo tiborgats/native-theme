@@ -1,7 +1,15 @@
-//! §4.7's free accessors: the values no `Style` field carries. Task 11: `scaled_text_size`;
-//! Task 23 adds the rest.
+//! §4.7's free accessors: the values no `Style` field carries.
 
-use crate::AccessibilityPreferences;
+use egui::FontId;
+use native_theme::SystemTheme;
+use native_theme::theme::{
+    DialogButtonOrder, FontStyle, ResolvedFontSpec, ResolvedTextScaleEntry, ResolvedTheme,
+};
+
+use crate::convert::{
+    i8_from_f32_saturating, padding_with_border, to_color32, to_color32_with_opacity, to_margin,
+};
+use crate::{AccessibilityPreferences, Role, TextRole};
 
 /// A text size from the theme times the user's text-scaling factor; a factor that is not
 /// finite and positive is ignored. Same signature and semantics as
@@ -23,19 +31,6 @@ fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
     let s = prefs.text_scaling_factor;
     if s.is_finite() && s > 0.0 { s } else { 1.0 }
 }
-
-use egui::FontId;
-use native_theme::theme::{
-    DialogButtonOrder, FontStyle, ResolvedFontSpec, ResolvedTextScaleEntry, ResolvedTheme,
-};
-// A crate-private `use`, not a root re-export: §4.1 removes that one on purpose. Task 11's
-// `use crate::AccessibilityPreferences;` already names the preferences type (E0252 otherwise).
-use native_theme::SystemTheme;
-
-use crate::convert::{
-    i8_from_f32_saturating, padding_with_border, to_color32, to_color32_with_opacity, to_margin,
-};
-use crate::{Role, TextRole};
 
 /// egui's own size for a stock `TextStyle` slot (`egui/src/style.rs:1414-1424`); `None` only
 /// for a key those five never lack.
@@ -556,7 +551,7 @@ mod tests {
     use super::*;
 
     /// §4.7, the siblings' rule: the factor applies when finite and positive, else the size
-    /// is returned unchanged (T13 (d) repeats this over the atlas in Task 32).
+    /// is returned unchanged (T13 (d) repeats it).
     #[test]
     fn scaled_text_size_ignores_a_factor_that_is_not_finite_and_positive() {
         let prefs = |f: f32| AccessibilityPreferences {

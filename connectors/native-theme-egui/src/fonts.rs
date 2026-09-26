@@ -463,7 +463,7 @@ mod tests {
     /// font's file holds and the family each records (§15's collection question).
     #[cfg(feature = "system-fonts")]
     #[test]
-    #[ignore = "runs on the macOS and Windows screenshot runners (plan Task 39)"]
+    #[ignore = "runs on the macOS and Windows screenshot runners (`.github/workflows/screenshots.yml`)"]
     fn system_faces_resolve() {
         use std::sync::Arc;
         for (label, t) in runner_themes() {
@@ -543,7 +543,7 @@ mod tests {
     /// `extra_text_line_spacing` asserted equal to T5's value for that face.
     #[cfg(feature = "system-fonts")]
     #[test]
-    #[ignore = "runs on the macOS and Windows screenshot runners (plan Task 39)"]
+    #[ignore = "runs on the macOS and Windows screenshot runners (`.github/workflows/screenshots.yml`)"]
     fn system_line_spacing() {
         use egui::{FontId, TextStyle};
         for (label, t) in runner_themes() {
