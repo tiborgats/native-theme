@@ -2,6 +2,7 @@
 //! §6). Task 11 builds egui's own values; Tasks 13–18 write the theme's into them.
 
 pub(crate) mod base;
+mod derived;
 mod roles;
 mod states;
 mod variants;

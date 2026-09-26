@@ -51,6 +51,7 @@ pub(crate) fn role_cell(
         Role::Expander => expander(&mut s, base, input, notes),
         Role::Link => link(&mut s, base, input, notes),
     }
+    crate::style::derived::apply_role(role, &mut s, input, notes);
     s
 }
 
@@ -1549,7 +1550,7 @@ mod tests {
     #[test]
     fn scrollbar_cell_writes_its_rows() {
         for (preset, mode) in PRESETS {
-            let (c, base, t, notes) = cell(preset, mode, Role::Scrollbar);
+            let (c, _, t, notes) = cell(preset, mode, Role::Scrollbar);
             let sb = &t.scrollbar;
             let w = &c.visuals.widgets;
             assert!(notes.is_empty(), "{preset}: {notes:?}");
@@ -1571,11 +1572,6 @@ mod tests {
                 "{preset}"
             );
             assert!(!c.spacing.scroll.foreground_color, "{preset}");
-            assert_eq!(
-                c.visuals.widgets.inactive.corner_radius,
-                base.visuals.widgets.inactive.corner_radius,
-                "{preset}: §6.8 is Task 17's"
-            );
         }
     }
 
@@ -1584,7 +1580,7 @@ mod tests {
     #[test]
     fn slider_cell_writes_its_rows() {
         for (preset, mode) in PRESETS {
-            let (c, base, t, notes) = cell(preset, mode, Role::Slider);
+            let (c, _, t, notes) = cell(preset, mode, Role::Slider);
             let sl = &t.slider;
             let w = &c.visuals.widgets;
             assert!(notes.is_empty(), "{preset}: {notes:?}");
@@ -1600,10 +1596,6 @@ mod tests {
                 c.visuals.disabled_alpha,
                 unit_interval(sl.disabled_opacity),
                 "{preset}"
-            );
-            assert_eq!(
-                c.spacing.interact_size.y, base.spacing.interact_size.y,
-                "{preset}: D2 is Task 17's"
             );
         }
     }
@@ -1839,10 +1831,6 @@ mod tests {
                     "{preset}"
                 ),
             }
-            assert_eq!(
-                c.spacing.interact_size.y, base.spacing.interact_size.y,
-                "{preset}: R-BAR is Task 17's"
-            );
         }
     }
 
@@ -2013,10 +2001,6 @@ mod tests {
             assert_eq!(
                 c.visuals.widgets.inactive, base.visuals.widgets.inactive,
                 "{preset}"
-            );
-            assert_eq!(
-                c.spacing.interact_size.y, base.spacing.interact_size.y,
-                "{preset}: D3 is Task 17's"
             );
         }
     }

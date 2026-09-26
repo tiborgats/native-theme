@@ -409,6 +409,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
         s.spacing.extra_text_line_spacing =
             line_spacing(d.line_height, body.size, input.row_height);
     }
+    crate::style::derived::apply_base(&mut s, input, notes);
     s
 }
 
