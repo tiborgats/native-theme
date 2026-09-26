@@ -42,10 +42,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["defaults.font.weight"]
 verdict   = "derived"
 tested_by = "T6(d)"
+probe     = 700
 
 ["defaults.font.style"]
 verdict   = "derived"
 tested_by = "T6(d)"
+probe     = "italic"
 
 ["defaults.font.color"]
 verdict  = "unmappable"
@@ -72,10 +74,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["defaults.mono_font.weight"]
 verdict   = "derived"
 tested_by = "T6(d)"
+probe     = 700
 
 ["defaults.mono_font.style"]
 verdict   = "derived"
 tested_by = "T6(d)"
+probe     = "italic"
 
 ["defaults.mono_font.color"]
 verdict   = "derived"
@@ -229,7 +233,7 @@ sinks   = [
   { path = "stroke.color", surface = "window" },
   { path = "stroke.color", surface = "dialog" },
   { path = "stroke.color", surface = "popover" },
-  { path = "stroke.color", surface = "card" },
+  { path = "stroke.color", surface = "card", when = "card.border.color is not fully transparent, §6.13" },
   { path = "stroke.color", surface = "tooltip" },
   { path = "visuals.widgets.inactive.bg_stroke.color", scope = "menu", when = "menu.border.color is not fully transparent, §6.13" },
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "menu", when = "menu.border.color is not fully transparent, §6.13" },
@@ -262,11 +266,11 @@ sinks   = [
   { path = "visuals.widgets.hovered.bg_stroke.color", scope = "combo_box" },
   { path = "visuals.widgets.active.bg_stroke.color", scope = "combo_box" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "combo_box" },
-  { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "tab" },
-  { path = "visuals.widgets.inactive.bg_stroke.color", scope = "tab" },
-  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "tab" },
-  { path = "visuals.widgets.active.bg_stroke.color", scope = "tab" },
-  { path = "visuals.widgets.open.bg_stroke.color", scope = "tab" },
+  { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "tab", when = "tab.border.color is not fully transparent, §6.13" },
+  { path = "visuals.widgets.inactive.bg_stroke.color", scope = "tab", when = "tab.border.color is not fully transparent, §6.13" },
+  { path = "visuals.widgets.hovered.bg_stroke.color", scope = "tab", when = "tab.border.color is not fully transparent, §6.13" },
+  { path = "visuals.widgets.active.bg_stroke.color", scope = "tab", when = "tab.border.color is not fully transparent, §6.13" },
+  { path = "visuals.widgets.open.bg_stroke.color", scope = "tab", when = "tab.border.color is not fully transparent, §6.13" },
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "sidebar" },
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "toolbar" },
   { path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "status_bar" },
@@ -282,9 +286,10 @@ verdict = "derived"
 sinks   = [
   { path = "visuals.popup_shadow.offset" },
   { path = "visuals.popup_shadow.blur" },
-  { path = "visuals.popup_shadow.spread" },
+  { path = "visuals.popup_shadow.spread", when = "never: egui's own spread, 0, is Shadow::NONE's, §6.14" },
   { path = "visuals.popup_shadow.color" },
 ]
+probe   = false
 
 ["defaults.disabled_opacity"]
 verdict = "direct"
@@ -309,6 +314,7 @@ tested_by = "T18(e)"
 ["defaults.icon_sizes.small"]
 verdict   = "derived"
 tested_by = "T18(e)"
+probe     = 20.0
 
 ["defaults.icon_sizes.large"]
 verdict   = "derived"
@@ -329,6 +335,7 @@ sinks   = [{ path = "text_styles[Small].size" }]
 ["text_scale.caption.weight"]
 verdict   = "derived"
 tested_by = "T18(e)"
+probe     = 700
 
 ["text_scale.caption.line_height"]
 verdict   = "derived"
@@ -434,6 +441,7 @@ tested_by = "T18(c)"
 ["window.title_bar_font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["window.title_bar_font.color"]
 verdict   = "derived"
@@ -456,25 +464,30 @@ verdict = "derived"
 sinks   = [
   { path = "visuals.window_shadow.offset" },
   { path = "visuals.window_shadow.blur" },
-  { path = "visuals.window_shadow.spread" },
+  { path = "visuals.window_shadow.spread", when = "never: egui's own spread, 0, is Shadow::NONE's, §6.14" },
   { path = "visuals.window_shadow.color" },
 ]
+probe   = false
 
 ["window.border.padding.top"]
 verdict = "direct"
 sinks   = [{ path = "spacing.window_margin.top" }]
+probe   = 5.0
 
 ["window.border.padding.right"]
 verdict = "direct"
 sinks   = [{ path = "spacing.window_margin.right" }]
+probe   = 5.0
 
 ["window.border.padding.bottom"]
 verdict = "direct"
 sinks   = [{ path = "spacing.window_margin.bottom" }]
+probe   = 5.0
 
 ["window.border.padding.left"]
 verdict = "direct"
 sinks   = [{ path = "spacing.window_margin.left" }]
+probe   = 5.0
 
 ["dialog.background_color"]
 verdict = "scoped"
@@ -529,6 +542,7 @@ tested_by = "T18(a)"
 ["dialog.title_font.style"]
 verdict   = "derived"
 tested_by = "T18(a)"
+probe     = "italic"
 
 ["dialog.title_font.color"]
 verdict   = "derived"
@@ -551,10 +565,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["dialog.body_font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["dialog.body_font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["dialog.body_font.color"]
 verdict = "scoped"
@@ -577,9 +593,10 @@ verdict = "derived"
 sinks   = [
   { path = "shadow.offset", surface = "dialog" },
   { path = "shadow.blur", surface = "dialog" },
-  { path = "shadow.spread", surface = "dialog" },
+  { path = "shadow.spread", surface = "dialog", when = "never: egui's own spread, 0, is Shadow::NONE's, §6.14" },
   { path = "shadow.color", surface = "dialog" },
 ]
+probe   = false
 
 ["dialog.border.padding.top"]
 verdict = "scoped"
@@ -618,10 +635,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["popover.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["popover.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["popover.font.color"]
 verdict = "scoped"
@@ -644,9 +663,10 @@ verdict = "derived"
 sinks   = [
   { path = "shadow.offset", surface = "popover" },
   { path = "shadow.blur", surface = "popover" },
-  { path = "shadow.spread", surface = "popover" },
+  { path = "shadow.spread", surface = "popover", when = "never: egui's own spread, 0, is Shadow::NONE's, §6.14" },
   { path = "shadow.color", surface = "popover" },
 ]
+probe   = false
 
 ["popover.border.padding.top"]
 verdict = "scoped"
@@ -671,6 +691,7 @@ sinks   = [{ path = "fill", surface = "card" }]
 ["card.border.color"]
 verdict = "scoped"
 sinks   = [{ path = "stroke.color", surface = "card" }]
+probe   = "#ff000080"
 
 ["card.border.corner_radius"]
 verdict = "scoped"
@@ -679,6 +700,7 @@ sinks   = [{ path = "corner_radius", surface = "card" }]
 ["card.border.line_width"]
 verdict = "scoped"
 sinks   = [{ path = "stroke.width", surface = "card" }]
+probe   = 2.0
 
 ["card.border.shadow_enabled"]
 verdict  = "unmappable"
@@ -726,10 +748,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["tooltip.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["tooltip.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["tooltip.font.color"]
 verdict = "scoped"
@@ -752,9 +776,10 @@ verdict = "derived"
 sinks   = [
   { path = "shadow.offset", surface = "tooltip" },
   { path = "shadow.blur", surface = "tooltip" },
-  { path = "shadow.spread", surface = "tooltip" },
+  { path = "shadow.spread", surface = "tooltip", when = "never: egui's own spread, 0, is Shadow::NONE's, §6.14" },
   { path = "shadow.color", surface = "tooltip" },
 ]
+probe   = false
 
 ["tooltip.border.padding.top"]
 verdict = "scoped"
@@ -832,10 +857,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["menu.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["menu.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["menu.font.color"]
 verdict = "scoped"
@@ -852,6 +879,7 @@ sinks   = [
   { path = "visuals.widgets.active.bg_stroke.color", scope = "menu" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "menu" },
 ]
+probe   = "#ff000080"
 
 ["menu.border.corner_radius"]
 verdict = "scoped"
@@ -861,6 +889,7 @@ sinks   = [
   { path = "visuals.widgets.active.corner_radius", scope = "menu" },
   { path = "visuals.widgets.open.corner_radius", scope = "menu" },
 ]
+probe   = 4.0
 
 ["menu.border.line_width"]
 verdict = "scoped"
@@ -872,6 +901,7 @@ sinks   = [
   { path = "spacing.button_padding.x", scope = "menu", when = "a side of the pair is stated, §5 intro" },
   { path = "spacing.button_padding.y", scope = "menu", when = "a side of the pair is stated, §5 intro" },
 ]
+probe   = 2.0
 
 ["menu.border.shadow_enabled"]
 verdict  = "unmappable"
@@ -1002,10 +1032,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["button.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["button.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["button.font.color"]
 verdict = "direct"
@@ -1107,6 +1139,7 @@ tested_by = "T18(a)"
 ["link.background_color"]
 verdict   = "derived"
 tested_by = "T18(a)"
+probe     = "#ff000080"
 
 ["link.hover_background"]
 verdict   = "derived"
@@ -1141,10 +1174,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["link.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["link.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["link.font.color"]
 verdict = "scoped"
@@ -1327,10 +1362,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["checkbox.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["checkbox.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["checkbox.font.color"]
 verdict = "scoped"
@@ -1416,6 +1453,7 @@ sinks   = [{ path = "spacing.interact_size.y", scope = "segmented_control" }]
 ["segmented_control.separator_width"]
 verdict = "scoped"
 sinks   = [{ path = "spacing.item_spacing.x", scope = "segmented_control" }]
+probe   = 2.0
 
 ["segmented_control.disabled_opacity"]
 verdict = "scoped"
@@ -1445,10 +1483,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["segmented_control.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["segmented_control.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["segmented_control.font.color"]
 verdict = "scoped"
@@ -1504,6 +1544,7 @@ sinks   = [{ path = "spacing.button_padding.y", scope = "segmented_control" }]
 ["segmented_control.border.padding.right"]
 verdict = "derived"
 sinks   = [{ path = "spacing.button_padding.x", scope = "segmented_control" }]
+probe   = 5.0
 
 ["segmented_control.border.padding.bottom"]
 verdict = "derived"
@@ -1512,6 +1553,7 @@ sinks   = [{ path = "spacing.button_padding.y", scope = "segmented_control" }]
 ["segmented_control.border.padding.left"]
 verdict = "derived"
 sinks   = [{ path = "spacing.button_padding.x", scope = "segmented_control" }]
+probe   = 5.0
 
 # ---- §5.4 Text input, combo box, list
 
@@ -1585,10 +1627,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["input.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["input.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["input.font.color"]
 verdict = "scoped"
@@ -1719,10 +1763,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["combo_box.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["combo_box.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["combo_box.font.color"]
 verdict = "scoped"
@@ -1847,10 +1893,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["list.item_font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["list.item_font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["list.item_font.color"]
 verdict = "scoped"
@@ -1873,10 +1921,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["list.header_font.weight"]
 verdict   = "derived"
 tested_by = "T18(a)"
+probe     = 700
 
 ["list.header_font.style"]
 verdict   = "derived"
 tested_by = "T18(a)"
+probe     = "italic"
 
 ["list.header_font.color"]
 verdict = "scoped"
@@ -2104,6 +2154,7 @@ upstream = "egui: a progress-bar style (§14 item 36)"
 ["progress_bar.border.padding.left"]
 verdict = "scoped"
 sinks   = [{ path = "spacing.item_spacing.x", scope = "progress_bar" }]
+probe   = 5.0
 
 ["splitter.divider_width"]
 verdict = "scoped"
@@ -2211,10 +2262,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["tab.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["tab.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["tab.font.color"]
 verdict = "scoped"
@@ -2233,6 +2286,7 @@ sinks   = [
   { path = "visuals.widgets.active.bg_stroke.color", scope = "tab" },
   { path = "visuals.widgets.open.bg_stroke.color", scope = "tab" },
 ]
+probe   = "#ff000080"
 
 ["tab.border.corner_radius"]
 verdict = "scoped"
@@ -2243,6 +2297,7 @@ sinks   = [
   { path = "visuals.widgets.active.corner_radius", scope = "tab" },
   { path = "visuals.widgets.open.corner_radius", scope = "tab" },
 ]
+probe   = 4.0
 
 ["tab.border.line_width"]
 verdict = "scoped"
@@ -2255,6 +2310,7 @@ sinks   = [
   { path = "spacing.button_padding.x", scope = "tab", when = "a side of the pair is stated, §5 intro" },
   { path = "spacing.button_padding.y", scope = "tab", when = "a side of the pair is stated, §5 intro" },
 ]
+probe   = 2.0
 
 ["tab.border.shadow_enabled"]
 verdict  = "unmappable"
@@ -2317,10 +2373,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["sidebar.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["sidebar.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["sidebar.font.color"]
 verdict = "scoped"
@@ -2342,6 +2400,7 @@ sinks   = [
   { path = "corner_radius", surface = "panel_left" },
   { path = "corner_radius", surface = "panel_right" },
 ]
+probe   = 4.0
 
 ["sidebar.border.line_width"]
 verdict = "scoped"
@@ -2358,6 +2417,7 @@ sinks   = [
   { path = "inner_margin.top", surface = "panel_left" },
   { path = "inner_margin.top", surface = "panel_right" },
 ]
+probe   = 5.0
 
 ["sidebar.border.padding.right"]
 verdict = "scoped"
@@ -2365,6 +2425,7 @@ sinks   = [
   { path = "inner_margin.right", surface = "panel_left" },
   { path = "inner_margin.right", surface = "panel_right" },
 ]
+probe   = 5.0
 
 ["sidebar.border.padding.bottom"]
 verdict = "scoped"
@@ -2372,6 +2433,7 @@ sinks   = [
   { path = "inner_margin.bottom", surface = "panel_left" },
   { path = "inner_margin.bottom", surface = "panel_right" },
 ]
+probe   = 5.0
 
 ["sidebar.border.padding.left"]
 verdict = "scoped"
@@ -2379,6 +2441,7 @@ sinks   = [
   { path = "inner_margin.left", surface = "panel_left" },
   { path = "inner_margin.left", surface = "panel_right" },
 ]
+probe   = 5.0
 
 ["toolbar.background_color"]
 verdict = "scoped"
@@ -2416,10 +2479,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["toolbar.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["toolbar.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["toolbar.font.color"]
 verdict = "scoped"
@@ -2497,10 +2562,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["status_bar.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["status_bar.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["status_bar.font.color"]
 verdict = "scoped"
@@ -2519,6 +2586,7 @@ sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "s
 ["status_bar.border.corner_radius"]
 verdict = "scoped"
 sinks   = [{ path = "corner_radius", surface = "panel_bottom" }]
+probe   = 4.0
 
 ["status_bar.border.line_width"]
 verdict = "scoped"
@@ -2581,10 +2649,12 @@ upstream = "egui: a stated-size unit beside FontId::size (§5.1)"
 ["expander.font.weight"]
 verdict   = "derived"
 tested_by = "T18(c)"
+probe     = 700
 
 ["expander.font.style"]
 verdict   = "derived"
 tested_by = "T18(d)"
+probe     = "italic"
 
 ["expander.font.color"]
 verdict = "scoped"

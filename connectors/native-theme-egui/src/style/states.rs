@@ -143,11 +143,13 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
         };
         set_fill(&mut widgets.hovered, f.field, hovered);
         set_fill(&mut widgets.active, f.field, active);
-        let open = match src.open {
-            OpenFrom::Inactive => idle,
-            OpenFrom::Hovered => hovered,
-        };
-        set_fill(&mut widgets.open, f.field, open);
+        // `open` copies what the role writes into `inactive` (§6.1): with no resting fill of
+        // its own the role writes none, and `open` keeps what it holds
+        match (src.open, f.idle) {
+            (OpenFrom::Inactive, Some(_)) => set_fill(&mut widgets.open, f.field, idle),
+            (OpenFrom::Inactive, None) => {}
+            (OpenFrom::Hovered, _) => set_fill(&mut widgets.open, f.field, hovered),
+        }
     }
 
     if let Some(t) = &src.text {

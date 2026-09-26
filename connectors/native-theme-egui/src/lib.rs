@@ -37,6 +37,8 @@ mod install_tests;
 mod mapping_tests;
 mod roles;
 mod style;
+#[cfg(test)]
+mod style_diff;
 
 pub use accessors::scaled_text_size;
 pub use atlas::Note;

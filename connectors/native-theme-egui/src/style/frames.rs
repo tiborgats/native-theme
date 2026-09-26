@@ -78,9 +78,10 @@ fn popup_like(
     fill: Rgba,
     border: &ResolvedWidgetBorder,
     paths: &BorderPaths,
-    t: &ResolvedTheme,
+    input: &BuildInput<'_>,
     notes: &mut Vec<Note>,
 ) -> egui::Frame {
+    let t = input.theme;
     let mut f = egui::Frame::popup(base);
     f.fill = to_color32(fill);
     f.stroke = border_stroke(f.stroke, border, paths, t, notes);
@@ -90,7 +91,10 @@ fn popup_like(
         border.corner_radius,
         notes,
     );
-    f.shadow = to_shadow(f.shadow, t.defaults.shadow_color, border.shadow_enabled);
+    // the surface's own gate over egui's own geometry (§6.14), not over the base style's
+    // `popup_shadow`, which `defaults.border.shadow_enabled` gates
+    let own = input.scheme.default_style().visuals.popup_shadow;
+    f.shadow = to_shadow(own, t.defaults.shadow_color, border.shadow_enabled);
     f.inner_margin = margin(paths.padding, f.inner_margin, &border.padding, notes);
     f
 }
@@ -149,7 +153,7 @@ pub(crate) fn surface_frame(
             t.dialog.background_color,
             &t.dialog.border,
             &DIALOG,
-            t,
+            input,
             notes,
         ),
         Surface::Popover => popup_like(
@@ -157,7 +161,7 @@ pub(crate) fn surface_frame(
             t.popover.background_color,
             &t.popover.border,
             &POPOVER,
-            t,
+            input,
             notes,
         ),
         Surface::Tooltip => popup_like(
@@ -165,7 +169,7 @@ pub(crate) fn surface_frame(
             t.tooltip.background_color,
             &t.tooltip.border,
             &TOOLTIP,
-            t,
+            input,
             notes,
         ),
         // `Frame::show` (`frame.rs:404`) over `Frame::group` (`:178-183`), which has no fill and

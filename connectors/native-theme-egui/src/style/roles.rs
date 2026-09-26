@@ -1011,6 +1011,7 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
     // the header's one frame layer, with no resting fill (§6.1, `collapsing_header.rs:561-568`)
     s.visuals.collapsing_header_frame = true;
     s.visuals.widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
+    s.visuals.widgets.open.weak_bg_fill = egui::Color32::TRANSPARENT; // `open` copies it (§6.1)
     write_states(
         &mut s.visuals.widgets,
         &StateSource {
