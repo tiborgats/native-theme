@@ -650,7 +650,7 @@ fn expected(
             )?)
         }
         // ---- §5.9: `slider.fill_color` is invisible without the trailing fill ----
-        (Some("slider"), _, None, "visuals.slider_trailing_fill") => Val::Bool(true),
+        (None, _, None, "visuals.slider_trailing_fill") => Val::Bool(true),
         // §5.9, §6.6: a diameter's knob is round, in the base style and every slider cell.
         (_, _, None, "visuals.handle_shape") => Val::Handle(egui::style::HandleShape::Circle),
         // §5.5, §5.9: the scroll handle reads `bg_fill`, never `fg_stroke`.

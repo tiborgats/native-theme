@@ -2036,7 +2036,7 @@ sinks   = [
 verdict = "scoped"
 sinks   = [
   { path = "visuals.selection.bg_fill", scope = "slider" },
-  { path = "visuals.slider_trailing_fill", scope = "slider", when = "never: written true in every slider cell, §5.9" },
+  { path = "visuals.slider_trailing_fill", when = "never: written true in the base style, which every cell inherits, §5.9" },
   { path = "visuals.selection.bg_fill", scope = "slider", variant = "disabled", when = "slider.disabled_fill_color is None, §6.4" },
 ]
 
