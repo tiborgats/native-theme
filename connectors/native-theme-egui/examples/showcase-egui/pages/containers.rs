@@ -79,8 +79,9 @@ pub(crate) fn show(
         let state =
             egui::collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), id, false);
         let header = state.show_header(ui, |ui| ui.label("CollapsingState with a custom header"));
-        let (toggle, _, _) = header.body(|ui| ui.label("The HeaderResponse's body"));
-        toggle
+        let (toggle, header, _) = header.body(|ui| ui.label("The HeaderResponse's body"));
+        // The toggle and the custom header together: the one instance the helper records.
+        toggle.union(header.response)
     });
 
     caption(
@@ -88,7 +89,9 @@ pub(crate) fn show(
         ui,
         "ScrollArea: the base style; show_rows in Role::Scrollbar",
     );
-    ui.horizontal_top(|ui| {
+    // One below the other: three `Resize`s side by side are wider than the page, whose
+    // vertical `ScrollArea` would then clip its right edge.
+    ui.vertical(|ui| {
         demo::contained(reg, ui, "ScrollArea (vertical)", |ui, reg| {
             egui::Resize::default()
                 .id_salt("containers/scroll-vertical")
@@ -193,15 +196,12 @@ pub(crate) fn show(
     });
 
     caption(reg, ui, "Containers with no counterpart (the base style)");
-    demo::contained(reg, ui, "Sides", |ui, reg| {
-        ui.scope(|ui| {
-            egui::Sides::new().show(
-                ui,
-                |ui| demo::base(reg, ui, "Sides label", |ui| ui.label("Sides: left")),
-                |ui| ui.label("right"),
-            );
-        })
-        .response
+    // `Sides::show` takes both sides' closures at once, so one helper records the pair: the
+    // union of the two labels, a non-container instance whose rect holds both.
+    demo::base(reg, ui, "Sides", |ui| {
+        let (left, right) =
+            egui::Sides::new().show(ui, |ui| ui.label("Sides: left"), |ui| ui.label("right"));
+        left.union(right)
     });
     demo::contained(reg, ui, "Resize", |ui, reg| {
         egui::Resize::default()

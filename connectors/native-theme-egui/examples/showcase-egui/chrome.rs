@@ -43,6 +43,7 @@ impl Action {
                 Some(Action::ShowPage(Page::Data)),
                 Some(Action::ShowPage(Page::Overlays)),
                 Some(Action::ShowPage(Page::Icons)),
+                Some(Action::ShowPage(Page::ThemeMap)),
                 None,
                 Some(Action::ToggleSidePanel),
                 Some(Action::OpenCommandPalette),
@@ -258,6 +259,8 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
                 pending.push(action);
             }
         }
+        // The bar spans the window, as a toolbar does: the rest of the row is its own surface.
+        ui.allocate_space(egui::Vec2::X * ui.available_width());
     });
     registry.record(
         &out.response,
@@ -305,6 +308,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
         .show(ui, |ui| {
             ui.native_set_style(Role::StatusBar, RoleVariant::Normal);
             let environment = environment(app, ui.ctx());
+            let title = app.status_title();
             ui.horizontal(|ui| {
                 let App {
                     registry,
@@ -322,6 +326,11 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 for item in environment {
                     demo::base(registry, ui, "status separator", |ui| ui.separator());
                     demo::base(registry, ui, "status item", |ui| ui.label(item));
+                }
+                // The shown Widget Info's title, last (§10.4).
+                if !title.is_empty() {
+                    demo::base(registry, ui, "status separator", |ui| ui.separator());
+                    demo::base(registry, ui, "status title", |ui| ui.label(title));
                 }
             });
         });
@@ -396,6 +405,7 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     ui.native_set_style(Role::Splitter, RoleVariant::Normal);
     let frame = ui.native_frame(Surface::Panel(PanelSide::Left));
     let mut visible = app.side_panel_visible;
+    app.hold_zone = None; // set again while the inspector is drawn
     let out = egui::Panel::left("side-panel")
         .resizable(true)
         .default_size(LEFT_PANEL_WIDTH)
@@ -412,7 +422,9 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                 |ui| ui.separator(),
             );
             inspector_tabs(app, ui);
-            egui::ScrollArea::vertical().show(ui, |ui| inspector_content(app, ui));
+            let area = egui::ScrollArea::vertical().show(ui, |ui| inspector_content(app, ui));
+            // The content records nothing and is Widget Info's hold zone (§10.4).
+            app.hold_zone = Some(area.inner_rect);
         });
     app.side_panel_visible = visible;
     if let Some(out) = out {
@@ -561,19 +573,28 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui) {
     let current = app.inspector_tab;
     let mut picked: Option<InspectorTab> = None;
+    let registry = &mut app.registry;
     let out = ui.native_scope(Role::Tab, RoleVariant::Normal, |ui| {
         ui.horizontal(|ui| {
             for (tab, label) in [
                 (InspectorTab::Widget, "Widget"),
                 (InspectorTab::Theme, "Theme tab"),
             ] {
-                if ui
-                    .add(egui::Button::new(label).selected(current == tab))
-                    .clicked()
-                {
+                let r = ui.add(egui::Button::new(label).selected(current == tab));
+                registry.record(
+                    &r,
+                    demo::info(
+                        "inspector tab",
+                        vec![Seam::Role(Role::Tab, RoleVariant::Normal)],
+                    ),
+                    false,
+                );
+                if r.clicked() {
                     picked = Some(tab);
                 }
             }
+            // The tab bar spans the panel: the rest of the row is its own surface.
+            ui.allocate_space(egui::Vec2::X * ui.available_width());
         })
     });
     app.registry.record(
@@ -589,8 +610,22 @@ fn inspector_tabs(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-fn inspector_content(_app: &mut App, ui: &mut egui::Ui) {
-    ui.label("Hover any widget to see what the theme sets on it.");
+/// The inspector's content below the tabs: the Widget tab or the Theme tab (§10.4).
+fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
+    let theme = ui.ctx().theme();
+    match app.inspector_tab {
+        InspectorTab::Widget => {
+            let json = crate::info::theme_json(&app.atlas, theme);
+            crate::info::widget_tab(
+                ui,
+                app.registry.shown(),
+                &app.manifest,
+                &json,
+                app.atlas.name(),
+            );
+        }
+        InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.manifest),
+    }
 }
 
 /// The page tabs: one `native_scope(Role::Tab, ..)`, each tab a `Button::new(label).selected(..)` (§10.4).
@@ -614,6 +649,8 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                     pending.push(Action::ShowPage(page));
                 }
             }
+            // The tab bar spans the page: the rest of the row is its own surface.
+            ui.allocate_space(egui::Vec2::X * ui.available_width());
         });
     });
     registry.record(

@@ -10,6 +10,7 @@ pub(crate) mod overlays;
 pub(crate) mod range;
 pub(crate) mod selection;
 pub(crate) mod text;
+pub(crate) mod theme_map;
 
 use crate::app::{App, Page};
 use crate::demo::{self, Registry};
@@ -56,6 +57,8 @@ pub(crate) struct DemoState {
     pub scene_rect: egui::Rect,
     /// The drag-and-drop demo: the items, and which column each sits in.
     pub dnd_columns: [Vec<&'static str>; 2],
+    /// The Theme Map's verdict filter; `None` lists every row.
+    pub theme_map_filter: Option<crate::info::Verdict>,
 }
 
 impl Default for DemoState {
@@ -94,10 +97,11 @@ impl Default for DemoState {
             rgba_unmultiplied: unmultiplied,
             code_theme: None,
             table_selected: Some(1),
-            window_open: true,
+            window_open: false,
             modal_open: false,
             scene_rect: egui::Rect::ZERO,
             dnd_columns: [vec!["First", "Second"], vec!["Third"]],
+            theme_map_filter: None,
         }
     }
 }
@@ -115,6 +119,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         demo_state,
         atlas,
         settings,
+        manifest,
         ..
     } = app;
     match settings.page {
@@ -128,5 +133,6 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         Page::Data => data::show(registry, demo_state, atlas, ui),
         Page::Overlays => overlays::show(registry, demo_state, atlas, ui, &chosen),
         Page::Icons => icons::show(registry, demo_state, atlas, ui, &chosen),
+        Page::ThemeMap => theme_map::show(registry, demo_state, atlas, manifest, ui),
     }
 }

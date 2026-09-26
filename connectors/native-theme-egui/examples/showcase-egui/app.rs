@@ -7,7 +7,7 @@ use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
 use native_theme_egui::{SystemThemeExt as _, ThemeAtlas, from_preset};
 
 use crate::chrome::{self, Action, InspectorTab, PaletteState};
-use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, pages};
+use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, info, pages};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Page {
@@ -21,10 +21,11 @@ pub(crate) enum Page {
     Data,
     Overlays,
     Icons,
+    ThemeMap,
 }
 
 impl Page {
-    pub(crate) const ALL: [Page; 10] = [
+    pub(crate) const ALL: [Page; 11] = [
         Page::Buttons,
         Page::Selection,
         Page::Inputs,
@@ -35,6 +36,7 @@ impl Page {
         Page::Data,
         Page::Overlays,
         Page::Icons,
+        Page::ThemeMap,
     ];
     /// The `--tab` name (§10.4's palette table).
     pub(crate) fn key(self) -> &'static str {
@@ -49,6 +51,7 @@ impl Page {
             Page::Data => "data",
             Page::Overlays => "overlays",
             Page::Icons => "icons",
+            Page::ThemeMap => "theme-map",
         }
     }
     pub(crate) fn label(self) -> &'static str {
@@ -63,6 +66,7 @@ impl Page {
             Page::Data => "Data",
             Page::Overlays => "Overlays",
             Page::Icons => "Icons",
+            Page::ThemeMap => "Theme Map",
         }
     }
     pub(crate) fn from_key(key: &str) -> Result<Page, String> {
@@ -233,6 +237,10 @@ pub(crate) struct App {
     pub(crate) quit_requested: bool,
     /// Actions the chrome's widgets asked for this pass, run after the pass's input is read.
     pub(crate) pending: Vec<Action>,
+    /// The embedded `mapping.toml`, parsed once; an error is shown in the inspector (§10.4).
+    pub(crate) manifest: Result<info::Manifest, String>,
+    /// The inspector's content rect this pass: Widget Info's hold zone (§10.4).
+    pub(crate) hold_zone: Option<egui::Rect>,
     /// The scheme the icon choice was last derived for; `None` forces a re-derive next pass.
     last_scheme: Option<egui::Theme>,
     screenshot: Option<Screenshot>,
@@ -289,6 +297,8 @@ impl App {
             inspector_tab: InspectorTab::Widget,
             quit_requested: false,
             pending: Vec::new(),
+            manifest: info::Manifest::parse(include_str!("../../mapping.toml")),
+            hold_zone: None,
             last_scheme: None,
             screenshot,
             #[cfg(feature = "watch")]
@@ -366,8 +376,17 @@ impl App {
             ModeChoice::Dark => egui::ThemePreference::Dark,
         });
         self.last_scheme = None;
+        self.registry.screen_changed();
         #[cfg(feature = "watch")]
         self.publish_selection();
+    }
+
+    /// The status bar's title: the shown Widget Info's kind, or nothing.
+    pub(crate) fn status_title(&self) -> String {
+        self.registry
+            .shown()
+            .map(|s| s.info.kind.to_string())
+            .unwrap_or_default()
     }
 
     /// The icon set and freedesktop theme the pages load from (§10.4's icon rule).
@@ -423,7 +442,10 @@ impl App {
 
     pub(crate) fn run_action(&mut self, action: Action, ctx: &egui::Context) {
         match action {
-            Action::ShowPage(page) => self.settings.page = page,
+            Action::ShowPage(page) => {
+                self.settings.page = page;
+                self.registry.screen_changed();
+            }
             Action::ToggleSidePanel => self.side_panel_visible = !self.side_panel_visible,
             Action::OpenCommandPalette => self.palette = Some(PaletteState::default()),
             Action::ReloadTheme => self.install(ctx),
@@ -474,6 +496,7 @@ impl eframe::App for App {
             atlas.install(ctx);
             self.atlas = atlas;
             self.last_scheme = None;
+            self.registry.screen_changed();
         }
         // A new theme or a scheme switch re-derives a following icon choice (§10.4:
         // `breeze` to `breeze-dark` on `kde-breeze`); a pass on the same scheme does nothing.
@@ -539,6 +562,7 @@ impl eframe::App for App {
         for action in pending {
             self.run_action(action, &ctx);
         }
+        self.registry.end_pass(&ctx, self.hold_zone);
     }
 
     fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {

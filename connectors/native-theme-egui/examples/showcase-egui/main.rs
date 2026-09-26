@@ -8,14 +8,11 @@
 #![deny(clippy::unreachable)]
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
-#![allow(
-    dead_code,
-    reason = "the showcase is assembled over Tasks 31-36; Task 36 removes this line"
-)]
 
 mod app;
 mod chrome;
 mod demo;
+mod info;
 mod pages;
 #[cfg(test)]
 mod tests;
@@ -40,6 +37,11 @@ pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
 /// is the gpui showcase's, the side panel beside a page
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:207`, `:216-217`, `:285`).
 pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(LEFT_PANEL_WIDTH + 880.0, 850.0);
+
+/// How long a new Widget Info choice must stay the choice before it is shown. The model
+/// states no hover delay (spec §10.4); this is the gpui showcase's
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs:16`).
+pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_millis(250);
 
 /// How long `--screenshot` lets the showcase run before it captures, in seconds of
 /// `InputState::time`: the iced showcase's delay, "60 ticks × 50ms = 3s render delay"

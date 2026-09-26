@@ -55,8 +55,12 @@ pub(crate) fn show(
                         demo::base(reg, ui, "Image", |ui| ui.add(image));
                     }
                     None => {
+                        // Unwrapped, so the row places each note whole and no two overlap.
                         demo::base(reg, ui, "Image (absent)", |ui| {
-                            ui.weak(format!("{}: not in this set", role.name()))
+                            let text =
+                                egui::RichText::new(format!("{}: not in this set", role.name()))
+                                    .weak();
+                            ui.add(egui::Label::new(text).extend())
                         });
                     }
                 }

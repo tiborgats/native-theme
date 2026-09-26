@@ -52,7 +52,9 @@ pub(crate) fn show(
                 .id(egui::Id::new("overlays/window"))
                 .open(window_open)
                 .frame(chrome.frame)
-                .default_pos(open.rect.left_bottom())
+                // At the page's right edge, clear of the page's own controls, which sit at its left.
+                .pivot(egui::Align2::RIGHT_TOP)
+                .default_pos(ui.max_rect().right_top())
                 .collapsible(true)
                 .resizable(true)
                 .vscroll(true);

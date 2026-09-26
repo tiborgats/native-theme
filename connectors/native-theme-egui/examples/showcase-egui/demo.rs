@@ -30,13 +30,29 @@ pub(crate) struct Record {
     pub layer: egui::LayerId,
     pub info: InstanceInfo,
     /// One of §10.4's 21 container types, or a chrome panel.
+    #[cfg(test)]
     pub container: bool,
+    /// `Response::contains_pointer` (`egui/src/response.rs:333`) when recorded.
+    pub contains_pointer: bool,
+}
+
+/// The instance Widget Info shows.
+#[derive(Clone, Debug)]
+pub(crate) struct Shown {
+    pub id: egui::Id,
+    pub info: InstanceInfo,
 }
 
 /// The pass's registrations; live for one pass.
 #[derive(Default)]
 pub(crate) struct Registry {
     records: Vec<Record>,
+    /// What Widget Info shows.
+    shown: Option<Shown>,
+    /// The candidate and the `InputState::time` it was first chosen at.
+    pending: Option<(egui::Id, f64)>,
+    /// The page changed or a theme was installed since the last `end_pass`.
+    screen_changed: bool,
     /// Ids recorded twice in one pass (§13.2 `no_id_is_recorded_twice`).
     #[cfg(test)]
     pub recorded_twice: std::collections::BTreeSet<String>,
@@ -50,7 +66,7 @@ impl Registry {
         &mut self,
         response: &egui::Response,
         info: InstanceInfo,
-        container: bool,
+        _container: bool,
     ) {
         #[cfg(test)]
         if self.records.iter().any(|r| r.id == response.id) {
@@ -61,11 +77,83 @@ impl Registry {
             rect: response.interact_rect,
             layer: response.layer_id,
             info,
-            container,
+            #[cfg(test)]
+            container: _container,
+            contains_pointer: response.contains_pointer(),
         });
     }
+    #[cfg(test)]
     pub(crate) fn records(&self) -> &[Record] {
         &self.records
+    }
+
+    /// The active page changed or a theme was installed: what is shown stays only if the next pass draws it again.
+    pub(crate) fn screen_changed(&mut self) {
+        self.screen_changed = true;
+    }
+
+    pub(crate) fn shown(&self) -> Option<&Shown> {
+        self.shown.as_ref()
+    }
+
+    /// At the end of `ui`: choose, settle, show.
+    pub(crate) fn end_pass(&mut self, ctx: &egui::Context, hold: Option<egui::Rect>) {
+        let (now, pointer) = ctx.input(|i| (i.time, i.pointer.latest_pos()));
+        if std::mem::take(&mut self.screen_changed)
+            && self
+                .shown
+                .as_ref()
+                .is_some_and(|s| !self.records.iter().any(|r| r.id == s.id))
+        {
+            self.shown = None;
+            self.pending = None;
+        }
+        if pointer.zip(hold).is_some_and(|(p, hold)| hold.contains(p)) {
+            self.pending = None;
+            return;
+        }
+        // Smallest global area among the records containing the pointer; a tie goes to the first recorded.
+        let choice = self
+            .records
+            .iter()
+            .filter(|r| r.contains_pointer)
+            .map(|r| {
+                let rect = ctx
+                    .layer_transform_to_global(r.layer)
+                    .map_or(r.rect, |t| t.mul_rect(r.rect));
+                (rect.area(), r)
+            })
+            .min_by(|a, b| a.0.total_cmp(&b.0))
+            .map(|(_, r)| r);
+        let Some(choice) = choice else {
+            self.pending = None;
+            return;
+        };
+        if self.shown.as_ref().is_some_and(|s| s.id == choice.id) {
+            self.pending = None;
+            return;
+        }
+        let settle = crate::INFO_SETTLE.as_secs_f64();
+        match self.pending {
+            Some((id, since)) if id == choice.id => {
+                let elapsed = now - since;
+                if elapsed >= settle {
+                    self.shown = Some(Shown {
+                        id: choice.id,
+                        info: choice.info.clone(),
+                    });
+                    self.pending = None;
+                } else {
+                    let left = std::time::Duration::try_from_secs_f64(settle - elapsed)
+                        .unwrap_or(crate::INFO_SETTLE);
+                    ctx.request_repaint_after(left);
+                }
+            }
+            _ => {
+                self.pending = Some((choice.id, now));
+                ctx.request_repaint_after(crate::INFO_SETTLE);
+            }
+        }
     }
     /// Add the accessors or leaves a page read, or a *This instance* note, to the last record.
     pub(crate) fn amend_last(&mut self, f: impl FnOnce(&mut InstanceInfo)) {
