@@ -30,7 +30,8 @@ egui's own types, and hands them to egui through egui's own seams:
 
 The install also registers a plugin that paints the platform's focus ring
 around the widget with keyboard focus and, where the platform integration
-reports no colour scheme (Linux), tells egui the OS one. The values no `Style` field carries — the
+reports no colour scheme (Linux), tells egui the OS one when the atlas carries
+it (`from_system`, `to_egui_atlas`, `Builder::os_mode`). The values no `Style` field carries — the
 info and warning colours, the text-scale roles, a `TextEdit`'s margin and
 frame, the dialog button order, icon sizes — are free functions of the crate
 root and of `icons`.
