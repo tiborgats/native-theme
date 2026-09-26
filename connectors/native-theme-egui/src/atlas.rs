@@ -425,7 +425,13 @@ impl ThemeAtlas {
     /// too and `install` leaves them alone: set them with
     /// `ctx.options_mut(|o| o.fallback_theme = ..)` (`egui/src/context.rs:1135`).
     pub fn install(&self, ctx: &egui::Context) {
-        // 1. Fonts — Task 22 (`ctx.set_fonts` whenever the atlas was built with a plan).
+        // §10.3 step 1: the plan's fonts, whenever the atlas was built with a plan — even one in
+        // which no face was found — so a family the plan has no face for is egui's own again, not
+        // the previous install's; an atlas built with no plan leaves the `Context`'s fonts alone.
+        // `set_fonts`, never `add_font`, which de-duplicates by name only (`egui/src/context.rs:2106`).
+        if let Some(defs) = self.fonts() {
+            ctx.set_fonts(defs.clone());
+        }
         // 2. Both base styles, each first given the `Name` keys of the style it replaces:
         //    `style_of` (`egui/src/context.rs:2221`) then `set_style_of` (`:2250`); §7.5, §10.3.
         for theme in [egui::Theme::Dark, egui::Theme::Light] {
@@ -468,6 +474,12 @@ impl ThemeAtlas {
     /// through (`base`, `cell(role, variant)`, `frame(surface)`).
     pub(crate) fn scheme(&self, theme: egui::Theme) -> &SchemeStyles {
         self.0.scheme(theme)
+    }
+
+    /// The `FontDefinitions` `Builder::build` made from the atlas's plan (§10.3 step 1), or
+    /// `None` when the atlas was built with no plan.
+    pub(crate) fn fonts(&self) -> Option<&egui::FontDefinitions> {
+        self.0.fonts.as_ref()
     }
 }
 
@@ -631,14 +643,14 @@ impl<'a> Builder<'a> {
         let mut notes = Vec::new();
         let prefs = self.accessibility.cloned().unwrap_or_default();
         let layout = self.layout.cloned().unwrap_or_default();
-        // Task 22: with a plan, `fonts::font_definitions(self.light, &plan)` gives the
-        // definitions and the notes (the plan's lookup notes among them, §4.9). Until then the
-        // plan's own notes alone reach the atlas, and no definitions are made.
-        let fonts: Option<egui::FontDefinitions> = None;
-        if let Some(plan) = self.fonts {
-            notes.extend(plan.notes);
-        }
-        let defs = fonts.clone().unwrap_or_default(); // egui's default faces until Task 22 fills `fonts`
+        // §4.9, §10.3 step 1: the plan's definitions, validated once here, kept for `install`,
+        // and the definitions §6.15 measures the Body row height on (Task 13's `body_row_height`).
+        let fonts: Option<egui::FontDefinitions> = self.fonts.as_ref().map(|plan| {
+            let (defs, plan_notes) = crate::fonts::font_definitions(self.light, plan);
+            notes.extend(plan_notes);
+            defs
+        });
+        let defs = fonts.clone().unwrap_or_default(); // egui's default faces for an atlas with no plan
         let light = compile_scheme(
             egui::Theme::Light,
             self.light,

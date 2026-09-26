@@ -835,3 +835,393 @@ fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
         );
     }
 }
+
+/// §13 T6 (a)–(e), T5's plan leg and T14 (a)'s font-plan clause (plan Task 22).
+mod t6_fonts {
+    use std::borrow::Cow;
+    use std::sync::Arc;
+
+    use egui::{FontData, FontDefinitions, FontFamily, FontId, TextStyle};
+    use native_theme::theme::{ColorMode, FontStyle, ResolvedTheme, Theme};
+
+    use super::{pass, resolved};
+    use crate::convert::clamp_length;
+    use crate::fonts::{FontBytes, FontPlan, font_definitions, weight_coords};
+    use crate::{Note, Role, RoleVariant, ThemeAtlas};
+
+    /// One of egui's bundled faces, `&'static` as `FontDefinitions::default()` registers them
+    /// with `FontData::from_static` (`epaint/src/text/fonts.rs:506-532`).
+    fn bundled(name: &str) -> &'static [u8] {
+        let defs = FontDefinitions::default();
+        let data = defs.font_data.get(name).unwrap();
+        match &data.font {
+            Cow::Borrowed(bytes) => Some(*bytes),
+            Cow::Owned(_) => None,
+        }
+        .unwrap()
+    }
+
+    fn hack() -> &'static [u8] {
+        bundled("Hack")
+    }
+
+    /// `bytes` with the `head` table's `unitsPerEm` overwritten with `0`. OpenType's table
+    /// directory holds `numTables` at offset 4 and 16-byte records from offset 12 (`tag`,
+    /// `checksum`, `offset`, `length`); in `head`, `unitsPerEm` sits at offset 18, after
+    /// `majorVersion`, `minorVersion`, `fontRevision`, `checksumAdjustment`, `magicNumber`
+    /// and `flags`. read-fonts checks no checksum, so the patched file still parses.
+    fn with_zero_units_per_em(bytes: &[u8]) -> Vec<u8> {
+        let mut out = bytes.to_vec();
+        let u16_at = |b: &[u8], at: usize| {
+            u16::from_be_bytes([*b.get(at).unwrap(), *b.get(at + 1).unwrap()])
+        };
+        let u32_at = |b: &[u8], at: usize| {
+            u32::from_be_bytes([
+                *b.get(at).unwrap(),
+                *b.get(at + 1).unwrap(),
+                *b.get(at + 2).unwrap(),
+                *b.get(at + 3).unwrap(),
+            ])
+        };
+        let num_tables = usize::from(u16_at(&out, 4));
+        let head = (0..num_tables)
+            .map(|i| 12 + 16 * i)
+            .find(|&record| out.get(record..record + 4) == Some(b"head"))
+            .map(|record| u32_at(&out, record + 8) as usize)
+            .unwrap();
+        out.get_mut(head + 18..head + 20)
+            .unwrap()
+            .copy_from_slice(&[0, 0]);
+        out
+    }
+
+    fn plan_for(t: &ResolvedTheme, bytes: &'static [u8]) -> FontPlan {
+        FontPlan::new().face(
+            &t.defaults.font.family,
+            t.defaults.font.weight,
+            t.defaults.font.style,
+            FontBytes::Static(bytes),
+        )
+    }
+
+    /// T6 (a): never a `FontFamily::Name`; the emoji tail survives; an empty plan is a no-op.
+    #[test]
+    fn t6_a_never_a_name_family_and_an_empty_plan_is_a_no_op() {
+        let t = resolved("kde-breeze", ColorMode::Dark);
+        let (defs, notes) = font_definitions(&t, &FontPlan::new());
+        assert_eq!(defs, FontDefinitions::default());
+        assert!(notes.is_empty());
+
+        let plan = plan_for(&t, hack()).face(
+            &t.defaults.mono_font.family,
+            t.defaults.mono_font.weight,
+            t.defaults.mono_font.style,
+            FontBytes::Static(hack()),
+        );
+        let (defs, _) = font_definitions(&t, &plan);
+        assert!(
+            defs.families
+                .keys()
+                .all(|f| matches!(f, FontFamily::Proportional | FontFamily::Monospace))
+        );
+        let stock = FontDefinitions::default();
+        for family in [FontFamily::Proportional, FontFamily::Monospace] {
+            let chain = defs.families.get(&family).unwrap();
+            let stock_chain = stock.families.get(&family).unwrap();
+            assert_eq!(
+                chain.get(1..),
+                Some(stock_chain.as_slice()),
+                "{family}: the head is the plan's face and the rest egui's own chain, emoji tail included"
+            );
+        }
+
+        let atlas = ThemeAtlas::builder("t6", &t, &t).fonts(plan).build();
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            let scheme = atlas.scheme(theme);
+            for style in std::iter::once(&scheme.base).chain(scheme.cells.iter().flatten()) {
+                for id in style
+                    .text_styles
+                    .values()
+                    .chain(style.override_font_id.iter())
+                {
+                    assert!(
+                        matches!(id.family, FontFamily::Proportional | FontFamily::Monospace),
+                        "{theme:?}: {id:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// T6 (b): a face epaint would panic on, or divide by zero on, is dropped before epaint
+    /// sees it. The cut-short face ends inside its table directory: read-fonts reads only the
+    /// directory when it opens a face (`FontRef::new`, read-fonts 0.41.0 `src/lib.rs` lines 349–351)
+    /// and never checks a table's range, and Hack's 17 records end at byte 284 with `head` at
+    /// 284..338, so a cut after the directory would still parse.
+    #[test]
+    fn t6_b_an_invalid_face_is_dropped_with_a_note() {
+        let t = resolved("adwaita", ColorMode::Light);
+        let family: Arc<str> = Arc::clone(&t.defaults.font.family);
+        let short: Arc<[u8]> = Arc::from(hack().get(..200).unwrap());
+        let cases: Vec<(&str, FontPlan)> = vec![
+            (
+                "garbage bytes",
+                FontPlan::new().face(
+                    &family,
+                    400,
+                    FontStyle::Normal,
+                    FontBytes::Static(b"this is not a font file"),
+                ),
+            ),
+            (
+                "a face cut short",
+                FontPlan::new().face(&family, 400, FontStyle::Normal, FontBytes::Shared(short)),
+            ),
+            (
+                "collection index 1 of a single face",
+                FontPlan::new().face_at(
+                    &family,
+                    Some(400),
+                    FontStyle::Normal,
+                    FontBytes::Static(hack()),
+                    1,
+                ),
+            ),
+            (
+                "unitsPerEm 0",
+                FontPlan::new().face(
+                    &family,
+                    400,
+                    FontStyle::Normal,
+                    FontBytes::Shared(Arc::from(with_zero_units_per_em(hack()))),
+                ),
+            ),
+        ];
+        let stock = FontDefinitions::default();
+        for (label, plan) in cases {
+            let (defs, notes) = font_definitions(&t, &plan);
+            assert_eq!(
+                defs.families.get(&FontFamily::Proportional),
+                stock.families.get(&FontFamily::Proportional),
+                "{label}: the family keeps egui's own faces"
+            );
+            assert!(
+                !defs
+                    .font_data
+                    .contains_key("native-theme-egui/proportional"),
+                "{label}"
+            );
+            let invalid: Vec<&Note> = notes
+                .iter()
+                .filter(|n| matches!(n, Note::FontDataInvalid { .. }))
+                .collect();
+            assert_eq!(
+                invalid,
+                vec![&Note::FontDataInvalid {
+                    family: Arc::clone(&family)
+                }],
+                "{label}"
+            );
+            let ctx = egui::Context::default();
+            ctx.set_fonts(defs);
+            let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+                ui.label("laid out with the plan's definitions");
+            });
+        }
+    }
+
+    /// T6 (c): a family the OS has no face of is reported, never replaced.
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn t6_c_a_family_no_system_has_is_reported_never_replaced() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        let pid = std::process::id();
+        let sans: Arc<str> = Arc::from(format!("native-theme-egui-no-such-sans-{pid}"));
+        let mono: Arc<str> = Arc::from(format!("native-theme-egui-no-such-mono-{pid}"));
+        t.defaults.font.family = Arc::clone(&sans);
+        t.defaults.mono_font.family = Arc::clone(&mono);
+        let plan = FontPlan::from_system(&t);
+        assert_eq!(plan.face_count(), 0);
+        let (defs, notes) = font_definitions(&t, &plan);
+        assert_eq!(
+            notes,
+            vec![
+                Note::FontFamilyUnavailable { family: sans },
+                Note::FontFamilyUnavailable { family: mono },
+            ]
+        );
+        assert_eq!(defs, FontDefinitions::default());
+    }
+
+    /// T6 (d): the face `select_face` picks heads its chain, at the theme's `wght`.
+    #[test]
+    fn t6_d_the_chosen_faces_head_the_chains_at_the_asked_weight() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        t.defaults.font.family = Arc::from("Plan Sans");
+        t.defaults.font.weight = 700;
+        t.defaults.font.style = FontStyle::Normal;
+        t.defaults.mono_font.family = Arc::from("Plan Mono");
+        t.defaults.mono_font.weight = 400;
+        t.defaults.mono_font.style = FontStyle::Normal;
+        let plan = FontPlan::new()
+            .face(
+                "Plan Sans",
+                400,
+                FontStyle::Normal,
+                FontBytes::Static(hack()),
+            )
+            .face(
+                "Plan Sans",
+                700,
+                FontStyle::Normal,
+                FontBytes::Static(bundled("Ubuntu-Light")),
+            )
+            .face(
+                "Plan Sans",
+                400,
+                FontStyle::Italic,
+                FontBytes::Static(bundled("NotoEmoji-Regular")),
+            )
+            // lower case on purpose: CSS Fonts 4 §5.1 caseless family matching (§8.2)
+            .face(
+                "plan mono",
+                400,
+                FontStyle::Normal,
+                FontBytes::Static(bundled("emoji-icon-font")),
+            );
+        let (defs, notes) = font_definitions(&t, &plan);
+        assert!(notes.is_empty(), "{notes:?}");
+        let head = |family: FontFamily| {
+            let name = defs.families.get(&family).unwrap().first().unwrap();
+            Arc::clone(defs.font_data.get(name).unwrap())
+        };
+        let sans = head(FontFamily::Proportional);
+        assert_eq!(sans.font.as_ref(), bundled("Ubuntu-Light"));
+        assert_eq!(sans.tweak.coords, weight_coords(700));
+        let mono = head(FontFamily::Monospace);
+        assert_eq!(mono.font.as_ref(), bundled("emoji-icon-font"));
+        assert_eq!(mono.tweak.coords, weight_coords(400));
+    }
+
+    /// T6 (e): a `FontFamily::Name` family of the plan's base survives, chain and data intact.
+    #[test]
+    fn t6_e_a_name_family_of_the_base_survives() {
+        let t = resolved("adwaita", ColorMode::Light);
+        let app = FontFamily::Name("app".into());
+        let mut base = FontDefinitions::default();
+        base.font_data.insert(
+            "app-face".to_owned(),
+            Arc::new(FontData::from_static(hack())),
+        );
+        base.families
+            .insert(app.clone(), vec!["app-face".to_owned()]);
+        let plan = plan_for(&t, hack()).with_base(base.clone());
+        let (defs, _) = font_definitions(&t, &plan);
+        assert_eq!(defs.families.get(&app), base.families.get(&app));
+        assert_eq!(
+            defs.font_data.get("app-face"),
+            base.font_data.get("app-face")
+        );
+    }
+
+    /// T5's plan leg at a text-scaling factor of `1.0`: §6.15 with egui's bundled `Hack` as
+    /// the Body face, egui's own `row_height` as the oracle, and §6.6's slider `expansion`.
+    #[test]
+    fn t5_line_spacing_with_a_plan_matches_egui_row_height() {
+        for preset in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let t = resolved(preset.key, mode);
+                let plan = plan_for(&t, hack());
+                let (defs, _) = font_definitions(&t, &plan);
+                let atlas = ThemeAtlas::builder(preset.key, &t, &t).fonts(plan).build();
+                let ctx = egui::Context::default();
+                ctx.set_fonts(defs);
+                let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+                for theme in [egui::Theme::Light, egui::Theme::Dark] {
+                    let scheme = atlas.scheme(theme);
+                    let size = scheme.base.text_styles.get(&TextStyle::Body).unwrap().size;
+                    let row = ctx.fonts_mut(|f| f.row_height(&FontId::proportional(size)));
+                    let want = t.defaults.line_height * size;
+                    let expected = clamp_length(want - row);
+                    for style in std::iter::once(&scheme.base).chain(scheme.cells.iter().flatten())
+                    {
+                        assert_eq!(
+                            style.spacing.extra_text_line_spacing, expected,
+                            "{} {mode:?} {theme:?}",
+                            preset.key
+                        );
+                    }
+                    // Every `Role::Slider` cell, in every variant (spec §13 T5).
+                    for variant in RoleVariant::all() {
+                        let slider = scheme.cell(Role::Slider, *variant);
+                        let d = t.slider.thumb_diameter;
+                        let w = slider.visuals.widgets.inactive.fg_stroke.width;
+                        let expected_e = if d.is_finite() {
+                            let thickness = row.max(slider.spacing.interact_size.y);
+                            ((clamp_length(d) - 0.8 * thickness) * 0.5).min(0.0) - w
+                        } else {
+                            -w
+                        };
+                        let widgets = &slider.visuals.widgets;
+                        for state in [
+                            &widgets.noninteractive,
+                            &widgets.inactive,
+                            &widgets.hovered,
+                            &widgets.active,
+                            &widgets.open,
+                        ] {
+                            assert_eq!(
+                                state.expansion, expected_e,
+                                "{} {mode:?} {theme:?} {variant:?}",
+                                preset.key
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// T14 (a)'s font-plan clause: an install whose plan found no face restores egui's chain.
+    #[test]
+    fn t14_a_an_install_whose_plan_found_no_face_restores_egui_s_chain() {
+        let t = resolved("adwaita", ColorMode::Light);
+        let ctx = egui::Context::default();
+        ctx.set_fonts(FontDefinitions::empty());
+        let with_face = ThemeAtlas::builder("a", &t, &t)
+            .fonts(plan_for(&t, hack()))
+            .build();
+        with_face.install(&ctx);
+        let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+        let head = ctx.fonts(|f| {
+            f.definitions()
+                .families
+                .get(&FontFamily::Proportional)
+                .and_then(|chain| chain.first().cloned())
+        });
+        assert_eq!(head.as_deref(), Some("native-theme-egui/proportional"));
+
+        let unrelated = FontPlan::new().face(
+            "Unrelated",
+            400,
+            FontStyle::Normal,
+            FontBytes::Static(hack()),
+        );
+        let none_found = ThemeAtlas::builder("b", &t, &t).fonts(unrelated).build();
+        none_found.install(&ctx);
+        let _ = pass(&ctx, egui::RawInput::default(), |_| {});
+        let chain = ctx.fonts(|f| {
+            f.definitions()
+                .families
+                .get(&FontFamily::Proportional)
+                .cloned()
+        });
+        assert_eq!(
+            chain,
+            FontDefinitions::default()
+                .families
+                .get(&FontFamily::Proportional)
+                .cloned()
+        );
+    }
+}
