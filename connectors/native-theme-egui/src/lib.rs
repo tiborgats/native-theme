@@ -149,3 +149,9 @@ pub use native_theme::{AccessibilityPreferences, Result};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
+
+/// The README's code blocks, compiled as doctests so they cannot drift from the API; the
+/// runtime-theme-change block needs feature `watch`.
+#[cfg(all(doctest, feature = "watch"))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
