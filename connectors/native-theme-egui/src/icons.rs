@@ -275,9 +275,13 @@ pub(crate) fn texture_id(uri: &str) -> egui::Id {
 
 fn remember_uri(ctx: &egui::Context, uri: &str) {
     ctx.data_mut(|d| {
-        d.get_temp_mut_or_default::<IconRegistry>(handles_key())
-            .uris
-            .insert(uri.to_owned());
+        // Called on every draw of an icon: the `String` is allocated only for a new URI.
+        let uris = &mut d
+            .get_temp_mut_or_default::<IconRegistry>(handles_key())
+            .uris;
+        if !uris.contains(uri) {
+            uris.insert(uri.to_owned());
+        }
     });
 }
 
