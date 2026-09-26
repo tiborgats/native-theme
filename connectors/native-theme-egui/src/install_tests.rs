@@ -1868,3 +1868,166 @@ fn install_leaves_no_stored_icon_texture_handle() {
     assert!(ctx.data(|d| d.get_temp::<IconRegistry>(handles_key()).is_none()));
     assert_eq!(ctx.tex_manager().read().num_allocated(), before);
 }
+
+// ---- T8: the documented limits (spec §13 T8; T8 (c) is Task 26's) ------------------------
+
+fn kde_breeze() -> (ResolvedTheme, ResolvedTheme) {
+    let theme = Theme::preset("kde-breeze").expect("bundled preset");
+    let light = theme.resolve(ColorMode::Light).expect("resolves").variant;
+    let dark = theme.resolve(ColorMode::Dark).expect("resolves").variant;
+    (light, dark)
+}
+
+/// T8 (a) — §7.5, §14 item 30: `TextStyle::resolve` panics on a missing key in every build
+/// (`egui/src/style.rs:112-120`), and each seam below replaces a whole style, so a seam that
+/// forgot the merge would crash an application that names its own text styles.
+#[test]
+fn t8a_named_text_styles_survive_every_seam() {
+    use egui::{FontId, TextStyle, Theme};
+    let (light, dark) = kde_breeze();
+    let atlas = ThemeAtlas::builder("t8a", &light, &dark).build();
+    let key = TextStyle::Name("app-caption".into());
+    let font = FontId::proportional(11.0);
+
+    let ctx = egui::Context::default();
+    ctx.set_fonts(egui::FontDefinitions::empty()); // no glyph is laid out (§13 T14's shape)
+    for theme in [Theme::Dark, Theme::Light] {
+        let (key, font) = (key.clone(), font.clone());
+        ctx.style_mut_of(theme, move |s| {
+            s.text_styles.insert(key, font); // egui/src/context.rs:2237
+        });
+    }
+    atlas.install(&ctx);
+    for theme in [Theme::Dark, Theme::Light] {
+        let style = ctx.style_of(theme); // egui/src/context.rs:2221
+        assert_eq!(
+            style.text_styles.get(&key),
+            Some(&font),
+            "{theme:?}: install dropped the application's key (§10.3 step 2)"
+        );
+    }
+
+    let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+        let inside_scope = ui
+            .native_scope(Role::Button, RoleVariant::Normal, |ui| {
+                ui.style().text_styles.get(&key).cloned()
+            })
+            .inner;
+        assert_eq!(
+            inside_scope,
+            Some(font.clone()),
+            "native_scope lost the key (§4.5)"
+        );
+
+        ui.native_set_style(Role::Sidebar, RoleVariant::Normal);
+        assert_eq!(
+            ui.style().text_styles.get(&key),
+            Some(&font),
+            "native_set_style lost the key (§4.5)"
+        );
+        // The documented failure path, once: resolve would panic on a missing key.
+        assert_eq!(key.resolve(ui.style()), font);
+
+        let modifier = ThemeAtlas::from_ctx(ui.ctx())
+            .expect("installed")
+            .role_modifier(ui.ctx().theme(), Role::Popover, RoleVariant::Normal);
+        let in_popup = egui::Popup::new(
+            egui::Id::new("t8a-popup"),
+            ui.ctx().clone(),
+            egui::PopupAnchor::Position(egui::pos2(20.0, 20.0)), // egui/src/containers/popup.rs:35
+            ui.layer_id(),
+        )
+        .open(true) // :296
+        .style(modifier) // :417
+        .show(|ui| ui.style().text_styles.get(&key).cloned()) // :508
+        .expect("an open popup shows its contents")
+        .inner;
+        assert_eq!(
+            in_popup,
+            Some(font.clone()),
+            "role_modifier lost the key (§4.2)"
+        );
+    });
+}
+
+/// T8 (b) — §14 item 2b: the handle a `Window` paints is the outer `Ui`'s, so a
+/// `Role::Scrollbar` scope as the first statement inside the closure does not reach it. On
+/// `kde-breeze` the scrollbar is no overlay (`native-theme/src/presets/kde-breeze.toml:149`),
+/// so egui paints the bar at full opacity (`egui/src/containers/scroll_area.rs:1483-1485`,
+/// `:1495-1497`), and only the corner radius can tell the base style from the cell (§6.8).
+#[test]
+fn t8b_a_window_scrollbar_keeps_the_base_radius() {
+    use egui::Shape;
+    let (mut light, mut dark) = kde_breeze();
+    assert!(!light.scrollbar.overlay_mode && !dark.scrollbar.overlay_mode);
+    for r in [&mut light, &mut dark] {
+        // The fields are public (T4): set the two radii apart first.
+        r.button.border.corner_radius = r.defaults.border.corner_radius + 4.0;
+    }
+    let atlas = ThemeAtlas::builder("t8b", &light, &dark).build();
+    let ctx = egui::Context::default();
+    ctx.set_fonts(egui::FontDefinitions::empty());
+    atlas.install(&ctx);
+
+    let scheme = ctx.theme();
+    let styles = atlas.scheme(scheme);
+    let base = &styles.base;
+    let cell = styles.cell(Role::Scrollbar, RoleVariant::Normal);
+    let base_radius = base.visuals.widgets.inactive.corner_radius;
+    assert_ne!(
+        base_radius, cell.visuals.widgets.inactive.corner_radius,
+        "the base and the Role::Scrollbar radii must differ for this test to discriminate"
+    );
+    let thumb = base.visuals.widgets.inactive.bg_fill; // scrollbar.thumb_color (§5.9)
+    assert_eq!(
+        thumb,
+        crate::convert::to_color32(atlas.resolved_for(scheme).scrollbar.thumb_color)
+    );
+    assert_ne!(
+        thumb, base.visuals.extreme_bg_color,
+        "the track must not share the thumb's colour"
+    );
+
+    // The bar appears once the content size is known from a previous pass: run three.
+    let mut handles = Vec::new();
+    for _ in 0..3 {
+        handles.clear();
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            let ctx = ui.ctx().clone();
+            let shown = egui::Window::new("t8b")
+                .fixed_size([200.0, 100.0]) // egui/src/containers/window.rs:437
+                // A new window fades in, multiplying every fill's alpha (`:227-234`).
+                .fade_in(false)
+                .vscroll(true) // :512; the ScrollArea branch, :738
+                .show(&ctx, |ui| {
+                    ui.native_set_style(Role::Scrollbar, RoleVariant::Normal);
+                    for i in 0..50 {
+                        ui.label(format!("row {i}"));
+                    }
+                })
+                .expect("the window is open");
+            let layer = shown.response.layer_id;
+            ctx.graphics(|g| {
+                // egui/src/context.rs:1045; egui/src/layers.rs:204, :186
+                if let Some(list) = g.get(layer) {
+                    for entry in list.all_entries() {
+                        if let Shape::Rect(rect) = &entry.shape
+                            && rect.fill == thumb
+                        {
+                            handles.push(rect.clone());
+                        }
+                    }
+                }
+            });
+        });
+    }
+    assert_eq!(
+        handles.len(),
+        1,
+        "exactly one handle in the window's layer (egui/src/containers/scroll_area.rs:1515-1519)"
+    );
+    assert_eq!(
+        handles[0].corner_radius, base_radius,
+        "the handle is painted from the outer Ui's style, the base style's (§14 item 2b)"
+    );
+}
