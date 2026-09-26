@@ -4926,7 +4926,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme"
-version = "0.5.9"
+version = "0.6.0"
 dependencies = [
  "arc-swap",
  "ashpd",
@@ -4956,7 +4956,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-build"
-version = "0.5.9"
+version = "0.6.0"
 dependencies = [
  "heck 0.5.0",
  "native-theme",
@@ -4966,7 +4966,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-derive"
-version = "0.5.9"
+version = "0.6.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4975,7 +4975,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-gpui"
-version = "0.5.9"
+version = "0.6.0"
 dependencies = [
  "gpui-base",
  "gpui-component",
@@ -4990,7 +4990,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-iced"
-version = "0.5.9"
+version = "0.6.0"
 dependencies = [
  "iced",
  "iced_aw",
