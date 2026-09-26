@@ -154,17 +154,24 @@ impl AtlasInner {
     }
 }
 
-/// `into` with every `TextStyle::Name` key of `from` that it lacks (§7.5): `into`'s own `Arc`
-/// when there is none — an application without named styles pays nothing — and a copy with
-/// the keys inserted otherwise. The five stock keys always keep `into`'s values.
-pub(crate) fn carry_name_keys(from: &egui::Style, into: &Arc<egui::Style>) -> Arc<egui::Style> {
-    let missing: Vec<(&egui::TextStyle, &egui::FontId)> = from
-        .text_styles
+/// Every `TextStyle::Name` key of `from` that `into` lacks, with its font (§7.5).
+fn missing_name_keys<'a>(
+    from: &'a egui::Style,
+    into: &egui::Style,
+) -> Vec<(&'a egui::TextStyle, &'a egui::FontId)> {
+    from.text_styles
         .iter()
         .filter(|(key, _)| {
             matches!(key, egui::TextStyle::Name(_)) && !into.text_styles.contains_key(*key)
         })
-        .collect();
+        .collect()
+}
+
+/// `into` with every `TextStyle::Name` key of `from` that it lacks (§7.5): `into`'s own `Arc`
+/// when there is none — an application without named styles pays nothing — and a copy with
+/// the keys inserted otherwise. The five stock keys always keep `into`'s values.
+pub(crate) fn carry_name_keys(from: &egui::Style, into: &Arc<egui::Style>) -> Arc<egui::Style> {
+    let missing = missing_name_keys(from, into);
     if missing.is_empty() {
         return Arc::clone(into);
     }
@@ -371,7 +378,11 @@ impl ThemeAtlas {
     ) -> egui::style::StyleModifier {
         let cell = Arc::clone(self.scheme(theme).cell(role, variant));
         egui::style::StyleModifier::new(move |style: &mut egui::Style| {
-            *style = egui::Style::clone(&carry_name_keys(style, &cell));
+            let mut next = egui::Style::clone(&cell);
+            for (key, font) in missing_name_keys(style, &cell) {
+                next.text_styles.insert(key.clone(), font.clone());
+            }
+            *style = next;
         })
     }
 
