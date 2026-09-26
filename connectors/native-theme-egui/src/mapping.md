@@ -411,7 +411,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-cra
 | `scrollbar.min_thumb_length` | DIRECT | `spacing.scroll.handle_min_length` |  |
 | `scrollbar.overlay_mode` | DERIVED | `spacing.scroll.floating`; `spacing.scroll.floating_allocated_width` (when: egui's own value is not 0.0, §6.5); `spacing.scroll.bar_width` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.bar_inner_margin` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.bar_outer_margin` (when: the thumb is narrower than the groove, §6.5); `spacing.scroll.floating_width` (when: egui's own floating width is not the thumb width, §6.5) |  |
 | `scrollbar.thumb_active_color` | DIRECT | `visuals.widgets.active.bg_fill` (when: stated; None copies scrollbar.thumb_hover_color, §6.9); «scrollbar» `visuals.widgets.active.bg_fill` (when: stated; None copies scrollbar.thumb_hover_color, §6.9) |  |
-| `scrollbar.thumb_color` | DIRECT | `visuals.widgets.inactive.bg_fill`; `visuals.widgets.open.bg_fill`; «scrollbar» `visuals.widgets.inactive.bg_fill`; «scrollbar» `visuals.widgets.open.bg_fill` |  |
+| `scrollbar.thumb_color` | DIRECT | `visuals.widgets.inactive.bg_fill`; `visuals.widgets.open.bg_fill`; «scrollbar» `visuals.widgets.inactive.bg_fill`; «scrollbar» `visuals.widgets.open.bg_fill`; `spacing.scroll.foreground_color` (when: never: written false in the base style, so the handle reads bg_fill, §5.5, §5.9) |  |
 | `scrollbar.thumb_hover_color` | DIRECT | `visuals.widgets.hovered.bg_fill`; «scrollbar» `visuals.widgets.hovered.bg_fill`; `visuals.widgets.active.bg_fill` (when: scrollbar.thumb_active_color is None, §6.9); «scrollbar» `visuals.widgets.active.bg_fill` (when: scrollbar.thumb_active_color is None, §6.9) |  |
 | `scrollbar.thumb_width` | DERIVED | `spacing.scroll.bar_width` (when: not overlay mode, §6.5); `spacing.scroll.floating_width` (when: overlay mode, §6.5); `spacing.scroll.bar_inner_margin` (when: not overlay mode, §6.5); `spacing.scroll.bar_outer_margin` (when: not overlay mode, §6.5) |  |
 | `scrollbar.track_color` | DIRECT | `visuals.extreme_bg_color`; «scrollbar» `visuals.extreme_bg_color` |  |
@@ -423,7 +423,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-cra
 | `slider.disabled_track_color` | SCOPED | «slider:disabled» `visuals.widgets.inactive.bg_fill` (when: stated; None copies slider.track_color, §6.4) |  |
 | `slider.fill_color` | SCOPED | «slider» `visuals.selection.bg_fill`; «slider» `visuals.slider_trailing_fill` (when: never: written true in every slider cell, §5.9); «slider:disabled» `visuals.selection.bg_fill` (when: slider.disabled_fill_color is None, §6.4) |  |
 | `slider.thumb_color` | SCOPED | «slider» `visuals.widgets.hovered.bg_fill` (when: slider.thumb_hover_color is None, §6.9); «slider» `visuals.widgets.active.bg_fill` (when: slider.thumb_hover_color is None, §6.9) |  |
-| `slider.thumb_diameter` | DERIVED | «slider» `spacing.interact_size.y`; «slider» `visuals.widgets.noninteractive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.inactive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.hovered.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.active.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.open.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6) |  |
+| `slider.thumb_diameter` | DERIVED | «slider» `spacing.interact_size.y`; «slider» `visuals.widgets.noninteractive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.inactive.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.hovered.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.active.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); «slider» `visuals.widgets.open.expansion` (when: Body row \> 1.25 · thumb_diameter, §6.6); `visuals.handle_shape` (when: never: HandleShape::Circle in the base style and every slider cell, a diameter's knob, §5.9, §6.6) |  |
 | `slider.thumb_hover_color` | SCOPED | «slider» `visuals.widgets.hovered.bg_fill` (when: stated; None copies slider.thumb_color, §6.9); «slider» `visuals.widgets.active.bg_fill` (when: stated; None copies slider.thumb_color, §6.9) |  |
 | `slider.tick_mark_length` | UNMAPPABLE |  | `egui-limited`: egui: tick marks on Slider |
 | `slider.track_color` | SCOPED | «slider» `visuals.widgets.inactive.bg_fill`; «slider» `visuals.widgets.open.bg_fill`; «slider:disabled» `visuals.widgets.inactive.bg_fill` (when: slider.disabled_track_color is None, §6.4) |  |
@@ -457,7 +457,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-cra
 | `expander.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `expander.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `expander.header_height` | SCOPED | «expander» `spacing.interact_size.y` |  |
-| `expander.hover_background` | SCOPED | «expander» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None leaves no highlight, §6.4); «expander» `visuals.widgets.active.weak_bg_fill` (when: stated; None leaves no highlight, §6.4) |  |
+| `expander.hover_background` | SCOPED | «expander» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None leaves no highlight, §6.4); «expander» `visuals.widgets.active.weak_bg_fill` (when: stated; None leaves no highlight, §6.4); «expander» `visuals.collapsing_header_frame` (when: never: written true in every expander cell, the frame the hover fill lies in, §6.1) |  |
 | `sidebar.background_color` | SCOPED | \[panel_left\] `fill`; \[panel_right\] `fill`; «sidebar» `visuals.panel_fill` |  |
 | `sidebar.border.color` | SCOPED | «sidebar» `visuals.widgets.noninteractive.bg_stroke.color` |  |
 | `sidebar.border.corner_radius` | SCOPED | \[panel_left\] `corner_radius`; \[panel_right\] `corner_radius` | probe `4.0` |
@@ -565,6 +565,7 @@ The leaf that wins an egui field globally, and the leaves that displace it insid
 | `spacing.scroll.floating` | `scrollbar.overlay_mode` |  |
 | `spacing.scroll.floating_allocated_width` | `scrollbar.overlay_mode` |  |
 | `spacing.scroll.floating_width` | `scrollbar.overlay_mode`, `scrollbar.thumb_width` |  |
+| `spacing.scroll.foreground_color` | `scrollbar.thumb_color` |  |
 | `spacing.scroll.handle_min_length` | `scrollbar.min_thumb_length` |  |
 | `spacing.slider_rail_height` | `slider.track_height` |  |
 | `spacing.tooltip_width` | `tooltip.max_width` |  |
@@ -579,10 +580,12 @@ The leaf that wins an egui field globally, and the leaves that displace it insid
 | `text_styles[Heading].size` | `text_scale.section_heading.size` | `dialog.title_font.size` «dialog» |
 | `text_styles[Monospace].size` | `defaults.mono_font.size` |  |
 | `text_styles[Small].size` | `text_scale.caption.size` |  |
+| `visuals.collapsing_header_frame` | — (egui's own value stands) | `expander.hover_background` «expander» |
 | `visuals.disabled_alpha` | `defaults.disabled_opacity` | `button.disabled_opacity` «button», `checkbox.disabled_opacity` «checkbox», `combo_box.disabled_opacity` «combo_box», `input.disabled_opacity` «input», `segmented_control.disabled_opacity` «segmented_control», `slider.disabled_opacity` «slider», `switch.disabled_opacity` «switch» |
 | `visuals.error_fg_color` | `defaults.danger_color` |  |
 | `visuals.extreme_bg_color` | `scrollbar.track_color` | `progress_bar.track_color` «progress_bar», `scrollbar.track_color` «scrollbar» |
 | `visuals.faint_bg_color` | `list.alternate_row_background` |  |
+| `visuals.handle_shape` | `slider.thumb_diameter` |  |
 | `visuals.hyperlink_color` | `defaults.link_color` | `link.disabled_text_color` «link:disabled», `link.font.color` «link» |
 | `visuals.menu_corner_radius` | `defaults.border.corner_radius_lg` |  |
 | `visuals.override_text_color` | — (egui's own value stands) | `checkbox.disabled_text_color` «checkbox:disabled», `checkbox.font.color` «checkbox» |
@@ -648,22 +651,116 @@ The leaf that wins an egui field globally, and the leaves that displace it insid
 
 | egui field | why egui's own value stands |
 |---|---|
+| `always_scroll_the_only_direction` | input behaviour (§5.10) |
 | `animation_time` | the accessibility preference, not a theme leaf (§4.3) |
+| `card.outer_margin.bottom` | as window.outer_margin.left |
+| `card.outer_margin.left` | as window.outer_margin.left |
+| `card.outer_margin.right` | as window.outer_margin.left |
+| `card.outer_margin.top` | as window.outer_margin.left |
+| `card.shadow.blur` | as card.shadow.offset |
+| `card.shadow.color` | as card.shadow.offset |
+| `card.shadow.offset` | Frame::group has no shadow (frame.rs:178-183), and card.border.shadow_enabled is UNMAPPABLE (§5.2) |
+| `card.shadow.spread` | as card.shadow.offset |
+| `central_panel.corner_radius` | as central_panel.stroke.width |
+| `central_panel.fill` | Frame::central_panel's, the base style's visuals.panel_fill, which defaults.background_color writes (§3.4, §5.9; frame.rs:191-193) |
+| `central_panel.outer_margin.bottom` | as window.outer_margin.left |
+| `central_panel.outer_margin.left` | as window.outer_margin.left |
+| `central_panel.outer_margin.right` | as window.outer_margin.left |
+| `central_panel.outer_margin.top` | as window.outer_margin.left |
+| `central_panel.shadow.blur` | as central_panel.stroke.width |
+| `central_panel.shadow.color` | as central_panel.stroke.width |
+| `central_panel.shadow.offset` | as central_panel.stroke.width |
+| `central_panel.shadow.spread` | as central_panel.stroke.width |
+| `central_panel.stroke.color` | as central_panel.stroke.width |
+| `central_panel.stroke.width` | Frame::central_panel has no stroke, radius or shadow (frame.rs:191-193); Surface::CentralPanel writes only its inner margin, from layout.window_margin (§4.4) |
+| `compact_menu_style` | no reader anywhere in egui 0.36.2 (§5.10) |
+| `debug` | egui's developer debug painting, DebugOptions (egui/src/style.rs:324, :1333): not appearance data |
+| `dialog.outer_margin.bottom` | as window.outer_margin.left |
+| `dialog.outer_margin.left` | as window.outer_margin.left |
+| `dialog.outer_margin.right` | as window.outer_margin.left |
+| `dialog.outer_margin.top` | as window.outer_margin.left |
+| `drag_value_text_style` | left at egui's TextStyle::Button (egui/src/style.rs:1434), whose size button.font writes (§5.9) |
+| `explanation_tooltips` | whether widgets explain themselves in tooltips is application behaviour (§5.10) |
+| `interaction.interact_radius` | input-behaviour policy; ResolvedTheme exposes none of Style::interaction (§5.10) |
+| `interaction.multi_widget_text_select` | as interaction.interact_radius |
+| `interaction.resize_grab_radius_corner` | as interaction.interact_radius |
+| `interaction.resize_grab_radius_side` | as interaction.interact_radius |
+| `interaction.selectable_labels` | as interaction.interact_radius |
+| `interaction.show_tooltips_only_when_still` | as interaction.interact_radius |
+| `interaction.tooltip_delay` | as interaction.interact_radius |
+| `interaction.tooltip_grace_time` | as interaction.interact_radius |
+| `override_font_id.family` | always FontFamily::Proportional where a scope writes the size: the family reaches egui as bytes, never as a name (§8.1) |
+| `override_text_style` | left at None: native-theme has no leaf forcing one TextStyle on all text; four scopes write override_font_id instead (§5.10) |
+| `override_text_valign` | vertical placement of mixed text in a row is layout policy with no native leaf (§5.10) |
+| `panel_bottom.outer_margin.bottom` | as window.outer_margin.left |
+| `panel_bottom.outer_margin.left` | as window.outer_margin.left |
+| `panel_bottom.outer_margin.right` | as window.outer_margin.left |
+| `panel_bottom.outer_margin.top` | as window.outer_margin.left |
+| `panel_bottom.shadow.blur` | as panel_left.shadow.offset |
+| `panel_bottom.shadow.color` | as panel_left.shadow.offset |
+| `panel_bottom.shadow.offset` | as panel_left.shadow.offset |
+| `panel_bottom.shadow.spread` | as panel_left.shadow.offset |
+| `panel_bottom.stroke.color` | as panel_left.stroke.width |
+| `panel_bottom.stroke.width` | as panel_left.stroke.width |
+| `panel_left.outer_margin.bottom` | as window.outer_margin.left |
+| `panel_left.outer_margin.left` | as window.outer_margin.left |
+| `panel_left.outer_margin.right` | as window.outer_margin.left |
+| `panel_left.outer_margin.top` | as window.outer_margin.left |
+| `panel_left.shadow.blur` | as panel_left.shadow.offset |
+| `panel_left.shadow.color` | as panel_left.shadow.offset |
+| `panel_left.shadow.offset` | Frame::side_top_panel has no shadow (frame.rs:185-189); sidebar, toolbar and status_bar border.shadow_enabled are UNMAPPABLE (§14 item 10) |
+| `panel_left.shadow.spread` | as panel_left.shadow.offset |
+| `panel_left.stroke.color` | as panel_left.stroke.width |
+| `panel_left.stroke.width` | Frame::side_top_panel has no stroke (frame.rs:185-189); the panel's separator line is painted from the parent Ui's noninteractive.bg_stroke (§4.4) |
+| `panel_right.outer_margin.bottom` | as window.outer_margin.left |
+| `panel_right.outer_margin.left` | as window.outer_margin.left |
+| `panel_right.outer_margin.right` | as window.outer_margin.left |
+| `panel_right.outer_margin.top` | as window.outer_margin.left |
+| `panel_right.shadow.blur` | as panel_left.shadow.offset |
+| `panel_right.shadow.color` | as panel_left.shadow.offset |
+| `panel_right.shadow.offset` | as panel_left.shadow.offset |
+| `panel_right.shadow.spread` | as panel_left.shadow.offset |
+| `panel_right.stroke.color` | as panel_left.stroke.width |
+| `panel_right.stroke.width` | as panel_left.stroke.width |
+| `panel_top.outer_margin.bottom` | as window.outer_margin.left |
+| `panel_top.outer_margin.left` | as window.outer_margin.left |
+| `panel_top.outer_margin.right` | as window.outer_margin.left |
+| `panel_top.outer_margin.top` | as window.outer_margin.left |
+| `panel_top.shadow.blur` | as panel_left.shadow.offset |
+| `panel_top.shadow.color` | as panel_left.shadow.offset |
+| `panel_top.shadow.offset` | as panel_left.shadow.offset |
+| `panel_top.shadow.spread` | as panel_left.shadow.offset |
+| `panel_top.stroke.color` | as panel_left.stroke.width |
+| `panel_top.stroke.width` | as panel_left.stroke.width |
+| `popover.outer_margin.bottom` | as window.outer_margin.left |
+| `popover.outer_margin.left` | as window.outer_margin.left |
+| `popover.outer_margin.right` | as window.outer_margin.left |
+| `popover.outer_margin.top` | as window.outer_margin.left |
 | `scroll_animation.duration.max` | as scroll_animation.points_per_second |
 | `scroll_animation.duration.min` | as scroll_animation.points_per_second |
 | `scroll_animation.points_per_second` | the accessibility preference, not a theme leaf (§4.3) |
 | `spacing.combo_height` | no native leaf states a combo-box maximum height (§5.9) |
 | `spacing.default_area_size.x` | sizes every free Area; dialog.max_width goes per call (§5.8 item 6) |
 | `spacing.default_area_size.y` | as spacing.default_area_size.x |
+| `spacing.indent` | no native leaf states an indent width (egui/src/style.rs:404, :1459) |
+| `spacing.indent_ends_with_horizontal_line` | whether an indented region is ruled is layout policy with no native leaf (§5.10) |
 | `spacing.interact_size.x` | no native analogue: a Grid column floor, the DragValue and colour-swatch width (§7.5) |
 | `spacing.menu_margin.bottom` | as spacing.menu_margin.left |
 | `spacing.menu_margin.left` | native-theme states no menu-container padding; menu.border is the item's (§5.9) |
 | `spacing.menu_margin.right` | as spacing.menu_margin.left |
 | `spacing.menu_margin.top` | as spacing.menu_margin.left |
+| `spacing.menu_spacing` | no reader anywhere in egui 0.36.2 (§5.10) |
+| `spacing.menu_width` | no reader anywhere in egui 0.36.2 (§5.10) |
 | `spacing.scroll.active_background_opacity` | as spacing.scroll.dormant_background_opacity |
 | `spacing.scroll.active_handle_opacity` | as spacing.scroll.dormant_background_opacity |
+| `spacing.scroll.content_margin.bottom` | as spacing.scroll.content_margin.left |
+| `spacing.scroll.content_margin.left` | no native leaf states a scroll-content margin (egui/src/style.rs:509, :596) |
+| `spacing.scroll.content_margin.right` | as spacing.scroll.content_margin.left |
+| `spacing.scroll.content_margin.top` | as spacing.scroll.content_margin.left |
 | `spacing.scroll.dormant_background_opacity` | no native leaf describes an auto-hide fade curve (§5.9) |
 | `spacing.scroll.dormant_handle_opacity` | as spacing.scroll.dormant_background_opacity |
+| `spacing.scroll.fade.size` | as spacing.scroll.fade.strength |
+| `spacing.scroll.fade.strength` | no platform fact records a scroll-edge fade (§5.10) |
 | `spacing.scroll.interact_background_opacity` | as spacing.scroll.dormant_background_opacity |
 | `spacing.scroll.interact_handle_opacity` | as spacing.scroll.dormant_background_opacity |
 | `spacing.slider_width` | no native leaf states a slider length (§5.9) |
@@ -673,5 +770,67 @@ The leaf that wins an egui field globally, and the leaves that displace it insid
 | `text_styles[Heading].family` | as text_styles\[Body\].family |
 | `text_styles[Monospace].family` | always FontFamily::Monospace (§8.1; T6(d)) |
 | `text_styles[Small].family` | as text_styles\[Body\].family |
+| `tooltip.outer_margin.bottom` | as window.outer_margin.left |
+| `tooltip.outer_margin.left` | as window.outer_margin.left |
+| `tooltip.outer_margin.right` | as window.outer_margin.left |
+| `tooltip.outer_margin.top` | as window.outer_margin.left |
+| `url_in_tooltip` | application behaviour (§5.10) |
+| `visuals.button_frame` | left at egui's true (egui/src/style.rs:1546): native-theme has no leaf for whether buttons draw a frame |
+| `visuals.clip_rect_margin` | deprecated; setting it has no effect (§5.10) |
+| `visuals.code_bg_color` | ResolvedTheme has no code-block colour (§5.10) |
+| `visuals.dark_mode` | egui's own for the scheme: every style starts from egui::Theme::default_style() (§3.4; egui/src/style.rs:1500, :1567) |
+| `visuals.image_loading_spinners` | application behaviour (§5.10) |
+| `visuals.ime_composition.active_underline_stroke.color` | as visuals.ime_composition.active_underline_stroke.width |
+| `visuals.ime_composition.active_underline_stroke.width` | native-theme carries no IME-composition colour or width (§5.10) |
+| `visuals.ime_composition.inactive_underline_stroke.color` | as visuals.ime_composition.active_underline_stroke.width |
+| `visuals.ime_composition.inactive_underline_stroke.width` | as visuals.ime_composition.active_underline_stroke.width |
+| `visuals.ime_composition.legacy_visuals` | a winit workaround, platform behaviour rather than theme data (§5.10) |
+| `visuals.indent_has_left_vline` | whether an indented region is ruled is layout policy with no native leaf (§5.10) |
+| `visuals.interact_cursor` | native-theme has no pointer-cursor leaf (§5.10) |
+| `visuals.numeric_color_space` | how a colour picker prints numbers is not theme data (§5.10) |
+| `visuals.resize_corner_size` | native-theme states no resize-grip size (§5.10) |
 | `visuals.selection.stroke.width` | no native source; egui's 1.0 (§6.2) |
+| `visuals.striped` | native-theme has no are-lists-striped boolean (§5.10) |
+| `visuals.text_cursor.blink` | caret blink is input behaviour with no native leaf (§5.9) |
+| `visuals.text_cursor.off_duration` | as visuals.text_cursor.blink |
+| `visuals.text_cursor.on_duration` | as visuals.text_cursor.blink |
+| `visuals.text_cursor.preview` | caret preview is input behaviour with no native leaf (§5.9) |
 | `visuals.text_cursor.stroke.width` | no native caret width exists (§5.9) |
+| `visuals.text_options.color_transfer_function` | how epaint writes glyph colours into the font atlas; native-theme carries no leaf for it (epaint/src/text/mod.rs:31-32) |
+| `visuals.text_options.font_hinting` | an operating-system text-rendering setting with no native leaf (§5.10) |
+| `visuals.text_options.max_texture_side` | a font-atlas texture limit, not appearance data; native-theme carries no leaf for it (epaint/src/text/mod.rs:28-29) |
+| `visuals.text_options.subpixel_binning` | fractional glyph positions, with no native leaf (§5.10) |
+| `visuals.weak_text_alpha` | read only where visuals.weak_text_color is None (egui/src/style.rs:1141-1143), which defaults.muted_color writes (§5.9) |
+| `visuals.widgets.inactive.fg_stroke.width` | no native text-stroke width; egui's own stands, and §6.1 copies it into hovered, active and open |
+| `visuals.widgets.noninteractive.fg_stroke.width` | no native text-stroke width; egui's own stands (§6.1) |
+| `visuals.widgets.open.fg_stroke.width` | written only as §6.1's copy of inactive's width, which is egui's own: no native text-stroke width |
+| `visuals.window_highlight_topmost` | no consumer (§5.10) |
+| `window.corner_radius` | Frame::window's, from the base style's visuals.window_corner_radius, which window.border.corner_radius writes (§3.4; frame.rs:199) |
+| `window.inner_margin.bottom` | as window.inner_margin.left |
+| `window.inner_margin.left` | Frame::window's, from the base style's spacing.window_margin, which window.border.padding writes (§3.4; egui/src/containers/frame.rs:198) |
+| `window.inner_margin.right` | as window.inner_margin.left |
+| `window.inner_margin.top` | as window.inner_margin.left |
+| `window.outer_margin.bottom` | as window.outer_margin.left |
+| `window.outer_margin.left` | egui's preset frames have no outer margin (egui/src/containers/frame.rs:170-175) and native-theme states none |
+| `window.outer_margin.right` | as window.outer_margin.left |
+| `window.outer_margin.top` | as window.outer_margin.left |
+| `window.shadow.blur` | as window.shadow.offset |
+| `window.shadow.color` | as window.shadow.offset |
+| `window.shadow.offset` | Frame::window's, the base style's visuals.window_shadow, which window.border.shadow_enabled gates (§3.4, §6.14; frame.rs:200) |
+| `window.shadow.spread` | as window.shadow.offset |
+| `window_title_bar.corner_radius` | as window_title_bar.inner_margin.left |
+| `window_title_bar.inner_margin.bottom` | as window_title_bar.inner_margin.left |
+| `window_title_bar.inner_margin.left` | Frame::window's, as the window frame's; the title bar states only its fill (§5.2) |
+| `window_title_bar.inner_margin.right` | as window_title_bar.inner_margin.left |
+| `window_title_bar.inner_margin.top` | as window_title_bar.inner_margin.left |
+| `window_title_bar.outer_margin.bottom` | as window.outer_margin.left |
+| `window_title_bar.outer_margin.left` | as window.outer_margin.left |
+| `window_title_bar.outer_margin.right` | as window.outer_margin.left |
+| `window_title_bar.outer_margin.top` | as window.outer_margin.left |
+| `window_title_bar.shadow.blur` | as window_title_bar.inner_margin.left |
+| `window_title_bar.shadow.color` | as window_title_bar.inner_margin.left |
+| `window_title_bar.shadow.offset` | as window_title_bar.inner_margin.left |
+| `window_title_bar.shadow.spread` | as window_title_bar.inner_margin.left |
+| `window_title_bar.stroke.color` | as window_title_bar.inner_margin.left |
+| `window_title_bar.stroke.width` | as window_title_bar.inner_margin.left |
+| `wrap_mode` | text-wrapping behaviour, not appearance data (§5.10) |
