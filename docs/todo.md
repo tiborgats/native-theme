@@ -346,6 +346,7 @@
       runners over the reader's theme and the platform's preset, in the runner
       task of `docs/todo_v0.6.0_egui-connector-plan.md`.
       The iced and gpui connectors build on it in that plan's Tasks 4 and 5.
+- [ ] A name-only lookup beside `system_face`: `native_theme_iced::system_font_family` (`connectors/native-theme-iced/src/lib.rs:480-485`) keeps only `SystemFace::family`, yet `system_face` copies the chosen face's whole file into an `Arc<[u8]>` (`native-theme/src/fonts.rs:203-205`; for a `.ttc` face, the whole collection). Measured on 2026-09-27 on a KDE Plasma desktop (release build, database already loaded, its first load 0.88 s): kde-breeze's `Noto Sans` copies 621 572 bytes in 0.10 ms per call and `Hack` 309 408 bytes in 0.08 ms; adwaita's `Adwaita Sans` 879 796 bytes in 0.13 ms and `Adwaita Mono` 1 419 152 bytes in 0.18 ms. The workaround in place is the iced showcase's cache, which calls it once per family, weight and style (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:5697-5711`), and the function's own doc, which says to call it when the theme changes, not per frame. The fix is a spec change for a later version: a `native_theme::fonts::system_face_family(family, weight, style) -> Option<Arc<str>>` over the same `select_face` and the same macOS file route without `with_face_data`, `system_face` built on it plus the copy, and iced's `system_font_family` calling it, after which the showcase's cache can go.
 
 ### `SystemTheme` — the icon theme of both variants
 
