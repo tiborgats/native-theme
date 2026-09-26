@@ -99,3 +99,58 @@ impl FontPlan {
         self
     }
 }
+
+/// egui's row height for the head face of `defs`' `Proportional` chain at `size` points,
+/// computed as epaint computes it (§6.15): the face's unscaled metrics at the default
+/// variation location (`epaint/src/text/font.rs:397-400`), scaled by
+/// `size · tweak.scale / units_per_em` (`:561`, `:215-218`); ascent, descent and line gap each
+/// rounded with `round_ui` (`:563-565`) and summed (`:587`). epaint measures a family by the
+/// first face of its chain (`:697-702`, `epaint/src/text/fonts.rs:865-875`). `None` for an
+/// empty chain, a face epaint cannot parse, or a row that is not finite and positive (a zero
+/// `units_per_em`, which §8.2 drops before it gets here; kept for totality).
+pub(crate) fn body_row_height(defs: &egui::FontDefinitions, size: f32) -> Option<f32> {
+    use egui::emath::GuiRounding as _;
+    use skrifa::MetadataProvider as _;
+
+    let name = defs
+        .families
+        .get(&egui::FontFamily::Proportional)?
+        .first()?;
+    let data = defs.font_data.get(name)?;
+    let face = skrifa::FontRef::from_index(data.font.as_ref(), data.index).ok()?;
+    let m = face.metrics(
+        skrifa::instance::Size::unscaled(),
+        skrifa::instance::LocationRef::default(),
+    );
+    let k = size * data.tweak.scale / f32::from(m.units_per_em);
+    let row = (m.ascent * k).round_ui() - (m.descent * k).round_ui() + (m.leading * k).round_ui();
+    (row.is_finite() && row > 0.0).then_some(row)
+}
+
+#[cfg(test)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::indexing_slicing,
+    reason = "a test fails by panicking"
+)]
+mod tests {
+    use super::*;
+    use crate::install_tests::pass;
+
+    /// §6.15, T5's oracle: for egui's own faces the recomputation equals egui's `row_height`
+    /// (`epaint/src/text/fonts.rs:865-875`) bit for bit. Fonts exist only after the first
+    /// pass (`egui/src/context.rs:1114-1122`).
+    #[test]
+    fn body_row_height_is_egui_row_height_for_the_default_faces() {
+        let ctx = egui::Context::default();
+        let _ = pass(&ctx, egui::RawInput::default(), |_ui| {}); // fonts exist after one pass; `pass` clears its texture delta
+        let defs = egui::FontDefinitions::default();
+        for size in [9.0_f32, 13.0, 18.0, 26.0, 11.5] {
+            let want = ctx.fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
+            assert_eq!(body_row_height(&defs, size), Some(want), "size {size}");
+        }
+        assert_eq!(body_row_height(&egui::FontDefinitions::empty(), 13.0), None);
+    }
+}

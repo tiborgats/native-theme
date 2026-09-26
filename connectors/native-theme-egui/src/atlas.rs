@@ -558,24 +558,21 @@ impl<'a> Builder<'a> {
         if let Some(plan) = self.fonts {
             notes.extend(plan.notes);
         }
-        // The stub: egui's own styles per scheme. Task 13 replaces these two calls with its
-        // `compile_scheme`, which also measures each scheme's row height.
-        let light = compile(
-            &BuildInput {
-                scheme: egui::Theme::Light,
-                theme: self.light,
-                prefs: &prefs,
-                row_height: None,
-            },
+        let defs = fonts.clone().unwrap_or_default(); // egui's default faces until Task 22 fills `fonts`
+        let light = compile_scheme(
+            egui::Theme::Light,
+            self.light,
+            &prefs,
+            &layout,
+            &defs,
             &mut notes,
         );
-        let dark = compile(
-            &BuildInput {
-                scheme: egui::Theme::Dark,
-                theme: self.dark,
-                prefs: &prefs,
-                row_height: None,
-            },
+        let dark = compile_scheme(
+            egui::Theme::Dark,
+            self.dark,
+            &prefs,
+            &layout,
+            &defs,
             &mut notes,
         );
         // Task 32: the style patch over every style of both schemes, last.
@@ -599,4 +596,41 @@ impl<'a> Builder<'a> {
             notes,
         }))
     }
+}
+
+/// One scheme's styles, with §6.15's Body row measured on `defs` at the Body size `base_style`
+/// writes. The throw-away `Vec` is deliberate: `base_style` reports the size's leaf; this call
+/// only needs the same sanitised size.
+fn compile_scheme(
+    scheme: egui::Theme,
+    theme: &ResolvedTheme,
+    prefs: &AccessibilityPreferences,
+    layout: &LayoutTheme,
+    defs: &egui::FontDefinitions,
+    notes: &mut Vec<Note>,
+) -> SchemeStyles {
+    let row_height = scheme
+        .default_style()
+        .text_styles
+        .get(&egui::TextStyle::Body)
+        .and_then(|own| {
+            let body = crate::style::base::text_size(
+                "defaults.font.size",
+                theme.defaults.font.size,
+                prefs,
+                own.size,
+                &mut Vec::new(),
+            );
+            crate::fonts::body_row_height(defs, body)
+        });
+    compile(
+        &BuildInput {
+            scheme,
+            theme,
+            prefs,
+            layout,
+            row_height,
+        },
+        notes,
+    )
 }
