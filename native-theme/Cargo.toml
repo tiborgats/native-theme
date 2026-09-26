@@ -32,6 +32,7 @@ watch = ["dep:notify", "zbus?/blocking-api"]
 material-icons = []
 lucide-icons = []
 svg-rasterize = ["dep:resvg"]
+system-fonts = ["dep:fontdb", "dep:objc2-core-text", "dep:objc2-core-foundation"]
 system-icons = [
     "dep:freedesktop-icons",
     "dep:objc2",
@@ -47,12 +48,14 @@ system-icons = [
 [dependencies]
 arc-swap = "1.9.2"
 async-trait = "0.1.92"
+fontdb = { version = "0.23", optional = true, default-features = false, features = ["fs", "fontconfig", "memmap"] }
 inventory = "0.3.24"
 native-theme-derive = { version = "0.6.0", path = "../native-theme-derive" }
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true
 toml.workspace = true
+unicase = "2.9"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = { version = "0.6.4", optional = true }
@@ -81,10 +84,16 @@ objc2-app-kit = { version = "0.3.2", optional = true, features = [
     "NSAccessibility",
 ] }
 block2 = { version = ">=0.6.2, <0.8.0", optional = true }
+objc2-core-text = { version = "0.3.2", optional = true, features = [
+    "CTFont",
+    "CTFontDescriptor",
+    "CTFontTraits",
+] }
 objc2-core-foundation = { version = "0.3.2", optional = true, features = [
     "CFCGTypes",
     "CFRunLoop",
     "CFDate",
+    "CFURL",
 ] }
 objc2-core-graphics = { version = "0.3.2", optional = true, features = [
     "CGBitmapContext",

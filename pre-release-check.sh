@@ -501,7 +501,7 @@ STRICT_PANIC_LINTS=(
     -D clippy::modulo_arithmetic
     -D clippy::exit
 )
-NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize"
+NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 
 print_section "Strict panic lints (library code)"
 run_check "strict-panic (native-theme, Linux features)" \

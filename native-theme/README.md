@@ -172,6 +172,7 @@ native-theme = { version = "0.5", features = ["native"] }
 | `system-icons` | Platform icon lookups: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent and stock icons (Windows), each platform's dependencies on that platform only; also enables `material-icons` |
 | `material-icons` / `lucide-icons` | Bundle those icon sets |
 | `svg-rasterize` | Rasterize SVG icons to RGBA via resvg |
+| `system-fonts` | The platform's own typeface for a family: `fonts::system_face` over the system font database (fontdb), and on macOS the system UI font's file through Core Text |
 
 OS-specific dependencies are target-gated — `native` on macOS only pulls in
 macOS-related deps.

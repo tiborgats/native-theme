@@ -4933,6 +4933,7 @@ dependencies = [
  "async-trait",
  "block2 0.6.2",
  "configparser",
+ "fontdb",
  "freedesktop-icons",
  "inventory",
  "native-theme-derive",
@@ -4941,6 +4942,7 @@ dependencies = [
  "objc2-app-kit 0.3.2",
  "objc2-core-foundation",
  "objc2-core-graphics",
+ "objc2-core-text",
  "objc2-foundation 0.3.2",
  "png 0.18.1",
  "pollster 1.0.1",
@@ -4950,6 +4952,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "toml 1.1.5+spec-1.1.0",
+ "unicase",
  "windows 0.62.2",
  "zbus",
 ]
@@ -5572,6 +5575,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cde0dfb48d25d2b4862161a4d5fcc0e3c24367869ad306b0c9ec0073bfed92d"
 dependencies = [
  "bitflags 2.13.1",
+ "block2 0.6.2",
+ "libc",
  "objc2 0.6.4",
  "objc2-core-foundation",
  "objc2-core-graphics",

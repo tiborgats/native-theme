@@ -81,7 +81,7 @@ jobs:
         run: |
           cargo test -p native-theme-derive
           cargo test -p native-theme-build
-          cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize
+          cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize,system-fonts
           cargo test -p native-theme-iced
           cargo test -p native-theme-iced --no-default-features
           cargo test -p native-theme-iced --features iced_aw

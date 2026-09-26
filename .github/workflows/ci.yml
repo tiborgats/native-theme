@@ -68,6 +68,9 @@ jobs:
           - { name: "Windows (windows)", os: windows-latest, flags: "--features windows" }
           - { name: "macOS (no features)", os: macos-latest, flags: "--no-default-features" }
           - { name: "macOS (macos)", os: macos-latest, flags: "--features macos" }
+          - { name: "Linux (system-fonts)", os: ubuntu-latest, flags: "--features system-fonts" }
+          - { name: "Windows (system-fonts)", os: windows-latest, flags: "--features system-fonts" }
+          - { name: "macOS (system-fonts)", os: macos-latest, flags: "--features system-fonts" }
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable

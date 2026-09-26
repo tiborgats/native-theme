@@ -66,7 +66,7 @@ jobs:
         run: cargo test -p native-theme-build
 
       - name: Test native-theme
-        run: cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize
+        run: cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize,system-fonts
 
       - name: Test native-theme-iced
         run: |

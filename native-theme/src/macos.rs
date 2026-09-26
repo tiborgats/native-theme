@@ -228,6 +228,65 @@ fn read_fonts() -> (crate::FontSpec, crate::FontSpec) {
     )
 }
 
+/// The macOS system UI font as Core Text resolves it: its family name and
+/// the file it lives in (egui connector spec §8.2).
+#[cfg(all(target_os = "macos", feature = "system-fonts"))]
+pub(crate) struct SystemUiFont {
+    /// Core Text's family name for the font (`kCTFontFamilyNameAttribute`).
+    pub(crate) family: String,
+    /// The font file (`kCTFontURLAttribute` as a file path).
+    pub(crate) path: std::path::PathBuf,
+}
+
+/// Ask Core Text which font is the system UI font — `CTFontUIFontType::System`
+/// at the type's default size, no language — and, for `italic`, its italic
+/// variant (the upright font where Core Text has none). `None` where Core
+/// Text returns none, an attribute is missing or is not the type the
+/// attribute documents, or the URL is not a file path. `CTFont::family_name`
+/// is not used: its binding `expect`s a non-null result (objc2-core-text
+/// 0.3.2 `src/generated/CTFont.rs` lines 977–983).
+#[cfg(all(target_os = "macos", feature = "system-fonts"))]
+pub(crate) fn system_ui_font(italic: bool) -> Option<SystemUiFont> {
+    use objc2_core_foundation::{CFString, CFURL};
+    use objc2_core_text::{
+        CTFont, CTFontSymbolicTraits, CTFontUIFontType, kCTFontFamilyNameAttribute,
+        kCTFontURLAttribute,
+    };
+    // SAFETY: `CTFontCreateUIFontForLanguage` takes a UI font type, a size
+    // (0.0 = the type's default) and an optional language; a null language
+    // is documented as allowed, and the binding maps a NULL result to None.
+    let upright = unsafe { CTFont::new_ui_font_for_language(CTFontUIFontType::System, 0.0, None) }?;
+    let font = if italic {
+        // SAFETY: a null matrix is documented as allowed by the binding's
+        // safety note; the value and mask both name the italic trait.
+        let slanted = unsafe {
+            upright.copy_with_symbolic_traits(
+                0.0,
+                std::ptr::null(),
+                CTFontSymbolicTraits::ItalicTrait,
+                CTFontSymbolicTraits::ItalicTrait,
+            )
+        };
+        slanted.unwrap_or(upright)
+    } else {
+        upright
+    };
+    // SAFETY: the two keys are Core Text's own statics, declared in `extern`
+    // blocks; reading them is an FFI read of a constant.
+    let (family_key, url_key) = unsafe { (kCTFontFamilyNameAttribute, kCTFontURLAttribute) };
+    // SAFETY: `CTFontCopyAttribute` returns a retained reference or NULL,
+    // which the binding maps to None; the downcasts check the type id.
+    let family = unsafe { font.attribute(family_key) }?
+        .downcast::<CFString>()
+        .ok()?
+        .to_string();
+    let path = unsafe { font.attribute(url_key) }?
+        .downcast::<CFURL>()
+        .ok()?
+        .to_file_path()?;
+    Some(SystemUiFont { family, path })
+}
+
 /// Read per-widget fonts: menu, tooltip, and title bar.
 ///
 /// Appearance-independent -- called once. Returns (menu, tooltip, title_bar).
