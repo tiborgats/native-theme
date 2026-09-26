@@ -875,6 +875,31 @@ fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
     }
 }
 
+/// After `ThemeAtlas::clear` the install plugin is inert: it fills no colour scheme, rewrites
+/// no title-bar command and paints no focus ring.
+#[test]
+fn after_clear_the_plugin_is_inert() {
+    let (ctx, _, probe) = ring_harness("adwaita");
+    let atlas = preset_atlas_with_os_mode("adwaita", ColorMode::Light);
+    atlas.install(&ctx);
+    let stroke = atlas
+        .focus_ring(ctx.theme())
+        .expect("the preset states a focus ring")
+        .stroke;
+    ThemeAtlas::clear(&ctx);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (egui::Theme::Dark, vec![egui::SystemTheme::SystemDefault]),
+        "egui's fallback theme and egui's own command"
+    );
+    let show = &mut |ui: &mut egui::Ui| ui.button("b");
+    let first = pass_ui(&ctx, egui::RawInput::default(), show);
+    watch(&probe, &[first.layer_id]);
+    let focused = pass_ui(&ctx, tab_press(), show);
+    assert!(focused.has_focus(), "the button took the focus");
+    assert_eq!(rings_on(&seen(&probe), first.layer_id, stroke), vec![]);
+}
+
 /// §13 T6 (a)–(e), T5's plan leg and T14 (a)'s font-plan clause (plan Task 22).
 mod t6_fonts {
     use std::borrow::Cow;
