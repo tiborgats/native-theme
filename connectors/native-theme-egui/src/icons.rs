@@ -848,7 +848,7 @@ mod tests {
         assert!(spin_angle(&ctx, &spin, false).unwrap().is_finite());
     }
 
-    /// T9's `forget_icons` clause and Review Focus 3: the icons' textures go, the application's stay.
+    /// T9's `forget_icons` clause: the icons' textures and SVG bytes go, the application's stay.
     #[test]
     fn forget_icons_frees_only_this_crates_textures() {
         let ctx = egui::Context::default();
@@ -867,7 +867,17 @@ mod tests {
         // A second call reuses the stored handle: no second upload.
         let _again = to_image_source(&ctx, &key, &rgba(4)).unwrap();
         assert_eq!(ctx.tex_manager().read().num_allocated(), before + 2);
+        // An SVG icon's bytes reach the loaders as an `Image` hands them over
+        // (`egui/src/widgets/image.rs:642`).
+        let svg_key = IconKey::role(IconRole::DialogWarning, IconSet::Lucide);
+        let (svg_uri, svg_bytes) = bytes_of(&to_image_source(&ctx, &svg_key, &svg(PLAIN)).unwrap());
+        ctx.include_bytes(svg_uri.clone(), svg_bytes);
+        assert!(ctx.try_load_bytes(&svg_uri).is_ok());
         forget_icons(&ctx);
+        assert!(
+            ctx.try_load_bytes(&svg_uri).is_err(),
+            "the icon's SVG bytes went"
+        );
         assert_eq!(
             ctx.tex_manager().read().num_allocated(),
             before + 1,
@@ -882,7 +892,7 @@ mod tests {
         assert_eq!(ctx.tex_manager().read().num_allocated(), before);
     }
 
-    /// Review Focus 4: an icon no theme holds is `None`; nothing is substituted.
+    /// An icon no theme holds is `None`; nothing is substituted.
     #[test]
     fn an_icon_no_theme_holds_is_none_and_nothing_is_substituted() {
         let ctx = egui::Context::default();
