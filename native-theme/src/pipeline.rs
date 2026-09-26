@@ -79,17 +79,20 @@ pub(crate) fn run_pipeline(
     // Must read before variants are consumed by unwrap_or_default().
     // None where no tier names a theme: the TOML states none and detection
     // failed (`ctx.icon_theme` is then None). No theme stands in for it.
-    let icon_theme: Option<std::borrow::Cow<'static, str>> = {
-        let active = if mode == crate::ColorMode::Dark {
-            &merged.dark
-        } else {
-            &merged.light
+    // Both variants are resolved: `icon_theme` is the active mode's, and
+    // `other_icon_theme` the other's (`SystemTheme::icon_theme_for`).
+    let icon_theme_of =
+        |variant: &Option<crate::model::ThemeMode>| -> Option<std::borrow::Cow<'static, str>> {
+            variant
+                .as_ref()
+                .and_then(|v| v.defaults.icon_theme.clone()) // tier 1: per-variant override
+                .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
+                .or_else(|| ctx.icon_theme.clone()) // tier 3: pre-detected system
         };
-        active
-            .as_ref()
-            .and_then(|v| v.defaults.icon_theme.clone()) // tier 1: per-variant override
-            .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
-            .or_else(|| ctx.icon_theme.clone()) // tier 3: pre-detected system
+    let (icon_theme, other_icon_theme) = if mode == crate::ColorMode::Dark {
+        (icon_theme_of(&merged.dark), icon_theme_of(&merged.light))
+    } else {
+        (icon_theme_of(&merged.light), icon_theme_of(&merged.dark))
     };
 
     // Shared across variants; read before the variants are moved out of `merged`.
@@ -141,6 +144,7 @@ pub(crate) fn run_pipeline(
         live_preset: preset_name.to_string(),
         icon_set,
         icon_theme,
+        other_icon_theme,
         layout,
         accessibility,
     })
@@ -1416,6 +1420,45 @@ accent_color = "#0066cc"
             sys.layout.widget_gap.is_some(),
             "adwaita defines all four layout keys (spec §1.3)"
         );
+        Ok(())
+    }
+
+    /// Both variants' icon themes are known whichever mode is active: the
+    /// egui connector needs the name per `egui::Theme`, because egui draws
+    /// either style after a scheme change (egui spec §4.2, §9).
+    #[test]
+    fn icon_theme_for_gives_each_variants_name() -> crate::Result<()> {
+        for mode in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            // A reader that names no icon theme: tier 1 (the reader's own
+            // variant) is empty, so the preset's variants decide.
+            let reader = ReaderResult {
+                output: ReaderOutput::Single {
+                    mode: Box::new(crate::model::ThemeMode::default()),
+                    is_dark: mode == crate::ColorMode::Dark,
+                },
+                name: std::borrow::Cow::Borrowed(""),
+                icon_set: None,
+                layout: crate::theme::LayoutTheme::default(),
+                font_dpi: None,
+                accessibility: crate::AccessibilityPreferences::default(),
+            };
+            let theme = run_pipeline(reader, "kde-breeze-live", mode)?;
+            assert_eq!(
+                theme.icon_theme_for(crate::ColorMode::Light),
+                Some("breeze"),
+                "kde-breeze.toml:9 names breeze for light (active mode {mode:?})"
+            );
+            assert_eq!(
+                theme.icon_theme_for(crate::ColorMode::Dark),
+                Some("breeze-dark"),
+                "kde-breeze.toml:317 names breeze-dark for dark (active mode {mode:?})"
+            );
+            assert_eq!(
+                theme.icon_theme_for(mode),
+                theme.icon_theme.as_deref(),
+                "the active mode's name is `icon_theme` itself"
+            );
+        }
         Ok(())
     }
 }
