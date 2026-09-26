@@ -2,13 +2,14 @@
 //! §6). Task 11 builds egui's own values; Tasks 13–18 write the theme's into them.
 
 pub(crate) mod base;
+mod roles;
 mod states;
 
 use std::sync::Arc;
 
 use crate::atlas::{Note, SchemeStyles};
-use crate::roles::{ROLES, SURFACES, VARIANTS};
-use crate::{AccessibilityPreferences, LayoutTheme, ResolvedTheme, Surface};
+use crate::roles::SURFACES;
+use crate::{AccessibilityPreferences, LayoutTheme, ResolvedTheme, Role, Surface};
 
 /// Everything one scheme's styles are built from.
 pub(crate) struct BuildInput<'a> {
@@ -42,7 +43,12 @@ pub(crate) fn egui_preset(surface: Surface, base: &egui::Style) -> egui::Frame {
 /// egui's by construction (§3.4). Tasks 13–18 write the theme's values.
 pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeStyles {
     let base = Arc::new(base::base_style(input, notes));
-    let cells = ROLES.map(|_| VARIANTS.map(|_| Arc::clone(&base)));
+    let mut cells: [[Arc<egui::Style>; 3]; 25] =
+        std::array::from_fn(|_| [Arc::clone(&base), Arc::clone(&base), Arc::clone(&base)]);
+    for (slot, role) in cells.iter_mut().zip(Role::all()) {
+        let normal = Arc::new(roles::role_cell(*role, &base, input, notes));
+        *slot = [Arc::clone(&normal), Arc::clone(&normal), normal];
+    }
     let frames = SURFACES.map(|surface| egui_preset(surface, &base));
     SchemeStyles {
         base,
