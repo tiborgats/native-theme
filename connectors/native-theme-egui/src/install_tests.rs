@@ -1666,3 +1666,180 @@ mod t18_accessors {
         }
     }
 }
+
+/// §13 T18 (g), T18 (a)'s `from_preset` clause and Review Focus 5's unknown preset (plan Task 24).
+mod t18_constructors {
+    use native_theme::theme::{ColorMode, Theme};
+    use native_theme::{AccessibilityPreferences, SystemTheme};
+
+    // `resolved` is the file's own helper (Task 11); `atlas_diff` is Task 19's.
+    use super::resolved;
+    use crate::style_diff::atlas_diff;
+    use crate::{Error, SystemThemeExt, ThemeAtlas, from_preset, from_system, to_theme};
+
+    /// Every style of two atlases, compared field by field: both base styles, every cell in
+    /// every variant, and every `Surface` frame. Not `==`: `Style`'s `PartialEq` compares
+    /// `number_formatter` by `Arc::ptr_eq` (`egui/src/style.rs:57-62`), and each build starts
+    /// from a fresh `Style::default()` (`:1435`), so two builds are never `==` (Global Constraints).
+    fn same_styles(a: &ThemeAtlas, b: &ThemeAtlas) -> bool {
+        let changes = atlas_diff(a, b);
+        assert!(changes.is_empty(), "the atlases differ at {changes:?}");
+        true
+    }
+
+    /// T18 (a), `from_preset` clause: its `name()` is the preset's
+    /// `Theme::name` (`native-theme/src/model/mod.rs:257`), and the atlas carries both variants, each
+    /// variant's icon theme, and the requested variant as the returned `ResolvedTheme`.
+    #[test]
+    fn t18_a_from_preset_carries_the_presets_name_and_both_variants() {
+        let prefs = AccessibilityPreferences::default();
+        for preset in Theme::list_presets() {
+            let spec = Theme::preset(preset.key).unwrap();
+            let light = spec.resolve(ColorMode::Light).unwrap();
+            let dark = spec.resolve(ColorMode::Dark).unwrap();
+            for is_dark in [false, true] {
+                let (atlas, chosen) = from_preset(preset.key, is_dark, &prefs).unwrap();
+                assert_eq!(atlas.name(), spec.name, "{}", preset.key);
+                assert_eq!(
+                    atlas.resolved_for(egui::Theme::Light),
+                    &light.variant,
+                    "{}",
+                    preset.key
+                );
+                assert_eq!(
+                    atlas.resolved_for(egui::Theme::Dark),
+                    &dark.variant,
+                    "{}",
+                    preset.key
+                );
+                assert_eq!(
+                    &chosen,
+                    if is_dark {
+                        &dark.variant
+                    } else {
+                        &light.variant
+                    },
+                    "{}",
+                    preset.key
+                );
+                assert_eq!(
+                    atlas.icon_theme(egui::Theme::Light),
+                    light.icon_theme.as_deref(),
+                    "{}",
+                    preset.key
+                );
+                assert_eq!(
+                    atlas.icon_theme(egui::Theme::Dark),
+                    dark.icon_theme.as_deref(),
+                    "{}",
+                    preset.key
+                );
+                assert_eq!(atlas.icon_set(), light.icon_set, "{}", preset.key);
+                assert_eq!(atlas.os_mode(), None, "{}", preset.key);
+                assert_eq!(atlas.accessibility(), &prefs, "{}", preset.key);
+                assert_eq!(atlas.layout(), &spec.layout, "{}", preset.key);
+            }
+        }
+    }
+
+    /// Review Focus 5: an unknown preset is an `Err`, never a panic.
+    #[test]
+    fn from_preset_of_an_unknown_name_is_an_error() {
+        let prefs = AccessibilityPreferences::default();
+        assert!(matches!(
+            from_preset("no-such-preset", false, &prefs),
+            Err(Error::UnknownPreset { .. })
+        ));
+    }
+
+    /// T18 (g), last clause: `to_theme(r, n)` is `ThemeAtlas::builder(n, r, r).build()`, style
+    /// for style.
+    #[test]
+    fn t18_g_to_theme_is_the_builder_over_one_variant() {
+        let r = resolved("gruvbox", ColorMode::Dark);
+        let atlas = to_theme(&r, "gruvbox twice");
+        let direct = ThemeAtlas::builder("gruvbox twice", &r, &r).build();
+        assert_eq!(atlas.name(), "gruvbox twice");
+        assert_eq!(atlas.resolved_for(egui::Theme::Light), &r);
+        assert_eq!(atlas.resolved_for(egui::Theme::Dark), &r);
+        assert_eq!(atlas.os_mode(), None);
+        assert!(same_styles(&atlas, &direct));
+    }
+
+    /// T18 (g): `to_egui_atlas` reports every input it was given, and `from_system` is exactly
+    /// that over `SystemTheme::from_system()`, or an error exactly when that is one.
+    #[test]
+    fn t18_g_to_egui_atlas_reports_what_it_was_given() {
+        // On a runner with no desktop there is nothing to compare; native-theme's own test
+        // accepts the same (`native-theme/src/watch/mod.rs:313`).
+        let Ok(mut sys) = SystemTheme::from_system() else {
+            assert!(
+                from_system().is_err(),
+                "from_system must fail exactly when SystemTheme::from_system does"
+            );
+            return;
+        };
+        // Values the detection did not return, so a field read from the wrong place shows.
+        sys.mode = if sys.mode.is_dark() {
+            ColorMode::Light
+        } else {
+            ColorMode::Dark
+        };
+        sys.accessibility = AccessibilityPreferences {
+            text_scaling_factor: 1.5,
+            reduce_motion: !sys.accessibility.reduce_motion,
+            ..sys.accessibility.clone()
+        };
+        sys.layout.widget_gap = Some(11.0);
+        sys.icon_set = match sys.icon_set {
+            native_theme::theme::IconSet::Lucide => native_theme::theme::IconSet::Material,
+            _ => native_theme::theme::IconSet::Lucide,
+        };
+
+        let atlas = sys.to_egui_atlas();
+        assert_eq!(atlas.name(), sys.name);
+        assert_eq!(atlas.os_mode(), Some(sys.mode));
+        assert_eq!(atlas.accessibility(), &sys.accessibility);
+        assert_eq!(atlas.layout(), &sys.layout);
+        assert_eq!(atlas.icon_set(), sys.icon_set);
+        assert_eq!(atlas.resolved_for(egui::Theme::Light), &sys.light);
+        assert_eq!(atlas.resolved_for(egui::Theme::Dark), &sys.dark);
+        assert_eq!(
+            atlas.icon_theme(egui::Theme::Light),
+            sys.icon_theme_for(ColorMode::Light)
+        );
+        assert_eq!(
+            atlas.icon_theme(egui::Theme::Dark),
+            sys.icon_theme_for(ColorMode::Dark)
+        );
+        // §6.16: `layout.widget_gap` is `spacing.item_spacing`, both axes, in the base style.
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            assert_eq!(
+                atlas.scheme(theme).base.spacing.item_spacing,
+                egui::vec2(11.0, 11.0)
+            );
+        }
+        #[cfg(feature = "system-fonts")]
+        {
+            let plan = crate::fonts::FontPlan::from_system(&sys.light);
+            let (_, notes) = crate::fonts::font_definitions(&sys.light, &plan);
+            for note in &notes {
+                assert!(
+                    atlas.notes().contains(note),
+                    "missing {note:?} in {:?}",
+                    atlas.notes()
+                );
+            }
+        }
+
+        let (again, chosen, is_dark) = from_system().unwrap();
+        let fresh = SystemTheme::from_system().unwrap();
+        assert_eq!(again.name(), fresh.name);
+        assert_eq!(again.os_mode(), Some(fresh.mode));
+        assert_eq!(is_dark, fresh.mode.is_dark());
+        assert_eq!(again.resolved_for(egui::Theme::Light), &fresh.light);
+        assert_eq!(again.resolved_for(egui::Theme::Dark), &fresh.dark);
+        assert_eq!(&chosen, if is_dark { &fresh.dark } else { &fresh.light });
+        assert!(same_styles(&again, &fresh.to_egui_atlas()));
+    }
+}

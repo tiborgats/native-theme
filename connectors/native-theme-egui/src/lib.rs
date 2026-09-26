@@ -55,6 +55,7 @@ pub use accessors::{
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};
 pub use ext::NativeThemeUiExt;
+pub use ext::{SystemThemeExt, from_preset, from_system, to_theme};
 pub use plugin::register_focus_shape;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(test)]
