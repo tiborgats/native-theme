@@ -168,7 +168,7 @@ jobs:
         if: matrix.package == 'native-theme-gpui'
         run: cargo test -p native-theme-gpui --lib --no-default-features
       # Reads the toolkits' sources through `cargo metadata` and fails when an
-      # upstream release adds a widget that neither showcase renders nor
+      # upstream release adds a widget that no showcase renders or
       # docs/showcase-exceptions.toml excepts. Runs here because this leg already
       # resolves the iced connector with `iced_aw`; ubuntu-latest ships Python
       # 3.12, above the 3.11 the script's `tomllib` import requires.

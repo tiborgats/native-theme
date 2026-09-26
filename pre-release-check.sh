@@ -633,7 +633,7 @@ done
 # scripts/check-widget-coverage.py reads the toolkits' own sources through
 # `cargo metadata` (the iced manifest with `--features iced_aw`, so the
 # optional dependency is in the graph) and fails when an upstream release adds
-# a widget that neither showcase renders nor docs/showcase-exceptions.toml
+# a widget that no showcase renders or docs/showcase-exceptions.toml
 # excepts, or when an exception has gone stale. Its `tomllib` import puts the
 # floor at Python 3.11: a missing or older interpreter fails the check rather
 # than skipping it, since a gate nobody runs is not a gate. CI and the nightly
@@ -649,7 +649,7 @@ if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)';
     print_fail "python3 is $PYTHON_VERSION — scripts/check-widget-coverage.py needs 3.11+ (tomllib)"
     exit 1
 fi
-run_check "widget coverage (gpui · iced_widget · iced_aw)" \
+run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
     python3 scripts/check-widget-coverage.py
 
 # ─────────────────────────────────────────────────────────────────────────────

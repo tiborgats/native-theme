@@ -9,7 +9,9 @@
 # internal sub-part of a compound widget, a layout wrapper with no visual
 # surface, a widget needing a GPU pipeline the application supplies, a
 # widget native-theme models no counterpart for, or a widget that would mix
-# icon sets (v0.5.9 chrome-UX rationale §9). Each was read in the
+# icon sets (v0.5.9 chrome-UX rationale §9). The egui sections name the `Ui`
+# layout methods no page of the egui showcase calls, each with the ui.rs line
+# of egui 0.36.2 it was read at. Each was read in the
 # vendored source on 2026-09-21 -- `Loading` and `Text` on 2026-09-22, when
 # the gpui matching rule stopped accepting a bare path segment and reported
 # them -- and cites the file and line it was read at: gpui-component 0.6.6
@@ -82,3 +84,12 @@ slide_bar = "native-theme models no slide bar (spec §3a); the feature is not en
 time_picker = "native-theme models no time picker (spec §3a); the feature is not enabled"
 typed_input = "a wrapper with no visual surface: it is a `TextInput` that parses its value into a type and delegates its whole `draw` to that input, which `styles::text_input` already covers (widget/typed_input.rs:38-46, :341-361); the feature is not enabled"
 wrap = "native-theme models no wrapping layout (spec §3a); the feature is not enabled"
+
+# The `Ui` layout methods of egui 0.36.2 no page of the egui showcase calls
+# (the connector spec §10.4: "each places other widgets and paints nothing of
+# its own"). Every other name the three universes discover is shown.
+[egui]
+
+[egui_ui]
+
+[egui_extras]

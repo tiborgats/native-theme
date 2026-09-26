@@ -26,7 +26,8 @@ The metadata is read with
 
 because `iced_aw` is an optional dependency of the iced connector and is
 absent from the graph otherwise. The invocation still returns the whole
-workspace, so `gpui-component` comes from the same call. A dependency that is
+workspace, so `gpui-component`, `egui` and `egui_extras` come from the same
+call. A dependency that is
 missing from the metadata is a hard error, never a silently skipped toolkit.
 
 gpui (`gpui-component`): every type with an `impl RenderOnce`/`IntoElement`
@@ -50,6 +51,25 @@ an exception naming it does not read as stale. An `iced_aw` module is looked
 for in the showcase by the type names `widget.rs` re-exports from it (`Card`,
 `SelectionList`, ...), not by the module name: `styles::aw::card` names the
 module without rendering the widget.
+
+egui: the public types drawn by value (`impl Widget for T`, the by-value impl
+only, so the `&mut` and `&` impls of style.rs and introspection.rs do not
+count) or shown by a container method (`show`, `show_*`, `ui`, `body`) of an
+inherent impl under `src/containers/` or in `src/grid.rs`. `body` admits
+`HeaderResponse`, whose `body` shows a `CollapsingState`'s content.
+
+egui_ui: the `pub fn`s of the `impl Ui` blocks of egui's `src/ui.rs` whose
+doc heading names widget-adding methods: `# Adding widgets`, `# Colors`,
+`# Adding Containers / Sub-uis:` and `# Menus`.
+
+egui_extras: the public types drawn by value or shown by a method (`show`,
+`show_*`, `ui`, `horizontal`, `vertical`, `header`, `body`), plus every
+module-level `pub fn` returning `egui::Response`, e.g.
+`syntax_highlighting::code_view_ui`.
+
+The egui showcase is the module tree
+`connectors/native-theme-egui/examples/showcase-egui/`, its `tests.rs` left
+out: the self-tests call `By::label` and the like, which are not widgets.
 
 Sub-parts of a compound widget (`TableRow`, `MessageHeader`, ...), layout
 wrappers with no visual surface and widgets needing a GPU pipeline the
@@ -112,6 +132,14 @@ demos: `Dialog`, `AlertDialog` and `Sheet` are opened through `WindowExt`
 methods that hand the widget to a builder closure, so an application never
 names the type. Those are `GPUI_VIA` entries now, which is what they always
 should have been.
+
+The egui showcase is matched by the gpui rule (`shows_gpui`), with its own
+roots (`use egui::…` / `use egui_extras::…`) and its own `EGUI_VIA` table of
+the calls that build a widget without naming it. Its `Ui` methods are matched
+by `shows_ui_method`: a method counts only as a call on a receiver named `ui`
+(a turbofish before the call admitted), because `small`, `strong`, `weak`,
+`code`, `monospace` and `heading` are also `RichText` builders and `small` a
+`Button` one, which a bare `.name(` would count.
 """
 
 import argparse
@@ -135,6 +163,29 @@ SHOWCASE_GPUI = os.path.join(
 SHOWCASE_ICED = os.path.join(
     PROJECT_ROOT, "connectors", "native-theme-iced", "examples", "showcase-iced.rs"
 )
+SHOWCASE_EGUI = os.path.join(
+    PROJECT_ROOT, "connectors", "native-theme-egui", "examples", "showcase-egui"
+)
+# The showcase's tests call `By::label` and the like, which are not widgets.
+SHOWCASE_EGUI_EXCLUDE = ("tests.rs",)
+
+# A by-value `impl Widget for Type`: the type name follows `for` directly, so
+# the `&mut` and `&` impls of style.rs and introspection.rs do not match, and
+# the blanket `impl<F> Widget for F` yields a name no `pub struct` declares.
+WIDGET_FOR = re.compile(
+    r"^\s*impl(?:<[^>]*>)?\s+Widget\s+for\s+([A-Za-z_]\w*)\b(?!::)", re.M
+)
+# An inherent impl block at column 0 (no `for`), with its type name.
+IMPL_HEAD = re.compile(
+    r"^impl(?:<[^>]*>)?\s+([A-Za-z_]\w*)(?:<[^>]*>)?\s*(?:where[^{]*)?\{", re.M
+)
+PUB_FN = re.compile(r"\s*pub fn (\w+)\b")
+EGUI_CONTAINER_METHODS = re.compile(r"show|show_\w+|ui|body")
+EGUI_EXTRAS_METHODS = re.compile(r"show|show_\w+|ui|horizontal|vertical|header|body")
+# The `impl Ui` blocks of egui/src/ui.rs whose doc heading names widget-adding
+# methods (ui.rs:1504, :2039, :2134, :2768).
+UI_HEADINGS = ("# Adding widgets", "# Colors", "# Adding Containers / Sub-uis:", "# Menus")
+RESPONSE_RETURN = re.compile(r"->\s*(?:egui::)?Response\b")
 
 RENDER_IMPL = re.compile(
     r"^\s*impl(?:\s*<[^>]*>)?\s+(?:RenderOnce|IntoElement)\s+for\s+([A-Za-z_]\w*)"
@@ -286,8 +337,8 @@ GPUI_VIA = {
 PATH_TAIL = re.compile(r"((?:\w+::)+)$")
 
 
-def toolkit_roots(src):
-    """The identifiers a `use gpui_component::…` / `gpui_kit::…` brings in.
+def toolkit_roots(src, crates=("gpui_component", "gpui_kit")):
+    """The identifiers a `use <crate>::…` brings in, for the given crates.
 
     A path-qualified name belongs to the toolkit when its *root* resolves
     there, and the showcase's `use` statements are what say so:
@@ -295,8 +346,8 @@ def toolkit_roots(src):
     from `use gpui_component::{…, form::{self, Field}, …}`, while
     `std::process::Command::new` is not gpui-component's `Command`.
     """
-    roots = {"gpui_component", "gpui_kit"}
-    for m in re.finditer(r"\buse\s+(?:gpui_component|gpui_kit)\s*::", src):
+    roots = set(crates)
+    for m in re.finditer(r"\buse\s+(?:" + "|".join(map(re.escape, crates)) + r")\s*::", src):
         end = src.find(";", m.end())
         if end < 0:
             continue
@@ -305,7 +356,7 @@ def toolkit_roots(src):
     return roots
 
 
-def shows_gpui(haystack, name, roots=None):
+def shows_gpui(haystack, name, roots=None, via=GPUI_VIA):
     """Whether the gpui showcase *constructs* `name`, rather than mentioning it.
 
     A bare path segment is not enough. `std::process::Command::new` names a
@@ -318,7 +369,7 @@ def shows_gpui(haystack, name, roots=None):
     """
     if roots is None:
         roots = {"gpui_component", "gpui_kit"}
-    pattern = GPUI_VIA.get(name)
+    pattern = via.get(name)
     if pattern and re.search(pattern, haystack):
         return True
     for m in re.finditer(r"(?<!\w)" + re.escape(name) + r"(?!\w)", haystack):
@@ -332,7 +383,7 @@ def shows_gpui(haystack, name, roots=None):
     return False
 
 
-def showcase_files(path):
+def showcase_files(path, exclude=()):
     """The source files of a showcase: `path` itself, or every `.rs` under it.
 
     The gpui showcase is a module tree, and a widget one of its pages builds
@@ -346,16 +397,16 @@ def showcase_files(path):
         os.path.join(root, name)
         for root, _, names in os.walk(path)
         for name in names
-        if name.endswith(".rs")
+        if name.endswith(".rs") and name not in exclude
     )
     if not files:
         raise Failure(f"no .rs files in the showcase directory {path}")
     return files
 
 
-def read_showcase(path, strip_literals=False):
+def read_showcase(path, strip_literals=False, exclude=()):
     texts = []
-    for file in showcase_files(path):
+    for file in showcase_files(path, exclude):
         try:
             with open(file, encoding="utf-8") as f:
                 source = f.read()
@@ -518,6 +569,145 @@ def aw_enabled(meta, universe):
     return enabled
 
 
+def inherent_impls(text):
+    """(type name, block body) for every inherent `impl` block at column 0."""
+    for m in IMPL_HEAD.finditer(text):
+        if re.search(r"\bfor\b", text[m.start() : m.end()]):
+            continue
+        depth, i = 1, m.end()
+        while i < len(text) and depth:
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+            i += 1
+        yield m.group(1), text[m.end() : i - 1]
+
+
+def methods_of(body):
+    """The `pub fn` names declared directly in an impl body (depth 0)."""
+    names, depth = [], 0
+    for line in body.splitlines():
+        if depth == 0 and (m := PUB_FN.match(line)):
+            names.append(m.group(1))
+        depth += line.count("{") - line.count("}")
+    return names
+
+
+def egui_widgets(src):
+    """Public egui types drawn by value (`impl Widget for T`) or shown by a
+    container method (`show`, `show_*`, `ui`, `body`) under src/containers/ or
+    in src/grid.rs.
+
+    `body` admits `HeaderResponse`, whose `body` shows a `CollapsingState`'s
+    content (containers/collapsing_header.rs:297).
+    """
+    found, public = set(), set()
+    for path in sorted(rust_files(src)):
+        rel = os.path.relpath(path, src)
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = strip_test_modules(strip_comments(f.read()))
+        public |= {m.group(1) for m in PUB_STRUCT.finditer(text)}
+        found |= {m.group(1) for m in WIDGET_FOR.finditer(text)}
+        if rel.startswith("containers" + os.sep) or rel == "grid.rs":
+            for name, body in inherent_impls(text):
+                if any(EGUI_CONTAINER_METHODS.fullmatch(fn) for fn in methods_of(body)):
+                    found.add(name)
+    return sorted(found & public)
+
+
+def egui_ui_methods(src):
+    """The `pub fn`s of the `impl Ui` blocks under egui's widget-adding
+    headings (`UI_HEADINGS`).
+
+    The heading is a doc comment on the line above `impl Ui {`, so it is read
+    from the raw file; the block is walked on the comment-stripped text, whose
+    line numbers are the raw file's as long as no block comment spans lines.
+    """
+    path = os.path.join(src, "ui.rs")
+    with open(path, encoding="utf-8") as f:
+        raw = f.read().splitlines()
+    stripped = strip_comments("\n".join(raw)).splitlines()
+    if len(stripped) != len(raw):
+        raise Failure(f"{path}: a block comment spans lines; the Ui-method rule walks lines")
+    names = []
+    for i, line in enumerate(raw[:-1]):
+        if line.strip() not in ("/// " + h for h in UI_HEADINGS):
+            continue
+        if not raw[i + 1].startswith("impl Ui {"):
+            continue
+        depth = 0
+        for body in stripped[i + 1 :]:
+            if depth == 1 and (m := PUB_FN.match(body)):
+                names.append(m.group(1))
+            depth += body.count("{") - body.count("}")
+            if depth == 0:
+                break
+    if not names:
+        raise Failure(f"{path}: none of the headings {UI_HEADINGS} found above an `impl Ui`")
+    return names
+
+
+def egui_extras_widgets(src):
+    """Public egui_extras types drawn by value or shown by a method (`show`,
+    `show_*`, `ui`, `horizontal`, `vertical`, `header`, `body`), plus every
+    module-level `pub fn` returning `egui::Response`, e.g.
+    `syntax_highlighting::code_view_ui` (syntax_highlighting.rs:10-15)."""
+    found, public, free = set(), set(), set()
+    for path in sorted(rust_files(src)):
+        with open(path, encoding="utf-8", errors="replace") as f:
+            text = strip_test_modules(strip_comments(f.read()))
+        public |= {m.group(1) for m in PUB_STRUCT.finditer(text)}
+        found |= {m.group(1) for m in WIDGET_FOR.finditer(text)}
+        for name, body in inherent_impls(text):
+            if any(EGUI_EXTRAS_METHODS.fullmatch(fn) for fn in methods_of(body)):
+                found.add(name)
+        # Module level: a `pub fn` at column 0, its signature up to the body.
+        for m in re.finditer(r"^pub fn (\w+)\b[^{;]*", text, re.M):
+            if RESPONSE_RETURN.search(m.group(0)):
+                free.add(m.group(1))
+    return sorted((found & public) | free)
+
+
+# egui widgets the showcase builds without naming their type: each pattern is
+# the call that returns one, as `GPUI_VIA`'s are.
+EGUI_VIA = {
+    # `NativeThemeUiExt::native_frame` and `ThemeAtlas::surface_frame` each
+    # return an `egui::Frame` (the connector spec, §4.5 and §4.2).
+    "Frame": r"\.(?:native_frame|surface_frame)\s*\(",
+    # `native_theme_egui::icons::to_image` returns an `Image` (§4.10).
+    "Image": r"\bicons::to_image\s*\(",
+    # `Ui::menu_button`, `menu_image_button` and `menu_image_text_button` build
+    # a `MenuButton` (ui.rs:2793-2797).
+    "MenuButton": r"\.menu_(?:image_|image_text_)?button\s*\(",
+    # `SubMenuButton::new` holds a `SubMenu` (containers/menu.rs:357).
+    "SubMenu": r"\bSubMenuButton::new\s*\(",
+    # `CollapsingState::show_header` returns a `HeaderResponse`
+    # (containers/collapsing_header.rs:129, :141).
+    "HeaderResponse": r"\.show_header\s*\(",
+    # egui_extras: `TableBuilder::header` returns a `Table` and
+    # `TableBuilder::body` builds one (table.rs:452, :527, :554), so a table
+    # is shown where a `TableBuilder` chain reaches either call.
+    "Table": r"\bTableBuilder::new\s*\([^;]*?\.(?:header|body)\s*\(",
+}
+
+
+def shows_ui_method(haystack, name):
+    """A `Ui` method counts only on a receiver named `ui`: `small`, `strong`,
+    `weak`, `code`, `monospace` and `heading` are also `RichText` builders, and
+    `small` a `Button` one, which a bare `.name(` would count. The showcase
+    names every `Ui` it draws into `ui`, as egui's own examples do. A
+    turbofish between the name and the call counts: `dnd_drop_zone` takes its
+    payload type as one (`ui.dnd_drop_zone::<Payload, _>(`, ui.rs:2694)."""
+    return (
+        re.search(
+            r"\bui\s*\.\s*" + re.escape(name) + r"\s*(?:::\s*<[^;{}]*?>\s*)?\(",
+            haystack,
+        )
+        is not None
+    )
+
+
 def load_exceptions():
     if not os.path.isfile(EXCEPTIONS):
         raise Failure(f"exception file not found: {EXCEPTIONS}")
@@ -529,7 +719,7 @@ def load_exceptions():
     except tomllib.TOMLDecodeError as err:
         raise Failure(f"{EXCEPTIONS} is not valid TOML: {err}") from err
     table = {}
-    for section in ("gpui", "iced_widget", "iced_aw"):
+    for section in ("gpui", "iced_widget", "iced_aw", "egui", "egui_ui", "egui_extras"):
         entries = data.get(section, {})
         for name, reason in entries.items():
             if not isinstance(reason, str) or not reason.strip():
@@ -578,6 +768,12 @@ def main():
         default=SHOWCASE_ICED,
         help="iced showcase to read instead of the connector's own",
     )
+    parser.add_argument(
+        "--showcase-egui",
+        default=SHOWCASE_EGUI,
+        help="egui showcase to read instead of the connector's own: a directory "
+        "whose .rs files are all read, its tests.rs left out",
+    )
     args = parser.parse_args()
 
     meta = cargo_metadata()
@@ -588,12 +784,22 @@ def main():
     # *about* a widget is not a demo of it.
     gpui_show = read_showcase(args.showcase_gpui, strip_literals=True)
     iced_show = read_showcase(args.showcase_iced, strip_literals=True)
+    egui_show = read_showcase(
+        args.showcase_egui, strip_literals=True, exclude=SHOWCASE_EGUI_EXCLUDE
+    )
     exceptions = load_exceptions()
 
     gpui = {w: [w] for w in gpui_widgets(source_dir(meta, "gpui-component"))}
     iced = {m: [m] for m in iced_modules(source_dir(meta, "iced_widget"))}
     aw_all = aw_modules(source_dir(meta, "iced_aw"))
     aw = aw_enabled(meta, aw_all)
+    egui = {w: [w] for w in egui_widgets(source_dir(meta, "egui"))}
+    egui_ui = {m: [m] for m in egui_ui_methods(source_dir(meta, "egui"))}
+    extras = {w: [w] for w in egui_extras_widgets(source_dir(meta, "egui_extras"))}
+    egui_roots = toolkit_roots(egui_show, ("egui", "egui_extras"))
+
+    def shows_in_egui(haystack, name):
+        return shows_gpui(haystack, name, egui_roots, EGUI_VIA)
 
     gpui_roots = toolkit_roots(gpui_show)
 
@@ -605,6 +811,9 @@ def main():
         ("gpui", gpui, gpui, gpui_show, shows_in_gpui),
         ("iced_widget", iced, iced, iced_show, shows),
         ("iced_aw", aw, aw_all, iced_show, shows),
+        ("egui", egui, egui, egui_show, shows_in_egui),
+        ("egui_ui", egui_ui, egui_ui, egui_show, shows_ui_method),
+        ("egui_extras", extras, extras, egui_show, shows_in_egui),
     ):
         part, rot = check(
             section, discovered, universe, showcase, exceptions, report, matches

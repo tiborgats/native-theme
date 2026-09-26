@@ -87,8 +87,8 @@ jobs:
           cargo test -p native-theme-egui --no-default-features
           cargo test -p native-theme-egui --all-features
 
-      # Fails when an upstream release adds a widget that neither showcase
-      # renders nor docs/showcase-exceptions.toml excepts. ubuntu-latest ships
+      # Fails when an upstream release adds a widget that no showcase
+      # renders or docs/showcase-exceptions.toml excepts. ubuntu-latest ships
       # Python 3.12, above the 3.11 the script's `tomllib` import requires.
       - name: Widget coverage
         run: |
