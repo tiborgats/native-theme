@@ -458,7 +458,7 @@ fn verdict_totals_match_the_specification() {
     let expected = [
         ("foundation", [18, 1, 37, 10]),
         ("surfaces", [8, 55, 31, 14]),
-        ("buttons", [12, 44, 29, 14]),
+        ("buttons", [11, 45, 29, 14]),
         ("inputs", [4, 35, 28, 11]),
         ("indicators", [6, 17, 8, 9]),
         ("chrome", [0, 53, 22, 16]),

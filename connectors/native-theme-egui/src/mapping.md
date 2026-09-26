@@ -10,11 +10,11 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 37 | 10 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 108 | 8 | 55 | 31 | 14 |
-| Buttons (button, link, switch, checkbox, segmented control) | 99 | 12 | 44 | 29 | 14 |
+| Buttons (button, link, switch, checkbox, segmented control) | 99 | 11 | 45 | 29 | 14 |
 | Inputs (input, combo box, list) | 78 | 4 | 35 | 28 | 11 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 91 | 0 | 53 | 22 | 16 |
-| **TOTAL** | **482** | **48** | **205** | **155** | **74** |
+| **TOTAL** | **482** | **47** | **206** | **155** | **74** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-crate` 5.
 
@@ -69,7 +69,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-cra
 | `defaults.success_color` | DERIVED | → T18(a) |  |
 | `defaults.success_text_color` | DERIVED | → T18(a) |  |
 | `defaults.surface_color` | UNMAPPABLE |  | `egui-limited`: egui: a content-surface fill in Visuals |
-| `defaults.text_color` | DIRECT | `visuals.widgets.noninteractive.fg_stroke.color` |  |
+| `defaults.text_color` | DIRECT | `visuals.widgets.noninteractive.fg_stroke.color`; `visuals.widgets.active.fg_stroke.color` |  |
 | `defaults.text_selection_background` | UNMAPPABLE |  | `egui-limited`: egui: a text-selection pair apart from Visuals::selection |
 | `defaults.text_selection_color` | UNMAPPABLE |  | `egui-limited`: egui: a text-selection pair apart from Visuals::selection |
 | `defaults.warning_color` | DIRECT | `visuals.warn_fg_color` |  |
@@ -209,7 +209,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-cra
 | leaf | verdict | sinks, or the test of its route | note |
 |---|---|---|---|
 | `button.active_background` | DIRECT | `visuals.widgets.active.weak_bg_fill` (when: stated; None copies button.hover_background, §6.4); «button» `visuals.widgets.active.weak_bg_fill` (when: stated; None copies button.hover_background, §6.4) |  |
-| `button.active_text_color` | DIRECT | `visuals.widgets.active.fg_stroke.color`; «button» `visuals.widgets.active.fg_stroke.color` |  |
+| `button.active_text_color` | SCOPED | «button» `visuals.widgets.active.fg_stroke.color` |  |
 | `button.background_color` | DIRECT | `visuals.widgets.inactive.weak_bg_fill`; `visuals.widgets.hovered.weak_bg_fill` (when: button.hover_background is translucent, §6.1); `visuals.widgets.active.weak_bg_fill` (when: the pressed layer is translucent, §6.1); «button» `visuals.widgets.inactive.weak_bg_fill`; «button» `visuals.widgets.open.weak_bg_fill`; «button» `visuals.widgets.hovered.weak_bg_fill` (when: button.hover_background is translucent, §6.1); «button» `visuals.widgets.active.weak_bg_fill` (when: the pressed layer is translucent, §6.1); «button:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: button.disabled_background is None, §6.4); «button:disabled» `visuals.selection.bg_fill` (when: button.disabled_background is None, §6.4) |  |
 | `button.border.color` | DIRECT | `visuals.widgets.inactive.bg_stroke.color`; `visuals.widgets.hovered.bg_stroke.color`; `visuals.widgets.active.bg_stroke.color`; `visuals.widgets.open.bg_stroke.color`; «button» `visuals.widgets.noninteractive.bg_stroke.color`; «button» `visuals.widgets.inactive.bg_stroke.color`; «button» `visuals.widgets.hovered.bg_stroke.color`; «button» `visuals.widgets.active.bg_stroke.color`; «button» `visuals.widgets.open.bg_stroke.color` |  |
 | `button.border.corner_radius` | DIRECT | «button» `visuals.widgets.noninteractive.corner_radius`; «button» `visuals.widgets.inactive.corner_radius`; «button» `visuals.widgets.hovered.corner_radius`; «button» `visuals.widgets.active.corner_radius`; «button» `visuals.widgets.open.corner_radius`; `visuals.widgets.inactive.corner_radius`; `visuals.widgets.hovered.corner_radius`; `visuals.widgets.active.corner_radius`; `visuals.widgets.open.corner_radius` |  |
@@ -606,7 +606,7 @@ The leaf that wins an egui field globally, and the leaves that displace it insid
 | `visuals.widgets.active.bg_stroke.width` | `button.border.line_width` | `button.border.line_width` «button», `checkbox.border.line_width` «checkbox», `combo_box.border.line_width` «combo_box», `expander.border.line_width` «expander», `input.border.line_width` «input», `menu.border.line_width` «menu», `segmented_control.border.line_width` «segmented_control», `tab.border.line_width` «tab» |
 | `visuals.widgets.active.corner_radius` | `button.border.corner_radius` | `button.border.corner_radius` «button», `checkbox.border.corner_radius` «checkbox», `combo_box.border.corner_radius` «combo_box», `defaults.border.corner_radius` «scrollbar», `expander.border.corner_radius` «expander», `input.border.corner_radius` «input», `menu.border.corner_radius` «menu», `segmented_control.border.corner_radius` «segmented_control», `switch.track_radius` «switch», `tab.border.corner_radius` «tab» |
 | `visuals.widgets.active.expansion` | — (egui's own value stands) | `defaults.font.size` «slider», `slider.thumb_diameter` «slider» |
-| `visuals.widgets.active.fg_stroke.color` | `button.active_text_color` | `button.active_text_color` «button», `checkbox.indicator_color` «checkbox», `combo_box.font.color` «combo_box», `expander.font.color` «expander», `input.font.color` «input», `list.header_font.color` «list», `menu.hover_text_color` «menu», `segmented_control.font.color` «segmented_control», `sidebar.font.color` «sidebar», `spinner.fill_color` «spinner», `splitter.hover_color` «splitter», `status_bar.font.color` «status_bar», `tab.hover_text_color` «tab», `toolbar.font.color` «toolbar» |
+| `visuals.widgets.active.fg_stroke.color` | `defaults.text_color` | `button.active_text_color` «button», `checkbox.indicator_color` «checkbox», `combo_box.font.color` «combo_box», `expander.font.color` «expander», `input.font.color` «input», `list.header_font.color` «list», `menu.hover_text_color` «menu», `segmented_control.font.color` «segmented_control», `sidebar.font.color` «sidebar», `spinner.fill_color` «spinner», `splitter.hover_color` «splitter», `status_bar.font.color` «status_bar», `tab.hover_text_color` «tab», `toolbar.font.color` «toolbar» |
 | `visuals.widgets.active.fg_stroke.width` | — (egui's own value stands) | `splitter.divider_width` «splitter» |
 | `visuals.widgets.active.weak_bg_fill` | `button.active_background`, `button.background_color`, `button.hover_background` | `button.active_background` «button», `button.background_color` «button», `button.hover_background` «button», `combo_box.background_color` «combo_box», `combo_box.hover_background` «combo_box», `expander.hover_background` «expander», `menu.hover_background` «menu», `segmented_control.background_color` «segmented_control», `segmented_control.hover_background` «segmented_control», `sidebar.hover_background` «sidebar», `switch.hover_unchecked_background` «switch», `switch.unchecked_background` «switch», `tab.background_color` «tab», `tab.hover_background` «tab» |
 | `visuals.widgets.hovered.bg_fill` | `scrollbar.thumb_hover_color` | `checkbox.background_color` «checkbox», `checkbox.checked_background` «checkbox:selected», `checkbox.hover_background` «checkbox», `checkbox.unchecked_background` «checkbox», `list.hover_background` «list», `scrollbar.thumb_hover_color` «scrollbar», `slider.thumb_color` «slider», `slider.thumb_hover_color` «slider» |

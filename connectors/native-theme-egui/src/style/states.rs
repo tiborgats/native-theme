@@ -366,7 +366,8 @@ mod tests {
     }
 
     /// §6.1's table: `noninteractive` takes `defaults.text_color`, `defaults.border` and the
-    /// panel fill; the interactive entries take the button's text colours.
+    /// panel fill; the interactive entries take the button's text colours, but `active` the
+    /// panel's, which egui's strong text reads (§5.3).
     #[test]
     fn noninteractive_takes_the_defaults_and_the_interactive_entries_the_button() {
         let t = resolved("kde-breeze", ColorMode::Dark);
@@ -404,10 +405,7 @@ mod tests {
             w.hovered.fg_stroke.color,
             to_color32(t.button.hover_text_color)
         );
-        assert_eq!(
-            w.active.fg_stroke.color,
-            to_color32(t.button.active_text_color)
-        );
+        assert_eq!(w.active.fg_stroke.color, to_color32(d.text_color));
         assert_eq!(w.open.fg_stroke.color, to_color32(t.button.font.color));
         for e in [
             &w.noninteractive,

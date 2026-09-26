@@ -1140,6 +1140,27 @@ mod tests {
         ]
     }
 
+    /// §5.3, §6.1: egui's strong text is `widgets.active.text_color()` (`egui/src/style.rs:1147-1149`),
+    /// so the base style writes the panel's text colour there; kde-breeze light's pressed-button
+    /// white `#fcfcfc` (`native-theme/src/presets/kde-breeze.toml:95`) stays in the Button cell.
+    #[test]
+    fn strong_text_is_the_panel_text_and_the_button_cell_keeps_its_pressed_pair() {
+        let (c, base, t, _) = cell("kde-breeze", ColorMode::Light, Role::Button);
+        assert_ne!(t.defaults.text_color, t.button.active_text_color);
+        assert_eq!(
+            base.visuals.strong_text_color(),
+            to_color32(t.defaults.text_color)
+        );
+        assert_eq!(
+            base.visuals.widgets.active.fg_stroke.color,
+            to_color32(t.defaults.text_color)
+        );
+        assert_eq!(
+            c.visuals.widgets.active.fg_stroke.color,
+            to_color32(t.button.active_text_color)
+        );
+    }
+
     /// The presets every per-role test reads: a light and a dark one from each platform
     /// family, so a soft option is met both stated and `None`.
     const PRESETS: [(&str, ColorMode); 6] = [

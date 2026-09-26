@@ -926,6 +926,23 @@ control is the button's outline, not the generic hairline; `noninteractive`
 is what frames, separators and group boxes draw with, and there
 `defaults.border` is the platform's own value.
 
+**Why the base style's pressed text is `defaults.text_color`, not
+`button.active_text_color`.** egui ties strong text to the pressed state:
+`Visuals::strong_text_color()` is `widgets.active.text_color()`
+(`egui/src/style.rs:1147-1149`), read by every `RichText::strong()` and
+`ui.strong()` (`widget_text.rs:485`) and by the default `Spinner`
+(`spinner.rs:44`). Borrowing the button's pressed text there as well painted
+every strong label in the colour the platform reserves for text on a pressed
+fill — kde-breeze light's `#fcfcfc` (`native-theme/src/presets/kde-breeze.toml:95`)
+on its `#eff0f1` panel, where the showcase's captions all but vanished. A label
+the user reads is on screen all the time; an unscoped button's pressed state
+lasts as long as a click. So the base style writes `defaults.text_color` into
+`widgets.active.fg_stroke.color` — the platform's text on the panel — and
+`button.active_text_color` moves to the `Role::Button` cell, where the platform's
+exact pressed pair holds (specification §5.3, §6.1). Its verdict is SCOPED for
+that reason: the one global write that would have made it DIRECT is the one this
+decision withdraws.
+
 **Rejected by name, so they are not re-proposed.** Every "obvious" way to
 synthesise a hover colour needs a constant that exists nowhere in
 `ResolvedTheme`: lightening or darkening by a factor; `Color32::gamma_multiply(k)`

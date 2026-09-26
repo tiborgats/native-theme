@@ -95,7 +95,10 @@ sinks   = [
 
 ["defaults.text_color"]
 verdict = "direct"
-sinks   = [{ path = "visuals.widgets.noninteractive.fg_stroke.color" }]
+sinks   = [
+  { path = "visuals.widgets.noninteractive.fg_stroke.color" },
+  { path = "visuals.widgets.active.fg_stroke.color" },
+]
 
 ["defaults.accent_color"]
 verdict  = "unmappable"
@@ -984,11 +987,8 @@ sinks   = [
 ]
 
 ["button.active_text_color"]
-verdict = "direct"
-sinks   = [
-  { path = "visuals.widgets.active.fg_stroke.color" },
-  { path = "visuals.widgets.active.fg_stroke.color", scope = "button" },
-]
+verdict = "scoped"
+sinks   = [{ path = "visuals.widgets.active.fg_stroke.color", scope = "button" }]
 
 ["button.disabled_text_color"]
 verdict = "scoped"

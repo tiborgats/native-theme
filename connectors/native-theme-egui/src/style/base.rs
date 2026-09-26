@@ -351,7 +351,9 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
             text: Some(TextSource {
                 idle: b.font.color,
                 hover: Some(b.hover_text_color),
-                active: Some(b.active_text_color),
+                // egui's strong text is `active.text_color()` (`egui/src/style.rs:1147-1149`):
+                // the panel's text, not the pressed button's; the Button cell keeps that (§5.3)
+                active: Some(d.text_color),
                 in_noninteractive: false, // the base's plain text is `defaults.text_color`
             }),
             border: Some(BorderSource {

@@ -1227,6 +1227,27 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     Pair {
+        what: "Strong text on the panel",
+        site: "egui/src/style.rs:1147-1149; egui/src/widget_text.rs:485",
+        emitted: |c| {
+            let s = base(c);
+            (
+                s.visuals.strong_text_color(),
+                s.visuals.panel_fill,
+                s.visuals.panel_fill,
+            )
+        },
+        native: |r| {
+            (
+                r.defaults.text_color,
+                r.defaults.background_color,
+                r.defaults.background_color,
+            )
+        },
+        asserted: true,
+        exceptions: &[],
+    },
+    Pair {
         what: "Button text on its resting fill",
         site: "egui/src/widget_style.rs:133-136, :159",
         emitted: |c| {
