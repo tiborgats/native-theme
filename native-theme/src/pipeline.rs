@@ -1501,12 +1501,10 @@ accent_color = "#0066cc"
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod theme_reader_trait_tests {
-    /// Trait object-safety probe. After Task 2 lands with
-    /// `#[async_trait::async_trait]` on the trait definition, this coercion
-    /// compiles because the macro rewrite produces `Pin<Box<dyn Future + Send + '_>>`
-    /// return types (vtable-compatible).
-    ///
-    /// Before Task 2 lands: fails to compile (`unresolved module crate::reader`).
+    /// Trait object-safety probe. With `#[async_trait::async_trait]` on the
+    /// trait definition, this coercion compiles because the macro rewrite
+    /// produces `Pin<Box<dyn Future + Send + '_>>` return types
+    /// (vtable-compatible).
     #[test]
     fn theme_reader_trait_exists_and_is_object_safe() {
         // Plain function that requires its argument to be ?Sized — compile-time
@@ -1519,8 +1517,7 @@ mod theme_reader_trait_tests {
         fn assert_object_safe<T: ?Sized>(_: &T) {}
 
         // Use one of the concrete readers to construct the trait object on
-        // the platforms where one exists. If the trait or the reader struct
-        // does not exist yet, this fails to compile before Task 2.
+        // the platforms where one exists.
         #[cfg(all(target_os = "linux", feature = "kde"))]
         {
             let r: Box<dyn crate::reader::ThemeReader> = Box::new(crate::kde::KdeReader);
