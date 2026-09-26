@@ -32,6 +32,7 @@ jobs:
           - { name: "native-theme-build", package: "native-theme-build" }
           - { name: "gpui connector", package: "native-theme-gpui" }
           - { name: "iced connector", package: "native-theme-iced" }
+          - { name: "egui connector", package: "native-theme-egui" }
     env:
       RUSTFLAGS: -Dwarnings
     steps:
@@ -47,6 +48,9 @@ jobs:
       - name: Clippy (iced connector, iced_aw)
         if: matrix.package == 'native-theme-iced'
         run: cargo clippy -p native-theme-iced --all-targets --features iced_aw
+      - name: Clippy (egui connector, all features)
+        if: matrix.package == 'native-theme-egui'
+        run: cargo clippy -p native-theme-egui --all-targets --all-features
 
   test:
     name: Test ${{ matrix.name }}
@@ -135,6 +139,7 @@ jobs:
         include:
           - { name: "iced connector", package: "native-theme-iced" }
           - { name: "gpui connector", package: "native-theme-gpui" }
+          - { name: "egui connector", package: "native-theme-egui" }
     steps:
       - uses: actions/checkout@v6
       - name: Install system dependencies (gpui)
@@ -150,6 +155,13 @@ jobs:
         run: |
           cargo test -p native-theme-iced --no-default-features
           cargo test -p native-theme-iced --features iced_aw
+      # The connector's other two supported configurations (spec §11), gated by
+      # pre-release-check.sh as well so a release cannot pass on one CI never ran.
+      - name: Test the egui connector's other configurations
+        if: matrix.package == 'native-theme-egui'
+        run: |
+          cargo test -p native-theme-egui --no-default-features
+          cargo test -p native-theme-egui --all-features
       # Without `svg-rasterize` the gpui connector hands gpui the SVG itself;
       # the tests for that path compile only without the default features.
       - name: Test the gpui connector without default features
@@ -183,6 +195,9 @@ jobs:
       # docs.rs builds native-theme-iced with every feature, and a doc item
       # behind a feature gate can only break in that configuration.
       - run: cargo doc -p native-theme-iced --no-deps --all-features
+      # docs.rs builds native-theme-egui with every feature too (its
+      # `[package.metadata.docs.rs]` says `all-features = true`).
+      - run: cargo doc -p native-theme-egui --no-deps --all-features
 
   audit:
     name: Security audit

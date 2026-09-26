@@ -696,6 +696,8 @@ run_check_soft "package (native-theme-iced)" \
     cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty
 run_check_soft "package (native-theme-gpui)" \
     cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty
+run_check_soft "package (native-theme-egui)" \
+    cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: security & dependency freshness
@@ -839,6 +841,7 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     printf "      ${DIM}cargo publish -p native-theme${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-iced${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-gpui${NC}\n"
+    printf "      ${DIM}cargo publish -p native-theme-egui${NC}\n"
     echo
     exit 0
 else

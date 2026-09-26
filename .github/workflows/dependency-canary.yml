@@ -12,6 +12,9 @@ name: Dependency canary
 # longer work with the newest upstream set", not "main is broken": CI on the
 # committed lockfile stays green until Cargo.lock is refreshed.
 #
+# egui releases reach consumers the same way: the egui connector's caret
+# requirement, `egui = "0.36.2"`, takes every 0.36.x patch release.
+#
 # Linux only: the question is API compatibility, which one target answers.
 
 on:
@@ -64,6 +67,14 @@ jobs:
               cargo pkgid "$c" 2>/dev/null | sed -E 's|.*#||; s|@| |'
             done
             echo '```'
+            echo
+            echo "## Resolved egui stack"
+            echo
+            echo '```'
+            for c in egui eframe egui_extras egui_kittest; do
+              cargo pkgid "$c" 2>/dev/null | sed -E 's|.*#||; s|@| |'
+            done
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clippy
@@ -76,6 +87,8 @@ jobs:
           cargo clippy -p native-theme-iced --all-targets
           cargo clippy -p native-theme-iced --all-targets --features iced_aw
           cargo clippy -p native-theme-gpui --all-targets
+          cargo clippy -p native-theme-egui --all-targets
+          cargo clippy -p native-theme-egui --all-targets --all-features
 
       - name: Test
         run: |
@@ -87,6 +100,9 @@ jobs:
           cargo test -p native-theme-iced --features iced_aw
           cargo test -p native-theme-gpui
           cargo test -p native-theme-gpui --lib --no-default-features
+          cargo test -p native-theme-egui
+          cargo test -p native-theme-egui --no-default-features
+          cargo test -p native-theme-egui --all-features
 
       # Every crate's library with no default features, each feature alone and
       # all features, as CI runs it: an upstream release can break a
@@ -126,3 +142,5 @@ jobs:
           cargo doc -p native-theme-iced --no-deps
           cargo doc -p native-theme-iced --no-deps --all-features
           cargo doc -p native-theme-gpui --no-deps
+          cargo doc -p native-theme-egui --no-deps
+          cargo doc -p native-theme-egui --no-deps --all-features
