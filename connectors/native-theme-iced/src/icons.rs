@@ -5,7 +5,7 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::icons::load_icon;
+use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader, load_icon};
 use native_theme::theme::{AnimatedIcon, IconData, IconProvider};
 
 /// Converted animation frames with timing metadata.
@@ -74,36 +74,46 @@ pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
 ) -> Option<iced_core::image::Handle> {
-    let data = load_custom_via_builder(provider, icon_set)?;
+    let data = load_custom_via_builder(provider, icon_set, None)?;
     to_image_handle(&data)
 }
 
 /// Load a custom SVG icon from an [`IconProvider`] and convert to an iced SVG handle.
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
-/// icon is RGBA. When `color` is `Some`, colorizes monochrome SVGs.
+/// icon is RGBA. When `color` is `Some`, colorizes monochrome SVGs, and a
+/// system set's icon (`Freedesktop`, `SfSymbols`, `SegoeIcons`) named by the
+/// provider is loaded in `color`.
 #[must_use]
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
-    let data = load_custom_via_builder(provider, icon_set)?;
+    let data = load_custom_via_builder(provider, icon_set, color.map(color_to_rgb))?;
     to_svg_handle(&data, color)
 }
 
-/// Internal helper: load an icon from a provider using [`load_icon`].
+/// Internal helper: load an icon from a provider using the per-set loaders.
 ///
-/// Uses the provider's `icon_name` and `icon_svg` methods directly, then
-/// dispatches through [`load_icon`] for system lookups. This preserves
-/// the `?Sized` bound on the public API.
+/// Uses the provider's `icon_name` and `icon_svg` methods directly. A system
+/// set's icon is loaded in `color` (its monochrome glyphs arrive in the colour
+/// they are loaded in); a bundled set goes through [`load_icon`]. This
+/// preserves the `?Sized` bound on the public API.
 fn load_custom_via_builder(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
+    color: Option<[u8; 3]>,
 ) -> Option<IconData> {
+    use native_theme::theme::IconSet;
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = load_icon(name, icon_set)
+        && let Some(data) = match icon_set {
+            IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
+            IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
+            IconSet::SegoeIcons => SegoeIconsLoader::new(name).color_opt(color).load(),
+            set => load_icon(name, set),
+        }
     {
         return Some(data);
     }
@@ -242,6 +252,15 @@ pub fn into_svg_handle(
     }
 }
 
+/// An iced colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
+fn color_to_rgb(color: iced_core::Color) -> [u8; 3] {
+    [
+        (color.r.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (color.g.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (color.b.clamp(0.0, 1.0) * 255.0).round() as u8,
+    ]
+}
+
 /// Colorize a **monochrome** SVG icon with the given color.
 ///
 /// Works correctly for bundled icon sets (Material, Lucide) which use
@@ -275,9 +294,7 @@ pub fn into_svg_handle(
 ///   SVGs with `<svg` inside comments could cause incorrect injection, though
 ///   this is extremely unlikely with real icon files.
 fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
-    let r = (color.r.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let g = (color.g.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let b = (color.b.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let [r, g, b] = color_to_rgb(color);
     let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
 
     // Validate UTF-8 before attempting string operations. Non-UTF-8 SVGs
