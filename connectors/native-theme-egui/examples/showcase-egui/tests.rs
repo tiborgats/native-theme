@@ -48,9 +48,28 @@ pub(crate) fn cli(pairs: &[(&str, &str)]) -> CliArgs {
     cli
 }
 
-/// T11 (a): every page in both schemes lays out, paints shapes and tessellates.
-/// `run_steps`, not `run`: the Range and Icons pages animate and would exceed
-/// `run`'s step limit (`egui_kittest/src/lib.rs:356`, `:451`).
+/// Kinds only `page` records, one of which it always draws: seen, the page itself was drawn,
+/// not only the chrome around it.
+fn page_kinds(page: Page) -> &'static [&'static str] {
+    match page {
+        Page::Buttons => &["button (enabled)"],
+        Page::Selection => &["checkbox (unchecked)"],
+        Page::Inputs => &["TextEdit (single line)"],
+        Page::Range => &["Slider (horizontal)"],
+        Page::Text => &["Label (wrapped)"],
+        Page::Colour => &["ui.color_edit_button_srgba"],
+        Page::Containers => &["card"],
+        Page::Data => &["Table"],
+        Page::Overlays => &["open window button"],
+        // An icon the chosen set lacks is shown as absent (§10.4).
+        Page::Icons => &["Image", "Image (absent)"],
+        Page::ThemeMap => &["verdict filter"],
+    }
+}
+
+/// T11 (a): every page in both schemes lays out, paints shapes and tessellates, and what it
+/// drew is that page's own content. `run_steps`, not `run`: the Range and Icons pages animate
+/// and would exceed `run`'s step limit (`egui_kittest/src/lib.rs:356`, `:451`).
 #[test]
 fn every_page_renders() {
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
@@ -58,6 +77,16 @@ fn every_page_renders() {
         for page in Page::ALL {
             harness.state_mut().settings.page = page;
             harness.run_steps(4);
+            let kinds = page_kinds(page);
+            assert!(
+                harness
+                    .state()
+                    .registry
+                    .records()
+                    .iter()
+                    .any(|r| kinds.contains(&r.info.kind)),
+                "{page:?} under {theme:?} drew none of {kinds:?}"
+            );
             let shapes = harness.output().shapes.clone();
             assert!(
                 !shapes.is_empty(),
@@ -392,14 +421,48 @@ fn the_side_panel_toggle_hides_and_shows_it() {
     );
 }
 
-/// §13.2: every item acts on the app, and every shortcut label is egui's own spelling.
+/// §13.2: every item acts on the app, and every shortcut label is egui's own spelling. Each
+/// item's effect is absent before its click — the app starts on the Text page in Dark mode, so
+/// View > Buttons and Theme > System change something, and Reload finds a selection changed
+/// behind the app's back that only an install shows — so an item wired to another's action,
+/// or to none, fails.
 #[test]
 fn the_menus_run_their_actions() {
-    let mut harness = open_default();
-    harness.run();
+    let mut harness = open(
+        egui::Theme::Dark,
+        cli(&[
+            ("--theme", TEST_PRESET),
+            ("--tab", Page::Text.key()),
+            ("--variant", "dark"),
+        ]),
+    );
+    harness.run_steps(2);
+    let other = Theme::list_presets_for_platform()
+        .into_iter()
+        .map(|info| info.key)
+        .find(|key| *key != TEST_PRESET)
+        .expect("a second preset is offered on every platform");
+    let reloaded = Theme::preset(other).expect("bundled").name;
     // `run_steps`, not `run`: View > Range shows a page that repaints every pass (§13 T11).
     for (menu, items) in Action::MENUS {
         for action in items.iter().flatten() {
+            let acted = |app: &App| match action {
+                Action::ShowPage(page) => app.settings.page == *page,
+                Action::ToggleSidePanel => !app.side_panel_visible,
+                Action::OpenCommandPalette => app.palette.is_some(),
+                Action::ReloadTheme => app.atlas.name() == reloaded,
+                Action::SetMode(mode) => app.settings.mode == *mode,
+                Action::OpenPreferences => app.preferences_open,
+                Action::OpenAbout => app.about_open,
+                Action::Quit => app.quit_requested,
+            };
+            if *action == Action::ReloadTheme {
+                harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
+            }
+            assert!(
+                !acted(harness.state()),
+                "{menu} > {action:?} holds before its click, so the click proves nothing"
+            );
             harness.get_by_role_and_label(Role::Button, menu).click();
             harness.run_steps(2);
             let label = menu_item_label(&harness.ctx, *action);
@@ -426,18 +489,7 @@ fn the_menus_run_their_actions() {
             );
             item.click();
             harness.run_steps(2);
-            let app = harness.state();
-            let acted = match action {
-                Action::ShowPage(page) => app.settings.page == *page,
-                Action::ToggleSidePanel => !app.side_panel_visible,
-                Action::OpenCommandPalette => app.palette.is_some(),
-                Action::ReloadTheme => app.theme_error.is_none(),
-                Action::SetMode(mode) => app.settings.mode == *mode,
-                Action::OpenPreferences => app.preferences_open,
-                Action::OpenAbout => app.about_open,
-                Action::Quit => app.quit_requested,
-            };
-            assert!(acted, "{menu} > {label} did not act");
+            assert!(acted(harness.state()), "{menu} > {label} did not act");
             // Put the app back so the next item starts from the same state.
             let app = harness.state_mut();
             app.palette = None;
@@ -480,6 +532,41 @@ fn the_command_palette_runs_what_it_lists() {
         harness.state().palette.is_none(),
         "a row that acted did not close the palette"
     );
+
+    // A preset row installs the preset it names; a mode row sets the mode it names.
+    let other = Theme::list_presets_for_platform()
+        .into_iter()
+        .map(|info| info.key)
+        .find(|key| *key != TEST_PRESET)
+        .expect("a second preset is offered on every platform");
+    let preset_row = format!("Preset: {other}");
+    for row in [preset_row.as_str(), "Mode: Dark"] {
+        harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
+        harness.run_steps(2);
+        harness
+            .query_all_by_role(Role::TextInput)
+            .find(|n| n.is_focused())
+            .expect("focus")
+            .type_text(row);
+        harness.run_steps(2);
+        harness.get_by_label(row).click();
+        harness.run_steps(2);
+        assert!(
+            harness.state().palette.is_none(),
+            "{row} did not close the palette"
+        );
+    }
+    assert_eq!(
+        harness.state().settings.theme,
+        ThemeChoice::Preset(other.to_string())
+    );
+    assert_eq!(
+        harness.state().atlas.name(),
+        Theme::preset(other).expect("bundled").name,
+        "the preset row did not install it"
+    );
+    assert_eq!(harness.state().settings.mode, ModeChoice::Dark);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
 
     harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
     harness.run_steps(2);
