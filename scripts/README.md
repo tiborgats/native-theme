@@ -51,6 +51,10 @@ it to render, then captures the active window.
 
 On macOS/Windows, use the showcase's built-in `--screenshot` flag instead.
 
+The showcase runs with `--capture`, which opens it at its default 1280 × 720
+whatever size the desktop remembers for its window, and each capture passes
+`capture_size.sh`'s check (below) or the script fails.
+
 Builds and runs the showcase with `--features iced_aw`, so the captures show
 the same widget set the coverage check gates.
 
@@ -84,10 +88,22 @@ Requires: spectacle (KDE)
 ./scripts/generate_screenshots_egui.sh
 ```
 
+## capture_size.sh
+
+Sourced by the four spectacle scripts. `check_capture FILE` takes a second
+capture of the active window without its decoration and shadow
+(`spectacle -e -S`) and fails unless that content is exactly 1280 × 720 times
+the scale factor of KWin's active output (from `kscreen-doctor`), and FILE,
+which holds the frame, is larger in both directions. The message gives the
+measured and the expected sizes.
+
+Requires: spectacle, kscreen-doctor, qdbus6 (KDE Plasma 6), Python 3
+
 ## generate_gifs_theme_switching.sh
 
 Captures 4 theme presets from the iced, gpui and egui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
+Each frame passes `capture_size.sh`'s check.
 
 Produces:
 - `connectors/native-theme-iced/docs/assets/theme-switching.gif`

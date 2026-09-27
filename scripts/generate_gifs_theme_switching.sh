@@ -15,6 +15,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+# `--capture` opens the showcase at its default size whatever the desktop
+# remembers for its window; check_capture fails the script unless each frame
+# is of a window at that size.
+source "$SCRIPT_DIR/capture_size.sh"
 ICED_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 GPUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 ICED_FRAME_DIR="$(mktemp -d)"
@@ -63,13 +67,14 @@ for i in "${!THEMES[@]}"; do
     # iced has no --icon-theme: an installed theme's name picks it as the icon set.
     cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
         --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
-        --tab buttons &
+        --tab buttons --capture &
     PID=$!
 
     sleep "$DELAY"
 
     spectacle -a -b -n -o "$frame_file"
     sleep 1
+    check_capture "$frame_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true
@@ -100,7 +105,7 @@ for i in "${!THEMES[@]}"; do
     echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
 
     # Build CLI args
-    cli_args=(--theme "$theme" --variant "$variant" --tab buttons --icon-set "$icon_set")
+    cli_args=(--theme "$theme" --variant "$variant" --tab buttons --icon-set "$icon_set" --capture)
     if [ -n "$icon_theme" ]; then
         cli_args+=(--icon-theme "$icon_theme")
     fi
@@ -112,6 +117,7 @@ for i in "${!THEMES[@]}"; do
 
     spectacle -a -b -n -o "$frame_file"
     sleep 1
+    check_capture "$frame_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true
@@ -144,13 +150,14 @@ for i in "${!THEMES[@]}"; do
     # egui has no --icon-theme: an installed theme's name picks it as the icon set.
     cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
         --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
-        --tab buttons &
+        --tab buttons --capture &
     PID=$!
 
     sleep "$DELAY"
 
     spectacle -a -b -n -o "$frame_file"
     sleep 1
+    check_capture "$frame_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true

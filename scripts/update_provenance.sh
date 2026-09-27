@@ -51,6 +51,7 @@ SOURCE_PATHS=(
     scripts/generate_screenshots_gpui.sh
     scripts/generate_screenshots_egui.sh
     scripts/generate_gifs_theme_switching.sh
+    scripts/capture_size.sh
     scripts/generate_gifs_spinners.py
     .github/workflows/screenshots.yml
 )

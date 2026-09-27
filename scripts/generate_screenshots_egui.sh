@@ -19,6 +19,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+# `--capture` opens the showcase at its default size whatever the desktop
+# remembers for its window; check_capture fails the script unless each capture
+# is of a window at that size.
+source "$SCRIPT_DIR/capture_size.sh"
 OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
 DELAY=3
 
@@ -70,13 +74,14 @@ for entry in "${THEMES[@]}"; do
 
     cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
-        --tab buttons &
+        --tab buttons --capture &
     PID=$!
 
     sleep "$DELAY"
 
     spectacle -a -b -n -o "$output_file"
     sleep 1
+    check_capture "$output_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true
