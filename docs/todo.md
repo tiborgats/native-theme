@@ -7,7 +7,7 @@
 ### `SystemTheme` — expose layout metrics
 
 - [x] Add `pub layout: LayoutTheme` to `SystemTheme` (done in v0.5.8). Approved 2026-08-10; see
-      Q-2 in `docs/todo_v0.6.0_egui-connector-rationale.md` §8. Before it, `from_preset` could supply `Spacing::item_spacing` (from
+      Q-2 in `docs/archive/todo_v0.6.0_egui-connector-rationale.md` §8. Before it, `from_preset` could supply `Spacing::item_spacing` (from
       `layout.widget_gap`) but `from_system` could not, because `SystemTheme`
       had no `layout` field — so on the system path that spacing fell back to
       the toolkit's default. `Spacing::window_margin` never depended on it: the
@@ -156,7 +156,7 @@
       `icon_width_inner` at egui's `8.0` on its base style, and in its
       Checkbox cell writes `indicator_width` less the mean of the two stated
       `checkbox.border.padding` pairs, the mark's inset, where a theme states
-      all four sides (`docs/todo_v0.6.0_egui-connector-spec.md` §6.11). Filling that
+      all four sides (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §6.11). Filling that
       field from a number in `docs/platform-facts.md` that no model field
       carries is rejected: the connector would then carry a theme value
       the model does not, which is the hardcoded value the project's rules
@@ -167,7 +167,7 @@
 
 - [ ] `watch::on_theme_change()` fires on fewer changes than the readers
       read, so an application that rebuilds its theme on it — the egui
-      connector's `ThemeWatcher` (`docs/todo_v0.6.0_egui-connector-spec.md`)
+      connector's `ThemeWatcher` (`docs/archive/todo_v0.6.0_egui-connector-spec.md`)
       — misses these:
 
       - **GNOME and Budgie**: the watcher subscribes to the portal's
@@ -212,7 +212,7 @@
       the next `org.freedesktop.appearance` change arrives. Register a
       platform shutdown that wakes the thread (e.g. closes the D-Bus
       connection's signal stream) so `Drop` returns at once; the egui
-      connector's plan, `docs/todo_v0.6.0_egui-connector-plan.md`, does this,
+      connector's plan, `docs/archive/todo_v0.6.0_egui-connector-plan.md`, does this,
       with a test that a started watcher drops within a bound.
 - [ ] **KDE: the 300 ms throttle keeps the first event of a burst and drops
       the rest.** `last_fire` starts as `None` and the watcher fires on the
@@ -296,7 +296,7 @@
       colour for "a semi-transparent UI control" (`:468-470`), and the egui
       connector's base style fills unscoped `ScrollArea` handles, checkbox
       and radio boxes and slider rails with it
-      (`docs/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
+      (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
       value per platform, while the presets' hover colours differ by variant
       on macOS (`#60606080` light, `#a0a0a080` dark,
       `native-theme/src/presets/macos-sonoma.toml:140`, `:496`) and not on
@@ -330,7 +330,7 @@
       `FontPlan` match fonts through the one implementation. egui has no font
       database and needs a font's bytes, so the egui connector's
       `FontPlan::from_system` builds on it for `defaults.font` and
-      `defaults.mono_font` (`docs/todo_v0.6.0_egui-connector-spec.md` §4.9,
+      `defaults.mono_font` (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §4.9,
       §8), and its own `system-fonts` feature, on by default, turns this one
       on. On macOS the system UI font is found by its file instead of its
       name, because fontdb holds it as `.SF NS` (see *macOS: the stated font
@@ -344,7 +344,7 @@
       fontdb records, and that the Core Text route finds the system font; the
       connector's `system_faces_resolve` runs on the macOS and Windows CI
       runners over the reader's theme and the platform's preset, in the runner
-      task of `docs/todo_v0.6.0_egui-connector-plan.md`.
+      task of `docs/archive/todo_v0.6.0_egui-connector-plan.md`.
       The iced and gpui connectors build on it in that plan's Tasks 4 and 5.
 - [ ] A name-only lookup beside `system_face`: `native_theme_iced::system_font_family` (`connectors/native-theme-iced/src/lib.rs:480-485`) keeps only `SystemFace::family`, yet `system_face` copies the chosen face's whole file into an `Arc<[u8]>` (`native-theme/src/fonts.rs:203-205`; for a `.ttc` face, the whole collection). Measured on 2026-09-27 on a KDE Plasma desktop (release build, database already loaded, its first load 0.88 s): kde-breeze's `Noto Sans` copies 621 572 bytes in 0.10 ms per call and `Hack` 309 408 bytes in 0.08 ms; adwaita's `Adwaita Sans` 879 796 bytes in 0.13 ms and `Adwaita Mono` 1 419 152 bytes in 0.18 ms. The workaround in place is the iced showcase's cache, which calls it once per family, weight and style (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:5697-5711`), and the function's own doc, which says to call it when the theme changes, not per frame. The fix is a spec change for a later version: a `native_theme::fonts::system_face_family(family, weight, style) -> Option<Arc<str>>` over the same `select_face` and the same macOS file route without `with_face_data`, `system_face` built on it plus the copy, and iced's `system_font_family` calling it, after which the showcase's cache can go.
 
@@ -476,7 +476,7 @@
       `line_width_px = 0` in the presets of the platforms that draw none.
       Then the egui connector's `Frame::stroke` route is exact on every
       preset, and the decline in its spec's §5.8 item 8 can go
-      (`docs/todo_v0.6.0_egui-connector-spec.md` §5.8).
+      (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.8).
 
 ### Selection: the text colour macOS pairs with the unemphasised selection
 
@@ -487,7 +487,7 @@
       text colour to pair with it: a toolkit that swapped the fill in on focus
       loss would paint the active `selection_text_color` on it. The egui
       connector grades the leaf UNMAPPABLE `source-side gap` for that reason
-      (`docs/todo_v0.6.0_egui-connector-spec.md` §14). Research which text
+      (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §14). Research which text
       colour AppKit draws on the unemphasised selection — `docs/platform-facts.md`
       first, then Apple's documentation, with citations; it is unresearched,
       and no `NSColor` name is assumed here — and add it as a leaf beside
@@ -511,10 +511,10 @@
 ### native-theme-egui connector
 
 - [x] Implement the connector by its plan,
-      `docs/todo_v0.6.0_egui-connector-plan.md` — tasks in execution order,
+      `docs/archive/todo_v0.6.0_egui-connector-plan.md` — tasks in execution order,
       each with its gate and commit point — per
-      `docs/todo_v0.6.0_egui-connector-spec.md` (rationale:
-      `docs/todo_v0.6.0_egui-connector-rationale.md`). Targets egui 0.36.2.
+      `docs/archive/todo_v0.6.0_egui-connector-spec.md` (rationale:
+      `docs/archive/todo_v0.6.0_egui-connector-rationale.md`). Targets egui 0.36.2.
       Archiving the three documents is the plan's last task.
 - [ ] Implement the companion widget crate, `native-theme-egui-widgets`, per
       `docs/todo_egui-widgets-spec.md` (rationale:
@@ -524,7 +524,7 @@
       spec against the connector as built, then write its plan.
 - [x] **The egui showcase: the gpui application, with per-instance Widget
       Info.** Part of v0.6.0, not deferred
-      (`docs/todo_v0.6.0_egui-connector-spec.md` §10.4, §13.2; plan Tasks 31,
+      (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §10.4, §13.2; plan Tasks 31,
       34–36). Tick when those tasks pass their gates; the iced showcase's
       entry (*The iced showcase: per-instance Widget Info* below) stays open.
 - [ ] Map the platform font-rendering preferences (see Core API above) onto
@@ -538,7 +538,7 @@
       are settled in the connector spec (§3.4, §5.10, §14 items 41–42).
 
 - [x] Add an MSRV CI job (spec §12.4; a task of
-      `docs/todo_v0.6.0_egui-connector-plan.md`). The workspace floor of `1.88.0`
+      `docs/archive/todo_v0.6.0_egui-connector-plan.md`). The workspace floor of `1.88.0`
       was measured on 2026-08-10, but nothing re-checks it: every CI job
       installs `@stable`, there is no `rust-toolchain.toml`, and
       `scripts/check_release.sh` has no MSRV check. The job is the one spec §12.4

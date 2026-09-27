@@ -1,6 +1,6 @@
 # v0.6.0 — egui Connector: Rationale
 
-Status: Pending
+Status: Implemented (2026-09-27, plan Tasks 0–43) and archived; see *As built* at the end.
 Crate: `connectors/native-theme-egui`
 Target toolkit: **egui 0.36.2**
 Companion specification:
@@ -336,7 +336,7 @@ settled by recounting, not by argument.
 What is rejected is widgets *in the connector*, not the widgets. Where egui has
 no widget with the platform's visual identity, the native look is supplied by a
 separate companion crate, `native-theme-egui-widgets`
-([`todo_egui-widgets-spec.md`](todo_egui-widgets-spec.md) §0.1, milestone
+([`todo_egui-widgets-spec.md`](../todo_egui-widgets-spec.md) §0.1, milestone
 undecided), which draws from the connector's `ThemeAtlas` and ships `Switch`
 among its widgets. The per-release audit obligation then lives in a crate whose
 remit it is, the connector stays a mapper, and an application that never adds
@@ -2215,7 +2215,7 @@ crate's remit, not the native look. What egui cannot draw natively is the
 companion crate `native-theme-egui-widgets`'s to supply — a switch with its
 knob, a slider whose knob is not its rail, a spinner at the theme's stroke,
 and a segmented control
-([`todo_egui-widgets-spec.md`](todo_egui-widgets-spec.md) §0.1) — and only
+([`todo_egui-widgets-spec.md`](../todo_egui-widgets-spec.md) §0.1) — and only
 that: where a role scope or a surface frame already gives egui's own widget the
 native look, that crate adds nothing. Links in their state and visited colours
 are not on that list: egui's own `Link` takes them per call, a route this crate
@@ -3380,3 +3380,29 @@ length above `f32::MAX * GUI_ROUNDING` becomes `+∞`, and `convert::clamp_lengt
 keeps every length sink below that ceiling (§3.9; specification §6.7, §13 T17).
 A *sum* of lengths each below it can still exceed it; that is specification
 §6.7's stated residual, not an open question.
+
+## As built
+
+The implementation was ported onto `v0.6.0-rc1` from a task-by-task gated dry
+run of the plan, then reviewed over the whole branch by six reviewers and
+corrected in four fix passes (`47baf7fd`..`c43bbc07`). Two decisions were
+settled differently from this document as first written; both are now in it.
+
+**Strong text is the panel's text colour** (§3.6, `47baf7fd`). The base style's
+pressed text, which egui reads as strong text, is `defaults.text_color`, not
+`button.active_text_color`; the latter is SCOPED to the `Role::Button` cell,
+and the totals are 482 = 47 DIRECT · 206 SCOPED · 155 DERIVED · 74 UNMAPPABLE.
+
+**The system sets' glyphs are coloured when they are loaded** (§3.13,
+`8e8de66a`). native-theme's `SfSymbolsLoader` and `SegoeIconsLoader` gained
+`color` / `color_opt` (`f6cbb01c`), the Segoe set's `ActionSearch`,
+`ActionSettings`, `ActionDelete` and `ActionPrint` became the Fluent glyphs,
+the showcases load the glyphs in the text colour (`3db595b5`), and all three
+connectors' custom-provider paths load them in the icon's colour (`d36c8081`,
+`87a99ccc`, `95df6010`, `99db360e`).
+
+Still open: "SF Mono" resolves in neither iced's font database, fontdb nor
+gpui's font names (run 36315092575; specification §15); whether AppKit hands
+Cmd+B to the menu before winit sees it needs a person at a Mac; and
+gpui-component's widgets cannot show the SF Symbols and Segoe rasters
+(`docs/todo.md`, *Platform icons inside widgets*).

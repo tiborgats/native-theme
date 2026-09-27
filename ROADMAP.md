@@ -19,10 +19,10 @@ per-widget geometry survives the contested-field collisions. Coverage is `mappin
 one row per theme value, which the crate's tests hold to `ResolvedTheme` and to every
 published `Style`. Targets egui 0.36.2.
 
-Detailed design: [`docs/todo_v0.6.0_egui-connector-spec.md`](docs/todo_v0.6.0_egui-connector-spec.md),
-[`docs/todo_v0.6.0_egui-connector-rationale.md`](docs/todo_v0.6.0_egui-connector-rationale.md)
+Detailed design: [`docs/archive/todo_v0.6.0_egui-connector-spec.md`](docs/archive/todo_v0.6.0_egui-connector-spec.md),
+[`docs/archive/todo_v0.6.0_egui-connector-rationale.md`](docs/archive/todo_v0.6.0_egui-connector-rationale.md)
 and the implementation plan,
-[`docs/todo_v0.6.0_egui-connector-plan.md`](docs/todo_v0.6.0_egui-connector-plan.md).
+[`docs/archive/todo_v0.6.0_egui-connector-plan.md`](docs/archive/todo_v0.6.0_egui-connector-plan.md).
 
 ## v0.6.1 — Full theme geometry in the iced connector
 

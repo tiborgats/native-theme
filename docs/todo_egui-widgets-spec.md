@@ -19,7 +19,7 @@ published. Paths are given the way the sibling documents give them:
 
 ### 0.1 What this crate is
 
-> A companion widget crate for [`native-theme-egui`](todo_v0.6.0_egui-connector-spec.md).
+> A companion widget crate for [`native-theme-egui`](archive/todo_v0.6.0_egui-connector-spec.md).
 > It draws what the connector cannot give egui's own widgets: a switch, a
 > slider whose knob is not its rail, a spinner at the theme's stroke, and a
 > segmented control, which egui does not have. It also wraps egui's links in

@@ -24182,3 +24182,77 @@ git commit -m "docs: the egui connector plan is implemented and archived"
   (Tasks 20, 21, 23, 24, 26).
 - **Open by design, not placeholders:** the values Task 39 measures are recorded
   when the workflow runs; nothing in this plan states them in advance.
+
+## As built
+
+The implementation was ported onto `v0.6.0-rc1` from a task-by-task gated dry
+run of this plan, then reviewed over the whole branch by six reviewers and
+corrected in four fix passes. The commits, on `v0.6.0-rc1`, from
+`git log --oneline main..HEAD` (`5cfe6220` is the design documents):
+
+| Task | Commits | Differs from the plan |
+|---|---|---|
+| 0 | `0105e11b` | — |
+| 1 | `a69d68c6` | — |
+| 2 | `327c582f` | `icon_theme_for` keeps the names by variant (`1853ed79`) |
+| 3 | `8545159a` | — |
+| 4 | `d4032fa6` | — |
+| 5 | `9ca8aa4c` | — |
+| 6 | `a54785e1` | — |
+| 7 | `4b354b5f` | — |
+| 8 | `61d2c2a0` | — |
+| 9 | `0e8e9523` | — |
+| 10 | `62081714` | — |
+| 11 | `6349fc20` | — |
+| 12 | `8638f32d` | `button.active_text_color` is SCOPED; totals 482 = 47 · 206 · 155 · 74 (`47baf7fd`) |
+| 13 | `079e0e43` | the pressed text, egui's strong text, is `defaults.text_color` (`47baf7fd`) |
+| 14 | `a4a2b889` | — |
+| 15 | `d7a178bf` | — |
+| 16 | `81b7d8bd` | — |
+| 17 | `40ebe2be` | — |
+| 18 | `30c64569` | — |
+| 19 | `78331b4c` | — |
+| 20 | `7bd3d507` | — |
+| 21 | `88001e7d` | — |
+| 22 | `a642c4ab` | — |
+| 23 | `e704782a` | — |
+| 24 | `0098ed6b` | — |
+| 25 | `8e9fed0a` | — |
+| 26 | `66be30b3` | a custom provider's SF Symbols and Segoe glyphs load in the icon's colour (`d36c8081`) |
+| 27 | `0072a095` | — |
+| 28 | `f493f3e3` | — |
+| 29 | `2d18975d` | — |
+| 30 | `6fe85032` | — |
+| 31 | `4015b0c0` | — |
+| 32 | `d7f9e349` | — |
+| 33 | `0731d7b1` | — |
+| 34 | `b14f6198` | — |
+| 35 | `26da6032` | — |
+| 36 | `9160ff77` | — |
+| 37 | `673903ff` | — |
+| 38 | `30f03a00` | the screenshots and the GIF are committed by `cf731310` and `22d9bcdb`; kde-breeze is captured with `breeze` / `breeze-dark` (`5ce06a7d`) |
+| 39 | `bffb6a4e`, `9210718a` | Step 5's screenshots are in `cf731310` and `22d9bcdb` |
+| 40 | `ebd6c7f7` | — |
+| 41 | `a4a5bfe3`, `d6410dbe` | — |
+| 42 | `9f197001` | the CHANGELOG entries join the later fixes' under `[Unreleased]`; the egui capture names a freedesktop theme through `--icon-set` |
+| 43 | the archive commit | — |
+
+After Task 41:
+
+- `47baf7fd`..`c43bbc07`: the review's fix passes — the connector's and the
+  showcase's fixes, tests and documentation; outside the connector,
+  `1853ed79` (`icon_theme_for`), `17d29a63` (the release check runs the
+  `system-fonts` tests), native-theme's `42717a9f`, `3033c87a` and
+  `377a52bf`, and `2a923cfc` in `docs/todo.md`.
+- `83aff77c`: every script named by its task group; `pre-release-check.sh`
+  moved to `scripts/check_release.sh`.
+- `f6cbb01c`, `3db595b5`, `8e8de66a`, `c3938fc2`, `d36c8081`, `87a99ccc`,
+  `95df6010`, `99db360e`: SF Symbols and Segoe glyphs load in a chosen colour,
+  the Segoe Search, Settings, Delete and Print roles are Fluent glyphs, and
+  all three connectors' custom-provider paths are coloured.
+- `47a5e6cc`, `72ce91e7`: the packaging check verifies in
+  `target/package-verify`.
+
+Still open: "SF Mono" resolves nowhere (spec §15); the Cmd+B accelerator needs
+a person at a Mac; gpui-component's widgets cannot show the SF Symbols and
+Segoe rasters (`docs/todo.md`, *Platform icons inside widgets*).

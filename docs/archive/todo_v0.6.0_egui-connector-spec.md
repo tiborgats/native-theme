@@ -1,6 +1,6 @@
 # v0.6.0 — egui Connector: Specification
 
-Status: Pending
+Status: Implemented (2026-09-27, plan Tasks 0–43) and archived; see *As built* at the end.
 Crate: `connectors/native-theme-egui`
 Target toolkit: **egui 0.36.2**
 Revised 2026-09-25 against egui 0.36.2 and native-theme 0.5.9 (HEAD `2db686ee`).
@@ -8184,3 +8184,30 @@ was read at its source or measured.
 
 The settled measurements and the decisions of the questions raised during
 design (Q-1 to Q-8) are rationale §8.
+
+## As built
+
+The implementation was ported from a task-by-task gated dry run of the plan,
+then reviewed over the whole branch by six reviewers and corrected in four fix
+passes (`47baf7fd`..`c43bbc07`). Where the build departed from the design, the
+section now says so:
+
+- **§2, §5.1, §5.3, §5.7, §5.9, §5.11, §6.1** (`47baf7fd`): the base style's
+  pressed text, egui's strong text, is `defaults.text_color`;
+  `button.active_text_color` is SCOPED to the `Role::Button` cell; the totals
+  are 482 = 47 · 206 · 155 · 74. The generated base-owner table names
+  owners, inputs and constants apart (§5.7, `c2e20abc`).
+- **§4.2, §4.10, §9.2, §10.4** (`8e8de66a`): the system sets' glyphs
+  arrive in the colour they are loaded in, through native-theme's
+  `SfSymbolsLoader::color` and `SegoeIconsLoader::color` (`f6cbb01c`); the
+  crate's custom-provider path loads them in the icon's colour (`d36c8081`).
+- **§10.4, §13.2** (`c43bbc07`): the showcase applies every seam inside
+  `demo.rs`; the style-literal allow list is the one built.
+- **§13** (`0777b9da`, `d65052b8`, `419ebefc`): T10c, T12 and T14(c) state what
+  their tests check.
+- **§6.15, §8.2, §8.8, §10.4, §13, §15** (`9210718a`): the results of run
+  36315092575 close the runner rows. Still open: "SF Mono" resolves nowhere,
+  and the Cmd+B accelerator row needs a person at a Mac.
+- The scripts are named by task group, and the release check is
+  `scripts/check_release.sh` (`83aff77c`); its packaging check verifies in
+  `target/package-verify` (`47a5e6cc`, `72ce91e7`).
