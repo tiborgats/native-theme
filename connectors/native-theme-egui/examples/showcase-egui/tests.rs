@@ -1017,6 +1017,41 @@ fn the_code_view_follows_the_scheme() {
     );
 }
 
+/// Preferences' check boxes take the checked look from their state, as the Selection page's do.
+#[test]
+fn a_checked_preference_is_drawn_selected() {
+    let mut harness = open_default();
+    harness.run();
+    let ctx = harness.ctx.clone();
+    harness.state_mut().settings.prefs = Some(AccessibilityPreferences {
+        reduce_motion: true,
+        ..AccessibilityPreferences::default()
+    });
+    harness.state_mut().install(&ctx);
+    harness
+        .state_mut()
+        .run_action(Action::OpenPreferences, &ctx);
+    harness.run();
+    for (kind, variant) in [
+        ("reduce motion", RoleVariant::Selected),
+        ("high contrast", RoleVariant::Normal),
+        ("reduce transparency", RoleVariant::Normal),
+    ] {
+        let seams = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == kind)
+            .map(|r| r.info.seams.clone());
+        assert_eq!(
+            seams,
+            Some(vec![Seam::Role(native_theme_egui::Role::Checkbox, variant)]),
+            "{kind}"
+        );
+    }
+}
+
 /// The Icons page's `ui.image` is drawn at the toolbar icon size, not at the page's width,
 /// which would push every icon row below the fold.
 #[cfg(feature = "lucide-icons")]

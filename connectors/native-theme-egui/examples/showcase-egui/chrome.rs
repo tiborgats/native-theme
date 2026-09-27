@@ -953,30 +953,26 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
             scale_dragged = scale.dragged();
             scale_settled = scale.drag_stopped() || scale.lost_focus();
         });
-        demo::scoped(
-            registry,
-            ui,
-            Role::Checkbox,
-            RoleVariant::Normal,
-            "reduce motion",
-            |ui| ui.checkbox(&mut prefs.reduce_motion, "Reduce motion"),
-        );
-        demo::scoped(
-            registry,
-            ui,
-            Role::Checkbox,
-            RoleVariant::Normal,
-            "high contrast",
-            |ui| ui.checkbox(&mut prefs.high_contrast, "High contrast"),
-        );
-        demo::scoped(
-            registry,
-            ui,
-            Role::Checkbox,
-            RoleVariant::Normal,
-            "reduce transparency",
-            |ui| ui.checkbox(&mut prefs.reduce_transparency, "Reduce transparency"),
-        );
+        // A check box takes no selected flag of its own: a checked one is drawn in
+        // `RoleVariant::Selected` (§4.4), as on the Selection page.
+        for (kind, label, flag) in [
+            ("reduce motion", "Reduce motion", &mut prefs.reduce_motion),
+            ("high contrast", "High contrast", &mut prefs.high_contrast),
+            (
+                "reduce transparency",
+                "Reduce transparency",
+                &mut prefs.reduce_transparency,
+            ),
+        ] {
+            let variant = if *flag {
+                RoleVariant::Selected
+            } else {
+                RoleVariant::Normal
+            };
+            demo::scoped(registry, ui, Role::Checkbox, variant, kind, |ui| {
+                ui.checkbox(flag, label)
+            });
+        }
     });
     if let Some(out) = out {
         app.registry.record(
