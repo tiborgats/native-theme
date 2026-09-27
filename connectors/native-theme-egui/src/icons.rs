@@ -219,10 +219,10 @@ pub fn uri(icon: &IconData) -> String {
     }
 }
 
-/// The colour a freedesktop icon is drawn in: the key's tint, else `defaults.text_color` of the
-/// installed atlas's theme for `ctx.theme()`; `None` with neither (§9.2). Two `Context`
-/// accessors, one after the other, never nested (§10.3).
-fn freedesktop_color(ctx: &egui::Context, key: &IconKey) -> Option<Rgba> {
+/// The colour a freedesktop icon, or a system set's monochrome glyph, is loaded in: the key's
+/// tint, else `defaults.text_color` of the installed atlas's theme for `ctx.theme()`; `None`
+/// with neither (§9.2). Two `Context` accessors, one after the other, never nested (§10.3).
+fn load_color(ctx: &egui::Context, key: &IconKey) -> Option<Rgba> {
     if let Some(tint) = key.tint_rgba() {
         return Some(tint);
     }
@@ -345,7 +345,7 @@ pub fn to_image_source(
     match icon {
         IconData::Svg(bytes) => {
             let freedesktop = if key.set == IconSet::Freedesktop {
-                freedesktop_color(ctx, key)
+                load_color(ctx, key)
             } else {
                 None
             };
@@ -404,7 +404,8 @@ pub fn to_image(
 /// Same, for an application-supplied [`IconProvider`]. Loads through native-theme's
 /// custom-provider path for the key's set — `FreedesktopLoader::new(provider)` with the key's
 /// icon theme and size, and `FreedesktopLoader::color` in the colour [`to_image_source`]
-/// uses, for `IconSet::Freedesktop`, else `native_theme::icons::load_icon(provider, set)`
+/// uses, for `IconSet::Freedesktop`; `SfSymbolsLoader` and `SegoeIconsLoader` with `color` in
+/// that colour for the system sets; else `native_theme::icons::load_icon(provider, set)`
 /// (`native-theme/src/icons.rs:529`), each trying `provider.icon_name(set)` then
 /// `icon_svg(set)` — then colours and keys the bytes as [`to_image_source`] does, so the
 /// provider's bytes are what the URI's hash covers. `None` where the provider has none. Build
@@ -426,11 +427,18 @@ pub fn custom_icon_to_image_source(
             if let Some(size) = key.size {
                 loader = loader.size(size);
             }
-            if let Some(c) = freedesktop_color(ctx, key) {
+            if let Some(c) = load_color(ctx, key) {
                 loader = loader.color([c.r, c.g, c.b]);
             }
             loader.load()?
         }
+        // A system set's monochrome glyphs arrive in the colour they are loaded in (§9.2).
+        IconSet::SfSymbols => native_theme::icons::SfSymbolsLoader::new(provider)
+            .color_opt(load_color(ctx, key).map(|c| [c.r, c.g, c.b]))
+            .load()?,
+        IconSet::SegoeIcons => native_theme::icons::SegoeIconsLoader::new(provider)
+            .color_opt(load_color(ctx, key).map(|c| [c.r, c.g, c.b]))
+            .load()?,
         set => native_theme::icons::load_icon(provider, set)?,
     };
     to_image_source(ctx, key, &icon)
