@@ -82,8 +82,8 @@ the CHANGELOG.
 
 ```toml
 [dependencies]
-native-theme = "0.5"
-native-theme-gpui = "0.5"
+native-theme = "0.6"
+native-theme-gpui = "0.6"
 gpui-kit = "0.6.6"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 

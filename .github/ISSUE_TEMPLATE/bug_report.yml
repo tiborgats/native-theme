@@ -18,6 +18,7 @@ body:
         - native-theme-build
         - native-theme-gpui
         - native-theme-iced
+        - native-theme-egui
     validations:
       required: true
 

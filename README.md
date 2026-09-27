@@ -15,18 +15,21 @@ populated `ResolvedTheme`.
 
 ![Iced theme switching](connectors/native-theme-iced/docs/assets/theme-switching.gif)
 
+![egui theme switching](connectors/native-theme-egui/docs/assets/theme-switching.gif)
+
 ## Pick your path
 
 | Your GUI framework | Add this crate |
 |---|---|
 | [gpui](https://www.gpui.rs) | [`native-theme-gpui`](connectors/native-theme-gpui/) |
 | [iced](https://iced.rs) | [`native-theme-iced`](connectors/native-theme-iced/) |
+| [egui](https://www.egui.rs) | [`native-theme-egui`](connectors/native-theme-egui/) |
 | Writing a new framework connector | [`native-theme`](native-theme/) directly |
 
 The connectors pull `native-theme` in transitively, so you only add one
 dependency for the common case.
 
-## How the 5 crates fit together
+## How the 6 crates fit together
 
 ![native-theme crate relations](docs/assets/crate-relations.svg)
 
@@ -45,6 +48,9 @@ dependency for the common case.
 - **iced** — full widget gallery with live theme switching
   - Run: `cargo run -p native-theme-iced --example showcase-iced`
   - Screenshots: [`native-theme-iced/README.md`](connectors/native-theme-iced/README.md#gallery)
+- **egui** — the gpui showcase's application in egui, with live theme switching
+  - Run: `cargo run -p native-theme-egui --example showcase-egui`
+  - Screenshots: [`native-theme-egui/README.md`](connectors/native-theme-egui/README.md#gallery)
 
 ## Icon sets
 

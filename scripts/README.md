@@ -9,12 +9,14 @@ crate it documents so relative paths in per-crate READMEs resolve everywhere
 - Spinner GIFs → `native-theme/docs/assets/`
 - gpui screenshots + theme-switching GIF → `connectors/native-theme-gpui/docs/assets/`
 - iced screenshots + theme-switching GIF → `connectors/native-theme-iced/docs/assets/`
+- egui screenshots + theme-switching GIF → `connectors/native-theme-egui/docs/assets/`
 - Workspace crate-relations diagram → `docs/assets/` (workspace-level)
 
 ## generate_assets_local.sh
 
-Master orchestration script. Runs all four asset generators in sequence:
-spinner GIFs, iced screenshots, gpui screenshots, and theme-switching GIFs.
+Master orchestration script. Runs all five asset generators in sequence:
+spinner GIFs, iced screenshots, gpui screenshots, egui screenshots, and
+theme-switching GIFs.
 
 ```sh
 ./scripts/generate_assets_local.sh
@@ -69,14 +71,28 @@ Requires: spectacle (KDE)
 ./scripts/generate_screenshots_gpui.sh
 ```
 
+## generate_screenshots_egui.sh
+
+Same as `generate_screenshots_iced.sh` but for the egui showcase, built with
+`--all-features`. The egui showcase takes no `--icon-theme`: a freedesktop
+icon theme is named through `--icon-set`, as the iced capture names
+kde-breeze's `breeze` and `breeze-dark`.
+
+Requires: spectacle (KDE)
+
+```sh
+./scripts/generate_screenshots_egui.sh
+```
+
 ## generate_gifs_theme_switching.sh
 
-Captures 4 theme presets from both iced and gpui showcases, then assembles
+Captures 4 theme presets from the iced, gpui and egui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
 
 Produces:
 - `connectors/native-theme-iced/docs/assets/theme-switching.gif`
 - `connectors/native-theme-gpui/docs/assets/theme-switching.gif`
+- `connectors/native-theme-egui/docs/assets/theme-switching.gif`
 
 Requires: spectacle (KDE), Python 3, Pillow
 
@@ -109,9 +125,9 @@ the assets depend on has uncommitted changes, because the captures must come
 from the commit CI builds.
 
 Its last step runs `update_compatibility.sh run` (below), which needs the network,
-runs both connectors' tests, clippy and documentation on the newest upstream
+runs every connector's tests, clippy and documentation on the newest upstream
 releases, runs `check_widget_coverage.py` (Python 3.11+), and rewrites
-`docs/COMPATIBILITY.toml` and the Verified line in both connector READMEs. A
+`docs/COMPATIBILITY.toml` and the Verified line in the connector READMEs. A
 connector that fails on the newest set fails the script.
 
 Requires: gh CLI (authenticated), spectacle, Python 3.11+, Pillow,
@@ -126,7 +142,8 @@ ImageMagick 7, network access
 Provenance stamp for the visual assets. `write` records the workspace
 version, the commit, and a SHA-256 over the git object ids of every path
 that feeds the showcases (crate manifests and sources, presets, icon
-bundles, `Cargo.lock`, the capture scripts, the screenshots workflow) into
+bundles, the egui connector's `mapping.toml`, `Cargo.lock`, the capture
+scripts, the screenshots workflow) into
 `docs/assets/PROVENANCE.toml`. `check` recomputes the hash at HEAD and exits
 non-zero with a message when the stamp is missing or the sources differ;
 `scripts/check_release.sh` and the crates.io workflow's CI gate call it, so a
@@ -143,15 +160,19 @@ uncommitted changes; `hash` prints the current value.
 The upstream versions each connector has been verified against, recorded in
 `docs/COMPATIBILITY.toml` and stated on each connector README's Verified line.
 
-- `run [gpui|iced]` (both when none is named) refuses to start while the
-  connector's `Cargo.toml`, `src`, `examples` or `tests` have uncommitted
+- `run [gpui|iced|egui]` (all when none is named) refuses to start while the
+  connector's `Cargo.toml`, `src`, `examples` or `tests` — for egui
+  `mapping.toml` in place of `tests` — have uncommitted
   changes, then runs `cargo update` on the connector's upstream family
   (gpui-base, gpui-component, gpui-kit, gpui-kit-assets, gpui-pre; or iced,
-  iced_aw, iced_core, iced_test, iced_widget) and that connector's gates on
+  iced_aw, iced_core, iced_test, iced_widget; or the egui release train —
+  ecolor, eframe, egui, egui-wgpu, egui-winit, egui_extras, egui_kittest,
+  emath, epaint, epaint_default_fonts, kittest) and that connector's gates on
   the result with `--locked`: tests (for iced also `--no-default-features`
-  and `--features iced_aw`), clippy with `-D warnings` (for iced with
+  and `--features iced_aw`; for egui also `--no-default-features` and
+  `--all-features`), clippy with `-D warnings` (for iced and egui with
   `--all-features`), documentation with `RUSTDOCFLAGS="-D warnings"` (for
-  iced also `--all-features`) and `check_widget_coverage.py`. Only when every gate passes does it write the
+  iced and egui also `--all-features`) and `check_widget_coverage.py`. Only when every gate passes does it write the
   versions the lockfile resolved, the commit and a sources hash into the
   stamp and rewrite the README's Verified line between its
   `<!-- compat:begin -->` / `<!-- compat:end -->` markers. `Cargo.lock` is
@@ -161,13 +182,15 @@ The upstream versions each connector has been verified against, recorded in
   HEAD matches the recorded one, and 1 with a message otherwise. It reads git
   and the stamp only, no network. `scripts/check_release.sh` runs it: a warning
   while the CHANGELOG entry says "Unreleased", a failure once it is dated.
-- `hash <gpui|iced>` prints a connector's sources hash at HEAD: a SHA-256
-  over the git object ids of its `Cargo.toml`, `src`, `examples` and `tests`.
+- `hash <gpui|iced|egui>` prints a connector's sources hash at HEAD: a SHA-256
+  over the git object ids of its `Cargo.toml`, `src`, `examples` and `tests`
+  — for egui `mapping.toml` in place of `tests`.
 
 There is no verb that writes the stamp without the run.
 
 ```sh
 ./scripts/update_compatibility.sh run iced
+./scripts/update_compatibility.sh run egui
 ./scripts/update_compatibility.sh check
 ```
 

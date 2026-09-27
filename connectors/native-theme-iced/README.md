@@ -68,8 +68,8 @@ Add both crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-native-theme = "0.5"
-native-theme-iced = "0.5"
+native-theme = "0.6"
+native-theme-iced = "0.6"
 ```
 
 Load a bundled preset:

@@ -12,8 +12,9 @@ themes, and 16 bundled TOML presets. Reads OS themes from KDE Plasma, GNOME
 ## How it fits
 
 Most apps don't depend on this crate directly — they use a framework connector like
-[`native-theme-gpui`](../connectors/native-theme-gpui/) or
-[`native-theme-iced`](../connectors/native-theme-iced/), which pull `native-theme` in
+[`native-theme-gpui`](../connectors/native-theme-gpui/),
+[`native-theme-iced`](../connectors/native-theme-iced/) or
+[`native-theme-egui`](../connectors/native-theme-egui/), which pull `native-theme` in
 transitively. Depend on `native-theme` directly only if you are writing a new connector.
 
 ## Quick start
@@ -149,14 +150,15 @@ if let Some(anim) = MaterialLoader::load_indicator() {
 }
 ```
 
-Connector crates provide toolkit playback helpers (see the `native-theme-gpui`
-and `native-theme-iced` READMEs).
+Connector crates provide toolkit playback helpers (see the `native-theme-gpui` and
+`native-theme-iced` READMEs, and `native-theme-egui`'s `icons::animated_frame_index` and
+`icons::spin_angle`).
 
 ## Feature flags
 
 ```toml
 [dependencies]
-native-theme = { version = "0.5", features = ["native"] }
+native-theme = { version = "0.6", features = ["native"] }
 ```
 
 `native` is a meta-feature enabling every OS reader for the current target
@@ -180,7 +182,7 @@ macOS-related deps.
 ## Links
 
 - [API reference on docs.rs](https://docs.rs/native-theme)
-- Connectors: [`native-theme-gpui`](../connectors/native-theme-gpui/), [`native-theme-iced`](../connectors/native-theme-iced/)
+- Connectors: [`native-theme-gpui`](../connectors/native-theme-gpui/), [`native-theme-iced`](../connectors/native-theme-iced/), [`native-theme-egui`](../connectors/native-theme-egui/)
 - [Showcase examples](../connectors/)
 - [CHANGELOG](../CHANGELOG.md)
 

@@ -201,7 +201,7 @@
 
       Decide per platform which further notification to observe, keeping one
       user action to one event.
-- [ ] **GNOME: dropping the watcher blocks until the next portal signal.**
+- [x] **GNOME: dropping the watcher blocks until the next portal signal.**
       The GNOME thread waits inside the blocking `SettingChanged` signal
       iterator and checks the shutdown channel only after a signal arrives
       (`native-theme/src/watch/gnome.rs:52-62`); the subscription is created
@@ -307,7 +307,7 @@
 
 ### Fonts: find a system face by family, weight and style
 
-- [ ] Add the feature `system-fonts` to `native-theme`: an optional `fontdb`
+- [x] Add the feature `system-fonts` to `native-theme`: an optional `fontdb`
       0.23 dependency (0.23.0 is already in `Cargo.lock`, through cosmic-text)
       with `default-features = false` and the features `fs`, `fontconfig` and
       `memmap`, fontdb's own default set (fontdb 0.23.0 `Cargo.toml`, lines
@@ -350,7 +350,7 @@
 
 ### `SystemTheme` — the icon theme of both variants
 
-- [ ] `SystemTheme::icon_theme` is the active variant's icon-theme name only
+- [x] `SystemTheme::icon_theme` is the active variant's icon-theme name only
       (`native-theme/src/lib.rs:470-483`), yet the variants can name different
       ones (`kde-breeze`: `breeze` and `breeze-dark`,
       `native-theme/src/presets/kde-breeze.toml:9`, `:317`), and a toolkit that
@@ -510,7 +510,7 @@
 
 ### native-theme-egui connector
 
-- [ ] Implement the connector by its plan,
+- [x] Implement the connector by its plan,
       `docs/todo_v0.6.0_egui-connector-plan.md` — tasks in execution order,
       each with its gate and commit point — per
       `docs/todo_v0.6.0_egui-connector-spec.md` (rationale:
@@ -522,7 +522,7 @@
       segmented control and link wrappers. Milestone undecided; it starts after
       the connector, whose API it consumes. When it is scheduled, re-verify the
       spec against the connector as built, then write its plan.
-- [ ] **The egui showcase: the gpui application, with per-instance Widget
+- [x] **The egui showcase: the gpui application, with per-instance Widget
       Info.** Part of v0.6.0, not deferred
       (`docs/todo_v0.6.0_egui-connector-spec.md` §10.4, §13.2; plan Tasks 31,
       34–36). Tick when those tasks pass their gates; the iced showcase's
@@ -537,7 +537,7 @@
       other `TextOptions` fields and the two preferences egui cannot express
       are settled in the connector spec (§3.4, §5.10, §14 items 41–42).
 
-- [ ] Add an MSRV CI job (spec §12.4; a task of
+- [x] Add an MSRV CI job (spec §12.4; a task of
       `docs/todo_v0.6.0_egui-connector-plan.md`). The workspace floor of `1.88.0`
       was measured on 2026-08-10, but nothing re-checks it: every CI job
       installs `@stable`, there is no `rust-toolchain.toml`, and
@@ -1853,7 +1853,10 @@ the gap — closing it is a change, and each wants its own decision.
       to promote, so this is the info half only: decide how an iced
       showcase can tell which instance is innermost under the pointer, and
       whether the citation gates in `src/showcase.rs` can be shared or need
-      an iced twin.
+      an iced twin. The egui showcase generates its info from its connector's
+      manifest (`connectors/native-theme-egui/mapping.toml`, its spec's
+      §10.4), which is the question this entry leaves to decide: whether an
+      iced info can be generated the same way from the iced contract's rows.
 - [ ] **The iced connector reads nothing of the model's toolbar.** The gpui
       connector gained `geometry::toolbar` in v0.5.9, which carries
       `toolbar.bar_height`, `item_gap`, the `toolbar.border` padding,

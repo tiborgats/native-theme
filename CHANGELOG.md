@@ -9,15 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **native-theme-egui**, the egui toolkit connector (egui 0.36.2). A `ThemeAtlas` compiles a theme into egui's two base styles, a style per widget role and appearance variant, and a frame per container surface; `install` puts them into an `egui::Context`, and `native_scope`, `native_set_style`, `role_modifier` and `surface_frame` apply the per-widget ones through egui's own seams. Icons follow the theme's icon set and, per colour scheme, its freedesktop icon theme; the platform's typeface is installed with feature `system-fonts` (default); a `ThemeWatcher` (feature `watch`) rebuilds on an OS theme change. `mapping.toml` states where every theme value lands, and the crate's docs render it. The showcase, `showcase-egui`, is the gpui showcase's application in egui, with per-instance Widget Info generated from the manifest.
+- **native-theme**: font matching by family, weight and style — `fonts::select_face` over `fonts::FaceTraits`, and behind the new `system-fonts` feature `fonts::system_face`, whose `SystemFace::family` is the family the font database records for the face; `fonts::is_macos_system_ui_family`.
+- **native-theme**: `SystemTheme::icon_theme_for(mode)`, the icon theme of either variant.
+- **native-theme**: `icons::colorize_monochrome_svg`, one colouriser for every connector.
 - **native-theme**: `SfSymbolsLoader::color` / `color_opt` and `SegoeIconsLoader::color` / `color_opt` draw the system sets' monochrome glyphs in a chosen colour, keeping their alpha, as `FreedesktopLoader::color` does for symbolic icons. Without a colour the output is unchanged (Segoe glyphs white, SF Symbols black); full-colour stock icons (`SIID_*`, `IDI_QUESTION`) ignore it.
+- **native-theme-iced**: the `system-fonts` feature (default) and `system_font_family`, the family iced's font database holds for the stated face — on macOS the system UI font's own name for "SF Pro".
 
 ### Changed
 
 - **native-theme**: in `IconSet::SegoeIcons`, `ActionSearch`, `ActionSettings`, `ActionDelete` and `ActionPrint` are the Segoe Fluent glyphs `Search` (U+E721), `Settings` (U+E713), `Delete` (U+E74D) and `Print` (U+E749), like the other action roles; they were the full-colour shell stock icons `SIID_FIND`, `SIID_SETTINGS`, `SIID_DELETE` and `SIID_PRINTER`.
+- **native-theme-gpui**: on macOS, a family that names the system UI font — "SF Pro", or the name the live reader reports — is drawn as gpui's `.SystemUIFont`.
 - **native-theme-iced**: `custom_icon_to_svg_handle` and `custom_icon_to_image_handle` load a provider's system-set icon through `FreedesktopLoader`, `SfSymbolsLoader` or `SegoeIconsLoader` in `color`; `custom_icon_to_image_handle` gains that `color: Option<Color>` parameter, so an SF Symbol or a Segoe glyph arrives in it instead of its fixed black or white.
+- **Development**: an MSRV job in CI (the workspace floor `1.88.0`, and the connectors' own floors); the egui connector in every gate that names connectors; the widget-coverage script covers egui and egui_extras; the screenshot pipeline captures the egui showcase.
 
 ### Fixed
 
+- **native-theme**: dropping a GNOME or Budgie theme subscription returns at once instead of waiting for the next portal signal.
 - **native-theme-gpui**: `custom_icon_to_image_source` draws a provider's SF Symbols and Segoe glyphs in `color`; they were black and white whatever `color` was. The provider's freedesktop icons load through `FreedesktopLoader::color` too.
 
 ## [0.5.9] - 2026-09-25

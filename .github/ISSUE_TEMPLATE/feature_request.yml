@@ -13,6 +13,7 @@ body:
         - native-theme-build
         - native-theme-gpui
         - native-theme-iced
+        - native-theme-egui
         - "New crate / cross-cutting"
     validations:
       required: true

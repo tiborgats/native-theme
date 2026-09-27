@@ -36,6 +36,8 @@ digraph crate_relations {
            fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
     iced  [label=<<FONT FACE="monospace"><B>native-theme-iced</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>iced connector</I></FONT>>,
            fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
+    egui  [label=<<FONT FACE="monospace"><B>native-theme-egui</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>egui connector</I></FONT>>,
+           fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
 
     // Runtime core — gray palette (matches native-theme-derive), 3-line
     // subtitle; extra margin gives 'Theme · ResolvedTheme' room so it
@@ -61,21 +63,25 @@ digraph crate_relations {
     //   * gpui, iced -> core: horizontal exit, angled entry into core's
     //     NW / SW corners. Routing to different corners keeps the two
     //     arrows from crossing in the gap between rank 2 and rank 3.
+    //   * egui -> core: the third arrow enters core's W side, between the two.
     //   * app -> build: plain. Build sits only 49pt below app but 379pt
     //     to the right (natural angle ~7°); a 45° :se tail tangent would
     //     overshoot below the build box before hooking back up. The
     //     default rendering is a gentle arc that matches the geometry.
-    //   * switch -> iced: plain — same y, a horizontal line is honest.
+    //   * switch -> egui, switch -> iced: plain — the switch sits between
+    //     the two, so a short straight line to each is honest.
     app:ne    -> switch;
     switch:ne -> gpui;
     switch    -> iced;
+    switch    -> egui;
     gpui      -> core:nw;
     iced      -> core:sw;
+    egui      -> core:w;
 
     // Optional path — dashed edge
     // build shares rank 2 with gpui/iced so it sits in the same column
     // (listed last so Graphviz stacks it below gpui and iced in LR layout)
-    { rank=same; gpui; iced; build; }
+    { rank=same; gpui; iced; egui; build; }
     app -> build [style=dashed];
 
     // derive below core, dashed arrow pointing from core DOWN to derive

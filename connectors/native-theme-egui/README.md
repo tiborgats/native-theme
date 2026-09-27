@@ -342,11 +342,26 @@ preset, variant, icon set and tab, or capture its frame to a PNG.
 
 ## Gallery
 
+![egui theme switching](docs/assets/theme-switching.gif)
+
 ### Linux
+
+![KDE Breeze Dark](docs/assets/linux-kde-breeze-dark.png)
+![KDE Breeze Light](docs/assets/linux-kde-breeze-light.png)
+![Material Dark](docs/assets/linux-material-dark.png)
+![Material Light](docs/assets/linux-material-light.png)
+![Catppuccin Mocha Dark](docs/assets/linux-catppuccin-mocha-dark.png)
+![Catppuccin Mocha Light](docs/assets/linux-catppuccin-mocha-light.png)
 
 ### macOS
 
+![macOS Sonoma Light](docs/assets/macos-macos-sonoma-light.png)
+![macOS Sonoma Dark](docs/assets/macos-macos-sonoma-dark.png)
+
 ### Windows
+
+![Windows 11 Light](docs/assets/windows-windows-11-light.png)
+![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
 
 ## Links
 

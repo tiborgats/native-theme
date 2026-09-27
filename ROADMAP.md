@@ -10,21 +10,14 @@ See also:
 
 ## v0.6.0 — egui connector
 
-There is no `native-theme-egui` crate yet. egui is the most structurally
-difficult connector target so far: it holds **one global `Style` per colour
-scheme**, whose widget appearance varies by interaction state and not by widget
-type, whereas `ResolvedTheme` carries a struct per widget. Many native-theme
-properties therefore compete for the same `Style` field, and a connector that
-only writes the global `Style` renders one winner per contested field and drops
-the rest.
-
-**Planned deliverable:** a `native-theme-egui` crate that pre-builds a `Style`
-per widget role and per appearance variant (resting, selected, disabled),
-applied through egui's own seams (`UiBuilder::style`, `Ui::set_style`,
-`StyleModifier`, `Frame`), so per-widget geometry survives the contested-field
-collisions. Coverage is enforced by an audited manifest that
-a headless differential test checks against `ResolvedTheme`, rather than
-asserted in prose. Targets egui 0.36.2.
+**Delivered:** `native-theme-egui`. egui holds one global `Style` per colour scheme, whose
+widget appearance varies by interaction state and not by widget type, whereas
+`ResolvedTheme` carries a struct per widget; the connector pre-builds a `Style` per widget
+role and per appearance variant (resting, selected, disabled) and applies them through
+egui's own seams (`UiBuilder::style`, `Ui::set_style`, `StyleModifier`, `Frame`), so
+per-widget geometry survives the contested-field collisions. Coverage is `mapping.toml`,
+one row per theme value, which the crate's tests hold to `ResolvedTheme` and to every
+published `Style`. Targets egui 0.36.2.
 
 Detailed design: [`docs/todo_v0.6.0_egui-connector-spec.md`](docs/todo_v0.6.0_egui-connector-spec.md),
 [`docs/todo_v0.6.0_egui-connector-rationale.md`](docs/todo_v0.6.0_egui-connector-rationale.md)

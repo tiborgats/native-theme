@@ -45,6 +45,7 @@ This policy covers the following crates published from this repository:
 - [`native-theme-derive`](https://crates.io/crates/native-theme-derive)
 - [`native-theme-gpui`](https://crates.io/crates/native-theme-gpui)
 - [`native-theme-iced`](https://crates.io/crates/native-theme-iced)
+- [`native-theme-egui`](https://crates.io/crates/native-theme-egui)
 
 Vulnerabilities in downstream dependencies (gpui, iced, serde, ashpd, etc.)
 should be reported to those projects directly.

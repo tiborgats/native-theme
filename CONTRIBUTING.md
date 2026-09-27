@@ -32,12 +32,14 @@ installed, and for windows-gnu the `x86_64-w64-mingw32-gcc` linker too
 under `RUSTFLAGS="-D warnings"`), `cargo fmt --all` (formats in place; CI uses
 `--check`), per-crate `cargo clippy --all-targets -- -D warnings`, the strict
 panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`
-and the rest of the type-aware set), per-crate `cargo test`, the iced
-connector's other configurations (tests with no default features and with
-`iced_aw`, clippy with `iced_aw`), `cargo build --examples` for the crates that
-have examples, the widget-coverage check (`scripts/check_widget_coverage.py`,
-Python 3.11+), per-crate `cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"`
-(and `native-theme-iced` with all features), `cargo package` on every
+and the rest of the type-aware set), per-crate `cargo test`, the iced and egui
+connectors' other configurations (tests with no default features and with
+`iced_aw`, for egui with all features; clippy with `iced_aw`, for egui with all
+features; for egui also that its graph holds one `skrifa`),
+`cargo build --examples` for the crates that have examples, the widget-coverage
+check (`scripts/check_widget_coverage.py`, Python 3.11+), per-crate
+`cargo doc --no-deps` with `RUSTDOCFLAGS="-D warnings"` (and `native-theme-iced`
+and `native-theme-egui` with all features), `cargo package` on every
 publishable crate, `cargo audit`, `cargo outdated`, the visual assets'
 PROVENANCE stamp and the connectors' compatibility claims
 (`scripts/update_compatibility.sh check`). The script prints
@@ -69,6 +71,7 @@ cargo clippy -p native-theme --all-targets
 cargo clippy -p native-theme-build --all-targets
 cargo clippy -p native-theme-gpui --all-targets
 cargo clippy -p native-theme-iced --all-targets
+cargo clippy -p native-theme-egui --all-targets
 
 # Tests
 cargo test --workspace
@@ -88,6 +91,7 @@ CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
 | `native-theme-derive` | `native-theme-derive/` | Proc-macro crate (internal; re-exported via `native-theme`) |
 | `native-theme-gpui` | `connectors/native-theme-gpui/` | gpui toolkit connector |
 | `native-theme-iced` | `connectors/native-theme-iced/` | iced toolkit connector |
+| `native-theme-egui` | `connectors/native-theme-egui/` | egui toolkit connector |
 
 ## Feature flags
 
