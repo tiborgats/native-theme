@@ -600,7 +600,7 @@ use native_theme_egui::{RoleVariant, Surface};
 use crate::{
     INFO_SETTLE,
     demo::Seam,
-    info::{Manifest, Verdict, value_at},
+    info::{Manifest, Verdict},
 };
 
 const MANIFEST: &str = include_str!("../../mapping.toml");
@@ -1484,53 +1484,84 @@ fn a_target_no_longer_drawn_never_wins() {
     );
 }
 
-/// §10.4's rule, written here from the parsed rows and not through `info.rs`.
+/// §10.4's rule, restated clause by clause from the spec's wording over the parsed rows, not
+/// through `info.rs`: a misreading of the spec in either spelling makes the two differ.
 fn expected_leaves(manifest: &Manifest, seam: &Seam) -> BTreeSet<String> {
-    let base = || {
-        manifest.rows.iter().filter(|r| {
-            r.sinks
+    let widget_of = |leaf: &str| leaf.split('.').next().unwrap_or_default().to_string();
+    // "every row with a sink that carries neither `scope` nor `surface` — the base-owner
+    // table — and every row under `defaults.`, `text_scale.` or `layout.` that carries no
+    // sink, `unmappable` or checked through `tested_by`"
+    let base: BTreeSet<String> = manifest
+        .rows
+        .iter()
+        .filter(|r| {
+            let owner = r
+                .sinks
                 .iter()
-                .any(|s| s.scope.is_none() && s.surface.is_none())
-                || (r.sinks.is_empty()
-                    && ["defaults.", "text_scale.", "layout."]
-                        .iter()
-                        .any(|p| r.leaf.starts_with(p)))
+                .any(|s| s.scope.is_none() && s.surface.is_none());
+            let lost_or_per_call = r.sinks.is_empty()
+                && ["defaults", "text_scale", "layout"].contains(&widget_of(&r.leaf).as_str())
+                && (r.verdict == Verdict::Unmappable || r.tested_by.is_some());
+            owner || lost_or_per_call
         })
-    };
+        .map(|r| r.leaf.clone())
+        .collect();
     match seam {
-        Seam::Base => base().map(|r| r.leaf.clone()).collect(),
+        Seam::Base => base,
+        // "every row whose leaf starts with `R.key()` and a dot, and every other row with a
+        // sink carrying `scope = R.key()`"; "A `Role` seam lists the base style's rows too".
         Seam::Role(role, _) => {
             let key = role.key();
-            manifest
-                .rows
-                .iter()
-                .filter(|r| {
-                    r.leaf.starts_with(&format!("{key}."))
-                        || r.sinks.iter().any(|s| s.scope.as_deref() == Some(key))
-                })
-                .chain(base())
-                .map(|r| r.leaf.clone())
-                .collect()
+            let mut leaves = base;
+            for row in &manifest.rows {
+                if widget_of(&row.leaf) == key
+                    || row.sinks.iter().any(|s| s.scope.as_deref() == Some(key))
+                {
+                    leaves.insert(row.leaf.clone());
+                }
+            }
+            leaves
         }
+        // "every row with a sink carrying `surface = S.key()`, and every row of each native
+        // widget those rows' leaves belong to".
         Seam::Surface(surface) => {
             let key = surface.key();
-            let direct: Vec<&crate::info::Row> = manifest
+            let on_surface: Vec<&crate::info::Row> = manifest
                 .rows
                 .iter()
                 .filter(|r| r.sinks.iter().any(|s| s.surface.as_deref() == Some(key)))
                 .collect();
-            let widgets: BTreeSet<&str> = direct
+            let widgets: BTreeSet<String> = on_surface.iter().map(|r| widget_of(&r.leaf)).collect();
+            on_surface
                 .iter()
-                .filter_map(|r| r.leaf.split('.').next())
-                .collect();
-            manifest
-                .rows
-                .iter()
-                .filter(|r| widgets.contains(r.leaf.split('.').next().unwrap_or("")))
                 .map(|r| r.leaf.clone())
+                .chain(
+                    manifest
+                        .rows
+                        .iter()
+                        .filter(|r| widgets.contains(&widget_of(&r.leaf)))
+                        .map(|r| r.leaf.clone()),
+                )
                 .collect()
         }
     }
+}
+
+/// The value line a row prints, as §10.4 states it: the leaf, then its value — a colour as its
+/// hex text, a number as itself, `None` as "not stated — egui's own value stands".
+fn value_line(leaf: &str, value: &serde_json::Value) -> String {
+    let text = match value {
+        serde_json::Value::Null => "not stated — egui's own value stands".to_string(),
+        serde_json::Value::String(s) => s.clone(),
+        other => other.to_string(),
+    };
+    format!("{leaf} = {text}")
+}
+
+/// The value at a dotted leaf, through a JSON pointer rather than the info module's walk.
+fn leaf_value(json: &serde_json::Value, leaf: &str) -> Option<serde_json::Value> {
+    json.pointer(&format!("/{}", leaf.replace('.', "/")))
+        .cloned()
 }
 
 #[test]
@@ -1567,11 +1598,14 @@ fn the_info_is_the_manifest() {
                 );
                 assert!(!rows.is_empty(), "{seam:?} lists no row");
                 for row in rows {
-                    let lines = crate::info::row_lines(row, &json, info.key).join("\n");
-                    if let Some(value) = value_at(&expected, &row.leaf) {
-                        assert!(
-                            lines.contains(&crate::info::value_text(&value)),
-                            "{} {seam:?} {}: prints {lines:?}, not {value}",
+                    let printed = crate::info::row_lines(row, &json, info.key);
+                    let lines = printed.join("\n");
+                    // The first line, whole: a substring would let `12` pass for `1`.
+                    if let Some(value) = leaf_value(&expected, &row.leaf) {
+                        assert_eq!(
+                            printed.first(),
+                            Some(&value_line(&row.leaf, &value)),
+                            "{} {seam:?} {}",
                             info.key,
                             row.leaf
                         );
@@ -1615,10 +1649,53 @@ fn the_info_is_the_manifest() {
     let (manifest, json) = manifest_and_json(&harness);
     let text = crate::info::info_text(&shown, &manifest, &json, other);
     let expected = resolved_json(&harness.state().atlas, harness.ctx.theme());
-    let value = value_at(&expected, "button.background_color").expect("a button background");
+    let line = leaf_value(&expected, "button.background_color")
+        .map(|value| value_line("button.background_color", &value));
     assert!(
-        text.contains(&crate::info::value_text(&value)),
-        "the info shows the previous preset's values"
+        line.as_ref()
+            .is_some_and(|line| text.lines().any(|l| l == line)),
+        "the info shows the previous preset's values, not {line:?}"
+    );
+
+    // What the spec names outright, kept by hand: `panel_left` lists every `sidebar` row
+    // (§10.4, "`sidebar` for `panel_left`"), a role lists the base style's rows (§3.4), and the
+    // base style lists every sinkless `defaults.` row.
+    let listed = |seam: &Seam| -> BTreeSet<String> {
+        manifest
+            .rows_for(seam)
+            .iter()
+            .map(|r| r.leaf.clone())
+            .collect()
+    };
+    let panel_left = listed(&Seam::Surface(Surface::Panel(
+        native_theme_egui::PanelSide::Left,
+    )));
+    let sidebar: Vec<&String> = manifest
+        .rows
+        .iter()
+        .map(|r| &r.leaf)
+        .filter(|l| l.starts_with("sidebar."))
+        .collect();
+    assert!(
+        !sidebar.is_empty() && sidebar.iter().all(|l| panel_left.contains(*l)),
+        "panel_left does not list every sidebar row"
+    );
+    let base = listed(&Seam::Base);
+    let button = listed(&Seam::Role(
+        native_theme_egui::Role::Button,
+        RoleVariant::Normal,
+    ));
+    assert!(
+        base.is_subset(&button),
+        "a role does not list the base style's rows"
+    );
+    assert!(
+        manifest
+            .rows
+            .iter()
+            .filter(|r| r.sinks.is_empty() && r.leaf.starts_with("defaults."))
+            .all(|r| base.contains(&r.leaf)),
+        "the base style does not list every sinkless defaults row"
     );
 }
 
