@@ -864,6 +864,17 @@ pub(crate) fn central_panel(
             page_tabs(app, ui);
             egui::Frame::NONE.inner_margin(page_margin).show(ui, |ui| {
                 if let Some(error) = app.theme_error.clone() {
+                    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:1342-1357`):
+                    // across the content, the chosen icon theme's error icon first, where it
+                    // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
+                    // (`showcase-gpui/support.rs:435`) — at `defaults.icon_sizes.small`.
+                    let (set, icon_theme) = app.chosen_icons();
+                    let size = app
+                        .atlas
+                        .resolved_for(ui.ctx().theme())
+                        .defaults
+                        .icon_sizes
+                        .small;
                     demo::framed(
                         &mut app.registry,
                         ui,
@@ -871,8 +882,21 @@ pub(crate) fn central_panel(
                         None,
                         "theme error",
                         |ui, reg| {
-                            demo::base(reg, ui, "theme error text", |ui| {
-                                ui.colored_label(ui.visuals().error_fg_color, error)
+                            ui.set_min_width(ui.available_width());
+                            ui.horizontal(|ui| {
+                                let icon = demo::role_image(
+                                    ui,
+                                    IconRole::DialogError,
+                                    set,
+                                    icon_theme.as_deref(),
+                                    size,
+                                );
+                                if let Some(icon) = icon {
+                                    demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
+                                }
+                                demo::base(reg, ui, "theme error text", |ui| {
+                                    ui.colored_label(ui.visuals().error_fg_color, error)
+                                });
                             });
                         },
                     );
@@ -913,15 +937,112 @@ pub(crate) fn inner_extent(stated: f32, frame: &egui::Frame, horizontal: bool) -
     }
 }
 
-/// The command palette (§10.4): a `Modal` in the dialog surface, its body in
-/// `Role::Dialog`, a focused field, then rows in `Role::List` for every page,
-/// preset and mode. Escape clears, then closes.
+/// A dialog's title row, as gpui-component's `Dialog` draws one (`GC/dialog/dialog.rs:182`) and
+/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:1013`, `:1047`): the
+/// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
+/// read from the theme — and flush right a frameless close button, the chosen icon theme's
+/// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's
+/// icon rule). Added through the dialog body's seam; returns whether the button was clicked.
+fn dialog_title(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    body: demo::Applied,
+    t: &native_theme::theme::ResolvedTheme,
+    (set, icon_theme): &(IconSet, Option<String>),
+    title: &'static str,
+) -> bool {
+    let colour = native_theme_egui::convert::to_color32(t.dialog.title_font.color);
+    let image = demo::role_image(
+        ui,
+        IconRole::WindowClose,
+        *set,
+        icon_theme.as_deref(),
+        t.defaults.icon_sizes.small,
+    );
+    let mut clicked = false;
+    ui.horizontal(|ui| {
+        body.add(reg, ui, "Label · dialog title", |ui| {
+            ui.label(egui::RichText::new(title).heading().color(colour))
+        });
+        reg.amend_last(|i| {
+            i.read.push((
+                "dialog.title_font.color",
+                t.dialog.title_font.color.to_string(),
+            ));
+        });
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let button = match image {
+                Some(image) => egui::Button::image(image),
+                None => egui::Button::new("Close"),
+            }
+            .frame_when_inactive(false);
+            let r = body.add(reg, ui, "Button · dialog close", |ui| ui.add(button));
+            r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Close"));
+            clicked = r.clicked();
+        });
+    });
+    clicked
+}
+
 /// What a palette row runs: an action, or a preset to install.
 enum Pick {
     Action(Action),
     Theme(ThemeChoice),
 }
 
+/// A palette row: its label, what the query matches, what it runs.
+type PaletteRow = (String, String, Pick);
+
+/// The command palette's groups, as the gpui showcase's (`showcase-gpui/chrome.rs:374-425`):
+/// the pages, the presets the Theme row offers by their display names, found by their keys too,
+/// and the colour modes, System named by the scheme it follows now.
+fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<PaletteRow>); 3] {
+    let pages = Page::ALL
+        .into_iter()
+        .map(|page| {
+            let label = page.label().to_string();
+            (label.clone(), label, Pick::Action(Action::ShowPage(page)))
+        })
+        .collect();
+    let presets = app
+        .theme_rows()
+        .into_iter()
+        .map(|(choice, name)| {
+            let key = match &choice {
+                ThemeChoice::Default => "default".to_string(),
+                ThemeChoice::Preset(key) => key.clone(),
+            };
+            (name.clone(), format!("{name} {key}"), Pick::Theme(choice))
+        })
+        .collect();
+    // The scheme `System` follows: what the integration reports, else the atlas's own reading
+    // of the OS (`ThemeAtlas::os_mode`, §10.3).
+    let system = ctx
+        .system_theme()
+        .map(|theme| theme == egui::Theme::Dark)
+        .or_else(|| app.atlas.os_mode().map(|mode| mode.is_dark()));
+    let modes = [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
+        .into_iter()
+        .map(|mode| {
+            let label = match (mode, system) {
+                (ModeChoice::System, Some(true)) => "System (Dark)".to_string(),
+                (ModeChoice::System, Some(false)) => "System (Light)".to_string(),
+                _ => Action::SetMode(mode).label().to_string(),
+            };
+            (label.clone(), label, Pick::Action(Action::SetMode(mode)))
+        })
+        .collect();
+    [
+        ("Pages", pages),
+        ("Presets", presets),
+        ("Colour mode", modes),
+    ]
+}
+
+/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:1002-1033`): a
+/// `Modal` in the dialog surface, its body in `Role::Dialog`, titled "Command Palette" with a
+/// close button, a focused field, then rows in `Role::List` grouped under small weak headers.
+/// Escape clears, then closes.
 pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let Some(palette) = app.palette.clone() else {
         return;
@@ -934,13 +1055,20 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
         t.dialog.min_height,
         t.dialog.max_height,
     ];
+    let groups = palette_groups(app, ui.ctx());
+    let chosen_icons = app.chosen_icons();
     let mut query = palette.query.clone();
     let mut chosen: Option<Action> = None;
     let mut chosen_theme: Option<ThemeChoice> = None;
     let mut should_close = false;
+    let mut close_clicked = false;
     let App {
-        registry, settings, ..
+        registry,
+        settings,
+        atlas,
+        ..
     } = app;
+    let t = atlas.resolved_for(ui.ctx().theme());
     demo::surfaced(
         registry,
         ui,
@@ -976,41 +1104,19 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                     if let Some(h) = max_h {
                         ui.set_max_height(h);
                     }
+                    close_clicked =
+                        dialog_title(registry, ui, dialog, t, &chosen_icons, "Command Palette");
                     let field = dialog.add(registry, ui, "palette query", |ui| {
-                        ui.add(egui::TextEdit::singleline(&mut query).hint_text("Type to filter"))
+                        ui.add(
+                            egui::TextEdit::singleline(&mut query)
+                                .hint_text("A page, a preset or a colour mode…")
+                                .desired_width(ui.available_width()),
+                        )
                     });
                     if !field.has_focus() && palette.query.is_empty() {
                         field.request_focus();
                     }
                     let needle = query.to_lowercase();
-                    let pages = Page::ALL.into_iter().map(|page| {
-                        (
-                            format!("Page: {}", page.label()),
-                            Pick::Action(Action::ShowPage(page)),
-                        )
-                    });
-                    let presets = std::iter::once("default".to_string())
-                        .chain(
-                            native_theme::theme::Theme::list_presets_for_platform()
-                                .into_iter()
-                                .map(|i| i.key.to_string()),
-                        )
-                        .map(|key| {
-                            let choice = if key == "default" {
-                                ThemeChoice::Default
-                            } else {
-                                ThemeChoice::Preset(key.clone())
-                            };
-                            (format!("Preset: {key}"), Pick::Theme(choice))
-                        });
-                    let modes = [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
-                        .into_iter()
-                        .map(|mode| {
-                            (
-                                format!("Mode: {}", Action::SetMode(mode).label()),
-                                Pick::Action(Action::SetMode(mode)),
-                            )
-                        });
                     demo::scoped_container(
                         registry,
                         ui,
@@ -1018,23 +1124,54 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                         RoleVariant::Normal,
                         "palette rows",
                         |ui, row, registry| {
-                            ui.vertical(|ui| {
-                                for (label, pick) in pages.chain(presets).chain(modes) {
-                                    if !label.to_lowercase().contains(&needle) {
-                                        continue;
-                                    }
-                                    let r = row.add(registry, ui, "palette row", |ui| {
-                                        ui.selectable_label(false, &label)
-                                    });
-                                    if r.clicked() {
-                                        match pick {
-                                            Pick::Action(action) => chosen = Some(action),
-                                            Pick::Theme(choice) => chosen_theme = Some(choice),
-                                        }
-                                    }
-                                }
-                            })
-                            .response
+                            // The rows scroll within the dialog's height and span its width, as
+                            // gpui's `Command` list's do.
+                            egui::ScrollArea::vertical()
+                                .auto_shrink([false, true])
+                                .show(ui, |ui| {
+                                    ui.with_layout(
+                                        egui::Layout::top_down_justified(egui::Align::Min),
+                                        |ui| {
+                                            for (header, rows) in groups {
+                                                let rows: Vec<_> = rows
+                                                    .into_iter()
+                                                    .filter(|(_, matched, _)| {
+                                                        matched.to_lowercase().contains(&needle)
+                                                    })
+                                                    .collect();
+                                                if rows.is_empty() {
+                                                    continue;
+                                                }
+                                                // A command group's header, small and muted.
+                                                row.add(registry, ui, "palette group", |ui| {
+                                                    ui.label(
+                                                        egui::RichText::new(header).small().weak(),
+                                                    )
+                                                });
+                                                for (label, _, pick) in rows {
+                                                    let r = row.add(
+                                                        registry,
+                                                        ui,
+                                                        "palette row",
+                                                        |ui| ui.selectable_label(false, &label),
+                                                    );
+                                                    if r.clicked() {
+                                                        match pick {
+                                                            Pick::Action(action) => {
+                                                                chosen = Some(action)
+                                                            }
+                                                            Pick::Theme(choice) => {
+                                                                chosen_theme = Some(choice);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    )
+                                    .response
+                                })
+                                .inner
                         },
                     );
                 });
@@ -1052,7 +1189,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
             Some(out.backdrop_response)
         },
     );
-    let close = chosen.is_some() || chosen_theme.is_some() || should_close;
+    let close = chosen.is_some() || chosen_theme.is_some() || should_close || close_clicked;
     app.palette = if close {
         None
     } else {
@@ -1076,6 +1213,32 @@ const TEXT_SCALE_MIN: f32 = 1.0;
 const TEXT_SCALE_MAX: f32 = 2.25;
 const TEXT_SCALE_STEP: f32 = 0.25;
 
+/// A Preferences row, as a gpui `SettingItem` lays one out: `control` flush right, the title and
+/// its weak description on the left, wrapping in the room left of it. Returns the control's
+/// response.
+fn preference_row(
+    registry: &mut Registry,
+    ui: &mut egui::Ui,
+    body: demo::Applied,
+    (title, description): (&str, &str),
+    control: impl FnOnce(&mut egui::Ui, &mut Registry) -> egui::Response,
+) -> egui::Response {
+    ui.horizontal(|ui| {
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let response = control(ui, registry);
+            ui.with_layout(egui::Layout::top_down(egui::Align::Min), |ui| {
+                body.add(registry, ui, "Label · preference", |ui| ui.label(title));
+                body.add(registry, ui, "Label · preference description", |ui| {
+                    ui.label(egui::RichText::new(description).small().weak())
+                });
+            });
+            response
+        })
+        .inner
+    })
+    .inner
+}
+
 /// Preferences: a `Window` in the window surfaces, its body `Role::Window`, its
 /// title in the title-bar font and colour (§4.7, §14 item 2b); a change
 /// rebuilds with `Builder::accessibility` through `App::install` (§4.3).
@@ -1088,6 +1251,8 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
     let title = egui::RichText::new("Preferences")
         .font(window_title_bar_font(t, app.atlas.accessibility()))
         .color(window_title_bar_text_color(t, true));
+    // `dialog.max_width`, a required size (`f32` on the resolved theme).
+    let dialog_width = t.dialog.max_width;
     let mut prefs = app
         .settings
         .prefs
@@ -1106,9 +1271,12 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         None,
         "preferences window",
         |_, chrome, registry| {
+            // As wide as the theme lets a dialog be: the gpui showcase's sheet is its own 600px
+            // (`PREFERENCES_WIDTH`), which the model states nothing of.
             let mut window = egui::Window::new(title)
                 .id(egui::Id::new("preferences"))
                 .open(&mut open)
+                .default_width(dialog_width)
                 .frame(chrome.frame);
             if let Some(title_frame) = chrome.title_frame {
                 window = window.title_frame(title_frame);
@@ -1122,55 +1290,109 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                         RoleVariant::Normal,
                         "preferences",
                     );
-                    ui.horizontal(|ui| {
-                        body.add(registry, ui, "text scaling label", |ui| {
-                            ui.label("Text scaling")
-                        });
-                        let scale = demo::scoped(
-                            registry,
-                            ui,
-                            Role::Input,
-                            RoleVariant::Normal,
-                            "text scaling factor",
-                            |ui| {
-                                ui.add(
-                                    egui::DragValue::new(&mut prefs.text_scaling_factor)
-                                        .range(TEXT_SCALE_MIN..=TEXT_SCALE_MAX)
-                                        // The OS's own factor is shown as it is until the user edits it.
-                                        .clamp_existing_to_range(false)
-                                        .speed(TEXT_SCALE_STEP),
-                                )
-                            },
-                        );
-                        if scale.changed() {
-                            // The field's steps: a drag moves the value continuously (`speed` is per point).
-                            let steps = (prefs.text_scaling_factor / TEXT_SCALE_STEP).round();
-                            prefs.text_scaling_factor =
-                                (steps * TEXT_SCALE_STEP).clamp(TEXT_SCALE_MIN, TEXT_SCALE_MAX);
-                        }
-                        scale_dragged = scale.dragged();
-                        scale_settled = scale.drag_stopped() || scale.lost_focus();
+                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:1249-1331`): its
+                    // title and description, then a row per preference — its title and a weak
+                    // description on the left, its control on the right.
+                    body.add(registry, ui, "heading", |ui| {
+                        let heading = demo::heading_text(ui, "Accessibility");
+                        ui.label(heading)
                     });
-                    // A check box takes no selected flag of its own: a checked one is drawn in
-                    // `RoleVariant::Selected` (§4.4), as on the Selection page.
-                    for (kind, label, flag) in [
-                        ("reduce motion", "Reduce motion", &mut prefs.reduce_motion),
-                        ("high contrast", "High contrast", &mut prefs.high_contrast),
+                    body.add(registry, ui, "Label · description", |ui| {
+                        ui.label(
+                            egui::RichText::new(
+                                "Installed with native_theme_egui's Builder::accessibility",
+                            )
+                            .small()
+                            .weak(),
+                        )
+                    });
+                    let scale = preference_row(
+                        registry,
+                        ui,
+                        body,
                         (
-                            "reduce transparency",
-                            "Reduce transparency",
-                            &mut prefs.reduce_transparency,
+                            "Text scale",
+                            "text_scaling_factor: every text size the atlas writes is multiplied by it",
                         ),
-                    ] {
-                        let variant = if *flag {
-                            RoleVariant::Selected
-                        } else {
-                            RoleVariant::Normal
-                        };
-                        demo::scoped(registry, ui, Role::Checkbox, variant, kind, |ui| {
-                            ui.checkbox(flag, label)
-                        });
+                        |ui, registry| {
+                            demo::scoped(
+                                registry,
+                                ui,
+                                Role::Input,
+                                RoleVariant::Normal,
+                                "text scaling factor",
+                                |ui| {
+                                    ui.add(
+                                        egui::DragValue::new(&mut prefs.text_scaling_factor)
+                                            .range(TEXT_SCALE_MIN..=TEXT_SCALE_MAX)
+                                            // The OS's own factor is shown as it is until the user edits it.
+                                            .clamp_existing_to_range(false)
+                                            .speed(TEXT_SCALE_STEP),
+                                    )
+                                },
+                            )
+                        },
+                    );
+                    if scale.changed() {
+                        // The field's steps: a drag moves the value continuously (`speed` is per point).
+                        let steps = (prefs.text_scaling_factor / TEXT_SCALE_STEP).round();
+                        prefs.text_scaling_factor =
+                            (steps * TEXT_SCALE_STEP).clamp(TEXT_SCALE_MIN, TEXT_SCALE_MAX);
                     }
+                    scale_dragged = scale.dragged();
+                    scale_settled = scale.drag_stopped() || scale.lost_focus();
+                    // Switches, as gpui's Settings rows have (§5.3's spelling: a
+                    // `Button::new(..).selected(on)` in `Role::Switch`, whose own flag picks the
+                    // checked look, §6.2).
+                    for (kind, title, description, flag) in [
+                                (
+                                    "switch · reduce motion",
+                                    "Reduce motion",
+                                    "reduce_motion: every style's animation time is zero and its scroll animation is off",
+                                    &mut prefs.reduce_motion,
+                                ),
+                                (
+                                    "switch · high contrast",
+                                    "High contrast",
+                                    "high_contrast: stored with the atlas, which builds no differently for it",
+                                    &mut prefs.high_contrast,
+                                ),
+                                (
+                                    "switch · reduce transparency",
+                                    "Reduce transparency",
+                                    "reduce_transparency: stored with the atlas, which builds no differently for it",
+                                    &mut prefs.reduce_transparency,
+                                ),
+                            ] {
+                                let on = *flag;
+                                let r = preference_row(registry, ui, body, (title, description), |ui, registry| {
+                                    demo::scoped(
+                                        registry,
+                                        ui,
+                                        Role::Switch,
+                                        RoleVariant::Normal,
+                                        kind,
+                                        |ui| {
+                                            let r = ui.add(
+                                                egui::Button::new(if on { "On" } else { "Off" })
+                                                    .selected(on),
+                                            );
+                                            r.widget_info(|| {
+                                                egui::WidgetInfo::selected(
+                                                    egui::WidgetType::Button,
+                                                    true,
+                                                    on,
+                                                    title,
+                                                )
+                                            });
+                                            r
+                                        },
+                                    )
+                                });
+                                if r.clicked() {
+                                    *flag = !on;
+                                }
+                            }
                 })
                 .map(|out| out.response)
         },
@@ -1192,6 +1414,15 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
+/// The connector README's Compatibility table at this version's tag, as the gpui showcase links
+/// its own (`showcase-gpui/chrome.rs:328-333`, `COMPATIBILITY_URL`).
+const COMPATIBILITY_URL: &str = concat!(
+    env!("CARGO_PKG_REPOSITORY"),
+    "/blob/v",
+    env!("CARGO_PKG_VERSION"),
+    "/connectors/native-theme-egui/README.md#compatibility"
+);
+
 /// About: a `Modal` in the dialog surface with the crate's name and version, a
 /// `Hyperlink` to the README's Compatibility section, and its buttons in
 /// `dialog_button_order` (§4.7).
@@ -1207,6 +1438,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         DialogButtonOrder::PrimaryLeft => ["Close", "Copy version"],
     };
     let version = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
+    let chosen_icons = app.chosen_icons();
     let mut close = false;
     demo::surfaced(
         &mut app.registry,
@@ -1216,13 +1448,27 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         None,
         "about",
         |_, chrome, registry| {
+            let max_w = inner_extent(t.dialog.max_width, &chrome.frame, true);
             let response = egui::Modal::new(egui::Id::new("about")).frame(chrome.frame).show(&ctx, |ui| {
         let body = demo::styled(registry, ui, Role::Dialog, RoleVariant::Normal, "about body");
+        if let Some(w) = max_w {
+            ui.set_max_width(w);
+        }
+        // The gpui showcase's About (`showcase-gpui/demo.rs:1038-1092`): its title, the name
+        // and version, then the description in `dialog.body_font` — the dialog role's `Body`
+        // slot and text colour (§5) — ending in the link to the Compatibility table at this
+        // version's tag.
+        close |= dialog_title(registry, ui, body, t, &chosen_icons, "About");
         body.add(registry, ui, "about version", |ui| ui.label(version));
+        // The link on a line of its own: a widget in a role scope of its own sits in a child
+        // `Ui` a wrapping row cannot carry on to its next line (`demo::Applied`).
+        body.add(registry, ui, "Label · about description", |ui| {
+            ui.label("The egui and egui_extras versions it requires, and those it was verified against, are in")
+        });
         demo::scoped(registry, ui, Role::Link, RoleVariant::Normal, "compatibility link", |ui| {
             ui.hyperlink_to(
-                "Compatibility",
-                "https://github.com/tiborgats/native-theme/blob/main/connectors/native-theme-egui/README.md#compatibility",
+                concat!("the README's Compatibility table at v", env!("CARGO_PKG_VERSION")),
+                COMPATIBILITY_URL,
             )
         });
         ui.horizontal(|ui| {

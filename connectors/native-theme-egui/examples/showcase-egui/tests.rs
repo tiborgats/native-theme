@@ -657,6 +657,39 @@ fn the_menus_run_their_actions() {
 /// §13.2: Ctrl+K opens the palette, typing filters, a row acts, Escape clears then closes.
 #[test]
 fn the_command_palette_runs_what_it_lists() {
+    // The rows the palette shows, by their labels: the page tabs carry the page names too, so a
+    // row is the node the palette recorded as its row (`Id::accesskit_id`, `egui/src/id.rs:103`).
+    fn rows(harness: &Harness<'_, App>) -> Vec<(egui::accesskit::NodeId, String)> {
+        let ids: Vec<egui::accesskit::NodeId> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "palette row")
+            .map(|r| r.id.accesskit_id())
+            .collect();
+        ids.into_iter()
+            .filter_map(|id| {
+                harness
+                    .query_all(By::new().predicate(move |n| n.locate().0 == id))
+                    .next()
+                    .and_then(|n| n.accesskit_node().label())
+                    .map(|label| (id, label))
+            })
+            .collect()
+    }
+    fn click_row(harness: &mut Harness<'_, App>, label: &str) {
+        let id = rows(harness)
+            .into_iter()
+            .find(|(_, l)| l == label)
+            .map(|(id, _)| id)
+            .unwrap_or_else(|| panic!("no palette row {label}"));
+        harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == id))
+            .next()
+            .expect("the row's node")
+            .click();
+    }
     let mut harness = open_default();
     harness.run();
     harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
@@ -666,18 +699,15 @@ fn the_command_palette_runs_what_it_lists() {
         .query_all_by_role(Role::TextInput)
         .find(|n| n.is_focused())
         .expect("the palette's field has focus");
-    field.type_text("Page: Ico");
+    field.type_text("Ico");
     harness.run();
-    let rows: Vec<String> = harness
-        .query_all_by_label_contains("Page: ")
-        .filter_map(|n| n.accesskit_node().label())
-        .collect();
+    let labels: Vec<String> = rows(&harness).into_iter().map(|(_, l)| l).collect();
     assert_eq!(
-        rows,
-        vec!["Page: Icons".to_string()],
+        labels,
+        vec!["Icons".to_string()],
         "typing did not filter the rows"
     );
-    harness.get_by_label("Page: Icons").click();
+    click_row(&mut harness, "Icons");
     harness.run_steps(2);
     assert_eq!(harness.state().settings.page, Page::Icons);
     assert!(
@@ -685,23 +715,23 @@ fn the_command_palette_runs_what_it_lists() {
         "a row that acted did not close the palette"
     );
 
-    // A preset row installs the preset it names; a mode row sets the mode it names.
-    let other = Theme::list_presets_for_platform()
+    // A preset row, found by its key, is named by its display name and installs the preset; a
+    // mode row sets the mode it names (the gpui showcase's palette, parity item 19).
+    let (other, other_name) = Theme::list_presets_for_platform()
         .into_iter()
-        .map(|info| info.key)
-        .find(|key| *key != TEST_PRESET)
+        .map(|info| (info.key, info.display_name))
+        .find(|(key, _)| *key != TEST_PRESET)
         .expect("a second preset is offered on every platform");
-    let preset_row = format!("Preset: {other}");
-    for row in [preset_row.as_str(), "Mode: Dark"] {
+    for (typed, row) in [(other, other_name), ("Dark", "Dark")] {
         harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
         harness.run_steps(2);
         harness
             .query_all_by_role(Role::TextInput)
             .find(|n| n.is_focused())
             .expect("focus")
-            .type_text(row);
+            .type_text(typed);
         harness.run_steps(2);
-        harness.get_by_label(row).click();
+        click_row(&mut harness, row);
         harness.run_steps(2);
         assert!(
             harness.state().palette.is_none(),
@@ -1447,9 +1477,59 @@ fn the_rows_fit_the_content() {
     }
 }
 
-/// Preferences' check boxes take the checked look from their state, as the Selection page's do.
+/// Parity items 19 and 21: the command palette and About are titled, as gpui-component's
+/// `Dialog` is, and the close button of the title row closes them.
 #[test]
-fn a_checked_preference_is_drawn_selected() {
+fn the_palette_and_about_are_titled_and_close() {
+    let mut harness = open_default();
+    harness.run();
+    let ctx = harness.ctx.clone();
+    for (action, title) in [
+        (Action::OpenCommandPalette, "Command Palette"),
+        (Action::OpenAbout, "About"),
+    ] {
+        harness.state_mut().run_action(action, &ctx);
+        harness.run_steps(2);
+        let titles: Vec<egui::accesskit::NodeId> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "Label · dialog title")
+            .map(|r| r.id.accesskit_id())
+            .collect();
+        let shown: Vec<String> = harness
+            .query_all(By::new().predicate(move |n| titles.contains(&n.locate().0)))
+            .filter_map(|n| n.accesskit_node().value())
+            .collect();
+        assert_eq!(shown, vec![title.to_string()]);
+        let closes: Vec<egui::accesskit::NodeId> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "Button · dialog close")
+            .map(|r| r.id.accesskit_id())
+            .collect();
+        harness
+            .query_all(By::new().predicate(move |n| closes.contains(&n.locate().0)))
+            .next()
+            .expect("the title row's close button")
+            .click();
+        harness.run_steps(2);
+        let app = harness.state();
+        assert!(
+            app.palette.is_none() && !app.about_open,
+            "{title}: the close button left it open"
+        );
+    }
+}
+
+/// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
+/// each in `Role::Switch`, its checked look the button's own selected flag (§6.2), so a set
+/// flag is a selected button and a click flips it; each sits right of its title.
+#[test]
+fn a_set_preference_is_a_selected_switch() {
     let mut harness = open_default();
     harness.run();
     let ctx = harness.ctx.clone();
@@ -1462,10 +1542,10 @@ fn a_checked_preference_is_drawn_selected() {
         .state_mut()
         .run_action(Action::OpenPreferences, &ctx);
     harness.run();
-    for (kind, variant) in [
-        ("reduce motion", RoleVariant::Selected),
-        ("high contrast", RoleVariant::Normal),
-        ("reduce transparency", RoleVariant::Normal),
+    for (kind, title, on) in [
+        ("switch · reduce motion", "Reduce motion", true),
+        ("switch · high contrast", "High contrast", false),
+        ("switch · reduce transparency", "Reduce transparency", false),
     ] {
         let seams = harness
             .state()
@@ -1476,10 +1556,33 @@ fn a_checked_preference_is_drawn_selected() {
             .map(|r| r.info.seams.clone());
         assert_eq!(
             seams,
-            Some(vec![Seam::Role(native_theme_egui::Role::Checkbox, variant)]),
+            Some(vec![Seam::Role(
+                native_theme_egui::Role::Switch,
+                RoleVariant::Normal
+            )]),
             "{kind}"
         );
+        let switch = harness.get_by_role_and_label(Role::Button, title);
+        let toggled = if on {
+            egui::accesskit::Toggled::True
+        } else {
+            egui::accesskit::Toggled::False
+        };
+        assert_eq!(switch.accesskit_node().toggled(), Some(toggled), "{title}");
     }
+    harness
+        .get_by_role_and_label(Role::Button, "High contrast")
+        .click();
+    harness.run();
+    assert!(
+        harness
+            .state()
+            .settings
+            .prefs
+            .as_ref()
+            .is_some_and(|p| p.high_contrast),
+        "the switch did not set the flag"
+    );
 }
 
 /// The Icons page's `ui.image` is drawn at the toolbar icon size, not at the page's width,
