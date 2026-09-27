@@ -882,6 +882,14 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
+/// The text-scaling field's range and step: the gpui showcase's Preferences number field
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1199-1206`), whose range is
+/// Windows' `UISettings.TextScaleFactor` (platform-facts §1.2.7) and whose step divides it
+/// evenly. The model states none; they are not style values.
+const TEXT_SCALE_MIN: f32 = 1.0;
+const TEXT_SCALE_MAX: f32 = 2.25;
+const TEXT_SCALE_STEP: f32 = 0.25;
+
 /// Preferences: a `Window` in the window surfaces, its body `Role::Window`, its
 /// title in the title-bar font and colour (§4.7, §14 item 2b); a change
 /// rebuilds with `Builder::accessibility` through `App::install` (§4.3).
@@ -900,6 +908,9 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         .clone()
         .unwrap_or_else(|| app.atlas.accessibility().clone());
     let before = prefs.clone();
+    // Whether the text-scaling field is still being dragged, or was just let go of.
+    let mut scale_dragged = false;
+    let mut scale_settled = false;
     let mut open = app.preferences_open;
     let window = egui::Window::new(title)
         .id(egui::Id::new("preferences"))
@@ -917,14 +928,30 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         );
         ui.horizontal(|ui| {
             ui.label("Text scaling");
-            demo::scoped(
+            let scale = demo::scoped(
                 registry,
                 ui,
                 Role::Input,
                 RoleVariant::Normal,
                 "text scaling factor",
-                |ui| ui.add(egui::DragValue::new(&mut prefs.text_scaling_factor)),
+                |ui| {
+                    ui.add(
+                        egui::DragValue::new(&mut prefs.text_scaling_factor)
+                            .range(TEXT_SCALE_MIN..=TEXT_SCALE_MAX)
+                            // The OS's own factor is shown as it is until the user edits it.
+                            .clamp_existing_to_range(false)
+                            .speed(TEXT_SCALE_STEP),
+                    )
+                },
             );
+            if scale.changed() {
+                // The field's steps: a drag moves the value continuously (`speed` is per point).
+                let steps = (prefs.text_scaling_factor / TEXT_SCALE_STEP).round();
+                prefs.text_scaling_factor =
+                    (steps * TEXT_SCALE_STEP).clamp(TEXT_SCALE_MIN, TEXT_SCALE_MAX);
+            }
+            scale_dragged = scale.dragged();
+            scale_settled = scale.drag_stopped() || scale.lost_focus();
         });
         demo::scoped(
             registry,
@@ -965,8 +992,18 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         );
     }
     app.preferences_open = open;
-    if prefs != before {
+    let changed = prefs != before;
+    if changed {
         app.settings.prefs = Some(prefs);
+    }
+    // A rebuild per pass of a drag would re-read the OS for `default` and rebuild the font
+    // atlas on every frame: the drag installs once, when it ends.
+    let differs = app
+        .settings
+        .prefs
+        .as_ref()
+        .is_some_and(|p| p != app.atlas.accessibility());
+    if differs && !scale_dragged && (changed || scale_settled) {
         app.install(&ctx);
     }
 }

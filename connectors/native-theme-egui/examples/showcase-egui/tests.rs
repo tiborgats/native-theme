@@ -835,6 +835,59 @@ fn a_base_widget_is_drawn_in_the_base_style() {
     }
 }
 
+/// Preferences' text-scaling field is the gpui showcase's: 1.0 to 2.25 in steps of 0.25; a drag
+/// installs once, when it ends, not on every pass it moves the value.
+#[test]
+fn the_text_scaling_field_steps_in_its_range_and_installs_on_release() {
+    let mut harness = open_default();
+    harness.run();
+    let ctx = harness.ctx.clone();
+    // A known start, not the desktop's own factor.
+    harness.state_mut().settings.prefs = Some(AccessibilityPreferences::default());
+    harness.state_mut().install(&ctx);
+    harness
+        .state_mut()
+        .run_action(Action::OpenPreferences, &ctx);
+    harness.run();
+    let installed = |h: &Harness<'_, App>| h.state().atlas.accessibility().text_scaling_factor;
+    let chosen = |h: &Harness<'_, App>| {
+        h.state()
+            .settings
+            .prefs
+            .as_ref()
+            .map(|p| p.text_scaling_factor)
+    };
+    let before = installed(&harness);
+    assert_eq!(before, 1.0);
+    let at = centre_of(&harness, "text scaling factor");
+    harness.hover_at(at);
+    harness.step();
+    harness.drag_at(at);
+    // Held past egui's click duration, a press is a drag before the pointer moves
+    // (`InputState::max_click_duration`, `egui/src/input_state/mod.rs:73`, `:114`).
+    harness.run_steps(4);
+    let mut seen = Vec::new();
+    for dx in [1.0, 2.0, 3.0, 400.0] {
+        harness.hover_at(at + egui::vec2(dx, 0.0));
+        harness.step();
+        let factor = chosen(&harness).unwrap_or(before);
+        assert!(
+            (1.0..=2.25).contains(&factor) && (factor * 4.0).fract() == 0.0,
+            "{factor} after {dx} points: not a step of 0.25 in 1.0..=2.25"
+        );
+        assert_eq!(installed(&harness), before, "installed during the drag");
+        seen.push(factor);
+    }
+    assert!(
+        seen.iter().any(|f| *f > before && *f < 2.25),
+        "no step between the ends: {seen:?}"
+    );
+    assert_eq!(chosen(&harness), Some(2.25), "the range's end: {seen:?}");
+    harness.drop_at(at + egui::vec2(400.0, 0.0));
+    harness.run();
+    assert_eq!(installed(&harness), 2.25, "the release installed nothing");
+}
+
 /// §10.4's palette row: only Escape is two-step; a click on the backdrop closes the palette
 /// whatever its query holds (`ModalResponse::should_close`, `egui/src/containers/modal.rs:151`).
 #[test]
