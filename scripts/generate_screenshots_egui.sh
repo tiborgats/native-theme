@@ -23,11 +23,12 @@ OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
 DELAY=3
 
 # Linux-native presets with matching icon sets (3 themes × dark+light).
-# Format: theme:variant:icon-set. The freedesktop icon theme follows the
-# preset (kde-breeze names breeze / breeze-dark itself), so no fourth field.
+# Format: theme:variant:icon-set. kde-breeze names its freedesktop theme per
+# variant, breeze / breeze-dark (kde-breeze.toml:9, :317); `--icon-set <theme>`
+# picks that installed theme, while `freedesktop` would mean the desktop's own.
 THEMES=(
-    "kde-breeze:dark:freedesktop"
-    "kde-breeze:light:freedesktop"
+    "kde-breeze:dark:breeze-dark"
+    "kde-breeze:light:breeze"
     "material:dark:material"
     "material:light:material"
     "catppuccin-mocha:dark:lucide"

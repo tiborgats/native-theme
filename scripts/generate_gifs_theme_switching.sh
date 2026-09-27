@@ -60,8 +60,9 @@ for i in "${!THEMES[@]}"; do
     frame_file="$ICED_FRAME_DIR/frame-$(printf '%02d' "$i").png"
     echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
 
+    # iced has no --icon-theme: an installed theme's name picks it as the icon set.
     cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
-        --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+        --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
         --tab buttons &
     PID=$!
 
@@ -140,9 +141,9 @@ for i in "${!THEMES[@]}"; do
     frame_file="$EGUI_FRAME_DIR/frame-$(printf '%02d' "$i").png"
     echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
 
-    # The egui showcase takes the preset's own icon theme; no --icon-theme.
+    # egui has no --icon-theme: an installed theme's name picks it as the icon set.
     cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
-        --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+        --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
         --tab buttons &
     PID=$!
 
