@@ -43,6 +43,12 @@ pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(LEFT_PANEL_WIDTH + 88
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs:16`).
 pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_millis(250);
 
+/// The thickness of the line under the selected tab. The model states no tab indicator; this is
+/// gpui-component's underline tab, whose selected tab has a 2px bottom border
+/// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-component-0.6.6/src/tab/tab.rs:253-261`),
+/// in the colour the theme states for the primary button.
+pub(crate) const TAB_UNDERLINE_WIDTH: f32 = 2.0;
+
 /// How long `--screenshot` lets the showcase run before it captures, in seconds of
 /// `InputState::time`: the iced showcase's delay, "60 ticks × 50ms = 3s render delay"
 /// (`connectors/native-theme-iced/examples/showcase-iced.rs:1222-1223`). Not a style value.

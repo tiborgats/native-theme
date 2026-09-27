@@ -220,22 +220,33 @@ fn menu_item_label(ctx: &egui::Context, action: Action) -> String {
     }
 }
 
+/// The Mode row's `ComboBox` opened and its row `mode` clicked.
+fn pick_mode(harness: &mut Harness<'_, App>, mode: &str) {
+    harness
+        .get_by_role_and_label(Role::ComboBox, "Mode")
+        .click();
+    harness.run();
+    harness.get_by_label(mode).click();
+    harness.run();
+}
+
 /// T11 (b): the theme, mode and icon pickers install what they name.
 #[test]
 fn interactive_controls_respond() {
     let mut harness = open_default();
     harness.run();
-    let other = Theme::list_presets_for_platform()
+    let (other, other_name) = Theme::list_presets_for_platform()
         .into_iter()
-        .map(|info| info.key)
-        .find(|key| *key != TEST_PRESET)
+        .map(|info| (info.key, info.display_name))
+        .find(|(key, _)| *key != TEST_PRESET)
         .expect("a second preset is offered on every platform");
 
+    // The rows are the presets' display names, as the gpui showcase's (§10.4, parity item 1).
     harness
         .get_by_role_and_label(Role::ComboBox, "Theme")
         .click();
     harness.run();
-    harness.get_by_label(other).click();
+    harness.get_by_label(other_name).click();
     harness.run();
     assert_eq!(
         harness.state().settings.theme,
@@ -246,8 +257,7 @@ fn interactive_controls_respond() {
         Theme::preset(other).expect("bundled").name
     );
 
-    harness.get_by_role_and_label(Role::Button, "Dark").click();
-    harness.run();
+    pick_mode(&mut harness, "Dark");
     assert_eq!(harness.state().settings.mode, ModeChoice::Dark);
     assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
 
@@ -296,15 +306,56 @@ fn the_chrome_is_where_the_layout_puts_it() {
     let theme = harness
         .get_by_role_and_label(Role::ComboBox, "Theme")
         .rect();
-    let mode = harness.get_by_role_and_label(Role::Button, "Light").rect();
+    let mode = harness.get_by_role_and_label(Role::ComboBox, "Mode").rect();
     let icon = harness
         .get_by_role_and_label(Role::ComboBox, "Icon theme")
         .rect();
     let widget_tab = harness.get_by_role_and_label(Role::Button, "Widget").rect();
+    // The Theme menu's button carries the same label: the inspector's tab is the one recorded
+    // as an inspector tab (`Id::accesskit_id`, `egui/src/id.rs:103`).
+    let inspector_tabs: Vec<egui::accesskit::NodeId> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "inspector tab")
+        .map(|r| r.id.accesskit_id())
+        .collect();
     let theme_tab = harness
-        .get_by_role_and_label(Role::Button, "Theme tab")
+        .query_all_by_role_and_label(Role::Button, "Theme")
+        .find(|n| inspector_tabs.contains(&n.accesskit_node().locate().0))
+        .expect("the inspector's Theme tab")
         .rect();
     assert!(theme.bottom() <= mode.top() && mode.bottom() <= icon.top());
+    // Each label sits above its control, as wide as its text, at the control's left edge; the
+    // controls are as wide as the panel's content (parity item 1).
+    let labels: Vec<egui::Rect> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "theme setting label")
+        .map(|r| r.rect)
+        .collect();
+    assert_eq!(labels.len(), 3, "three setting labels: {labels:?}");
+    let panel = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == "side panel")
+        .map(|r| r.rect)
+        .expect("the side panel records itself");
+    for (label, control) in labels.iter().zip([theme, mode, icon]) {
+        assert!(
+            label.bottom() <= control.top() && (label.left() - control.left()).abs() < 1.0,
+            "label {label:?} is not above its control {control:?}"
+        );
+        assert!(
+            label.width() < control.width() && control.width() > panel.width() * 0.8,
+            "control {control:?} is not as wide as the panel {panel:?}"
+        );
+    }
     assert!(icon.bottom() <= widget_tab.top() && (widget_tab.top() - theme_tab.top()).abs() < 1.0);
     let separator = harness
         .state()
@@ -421,6 +472,24 @@ fn the_side_panel_toggle_hides_and_shows_it() {
     );
 }
 
+/// The menu bar's button `menu`, clicked: the one the menu bar recorded, since the inspector's
+/// Theme tab carries the Theme menu's label.
+fn click_menu(harness: &mut Harness<'_, App>, menu: &str) {
+    let buttons: Vec<egui::accesskit::NodeId> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "menu button")
+        .map(|r| r.id.accesskit_id())
+        .collect();
+    harness
+        .query_all_by_role_and_label(Role::Button, menu)
+        .find(|n| buttons.contains(&n.accesskit_node().locate().0))
+        .unwrap_or_else(|| panic!("no {menu} button in the menu bar"))
+        .click();
+}
+
 /// §13.2: every item acts on the app, and every shortcut label is egui's own spelling. Each
 /// item's effect is absent before its click — the app starts on the Text page in Dark mode, so
 /// View > Buttons and Theme > System change something, and Reload finds a selection changed
@@ -463,14 +532,12 @@ fn the_menus_run_their_actions() {
                 !acted(harness.state()),
                 "{menu} > {action:?} holds before its click, so the click proves nothing"
             );
-            harness.get_by_role_and_label(Role::Button, menu).click();
+            click_menu(&mut harness, menu);
             harness.run_steps(2);
             let label = menu_item_label(&harness.ctx, *action);
-            // The item inside the open menu: a page tab and a Mode button carry the same text
-            // ("Icons", "Dark"), so the label alone is not unique (`kittest/src/query.rs:65-70`),
-            // and the open menu lies over the side panel's Mode row, so a rect test cannot tell
-            // them apart either: the node is the one the menu recorded as its item
-            // (`Id::accesskit_id`, `egui/src/id.rs:103`).
+            // The item inside the open menu: a page tab carries the same text ("Icons"), so the
+            // label alone is not unique (`kittest/src/query.rs:65-70`): the node is the one the
+            // menu recorded as its item (`Id::accesskit_id`, `egui/src/id.rs:103`).
             let items: Vec<egui::accesskit::NodeId> = harness
                 .state()
                 .registry
@@ -1021,8 +1088,7 @@ fn a_mode_switch_installs_nothing() {
     let mut harness = open_default();
     harness.run();
     harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
-    harness.get_by_role_and_label(Role::Button, "Dark").click();
-    harness.run();
+    pick_mode(&mut harness, "Dark");
     assert_eq!(harness.state().settings.mode, ModeChoice::Dark);
     assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
     assert_eq!(
@@ -1956,6 +2022,11 @@ fn every_role_and_surface_is_demonstrated() {
 fn the_chrome_reports_itself() {
     let mut harness = open_page(Page::Buttons, egui::Theme::Light);
     let radius = harness.ctx.global_style().interaction.interact_radius;
+    // The inspector's content is the hold zone, where nothing is chosen (§10.4).
+    let hold = harness
+        .state()
+        .hold_zone
+        .expect("the inspector reports its content rect");
     for kind in [
         "menu bar",
         "toolbar",
@@ -1984,21 +2055,22 @@ fn the_chrome_reports_itself() {
         // The records around it (the chrome bar around the menu bar and the toolbar, the side
         // panel around the inspector's tabs, the central panel around the page tabs) contain it
         // too, and lose to it by area (§10.4, innermost hovered wins).
-        let point = (0..20)
-            .flat_map(|x| (0..20).map(move |y| (x, y)))
+        let point = (0..40)
+            .flat_map(|x| (0..40).map(move |y| (x, y)))
             .map(|(x, y)| {
                 rect.left_top()
                     + egui::vec2(
-                        rect.width() * (x as f32 + 0.5) / 20.0,
-                        rect.height() * (y as f32 + 0.5) / 20.0,
+                        rect.width() * (x as f32 + 0.5) / 40.0,
+                        rect.height() * (y as f32 + 0.5) / 40.0,
                     )
             })
             .find(|p| {
                 // egui counts a widget within its interact radius as under the pointer too
                 // (`egui/src/hit_test.rs`, §10.4's `contains_pointer`).
-                !records.iter().any(|(other, r)| {
-                    *other != id && r.expand(radius).contains(*p) && r.area() <= rect.area()
-                })
+                !hold.expand(radius).contains(*p)
+                    && !records.iter().any(|(other, r)| {
+                        *other != id && r.expand(radius).contains(*p) && r.area() <= rect.area()
+                    })
             })
             .unwrap_or_else(|| panic!("{kind} has no point of its own"));
         hover_and_settle(&mut harness, point);
@@ -2073,8 +2145,14 @@ const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
         "the 0.5 of Vec2::splat(0.5) is the centre Image::rotate turns about (§4.10)",
     ),
 ];
-/// The three named constants of §10.4, exempt as definitions.
-const NAMED_CONSTANTS: &[&str] = &["LEFT_PANEL_WIDTH", "WINDOW_SIZE", "INFO_SETTLE"];
+/// The three named constants of §10.4, and the gpui-component literals the parity decisions
+/// allow (each cites the upstream line it mirrors), exempt as definitions.
+const NAMED_CONSTANTS: &[&str] = &[
+    "LEFT_PANEL_WIDTH",
+    "WINDOW_SIZE",
+    "INFO_SETTLE",
+    "TAB_UNDERLINE_WIDTH",
+];
 
 #[test]
 fn the_showcase_hardcodes_no_style_values() {

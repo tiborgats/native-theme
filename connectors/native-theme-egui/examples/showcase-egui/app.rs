@@ -224,6 +224,10 @@ pub(crate) struct App {
     /// The one field for theme state (§10.4's third rule).
     pub(crate) atlas: ThemeAtlas,
     pub(crate) settings: Settings,
+    /// The platform preset `default` builds on, `SystemTheme::preset` since the last read of
+    /// the OS: the name the Theme row, the command palette and the status bar give `default`,
+    /// "default (kde-breeze)", as the gpui showcase's (`showcase-gpui/support.rs:1031-1036`).
+    pub(crate) default_preset: String,
     pub(crate) theme_error: Option<String>,
     pub(crate) registry: demo::Registry,
     pub(crate) demo_state: pages::DemoState,
@@ -270,12 +274,22 @@ impl App {
         egui_extras::install_image_loaders(&cc.egui_ctx);
         let mut settings = Settings::initial();
         apply_cli_args(&mut settings, cli);
+        let mut default_preset = native_theme::pipeline::platform_preset_name()
+            .name
+            .to_string();
         let (atlas, theme_error) = match Self::rebuild_atlas(&settings) {
-            Ok(atlas) => (atlas, None),
+            Ok((atlas, preset)) => {
+                if let Some(preset) = preset {
+                    default_preset = preset;
+                }
+                (atlas, None)
+            }
             Err(error) => {
-                let fallback = native_theme::pipeline::platform_preset_name().name;
-                let (atlas, _) =
-                    from_preset(fallback, false, &AccessibilityPreferences::from_system())?;
+                let (atlas, _) = from_preset(
+                    &default_preset,
+                    false,
+                    &AccessibilityPreferences::from_system(),
+                )?;
                 (atlas, Some(error.to_string()))
             }
         };
@@ -289,6 +303,7 @@ impl App {
         let mut app = Self {
             atlas,
             settings,
+            default_preset,
             theme_error,
             registry: demo::Registry::default(),
             demo_state: pages::DemoState::default(),
@@ -336,8 +351,11 @@ impl App {
     /// `to_egui_atlas`, with Preferences' overrides on its public `accessibility`
     /// (`native-theme/src/lib.rs:490`) after `invalidate_caches()`; a preset is `from_preset`,
     /// whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
-    /// variants and egui picks the scheme (§4.6) — so `false` is passed.
-    pub(crate) fn rebuild_atlas(settings: &Settings) -> native_theme::Result<ThemeAtlas> {
+    /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
+    /// for `default`, the platform preset it builds on (`SystemTheme::preset`).
+    pub(crate) fn rebuild_atlas(
+        settings: &Settings,
+    ) -> native_theme::Result<(ThemeAtlas, Option<String>)> {
         match &settings.theme {
             ThemeChoice::Default => {
                 native_theme::detect::invalidate_caches();
@@ -345,14 +363,15 @@ impl App {
                 if let Some(overrides) = &settings.prefs {
                     sys.accessibility = overrides.clone();
                 }
-                Ok(sys.to_egui_atlas())
+                let preset = sys.preset.clone();
+                Ok((sys.to_egui_atlas(), Some(preset)))
             }
             ThemeChoice::Preset(name) => {
                 let prefs = settings
                     .prefs
                     .clone()
                     .unwrap_or_else(AccessibilityPreferences::from_system);
-                from_preset(name, false, &prefs).map(|(atlas, _)| atlas)
+                from_preset(name, false, &prefs).map(|(atlas, _)| (atlas, None))
             }
         }
     }
@@ -361,8 +380,11 @@ impl App {
     /// is shown on the page (§10.4, the theme error in the content).
     pub(crate) fn install(&mut self, ctx: &egui::Context) {
         match Self::rebuild_atlas(&self.settings) {
-            Ok(atlas) => {
+            Ok((atlas, preset)) => {
                 self.atlas = atlas;
+                if let Some(preset) = preset {
+                    self.default_preset = preset;
+                }
                 self.theme_error = None;
             }
             Err(error) => self.theme_error = Some(error.to_string()),
@@ -397,6 +419,27 @@ impl App {
             ModeChoice::Light => egui::ThemePreference::Light,
             ModeChoice::Dark => egui::ThemePreference::Dark,
         }
+    }
+
+    /// What the Theme row and the command palette offer, as `(choice, display name)`: `default`
+    /// named by the preset it builds on, then this platform's presets by their display names,
+    /// as the gpui showcase's `preset_items` (`showcase-gpui/support.rs:1038-1056`).
+    pub(crate) fn theme_rows(&self) -> Vec<(ThemeChoice, String)> {
+        std::iter::once((
+            ThemeChoice::Default,
+            format!("default ({})", self.default_preset),
+        ))
+        .chain(
+            native_theme::theme::Theme::list_presets_for_platform()
+                .into_iter()
+                .map(|info| {
+                    (
+                        ThemeChoice::Preset(info.key.to_string()),
+                        info.display_name.to_string(),
+                    )
+                }),
+        )
+        .collect()
     }
 
     /// The status bar's title: the shown Widget Info's kind, or nothing.
@@ -434,7 +477,7 @@ impl App {
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .clone();
-            App::rebuild_atlas(&settings)
+            App::rebuild_atlas(&settings).map(|(atlas, _)| atlas)
         });
         match started {
             Ok(watcher) => self.watcher = Some(watcher),

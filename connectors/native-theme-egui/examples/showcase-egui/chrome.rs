@@ -384,14 +384,18 @@ fn desktop() -> String {
 }
 
 /// The side panel: `Role::Splitter` live on the root while it is shown, its body
-/// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note).
+/// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note). As the gpui
+/// showcase's (`showcase-gpui/demo.rs:606-630`): the settings padded by `container_margin`,
+/// a separator and the inspector's tabs from edge to edge, the inspector's content padded too.
 pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
+    let margin = app.atlas.layout().container_margin;
     let seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Left),
         Some((Role::Splitter, RoleVariant::Normal)),
         Some((Role::Sidebar, RoleVariant::Normal)),
-    );
+    )
+    .unpadded(margin);
     let mut visible = app.side_panel_visible;
     app.hold_zone = None; // set again while the inspector is drawn
     let out = egui::Panel::left("side-panel")
@@ -399,8 +403,10 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         .default_size(LEFT_PANEL_WIDTH)
         .frame(seams.frame)
         .show_collapsible(ui, &mut visible, |ui| {
-            seams.enter(ui);
-            settings_rows(app, ui);
+            let Some(body) = seams.enter(ui) else {
+                return;
+            };
+            padded(ui, margin, |ui| settings_rows(app, ui, body));
             demo::scoped(
                 &mut app.registry,
                 ui,
@@ -409,8 +415,10 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                 "side panel separator",
                 |ui| ui.separator(),
             );
-            inspector_tabs(app, ui);
-            let area = egui::ScrollArea::vertical().show(ui, |ui| inspector_content(app, ui));
+            inspector_tabs(app, ui, margin);
+            let area = egui::ScrollArea::vertical()
+                .auto_shrink([false, false])
+                .show(ui, |ui| padded(ui, margin, |ui| inspector_content(app, ui)));
             // The content records nothing and is Widget Info's hold zone (§10.4).
             app.hold_zone = Some(area.inner_rect);
         });
@@ -420,18 +428,45 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// Theme (`ComboBox` of `default` and the platform's presets), Mode (a
-/// segmented control of `Button::new(..).selected(..)`), Icon theme (`ComboBox`).
-fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
+/// `add` padded by `margin`, `layout.container_margin`, where the theme states one, and not at
+/// all where it states none, as the gpui showcase's `with_padding`.
+fn padded<R>(ui: &mut egui::Ui, margin: Option<f32>, add: impl FnOnce(&mut egui::Ui) -> R) -> R {
+    egui::Frame::NONE
+        .inner_margin(margin.unwrap_or_default())
+        .show(ui, add)
+        .inner
+}
+
+/// A theme setting's label, above its control and as wide as its text, in `Small` (the gpui
+/// showcase's `demo::label`, `Label::text_sm()`, `showcase-gpui/demo.rs:1399-1411`), recorded
+/// with the side panel body's role; the control names it as its AccessKit label.
+fn setting_label(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    body: demo::Applied,
+    text: &'static str,
+) -> egui::Id {
+    body.add(reg, ui, "theme setting label", |ui| {
+        ui.label(egui::RichText::new(text).small())
+    })
+    .id
+}
+
+/// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
+/// Light and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the
+/// gpui showcase's theme settings (`showcase-gpui/demo.rs:578-603`, `chrome.rs:166-196`).
+fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
     let ctx = ui.ctx().clone();
     let theme = ctx.theme();
-    let current_theme = match &app.settings.theme {
-        ThemeChoice::Default => "default".to_string(),
-        ThemeChoice::Preset(name) => name.clone(),
-    };
-    let presets = native_theme::theme::Theme::list_presets_for_platform();
+    let theme_rows = app.theme_rows();
+    let current_theme = theme_rows
+        .iter()
+        .find(|(choice, _)| *choice == app.settings.theme)
+        .map(|(_, label)| label.clone())
+        .unwrap_or_default();
     let current_mode = app.settings.mode;
-    // The iced showcase's icon-theme list (`connectors/native-theme-iced/examples/showcase-iced.rs:581-596`).
+    // The gpui showcase's icon-theme list (`showcase-gpui/app.rs:417-446`), less its
+    // gpui-component row: `default`, `system`, the installed themes, Lucide, Material.
     let mut icon_rows = Vec::new();
     if let choice @ IconSetChoice::Default(_) =
         default_icon_choice(app.atlas.icon_set(), app.atlas.icon_theme(theme))
@@ -445,98 +480,60 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
             .iter()
             .map(|name| IconSetChoice::Freedesktop(name.clone())),
     );
-    icon_rows.push(IconSetChoice::Material);
     icon_rows.push(IconSetChoice::Lucide);
+    icon_rows.push(IconSetChoice::Material);
+    let icon_rows: Vec<(IconSetChoice, String)> = icon_rows
+        .into_iter()
+        .map(|choice| {
+            let text = choice.to_string();
+            (choice, text)
+        })
+        .collect();
+    let mode_rows: Vec<(ModeChoice, String)> =
+        [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
+            .into_iter()
+            .map(|mode| (mode, Action::SetMode(mode).label().to_string()))
+            .collect();
     let current_icon = app.settings.icon.clone();
 
-    let mut picked_theme: Option<ThemeChoice> = None;
-    let mut picked_mode: Option<ModeChoice> = None;
-    let mut picked_icon: Option<IconSetChoice> = None;
     let registry = &mut app.registry;
-    demo::scoped_popup(
+    let picked_theme = setting(
         registry,
         ui,
-        Role::ComboBox,
-        RoleVariant::Normal,
-        "theme picker",
-        |ui, modifier, row, registry| {
-            let mut combo =
-                egui::ComboBox::from_label("Theme").selected_text(current_theme.as_str());
-            if let Some(modifier) = modifier {
-                combo = combo.popup_style(modifier);
-            }
-            combo
-                .show_ui(ui, |ui| {
-                    for key in std::iter::once("default").chain(presets.iter().map(|info| info.key))
-                    {
-                        let selected = current_theme == key;
-                        if row
-                            .add(registry, ui, "theme row", |ui| {
-                                ui.selectable_label(selected, key)
-                            })
-                            .clicked()
-                        {
-                            picked_theme = Some(if key == "default" {
-                                ThemeChoice::Default
-                            } else {
-                                ThemeChoice::Preset(key.to_string())
-                            });
-                        }
-                    }
-                })
-                .response
+        body,
+        Setting {
+            label: "Theme",
+            kind: "theme picker",
+            row_kind: "theme row",
+            rows: &theme_rows,
+            current: &app.settings.theme,
+            current_text: current_theme,
         },
     );
-    demo::scoped_container(
+    let picked_mode = setting(
         registry,
         ui,
-        Role::SegmentedControl,
-        RoleVariant::Normal,
-        "mode",
-        |ui, segment, registry| {
-            ui.horizontal(|ui| {
-                for mode in [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark] {
-                    let button = egui::Button::new(Action::SetMode(mode).label())
-                        .selected(current_mode == mode);
-                    if segment
-                        .add(registry, ui, "mode segment", |ui| ui.add(button))
-                        .clicked()
-                    {
-                        picked_mode = Some(mode);
-                    }
-                }
-            })
-            .response
+        body,
+        Setting {
+            label: "Mode",
+            kind: "mode picker",
+            row_kind: "mode row",
+            current_text: Action::SetMode(current_mode).label().to_string(),
+            rows: &mode_rows,
+            current: &current_mode,
         },
     );
-    demo::scoped_popup(
+    let picked_icon = setting(
         registry,
         ui,
-        Role::ComboBox,
-        RoleVariant::Normal,
-        "icon theme picker",
-        |ui, modifier, row, registry| {
-            let mut combo =
-                egui::ComboBox::from_label("Icon theme").selected_text(current_icon.to_string());
-            if let Some(modifier) = modifier {
-                combo = combo.popup_style(modifier);
-            }
-            combo
-                .show_ui(ui, |ui| {
-                    for choice in icon_rows {
-                        let selected = current_icon == choice;
-                        let text = choice.to_string();
-                        if row
-                            .add(registry, ui, "icon theme row", |ui| {
-                                ui.selectable_label(selected, text)
-                            })
-                            .clicked()
-                        {
-                            picked_icon = Some(choice);
-                        }
-                    }
-                })
-                .response
+        body,
+        Setting {
+            label: "Icon theme",
+            kind: "icon theme picker",
+            row_kind: "icon theme row",
+            current_text: current_icon.to_string(),
+            rows: &icon_rows,
+            current: &current_icon,
         },
     );
 
@@ -553,36 +550,81 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// The inspector's two tabs, drawn as the page tabs are: `Button::new(..).selected(..)` in one
-/// `Role::Tab` scope; "Theme tab" so the label differs from the Theme menu and combo box.
-fn inspector_tabs(app: &mut App, ui: &mut egui::Ui) {
-    let current = app.inspector_tab;
-    let mut picked: Option<InspectorTab> = None;
-    demo::scoped_container(
+/// One theme setting, as `setting` draws it.
+struct Setting<'a, T> {
+    label: &'static str,
+    kind: &'static str,
+    row_kind: &'static str,
+    rows: &'a [(T, String)],
+    current: &'a T,
+    current_text: String,
+}
+
+/// A theme setting: its label, then a `ComboBox` as wide as the panel in `Role::ComboBox`, its
+/// popup through `popup_style` (§10.4), a `selectable_label` per row. Returns the row picked.
+fn setting<T: Clone + PartialEq>(
+    registry: &mut Registry,
+    ui: &mut egui::Ui,
+    body: demo::Applied,
+    setting: Setting<'_, T>,
+) -> Option<T> {
+    let label = setting_label(registry, ui, body, setting.label);
+    let mut picked = None;
+    demo::scoped_popup(
+        registry,
+        ui,
+        Role::ComboBox,
+        RoleVariant::Normal,
+        setting.kind,
+        |ui, modifier, row, registry| {
+            let mut combo = egui::ComboBox::from_id_salt(setting.label)
+                .width(ui.available_width())
+                .selected_text(setting.current_text);
+            if let Some(modifier) = modifier {
+                combo = combo.popup_style(modifier);
+            }
+            combo
+                .show_ui(ui, |ui| {
+                    for (value, text) in setting.rows {
+                        let selected = value == setting.current;
+                        if row
+                            .add(registry, ui, setting.row_kind, |ui| {
+                                ui.selectable_label(selected, text)
+                            })
+                            .clicked()
+                        {
+                            picked = Some(value.clone());
+                        }
+                    }
+                })
+                .response
+                .labelled_by(label)
+        },
+    );
+    picked
+}
+
+/// The inspector's two tabs, drawn as the page tabs are (`demo::tab_bar`), padded by
+/// `container_margin`, their rule from edge to edge: the gpui showcase's inspector `TabBar`
+/// (`showcase-gpui/inspector.rs:389-403`).
+fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
+    let t = app.atlas.resolved_for(ui.ctx().theme());
+    let picked = demo::tab_bar(
         &mut app.registry,
         ui,
-        Role::Tab,
-        RoleVariant::Normal,
-        "inspector tabs",
-        |ui, tab_seam, registry| {
-            ui.horizontal(|ui| {
-                for (tab, label) in [
-                    (InspectorTab::Widget, "Widget"),
-                    (InspectorTab::Theme, "Theme tab"),
-                ] {
-                    let selected = current == tab;
-                    let r = tab_seam.add(registry, ui, "inspector tab", |ui| {
-                        ui.add(egui::Button::new(label).selected(selected))
-                    });
-                    if r.clicked() {
-                        picked = Some(tab);
-                    }
-                }
-                // The tab bar spans the panel: the rest of the row is its own surface.
-                ui.allocate_space(egui::Vec2::X * ui.available_width());
-            })
-            .response
+        t,
+        demo::TabBar {
+            kind: "inspector tabs",
+            tab_kind: "inspector tab",
+            tabs: &[
+                (InspectorTab::Widget, "Widget"),
+                (InspectorTab::Theme, "Theme"),
+            ],
+            current: app.inspector_tab,
+            margin,
+            scroll: false,
         },
+        |_, _, _| {},
     );
     if let Some(tab) = picked {
         app.inspector_tab = tab;

@@ -449,6 +449,9 @@ pub(crate) struct PanelSeams {
     surface: Surface,
     live: Option<(Role, RoleVariant)>,
     body: Option<(Role, RoleVariant)>,
+    /// Set by `PanelSeams::unpadded`: the panel's own inner margin is dropped and its content
+    /// pads itself by this `layout.container_margin`.
+    content_margin: Option<Option<f32>>,
     pub frame: egui::Frame,
 }
 
@@ -466,8 +469,20 @@ impl PanelSeams {
             surface,
             live,
             body,
+            content_margin: None,
             frame: ui.native_frame(surface),
         }
+    }
+
+    /// The panel with no inner margin of its own, its content padded by `container_margin`
+    /// (`layout.container_margin`) where the theme states one, as the gpui showcase pads its
+    /// side panel's settings and inspector
+    /// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:606-630`), so a separator
+    /// and a tab bar's rule inside run from edge to edge. Recorded with the panel.
+    pub(crate) fn unpadded(mut self, container_margin: Option<f32>) -> Self {
+        self.frame.inner_margin = egui::Margin::ZERO;
+        self.content_margin = Some(container_margin);
+        self
     }
 
     /// The body's role, set as the first statement inside the panel's closure; `Applied` for
@@ -486,7 +501,17 @@ impl PanelSeams {
                 seams.push(seam);
             }
         }
-        reg.record(response, info(kind, seams), true);
+        let mut info = info(kind, seams);
+        if let Some(margin) = self.content_margin {
+            info.notes.push(
+                "inner margin: none; the content pads itself by layout.container_margin, as the gpui showcase's side panel does".to_string(),
+            );
+            info.read.push((
+                "layout.container_margin",
+                margin.map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
+            ));
+        }
+        reg.record(response, info, true);
     }
 }
 
@@ -529,4 +554,128 @@ pub(crate) fn role_image(
     };
     icons::to_image(ui.ctx(), &key, &data)
         .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
+}
+
+/// A row of tabs, as `tab_bar` draws it.
+pub(crate) struct TabBar<'a, T> {
+    /// The row's kind, recorded as a container.
+    pub kind: &'static str,
+    /// Each tab's kind.
+    pub tab_kind: &'static str,
+    pub tabs: &'a [(T, &'static str)],
+    pub current: T,
+    /// `layout.container_margin`: the row's padding on its left and right, where the theme
+    /// states one.
+    pub margin: Option<f32>,
+    /// Whether the tabs scroll sideways where the row is too narrow for them, as the page
+    /// tabs do; the trailing widgets stay at the row's right end.
+    pub scroll: bool,
+}
+
+/// A row of tabs as gpui-component's underline `TabBar` draws it, the gpui showcase's
+/// `demo::tab_bar` (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:797-836`), in
+/// one `Role::Tab` scope (§10.4): each tab a `Button::new(label).selected(..)` whose own flag
+/// picks the active tab's colours (§6.2), frameless at rest as an underline tab is; under the
+/// selected tab a `TAB_UNDERLINE_WIDTH` line in `button.primary_background`, the leaf gpui's
+/// `primary` is built from (`GC/tab/tab.rs:253-261`); under the row a rule in
+/// `defaults.border`'s colour and width, from edge to edge (`GC/tab/tab_bar.rs:502-512`).
+/// `trailing` adds what follows the tabs. Returns the tab clicked.
+pub(crate) fn tab_bar<T: Copy + PartialEq>(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    t: &native_theme::theme::ResolvedTheme,
+    bar: TabBar<'_, T>,
+    trailing: impl FnOnce(&mut egui::Ui, Applied, &mut Registry),
+) -> Option<T> {
+    let underline = egui::Stroke::new(
+        crate::TAB_UNDERLINE_WIDTH,
+        native_theme_egui::convert::to_color32(t.button.primary_background),
+    );
+    let rule = egui::Stroke::new(
+        t.defaults.border.line_width,
+        native_theme_egui::border_color(t),
+    );
+    let mut picked = None;
+    scoped_container(
+        reg,
+        ui,
+        Role::Tab,
+        RoleVariant::Normal,
+        bar.kind,
+        |ui, tab, reg| {
+            // Reserved first, so the rule lies under the tabs and the selected tab's line.
+            let rule_slot = ui.painter().add(egui::Shape::Noop);
+            let padding = egui::Vec2::X * bar.margin.unwrap_or_default();
+            let out = egui::Frame::NONE.inner_margin(padding).show(ui, |ui| {
+                ui.set_min_width(ui.available_width());
+                let mut tabs = |ui: &mut egui::Ui, reg: &mut Registry| {
+                    for (value, label) in bar.tabs {
+                        let selected = *value == bar.current;
+                        let r = tab.add(reg, ui, bar.tab_kind, |ui| {
+                            ui.add(
+                                egui::Button::new(*label)
+                                    .selected(selected)
+                                    .frame_when_inactive(false),
+                            )
+                        });
+                        if selected {
+                            let y = r.rect.bottom() - underline.width / 2.0;
+                            ui.painter().hline(r.rect.x_range(), y, underline);
+                        }
+                        if r.clicked() {
+                            picked = Some(*value);
+                        }
+                    }
+                };
+                if bar.scroll {
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        trailing(ui, tab, reg);
+                        egui::ScrollArea::horizontal()
+                            .id_salt(bar.kind)
+                            .auto_shrink([false, true])
+                            .show(ui, |ui| {
+                                ui.with_layout(
+                                    egui::Layout::left_to_right(egui::Align::Center),
+                                    |ui| tabs(ui, reg),
+                                );
+                            });
+                    });
+                } else {
+                    ui.horizontal(|ui| {
+                        tabs(ui, reg);
+                        trailing(ui, tab, reg);
+                    });
+                }
+            });
+            let rect = out.response.rect;
+            ui.painter().set(
+                rule_slot,
+                egui::Shape::hline(rect.x_range(), rect.bottom() - rule.width / 2.0, rule),
+            );
+            out.response
+        },
+    );
+    reg.amend_last(|i| {
+        i.read.extend([
+            (
+                "button.primary_background",
+                t.button.primary_background.to_string(),
+            ),
+            ("defaults.border.color", t.defaults.border.color.to_string()),
+            (
+                "defaults.border.line_width",
+                t.defaults.border.line_width.to_string(),
+            ),
+            (
+                "layout.container_margin",
+                bar.margin
+                    .map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
+            ),
+        ]);
+        i.notes.push(format!(
+            "the selected tab's line: {}px, gpui-component's underline tab",
+            crate::TAB_UNDERLINE_WIDTH
+        ));
+    });
+    picked
 }
