@@ -1,6 +1,6 @@
 //! Demo helpers: each applies one seam and records the instance it drew (spec §10.4).
 
-use native_theme::icons::FreedesktopLoader;
+use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader};
 use native_theme::theme::{IconRole, IconSet};
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons};
 
@@ -494,8 +494,10 @@ impl PanelSeams {
 /// a freedesktop icon is read from `icon_theme` — the chosen theme; the OS's own only when the
 /// choice is `system`, which passes `None` — in the text colour
 /// (`FreedesktopLoader::{new, theme, size, color, load}`, `native-theme/src/icons.rs:127`, `:157`,
-/// `:137`, `:143`, `:177`); a bundled icon is tinted the text colour. `None` where the set or
-/// theme lacks it: the caller shows it as absent, never from another set.
+/// `:137`, `:143`, `:177`); an SF Symbol or a Segoe glyph is loaded in the text colour too
+/// (`SfSymbolsLoader::color`, `native-theme/src/icons.rs:283`; `SegoeIconsLoader::color`,
+/// `:353`); a bundled icon is tinted the text colour. `None` where the set or theme lacks it:
+/// the caller shows it as absent, never from another set.
 pub(crate) fn role_image(
     ui: &egui::Ui,
     role: IconRole,
@@ -504,21 +506,26 @@ pub(crate) fn role_image(
     size: f32,
 ) -> Option<egui::Image<'static>> {
     let text = ui.visuals().text_color();
+    let [r, g, b, _] = text.to_srgba_unmultiplied();
     let mut key = icons::IconKey::role(role, set).size(size);
-    let data = if set == IconSet::Freedesktop {
-        let [r, g, b, _] = text.to_srgba_unmultiplied();
-        // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
-        let mut loader = FreedesktopLoader::new(role)
-            .size(size.round() as u16)
-            .color([r, g, b]);
-        if let Some(name) = icon_theme {
-            loader = loader.theme(name);
-            key = key.icon_theme(name);
+    let data = match set {
+        IconSet::Freedesktop => {
+            // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
+            let mut loader = FreedesktopLoader::new(role)
+                .size(size.round() as u16)
+                .color([r, g, b]);
+            if let Some(name) = icon_theme {
+                loader = loader.theme(name);
+                key = key.icon_theme(name);
+            }
+            loader.load()?
         }
-        loader.load()?
-    } else {
-        key = key.tint(text);
-        native_theme::icons::load_icon(role, set)?
+        IconSet::SfSymbols => SfSymbolsLoader::new(role).color([r, g, b]).load()?,
+        IconSet::SegoeIcons => SegoeIconsLoader::new(role).color([r, g, b]).load()?,
+        _ => {
+            key = key.tint(text);
+            native_theme::icons::load_icon(role, set)?
+        }
     };
     icons::to_image(ui.ctx(), &key, &data)
         .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))

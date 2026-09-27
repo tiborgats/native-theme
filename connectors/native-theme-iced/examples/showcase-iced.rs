@@ -665,7 +665,7 @@ fn load_all_icons(
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
     );
 
-    // Foreground color for GTK symbolic icon recoloring (Adwaita, Yaru, etc.)
+    // Foreground color for GTK symbolic icons (Adwaita, Yaru, etc.), SF Symbols, Segoe glyphs
     let tc = resolved.defaults.text_color;
     let fg = Some([tc.r, tc.g, tc.b]);
 
@@ -693,8 +693,8 @@ fn load_all_icons(
                 }
                 IconSet::Material => MaterialLoader::new(role).load(),
                 IconSet::Lucide => LucideLoader::new(role).load(),
-                IconSet::SfSymbols => SfSymbolsLoader::new(role).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(role).load(),
+                IconSet::SfSymbols => SfSymbolsLoader::new(role).color_opt(fg).load(),
+                IconSet::SegoeIcons => SegoeIconsLoader::new(role).color_opt(fg).load(),
                 _ => None,
             };
             let name = native_theme::theme::icon_name(role, set);

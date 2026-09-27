@@ -379,8 +379,8 @@ pub(crate) fn load_all_icons(
                 }
                 IconSet::Material => MaterialLoader::new(*role).load(),
                 IconSet::Lucide => LucideLoader::new(*role).load(),
-                IconSet::SfSymbols => SfSymbolsLoader::new(*role).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).load(),
+                IconSet::SfSymbols => SfSymbolsLoader::new(*role).color_opt(fg_color).load(),
+                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).color_opt(fg_color).load(),
                 _ => None,
             };
             #[cfg(not(target_os = "linux"))]
@@ -394,8 +394,8 @@ pub(crate) fn load_all_icons(
                 }
                 IconSet::Material => MaterialLoader::new(*role).load(),
                 IconSet::Lucide => LucideLoader::new(*role).load(),
-                IconSet::SfSymbols => SfSymbolsLoader::new(*role).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).load(),
+                IconSet::SfSymbols => SfSymbolsLoader::new(*role).color_opt(fg_color).load(),
+                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).color_opt(fg_color).load(),
                 _ => None,
             };
 
@@ -665,8 +665,8 @@ pub(crate) fn load_gpui_icons(
                     }
                     IconSet::Material => MaterialLoader::new(r).load(),
                     IconSet::Lucide => LucideLoader::new(r).load(),
-                    IconSet::SfSymbols => SfSymbolsLoader::new(r).load(),
-                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).load(),
+                    IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
+                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).color_opt(fg_color).load(),
                     _ => None,
                 };
                 #[cfg(not(target_os = "linux"))]
@@ -680,8 +680,8 @@ pub(crate) fn load_gpui_icons(
                     }
                     IconSet::Material => MaterialLoader::new(r).load(),
                     IconSet::Lucide => LucideLoader::new(r).load(),
-                    IconSet::SfSymbols => SfSymbolsLoader::new(r).load(),
-                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).load(),
+                    IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
+                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).color_opt(fg_color).load(),
                     _ => None,
                 };
                 let source = match &data {
