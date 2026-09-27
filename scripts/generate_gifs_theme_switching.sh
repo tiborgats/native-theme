@@ -16,9 +16,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # `--capture` opens the showcase at its default size whatever the desktop
-# remembers for its window; check_capture fails the script unless each frame
-# is of a window at that size.
-source "$SCRIPT_DIR/capture_size.sh"
+# remembers for its window, with an app id of its own; capture_showcase makes
+# that window the active one, captures it, and fails the script unless the
+# frame is of that window at that size.
+source "$SCRIPT_DIR/capture_window.sh"
 ICED_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 GPUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 ICED_FRAME_DIR="$(mktemp -d)"
@@ -72,9 +73,7 @@ for i in "${!THEMES[@]}"; do
 
     sleep "$DELAY"
 
-    spectacle -a -b -n -o "$frame_file"
-    sleep 1
-    check_capture "$frame_file"
+    capture_showcase iced "$PID" "$frame_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true
@@ -115,9 +114,7 @@ for i in "${!THEMES[@]}"; do
 
     sleep "$DELAY"
 
-    spectacle -a -b -n -o "$frame_file"
-    sleep 1
-    check_capture "$frame_file"
+    capture_showcase gpui "$PID" "$frame_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true
@@ -155,9 +152,7 @@ for i in "${!THEMES[@]}"; do
 
     sleep "$DELAY"
 
-    spectacle -a -b -n -o "$frame_file"
-    sleep 1
-    check_capture "$frame_file"
+    capture_showcase egui "$PID" "$frame_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true

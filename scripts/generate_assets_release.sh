@@ -47,6 +47,9 @@ command -v python3 >/dev/null 2>&1 || fail "python3 not found"
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
     || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check_widget_coverage.py needs 3.11+ (tomllib)"
 command -v spectacle >/dev/null 2>&1 || fail "spectacle not found (needed for the Linux captures)"
+for tool in kscreen-doctor qdbus6 dbus-monitor dbus-send; do
+    command -v "$tool" >/dev/null 2>&1 || fail "$tool not found (scripts/capture_window.sh needs it for the Linux captures)"
+done
 python3 -c "from PIL import Image" 2>/dev/null || fail "Pillow not installed (pip install Pillow)"
 gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
 ok "Prerequisites OK"

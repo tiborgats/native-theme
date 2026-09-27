@@ -47,13 +47,13 @@ python3 scripts/generate_gifs_spinners.py --theme-switching /path/to/frames \
 
 Captures iced showcase screenshots on Linux (KDE Wayland) using spectacle.
 Launches the showcase with each theme/variant/icon-set combination, waits for
-it to render, then captures the active window.
+it to render, then makes its window the active one and captures it.
 
 On macOS/Windows, use the showcase's built-in `--screenshot` flag instead.
 
 The showcase runs with `--capture`, which opens it at its default 1280 × 720
-whatever size the desktop remembers for its window, and each capture passes
-`capture_size.sh`'s check (below) or the script fails.
+whatever size the desktop remembers for its window, with an app id of its own,
+and each capture passes `capture_window.sh`'s check (below) or the script fails.
 
 Builds and runs the showcase with `--features iced_aw`, so the captures show
 the same widget set the coverage check gates.
@@ -88,22 +88,40 @@ Requires: spectacle (KDE)
 ./scripts/generate_screenshots_egui.sh
 ```
 
-## capture_size.sh
+## capture_window.sh
 
-Sourced by the four spectacle scripts. `check_capture FILE` takes a second
-capture of the active window without its decoration and shadow
-(`spectacle -e -S`) and fails unless that content is exactly 1280 × 720 times
-the scale factor of KWin's active output (from `kscreen-doctor`), and FILE,
-which holds the frame, is larger in both directions. The message gives the
-measured and the expected sizes.
+Sourced by the four spectacle scripts. `capture_showcase KIND PID FILE`
+captures the window of a showcase run with `--capture`, whose app id is
+`showcase-KIND-capture-PID`:
 
-Requires: spectacle, kscreen-doctor, qdbus6 (KDE Plasma 6), Python 3
+- A KWin script, loaded through KWin's scripting D-Bus interface
+  (`org.kde.kwin.Scripting.loadScript` at `/Scripting`, `run`, then
+  `unloadScript`), finds the one window with that app id and sets
+  `workspace.activeWindow` to it; the helper waits until it is the active
+  window, and fails when there is no such window, several, or it does not
+  become active. `spectacle -a` captures the active window, and a window a
+  script opens need not be the active one (KWin's focus stealing prevention
+  can keep it behind the window in use). The script reports by a D-Bus call that
+  `dbus-monitor` reads.
+- With the showcase stopped (SIGSTOP), so its window holds one frame, it
+  captures the window with its frame to FILE, and without its decoration and
+  shadow (`spectacle -e -S`).
+- It fails unless the window is still the active one, the content is exactly
+  1280 × 720 times the scale factor of KWin's active output (from
+  `kscreen-doctor`), FILE is larger in both directions, and the content appears
+  pixel for pixel inside FILE (only the pixels of the window's rounded corners,
+  which the two captures blend differently, are not compared). A capture of
+  another window, or of the showcase in another state, fails; the message names
+  both files and their sizes.
+
+Requires: spectacle, kscreen-doctor, qdbus6 (KDE Plasma 6), dbus-monitor and
+dbus-send (D-Bus), Python 3, Pillow
 
 ## generate_gifs_theme_switching.sh
 
 Captures 4 theme presets from the iced, gpui and egui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
-Each frame passes `capture_size.sh`'s check.
+Each frame passes `capture_window.sh`'s check.
 
 Produces:
 - `connectors/native-theme-iced/docs/assets/theme-switching.gif`

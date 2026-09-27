@@ -19,9 +19,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 # `--capture` opens the showcase at its default size whatever the desktop
-# remembers for its window; check_capture fails the script unless each capture
-# is of a window at that size.
-source "$SCRIPT_DIR/capture_size.sh"
+# remembers for its window, with an app id of its own; capture_showcase makes
+# that window the active one, captures it, and fails the script unless the
+# capture is of that window at that size.
+source "$SCRIPT_DIR/capture_window.sh"
 OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 DELAY=3
 
@@ -81,9 +82,7 @@ for entry in "${THEMES[@]}"; do
 
     sleep "$DELAY"
 
-    spectacle -a -b -n -o "$output_file"
-    sleep 1
-    check_capture "$output_file"
+    capture_showcase gpui "$PID" "$output_file"
 
     kill "$PID" 2>/dev/null || true
     wait "$PID" 2>/dev/null || true
