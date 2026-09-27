@@ -1072,6 +1072,76 @@ fn the_nested_panels_stay_inside_the_page() {
     }
 }
 
+/// The Overlays page's `Area` floats beside its anchor label; scrolled with the page in a
+/// window too short for it, it never lies over the page tabs or the status bar.
+#[test]
+fn the_area_stays_inside_the_page() {
+    let mut harness = Harness::builder()
+        .with_theme(egui::Theme::Light)
+        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 4.0))
+        .build_eframe(|cc| {
+            App::new(cc, &cli(&[("--theme", TEST_PRESET), ("--tab", "overlays")]))
+                .expect("the showcase starts under a bundled preset")
+        });
+    harness.run_steps(4);
+    let rect_of = |harness: &Harness<'_, App>, kind: &str| {
+        harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .unwrap_or_else(|| panic!("no {kind} record"))
+    };
+    // The anchor's own rect, unclipped: its AccessKit node's (`egui/src/response.rs:912-917`).
+    let anchor_id = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == "area anchor")
+        .map(|r| r.id.accesskit_id())
+        .expect("the anchor");
+    harness.hover_at(rect_of(&harness, "central panel").center());
+    let mut passed_the_tabs = false;
+    for _ in 0..20 {
+        // The page's content moved up, a wheel notch at a time.
+        harness.event(egui::Event::MouseWheel {
+            unit: egui::MouseWheelUnit::Point,
+            delta: egui::vec2(0.0, -40.0),
+            phase: egui::TouchPhase::Move,
+            modifiers: egui::Modifiers::NONE,
+        });
+        harness.run_steps(2);
+        let chrome = [
+            rect_of(&harness, "chrome bar"),
+            rect_of(&harness, "page tabs"),
+            rect_of(&harness, "status bar"),
+        ];
+        let anchor = harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == anchor_id))
+            .next()
+            .map(|n| n.rect())
+            .expect("the anchor's node");
+        passed_the_tabs |= anchor.top() < chrome[1].bottom();
+        // What the Area paints: its label's rect as egui clips it (inverted once clipped away).
+        let area = rect_of(&harness, "area label");
+        let over = |c: &egui::Rect| {
+            let common = c.intersect(area);
+            common.width() > 0.0 && common.height() > 0.0
+        };
+        assert!(
+            !chrome.iter().any(over),
+            "the Area at {area:?} lies over the chrome {chrome:?}"
+        );
+    }
+    assert!(
+        passed_the_tabs,
+        "the page never scrolled its anchor under the tabs"
+    );
+}
+
 /// At the window size `main` opens, under every preset this platform offers, the page tabs and
 /// the Text page's link row lie inside the content: a row too wide for it wraps, and nothing is
 /// cut at the right edge.

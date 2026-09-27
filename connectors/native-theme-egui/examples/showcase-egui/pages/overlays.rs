@@ -235,8 +235,15 @@ pub(crate) fn show(
     let anchor = demo::base(reg, ui, "area anchor", |ui| {
         ui.label("An Area floats beside this label:")
     });
+    // An `Area` clips to its constrain rect, the whole window unless given one
+    // (`egui/src/containers/area.rs:439`, `:630`): the page's visible part here, so as the page
+    // scrolls the Area follows its anchor out of view instead of over the chrome; not
+    // `constrain`ed, which would move it back into that rect, away from its anchor.
+    let page = ui.clip_rect();
     demo::contained(reg, ui, "Area", |ui, reg| {
         egui::Area::new(egui::Id::new("overlays/area"))
+            .constrain_to(page)
+            .constrain(false)
             .fixed_pos(anchor.rect.right_top())
             .show(ui.ctx(), |ui| {
                 demo::base(reg, ui, "area label", |ui| ui.label("Area"));
