@@ -1836,8 +1836,12 @@ the gap — closing it is a change, and each wants its own decision.
         The screenshot scripts capture the active window with
         `spectacle -a -b -n`; check that the captures hold KWin's frame, as
         whether Spectacle includes a window's decoration is its own setting.
-        (Since 2026-09-27 `scripts/capture_size.sh` fails a capture no larger
-        than the window's content, so one without the frame fails the script.)
+        (Since 2026-09-27 the scripts' shared helper, `scripts/capture_window.sh`
+        (then `capture_size.sh`), fails a capture no larger than the window's
+        content, so one without the frame fails the script. Since 2026-09-28 it
+        also makes the showcase's
+        window the active one before capturing, and fails unless the window's
+        content appears pixel for pixel inside the capture.)
       - **The layout.** Two panels: the side panel (`LEFT_PANEL_WIDTH`
         300) holds the Theme, Mode and Icon theme rows, a Separator and the
         inspector; the content panel has a TabBar of the pages above the
