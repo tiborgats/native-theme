@@ -405,7 +405,7 @@ pub fn to_image(
 /// custom-provider path for the key's set — `FreedesktopLoader::new(provider)` with the key's
 /// icon theme and size, and `FreedesktopLoader::color` in the colour [`to_image_source`]
 /// uses, for `IconSet::Freedesktop`, else `native_theme::icons::load_icon(provider, set)`
-/// (`native-theme/src/icons.rs:487`), each trying `provider.icon_name(set)` then
+/// (`native-theme/src/icons.rs:529`), each trying `provider.icon_name(set)` then
 /// `icon_svg(set)` — then colours and keys the bytes as [`to_image_source`] does, so the
 /// provider's bytes are what the URI's hash covers. `None` where the provider has none. Build
 /// the key with `IconKey::name(n, set)`, `n` its `icon_name(set)` where it has one; where it

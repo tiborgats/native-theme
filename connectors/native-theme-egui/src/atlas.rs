@@ -310,7 +310,7 @@ impl ThemeAtlas {
     /// (`native_theme::icons::load_icon_indicator(set)` for a bundled set; for
     /// `IconSet::Freedesktop`, `FreedesktopLoader::load_indicator(atlas.icon_theme(ctx.theme()))`,
     /// because `load_icon_indicator` asks for the system's theme there,
-    /// `native-theme/src/icons.rs:508`), an [`icons::IconKey`](crate::icons::IconKey) — follows the theme
+    /// `native-theme/src/icons.rs:550`), an [`icons::IconKey`](crate::icons::IconKey) — follows the theme
     /// with no second input. On the [`from_preset`](crate::from_preset) path it is `Resolved::icon_set`
     /// (`native-theme/src/model/resolved.rs:259`), which native-theme already falls back to
     /// `system_icon_set()` when the preset states none; on the [`from_system`](crate::from_system) /

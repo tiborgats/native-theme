@@ -447,7 +447,7 @@ after the rail and names the slider in `WidgetInfo::slider` (`:967`).
 an animated indicator, `Spinner` draws that one, as both sibling showcases do
 (`connectors/native-theme-gpui/examples/showcase-gpui/app.rs:504-514`,
 `connectors/native-theme-iced/examples/showcase-iced.rs:760-763`):
-`native_theme::icons::load_icon_indicator(set)` (`native-theme/src/icons.rs:506`),
+`native_theme::icons::load_icon_indicator(set)` (`native-theme/src/icons.rs:548`),
 and for a freedesktop set `FreedesktopLoader::load_indicator(icon_theme)`
 (`:246`), with the set and theme from `ThemeAtlas::icon_set` and
 `ThemeAtlas::icon_theme(ui.ctx().theme())`, so the spinner comes from the theme
@@ -466,7 +466,7 @@ show it (`connectors/native-theme-gpui/examples/showcase-gpui/app.rs:553-554`,
 `connectors/native-theme-iced/examples/showcase-iced.rs:765`).
 
 **Why Tier P.** Where the set supplies none — `SfSymbols` and `SegoeIcons`
-(`native-theme/src/icons.rs:511`), or its icon feature is off — it paints an
+(`native-theme/src/icons.rs:553`), or its icon feature is off — it paints an
 arc, because `egui::Spinner` exposes only `.size()` (`widgets/spinner.rs:25`)
 and `.color()` (`:32`): its stroke is hardcoded `Stroke::new(3.0, color)`
 (`:58`) and its radius inset a literal `- 2.0` (`:45`), so
