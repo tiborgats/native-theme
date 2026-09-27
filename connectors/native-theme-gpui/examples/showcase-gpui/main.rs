@@ -1223,7 +1223,13 @@ fn main() {
             gpui_kit::init(cx);
             app::init(cx);
 
-            let bounds = Bounds::centered(None, WINDOW_SIZE, cx);
+            // Centred on whole pixels: `Bounds::centered` centres on the display's visible
+            // bounds (gpui-pre 0.3.6 `src/geometry.rs:740-749`), which exclude the macOS menu
+            // bar, so the origin can fall on a half pixel, and AppKit then grows the window to
+            // whole pixels -- the 720 px content came out 721 px on the macOS runner
+            // (screenshots run 36352884582).
+            let mut bounds = Bounds::centered(None, WINDOW_SIZE, cx);
+            bounds.origin = gpui::point(bounds.origin.x.round(), bounds.origin.y.round());
             let options = if cli_args.capture || cli_args.screenshot.is_some() {
                 capture_window_options(bounds)
             } else {
