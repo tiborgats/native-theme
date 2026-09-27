@@ -402,6 +402,39 @@ fn the_chrome_is_where_the_layout_puts_it() {
     assert_eq!(harness.state().settings.page, Page::Icons);
 }
 
+/// Parity item 9: the page tabs' menu lists every page, the current one selected, and its item
+/// shows the page it names, as gpui-component's tab-bar menu does.
+#[test]
+fn the_page_menu_lists_and_shows_every_page() {
+    let mut harness = open_default();
+    harness.run();
+    harness.get_by_role_and_label(Role::Button, "Pages").click();
+    harness.run();
+    let ids: Vec<egui::accesskit::NodeId> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "Menu item · Pages")
+        .map(|r| r.id.accesskit_id())
+        .collect();
+    assert_eq!(ids.len(), Page::ALL.len(), "the menu lists every page");
+    let selected: Vec<String> = harness
+        // egui gives a selected button AccessKit's `toggled` (`egui/src/response.rs:975-976`).
+        .query_all(By::new().predicate(|n| n.toggled() == Some(egui::accesskit::Toggled::True)))
+        .filter(|n| ids.contains(&n.accesskit_node().locate().0))
+        .filter_map(|n| n.accesskit_node().label())
+        .collect();
+    assert_eq!(selected, vec![Page::Buttons.label().to_string()]);
+    let item = harness
+        .query_all_by_label(Page::ThemeMap.label())
+        .find(|n| ids.contains(&n.accesskit_node().locate().0))
+        .expect("the menu's Theme Map item");
+    item.click();
+    harness.run_steps(2);
+    assert_eq!(harness.state().settings.page, Page::ThemeMap);
+}
+
 /// §13.2: three ways to hide and show the side panel; the dragged width survives.
 #[test]
 fn the_side_panel_toggle_hides_and_shows_it() {
@@ -1296,8 +1329,9 @@ fn the_area_stays_inside_the_page() {
 }
 
 /// At the window size `main` opens, under every preset this platform offers, the page tabs and
-/// the Text page's link row lie inside the content: a row too wide for it wraps, and nothing is
-/// cut at the right edge.
+/// the Text page's link row lie inside the content: the link row wraps where it is too wide,
+/// and the tab row scrolls, its page menu at its right end inside the content, as the gpui
+/// showcase's page `TabBar` does (parity item 9).
 #[test]
 fn the_rows_fit_the_content() {
     for info in Theme::list_presets_for_platform() {
@@ -1307,29 +1341,37 @@ fn the_rows_fit_the_content() {
         );
         harness.run_steps(4);
         let records = harness.state().registry.records();
-        let right_of = |kind: &str| {
+        let rect_of = |kind: &str| {
             records
                 .iter()
                 .find(|r| r.info.kind == kind)
-                .map(|r| r.rect.right())
+                .map(|r| r.rect)
                 .unwrap_or_else(|| panic!("{}: no {kind} record", info.key))
         };
-        // The tab row spans the content's width; a horizontal separator the page's, less a
-        // scroll bar where the page scrolls.
-        let rows = [
-            (right_of("TabBar · Pages"), &["Tab · Page"][..]),
-            (
-                right_of("Separator (horizontal)"),
-                &[
-                    "Hyperlink",
-                    "Link",
-                    "Link (disabled)",
-                    "ui.link",
-                    "ui.hyperlink",
-                    "ui.hyperlink_to",
-                ][..],
-            ),
-        ];
+        let right_of = |kind: &str| rect_of(kind).right();
+        let (content, bar, menu) = (
+            rect_of("Central panel"),
+            rect_of("TabBar · Pages"),
+            rect_of("Menu button · Pages"),
+        );
+        assert!(
+            content.contains_rect(bar) && bar.contains_rect(menu),
+            "{}: the tab row {bar:?} or its menu {menu:?} is outside the content {content:?}",
+            info.key
+        );
+        // A horizontal separator spans the page's width, less a scroll bar where the page
+        // scrolls.
+        let rows = [(
+            right_of("Separator (horizontal)"),
+            &[
+                "Hyperlink",
+                "Link",
+                "Link (disabled)",
+                "ui.link",
+                "ui.hyperlink",
+                "ui.hyperlink_to",
+            ][..],
+        )];
         for (edge, kinds) in rows {
             // By their records; a node's AccessKit bounds are the widget's own rect, not
             // clipped as a record's `interact_rect` is (`egui/src/response.rs:912-917`).

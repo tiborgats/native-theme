@@ -651,67 +651,114 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// The page tabs: one `native_scope(Role::Tab, ..)`, each tab a `Button::new(label).selected(..)`
-/// (§10.4), in a row that wraps where the content is too narrow for it.
+/// The page tabs, the gpui showcase's page `TabBar` (`showcase-gpui/chrome.rs:215-228`): the
+/// underline tabs of `demo::tab_bar` in one `Role::Tab` scope (§10.4), padded by
+/// `container_margin`, scrolling sideways where the content is too narrow for them, and at the
+/// row's right end a frameless menu button listing every page, the current one selected, as
+/// gpui-component's tab-bar menu does (`GC/tab/tab_bar.rs:554-584`). Its caret is the chosen
+/// icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the button
+/// reads "Pages" (§10.4's icon rule).
 pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
+    let theme = ui.ctx().theme();
+    let (set, icon_theme) = app.chosen_icons();
+    let margin = app.atlas.layout().container_margin;
     let App {
         registry,
         settings,
         pending,
+        atlas,
         ..
     } = app;
-    demo::scoped_container(
+    let t = atlas.resolved_for(theme);
+    let caret_size = t.defaults.icon_sizes.small;
+    let tabs: Vec<(Page, &'static str)> = Page::ALL.map(|page| (page, page.label())).to_vec();
+    let current = settings.page;
+    let mut from_menu = None;
+    let picked = demo::tab_bar(
         registry,
         ui,
-        Role::Tab,
-        RoleVariant::Normal,
-        "TabBar · Pages",
+        t,
+        demo::TabBar {
+            kind: "TabBar · Pages",
+            tab_kind: "Tab · Page",
+            tabs: &tabs,
+            current,
+            margin,
+            scroll: true,
+        },
         |ui, tab, registry| {
-            ui.horizontal_wrapped(|ui| {
-                // The tab bar spans the page: the rest of its width is its own surface.
-                ui.set_min_width(ui.available_width());
-                for page in Page::ALL {
-                    let selected = settings.page == page;
-                    let r = tab.add(registry, ui, "Tab · Page", |ui| {
-                        ui.add(egui::Button::new(page.label()).selected(selected))
-                    });
-                    if r.clicked() {
-                        pending.push(Action::ShowPage(page));
+            let caret = demo::role_image(
+                ui,
+                IconRole::NavDown,
+                set,
+                icon_theme.as_deref(),
+                caret_size,
+            );
+            let button = match caret {
+                Some(image) => egui::Button::image(image),
+                None => egui::Button::new("Pages"),
+            }
+            .small()
+            .frame_when_inactive(false);
+            let response = demo::menu_button(
+                registry,
+                ui,
+                tab,
+                "Menu button · Pages",
+                button,
+                (Role::Menu, RoleVariant::Normal),
+                |ui, item, registry| {
+                    for page in Page::ALL {
+                        let button = egui::Button::new(page.label()).selected(page == current);
+                        if item
+                            .add(registry, ui, "Menu item · Pages", |ui| ui.add(button))
+                            .clicked()
+                        {
+                            from_menu = Some(page);
+                            ui.close();
+                        }
                     }
-                }
-            })
-            .response
+                },
+            );
+            response
+                .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Pages"));
         },
     );
+    if let Some(page) = picked.or(from_menu) {
+        pending.push(Action::ShowPage(page));
+    }
 }
 
-/// The content: the central panel surface fed from `theme.defaults`; the tabs,
-/// a theme error in a card, then the page.
+/// The content: the central panel surface fed from `theme.defaults`; the page tabs flush at its
+/// top, then — padded by the surface's own inner margin — a theme error in a card, and the page.
 pub(crate) fn central_panel(
     app: &mut App,
     ui: &mut egui::Ui,
     add: impl FnOnce(&mut App, &mut egui::Ui),
 ) {
-    let seams = PanelSeams::apply(ui, Surface::CentralPanel, None, None);
+    let mut seams = PanelSeams::apply(ui, Surface::CentralPanel, None, None);
+    let page_margin = seams.lift_margin();
     let out = egui::CentralPanel::default()
         .frame(seams.frame)
         .show(ui, |ui| {
             page_tabs(app, ui);
-            if let Some(error) = app.theme_error.clone() {
-                demo::framed(
-                    &mut app.registry,
-                    ui,
-                    Surface::Card,
-                    None,
-                    "theme error",
-                    |ui, reg| {
-                        demo::base(reg, ui, "theme error text", |ui| {
-                            ui.colored_label(ui.visuals().error_fg_color, error)
-                        });
-                    },
-                );
-            }
-            add(app, ui);
+            egui::Frame::NONE.inner_margin(page_margin).show(ui, |ui| {
+                if let Some(error) = app.theme_error.clone() {
+                    demo::framed(
+                        &mut app.registry,
+                        ui,
+                        Surface::Card,
+                        None,
+                        "theme error",
+                        |ui, reg| {
+                            demo::base(reg, ui, "theme error text", |ui| {
+                                ui.colored_label(ui.visuals().error_fg_color, error)
+                            });
+                        },
+                    );
+                }
+                add(app, ui);
+            });
         });
     seams.record(&mut app.registry, &out.response, "Central panel");
 }

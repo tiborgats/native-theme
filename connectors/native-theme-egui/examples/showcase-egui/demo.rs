@@ -424,6 +424,32 @@ pub(crate) fn menu_bar(
     response
 }
 
+/// A menu button added straight into a `Ui` that carries `seam` — a tab row's page menu —
+/// recorded with that seam; its menu given `menu`'s modifier through `MenuConfig::style`
+/// (§4.2), and the open menu's own `Ui` styled and recorded with `menu`, as the chrome's menus
+/// are (`styled`); `add` fills the menu, adding its items through the `Applied` it gets.
+pub(crate) fn menu_button(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    seam: Applied,
+    kind: &'static str,
+    button: egui::Button<'_>,
+    menu: (Role, RoleVariant),
+    add: impl FnOnce(&mut egui::Ui, Applied, &mut Registry),
+) -> egui::Response {
+    let (role, variant) = menu;
+    let mut menu_button = egui::containers::menu::MenuButton::from_button(button);
+    if let Some(modifier) = role_modifier(ui, role, variant) {
+        menu_button = menu_button.config(egui::containers::menu::MenuConfig::new().style(modifier));
+    }
+    let (response, _) = menu_button.ui(ui, |ui| {
+        let open = styled(reg, ui, role, variant, "Menu");
+        add(ui, open, reg);
+    });
+    seam.record(reg, &response, kind);
+    response
+}
+
 /// `native_set_style` on a `Ui` the application did not create — a `Window`'s
 /// or `Modal`'s body, an open menu (§1.5) — recorded on that `Ui`'s own response
 /// (`egui/src/ui.rs:944`); the seam is returned as `Applied` for the widgets egui or the caller
@@ -453,6 +479,9 @@ pub(crate) struct PanelSeams {
     /// Set by `PanelSeams::unpadded`: the panel's own inner margin is dropped and its content
     /// pads itself by this `layout.container_margin`.
     content_margin: Option<Option<f32>>,
+    /// Set by `PanelSeams::lift_margin`: the frame's inner margin, moved onto the content below
+    /// a row that sits flush at the panel's top.
+    lifted: Option<egui::Margin>,
     pub frame: egui::Frame,
 }
 
@@ -471,8 +500,19 @@ impl PanelSeams {
             live,
             body,
             content_margin: None,
+            lifted: None,
             frame: ui.native_frame(surface),
         }
+    }
+
+    /// The frame's inner margin, taken off the frame and handed to the caller, who pads the
+    /// content below a row that sits flush at the panel's top with it: the page tabs, as the
+    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:1741`). Recorded
+    /// with the panel.
+    pub(crate) fn lift_margin(&mut self) -> egui::Margin {
+        let margin = std::mem::take(&mut self.frame.inner_margin);
+        self.lifted = Some(margin);
+        margin
     }
 
     /// The panel with no inner margin of its own, its content padded by `container_margin`
@@ -511,6 +551,14 @@ impl PanelSeams {
             info.read.push((
                 "layout.container_margin",
                 margin.map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
+            ));
+        }
+        if let Some(margin) = self.lifted {
+            info.notes.push((
+                "inner margin",
+                format!(
+                    "{margin:?}, the surface's, below the page tabs: the tabs sit flush at the top, as the gpui showcase's do"
+                ),
             ));
         }
         reg.record(response, info, true);
@@ -716,17 +764,21 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     }
                 };
                 if bar.scroll {
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        trailing(ui, tab, reg);
-                        egui::ScrollArea::horizontal()
-                            .id_salt(bar.kind)
-                            .auto_shrink([false, true])
-                            .show(ui, |ui| {
-                                ui.with_layout(
-                                    egui::Layout::left_to_right(egui::Align::Center),
-                                    |ui| tabs(ui, reg),
-                                );
-                            });
+                    // In a row, so the right-to-left layout takes the row's height, not the rest
+                    // of the panel's.
+                    ui.horizontal(|ui| {
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                            trailing(ui, tab, reg);
+                            egui::ScrollArea::horizontal()
+                                .id_salt(bar.kind)
+                                .auto_shrink([false, true])
+                                .show(ui, |ui| {
+                                    ui.with_layout(
+                                        egui::Layout::left_to_right(egui::Align::Center),
+                                        |ui| tabs(ui, reg),
+                                    );
+                                });
+                        });
                     });
                 } else {
                     ui.horizontal(|ui| {

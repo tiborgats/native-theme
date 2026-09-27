@@ -14,6 +14,7 @@ pub(crate) mod theme_map;
 
 use crate::app::{App, Page};
 use crate::demo::{self, Registry};
+use native_theme_egui::ThemeAtlas;
 
 /// The date the date picker starts from: a datum, evaluated at compile time, so a date
 /// `Date::constant` rejected would fail the build, never the run.
@@ -119,11 +120,24 @@ fn demo_colour() -> egui::Color32 {
 /// A heading above a group of items, the gpui showcase's `demo::heading`: `Body` size,
 /// semibold, in the text colour (`demo::heading_text`), not `ui.strong`, whose colour is the
 /// active-state text colour (`egui/src/style.rs:1147-1149`); a `Label` in the base style,
-/// recorded like any other.
+/// recorded like any other. Every heading but a page's first is `layout.section_gap` below the
+/// section before it, where the theme states that gap: the theme's space between sections, which
+/// stands in for the gpui pages' `gap_5` (parity item 11).
 pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
+    let section_gap = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| atlas.layout().section_gap);
+    let first = ui.min_rect().height() <= 0.0;
+    if let Some(gap) = section_gap.filter(|_| !first) {
+        ui.add_space(gap);
+    }
     demo::base(reg, ui, "heading", |ui| {
         let heading = demo::heading_text(ui, text);
         ui.label(heading)
+    });
+    reg.amend_last(|i| {
+        i.read.push((
+            "layout.section_gap",
+            section_gap.map_or_else(|| "not stated: no gap".to_string(), |g| g.to_string()),
+        ));
     });
 }
 
