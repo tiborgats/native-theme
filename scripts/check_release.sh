@@ -695,6 +695,16 @@ run_check "docs (native-theme-egui, all features)" \
 # between crates, is done by .github/workflows/publish.yml on a `v*` tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Packaging"
+# cargo unpacks each packaged workspace crate into a local-registry source
+# cache (a `-<hash>` directory under $CARGO_HOME/registry/src, beside crates.io's
+# `index.crates.io-…`) and reuses that copy while the version is unchanged, so a
+# connector would be compiled against the native-theme of an earlier run and a
+# stale API would pass or fail for the wrong reason. Those copies of this
+# version's workspace crates are removed first; cargo unpacks the current
+# tarballs again. crates.io's own cache is not touched.
+WS_VERSION=$(cargo pkgid -p native-theme | sed 's/.*[@#]//')
+find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -mindepth 2 -maxdepth 2 -type d \
+    -path "*/registry/src/-*/native-theme*-$WS_VERSION" -exec rm -rf {} +
 run_check "package (core: derive · native-theme · build)" \
     cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty
 run_check_soft "package (native-theme-iced)" \
