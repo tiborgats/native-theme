@@ -594,12 +594,11 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
     let theme = ui.ctx().theme();
     match app.inspector_tab {
         InspectorTab::Widget => {
-            let json = crate::info::theme_json(&app.atlas, theme);
             crate::info::widget_tab(
                 ui,
                 app.registry.shown(),
                 &app.manifest,
-                &json,
+                app.json.get(&app.atlas, theme),
                 app.atlas.name(),
             );
         }

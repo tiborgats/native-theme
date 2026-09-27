@@ -68,7 +68,7 @@ pub(crate) struct DemoState {
 
 impl Default for DemoState {
     fn default() -> Self {
-        let colour = egui::Color32::from_rgb(0x3d, 0x8b, 0xd1);
+        let colour = demo_colour();
         let rgba = egui::Rgba::from(colour);
         let [r, g, b, a] = colour.to_srgba_unmultiplied();
         let unmultiplied = [rgba.r(), rgba.g(), rgba.b(), rgba.a()];
@@ -111,6 +111,11 @@ impl Default for DemoState {
     }
 }
 
+/// The colour the Colour page's editors start from: the datum on display, not a style value.
+fn demo_colour() -> egui::Color32 {
+    egui::Color32::from_rgb(0x3d, 0x8b, 0xd1)
+}
+
 /// A caption above a group of items: a `Label` in the base style, recorded like any other.
 pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
     demo::base(reg, ui, "caption", |ui| ui.strong(text));
@@ -133,6 +138,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         atlas,
         settings,
         manifest,
+        json,
         ..
     } = app;
     match settings.page {
@@ -146,6 +152,6 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         Page::Data => data::show(registry, demo_state, atlas, ui),
         Page::Overlays => overlays::show(registry, demo_state, atlas, ui, &chosen),
         Page::Icons => icons::show(registry, demo_state, atlas, ui, &chosen),
-        Page::ThemeMap => theme_map::show(registry, demo_state, atlas, manifest, ui),
+        Page::ThemeMap => theme_map::show(registry, demo_state, atlas, manifest, json, ui),
     }
 }

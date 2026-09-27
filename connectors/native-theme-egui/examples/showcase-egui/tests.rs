@@ -1638,7 +1638,16 @@ fn the_info_is_the_manifest() {
         .map(|i| i.key)
         .find(|k| *k != TEST_PRESET)
         .expect("a second preset");
-    let mut harness = open_page(Page::Buttons, egui::Theme::Light);
+    // Light held, so the install cannot move the pass to the other scheme's values.
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[
+            ("--theme", TEST_PRESET),
+            ("--tab", Page::Buttons.key()),
+            ("--variant", "light"),
+        ]),
+    );
+    harness.run_steps(4);
     let pos = centre_of(&harness, "button (enabled)");
     hover_and_settle(&mut harness, pos);
     harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
@@ -1646,7 +1655,13 @@ fn the_info_is_the_manifest() {
     harness.state_mut().install(&ctx);
     harness.run_steps(3);
     let shown = harness.state().registry.shown().cloned().expect("shown");
-    let (manifest, json) = manifest_and_json(&harness);
+    // What the inspector prints from: the app's JSON, which it keeps between installs.
+    let app = harness.state();
+    let json = app
+        .json
+        .get(&app.atlas, harness.ctx.theme())
+        .clone()
+        .unwrap_or_default();
     let text = crate::info::info_text(&shown, &manifest, &json, other);
     let expected = resolved_json(&harness.state().atlas, harness.ctx.theme());
     let line = leaf_value(&expected, "button.background_color")
@@ -2047,14 +2062,11 @@ const CONSTRUCTORS: &[&str] = &[
 ];
 /// The sites the rule does not reach, by the enclosing `fn`, with the reason
 /// (the gpui showcase's `ALLOWED_STYLE_LITERALS`, `connectors/native-theme-gpui/src/showcase.rs:3003`).
+/// `tests.rs`, which holds the detector's own sample source, is not scanned, so it needs no entry.
 const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
     (
-        "default",
-        "DemoState::default: the colour a Colour-page editor starts from is the datum on display",
-    ),
-    (
-        "the_showcase_hardcodes_no_style_values",
-        "the detector's own sample source",
+        "demo_colour",
+        "the colour a Colour-page editor starts from is the datum on display",
     ),
     (
         "icons_indicator",

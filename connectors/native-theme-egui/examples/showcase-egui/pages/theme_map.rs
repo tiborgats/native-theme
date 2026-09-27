@@ -13,10 +13,11 @@ pub(crate) fn show(
     state: &mut DemoState,
     atlas: &ThemeAtlas,
     manifest: &Result<Manifest, String>,
+    json: &crate::info::JsonCache,
     ui: &mut egui::Ui,
 ) {
     let theme = ui.ctx().theme();
-    let json = crate::info::theme_json(atlas, theme);
+    let json = json.get(atlas, theme);
     // The filter row is one instance in the base style: selectables, frameless at rest (§10.4).
     demo::contained(reg, ui, "verdict filter", |ui, reg| {
         ui.horizontal(|ui| {
@@ -34,7 +35,7 @@ pub(crate) fn show(
         })
         .response
     });
-    let (Ok(manifest), Ok(json)) = (manifest, &json) else {
+    let (Ok(manifest), Ok(json)) = (manifest, json) else {
         let error = manifest
             .as_ref()
             .err()

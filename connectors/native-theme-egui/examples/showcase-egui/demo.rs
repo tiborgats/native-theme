@@ -11,7 +11,7 @@ pub(crate) enum Seam {
     Surface(Surface),
 }
 
-/// What one drawn instance says about itself; the rows come from the manifest (Task 36).
+/// What one drawn instance says about itself; the rows come from the manifest (`info.rs`).
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct InstanceInfo {
     /// The widget's kind, e.g. "Button", "TextEdit (password)".

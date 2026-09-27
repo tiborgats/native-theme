@@ -138,13 +138,9 @@ pub(crate) fn show(
 
     caption(reg, ui, "Switch (Role::Switch)");
     ui.horizontal_wrapped(|ui| {
-        let mut off = false;
+        // Held off, as the disabled one is held on: each shows one state; the next one toggles.
         demo::scoped(reg, ui, Role::Switch, normal, "switch (off)", |ui| {
-            let r = ui.add(Button::new("Off").selected(off));
-            if r.clicked() {
-                off = !off;
-            }
-            r
+            ui.add(Button::new("Off").selected(false))
         });
         demo::scoped(reg, ui, Role::Switch, normal, "switch", |ui| {
             let r =

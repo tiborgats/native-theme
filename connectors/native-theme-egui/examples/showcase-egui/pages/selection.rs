@@ -18,6 +18,8 @@ pub(crate) fn show(
 
     caption(reg, ui, "Checkbox (Role::Checkbox)");
     ui.horizontal_wrapped(|ui| {
+        // The first four each show one state and are held in it: a click on them changes a
+        // copy made for the pass. `ui.checkbox`, last, is the one that toggles.
         let mut unchecked = false;
         demo::scoped(
             reg,

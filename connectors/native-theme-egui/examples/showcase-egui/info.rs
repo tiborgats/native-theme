@@ -222,8 +222,30 @@ pub(crate) fn theme_json(
     Ok(json)
 }
 
-/// The value at a dotted leaf path; the walk stops at a `FontSize` (§13.1), so
-/// `button.font.defined_size` yields the tagged object.
+/// `theme_json` for each scheme, made on first use and kept until the next install: Widget
+/// Info and the Theme Map read it on every pass.
+#[derive(Default)]
+pub(crate) struct JsonCache {
+    light: std::cell::OnceCell<Result<serde_json::Value, String>>,
+    dark: std::cell::OnceCell<Result<serde_json::Value, String>>,
+}
+
+impl JsonCache {
+    pub(crate) fn get(
+        &self,
+        atlas: &ThemeAtlas,
+        theme: egui::Theme,
+    ) -> &Result<serde_json::Value, String> {
+        let cell = match theme {
+            egui::Theme::Light => &self.light,
+            egui::Theme::Dark => &self.dark,
+        };
+        cell.get_or_init(|| theme_json(atlas, theme))
+    }
+}
+
+/// The value at a dotted leaf path, every segment walked; a `defined_size` leaf ends on the
+/// tagged `FontSize` object (§13.1), which prints as its JSON text.
 pub(crate) fn value_at(json: &serde_json::Value, leaf: &str) -> Option<serde_json::Value> {
     let mut current = json;
     for part in leaf.split('.') {

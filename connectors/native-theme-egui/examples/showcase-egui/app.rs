@@ -239,6 +239,8 @@ pub(crate) struct App {
     pub(crate) pending: Vec<Action>,
     /// The embedded `mapping.toml`, parsed once; an error is shown in the inspector (§10.4).
     pub(crate) manifest: Result<info::Manifest, String>,
+    /// The installed atlas's JSON per scheme, emptied on each install.
+    pub(crate) json: info::JsonCache,
     /// The inspector's content rect this pass: Widget Info's hold zone (§10.4).
     pub(crate) hold_zone: Option<egui::Rect>,
     /// The scheme the icon choice was last derived for; `None` forces a re-derive next pass.
@@ -298,6 +300,7 @@ impl App {
             quit_requested: false,
             pending: Vec::new(),
             manifest: info::Manifest::parse(include_str!("../../mapping.toml")),
+            json: info::JsonCache::default(),
             hold_zone: None,
             last_scheme: None,
             screenshot,
@@ -371,6 +374,7 @@ impl App {
     fn apply(&mut self, ctx: &egui::Context) {
         self.atlas.install(ctx);
         ctx.set_theme(self.theme_preference());
+        self.json = info::JsonCache::default();
         self.last_scheme = None;
         self.registry.screen_changed();
         #[cfg(feature = "watch")]
@@ -506,6 +510,7 @@ impl eframe::App for App {
         if let Some(atlas) = self.watcher.as_ref().and_then(|w| w.take()) {
             atlas.install(ctx);
             self.atlas = atlas;
+            self.json = info::JsonCache::default();
             self.last_scheme = None;
             self.registry.screen_changed();
         }
