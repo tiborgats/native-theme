@@ -4990,8 +4990,10 @@ own settings slider clamps the field to `0.0..=20.0` (`style.rs:2024`) and the
 field's whole doc is "Additional vertical spacing between lines of text."
 (`style.rs:423`). Measured with the platform's own face, the difference is
 slightly negative on both Linux presets (rationale §3.12), so the floor gives
-egui's `0.0` there. The same measurement with the macOS and Windows Body faces is an
-*Open verification item*.
+egui's `0.0` there. Measured on the runners
+(run 36315092575, 2026-09-27): `want − row` is `0.1575` on macOS with "SF Pro" at 13 pt, and
+`1.4262` on Windows with windows-11's "Segoe UI" at 14 pt (`1.2225` at the
+Windows reader's 12 pt), so the floor does not bite there.
 
 **Three losses that must be stated, not buried.** (a) One global `f32` cannot be
 simultaneously correct for `Small` (9), `Body` (13), `Button` (13), `Heading`
@@ -6021,14 +6023,13 @@ A name becomes bytes in exactly two ways:
   `Options::fallback_theme` (`egui/src/memory/mod.rs:363-368`), so no choice
   made at install could follow the scheme, and no bundled preset states a
   different `defaults.font` or `defaults.mono_font` family, weight or style
-  for its two variants. **UNVERIFIED
-  until run on the platform:** that the families the Windows reader reports,
-  and macOS's monospace family, are names fontdb records for those faces, and
-  that the Core Text route resolves the macOS system UI font under both the
-  live reader's name and "SF Pro"; `system_faces_resolve` (§13) runs on the
-  screenshot workflow's `macos-latest` and `windows-latest` runners, over the
-  reader's theme and the platform's bundled preset (an *Open verification
-  item*).
+  for its two variants. **Verified on the
+  runners** (run 36315092575, 2026-09-27): the families the Windows reader reports resolve
+  (`system_faces_resolve` passed on `windows-latest`), and the Core Text route
+  resolves the macOS system UI font under the live reader's name,
+  ".AppleSystemUIFont", and "SF Pro" — a single face, whose file records the
+  family "System Font"; macOS's monospace family "SF Mono", and the live
+  reader's ".AppleSystemUIFontMonospaced", did not resolve by name (§15).
 * **The application's own bytes** — `FontPlan::face` and
   `FontPlan::variable_face` (§4.9), e.g. `include_bytes!` fonts, each
   registered with its family and style — a `face` at its own weight, a
@@ -6397,10 +6398,10 @@ capture's inspector shows "SF Pro" with no "not found"; a runner test asserts
 that `system_font_family` of `macos-sonoma`'s `defaults.font` is a family in
 iced's font database (`font_system()`'s `db`), and a second prints, without
 asserting, whether the same holds for its `mono_font`, "SF Mono" —
-**UNVERIFIED** whether any database holds it under that name. gpui: the gpui showcase's macOS
+it does not (run 36315092575, 2026-09-27: "in iced's font database: false"). gpui: the gpui showcase's macOS
 `--screenshot` run logs whether `cx.text_system().all_font_names()`
 (gpui-pre 0.3.6 `src/text_system.rs` line 284) holds the stated mono family
-"SF Mono" — **UNVERIFIED**. It is a log line in the application, not a test,
+"SF Mono" — it does not (run 36315092575, 2026-09-27: "in gpui's font names: false"). It is a log line in the application, not a test,
 because a `#[gpui::test]` gets gpui's `NoopTextSystem` (gpui-pre 0.3.6
 `src/app/test_context.rs` line 131 and `src/platform/test/platform.rs` lines
 124–131). If the name is absent, the remedy is `system_face`'s bytes through
@@ -7042,8 +7043,8 @@ shortcuts is compiled out, so one route owns each key. Under `cfg(test)` the
 in-window `MenuBar` is used on every platform: `build_eframe` takes no
 `NativeOptions` (§13 T11) and a harness has no system menu bar, so the menus'
 actions are tested through it (§13.2), and the muda path is the binary's
-alone. **UNVERIFIED** until the macOS runner's capture step runs (§13's runner
-checks, §15): that the menu is installed. **UNVERIFIED** until run on a Mac: that AppKit delivers an accelerator to
+alone. Verified by the macOS runner's capture step (run 36315092575, 2026-09-27): the menu is
+installed. **UNVERIFIED** until run on a Mac: that AppKit delivers an accelerator to
 the menu before winit's view sees the key; *what would verify it*: pressing
 Cmd+B once and seeing the side panel toggle exactly once. And `eframe::App::clear_color` defaults to a
 hardcoded translucent dark grey (`eframe/src/epi.rs:248-253`) that shows
@@ -7823,10 +7824,9 @@ the gpui showcase's capture run: the iced showcase's `macos-sonoma` capture
 shows "SF Pro" in its inspector with no "not found"; an iced showcase runner
 test asserts that `system_font_family` of `macos-sonoma`'s `defaults.font` is a
 family in iced's font database (`font_system()`'s `db`), and another prints,
-without asserting, whether the same holds for its `mono_font` ("SF Mono",
-**UNVERIFIED**); and the gpui showcase's macOS `--screenshot` run logs whether
+without asserting, whether the same holds for its `mono_font` ("SF Mono": not held, run 36315092575, 2026-09-27); and the gpui showcase's macOS `--screenshot` run logs whether
 `cx.text_system().all_font_names()` holds the stated mono family "SF Mono"
-(**UNVERIFIED**).
+(not held, run 36315092575, 2026-09-27).
 
 `mapping.toml` lives at `connectors/native-theme-egui/mapping.toml`, one row per
 native leaf, carrying `verdict ∈ {direct, scoped, derived, unmappable}`, the
@@ -8168,12 +8168,12 @@ was read at its source or measured.
 
 | Item | Where | What closes it | Run by |
 |---|---|---|---|
-| The family names the macOS and Windows readers and presets give resolve to a face — by name through fontdb, and the macOS system UI font by its file through Core Text; macOS's `mono_font` is the "SF Mono" row below | §8.2 | `system_faces_resolve` (§13) passing on `macos-latest` and `windows-latest`, over the reader's theme and the platform's bundled preset | the implementation plan's runner-checks task |
-| `want − row` with the platform's own Body face on macOS and Windows; KDE and GNOME are measured (§6.15) | §6.15 | `system_line_spacing` (§13) printing it on the same runners, the atlas's value asserted equal to T5's | the implementation plan's runner-checks task |
-| Whether the Core Text system UI font's file is a collection whose faces record different families: `system_face` selects within the family the file's first face records, which could exclude the face Core Text chose. If it is, the remedy is undecided: the Core Text path reads only the font's family name and file URL, and no call it makes names the face within the file | §8.2 | the faces and families `system_faces_resolve` (§13) prints on `macos-latest` | the implementation plan's runner-checks task |
-| The showcase's menus are installed in the macOS menu bar | §10.4 | the capture step's read-back of `NSApplication::mainMenu` on `macos-latest` (§13's third runner check) | the implementation plan's runner-checks task |
-| iced's font database holds a family for `system_font_family` of `macos-sonoma`'s `defaults.font` and of its `mono_font`, "SF Mono", and the iced showcase's inspector shows "SF Pro" with no "not found"; and fontdb resolves "SF Mono" for this crate's `system_face`. If "SF Mono" resolves in neither, the remedy is the system UI font's file route for the monospaced system font, `NSFont::monospacedSystemFontOfSize:weight:` (`native-theme/src/macos.rs:222-223`), which needs the maintainer's approval of new `unsafe`, not designed here | §8.8, §8.2 | the iced showcase's runner tests and its `macos-sonoma` capture, and the line `system_faces_resolve` prints (§13), on `macos-latest` | the implementation plan's runner-checks task |
-| gpui's text system lists the stated mono family "SF Mono" (`all_font_names`); if it does not, the remedy is `system_face`'s bytes through `TextSystem::add_fonts`, not designed here | §8.8 | the gpui showcase's macOS capture log (§13) on `macos-latest` | the implementation plan's runner-checks task |
+| The family names the macOS and Windows readers and presets give resolve to a face — by name through fontdb, and the macOS system UI font by its file through Core Text; macOS's `mono_font` is the "SF Mono" row below | §8.2 | `system_faces_resolve` (§13) passing on `macos-latest` and `windows-latest`, over the reader's theme and the platform's bundled preset — closed by run 36315092575, 2026-09-27: `system_faces_resolve … ok` on both runners | the implementation plan's runner-checks task |
+| `want − row` with the platform's own Body face on macOS and Windows; KDE and GNOME are measured (§6.15) | §6.15 | `system_line_spacing` (§13) printing it on the same runners, the atlas's value asserted equal to T5's — closed by run 36315092575, 2026-09-27: `0.1575` on macOS (13 pt), `1.4262` on Windows (14 pt) | the implementation plan's runner-checks task |
+| Whether the Core Text system UI font's file is a collection whose faces record different families: `system_face` selects within the family the file's first face records, which could exclude the face Core Text chose. If it is, the remedy is undecided: the Core Text path reads only the font's family name and file URL, and no call it makes names the face within the file | §8.2 | the faces and families `system_faces_resolve` (§13) prints on `macos-latest` — closed by run 36315092575, 2026-09-27: the file holds a single face, family "System Font", under both "SF Pro" and the live reader's name | the implementation plan's runner-checks task |
+| The showcase's menus are installed in the macOS menu bar | §10.4 | the capture step's read-back of `NSApplication::mainMenu` on `macos-latest` (§13's third runner check) — closed by run 36315092575, 2026-09-27: the egui macOS capture step passed | the implementation plan's runner-checks task |
+| iced's font database holds a family for `system_font_family` of `macos-sonoma`'s `defaults.font` and of its `mono_font`, "SF Mono", and the iced showcase's inspector shows "SF Pro" with no "not found"; and fontdb resolves "SF Mono" for this crate's `system_face`. If "SF Mono" resolves in neither, the remedy is the system UI font's file route for the monospaced system font, `NSFont::monospacedSystemFontOfSize:weight:` (`native-theme/src/macos.rs:222-223`), which needs the maintainer's approval of new `unsafe`, not designed here | §8.8, §8.2 | the iced showcase's runner tests and its `macos-sonoma` capture, and the line `system_faces_resolve` prints (§13), on `macos-latest` — closed by run 36315092575, 2026-09-27: both iced tests passed and the inspector shows "SF Pro" with no "not found"; "SF Mono" is held neither by iced's font database nor by fontdb (`resolves: false`), so its remedy stays open | the implementation plan's runner-checks task |
+| gpui's text system lists the stated mono family "SF Mono" (`all_font_names`); if it does not, the remedy is `system_face`'s bytes through `TextSystem::add_fonts`, not designed here | §8.8 | the gpui showcase's macOS capture log (§13) on `macos-latest` — closed by run 36315092575, 2026-09-27: "SF Mono" is not in gpui's font names, so its remedy stays open | the implementation plan's runner-checks task |
 | AppKit hands a menu accelerator to the menu before winit's view sees the key | §10.4 | a person at a Mac pressing Cmd+B once and seeing the side panel toggle exactly once | none: no runner presses keys; it stays open until someone checks it on a Mac |
 | Whether a change of Windows' non-client fonts, high contrast or animation flag raises `ColorValuesChanged`, and whether a macOS accent or accessibility change posts `AppleInterfaceThemeChangedNotification` | §10.2 | changing each setting while a `native_theme::watch::on_theme_change` subscription runs | none: native-theme's (`docs/todo.md`, the watcher item); no runner changes OS settings |
 | egui's appetite for the upstream change | rationale §4.2 | an issue or discussion on the egui repository | none: the connector depends on no upstream change (§14.2) |
