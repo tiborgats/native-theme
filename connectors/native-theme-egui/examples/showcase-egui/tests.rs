@@ -67,6 +67,19 @@ fn page_kinds(page: Page) -> &'static [&'static str] {
     }
 }
 
+/// Widget Info matches `mapping.toml`'s per-preset `exceptions` by preset key, so the key it is
+/// handed is the preset's key — never the atlas's display name — and `default`'s the preset it
+/// builds on.
+#[test]
+fn widget_info_is_handed_the_preset_key() {
+    let mut harness = open(egui::Theme::Light, cli(&[("--theme", TEST_PRESET)]));
+    assert_eq!(harness.state().preset_key(), TEST_PRESET);
+    assert_ne!(harness.state().preset_key(), harness.state().atlas.name());
+    harness.state_mut().settings.theme = ThemeChoice::Default;
+    let app = harness.state();
+    assert_eq!(app.preset_key(), app.default_preset);
+}
+
 /// T11 (a): every page in both schemes lays out, paints shapes and tessellates, and what it
 /// drew is that page's own content. `run_steps`, not `run`: the Range and Icons pages animate
 /// and would exceed `run`'s step limit (`egui_kittest/src/lib.rs:356`, `:451`).

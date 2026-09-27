@@ -446,6 +446,15 @@ impl App {
         .collect()
     }
 
+    /// The key of the preset the atlas is built from — `default_preset` for `default` — the key
+    /// `mapping.toml`'s per-preset `exceptions` name (not the atlas's display name).
+    pub(crate) fn preset_key(&self) -> &str {
+        match &self.settings.theme {
+            ThemeChoice::Default => &self.default_preset,
+            ThemeChoice::Preset(key) => key,
+        }
+    }
+
     /// The status bar's title: the shown Widget Info's kind, or nothing.
     pub(crate) fn status_title(&self) -> String {
         self.registry

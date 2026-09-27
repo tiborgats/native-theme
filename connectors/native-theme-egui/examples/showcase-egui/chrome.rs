@@ -776,7 +776,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                 app.registry.shown(),
                 &app.manifest,
                 app.json.get(&app.atlas, theme),
-                app.atlas.name(),
+                app.preset_key(),
             );
         }
         InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.manifest),
