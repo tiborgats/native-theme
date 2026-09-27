@@ -102,13 +102,14 @@ Requires: spectacle (KDE), Python 3, Pillow
 
 ## generate_diagrams.sh
 
-Regenerates SVG diagrams from Mermaid `.mmd` sources in `docs/assets/`.
-Uses `mermaid-cli` via `npx` — no global install required.
+Renders the Graphviz `.dot` sources in `docs/assets/` to matching `.svg`
+files with Graphviz's `dot` binary.
 
-Run after editing any `.mmd` file. The generated `.svg` is checked into
-git so contributors don't need Node installed to view diagrams.
+Run after editing any `.dot` file. The generated `.svg` is checked into
+git so contributors don't need Graphviz installed to view diagrams.
 
-Requires: Node.js ≥ 18, network access (first run downloads `mmdc` on demand)
+Requires: Graphviz (`pacman -S graphviz`, `apt install graphviz` or
+`brew install graphviz`)
 
 ```sh
 ./scripts/generate_diagrams.sh

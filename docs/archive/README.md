@@ -40,6 +40,8 @@ actually happened when they were implemented.
 | v0.5.5 | `v0.5.5.md`, `v0.5.5_size-fix.md`, `v0.5.5_pt-px.md` |
 | v0.5.6 | `v0.5.6_break-up-lib-rs.md`, `v0.5.6_gtk-icon-theme.md`, `v0.5.6_platform-reader-testing.md`, `v0.5.6_runtime-theme-change.md`, `v0.5.6_validate-derive-macro.md` |
 | v0.5.7 | `v0.5.7_native-theme-api.md`, `v0.5.7_native-theme-api-2.md`, `v0.5.7_gaps.md`, `v0.5.7_icon-theme.md`, `v0.5.7_docs-overhaul-design.md`, `v0.5.7_docs-overhaul-plan.md` |
+| v0.5.8 | `todo_v0.5.8_gpui-component-0.6-rationale.md`, `todo_v0.5.8_gpui-component-0.6-spec.md`, `todo_v0.5.8_gpui-component-0.6-plan.md` |
+| v0.5.9 | `todo_v0.5.9_gpui-kit-0.6.4-{rationale,spec,plan}.md`, `todo_v0.5.9_theme-contracts-{rationale,spec,plan}.md`, `todo_v0.5.9_showcase-app-{rationale,spec,plan}.md`, `todo_v0.5.9_showcase-layout.md`, `todo_v0.5.9_widget-info-{rationale,spec,plan}.md`, `todo_v0.5.9_unstated-sizes-and-chrome-ux-{rationale,spec,plan}.md`, `todo_v0.5.9_pre-merge-fixes.md`, `todo_v0.5.9_second-review-fixes.md` |
 | v0.6.0 | `todo_v0.6.0_egui-connector-rationale.md`, `todo_v0.6.0_egui-connector-spec.md`, `todo_v0.6.0_egui-connector-plan.md` |
 
 The v0.5.7 pair `v0.5.7_docs-overhaul-{design,plan}.md` is the exception to

@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: in `IconSet::SegoeIcons`, `ActionSearch`, `ActionSettings`, `ActionDelete` and `ActionPrint` are the Segoe Fluent glyphs `Search` (U+E721), `Settings` (U+E713), `Delete` (U+E74D) and `Print` (U+E749), like the other action roles; they were the full-colour shell stock icons `SIID_FIND`, `SIID_SETTINGS`, `SIID_DELETE` and `SIID_PRINTER`.
 - **native-theme-gpui**: on macOS, a family that names the system UI font — "SF Pro", or the name the live reader reports — is drawn as gpui's `.SystemUIFont`.
 - **native-theme-iced**: `custom_icon_to_svg_handle` and `custom_icon_to_image_handle` load a provider's system-set icon through `FreedesktopLoader`, `SfSymbolsLoader` or `SegoeIconsLoader` in `color`; `custom_icon_to_image_handle` gains that `color: Option<Color>` parameter, so an SF Symbol or a Segoe glyph arrives in it instead of its fixed black or white.
-- **Development**: an MSRV job in CI (the workspace floor `1.88.0`, and the connectors' own floors); the egui connector in every gate that names connectors; the widget-coverage script covers egui and egui_extras; the screenshot pipeline captures the egui showcase.
+- **Development**: an MSRV job in CI (the workspace floor `1.88.0`, and the connectors' own floors); the egui connector in every gate that names connectors; the widget-coverage script covers egui and egui_extras; the screenshot pipeline captures the egui showcase; the scripts are named by task group (`check_`, `update_`, `generate_`), and `pre-release-check.sh` is now `scripts/check_release.sh`.
 
 ### Fixed
 
