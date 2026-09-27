@@ -2042,8 +2042,8 @@ fn resolved_json(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> s
     json
 }
 
-/// Every file of the showcase, blanked as the gpui detector blanks its source.
-fn showcase_sources() -> Vec<(String, String)> {
+/// Every file of the showcase, as it is written.
+fn showcase_raw_sources() -> Vec<(String, String)> {
     fn walk(dir: &Path, out: &mut Vec<(String, String)>) {
         for entry in std::fs::read_dir(dir).expect("the showcase directory") {
             let path = entry.expect("entry").path();
@@ -2051,7 +2051,7 @@ fn showcase_sources() -> Vec<(String, String)> {
                 walk(&path, out);
             } else if path.extension().is_some_and(|e| e == "rs") {
                 let raw = std::fs::read_to_string(&path).expect("read");
-                out.push((path.display().to_string(), blanked(&raw)));
+                out.push((path.display().to_string(), raw));
             }
         }
     }
@@ -2064,6 +2064,108 @@ fn showcase_sources() -> Vec<(String, String)> {
         &mut out,
     );
     out
+}
+
+/// Every file of the showcase, blanked as the gpui detector blanks its source.
+fn showcase_sources() -> Vec<(String, String)> {
+    showcase_raw_sources()
+        .into_iter()
+        .map(|(path, raw)| (path, blanked(&raw)))
+        .collect()
+}
+
+/// The body of every string literal in `raw`, comments and char literals skipped: the walk
+/// `blanked` makes, keeping what it blanks between the quotes.
+fn string_literals(raw: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut at = 0usize;
+    while let Some(rest) = raw.get(at..).filter(|rest| !rest.is_empty()) {
+        if let Some(after) = rest.strip_prefix("//") {
+            at += 2 + after.find('\n').unwrap_or(after.len());
+        } else if let Some(len) = char_literal_len(rest) {
+            at += len;
+        } else if let Some(hashes) = raw_string_hashes(rest) {
+            let close = format!("\"{}", "#".repeat(hashes));
+            let from = hashes + 2;
+            match rest.get(from..).and_then(|t| t.find(&close)) {
+                Some(ix) => {
+                    out.push(rest[from..from + ix].to_string());
+                    at += from + ix + close.len();
+                }
+                None => at = raw.len(),
+            }
+        } else if let Some(body) = rest.strip_prefix('"') {
+            let len = end_of_string(body, "\"");
+            out.push(body.get(..len.saturating_sub(1)).unwrap_or("").to_string());
+            at += 1 + len;
+        } else {
+            at += char_len(rest);
+        }
+    }
+    out
+}
+
+/// Parity decision 5: no rendered string holds a character the installed proportional fonts
+/// lack, which egui would draw as a replacement square. The strings are the showcase's own
+/// literals — every file but this one, whose literals are test data — and every field of
+/// `mapping.toml` that Widget Info and the Theme Map print; the fonts are the chain the atlas
+/// installed, as epaint resolves a character through it (`FontsView::has_glyph`,
+/// `epaint/src/text/fonts.rs:852-854`).
+#[test]
+fn every_rendered_character_is_in_the_installed_fonts() {
+    let mut harness = open_default();
+    harness.run();
+    let mut texts: Vec<String> = showcase_raw_sources()
+        .into_iter()
+        .filter(|(path, _)| !path.ends_with("tests.rs"))
+        .flat_map(|(_, raw)| string_literals(&raw))
+        .collect();
+    assert!(
+        texts.iter().any(|t| t.contains("Hover any widget")),
+        "the scan read no string of the showcase"
+    );
+    let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
+    for row in &manifest.rows {
+        texts.push(row.leaf.clone());
+        texts.extend(
+            [&row.tested_by, &row.sub_tag, &row.upstream]
+                .into_iter()
+                .flatten()
+                .cloned(),
+        );
+        for sink in &row.sinks {
+            texts.push(sink.path.clone());
+            texts.extend(
+                [&sink.scope, &sink.variant, &sink.surface, &sink.when]
+                    .into_iter()
+                    .flatten()
+                    .cloned(),
+            );
+        }
+        for (preset, why) in &row.exceptions {
+            texts.extend([preset.clone(), why.clone()]);
+        }
+    }
+    for (path, why) in &manifest.unwritten {
+        texts.extend([path.clone(), why.clone()]);
+    }
+    let chars: BTreeSet<char> = texts
+        .iter()
+        .flat_map(|t| t.chars())
+        .filter(|c| !c.is_control())
+        .collect();
+    let font = egui::TextStyle::Body.resolve(&harness.ctx.global_style());
+    let missing: Vec<char> = harness.ctx.fonts_mut(|fonts| {
+        chars
+            .iter()
+            .copied()
+            .filter(|c| !fonts.has_glyph(&font, *c))
+            .collect()
+    });
+    assert!(
+        missing.is_empty(),
+        "characters the installed proportional fonts lack: {missing:?}"
+    );
 }
 
 /// `raw` with every comment, string literal and char literal blanked to spaces,
