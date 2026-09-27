@@ -68,13 +68,17 @@ pub fn to_svg_handle(
 /// Load a custom RGBA icon from an [`IconProvider`] and convert to an iced image handle.
 ///
 /// Returns `None` if the provider has no icon for the given set, or if the loaded
-/// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons).
+/// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons). When `color`
+/// is `Some`, a system set's icon (`Freedesktop`, `SfSymbols`, `SegoeIcons`) named
+/// by the provider is loaded in `color`: an SF Symbol or a Segoe glyph arrives as
+/// RGBA in that colour instead of its fixed black or white.
 #[must_use]
 pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
+    color: Option<iced_core::Color>,
 ) -> Option<iced_core::image::Handle> {
-    let data = load_custom_via_builder(provider, icon_set, None)?;
+    let data = load_custom_via_builder(provider, icon_set, color.map(color_to_rgb))?;
     to_image_handle(&data)
 }
 
@@ -477,8 +481,11 @@ mod tests {
     #[test]
     fn custom_icon_to_image_handle_with_svg_provider_returns_none() {
         // SVG data is not RGBA, so to_image_handle returns None
-        let result =
-            custom_icon_to_image_handle(&TestSvgProvider, native_theme::theme::IconSet::Material);
+        let result = custom_icon_to_image_handle(
+            &TestSvgProvider,
+            native_theme::theme::IconSet::Material,
+            None,
+        );
         assert!(result.is_none());
     }
 
@@ -505,8 +512,11 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_handle_with_empty_provider_returns_none() {
-        let result =
-            custom_icon_to_image_handle(&EmptyProvider, native_theme::theme::IconSet::Material);
+        let result = custom_icon_to_image_handle(
+            &EmptyProvider,
+            native_theme::theme::IconSet::Material,
+            None,
+        );
         assert!(result.is_none());
     }
 

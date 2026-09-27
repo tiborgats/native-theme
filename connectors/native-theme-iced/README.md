@@ -318,7 +318,7 @@ For app-specific icons generated via [`native-theme-build`](https://crates.io/cr
 use native_theme_iced::icons::{custom_icon_to_image_handle, custom_icon_to_svg_handle};
 use native_theme::theme::IconSet;
 
-let image = custom_icon_to_image_handle(&AppIcon::PlayPause, IconSet::Material);
+let image = custom_icon_to_image_handle(&AppIcon::PlayPause, IconSet::Material, None);
 let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, IconSet::Material, None);
 ```
 
