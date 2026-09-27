@@ -2,7 +2,8 @@
 //! `Role::List` — the siblings' Theme Map pages list their toolkit's slots; this one lists the
 //! manifest that maps egui's.
 
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui::convert::to_color32;
+use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font};
 
 use super::DemoState;
 use crate::demo::{self, Registry};
@@ -49,7 +50,13 @@ pub(crate) fn show(
         .iter()
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
-    let row_height = atlas.resolved_for(theme).list.row_height;
+    let t = atlas.resolved_for(theme);
+    let row_height = t.list.row_height;
+    // The header as the Data page's table has it: `list_header_font` in `list.header_font.color`
+    // (§10.4's Data row), not `RichText::strong`, which is the scope's active-state text colour
+    // (`egui/src/style.rs:1147-1149`).
+    let header_font = list_header_font(t, atlas.accessibility());
+    let header_color = to_color32(t.list.header_font.color);
     demo::scoped_container(
         reg,
         ui,
@@ -68,7 +75,13 @@ pub(crate) fn show(
                     .header(height, |mut header| {
                         for title in ["Leaf", "Value", "Verdict", "Sinks / upstream"] {
                             header.col(|ui| {
-                                list.add(reg, ui, "theme map header", |ui| ui.strong(title));
+                                list.add(reg, ui, "theme map header", |ui| {
+                                    ui.label(
+                                        egui::RichText::new(title)
+                                            .font(header_font.clone())
+                                            .color(header_color),
+                                    )
+                                });
                             });
                         }
                     })
