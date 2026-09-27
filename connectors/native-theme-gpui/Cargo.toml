@@ -73,6 +73,8 @@ native-theme = { workspace = true, features = ["watch"] }
 serde_json = "1.0.151"
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
+# `png`: the showcase reads back the size of the PNG `screencapture` wrote.
+image = { version = "0.25.10", default-features = false, features = ["png"] }
 objc2 = "0.6.4"
 
 [target.'cfg(target_os = "windows")'.dev-dependencies]

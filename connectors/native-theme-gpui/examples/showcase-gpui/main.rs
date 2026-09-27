@@ -201,20 +201,22 @@ const _: () = {
     }
 };
 
-/// The width, in logical pixels, the pages were laid out for: the content
-/// area the window gave them before the side panel flanked it. The model
-/// states no such value (spec §1.3); it is the showcase's own layout default.
-pub(crate) const PAGE_WIDTH_PX: f32 = 880.;
+/// The window the showcase opens, width × height in logical pixels:
+/// 1280 × 720, the maintainer's default for every showcase, as the egui and
+/// iced showcases' `WINDOW_SIZE`. The model states no window size (spec
+/// §1.3); a page taller than the window scrolls. `f32`s, because gpui's
+/// `Pixels` has no `const` arithmetic; `WINDOW_SIZE` is this size.
+const WINDOW_SIZE_PX: (f32, f32) = (1280., 720.);
 
-/// The window the showcase opens: `LEFT_PANEL_WIDTH` + the pages' width
-/// wide, so the content panel starts at the width the pages were laid out
-/// for, and 850px tall. The model states no window size (spec §1.3), so both
-/// are the showcase's own layout defaults; a page taller than the window
-/// scrolls. The sum is taken over the `f32`s, because gpui's `Pixels` has no
-/// `const` arithmetic. The self-tests lay the interface out at this width, so
+/// The width, in logical pixels, the content panel opens at: the window's
+/// width less `LEFT_PANEL_WIDTH`.
+#[cfg(test)]
+pub(crate) const PAGE_WIDTH_PX: f32 = WINDOW_SIZE_PX.0 - LEFT_PANEL_WIDTH_PX;
+
+/// The window the showcase opens, `WINDOW_SIZE_PX`: `LEFT_PANEL_WIDTH` + the
+/// pages' width wide. The self-tests lay the interface out at this width, so
 /// a measurement they take is a measurement of the real thing.
-pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> =
-    size(px(LEFT_PANEL_WIDTH_PX + PAGE_WIDTH_PX), px(850.));
+pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> = size(px(WINDOW_SIZE_PX.0), px(WINDOW_SIZE_PX.1));
 
 /// The window's title: this crate's name and version. The title bar's label,
 /// the title the OS shows, and the Windows screenshot capture, which finds
@@ -576,6 +578,64 @@ pub(crate) fn window_options(bounds: Bounds<Pixels>) -> WindowOptions {
     }
 }
 
+/// `window_options` for a window that is captured (`--screenshot` or
+/// `--capture`): it opens at `WINDOW_SIZE` whatever size a desktop stored for
+/// the showcase's window. gpui itself stores none; a desktop can, by the
+/// window's app id (a KWin script that remembers window geometry, say), so
+/// the window takes an app id of this process's own, which nothing stored.
+pub(crate) fn capture_window_options(bounds: Bounds<Pixels>) -> WindowOptions {
+    WindowOptions {
+        app_id: Some(format!("showcase-gpui-capture-{}", std::process::id())),
+        ..window_options(bounds)
+    }
+}
+
+/// Whether an OS capture of the window with its frame, `captured` pixels, is
+/// the frame of a window whose content is `WINDOW_SIZE` at the display's
+/// scale factor `scale`: the capture less the content the window has now,
+/// `content` pixels, is the frame, and around a `WINDOW_SIZE` content it
+/// makes the size the capture must be. Any other size is a window that did
+/// not open at its default size -- on a display too small for it, say.
+#[cfg_attr(
+    not(any(target_os = "macos", target_os = "windows", test)),
+    allow(dead_code)
+)]
+pub(crate) fn check_frame_capture(
+    captured: (i64, i64),
+    content: (i64, i64),
+    scale: f64,
+) -> Result<(), String> {
+    let default = (
+        (f64::from(WINDOW_SIZE_PX.0) * scale).round() as i64,
+        (f64::from(WINDOW_SIZE_PX.1) * scale).round() as i64,
+    );
+    let expected = (
+        default.0 + captured.0 - content.0,
+        default.1 + captured.1 - content.1,
+    );
+    if captured == expected {
+        Ok(())
+    } else {
+        Err(format!(
+            "the capture is {}x{} px, expected {}x{}: a {}x{} content area \
+             ({}x{} at scale {scale}) in the frame's {}x{} px, but the content \
+             is {}x{} px, so the window did not open at its default size",
+            captured.0,
+            captured.1,
+            expected.0,
+            expected.1,
+            default.0,
+            default.1,
+            WINDOW_SIZE_PX.0,
+            WINDOW_SIZE_PX.1,
+            captured.0 - content.0,
+            captured.1 - content.1,
+            content.0,
+            content.1,
+        ))
+    }
+}
+
 // ---------------------------------------------------------------------------
 // CLI argument parsing
 // ---------------------------------------------------------------------------
@@ -592,6 +652,9 @@ struct CliArgs {
     icon_set: Option<String>,
     icon_theme: Option<String>,
     screenshot: Option<String>,
+    /// `--capture`: a tool outside the showcase captures its window, which
+    /// opens as a `--screenshot` run's does (`capture_window_options`).
+    capture: bool,
 }
 
 impl CliArgs {
@@ -637,6 +700,7 @@ impl CliArgs {
                         args.screenshot = Some(argv[i].clone());
                     }
                 }
+                "--capture" => args.capture = true,
                 _ => {} // ignore unknown args
             }
             i += 1;
@@ -859,9 +923,43 @@ fn nudge_content_size(delta_w: f64, delta_h: f64) {
 /// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
 /// shells out to `screencapture -l <id> -o <path>`. This avoids the deprecated
 /// `CGWindowListCreateImage` API and produces a PNG with full title bar and
-/// window chrome.
+/// window chrome. False, too, when the PNG is not the size
+/// `check_frame_capture` expects.
 #[cfg(target_os = "macos")]
-fn capture_own_window_macos(_window: &mut Window, output_path: &str) -> bool {
+fn capture_own_window_macos(window: &mut Window, output_path: &str) -> bool {
+    screencapture_own_window(output_path) && checked_capture(window, output_path)
+}
+
+/// `check_frame_capture` for the PNG at `path`, a capture of `window` with
+/// its frame, reported on stderr.
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn checked_capture(window: &Window, path: &str) -> bool {
+    let checked = image::image_dimensions(path)
+        .map_err(|e| format!("{path}: {e}"))
+        .and_then(|(width, height)| {
+            let scale = f64::from(window.scale_factor());
+            let content = window.viewport_size();
+            check_frame_capture(
+                (i64::from(width), i64::from(height)),
+                (
+                    (f64::from(content.width) * scale).round() as i64,
+                    (f64::from(content.height) * scale).round() as i64,
+                ),
+                scale,
+            )
+        });
+    match checked {
+        Ok(()) => true,
+        Err(error) => {
+            eprintln!("ERROR: {error}");
+            false
+        }
+    }
+}
+
+/// `screencapture -l <window> -o <path>` of the main window.
+#[cfg(target_os = "macos")]
+fn screencapture_own_window(output_path: &str) -> bool {
     let Some(window_ptr) = get_main_window_ptr() else {
         eprintln!("No main window found");
         return false;
@@ -895,8 +993,16 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) -> bool {
 /// Uses `FindWindowW` with `WINDOW_TITLE` to locate the correct HWND
 /// (more reliable than `GetForegroundWindow` which may return a console or
 /// other window on CI), then `BitBlt` + `GetDIBits` to extract pixel data.
+/// False, too, when the PNG is not the size `check_frame_capture` expects.
 #[cfg(target_os = "windows")]
-fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
+fn capture_own_window_windows(window: &mut Window, output_path: &str) -> bool {
+    bitblt_own_window(output_path) && checked_capture(window, output_path)
+}
+
+/// `BitBlt` of the window found by `WINDOW_TITLE`, its visible frame
+/// included, written to `output_path` as a PNG.
+#[cfg(target_os = "windows")]
+fn bitblt_own_window(output_path: &str) -> bool {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
@@ -1118,8 +1224,13 @@ fn main() {
             app::init(cx);
 
             let bounds = Bounds::centered(None, WINDOW_SIZE, cx);
+            let options = if cli_args.capture || cli_args.screenshot.is_some() {
+                capture_window_options(bounds)
+            } else {
+                window_options(bounds)
+            };
             let mut showcase_entity = None;
-            let window_handle = cx.open_window(window_options(bounds), |window, cx| {
+            let window_handle = cx.open_window(options, |window, cx| {
                 let showcase = cx.new(|cx| {
                     let mut s = Showcase::new(window, cx);
                     apply_cli_args(&mut s, &cli_args, window, cx);

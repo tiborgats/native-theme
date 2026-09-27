@@ -1924,9 +1924,50 @@ fn dragging_the_handle_resizes_both_panels(cx: &mut TestAppContext) {
     );
 }
 
+/// A captured window opens at the size a normal run does, under an app id no
+/// desktop stored a geometry for.
+#[test]
+fn a_capture_opens_at_the_default_size() {
+    let bounds = Bounds {
+        origin: gpui::point(px(0.), px(0.)),
+        size: WINDOW_SIZE,
+    };
+    let normal = crate::window_options(bounds);
+    let capture = crate::capture_window_options(bounds);
+    assert_eq!(normal.app_id, None);
+    assert_eq!(
+        capture.app_id,
+        Some(format!("showcase-gpui-capture-{}", std::process::id()))
+    );
+    assert_eq!(
+        format!("{:?}", capture.window_bounds),
+        format!("{:?}", normal.window_bounds)
+    );
+}
+
+/// An OS capture of the window passes only when the content inside its frame
+/// is `WINDOW_SIZE` at the display's scale factor.
+#[test]
+fn a_frame_capture_of_another_size_fails() {
+    use crate::check_frame_capture;
+    // A frame 2px wider and 32px taller than the content, as the Windows
+    // runner's captures measured (1182 x 882 around a 1180 x 850 content).
+    assert_eq!(check_frame_capture((1282, 752), (1280, 720), 1.), Ok(()));
+    assert_eq!(check_frame_capture((2560, 1496), (2560, 1440), 2.), Ok(()));
+    // A 1024px-wide display clamped the window.
+    let clamped = check_frame_capture((1024, 674), (1024, 646), 1.);
+    assert!(
+        clamped
+            .as_ref()
+            .is_err_and(|e| e.contains("1024x674") && e.contains("1280x748")),
+        "{clamped:?}"
+    );
+    assert!(check_frame_capture((1282, 752), (1280, 720), 2.).is_err());
+}
+
 /// The window is two panels wide (spec S1): the side panel, which opens at
-/// `LEFT_PANEL_WIDTH`, and the content panel, which opens at the width the
-/// pages were laid out for.
+/// `LEFT_PANEL_WIDTH`, and the content panel, which opens at the rest of the
+/// window's width.
 #[gpui::test]
 fn the_window_fits_the_side_panel_and_a_page(cx: &mut TestAppContext) {
     assert_eq!(
