@@ -1721,6 +1721,25 @@ the bytes with it (a freedesktop icon's tint only replaces its `currentColor`,
 above), so URI and pixels agree (specification §4.10, §9.2), and the siblings switching
 to it is a `docs/todo.md` item.
 
+**Why the system sets' glyphs are coloured when they are loaded.** The
+screenshots of CI run 36315092575 showed the showcases' toolbar icons vanish on
+a light Windows window and on a dark macOS window: native-theme drew every
+Segoe Fluent glyph white (the `GGO_GRAY8` mask as `[255, 255, 255, alpha]`,
+`native-theme/src/winicons.rs`) and every SF Symbol as a black monochrome
+template (`native-theme/src/sficons.rs`), and nothing let the application
+choose. An `IconData::Rgba` reaches the connector as pixels, and
+`Image::tint`'s multiply cannot turn black into a light colour, so the colour
+is chosen where the pixels are made: `SfSymbolsLoader::color` and
+`SegoeIconsLoader::color`, like `FreedesktopLoader::color`, in native-theme,
+for every connector at once. A full-colour stock icon keeps its own colours.
+The Segoe set's four action roles that were shell stock icons —
+`ActionSearch`, `ActionSettings`, `ActionDelete`, `ActionPrint`, as
+`SIID_FIND`, `SIID_SETTINGS`, `SIID_DELETE`, `SIID_PRINTER` — became the
+glyphs `Search`, `Settings`, `Delete` and `Print`, because the other action
+roles already are glyphs and those stock icons are full-colour Explorer icons
+(on the runner `SIID_SETTINGS` drew a black box and `SIID_FIND` a colour
+magnifier) that no load colour reaches.
+
 **Why a missing icon stays missing.** `SystemTheme::icon_theme` is
 `Option<Cow<'static, str>>` (`native-theme/src/lib.rs:483`): `None` where the
 theme states no icon theme and detection fails, and detection reports why it

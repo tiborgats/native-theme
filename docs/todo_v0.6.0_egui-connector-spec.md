@@ -781,7 +781,7 @@ impl ThemeAtlas {
     /// (`native_theme::icons::load_icon_indicator(set)` for a bundled set; for
     /// `IconSet::Freedesktop`, `FreedesktopLoader::load_indicator(atlas.icon_theme(ctx.theme()))`,
     /// because `load_icon_indicator` asks for the system's theme there,
-    /// `native-theme/src/icons.rs:508`), an [`icons::IconKey`](crate::icons::IconKey) — follows the theme
+    /// `native-theme/src/icons.rs:550`), an [`icons::IconKey`](crate::icons::IconKey) — follows the theme
     /// with no second input. On the [`from_preset`](crate::from_preset) path it is `Resolved::icon_set`
     /// (`native-theme/src/model/resolved.rs:259`), which native-theme already falls back to
     /// `system_icon_set()` when the preset states none; on the [`from_system`](crate::from_system) /
@@ -2331,7 +2331,7 @@ pub fn to_image(
 /// custom-provider path for the key's set — `FreedesktopLoader::new(provider)` with the key's
 /// icon theme and size, and `FreedesktopLoader::color` in the colour [`to_image_source`]
 /// uses, for `IconSet::Freedesktop`, else `native_theme::icons::load_icon(provider, set)`
-/// (`native-theme/src/icons.rs:487`), each trying `provider.icon_name(set)` then
+/// (`native-theme/src/icons.rs:529`), each trying `provider.icon_name(set)` then
 /// `icon_svg(set)` — then colours and keys the bytes as [`to_image_source`] does, so the
 /// provider's bytes are what the URI's hash covers. `None` where the provider has none. Build
 /// the key with `IconKey::name(n, set)`, `n` its `icon_name(set)` where it has one; where it
@@ -6528,6 +6528,10 @@ key has a tint (`IconKey::tint`, as `Color32::to_srgba_unmultiplied`,
 `ecolor/src/color32.rs:248`), so the colour is in the pixels and, through
 their hash, in the URI; without a tint a bundled set's bytes are used as they
 are, right for a full-colour icon. An `IconData::Rgba` is uploaded as it is.
+The system sets' monochrome glyphs arrive in the colour the application loads
+them in — `SfSymbolsLoader::color` and `SegoeIconsLoader::color`, like
+`FreedesktopLoader::color` — so the application loads them in the text colour,
+and a full-colour stock icon keeps its own colours.
 `egui::Image::tint` stays out of the URI: it is a draw-time multiply that does
 not change the texture.
 
@@ -7265,7 +7269,7 @@ pages to this table.
 | | `Tooltip::for_enabled` (`egui/src/containers/tooltip.rs:53`), beside a `Response::on_hover_text` | `Surface::Tooltip` through the public `Tooltip::popup` (`egui/src/containers/tooltip.rs:9`), with `Role::Tooltip`; the `on_hover_text` one shows what §14 item 3 records |
 | | `Area` | none: an `Area` has no style builder (§3.2) |
 | | `ui.menu_button`, `ui.menu_image_button`, `ui.menu_image_text_button` (`egui/src/ui.rs:2788`, `:2822`, `:2859`) inside a page `MenuBar`, which gives them their `MenuConfig`; each builds a `MenuButton`, and inside a menu a `SubMenuButton` (`:2793-2797`) with its `SubMenu` (`egui/src/containers/menu.rs:357`); a menu holds a disabled item | `Role::Menu`, `Normal` and `Disabled`. The menus' icons are `ui.menu_button` items given an `(Image, text)` atom tuple, the image at `menu.icon_size` read from the `ResolvedTheme`; `ui.menu_image_button` and `ui.menu_image_text_button` are shown too, their icons at egui's Body row height, the clamp of `Button::image` and `image_and_text` they build (`egui/src/ui.rs:2829`, `:2833`, `:2867`, `:2871`; §9.4) |
-| Icons (`icons`), 2 | `Image` through `icons::to_image` (§4.10) for every icon of the chosen icon theme, at each size `defaults.icon_sizes` states, each bundled Material or Lucide key tinted `ui.visuals().text_color()`, so a monochrome icon is drawn in it (§9.2); a system icon theme's icons are loaded in the text colour, a full-colour one left as it is (§9.2), as the gpui showcase loads them (`connectors/native-theme-gpui/examples/showcase-gpui/support.rs:366`); the tint demonstration stays on the bundled keys; `ui.image`; and the loading indicator the chosen icon theme ships — `FreedesktopLoader::load_indicator(Some(<chosen theme>))` (`native-theme/src/icons.rs:246`) for a freedesktop theme, `native_theme::icons::load_icon_indicator(set)` (`:506`) for a bundled set, as the gpui showcase does (`connectors/native-theme-gpui/examples/showcase-gpui/app.rs:504-513`), since `load_icon_indicator(IconSet::Freedesktop)` takes the system's theme (`native-theme/src/icons.rs:508`) and would mix two themes — drawn through `icons::animated_frame_index`, each frame's `IconData` handed to `to_image_source`, under the URI its bytes hash to (§9.2), or rotated by `icons::spin_angle`, with `atlas.accessibility().reduce_motion`, its `first_frame()` when that is set, its key tinted by the same rule as the other icons, as the gpui Icons page's Animated Icons section does (`connectors/native-theme-gpui/examples/showcase-gpui/pages/icons.rs:32-34`) | none: an image carries no theme. The icon theme follows the preset until the user picks one (the rules below) |
+| Icons (`icons`), 2 | `Image` through `icons::to_image` (§4.10) for every icon of the chosen icon theme, at each size `defaults.icon_sizes` states, each bundled Material or Lucide key tinted `ui.visuals().text_color()`, so a monochrome icon is drawn in it (§9.2); a system icon theme's icons are loaded in the text colour, a full-colour one left as it is (§9.2), as the gpui showcase loads them (`connectors/native-theme-gpui/examples/showcase-gpui/support.rs:366`); the tint demonstration stays on the bundled keys; `ui.image`; and the loading indicator the chosen icon theme ships — `FreedesktopLoader::load_indicator(Some(<chosen theme>))` (`native-theme/src/icons.rs:246`) for a freedesktop theme, `native_theme::icons::load_icon_indicator(set)` (`:548`) for a bundled set, as the gpui showcase does (`connectors/native-theme-gpui/examples/showcase-gpui/app.rs:504-513`), since `load_icon_indicator(IconSet::Freedesktop)` takes the system's theme (`native-theme/src/icons.rs:550`) and would mix two themes — drawn through `icons::animated_frame_index`, each frame's `IconData` handed to `to_image_source`, under the URI its bytes hash to (§9.2), or rotated by `icons::spin_angle`, with `atlas.accessibility().reduce_motion`, its `first_frame()` when that is set, its key tinted by the same rule as the other icons, as the gpui Icons page's Animated Icons section does (`connectors/native-theme-gpui/examples/showcase-gpui/pages/icons.rs:32-34`) | none: an image carries no theme. The icon theme follows the preset until the user picks one (the rules below) |
 | the chrome, 3 | `MenuBar`, `Panel` (top, bottom, left), `CentralPanel` | the chrome table above |
 | Theme Map (`theme-map`), 0 | every `mapping.toml` row in a `Table` built with `TableBody::rows` (`egui_extras/src/table.rs:1027`): the leaf, its value now, the verdict, the sinks with their scope or surface, and for an `unmappable` row its `sub_tag` and `upstream`; filtered by verdict with `selectable_value` | `Role::List`. The siblings' Theme Map pages list their toolkit's slots; this one lists the manifest that maps egui's |
 
@@ -7333,7 +7337,7 @@ v0.5.9 showcases do, and the last is Widget Info's:
 * `.into()` is never written on an argument whose parameter is `impl Into<T>`
   when the argument's own type already satisfies the bound (`E0283`) — notably
   `native_theme::icons::load_icon(IconRole::ActionSave, ..)`, which takes
-  `impl Into<IconId<'a>>` (`native-theme/src/icons.rs:487`) and for which both
+  `impl Into<IconId<'a>>` (`native-theme/src/icons.rs:529`) and for which both
   `IconId<'_>` and `IconRole` satisfy the bound.
 * **The command line takes what the pickers offer, and nothing else.** The
   capture pipeline starts every showcase with `--theme`, `--variant`,
