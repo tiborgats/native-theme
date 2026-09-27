@@ -27,7 +27,7 @@ items, `src/showcase.rs` holds the lexical helpers and four tests, and
    symbol have its existence checked (§4).
 4. An advisory report lists what each panel omits (§5).
 5. The false claims are corrected and the five missing panels written (§6).
-6. `check-widget-coverage.py` stops accepting a bare path segment as proof
+6. `check_widget_coverage.py` stops accepting a bare path segment as proof
    that a gpui widget is shown (§7).
 
 ### 0.2 Constraints
@@ -73,7 +73,7 @@ Verified 2026-09-22. `gpui-component` 0.6.4 and 0.6.6 differ only in
 | F5 | It provides `public_fns`, `without_comments_or_strings` and `references(haystack, module, name)`, and removed spans keep their newlines so line numbers survive | `src/showcase.rs:33, 55-58, 59, 165` |
 | F6 | Upstream reads theme colour as `cx.theme().<field>` or `cx.theme().tokens.<field>` | `button.rs:936-941, 993`; `toggle.rs:155`; `radio.rs:186-188` |
 | F7 | `ThemeTokens` is a mechanical 1:1 projection of `ThemeColor`, so `tokens.x` and `x` are the same value | `theme/theme_color.rs:343-371` |
-| F8 | `check-widget-coverage.py` matches a widget name "as an identifier or a path segment" | `scripts/check-widget-coverage.py`, Matching |
+| F8 | `check_widget_coverage.py` matches a widget name "as an identifier or a path segment" | `scripts/check_widget_coverage.py`, Matching |
 | F9 | Every one of the 102 panels hangs on its own `tt-` block: **101** as a literal `.id("tt-…")`, and one — the resizable groups — through `.id(group.id)` from the `RESIZABLE_GROUPS` table, whose ids are already `tt-resizable-h`/`tt-resizable-v` (`:459, :480`). Blocks and panels are 1:1 | measured 2026-09-22, then confirmed by the implemented test |
 | F10 | The geometry prose that exists is accurate: `input`, `progress` and `tooltip` each match their panel | rationale §1.6 |
 
@@ -147,7 +147,7 @@ its line.
 
 ### 2.3 Every widget appears in a panel's block
 
-`check-widget-coverage.py` gains a second question. Today it asks "is this
+`check_widget_coverage.py` gains a second question. Today it asks "is this
 widget shown?"; it will also ask "is it shown **inside a demo block**?". A
 widget rendered only in the application's chrome -- the theme `Select`, the
 info-panel `Textarea` -- fails, because a reader can never hover it.
@@ -285,7 +285,7 @@ Button (Link): claims `link` at button.rs:993
 ### 4.4 Locating the crate source
 
 Each cited crate's `src` comes from `cargo metadata` only, never from a
-registry path or a version literal, exactly as `check-widget-coverage.py`
+registry path or a version literal, exactly as `check_widget_coverage.py`
 does. A crate missing from the metadata fails the check, never skips it.
 
 **A `#[test]`, not a script.** The earlier objection -- that a test would
@@ -363,7 +363,7 @@ demo does not show, some are real gaps.
 It is a report and not a gate because making it one would need an exception
 per unshown state across ~100 widgets -- exactly the sprawl this design
 avoids. It runs during the §6 corrections and at every upstream bump, and
-`pre-release-check.sh` prints its count as information, not as a failure.
+`scripts/check_release.sh` prints its count as information, not as a failure.
 
 ---
 
@@ -412,7 +412,7 @@ citation:
 - A claim with no citation is skipped by §4.2 and **counted**.
 - During the pass the check *reports* that count; it does not fail on it, so
   every page's commit is green under the standing "run
-  `./pre-release-check.sh` before committing" rule.
+  `./scripts/check_release.sh` before committing" rule.
 - The gate is flipped to **fail on a non-zero count** once the pass has
   finished and the count has actually reached zero.
 
@@ -425,7 +425,7 @@ impossible.
 
 ## 7 -- The coverage-gate fix
 
-`check-widget-coverage.py`'s gpui matching stops accepting a bare path
+`check_widget_coverage.py`'s gpui matching stops accepting a bare path
 segment (F8). A gpui widget counts as shown when it appears as a constructor
 or in a toolkit-rooted path:
 
@@ -443,13 +443,13 @@ gate reports it missing until §6.4 resolves.
 
 ## 8 -- Acceptance
 
-1. `./pre-release-check.sh` green, with the new checks counted in its header.
+1. `./scripts/check_release.sh` green, with the new checks counted in its header.
 2. `every_demo_block_has_a_widget_info_panel` passes.
 3. `every_demo_names_the_builders_it_applies` passes.
 4. `every_colour_claim_is_read_at_the_line_it_cites` passes, and the
    **uncited-claim count is zero** (§6.6).
 4a. Every prose citation resolves to an existing file and symbol (§4.6).
-5. `check-widget-coverage.py` exits 0 — but only after it has first been
+5. `check_widget_coverage.py` exits 0 — but only after it has first been
    *seen* reporting `Command` missing. That observation is both the
    discrimination proof for §7 and the evidence that §6.4's `Command` row is
    a real gap rather than an assumption, so the tightening and the

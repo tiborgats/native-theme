@@ -390,9 +390,9 @@ font size; that changes only `u`, never the refinement's `e`.
 
 `cargo test -p native-theme-gpui` picks the file up, so CI (`ci.yml:85-101`),
 the publish gate (`publish.yml:74`), the nightly canary
-(`dependency-canary.yml:85`) and `pre-release-check.sh:478` all run it with no
+(`dependency-canary.yml:85`) and `scripts/check_release.sh:478` all run it with no
 workflow change, and all four run it with default features, which is how the probe ran it
-(194 library tests, 6 seam tests). In `pre-release-check.sh` the connector's
+(194 library tests, 6 seam tests). In `scripts/check_release.sh` the connector's
 tests are a *soft* check (`:477-478`), so a failure warns there; in the other
 three it fails the run.
 
@@ -469,8 +469,8 @@ pass (rationale §4). The one line Task 4 edits there is corrected in passing.
 
 `CHANGELOG.md`, under the existing `## [Unreleased]` heading, next to the
 canary and publish-job entries already there. The heading stays undated:
-`pre-release-check.sh:593` treats a dated `## [0.5.9] - …` heading as "release
-tree" and turns the asset-stamp warning into a failure, so dating it is part
+`scripts/check_release.sh:593` treats a dated `## [0.5.9] - …` heading as "release
+tree" and turns the update_provenance warning into a failure, so dating it is part
 of the maintainer's release commit (§9), not of the implementation:
 
 - **Fixed** — native-theme-gpui 0.5.8 no longer compiled on a fresh
@@ -590,25 +590,25 @@ gains a "Flat buttons" subsection under "Per-widget geometry".
 
 ## 9 -- Release gates
 
-Unchanged from v0.5.8 and the order `pre-release-check.sh:634-647` prints,
+Unchanged from v0.5.8 and the order `scripts/check_release.sh:634-647` prints,
 listed so the plan can cite them:
 
-1. `./pre-release-check.sh` without failures (run with `CARGO_BUILD_JOBS=4`).
-   The asset-stamp check *warns* at this point: five stamped paths change in
+1. `./scripts/check_release.sh` without failures (run with `CARGO_BUILD_JOBS=4`).
+   The update_provenance check *warns* at this point: five stamped paths change in
    this release (`Cargo.lock`, the workspace and two crate `Cargo.toml`s, the
-   connector's `src/` and `examples/`; `scripts/asset-stamp.sh:28-50`). It
+   connector's `src/` and `examples/`; `scripts/update_provenance.sh:28-50`). It
    becomes a hard failure once the CHANGELOG heading is dated, and the stamp
    must therefore be rewritten *after* the version bump, i.e. gate 2 comes
    after plan Task 7.
-2. Push the branch first: `scripts/pre-release.sh` refuses to run unless HEAD
+2. Push the branch first: `scripts/generate_assets_release.sh` refuses to run unless HEAD
    equals `@{u}` and triggers `gh workflow run screenshots.yml --ref <branch>`,
-   which needs the branch on origin. Then `./scripts/pre-release.sh` on the
+   which needs the branch on origin. Then `./scripts/generate_assets_release.sh` on the
    maintainer's KDE desktop regenerates the screenshots; assets and
    `docs/assets/PROVENANCE.toml` committed. This is also the visual check of
    the showcase on 0.6.4, which no test replaces — including the five new
    sections, which no screenshot captures (rationale §2.11).
 3. The release commit (`chore(release): v0.5.9`) dates the CHANGELOG heading
-   and adds the `v0.5.8...v0.5.9` compare link; `./pre-release-check.sh` fully
+   and adds the `v0.5.8...v0.5.9` compare link; `./scripts/check_release.sh` fully
    green on it; CI green on that exact commit; canary dispatched once by hand
    on it and green.
 4. Maintainer's explicit go → tag `v0.5.9` pushed by name by the maintainer →
@@ -626,6 +626,6 @@ listed so the plan can cite them:
 - [ ] `grep -rn 'tiles' connectors/native-theme-gpui/` finds exactly one line: the `Cargo.toml` comment recording why the floor is hard ("0.6.2 removed ThemeColor::tiles"). No `.rs`, `.md` or example file mentions it.
 - [ ] `grep -rn '0\.6\.0\|0\.3\.3' connectors/native-theme-gpui/` finds no *citation*: every remaining hit states history or native-theme's own version — `src/lib.rs:137` ("Planned for unification in v0.6.0"), the `Theme`-tripwire and `spinner_size` comments that say what 0.6.0 did, and the two showcase comments ("0.6.0 added `SliderEvent::Release`", "Button (0.6.0):").
 - [ ] `cargo tree -p native-theme-gpui -i gpui-pre` shows one gpui-pre, 0.3.5.
-- [ ] `cargo doc -p native-theme-gpui --no-deps --all-features` builds without warnings (the form `pre-release-check.sh:510-516` and CI use, plus the features docs.rs enables).
+- [ ] `cargo doc -p native-theme-gpui --no-deps --all-features` builds without warnings (the form `scripts/check_release.sh:510-516` and CI use, plus the features docs.rs enables).
 - [ ] The showcase builds and shows the five §8a sections; `docs/todo_v0.5.8_*` no longer exists outside `docs/archive/`.
 - [ ] §9 gate 1 by the implementer; gates 2–4 are the maintainer's.

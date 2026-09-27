@@ -1,7 +1,7 @@
 # Provenance of the visual assets (screenshots and GIFs under
 # native-theme/docs/assets and connectors/*/docs/assets).
-# Written by scripts/asset-stamp.sh at the end of scripts/pre-release.sh;
-# read by pre-release-check.sh and the crates.io workflow's CI gate.
+# Written by scripts/update_provenance.sh at the end of scripts/generate_assets_release.sh;
+# read by scripts/check_release.sh and the crates.io workflow's CI gate.
 # Do not edit by hand.
 
 # Workspace version and commit the assets were captured from.
@@ -10,6 +10,6 @@ commit = "33fea0f73db4860921cce591785c95104ff68e5c"
 generated = "2026-09-24"
 
 # SHA-256 over the git object ids of every path that feeds the showcases
-# (SOURCE_PATHS in scripts/asset-stamp.sh). The gates recompute it at HEAD;
+# (SOURCE_PATHS in scripts/update_provenance.sh). The gates recompute it at HEAD;
 # a difference means the assets were captured from other sources.
 sources = "a7b42e60f8c1a0d85d53a9602b6bc1d3f5d26c450ec9b9ce5ab3eb542aecce10"

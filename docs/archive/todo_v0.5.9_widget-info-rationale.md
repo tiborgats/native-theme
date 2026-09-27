@@ -162,7 +162,7 @@ given a test.
 | Animated Icons | `render_animated_icons_section` | — |
 
 `Command`'s absence also exposes a gate defect.
-`scripts/check-widget-coverage.py` reports it as shown, because its matching
+`scripts/check_widget_coverage.py` reports it as shown, because its matching
 rule accepts a name "as an identifier or a path segment" and
 `std::process::Command::new` at `:8460` is one. The gate is satisfied by a
 name from the standard library.
@@ -354,7 +354,7 @@ sprawl this revision exists to remove.
 | W4 | Every colour claim carries `file.rs:line`, and a test checks the field is there | 324 claims gain a citation; upstream line moves surface as failures |
 | W5 | The colour section keeps its roles; the test checks the citation, never the role label | A wrong role label is caught by review, not by machine |
 | W6 | Omission detection is an **advisory report**, not a gate | A panel can stay incomplete without failing CI |
-| W7 | `check-widget-coverage.py` stops accepting a bare path segment for gpui widgets | A per-widget constructor pattern for the eight widgets its docstring already names |
+| W7 | `check_widget_coverage.py` stops accepting a bare path segment for gpui widgets | A per-widget constructor pattern for the eight widgets its docstring already names |
 | W8 | Every gate ships a discrimination proof: a seeded defect must fail it, naming the line | — |
 | W9 | Prose claims that already cite `file.rs, Symbol` have that symbol's **existence** checked — never its semantics | 45 entries are checked; the other 182 stay unguarded, by choice (§3.8) |
 

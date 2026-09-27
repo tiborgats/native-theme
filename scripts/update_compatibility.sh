@@ -5,22 +5,22 @@
 # against. The claim is only worth what the run behind it was, so the run is
 # here:
 #
-#   compat-check.sh run [gpui|iced|egui]  resolve the newest upstream release on a
+#   update_compatibility.sh run [gpui|iced|egui]  resolve the newest upstream release on a
 #                                         throwaway lockfile, run that connector's
 #                                         gates on it, and -- only if they all pass
 #                                         -- stamp docs/COMPATIBILITY.toml with the
 #                                         versions the lockfile ended up with and
 #                                         rewrite the README's Verified line from it
-#   compat-check.sh check                 exit 0 if the stamp exists, is
+#   update_compatibility.sh check                 exit 0 if the stamp exists, is
 #                                         well-formed, and each connector's sources
 #                                         are the ones it was verified from; exit 1
 #                                         with a message on stdout otherwise
-#   compat-check.sh hash <connector>      print a connector's sources hash at HEAD
+#   update_compatibility.sh hash <connector>      print a connector's sources hash at HEAD
 #
 # The hash covers the git object ids of that connector's Cargo.toml, src,
 # examples and tests (egui: Cargo.toml, src, examples and mapping.toml, the manifest
 # its showcase embeds): a connector that has changed has not been verified, the
-# rule scripts/asset-stamp.sh applies to the sources its screenshots came
+# rule scripts/update_provenance.sh applies to the sources its screenshots came
 # from. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check` works
 # on a depth-1 checkout and needs no network.
 #
@@ -80,7 +80,7 @@ sources_hash() {
     local connector="$1" rev="${2:-HEAD}" p id ids=""
     while read -r p; do
         id=$(git -C "$ROOT" rev-parse --verify --quiet "$rev:$p") || {
-            echo "compat-check: $p not found at $rev" >&2
+            echo "update_compatibility: $p not found at $rev" >&2
             return 1
         }
         ids+="$id"$'\n'
@@ -147,11 +147,11 @@ write_stamp() {
         cat <<'EOF'
 # Upstream versions each connector has been verified against.
 #
-# Written by `scripts/compat-check.sh run`, which resolves the newest upstream
+# Written by `scripts/update_compatibility.sh run`, which resolves the newest upstream
 # release of a connector's family on a throwaway lockfile, runs that
 # connector's tests, clippy, documentation and the widget-coverage script on
 # it, and records what the lockfile resolved only when every one of them
-# passed. Read by pre-release-check.sh and by each connector's own
+# passed. Read by scripts/check_release.sh and by each connector's own
 # `src/compat.rs`, which requires the README's Verified line to be this file's.
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
@@ -172,7 +172,7 @@ write_readme() {
     file="$ROOT/$(readme_of "$connector")"
     if ! grep -q '^<!-- compat:begin -->$' "$file" ||
         ! grep -q '^<!-- compat:end -->$' "$file"; then
-        echo "compat-check: $(readme_of "$connector") carries no <!-- compat:begin --> / <!-- compat:end --> markers to write the Verified line between" >&2
+        echo "update_compatibility: $(readme_of "$connector") carries no <!-- compat:begin --> / <!-- compat:end --> markers to write the Verified line between" >&2
         exit 1
     fi
     sentence=$(verified_sentence "$versions" "$today")
@@ -202,7 +202,7 @@ run_gate() {
     shift
     printf '  → %s\n' "$label"
     if ! "$@"; then
-        echo "compat-check: $CURRENT_CRATE is NOT verified: $label failed on the updated lockfile" >&2
+        echo "update_compatibility: $CURRENT_CRATE is NOT verified: $label failed on the updated lockfile" >&2
         exit 1
     fi
 }
@@ -212,7 +212,7 @@ verify_clean() {
     while read -r p; do paths+=("$p"); done < <(source_paths "$connector")
     dirty=$(git -C "$ROOT" status --porcelain -- "${paths[@]}")
     if [ -n "$dirty" ]; then
-        echo "compat-check: uncommitted changes in $(crate_of "$connector")'s sources; the stamp records what HEAD holds, so commit them first:" >&2
+        echo "update_compatibility: uncommitted changes in $(crate_of "$connector")'s sources; the stamp records what HEAD holds, so commit them first:" >&2
         printf '%s\n' "$dirty" | head -10 >&2
         exit 1
     fi
@@ -231,7 +231,7 @@ gates_gpui() {
     run_gate "clippy" cargo clippy -p native-theme-gpui --all-targets --locked -- -D warnings
     run_gate "documentation" env RUSTDOCFLAGS="-D warnings" \
         cargo doc -p native-theme-gpui --no-deps --locked
-    run_gate "widget coverage" python3 scripts/check-widget-coverage.py
+    run_gate "widget coverage" python3 scripts/check_widget_coverage.py
 }
 
 gates_iced() {
@@ -245,7 +245,7 @@ gates_iced() {
         cargo doc -p native-theme-iced --no-deps --locked
     run_gate "documentation (all features)" env RUSTDOCFLAGS="-D warnings" \
         cargo doc -p native-theme-iced --no-deps --locked --all-features
-    run_gate "widget coverage" python3 scripts/check-widget-coverage.py
+    run_gate "widget coverage" python3 scripts/check_widget_coverage.py
 }
 
 gates_egui() {
@@ -259,7 +259,7 @@ gates_egui() {
         cargo doc -p native-theme-egui --no-deps --locked
     run_gate "documentation (all features)" env RUSTDOCFLAGS="-D warnings" \
         cargo doc -p native-theme-egui --no-deps --locked --all-features
-    run_gate "widget coverage" python3 scripts/check-widget-coverage.py
+    run_gate "widget coverage" python3 scripts/check_widget_coverage.py
 }
 
 run_connector() {
@@ -274,7 +274,7 @@ run_connector() {
 
     for c in $(family_of "$connector"); do update_args+=(-p "$c"); done
     if ! cargo update "${update_args[@]}"; then
-        echo "compat-check: cargo update failed. The run resolves the newest upstream release and needs the registry; it is never skipped, because a claim made offline would be about the versions already in the lockfile." >&2
+        echo "update_compatibility: cargo update failed. The run resolves the newest upstream release and needs the registry; it is never skipped, because a claim made offline would be about the versions already in the lockfile." >&2
         exit 1
     fi
 
@@ -285,7 +285,7 @@ run_connector() {
     for c in $(family_of "$connector"); do
         version=$(lock_version "$c")
         if [ -z "$version" ]; then
-            echo "compat-check: $c is not in Cargo.lock, so the run cannot say which version it verified" >&2
+            echo "update_compatibility: $c is not in Cargo.lock, so the run cannot say which version it verified" >&2
             exit 1
         fi
         versions+="$c = \"$version\""$'\n'
@@ -310,7 +310,7 @@ cmd_run() {
     fi
     for connector in "${requested[@]}"; do
         if ! crate_of "$connector" >/dev/null; then
-            echo "compat-check: unknown connector '$connector' (gpui, iced, egui)" >&2
+            echo "update_compatibility: unknown connector '$connector' (gpui, iced, egui)" >&2
             exit 2
         fi
     done
@@ -322,7 +322,7 @@ cmd_run() {
 
 cmd_check() {
     if [ ! -f "$STAMP" ]; then
-        echo "no $STAMP_REL: no connector states an upstream set it has been verified against; run ./scripts/compat-check.sh run"
+        echo "no $STAMP_REL: no connector states an upstream set it has been verified against; run ./scripts/update_compatibility.sh run"
         return 1
     fi
     local connector crate recorded generated pairs current stale=() verified=()
@@ -348,7 +348,7 @@ cmd_check() {
     fi
     local joined
     joined=$(printf '%s; ' "${stale[@]}")
-    echo "compatibility claims are stale: ${joined%; }. ./scripts/compat-check.sh run re-verifies and refreshes them"
+    echo "compatibility claims are stale: ${joined%; }. ./scripts/update_compatibility.sh run re-verifies and refreshes them"
     return 1
 }
 

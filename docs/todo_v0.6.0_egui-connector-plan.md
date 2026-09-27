@@ -25,7 +25,7 @@ iced the family name its font database records for the face
 `1.88.0`), egui / eframe / egui_extras / egui_kittest 0.36.2, kittest 0.4.0,
 skrifa 0.44.0 (epaint 0.36.2's own requirement), fontdb 0.23.0, unicase 2.9,
 objc2-core-text 0.3.2 (macOS), muda 0.20.0 (macOS, showcase only), Python 3
-for `scripts/check-widget-coverage.py`.
+for `scripts/check_widget_coverage.py`.
 
 **Spec:** [`todo_v0.6.0_egui-connector-spec.md`](todo_v0.6.0_egui-connector-spec.md) — read it first; every task names the sections it implements, and a step that says "copy the block of spec §x verbatim" means exactly that: the spec's code and rustdoc are the text.
 **Rationale:** [`todo_v0.6.0_egui-connector-rationale.md`](todo_v0.6.0_egui-connector-rationale.md)
@@ -97,7 +97,7 @@ from earlier tasks and the ones later tasks take from it.
   called inside another's closure (§10.3, lock discipline).
 - **Every commit is green.** Write the test, watch it fail, implement, watch it
   pass, commit — within one task. Never wire a gate to a check that does not
-  yet pass: CI, the nightly canary and `pre-release-check.sh` run on these
+  yet pass: CI, the nightly canary and `scripts/check_release.sh` run on these
   commits.
 - **Dead code while the connector is assembled: one mechanism.** Task 7's crate
   root carries, after spec §4.1's attributes, two lines that are the plan's own,
@@ -137,7 +137,7 @@ from earlier tasks and the ones later tasks take from it.
 - **Every `Note` goes through `style::push_note`** (Task 13), which drops a
   duplicate: both schemes compile into one `notes`, and spec §7.2 reports a
   leaf once per atlas.
-- Every task ends with `CARGO_BUILD_JOBS=4 ./pre-release-check.sh` green and one
+- Every task ends with `CARGO_BUILD_JOBS=4 ./scripts/check_release.sh` green and one
   commit of the task's files, named one by one. Never `git add -A`. No
   `Co-Authored-By` or other AI-attribution lines. Push nothing; never tag,
   publish or release — Task 39's dispatch and every push are the maintainer's.
@@ -356,9 +356,9 @@ on.
 ### Task 0: The 0.6.0 version
 
 Spec §12.2 (clause 1). The workspace version is `0.5.9` (`Cargo.toml:12`) and `CHANGELOG.md:8`
-dates it. The asset stamp hashes `Cargo.lock` and `native-theme/src` (`scripts/asset-stamp.sh:30`,
-`:33`), and `pre-release-check.sh` turns a stale asset stamp or compatibility stamp into
-`print_fail` once `CHANGELOG.md` dates the current version (`pre-release-check.sh:698-700`,
+dates it. The asset stamp hashes `Cargo.lock` and `native-theme/src` (`scripts/update_provenance.sh:30`,
+`:33`), and `scripts/check_release.sh` turns a stale asset stamp or compatibility stamp into
+`print_fail` once `CHANGELOG.md` dates the current version (`scripts/check_release.sh:698-700`,
 `:729-731`), so from Task 1's first edit on no task's gate could pass. v0.5.9 bumped the version
 first for the same reason (`e02de421`).
 
@@ -414,15 +414,15 @@ Task 42 writes the entries under it; dating it is the maintainer's release commi
 
 - [ ] **Step 4: Verify the gates read the new version**
 
-Run: `CARGO_BUILD_JOBS=4 ./pre-release-check.sh`
+Run: `CARGO_BUILD_JOBS=4 ./scripts/check_release.sh`
 Expected: `PASS WITH WARNINGS` (measured: 53 checks, 52 ✅, 1 ⚠️, about 38 minutes). Run before
-the commit, the asset-stamp check itself is ✅ — it compares HEAD, which still holds v0.5.9's
+the commit, the update_provenance check itself is ✅ — it compares HEAD, which still holds v0.5.9's
 sources — and the one warning is `asset sources have uncommitted changes; the stamp check compared
-HEAD` (`pre-release-check.sh:704-707`). From Step 5's commit on, `bash scripts/asset-stamp.sh check`
+HEAD` (`scripts/check_release.sh:704-707`). From Step 5's commit on, `bash scripts/update_provenance.sh check`
 exits 1 (`visual assets are stale: captured from other sources …`), and the gate turns that into a
 *warning* (`print_warn`), not a failure: the `elif grep -qE "^## \[0\.6\.0\] - ..."` branch at
-`pre-release-check.sh:698` does not match, since `CHANGELOG.md` dates no `0.6.0`. The compatibility
-check stays green: it hashes only the connectors' own sources (`scripts/compat-check.sh:63-66`),
+`scripts/check_release.sh:698` does not match, since `CHANGELOG.md` dates no `0.6.0`. The compatibility
+check stays green: it hashes only the connectors' own sources (`scripts/update_compatibility.sh:63-66`),
 which this task does not touch; it warns from Task 4 on.
 
 - [ ] **Step 5: Commit**
@@ -450,7 +450,7 @@ Tasks 4 and 5; Task 6's manifest forwards the feature; Task 22's `FontPlan::from
 - Modify: `native-theme/src/lib.rs:92` (a `pub mod fonts;` after `pub mod error;`)
 - Modify: `native-theme/src/macos.rs:219-229` (the `SystemUiFont` struct and the `system_ui_font` function, after `read_fonts`)
 - Modify: `native-theme/README.md:165-174` (the *Features* table gains the `system-fonts` row)
-- Modify: `Cargo.lock`, `pre-release-check.sh:504`, `.github/workflows/ci.yml:59-70`, `.github/workflows/publish.yml:69`, `.github/workflows/dependency-canary.yml:84`
+- Modify: `Cargo.lock`, `scripts/check_release.sh:504`, `.github/workflows/ci.yml:59-70`, `.github/workflows/publish.yml:69`, `.github/workflows/dependency-canary.yml:84`
 
 **Interfaces:**
 - Consumes: `native_theme::theme::FontStyle` (`native-theme/src/model/font.rs:57-66`, re-exported by `pub mod theme` at `native-theme/src/lib.rs:154-157`); fontdb 0.23.0 `Database::{new, load_system_fonts, load_font_file, faces, with_face_data}` (its `src/lib.rs` lines 178, 400, 258, 685 and 721), `FaceInfo::{id, families, style, weight, stretch}` (lines 813, 836, 846, 849, 852), `Stretch::to_number` (fontdb's `pub use ttf_parser::Width as Stretch`, line 73; ttf-parser 0.25.1 `src/tables/os2.rs` line 102); unicase 2.9.0 `UniCase::new` and its `PartialEq` (its `src/lib.rs` lines 123 and 211); objc2-core-text 0.3.2 `CTFont::{new_ui_font_for_language, copy_with_symbolic_traits, attribute}` (its `src/generated/CTFont.rs` lines 574, 662 and 843), `CTFontUIFontType::System` (line 437), `CTFontSymbolicTraits::ItalicTrait` (`src/generated/CTFontTraits.rs` line 90), the statics `kCTFontURLAttribute` and `kCTFontFamilyNameAttribute` (`src/generated/CTFontDescriptor.rs` lines 55 and 88); objc2-core-foundation 0.3.2 `CFRetained::downcast` (`src/retained.rs` line 204), `CFURL::to_file_path` (`src/url.rs` line 159), `CFString: Display` (`src/string.rs` line 130).
@@ -744,8 +744,8 @@ pub fn is_macos_system_ui_family(family: &str) -> bool {
 }
 ```
 
-The `saturating_sub`s are for `pre-release-check.sh`'s strict set, which denies
-`arithmetic_side_effects` on native-theme's library (`pre-release-check.sh:487-510`).
+The `saturating_sub`s are for `scripts/check_release.sh`'s strict set, which denies
+`arithmetic_side_effects` on native-theme's library (`scripts/check_release.sh:487-510`).
 
 - [ ] **Step 4: Run them again**
 
@@ -1102,7 +1102,7 @@ measured the load.
 
 - [ ] **Step 9: The gates see the feature**
 
-`pre-release-check.sh:504`:
+`scripts/check_release.sh:504`:
 
 ```bash
 NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
@@ -1136,18 +1136,18 @@ native-theme test feature list:
 
 - [ ] **Step 10: Gate and commit**
 
-Run: `./scripts/check-features.sh`
+Run: `./scripts/check_features.sh`
 Expected: every combination `ok`, `system-fonts` alone among them (the script discovers the
-feature from `cargo metadata`, `scripts/check-features.sh:36-40`), with no `warning:` line.
+feature from `cargo metadata`, `scripts/check_features.sh:36-40`), with no `warning:` line.
 
-Run: `CARGO_BUILD_JOBS=4 ./pre-release-check.sh`
+Run: `CARGO_BUILD_JOBS=4 ./scripts/check_release.sh`
 Expected: green; its cross-target section checks `native-theme --all-features` for
-`x86_64-apple-darwin` with warnings denied (`pre-release-check.sh:432-445`), which compiles
+`x86_64-apple-darwin` with warnings denied (`scripts/check_release.sh:432-445`), which compiles
 Step 6 where that target is installed (`rustup target add x86_64-apple-darwin`); the strict-panic
 lints run the library with `NT_FEATURES`, `system-fonts` now among them (`:507-508`).
 
 ```sh
-git add native-theme/src/fonts.rs native-theme/src/lib.rs native-theme/src/macos.rs native-theme/Cargo.toml native-theme/README.md Cargo.lock pre-release-check.sh .github/workflows/ci.yml .github/workflows/publish.yml .github/workflows/dependency-canary.yml
+git add native-theme/src/fonts.rs native-theme/src/lib.rs native-theme/src/macos.rs native-theme/Cargo.toml native-theme/README.md Cargo.lock scripts/check_release.sh .github/workflows/ci.yml .github/workflows/publish.yml .github/workflows/dependency-canary.yml
 git commit -m "feat(native-theme): system-fonts — find the platform's typeface by family name"
 ```
 
@@ -1303,7 +1303,7 @@ Expected: PASS, the new test among them, and no other test of the filter changed
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add native-theme/src/pipeline.rs native-theme/src/lib.rs
 git commit -m "feat(native-theme): SystemTheme::icon_theme_for gives both variants' icon theme"
 ```
@@ -1597,12 +1597,12 @@ Expected: PASS, 12 tests (gpui's eleven plus `colorize_svg_discards_alpha`).
 
 - [ ] **Step 5: Gate and commit**
 
-`pre-release-check.sh`'s strict-panic lints cover `native-theme`'s library
-(`pre-release-check.sh:507-510`): the function's arithmetic is `saturating_*`, its slicing
+`scripts/check_release.sh`'s strict-panic lints cover `native-theme`'s library
+(`scripts/check_release.sh:507-510`): the function's arithmetic is `saturating_*`, its slicing
 `get(..)`, so nothing is denied.
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add native-theme/src/icons.rs
 git commit -m "feat(native-theme): icons::colorize_monochrome_svg, one colouriser for every connector"
 ```
@@ -1624,7 +1624,7 @@ draw and label its theme fonts through it.
 - Modify: `connectors/native-theme-iced/src/lib.rs:64-68` (the *Features* table), `:98-116` (the *Font Configuration* example), `:411-415` (`font_family`'s doc), `:445-449` (`mono_font_family`'s doc, and the new function after it), `:618-632` (a test in `mod tests`)
 - Modify: `connectors/native-theme-iced/README.md:166-181` (*Features*) and `:196-204` (*Full helper list*)
 - Modify: `connectors/native-theme-iced/examples/showcase-iced.rs:5557` (`font_drawn`), `:5562` (`mono_drawn`), `:5568` (`role_drawn`), `:5593-5603` (`family_label`) and its callers `:2117-2122`, `:2137-2142`, `:3356-3360`, `:4104-4107` and `:5579-5580` (`font_row_drawn`); `:5654-5675` (`FONTS`/`FontBook`); `:7896-7916` (`a_substituted_family_says_so`); `:5975-5976` (two tests in `mod tests`)
-- Modify: `pre-release-check.sh:541-542` (the iced configurations' comment)
+- Modify: `scripts/check_release.sh:541-542` (the iced configurations' comment)
 
 **Interfaces:**
 - Consumes: `native_theme::fonts::system_face(&str, u16, FontStyle) -> Option<SystemFace>` and `SystemFace::family: Arc<str>` (Task 1; feature `native-theme/system-fonts`); `native_theme::theme::ResolvedFontSpec { family: Arc<str>, size, defined_size, weight: u16, style: FontStyle, color }` (`native-theme/src/model/font.rs:240-272`, `Clone`); the showcase's `font_from_database(family: &str, weight: u16, mono: bool) -> Drawn<'static>` (`connectors/native-theme-iced/examples/showcase-iced.rs:5680`), `Drawn { font: iced::Font, family: Option<&str> }` (`:5642-5645`), `holds(db, family) -> bool` (`:5790`), `iced::advanced::graphics::text::font_system()` (`:5687`).
@@ -1692,7 +1692,7 @@ name = "showcase-iced"
 required-features = ["widgets", "system-fonts"]
 ```
 
-`pre-release-check.sh:541-542`: `(no icon support)` → `(no icon or system-font support)`.
+`scripts/check_release.sh:541-542`: `(no icon support)` → `(no icon or system-font support)`.
 
 - [ ] **Step 4: Implement `system_font_family` and its docs**
 
@@ -1735,7 +1735,7 @@ The *Features* table (`connectors/native-theme-iced/src/lib.rs:64-68`) gains a r
 
 The *Font Configuration* example (`connectors/native-theme-iced/src/lib.rs:98-116`) names the family through the function where the
 feature is on, and the stated family where it is off, so the `--no-default-features` test run
-(`pre-release-check.sh:548-549`) still compiles it; the example becomes:
+(`scripts/check_release.sh:548-549`) still compiles it; the example becomes:
 
 ```rust
 //! ```rust,no_run
@@ -2038,21 +2038,21 @@ Expected: PASS — the crate's and the showcase's tests, `system-fonts` now amon
 the two new showcase tests listed as `ignored`.
 
 Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --no-default-features`
-Expected: PASS (`pre-release-check.sh:548-549`'s configuration; the showcase is skipped by
+Expected: PASS (`scripts/check_release.sh:548-549`'s configuration; the showcase is skipped by
 its `required-features`).
 
 Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --features iced_aw`
-Expected: PASS (`pre-release-check.sh:550-551`'s configuration).
+Expected: PASS (`scripts/check_release.sh:550-551`'s configuration).
 
 Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --example showcase-iced --features iced_aw --no-run`
 Expected: compiles; Step 7's tests are in the binary.
 
-Run: `./scripts/check-features.sh`
+Run: `./scripts/check_features.sh`
 Expected: `system-fonts` alone builds without a `warning:` line.
 
 - [ ] **Step 9: Gate and commit**
 
-The connector packaging checks (`pre-release-check.sh:638-641`, soft) compile the connector
+The connector packaging checks (`scripts/check_release.sh:638-641`, soft) compile the connector
 against the native-theme tarball packaged in the same invocation, which cargo extracts into a
 directory `~/.cargo/registry/src/-<hash>/native-theme-0.6.0/` and does not extract again while
 the version stays `0.6.0` (measured 2026-09-26): the extraction Task 0's run left has no
@@ -2062,12 +2062,12 @@ the version stays `0.6.0` (measured 2026-09-26): the extraction Task 0's run lef
 
 ```sh
 find ~/.cargo/registry/src -maxdepth 2 -path '*/-*/native-theme-0.6.0' -exec rm -rf {} +
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
-git add connectors/native-theme-iced/Cargo.toml connectors/native-theme-iced/src/lib.rs connectors/native-theme-iced/README.md connectors/native-theme-iced/examples/showcase-iced.rs pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
+git add connectors/native-theme-iced/Cargo.toml connectors/native-theme-iced/src/lib.rs connectors/native-theme-iced/README.md connectors/native-theme-iced/examples/showcase-iced.rs scripts/check_release.sh
 git commit -m "feat(iced): system-fonts — the family iced's font database holds for the stated face"
 ```
 
-The compatibility check of `pre-release-check.sh` warns from here on: the iced connector's
+The compatibility check of `scripts/check_release.sh` warns from here on: the iced connector's
 sources changed since its stamp (Task 0's gate said so); Task 41 re-verifies the connectors.
 
 ### Task 5: The gpui connector draws the macOS system font as gpui's system UI font
@@ -2181,7 +2181,7 @@ Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-gpui --lib ui_font`
 Expected: PASS, the new test among them.
 
 Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-gpui --lib --no-default-features`
-Expected: PASS (`pre-release-check.sh:534-535`'s configuration).
+Expected: PASS (`scripts/check_release.sh:534-535`'s configuration).
 
 - [ ] **Step 5: The showcase's inspector**
 
@@ -2269,13 +2269,13 @@ warning: on Linux it is read by Step 6's `#[cfg(not(target_os = "macos"))] let _
 
 - [ ] **Step 8: Gate and commit**
 
-The task adds no feature, so `scripts/check-features.sh` has nothing new to build.
+The task adds no feature, so `scripts/check_features.sh` has nothing new to build.
 The packaging extraction is removed first, for the reason Task 4's Step 9 gives (the gpui
 connector now calls `native_theme::fonts`).
 
 ```sh
 find ~/.cargo/registry/src -maxdepth 2 -path '*/-*/native-theme-0.6.0' -exec rm -rf {} +
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-gpui/src/lib.rs connectors/native-theme-gpui/src/config.rs connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs connectors/native-theme-gpui/examples/showcase-gpui/main.rs
 git commit -m "feat(gpui): the macOS system font through gpui's .SystemUIFont"
 ```
@@ -2287,17 +2287,17 @@ git commit -m "feat(gpui): the macOS system font through gpui's .SystemUIFont"
 ### Task 6: The crate and its manifest
 
 Spec §11, §12.1, §13 T7 (the one-`skrifa` check). The crate exists from here on, wired into
-every entry of `pre-release-check.sh` that passes on an empty crate, so every later task runs
+every entry of `scripts/check_release.sh` that passes on an empty crate, so every later task runs
 under them.
 
 **Model:** Opus 5 (`implement` agent)
 
 **Files:**
 - Create: `connectors/native-theme-egui/Cargo.toml`, `connectors/native-theme-egui/src/lib.rs` (an empty file; Task 7 writes the crate root)
-- Modify: `Cargo.toml` (the workspace `members` list, lines 2–8), `Cargo.lock` (cargo rewrites it), `pre-release-check.sh` (the panic-pattern directories at line 303 and the scan's test-module rule, lines 304-354; after the gpui strict-panic entry at lines 517–518; after the iced configurations section at lines 547–553; after the iced all-features docs run at lines 620–621)
+- Modify: `Cargo.toml` (the workspace `members` list, lines 2–8), `Cargo.lock` (cargo rewrites it), `scripts/check_release.sh` (the panic-pattern directories at line 303 and the scan's test-module rule, lines 304-354; after the gpui strict-panic entry at lines 517–518; after the iced configurations section at lines 547–553; after the iced all-features docs run at lines 620–621)
 
 **Interfaces:**
-- Consumes: the workspace dependency `native-theme = { path = "native-theme", version = "0.6.0" }` (`Cargo.toml:22`, bumped by Task 0); native-theme's features `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`, `watch`, and `system-fonts` from Task 1 (§12.1); the `WORKSPACE_CRATES` discovery of `pre-release-check.sh:380-384`, which picks the new member up for the check, clippy, test, examples and docs loops with no edit.
+- Consumes: the workspace dependency `native-theme = { path = "native-theme", version = "0.6.0" }` (`Cargo.toml:22`, bumped by Task 0); native-theme's features `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`, `watch`, and `system-fonts` from Task 1 (§12.1); the `WORKSPACE_CRATES` discovery of `scripts/check_release.sh:380-384`, which picks the new member up for the check, clippy, test, examples and docs loops with no edit.
 - Produces: the package `native-theme-egui` (`rust-version = "1.95"`, the six features of §12.1, `default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]`, direct dependencies `egui`, `native-theme`, `skrifa` and the dev-dependencies of §11 less the macOS ones); the pre-release entries `strict-panic (native-theme-egui)`, `test (native-theme-egui, no features)`, `test (native-theme-egui, all features)`, `clippy (native-theme-egui, all features)`, `one skrifa (native-theme-egui)` and `docs (native-theme-egui, all features)`, which every later task's gate runs.
 
 - [ ] **Step 1: Write the manifest**
@@ -2360,20 +2360,20 @@ Expected: the direct edges `egui v0.36.2` (or a later `0.36.x` patch — `egui =
 Run: `cargo tree -p native-theme-egui --target all -d`
 Expected: no line begins with `ecolor ` and no line begins with `skrifa ` — `-d` lists each duplicated package as a root line followed by its dependents, so a second `ecolor` or a second `skrifa` in this crate's graph, dev-dependencies included, would print as such a root (§11; §13 T7). Other duplicated packages (a `windows-sys`, a `bitflags`) may be listed; they are not this task's.
 
-- [ ] **Step 4: Wire the entries of `pre-release-check.sh` that pass on an empty crate**
+- [ ] **Step 4: Wire the entries of `scripts/check_release.sh` that pass on an empty crate**
 
 Four edits, each anchored on the text quoted. The script's helpers: `run_check` is defined at
-`pre-release-check.sh:152` and `run_tests` at `pre-release-check.sh:208`; each runs its
+`scripts/check_release.sh:152` and `run_tests` at `scripts/check_release.sh:208`; each runs its
 command and fails the script on a non-zero exit.
 
-(a) The panic-pattern scan's `src_dir` list (`pre-release-check.sh:303`):
+(a) The panic-pattern scan's `src_dir` list (`scripts/check_release.sh:303`):
 
 ```bash
 for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src; do
 ```
 
 and, in the same scan, a module whose parent declares it `#[cfg(test)] mod name;` is skipped
-as the scan's in-file `#[cfg(test)]` blocks are. The scan (`pre-release-check.sh:304-354`)
+as the scan's in-file `#[cfg(test)]` blocks are. The scan (`scripts/check_release.sh:304-354`)
 skips only a brace block that follows a `#[cfg(test)]` line in the same file, and files named
 `tests.rs`; it does not follow a module declaration into its file. The siblings' test-only
 files (`connectors/native-theme-iced/src/lib.rs:183-185`, `compat` and `contract`) hold none of
@@ -2420,16 +2420,16 @@ lines are written exactly as above in the file (`'\n'`, `r'\s*…'`). Production
 scanned: a `.unwrap()` appended to `src/style/mod.rs` and an `.expect(` to `src/fonts.rs` of a
 scratch copy of the crate are both reported (checked 2026-09-26).
 
-(b) After the gpui strict-panic entry (`pre-release-check.sh:517-518`, the last entry of the
+(b) After the gpui strict-panic entry (`scripts/check_release.sh:517-518`, the last entry of the
 "Strict panic lints (library code)" section), whose lint set is the array
-`STRICT_PANIC_LINTS` (`pre-release-check.sh:487-503`):
+`STRICT_PANIC_LINTS` (`scripts/check_release.sh:487-503`):
 
 ```bash
 run_check "strict-panic (native-theme-egui)" \
     cargo clippy -p native-theme-egui --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
 ```
 
-(c) After the iced configurations section (`pre-release-check.sh:547-553`), a section of the
+(c) After the iced configurations section (`scripts/check_release.sh:547-553`), a section of the
 same shape for this crate's two configurations of §11, plus §13 T7's one-`skrifa` check:
 
 ```bash
@@ -2454,7 +2454,7 @@ run_check "one skrifa (native-theme-egui)" \
     bash -c 'out=$(cargo tree -p native-theme-egui --target all -d) && ! grep -q "^skrifa " <<<"$out"'
 ```
 
-(d) After the iced all-features docs run (`pre-release-check.sh:620-621`):
+(d) After the iced all-features docs run (`scripts/check_release.sh:620-621`):
 
 ```bash
 # docs.rs builds native-theme-egui with every feature too (its
@@ -2463,18 +2463,18 @@ run_check "docs (native-theme-egui, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui --no-deps --all-features
 ```
 
-The package dry run (`pre-release-check.sh:637-642`) and the publish hints (`:783-784`) are
+The package dry run (`scripts/check_release.sh:637-642`) and the publish hints (`:783-784`) are
 Task 37's: the dry run needs Task 29's README.
 
 - [ ] **Step 5: Run the gate**
 
-Run: `CARGO_BUILD_JOBS=4 ./pre-release-check.sh`
-Expected: green. The output lists `check (native-theme-egui)`, `clippy (native-theme-egui)`, `test (native-theme-egui)` and `docs (native-theme-egui)` from the per-crate loops, and the six entries of Step 4 by the names given there; the three `test (native-theme-egui…)` entries print a bare ✓ with no count, because `_run_tests_impl` prints a count only when a test passed or was ignored (`pre-release-check.sh:173-187`) and the crate has no test yet. The asset-stamp check stays the warning Task 0 left it (`CHANGELOG.md` dates no `0.6.0`).
+Run: `CARGO_BUILD_JOBS=4 ./scripts/check_release.sh`
+Expected: green. The output lists `check (native-theme-egui)`, `clippy (native-theme-egui)`, `test (native-theme-egui)` and `docs (native-theme-egui)` from the per-crate loops, and the six entries of Step 4 by the names given there; the three `test (native-theme-egui…)` entries print a bare ✓ with no count, because `_run_tests_impl` prints a count only when a test passed or was ignored (`scripts/check_release.sh:173-187`) and the crate has no test yet. The update_provenance check stays the warning Task 0 left it (`CHANGELOG.md` dates no `0.6.0`).
 
 - [ ] **Step 6: Commit**
 
 ```sh
-git add Cargo.toml Cargo.lock pre-release-check.sh connectors/native-theme-egui/Cargo.toml connectors/native-theme-egui/src/lib.rs
+git add Cargo.toml Cargo.lock scripts/check_release.sh connectors/native-theme-egui/Cargo.toml connectors/native-theme-egui/src/lib.rs
 git commit -m "feat(egui): add the native-theme-egui crate"
 ```
 
@@ -2619,13 +2619,13 @@ Expected: `0`.
 - [ ] **Step 4: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/lib.rs
 git commit -m "feat(egui): crate root, lints and re-exports"
 ```
 
 Expected of the gate: green, `strict-panic (native-theme-egui)` included — the script's
-`STRICT_PANIC_LINTS` (`pre-release-check.sh:487-503`) is a superset of the crate's own seven.
+`STRICT_PANIC_LINTS` (`scripts/check_release.sh:487-503`) is a superset of the crate's own seven.
 
 ### Task 8: `mod convert`
 
@@ -2874,12 +2874,12 @@ Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-egui --lib convert::`
 Expected: PASS, `7 passed`.
 
 Run: `CARGO_BUILD_JOBS=4 cargo clippy -p native-theme-egui --lib --all-features -- -D clippy::unwrap_used -D clippy::expect_used -D clippy::unwrap_in_result -D clippy::panic -D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::unreachable -D clippy::manual_assert -D clippy::indexing_slicing -D clippy::string_slice -D clippy::arithmetic_side_effects -D clippy::integer_division -D clippy::modulo_arithmetic -D clippy::exit >/dev/null 2>&1; echo $?`
-Expected: `0` — the strict set of `pre-release-check.sh:487-503`; §7.2's arithmetic is all `f32`, on which `arithmetic_side_effects` and `integer_division` do not fire (§4.1).
+Expected: `0` — the strict set of `scripts/check_release.sh:487-503`; §7.2's arithmetic is all `f32`, on which `arithmetic_side_effects` and `integer_division` do not fire (§4.1).
 
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/convert.rs
 git commit -m "feat(egui): total, panic-free numeric and colour conversion"
 ```
@@ -3141,7 +3141,7 @@ Expected: `0` — the `#[expect(deprecated)]` is fulfilled, so `unfulfilled_lint
 - [ ] **Step 3: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/tripwires.rs
 git commit -m "test(egui): compile-time and default-value tripwires over egui's style types"
 ```
@@ -3476,7 +3476,7 @@ Expected: `0` — every public item, variant and `Note` field carries its spec d
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/roles.rs connectors/native-theme-egui/src/icons.rs connectors/native-theme-egui/src/atlas.rs
 git commit -m "feat(egui): Role, RoleVariant, Surface and the diagnostic Note"
 ```
@@ -4141,7 +4141,7 @@ Expected: `0` — Task 7's crate-level `dead_code` allow covers the stores later
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/atlas.rs connectors/native-theme-egui/src/fonts.rs connectors/native-theme-egui/src/style/mod.rs connectors/native-theme-egui/src/accessors.rs connectors/native-theme-egui/src/install_tests.rs
 git commit -m "feat(egui): the ThemeAtlas handle, its Builder and its accessors"
 ```
@@ -4900,7 +4900,7 @@ Expected: PASS — `3 passed`. The transcription measured 2026-09-26: 297 rows w
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/mapping.toml connectors/native-theme-egui/src/mapping_tests.rs connectors/native-theme-egui/src/lib.rs
 git commit -m "feat(egui): mapping.toml, one row per native leaf"
 ```
@@ -5515,7 +5515,7 @@ Expected: PASS — `6 passed`; the oracle test's five sizes agree with `row_heig
 - [ ] **Step 6: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style/base.rs connectors/native-theme-egui/src/style/mod.rs connectors/native-theme-egui/src/fonts.rs connectors/native-theme-egui/src/atlas.rs
 git commit -m "feat(egui): the base style"
 ```
@@ -6021,7 +6021,7 @@ Expected: PASS — `style::states::tests` 9 passed and `style::base::tests` 5 pa
 - [ ] **Step 6: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style/states.rs connectors/native-theme-egui/src/style/base.rs connectors/native-theme-egui/src/style/mod.rs
 git commit -m "feat(egui): the five-state derivation"
 ```
@@ -7342,7 +7342,7 @@ Expected: PASS — `test result: ok. 21 passed` (`style::roles`; 35 with `style:
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style/roles.rs connectors/native-theme-egui/src/style/mod.rs
 git commit -m "feat(egui): per-role styles"
 ```
@@ -7789,7 +7789,7 @@ now differ from `Normal` only where this task writes.
 - [ ] **Step 6: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style/variants.rs connectors/native-theme-egui/src/style/mod.rs
 git commit -m "feat(egui): the Selected and Disabled variants"
 ```
@@ -8769,7 +8769,7 @@ Expected: `0`
 - [ ] **Step 6: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style/derived.rs connectors/native-theme-egui/src/style/mod.rs connectors/native-theme-egui/src/style/base.rs connectors/native-theme-egui/src/style/roles.rs
 git commit -m "feat(egui): soft-option fallbacks and the derived formulas"
 ```
@@ -9225,7 +9225,7 @@ Expected: `0`
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style/frames.rs connectors/native-theme-egui/src/style/mod.rs
 git commit -m "feat(egui): surface frames"
 ```
@@ -10657,7 +10657,7 @@ Expected: `0`
 - [ ] **Step 9: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style_diff.rs connectors/native-theme-egui/src/mapping_tests.rs connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/mapping.toml
 git commit -m "test(egui): hostile input and differential mapping coverage" -m "T4 (a) runs in <t4a> s and T2 in <t2> s."
 ```
@@ -11009,7 +11009,7 @@ Expected: `0`.
 - [ ] **Step 9: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/atlas.rs connectors/native-theme-egui/src/ext.rs connectors/native-theme-egui/src/plugin.rs connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/install_tests.rs
 git commit -m "feat(egui): install, from_ctx and clear, and native_scope / native_set_style / native_frame"
 ```
@@ -11710,7 +11710,7 @@ Expected: `0`.
 - [ ] **Step 10: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/plugin.rs connectors/native-theme-egui/src/atlas.rs connectors/native-theme-egui/src/style/mod.rs connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/install_tests.rs connectors/native-theme-egui/src/mapping_tests.rs
 git commit -m "feat(egui): the install plugin — OS colour scheme, title bar, focus ring"
 ```
@@ -12462,8 +12462,8 @@ Expected: compiles; and `CARGO_BUILD_JOBS=4 cargo test -p native-theme-egui --al
 
 ```sh
 CARGO_BUILD_JOBS=4 cargo test -p native-theme-egui --all-features --no-run
-./scripts/check-features.sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+./scripts/check_features.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/fonts.rs connectors/native-theme-egui/src/atlas.rs connectors/native-theme-egui/src/install_tests.rs
 git commit -m "feat(egui): the platform's typeface, validated, and line spacing at build"
 ```
@@ -13153,7 +13153,7 @@ Expected: `0` — every accessor is `#[must_use]` and documented. `input_frame` 
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/accessors.rs connectors/native-theme-egui/src/icons.rs connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/install_tests.rs
 git commit -m "feat(egui): free accessors"
 ```
@@ -13418,7 +13418,7 @@ Expected: PASS — without `system-fonts` no plan is attached and the notes clau
 
 ```sh
 CARGO_BUILD_JOBS=4 cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings >/dev/null 2>&1; echo $?
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/ext.rs connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/install_tests.rs
 git commit -m "feat(egui): parity constructors and SystemThemeExt"
 ```
@@ -13441,7 +13441,7 @@ It runs before Task 26, whose `ThemeWatcher` drops one of these subscriptions.
 **Files:**
 - Modify: `native-theme/src/watch/gnome.rs` (`watch_gnome`, its doc comment at `native-theme/src/watch/gnome.rs:14-17`, a new `#[cfg(test)] mod tests`)
 - Modify: `native-theme/src/watch/mod.rs` (the module doc's constructor note, `native-theme/src/watch/mod.rs:32-36`; `ThemeSubscription::new`'s rustdoc line, `native-theme/src/watch/mod.rs:150`; the `Drop` comment, `native-theme/src/watch/mod.rs:174-176`)
-- Modify: `pre-release-check.sh` (one `run_tests` line after the `run_tests_soft "test (native-theme-gpui, no features)"` call, `pre-release-check.sh:534-535` at HEAD; Task 6's inserted entries move it down, so locate it with `grep -n`)
+- Modify: `scripts/check_release.sh` (one `run_tests` line after the `run_tests_soft "test (native-theme-gpui, no features)"` call, `scripts/check_release.sh:534-535` at HEAD; Task 6's inserted entries move it down, so locate it with `grep -n`)
 
 **Interfaces:**
 - Consumes: `ThemeSubscription::new(shutdown_tx: mpsc::Sender<()>, thread: JoinHandle<()>, platform_shutdown: Option<Box<dyn FnOnce() + Send>>)` (`native-theme/src/watch/mod.rs:159-169`) and its `Drop`, which runs `platform_shutdown` first, then drops the sender, then joins (`:172-187`); `crate::Error::ReaderFailed { reader: &'static str, source: Box<dyn std::error::Error + Send + Sync> }` (`native-theme/src/error.rs:118-123`); zbus 5.19.0's `blocking::Connection`, which is `Clone` (its `src/blocking/connection/mod.rs`, line 23) and whose `close(self) -> Result<()>` makes "all reading and writing operations" fail afterwards (lines 299–304): the socket reader task then clears its senders, stores `closed` and returns (`src/connection/socket_reader.rs`, lines 111–118), the message stream ends (`src/message_stream.rs`, line 224, `Poll::Ready(None)` → `Terminated`), and `SignalIterator::next` — `block_on(stream.next())` (`src/blocking/proxy/mod.rs`, lines 406–412) — returns `None`, so the `for signal in signals` loop ends. `ashpd` re-exports zbus as `ashpd::zbus` (the backend already spells `ashpd::zbus::blocking::Connection::session()`, `native-theme/src/watch/gnome.rs:26`).
@@ -13604,7 +13604,7 @@ and the `Drop` comment's example list (`native-theme/src/watch/mod.rs:174-176`, 
 Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme --features portal,watch --lib watch:: -- --nocapture`
 Expected: PASS — `dropping_a_gnome_subscription_returns_without_a_signal ... ok` well inside the five seconds, and the four tests of `watch::tests` (`native-theme/src/watch/mod.rs:279-349`) still `ok`.
 
-- [ ] **Step 5: The gate.** The `Tests` section of `pre-release-check.sh` runs every crate with its default features (`pre-release-check.sh:524-535`), which leave `portal` and `watch` off (`native-theme/Cargo.toml:24`, `:31` are not in a default set), so the watch module's tests run nowhere else. Add after the `run_tests_soft "test (native-theme-gpui, no features)"` call (`pre-release-check.sh:534-535` at HEAD; after Task 6's inserted strict-panic entry it sits a few lines lower — `grep -n 'native-theme-gpui, no features' pre-release-check.sh`):
+- [ ] **Step 5: The gate.** The `Tests` section of `scripts/check_release.sh` runs every crate with its default features (`scripts/check_release.sh:524-535`), which leave `portal` and `watch` off (`native-theme/Cargo.toml:24`, `:31` are not in a default set), so the watch module's tests run nowhere else. Add after the `run_tests_soft "test (native-theme-gpui, no features)"` call (`scripts/check_release.sh:534-535` at HEAD; after Task 6's inserted strict-panic entry it sits a few lines lower — `grep -n 'native-theme-gpui, no features' scripts/check_release.sh`):
 
 ```bash
 # The GNOME watcher's shutdown (native-theme/src/watch/gnome.rs) is tested
@@ -13617,12 +13617,12 @@ run_tests "test (native-theme, portal+watch: the watch module)" \
 - [ ] **Step 6: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
-git add native-theme/src/watch/gnome.rs native-theme/src/watch/mod.rs pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
+git add native-theme/src/watch/gnome.rs native-theme/src/watch/mod.rs scripts/check_release.sh
 git commit -m "fix(native-theme): a GNOME theme subscription stops on drop"
 ```
 
-Expected of the script: green, its new `test (native-theme, portal+watch: the watch module)` line among the passes; the strict-panic lint over `NT_FEATURES` (`pre-release-check.sh:504-508`), which includes `portal` and `watch`, compiles the new `watch_gnome`. The CHANGELOG entry is Task 42's.
+Expected of the script: green, its new `test (native-theme, portal+watch: the watch module)` line among the passes; the strict-panic lint over `NT_FEATURES` (`scripts/check_release.sh:504-508`), which includes `portal` and `watch`, compiles the new `watch_gnome`. The CHANGELOG entry is Task 42's.
 
 ### Task 26: Icons and the watcher
 
@@ -14550,7 +14550,7 @@ Expected: `0`.
 - [ ] **Step 7: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/icons.rs connectors/native-theme-egui/src/watch.rs connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/atlas.rs connectors/native-theme-egui/src/install_tests.rs
 git commit -m "feat(egui): icons and the theme watcher"
 ```
@@ -14579,7 +14579,7 @@ the workspace's `1.88.0` or the connectors' `1.95`; this task adds the job §12.
 - [ ] **Step 1: Add the job**
 
 Insert into `.github/workflows/ci.yml` between the `features` job (its last line is
-`      - run: bash scripts/check-features.sh`, line 101 at HEAD) and the `test-build-crate` job (line
+`      - run: bash scripts/check_features.sh`, line 101 at HEAD) and the `test-build-crate` job (line
 103 at HEAD; both three lines lower after Task 1), spec §12.4's `msrv:` block verbatim:
 
 ```yaml
@@ -14628,7 +14628,7 @@ Expected: `['audit', 'clippy', 'doc', 'features', 'fmt', 'msrv', 'test', 'test-b
 - [ ] **Step 4: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add .github/workflows/ci.yml
 git commit -m "ci: an MSRV job for the workspace floor and the connectors' own"
 ```
@@ -14642,7 +14642,7 @@ application's `TextStyle::Name` keys across every seam that replaces a style (§
 30), the one residue a `Role::Scrollbar` scope does not reach (§14 item 2b), and the deliberate
 `None` for a raster icon larger than the GPU texture side (§9.3). They need `install` and the
 scopes (Task 20), `role_modifier` (Task 11) and the icons (Task 26) in place, which is why the
-task lands here. T7 is a checklist, not a module: `pre-release-check.sh` runs its lints and
+task lands here. T7 is a checklist, not a module: `scripts/check_release.sh` runs its lints and
 one-`skrifa` check from Task 6 on, and its package dry run once Task 37 wires that in.
 
 **Model:** Opus 5 (`implement` agent)
@@ -14830,7 +14830,7 @@ Expected: FAIL — under `cargo test`'s debug assertions the `debug_assert!` at 
 
 ```sh
 CARGO_BUILD_JOBS=4 cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings >/dev/null 2>&1; echo $?
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/install_tests.rs
 git commit -m "test(egui): the documented-limit regressions"
 ```
@@ -15070,7 +15070,7 @@ Expected: `0`, then the two doctests `ok` (they compile; `no_run` runs nothing)
 - [ ] **Step 6: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/README.md connectors/native-theme-egui/src/lib.rs
 git commit -m "docs(egui): the connector README and crate docs"
 ```
@@ -15336,7 +15336,7 @@ Expected: no warning; the crate page renders, under the crate docs, the totals t
 
 ```sh
 CARGO_BUILD_JOBS=4 cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings >/dev/null 2>&1; echo $?
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/src/mapping_doc.rs connectors/native-theme-egui/src/mapping.md
 git commit -m "docs(egui): the mapping document, generated from mapping.toml"
 ```
@@ -16609,7 +16609,7 @@ Expected: the window opens with the OS's frame, shows the Buttons page — the p
 - [ ] **Step 9: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/Cargo.toml connectors/native-theme-egui/examples/showcase-egui
 git commit -m "feat(egui): the showcase — palette pages and self-tests"
 ```
@@ -16961,7 +16961,7 @@ Expected: `0`, `0` and `0`
 - [ ] **Step 7: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/style/mod.rs connectors/native-theme-egui/src/style/base.rs connectors/native-theme-egui/src/style/states.rs connectors/native-theme-egui/src/style/roles.rs connectors/native-theme-egui/src/style/variants.rs connectors/native-theme-egui/src/style/derived.rs connectors/native-theme-egui/src/style/frames.rs connectors/native-theme-egui/src/atlas.rs connectors/native-theme-egui/src/install_tests.rs connectors/native-theme-egui/src/lib.rs
 git commit -m "feat(egui): accessibility preferences and the application's style patch"
 ```
@@ -18887,7 +18887,7 @@ Expected: FAIL naming `spacing.combo_height` — measured: `1 field(s) neither a
 
 ```sh
 CARGO_BUILD_JOBS=4 cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings >/dev/null 2>&1; echo $?
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/src/contract.rs connectors/native-theme-egui/src/lib.rs connectors/native-theme-egui/mapping.toml connectors/native-theme-egui/src/mapping.md
 git commit -m "test(egui): the mapping contract over 32 combinations, and contrast"
 ```
@@ -20287,7 +20287,7 @@ Expected: FAIL, the message naming what moved; PASS again after the revert. Past
 - [ ] **Step 7: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/examples/showcase-egui
 git commit -m "feat(egui): the showcase's chrome" -m "<the five observed failures, one per line>"
 ```
@@ -20307,7 +20307,7 @@ desktop: the gate is the cross-target check, and the readback is Task 39's.
 **Model:** Fable 5.1 (inline)
 
 **Files:**
-- Modify: `connectors/native-theme-egui/Cargo.toml` (the macOS dev-dependencies of §11), `Cargo.lock`, `examples/showcase-egui/main.rs` (the event-loop hook), `app.rs` (the menu the app owns, the channel, the shortcut block compiled out), `chrome.rs` (the `system_menu` module), `pre-release-check.sh` (the cross-target loop)
+- Modify: `connectors/native-theme-egui/Cargo.toml` (the macOS dev-dependencies of §11), `Cargo.lock`, `examples/showcase-egui/main.rs` (the event-loop hook), `app.rs` (the menu the app owns, the channel, the shortcut block compiled out), `chrome.rs` (the `system_menu` module), `scripts/check_release.sh` (the cross-target loop)
 
 **Interfaces:**
 - Consumes: Task 34's `Action::{MENUS, label, shortcut}`, `App::{pending, run_action}`, `chrome::menu_bar`; eframe's `NativeOptions::event_loop_builder` and `EventLoopBuilderHook` (`eframe/src/epi.rs:351`, `:34`); winit 0.30.13's `EventLoopBuilderExtMacOS::with_default_menu` (winit-0.30.13 `src/platform/macos.rs`, the trait method at line 429 and its impl at lines 446-449, read in the local registry); muda 0.20.0's `Menu::new`, `append`, `items`, `init_for_nsapp` (muda-0.20.0 `src/items/menu.rs` lines 86, 134, 256, 550-552), `Submenu::with_items` (`src/items/submenu.rs` lines 145-154), `MenuItem::with_id` (`src/items/normal.rs` lines 67-79), `PredefinedMenuItem::separator` (`src/items/predefined.rs` line 46), `MenuId(pub String)` (`src/menu_id.rs` line 6), `MenuEvent::set_event_handler` (`src/menu_event.rs` lines 47-53, a `Fn(MenuEvent) + Send + Sync + 'static`), `Accelerator::new(mods, key)` with `Code` and `Modifiers` re-exported from `keyboard_types` (`src/accelerator/mod.rs` lines 9 and 109); objc2 0.6.4's `MainThreadMarker::new` (`src/main_thread_marker.rs` line 230); objc2-app-kit 0.3.2's `NSApplication::sharedApplication` and `mainMenu` (`src/generated/NSApplication.rs` lines 488 and 703) and `NSMenu::numberOfItems` (`src/generated/NSMenu.rs` line 269), all safe methods.
@@ -20522,8 +20522,8 @@ let shortcuts: Vec<Action> = Vec::new();
       there; the chrome bar on macOS holds the toolbar row alone. `Action::shortcut` keeps a
       caller on every target: the egui-side block elsewhere, `system_menu::accelerator` on macOS.
 
-- [ ] **Step 5: The cross-target check.** In the cross-target loop of `pre-release-check.sh`
-      (`pre-release-check.sh:432-445`), after the `all features, -D warnings` check and inside
+- [ ] **Step 5: The cross-target check.** In the cross-target loop of `scripts/check_release.sh`
+      (`scripts/check_release.sh:432-445`), after the `all features, -D warnings` check and inside
       the loop, a check of the showcase and the lib's tests for the darwin target only — the
       `x86_64-pc-windows-gnu` branch does not build the muda macOS path — so Tasks 36–38's
       edits to `app.rs` and `chrome.rs`, and the lib's `#[cfg(test)]` macOS lines
@@ -20548,8 +20548,8 @@ Expected: PASS — Tasks 31 and 34's nine tests `ok`
 - [ ] **Step 7: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
-git add connectors/native-theme-egui/Cargo.toml Cargo.lock connectors/native-theme-egui/examples/showcase-egui/main.rs connectors/native-theme-egui/examples/showcase-egui/app.rs connectors/native-theme-egui/examples/showcase-egui/chrome.rs pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
+git add connectors/native-theme-egui/Cargo.toml Cargo.lock connectors/native-theme-egui/examples/showcase-egui/main.rs connectors/native-theme-egui/examples/showcase-egui/app.rs connectors/native-theme-egui/examples/showcase-egui/chrome.rs scripts/check_release.sh
 git commit -m "feat(egui): the showcase's menus in the macOS menu bar"
 ```
 
@@ -22374,46 +22374,46 @@ Expected: `0`, `0` and `0`
 - [ ] **Step 10: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/examples/showcase-egui
 git commit -m "feat(egui): per-instance Widget Info generated from mapping.toml" -m "<the observed failures, one per line>"
 ```
 
 ### Task 37: The connector in every gate that names connectors
 
-Spec §11, §12, §13 T7. Task 6 wired the entries of `pre-release-check.sh` that pass on an empty
+Spec §11, §12, §13 T7. Task 6 wired the entries of `scripts/check_release.sh` that pass on an empty
 crate and Task 35 its `x86_64-apple-darwin` check; this task adds the package dry run, which
 needs Task 29's README (§11's `readme = "README.md"`), and the connector to the three workflows
 that name each connector one by one, so that CI, the publish gate and the nightly canary run
-the same configurations `pre-release-check.sh` runs: default, `--no-default-features` and
+the same configurations `scripts/check_release.sh` runs: default, `--no-default-features` and
 `--all-features` (§11).
 
 **Model:** Opus 5 (`implement` agent)
 
 **Files:**
-- Modify: `pre-release-check.sh` (the packaging section, `pre-release-check.sh:638-641`; the publish hints, `:783-784`)
+- Modify: `scripts/check_release.sh` (the packaging section, `scripts/check_release.sh:638-641`; the publish hints, `:783-784`)
 - Modify: `.github/workflows/ci.yml` (the clippy matrix, `.github/workflows/ci.yml:31-34`; the connector test matrix, `:121-122`; the doc job, `:170`)
 - Modify: `.github/workflows/publish.yml` (the CI gate's clippy, test and doc steps, `.github/workflows/publish.yml:47-60`, `:71-80`, `:90-104`; the publish order comment and steps, `:154-159`, `:225-236`)
 - Modify: `.github/workflows/dependency-canary.yml` (the header comment, `.github/workflows/dependency-canary.yml:3-15`; the resolved-stack summary, `.github/workflows/dependency-canary.yml:60-66`; clippy, `:69-78`; test, `:80-89`; the `Documentation` step, `:118-128`)
 
 **Interfaces:**
-- Consumes: the crate `native-theme-egui` (Task 6) with §12.1's features — `default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]`, `svg-rasterize` and `watch` opt-in (spec §11); its README (Task 29); its showcase, which builds with no connector feature and with all of them (Task 31, spec §11); `scripts/check-features.sh`, which discovers every workspace library through `cargo metadata` (`scripts/check-features.sh:36-40`) and needs no edit.
-- Produces: the `pre-release-check.sh` package check `package (native-theme-egui)`; the CI jobs `Clippy egui connector` and `Test egui connector`; the publish gate's `Test native-theme-egui` step and `Publish native-theme-egui` step; the canary's egui lines. Every later task's commit runs under them.
+- Consumes: the crate `native-theme-egui` (Task 6) with §12.1's features — `default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]`, `svg-rasterize` and `watch` opt-in (spec §11); its README (Task 29); its showcase, which builds with no connector feature and with all of them (Task 31, spec §11); `scripts/check_features.sh`, which discovers every workspace library through `cargo metadata` (`scripts/check_features.sh:36-40`) and needs no edit.
+- Produces: the `scripts/check_release.sh` package check `package (native-theme-egui)`; the CI jobs `Clippy egui connector` and `Test egui connector`; the publish gate's `Test native-theme-egui` step and `Publish native-theme-egui` step; the canary's egui lines. Every later task's commit runs under them.
 
 - [ ] **Step 1: Confirm what needs no edit**
 
-The per-crate loops of `pre-release-check.sh` read the workspace through `cargo metadata`
-(`pre-release-check.sh:380-391`: `WORKSPACE_CRATES`) and already run the crate's tests
-(`pre-release-check.sh:524-530`), examples (`pre-release-check.sh:559-575`) and docs (`pre-release-check.sh:609-617`); `scripts/check-features.sh` discovers
-every library the same way, from one `cargo metadata` call whose `packages` it filters for a library `target` (`scripts/check-features.sh:36-40`).
+The per-crate loops of `scripts/check_release.sh` read the workspace through `cargo metadata`
+(`scripts/check_release.sh:380-391`: `WORKSPACE_CRATES`) and already run the crate's tests
+(`scripts/check_release.sh:524-530`), examples (`scripts/check_release.sh:559-575`) and docs (`scripts/check_release.sh:609-617`); `scripts/check_features.sh` discovers
+every library the same way, from one `cargo metadata` call whose `packages` it filters for a library `target` (`scripts/check_features.sh:36-40`).
 
-Run: `bash scripts/check-features.sh 2>&1 | grep native-theme-egui | head -3`
+Run: `bash scripts/check_features.sh 2>&1 | grep native-theme-egui | head -3`
 Expected: lines naming `native-theme-egui` — the script already builds its library with no
 features, each feature alone and all together.
 
-- [ ] **Step 2: Add the package dry run and the publish hint to `pre-release-check.sh`**
+- [ ] **Step 2: Add the package dry run and the publish hint to `scripts/check_release.sh`**
 
-After the gpui package line (`pre-release-check.sh:640-641`), in the same class as the two
+After the gpui package line (`scripts/check_release.sh:640-641`), in the same class as the two
 connector lines above it:
 
 ```bash
@@ -22421,7 +22421,7 @@ run_check_soft "package (native-theme-egui)" \
     cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty
 ```
 
-After the last publish hint (`pre-release-check.sh:784`, `cargo publish -p native-theme-gpui`):
+After the last publish hint (`scripts/check_release.sh:784`, `cargo publish -p native-theme-gpui`):
 
 ```bash
     printf "      ${DIM}cargo publish -p native-theme-egui${NC}\n"
@@ -22448,8 +22448,8 @@ mirrors:
 ```
 
 The connector test matrix (`.github/workflows/ci.yml:121-122`) gains a row, and the job a step after the iced one
-(`.github/workflows/ci.yml:131-137`), which it mirrors — the two configurations `pre-release-check.sh` gates the crate
-in from Task 6 on, as the iced connector's are (`pre-release-check.sh:547-551`):
+(`.github/workflows/ci.yml:131-137`), which it mirrors — the two configurations `scripts/check_release.sh` gates the crate
+in from Task 6 on, as the iced connector's are (`scripts/check_release.sh:547-551`):
 
 ```yaml
           - { name: "egui connector", package: "native-theme-egui" }
@@ -22457,7 +22457,7 @@ in from Task 6 on, as the iced connector's are (`pre-release-check.sh:547-551`):
 
 ```yaml
       # The connector's other two supported configurations (spec §11), gated by
-      # pre-release-check.sh as well so a release cannot pass on one CI never ran.
+      # scripts/check_release.sh as well so a release cannot pass on one CI never ran.
       - name: Test the egui connector's other configurations
         if: matrix.package == 'native-theme-egui'
         run: |
@@ -22588,13 +22588,13 @@ Expected: `0`.
 
 - [ ] **Step 6: Run the gate, then commit**
 
-Run: `CARGO_BUILD_JOBS=4 ./pre-release-check.sh 2>&1 | grep -E 'package \(native-theme-egui\)|ALL PASS|PASS WITH WARNINGS|FAILED'`
+Run: `CARGO_BUILD_JOBS=4 ./scripts/check_release.sh 2>&1 | grep -E 'package \(native-theme-egui\)|ALL PASS|PASS WITH WARNINGS|FAILED'`
 Expected: `package (native-theme-egui)` passes and the summary line is `ALL PASS` or
 `PASS WITH WARNINGS` (the asset and compatibility stamps warn until the release, Task 0).
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
-git add pre-release-check.sh .github/workflows/ci.yml .github/workflows/publish.yml .github/workflows/dependency-canary.yml
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
+git add scripts/check_release.sh .github/workflows/ci.yml .github/workflows/publish.yml .github/workflows/dependency-canary.yml
 git commit -m "ci: gate native-theme-egui wherever the connectors are named"
 ```
 
@@ -22608,16 +22608,16 @@ Windows screenshot workflow, and the connector's sources in the asset stamp, so 
 **Model:** Opus 5 (`implement` agent)
 
 **Files:**
-- Create: `scripts/generate_egui_screenshots.sh`; `connectors/native-theme-egui/docs/assets/` with the six Linux screenshots and the GIF the scripts capture
-- Modify: `scripts/pre-release.sh` (`scripts/pre-release.sh:20-21`, `:48`, `:103-121`, `:171-178`, the summary `dir` loop `:220`), `scripts/generate_assets.sh` (`scripts/generate_assets.sh:16-25`, `:31-35`), `scripts/generate_theme_switching_gif.sh` (`scripts/generate_theme_switching_gif.sh:4-11`, `:17-20`, the `mkdir` `:33`, the `Assembling gpui GIF` block through the `rm -rf` cleanup `:116-129`), `.github/workflows/screenshots.yml` (`.github/workflows/screenshots.yml:13-32`), `scripts/asset-stamp.sh` (`scripts/asset-stamp.sh:18-21`, `:28-50`)
+- Create: `scripts/generate_screenshots_egui.sh`; `connectors/native-theme-egui/docs/assets/` with the six Linux screenshots and the GIF the scripts capture
+- Modify: `scripts/generate_assets_release.sh` (`scripts/generate_assets_release.sh:20-21`, `:48`, `:103-121`, `:171-178`, the summary `dir` loop `:220`), `scripts/generate_assets_local.sh` (`scripts/generate_assets_local.sh:16-25`, `:31-35`), `scripts/generate_gifs_theme_switching.sh` (`scripts/generate_gifs_theme_switching.sh:4-11`, `:17-20`, the `mkdir` `:33`, the `Assembling gpui GIF` block through the `rm -rf` cleanup `:116-129`), `.github/workflows/screenshots.yml` (`.github/workflows/screenshots.yml:13-32`), `scripts/update_provenance.sh` (`scripts/update_provenance.sh:18-21`, `:28-50`)
 
 **Interfaces:**
-- Consumes: the showcase's command line (Task 31, spec §10.4): `--theme <preset>`, `--variant light|dark`, `--icon-set <set>`, `--tab <page>` and `--screenshot <path>`, the five flags every showcase parses (`.github/workflows/screenshots.yml:79-82`); `--screenshot` writes the frame egui rendered as a PNG at `<path>` and exits; the page `buttons` (spec §10.4's page table); the icon theme follows the preset (`kde-breeze` names `breeze` and `breeze-dark` itself), so no icon-theme flag exists or is needed. `python3 scripts/generate_gifs.py --theme-switching <frame dir> --theme-switching-output <gif>` (`scripts/generate_gifs.py:319-331`).
+- Consumes: the showcase's command line (Task 31, spec §10.4): `--theme <preset>`, `--variant light|dark`, `--icon-set <set>`, `--tab <page>` and `--screenshot <path>`, the five flags every showcase parses (`.github/workflows/screenshots.yml:79-82`); `--screenshot` writes the frame egui rendered as a PNG at `<path>` and exits; the page `buttons` (spec §10.4's page table); the icon theme follows the preset (`kde-breeze` names `breeze` and `breeze-dark` itself), so no icon-theme flag exists or is needed. `python3 scripts/generate_gifs_spinners.py --theme-switching <frame dir> --theme-switching-output <gif>` (`scripts/generate_gifs_spinners.py:319-331`).
 - Produces: `connectors/native-theme-egui/docs/assets/linux-<theme>-<variant>.png` for the six Linux presets, `theme-switching.gif` beside them; the workflow artifacts `screenshots-egui-macos` (`macos-macos-sonoma-light.png`, `-dark.png`) and `screenshots-egui-windows` (`windows-windows-11-light.png`, `-dark.png`), which Task 39 downloads; a `SOURCE_PATHS` that covers the egui connector.
 
-- [ ] **Step 1: Write `scripts/generate_egui_screenshots.sh`**
+- [ ] **Step 1: Write `scripts/generate_screenshots_egui.sh`**
 
-The iced script (`scripts/generate_screenshots.sh`) with the egui crate, example and feature
+The iced script (`scripts/generate_screenshots_iced.sh`) with the egui crate, example and feature
 set; the egui showcase takes no `--icon-theme`, so the gpui script's fourth field is not
 needed:
 
@@ -22710,7 +22710,7 @@ echo "=== Screenshot generation complete ==="
 echo "Generated $(ls "$OUTPUT_DIR"/linux-*.png 2>/dev/null | wc -l) screenshots in $OUTPUT_DIR"
 ```
 
-`chmod +x scripts/generate_egui_screenshots.sh`, as the sibling scripts are.
+`chmod +x scripts/generate_screenshots_egui.sh`, as the sibling scripts are.
 
 - [ ] **Step 2: Capture the Linux screenshots**
 
@@ -22718,37 +22718,37 @@ The desktop must be idle for the whole run — per capture the script's `DELAY` 
 own time and one more second — since spectacle grabs the active window. Where the implementer has no desktop session, this step is the maintainer's: say so
 in the report and continue with Step 3.
 
-Run: `bash scripts/generate_egui_screenshots.sh && ls connectors/native-theme-egui/docs/assets/`
+Run: `bash scripts/generate_screenshots_egui.sh && ls connectors/native-theme-egui/docs/assets/`
 Expected: the six files `linux-kde-breeze-dark.png`, `linux-kde-breeze-light.png`,
 `linux-material-dark.png`, `linux-material-light.png`, `linux-catppuccin-mocha-dark.png`,
 `linux-catppuccin-mocha-light.png`, each showing the showcase on its Buttons page with the
 side panel shown; the kde-breeze pair carries Breeze icons.
 
-- [ ] **Step 3: Add the egui step and artifacts to `scripts/pre-release.sh`**
+- [ ] **Step 3: Add the egui step and artifacts to `scripts/generate_assets_release.sh`**
 
-After `GPUI_DIR` (`scripts/pre-release.sh:21`):
+After `GPUI_DIR` (`scripts/generate_assets_release.sh:21`):
 
 ```bash
 EGUI_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
 ```
 
-The five `Step N/5` headings (`scripts/pre-release.sh:56`, `:103`, `:108`, `:113`, `:118`) become `Step N/6`:
-the first four read `Step 1/6` to `Step 4/6`, a new block follows the gpui one (`scripts/pre-release.sh:113-116`), and the GIF
+The five `Step N/5` headings (`scripts/generate_assets_release.sh:56`, `:103`, `:108`, `:113`, `:118`) become `Step N/6`:
+the first four read `Step 1/6` to `Step 4/6`, a new block follows the gpui one (`scripts/generate_assets_release.sh:113-116`), and the GIF
 step becomes `Step 6/6` and names all three showcases:
 
 ```bash
 echo "=== Step 5/6: egui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_egui_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_egui.sh"
 ok "egui Linux screenshots generated"
 echo ""
 
 echo "=== Step 6/6: Theme-switching GIFs (iced + gpui + egui) ==="
-bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
+bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 ok "Theme-switching GIFs generated"
 echo ""
 ```
 
-The artifact loop (`scripts/pre-release.sh:171-178`) gains the two egui artifacts and their destination:
+The artifact loop (`scripts/generate_assets_release.sh:171-178`) gains the two egui artifacts and their destination:
 
 ```bash
 for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-macos "$TMPDIR"/screenshots-egui-macos "$TMPDIR"/screenshots-iced-windows "$TMPDIR"/screenshots-gpui-windows "$TMPDIR"/screenshots-egui-windows; do
@@ -22762,38 +22762,38 @@ for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-
     esac
 ```
 
-The summary loop (`scripts/pre-release.sh:220`) becomes `for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR" "$NT_DIR"; do`.
-The prerequisite check's message (`scripts/pre-release.sh:48`), `spectacle not found (needed for gpui captures)`,
+The summary loop (`scripts/generate_assets_release.sh:220`) becomes `for dir in "$ICED_DIR" "$GPUI_DIR" "$EGUI_DIR" "$NT_DIR"; do`.
+The prerequisite check's message (`scripts/generate_assets_release.sh:48`), `spectacle not found (needed for gpui captures)`,
 becomes `spectacle not found (needed for the Linux captures)`: every Linux capture script uses it.
-The closing hint (`scripts/pre-release.sh:231`) already names `connectors/native-theme-*/docs/assets/`, which
+The closing hint (`scripts/generate_assets_release.sh:231`) already names `connectors/native-theme-*/docs/assets/`, which
 covers the egui directory.
 
-Run: `bash -n scripts/pre-release.sh; echo $?`
+Run: `bash -n scripts/generate_assets_release.sh; echo $?`
 Expected: `0`.
 
-- [ ] **Step 4: Add the egui step to `scripts/generate_assets.sh`**
+- [ ] **Step 4: Add the egui step to `scripts/generate_assets_local.sh`**
 
-After the gpui block (`scripts/generate_assets.sh:20-22`), and the GIF step renumbered:
+After the gpui block (`scripts/generate_assets_local.sh:20-22`), and the GIF step renumbered:
 
 ```bash
 echo "--- Step 4: Generating egui showcase screenshots ---"
-bash "$SCRIPT_DIR/generate_egui_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_egui.sh"
 echo ""
 
 echo "--- Step 5: Generating theme-switching GIFs (iced + gpui + egui) ---"
-bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
+bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 echo ""
 ```
 
-The directory list (`scripts/generate_assets.sh:31-35`) gains `"$PROJECT_ROOT/connectors/native-theme-egui/docs/assets" \`
+The directory list (`scripts/generate_assets_local.sh:31-35`) gains `"$PROJECT_ROOT/connectors/native-theme-egui/docs/assets" \`
 after the iced line.
 
-Run: `bash -n scripts/generate_assets.sh; echo $?`
+Run: `bash -n scripts/generate_assets_local.sh; echo $?`
 Expected: `0`.
 
-- [ ] **Step 5: Add the egui GIF to `scripts/generate_theme_switching_gif.sh`**
+- [ ] **Step 5: Add the egui GIF to `scripts/generate_gifs_theme_switching.sh`**
 
-The header comment (`scripts/generate_theme_switching_gif.sh:4-11`) says "both iced and gpui"
+The header comment (`scripts/generate_gifs_theme_switching.sh:4-11`) says "both iced and gpui"
 and lists two GIFs; it becomes:
 
 ```bash
@@ -22808,15 +22808,15 @@ and lists two GIFs; it becomes:
 # decorations (title bar, buttons, borders) in the frames.
 ```
 
-After the gpui directories (`scripts/generate_theme_switching_gif.sh:17-20`):
+After the gpui directories (`scripts/generate_gifs_theme_switching.sh:17-20`):
 
 ```bash
 EGUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
 EGUI_FRAME_DIR="$(mktemp -d)"
 ```
 
-`mkdir -p "$ICED_OUTPUT_DIR" "$GPUI_OUTPUT_DIR"` (`scripts/generate_theme_switching_gif.sh:33`) gains `"$EGUI_OUTPUT_DIR"`. After
-the gpui GIF's `ls -lh` of `theme-switching.gif` (`scripts/generate_theme_switching_gif.sh:122`), an egui section in the shape of the gpui one — the
+`mkdir -p "$ICED_OUTPUT_DIR" "$GPUI_OUTPUT_DIR"` (`scripts/generate_gifs_theme_switching.sh:33`) gains `"$EGUI_OUTPUT_DIR"`. After
+the gpui GIF's `ls -lh` of `theme-switching.gif` (`scripts/generate_gifs_theme_switching.sh:122`), an egui section in the shape of the gpui one — the
 `icon_theme` field of `THEMES` is read and not passed, since the egui showcase derives the
 icon theme from the preset:
 
@@ -22854,23 +22854,23 @@ done
 
 echo ""
 echo "--- Assembling egui GIF ---"
-python3 "$SCRIPT_DIR/generate_gifs.py" \
+python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
     --theme-switching "$EGUI_FRAME_DIR" \
     --theme-switching-output "$EGUI_OUTPUT_DIR/theme-switching.gif"
 echo ""
 ls -lh "$EGUI_OUTPUT_DIR/theme-switching.gif"
 ```
 
-The cleanup (`scripts/generate_theme_switching_gif.sh:126`) becomes `rm -rf "$ICED_FRAME_DIR" "$GPUI_FRAME_DIR" "$EGUI_FRAME_DIR"`
-and the last line (`scripts/generate_theme_switching_gif.sh:129`) `"=== Done: all three theme-switching GIFs generated ==="`.
+The cleanup (`scripts/generate_gifs_theme_switching.sh:126`) becomes `rm -rf "$ICED_FRAME_DIR" "$GPUI_FRAME_DIR" "$EGUI_FRAME_DIR"`
+and the last line (`scripts/generate_gifs_theme_switching.sh:129`) `"=== Done: all three theme-switching GIFs generated ==="`.
 
-Run: `bash -n scripts/generate_theme_switching_gif.sh; echo $?`
+Run: `bash -n scripts/generate_gifs_theme_switching.sh; echo $?`
 Expected: `0`.
 
-Run: `bash scripts/generate_theme_switching_gif.sh && ls -l connectors/native-theme-egui/docs/assets/theme-switching.gif`
+Run: `bash scripts/generate_gifs_theme_switching.sh && ls -l connectors/native-theme-egui/docs/assets/theme-switching.gif`
 Expected: the three GIFs are regenerated and the egui one exists, cycling through the four
 presets of `THEMES`; where the implementer has no desktop session, the maintainer runs it.
-The iced and gpui GIFs it rewrote belong to the release's capture (`scripts/pre-release.sh`,
+The iced and gpui GIFs it rewrote belong to the release's capture (`scripts/generate_assets_release.sh`,
 under the asset stamp), not to this commit: restore them with
 `git checkout connectors/native-theme-iced/docs/assets/theme-switching.gif connectors/native-theme-gpui/docs/assets/theme-switching.gif`.
 
@@ -22900,9 +22900,9 @@ Run: `if command -v actionlint >/dev/null; then actionlint .github/workflows/scr
 Expected: `0` — `actionlint` where it is installed; otherwise PyYAML parses the file (the
 YAML, not the workflow schema, which Task 39's dispatch checks).
 
-- [ ] **Step 7: Add the connector's sources to `scripts/asset-stamp.sh`**
+- [ ] **Step 7: Add the connector's sources to `scripts/update_provenance.sh`**
 
-In `SOURCE_PATHS` (`scripts/asset-stamp.sh:28-50`), after the iced entries and before the
+In `SOURCE_PATHS` (`scripts/update_provenance.sh:28-50`), after the iced entries and before the
 capture scripts:
 
 ```bash
@@ -22912,9 +22912,9 @@ capture scripts:
     connectors/native-theme-egui/mapping.toml
 ```
 
-and `scripts/generate_egui_screenshots.sh` after `scripts/generate_gpui_screenshots.sh`.
+and `scripts/generate_screenshots_egui.sh` after `scripts/generate_screenshots_gpui.sh`.
 `mapping.toml` is stamped because the showcase embeds it: its Widget Info and Theme Map page
-are drawn from it (spec §10.4). The header comment (`scripts/asset-stamp.sh:18-21`) lists what the hash covers;
+are drawn from it (spec §10.4). The header comment (`scripts/update_provenance.sh:18-21`) lists what the hash covers;
 it becomes:
 
 ```bash
@@ -22925,22 +22925,22 @@ it becomes:
 # works on a depth-1 checkout.
 ```
 
-The stamp hashes each path at HEAD (`scripts/asset-stamp.sh:52-62`), and
-`scripts/generate_egui_screenshots.sh` reaches HEAD only with Step 8's commit, so before it the
-hash cannot be computed: `sources_hash` prints `asset-stamp: <path> not found at HEAD` and
+The stamp hashes each path at HEAD (`scripts/update_provenance.sh:52-62`), and
+`scripts/generate_screenshots_egui.sh` reaches HEAD only with Step 8's commit, so before it the
+hash cannot be computed: `sources_hash` prints `update_provenance: <path> not found at HEAD` and
 returns 1, which ends the script under its `set -euo pipefail` (`:22`).
 
-Run: `bash scripts/asset-stamp.sh hash | wc -c; bash scripts/asset-stamp.sh check; echo $?`
-Expected: `asset-stamp: scripts/generate_egui_screenshots.sh not found at HEAD` and `0` (the
+Run: `bash scripts/update_provenance.sh hash | wc -c; bash scripts/update_provenance.sh check; echo $?`
+Expected: `update_provenance: scripts/generate_screenshots_egui.sh not found at HEAD` and `0` (the
 `hash` call writes nothing to stdout), then the same line and `1` from `check`. Step 8's
-`pre-release-check.sh` shows that line as its Visual assets warning, a warning because
-`CHANGELOG.md` dates no `0.6.0` (`pre-release-check.sh:698-700`).
+`scripts/check_release.sh` shows that line as its Visual assets warning, a warning because
+`CHANGELOG.md` dates no `0.6.0` (`scripts/check_release.sh:698-700`).
 
 - [ ] **Step 8: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
-git add scripts/generate_egui_screenshots.sh scripts/pre-release.sh scripts/generate_assets.sh scripts/generate_theme_switching_gif.sh .github/workflows/screenshots.yml scripts/asset-stamp.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
+git add scripts/generate_screenshots_egui.sh scripts/generate_assets_release.sh scripts/generate_assets_local.sh scripts/generate_gifs_theme_switching.sh .github/workflows/screenshots.yml scripts/update_provenance.sh
 git add connectors/native-theme-egui/docs/assets/
 git commit -m "ci: egui screenshots and theme-switching GIF in the release pipeline"
 ```
@@ -22951,10 +22951,10 @@ exist yet, and `git add` of a missing path stops with `fatal: pathspec … did n
 and stages nothing it was given on that line; the maintainer's capture run then commits it. With
 every stamped path at HEAD, the hash is computed again:
 
-Run: `bash scripts/asset-stamp.sh hash | wc -c; bash scripts/asset-stamp.sh check; echo $?`
+Run: `bash scripts/update_provenance.sh hash | wc -c; bash scripts/update_provenance.sh check; echo $?`
 Expected: `65` (a 64-digit hash and a newline), then the message
 `visual assets are stale: captured from other sources …` and `1` — the stamp names v0.5.9's
-sources and is rewritten only by `scripts/pre-release.sh` at the release (Task 0's gate
+sources and is rewritten only by `scripts/generate_assets_release.sh` at the release (Task 0's gate
 already carries this warning).
 
 ### Task 39: The runner checks
@@ -23011,7 +23011,7 @@ Expected: `0`.
 Commit this before the dispatch, since the workflow runs the pushed branch's file:
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add .github/workflows/screenshots.yml
 git commit -m "ci: the runner checks on macOS and Windows — egui's, and the sibling connectors' system font"
 ```
@@ -23029,7 +23029,7 @@ gh run list --workflow=screenshots.yml --limit 1
 
 and to hand back the run id. Nothing below — and no later task — runs until the run has
 completed: Task 42's Gallery links the four macOS and Windows screenshots Step 5 commits, and
-Task 43 archives the spec Step 4 edits, so this run cannot wait for `scripts/pre-release.sh` at
+Task 43 archives the spec Step 4 edits, so this run cannot wait for `scripts/generate_assets_release.sh` at
 the release.
 
 - [ ] **Step 3: Read the run's log**
@@ -23091,7 +23091,7 @@ keeps its own. Each of the six sits on a line no other `UNVERIFIED` shares, so t
 that `grep -c` gives drops by six.
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add docs/todo_v0.6.0_egui-connector-spec.md
 git commit -m "docs(egui spec): the runner checks' results close the open verification items"
 ```
@@ -23114,14 +23114,14 @@ the inspector's font row reads "SF Pro" alone, with no "not found" (Task 4 Step 
 database holds* is the maintainer's to close on this evidence, Task 42 Step 6). Then:
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add connectors/native-theme-egui/docs/assets/
 git commit -m "docs(egui): the macOS and Windows showcase screenshots from the runner"
 ```
 
 ### Task 40: The widget-coverage script
 
-Spec §10.4. `scripts/check-widget-coverage.py` gains egui and egui_extras, so that a widget a
+Spec §10.4. `scripts/check_widget_coverage.py` gains egui and egui_extras, so that a widget a
 future egui release adds fails the gate until the showcase shows it or an exception gives
 the reason. The three discovery rules below were prototyped over the 0.36.2 sources on
 2026-09-26 and yield 35, 69 and 6 names: the 110 items of §10.4's palette.
@@ -23129,15 +23129,15 @@ the reason. The three discovery rules below were prototyped over the 0.36.2 sour
 **Model:** Opus 5 (`implement` agent)
 
 **Files:**
-- Modify: `scripts/check-widget-coverage.py` (the docstring's *Discovery* and *Matching* parts; the constants after `SHOWCASE_ICED`, `scripts/check-widget-coverage.py:135-137`; `showcase_files` and `read_showcase`, `:335-369`; `toolkit_roots` and `shows_gpui`, `:289-332`; new discovery functions after `aw_enabled`, `:490-518`; `load_exceptions`, `:521-540`; `main`, `:568-630`), `docs/showcase-exceptions.toml` (the header comment, `docs/showcase-exceptions.toml:1-17`; three new sections), `pre-release-check.sh` (the check's label, `pre-release-check.sh:599`; its comment, `:583`), `.github/workflows/ci.yml` (the Widget coverage comment, `.github/workflows/ci.yml:143-145`), `.github/workflows/publish.yml` (the Widget coverage comment, `.github/workflows/publish.yml:82-84`)
+- Modify: `scripts/check_widget_coverage.py` (the docstring's *Discovery* and *Matching* parts; the constants after `SHOWCASE_ICED`, `scripts/check_widget_coverage.py:135-137`; `showcase_files` and `read_showcase`, `:335-369`; `toolkit_roots` and `shows_gpui`, `:289-332`; new discovery functions after `aw_enabled`, `:490-518`; `load_exceptions`, `:521-540`; `main`, `:568-630`), `docs/showcase-exceptions.toml` (the header comment, `docs/showcase-exceptions.toml:1-17`; three new sections), `scripts/check_release.sh` (the check's label, `scripts/check_release.sh:599`; its comment, `:583`), `.github/workflows/ci.yml` (the Widget coverage comment, `.github/workflows/ci.yml:143-145`), `.github/workflows/publish.yml` (the Widget coverage comment, `.github/workflows/publish.yml:82-84`)
 
 **Interfaces:**
-- Consumes: `cargo_metadata()` (`scripts/check-widget-coverage.py:372-399`), which returns the whole workspace's packages — once `native-theme-egui` is a member (Task 6), `egui` is among them as its dependency and `egui_extras` as its dev-dependency (spec §11); `source_dir(meta, name)` (`:413-417`); `strip_comments`, `strip_test_modules`, `strip_string_literals`, `PUB_STRUCT`, `rust_files`, `check` (`:158-257`, `:420-424`, `:543-565`); the showcase's module tree `connectors/native-theme-egui/examples/showcase-egui/` (Task 31) whose every `Ui` is named `ui`, and whose `tests.rs` holds its tests (spec §10.4, §11).
+- Consumes: `cargo_metadata()` (`scripts/check_widget_coverage.py:372-399`), which returns the whole workspace's packages — once `native-theme-egui` is a member (Task 6), `egui` is among them as its dependency and `egui_extras` as its dev-dependency (spec §11); `source_dir(meta, name)` (`:413-417`); `strip_comments`, `strip_test_modules`, `strip_string_literals`, `PUB_STRUCT`, `rust_files`, `check` (`:158-257`, `:420-424`, `:543-565`); the showcase's module tree `connectors/native-theme-egui/examples/showcase-egui/` (Task 31) whose every `Ui` is named `ui`, and whose `tests.rs` holds its tests (spec §10.4, §11).
 - Produces: the sections `egui`, `egui_ui` and `egui_extras` of `docs/showcase-exceptions.toml` and of the script's report; the argument `--showcase-egui`.
 
 - [ ] **Step 1: Add the constants and the egui discovery functions**
 
-After `SHOWCASE_ICED` (`scripts/check-widget-coverage.py:135-137`):
+After `SHOWCASE_ICED` (`scripts/check_widget_coverage.py:135-137`):
 
 ```python
 SHOWCASE_EGUI = os.path.join(
@@ -23165,7 +23165,7 @@ UI_HEADINGS = ("# Adding widgets", "# Colors", "# Adding Containers / Sub-uis:",
 RESPONSE_RETURN = re.compile(r"->\s*(?:egui::)?Response\b")
 ```
 
-After `aw_enabled` (`scripts/check-widget-coverage.py:490-518`):
+After `aw_enabled` (`scripts/check_widget_coverage.py:490-518`):
 
 ```python
 def inherent_impls(text):
@@ -23309,7 +23309,7 @@ def shows_ui_method(haystack, name):
 
 - [ ] **Step 2: Generalise the matching helpers and the showcase reader**
 
-`toolkit_roots` (`scripts/check-widget-coverage.py:289-305`) takes the crate names as a
+`toolkit_roots` (`scripts/check_widget_coverage.py:289-305`) takes the crate names as a
 parameter; its two gpui names become the default:
 
 ```python
@@ -23327,7 +23327,7 @@ def toolkit_roots(src, crates=("gpui_component", "gpui_kit")):
     return roots
 ```
 
-`shows_gpui` (`scripts/check-widget-coverage.py:308-332`) takes the via table as a parameter, `GPUI_VIA` by default, and
+`shows_gpui` (`scripts/check_widget_coverage.py:308-332`) takes the via table as a parameter, `GPUI_VIA` by default, and
 reads `pattern = via.get(name)`:
 
 ```python
@@ -23335,7 +23335,7 @@ def shows_gpui(haystack, name, roots=None, via=GPUI_VIA):
 ```
 
 (`EGUI_VIA` is defined after `shows_gpui` in the file, so pass it at the call site, never as
-a default.) `showcase_files` and `read_showcase` (`scripts/check-widget-coverage.py:335-369`) take an `exclude` tuple of
+a default.) `showcase_files` and `read_showcase` (`scripts/check_widget_coverage.py:335-369`) take an `exclude` tuple of
 base names left out:
 
 ```python
@@ -23356,12 +23356,12 @@ def read_showcase(path, strip_literals=False, exclude=()):
         …
 ```
 
-`load_exceptions` (`scripts/check-widget-coverage.py:532`): the section tuple becomes
+`load_exceptions` (`scripts/check_widget_coverage.py:532`): the section tuple becomes
 `("gpui", "iced_widget", "iced_aw", "egui", "egui_ui", "egui_extras")`.
 
 - [ ] **Step 3: Wire the three universes into `main`**
 
-After `--showcase-iced` (`scripts/check-widget-coverage.py:576-580`):
+After `--showcase-iced` (`scripts/check_widget_coverage.py:576-580`):
 
 ```python
     parser.add_argument(
@@ -23372,7 +23372,7 @@ After `--showcase-iced` (`scripts/check-widget-coverage.py:576-580`):
     )
 ```
 
-After `iced_show = …` (`scripts/check-widget-coverage.py:590`):
+After `iced_show = …` (`scripts/check_widget_coverage.py:590`):
 
 ```python
     egui_show = read_showcase(
@@ -23380,7 +23380,7 @@ After `iced_show = …` (`scripts/check-widget-coverage.py:590`):
     )
 ```
 
-After `aw = aw_enabled(meta, aw_all)` (`scripts/check-widget-coverage.py:596`):
+After `aw = aw_enabled(meta, aw_all)` (`scripts/check_widget_coverage.py:596`):
 
 ```python
     egui = {w: [w] for w in egui_widgets(source_dir(meta, "egui"))}
@@ -23392,7 +23392,7 @@ After `aw = aw_enabled(meta, aw_all)` (`scripts/check-widget-coverage.py:596`):
         return shows_gpui(haystack, name, egui_roots, EGUI_VIA)
 ```
 
-and three tuples after the `iced_aw` one in the loop (`scripts/check-widget-coverage.py:604-608`):
+and three tuples after the `iced_aw` one in the loop (`scripts/check_widget_coverage.py:604-608`):
 
 ```python
         ("egui", egui, egui, egui_show, shows_in_egui),
@@ -23437,11 +23437,11 @@ by `shows_ui_method`: a method counts only as a call on a receiver named `ui`
 `Button` one, which a bare `.name(` would count.
 ```
 
-`pre-release-check.sh`'s label (`pre-release-check.sh:599`) becomes
+`scripts/check_release.sh`'s label (`scripts/check_release.sh:599`) becomes
 `"widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)"`.
 
 Three comments on the check say "neither showcase renders nor", which a third showcase makes
-wrong; each becomes "no showcase renders or": `pre-release-check.sh:583` (`# a widget that neither showcase renders nor
+wrong; each becomes "no showcase renders or": `scripts/check_release.sh:583` (`# a widget that neither showcase renders nor
 docs/showcase-exceptions.toml`), `.github/workflows/ci.yml:143-145` (`# Reads the toolkits' sources …
 fails when an upstream release adds a widget that neither showcase renders nor …`) and
 `.github/workflows/publish.yml:82-84` (`# Fails when an upstream release adds a widget that
@@ -23449,7 +23449,7 @@ neither showcase renders nor …`).
 
 - [ ] **Step 4: Run it and check the universes**
 
-Run: `python3 scripts/check-widget-coverage.py 2>&1 | grep -E '^(egui|egui_ui|egui_extras) '`
+Run: `python3 scripts/check_widget_coverage.py 2>&1 | grep -E '^(egui|egui_ui|egui_extras) '`
 Expected: three report lines, `discovered  35`, `discovered  69` and `discovered   6` — the
 counts the prototype gave over egui 0.36.2 and egui_extras 0.36.2 (14 egui types by
 `Widget`: `AtomLayout`, `Button`, `Checkbox`, `DragValue`, `Hyperlink`, `Image`, `Label`,
@@ -23505,7 +23505,7 @@ added to the page that §10.4's table assigns it, never excepted. `[egui]` and
 `[egui_extras]` are expected to stay empty; an entry there needs a reason of one of the six
 kinds and the line it was read at.
 
-Run: `python3 scripts/check-widget-coverage.py; echo $?`
+Run: `python3 scripts/check_widget_coverage.py; echo $?`
 Expected: the last line `Every widget is shown or excepted.` and `0`.
 
 - [ ] **Step 6: Discrimination proof**
@@ -23518,10 +23518,10 @@ Seed each defect, observe the report, revert:
    `grep -rn 'DragValue' connectors/native-theme-egui/examples/showcase-egui --include='*.rs' | grep -v '/tests.rs:'`:
    one construction left anywhere else keeps the widget shown, and the seed then proves nothing.
    The showcase does not compile while seeded; the script reads sources, so it need not.
-   Run: `python3 scripts/check-widget-coverage.py | grep -E 'egui: DragValue'; git checkout connectors/native-theme-egui/examples/showcase-egui/`
+   Run: `python3 scripts/check_widget_coverage.py | grep -E 'egui: DragValue'; git checkout connectors/native-theme-egui/examples/showcase-egui/`
    Expected: `  egui: DragValue` under "Widgets neither shown nor excepted".
 2. Rewrite the showcase's only `ui.small(` call as `ui.label(RichText::new(..).small())`.
-   Run: `python3 scripts/check-widget-coverage.py | grep -E 'egui_ui: small'; git checkout connectors/native-theme-egui/examples/showcase-egui/`
+   Run: `python3 scripts/check_widget_coverage.py | grep -E 'egui_ui: small'; git checkout connectors/native-theme-egui/examples/showcase-egui/`
    Expected: `  egui_ui: small` — the bare `.small(` on a `RichText` does not count.
 
 The two observed lines go into the commit message.
@@ -23529,17 +23529,17 @@ The two observed lines go into the commit message.
 - [ ] **Step 7: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
-git add scripts/check-widget-coverage.py docs/showcase-exceptions.toml pre-release-check.sh .github/workflows/ci.yml .github/workflows/publish.yml
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
+git add scripts/check_widget_coverage.py docs/showcase-exceptions.toml scripts/check_release.sh .github/workflows/ci.yml .github/workflows/publish.yml
 git commit -m "ci: the widget-coverage script covers egui and egui_extras"
 ```
 
 ### Task 41: The Compatibility section, checked
 
 Spec §12.3. The README's **Compatibility** section (Task 29) is held to the manifest by a
-`src/compat.rs` test, as the siblings' are, and `scripts/compat-check.sh` learns the
+`src/compat.rs` test, as the siblings' are, and `scripts/update_compatibility.sh` learns the
 connector, so that its Verified line is earned by a run on the newest egui release and
-`pre-release-check.sh`'s compatibility claim covers it. The run refuses uncommitted
+`scripts/check_release.sh`'s compatibility claim covers it. The run refuses uncommitted
 connector sources, which fixes the order: run, write the test against the stamp, commit,
 run again so the stamp hashes HEAD's sources — as v0.5.9 did (`0704de54`, then `06649c15`).
 
@@ -23547,34 +23547,34 @@ run again so the stamp hashes HEAD's sources — as v0.5.9 did (`0704de54`, then
 
 **Files:**
 - Create: `connectors/native-theme-egui/src/compat.rs`
-- Modify: `scripts/compat-check.sh` (`scripts/compat-check.sh:8-18`, `:20-21`, `:38`, `:43-49`, `:54-60`, `:63-66`, `:125-128`, `:150-152`, `:221-241`, `:291`, `:303`, `:335`, `:352`), `scripts/pre-release.sh` (its comment on the Verified lines, `scripts/pre-release.sh:203-210`), `docs/COMPATIBILITY.toml` (written by the run), `connectors/native-theme-egui/README.md` (the **Verified** paragraph and the compat markers; the Verified line the run writes), `connectors/native-theme-egui/src/lib.rs` (`#[cfg(test)] mod compat;`, as the siblings declare it: `connectors/native-theme-iced/src/lib.rs:176`, `connectors/native-theme-gpui/src/lib.rs:114`)
+- Modify: `scripts/update_compatibility.sh` (`scripts/update_compatibility.sh:8-18`, `:20-21`, `:38`, `:43-49`, `:54-60`, `:63-66`, `:125-128`, `:150-152`, `:221-241`, `:291`, `:303`, `:335`, `:352`), `scripts/generate_assets_release.sh` (its comment on the Verified lines, `scripts/generate_assets_release.sh:203-210`), `docs/COMPATIBILITY.toml` (written by the run), `connectors/native-theme-egui/README.md` (the **Verified** paragraph and the compat markers; the Verified line the run writes), `connectors/native-theme-egui/src/lib.rs` (`#[cfg(test)] mod compat;`, as the siblings declare it: `connectors/native-theme-iced/src/lib.rs:176`, `connectors/native-theme-gpui/src/lib.rs:114`)
 
 **Interfaces:**
-- Consumes: the README's `## Compatibility` section (Task 29), whose **Required** table must state exactly the floors `REQUIRED` below names plus `rust-version`, each as the manifest string (spec §11): `eframe` 0.36.2, `egui` 0.36.2, `skrifa` 0.44.0, `egui_extras` 0.36.2, `egui_kittest` 0.36.2, `rust-version` 1.95 — a row for any other crate fails `the_readme_states_the_manifest_floors` (`connectors/native-theme-iced/src/compat.rs:255-264`); the iced test module `connectors/native-theme-iced/src/compat.rs:1-426`, copied whole; `verify_clean` (`scripts/compat-check.sh:202-211`), which refuses a dirty connector tree; `write_readme` (`:161-177`), which needs both markers; the widget-coverage script (Task 40), which every `gates_*` runs.
-- Produces: `bash scripts/compat-check.sh run egui`, `hash egui`, and `check` covering three connectors; the `[native-theme-egui]` and `[native-theme-egui.verified]` tables of `docs/COMPATIBILITY.toml`; the README's Verified line between `<!-- compat:begin -->` and `<!-- compat:end -->`.
+- Consumes: the README's `## Compatibility` section (Task 29), whose **Required** table must state exactly the floors `REQUIRED` below names plus `rust-version`, each as the manifest string (spec §11): `eframe` 0.36.2, `egui` 0.36.2, `skrifa` 0.44.0, `egui_extras` 0.36.2, `egui_kittest` 0.36.2, `rust-version` 1.95 — a row for any other crate fails `the_readme_states_the_manifest_floors` (`connectors/native-theme-iced/src/compat.rs:255-264`); the iced test module `connectors/native-theme-iced/src/compat.rs:1-426`, copied whole; `verify_clean` (`scripts/update_compatibility.sh:202-211`), which refuses a dirty connector tree; `write_readme` (`:161-177`), which needs both markers; the widget-coverage script (Task 40), which every `gates_*` runs.
+- Produces: `bash scripts/update_compatibility.sh run egui`, `hash egui`, and `check` covering three connectors; the `[native-theme-egui]` and `[native-theme-egui.verified]` tables of `docs/COMPATIBILITY.toml`; the README's Verified line between `<!-- compat:begin -->` and `<!-- compat:end -->`.
 
-- [ ] **Step 1: Teach `scripts/compat-check.sh` the connector**
+- [ ] **Step 1: Teach `scripts/update_compatibility.sh` the connector**
 
 Each edit is old → new at the line named.
 
-`scripts/compat-check.sh:8`: `#   compat-check.sh run [gpui|iced]  resolve the newest upstream release on a` →
-`#   compat-check.sh run [gpui|iced|egui]  resolve the newest upstream release on a`
+`scripts/update_compatibility.sh:8`: `#   update_compatibility.sh run [gpui|iced]  resolve the newest upstream release on a` →
+`#   update_compatibility.sh run [gpui|iced|egui]  resolve the newest upstream release on a`
 (re-indent the continuation lines `:9-13`, and the description columns of `:14-17` and `:18`,
 which share that column, by five spaces so the column holds).
 
-`scripts/compat-check.sh:20-21`, the two comment lines `# The hash covers the git object ids of that connector's Cargo.toml, src,` / `# examples and tests: …` → `# The hash covers the git object ids of that connector's Cargo.toml, src,` / `# examples and tests (egui: Cargo.toml, src, examples and mapping.toml, the manifest` / `# its showcase embeds): …` — the rest of the sentence unchanged.
+`scripts/update_compatibility.sh:20-21`, the two comment lines `# The hash covers the git object ids of that connector's Cargo.toml, src,` / `# examples and tests: …` → `# The hash covers the git object ids of that connector's Cargo.toml, src,` / `# examples and tests (egui: Cargo.toml, src, examples and mapping.toml, the manifest` / `# its showcase embeds): …` — the rest of the sentence unchanged.
 
-`scripts/compat-check.sh:38`: `CONNECTORS=(gpui iced)` → `CONNECTORS=(gpui iced egui)`.
+`scripts/update_compatibility.sh:38`: `CONNECTORS=(gpui iced)` → `CONNECTORS=(gpui iced egui)`.
 
-`crate_of` (`scripts/compat-check.sh:43-49`) gains `egui) echo native-theme-egui ;;` after the iced arm.
+`crate_of` (`scripts/update_compatibility.sh:43-49`) gains `egui) echo native-theme-egui ;;` after the iced arm.
 
-`family_of` (`scripts/compat-check.sh:54-60`) gains, after the iced arm, the egui release train the connector's graph holds — `egui` and the crates it re-exports, `epaint`'s bundled fonts, `eframe` and its winit and wgpu bridges, `egui_extras`, `egui_kittest` and its `kittest`:
+`family_of` (`scripts/update_compatibility.sh:54-60`) gains, after the iced arm, the egui release train the connector's graph holds — `egui` and the crates it re-exports, `epaint`'s bundled fonts, `eframe` and its winit and wgpu bridges, `egui_extras`, `egui_kittest` and its `kittest`:
 
 ```bash
         egui) echo "ecolor eframe egui egui-wgpu egui-winit egui_extras egui_kittest emath epaint epaint_default_fonts kittest" ;;
 ```
 
-Every name must be in `Cargo.lock`, or `run` stops at `lock_version` (`scripts/compat-check.sh:263-268`); verify the list against the graph. The egui release train is every crate of the graph at egui's own version, on every target; `kittest` is versioned on its own:
+Every name must be in `Cargo.lock`, or `run` stops at `lock_version` (`scripts/update_compatibility.sh:263-268`); verify the list against the graph. The egui release train is every crate of the graph at egui's own version, on every target; `kittest` is versioned on its own:
 
 Run: `cargo tree -p native-theme-egui -e normal,dev --target all --prefix none | awk '$2=="v0.36.2" || $1=="kittest" {print $1}' | sort -u | tr '\n' ' '; echo`
 Expected: `ecolor eframe egui egui_extras egui_kittest egui-wgpu egui-winit emath epaint epaint_default_fonts kittest`
@@ -23583,8 +23583,8 @@ the graph lacks is removed from the arm; a name the graph lists beyond the arm (
 `egui_glow` under a feature this crate does not enable would be one) is added — the arm states
 what the lockfile can resolve.
 
-`source_paths` (`scripts/compat-check.sh:63-66`) becomes per connector — the egui crate has no
-`tests` directory, at which `sources_hash` would stop (`scripts/compat-check.sh:72-80`), and its
+`source_paths` (`scripts/update_compatibility.sh:63-66`) becomes per connector — the egui crate has no
+`tests` directory, at which `sources_hash` would stop (`scripts/update_compatibility.sh:72-80`), and its
 showcase embeds `mapping.toml` (spec §10.4):
 
 ```bash
@@ -23599,14 +23599,14 @@ source_paths() {
 }
 ```
 
-`write_stamp` (`scripts/compat-check.sh:125-128`): the comment `# Read the other connector's block before the redirection below truncates` / `# the file: a run is about one connector and leaves the other's claim as` / `# it found it.` → `# Read the other connectors' blocks before the redirection below truncates` / `# the file: a run is about one connector and leaves the others' claims as` / `# it found them.`, and `for name in native-theme-gpui native-theme-iced; do` →
+`write_stamp` (`scripts/update_compatibility.sh:125-128`): the comment `# Read the other connector's block before the redirection below truncates` / `# the file: a run is about one connector and leaves the other's claim as` / `# it found it.` → `# Read the other connectors' blocks before the redirection below truncates` / `# the file: a run is about one connector and leaves the others' claims as` / `# it found them.`, and `for name in native-theme-gpui native-theme-iced; do` →
 `for name in native-theme-gpui native-theme-iced native-theme-egui; do` — without it a
 `run egui` writes no egui block while it reports the crate verified, and every later run
-drops it. The stamp's header (`scripts/compat-check.sh:150-152`, `# \`sources\` is a SHA-256 …
+drops it. The stamp's header (`scripts/update_compatibility.sh:150-152`, `# \`sources\` is a SHA-256 …
 Cargo.toml, src, examples and tests.`) gets the same parenthesis as `:20-21`.
 
-After `gates_iced` (`scripts/compat-check.sh:229-241`), the configurations
-`pre-release-check.sh` gates the crate in (Task 6; spec §11), then the widget coverage:
+After `gates_iced` (`scripts/update_compatibility.sh:229-241`), the configurations
+`scripts/check_release.sh` gates the crate in (Task 6; spec §11), then the widget coverage:
 
 ```bash
 gates_egui() {
@@ -23620,20 +23620,20 @@ gates_egui() {
         cargo doc -p native-theme-egui --no-deps --locked
     run_gate "documentation (all features)" env RUSTDOCFLAGS="-D warnings" \
         cargo doc -p native-theme-egui --no-deps --locked --all-features
-    run_gate "widget coverage" python3 scripts/check-widget-coverage.py
+    run_gate "widget coverage" python3 scripts/check_widget_coverage.py
 }
 ```
 
-`scripts/compat-check.sh:291`: `unknown connector '$connector' (gpui, iced)` → `(gpui, iced, egui)`.
-`scripts/compat-check.sh:303`: `neither connector states an upstream set` → `no connector states an upstream set`.
-`scripts/compat-check.sh:335`: `usage: $0 hash <gpui|iced>` → `usage: $0 hash <gpui|iced|egui>`.
-`scripts/compat-check.sh:352`: `usage: $0 {run [gpui|iced] | check | hash <gpui|iced>}` → `usage: $0 {run [gpui|iced|egui] | check | hash <gpui|iced|egui>}`.
+`scripts/update_compatibility.sh:291`: `unknown connector '$connector' (gpui, iced)` → `(gpui, iced, egui)`.
+`scripts/update_compatibility.sh:303`: `neither connector states an upstream set` → `no connector states an upstream set`.
+`scripts/update_compatibility.sh:335`: `usage: $0 hash <gpui|iced>` → `usage: $0 hash <gpui|iced|egui>`.
+`scripts/update_compatibility.sh:352`: `usage: $0 {run [gpui|iced] | check | hash <gpui|iced>}` → `usage: $0 {run [gpui|iced|egui] | check | hash <gpui|iced|egui>}`.
 
-`scripts/pre-release.sh:203-210`'s comment says "rewrites docs/COMPATIBILITY.toml and the two
+`scripts/generate_assets_release.sh:203-210`'s comment says "rewrites docs/COMPATIBILITY.toml and the two
 Verified lines from what it resolved" → "and the connector READMEs' Verified lines"; `run`
-with no argument already runs every connector in `CONNECTORS` (`scripts/compat-check.sh:284-299`).
+with no argument already runs every connector in `CONNECTORS` (`scripts/update_compatibility.sh:284-299`).
 
-Run: `bash -n scripts/compat-check.sh; echo $?; bash scripts/compat-check.sh hash egui | wc -c`
+Run: `bash -n scripts/update_compatibility.sh; echo $?; bash scripts/update_compatibility.sh hash egui | wc -c`
 Expected: `0`, then `65` — the hash over the four egui paths at HEAD.
 
 - [ ] **Step 2: Add the markers to the README**
@@ -23644,10 +23644,10 @@ Task 29 left the **Verified** paragraph and its markers to this task (its step's
 ends "native-theme-gpui 0.5.8 wrote and 0.5.8 stopped compiling." and before `### Semver`,
 write the paragraph in the iced README's words (`connectors/native-theme-iced/README.md:52-55`),
 naming the configurations `gates_egui` runs, then the two marker lines with nothing between
-them — `write_readme` puts the sentence there (`scripts/compat-check.sh:170-176`):
+them — `write_readme` puts the sentence there (`scripts/update_compatibility.sh:170-176`):
 
 ```markdown
-**Verified** — the versions `scripts/compat-check.sh run` last resolved and ran
+**Verified** — the versions `scripts/update_compatibility.sh run` last resolved and ran
 this connector's tests, in all three feature configurations, clippy, docs in both
 the default and all features, and the widget-coverage script against. The script
 writes the line; a hand-edited one fails a test:
@@ -23661,13 +23661,13 @@ writes the line; a hand-edited one fails a test:
 The connector's sources are committed (Task 40's commit was the last); the script and README
 edits above are outside `source_paths`, so `verify_clean` passes. The run needs the network.
 
-Run: `bash scripts/compat-check.sh run egui`
+Run: `bash scripts/update_compatibility.sh run egui`
 Expected: the seven gate lines `  → tests` … `  → widget coverage`, then
 `native-theme-egui verified: Verified against ecolor <v>, eframe <v>, … and kittest <v> on <date>.`
 and `wrote docs/COMPATIBILITY.toml and connectors/native-theme-egui/README.md (commit <7 hex>, sources <12 hex>)`;
 `Cargo.lock` restored (`git status --porcelain Cargo.lock` prints nothing). A gate that fails
 on the updated lockfile is a finding about the newest egui release: report the failing gate
-and stop; the stamp is not written (`scripts/compat-check.sh:192-200`).
+and stop; the stamp is not written (`scripts/update_compatibility.sh:192-200`).
 
 - [ ] **Step 4: Write `src/compat.rs` against the stamp**
 
@@ -23710,28 +23710,28 @@ table (the manifest is the authority), never the test.
 - [ ] **Step 5: Commit, then the second run**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
-git add scripts/compat-check.sh scripts/pre-release.sh docs/COMPATIBILITY.toml connectors/native-theme-egui/README.md connectors/native-theme-egui/src/compat.rs connectors/native-theme-egui/src/lib.rs
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
+git add scripts/update_compatibility.sh scripts/generate_assets_release.sh docs/COMPATIBILITY.toml connectors/native-theme-egui/README.md connectors/native-theme-egui/src/compat.rs connectors/native-theme-egui/src/lib.rs
 git commit -m "ci(egui): the Compatibility section is checked against the manifest"
 ```
 
 The stamp now names a sources hash without `compat.rs`, so `check` calls the connector
-changed. Run again so the stamp hashes HEAD (`scripts/compat-check.sh:272`):
+changed. Run again so the stamp hashes HEAD (`scripts/update_compatibility.sh:272`):
 
-Run: `bash scripts/compat-check.sh run egui && bash scripts/compat-check.sh check; echo $?`
+Run: `bash scripts/update_compatibility.sh run egui && bash scripts/update_compatibility.sh check; echo $?`
 Expected: the run's `verified` line again; then `check` prints
 `compatibility claims are stale: native-theme-gpui has changed since it was verified on 2026-09-24; native-theme-iced has changed since it was verified on 2026-09-24. …` and `1`
 — Tasks 4 and 5 changed the gpui and iced sources after their 2026-09-24 stamps
-(`docs/COMPATIBILITY.toml:16-18`, `:28-30`), and `pre-release-check.sh` warns until
-`scripts/pre-release.sh` re-verifies all three at the release (its last step,
-`scripts/pre-release.sh:211-213`); the egui block is fresh: `grep -A3 '^\[native-theme-egui\]' docs/COMPATIBILITY.toml` shows today's date and HEAD's commit.
+(`docs/COMPATIBILITY.toml:16-18`, `:28-30`), and `scripts/check_release.sh` warns until
+`scripts/generate_assets_release.sh` re-verifies all three at the release (its last step,
+`scripts/generate_assets_release.sh:211-213`); the egui block is fresh: `grep -A3 '^\[native-theme-egui\]' docs/COMPATIBILITY.toml` shows today's date and HEAD's commit.
 
 Run: `CARGO_BUILD_JOBS=4 cargo test -p native-theme-egui --lib compat::`
 Expected: `4 passed` — the README's Verified line is the stamp's again (same set, and the
 date differs only if the day changed).
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add docs/COMPATIBILITY.toml connectors/native-theme-egui/README.md
 git commit -m "docs(compat): verify the egui connector on the sources that carry its test"
 ```
@@ -23752,10 +23752,10 @@ here.
 **Model:** Fable 5.1 (inline)
 
 **Files:**
-- Modify: `CHANGELOG.md` (under Task 0's `## [Unreleased]`, `CHANGELOG.md:8`), the root `README.md` (lines 14–16, 20–24, 29 and 40–47), `native-theme/README.md` (`native-theme/README.md:14-16`, `:152-153`, `:159`, `:182`), `CONTRIBUTING.md` (`CONTRIBUTING.md:35-40`, `:68-72`, `:88-90`), `SECURITY.md` (`SECURITY.md:43-47`), `.github/ISSUE_TEMPLATE/bug_report.yml` (`.github/ISSUE_TEMPLATE/bug_report.yml:16-20`), `.github/ISSUE_TEMPLATE/feature_request.yml` (`.github/ISSUE_TEMPLATE/feature_request.yml:12-15`), `docs/assets/crate-relations.dot` (`docs/assets/crate-relations.dot:34-38`, `:69-79`), `docs/assets/crate-relations.svg` (regenerated), `scripts/README.md` (`scripts/README.md:9-12`, `:14-17`, `:61-85`, `:112-116`, `:141-172`, `:124-140` the `asset-stamp.sh` section), `connectors/native-theme-egui/README.md` (the Gallery), `connectors/native-theme-gpui/README.md` (`connectors/native-theme-gpui/README.md:85-86`), `connectors/native-theme-iced/README.md` (`connectors/native-theme-iced/README.md:71-72`), `native-theme-build/README.md` (`native-theme-build/README.md:30`), `ROADMAP.md` (`ROADMAP.md:11-27`), `docs/todo.md` (the items named in Step 6)
+- Modify: `CHANGELOG.md` (under Task 0's `## [Unreleased]`, `CHANGELOG.md:8`), the root `README.md` (lines 14–16, 20–24, 29 and 40–47), `native-theme/README.md` (`native-theme/README.md:14-16`, `:152-153`, `:159`, `:182`), `CONTRIBUTING.md` (`CONTRIBUTING.md:35-40`, `:68-72`, `:88-90`), `SECURITY.md` (`SECURITY.md:43-47`), `.github/ISSUE_TEMPLATE/bug_report.yml` (`.github/ISSUE_TEMPLATE/bug_report.yml:16-20`), `.github/ISSUE_TEMPLATE/feature_request.yml` (`.github/ISSUE_TEMPLATE/feature_request.yml:12-15`), `docs/assets/crate-relations.dot` (`docs/assets/crate-relations.dot:34-38`, `:69-79`), `docs/assets/crate-relations.svg` (regenerated), `scripts/README.md` (`scripts/README.md:9-12`, `:14-17`, `:61-85`, `:112-116`, `:141-172`, `:124-140` the `update_provenance.sh` section), `connectors/native-theme-egui/README.md` (the Gallery), `connectors/native-theme-gpui/README.md` (`connectors/native-theme-gpui/README.md:85-86`), `connectors/native-theme-iced/README.md` (`connectors/native-theme-iced/README.md:71-72`), `native-theme-build/README.md` (`native-theme-build/README.md:30`), `ROADMAP.md` (`ROADMAP.md:11-27`), `docs/todo.md` (the items named in Step 6)
 
 **Interfaces:**
-- Consumes: the public names Tasks 1–5 and 25 added — `native_theme::fonts::{select_face, system_face, SystemFace, is_macos_system_ui_family}` and the `system-fonts` feature (Task 1), `SystemTheme::icon_theme_for` (Task 2), `native_theme::icons::colorize_monochrome_svg` (Task 3), `native_theme_iced::system_font_family` and its `system-fonts` feature (Task 4), the gpui `.SystemUIFont` mapping (Task 5), the GNOME watcher fix (Task 25); the connector's surface (spec §4); the screenshots and GIF Tasks 38 and 39 committed to `connectors/native-theme-egui/docs/assets/`; `scripts/render-diagrams.sh`, which renders every `.dot` under `docs/assets/` (`scripts/render-diagrams.sh:1-3`, `:40-41`).
+- Consumes: the public names Tasks 1–5 and 25 added — `native_theme::fonts::{select_face, system_face, SystemFace, is_macos_system_ui_family}` and the `system-fonts` feature (Task 1), `SystemTheme::icon_theme_for` (Task 2), `native_theme::icons::colorize_monochrome_svg` (Task 3), `native_theme_iced::system_font_family` and its `system-fonts` feature (Task 4), the gpui `.SystemUIFont` mapping (Task 5), the GNOME watcher fix (Task 25); the connector's surface (spec §4); the screenshots and GIF Tasks 38 and 39 committed to `connectors/native-theme-egui/docs/assets/`; `scripts/generate_diagrams.sh`, which renders every `.dot` under `docs/assets/` (`scripts/generate_diagrams.sh:1-3`, `:40-41`).
 - Produces: the documents a reader of v0.6.0 meets, each naming the egui connector where it names the others.
 
 - [ ] **Step 1: `CHANGELOG.md`**
@@ -23819,7 +23819,7 @@ gains `, [\`native-theme-egui\`](../connectors/native-theme-egui/)`.
 `CONTRIBUTING.md:88-90`, the crate table: a row after the iced one,
 `| \`native-theme-egui\` | \`connectors/native-theme-egui/\` | egui toolkit connector |`.
 
-`CONTRIBUTING.md:35-40`, the description of `pre-release-check.sh`: `the iced
+`CONTRIBUTING.md:35-40`, the description of `scripts/check_release.sh`: `the iced
 connector's other configurations (tests with no default features and with
 \`iced_aw\`, clippy with \`iced_aw\`)` → `the iced and egui connectors' other
 configurations (tests with no default features and with \`iced_aw\`, for egui with all
@@ -23874,10 +23874,10 @@ makes untrue (the switch then sits between egui and iced), becomes the two lines
 `{ rank=same; gpui; iced; egui; build; }`. Then regenerate the SVG the root README shows
 (its line 31). Graphviz writes a hyphen in a label as `&#45;`, so the count looks for that:
 
-Run: `./scripts/render-diagrams.sh && grep -c 'native&#45;theme&#45;egui' docs/assets/crate-relations.svg`
+Run: `./scripts/generate_diagrams.sh && grep -c 'native&#45;theme&#45;egui' docs/assets/crate-relations.svg`
 Expected: the script reports `→ rendering crate-relations.dot → crate-relations.svg` and
 `Done.`, and the count is `1`. The script needs Graphviz (`dot`); the *Fuzzy Bubbles*
-embedding is optional and says so (`scripts/render-diagrams.sh:18-20`). Look at the result —
+embedding is optional and says so (`scripts/generate_diagrams.sh:18-20`). Look at the result —
 `rsvg-convert -w 1400 docs/assets/crate-relations.svg -o "$TMPDIR/crate-relations.png"` (any
 scratch directory), then Read the PNG: the egui node sits in the connectors' column between
 gpui and iced, with an arrow from the switch and one into core's west side.
@@ -23885,27 +23885,27 @@ gpui and iced, with an arrow from the switch and one into core's west side.
 - [ ] **Step 5: `scripts/README.md`**
 
 - `scripts/README.md:9-12`: after the iced line, `- egui screenshots + theme-switching GIF → \`connectors/native-theme-egui/docs/assets/\``.
-- `scripts/README.md:14-17`, `generate_assets.sh`: "Runs all four asset generators in sequence: spinner GIFs, iced screenshots, gpui screenshots, and theme-switching GIFs." → "Runs all five asset generators in sequence: spinner GIFs, iced screenshots, gpui screenshots, egui screenshots, and theme-switching GIFs."
-- After the `generate_gpui_screenshots.sh` section (`scripts/README.md:61-70`):
+- `scripts/README.md:14-17`, `generate_assets_local.sh`: "Runs all four asset generators in sequence: spinner GIFs, iced screenshots, gpui screenshots, and theme-switching GIFs." → "Runs all five asset generators in sequence: spinner GIFs, iced screenshots, gpui screenshots, egui screenshots, and theme-switching GIFs."
+- After the `generate_screenshots_gpui.sh` section (`scripts/README.md:61-70`):
 
 ```markdown
-## generate_egui_screenshots.sh
+## generate_screenshots_egui.sh
 
-Same as `generate_screenshots.sh` but for the egui showcase, built with
+Same as `generate_screenshots_iced.sh` but for the egui showcase, built with
 `--all-features`. The egui showcase takes no `--icon-theme`: the icon theme
 follows the preset.
 
 Requires: spectacle (KDE)
 
 ```sh
-./scripts/generate_egui_screenshots.sh
+./scripts/generate_screenshots_egui.sh
 ```
 ```
 
-- `scripts/README.md:72-85`, `generate_theme_switching_gif.sh`: "from both iced and gpui showcases" → "from the iced, gpui and egui showcases"; the *Produces* list gains `- \`connectors/native-theme-egui/docs/assets/theme-switching.gif\``.
-- `scripts/README.md:112-116`, the `pre-release.sh` paragraph: "runs both connectors' tests, clippy and documentation" → "runs every connector's tests, clippy and documentation", "the Verified line in both connector READMEs" → "the Verified line in the connector READMEs".
-- `scripts/README.md:141-172`, `compat-check.sh`: `run [gpui|iced]` → `run [gpui|iced|egui]`; the connector's paths "(`Cargo.toml`, `src`, `examples` or `tests`)" gains "— for egui `mapping.toml` in place of `tests`"; "(both when none is named)" becomes "(all when none is named)"; the family list gains "; or the egui release train — ecolor, eframe, egui, egui-wgpu, egui-winit, egui_extras, egui_kittest, emath, epaint, epaint_default_fonts, kittest" (`family_of`'s egui arm, Task 41); the gates sentence gains "(for egui also `--no-default-features` and `--all-features`)" after the iced parenthesis, clippy's "(for iced with `--all-features`)" becomes "(for iced and egui with `--all-features`)" and documentation's "(for iced also `--all-features`)" becomes "(for iced and egui also `--all-features`)" — `gates_egui` documents both configurations, as `gates_iced` does (Task 41); `hash <gpui|iced>` → `hash <gpui|iced|egui>` with the same `mapping.toml` note; the example block gains `./scripts/compat-check.sh run egui`.
-- the `asset-stamp.sh` paragraph (`scripts/README.md:124-139`; the list is at `:128-129`): the list "crate manifests and sources, presets, icon bundles, `Cargo.lock`, the capture scripts, the screenshots workflow" gains "the egui connector's `mapping.toml`".
+- `scripts/README.md:72-85`, `generate_gifs_theme_switching.sh`: "from both iced and gpui showcases" → "from the iced, gpui and egui showcases"; the *Produces* list gains `- \`connectors/native-theme-egui/docs/assets/theme-switching.gif\``.
+- `scripts/README.md:112-116`, the `generate_assets_release.sh` paragraph: "runs both connectors' tests, clippy and documentation" → "runs every connector's tests, clippy and documentation", "the Verified line in both connector READMEs" → "the Verified line in the connector READMEs".
+- `scripts/README.md:141-172`, `update_compatibility.sh`: `run [gpui|iced]` → `run [gpui|iced|egui]`; the connector's paths "(`Cargo.toml`, `src`, `examples` or `tests`)" gains "— for egui `mapping.toml` in place of `tests`"; "(both when none is named)" becomes "(all when none is named)"; the family list gains "; or the egui release train — ecolor, eframe, egui, egui-wgpu, egui-winit, egui_extras, egui_kittest, emath, epaint, epaint_default_fonts, kittest" (`family_of`'s egui arm, Task 41); the gates sentence gains "(for egui also `--no-default-features` and `--all-features`)" after the iced parenthesis, clippy's "(for iced with `--all-features`)" becomes "(for iced and egui with `--all-features`)" and documentation's "(for iced also `--all-features`)" becomes "(for iced and egui also `--all-features`)" — `gates_egui` documents both configurations, as `gates_iced` does (Task 41); `hash <gpui|iced>` → `hash <gpui|iced|egui>` with the same `mapping.toml` note; the example block gains `./scripts/update_compatibility.sh run egui`.
+- the `update_provenance.sh` paragraph (`scripts/README.md:124-139`; the list is at `:128-129`): the list "crate manifests and sources, presets, icon bundles, `Cargo.lock`, the capture scripts, the screenshots workflow" gains "the egui connector's `mapping.toml`".
 
 Run: `grep -c 'egui' scripts/README.md`
 Expected: at least `8`.
@@ -23996,7 +23996,7 @@ them into `docs/archive/`.
 - [ ] **Step 8: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add CHANGELOG.md README.md native-theme/README.md CONTRIBUTING.md SECURITY.md .github/ISSUE_TEMPLATE/bug_report.yml .github/ISSUE_TEMPLATE/feature_request.yml docs/assets/crate-relations.dot docs/assets/crate-relations.svg scripts/README.md connectors/native-theme-egui/README.md connectors/native-theme-gpui/README.md connectors/native-theme-iced/README.md native-theme-build/README.md ROADMAP.md docs/todo.md
 git commit -m "docs: the egui connector across the project's documents"
 ```
@@ -24123,7 +24123,7 @@ Expected: no output — outside `docs/archive/`, only links into `docs/archive/`
 - [ ] **Step 5: Gate and commit**
 
 ```sh
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 git add docs/archive/README.md docs/archive/todo_v0.6.0_egui-connector-rationale.md docs/archive/todo_v0.6.0_egui-connector-spec.md docs/archive/todo_v0.6.0_egui-connector-plan.md ROADMAP.md docs/todo.md docs/todo_egui-widgets-spec.md
 git commit -m "docs: the egui connector plan is implemented and archived"
 ```

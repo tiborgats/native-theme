@@ -999,7 +999,7 @@ and Adwaita resolution tests are the gate.
    repository, ref, path pattern and licence file, and per exceptional file
    its individual source. A test asserts every `.svg` under `icons/` is
    covered by a set rule or a per-file entry.
-2. **`scripts/refresh-icons.sh`** re-downloads every file from the manifest,
+2. **`scripts/update_icons.sh`** re-downloads every file from the manifest,
    so refreshes and additions are reproducible.
 3. **Generated name tables.** A `build.rs` in `native-theme` generates
    `lucide_svg_by_name` and `material_svg_by_name` from the directory
@@ -1088,7 +1088,7 @@ resolving a full `SystemTheme`.
 | `#[gpui::test] apply_installs_configs_for_both_variants` | headless App | after `apply(dark)` then `apply(light)`: `Theme::change(Dark)` reproduces the dark variant's palette through the installed `ThemeConfig` (compared hex-for-hex, including a `button_*` field) and `highlight_theme.appearance` is `Dark` (D41) |
 | `#[gpui::test] apply_accessibility_rescales_from_the_stored_variant` | headless App | after `apply`, `apply_accessibility` with factor 1.5: `font_size` and its config copy are scaled, `reduce_motion` forwarded, preferences stored |
 | MSRV checks (§4.4) | toolchain | both floors true |
-| `./pre-release-check.sh` | workspace | fmt, clippy, panic lint, package |
+| `./scripts/check_release.sh` | workspace | fmt, clippy, panic lint, package |
 | screenshots workflow | visual | showcase renders on all three platforms with geometry applied |
 
 ---
@@ -1269,7 +1269,7 @@ tests, commands and per-task model routing is
     `screenshots.yml` green.
 13. **Connector MSRV measurement** (§4.4).
 14. **CI/publish** (§5.5).
-15. **Docs** (§13). Gate: `./pre-release-check.sh`, link check.
+15. **Docs** (§13). Gate: `./scripts/check_release.sh`, link check.
 16. **Release**: CHANGELOG date; tag and publish only on explicit approval;
     then confirm the docs.rs build of `native-theme-gpui` succeeds on the
     new stack (default target, as 0.5.7 did and as gpui-pre, gpui-component

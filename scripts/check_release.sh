@@ -16,6 +16,7 @@
 
 set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Exit if an undefined variable is used
+cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Colour + icon vocabulary
@@ -421,7 +422,7 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: feature combinations
 #
-# scripts/check-features.sh checks every workspace crate's library with no
+# scripts/check_features.sh checks every workspace crate's library with no
 # default features, with each feature alone and with all features (the
 # coverage of `cargo hack check --each-feature`), and fails on an error or a
 # warning. The per-crate loops above build the default set only, and a crate
@@ -431,7 +432,7 @@ done
 # script.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Feature combinations"
-run_check "feature combinations (every crate)" bash scripts/check-features.sh
+run_check "feature combinations (every crate)" bash scripts/check_features.sh
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: system-icons on macOS and Windows
@@ -634,7 +635,7 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: widget coverage
 #
-# scripts/check-widget-coverage.py reads the toolkits' own sources through
+# scripts/check_widget_coverage.py reads the toolkits' own sources through
 # `cargo metadata` (the iced manifest with `--features iced_aw`, so the
 # optional dependency is in the graph) and fails when an upstream release adds
 # a widget that no showcase renders or docs/showcase-exceptions.toml
@@ -645,16 +646,16 @@ done
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
-    print_fail "python3 not found — scripts/check-widget-coverage.py needs Python 3.11+"
+    print_fail "python3 not found — scripts/check_widget_coverage.py needs Python 3.11+"
     exit 1
 fi
 if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then
     PYTHON_VERSION=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-    print_fail "python3 is $PYTHON_VERSION — scripts/check-widget-coverage.py needs 3.11+ (tomllib)"
+    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py needs 3.11+ (tomllib)"
     exit 1
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
-    python3 scripts/check-widget-coverage.py
+    python3 scripts/check_widget_coverage.py
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
@@ -742,18 +743,18 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: visual assets
 #
-# scripts/pre-release.sh captures the screenshots and GIFs and stamps
+# scripts/generate_assets_release.sh captures the screenshots and GIFs and stamps
 # docs/assets/PROVENANCE.toml with a hash over the sources they came from
-# (scripts/asset-stamp.sh). A mismatch at HEAD is a warning while the
+# (scripts/update_provenance.sh). A mismatch at HEAD is a warning while the
 # CHANGELOG entry for this version still says "Unreleased" and a hard failure
 # once it carries a date: the release commit exists, so this tree is about to
 # be tagged. The crates.io workflow's CI gate runs the same check on the tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Visual assets"
 set +e
-STAMP_MSG=$(bash scripts/asset-stamp.sh check 2>&1)
+STAMP_MSG=$(bash scripts/update_provenance.sh check 2>&1)
 STAMP_STATUS=$?
-CLEAN_MSG=$(bash scripts/asset-stamp.sh verify-clean 2>&1)
+CLEAN_MSG=$(bash scripts/update_provenance.sh verify-clean 2>&1)
 CLEAN_STATUS=$?
 set -e
 if [ "$STAMP_STATUS" -eq 0 ]; then
@@ -773,7 +774,7 @@ fi
 # Section: compatibility claims
 #
 # Each connector's README states the upstream set it has been verified
-# against. scripts/compat-check.sh run earns that line — it resolves the
+# against. scripts/update_compatibility.sh run earns that line — it resolves the
 # newest upstream release on a throwaway lockfile, runs the connector's gates
 # on it and stamps docs/COMPATIBILITY.toml — and `check` says here whether the
 # connector's sources are still the ones that run covered. Same class as the
@@ -784,7 +785,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Compatibility claims"
 set +e
-COMPAT_MSG=$(bash scripts/compat-check.sh check 2>&1)
+COMPAT_MSG=$(bash scripts/update_compatibility.sh check 2>&1)
 COMPAT_STATUS=$?
 set -e
 if [ "$COMPAT_STATUS" -eq 0 ]; then
@@ -830,7 +831,7 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     printf "\n${BOLD}${BLUE}Next steps:${NC}\n"
     printf "   1. Review the changes once more\n"
     printf "   2. Visual assets and compatibility: if either check above warned, push, run\n"
-    printf "      ${DIM}./scripts/pre-release.sh${NC} and commit the assets with docs/assets/PROVENANCE.toml,\n"
+    printf "      ${DIM}./scripts/generate_assets_release.sh${NC} and commit the assets with docs/assets/PROVENANCE.toml,\n"
     printf "      docs/COMPATIBILITY.toml and the connector READMEs it rewrote\n"
     printf "   3. Date the CHANGELOG entry, set its compare link, commit ${DIM}chore(release): v%s${NC}\n" "$CURRENT_VERSION"
     printf "   4. Re-run this script on that commit (both stamp checks are hard once the entry is dated)\n"

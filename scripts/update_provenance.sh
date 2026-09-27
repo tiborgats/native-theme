@@ -2,18 +2,18 @@
 # Visual-asset provenance stamp: docs/assets/PROVENANCE.toml
 #
 # The screenshots and GIFs under native-theme/docs/assets and
-# connectors/*/docs/assets are captured by scripts/pre-release.sh from a
+# connectors/*/docs/assets are captured by scripts/generate_assets_release.sh from a
 # checked-out commit. This script records which sources they came from and
 # lets the release gates verify that claim without any git history:
 #
-#   asset-stamp.sh write         write the stamp for HEAD (pre-release.sh
+#   update_provenance.sh write         write the stamp for HEAD (generate_assets_release.sh
 #                                calls it after the captures succeeded)
-#   asset-stamp.sh check         exit 0 if HEAD's sources match the stamp;
+#   update_provenance.sh check         exit 0 if HEAD's sources match the stamp;
 #                                exit 1 with a message on stdout if the stamp
 #                                is missing or the sources differ
-#   asset-stamp.sh verify-clean  exit 1 if a stamped path has uncommitted
+#   update_provenance.sh verify-clean  exit 1 if a stamped path has uncommitted
 #                                changes (captures must run on HEAD's sources)
-#   asset-stamp.sh hash          print the sources hash of HEAD
+#   update_provenance.sh hash          print the sources hash of HEAD
 #
 # The hash covers the git object ids of every path that feeds the showcases:
 # crate manifests and sources, presets, icon bundles, the egui connector's
@@ -47,11 +47,11 @@ SOURCE_PATHS=(
     connectors/native-theme-egui/src
     connectors/native-theme-egui/examples
     connectors/native-theme-egui/mapping.toml
-    scripts/generate_screenshots.sh
-    scripts/generate_gpui_screenshots.sh
-    scripts/generate_egui_screenshots.sh
-    scripts/generate_theme_switching_gif.sh
-    scripts/generate_gifs.py
+    scripts/generate_screenshots_iced.sh
+    scripts/generate_screenshots_gpui.sh
+    scripts/generate_screenshots_egui.sh
+    scripts/generate_gifs_theme_switching.sh
+    scripts/generate_gifs_spinners.py
     .github/workflows/screenshots.yml
 )
 
@@ -59,7 +59,7 @@ sources_hash() {
     local rev="${1:-HEAD}" p id ids=""
     for p in "${SOURCE_PATHS[@]}"; do
         id=$(git -C "$ROOT" rev-parse --verify --quiet "$rev:$p") || {
-            echo "asset-stamp: $p not found at $rev" >&2
+            echo "update_provenance: $p not found at $rev" >&2
             return 1
         }
         ids+="$id"$'\n'
@@ -85,8 +85,8 @@ cmd_write() {
     cat > "$STAMP" <<EOF
 # Provenance of the visual assets (screenshots and GIFs under
 # native-theme/docs/assets and connectors/*/docs/assets).
-# Written by scripts/asset-stamp.sh at the end of scripts/pre-release.sh;
-# read by pre-release-check.sh and the crates.io workflow's CI gate.
+# Written by scripts/update_provenance.sh at the end of scripts/generate_assets_release.sh;
+# read by scripts/check_release.sh and the crates.io workflow's CI gate.
 # Do not edit by hand.
 
 # Workspace version and commit the assets were captured from.
@@ -95,7 +95,7 @@ commit = "$commit"
 generated = "$today"
 
 # SHA-256 over the git object ids of every path that feeds the showcases
-# (SOURCE_PATHS in scripts/asset-stamp.sh). The gates recompute it at HEAD;
+# (SOURCE_PATHS in scripts/update_provenance.sh). The gates recompute it at HEAD;
 # a difference means the assets were captured from other sources.
 sources = "$hash"
 EOF
@@ -104,7 +104,7 @@ EOF
 
 cmd_check() {
     if [ ! -f "$STAMP" ]; then
-        echo "no $STAMP_REL: the visual assets carry no provenance; run ./scripts/pre-release.sh"
+        echo "no $STAMP_REL: the visual assets carry no provenance; run ./scripts/generate_assets_release.sh"
         return 1
     fi
     local recorded version commit generated current
@@ -117,7 +117,7 @@ cmd_check() {
         echo "visual assets captured from HEAD's sources (v$version, ${commit:0:7}, $generated)"
         return 0
     fi
-    echo "visual assets are stale: captured from other sources (v$version, ${commit:0:7}, $generated); run ./scripts/pre-release.sh"
+    echo "visual assets are stale: captured from other sources (v$version, ${commit:0:7}, $generated); run ./scripts/generate_assets_release.sh"
     return 1
 }
 

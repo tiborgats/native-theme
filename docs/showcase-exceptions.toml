@@ -1,6 +1,6 @@
 # Widgets the showcases deliberately do not render.
 #
-# `scripts/check-widget-coverage.py` fails on a widget that is neither shown
+# `scripts/check_widget_coverage.py` fails on a widget that is neither shown
 # in its showcase nor listed here, and on an entry that has gone stale: one
 # naming a widget the toolkit no longer offers, or one the showcase does show
 # after all. An exception is therefore a claim that has to stay true.

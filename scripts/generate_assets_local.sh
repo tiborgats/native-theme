@@ -10,23 +10,23 @@ echo "=== Generating visual assets for native-theme ==="
 echo ""
 
 echo "--- Step 1: Generating spinner GIFs ---"
-python3 "$SCRIPT_DIR/generate_gifs.py"
+python3 "$SCRIPT_DIR/generate_gifs_spinners.py"
 echo ""
 
 echo "--- Step 2: Generating showcase screenshots ---"
-bash "$SCRIPT_DIR/generate_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_iced.sh"
 echo ""
 
 echo "--- Step 3: Generating gpui showcase screenshots ---"
-bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_gpui.sh"
 echo ""
 
 echo "--- Step 4: Generating egui showcase screenshots ---"
-bash "$SCRIPT_DIR/generate_egui_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_egui.sh"
 echo ""
 
 echo "--- Step 5: Generating theme-switching GIFs (iced + gpui + egui) ---"
-bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
+bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 echo ""
 
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"

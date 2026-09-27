@@ -18,7 +18,7 @@
 //! remove. Comments and string literals are removed first, because the
 //! showcase names builders in both -- every widget's Widget Info says which
 //! builder shaped it -- and a note about a builder is not a use of it. That is
-//! the opposite of what `scripts/check-widget-coverage.py` does with the same
+//! the opposite of what `scripts/check_widget_coverage.py` does with the same
 //! files, and for the opposite reason: a widget is often reached through an
 //! extension method and its name appears only in the section label, while a
 //! builder is always called by path.
@@ -298,7 +298,7 @@ fn raw_string_hashes(from: &str) -> Option<usize> {
 ///
 /// `'a`, `'_` and `'static` are lifetimes and must fall through untouched;
 /// `'"'` and `'/'` are literals whose contents would otherwise be read as the
-/// start of a string or a comment. `scripts/check-widget-coverage.py` draws
+/// start of a string or a comment. `scripts/check_widget_coverage.py` draws
 /// the same distinction, and the same way.
 fn char_literal_len(from: &str) -> Option<usize> {
     let body = from.strip_prefix('\'')?;
@@ -1013,7 +1013,7 @@ fn is_public(code: &str, at: usize) -> bool {
 // to the helper that builds the widget, so constructing it puts nothing on
 // screen. Which names a file can mean by those types comes from its own
 // `use gpui_component::…` and `use gpui_base::…` items, read the way
-// `scripts/check-widget-coverage.py` reads them (`toolkit_roots`): `Tag`
+// `scripts/check_widget_coverage.py` reads them (`toolkit_roots`): `Tag`
 // imported by name, or reached through an imported module (`form::Form`) or
 // the crate itself (`gpui_component::tag::Tag`).
 //
@@ -2204,7 +2204,7 @@ fn collect_named(dir: &Path, name: &str, out: &mut Vec<PathBuf>) {
 /// The `src` directory of each crate a citation may name, and this crate's.
 ///
 /// From `cargo metadata` only -- never a registry path or a version literal,
-/// as `scripts/check-widget-coverage.py` also insists. A crate missing from
+/// as `scripts/check_widget_coverage.py` also insists. A crate missing from
 /// the metadata fails the test rather than being skipped.
 fn cited_source_dirs() -> Result<Vec<(String, PathBuf)>, String> {
     let out = std::process::Command::new(env!("CARGO"))

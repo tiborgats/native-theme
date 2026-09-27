@@ -6,7 +6,7 @@
 
 **Architecture:** The example becomes a module tree. A `WidgetInfo` value is built per widget instance by one function per widget kind, attached by a demo helper that builds the widget from the same arguments, and chosen at run time by a registry that shows the innermost hovered instance after a short settle time. The window gets a client-side TitleBar with menus, a toolbar sized by a new `geometry::toolbar`, a Sidebar for navigation, an `h_resizable` body (navigation | content | inspector) and a StatusBar. Gates move from demo blocks to instances.
 
-**Tech Stack:** Rust 1.95, gpui-component / gpui-base 0.6.6, gpui-pre 0.3.6 (the `Cargo.lock` pins), the showcase's windowed test harness (`#[gpui::test]`, `VisualTestContext`), Python 3 for `scripts/check-widget-coverage.py`.
+**Tech Stack:** Rust 1.95, gpui-component / gpui-base 0.6.6, gpui-pre 0.3.6 (the `Cargo.lock` pins), the showcase's windowed test harness (`#[gpui::test]`, `VisualTestContext`), Python 3 for `scripts/check_widget_coverage.py`.
 
 **Spec:** [`todo_v0.5.9_showcase-app-spec.md`](todo_v0.5.9_showcase-app-spec.md)
 **Rationale:** [`todo_v0.5.9_showcase-app-rationale.md`](todo_v0.5.9_showcase-app-rationale.md)
@@ -18,7 +18,7 @@
 - No hardcoded theme values. Layout defaults the model does not state are named constants whose comment says so (spec §1.3).
 - `native-theme-gpui` gains exactly `geometry::toolbar` (spec §9). Nothing else in `src/` becomes public.
 - Every new gate ships a discrimination proof: seed the defect, watch it fail naming file and line, remove the seed.
-- Every task ends with `CARGO_BUILD_JOBS=4 ./pre-release-check.sh` green and one commit of the named files. Never `git add -A`. No `Co-Authored-By` or AI-attribution lines. Push nothing.
+- Every task ends with `CARGO_BUILD_JOBS=4 ./scripts/check_release.sh` green and one commit of the named files. Never `git add -A`. No `Co-Authored-By` or AI-attribution lines. Push nothing.
 - The Bash tool's shell is **fish**.
 - Dispatch (CLAUDE.md): a task with a mechanical gate goes to the `implement` agent; claim derivation (Tasks 14–23) is judgment and stays inline.
 
@@ -99,7 +99,7 @@ On each `SettingGroup::new()` in the Settings demo add `.native(cx, geometry::sc
 
 Add to the Settings panel's "Not themeable": `("scrollbar", "gpui-component lays the page's scrollbar over the body's right edge (setting/page.rs, SettingPage) and reserves only 1rem; this demo pads each group by the platform's groove width instead (setting/group.rs, SettingGroup). The page body takes no refinement -- Tier U")`. Add an upstream PR candidate to docs/todo.md ("Upstream PR candidates from v0.5.8"): internal scrollbars reserve no gutter where the platform's scrollbars are not overlays — Settings page body, Dialog, Sheet, PopupMenu, MessageScroller, Sidebar, Tree (each attaches `.vertical_scrollbar`/`overflow_y_scrollbar`, scroll/scrollable.rs:19-29).
 
-- [ ] **Step 6: pre-release-check, commit** `fix(showcase): Settings rows keep off an always-visible scrollbar`.
+- [ ] **Step 6: check_release, commit** `fix(showcase): Settings rows keep off an always-visible scrollbar`.
 
 ---
 
@@ -109,7 +109,7 @@ Add to the Settings panel's "Not themeable": `("scrollbar", "gpui-component lays
 
 **Files:**
 - Create: the tree in "File Structure" above, by moving code out of `examples/showcase-gpui.rs` (which is deleted).
-- Modify: `connectors/native-theme-gpui/Cargo.toml` (`path =` on the `[[example]]`), `connectors/native-theme-gpui/src/showcase.rs`, `scripts/check-widget-coverage.py`, `scripts/*.sh` that name the file (grep first).
+- Modify: `connectors/native-theme-gpui/Cargo.toml` (`path =` on the `[[example]]`), `connectors/native-theme-gpui/src/showcase.rs`, `scripts/check_widget_coverage.py`, `scripts/*.sh` that name the file (grep first).
 
 **Interfaces:**
 - Produces: `SHOWCASE_FILES: &[(&str, &str)]` in `src/showcase.rs` — `(relative path, include_str!(…))` for every `.rs` under the example directory; the per-file iteration every gate uses from here on.
@@ -149,13 +149,13 @@ fn collect_rs(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<Strin
 
 - [ ] **Step 2: Move the code.** Split along the existing sections: `Tab`, constants, `CliArgs`, the capture functions and `main` → `main.rs`; `Showcase` struct, `new`, theme switching, `Render for Showcase` → `app.rs`; each `render_*_tab` method → `pages/<page>.rs` as `impl Showcase { … }` (fields become `pub(crate)`); `WidgetInfoPanel` → `inspector.rs`; `widget_tooltip*`, `hsla_to_hex`, `section`, `native_geometry`, `NativeStyled`, `refined`, `native_value`, `native_icon`, `with_gap`, `with_padding`, icon loading → `support.rs`; delegates → `support.rs`; the `#[cfg(test)]` module → `tests.rs`. `info/`, `demo.rs`, `chrome.rs` start empty (a module doc line each).
 
-- [ ] **Step 3: Make the gates read files.** Replace `const SHOWCASE: &str = include_str!(…)` with `SHOWCASE_FILES`; every gate that scanned `SHOWCASE` iterates the files and reports `file:line`. `showcase_demos` (which cuts off the test module) is no longer needed — `tests.rs` is simply not a page file. Update `scripts/check-widget-coverage.py` to read every `.rs` under the directory (its `--showcase-gpui` default becomes the directory).
+- [ ] **Step 3: Make the gates read files.** Replace `const SHOWCASE: &str = include_str!(…)` with `SHOWCASE_FILES`; every gate that scanned `SHOWCASE` iterates the files and reports `file:line`. `showcase_demos` (which cuts off the test module) is no longer needed — `tests.rs` is simply not a page file. Update `scripts/check_widget_coverage.py` to read every `.rs` under the directory (its `--showcase-gpui` default becomes the directory).
 
-- [ ] **Step 4: Run everything.** `CARGO_BUILD_JOBS=4 cargo test -p native-theme-gpui --example showcase-gpui`, `cargo test -p native-theme-gpui --lib showcase`, `python3 scripts/check-widget-coverage.py`. Expected: all green; the coverage script prints the same counts as before (gpui 135 / 109 / 26 / 0).
+- [ ] **Step 4: Run everything.** `CARGO_BUILD_JOBS=4 cargo test -p native-theme-gpui --example showcase-gpui`, `cargo test -p native-theme-gpui --lib showcase`, `python3 scripts/check_widget_coverage.py`. Expected: all green; the coverage script prints the same counts as before (gpui 135 / 109 / 26 / 0).
 
 - [ ] **Step 5: Discrimination proof.** Add an empty `pages/scratch.rs`; `the_gates_read_every_showcase_file` fails naming it. Remove it.
 
-- [ ] **Step 6: pre-release-check, commit** `refactor(showcase): the example becomes a module tree the gates read whole`.
+- [ ] **Step 6: check_release, commit** `refactor(showcase): the example becomes a module tree the gates read whole`.
 
 ---
 
@@ -313,7 +313,7 @@ impl WidgetInfo {
 Move `hsla_to_hex` here unchanged (support.rs keeps a `pub use`).
 
 - [ ] **Step 4: Run, expect PASS.**
-- [ ] **Step 5: pre-release-check, commit** `feat(showcase): a WidgetInfo per widget instance`.
+- [ ] **Step 5: check_release, commit** `feat(showcase): a WidgetInfo per widget instance`.
 
 ### Task 4: The registry — innermost wins, stale never wins, crossing is not hovering
 
@@ -470,7 +470,7 @@ impl<E: IntoElement> InfoExt for E {}
 (If `size_0` is not a method on `Canvas` in gpui-pre 0.3.6, use `.w(px(0.)).h(px(0.))`; the behaviour is what the tests pin.)
 
 - [ ] **Step 4: Run, expect PASS.** If `a_target_no_longer_drawn_never_wins` fails, the epoch marker is not prepainted first: check it is the root's first child and the targets are its later siblings' descendants.
-- [ ] **Step 5: pre-release-check, commit** `feat(showcase): the innermost hovered instance's info, after it settles`.
+- [ ] **Step 5: check_release, commit** `feat(showcase): the innermost hovered instance's info, after it settles`.
 
 ### Task 5: Geometry lines are generated
 
@@ -487,7 +487,7 @@ impl<E: IntoElement> InfoExt for E {}
 - [ ] **Step 2: Run, expect FAIL** (table absent).
 - [ ] **Step 3: Write the table.** One entry per `pub fn` of geometry.rs, the text taken from the audited "geometry" config lines the current panels carry (grep `("geometry", "geometry::` in the showcase) — for a builder no panel describes yet, read its doc comment and body in geometry.rs and write what it sets, field by field. `native_info` applies `native_geometry(cx, build)` with `refined` and calls `info.geometry(name)` only when the refinement was applied.
 - [ ] **Step 4: Run, expect PASS. Discrimination proof:** delete one entry → `every_geometry_builder_has_a_note` fails naming it; write `native_info(w, cx, geometry::button, "input", …)` → the second gate fails naming the line. Revert both.
-- [ ] **Step 5: pre-release-check, commit** `feat(showcase): geometry lines come from the builder applied`.
+- [ ] **Step 5: check_release, commit** `feat(showcase): geometry lines come from the builder applied`.
 
 ### Task 6: The citation gates read claims wherever they are written
 
@@ -500,7 +500,7 @@ impl<E: IntoElement> InfoExt for E {}
 
 - [ ] **Step 1:** Extend `panel_claims` so a `claim("role", "field", value, "cite")` call yields the same `Claim` a tuple in a `hover_info` array does; extend the prose collection to the string-literal second argument of `.config(`, `.not_themeable(` and `.instance(` calls.
 - [ ] **Step 2: Discrimination proof:** write `claim("bg", "primary", t.primary, "gpui-component/tag.rs:30")` (line 30 reads `secondary`) in `info/mod.rs` test scaffolding → `every_colour_claim_is_read_at_the_line_it_cites` fails naming the file and line. Revert.
-- [ ] **Step 3: pre-release-check, commit** `test(showcase): the citation gates read claim() calls too`.
+- [ ] **Step 3: check_release, commit** `test(showcase): the citation gates read claim() calls too`.
 
 ---
 
@@ -572,7 +572,7 @@ pub fn icon_size_toolbar(n: Native<'_>) -> Size {
 Update the old `icon_size_toolbar` test that asserted `defaults.icon_sizes.toolbar`. Add the `GEOMETRY_NOTES` entry `("toolbar", "toolbar.bar_height (minimum height), item_gap, border.padding_*, background_color, font size and weight")`.
 
 - [ ] **Step 5: Run, expect PASS**; `cargo test -p native-theme-gpui` whole; the connector-parity agent is not needed (iced gains nothing).
-- [ ] **Step 6: pre-release-check, commit** `feat(gpui): geometry::toolbar carries the model's toolbar`.
+- [ ] **Step 6: check_release, commit** `feat(gpui): geometry::toolbar carries the model's toolbar`.
 
 ### Task 8: The window's own title bar and menus
 
@@ -585,8 +585,8 @@ Update the old `icon_size_toolbar` test that asserted `defaults.icon_sizes.toolb
 - [ ] **Step 1: Failing test** `the_title_bar_is_the_top_of_the_window`: after `open`, the element tagged `CHROME_TITLE_BAR` has `top == 0` and spans the window width; `the_menus_run_actions`: dispatching `ShowPage(3)` makes `active_page == Page::Feedback`.
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement.** `WindowOptions { window_bounds: Some(WindowBounds::Windowed(bounds)), window_decorations: Some(WindowDecorations::Client), ..TitleBar::window_options() }`. The title bar: `demo::title_bar(ui, cx, label, app_menu_bar)` builds `TitleBar::new()`, applies `geometry::title_bar` through `native_info`, adds the label and — `cfg!(not(target_os = "macos"))` — the AppMenuBar entity; `on_close_window` dispatches `Quit`. Menus per spec §2.2, given to `cx.set_menus` and to `GlobalState` (guarded, as now). Key bindings per spec §2.2. The TitleBar and AppMenuBar info functions take the audited content of today's TitleBar and AppMenuBar panels (the nested-bar and "this showcase gives both the same menus" notes become instance notes about the real bar).
-- [ ] **Step 4: Verify the capture paths** still work: `--screenshot` on the current platform, and `scripts/generate_gpui_screenshots.sh` once (it drives the desktop — run only when the maintainer is not using it, or leave this sub-step to the maintainer and say so in the commit message).
-- [ ] **Step 5: Run tests, pre-release-check, commit** `feat(showcase): the TitleBar is the window's title bar, with menus that act`.
+- [ ] **Step 4: Verify the capture paths** still work: `--screenshot` on the current platform, and `scripts/generate_screenshots_gpui.sh` once (it drives the desktop — run only when the maintainer is not using it, or leave this sub-step to the maintainer and say so in the commit message).
+- [ ] **Step 5: Run tests, check_release, commit** `feat(showcase): the TitleBar is the window's title bar, with menus that act`.
 
 ### Task 9: The toolbar
 
@@ -596,7 +596,7 @@ Update the old `icon_size_toolbar` test that asserted `defaults.icon_sizes.toolb
 - [ ] **Step 1: Failing tests** `the_toolbar_is_the_models_toolbar` (for kde-breeze and adwaita: the toolbar element's height ≥ `toolbar.bar_height`, its first two children's gap equals `toolbar.item_gap`) and `the_toolbar_switches_the_preset` (select "nord" in the toolbar Combobox → `current_theme_name == "nord"`).
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement** per spec §2.3: a row refined by `geometry::toolbar` (via `native_info`), children built by `demo::` helpers — SidebarToggleButton, the preset Combobox (moved from the Inputs page), a ToggleGroup System/Light/Dark wired to `SetColorMode` (replacing the colour-mode Select), the icon-set Select, `Separator::vertical()`, three icon Buttons with Tooltips at `geometry::icon_size_toolbar`. Each carries its info. Remove the left column's selector blocks.
-- [ ] **Step 4: Run, pre-release-check, commit** `feat(showcase): a real toolbar, sized by the platform's toolbar`.
+- [ ] **Step 4: Run, check_release, commit** `feat(showcase): a real toolbar, sized by the platform's toolbar`.
 
 ### Task 10: Navigation, draggable panels, the inspector
 
@@ -613,27 +613,27 @@ Update the old `icon_size_toolbar` test that asserted `defaults.icon_sizes.toolb
   - `every_page_lays_out` (the renamed `every_tab_lays_out`).
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement** per spec §1.1, §2.4–§2.6: `h_resizable("body")` with three `resizable_panel()`s sized `NAV_WIDTH`, flexible, `INSPECTOR_WIDTH`; the Sidebar with one `SidebarMenuItem` per `Page` (icon, `active`, `on_click` → `ShowPage`); the content panel's scrolled element with `geometry::scrollbar_gutter`; the inspector: a TabBar (built by `demo::tab_bar`, so it reports itself) over the Widget tab — sections rendered from `registry.shown()` with a swatch per claim (the existing `color_swatch`), token, hex, citation in muted text, and a Copy button writing `to_text()` via `cx.write_to_clipboard(ClipboardItem::new_string(…))` — and the Theme tab (today's `render_sidebar` markdown, rebuilt as rows, plus a "Window" section stating what `Root` draws: the WindowBorder facts from today's panel). The inspector observes the registry (`cx.observe`) to re-render. Remove the TabBar navigation and the old left column. The inspector's content module constructs widgets without `.info()` (spec §4.4).
-- [ ] **Step 4: Run, pre-release-check, commit** `feat(showcase): Sidebar navigation, draggable panels, a structured inspector`.
+- [ ] **Step 4: Run, check_release, commit** `feat(showcase): Sidebar navigation, draggable panels, a structured inspector`.
 
 ### Task 11: The status bar
 
 - [ ] **Step 1: Failing test** `the_status_bar_names_the_hovered_widget`: hover an instance, settle → the status bar's `STATUS_HOVERED` label reads its title; `the_status_bar_is_the_bottom_of_the_window`: its bottom equals the window's height.
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement** per spec §2.7 in `chrome.rs`, styled by `geometry::status_bar` via `native_info`; desktop from `native_theme::detect` (the function the showcase already calls to decide the system theme), preset and mode from `Showcase`, font via `defined_size`, text scale and flags from the stored `AccessibilityPreferences`.
-- [ ] **Step 4: pre-release-check, commit** `feat(showcase): a status bar that reports the environment and the hover`.
+- [ ] **Step 4: check_release, commit** `feat(showcase): a status bar that reports the environment and the hover`.
 
 ### Task 12: Overlays that do work
 
 - [ ] **Step 1: Failing tests:** `ctrl_k_opens_the_command_palette` (simulate `ctrl-k`, a Dialog layer exists and contains the palette probe); `the_palette_switches_page` (type "Charts", enter → `Page::Charts`); `a_preference_reaches_apply_accessibility` (toggle "Reduce motion" in the Preferences sheet → `cx.reduce_motion()` is true); `a_theme_error_is_an_alert` (apply a nonexistent preset name → an element tagged `CONTENT_ALERT` exists).
 - [ ] **Step 2: Run, expect FAIL.**
 - [ ] **Step 3: Implement** per spec §2.8. Reuse the Command demo's construction for the palette (Overlays page) and the Settings demo's for Preferences; each gets `.native(cx, geometry::scrollbar_gutter)` on its SettingGroups (Task 1). Replace `error_message`'s banner with `demo::alert`.
-- [ ] **Step 4: pre-release-check, commit** `feat(showcase): command palette, preferences, about, and errors as an Alert`.
+- [ ] **Step 4: check_release, commit** `feat(showcase): command palette, preferences, about, and errors as an Alert`.
 
 ### Task 13: The chrome samples leave the pages
 
 - [ ] **Step 1:** Delete the samples of spec §7.1 from `pages/layout.rs`, `pages/overlays.rs`, `pages/inputs.rs`, with their panels and their `RESIZABLE_GROUPS` table and its test `resizable_groups_have_room_to_drag` (superseded by Task 10's drag test).
-- [ ] **Step 2:** Run `python3 scripts/check-widget-coverage.py`: every widget still shown (the chrome constructs it). Update the `WindowBorder` exception's reason in `docs/showcase-exceptions.toml` to "drawn by `Root` around the window (client-side decorations since this change); its facts are in the inspector's Theme tab".
-- [ ] **Step 3: pre-release-check, commit** `refactor(showcase): chrome is demonstrated by being the chrome`.
+- [ ] **Step 2:** Run `python3 scripts/check_widget_coverage.py`: every widget still shown (the chrome constructs it). Update the `WindowBorder` exception's reason in `docs/showcase-exceptions.toml` to "drawn by `Root` around the window (client-side decorations since this change); its facts are in the inspector's Theme tab".
+- [ ] **Step 3: check_release, commit** `refactor(showcase): chrome is demonstrated by being the chrome`.
 
 ---
 
@@ -646,7 +646,7 @@ Tasks 14–23 have one shape. For page **P**:
 3. **Gallery panels split by variant.** A claim that holds for one variant goes into that variant's `match` arm; a claim that holds for all goes outside the match. Where the old panel had one claim for several variants, re-derive each variant's from upstream: open the widget's source at the variant's arm, cite the line that reads the token, and run the colour gate. A variant whose claim you cannot verify gets no claim and a finding in your report.
 4. Create `demo::<kind>(ui, cx, id, …)` helpers building the widget and calling `.info(ui, id, info::P::<kind>(…))`; builders through `native_info`.
 5. Rewrite `pages/P.rs` to call helpers only; delete its `hover_info` calls and `tt-` ids.
-6. Run the page's windowed test (`every_page_lays_out`), the colour and prose gates, the coverage script; pre-release-check; commit `feat(showcase): <Page> reports every instance`.
+6. Run the page's windowed test (`every_page_lays_out`), the colour and prose gates, the coverage script; check_release; commit `feat(showcase): <Page> reports every instance`.
 
 **Worked example — the Tags gallery (Feedback page):**
 
@@ -741,14 +741,14 @@ The `(true, None)` case falls to the unoutlined arm on purpose and is unreachabl
 - [ ] **Step 2: Discrimination proofs:** a `Tag::primary()` in `pages/feedback.rs` fails naming file and line; a `demo::` helper without `.info(` fails naming it. Revert.
 - [ ] **Step 3: Delete** `every_demo_id_is_a_tt_id`, `every_demo_block_has_a_widget_info_panel`, `every_demo_names_the_builders_it_applies`, the `BLOCK_ID`/`PANEL_CALL`/`INDIRECT_BLOCK_ID` machinery and the `hover_info` array parsing from `claims_in`.
 - [ ] **Step 4: Extend** `the_showcase_hardcodes_no_style_values` to `text_size(px(` literals; fix every hit in chrome and pages with a text-scale role or a rem (`text_sm`, `text_xs`) — run the gate first to list them; today they are `section()` (:714), the error banner (:7394), the inspector (:1463) and a few sidebar labels.
-- [ ] **Step 5: pre-release-check, commit** `test(showcase): every widget reports itself; the block gates go`.
+- [ ] **Step 5: check_release, commit** `test(showcase): every widget reports itself; the block gates go`.
 
 ### Task 25: Documentation and archive
 
 - [ ] **Step 1:** CHANGELOG `[Unreleased]`: `### Added` — `geometry::toolbar`; `### Changed` — the showcase is an application (chrome, per-instance Widget Info, This instance section), `icon_size_toolbar` reads `toolbar.icon_size`; `### Fixed` — Settings rows under the scrollbar.
 - [ ] **Step 2:** docs/todo.md: close "The model's toolbar is read by nothing", "'Not themeable' has become a bucket"; update "The colour gate cannot tell whose line it is" with the spike's outcome; add "The iced showcase: per-instance Widget Info" as a follow-up; record Task 7 Step 1's finding.
 - [ ] **Step 3:** Move the three `todo_v0.5.9_showcase-app-*.md` documents to `docs/archive/` and fix their relative links.
-- [ ] **Step 4: pre-release-check, commit** `docs: the showcase-app plan is implemented and archived`.
+- [ ] **Step 4: check_release, commit** `docs: the showcase-app plan is implemented and archived`.
 
 ---
 

@@ -28,7 +28,7 @@ The plan argues from the spec; executors read both. Section numbers below (§) r
 - **Icon rules**: tables return `None` where a set has no equivalent, never a substitute (§10.1); bundles hold only genuine upstream files under upstream names (§10.2); confidence labels `exact` / `close` / `approximate` on every freedesktop and Material row (rationale §2.21).
 - **Test feature set** for native-theme, as in `publish.yml`: `--features material-icons,lucide-icons,system-icons,svg-rasterize`.
 - **Citations** in code comments follow the spec's convention: `crate version path:line` (e.g. `gpui-component 0.6.0 src/button/button.rs:650`).
-- **Commits**: conventional-commit subjects as in `git log` (`feat(gpui)!:`, `chore(deps):`, `docs:`); **no AI attribution trailers** (project rule, memory `feedback_no_coauthored_by`). Run `./pre-release-check.sh` before the release commit.
+- **Commits**: conventional-commit subjects as in `git log` (`feat(gpui)!:`, `chore(deps):`, `docs:`); **no AI attribution trailers** (project rule, memory `feedback_no_coauthored_by`). Run `./scripts/check_release.sh` before the release commit.
 - **Release gate**: tag, push tag, publish only on the maintainer's explicit approval (Task 16). Nothing in this plan authorises it.
 
 ## Execution notes
@@ -70,7 +70,7 @@ The plan argues from the spec; executors read both. Section numbers below (§) r
 | `native-theme/icons/SOURCES.toml` | create | provenance manifest: one rule per set, one per-file exception per set |
 | `native-theme/icons/lucide/*.svg`, `native-theme/icons/material/*.svg` | modify | ten duplicates deleted, `trash-2` → `trash`, `star_border` removed, 28 files added, both sets refreshed |
 | `native-theme/tests/icon_sources.rs` | create | manifest coverage tests |
-| `scripts/refresh-icons.sh` | create | re-downloads every file from the manifest; `add` sub-command |
+| `scripts/update_icons.sh` | create | re-downloads every file from the manifest; `add` sub-command |
 | `scripts/README.md` | modify | documents the refresh script |
 | `connectors/native-theme-gpui/Cargo.toml` | modify | 0.6.0 stack, own `rust-version`, dev-deps |
 | `connectors/native-theme-gpui/src/lib.rs` | modify | `to_theme` / `from_preset` signatures, text scaling, `focus_ring`, `scrollbar_mode`; `NativeTheme`, `ActiveNativeTheme`, `Native`, `apply`, `apply_system_theme`, `apply_accessibility`, observer |
@@ -564,7 +564,7 @@ the single source of truth."
 **Model:** Opus 5 (`implement` agent) for steps 1–7 and 9–12; Fable 5.1 inline for step 8 and the pre-commit diff review
 
 **Files:**
-- Create: `native-theme/icons/SOURCES.toml`, `native-theme/tests/icon_sources.rs`, `scripts/refresh-icons.sh`
+- Create: `native-theme/icons/SOURCES.toml`, `native-theme/tests/icon_sources.rs`, `scripts/update_icons.sh`
 - Delete: ten Lucide duplicates, `native-theme/icons/material/star_border.svg`
 - Rename: `native-theme/icons/lucide/trash-2.svg` → `trash.svg`
 - Add: 14 Lucide + 14 Material files
@@ -769,7 +769,7 @@ In `native-theme/src/model/bundled.rs` (`lucide_svg`), change the three `include
 #
 # Each directory is covered by exactly one [[set]] rule: repository, git ref,
 # and the upstream path pattern with {name} = the file stem. A [[file]] entry
-# overrides the ref and path for one file. `scripts/refresh-icons.sh`
+# overrides the ref and path for one file. `scripts/update_icons.sh`
 # re-downloads everything from this manifest; native-theme/tests/icon_sources.rs
 # checks that every directory and exception is described here.
 
@@ -808,14 +808,14 @@ path = "symbols/web/star/materialsymbolsoutlined/star_fill1_24px.svg"
 reason = "filled variant of star; the upstream stem carries _fill1 before _24px, so the set pattern does not apply"
 ```
 
-- [ ] **Step 6: Write `scripts/refresh-icons.sh`**
+- [ ] **Step 6: Write `scripts/update_icons.sh`**
 
 ```bash
 #!/usr/bin/env bash
 # Re-download every bundled icon from native-theme/icons/SOURCES.toml, or add
-# a new one:  scripts/refresh-icons.sh            (refresh all)
-#             scripts/refresh-icons.sh add lucide battery
-#             scripts/refresh-icons.sh add material battery_0_bar
+# a new one:  scripts/update_icons.sh            (refresh all)
+#             scripts/update_icons.sh add lucide battery
+#             scripts/update_icons.sh add material battery_0_bar
 # Requires python3 >= 3.11 (tomllib) and network access. Run from anywhere.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -861,7 +861,7 @@ sys.exit(1 if failures else 0)
 PY
 ```
 
-Then `chmod +x scripts/refresh-icons.sh`.
+Then `chmod +x scripts/update_icons.sh`.
 
 - [ ] **Step 7: Refresh both sets and add the 28 files**
 
@@ -870,7 +870,7 @@ Then `chmod +x scripts/refresh-icons.sh`.
 # (the script's `add` sub-command does the same for a single file).
 for n in battery battery-charging battery-full battery-low battery-medium battery-warning cpu file-text hard-drive memory-stick network pause play rotate-cw; do : > "native-theme/icons/lucide/$n.svg"; done
 for n in battery_0_bar battery_charging_full battery_full battery_2_bar battery_4_bar battery_alert memory hard_drive memory_alt lan pause play_arrow rotate_right star_fill1; do : > "native-theme/icons/material/$n.svg"; done
-./scripts/refresh-icons.sh
+./scripts/update_icons.sh
 ls native-theme/icons/lucide | wc -l; ls native-theme/icons/material | wc -l
 git status --short native-theme/icons | grep -c '^A\|^??'
 git diff --stat -- native-theme/icons/lucide/github.svg
@@ -929,16 +929,16 @@ Expected: PASS (role coverage, size budgets, generated-table coverage, manifest 
 Append to `scripts/README.md`:
 
 ````markdown
-## refresh-icons.sh
+## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
 provenance manifest `native-theme/icons/SOURCES.toml` (one rule per set, one
 per-file exception per set), so a refresh or an addition is reproducible.
 
 ```sh
-./scripts/refresh-icons.sh                      # refresh every file to the manifest refs
-./scripts/refresh-icons.sh add lucide battery   # add a Lucide icon by its upstream name
-./scripts/refresh-icons.sh add material lan     # add a Material Symbols icon
+./scripts/update_icons.sh                      # refresh every file to the manifest refs
+./scripts/update_icons.sh add lucide battery   # add a Lucide icon by its upstream name
+./scripts/update_icons.sh add material lan     # add a Material Symbols icon
 ```
 
 Requires Python 3.11+ (for `tomllib`) and network access. After a run,
@@ -950,7 +950,7 @@ directories (`native-theme/build.rs`).
 - [ ] **Step 12: Commit**
 
 ```bash
-git add native-theme/icons native-theme/src/model/bundled.rs native-theme/tests/icon_sources.rs scripts/refresh-icons.sh scripts/README.md
+git add native-theme/icons native-theme/src/model/bundled.rs native-theme/tests/icon_sources.rs scripts/update_icons.sh scripts/README.md
 git commit -m "feat(native-theme)!: icon bundles under upstream names, Lucide 1.41.0, Material HEAD, provenance manifest
 
 Ten Lucide files stored under gpui-component's names were byte-identical
@@ -958,7 +958,7 @@ duplicates of files already present under Lucide's names and are deleted;
 trash-2 -> trash (Lucide 1.x canonical name, identical glyph); star_border
 (a duplicate of star that backed StarOff) removed. 14 + 14 files added for
 the gpui-component 0.6.0 icons. icons/SOURCES.toml records every source;
-scripts/refresh-icons.sh reproduces the bundle. Breaking for LucideLoader /
+scripts/update_icons.sh reproduces the bundle. Breaking for LucideLoader /
 MaterialLoader callers using the old names (they now get None)."
 ```
 
@@ -3605,7 +3605,7 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 ### Added
 
 - **native-theme-gpui**: `apply`, `apply_system_theme` (a `ThemeConfig` is installed for every stored variant, so upstream's `Theme::change` reproduces native colours in both modes), `apply_accessibility` (rebuilds the styled theme from the stored variant at runtime); `NativeTheme` global with `cx.native_theme()` (`ActiveNativeTheme`); `Native` view; `base_layer` module (native scrollbar geometry/colours and resize-handle colours written onto gpui-base, restored automatically after upstream rebuilds the base theme); `geometry` module (per-widget `StyleRefinement` builders for Button, Input, MenuItem, ListItem, Tooltip, Popover, StatusBar, Dialog family, Table, Progress, GroupBox content, Accordion title, Checkbox, Radio, Select, Combobox, TitleBar; `Size` helpers; layout accessors); text scaling through `Theme.font_size` (rem); reduce-motion forwarded to GPUI; `focus_ring` from `focus_ring_width`; the 15 new `IconName` variants covered in all three tables (`StarFill` has no Lucide equivalent and `StarOff` no Material one; both return `None`).
-- **native-theme**: `SystemTheme.layout: LayoutTheme`; `AccessibilityPreferences::from_system()`; 28 bundled SVGs (14 Lucide, 14 Material); `icons/SOURCES.toml` provenance manifest; `scripts/refresh-icons.sh`; by-name icon tables generated by `build.rs` from the bundle directories.
+- **native-theme**: `SystemTheme.layout: LayoutTheme`; `AccessibilityPreferences::from_system()`; 28 bundled SVGs (14 Lucide, 14 Material); `icons/SOURCES.toml` provenance manifest; `scripts/update_icons.sh`; by-name icon tables generated by `build.rs` from the bundle directories.
 
 ### Changed
 
@@ -3647,7 +3647,7 @@ Add a "v0.5.8" column to the gap table: for each widget row, "delivered (R)" / "
 - [ ] **Step 7: Gate**
 
 ```bash
-./pre-release-check.sh
+./scripts/check_release.sh
 ```
 
 Expected: every check green (fmt, clippy, panic lint, package). Also check every relative link in the connector README resolves (`grep -o '](\([^)]*\))' connectors/native-theme-gpui/README.md`).
@@ -3671,7 +3671,7 @@ git commit -m "docs(v0.5.8): README, CHANGELOG, ROADMAP and todo for the gpui-co
 
 - [ ] **Step 1: Prepare**
 
-Set `## [0.5.8] - <today>` and change the compare link at the end of `CHANGELOG.md` from `[0.5.8]: https://github.com/tiborgats/native-theme/compare/v0.5.7...HEAD` to `.../compare/v0.5.7...v0.5.8` (as `v0.5.7` did for its own link, `CHANGELOG.md:947` at that tag). Run `./pre-release-check.sh` once more, then the docs build the way docs.rs will run it (default target; D40):
+Set `## [0.5.8] - <today>` and change the compare link at the end of `CHANGELOG.md` from `[0.5.8]: https://github.com/tiborgats/native-theme/compare/v0.5.7...HEAD` to `.../compare/v0.5.7...v0.5.8` (as `v0.5.7` did for its own link, `CHANGELOG.md:947` at that tag). Run `./scripts/check_release.sh` once more, then the docs build the way docs.rs will run it (default target; D40):
 
 ```bash
 DOCS_RS=1 cargo doc -p native-theme-gpui --no-deps --all-features 2>&1 | grep -c warning   # expected 0
@@ -3709,5 +3709,5 @@ Design changes made during the review of 2026-09-05 and written into the spec (�
 
 - §0.1 items 1–10 → Tasks 6 (1, 2), 7 (3), 8 (4), 10 (5), 11 (6), 5+6 (7), 2+3 (8), 1+13 (9), 14+15 (10).
 - §4 → Tasks 1, 6, 13. §5.1–5.3 → Tasks 6, 7, 8. §5.4 → Task 12. §5.5 → Task 14.
-- §6 → Task 7. §7 → Task 8 (and Task 10 for `reduce_motion`). §8 → Tasks 9, 10. §9 → Task 11. §10 → Tasks 4, 5, 6. §11 → Tasks 2, 3. §12 → tests in Tasks 5–11, MSRV in 1 and 13, `pre-release-check.sh` in 15, screenshots in 12/14. §13 → Task 15. §15 → this plan. §16 open questions: Q1 (`dialog_width`) not offered (unchanged decision); Q2/Q3 (iced parity) out of scope, flagged for v0.6.1; Q4 (`warning.svg`, `info.svg`) resolved by the refresh in Task 5.
+- §6 → Task 7. §7 → Task 8 (and Task 10 for `reduce_motion`). §8 → Tasks 9, 10. §9 → Task 11. §10 → Tasks 4, 5, 6. §11 → Tasks 2, 3. §12 → tests in Tasks 5–11, MSRV in 1 and 13, `scripts/check_release.sh` in 15, screenshots in 12/14. §13 → Task 15. §15 → this plan. §16 open questions: Q1 (`dialog_width`) not offered (unchanged decision); Q2/Q3 (iced parity) out of scope, flagged for v0.6.1; Q4 (`warning.svg`, `info.svg`) resolved by the refresh in Task 5.
 - Names used across tasks: `text_scale_factor` (Task 8) used by Task 11; `Native`, `NativeTheme`, `ActiveNativeTheme`, `apply*` (Task 10) used by Tasks 11, 12; `base_layer::{ScrollbarGeometry, scrollbar_geometry, resizable_theme, apply_overrides}` (Task 9) used by Task 10; `AccessibilityPreferences::from_system` (Task 3) used by Task 12 and the README; `SystemTheme.layout` (Task 2) used by Task 12.

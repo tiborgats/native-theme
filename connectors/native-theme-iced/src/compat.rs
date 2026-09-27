@@ -21,7 +21,7 @@ const README: &str = include_str!("../README.md");
 const MANIFEST: &str = include_str!("../Cargo.toml");
 const WORKSPACE: &str = include_str!("../../../Cargo.toml");
 
-/// The stamp `scripts/compat-check.sh run` writes when every gate passed on
+/// The stamp `scripts/update_compatibility.sh run` writes when every gate passed on
 /// the upstream set it resolved, and the name of the table that speaks for
 /// this crate -- the package's own, so a rename cannot leave the test looking
 /// at nothing.
@@ -211,7 +211,7 @@ fn backticked(cell: &str) -> Option<&str> {
     body.get(..end)
 }
 
-/// The sentence `scripts/compat-check.sh run` writes between the README's
+/// The sentence `scripts/update_compatibility.sh run` writes between the README's
 /// compat markers, rendered a second time from the stamp that same run wrote.
 ///
 /// Rendering it again rather than storing it is what makes a README edited by
@@ -287,13 +287,13 @@ fn the_verified_line_is_the_stamps() {
     assert!(
         expected.is_some(),
         "docs/COMPATIBILITY.toml carries no `generated` date or no `[{CRATE}.verified]` \
-         versions for {CRATE}; `scripts/compat-check.sh run` writes both"
+         versions for {CRATE}; `scripts/update_compatibility.sh run` writes both"
     );
     let found = verified_line(README);
     assert!(
         found.is_some(),
         "the README carries no line between `<!-- compat:begin -->` and `<!-- compat:end -->`; \
-         `scripts/compat-check.sh run` writes it there"
+         `scripts/update_compatibility.sh run` writes it there"
     );
     if let (Some(expected), Some((line, stated))) = (expected, found) {
         assert_eq!(

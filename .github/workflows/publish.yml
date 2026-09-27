@@ -22,10 +22,10 @@ jobs:
 
       # Refuse to publish assets captured from other sources, or a tag whose
       # name differs from the workspace version. Both checks need no history:
-      # scripts/asset-stamp.sh hashes HEAD's git object ids.
+      # scripts/update_provenance.sh hashes HEAD's git object ids.
       - name: Visual assets and tag match this version
         run: |
-          if ! msg=$(bash scripts/asset-stamp.sh check); then
+          if ! msg=$(bash scripts/update_provenance.sh check); then
             echo "::error::$msg"
             exit 1
           fi
@@ -93,7 +93,7 @@ jobs:
       - name: Widget coverage
         run: |
           python3 --version
-          python3 scripts/check-widget-coverage.py
+          python3 scripts/check_widget_coverage.py
 
       - name: Documentation (core)
         env:
@@ -136,7 +136,7 @@ jobs:
         run: cargo check -p native-theme --all-features
 
   # Every crate's library with no default features, each feature alone and
-  # all features, as CI and pre-release-check.sh run it.
+  # all features, as CI and scripts/check_release.sh run it.
   features:
     name: Feature combinations
     runs-on: ubuntu-latest
@@ -146,7 +146,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: bash scripts/check-features.sh
+      - run: bash scripts/check_features.sh
 
   publish:
     name: Publish

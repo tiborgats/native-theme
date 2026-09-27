@@ -541,7 +541,7 @@
       `docs/todo_v0.6.0_egui-connector-plan.md`). The workspace floor of `1.88.0`
       was measured on 2026-08-10, but nothing re-checks it: every CI job
       installs `@stable`, there is no `rust-toolchain.toml`, and
-      `pre-release-check.sh` has no MSRV check. The job is the one spec §12.4
+      `scripts/check_release.sh` has no MSRV check. The job is the one spec §12.4
       spells out, three `cargo check --all-features --locked` runs: the
       workspace except the gpui and egui connectors at `1.88.0` (re-measured
       2026-09-25, clean; since 2026-09-07 `native-theme` itself uses
@@ -555,7 +555,7 @@
       macOS warnings measured on 2026-09-07 are gone (1dc99f82), and CI's
       Windows and macOS test legs now run `cargo check -p native-theme
       --all-features` with warnings denied (`.github/workflows/ci.yml:83-87`,
-      b35432a9), as the cross-target section of `pre-release-check.sh` does.
+      b35432a9), as the cross-target section of `scripts/check_release.sh` does.
       Re-measured 2026-09-25 on rustc 1.98.1: `cargo check -p native-theme`
       for `x86_64-pc-windows-msvc` and `x86_64-apple-darwin`, each with and
       without its platform feature, reports no warning.
@@ -859,7 +859,7 @@ What is still open on the iced side:
       `combo_box.arrow_icon_size`) are named in the style functions' doc
       comments and applied by the showcase; spacing comes from the model's
       `LayoutTheme`, which is public on `Theme` / `SystemTheme` and needs no
-      connector API. `scripts/check-widget-coverage.py` keeps *widget*
+      connector API. `scripts/check_widget_coverage.py` keeps *widget*
       coverage visible; nothing mechanical yet lists native geometry fields
       that no iced builder receives.
 - [ ] Unreachable in iced 0.14 / iced_aw 0.14.1, recorded so they are not
@@ -1005,7 +1005,7 @@ What is still open on the iced side:
       `.SystemUIFont` when `cx.text_system().all_font_names()` lacks the
       family, as upstream does for its own defaults.
 - [ ] Widen the captured screenshot tabs: every capture passes `--tab buttons`
-      (`scripts/generate_gpui_screenshots.sh:70`, `screenshots.yml`), so the
+      (`scripts/generate_screenshots_gpui.sh:70`, `screenshots.yml`), so the
       InputGroup, Empty, Carousel, code-editor and Markdown sections never
       appear in an artefact.
 - [ ] Re-verify the upstream `file:line` citations in this file,
@@ -1380,7 +1380,7 @@ the gap — closing it is a change, and each wants its own decision.
       every `Size` consumer before leaning on it anywhere.
 - [ ] **A gate the audit broke, and what that says about the others.** Writing
       `(select.rs, Caret::render)` into a note made `Caret` a "shown" widget
-      in `check-widget-coverage.py`, because the gpui side read string
+      in `check_widget_coverage.py`, because the gpui side read string
       literals as code — on the explicit reasoning, written into its own
       docstring, that the tightened match made literals harmless. It did not:
       the audit's citations have exactly the matched shape. Fixed by stripping
@@ -1682,7 +1682,7 @@ the gap — closing it is a change, and each wants its own decision.
       the file that names the widget is not the file that paints it; and a
       citation proposed from a crate-wide search was plausible-but-wrong five
       times out of five — it is a lead to read, never an answer to accept.
-- [ ] Port `scripts/check-widget-coverage.py` to a `#[test]`, as the Widget
+- [ ] Port `scripts/check_widget_coverage.py` to a `#[test]`, as the Widget
       Info citation check was. A gate that has to be invoked can be skipped;
       one that runs under `cargo test` cannot, and the objection that a test
       cannot reach `cargo metadata` turned out to be false — a test runs
@@ -1693,7 +1693,7 @@ the gap — closing it is a change, and each wants its own decision.
       tests — it wants splitting per connector or a shared home. It also
       parses TOML, so it needs a `toml` dev-dependency, which the citation
       check did not. It works today, so this is tidying, not a fix.
-      `scripts/generate_gifs.py` is deliberately **not** included: it is
+      `scripts/generate_gifs_spinners.py` is deliberately **not** included: it is
       release tooling a human runs, not a gate, and nothing can silently
       skip it because its output is the screenshots the asset stamp checks.
 - [ ] Split the showcases into modules: `showcase-gpui.rs` and
@@ -1701,7 +1701,7 @@ the gap — closing it is a change, and each wants its own decision.
       widget and their self-tests. The gpui half is done: the example is
       `examples/showcase-gpui/`, a module tree (ab3f7d6). `showcase-iced.rs`
       remains one file.
-- [ ] `scripts/check-widget-coverage.py` still accepts weak evidence of
+- [ ] `scripts/check_widget_coverage.py` still accepts weak evidence of
       "shown" on the **iced** side: an import of the module is enough. The
       gpui side no longer does — `shows_gpui` requires a constructor, a call,
       a struct literal or a named extension method, and rejects a name that
@@ -1734,7 +1734,7 @@ the gap — closing it is a change, and each wants its own decision.
       changes.** The v0.5.9 showcase-app plan (Tasks 1–25) changed what the
       gpui showcase draws, and nobody has looked at it on screen: the plan's
       tasks lay it out headlessly and never ran
-      `scripts/generate_gpui_screenshots.sh`, which is maintainer-run because
+      `scripts/generate_screenshots_gpui.sh`, which is maintainer-run because
       it drives the desktop. Changes to check, by task:
       - Task 9, the toolbar: the preset Combobox and the icon-set Select have
         no literal width (they take `combo_box.min_width` and grow with their

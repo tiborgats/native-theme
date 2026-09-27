@@ -15,7 +15,7 @@ jobs:
           - os: macos-latest
             os_name: macos
             toolkit: iced
-            # The showcase's iced_aw pages, as scripts/generate_screenshots.sh builds it.
+            # The showcase's iced_aw pages, as scripts/generate_screenshots_iced.sh builds it.
             features: --features iced_aw
           - os: macos-latest
             os_name: macos
@@ -24,7 +24,7 @@ jobs:
           - os: windows-latest
             os_name: windows
             toolkit: iced
-            # The showcase's iced_aw pages, as scripts/generate_screenshots.sh builds it.
+            # The showcase's iced_aw pages, as scripts/generate_screenshots_iced.sh builds it.
             features: --features iced_aw
           - os: windows-latest
             os_name: windows

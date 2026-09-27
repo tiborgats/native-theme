@@ -27,7 +27,7 @@ const SPIN_FRAME_DURATION_MS: u32 = 42;
 ///
 /// Parses the SVG to extract the viewBox center, then generates `SPIN_FRAME_COUNT`
 /// frames, each with the inner content wrapped in `<g transform="rotate(angle cx cy)">`.
-/// This is the same technique used by `scripts/generate_gifs.py` for the README animations.
+/// This is the same technique used by `scripts/generate_gifs_spinners.py` for the README animations.
 fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     let svg_str = match std::str::from_utf8(svg_bytes) {
         Ok(s) => s,

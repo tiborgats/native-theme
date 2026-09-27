@@ -1224,7 +1224,7 @@ fn main() {
                     let _ = &screenshot_path;
                     eprintln!(
                         "Self-capture not supported on this platform. \
-                         Use spectacle or generate_gpui_screenshots.sh instead."
+                         Use spectacle or generate_screenshots_gpui.sh instead."
                     );
                     // Continue running -- let the user capture manually
                 }

@@ -4,7 +4,7 @@ Status: approved by the maintainer 2026-09-24 ("go, fix all"). Source: the
 second five-area review of `v0.5.9-gpui-kit-0.6.6` (merge base `399f45a`),
 after the first review's fixes (`943891d..05c0a56`). Every finding below was
 verified by the controller or by a reviewer against the code. The
-maintainer also asked for more build tests in `pre-release-check.sh` (E1).
+maintainer also asked for more build tests in `scripts/check_release.sh` (E1).
 
 Rules for every task: never invent a value (a size needs a source, an unstated
 one stays `None`); no panics, no `unsafe` outside the existing `#[allow(unsafe_code)]`
@@ -12,7 +12,7 @@ platform calls; no hardcoded theme values; never mix icon sets (a missing icon
 is none, never another set's); a new or changed test fails first, and the
 report shows the failure; stage by name, no attribution lines; `docs/todo.md`
 is appended to or has its named lines corrected, nothing else; run
-`env CARGO_BUILD_JOBS=4 ./pre-release-check.sh` before the last commit of a
+`env CARGO_BUILD_JOBS=4 ./scripts/check_release.sh` before the last commit of a
 task (expected warnings: stale visual assets, stale compat claims, uncommitted
 asset sources). Scripts run under bash; the user's shell may be fish, so use
 `env VAR=x cmd` in commands you run.
@@ -22,12 +22,12 @@ asset sources). Scripts run under bash; the user's shell may be fish, so use
 E1. **Every crate builds in every feature combination the gate names.** The
 gpui connector does not compile with `--no-default-features` (it calls
 `native_theme::rasterize` ungated, `connectors/native-theme-gpui/src/icons.rs:1171`),
-and nothing builds it that way. A new `scripts/check-features.sh` checks, for
+and nothing builds it that way. A new `scripts/check_features.sh` checks, for
 each workspace crate, the library with no default features, with each feature
 alone (`--no-default-features --features F`), and with all features — the
 coverage of `cargo hack check --each-feature`, without a new tool: features
 come from `cargo metadata --no-deps --format-version 1` through `jq` (installed
-locally and on GitHub's runners). `pre-release-check.sh`, `ci.yml`,
+locally and on GitHub's runners). `scripts/check_release.sh`, `ci.yml`,
 `publish.yml` and `dependency-canary.yml` run it.
 
 E2. **Without `svg-rasterize` the gpui connector hands SVG to gpui.** gpui-pre
@@ -44,7 +44,7 @@ gpui chooses the raster size. No icon becomes `None` for want of the feature.
 E3. **Cross-target builds deny warnings.** `native-theme` with `--all-features`
 has 10 warnings on `x86_64-pc-windows-gnu` (dead code, unchecked `BOOL`s, an
 unreachable expression), all from before this branch. They are fixed, and the
-cross-target section of `pre-release-check.sh` also runs `cargo check --target
+cross-target section of `scripts/check_release.sh` also runs `cargo check --target
 T -p native-theme --all-features` with `RUSTFLAGS="-D warnings"` for both
 targets, as do CI's Windows and macOS legs natively.
 
@@ -79,7 +79,7 @@ presets run on Linux (the project rule, and the showcases' own preset lists).
 
 ### Task 1: feature combinations, gpui without `svg-rasterize`, cross-target warnings (E1, E2, E3)
 
-- New `scripts/check-features.sh` (bash, `set -euo pipefail`, executable):
+- New `scripts/check_features.sh` (bash, `set -euo pipefail`, executable):
   for every workspace member from `cargo metadata --no-deps --format-version 1`
   (use `jq`), run `cargo check -p <crate> --lib` with `--no-default-features`,
   with `--no-default-features --features <F>` for each feature in its
@@ -87,7 +87,7 @@ presets run on Linux (the project rule, and the showcases' own preset lists).
   per combination; exit non-zero if any fails, naming each failure at the end.
   Fail with a clear message if `jq` is missing. Document it in
   `scripts/README.md`.
-- Wire it: a "Feature combinations" section in `pre-release-check.sh`
+- Wire it: a "Feature combinations" section in `scripts/check_release.sh`
   (a hard failure, not soft); a job in `.github/workflows/ci.yml`; the same
   job in `publish.yml` (and in its `needs`); a step in
   `dependency-canary.yml` (which mirrors CI's gates).
@@ -126,13 +126,13 @@ presets run on Linux (the project rule, and the showcases' own preset lists).
   Then check `x86_64-apple-darwin` the same way (`cargo check --target
   x86_64-apple-darwin -p native-theme --all-features`) and fix its warnings
   the same way. Both targets must end with zero warnings.
-- Extend `pre-release-check.sh`'s cross-target section (`:400-423`) to also
+- Extend `scripts/check_release.sh`'s cross-target section (`:400-423`) to also
   run, per installed target, `env RUSTFLAGS="-D warnings" cargo check --target
   "$target" -p native-theme --all-features`. In `ci.yml`, the Windows and macOS
   legs run `cargo check -p native-theme --all-features` with
   `RUSTFLAGS: -Dwarnings`; mirror it in `publish.yml`.
-- Done when: `scripts/check-features.sh` exits 0; both cross-target checks
-  have zero warnings; `pre-release-check.sh` passes with the new sections.
+- Done when: `scripts/check_features.sh` exits 0; both cross-target checks
+  have zero warnings; `scripts/check_release.sh` passes with the new sections.
 
 ### Task 2: preset and reader values against platform-facts, and a gate for them (E4, E5)
 
@@ -203,7 +203,7 @@ already fixed the first three; port its logic, not a new design.
    `a_failed_cli_theme_keeps_the_colour_mode_shown` idea — a failing preset
    leaves choice, mode and `is_dark` unchanged.
 2. `--icon-set freedesktop` (`:1047`, passed by
-   `scripts/generate_screenshots.sh:24-25`) becomes
+   `scripts/generate_screenshots_iced.sh:24-25`) becomes
    `IconSetChoice::Freedesktop("freedesktop")`. Map `freedesktop` to
    `System` (gpui `main.rs:975`); accept any other name as a freedesktop theme
    only if it is installed (`is_freedesktop_theme_available`), else report it
@@ -367,7 +367,7 @@ text is):
 7. `CONTRIBUTING.md:24-31` check list: add the cross-target checks, the
    feature-combination check (Task 1), the iced configurations, widget
    coverage, the PROVENANCE stamp and compat claims — read
-   `pre-release-check.sh` for the actual order; `:144`: `pre-release.sh`
+   `scripts/check_release.sh` for the actual order; `:144`: `generate_assets_release.sh`
    needs Python 3.11+ with Pillow and network access (`scripts/README.md`).
 8. `SECURITY.md:54-55`: `cargo audit` runs in CI (`ci.yml:146-152`) on
    every push and pull request — say what the workflow's triggers are.
@@ -385,7 +385,7 @@ text is):
     prose).
 11. Check every README and doc this plan touched once more for a value
     Tasks 1–5 changed.
-- Done when: every item is fixed and `pre-release-check.sh` passes.
+- Done when: every item is fixed and `scripts/check_release.sh` passes.
 
 ### Task 8: archive
 

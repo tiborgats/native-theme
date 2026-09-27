@@ -6,14 +6,14 @@ set -euo pipefail
 # Triggers CI for macOS/Windows screenshots first, then generates local
 # Linux assets in parallel while CI runs, and finally downloads the
 # CI results into the per-connector docs/assets/ directories and stamps
-# docs/assets/PROVENANCE.toml (scripts/asset-stamp.sh) with the sources the
-# assets came from. pre-release-check.sh and the crates.io workflow's CI gate
+# docs/assets/PROVENANCE.toml (scripts/update_provenance.sh) with the sources the
+# assets came from. scripts/check_release.sh and the crates.io workflow's CI gate
 # verify that stamp against HEAD.
 #
 # Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland);
 # HEAD pushed and the asset sources committed (captures run on HEAD).
 #
-# Usage: bash scripts/pre-release.sh
+# Usage: bash scripts/generate_assets_release.sh
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -41,11 +41,11 @@ echo ""
 info "Checking prerequisites..."
 command -v gh >/dev/null 2>&1 || fail "gh CLI not found"
 command -v python3 >/dev/null 2>&1 || fail "python3 not found"
-# The last step, compat-check.sh run, runs scripts/check-widget-coverage.py,
+# The last step, update_compatibility.sh run, runs scripts/check_widget_coverage.py,
 # whose tomllib import needs Python 3.11; fail here rather than after the
 # captures.
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
-    || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check-widget-coverage.py needs 3.11+ (tomllib)"
+    || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check_widget_coverage.py needs 3.11+ (tomllib)"
 command -v spectacle >/dev/null 2>&1 || fail "spectacle not found (needed for the Linux captures)"
 python3 -c "from PIL import Image" 2>/dev/null || fail "Pillow not installed (pip install Pillow)"
 gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
@@ -69,8 +69,8 @@ fi
 ok "Branch is up to date with remote"
 
 info "Checking that the asset sources are committed..."
-bash "$SCRIPT_DIR/asset-stamp.sh" verify-clean >/dev/null \
-    || fail "Uncommitted changes in paths the assets depend on (see: scripts/asset-stamp.sh verify-clean); commit or stash them first"
+bash "$SCRIPT_DIR/update_provenance.sh" verify-clean >/dev/null \
+    || fail "Uncommitted changes in paths the assets depend on (see: scripts/update_provenance.sh verify-clean); commit or stash them first"
 ok "Asset sources match HEAD"
 
 info "Triggering screenshots workflow..."
@@ -102,27 +102,27 @@ echo ""
 # ── Step 2: Local Linux assets (while CI runs) ──────────────────────
 
 echo "=== Step 2/6: Spinner GIFs ==="
-python3 "$SCRIPT_DIR/generate_gifs.py"
+python3 "$SCRIPT_DIR/generate_gifs_spinners.py"
 ok "Spinner GIFs generated"
 echo ""
 
 echo "=== Step 3/6: Iced Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_iced.sh"
 ok "Iced Linux screenshots generated"
 echo ""
 
 echo "=== Step 4/6: gpui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_gpui.sh"
 ok "gpui Linux screenshots generated"
 echo ""
 
 echo "=== Step 5/6: egui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_egui_screenshots.sh"
+bash "$SCRIPT_DIR/generate_screenshots_egui.sh"
 ok "egui Linux screenshots generated"
 echo ""
 
 echo "=== Step 6/6: Theme-switching GIFs (iced + gpui + egui) ==="
-bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
+bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 ok "Theme-switching GIFs generated"
 echo ""
 
@@ -202,7 +202,7 @@ ok "Downloaded $DOWNLOADED screenshots from CI"
 # ── Stamp the provenance ─────────────────────────────────────────────
 
 info "Recording provenance..."
-bash "$SCRIPT_DIR/asset-stamp.sh" write
+bash "$SCRIPT_DIR/update_provenance.sh" write
 ok "docs/assets/PROVENANCE.toml written for $EXPECTED_SHA"
 
 # ── Refresh the compatibility claim ──────────────────────────────────────
@@ -216,7 +216,7 @@ ok "docs/assets/PROVENANCE.toml written for $EXPECTED_SHA"
 # a connector no longer passes on the newest set, which is the answer the
 # release needs before the tag, not after it.
 info "Verifying the connectors against the newest upstream releases..."
-bash "$SCRIPT_DIR/compat-check.sh" run
+bash "$SCRIPT_DIR/update_compatibility.sh" run
 ok "docs/COMPATIBILITY.toml and the connector READMEs refreshed"
 
 # ── Summary ──────────────────────────────────────────────────────────

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Re-download every bundled icon from native-theme/icons/SOURCES.toml, or add
-# a new one:  scripts/refresh-icons.sh            (refresh all)
-#             scripts/refresh-icons.sh add lucide battery
-#             scripts/refresh-icons.sh add material battery_0_bar
+# a new one:  scripts/update_icons.sh            (refresh all)
+#             scripts/update_icons.sh add lucide battery
+#             scripts/update_icons.sh add material battery_0_bar
 # Requires python3 >= 3.11 (tomllib) and network access. Run from anywhere.
 set -euo pipefail
 cd "$(dirname "$0")/.."

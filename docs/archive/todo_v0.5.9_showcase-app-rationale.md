@@ -95,7 +95,7 @@ gate (src/showcase.rs) covers radii and colours, not text sizes.
 
 - The citation gates: every colour claim is read at the line it cites; every
   prose citation names a symbol that exists (archived widget-info spec §4).
-- The coverage script `scripts/check-widget-coverage.py` and
+- The coverage script `scripts/check_widget_coverage.py` and
   `docs/showcase-exceptions.toml`.
 - The showcase's windowed tests (`open`, `click`, `bounds_of`,
   `every_tab_lays_out`, showcase-gpui.rs:8118 onward), which already drive

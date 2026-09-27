@@ -66,7 +66,7 @@ Each is a floor and nothing more. It is not an open-ended `0.6.x`, because a
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
 stopped compiling on a fresh dependency resolution.
 
-**Verified** — the versions `scripts/compat-check.sh run` last resolved and ran
+**Verified** — the versions `scripts/update_compatibility.sh run` last resolved and ran
 this connector's tests, clippy, docs and the widget-coverage script against. The
 script writes the line; a hand-edited one fails a test:
 

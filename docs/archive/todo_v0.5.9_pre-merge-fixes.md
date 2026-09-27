@@ -9,7 +9,7 @@ one stays `None`); no panics, no `unsafe`; no hardcoded theme values; never mix
 icon sets (a missing icon is none, never another set's); a new or changed test
 fails first, and the report shows the failure; stage by name, no attribution
 lines; `docs/todo.md` is appended to or has its named lines corrected, nothing
-else; run `env CARGO_BUILD_JOBS=4 ./pre-release-check.sh` before the last
+else; run `env CARGO_BUILD_JOBS=4 ./scripts/check_release.sh` before the last
 commit of a task (expected warnings: stale visual assets, stale compat claims,
 uncommitted asset sources).
 
@@ -88,7 +88,7 @@ Gate: `cargo check --target x86_64-pc-windows-gnu -p native-theme
 Also `cargo check --target x86_64-pc-windows-gnu -p native-theme-iced` with
 default features, and `-p native-theme-gpui` with default features. Add the
 feature-alone check to CI's Windows and macOS legs of `ci.yml`, and a
-cross-target `cargo check` of it to `pre-release-check.sh` where the target is
+cross-target `cargo check` of it to `scripts/check_release.sh` where the target is
 installed (soft-skip otherwise, saying so). CHANGELOG Fixed entry.
 
 ### Task 2: core sizes and docs (D2, D3, D4, D5)
@@ -180,12 +180,12 @@ Gate: a test per sample class that the drawn icon is the chosen theme's, and
 one that a missing icon draws none.
 
 ### Task 7: release tooling and project docs
-`publish.yml` CI gate mirrors CI/pre-release-check (iced `--no-default-features`,
+`publish.yml` CI gate mirrors CI/check_release (iced `--no-default-features`,
 `--features iced_aw` test and clippy, `cargo doc -p native-theme-iced
 --all-features`, widget coverage, the Task 1 check); `screenshots.yml` builds
 and runs the iced showcase with `--features iced_aw`; `dependency-canary.yml`
 matches CHANGELOG's description; `scripts/README.md` documents
-`compat-check.sh` and what `pre-release.sh` now runs; `compat-check.sh:327`
+`update_compatibility.sh` and what `generate_assets_release.sh` now runs; `update_compatibility.sh:327`
 separator; CHANGELOG: `:74` 108, `table_row_border`/`link` entry, the two
 "Fixed" entries about the new script folded into Added, ios; ROADMAP v0.6.1;
 `docs/todo.md:131, :1550-1552, :1660`; platform-facts §2.14 link text.
@@ -226,5 +226,5 @@ pushed. Where the implementation departed from or went beyond the text above:
   `OUT_DIR`; the code now takes the environment as a parameter).
 - Task 8: the final review found no blocker; its findings (a failed
   `--theme` with `--variant`, the accessibility semantics above, the macOS
-  arrow width, a Python check in `pre-release.sh`, CHANGELOG entries that
+  arrow width, a Python check in `generate_assets_release.sh`, CHANGELOG entries that
   described fixes to things new in this release) are fixed.

@@ -76,7 +76,7 @@ done
 
 echo ""
 echo "--- Assembling iced GIF ---"
-python3 "$SCRIPT_DIR/generate_gifs.py" \
+python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
     --theme-switching "$ICED_FRAME_DIR" \
     --theme-switching-output "$ICED_OUTPUT_DIR/theme-switching.gif"
 echo ""
@@ -118,7 +118,7 @@ done
 
 echo ""
 echo "--- Assembling gpui GIF ---"
-python3 "$SCRIPT_DIR/generate_gifs.py" \
+python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
     --theme-switching "$GPUI_FRAME_DIR" \
     --theme-switching-output "$GPUI_OUTPUT_DIR/theme-switching.gif"
 echo ""
@@ -157,7 +157,7 @@ done
 
 echo ""
 echo "--- Assembling egui GIF ---"
-python3 "$SCRIPT_DIR/generate_gifs.py" \
+python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
     --theme-switching "$EGUI_FRAME_DIR" \
     --theme-switching-output "$EGUI_OUTPUT_DIR/theme-switching.gif"
 echo ""

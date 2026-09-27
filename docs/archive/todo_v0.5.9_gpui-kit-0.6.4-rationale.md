@@ -606,7 +606,7 @@ mechanism is not re-derived from source. The tests are the evidence.
 
 The showcase is the only place a human sees upstream widgets under native
 themes. It is also the screenshot source, but only for one tab: every capture
-in `scripts/generate_gpui_screenshots.sh:70` and in `screenshots.yml` passes
+in `scripts/generate_screenshots_gpui.sh:70` and in `screenshots.yml` passes
 `--tab buttons`, and all five new sections live in other tabs. They are
 therefore looked at once, by eye, at the visual check (§9 gate 2) and leave no
 artefact; widening the captured tabs is a follow-up in `docs/todo.md`, not
@@ -648,7 +648,7 @@ crate already uses three times.
 | E8 | `rust-version` stays 1.95.0: measured sufficient (1.95.0 builds) and necessary (1.94.0 does not) on the 0.6.4 closure. |
 | E9 | Icon tables: wording only. Assets-enum keying and the Lucide refresh stay out. |
 | E10 | No CI workflow change (no new system package; verified from the lockfile diff). |
-| E11 | Release gates as for v0.5.8: `./pre-release-check.sh`, screenshots regenerated on the maintainer's desktop (`Cargo.lock` is a stamped path), tag and upload only on the maintainer's explicit go. |
+| E11 | Release gates as for v0.5.8: `./scripts/check_release.sh`, screenshots regenerated on the maintainer's desktop (`Cargo.lock` is a stamped path), tag and upload only on the maintainer's explicit go. |
 | E12 | Flat-button hover: the connector ships `variants::ghost_button`, a `ButtonCustomVariant` with the platform's button state colours, for the buttons an application builds (standalone ghost and `InputGroup` addon alike); upstream-internal buttons are Tier U with the token-pair proposal (§2.10, §1.4g, §1.4m). Revised after the maintainer's visual check, 2026-09-20. |
 | E13 | Showcase gains Carousel, Empty, InputGroup, a code editor and a Markdown view (§2.11). |
 | E14 | 0.5.8 is not yanked (maintainer, 2026-09-19). |

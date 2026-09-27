@@ -1,10 +1,10 @@
 # Upstream versions each connector has been verified against.
 #
-# Written by `scripts/compat-check.sh run`, which resolves the newest upstream
+# Written by `scripts/update_compatibility.sh run`, which resolves the newest upstream
 # release of a connector's family on a throwaway lockfile, runs that
 # connector's tests, clippy, documentation and the widget-coverage script on
 # it, and records what the lockfile resolved only when every one of them
-# passed. Read by pre-release-check.sh and by each connector's own
+# passed. Read by scripts/check_release.sh and by each connector's own
 # `src/compat.rs`, which requires the README's Verified line to be this file's.
 #
 # `sources` is a SHA-256 over the git object ids of that connector's

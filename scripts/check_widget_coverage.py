@@ -8,7 +8,7 @@ script.
 
 Run from the repository root:
 
-    python3 scripts/check-widget-coverage.py
+    python3 scripts/check_widget_coverage.py
 
 Exit 0 only when every discovered widget is either shown in the matching
 showcase or listed in docs/showcase-exceptions.toml with a non-empty reason,
@@ -843,5 +843,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Failure as error:
-        print(f"check-widget-coverage: {error}", file=sys.stderr)
+        print(f"check_widget_coverage: {error}", file=sys.stderr)
         sys.exit(2)

@@ -75,7 +75,7 @@ Each is a floor and nothing more, and deliberately not an open-ended range: a
 before, when gpui-component 0.6.2 removed a theme field the published
 native-theme-gpui 0.5.8 wrote and 0.5.8 stopped compiling.
 
-**Verified** — the versions `scripts/compat-check.sh run` last resolved and ran
+**Verified** — the versions `scripts/update_compatibility.sh run` last resolved and ran
 this connector's tests, in all three feature configurations, clippy, docs in both
 the default and all features, and the widget-coverage script against. The script
 writes the line; a hand-edited one fails a test:

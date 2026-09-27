@@ -2,7 +2,7 @@
 #
 # Each directory is covered by exactly one [[set]] rule: repository, git ref,
 # and the upstream path pattern with {name} = the file stem. A [[file]] entry
-# overrides the ref and path for one file. `scripts/refresh-icons.sh`
+# overrides the ref and path for one file. `scripts/update_icons.sh`
 # re-downloads everything from this manifest; native-theme/tests/icon_sources.rs
 # checks that every directory and exception is described here.
 

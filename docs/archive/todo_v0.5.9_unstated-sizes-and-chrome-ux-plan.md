@@ -29,7 +29,7 @@ Status: implemented (2026-09-23, Tasks 1–7) and archived; see *As built* at th
 - Never mix icon sets. A missing icon is `None`, never a substitute.
 - Before 1.0, breaking changes are allowed, and there are no migration docs.
 - Every task ends with:
-  - a green `env CARGO_BUILD_JOBS=4 ./pre-release-check.sh` (the expected release-time warnings are fine);
+  - a green `env CARGO_BUILD_JOBS=4 ./scripts/check_release.sh` (the expected release-time warnings are fine);
   - one commit of named files. No `git add -A`, no Co-Authored-By or AI-attribution lines. Push nothing, tag nothing.
 - Every new gate or test ships a seed-and-fail proof.
 - `docs/todo.md` is append-only, except for closing or updating a named item.
@@ -78,7 +78,7 @@ Report `ios` separately, because platform-facts has no iOS column.
 - Fetch the upstream sources for each platform.
 - Append the per-side rows to platform-facts §2.14, with citations. A platform without a sourced number gets **(none)** and its reason.
 - The controller checks every citation.
-- Run pre-release-check.
+- Run check_release.
 - Commit `docs(facts): the status bar's padding, per platform`.
 
 ### Task 3: Per-side padding; unstated stays unstated; heights laid out (spec §1.1–§1.3, §2)
@@ -115,7 +115,7 @@ This is one task: the model's type changes and their consumers must compile toge
    - iced, plus the iced showcase;
    - the README builder table;
    - the gpui showcase's `GEOMETRY_NOTES`, infos, HeightOnly sample, Textarea, and the removed Theme Map `control_height` rows with their test.
-3. Run `cargo test --workspace`, then pre-release-check.
+3. Run `cargo test --workspace`, then check_release.
 4. Commit `feat(model): padding per side; a size the platform does not state stays unstated`.
 
 ### Task 4: Native themes state what their platform documents (spec §1.4–§1.6)
@@ -129,14 +129,14 @@ This is one task: the model's type changes and their consumers must compile toge
    - Give every value a comment citing platform-facts.
    - Correct platform-facts wherever a ruling found it wrong, including any sourced `0` the audit proposed.
 4. **Seed proofs** (spec §1.6).
-5. Run pre-release-check.
+5. Run check_release.
 6. Commit `fix(presets): native themes state their platform's documented sizes`.
 
 ### Task 5: Sidebar icons fit their items (spec §3.5)
 
 1. **Failing test** (spec §3.5), under every native preset and one colour-scheme preset, expanded and in the rail.
 2. **Implement:** `icon_size_small` for the page icons, and their info.
-3. Run pre-release-check.
+3. Run check_release.
 4. Commit `fix(showcase): Sidebar icons use the platform's small icon size`.
 
 ### Task 6: The chrome, rearranged (spec §3.1–§3.4, §3.6)
@@ -166,7 +166,7 @@ This is one task: the model's type changes and their consumers must compile toge
    - the `PanelRight` mapping in `icons.rs`;
    - `showcase-exceptions.toml`;
    - `chrome_icon_names()`.
-3. Run pre-release-check.
+3. Run check_release.
 4. Commit `feat(showcase): panel toggles in the status bar, theme settings in the Sidebar, the version in the title`.
 
 ### Task 7: Docs and archive (spec §4)

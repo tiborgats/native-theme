@@ -649,7 +649,7 @@ dependency offers — it cannot locate that dependency's source, and
 gpui-component exposes no list of its widgets to match against. The first
 draft of this section claimed otherwise; it was wrong.
 
-`scripts/check-widget-coverage.py` does it instead: `cargo metadata
+`scripts/check_widget_coverage.py` does it instead: `cargo metadata
 --format-version 1` gives the exact on-disk source path of `gpui-component`,
 `iced_widget` and `iced_aw`, from which the script enumerates the
 constructible widgets (types implementing `RenderOnce` or `IntoElement` for
@@ -658,7 +658,7 @@ sub-parts by the rules in §6a.2, and compares against the showcase. Widgets
 not shown must appear in `docs/showcase-exceptions.toml` with a reason;
 anything else fails the script.
 
-It runs in two places: `pre-release-check.sh`, so a release cannot ship an
+It runs in two places: `scripts/check_release.sh`, so a release cannot ship an
 unshown widget, and the nightly dependency canary, so an upstream release that
 adds a widget is reported the evening it appears rather than at the next
 release.
@@ -836,7 +836,7 @@ reaches the text *and* upstream's state colours still win — `checkbox` and
       `svg-rasterize`. The `no-dev` edge filter is essential: with
       dev-dependencies in the graph the features are already on, which is how
       the defect stayed invisible to every test.
-- [ ] `scripts/check-widget-coverage.py` passes for both connectors, and
+- [ ] `scripts/check_widget_coverage.py` passes for both connectors, and
       removing one widget from a showcase makes it fail (the negative control).
 - [ ] The builder-coverage test passes, and deleting one `geometry::` call
       from the showcase makes it fail.
@@ -844,4 +844,4 @@ reaches the text *and* upstream's state colours still win — `checkbox` and
       iced showcase renders the six `iced_aw` widgets (§3a).
 - [ ] The iced showcase's `interactive_controls_respond` fails when one
       control's `on_press` is removed (the negative control for §6.2).
-- [ ] `./pre-release-check.sh` shows no failures.
+- [ ] `./scripts/check_release.sh` shows no failures.

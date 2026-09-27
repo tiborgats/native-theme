@@ -143,7 +143,7 @@ Record what each platform grants in the report. Never guess.
    - The third row's label reads "Icon theme".
    - The Layout page's Sidebar sample is drawn, and its icons fit.
 2. **Implement** S1–S6.
-3. **Check.** Run the coverage script and `env CARGO_BUILD_JOBS=4 ./pre-release-check.sh`.
+3. **Check.** Run the coverage script and `env CARGO_BUILD_JOBS=4 ./scripts/check_release.sh`.
 4. **Commit.** One commit: `feat(showcase): two panels — the theme and its inspector on the left, the page with its tabs in the middle`.
 
 ### Task 2: the window manager draws the frame (S8)
@@ -154,7 +154,7 @@ Record what each platform grants in the report. Never guess.
    - The Layout page's `TitleBar` sample is drawn.
    - The Theme tab's Window section names the mode.
 2. **Implement S8.** Read each platform's backend first.
-3. **Check.** Run the coverage script and `env CARGO_BUILD_JOBS=4 ./pre-release-check.sh`.
+3. **Check.** Run the coverage script and `env CARGO_BUILD_JOBS=4 ./scripts/check_release.sh`.
 4. **Commit.** One commit: `feat(showcase): the window manager draws the window's frame where it will`.
 
 ### Task 3: docs and archive (S7, S8)

@@ -29,7 +29,7 @@ E1–E21). This plan assumes that state and does not repeat it.
 - **Every commit is green.** Write the test, watch it fail, implement, watch it
   pass, commit — within one task. Never commit a red test, and never wire a
   gate to a check that does not yet pass: CI, the nightly canary and
-  `pre-release-check.sh` all run on this branch's commits.
+  `scripts/check_release.sh` all run on this branch's commits.
 - **The breaking signature changes land first (Task 1)**, so no test written
   later is rewritten for them.
 - **An expected result in this plan is a measurement or it says it is not.**
@@ -75,8 +75,8 @@ E1–E21). This plan assumes that state and does not repeat it.
 | `connectors/native-theme-gpui/src/contract.rs` (new) | the same for gpui |
 | both `examples/showcase-*.rs` | complete widget coverage, `styles::*` throughout, self-tests |
 | both `Cargo.toml` `[[example]]` | `test = true` |
-| `scripts/check-widget-coverage.py`, `docs/showcase-exceptions.toml` (new) | toolkit widget coverage |
-| `pre-release-check.sh`, `.github/workflows/dependency-canary.yml` | run the coverage script (Task 12, once it passes) |
+| `scripts/check_widget_coverage.py`, `docs/showcase-exceptions.toml` (new) | toolkit widget coverage |
+| `scripts/check_release.sh`, `.github/workflows/dependency-canary.yml` | run the coverage script (Task 12, once it passes) |
 | `docs/todo.md`, `CHANGELOG.md`, both `README.md`, the sibling spec §10 | notes and reconciled counts |
 
 ---
@@ -197,13 +197,13 @@ Spec §5. The gpui mapping is already correct; this states it.
 
 Spec §6a.4. Created and run here; **wired into the gates in Task 12**, once Tasks 7–9 have made it pass.
 
-**Files:** Create `scripts/check-widget-coverage.py` and `docs/showcase-exceptions.toml`.
+**Files:** Create `scripts/check_widget_coverage.py` and `docs/showcase-exceptions.toml`.
 
 - [ ] **Step 1: The script.** `cargo metadata --format-version 1` gives each dependency's `manifest_path` and therefore its `src` directory — the only reliable way to reach a dependency's source, and why this is a script rather than a test. For gpui-component, enumerate types implementing `RenderOnce` or `IntoElement`, discarding harnesses and sub-parts by spec §6a.2's rules; for `iced_widget` and `iced_aw`, the source modules. Compare against the showcase. Exit non-zero on anything neither shown nor excepted.
 - [ ] **Step 2: The exception file** with a reason per entry: a test harness, an internal sub-part, a layout wrapper with no visual surface, a widget needing a GPU pipeline the application supplies (`shader`), or no native counterpart (the ten `iced_aw` widgets of spec §3a).
 - [ ] **Step 3: Run it and record the work list.**
 
-Run: `python3 scripts/check-widget-coverage.py`
+Run: `python3 scripts/check_widget_coverage.py`
 Expected: it exits non-zero, listing exactly the widgets Tasks 7–9 add — the 20 gpui widgets of spec §6a.2 and the five iced modules of §6a.3. If it also reports `DescriptionText` or `ShimmerGlyphs`, the sub-part filter is wrong: neither is a widget (spec §6a.2). Paste the list into the commit message; it is Tasks 7–9's work order.
 
 - [ ] **Step 4: Commit** the script and the exception file. Nothing is wired to them yet, so the tree stays green.
@@ -280,7 +280,7 @@ Spec §8.
 - [ ] **Step 2: iced crate docs** — text scaling, why the other two preferences have no receiver in iced, the features, the two-layer colour story.
 - [ ] **Step 3: `docs/todo.md`** — add to the Tier U upstream list: a menu-surface token, since `PopupMenu` hardcodes `popover_style` and `menu.background_color` differs from `popover.background_color` in 30 of 32 combinations. Also the nine iced audit items move to done; the iced `geometry` gap stays, with the coverage script named as what keeps it visible; add `scrollbar.min_thumb_length` as unreachable in iced 0.14. Correct the attribution in that section's preamble: `connector-parity-checker` reported the two public-surface items, and the seven mapping defects came from reading the `iced_widget` catalogs.
 - [ ] **Step 4: Reconcile the sibling specification.** `todo_v0.5.9_gpui-kit-0.6.4-spec.md` §10 states test counts (200 library, 6 seam) that this work changes, and §0.2 lists the public items added. Update both, so the two documents do not contradict each other when they are archived together.
-- [ ] **Step 5: `CHANGELOG.md`** — the entries of spec §8, under the existing **undated** `## [Unreleased]` heading. Do not date it: `pre-release-check.sh` turns the asset-stamp check from a warning into a hard failure once `## [<version>]` carries a date (the `grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}"` branch), and dating is the maintainer's release commit.
+- [ ] **Step 5: `CHANGELOG.md`** — the entries of spec §8, under the existing **undated** `## [Unreleased]` heading. Do not date it: `scripts/check_release.sh` turns the update_provenance check from a warning into a hard failure once `## [<version>]` carries a date (the `grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}"` branch), and dating is the maintainer's release commit.
 - [ ] **Step 6: Commit.**
 
 ---
@@ -289,7 +289,7 @@ Spec §8.
 
 Now that Tasks 7–9 have made it pass.
 
-- [ ] **Step 1:** `pre-release-check.sh` gains a check that runs the script.
+- [ ] **Step 1:** `scripts/check_release.sh` gains a check that runs the script.
 - [ ] **Step 2:** `.github/workflows/dependency-canary.yml` gains a step, so an upstream release that adds a widget is reported the evening it appears rather than at the next release.
 - [ ] **Step 3: Run both** paths locally and confirm they pass.
 - [ ] **Step 4: Commit.**
@@ -305,14 +305,14 @@ CARGO_BUILD_JOBS=4 cargo test --workspace --all-features
 CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --no-default-features
 CARGO_BUILD_JOBS=4 cargo test -p native-theme-iced --features iced_aw
 CARGO_BUILD_JOBS=4 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings >/dev/null 2>&1; echo "clippy=$?"
-python3 scripts/check-widget-coverage.py ; echo "coverage=$?"
+python3 scripts/check_widget_coverage.py ; echo "coverage=$?"
 cargo audit >/dev/null 2>&1; echo "audit=$?"
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 ```
-Expected: all green; `pre-release-check.sh` reports no failures and one warning, the stale asset stamp.
+Expected: all green; `scripts/check_release.sh` reports no failures and one warning, the stale asset stamp.
 
 - [ ] **Step 2: Spec §9 acceptance list** — run each item, paste each result into the hand-over message.
-- [ ] **Step 3: Report to the maintainer.** Both design document sets are now implemented. Report: test counts per crate, the contract tables' row counts, the contrast baseline (how many pairs sit below AA, and that none degraded), anything Tasks 8 or 9 could not build, and the remaining maintainer-only steps, unchanged from the sibling plan's Task 8 — the visual check, pushing the branch, `./scripts/pre-release.sh`, the release commit, CI, the tag, and archiving **all six** design documents afterwards.
+- [ ] **Step 3: Report to the maintainer.** Both design document sets are now implemented. Report: test counts per crate, the contract tables' row counts, the contrast baseline (how many pairs sit below AA, and that none degraded), anything Tasks 8 or 9 could not build, and the remaining maintainer-only steps, unchanged from the sibling plan's Task 8 — the visual check, pushing the branch, `./scripts/generate_assets_release.sh`, the release commit, CI, the tag, and archiving **all six** design documents afterwards.
 
 **Do not push the branch, open a PR, tag, or publish.**
 

@@ -11,14 +11,14 @@
 # combination and exits non-zero when any fails, naming every failure at the
 # end.
 #
-#   scripts/check-features.sh
+#   scripts/check_features.sh
 #
-# Requires jq. pre-release-check.sh, ci.yml, publish.yml and
+# Requires jq. scripts/check_release.sh, ci.yml, publish.yml and
 # dependency-canary.yml run it.
 set -euo pipefail
 
 if ! command -v jq &>/dev/null; then
-    echo "check-features.sh: jq is required (it reads the crates' features from cargo metadata); install jq and rerun" >&2
+    echo "check_features.sh: jq is required (it reads the crates' features from cargo metadata); install jq and rerun" >&2
     exit 2
 fi
 

@@ -6,7 +6,7 @@
 
 **Architecture:** Three gates, each the smallest thing that catches its defect class. Presence: every demo has a panel, every widget has a demo. Builders: the `geometry::` builders a demo applies are the ones its panel names — one lexical test extending `src/showcase.rs`. Colours: every claim cites the upstream line it was read at, and a test opens that line. A fourth script reports what panels omit, advisory only.
 
-**Tech Stack:** Rust 1.95, gpui-component 0.6.4 (floor; 0.6.6 verified identical for every cited line), Python 3 for the omission report and for `check-widget-coverage.py`, the lexical helpers already in `connectors/native-theme-gpui/src/showcase.rs`. Whether the citation check is a Rust test or a Python script is decided in Task 3 Step 1.
+**Tech Stack:** Rust 1.95, gpui-component 0.6.4 (floor; 0.6.6 verified identical for every cited line), Python 3 for the omission report and for `check_widget_coverage.py`, the lexical helpers already in `connectors/native-theme-gpui/src/showcase.rs`. Whether the citation check is a Rust test or a Python script is decided in Task 3 Step 1.
 
 **Spec:** [`todo_v0.5.9_widget-info-spec.md`](todo_v0.5.9_widget-info-spec.md)
 **Rationale:** [`todo_v0.5.9_widget-info-rationale.md`](todo_v0.5.9_widget-info-rationale.md)
@@ -19,7 +19,7 @@
 - **No public item is added.** `geometry` stays at 37 public items (spec §0.2).
 - Every gate ships a **discrimination proof**: a seeded defect must make it fail, naming the line. A gate never seen to fail is not a gate.
 - Verified against gpui-component **0.6.4** (the manifest floor and the `Cargo.lock` pin). 0.6.6 differs only in `inspector.rs` and `label.rs`; if you cite a line in either, re-read it in both.
-- Run `./pre-release-check.sh` before committing code changes, with `CARGO_BUILD_JOBS=4`.
+- Run `./scripts/check_release.sh` before committing code changes, with `CARGO_BUILD_JOBS=4`.
 - The Bash tool's shell is **fish**: a multi-word flag passed through an unquoted variable arrives as one argv element. Write `--features iced_aw` literally.
 - Never `git add -A`. No `Co-Authored-By` or AI-attribution lines in commits.
 
@@ -143,14 +143,14 @@ git commit -m "test(showcase): a demo names exactly the builders it applies"
 **Files:**
 - Modify: `connectors/native-theme-gpui/src/showcase.rs` (or a script — see Step 1)
 - Modify: `connectors/native-theme-gpui/examples/showcase-gpui.rs`
-- Modify: `pre-release-check.sh`
+- Modify: `scripts/check_release.sh`
 
 **Interfaces:**
 - Produces: the `(role, field, value, cited-at)` claim shape every later task fills in
 
 - [ ] **Step 1: Decide where the check runs, and record it**
 
-The check needs the vendored crate's `src/` at run time, from `cargo metadata` only (spec §4.4). Either a build script writes the path to `OUT_DIR` for a `#[test]`, or the check is a Python script called by `pre-release-check.sh`. Pick the simpler one for this repo, implement it, and record the choice in spec §9.
+The check needs the vendored crate's `src/` at run time, from `cargo metadata` only (spec §4.4). Either a build script writes the path to `OUT_DIR` for a `#[test]`, or the check is a Python script called by `scripts/check_release.sh`. Pick the simpler one for this repo, implement it, and record the choice in spec §9.
 
 - [ ] **Step 2: Extend the claim shape and render it — its own commit**
 
@@ -166,7 +166,7 @@ For each claim with a citation: resolve `<file>:<line>` or `<file>:<from>-<to>` 
 
 - [ ] **Step 4: Gate the uncited count**
 
-`pre-release-check.sh` fails when any claim lacks a citation. It starts at 324 and only falls (spec §6.6), so intermediate commits are green and a release with an uncited claim is impossible.
+`scripts/check_release.sh` fails when any claim lacks a citation. It starts at 324 and only falls (spec §6.6), so intermediate commits are green and a release with an uncited claim is impossible.
 
 At this task the count is 324 — that is correct. Tasks 4, 6 and 7 drain it. Wire the check now and land Task 3 with the gate **reporting** the count; Task 8 flips it to failing, once the count has actually reached zero.
 
@@ -183,7 +183,7 @@ Seed each, confirm the failure names the claim, revert.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add connectors/native-theme-gpui/src/showcase.rs connectors/native-theme-gpui/examples/showcase-gpui.rs pre-release-check.sh
+git add connectors/native-theme-gpui/src/showcase.rs connectors/native-theme-gpui/examples/showcase-gpui.rs scripts/check_release.sh
 git commit -m "test(showcase): a colour claim is read at the line it cites"
 ```
 
@@ -297,7 +297,7 @@ git commit -m "feat(showcase): Select, Textarea and the icon grids have panels"
 ### Task 8: The coverage-gate fix
 
 **Files:**
-- Modify: `scripts/check-widget-coverage.py`
+- Modify: `scripts/check_widget_coverage.py`
 
 - [ ] **Step 1: Tighten gpui matching per spec §7**
 
@@ -306,7 +306,7 @@ git commit -m "feat(showcase): Select, Textarea and the icon grids have panels"
 `std::process::Command::new` must no longer satisfy the `Command` widget:
 
 ```
-python3 scripts/check-widget-coverage.py
+python3 scripts/check_widget_coverage.py
 ```
 
 Expected: `gpui: Command` reported missing. That is both the proof the fix works **and** a genuine finding — `Command` really is absent from the showcase.
@@ -326,7 +326,7 @@ Task 3 Step 4 wired it as a report. The count must be zero before this flip; if 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/check-widget-coverage.py pre-release-check.sh docs/showcase-exceptions.toml docs/todo.md
+git add scripts/check_widget_coverage.py scripts/check_release.sh docs/showcase-exceptions.toml docs/todo.md
 git commit -m "fix(scripts): a std path segment no longer proves a gpui widget is shown"
 ```
 
@@ -335,7 +335,7 @@ git commit -m "fix(scripts): a std path segment no longer proves a gpui widget i
 ### Task 9: CHANGELOG, docs, and archive
 
 **Files:**
-- Modify: `CHANGELOG.md`, `docs/todo.md`, `pre-release-check.sh`
+- Modify: `CHANGELOG.md`, `docs/todo.md`, `scripts/check_release.sh`
 - Move: the three `docs/todo_v0.5.9_widget-info-*.md` into `docs/archive/`
 
 - [ ] **Step 1: CHANGELOG**
@@ -346,12 +346,12 @@ Under `Fixed`: the seven corrected claims, named. State plainly that **no public
 
 The `Command` follow-up if deferred; the Tier U entry for empirical measurement (rationale §5, blocked on gpui-pre exposing the scene); and the trigger for derived geometry (rationale §3.3).
 
-- [ ] **Step 3: Update the check count in `pre-release-check.sh`'s header**
+- [ ] **Step 3: Update the check count in `scripts/check_release.sh`'s header**
 
 - [ ] **Step 4: Full gate**
 
 ```bash
-CARGO_BUILD_JOBS=4 ./pre-release-check.sh
+CARGO_BUILD_JOBS=4 ./scripts/check_release.sh
 ```
 
 - [ ] **Step 5: Fill in spec §9 "As built"**

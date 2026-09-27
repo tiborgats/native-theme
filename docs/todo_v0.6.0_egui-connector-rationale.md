@@ -2040,7 +2040,7 @@ fail to build `native-theme` itself.
 of writing). This was briefly adopted, on the argument that all six toolchain
 installs in `.github/workflows/ci.yml` were `@stable` (seven today, lines 18,
 42, 73, 97, 109, 128 and 165, all still `@stable`), there is no
-`rust-toolchain.toml`, and `pre-release-check.sh` has no MSRV check — so any declared number was an untested claim, and one equal to what CI
+`rust-toolchain.toml`, and `scripts/check_release.sh` has no MSRV check — so any declared number was an untested claim, and one equal to what CI
 runs is at least true by construction.
 
 **Why that reasoning was wrong.** The remedy did not match the defect. The fix

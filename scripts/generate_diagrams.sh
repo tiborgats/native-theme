@@ -19,7 +19,7 @@
 # Without the embed prerequisites the script still renders; the label just
 # falls back to a sans-serif face in viewers that lack the font.
 #
-# Usage: ./scripts/render-diagrams.sh
+# Usage: ./scripts/generate_diagrams.sh
 
 set -euo pipefail
 

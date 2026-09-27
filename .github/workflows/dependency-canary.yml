@@ -110,7 +110,7 @@ jobs:
       # always()` for the reason given at Widget coverage below.
       - name: Feature combinations
         if: always()
-        run: bash scripts/check-features.sh
+        run: bash scripts/check_features.sh
 
       # On the updated lockfile, so an upstream release that adds a widget is
       # reported the evening it appears rather than at the next release. The
@@ -129,7 +129,7 @@ jobs:
         if: always()
         run: |
           python3 --version
-          python3 scripts/check-widget-coverage.py
+          python3 scripts/check_widget_coverage.py
 
       - name: Documentation
         if: always()
