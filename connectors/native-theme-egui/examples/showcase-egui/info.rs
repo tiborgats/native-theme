@@ -282,32 +282,58 @@ fn sink_text(sink: &Sink) -> String {
     }
 }
 
-/// The lines one row prints: the leaf, its value, the verdict, the sinks with
-/// their scope or surface, a `tested_by` route, an exception for `preset`, and
-/// for an `unmappable` row "lost here", its sub_tag and its upstream line.
-pub(crate) fn row_lines(row: &Row, json: &serde_json::Value, preset: &str) -> Vec<String> {
-    let value =
-        value_at(json, &row.leaf).map_or_else(|| "(no value)".to_string(), |v| value_text(&v));
-    let mut lines = vec![
-        format!("{} = {value}", row.leaf),
-        format!("  {}", row.verdict.name()),
-    ];
-    lines.extend(row.sinks.iter().map(|s| format!("  → {}", sink_text(s))));
+/// One row as Widget Info shows it: the leaf, its value, the verdict, a colour value's colour,
+/// and what follows the value — each sink it writes with its scope or surface, a `tested_by`
+/// route, an exception for `preset`, and for an `unmappable` row "lost here", its sub_tag and
+/// its upstream line. In words, with no glyph the proportional fonts may lack (parity item 7).
+pub(crate) struct RowView {
+    pub leaf: String,
+    pub value: String,
+    pub verdict: &'static str,
+    pub colour: Option<egui::Color32>,
+    pub details: Vec<String>,
+}
+
+pub(crate) fn row_view(row: &Row, json: &serde_json::Value, preset: &str) -> RowView {
+    let value = value_at(json, &row.leaf);
+    let mut details: Vec<String> = row
+        .sinks
+        .iter()
+        .map(|s| format!("writes {}", sink_text(s)))
+        .collect();
     if let Some(test) = &row.tested_by {
-        lines.push(format!(
-            "  no Style or Frame field carries it; its route is checked by {test}"
+        details.push(format!(
+            "no Style or Frame field carries it; its route is checked by {test}"
         ));
     }
     for (_, why) in row.exceptions.iter().filter(|(p, _)| p == preset) {
-        lines.push(format!("  on {preset}: {why}"));
+        details.push(format!("on {preset}: {why}"));
     }
     if row.verdict == Verdict::Unmappable {
-        lines.push(format!(
-            "  lost here — {}: {}",
+        details.push(format!(
+            "lost here — {}: {}",
             row.sub_tag.as_deref().unwrap_or_default(),
             row.upstream.as_deref().unwrap_or_default()
         ));
     }
+    RowView {
+        leaf: row.leaf.clone(),
+        colour: value.as_ref().and_then(swatch_colour),
+        value: value.map_or_else(|| "(no value)".to_string(), |v| value_text(&v)),
+        verdict: row.verdict.name(),
+        details,
+    }
+}
+
+/// The lines one row prints in Copy's text: `leaf = value`, then the verdict and each of
+/// `row_view`'s details, indented.
+pub(crate) fn row_lines(row: &Row, json: &serde_json::Value, preset: &str) -> Vec<String> {
+    let view = row_view(row, json, preset);
+    let mut lines = vec![
+        format!("{} = {}", view.leaf, view.value),
+        format!("  {}", view.verdict),
+    ];
+    lines.extend(view.details.iter().map(|d| format!("  {d}")));
     lines
 }
 
@@ -365,8 +391,8 @@ pub(crate) fn info_text(
     for (name, value) in &shown.info.read {
         out.push(format!("read: {name} = {value}"));
     }
-    for note in &shown.info.notes {
-        out.push(format!("this instance: {note}"));
+    for (what, note) in &shown.info.notes {
+        out.push(format!("this instance: {what}: {note}"));
     }
     out.join("\n")
 }
@@ -379,58 +405,169 @@ fn swatch_colour(value: &serde_json::Value) -> Option<egui::Color32> {
         .map(native_theme_egui::convert::to_color32)
 }
 
-/// The Widget tab: `info_text`'s content as rows with colour swatches
-/// (`ui.color_edit_button_srgba` is an editor; a swatch is a `Frame` filled with
-/// the colour at `ui.spacing().interact_size.y` square), and the Copy button.
+/// Text in `Small`, gpui's `text_sm` and `text_xs` (parity rule R1), wrapping at the width it
+/// is given.
+fn small(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Response {
+    let mut text = egui::RichText::new(text).small();
+    if weak {
+        text = text.weak();
+    }
+    ui.add(egui::Label::new(text).wrap())
+}
+
+/// A name over its value, one label, the gpui showcase's inspector `row` and note line
+/// (`showcase-gpui/inspector.rs:321-329`, `:365-367`): the name in the weak text colour
+/// (gpui's `muted_foreground` is `defaults.muted_color`, as egui's `weak_text_color` is, parity
+/// rule R3), the value and each line after it in the text colour, all in `Small`, wrapping.
+pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui::Response {
+    let font = egui::TextStyle::Small.resolve(ui.style());
+    let (weak, strong) = (ui.visuals().weak_text_color(), ui.visuals().text_color());
+    let mut job = egui::text::LayoutJob::default();
+    job.append(key, 0.0, egui::TextFormat::simple(font.clone(), weak));
+    for line in lines {
+        job.append("\n", 0.0, egui::TextFormat::simple(font.clone(), strong));
+        job.append(line, 0.0, egui::TextFormat::simple(font.clone(), strong));
+    }
+    ui.add(egui::Label::new(job).wrap())
+}
+
+/// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:342-360`): a
+/// `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame` in
+/// `defaults.border` (`showcase-gpui/support.rs:209-216`), beside the leaf and the colour's hex;
+/// the verdict and the details under it, weak, as gpui's citation line is muted.
+pub(crate) fn swatch_row(
+    ui: &mut egui::Ui,
+    t: &native_theme::theme::ResolvedTheme,
+    colour: egui::Color32,
+    label: &str,
+    under: &[String],
+) -> egui::Response {
+    let font = egui::TextStyle::Small.resolve(ui.style());
+    let (weak, strong) = (ui.visuals().weak_text_color(), ui.visuals().text_color());
+    let format = |color| egui::TextFormat {
+        font_id: font.clone(),
+        color,
+        valign: egui::Align::Center,
+        ..Default::default()
+    };
+    // One label: the first row leaves the swatch its room and is as tall as it, so the lines
+    // under it follow with no gap, as gpui's `v_flex` of the two lines has none.
+    let mut job = egui::text::LayoutJob {
+        first_row_min_height: crate::SWATCH_SIZE,
+        ..Default::default()
+    };
+    job.append(
+        label,
+        crate::SWATCH_SIZE + ui.spacing().item_spacing.x,
+        format(strong),
+    );
+    for line in under {
+        job.append("\n", 0.0, format(weak));
+        job.append(line, 0.0, format(weak));
+    }
+    let response = ui.add(egui::Label::new(job).wrap());
+    let square =
+        egui::Rect::from_min_size(response.rect.min, egui::Vec2::splat(crate::SWATCH_SIZE));
+    paint_swatch(ui, t, square, colour);
+    response
+}
+
+/// `rect` filled with `colour` and framed in `defaults.border`'s colour, width and radius, as
+/// the gpui showcase's `demo_frame` (`showcase-gpui/support.rs:209-216`).
+fn paint_swatch(
+    ui: &egui::Ui,
+    t: &native_theme::theme::ResolvedTheme,
+    rect: egui::Rect,
+    colour: egui::Color32,
+) {
+    ui.painter().rect(
+        rect,
+        native_theme_egui::border_radius(t),
+        colour,
+        egui::Stroke::new(
+            t.defaults.border.line_width,
+            native_theme_egui::border_color(t),
+        ),
+        egui::StrokeKind::Inside,
+    );
+}
+
+/// The Widget tab, as the gpui showcase's (`showcase-gpui/inspector.rs:102-165`, `:352-378`):
+/// the title and Copy on one row, then a section per seam — its heading, a swatch line per
+/// colour row, a name-over-value row per other row — then "Theme config", the accessors and
+/// leaves the helper read, and "This instance", its notes. The content records nothing (§10.4).
 pub(crate) fn widget_tab(
     ui: &mut egui::Ui,
+    t: &native_theme::theme::ResolvedTheme,
     shown: Option<&Shown>,
     manifest: &Result<Manifest, String>,
     json: &Result<serde_json::Value, String>,
     preset: &str,
 ) {
     let Some(shown) = shown else {
-        ui.label("Hover any widget to see what the theme sets on it.");
+        small(
+            ui,
+            "Hover any widget to see what the theme sets on it.",
+            true,
+        );
         return;
     };
     let (manifest, json) = match (manifest, json) {
         (Ok(manifest), Ok(json)) => (manifest, json),
         (Err(error), _) | (_, Err(error)) => {
-            ui.label(format!("Widget Info is unavailable: {error}"));
+            small(ui, format!("Widget Info is unavailable: {error}"), true);
             return;
         }
     };
+    // The title, and Copy flush right: a small Ghost button, frameless at rest (parity rule R4).
     ui.horizontal(|ui| {
-        ui.strong(shown.info.kind);
-        if ui.button("Copy").clicked() {
-            ui.ctx().copy_text(info_text(shown, manifest, json, preset));
-        }
+        let title = crate::demo::section_text(ui, shown.info.kind);
+        ui.label(title);
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let copy = egui::Button::new("Copy").small().frame_when_inactive(false);
+            if ui.add(copy).clicked() {
+                ui.ctx().copy_text(info_text(shown, manifest, json, preset));
+            }
+        });
     });
-    let side = ui.spacing().interact_size.y;
     for seam in &shown.info.seams {
-        ui.strong(seam_text(seam));
+        let heading = crate::demo::section_text(ui, seam_text(seam));
+        ui.label(heading);
         for row in manifest.rows_for(seam) {
-            let swatch = value_at(json, &row.leaf).as_ref().and_then(swatch_colour);
-            let lines = row_lines(row, json, preset);
-            ui.horizontal_top(|ui| {
-                if let Some(colour) = swatch {
-                    let (rect, _) =
-                        ui.allocate_exact_size(egui::Vec2::splat(side), egui::Sense::hover());
-                    ui.painter().rect_filled(rect, 0, colour);
+            let view = row_view(row, json, preset);
+            match view.colour {
+                Some(colour) => {
+                    let mut under = vec![view.verdict.to_string()];
+                    under.extend(view.details);
+                    swatch_row(
+                        ui,
+                        t,
+                        colour,
+                        &format!("{} {}", view.leaf, view.value),
+                        &under,
+                    );
                 }
-                ui.vertical(|ui| {
-                    for line in lines {
-                        ui.label(line);
-                    }
-                });
-            });
+                None => {
+                    let mut lines = vec![format!("{} ({})", view.value, view.verdict)];
+                    lines.extend(view.details);
+                    key_value(ui, &view.leaf, &lines);
+                }
+            }
         }
     }
-    for (name, value) in &shown.info.read {
-        ui.label(format!("read: {name} = {value}"));
+    if !shown.info.read.is_empty() {
+        let heading = crate::demo::section_text(ui, "Theme config");
+        ui.label(heading);
+        for (name, value) in &shown.info.read {
+            key_value(ui, name, std::slice::from_ref(value));
+        }
     }
-    for note in &shown.info.notes {
-        ui.label(format!("This instance: {note}"));
+    if !shown.info.notes.is_empty() {
+        let heading = crate::demo::section_text(ui, "This instance");
+        ui.label(heading);
+        for (what, note) in &shown.info.notes {
+            key_value(ui, what, std::slice::from_ref(note));
+        }
     }
 }
 
@@ -443,39 +580,75 @@ pub(crate) fn theme_tab(
     manifest: &Result<Manifest, String>,
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
-    ui.label(format!("Theme: {}", atlas.name()));
-    ui.label(format!("OS mode: {:?}", atlas.os_mode()));
-    ui.label(format!("Accessibility: {:?}", atlas.accessibility()));
-    ui.strong("Notes");
+    let section = |ui: &mut egui::Ui, title: &str| {
+        let heading = crate::demo::section_text(ui, title);
+        ui.label(heading);
+    };
+    let row = |ui: &mut egui::Ui, key: &str, value: String| {
+        key_value(ui, key, &[value]);
+    };
+    // Sections and rows as the gpui showcase's Theme tab (`showcase-gpui/inspector.rs:166-232`).
+    section(ui, "Theme");
+    row(ui, "name", atlas.name().to_string());
+    row(ui, "os_mode", format!("{:?}", atlas.os_mode()));
+    let prefs = atlas.accessibility();
+    row(
+        ui,
+        "text_scaling_factor",
+        prefs.text_scaling_factor.to_string(),
+    );
+    row(ui, "reduce_motion", prefs.reduce_motion.to_string());
+    row(ui, "high_contrast", prefs.high_contrast.to_string());
+    row(
+        ui,
+        "reduce_transparency",
+        prefs.reduce_transparency.to_string(),
+    );
+    section(ui, "Notes");
     if atlas.notes().is_empty() {
-        ui.label("none");
+        small(ui, "none", true);
     }
     for note in atlas.notes() {
-        ui.label(format!("{note:?}"));
+        let text = format!("{note:?}");
+        let kind: String = text.chars().take_while(|c| c.is_alphanumeric()).collect();
+        row(ui, &kind, text);
     }
-    ui.strong("Fonts");
-    for (name, font) in [
-        ("defaults.font", &t.defaults.font),
-        ("defaults.mono_font", &t.defaults.mono_font),
-    ] {
-        let size = match font.defined_size {
-            Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
-            Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
-            None => "(size not stated)".to_string(),
-        };
-        ui.label(format!("{name}: {} {size}", font.family));
-    }
-    ui.strong("The window");
-    ui.label("The OS draws the window's frame and title bar (decorations on); the showcase draws none (§10.4).");
-    ui.strong("Fields left at egui's own value");
+    section(ui, "Fonts");
+    let size = |font: &native_theme::theme::ResolvedFontSpec| match font.defined_size {
+        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
+        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
+        None => "(size not stated)".to_string(),
+    };
+    row(ui, "font_family", t.defaults.font.family.to_string());
+    row(ui, "font_size", size(&t.defaults.font));
+    row(
+        ui,
+        "mono_font_family",
+        t.defaults.mono_font.family.to_string(),
+    );
+    row(ui, "mono_font_size", size(&t.defaults.mono_font));
+    section(ui, "Window");
+    row(
+        ui,
+        "decorations",
+        "on: the showcase asks for the OS's frame (ViewportBuilder::with_decorations(true))"
+            .to_string(),
+    );
+    row(
+        ui,
+        "frame",
+        "the OS's, or winit's Adwaita-styled one where the compositor leaves the frame to the application; the showcase draws no title bar (§10.4)"
+            .to_string(),
+    );
+    section(ui, "Fields left at egui's own value");
     match manifest {
         Ok(manifest) => {
             for (path, why) in &manifest.unwritten {
-                ui.label(format!("{path}: {why}"));
+                row(ui, path, why.clone());
             }
         }
         Err(error) => {
-            ui.label(format!("the manifest did not parse: {error}"));
+            small(ui, format!("the manifest did not parse: {error}"), true);
         }
     }
 }

@@ -116,9 +116,15 @@ fn demo_colour() -> egui::Color32 {
     egui::Color32::from_rgb(0x3d, 0x8b, 0xd1)
 }
 
-/// A caption above a group of items: a `Label` in the base style, recorded like any other.
+/// A heading above a group of items, the gpui showcase's `demo::heading`: `Body` size,
+/// semibold, in the text colour (`demo::heading_text`), not `ui.strong`, whose colour is the
+/// active-state text colour (`egui/src/style.rs:1147-1149`); a `Label` in the base style,
+/// recorded like any other.
 pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
-    demo::base(reg, ui, "caption", |ui| ui.strong(text));
+    demo::base(reg, ui, "heading", |ui| {
+        let heading = demo::heading_text(ui, text);
+        ui.label(heading)
+    });
 }
 
 /// What the page draws above its `ScrollArea`, which never scrolls: the Containers page's

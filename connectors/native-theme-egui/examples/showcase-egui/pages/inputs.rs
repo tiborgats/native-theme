@@ -61,7 +61,7 @@ pub(crate) fn show(
                 .frame(frame),
         )
     });
-    reg.amend_last(|i| i.notes.push("hint text: \"A hint\"".to_string()));
+    reg.amend_last(|i| i.notes.push(("hint text", "\"A hint\"".to_string())));
     let id = ui.make_persistent_id("inputs/disabled");
     let frame = input_frame(ui, id, t);
     let mut disabled = "Disabled".to_string();

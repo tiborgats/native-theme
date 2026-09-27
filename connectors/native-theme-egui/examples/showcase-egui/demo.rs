@@ -19,8 +19,9 @@ pub(crate) struct InstanceInfo {
     pub seams: Vec<Seam>,
     /// The §4.7 accessors and `ResolvedTheme` leaves the helper read, with their values.
     pub read: Vec<(&'static str, String)>,
-    /// *This instance* notes from the helper's own arguments, never a claim about the theme.
-    pub notes: Vec<String>,
+    /// *This instance* notes from the helper's own arguments, never a claim about the theme: what
+    /// each is about, and the note.
+    pub notes: Vec<(&'static str, String)>,
 }
 
 #[derive(Clone, Debug)]
@@ -503,9 +504,10 @@ impl PanelSeams {
         }
         let mut info = info(kind, seams);
         if let Some(margin) = self.content_margin {
-            info.notes.push(
-                "inner margin: none; the content pads itself by layout.container_margin, as the gpui showcase's side panel does".to_string(),
-            );
+            info.notes.push((
+                "inner margin",
+                "none: the content pads itself by layout.container_margin, as the gpui showcase's side panel does".to_string(),
+            ));
             info.read.push((
                 "layout.container_margin",
                 margin.map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
@@ -554,6 +556,92 @@ pub(crate) fn role_image(
     };
     icons::to_image(ui.ctx(), &key, &data)
         .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
+}
+
+/// The `FontFamily::Name` the showcase registers the OS's semibold face under. Application
+/// code only: the connector registers one face per family and never a `Name` (§8).
+pub(crate) const SEMIBOLD_FAMILY: &str = "showcase-semibold";
+
+/// The OS's semibold face of the theme's family, for the headings gpui draws `font_semibold()`
+/// (parity decision 3): `native_theme::fonts::system_face` at `SEMIBOLD_WEIGHT`, added with
+/// `Context::add_font` under `SEMIBOLD_FAMILY` after every `ThemeAtlas::install`, whose
+/// `set_fonts` replaces the definitions. `add_font` skips a name the loaded fonts already hold
+/// (`egui/src/context.rs:2133-2143`), and they still hold the previous install's face when the
+/// next install is pending, so each registration takes a name of its own.
+#[derive(Default)]
+pub(crate) struct Semibold {
+    registrations: u64,
+}
+
+impl Semibold {
+    /// After `atlas.install(ctx)`: the face of the family the theme's light variant names, the
+    /// one the connector's font plan registers (§4.6), where the OS has one; none otherwise, and
+    /// the headings keep the regular face.
+    pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &ThemeAtlas) {
+        #[cfg(feature = "system-fonts")]
+        {
+            let font = &atlas.resolved_for(egui::Theme::Light).defaults.font;
+            let Some(face) =
+                native_theme::fonts::system_face(&font.family, crate::SEMIBOLD_WEIGHT, font.style)
+            else {
+                return;
+            };
+            let mut data = egui::FontData::from_owned(face.data.to_vec());
+            data.index = face.index;
+            // A face with a `wght` axis is set to the weight; a static face ignores it (§8.3).
+            data.tweak.coords = native_theme_egui::fonts::weight_coords(crate::SEMIBOLD_WEIGHT);
+            self.registrations += 1;
+            ctx.add_font(egui::epaint::text::FontInsert::new(
+                &format!("{SEMIBOLD_FAMILY}-{}", self.registrations),
+                data,
+                vec![egui::epaint::text::InsertFontFamily {
+                    family: egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
+                    priority: egui::epaint::text::FontPriority::Highest,
+                }],
+            ));
+        }
+        #[cfg(not(feature = "system-fonts"))]
+        let _ = (ctx, atlas, &mut self.registrations);
+    }
+}
+
+/// `size` in the semibold family where the fonts this pass draws with hold it, else in the
+/// proportional one: a `Name` family the fonts do not hold panics at the first text that
+/// names it (`epaint/src/text/fonts.rs:1025`), and none is registered where the OS has no
+/// such face or feature `system-fonts` is off.
+pub(crate) fn semibold_font(ui: &egui::Ui, size: f32) -> egui::FontId {
+    let family = egui::FontFamily::Name(SEMIBOLD_FAMILY.into());
+    let held = ui
+        .ctx()
+        .fonts(|f| f.definitions().families.contains_key(&family));
+    egui::FontId::new(
+        size,
+        if held {
+            family
+        } else {
+            egui::FontFamily::Proportional
+        },
+    )
+}
+
+/// A page's section heading, the gpui showcase's `demo::heading`
+/// (`Label::text_base().font_semibold()`, `showcase-gpui/demo.rs:1365-1379`): `Body` size,
+/// semibold, in the text colour.
+pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::RichText {
+    let size = egui::TextStyle::Body.resolve(ui.style()).size;
+    egui::RichText::new(text)
+        .font(semibold_font(ui, size))
+        .color(ui.visuals().text_color())
+}
+
+/// An inspector title or section heading, the gpui showcase's
+/// `Label::text_sm().font_semibold()` (`showcase-gpui/inspector.rs:127`, `:316-318`): `Small`
+/// size (gpui's `text_sm`, parity rule R1), semibold, in the text colour.
+pub(crate) fn section_text(ui: &egui::Ui, text: impl Into<String>) -> egui::RichText {
+    let size = egui::TextStyle::Small.resolve(ui.style()).size;
+    egui::RichText::new(text)
+        .font(semibold_font(ui, size))
+        .color(ui.visuals().text_color())
 }
 
 /// A row of tabs, as `tab_bar` draws it.
@@ -672,9 +760,12 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     .map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
             ),
         ]);
-        i.notes.push(format!(
-            "the selected tab's line: {}px, gpui-component's underline tab",
-            crate::TAB_UNDERLINE_WIDTH
+        i.notes.push((
+            "the selected tab's line",
+            format!(
+                "{}px, gpui-component's underline tab",
+                crate::TAB_UNDERLINE_WIDTH
+            ),
         ));
     });
     picked

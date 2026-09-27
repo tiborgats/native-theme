@@ -49,6 +49,21 @@ pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_mi
 /// in the colour the theme states for the primary button.
 pub(crate) const TAB_UNDERLINE_WIDTH: f32 = 2.0;
 
+/// The weight the showcase draws its headings in. The model states no heading weight; this is
+/// gpui's `FontWeight::SEMIBOLD`
+/// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.6/src/text_system.rs:1169`),
+/// which the gpui showcase's headings take (`font_semibold()`,
+/// `connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1373`). Without `system-fonts`
+/// no face is looked up, and the headings keep the regular one.
+#[cfg(feature = "system-fonts")]
+pub(crate) const SEMIBOLD_WEIGHT: u16 = 600;
+
+/// The side of a colour swatch in Widget Info and on the Theme Map. The model states no swatch;
+/// this is the gpui showcase's `SWATCH_SIZE`
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:334`), the square both of
+/// its swatches draw.
+pub(crate) const SWATCH_SIZE: f32 = 16.0;
+
 /// How long `--screenshot` lets the showcase run before it captures, in seconds of
 /// `InputState::time`: the iced showcase's delay, "60 ticks × 50ms = 3s render delay"
 /// (`connectors/native-theme-iced/examples/showcase-iced.rs:1222-1223`). Not a style value.

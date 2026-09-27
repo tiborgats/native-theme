@@ -318,7 +318,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .registry
         .records()
         .iter()
-        .filter(|r| r.info.kind == "inspector tab")
+        .filter(|r| r.info.kind == "Tab · Inspector")
         .map(|r| r.id.accesskit_id())
         .collect();
     let theme_tab = harness
@@ -334,7 +334,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .registry
         .records()
         .iter()
-        .filter(|r| r.info.kind == "theme setting label")
+        .filter(|r| r.info.kind == "Label · theme setting")
         .map(|r| r.rect)
         .collect();
     assert_eq!(labels.len(), 3, "three setting labels: {labels:?}");
@@ -343,7 +343,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .registry
         .records()
         .iter()
-        .find(|r| r.info.kind == "side panel")
+        .find(|r| r.info.kind == "Side panel")
         .map(|r| r.rect)
         .expect("the side panel records itself");
     for (label, control) in labels.iter().zip([theme, mode, icon]) {
@@ -362,7 +362,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .registry
         .records()
         .iter()
-        .find(|r| r.info.kind == "side panel separator")
+        .find(|r| r.info.kind == "Separator · side panel")
         .map(|r| r.rect)
         .expect("the side panel records its separator");
     assert!(icon.bottom() <= separator.top() && separator.bottom() <= widget_tab.top());
@@ -382,7 +382,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
         .registry
         .records()
         .iter()
-        .find(|r| r.info.kind == "central panel")
+        .find(|r| r.info.kind == "Central panel")
         .map(|r| r.rect.top())
         .expect("the central panel records itself");
     let first_item = harness
@@ -412,7 +412,7 @@ fn the_side_panel_toggle_hides_and_shows_it() {
             .registry
             .records()
             .iter()
-            .find(|r| r.info.kind == "side panel")
+            .find(|r| r.info.kind == "Side panel")
             .map(|r| r.rect.width())
     };
     let initial = width_of(&harness).expect("the side panel is shown at start");
@@ -445,7 +445,7 @@ fn the_side_panel_toggle_hides_and_shows_it() {
         .registry
         .records()
         .iter()
-        .find(|r| r.info.kind == "side panel")
+        .find(|r| r.info.kind == "Side panel")
         .map(|r| egui::pos2(r.rect.right(), r.rect.center().y))
         .expect("shown");
     harness.hover_at(edge);
@@ -480,7 +480,7 @@ fn click_menu(harness: &mut Harness<'_, App>, menu: &str) {
         .registry
         .records()
         .iter()
-        .filter(|r| r.info.kind == "menu button")
+        .filter(|r| r.info.kind == "Menu button")
         .map(|r| r.id.accesskit_id())
         .collect();
     harness
@@ -543,7 +543,7 @@ fn the_menus_run_their_actions() {
                 .registry
                 .records()
                 .iter()
-                .filter(|r| r.info.kind == "menu item")
+                .filter(|r| r.info.kind == "Menu item")
                 .map(|r| r.id.accesskit_id())
                 .collect();
             let item = harness
@@ -1186,9 +1186,9 @@ fn the_nested_panels_stay_inside_the_page() {
                 .unwrap_or_else(|| panic!("{when}: no {kind} record"))
         };
         let (content, tabs, status) = (
-            rect_of("central panel"),
-            rect_of("page tabs"),
-            rect_of("status bar"),
+            rect_of("Central panel"),
+            rect_of("TabBar · Pages"),
+            rect_of("Status bar"),
         );
         for kind in ["right panel", "CentralPanel (nested)"] {
             let rect = rect_of(kind);
@@ -1256,7 +1256,7 @@ fn the_area_stays_inside_the_page() {
         .find(|r| r.info.kind == "area anchor")
         .map(|r| r.id.accesskit_id())
         .expect("the anchor");
-    harness.hover_at(rect_of(&harness, "central panel").center());
+    harness.hover_at(rect_of(&harness, "Central panel").center());
     let mut passed_the_tabs = false;
     for _ in 0..20 {
         // The page's content moved up, a wheel notch at a time.
@@ -1268,9 +1268,9 @@ fn the_area_stays_inside_the_page() {
         });
         harness.run_steps(2);
         let chrome = [
-            rect_of(&harness, "chrome bar"),
-            rect_of(&harness, "page tabs"),
-            rect_of(&harness, "status bar"),
+            rect_of(&harness, "Chrome bar"),
+            rect_of(&harness, "TabBar · Pages"),
+            rect_of(&harness, "Status bar"),
         ];
         let anchor = harness
             .query_all(By::new().predicate(move |n| n.locate().0 == anchor_id))
@@ -1317,7 +1317,7 @@ fn the_rows_fit_the_content() {
         // The tab row spans the content's width; a horizontal separator the page's, less a
         // scroll bar where the page scrolls.
         let rows = [
-            (right_of("page tabs"), &["page tab"][..]),
+            (right_of("TabBar · Pages"), &["Tab · Page"][..]),
             (
                 right_of("Separator (horizontal)"),
                 &[
@@ -2028,13 +2028,13 @@ fn the_chrome_reports_itself() {
         .hold_zone
         .expect("the inspector reports its content rect");
     for kind in [
-        "menu bar",
-        "toolbar",
-        "side panel",
-        "status bar",
-        "page tabs",
-        "inspector tabs",
-        "central panel",
+        "Menu bar",
+        "Toolbar",
+        "Side panel",
+        "Status bar",
+        "TabBar · Pages",
+        "TabBar · Inspector",
+        "Central panel",
     ] {
         let records: Vec<(egui::Id, egui::Rect)> = harness
             .state()

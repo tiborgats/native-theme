@@ -123,7 +123,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
             menu_bar(app, ui);
             toolbar(app, ui);
         });
-    seams.record(&mut app.registry, &out.response, "chrome bar");
+    seams.record(&mut app.registry, &out.response, "Chrome bar");
 }
 
 /// The in-window menu bar (Linux, Windows, and macOS under `cfg(test)`; macOS has the system
@@ -141,16 +141,18 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
         ui,
         Role::Menu,
         normal,
-        "menu bar",
+        "Menu bar",
         |ui, bar, menu_seam, registry| {
             bar.ui(ui, |ui| {
                 for (menu, items) in Action::MENUS {
                     let response = ui.menu_button(*menu, |ui| {
-                        let open = demo::styled(registry, ui, Role::Menu, normal, "menu");
+                        let open = demo::styled(registry, ui, Role::Menu, normal, "Menu");
                         for item in *items {
                             match item {
                                 None => {
-                                    open.add(registry, ui, "menu separator", |ui| ui.separator());
+                                    open.add(registry, ui, "Separator · menu", |ui| {
+                                        ui.separator()
+                                    });
                                 }
                                 Some(action) => {
                                     let mut button = egui::Button::new(action.label());
@@ -159,7 +161,7 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
                                             .shortcut_text(ui.ctx().format_shortcut(&shortcut));
                                     }
                                     let r =
-                                        open.add(registry, ui, "menu item", |ui| ui.add(button));
+                                        open.add(registry, ui, "Menu item", |ui| ui.add(button));
                                     if r.clicked() {
                                         pending.push(*action);
                                         ui.close();
@@ -168,7 +170,7 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
                             }
                         }
                     });
-                    menu_seam.record(registry, &response.response, "menu button");
+                    menu_seam.record(registry, &response.response, "Menu button");
                 }
             })
             .response
@@ -245,7 +247,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
         ui,
         Role::Toolbar,
         RoleVariant::Normal,
-        "toolbar",
+        "Toolbar",
         toolbar_row,
     );
 }
@@ -261,7 +263,7 @@ fn tooltip(reg: &mut Registry, ui: &mut egui::Ui, response: &egui::Response, tex
         Surface::Tooltip,
         false,
         tooltip_role,
-        "tooltip",
+        "Tooltip",
         |_, chrome, reg| {
             let mut tip = egui::Tooltip::for_enabled(response);
             tip.popup = tip.popup.frame(chrome.frame);
@@ -274,7 +276,7 @@ fn tooltip(reg: &mut Registry, ui: &mut egui::Ui, response: &egui::Response, tex
                     ui,
                     Role::Tooltip,
                     RoleVariant::Normal,
-                    "tooltip text",
+                    "Label · tooltip",
                     |ui| ui.label(text),
                 );
             })
@@ -328,7 +330,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 }
             });
         });
-    seams.record(&mut app.registry, &out.response, "status bar");
+    seams.record(&mut app.registry, &out.response, "Status bar");
 }
 
 /// Desktop, preset and mode, the font in its defined unit (§8.7), the
@@ -412,7 +414,7 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                 ui,
                 Role::Separator,
                 RoleVariant::Normal,
-                "side panel separator",
+                "Separator · side panel",
                 |ui| ui.separator(),
             );
             inspector_tabs(app, ui, margin);
@@ -424,7 +426,7 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         });
     app.side_panel_visible = visible;
     if let Some(out) = out {
-        seams.record(&mut app.registry, &out.response, "side panel");
+        seams.record(&mut app.registry, &out.response, "Side panel");
     }
 }
 
@@ -446,7 +448,7 @@ fn setting_label(
     body: demo::Applied,
     text: &'static str,
 ) -> egui::Id {
-    body.add(reg, ui, "theme setting label", |ui| {
+    body.add(reg, ui, "Label · theme setting", |ui| {
         ui.label(egui::RichText::new(text).small())
     })
     .id
@@ -503,8 +505,8 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Theme",
-            kind: "theme picker",
-            row_kind: "theme row",
+            kind: "ComboBox · Theme",
+            row_kind: "Theme row",
             rows: &theme_rows,
             current: &app.settings.theme,
             current_text: current_theme,
@@ -516,8 +518,8 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Mode",
-            kind: "mode picker",
-            row_kind: "mode row",
+            kind: "ComboBox · Mode",
+            row_kind: "Mode row",
             current_text: Action::SetMode(current_mode).label().to_string(),
             rows: &mode_rows,
             current: &current_mode,
@@ -529,8 +531,8 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         body,
         Setting {
             label: "Icon theme",
-            kind: "icon theme picker",
-            row_kind: "icon theme row",
+            kind: "ComboBox · Icon theme",
+            row_kind: "Icon theme row",
             current_text: current_icon.to_string(),
             rows: &icon_rows,
             current: &current_icon,
@@ -614,8 +616,8 @@ fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
         ui,
         t,
         demo::TabBar {
-            kind: "inspector tabs",
-            tab_kind: "inspector tab",
+            kind: "TabBar · Inspector",
+            tab_kind: "Tab · Inspector",
             tabs: &[
                 (InspectorTab::Widget, "Widget"),
                 (InspectorTab::Theme, "Theme"),
@@ -638,6 +640,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
         InspectorTab::Widget => {
             crate::info::widget_tab(
                 ui,
+                app.atlas.resolved_for(theme),
                 app.registry.shown(),
                 &app.manifest,
                 app.json.get(&app.atlas, theme),
@@ -662,14 +665,14 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
         ui,
         Role::Tab,
         RoleVariant::Normal,
-        "page tabs",
+        "TabBar · Pages",
         |ui, tab, registry| {
             ui.horizontal_wrapped(|ui| {
                 // The tab bar spans the page: the rest of its width is its own surface.
                 ui.set_min_width(ui.available_width());
                 for page in Page::ALL {
                     let selected = settings.page == page;
-                    let r = tab.add(registry, ui, "page tab", |ui| {
+                    let r = tab.add(registry, ui, "Tab · Page", |ui| {
                         ui.add(egui::Button::new(page.label()).selected(selected))
                     });
                     if r.clicked() {
@@ -710,7 +713,7 @@ pub(crate) fn central_panel(
             }
             add(app, ui);
         });
-    seams.record(&mut app.registry, &out.response, "central panel");
+    seams.record(&mut app.registry, &out.response, "Central panel");
 }
 
 /// A dialog extent the theme states, less the frame's own margins and stroke,

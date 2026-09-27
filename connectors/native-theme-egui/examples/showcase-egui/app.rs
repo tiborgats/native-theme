@@ -228,6 +228,8 @@ pub(crate) struct App {
     /// the OS: the name the Theme row, the command palette and the status bar give `default`,
     /// "default (kde-breeze)", as the gpui showcase's (`showcase-gpui/support.rs:1031-1036`).
     pub(crate) default_preset: String,
+    /// The OS's semibold face of the theme's family, registered after each install.
+    pub(crate) semibold: demo::Semibold,
     pub(crate) theme_error: Option<String>,
     pub(crate) registry: demo::Registry,
     pub(crate) demo_state: pages::DemoState,
@@ -304,6 +306,7 @@ impl App {
             atlas,
             settings,
             default_preset,
+            semibold: demo::Semibold::default(),
             theme_error,
             registry: demo::Registry::default(),
             demo_state: pages::DemoState::default(),
@@ -395,6 +398,7 @@ impl App {
     /// Install the held atlas and the mode's theme preference (egui's own call, §10.3).
     fn apply(&mut self, ctx: &egui::Context) {
         self.atlas.install(ctx);
+        self.semibold.register(ctx, &self.atlas);
         ctx.set_theme(self.theme_preference());
         self.json = info::JsonCache::default();
         self.last_scheme = None;
@@ -552,6 +556,7 @@ impl eframe::App for App {
         #[cfg(feature = "watch")]
         if let Some(atlas) = self.watcher.as_ref().and_then(|w| w.take()) {
             atlas.install(ctx);
+            self.semibold.register(ctx, &atlas);
             self.atlas = atlas;
             self.json = info::JsonCache::default();
             self.last_scheme = None;
