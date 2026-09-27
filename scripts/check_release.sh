@@ -705,14 +705,22 @@ print_section "Packaging"
 WS_VERSION=$(cargo pkgid -p native-theme | sed 's/.*[@#]//')
 find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -mindepth 2 -maxdepth 2 -type d \
     -path "*/registry/src/-*/native-theme*-$WS_VERSION" -exec rm -rf {} +
+# The packages are verified in a target directory of their own, where only the
+# workspace crates are cleaned before each run: cargo reuses a registry-sourced
+# build of the same name and version without looking at its source, and the
+# dependencies stay built between runs. The workspace's own target/ is untouched.
+PKG_TARGET="target/package-verify"
+cargo clean --target-dir "$PKG_TARGET" \
+    -p native-theme-derive -p native-theme -p native-theme-build \
+    -p native-theme-iced -p native-theme-gpui -p native-theme-egui >/dev/null 2>&1 || true
 run_check "package (core: derive · native-theme · build)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty
+    cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty --target-dir "$PKG_TARGET"
 run_check_soft "package (native-theme-iced)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty
+    cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty --target-dir "$PKG_TARGET"
 run_check_soft "package (native-theme-gpui)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty
+    cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty --target-dir "$PKG_TARGET"
 run_check_soft "package (native-theme-egui)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty
+    cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty --target-dir "$PKG_TARGET"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: security & dependency freshness
