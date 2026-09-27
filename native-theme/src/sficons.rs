@@ -92,15 +92,18 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
 /// the built-in [`IconRole`](crate::IconRole) mappings. Use this when you know the
 /// exact SF Symbol name (e.g., from a custom icon mapping).
 ///
+/// The symbol is a monochrome template: with `fg_color` its pixels take that
+/// colour and keep their alpha; without it they are left as drawn.
+///
 /// Returns `None` if the symbol name doesn't exist on this macOS version.
 ///
 /// # Examples
 ///
 /// ```ignore
-/// let icon = load_sf_icon_by_name("arrow.right");
+/// let icon = load_sf_icon_by_name("arrow.right", None);
 /// ```
 #[must_use]
-pub(crate) fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
+pub(crate) fn load_sf_icon_by_name(name: &str, fg_color: Option<[u8; 3]>) -> Option<IconData> {
     let size = DEFAULT_ICON_SIZE;
     let image = load_symbol(name, size as f64)?;
     let cg_image = extract_cgimage(&image)?;
@@ -108,6 +111,7 @@ pub(crate) fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
     let h = CGImage::height(Some(&cg_image)) as u32;
     let mut data = rasterize(&cg_image, w, h)?;
     crate::color::unpremultiply_alpha(&mut data);
+    crate::color::tint_monochrome(&mut data, fg_color);
     Some(IconData::Rgba {
         width: w,
         height: h,
@@ -124,7 +128,7 @@ mod tests {
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the SF Symbols set.
     fn load_role(role: IconRole) -> Option<IconData> {
-        load_sf_icon_by_name(icon_name(role, IconSet::SfSymbols)?)
+        load_sf_icon_by_name(icon_name(role, IconSet::SfSymbols)?, None)
     }
 
     #[test]
@@ -187,7 +191,7 @@ mod tests {
     #[test]
     fn load_sf_icon_by_name_returns_some() {
         // "doc.on.doc" is the SF Symbol for copy
-        let result = load_sf_icon_by_name("doc.on.doc");
+        let result = load_sf_icon_by_name("doc.on.doc", None);
         assert!(
             result.is_some(),
             "doc.on.doc should resolve to an SF Symbol"
@@ -197,7 +201,7 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn load_sf_icon_by_name_nonexistent_returns_none() {
-        let result = load_sf_icon_by_name("zzz.nonexistent.symbol");
+        let result = load_sf_icon_by_name("zzz.nonexistent.symbol", None);
         assert!(result.is_none(), "nonexistent symbol should return None");
     }
 }

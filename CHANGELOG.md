@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **native-theme**: `SfSymbolsLoader::color` / `color_opt` and `SegoeIconsLoader::color` / `color_opt` draw the system sets' monochrome glyphs in a chosen colour, keeping their alpha, as `FreedesktopLoader::color` does for symbolic icons. Without a colour the output is unchanged (Segoe glyphs white, SF Symbols black); full-colour stock icons (`SIID_*`, `IDI_QUESTION`) ignore it.
+
+### Changed
+
+- **native-theme**: in `IconSet::SegoeIcons`, `ActionSearch`, `ActionSettings`, `ActionDelete` and `ActionPrint` are the Segoe Fluent glyphs `Search` (U+E721), `Settings` (U+E713), `Delete` (U+E74D) and `Print` (U+E749), like the other action roles; they were the full-colour shell stock icons `SIID_FIND`, `SIID_SETTINGS`, `SIID_DELETE` and `SIID_PRINTER`.
+
 ## [0.5.9] - 2026-09-25
 
 ### Breaking Changes

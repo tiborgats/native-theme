@@ -257,19 +257,38 @@ impl<'a> FreedesktopLoader<'a> {
 
 /// Loader for Apple SF Symbols (macOS only).
 ///
-/// SF Symbols has no concept of themes or foreground-color baking, so the
-/// loader exposes only [`Self::new`] and [`Self::load`].
+/// SF Symbols has no concept of themes. A symbol is a monochrome template,
+/// drawn black unless [`Self::color`] gives it a foreground colour.
 #[derive(Debug)]
 #[must_use]
 pub struct SfSymbolsLoader<'a> {
     #[allow(dead_code)] // read only in the macOS cfg branch of `load`
     id: IconId<'a>,
+    #[allow(dead_code)] // read only in the macOS cfg branch of `load`
+    fg_color: Option<[u8; 3]>,
 }
 
 impl<'a> SfSymbolsLoader<'a> {
-    /// Construct a new SF Symbols loader for the given icon id.
+    /// Construct a new SF Symbols loader for the given icon id. Defaults:
+    /// no fg_color.
     pub fn new(id: impl Into<IconId<'a>>) -> Self {
-        Self { id: id.into() }
+        Self {
+            id: id.into(),
+            fg_color: None,
+        }
+    }
+
+    /// Set the foreground color the monochrome symbol is drawn in; its
+    /// alpha is kept.
+    pub fn color(mut self, rgb: [u8; 3]) -> Self {
+        self.fg_color = Some(rgb);
+        self
+    }
+
+    /// Set the foreground color if `Some`, leave default if `None`.
+    pub fn color_opt(mut self, rgb: Option<[u8; 3]>) -> Self {
+        self.fg_color = rgb;
+        self
     }
 
     /// Load the icon, returning its data.
@@ -283,12 +302,12 @@ impl<'a> SfSymbolsLoader<'a> {
             match self.id {
                 IconId::Role(role) => {
                     let name = icon_name(role, IconSet::SfSymbols)?;
-                    crate::sficons::load_sf_icon_by_name(name)
+                    crate::sficons::load_sf_icon_by_name(name, self.fg_color)
                 }
-                IconId::Name(n) => crate::sficons::load_sf_icon_by_name(n),
+                IconId::Name(n) => crate::sficons::load_sf_icon_by_name(n, self.fg_color),
                 IconId::Custom(p) => {
                     if let Some(n) = p.icon_name(IconSet::SfSymbols)
-                        && let Some(data) = crate::sficons::load_sf_icon_by_name(n)
+                        && let Some(data) = crate::sficons::load_sf_icon_by_name(n, self.fg_color)
                     {
                         return Some(data);
                     }
@@ -306,18 +325,40 @@ impl<'a> SfSymbolsLoader<'a> {
 
 /// Loader for Windows Segoe Fluent Icons (Windows only).
 ///
-/// Segoe icons have no themes or fg_color baking in this API.
+/// Segoe icons have no themes. A Segoe Fluent glyph is monochrome, drawn
+/// white unless [`Self::color`] gives it a foreground colour; a stock shell
+/// icon (the `SIID_*` and `IDI_QUESTION` names) is full-colour and keeps its
+/// own colours.
 #[derive(Debug)]
 #[must_use]
 pub struct SegoeIconsLoader<'a> {
     #[allow(dead_code)] // read only in the Windows cfg branch of `load`
     id: IconId<'a>,
+    #[allow(dead_code)] // read only in the Windows cfg branch of `load`
+    fg_color: Option<[u8; 3]>,
 }
 
 impl<'a> SegoeIconsLoader<'a> {
-    /// Construct a new Segoe Fluent loader for the given icon id.
+    /// Construct a new Segoe Fluent loader for the given icon id. Defaults:
+    /// no fg_color.
     pub fn new(id: impl Into<IconId<'a>>) -> Self {
-        Self { id: id.into() }
+        Self {
+            id: id.into(),
+            fg_color: None,
+        }
+    }
+
+    /// Set the foreground color a monochrome glyph is drawn in; its alpha
+    /// is kept. A full-colour stock icon is unchanged.
+    pub fn color(mut self, rgb: [u8; 3]) -> Self {
+        self.fg_color = Some(rgb);
+        self
+    }
+
+    /// Set the foreground color if `Some`, leave default if `None`.
+    pub fn color_opt(mut self, rgb: Option<[u8; 3]>) -> Self {
+        self.fg_color = rgb;
+        self
     }
 
     /// Load the icon, returning its data.
@@ -331,12 +372,13 @@ impl<'a> SegoeIconsLoader<'a> {
             match self.id {
                 IconId::Role(role) => {
                     let name = icon_name(role, IconSet::SegoeIcons)?;
-                    crate::winicons::load_windows_icon_by_name(name)
+                    crate::winicons::load_windows_icon_by_name(name, self.fg_color)
                 }
-                IconId::Name(n) => crate::winicons::load_windows_icon_by_name(n),
+                IconId::Name(n) => crate::winicons::load_windows_icon_by_name(n, self.fg_color),
                 IconId::Custom(p) => {
                     if let Some(n) = p.icon_name(IconSet::SegoeIcons)
-                        && let Some(data) = crate::winicons::load_windows_icon_by_name(n)
+                        && let Some(data) =
+                            crate::winicons::load_windows_icon_by_name(n, self.fg_color)
                     {
                         return Some(data);
                     }
@@ -1087,6 +1129,28 @@ mod load_icon_tests {
             some_count, 42,
             "Lucide should cover all 42 roles via bundled SVGs"
         );
+    }
+
+    #[test]
+    fn sf_symbols_loader_stores_the_colour() {
+        let loader = SfSymbolsLoader::new(IconRole::ActionCopy).color([10, 20, 30]);
+        assert_eq!(loader.fg_color, Some([10, 20, 30]));
+        let loader = loader.color_opt(None);
+        assert_eq!(loader.fg_color, None);
+        let loader = loader.color_opt(Some([40, 50, 60]));
+        assert_eq!(loader.fg_color, Some([40, 50, 60]));
+        assert_eq!(SfSymbolsLoader::new(IconRole::ActionCopy).fg_color, None);
+    }
+
+    #[test]
+    fn segoe_icons_loader_stores_the_colour() {
+        let loader = SegoeIconsLoader::new(IconRole::ActionCopy).color([10, 20, 30]);
+        assert_eq!(loader.fg_color, Some([10, 20, 30]));
+        let loader = loader.color_opt(None);
+        assert_eq!(loader.fg_color, None);
+        let loader = loader.color_opt(Some([40, 50, 60]));
+        assert_eq!(loader.fg_color, Some([40, 50, 60]));
+        assert_eq!(SegoeIconsLoader::new(IconRole::ActionCopy).fg_color, None);
     }
 
     #[test]

@@ -292,6 +292,24 @@ pub(crate) fn unpremultiply_alpha(buffer: &mut [u8]) {
     }
 }
 
+/// Draw a monochrome straight-alpha RGBA raster in `rgb`.
+///
+/// Every pixel takes `rgb` and keeps its alpha, so the glyph's coverage is
+/// unchanged. `None` leaves the buffer as it is.
+///
+/// Used by `sficons` and `winicons` (platform gated) for their monochrome
+/// glyphs; full-colour icons are never passed here.
+#[allow(dead_code)]
+pub(crate) fn tint_monochrome(buffer: &mut [u8], rgb: Option<[u8; 3]>) {
+    let Some([r, g, b]) = rgb else {
+        return;
+    };
+    for pixel in buffer.as_chunks_mut::<4>().0 {
+        let [_, _, _, a] = *pixel;
+        *pixel = [r, g, b, a];
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -464,5 +482,29 @@ mod tests {
         let c = Rgba::from_f32(-0.5, 1.5, 0.0, 0.0);
         assert_eq!(c.r, 0);
         assert_eq!(c.g, 255);
+    }
+
+    // === tint_monochrome tests ===
+
+    #[test]
+    fn tint_monochrome_colours_a_white_glyph_and_keeps_alpha() {
+        let mut buf = [255u8, 255, 255, 255, 255, 255, 255, 127];
+        tint_monochrome(&mut buf, Some([10, 20, 30]));
+        assert_eq!(buf, [10, 20, 30, 255, 10, 20, 30, 127]);
+    }
+
+    #[test]
+    fn tint_monochrome_keeps_a_transparent_pixel_transparent() {
+        let mut buf = [0u8, 0, 0, 0];
+        tint_monochrome(&mut buf, Some([10, 20, 30]));
+        assert_eq!(buf[3], 0);
+    }
+
+    #[test]
+    fn tint_monochrome_without_a_colour_leaves_the_bytes() {
+        let original = [255u8, 255, 255, 127, 0, 0, 0, 255, 1, 2, 3, 0];
+        let mut buf = original;
+        tint_monochrome(&mut buf, None);
+        assert_eq!(buf, original);
     }
 }

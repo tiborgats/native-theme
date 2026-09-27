@@ -2,8 +2,10 @@
 //
 // Resolves Segoe icon names (the names `icon_name` gives each IconRole in
 // IconSet::SegoeIcons) to RGBA pixel data via two pipelines:
-// 1. Stock icons via SHGetStockIconInfo (18 SIID_ prefixed roles)
-// 2. Font glyphs via GetGlyphOutlineW from Segoe Fluent Icons (22 glyph roles)
+// 1. Stock icons via SHGetStockIconInfo (13 SIID_ prefixed roles), and
+//    IDI_QUESTION via LoadIconW -- full-colour
+// 2. Font glyphs via GetGlyphOutlineW from Segoe Fluent Icons (27 glyph
+//    roles) -- monochrome, drawn in the requested colour or white
 //
 // Both pipelines produce IconData::Rgba with correct RGBA byte order and
 // straight (non-premultiplied) alpha. Returns None when the name is not
@@ -53,6 +55,12 @@ fn glyph_codepoint(name: &str) -> Option<u32> {
         "Add" => 0xE710,
         "Remove" => 0xE738,
         "Refresh" => 0xE72C,
+        // Names and codepoints as the Segoe Fluent Icons reference lists them:
+        // https://learn.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font
+        "Search" => 0xE721,
+        "Settings" => 0xE713,
+        "Delete" => 0xE74D,
+        "Print" => 0xE749,
         // Navigation
         "Back" => 0xE72B,
         "Forward" => 0xE72A,
@@ -277,9 +285,10 @@ unsafe fn try_create_font(hdc: HDC, face_name: &str, size: i32) -> Option<HFONT>
 /// Returns None if neither font is available (caller falls back to bundled).
 ///
 /// Uses GGO_GRAY8_BITMAP which produces a 65-level grayscale alpha mask
-/// (values 0-64), converted to RGBA with white foreground and scaled alpha.
+/// (values 0-64), converted to RGBA with scaled alpha and a white
+/// foreground, or `fg_color` where it is given.
 #[cfg(target_os = "windows")]
-fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
+fn load_glyph_icon(codepoint: u32, size: i32, fg_color: Option<[u8; 3]>) -> Option<IconData> {
     unsafe {
         let hdc = CreateCompatibleDC(None);
 
@@ -351,6 +360,7 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
                 rgba.extend_from_slice(&gray8_to_rgba(gray));
             }
         }
+        crate::color::tint_monochrome(&mut rgba, fg_color);
 
         Some(IconData::Rgba {
             width: glyph_w,
@@ -384,10 +394,13 @@ fn parse_hex_codepoint(name: &str) -> Option<u32> {
 /// - `"0xE8BB"` -- hex codepoint for Segoe Fluent Icons glyph
 /// - `"ChromeClose"` -- named Segoe Fluent Icons glyph
 ///
+/// A glyph is drawn in `fg_color` where it is given, white otherwise; the
+/// stock and dialog icons are full-colour and ignore it.
+///
 /// Returns `None` if the name doesn't match any known format or
 /// the icon cannot be loaded on this system.
 #[must_use]
-pub(crate) fn load_windows_icon_by_name(name: &str) -> Option<IconData> {
+pub(crate) fn load_windows_icon_by_name(name: &str, fg_color: Option<[u8; 3]>) -> Option<IconData> {
     #[cfg(target_os = "windows")]
     {
         if name.starts_with("SIID_") {
@@ -398,18 +411,18 @@ pub(crate) fn load_windows_icon_by_name(name: &str) -> Option<IconData> {
         }
         // Try hex codepoint (e.g., "0xE8BB")
         if let Some(cp) = parse_hex_codepoint(name) {
-            return load_glyph_icon(cp, DEFAULT_ICON_SIZE);
+            return load_glyph_icon(cp, DEFAULT_ICON_SIZE, fg_color);
         }
         // Try named glyph (e.g., "ChromeClose")
         if let Some(cp) = glyph_codepoint(name) {
-            return load_glyph_icon(cp, DEFAULT_ICON_SIZE);
+            return load_glyph_icon(cp, DEFAULT_ICON_SIZE, fg_color);
         }
         None
     }
 
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = name;
+        let _ = (name, fg_color);
         None
     }
 }
@@ -423,7 +436,7 @@ mod tests {
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the Segoe set.
     fn load_role(role: IconRole) -> Option<IconData> {
-        load_windows_icon_by_name(icon_name(role, IconSet::SegoeIcons)?)
+        load_windows_icon_by_name(icon_name(role, IconSet::SegoeIcons)?, None)
     }
 
     // === Platform-independent unit tests ===
@@ -473,6 +486,21 @@ mod tests {
     fn glyph_codepoint_lookup() {
         assert_eq!(glyph_codepoint("ChromeClose"), Some(0xE8BB));
         assert_eq!(glyph_codepoint("Unknown"), None);
+    }
+
+    /// Every action role is a Segoe Fluent glyph, drawn in the loader's
+    /// colour, not a full-colour stock icon.
+    #[test]
+    fn action_roles_are_glyphs() {
+        for (role, name, codepoint) in [
+            (IconRole::ActionSearch, "Search", 0xE721),
+            (IconRole::ActionSettings, "Settings", 0xE713),
+            (IconRole::ActionDelete, "Delete", 0xE74D),
+            (IconRole::ActionPrint, "Print", 0xE749),
+        ] {
+            assert_eq!(icon_name(role, IconSet::SegoeIcons), Some(name));
+            assert_eq!(glyph_codepoint(name), Some(codepoint));
+        }
     }
 
     #[test]
@@ -588,7 +616,7 @@ mod tests {
     #[test]
     fn load_by_name_hex_codepoint() {
         // 0xE8C8 is the Copy glyph
-        let result = load_windows_icon_by_name("0xE8C8");
+        let result = load_windows_icon_by_name("0xE8C8", None);
         assert!(
             result.is_some(),
             "hex codepoint 0xE8C8 should load Copy glyph"
@@ -598,14 +626,14 @@ mod tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn load_by_name_named_glyph() {
-        let result = load_windows_icon_by_name("Copy");
+        let result = load_windows_icon_by_name("Copy", None);
         assert!(result.is_some(), "named glyph Copy should load");
     }
 
     #[cfg(target_os = "windows")]
     #[test]
     fn load_by_name_stock_icon() {
-        let result = load_windows_icon_by_name("SIID_WARNING");
+        let result = load_windows_icon_by_name("SIID_WARNING", None);
         assert!(result.is_some(), "SIID_WARNING stock icon should load");
     }
 }

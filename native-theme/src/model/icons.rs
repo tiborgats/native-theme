@@ -1056,21 +1056,21 @@ fn segoe_name(role: IconRole) -> Option<&'static str> {
         IconRole::WindowMaximize => "ChromeMaximize",
         IconRole::WindowRestore => "ChromeRestore",
 
-        // Common Actions (mix of SHSTOCKICONID and Segoe Fluent)
+        // Common Actions (Segoe Fluent Icons glyphs)
         IconRole::ActionSave => "Save",
-        IconRole::ActionDelete => "SIID_DELETE",
+        IconRole::ActionDelete => "Delete",
         IconRole::ActionCopy => "Copy",
         IconRole::ActionPaste => "Paste",
         IconRole::ActionCut => "Cut",
         IconRole::ActionUndo => "Undo",
         IconRole::ActionRedo => "Redo",
-        IconRole::ActionSearch => "SIID_FIND",
-        IconRole::ActionSettings => "SIID_SETTINGS",
+        IconRole::ActionSearch => "Search",
+        IconRole::ActionSettings => "Settings",
         IconRole::ActionEdit => "Edit",
         IconRole::ActionAdd => "Add",
         IconRole::ActionRemove => "Remove",
         IconRole::ActionRefresh => "Refresh",
-        IconRole::ActionPrint => "SIID_PRINTER",
+        IconRole::ActionPrint => "Print",
 
         // Navigation (Segoe Fluent Icons)
         IconRole::NavBack => "Back",
