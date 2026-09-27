@@ -77,31 +77,30 @@ pub(crate) fn show(
     }
 
     caption(reg, ui, "Links (Role::Link)");
-    ui.horizontal_wrapped(|ui| {
-        demo::scoped(reg, ui, Role::Link, normal, "Hyperlink", |ui| {
-            ui.add(egui::Hyperlink::new(REPOSITORY))
-        });
-        demo::scoped(reg, ui, Role::Link, normal, "Link", |ui| {
-            ui.add(egui::Link::new("Link"))
-        });
-        demo::scoped(
-            reg,
-            ui,
-            Role::Link,
-            RoleVariant::Disabled,
-            "Link (disabled)",
-            |ui| ui.add_enabled(false, egui::Link::new("Disabled link")),
-        );
-        demo::scoped(reg, ui, Role::Link, normal, "ui.link", |ui| {
-            ui.link("ui.link")
-        });
-        demo::scoped(reg, ui, Role::Link, normal, "ui.hyperlink", |ui| {
-            ui.hyperlink(REPOSITORY)
-        });
-        demo::scoped(reg, ui, Role::Link, normal, "ui.hyperlink_to", |ui| {
-            ui.hyperlink_to("ui.hyperlink_to", REPOSITORY)
-        });
+    // One scope for the enabled links, so the row wraps between them; the disabled one in its
+    // own variant's scope, on a line of its own.
+    demo::row(reg, ui, Role::Link, normal, "links", |ui, link, reg| {
+        ui.horizontal_wrapped(|ui| {
+            link.add(reg, ui, "Hyperlink", |ui| {
+                ui.add(egui::Hyperlink::new(REPOSITORY))
+            });
+            link.add(reg, ui, "Link", |ui| ui.add(egui::Link::new("Link")));
+            link.add(reg, ui, "ui.link", |ui| ui.link("ui.link"));
+            link.add(reg, ui, "ui.hyperlink", |ui| ui.hyperlink(REPOSITORY));
+            link.add(reg, ui, "ui.hyperlink_to", |ui| {
+                ui.hyperlink_to("ui.hyperlink_to", REPOSITORY)
+            });
+        })
+        .response
     });
+    demo::scoped(
+        reg,
+        ui,
+        Role::Link,
+        RoleVariant::Disabled,
+        "Link (disabled)",
+        |ui| ui.add_enabled(false, egui::Link::new("Disabled link")),
+    );
 
     caption(reg, ui, "Separators (Role::Separator)");
     demo::scoped(

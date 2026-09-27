@@ -1017,6 +1017,64 @@ fn the_code_view_follows_the_scheme() {
     );
 }
 
+/// At the window size `main` opens, under every preset this platform offers, the page tabs and
+/// the Text page's link row lie inside the content: a row too wide for it wraps, and nothing is
+/// cut at the right edge.
+#[test]
+fn the_rows_fit_the_content() {
+    for info in Theme::list_presets_for_platform() {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", info.key), ("--tab", Page::Text.key())]),
+        );
+        harness.run_steps(4);
+        let records = harness.state().registry.records();
+        let right_of = |kind: &str| {
+            records
+                .iter()
+                .find(|r| r.info.kind == kind)
+                .map(|r| r.rect.right())
+                .unwrap_or_else(|| panic!("{}: no {kind} record", info.key))
+        };
+        // The tab row spans the content's width; a horizontal separator the page's, less a
+        // scroll bar where the page scrolls.
+        let rows = [
+            (right_of("page tabs"), &["page tab"][..]),
+            (
+                right_of("Separator (horizontal)"),
+                &[
+                    "Hyperlink",
+                    "Link",
+                    "Link (disabled)",
+                    "ui.link",
+                    "ui.hyperlink",
+                    "ui.hyperlink_to",
+                ][..],
+            ),
+        ];
+        for (edge, kinds) in rows {
+            // By their records; a node's AccessKit bounds are the widget's own rect, not
+            // clipped as a record's `interact_rect` is (`egui/src/response.rs:912-917`).
+            let ids: Vec<egui::accesskit::NodeId> = records
+                .iter()
+                .filter(|r| kinds.contains(&r.info.kind))
+                .map(|r| r.id.accesskit_id())
+                .collect();
+            assert!(ids.len() >= kinds.len(), "{}: {kinds:?}", info.key);
+            let cut: Vec<(String, egui::Rect)> = harness
+                .query_all(By::new().predicate(move |n| ids.contains(&n.locate().0)))
+                .filter(|n| n.rect().right() > edge)
+                .map(|n| (n.accesskit_node().label().unwrap_or_default(), n.rect()))
+                .collect();
+            assert!(
+                cut.is_empty(),
+                "{}: past the right edge {edge}: {cut:?}",
+                info.key
+            );
+        }
+    }
+}
+
 /// Preferences' check boxes take the checked look from their state, as the Selection page's do.
 #[test]
 fn a_checked_preference_is_drawn_selected() {

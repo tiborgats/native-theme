@@ -634,7 +634,8 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// The page tabs: one `native_scope(Role::Tab, ..)`, each tab a `Button::new(label).selected(..)` (§10.4).
+/// The page tabs: one `native_scope(Role::Tab, ..)`, each tab a `Button::new(label).selected(..)`
+/// (§10.4), in a row that wraps where the content is too narrow for it.
 pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
     let App {
         registry,
@@ -642,30 +643,28 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
         pending,
         ..
     } = app;
-    let out = ui.native_scope(Role::Tab, RoleVariant::Normal, |ui| {
-        ui.horizontal(|ui| {
-            for page in Page::ALL {
-                let r = ui.add(egui::Button::new(page.label()).selected(settings.page == page));
-                registry.record(
-                    &r,
-                    demo::info("page tab", vec![Seam::Role(Role::Tab, RoleVariant::Normal)]),
-                    false,
-                );
-                if r.clicked() {
-                    pending.push(Action::ShowPage(page));
+    demo::row(
+        registry,
+        ui,
+        Role::Tab,
+        RoleVariant::Normal,
+        "page tabs",
+        |ui, tab, registry| {
+            ui.horizontal_wrapped(|ui| {
+                // The tab bar spans the page: the rest of its width is its own surface.
+                ui.set_min_width(ui.available_width());
+                for page in Page::ALL {
+                    let selected = settings.page == page;
+                    let r = tab.add(registry, ui, "page tab", |ui| {
+                        ui.add(egui::Button::new(page.label()).selected(selected))
+                    });
+                    if r.clicked() {
+                        pending.push(Action::ShowPage(page));
+                    }
                 }
-            }
-            // The tab bar spans the page: the rest of the row is its own surface.
-            ui.allocate_space(egui::Vec2::X * ui.available_width());
-        });
-    });
-    registry.record(
-        &out.response,
-        demo::info(
-            "page tabs",
-            vec![Seam::Role(Role::Tab, RoleVariant::Normal)],
-        ),
-        true,
+            })
+            .response
+        },
     );
 }
 

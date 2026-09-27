@@ -205,6 +205,53 @@ pub(crate) fn scoped(
     response
 }
 
+/// The seam a helper applied to a `Ui` whose widgets are added straight into it — a row of
+/// tabs or links, a menu bar's buttons — handed to the closure, so each widget records that
+/// seam rather than one written a second time. A widget in a scope of its own sits in a child
+/// `Ui` made at the cursor, which a wrapping row cannot move to its next line (`Ui::scope_dyn`,
+/// `egui/src/ui.rs:2203-2213`).
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct Applied(Seam);
+
+impl Applied {
+    /// Record a widget egui returns a `Response` for (a menu button, a submenu button).
+    pub(crate) fn record(self, reg: &mut Registry, response: &egui::Response, kind: &'static str) {
+        reg.record(response, info(kind, vec![self.0]), false);
+    }
+
+    /// Add a widget and record it with this seam.
+    pub(crate) fn add(
+        self,
+        reg: &mut Registry,
+        ui: &mut egui::Ui,
+        kind: &'static str,
+        add: impl FnOnce(&mut egui::Ui) -> egui::Response,
+    ) -> egui::Response {
+        let response = add(ui);
+        self.record(reg, &response, kind);
+        response
+    }
+}
+
+/// A container inside `ui.native_scope(role, variant, ..)` — a row whose widgets take the role
+/// together: the closure lays them out, adding each through the `Applied` seam, and returns the
+/// container's `Response`, recorded as a container with the role seam.
+pub(crate) fn row(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, Applied, &mut Registry) -> egui::Response,
+) -> egui::Response {
+    let seam = Seam::Role(role, variant);
+    let response = ui
+        .native_scope(role, variant, |ui| add(ui, Applied(seam), reg))
+        .inner;
+    reg.record(&response, info(kind, vec![seam]), true);
+    response
+}
+
 /// A widget in `role`'s scope whose popup is an `Area` the scope does not reach (§1.5) — a
 /// `ComboBox`: the closure gets the same role's modifier for `ComboBox::popup_style`
 /// (`egui/src/containers/combo_box.rs:199`); one role seam, applied twice and recorded once.
