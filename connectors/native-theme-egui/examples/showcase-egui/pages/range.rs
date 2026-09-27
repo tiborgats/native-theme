@@ -56,13 +56,29 @@ pub(crate) fn show(
     });
 
     caption(reg, ui, "ProgressBar (Role::ProgressBar)");
-    demo::scoped(
+    // The percentage beside the bar, as the platforms draw it: egui's `show_percentage` paints
+    // it inside the bar, which the theme's track height (spec §5.5) is too thin for.
+    demo::scoped_container(
         reg,
         ui,
         Role::ProgressBar,
         normal,
-        "ProgressBar (with text)",
-        |ui| ui.add(egui::ProgressBar::new(state.progress).show_percentage()),
+        "ProgressBar with its percentage",
+        |ui, seam, reg| {
+            // One row: `ui.horizontal` bounds the height a right-to-left layout would otherwise
+            // take from the whole page.
+            ui.horizontal(|ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    seam.add(reg, ui, "ProgressBar percentage", |ui| {
+                        ui.label(format!("{:.0}%", state.progress * 100.0))
+                    });
+                    seam.add(reg, ui, "ProgressBar (with its percentage)", |ui| {
+                        ui.add(egui::ProgressBar::new(state.progress))
+                    });
+                });
+            })
+            .response
+        },
     );
     demo::scoped(
         reg,
