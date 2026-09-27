@@ -123,7 +123,7 @@ pub(crate) fn show(
             Role::ComboBox,
             normal,
             "ComboBox",
-            |ui, modifier| {
+            |ui, modifier, row, reg| {
                 let mut combo =
                     egui::ComboBox::from_id_salt("selection/combo").selected_text(current);
                 if let Some(modifier) = modifier {
@@ -132,7 +132,9 @@ pub(crate) fn show(
                 combo
                     .show_ui(ui, |ui| {
                         for (i, fruit) in FRUITS.into_iter().enumerate() {
-                            ui.selectable_value(&mut state.combo, i, fruit);
+                            row.add(reg, ui, "ComboBox row", |ui| {
+                                ui.selectable_value(&mut state.combo, i, fruit)
+                            });
                         }
                     })
                     .response
@@ -144,7 +146,7 @@ pub(crate) fn show(
             Role::ComboBox,
             RoleVariant::Disabled,
             "ComboBox (disabled)",
-            |ui, modifier| {
+            |ui, modifier, _, _| {
                 let mut combo =
                     egui::ComboBox::from_id_salt("selection/combo-disabled").selected_text(current);
                 if let Some(modifier) = modifier {

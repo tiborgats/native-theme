@@ -233,10 +233,10 @@ impl Applied {
     }
 }
 
-/// A container inside `ui.native_scope(role, variant, ..)` — a row whose widgets take the role
-/// together: the closure lays them out, adding each through the `Applied` seam, and returns the
-/// container's `Response`, recorded as a container with the role seam.
-pub(crate) fn row(
+/// A container inside `ui.native_scope(role, variant, ..)` — a row, a table, a grid whose
+/// widgets take the role together: the closure lays them out, adding each through the `Applied`
+/// seam, and returns the container's `Response`, recorded as a container with the role seam.
+pub(crate) fn scoped_container(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     role: Role,
@@ -254,17 +254,26 @@ pub(crate) fn row(
 
 /// A widget in `role`'s scope whose popup is an `Area` the scope does not reach (§1.5) — a
 /// `ComboBox`: the closure gets the same role's modifier for `ComboBox::popup_style`
-/// (`egui/src/containers/combo_box.rs:199`); one role seam, applied twice and recorded once.
+/// (`egui/src/containers/combo_box.rs:199`), and the seam as `Applied` for the popup's rows; one
+/// role seam, applied twice and recorded with the widget and each row.
 pub(crate) fn scoped_popup(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     role: Role,
     variant: RoleVariant,
     kind: &'static str,
-    add: impl FnOnce(&mut egui::Ui, Option<egui::style::StyleModifier>) -> egui::Response,
+    add: impl FnOnce(
+        &mut egui::Ui,
+        Option<egui::style::StyleModifier>,
+        Applied,
+        &mut Registry,
+    ) -> egui::Response,
 ) -> egui::Response {
     let modifier = role_modifier(ui, role, variant);
-    let response = ui.native_scope(role, variant, |ui| add(ui, modifier)).inner;
+    let applied = Applied(Seam::Role(role, variant));
+    let response = ui
+        .native_scope(role, variant, |ui| add(ui, modifier, applied, reg))
+        .inner;
     reg.record(
         &response,
         info(kind, vec![Seam::Role(role, variant)]),
@@ -391,18 +400,94 @@ pub(crate) fn modifier(
     response
 }
 
+/// A `MenuBar` given `role`'s modifier for both `MenuBar::style` and `MenuConfig::style` (§4.2):
+/// the closure builds the bar with the modifier and records the menu buttons egui builds in it
+/// through `Applied`; the bar's `Response` is recorded as a container with the role seam.
+pub(crate) fn menu_bar(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, egui::MenuBar, Applied, &mut Registry) -> egui::Response,
+) -> egui::Response {
+    let mut bar = egui::MenuBar::new();
+    if let Some(modifier) = role_modifier(ui, role, variant) {
+        bar = bar
+            .style(modifier.clone())
+            .config(egui::containers::menu::MenuConfig::new().style(modifier));
+    }
+    let seam = Seam::Role(role, variant);
+    let response = add(ui, bar, Applied(seam), reg);
+    reg.record(&response, info(kind, vec![seam]), true);
+    response
+}
+
 /// `native_set_style` on a `Ui` the application did not create — a `Window`'s
-/// or `Modal`'s body, an open menu (§1.5) — recorded on that `Ui`'s own response (`egui/src/ui.rs:944`).
+/// or `Modal`'s body, an open menu (§1.5) — recorded on that `Ui`'s own response
+/// (`egui/src/ui.rs:944`); the seam is returned as `Applied` for the widgets egui or the caller
+/// adds to that body without a scope of their own.
 pub(crate) fn styled(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     role: Role,
     variant: RoleVariant,
     kind: &'static str,
-) {
+) -> Applied {
+    let seam = Seam::Role(role, variant);
     ui.native_set_style(role, variant);
     let response = ui.response();
-    reg.record(&response, info(kind, vec![Seam::Role(role, variant)]), true);
+    reg.record(&response, info(kind, vec![seam]), true);
+    Applied(seam)
+}
+
+/// A chrome panel's seams, each taken once (§10.4's chrome table): `live` set on the parent
+/// `Ui` while the panel is shown, so its separator line takes that style (§4.4's recipe);
+/// `surface`'s frame for `Panel::frame`; `body` set as the first statement inside
+/// (`PanelSeams::enter`). `PanelSeams::record` records the panel with exactly these seams.
+pub(crate) struct PanelSeams {
+    surface: Surface,
+    live: Option<(Role, RoleVariant)>,
+    body: Option<(Role, RoleVariant)>,
+    pub frame: egui::Frame,
+}
+
+impl PanelSeams {
+    pub(crate) fn apply(
+        ui: &mut egui::Ui,
+        surface: Surface,
+        live: Option<(Role, RoleVariant)>,
+        body: Option<(Role, RoleVariant)>,
+    ) -> Self {
+        if let Some((role, variant)) = live {
+            ui.native_set_style(role, variant);
+        }
+        Self {
+            surface,
+            live,
+            body,
+            frame: ui.native_frame(surface),
+        }
+    }
+
+    /// The body's role, set as the first statement inside the panel's closure; `Applied` for
+    /// the widgets added straight into the body.
+    pub(crate) fn enter(&self, ui: &mut egui::Ui) -> Option<Applied> {
+        let (role, variant) = self.body?;
+        ui.native_set_style(role, variant);
+        Some(Applied(Seam::Role(role, variant)))
+    }
+
+    pub(crate) fn record(&self, reg: &mut Registry, response: &egui::Response, kind: &'static str) {
+        let mut seams = vec![Seam::Surface(self.surface)];
+        for (role, variant) in [self.live, self.body].into_iter().flatten() {
+            let seam = Seam::Role(role, variant);
+            if !seams.contains(&seam) {
+                seams.push(seam);
+            }
+        }
+        reg.record(response, info(kind, seams), true);
+    }
 }
 
 /// An icon of `role` from the chosen set and theme at `size` points (§10.4's icon rule, §9.2):

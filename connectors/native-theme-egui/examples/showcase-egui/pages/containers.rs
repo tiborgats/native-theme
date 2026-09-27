@@ -132,13 +132,13 @@ pub(crate) fn show(
                     ui.response()
                 })
         });
-        demo::scoped(
+        demo::scoped_container(
             reg,
             ui,
             Role::Scrollbar,
             normal,
             "ScrollArea (show_rows)",
-            |ui| {
+            |ui, scrollbar, reg| {
                 egui::Resize::default()
                     .id_salt("containers/scroll-rows")
                     .show(ui, |ui| {
@@ -147,7 +147,9 @@ pub(crate) fn show(
                             .id_salt("containers/rows")
                             .show_rows(ui, row_height, SCROLL_ROWS, |ui, rows| {
                                 for row in rows {
-                                    ui.label(format!("show_rows row {row}"));
+                                    scrollbar.add(reg, ui, "show_rows label", |ui| {
+                                        ui.label(format!("show_rows row {row}"))
+                                    });
                                 }
                             });
                         ui.response()
@@ -273,27 +275,22 @@ fn drag_and_drop(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     let mut dropped: Option<(usize, &'static str)> = None;
     ui.horizontal_top(|ui| {
         for (column, items) in state.dnd_columns.iter().enumerate() {
-            let (zone, payload) =
-                ui.dnd_drop_zone::<&'static str, ()>(egui::Frame::default(), |ui| {
-                    ui.set_min_size(ui.spacing().interact_size);
-                    for item in items {
-                        let id = egui::Id::new(("containers/dnd", *item));
-                        let source = ui.dnd_drag_source(id, *item, |ui| ui.label(*item));
-                        reg.record(
-                            &source.response,
-                            demo::info("ui.dnd_drag_source", vec![demo::Seam::Base]),
-                            false,
-                        );
-                    }
-                });
-            reg.record(
-                &zone.response,
-                demo::info("ui.dnd_drop_zone", vec![demo::Seam::Base]),
-                true,
-            );
-            if let Some(item) = payload {
-                dropped = Some((column, *item));
-            }
+            demo::contained(reg, ui, "ui.dnd_drop_zone", |ui, reg| {
+                let (zone, payload) =
+                    ui.dnd_drop_zone::<&'static str, ()>(egui::Frame::default(), |ui| {
+                        ui.set_min_size(ui.spacing().interact_size);
+                        for item in items {
+                            let id = egui::Id::new(("containers/dnd", *item));
+                            demo::base(reg, ui, "ui.dnd_drag_source", |ui| {
+                                ui.dnd_drag_source(id, *item, |ui| ui.label(*item)).response
+                            });
+                        }
+                    });
+                if let Some(item) = payload {
+                    dropped = Some((column, *item));
+                }
+                zone.response
+            });
         }
     });
     if let Some((column, item)) = dropped {

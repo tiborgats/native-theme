@@ -79,7 +79,7 @@ pub(crate) fn show(
     caption(reg, ui, "Links (Role::Link)");
     // One scope for the enabled links, so the row wraps between them; the disabled one in its
     // own variant's scope, on a line of its own.
-    demo::row(reg, ui, Role::Link, normal, "links", |ui, link, reg| {
+    demo::scoped_container(reg, ui, Role::Link, normal, "links", |ui, link, reg| {
         ui.horizontal_wrapped(|ui| {
             link.add(reg, ui, "Hyperlink", |ui| {
                 ui.add(egui::Hyperlink::new(REPOSITORY))

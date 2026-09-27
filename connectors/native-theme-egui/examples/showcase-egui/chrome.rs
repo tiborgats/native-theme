@@ -3,14 +3,14 @@
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::theme::IconRole;
 use native_theme_egui::{
-    DialogButtonOrder, NativeThemeUiExt as _, PanelSide, Role, RoleVariant, Surface,
-    dialog_button_order, window_title_bar_font, window_title_bar_text_color,
+    DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
+    window_title_bar_font, window_title_bar_text_color,
 };
 
 use crate::{
     LEFT_PANEL_WIDTH,
     app::{App, ModeChoice, Page, ThemeChoice},
-    demo::{self, Registry, Seam},
+    demo::{self, PanelSeams, Registry},
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -107,97 +107,72 @@ pub(crate) enum InspectorTab {
 /// shown, and again inside it (§4.4's recipe, §6.18); the panel's frame is the
 /// top panel surface fed from `theme.toolbar`.
 pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
-    ui.native_set_style(Role::Toolbar, RoleVariant::Normal);
-    let frame = ui.native_frame(Surface::Panel(PanelSide::Top));
-    let out = egui::Panel::top("chrome-bar").frame(frame).show(ui, |ui| {
-        ui.native_set_style(Role::Toolbar, RoleVariant::Normal);
-        // On macOS outside `cfg(test)` the menus are the system menu bar's (Task 35).
-        #[cfg(not(all(target_os = "macos", not(test))))]
-        menu_bar(app, ui);
-        toolbar(app, ui);
-    });
-    app.registry.record(
-        &out.response,
-        demo::info(
-            "chrome bar",
-            vec![
-                Seam::Surface(Surface::Panel(PanelSide::Top)),
-                Seam::Role(Role::Toolbar, RoleVariant::Normal),
-            ],
-        ),
-        true,
+    let toolbar_role = Some((Role::Toolbar, RoleVariant::Normal));
+    let seams = PanelSeams::apply(
+        ui,
+        Surface::Panel(PanelSide::Top),
+        toolbar_role,
+        toolbar_role,
     );
+    let out = egui::Panel::top("chrome-bar")
+        .frame(seams.frame)
+        .show(ui, |ui| {
+            seams.enter(ui);
+            // On macOS outside `cfg(test)` the menus are the system menu bar's.
+            #[cfg(not(all(target_os = "macos", not(test))))]
+            menu_bar(app, ui);
+            toolbar(app, ui);
+        });
+    seams.record(&mut app.registry, &out.response, "chrome bar");
 }
 
-/// The in-window menu bar (Linux, Windows, and macOS under `cfg(test)`; Task 35
-/// gives macOS the system menu bar). `Role::Menu` through `role_modifier` to
-/// both `MenuBar::style` and `MenuConfig::style` (§4.2); each open menu's own
-/// `Ui` is recorded as `Role::Menu` too.
+/// The in-window menu bar (Linux, Windows, and macOS under `cfg(test)`; macOS has the system
+/// menu bar otherwise). `Role::Menu` through `role_modifier` to both `MenuBar::style` and
+/// `MenuConfig::style` (§4.2); each open menu's own `Ui` is styled and recorded as `Role::Menu`
+/// too.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
     let App {
-        registry,
-        atlas,
-        pending,
-        ..
+        registry, pending, ..
     } = app;
-    let theme = ui.ctx().theme();
-    let modifier = atlas.role_modifier(theme, Role::Menu, RoleVariant::Normal);
-    let bar = egui::MenuBar::new()
-        .style(modifier.clone())
-        .config(egui::containers::menu::MenuConfig::new().style(modifier));
-    let out = bar.ui(ui, |ui| {
-        for (menu, items) in Action::MENUS {
-            let response = ui.menu_button(*menu, |ui| {
-                registry.record(
-                    &ui.response(),
-                    demo::info("menu", vec![Seam::Role(Role::Menu, RoleVariant::Normal)]),
-                    true,
-                );
-                for item in *items {
-                    match item {
-                        None => {
-                            ui.separator();
-                        }
-                        Some(action) => {
-                            let mut button = egui::Button::new(action.label());
-                            if let Some(shortcut) = action.shortcut() {
-                                button = button.shortcut_text(ui.ctx().format_shortcut(&shortcut));
-                            }
-                            let r = ui.add(button);
-                            registry.record(
-                                &r,
-                                demo::info(
-                                    "menu item",
-                                    vec![Seam::Role(Role::Menu, RoleVariant::Normal)],
-                                ),
-                                false,
-                            );
-                            if r.clicked() {
-                                pending.push(*action);
-                                ui.close();
+    let normal = RoleVariant::Normal;
+    demo::menu_bar(
+        registry,
+        ui,
+        Role::Menu,
+        normal,
+        "menu bar",
+        |ui, bar, menu_seam, registry| {
+            bar.ui(ui, |ui| {
+                for (menu, items) in Action::MENUS {
+                    let response = ui.menu_button(*menu, |ui| {
+                        let open = demo::styled(registry, ui, Role::Menu, normal, "menu");
+                        for item in *items {
+                            match item {
+                                None => {
+                                    open.add(registry, ui, "menu separator", |ui| ui.separator());
+                                }
+                                Some(action) => {
+                                    let mut button = egui::Button::new(action.label());
+                                    if let Some(shortcut) = action.shortcut() {
+                                        button = button
+                                            .shortcut_text(ui.ctx().format_shortcut(&shortcut));
+                                    }
+                                    let r =
+                                        open.add(registry, ui, "menu item", |ui| ui.add(button));
+                                    if r.clicked() {
+                                        pending.push(*action);
+                                        ui.close();
+                                    }
+                                }
                             }
                         }
-                    }
+                    });
+                    menu_seam.record(registry, &response.response, "menu button");
                 }
-            });
-            registry.record(
-                &response.response,
-                demo::info(
-                    "menu button",
-                    vec![Seam::Role(Role::Menu, RoleVariant::Normal)],
-                ),
-                false,
-            );
-        }
-    });
-    registry.record(
-        &out.response,
-        demo::info(
-            "menu bar",
-            vec![Seam::Role(Role::Menu, RoleVariant::Normal)],
-        ),
-        true,
+            })
+            .response
+        },
     );
 }
 
@@ -218,57 +193,60 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(theme);
     let bar_height = t.toolbar.bar_height.filter(|h| h.is_finite() && *h >= 0.0);
     let icon_size = t.toolbar.icon_size;
-    let out = ui.horizontal(|ui| {
-        if let Some(h) = bar_height {
-            ui.set_min_height(h);
-        }
-        for (role, label, action) in [
-            (
-                IconRole::ActionSearch,
-                "Command palette",
-                Action::OpenCommandPalette,
-            ),
-            (IconRole::ActionRefresh, "Reload theme", Action::ReloadTheme),
-            (
-                IconRole::ActionSettings,
-                "Preferences",
-                Action::OpenPreferences,
-            ),
-        ] {
-            let image = demo::role_image(ui, role, set, icon_theme.as_deref(), icon_size);
-            let response = demo::scoped(
-                registry,
-                ui,
-                Role::Button,
-                RoleVariant::Normal,
-                "toolbar button",
-                |ui| {
-                    let r = match image {
-                        Some(image) => ui.add(egui::Button::image(image)),
-                        None => ui.button(label),
-                    };
-                    r.widget_info(|| {
-                        egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
-                    });
-                    r
-                },
-            );
-            registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
-            tooltip(registry, ui, &response, label);
-            if response.clicked() {
-                pending.push(action);
+    let toolbar_row = |ui: &mut egui::Ui, _: demo::Applied, registry: &mut Registry| {
+        ui.horizontal(|ui| {
+            if let Some(h) = bar_height {
+                ui.set_min_height(h);
             }
-        }
-        // The bar spans the window, as a toolbar does: the rest of the row is its own surface.
-        ui.allocate_space(egui::Vec2::X * ui.available_width());
-    });
-    registry.record(
-        &out.response,
-        demo::info(
-            "toolbar",
-            vec![Seam::Role(Role::Toolbar, RoleVariant::Normal)],
-        ),
-        true,
+            for (role, label, action) in [
+                (
+                    IconRole::ActionSearch,
+                    "Command palette",
+                    Action::OpenCommandPalette,
+                ),
+                (IconRole::ActionRefresh, "Reload theme", Action::ReloadTheme),
+                (
+                    IconRole::ActionSettings,
+                    "Preferences",
+                    Action::OpenPreferences,
+                ),
+            ] {
+                let image = demo::role_image(ui, role, set, icon_theme.as_deref(), icon_size);
+                let response = demo::scoped(
+                    registry,
+                    ui,
+                    Role::Button,
+                    RoleVariant::Normal,
+                    "toolbar button",
+                    |ui| {
+                        let r = match image {
+                            Some(image) => ui.add(egui::Button::image(image)),
+                            None => ui.button(label),
+                        };
+                        r.widget_info(|| {
+                            egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
+                        });
+                        r
+                    },
+                );
+                registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
+                tooltip(registry, ui, &response, label);
+                if response.clicked() {
+                    pending.push(action);
+                }
+            }
+            // The bar spans the window, as a toolbar does: the rest of the row is its own surface.
+            ui.allocate_space(egui::Vec2::X * ui.available_width());
+        })
+        .response
+    };
+    demo::scoped_container(
+        registry,
+        ui,
+        Role::Toolbar,
+        RoleVariant::Normal,
+        "toolbar",
+        toolbar_row,
     );
 }
 
@@ -284,29 +262,40 @@ fn tooltip(reg: &mut Registry, ui: &mut egui::Ui, response: &egui::Response, tex
         false,
         tooltip_role,
         "tooltip",
-        |_, chrome, _| {
+        |_, chrome, reg| {
             let mut tip = egui::Tooltip::for_enabled(response);
             tip.popup = tip.popup.frame(chrome.frame);
             if let Some(modifier) = chrome.modifier {
                 tip.popup = tip.popup.style(modifier);
             }
             tip.show(|ui| {
-                ui.label(text);
+                demo::scoped(
+                    reg,
+                    ui,
+                    Role::Tooltip,
+                    RoleVariant::Normal,
+                    "tooltip text",
+                    |ui| ui.label(text),
+                );
             })
             .map(|out| out.response)
         },
     );
 }
 
-/// The status bar: the side-panel toggle, the environment, the shown info's
-/// title (Task 36 fills the title; here it is empty).
+/// The status bar: the side-panel toggle, the environment, the shown info's title.
 pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
-    ui.native_set_style(Role::StatusBar, RoleVariant::Normal);
-    let frame = ui.native_frame(Surface::Panel(PanelSide::Bottom));
+    let status_role = Some((Role::StatusBar, RoleVariant::Normal));
+    let seams = PanelSeams::apply(
+        ui,
+        Surface::Panel(PanelSide::Bottom),
+        status_role,
+        status_role,
+    );
     let out = egui::Panel::bottom("status-bar")
-        .frame(frame)
+        .frame(seams.frame)
         .show(ui, |ui| {
-            ui.native_set_style(Role::StatusBar, RoleVariant::Normal);
+            let bar = seams.enter(ui);
             let environment = environment(app, ui.ctx());
             let title = app.status_title();
             ui.horizontal(|ui| {
@@ -325,12 +314,10 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 );
                 // The bar's own role, not the base style: its separator line and its text are
                 // `status_bar`'s (§10.4).
-                let bar = (Role::StatusBar, RoleVariant::Normal);
+                let Some(bar) = bar else { return };
                 let mut item = |ui: &mut egui::Ui, kind: &'static str, text: String| {
-                    demo::scoped(registry, ui, bar.0, bar.1, "status separator", |ui| {
-                        ui.separator()
-                    });
-                    demo::scoped(registry, ui, bar.0, bar.1, kind, |ui| ui.label(text));
+                    bar.add(registry, ui, "status separator", |ui| ui.separator());
+                    bar.add(registry, ui, kind, |ui| ui.label(text));
                 };
                 for text in environment {
                     item(ui, "status item", text);
@@ -341,17 +328,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 }
             });
         });
-    app.registry.record(
-        &out.response,
-        demo::info(
-            "status bar",
-            vec![
-                Seam::Surface(Surface::Panel(PanelSide::Bottom)),
-                Seam::Role(Role::StatusBar, RoleVariant::Normal),
-            ],
-        ),
-        true,
-    );
+    seams.record(&mut app.registry, &out.response, "status bar");
 }
 
 /// Desktop, preset and mode, the font in its defined unit (§8.7), the
@@ -409,16 +386,20 @@ fn desktop() -> String {
 /// The side panel: `Role::Splitter` live on the root while it is shown, its body
 /// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note).
 pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
-    ui.native_set_style(Role::Splitter, RoleVariant::Normal);
-    let frame = ui.native_frame(Surface::Panel(PanelSide::Left));
+    let seams = PanelSeams::apply(
+        ui,
+        Surface::Panel(PanelSide::Left),
+        Some((Role::Splitter, RoleVariant::Normal)),
+        Some((Role::Sidebar, RoleVariant::Normal)),
+    );
     let mut visible = app.side_panel_visible;
     app.hold_zone = None; // set again while the inspector is drawn
     let out = egui::Panel::left("side-panel")
         .resizable(true)
         .default_size(LEFT_PANEL_WIDTH)
-        .frame(frame)
+        .frame(seams.frame)
         .show_collapsible(ui, &mut visible, |ui| {
-            ui.native_set_style(Role::Sidebar, RoleVariant::Normal);
+            seams.enter(ui);
             settings_rows(app, ui);
             demo::scoped(
                 &mut app.registry,
@@ -435,18 +416,7 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         });
     app.side_panel_visible = visible;
     if let Some(out) = out {
-        app.registry.record(
-            &out.response,
-            demo::info(
-                "side panel",
-                vec![
-                    Seam::Surface(Surface::Panel(PanelSide::Left)),
-                    Seam::Role(Role::Splitter, RoleVariant::Normal),
-                    Seam::Role(Role::Sidebar, RoleVariant::Normal),
-                ],
-            ),
-            true,
-        );
+        seams.record(&mut app.registry, &out.response, "side panel");
     }
 }
 
@@ -489,7 +459,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
         Role::ComboBox,
         RoleVariant::Normal,
         "theme picker",
-        |ui, modifier| {
+        |ui, modifier, row, registry| {
             let mut combo =
                 egui::ComboBox::from_label("Theme").selected_text(current_theme.as_str());
             if let Some(modifier) = modifier {
@@ -499,7 +469,13 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
                 .show_ui(ui, |ui| {
                     for key in std::iter::once("default").chain(presets.iter().map(|info| info.key))
                     {
-                        if ui.selectable_label(current_theme == key, key).clicked() {
+                        let selected = current_theme == key;
+                        if row
+                            .add(registry, ui, "theme row", |ui| {
+                                ui.selectable_label(selected, key)
+                            })
+                            .clicked()
+                        {
                             picked_theme = Some(if key == "default" {
                                 ThemeChoice::Default
                             } else {
@@ -511,20 +487,19 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
                 .response
         },
     );
-    demo::scoped(
+    demo::scoped_container(
         registry,
         ui,
         Role::SegmentedControl,
         RoleVariant::Normal,
         "mode",
-        |ui| {
+        |ui, segment, registry| {
             ui.horizontal(|ui| {
                 for mode in [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark] {
-                    if ui
-                        .add(
-                            egui::Button::new(Action::SetMode(mode).label())
-                                .selected(current_mode == mode),
-                        )
+                    let button = egui::Button::new(Action::SetMode(mode).label())
+                        .selected(current_mode == mode);
+                    if segment
+                        .add(registry, ui, "mode segment", |ui| ui.add(button))
                         .clicked()
                     {
                         picked_mode = Some(mode);
@@ -540,7 +515,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
         Role::ComboBox,
         RoleVariant::Normal,
         "icon theme picker",
-        |ui, modifier| {
+        |ui, modifier, row, registry| {
             let mut combo =
                 egui::ComboBox::from_label("Icon theme").selected_text(current_icon.to_string());
             if let Some(modifier) = modifier {
@@ -549,8 +524,12 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
             combo
                 .show_ui(ui, |ui| {
                     for choice in icon_rows {
-                        if ui
-                            .selectable_label(current_icon == choice, choice.to_string())
+                        let selected = current_icon == choice;
+                        let text = choice.to_string();
+                        if row
+                            .add(registry, ui, "icon theme row", |ui| {
+                                ui.selectable_label(selected, text)
+                            })
                             .clicked()
                         {
                             picked_icon = Some(choice);
@@ -579,37 +558,31 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui) {
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui) {
     let current = app.inspector_tab;
     let mut picked: Option<InspectorTab> = None;
-    let registry = &mut app.registry;
-    let out = ui.native_scope(Role::Tab, RoleVariant::Normal, |ui| {
-        ui.horizontal(|ui| {
-            for (tab, label) in [
-                (InspectorTab::Widget, "Widget"),
-                (InspectorTab::Theme, "Theme tab"),
-            ] {
-                let r = ui.add(egui::Button::new(label).selected(current == tab));
-                registry.record(
-                    &r,
-                    demo::info(
-                        "inspector tab",
-                        vec![Seam::Role(Role::Tab, RoleVariant::Normal)],
-                    ),
-                    false,
-                );
-                if r.clicked() {
-                    picked = Some(tab);
+    demo::scoped_container(
+        &mut app.registry,
+        ui,
+        Role::Tab,
+        RoleVariant::Normal,
+        "inspector tabs",
+        |ui, tab_seam, registry| {
+            ui.horizontal(|ui| {
+                for (tab, label) in [
+                    (InspectorTab::Widget, "Widget"),
+                    (InspectorTab::Theme, "Theme tab"),
+                ] {
+                    let selected = current == tab;
+                    let r = tab_seam.add(registry, ui, "inspector tab", |ui| {
+                        ui.add(egui::Button::new(label).selected(selected))
+                    });
+                    if r.clicked() {
+                        picked = Some(tab);
+                    }
                 }
-            }
-            // The tab bar spans the panel: the rest of the row is its own surface.
-            ui.allocate_space(egui::Vec2::X * ui.available_width());
-        })
-    });
-    app.registry.record(
-        &out.response,
-        demo::info(
-            "inspector tabs",
-            vec![Seam::Role(Role::Tab, RoleVariant::Normal)],
-        ),
-        true,
+                // The tab bar spans the panel: the rest of the row is its own surface.
+                ui.allocate_space(egui::Vec2::X * ui.available_width());
+            })
+            .response
+        },
     );
     if let Some(tab) = picked {
         app.inspector_tab = tab;
@@ -643,7 +616,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
         pending,
         ..
     } = app;
-    demo::row(
+    demo::scoped_container(
         registry,
         ui,
         Role::Tab,
@@ -675,28 +648,28 @@ pub(crate) fn central_panel(
     ui: &mut egui::Ui,
     add: impl FnOnce(&mut App, &mut egui::Ui),
 ) {
-    let frame = ui.native_frame(Surface::CentralPanel);
-    let out = egui::CentralPanel::default().frame(frame).show(ui, |ui| {
-        page_tabs(app, ui);
-        if let Some(error) = app.theme_error.clone() {
-            demo::framed(
-                &mut app.registry,
-                ui,
-                Surface::Card,
-                None,
-                "theme error",
-                |ui, _| {
-                    ui.colored_label(ui.visuals().error_fg_color, error);
-                },
-            );
-        }
-        add(app, ui);
-    });
-    app.registry.record(
-        &out.response,
-        demo::info("central panel", vec![Seam::Surface(Surface::CentralPanel)]),
-        true,
-    );
+    let seams = PanelSeams::apply(ui, Surface::CentralPanel, None, None);
+    let out = egui::CentralPanel::default()
+        .frame(seams.frame)
+        .show(ui, |ui| {
+            page_tabs(app, ui);
+            if let Some(error) = app.theme_error.clone() {
+                demo::framed(
+                    &mut app.registry,
+                    ui,
+                    Surface::Card,
+                    None,
+                    "theme error",
+                    |ui, reg| {
+                        demo::base(reg, ui, "theme error text", |ui| {
+                            ui.colored_label(ui.visuals().error_fg_color, error)
+                        });
+                    },
+                );
+            }
+            add(app, ui);
+        });
+    seams.record(&mut app.registry, &out.response, "central panel");
 }
 
 /// A dialog extent the theme states, less the frame's own margins and stroke,
@@ -732,140 +705,143 @@ pub(crate) fn inner_extent(stated: f32, frame: &egui::Frame, horizontal: bool) -
 /// The command palette (§10.4): a `Modal` in the dialog surface, its body in
 /// `Role::Dialog`, a focused field, then rows in `Role::List` for every page,
 /// preset and mode. Escape clears, then closes.
+/// What a palette row runs: an action, or a preset to install.
+enum Pick {
+    Action(Action),
+    Theme(ThemeChoice),
+}
+
 pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let Some(palette) = app.palette.clone() else {
         return;
     };
-    let theme = ui.ctx().theme();
-    let frame = ui.native_frame(Surface::Dialog);
-    let t = app.atlas.resolved_for(theme);
+    let t = app.atlas.resolved_for(ui.ctx().theme());
     // The four dialog extents are required sizes (`f32` on the resolved theme).
-    let min_w = inner_extent(t.dialog.min_width, &frame, true);
-    let max_w = inner_extent(t.dialog.max_width, &frame, true);
-    let min_h = inner_extent(t.dialog.min_height, &frame, false);
-    let max_h = inner_extent(t.dialog.max_height, &frame, false);
+    let extents = [
+        t.dialog.min_width,
+        t.dialog.max_width,
+        t.dialog.min_height,
+        t.dialog.max_height,
+    ];
     let mut query = palette.query.clone();
     let mut chosen: Option<Action> = None;
     let mut chosen_theme: Option<ThemeChoice> = None;
+    let mut should_close = false;
     let App {
         registry, settings, ..
     } = app;
-    let response = egui::Modal::new(egui::Id::new("command-palette"))
-        .frame(frame)
-        .show(ui.ctx(), |ui| {
-            demo::styled(
-                registry,
-                ui,
-                Role::Dialog,
-                RoleVariant::Normal,
-                "command palette",
-            );
-            if let Some(w) = min_w {
-                ui.set_min_width(w);
-            }
-            if let Some(w) = max_w {
-                ui.set_max_width(w);
-            }
-            if let Some(h) = min_h {
-                ui.set_min_height(h);
-            }
-            if let Some(h) = max_h {
-                ui.set_max_height(h);
-            }
-            let field = ui.add(egui::TextEdit::singleline(&mut query).hint_text("Type to filter"));
-            if !field.has_focus() && palette.query.is_empty() {
-                field.request_focus();
-            }
-            registry.record(
-                &field,
-                demo::info(
-                    "palette query",
-                    vec![Seam::Role(Role::Dialog, RoleVariant::Normal)],
-                ),
-                false,
-            );
-            let needle = query.to_lowercase();
-            ui.native_scope(Role::List, RoleVariant::Normal, |ui| {
-                for page in Page::ALL {
-                    let label = format!("Page: {}", page.label());
-                    if label.to_lowercase().contains(&needle) {
-                        let r = ui.selectable_label(false, &label);
-                        registry.record(
-                            &r,
-                            demo::info(
-                                "palette row",
-                                vec![Seam::Role(Role::List, RoleVariant::Normal)],
-                            ),
-                            false,
-                        );
-                        if r.clicked() {
-                            chosen = Some(Action::ShowPage(page));
-                        }
+    demo::surfaced(
+        registry,
+        ui,
+        Surface::Dialog,
+        false,
+        None,
+        "command palette backdrop",
+        |ui, chrome, registry| {
+            let [min_w, max_w, min_h, max_h] = extents;
+            let min_w = inner_extent(min_w, &chrome.frame, true);
+            let max_w = inner_extent(max_w, &chrome.frame, true);
+            let min_h = inner_extent(min_h, &chrome.frame, false);
+            let max_h = inner_extent(max_h, &chrome.frame, false);
+            let out = egui::Modal::new(egui::Id::new("command-palette"))
+                .frame(chrome.frame)
+                .show(ui.ctx(), |ui| {
+                    let dialog = demo::styled(
+                        registry,
+                        ui,
+                        Role::Dialog,
+                        RoleVariant::Normal,
+                        "command palette",
+                    );
+                    if let Some(w) = min_w {
+                        ui.set_min_width(w);
                     }
-                }
-                let presets = std::iter::once("default".to_string()).chain(
-                    native_theme::theme::Theme::list_presets_for_platform()
-                        .into_iter()
-                        .map(|i| i.key.to_string()),
-                );
-                for key in presets {
-                    let label = format!("Preset: {key}");
-                    if label.to_lowercase().contains(&needle) {
-                        let r = ui.selectable_label(false, &label);
-                        registry.record(
-                            &r,
-                            demo::info(
-                                "palette row",
-                                vec![Seam::Role(Role::List, RoleVariant::Normal)],
-                            ),
-                            false,
-                        );
-                        if r.clicked() {
-                            chosen_theme = Some(if key == "default" {
+                    if let Some(w) = max_w {
+                        ui.set_max_width(w);
+                    }
+                    if let Some(h) = min_h {
+                        ui.set_min_height(h);
+                    }
+                    if let Some(h) = max_h {
+                        ui.set_max_height(h);
+                    }
+                    let field = dialog.add(registry, ui, "palette query", |ui| {
+                        ui.add(egui::TextEdit::singleline(&mut query).hint_text("Type to filter"))
+                    });
+                    if !field.has_focus() && palette.query.is_empty() {
+                        field.request_focus();
+                    }
+                    let needle = query.to_lowercase();
+                    let pages = Page::ALL.into_iter().map(|page| {
+                        (
+                            format!("Page: {}", page.label()),
+                            Pick::Action(Action::ShowPage(page)),
+                        )
+                    });
+                    let presets = std::iter::once("default".to_string())
+                        .chain(
+                            native_theme::theme::Theme::list_presets_for_platform()
+                                .into_iter()
+                                .map(|i| i.key.to_string()),
+                        )
+                        .map(|key| {
+                            let choice = if key == "default" {
                                 ThemeChoice::Default
                             } else {
-                                ThemeChoice::Preset(key)
-                            });
-                        }
-                    }
-                }
-                for mode in [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark] {
-                    let label = format!("Mode: {}", Action::SetMode(mode).label());
-                    if label.to_lowercase().contains(&needle) {
-                        let r = ui.selectable_label(false, &label);
-                        registry.record(
-                            &r,
-                            demo::info(
-                                "palette row",
-                                vec![Seam::Role(Role::List, RoleVariant::Normal)],
-                            ),
-                            false,
-                        );
-                        if r.clicked() {
-                            chosen = Some(Action::SetMode(mode));
-                        }
-                    }
-                }
+                                ThemeChoice::Preset(key.clone())
+                            };
+                            (format!("Preset: {key}"), Pick::Theme(choice))
+                        });
+                    let modes = [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
+                        .into_iter()
+                        .map(|mode| {
+                            (
+                                format!("Mode: {}", Action::SetMode(mode).label()),
+                                Pick::Action(Action::SetMode(mode)),
+                            )
+                        });
+                    demo::scoped_container(
+                        registry,
+                        ui,
+                        Role::List,
+                        RoleVariant::Normal,
+                        "palette rows",
+                        |ui, row, registry| {
+                            ui.vertical(|ui| {
+                                for (label, pick) in pages.chain(presets).chain(modes) {
+                                    if !label.to_lowercase().contains(&needle) {
+                                        continue;
+                                    }
+                                    let r = row.add(registry, ui, "palette row", |ui| {
+                                        ui.selectable_label(false, &label)
+                                    });
+                                    if r.clicked() {
+                                        match pick {
+                                            Pick::Action(action) => chosen = Some(action),
+                                            Pick::Theme(choice) => chosen_theme = Some(choice),
+                                        }
+                                    }
+                                }
+                            })
+                            .response
+                        },
+                    );
+                });
+            // Escape: clear the query first; only an empty query lets it close the modal
+            // (§10.4). It is consumed here, so `should_close` below sees it only when the query
+            // was already empty, and still answers a click on the backdrop, which closes
+            // whatever the query holds.
+            let escape = ui.ctx().input_mut(|i| {
+                !query.is_empty() && i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)
             });
-        });
-    registry.record(
-        &response.backdrop_response,
-        demo::info(
-            "command palette backdrop",
-            vec![Seam::Surface(Surface::Dialog)],
-        ),
-        true,
+            if escape {
+                query.clear();
+            }
+            should_close = out.should_close();
+            Some(out.backdrop_response)
+        },
     );
-    // Escape: clear the query first; only an empty query lets it close the modal (§10.4). It is
-    // consumed here, so `should_close` below sees it only when the query was already empty, and
-    // still answers a click on the backdrop, which closes whatever the query holds.
-    let escape = ui.ctx().input_mut(|i| {
-        !query.is_empty() && i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)
-    });
-    if escape {
-        query.clear();
-    }
-    let close = chosen.is_some() || chosen_theme.is_some() || response.should_close();
+    let close = chosen.is_some() || chosen_theme.is_some() || should_close;
     app.palette = if close {
         None
     } else {
@@ -911,81 +887,83 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
     let mut scale_dragged = false;
     let mut scale_settled = false;
     let mut open = app.preferences_open;
-    let window = egui::Window::new(title)
-        .id(egui::Id::new("preferences"))
-        .open(&mut open)
-        .frame(ui.native_frame(Surface::Window))
-        .title_frame(ui.native_frame(Surface::WindowTitleBar));
-    let registry = &mut app.registry;
-    let out = window.show(&ctx, |ui| {
-        demo::styled(
-            registry,
-            ui,
-            Role::Window,
-            RoleVariant::Normal,
-            "preferences",
-        );
-        ui.horizontal(|ui| {
-            ui.label("Text scaling");
-            let scale = demo::scoped(
-                registry,
-                ui,
-                Role::Input,
-                RoleVariant::Normal,
-                "text scaling factor",
-                |ui| {
-                    ui.add(
-                        egui::DragValue::new(&mut prefs.text_scaling_factor)
-                            .range(TEXT_SCALE_MIN..=TEXT_SCALE_MAX)
-                            // The OS's own factor is shown as it is until the user edits it.
-                            .clamp_existing_to_range(false)
-                            .speed(TEXT_SCALE_STEP),
-                    )
-                },
-            );
-            if scale.changed() {
-                // The field's steps: a drag moves the value continuously (`speed` is per point).
-                let steps = (prefs.text_scaling_factor / TEXT_SCALE_STEP).round();
-                prefs.text_scaling_factor =
-                    (steps * TEXT_SCALE_STEP).clamp(TEXT_SCALE_MIN, TEXT_SCALE_MAX);
+    demo::surfaced(
+        &mut app.registry,
+        ui,
+        Surface::Window,
+        true,
+        None,
+        "preferences window",
+        |_, chrome, registry| {
+            let mut window = egui::Window::new(title)
+                .id(egui::Id::new("preferences"))
+                .open(&mut open)
+                .frame(chrome.frame);
+            if let Some(title_frame) = chrome.title_frame {
+                window = window.title_frame(title_frame);
             }
-            scale_dragged = scale.dragged();
-            scale_settled = scale.drag_stopped() || scale.lost_focus();
-        });
-        // A check box takes no selected flag of its own: a checked one is drawn in
-        // `RoleVariant::Selected` (§4.4), as on the Selection page.
-        for (kind, label, flag) in [
-            ("reduce motion", "Reduce motion", &mut prefs.reduce_motion),
-            ("high contrast", "High contrast", &mut prefs.high_contrast),
-            (
-                "reduce transparency",
-                "Reduce transparency",
-                &mut prefs.reduce_transparency,
-            ),
-        ] {
-            let variant = if *flag {
-                RoleVariant::Selected
-            } else {
-                RoleVariant::Normal
-            };
-            demo::scoped(registry, ui, Role::Checkbox, variant, kind, |ui| {
-                ui.checkbox(flag, label)
-            });
-        }
-    });
-    if let Some(out) = out {
-        app.registry.record(
-            &out.response,
-            demo::info(
-                "preferences window",
-                vec![
-                    Seam::Surface(Surface::Window),
-                    Seam::Surface(Surface::WindowTitleBar),
-                ],
-            ),
-            true,
-        );
-    }
+            window
+                .show(&ctx, |ui| {
+                    let body = demo::styled(
+                        registry,
+                        ui,
+                        Role::Window,
+                        RoleVariant::Normal,
+                        "preferences",
+                    );
+                    ui.horizontal(|ui| {
+                        body.add(registry, ui, "text scaling label", |ui| {
+                            ui.label("Text scaling")
+                        });
+                        let scale = demo::scoped(
+                            registry,
+                            ui,
+                            Role::Input,
+                            RoleVariant::Normal,
+                            "text scaling factor",
+                            |ui| {
+                                ui.add(
+                                    egui::DragValue::new(&mut prefs.text_scaling_factor)
+                                        .range(TEXT_SCALE_MIN..=TEXT_SCALE_MAX)
+                                        // The OS's own factor is shown as it is until the user edits it.
+                                        .clamp_existing_to_range(false)
+                                        .speed(TEXT_SCALE_STEP),
+                                )
+                            },
+                        );
+                        if scale.changed() {
+                            // The field's steps: a drag moves the value continuously (`speed` is per point).
+                            let steps = (prefs.text_scaling_factor / TEXT_SCALE_STEP).round();
+                            prefs.text_scaling_factor =
+                                (steps * TEXT_SCALE_STEP).clamp(TEXT_SCALE_MIN, TEXT_SCALE_MAX);
+                        }
+                        scale_dragged = scale.dragged();
+                        scale_settled = scale.drag_stopped() || scale.lost_focus();
+                    });
+                    // A check box takes no selected flag of its own: a checked one is drawn in
+                    // `RoleVariant::Selected` (§4.4), as on the Selection page.
+                    for (kind, label, flag) in [
+                        ("reduce motion", "Reduce motion", &mut prefs.reduce_motion),
+                        ("high contrast", "High contrast", &mut prefs.high_contrast),
+                        (
+                            "reduce transparency",
+                            "Reduce transparency",
+                            &mut prefs.reduce_transparency,
+                        ),
+                    ] {
+                        let variant = if *flag {
+                            RoleVariant::Selected
+                        } else {
+                            RoleVariant::Normal
+                        };
+                        demo::scoped(registry, ui, Role::Checkbox, variant, kind, |ui| {
+                            ui.checkbox(flag, label)
+                        });
+                    }
+                })
+                .map(|out| out.response)
+        },
+    );
     app.preferences_open = open;
     let changed = prefs != before;
     if changed {
@@ -1018,12 +996,18 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         DialogButtonOrder::PrimaryLeft => ["Close", "Copy version"],
     };
     let version = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
-    let frame = ui.native_frame(Surface::Dialog);
-    let registry = &mut app.registry;
     let mut close = false;
-    let response = egui::Modal::new(egui::Id::new("about")).frame(frame).show(&ctx, |ui| {
-        demo::styled(registry, ui, Role::Dialog, RoleVariant::Normal, "about");
-        demo::scoped(registry, ui, Role::Dialog, RoleVariant::Normal, "about version", |ui| ui.label(version));
+    demo::surfaced(
+        &mut app.registry,
+        ui,
+        Surface::Dialog,
+        false,
+        None,
+        "about",
+        |_, chrome, registry| {
+            let response = egui::Modal::new(egui::Id::new("about")).frame(chrome.frame).show(&ctx, |ui| {
+        let body = demo::styled(registry, ui, Role::Dialog, RoleVariant::Normal, "about body");
+        body.add(registry, ui, "about version", |ui| ui.label(version));
         demo::scoped(registry, ui, Role::Link, RoleVariant::Normal, "compatibility link", |ui| {
             ui.hyperlink_to(
                 "Compatibility",
@@ -1042,12 +1026,11 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
             }
         });
     });
-    app.registry.record(
-        &response.response,
-        demo::info("about", vec![Seam::Surface(Surface::Dialog)]),
-        true,
+            close |= response.should_close();
+            Some(response.response)
+        },
     );
-    if close || response.should_close() {
+    if close {
         app.about_open = false;
     }
 }

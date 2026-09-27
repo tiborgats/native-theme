@@ -33,7 +33,7 @@ pub(crate) fn show(
         ui,
         "TableBuilder: striped, resizable columns, a selected row (Role::List)",
     );
-    demo::scoped(reg, ui, Role::List, normal, "Table", |ui| {
+    demo::scoped_container(reg, ui, Role::List, normal, "Table", |ui, list, reg| {
         // A table's row height is a call argument no `Style` field reaches (§5.4 `list.row_height`).
         let height = row_height.unwrap_or(ui.spacing().interact_size.y);
         ui.scope(|ui| {
@@ -48,11 +48,13 @@ pub(crate) fn show(
                 .header(height, |mut header| {
                     for title in ["Theme", "Platform"] {
                         header.col(|ui| {
-                            ui.label(
-                                egui::RichText::new(title)
-                                    .font(header_font.clone())
-                                    .color(header_color),
-                            );
+                            list.add(reg, ui, "table header", |ui| {
+                                ui.label(
+                                    egui::RichText::new(title)
+                                        .font(header_font.clone())
+                                        .color(header_color),
+                                )
+                            });
                         });
                     }
                 })
@@ -60,12 +62,11 @@ pub(crate) fn show(
                     for (i, (theme, platform)) in ROWS.into_iter().enumerate() {
                         body.row(height, |mut row| {
                             row.set_selected(state.table_selected == Some(i));
-                            row.col(|ui| {
-                                ui.label(theme);
-                            });
-                            row.col(|ui| {
-                                ui.label(platform);
-                            });
+                            for text in [theme, platform] {
+                                row.col(|ui| {
+                                    list.add(reg, ui, "table cell", |ui| ui.label(text));
+                                });
+                            }
                             if row.response().clicked() {
                                 state.table_selected = Some(i);
                             }
@@ -89,30 +90,37 @@ pub(crate) fn show(
         "Grid: striped (Role::List), and disabled (RoleVariant::Disabled)",
     );
     ui.horizontal_top(|ui| {
-        demo::scoped(reg, ui, Role::List, normal, "Grid (striped)", |ui| {
-            egui::Grid::new("data/grid")
-                .striped(true)
-                .show(ui, grid_rows)
-                .response
-        });
-        demo::scoped(
+        demo::scoped_container(
+            reg,
+            ui,
+            Role::List,
+            normal,
+            "Grid (striped)",
+            |ui, list, reg| {
+                egui::Grid::new("data/grid")
+                    .striped(true)
+                    .show(ui, |ui| grid_rows(ui, list, reg))
+                    .response
+            },
+        );
+        demo::scoped_container(
             reg,
             ui,
             Role::List,
             RoleVariant::Disabled,
             "Grid (disabled)",
-            |ui| {
+            |ui, list, reg| {
                 ui.disable();
                 egui::Grid::new("data/grid-disabled")
                     .striped(true)
-                    .show(ui, grid_rows)
+                    .show(ui, |ui| grid_rows(ui, list, reg))
                     .response
             },
         );
     });
 
     caption(reg, ui, "StripBuilder (the base style)");
-    demo::base(reg, ui, "StripBuilder", |ui| {
+    demo::contained(reg, ui, "StripBuilder", |ui, reg| {
         egui::Resize::default()
             .id_salt("data/strip-area")
             .show(ui, |ui| {
@@ -120,21 +128,21 @@ pub(crate) fn show(
                     .size(Size::remainder())
                     .size(Size::remainder())
                     .horizontal(|mut strip| {
-                        strip.cell(|ui| {
-                            ui.label("First strip cell");
-                        });
-                        strip.cell(|ui| {
-                            ui.label("Second strip cell");
-                        });
+                        for text in ["First strip cell", "Second strip cell"] {
+                            strip.cell(|ui| {
+                                demo::base(reg, ui, "strip cell", |ui| ui.label(text));
+                            });
+                        }
                     })
             })
     });
 }
 
-fn grid_rows(ui: &mut egui::Ui) {
+/// The grids' cells, each recorded with the grid's seam.
+fn grid_rows(ui: &mut egui::Ui, list: demo::Applied, reg: &mut Registry) {
     for (theme, platform) in ROWS {
-        ui.label(theme);
-        ui.label(platform);
+        list.add(reg, ui, "grid cell", |ui| ui.label(theme));
+        list.add(reg, ui, "grid cell", |ui| ui.label(platform));
         ui.end_row();
     }
 }

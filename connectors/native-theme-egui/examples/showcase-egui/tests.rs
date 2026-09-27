@@ -1659,6 +1659,10 @@ fn char_len(s: &str) -> usize {
     }
 }
 
+/// §10.4's last rule, held lexically: the seams are applied only inside `demo.rs`'s helpers,
+/// each of which takes a seam once and both applies and records it. The chrome builds its
+/// elements through those helpers too, so no other file — `chrome.rs` included — calls a seam
+/// and records it from a second spelling.
 #[test]
 fn every_seam_is_recorded() {
     const SEAMS: &[&str] = &[
@@ -1669,31 +1673,27 @@ fn every_seam_is_recorded() {
         ".surface_frame(",
     ];
     let mut in_demo = 0;
-    let mut in_chrome = 0;
     for (path, source) in showcase_sources() {
-        let count: usize = SEAMS.iter().map(|s| source.matches(s).count()).sum();
         if path.ends_with("demo.rs") {
-            in_demo += count;
-        } else if path.ends_with("chrome.rs") {
-            in_chrome += count;
-        } else {
-            for seam in SEAMS {
-                if let Some(at) = source.find(seam) {
-                    let line = source
-                        .get(..at)
-                        .map(|s| s.matches('\n').count() + 1)
-                        .unwrap_or_default();
-                    panic!(
-                        "{path}:{line}: {seam} applied outside demo.rs and chrome.rs, where no info records it"
-                    );
-                }
+            in_demo += SEAMS
+                .iter()
+                .map(|s| source.matches(s).count())
+                .sum::<usize>();
+            continue;
+        }
+        for seam in SEAMS {
+            if let Some(at) = source.find(seam) {
+                let line = source
+                    .get(..at)
+                    .map(|s| s.matches('\n').count() + 1)
+                    .unwrap_or_default();
+                panic!(
+                    "{path}:{line}: {seam} applied outside demo.rs's helpers, which apply and record each seam once"
+                );
             }
         }
     }
-    assert!(
-        in_demo > 0 && in_chrome > 0,
-        "the detector read no seam call ({in_demo}, {in_chrome})"
-    );
+    assert!(in_demo > 0, "the detector read no seam call in demo.rs");
 }
 
 #[test]

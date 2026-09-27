@@ -2,7 +2,7 @@
 //! page `MenuBar`, each container given its surface's frame and its role's modifier as values
 //! (§1.5, §3.2), its body styled as the first statement inside.
 
-use egui::containers::menu::{MenuConfig, SubMenuButton};
+use egui::containers::menu::SubMenuButton;
 use native_theme::theme::{IconRole, IconSet};
 use native_theme_egui::{
     DialogButtonOrder, Role, RoleVariant, Surface, ThemeAtlas, dialog_button_order,
@@ -10,7 +10,7 @@ use native_theme_egui::{
 };
 
 use super::{DemoState, caption};
-use crate::demo::{self, Registry, Seam};
+use crate::demo::{self, Registry};
 
 /// The lines the window scrolls: a datum.
 const WINDOW_LINES: usize = 30;
@@ -63,9 +63,9 @@ pub(crate) fn show(
             }
             window
                 .show(ui.ctx(), |ui| {
-                    demo::styled(reg, ui, Role::Window, normal, "window body");
+                    let body = demo::styled(reg, ui, Role::Window, normal, "window body");
                     for line in 0..WINDOW_LINES {
-                        demo::scoped(reg, ui, Role::Window, normal, "window line", |ui| {
+                        body.add(reg, ui, "window line", |ui| {
                             ui.label(format!("A line of the window's body: {line}"))
                         });
                     }
@@ -99,8 +99,8 @@ pub(crate) fn show(
                 let out = egui::Modal::new(egui::Id::new("overlays/modal"))
                     .frame(chrome.frame)
                     .show(ui.ctx(), |ui| {
-                        demo::styled(reg, ui, Role::Dialog, normal, "modal body");
-                        demo::scoped(reg, ui, Role::Dialog, normal, "modal message", |ui| {
+                        let body = demo::styled(reg, ui, Role::Dialog, normal, "modal body");
+                        body.add(reg, ui, "modal message", |ui| {
                             ui.label("A modal dialog, its two buttons in the platform's order.")
                         });
                         let labels = match order {
@@ -254,22 +254,16 @@ pub(crate) fn show(
     caption(reg, ui, "Menus in a page MenuBar (Role::Menu)");
     let menu_icon_size = t.menu.icon_size;
     let (set, icon_theme) = chosen;
-    demo::modifier(
+    demo::menu_bar(
         reg,
         ui,
         Role::Menu,
         normal,
         "page menu bar",
-        |ui, modifier, reg| {
-            let mut bar = egui::MenuBar::new();
-            if let Some(modifier) = modifier {
-                bar = bar
-                    .style(modifier.clone())
-                    .config(MenuConfig::new().style(modifier));
-            }
+        |ui, bar, menu, reg| {
             bar.ui(ui, |ui| {
                 let r = ui.menu_button("Page menu", |ui| {
-                    demo::styled(reg, ui, Role::Menu, normal, "page menu (open)");
+                    let open = demo::styled(reg, ui, Role::Menu, normal, "page menu (open)");
                     demo::scoped(reg, ui, Role::Menu, normal, "menu item", |ui| {
                         ui.button("An item")
                     });
@@ -287,17 +281,9 @@ pub(crate) fn show(
                             ui.button("A submenu item")
                         });
                     });
-                    reg.record(
-                        &sub,
-                        demo::info("SubMenuButton", vec![Seam::Role(Role::Menu, normal)]),
-                        false,
-                    );
+                    open.record(reg, &sub, "SubMenuButton");
                 });
-                reg.record(
-                    &r.response,
-                    demo::info("menu button", vec![Seam::Role(Role::Menu, normal)]),
-                    false,
-                );
+                menu.record(reg, &r.response, "menu button");
 
                 let image = demo::role_image(
                     ui,
@@ -317,14 +303,7 @@ pub(crate) fn show(
                         demo::styled(reg, ui, Role::Menu, normal, "icon menu (open)");
                     }),
                 };
-                reg.record(
-                    &r.response,
-                    demo::info(
-                        "menu button (image and text)",
-                        vec![Seam::Role(Role::Menu, normal)],
-                    ),
-                    false,
-                );
+                menu.record(reg, &r.response, "menu button (image and text)");
                 reg.amend_last(|i| i.read.push(("menu.icon_size", format!("{menu_icon_size}"))));
 
                 let image = demo::role_image(
@@ -341,11 +320,7 @@ pub(crate) fn show(
                             ui.button("An item")
                         });
                     });
-                    reg.record(
-                        &r.response,
-                        demo::info("ui.menu_image_button", vec![Seam::Role(Role::Menu, normal)]),
-                        false,
-                    );
+                    menu.record(reg, &r.response, "ui.menu_image_button");
                 }
                 let image = demo::role_image(
                     ui,
@@ -361,14 +336,7 @@ pub(crate) fn show(
                             ui.button("An item")
                         });
                     });
-                    reg.record(
-                        &r.response,
-                        demo::info(
-                            "ui.menu_image_text_button",
-                            vec![Seam::Role(Role::Menu, normal)],
-                        ),
-                        false,
-                    );
+                    menu.record(reg, &r.response, "ui.menu_image_text_button");
                 }
             })
             .response

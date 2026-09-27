@@ -107,17 +107,20 @@ pub(crate) fn show(
     });
 
     caption(reg, ui, "Segmented control (Role::SegmentedControl)");
-    demo::scoped(
+    demo::scoped_container(
         reg,
         ui,
         Role::SegmentedControl,
         normal,
         "segmented control",
-        |ui| {
+        |ui, segment, reg| {
             ui.horizontal(|ui| {
                 for (i, label) in ["Day", "Week", "Month"].into_iter().enumerate() {
-                    if ui
-                        .add(Button::new(label).selected(i == state.segment))
+                    let selected = i == state.segment;
+                    if segment
+                        .add(reg, ui, "segment", |ui| {
+                            ui.add(Button::new(label).selected(selected))
+                        })
                         .clicked()
                     {
                         state.segment = i;

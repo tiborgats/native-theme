@@ -18,7 +18,7 @@ pub(crate) fn show(
     let theme = ui.ctx().theme();
     let json = crate::info::theme_json(atlas, theme);
     // The filter row is one instance in the base style: selectables, frameless at rest (§10.4).
-    demo::base(reg, ui, "verdict filter", |ui| {
+    demo::contained(reg, ui, "verdict filter", |ui, reg| {
         ui.horizontal(|ui| {
             for (label, filter) in [
                 ("All", None),
@@ -27,19 +27,20 @@ pub(crate) fn show(
                 ("Derived", Some(Verdict::Derived)),
                 ("Unmappable", Some(Verdict::Unmappable)),
             ] {
-                ui.selectable_value(&mut state.theme_map_filter, filter, label);
+                demo::base(reg, ui, "verdict", |ui| {
+                    ui.selectable_value(&mut state.theme_map_filter, filter, label)
+                });
             }
         })
         .response
     });
     let (Ok(manifest), Ok(json)) = (manifest, &json) else {
-        ui.label(
-            manifest
-                .as_ref()
-                .err()
-                .or(json.as_ref().err())
-                .map_or(String::new(), Clone::clone),
-        );
+        let error = manifest
+            .as_ref()
+            .err()
+            .or(json.as_ref().err())
+            .map_or(String::new(), Clone::clone);
+        demo::base(reg, ui, "theme map error", |ui| ui.label(error));
         return;
     };
     let rows: Vec<&Row> = manifest
@@ -48,13 +49,13 @@ pub(crate) fn show(
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
     let row_height = atlas.resolved_for(theme).list.row_height;
-    demo::scoped(
+    demo::scoped_container(
         reg,
         ui,
         Role::List,
         RoleVariant::Normal,
         "theme map",
-        |ui| {
+        |ui, list, reg| {
             let height = row_height.unwrap_or(ui.spacing().interact_size.y);
             let out = ui.scope(|ui| {
                 egui_extras::TableBuilder::new(ui)
@@ -66,7 +67,7 @@ pub(crate) fn show(
                     .header(height, |mut header| {
                         for title in ["Leaf", "Value", "Verdict", "Sinks / upstream"] {
                             header.col(|ui| {
-                                ui.strong(title);
+                                list.add(reg, ui, "theme map header", |ui| ui.strong(title));
                             });
                         }
                     })
@@ -75,7 +76,7 @@ pub(crate) fn show(
                             if let Some(r) = rows.get(row.index()) {
                                 for text in crate::info::row_cells(r, json) {
                                     row.col(|ui| {
-                                        ui.label(text);
+                                        list.add(reg, ui, "theme map cell", |ui| ui.label(text));
                                     });
                                 }
                             }
