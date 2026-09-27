@@ -1,7 +1,7 @@
 //! The chrome: menu bar, toolbar, status bar, side panel, page tabs, overlays (spec §10.4).
 
 use native_theme::icons::{IconSetChoice, default_icon_choice};
-use native_theme::theme::IconRole;
+use native_theme::theme::{IconRole, IconSet};
 use native_theme_egui::{
     DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
     window_title_bar_font, window_title_bar_text_color,
@@ -114,8 +114,11 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         toolbar_role,
         toolbar_role,
     );
+    // No line under the bar: the gpui showcase draws none under its toolbar
+    // (`showcase-gpui/app.rs:1874-1878`).
     let out = egui::Panel::top("chrome-bar")
         .frame(seams.frame)
+        .show_separator_line(false)
         .show(ui, |ui| {
             seams.enter(ui);
             // On macOS outside `cfg(test)` the menus are the system menu bar's.
@@ -178,14 +181,69 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) {
     );
 }
 
-/// Three icon buttons with tooltips, at `toolbar.icon_size` (a required size, `f32` on the
-/// resolved theme), the row at least `toolbar.bar_height` tall where the theme states a usable
-/// one; icons of the chosen set and theme through `demo::role_image`, the Icons page's loader —
-/// a freedesktop icon from the chosen theme in the text colour, a bundled key tinted it (§9.2,
-/// §10.4).
+/// What a chrome button shows: gpui-component's `IconName` by its name in the chosen set, or
+/// the one an `IconRole` stands for.
+#[derive(Clone, Copy)]
+enum ChromeButtonIcon {
+    Named(demo::ChromeIcon),
+    Role(IconRole),
+}
+
+/// A chrome button's icon of the chosen set and theme at `size`, or `None` where they lack it.
+fn chrome_button_image(
+    ui: &egui::Ui,
+    icon: ChromeButtonIcon,
+    (set, icon_theme): &(IconSet, Option<String>),
+    size: f32,
+) -> Option<egui::Image<'static>> {
+    match icon {
+        ChromeButtonIcon::Named(icon) => {
+            demo::named_image(ui, icon, *set, icon_theme.as_deref(), size)
+        }
+        ChromeButtonIcon::Role(role) => {
+            demo::role_image(ui, role, *set, icon_theme.as_deref(), size)
+        }
+    }
+}
+
+/// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4):
+/// frameless at rest and filled on hover, and filled while `selected`; its icon where the set
+/// has one, else its tooltip's text as its label, as gpui's (`showcase-gpui/demo.rs:480-483`),
+/// and that text its AccessKit label either way.
+fn ghost_button(
+    image: Option<egui::Image<'static>>,
+    label: &'static str,
+    selected: bool,
+) -> egui::Button<'static> {
+    match image {
+        Some(image) => egui::Button::image(image),
+        None => egui::Button::new(label),
+    }
+    .selected(selected)
+    .frame_when_inactive(selected)
+}
+
+/// The kind a Ghost button records, as the gpui showcase names its toolbar and status-bar
+/// buttons (`showcase-gpui/info/chrome.rs:414-419`, `:871-875`).
+fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
+    match (drawn, selected) {
+        (true, true) => "Button · Ghost, icon, selected",
+        (true, false) => "Button · Ghost, icon",
+        (false, true) => "Button · Ghost, labelled, selected",
+        (false, false) => "Button · Ghost, labelled",
+    }
+}
+
+/// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:103-160`): three Ghost buttons in its
+/// order — the command palette, a theme reload, Preferences — each with a tooltip naming it
+/// and its shortcut, at `toolbar.icon_size` (a required size, `f32` on the resolved theme), the
+/// row at least `toolbar.bar_height` tall where the theme states a usable one. The icons are
+/// gpui's: `SquareTerminal` and `RotateCw` by their names in the chosen set, Settings by its
+/// role, loaded as the Icons page loads them — a freedesktop icon from the chosen theme in the
+/// text colour, a bundled key tinted it (§9.2, §10.4).
 fn toolbar(app: &mut App, ui: &mut egui::Ui) {
     let theme = ui.ctx().theme();
-    let (set, icon_theme) = app.chosen_icons();
+    let chosen = app.chosen_icons();
     let App {
         registry,
         atlas,
@@ -200,31 +258,33 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
             if let Some(h) = bar_height {
                 ui.set_min_height(h);
             }
-            for (role, label, action) in [
+            for (icon, label, action) in [
                 (
-                    IconRole::ActionSearch,
-                    "Command palette",
+                    ChromeButtonIcon::Named(demo::ChromeIcon::SquareTerminal),
+                    "Command Palette",
                     Action::OpenCommandPalette,
                 ),
-                (IconRole::ActionRefresh, "Reload theme", Action::ReloadTheme),
                 (
-                    IconRole::ActionSettings,
+                    ChromeButtonIcon::Named(demo::ChromeIcon::RotateCw),
+                    "Reload System Theme",
+                    Action::ReloadTheme,
+                ),
+                (
+                    ChromeButtonIcon::Role(IconRole::ActionSettings),
                     "Preferences",
                     Action::OpenPreferences,
                 ),
             ] {
-                let image = demo::role_image(ui, role, set, icon_theme.as_deref(), icon_size);
+                let image = chrome_button_image(ui, icon, &chosen, icon_size);
+                let kind = ghost_kind(image.is_some(), false);
                 let response = demo::scoped(
                     registry,
                     ui,
                     Role::Button,
                     RoleVariant::Normal,
-                    "toolbar button",
+                    kind,
                     |ui| {
-                        let r = match image {
-                            Some(image) => ui.add(egui::Button::image(image)),
-                            None => ui.button(label),
-                        };
+                        let r = ui.add(ghost_button(image, label, false));
                         r.widget_info(|| {
                             egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
                         });
@@ -232,7 +292,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
                     },
                 );
                 registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
-                tooltip(registry, ui, &response, label);
+                tooltip(registry, ui, &response, label, action.shortcut());
                 if response.clicked() {
                     pending.push(action);
                 }
@@ -254,9 +314,18 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
 
 /// `Tooltip::for_enabled`, its `popup` given the tooltip surface's frame and the `Role::Tooltip`
 /// modifier through `demo::surfaced`, the Overlays page's spelling (§10.4;
-/// `Response::on_hover_text` takes neither).
-fn tooltip(reg: &mut Registry, ui: &mut egui::Ui, response: &egui::Response, text: &str) {
+/// `Response::on_hover_text` takes neither): `text`, then the action's shortcut in the
+/// platform's spelling (`Context::format_shortcut`), weak, as gpui's `tooltip_with_action`
+/// shows the key binding (`showcase-gpui/demo.rs:479`).
+fn tooltip(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    response: &egui::Response,
+    text: &str,
+    shortcut: Option<egui::KeyboardShortcut>,
+) {
     let tooltip_role = Some((Role::Tooltip, RoleVariant::Normal));
+    let shortcut = shortcut.map(|s| ui.ctx().format_shortcut(&s));
     demo::surfaced(
         reg,
         ui,
@@ -271,13 +340,21 @@ fn tooltip(reg: &mut Registry, ui: &mut egui::Ui, response: &egui::Response, tex
                 tip.popup = tip.popup.style(modifier);
             }
             tip.show(|ui| {
-                demo::scoped(
+                demo::scoped_container(
                     reg,
                     ui,
                     Role::Tooltip,
                     RoleVariant::Normal,
-                    "Label · tooltip",
-                    |ui| ui.label(text),
+                    "Tooltip row",
+                    |ui, label, reg| {
+                        ui.horizontal(|ui| {
+                            label.add(reg, ui, "Label · tooltip", |ui| ui.label(text));
+                            if let Some(shortcut) = shortcut {
+                                label.add(reg, ui, "Label · shortcut", |ui| ui.weak(shortcut));
+                            }
+                        })
+                        .response
+                    },
                 );
             })
             .map(|out| out.response)
@@ -285,7 +362,10 @@ fn tooltip(reg: &mut Registry, ui: &mut egui::Ui, response: &egui::Response, tex
     );
 }
 
-/// The status bar: the side-panel toggle, the environment, the shown info's title.
+/// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:242-302`,
+/// `showcase-gpui/demo.rs:342-365`, `:522-563`): the side-panel toggle, a small Ghost button
+/// with gpui's `PanelLeft` icon at `defaults.icon_sizes.small`, selected while the panel shows;
+/// then the environment as one line joined by " · "; the shown Widget Info's title flush right.
 pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
     let status_role = Some((Role::StatusBar, RoleVariant::Normal));
     let seams = PanelSeams::apply(
@@ -294,39 +374,73 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
         status_role,
         status_role,
     );
+    let chosen = app.chosen_icons();
     let out = egui::Panel::bottom("status-bar")
         .frame(seams.frame)
         .show(ui, |ui| {
             let bar = seams.enter(ui);
-            let environment = environment(app, ui.ctx());
+            let environment = environment(app, ui.ctx()).join(" · ");
             let title = app.status_title();
+            let icon_size = app
+                .atlas
+                .resolved_for(ui.ctx().theme())
+                .defaults
+                .icon_sizes
+                .small;
             ui.horizontal(|ui| {
                 let App {
                     registry,
                     side_panel_visible,
                     ..
                 } = app;
-                demo::scoped(
+                let label = "Toggle Side Panel";
+                let open = *side_panel_visible;
+                let image = chrome_button_image(
+                    ui,
+                    ChromeButtonIcon::Named(demo::ChromeIcon::PanelLeft),
+                    &chosen,
+                    icon_size,
+                );
+                let kind = ghost_kind(image.is_some(), open);
+                let toggle = demo::scoped(
                     registry,
                     ui,
                     Role::Button,
                     RoleVariant::Normal,
-                    "side panel toggle",
-                    |ui| ui.toggle_value(side_panel_visible, "Side panel"),
+                    kind,
+                    |ui| {
+                        let r = ui.add(ghost_button(image, label, open).small());
+                        r.widget_info(|| {
+                            egui::WidgetInfo::selected(egui::WidgetType::Button, true, open, label)
+                        });
+                        r
+                    },
                 );
+                registry.amend_last(|i| {
+                    i.read
+                        .push(("defaults.icon_sizes.small", format!("{icon_size}")));
+                });
+                tooltip(
+                    registry,
+                    ui,
+                    &toggle,
+                    label,
+                    Action::ToggleSidePanel.shortcut(),
+                );
+                if toggle.clicked() {
+                    *side_panel_visible = !open;
+                }
                 // The bar's own role, not the base style: its separator line and its text are
                 // `status_bar`'s (§10.4).
                 let Some(bar) = bar else { return };
-                let mut item = |ui: &mut egui::Ui, kind: &'static str, text: String| {
-                    bar.add(registry, ui, "status separator", |ui| ui.separator());
-                    bar.add(registry, ui, kind, |ui| ui.label(text));
-                };
-                for text in environment {
-                    item(ui, "status item", text);
-                }
-                // The shown Widget Info's title, last (§10.4).
+                bar.add(registry, ui, "Label · environment", |ui| {
+                    ui.label(environment)
+                });
+                // The shown Widget Info's title, flush right (§10.4).
                 if !title.is_empty() {
-                    item(ui, "status title", title);
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        bar.add(registry, ui, "Label · shown info", |ui| ui.label(title));
+                    });
                 }
             });
         });
@@ -352,9 +466,15 @@ fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
         // Validation records a missing size rather than inventing one (§8.7).
         None => "(size not stated)".to_string(),
     };
+    // The preset by its key, `default` by the preset it builds on, as the gpui showcase's
+    // (`showcase-gpui/chrome.rs:90-97`).
+    let preset = match &app.settings.theme {
+        ThemeChoice::Default => format!("default ({})", app.default_preset),
+        ThemeChoice::Preset(key) => key.clone(),
+    };
     let mut items = vec![
         desktop(),
-        format!("{} {mode}", app.atlas.name()),
+        format!("{preset} {mode}"),
         format!("{} {size}", font.family),
         format!("text ×{}", prefs.text_scaling_factor),
     ];

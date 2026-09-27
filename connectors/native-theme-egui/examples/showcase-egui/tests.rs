@@ -296,7 +296,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
     harness.run();
     let menu_row = harness.get_by_role_and_label(Role::Button, "File").rect();
     let toolbar = harness
-        .get_by_role_and_label(Role::Button, "Command palette")
+        .get_by_role_and_label(Role::Button, "Command Palette")
         .rect();
     assert!(
         menu_row.bottom() <= toolbar.top(),
@@ -369,7 +369,7 @@ fn the_chrome_is_where_the_layout_puts_it() {
 
     let window = harness.ctx.viewport_rect(); // `egui/src/context.rs:2921`
     let status = harness
-        .get_by_role_and_label(Role::Button, "Side panel")
+        .get_by_role_and_label(Role::Button, "Toggle Side Panel")
         .rect();
     assert!(
         (status.bottom() - window.bottom()).abs() <= status.height(),
@@ -400,6 +400,58 @@ fn the_chrome_is_where_the_layout_puts_it() {
     harness.get_by_role_and_label(Role::Button, "Icons").click();
     harness.run_steps(2);
     assert_eq!(harness.state().settings.page, Page::Icons);
+}
+
+/// Parity items 14 to 16: the status bar is the toggle, the environment as one line joined by
+/// " · " naming the preset by its key, and the shown info's title flush right.
+#[test]
+fn the_status_bar_reads_as_the_gpui_showcases() {
+    // A `Label`'s text is its AccessKit value (`egui/src/response.rs:962-964`).
+    let environment_line = |harness: &Harness<'_, App>| {
+        harness
+            .query_all(By::new().predicate(|n| {
+                n.value()
+                    .is_some_and(|v| v.contains(" · ") && v.contains(TEST_PRESET))
+            }))
+            .filter_map(|n| n.accesskit_node().value())
+            .next()
+            .expect("one environment line")
+    };
+    let mut harness = open_page(Page::Buttons, egui::Theme::Light);
+    let pos = centre_of(&harness, "button (enabled)");
+    hover_and_settle(&mut harness, pos);
+    let records = harness.state().registry.records();
+    let rect_of = |kind: &str| {
+        records
+            .iter()
+            .find(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .unwrap_or_else(|| panic!("no {kind} record"))
+    };
+    // Selected while the panel shows; with its icon, or labelled where the set has none.
+    let toggle_kind = [
+        "Button · Ghost, icon, selected",
+        "Button · Ghost, labelled, selected",
+    ]
+    .into_iter()
+    .find(|kind| records.iter().any(|r| r.info.kind == *kind))
+    .unwrap_or("a selected side-panel toggle");
+    let (bar, toggle, environment, title) = (
+        rect_of("Status bar"),
+        rect_of(toggle_kind),
+        rect_of("Label · environment"),
+        rect_of("Label · shown info"),
+    );
+    assert!(toggle.right() <= environment.left() && environment.right() <= title.left());
+    assert!(
+        (bar.right() - title.right()).abs() <= bar.height(),
+        "the title {title:?} is not flush right in {bar:?}"
+    );
+    let line = environment_line(&harness);
+    assert!(
+        line.contains(&format!("{TEST_PRESET} light")),
+        "the preset is not named by its key: {line}"
+    );
 }
 
 /// Parity item 9: the page tabs' menu lists every page, the current one selected, and its item
@@ -451,12 +503,12 @@ fn the_side_panel_toggle_hides_and_shows_it() {
     let initial = width_of(&harness).expect("the side panel is shown at start");
 
     harness
-        .get_by_role_and_label(Role::Button, "Side panel")
+        .get_by_role_and_label(Role::Button, "Toggle Side Panel")
         .click();
     harness.run();
     assert!(!harness.state().side_panel_visible && width_of(&harness).is_none());
     harness
-        .get_by_role_and_label(Role::Button, "Side panel")
+        .get_by_role_and_label(Role::Button, "Toggle Side Panel")
         .click();
     harness.run();
     assert!(harness.state().side_panel_visible);
