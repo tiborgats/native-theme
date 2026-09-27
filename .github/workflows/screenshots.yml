@@ -56,6 +56,42 @@ jobs:
         shell: powershell
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
 
+      # The showcases open at 1280 x 720, and the macOS runner's display is
+      # 1024 x 768, which clamps the window: every macOS capture before this
+      # step was 1024px wide. displayplacer (Homebrew core) switches the
+      # display to 1920 x 1080, a mode its virtual display lists. Seen working
+      # on a GitHub-hosted arm64 macOS runner (macos-26), where the switch took
+      # and a window then kept its requested size, which the 1024 x 768 display
+      # had clamped: https://github.com/JaminZhou/codex-ui-kit/actions/runs/34041357514
+      # (step "Configure hosted display for native capture", commit e86516c).
+      # The step fails when the mode is not listed or does not take; the
+      # showcases' own capture check fails a capture of a window that did not
+      # open at 1280 x 720.
+      - name: Set display resolution (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install displayplacer
+          modes="$(displayplacer list)"
+          echo "$modes"
+          screens="$(grep -c '^Persistent screen id:' <<< "$modes" || true)"
+          if [ "$screens" -ne 1 ]; then
+            echo "::error::displayplacer lists $screens displays, not one"
+            exit 1
+          fi
+          if ! grep -q 'res:1920x1080 ' <<< "$modes"; then
+            echo "::error::the runner's display offers no 1920x1080 mode, so a 1280x720 window cannot open unclamped"
+            exit 1
+          fi
+          id="$(awk '/^Persistent screen id:/ { print $4 }' <<< "$modes")"
+          displayplacer "id:${id} res:1920x1080 scaling:off origin:(0,0) degree:0"
+          sleep 2
+          after="$(displayplacer list)"
+          if ! grep -qx 'Resolution: 1920x1080' <<< "$after"; then
+            echo "$after"
+            echo "::error::the runner's display did not switch to 1920x1080"
+            exit 1
+          fi
+
       - name: Grant screen recording permission (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -92,6 +128,11 @@ jobs:
         run: mkdir -p connectors/native-theme-${{ matrix.toolkit }}/docs/assets
         shell: bash
 
+      # `--screenshot` opens the window at the showcases' default 1280 x 720
+      # and exits non-zero, with the measured and the expected size, unless
+      # the capture is of that window: egui's frame is its content,
+      # 1280 x 720 times the display's scale factor; gpui's and iced's OS
+      # capture is the window with its frame, the content at that size.
       - name: Capture screenshots (macOS)
         if: runner.os == 'macOS'
         run: |
