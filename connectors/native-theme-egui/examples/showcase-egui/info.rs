@@ -398,7 +398,7 @@ pub(crate) fn info_text(
 }
 
 /// A colour value as egui's colour, for a swatch; `None` for any other value.
-fn swatch_colour(value: &serde_json::Value) -> Option<egui::Color32> {
+pub(crate) fn swatch_colour(value: &serde_json::Value) -> Option<egui::Color32> {
     let text = value.as_str()?;
     native_theme::color::Rgba::from_str(text)
         .ok()
@@ -433,16 +433,17 @@ pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui:
 
 /// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:342-360`): a
 /// `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame` in
-/// `defaults.border` (`showcase-gpui/support.rs:209-216`), beside the leaf and the colour's hex;
-/// the verdict and the details under it, weak, as gpui's citation line is muted.
+/// `defaults.border` (`showcase-gpui/support.rs:209-216`), beside `label` in `style` — the leaf
+/// and the colour's hex; the lines `under` it — the verdict and the details — weak, as gpui's
+/// citation line is muted.
 pub(crate) fn swatch_row(
     ui: &mut egui::Ui,
     t: &native_theme::theme::ResolvedTheme,
     colour: egui::Color32,
-    label: &str,
+    (label, style): (&str, egui::TextStyle),
     under: &[String],
 ) -> egui::Response {
-    let font = egui::TextStyle::Small.resolve(ui.style());
+    let font = style.resolve(ui.style());
     let (weak, strong) = (ui.visuals().weak_text_color(), ui.visuals().text_color());
     let format = |color| egui::TextFormat {
         font_id: font.clone(),
@@ -543,7 +544,10 @@ pub(crate) fn widget_tab(
                         ui,
                         t,
                         colour,
-                        &format!("{} {}", view.leaf, view.value),
+                        (
+                            &format!("{} {}", view.leaf, view.value),
+                            egui::TextStyle::Small,
+                        ),
                         &under,
                     );
                 }

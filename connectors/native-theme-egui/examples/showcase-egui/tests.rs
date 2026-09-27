@@ -1477,6 +1477,50 @@ fn the_rows_fit_the_content() {
     }
 }
 
+/// Parity item 23: the Icons page's sections are the gpui showcase's, the Icon Sizes cells in
+/// its order with their names on one line, every role's cell named by the role.
+#[test]
+fn the_icons_page_has_the_gpui_showcases_sections() {
+    let harness = open_page(Page::Icons, egui::Theme::Light);
+    let records = harness.state().registry.records();
+    let sizes: Vec<egui::Rect> = records
+        .iter()
+        .filter(|r| r.info.kind == "Label · icon size")
+        .map(|r| r.rect)
+        .collect();
+    assert_eq!(sizes.len(), 5, "five Icon Sizes cells");
+    assert!(
+        sizes
+            .windows(2)
+            .all(|w| w[0].right() <= w[1].left() && (w[0].bottom() - w[1].bottom()).abs() < 1.0),
+        "the Icon Sizes names are not on one line, left to right: {sizes:?}"
+    );
+    let names = records
+        .iter()
+        .filter(|r| r.info.kind == "Label · icon name")
+        .count();
+    assert_eq!(
+        names,
+        native_theme::theme::IconRole::ALL.len(),
+        "a named cell per role"
+    );
+    let headings: Vec<egui::accesskit::NodeId> = records
+        .iter()
+        .filter(|r| r.info.kind == "heading")
+        .map(|r| r.id.accesskit_id())
+        .collect();
+    let shown: Vec<String> = harness
+        .query_all(By::new().predicate(move |n| headings.contains(&n.locate().0)))
+        .filter_map(|n| n.accesskit_node().value())
+        .collect();
+    for heading in ["Icon Sizes", "Animated Icons", "Native Theme Icons: "] {
+        assert!(
+            shown.iter().any(|s| s.starts_with(heading)),
+            "no {heading} heading in {shown:?}"
+        );
+    }
+}
+
 /// Parity items 19 and 21: the command palette and About are titled, as gpui-component's
 /// `Dialog` is, and the close button of the title row closes them.
 #[test]

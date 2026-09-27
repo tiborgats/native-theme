@@ -5,7 +5,7 @@
 use native_theme_egui::convert::to_color32;
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font};
 
-use super::DemoState;
+use super::{DemoState, caption};
 use crate::demo::{self, Registry};
 use crate::info::{Manifest, Row, Verdict};
 
@@ -19,6 +19,9 @@ pub(crate) fn show(
 ) {
     let theme = ui.ctx().theme();
     let json = json.get(atlas, theme);
+    // The page's heading, as the gpui Theme Map's "All ThemeColor Fields"
+    // (`showcase-gpui/pages/theme_map.rs:276-280`).
+    caption(reg, ui, "All mapping.toml Rows");
     // The filter row is one instance in the base style: selectables, frameless at rest (§10.4).
     demo::contained(reg, ui, "verdict filter", |ui, reg| {
         ui.horizontal(|ui| {
@@ -88,9 +91,26 @@ pub(crate) fn show(
                     .body(|body| {
                         body.rows(height, rows.len(), |mut row| {
                             if let Some(r) = rows.get(row.index()) {
-                                for text in crate::info::row_cells(r, json) {
+                                // A colour value beside its swatch, as the gpui Theme Map shows
+                                // every colour (`showcase-gpui/demo.rs:5331-5352`).
+                                let colour = crate::info::value_at(json, &r.leaf)
+                                    .as_ref()
+                                    .and_then(crate::info::swatch_colour);
+                                for (ix, text) in
+                                    crate::info::row_cells(r, json).into_iter().enumerate()
+                                {
+                                    let swatch = colour.filter(|_| ix == 1);
                                     row.col(|ui| {
-                                        list.add(reg, ui, "theme map cell", |ui| ui.label(text));
+                                        list.add(reg, ui, "theme map cell", |ui| match swatch {
+                                            Some(colour) => crate::info::swatch_row(
+                                                ui,
+                                                t,
+                                                colour,
+                                                (&text, egui::TextStyle::Body),
+                                                &[],
+                                            ),
+                                            None => ui.label(text),
+                                        });
                                     });
                                 }
                             }
