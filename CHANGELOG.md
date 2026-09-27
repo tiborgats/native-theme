@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **native-theme**: in `IconSet::SegoeIcons`, `ActionSearch`, `ActionSettings`, `ActionDelete` and `ActionPrint` are the Segoe Fluent glyphs `Search` (U+E721), `Settings` (U+E713), `Delete` (U+E74D) and `Print` (U+E749), like the other action roles; they were the full-colour shell stock icons `SIID_FIND`, `SIID_SETTINGS`, `SIID_DELETE` and `SIID_PRINTER`.
 - **native-theme-iced**: `custom_icon_to_svg_handle` loads a provider's system-set icon through `FreedesktopLoader`, `SfSymbolsLoader` or `SegoeIconsLoader` in `color`; `custom_icon_to_image_handle` takes no colour, so its SF Symbols stay black and its Segoe glyphs white.
 
+### Fixed
+
+- **native-theme-gpui**: `custom_icon_to_image_source` draws a provider's SF Symbols and Segoe glyphs in `color`; they were black and white whatever `color` was. The provider's freedesktop icons load through `FreedesktopLoader::color` too.
+
 ## [0.5.9] - 2026-09-25
 
 ### Breaking Changes

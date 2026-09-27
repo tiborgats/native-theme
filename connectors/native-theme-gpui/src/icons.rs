@@ -36,9 +36,7 @@ use gpui::{
     Animation, AnimationExt, Hsla, ImageSource, RenderImage, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
-#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
-use native_theme::icons::FreedesktopLoader;
-use native_theme::icons::load_icon;
+use native_theme::icons::{FreedesktopLoader, SegoeIconsLoader, SfSymbolsLoader, load_icon};
 use native_theme::theme::{AnimatedIcon, IconData, IconProvider, IconRole};
 use std::sync::Arc;
 use std::time::Duration;
@@ -970,8 +968,12 @@ pub fn into_image_source(
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
-/// Equivalent to calling [`load_icon(provider, icon_set)`](native_theme::icons::load_icon)
-/// followed by [`to_image_source()`], composing the loading and conversion steps.
+/// Loads the provider's icon for `icon_set`, then converts it with
+/// [`to_image_source()`]. A system set's icon (`Freedesktop`, `SfSymbols`,
+/// `SegoeIcons`) named by the provider is loaded in `color` through
+/// [`FreedesktopLoader`], [`SfSymbolsLoader`] or [`SegoeIconsLoader`], since
+/// its monochrome glyphs arrive in the colour they are loaded in; a bundled
+/// set's goes through [`load_icon`].
 ///
 /// Returns `None` if the provider has no icon for the given set or if
 /// conversion fails.
@@ -985,22 +987,29 @@ pub fn custom_icon_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let data = load_custom_via_builder(provider, icon_set)?;
+    let data = load_custom_via_builder(provider, icon_set, color.map(hsla_to_rgb))?;
     to_image_source(&data, color, size)
 }
 
 /// Internal helper: load an icon from a provider using the typed per-set loaders.
 ///
-/// Uses the provider's `icon_name` and `icon_svg` methods directly, then
-/// dispatches through [`load_icon`] for system lookups. This preserves
-/// the `?Sized` bound on the public API.
+/// Uses the provider's `icon_name` and `icon_svg` methods directly. A system
+/// set's icon is loaded in `color`; a bundled set goes through [`load_icon`].
+/// This preserves the `?Sized` bound on the public API.
 fn load_custom_via_builder(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
+    color: Option<[u8; 3]>,
 ) -> Option<IconData> {
+    use native_theme::theme::IconSet;
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = load_icon(name, icon_set)
+        && let Some(data) = match icon_set {
+            IconSet::Freedesktop => FreedesktopLoader::new(name).color_opt(color).load(),
+            IconSet::SfSymbols => SfSymbolsLoader::new(name).color_opt(color).load(),
+            IconSet::SegoeIcons => SegoeIconsLoader::new(name).color_opt(color).load(),
+            set => load_icon(name, set),
+        }
     {
         return Some(data);
     }
@@ -1277,6 +1286,16 @@ fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSo
     ]))))
 }
 
+/// An `Hsla` colour's opaque RGB bytes, each channel clamped to `0.0..=1.0`.
+fn hsla_to_rgb(color: Hsla) -> [u8; 3] {
+    let rgba: gpui::Rgba = color.into();
+    [
+        (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8,
+        (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8,
+    ]
+}
+
 /// Rewrite SVG bytes to use the given color for strokes and fills.
 ///
 /// Handles four SVG color patterns (in order):
@@ -1297,10 +1316,7 @@ fn rgba_to_render_source(width: u32, height: u32, rgba: &[u8]) -> Option<ImageSo
 /// SVG fill/stroke attributes only accept opaque hex (`#rrggbb`); semi-transparent
 /// colors are converted to their opaque RGB equivalent.
 fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
-    let rgba: gpui::Rgba = color.into();
-    let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let g = (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let [r, g, b] = hsla_to_rgb(color);
     let hex = format!("#{r:02x}{g:02x}{b:02x}");
 
     let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
