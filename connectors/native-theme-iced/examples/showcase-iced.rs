@@ -99,8 +99,10 @@ impl Spacing {
 /// Showcase UI spacing constants.
 const SP: Spacing = Spacing::new();
 
-/// The window `main` opens, and the viewport `every_tab_renders` lays out in.
-const WINDOW_SIZE: (f32, f32) = (1060.0, 750.0);
+/// The window `main` opens, and the viewport `every_tab_renders` lays out in:
+/// 1280 × 720 logical pixels, the maintainer's default for every showcase, as
+/// the egui and gpui showcases' `WINDOW_SIZE`.
+const WINDOW_SIZE: (f32, f32) = (1280.0, 720.0);
 
 /// Tags a widget so the self-tests can find it, and does nothing otherwise.
 ///
@@ -219,6 +221,9 @@ struct CliArgs {
     tab: Option<String>,
     icon_set: Option<String>,
     screenshot: Option<String>,
+    /// `--capture`: a tool outside the showcase captures its window, which
+    /// opens as a `--screenshot` run's does (`capture_window_settings`).
+    capture: bool,
 }
 
 /// Global CLI args, set once in `main()` before the iced application starts.
@@ -261,6 +266,7 @@ impl CliArgs {
                         args.screenshot = Some(argv[i].clone());
                     }
                 }
+                "--capture" => args.capture = true,
                 _ => {} // ignore unknown args
             }
             i += 1;
@@ -1440,7 +1446,13 @@ enum Message {
 
     // Screenshot
     ScreenshotTick,
-    ScreenshotCaptured(Vec<u8>, u32, u32),
+    /// iced's frame of the window's content: RGBA bytes, width, height and
+    /// the scale factor it was drawn at.
+    ScreenshotCaptured(Vec<u8>, u32, u32, f32),
+    /// The window's logical content size and scale factor, read before an
+    /// OS capture of the window with its frame.
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    CaptureFrame(iced::Size, f32),
 
     // Theme watcher
     ThemeWatcherTick,
@@ -1634,24 +1646,17 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
             if state.screenshot_countdown > 0 {
                 state.screenshot_countdown -= 1;
                 if state.screenshot_countdown == 0 {
-                    // Platform-dispatched self-capture (includes window decorations)
-                    // macOS: screencapture -l
-                    #[cfg(target_os = "macos")]
-                    if let Some(ref path) = state.screenshot_path {
-                        match capture_own_window_macos(path) {
-                            Ok(()) => eprintln!("Screenshot saved to {path}"),
-                            Err(e) => eprintln!("macOS self-capture failed: {e}"),
-                        }
-                        return iced::exit();
-                    }
-                    // Windows: BitBlt self-capture
-                    #[cfg(target_os = "windows")]
-                    if let Some(ref path) = state.screenshot_path {
-                        match capture_own_window_windows(path) {
-                            Ok(()) => eprintln!("Screenshot saved to {path}"),
-                            Err(e) => eprintln!("Windows self-capture failed: {e}"),
-                        }
-                        return iced::exit();
+                    // macOS and Windows: an OS capture of the window with its
+                    // decorations, once the content's size is known.
+                    #[cfg(any(target_os = "macos", target_os = "windows"))]
+                    {
+                        return iced::window::latest().then(|opt_id| match opt_id {
+                            Some(id) => iced::window::size(id).then(move |size| {
+                                iced::window::scale_factor(id)
+                                    .map(move |scale| Message::CaptureFrame(size, scale))
+                            }),
+                            None => failed_capture("the showcase has no window"),
+                        });
                     }
                     // Linux (and other platforms): iced internal framebuffer
                     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
@@ -1662,20 +1667,58 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                                     let bytes = s.rgba.to_vec();
                                     let w = s.size.width;
                                     let h = s.size.height;
-                                    Message::ScreenshotCaptured(bytes, w, h)
+                                    Message::ScreenshotCaptured(bytes, w, h, s.scale_factor)
                                 })
                             } else {
-                                iced::Task::none()
+                                failed_capture("the showcase has no window")
                             }
                         });
                     }
                 }
             }
         }
-        Message::ScreenshotCaptured(bytes, width, height) => {
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        Message::CaptureFrame(size, scale) => {
             if let Some(ref path) = state.screenshot_path {
-                let _ = image::save_buffer(path, &bytes, width, height, image::ColorType::Rgba8);
-                eprintln!("Screenshot saved to {path}");
+                #[cfg(target_os = "macos")]
+                let captured = capture_own_window_macos(path);
+                #[cfg(target_os = "windows")]
+                let captured = capture_own_window_windows(path);
+                let checked = captured
+                    .and_then(|()| image::image_dimensions(path).map_err(|e| e.to_string()))
+                    .and_then(|(width, height)| {
+                        let scale = f64::from(scale);
+                        check_frame_capture(
+                            (i64::from(width), i64::from(height)),
+                            (
+                                (f64::from(size.width) * scale).round() as i64,
+                                (f64::from(size.height) * scale).round() as i64,
+                            ),
+                            scale,
+                        )
+                    });
+                return match checked {
+                    Ok(()) => {
+                        eprintln!("Screenshot saved to {path}");
+                        iced::exit()
+                    }
+                    Err(e) => failed_capture(&format!("{path}: {e}")),
+                };
+            }
+        }
+        Message::ScreenshotCaptured(bytes, width, height, scale) => {
+            if let Some(ref path) = state.screenshot_path {
+                let saved = check_content_capture((width, height), scale).and_then(|()| {
+                    image::save_buffer(path, &bytes, width, height, image::ColorType::Rgba8)
+                        .map_err(|e| e.to_string())
+                });
+                return match saved {
+                    Ok(()) => {
+                        eprintln!("Screenshot saved to {path}");
+                        iced::exit()
+                    }
+                    Err(e) => failed_capture(&format!("{path}: {e}")),
+                };
             }
             return iced::exit();
         }
@@ -6008,8 +6051,11 @@ fn main() -> iced::Result {
     // Parse CLI args and store globally before the iced application starts.
     // State::default() reads from CLI_ARGS to apply overrides.
     let _ = CLI_ARGS.set(CliArgs::parse());
+    let capturing = CLI_ARGS
+        .get()
+        .is_some_and(|cli| cli.capture || cli.screenshot.is_some());
 
-    iced::application(State::default, update, view)
+    let application = iced::application(State::default, update, view)
         .title(|_: &State| {
             format!(
                 "Native Theme – Iced Showcase, v{}",
@@ -6019,8 +6065,91 @@ fn main() -> iced::Result {
         .theme(theme)
         .subscription(subscription)
         .window_size(WINDOW_SIZE)
-        .centered()
-        .run()
+        .centered();
+    if capturing {
+        application.window(capture_window_settings()).run()
+    } else {
+        application.run()
+    }
+}
+
+/// The window settings of a run that is captured (`--screenshot` or
+/// `--capture`): `main`'s own, `WINDOW_SIZE` centred, whatever size a desktop
+/// stored for the showcase's window. iced itself stores none; a desktop can,
+/// by the window's app id (a KWin script that remembers window geometry,
+/// say), so on Linux the window takes an app id of this process's own, which
+/// nothing stored.
+fn capture_window_settings() -> iced::window::Settings {
+    iced::window::Settings {
+        size: WINDOW_SIZE.into(),
+        position: iced::window::Position::Centered,
+        #[cfg(target_os = "linux")]
+        platform_specific: iced::window::settings::PlatformSpecific {
+            application_id: format!("showcase-iced-capture-{}", std::process::id()),
+            ..Default::default()
+        },
+        ..Default::default()
+    }
+}
+
+/// A `--screenshot` that failed: reported on stderr, and the process exits
+/// with 1, so a capture step fails.
+fn failed_capture(error: &str) -> ! {
+    eprintln!("ERROR: screenshot capture failed: {error}");
+    std::process::exit(1)
+}
+
+/// Whether a frame the showcase captured of its own content, `captured`
+/// physical pixels, is `WINDOW_SIZE` at the display's scale factor `scale`.
+/// Any other size is a window that did not open at its default size -- on a
+/// display too small for it, say.
+#[cfg_attr(any(target_os = "macos", target_os = "windows"), allow(dead_code))]
+fn check_content_capture(captured: (u32, u32), scale: f32) -> Result<(), String> {
+    check_frame_capture(
+        (i64::from(captured.0), i64::from(captured.1)),
+        (i64::from(captured.0), i64::from(captured.1)),
+        f64::from(scale),
+    )
+}
+
+/// Whether an OS capture of the window with its frame, `captured` pixels, is
+/// the frame of a window whose content is `WINDOW_SIZE` at the display's
+/// scale factor `scale`: the capture less the content the window has now,
+/// `content` pixels, is the frame, and around a `WINDOW_SIZE` content it
+/// makes the size the capture must be. Any other size is a window that did
+/// not open at its default size.
+fn check_frame_capture(
+    captured: (i64, i64),
+    content: (i64, i64),
+    scale: f64,
+) -> Result<(), String> {
+    let default = (
+        (f64::from(WINDOW_SIZE.0) * scale).round() as i64,
+        (f64::from(WINDOW_SIZE.1) * scale).round() as i64,
+    );
+    let frame = (captured.0 - content.0, captured.1 - content.1);
+    let expected = (default.0 + frame.0, default.1 + frame.1);
+    if captured == expected {
+        Ok(())
+    } else {
+        Err(format!(
+            "the capture is {}x{} px, expected {}x{}: a {}x{} content area \
+             ({}x{} at scale {scale}) in the frame's {}x{} px, but the content \
+             is {}x{} px, so the window did not open at its default size",
+            captured.0,
+            captured.1,
+            expected.0,
+            expected.1,
+            default.0,
+            default.1,
+            WINDOW_SIZE.0,
+            WINDOW_SIZE.1,
+            frame.0,
+            frame.1,
+            content.0,
+            content.1,
+        ))
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -8096,10 +8225,48 @@ mod tests {
         );
     }
 
+    /// A captured window opens at `WINDOW_SIZE`, centred, as `main`'s own
+    /// does, and on Linux under an app id no desktop stored a geometry for.
+    #[test]
+    fn a_capture_opens_at_the_default_size() {
+        let settings = capture_window_settings();
+        assert_eq!(settings.size, Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1));
+        assert!(matches!(
+            settings.position,
+            iced::window::Position::Centered
+        ));
+        #[cfg(target_os = "linux")]
+        assert_eq!(
+            settings.platform_specific.application_id,
+            format!("showcase-iced-capture-{}", std::process::id())
+        );
+    }
+
+    /// A capture passes only when the window's content is `WINDOW_SIZE` at
+    /// the display's scale factor, with or without the frame around it.
+    #[test]
+    fn a_capture_of_another_size_fails() {
+        assert_eq!(check_content_capture((1280, 720), 1.0), Ok(()));
+        assert_eq!(check_content_capture((2560, 1440), 2.0), Ok(()));
+        assert!(check_content_capture((1060, 750), 1.0).is_err());
+        // A frame 2px wider and 32px taller than the content, as the Windows
+        // runner's captures measured (1062 x 782 around a 1060 x 750 content).
+        assert_eq!(check_frame_capture((1282, 752), (1280, 720), 1.0), Ok(()));
+        // A 1024px-wide display clamped the window.
+        let clamped = check_frame_capture((1024, 674), (1024, 646), 1.0);
+        assert!(
+            clamped
+                .as_ref()
+                .is_err_and(|e| e.contains("1024x674") && e.contains("1280x748")),
+            "{clamped:?}"
+        );
+    }
+
     /// The page tab strip's scrollbar is laid out below the tabs, not over
     /// their labels, wherever the tabs overflow the strip. An overlay-mode
     /// scrollbar floats over what it scrolls (`styles::scrollbar`); the tabs
-    /// overflowed the 1024px-wide window macOS captures, and every tab set
+    /// overflowed the 1024px-wide window the macOS runner's display once
+    /// clamped the captures to, and every tab set
     /// overflows one half as wide, so the check always runs.
     #[test]
     fn the_tab_strip_scrollbar_leaves_the_labels_clear() {
