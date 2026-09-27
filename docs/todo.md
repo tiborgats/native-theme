@@ -1836,10 +1836,12 @@ the gap — closing it is a change, and each wants its own decision.
         The screenshot scripts capture the active window with
         `spectacle -a -b -n`; check that the captures hold KWin's frame, as
         whether Spectacle includes a window's decoration is its own setting.
+        (Since 2026-09-27 `scripts/capture_size.sh` fails a capture no larger
+        than the window's content, so one without the frame fails the script.)
       - **The layout.** Two panels: the side panel (`LEFT_PANEL_WIDTH`
         300) holds the Theme, Mode and Icon theme rows, a Separator and the
         inspector; the content panel has a TabBar of the pages above the
-        page. The window is 1180 × 850. The status bar has one toggle, at
+        page. The window is 1280 × 720 (1180 × 850 until 2026-09-27). The status bar has one toggle, at
         its left end. The Layout page shows an expanded and a collapsed
         `Sidebar`.
 - [ ] **The iced showcase: per-instance Widget Info.** The gpui showcase now
