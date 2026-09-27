@@ -601,7 +601,10 @@ impl eframe::App for App {
                 })
             });
             if let Some(image) = image {
-                match write_png(&image, &shot.path) {
+                let scale = ctx.input(|i| i.viewport().native_pixels_per_point);
+                match crate::check_capture_size(image.size, scale)
+                    .and_then(|()| write_png(&image, &shot.path))
+                {
                     Ok(()) => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
                     Err(error) => {
                         eprintln!(

@@ -338,7 +338,9 @@ cargo run -p native-theme-egui --example showcase-egui
 The gpui showcase's application built from egui's own containers, with
 per-instance Widget Info for every widget on screen. Its flags `--theme`,
 `--variant`, `--icon-set`, `--tab` and `--screenshot` start it on a given
-preset, variant, icon set and tab, or capture its frame to a PNG.
+preset, variant, icon set and tab, or capture its frame to a PNG. The window
+opens at 1280 × 720; with `--screenshot`, or `--capture` for a capture taken by
+another tool, it opens at that size whatever size the desktop remembers for it.
 
 ## Gallery
 

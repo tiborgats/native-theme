@@ -295,10 +295,56 @@ fn interactive_controls_respond() {
 /// §13.2: the OS draws the frame; the title carries the version.
 #[test]
 fn the_window_asks_for_the_os_frame() {
-    let options = native_options();
+    let options = native_options(false);
     assert_eq!(options.viewport.decorations, Some(true));
     assert_eq!(options.viewport.title.as_deref(), Some(WINDOW_TITLE));
     assert!(WINDOW_TITLE.contains(env!("CARGO_PKG_VERSION")));
+}
+
+/// A capture opens at the default size and keeps none an earlier run stored: no persisted
+/// window, and an app id no desktop stored a geometry for. A normal run asks for the same size.
+#[test]
+fn a_capture_opens_at_the_default_size() {
+    for capturing in [false, true] {
+        let options = native_options(capturing);
+        assert_eq!(
+            options.viewport.inner_size,
+            Some(crate::WINDOW_SIZE),
+            "capturing: {capturing}"
+        );
+        assert_eq!(options.persist_window, !capturing, "capturing: {capturing}");
+        assert_eq!(
+            options.viewport.app_id,
+            capturing.then(crate::capture_app_id),
+            "capturing: {capturing}"
+        );
+    }
+    let args = |argv: &[&str]| CliArgs::parse(argv.iter().map(|a| (*a).to_string()));
+    assert!(!args(&["--tab", "buttons"]).capturing());
+    assert!(args(&["--capture", "--tab", "buttons"]).capturing());
+    assert_eq!(
+        args(&["--capture", "--tab", "buttons"]).tab.as_deref(),
+        Some("buttons")
+    );
+    assert!(args(&["--screenshot", "out.png"]).capturing());
+}
+
+/// A captured frame passes only at `WINDOW_SIZE` times the display's scale factor.
+#[test]
+fn a_capture_of_another_size_fails() {
+    use crate::check_capture_size;
+    assert_eq!(check_capture_size([1280, 720], Some(1.0)), Ok(()));
+    assert_eq!(check_capture_size([1600, 900], Some(1.25)), Ok(()));
+    assert_eq!(check_capture_size([2560, 1440], Some(2.0)), Ok(()));
+    let clamped = check_capture_size([1024, 642], Some(1.0));
+    assert!(
+        clamped
+            .as_ref()
+            .is_err_and(|e| e.contains("1024x642") && e.contains("1280x720")),
+        "{clamped:?}"
+    );
+    assert!(check_capture_size([1280, 720], Some(2.0)).is_err());
+    assert!(check_capture_size([1280, 720], None).is_err());
 }
 
 /// §13.2: menu row above the toolbar; the side panel's rows, a separator, the
@@ -1359,7 +1405,7 @@ fn the_nested_panels_stay_inside_the_page() {
 fn the_area_stays_inside_the_page() {
     let mut harness = Harness::builder()
         .with_theme(egui::Theme::Light)
-        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 4.0))
+        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 3.0))
         .build_eframe(|cc| {
             App::new(cc, &cli(&[("--theme", TEST_PRESET), ("--tab", "overlays")]))
                 .expect("the showcase starts under a bundled preset")

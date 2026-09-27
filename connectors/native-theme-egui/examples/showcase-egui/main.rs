@@ -33,10 +33,11 @@ pub(crate) const WINDOW_TITLE: &str = concat!(
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:285`).
 pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
 
-/// The initial window size. The model states no such value (spec §10.4); this
-/// is the gpui showcase's, the side panel beside a page
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:207`, `:216-217`, `:285`).
-pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(LEFT_PANEL_WIDTH + 880.0, 850.0);
+/// The initial window size, 1280 × 720 logical pixels: the maintainer's default for every
+/// showcase, the gpui showcase's `WINDOW_SIZE` and the iced showcase's `WINDOW_SIZE`. The model
+/// states no such value (spec §10.4). The side panel opens `LEFT_PANEL_WIDTH` wide and the page
+/// takes the rest.
+pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(1280.0, 720.0);
 
 /// How long a new Widget Info choice must stay the choice before it is shown. The model
 /// states no hover delay (spec §10.4); this is the gpui showcase's
@@ -71,12 +72,25 @@ pub(crate) const SCREENSHOT_DELAY_S: f64 = 3.0;
 
 /// What `main` runs with and `the_window_asks_for_the_os_frame` reads back (§13.2):
 /// `build_eframe` takes none, so the test calls this function too.
-pub(crate) fn native_options() -> eframe::NativeOptions {
+///
+/// A capture (`capturing`: `--capture` or `--screenshot`) opens at `WINDOW_SIZE` whatever an
+/// earlier run left. eframe restores a stored window size only with its `persistence` feature
+/// (`eframe/src/epi.rs:378-379`), which the showcase does not enable, and `persist_window` is
+/// off for a capture so that enabling it would not change what a capture shows. A desktop can
+/// store a size of its own, by the window's app id (a KWin script that remembers window
+/// geometry, say), so a capture's window takes `capture_app_id`, which nothing stored.
+pub(crate) fn native_options(capturing: bool) -> eframe::NativeOptions {
+    let viewport = egui::ViewportBuilder::default()
+        .with_title(WINDOW_TITLE)
+        .with_decorations(true)
+        .with_inner_size(WINDOW_SIZE);
     eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default()
-            .with_title(WINDOW_TITLE)
-            .with_decorations(true)
-            .with_inner_size(WINDOW_SIZE),
+        viewport: if capturing {
+            viewport.with_app_id(capture_app_id())
+        } else {
+            viewport
+        },
+        persist_window: !capturing,
         #[cfg(all(target_os = "macos", not(test)))]
         event_loop_builder: Some(Box::new(|builder| {
             use winit::platform::macos::EventLoopBuilderExtMacOS as _;
@@ -86,7 +100,36 @@ pub(crate) fn native_options() -> eframe::NativeOptions {
     }
 }
 
-/// The five flags the capture pipeline passes (`.github/workflows/screenshots.yml:79-82`).
+/// The app id of a capture's window: this process's own, so no geometry a desktop stored
+/// for an earlier window applies to it.
+pub(crate) fn capture_app_id() -> String {
+    format!("showcase-egui-capture-{}", std::process::id())
+}
+
+/// Whether a frame `--screenshot` captured, `measured` physical pixels, is `WINDOW_SIZE` at the
+/// display's scale factor `scale`, rounded as winit rounds a logical size to a physical one. The
+/// frame is the window's content alone, so any other size is a window that did not open at its
+/// default size (a display too small for it, or a size restored from elsewhere).
+pub(crate) fn check_capture_size(measured: [usize; 2], scale: Option<f32>) -> Result<(), String> {
+    let scale = scale.ok_or("the display's scale factor is unknown")?;
+    let expected = [
+        (WINDOW_SIZE.x * scale).round() as usize,
+        (WINDOW_SIZE.y * scale).round() as usize,
+    ];
+    if measured == expected {
+        Ok(())
+    } else {
+        let ([w, h], [ew, eh]) = (measured, expected);
+        Err(format!(
+            "the captured frame is {w}x{h} px, expected {ew}x{eh} ({}x{} at scale {scale}): \
+             the window did not open at its default size",
+            WINDOW_SIZE.x, WINDOW_SIZE.y
+        ))
+    }
+}
+
+/// The flags the capture pipeline passes (`.github/workflows/screenshots.yml`,
+/// `scripts/generate_screenshots_egui.sh`).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct CliArgs {
     pub theme: Option<String>,
@@ -94,10 +137,19 @@ pub(crate) struct CliArgs {
     pub tab: Option<String>,
     pub icon_set: Option<String>,
     pub screenshot: Option<String>,
+    /// `--capture`: a tool outside the showcase captures its window, which opens as a
+    /// `--screenshot` run's does (`native_options`).
+    pub capture: bool,
 }
 
 impl CliArgs {
-    /// `--flag value` pairs; an unknown flag is ignored, and `--variant` and
+    /// Whether the window is captured: by the showcase itself (`--screenshot`) or by a tool
+    /// outside it (`--capture`).
+    pub(crate) fn capturing(&self) -> bool {
+        self.capture || self.screenshot.is_some()
+    }
+
+    /// `--flag value` pairs and `--capture`; an unknown flag is ignored, and `--variant` and
     /// `--tab` are lower-cased, as the iced showcase does
     /// (`connectors/native-theme-iced/examples/showcase-iced.rs:228-270`); a
     /// theme or icon-theme name keeps its case, since a freedesktop theme's is
@@ -108,6 +160,10 @@ impl CliArgs {
         while let Some(flag) = argv.next() {
             let lower = matches!(flag.as_str(), "--variant" | "--tab");
             let slot = match flag.as_str() {
+                "--capture" => {
+                    cli.capture = true;
+                    continue;
+                }
                 "--theme" => &mut cli.theme,
                 "--variant" => &mut cli.variant,
                 "--tab" => &mut cli.tab,
@@ -162,7 +218,7 @@ fn main() -> eframe::Result {
     let cli = CliArgs::parse(std::env::args().skip(1));
     eframe::run_native(
         WINDOW_TITLE,
-        native_options(),
+        native_options(cli.capturing()),
         Box::new(move |cc| Ok(Box::new(App::new(cc, &cli)?))),
     )
 }
