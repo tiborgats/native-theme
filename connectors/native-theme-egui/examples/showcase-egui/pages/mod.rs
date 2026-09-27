@@ -116,6 +116,14 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
     demo::base(reg, ui, "caption", |ui| ui.strong(text));
 }
 
+/// What the page draws above its `ScrollArea`, which never scrolls: the Containers page's
+/// nested panels, which egui does not clip to a scrolled page (`containers::nested_panels`).
+pub(crate) fn show_fixed(app: &mut App, ui: &mut egui::Ui) {
+    if app.settings.page == Page::Containers {
+        containers::nested_panels(&mut app.registry, ui);
+    }
+}
+
 pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
     let chosen = app.chosen_icons();
     // Disjoint borrows: the registry, the demo state and the atlas are separate fields (§10.4's fourth rule).

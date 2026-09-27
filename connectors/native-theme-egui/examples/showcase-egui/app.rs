@@ -563,6 +563,7 @@ impl eframe::App for App {
         chrome::side_panel(self, ui);
         ui.reset_style();
         chrome::central_panel(self, ui, |app, ui| {
+            pages::show_fixed(app, ui);
             egui::ScrollArea::vertical().show(ui, |ui| pages::show(app, ui));
         });
         chrome::command_palette(self, ui);

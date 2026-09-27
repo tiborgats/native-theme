@@ -1017,6 +1017,61 @@ fn the_code_view_follows_the_scheme() {
     );
 }
 
+/// The Containers page's nested `Panel::right` and `CentralPanel` set their own clip rects
+/// (`egui/src/containers/panel.rs:824`, `:1241`), so they must never lie where the page is not
+/// shown: at the window size `main` opens, and with the page scrolled to its end, they stay
+/// below the page tabs, above the status bar and inside the content.
+#[test]
+fn the_nested_panels_stay_inside_the_page() {
+    fn check(harness: &Harness<'_, App>, when: &str) {
+        let records = harness.state().registry.records();
+        let rect_of = |kind: &str| {
+            records
+                .iter()
+                .find(|r| r.info.kind == kind)
+                .map(|r| r.rect)
+                .unwrap_or_else(|| panic!("{when}: no {kind} record"))
+        };
+        let (content, tabs, status) = (
+            rect_of("central panel"),
+            rect_of("page tabs"),
+            rect_of("status bar"),
+        );
+        for kind in ["right panel", "CentralPanel (nested)"] {
+            let rect = rect_of(kind);
+            assert!(
+                content.contains_rect(rect)
+                    && rect.top() >= tabs.bottom()
+                    && rect.bottom() <= status.top(),
+                "{when}: {kind} at {rect:?}, the content {content:?}, the tabs' bottom {}, \
+                 the status bar's top {}",
+                tabs.bottom(),
+                status.top()
+            );
+        }
+    }
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let mut harness = open_page(Page::Containers, theme);
+        check(&harness, &format!("{theme:?}, at the top"));
+        let last = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .rev()
+            .find(|r| r.info.kind == "ui.centered_and_justified")
+            .map(|r| r.id.accesskit_id())
+            .expect("the page's last item");
+        harness
+            .query_all(By::new().predicate(move |n| n.locate().0 == last))
+            .next()
+            .expect("its node")
+            .scroll_to_me();
+        harness.run_steps(3);
+        check(&harness, &format!("{theme:?}, scrolled to the end"));
+    }
+}
+
 /// At the window size `main` opens, under every preset this platform offers, the page tabs and
 /// the Text page's link row lie inside the content: a row too wide for it wraps, and nothing is
 /// cut at the right edge.

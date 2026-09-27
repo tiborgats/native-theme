@@ -2,7 +2,8 @@
 //! role, scroll areas, a nested right panel, and the containers and layout methods
 //! native-theme models no counterpart for, in the base style. A container that would take
 //! the whole of the page's height — a scroll area, a panel, a `Scene`, a strip — sits in a
-//! `Resize` at egui's own default size.
+//! `Resize` at egui's own default size; the nested panels sit above the page's `ScrollArea`
+//! (`nested_panels`).
 
 use egui::emath::TSTransform;
 use native_theme_egui::{PanelSide, Role, RoleVariant, Surface, ThemeAtlas, expander_icon};
@@ -155,48 +156,6 @@ pub(crate) fn show(
         );
     });
 
-    caption(
-        reg,
-        ui,
-        "Panel::right with a CentralPanel, nested (Surface::Panel(PanelSide::Right))",
-    );
-    demo::contained(reg, ui, "Resize (panels)", |ui, reg| {
-        egui::Resize::default()
-            .id_salt("containers/panels")
-            .show(ui, |ui| {
-                demo::surfaced(
-                    reg,
-                    ui,
-                    Surface::Panel(PanelSide::Right),
-                    false,
-                    None,
-                    "right panel",
-                    |ui, chrome, reg| {
-                        Some(
-                            egui::Panel::right("containers/right-panel")
-                                .frame(chrome.frame)
-                                .show(ui, |ui| {
-                                    demo::base(reg, ui, "right panel label", |ui| {
-                                        ui.label("Panel::right")
-                                    });
-                                })
-                                .response,
-                        )
-                    },
-                );
-                demo::contained(reg, ui, "CentralPanel (nested)", |ui, reg| {
-                    egui::CentralPanel::default()
-                        .show(ui, |ui| {
-                            demo::base(reg, ui, "central panel label", |ui| {
-                                ui.label("CentralPanel")
-                            });
-                        })
-                        .response
-                });
-                ui.response()
-            })
-    });
-
     caption(reg, ui, "Containers with no counterpart (the base style)");
     // `Sides::show` takes both sides' closures at once, so one helper records the pair: the
     // union of the two labels, a non-container instance whose rect holds both.
@@ -257,6 +216,56 @@ pub(crate) fn show(
         "The layout methods: each places other widgets and paints nothing of its own",
     );
     layouts(reg, ui);
+}
+
+/// `Panel::right` beside a `CentralPanel`, nested in the page above its `ScrollArea`: a panel
+/// replaces its `Ui`'s clip rect with its own rect instead of narrowing it
+/// (`egui/src/containers/panel.rs:824`, `:1241`), so where the page scrolls it out of view it
+/// would paint over the chrome. The `Resize` holding them grows no taller than the room left.
+pub(crate) fn nested_panels(reg: &mut Registry, ui: &mut egui::Ui) {
+    caption(
+        reg,
+        ui,
+        "Panel::right with a CentralPanel, nested (Surface::Panel(PanelSide::Right))",
+    );
+    let room = ui.available_size();
+    demo::contained(reg, ui, "Resize (panels)", |ui, reg| {
+        egui::Resize::default()
+            .id_salt("containers/panels")
+            .max_size(room)
+            .show(ui, |ui| {
+                demo::surfaced(
+                    reg,
+                    ui,
+                    Surface::Panel(PanelSide::Right),
+                    false,
+                    None,
+                    "right panel",
+                    |ui, chrome, reg| {
+                        Some(
+                            egui::Panel::right("containers/right-panel")
+                                .frame(chrome.frame)
+                                .show(ui, |ui| {
+                                    demo::base(reg, ui, "right panel label", |ui| {
+                                        ui.label("Panel::right")
+                                    });
+                                })
+                                .response,
+                        )
+                    },
+                );
+                demo::contained(reg, ui, "CentralPanel (nested)", |ui, reg| {
+                    egui::CentralPanel::default()
+                        .show(ui, |ui| {
+                            demo::base(reg, ui, "central panel label", |ui| {
+                                ui.label("CentralPanel")
+                            });
+                        })
+                        .response
+                });
+                ui.response()
+            })
+    });
 }
 
 /// `ui.dnd_drag_source` and `ui.dnd_drop_zone`: two columns whose items move between them.
