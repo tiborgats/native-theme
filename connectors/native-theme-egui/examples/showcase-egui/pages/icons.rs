@@ -32,6 +32,7 @@ pub(crate) fn show(
     let t = atlas.resolved_for(ui.ctx().theme());
     let (set, icon_theme) = chosen;
     let set_label = set_label(*set, icon_theme.as_deref());
+    let pad = atlas.layout().container_margin;
 
     // The folder icon at each context's size, above the context's name
     // (`showcase-gpui/demo.rs:5051-5093`); where the set has no folder icon, the name alone.
@@ -54,7 +55,7 @@ pub(crate) fn show(
             );
             let width = size.max(small_width(ui, name));
             let layout = egui::Layout::bottom_up(egui::Align::Center);
-            cell(ui, width, tallest, layout, |ui| {
+            cell(ui, (width, tallest), layout, pad, |ui| {
                 demo::base(reg, ui, "Label · icon size", |ui| {
                     ui.label(egui::RichText::new(name).small())
                 });
@@ -101,7 +102,7 @@ pub(crate) fn show(
             let name = format!("{role:?}");
             let width = size.max(small_width(ui, &name));
             let layout = egui::Layout::top_down(egui::Align::Center);
-            cell(ui, width, size, layout, |ui| {
+            cell(ui, (width, size), layout, pad, |ui| {
                 match image {
                     Some(image) => {
                         demo::base(reg, ui, "Image", |ui| ui.add(image));
@@ -165,19 +166,25 @@ fn small_width(ui: &egui::Ui, text: &str) -> f32 {
 
 /// A cell `width` wide holding an icon of at most `icon` points over a `Small` name, its content
 /// centred in a column as the gpui showcase's icon cells are (`items_center`,
-/// `showcase-gpui/demo.rs:4916-4936`), laid out by `layout`.
+/// `showcase-gpui/demo.rs:4916-4936`), laid out by `layout`, and padded by `pad` —
+/// `layout.container_margin` in a gallery, standing in for the gpui cell's own `px_2`/`py_2`.
 fn cell(
     ui: &mut egui::Ui,
-    width: f32,
-    icon: f32,
+    (width, icon): (f32, f32),
     layout: egui::Layout,
+    pad: Option<f32>,
     add: impl FnOnce(&mut egui::Ui),
 ) {
+    let pad = pad.unwrap_or_default();
     let height = icon + ui.spacing().item_spacing.y + ui.text_style_height(&egui::TextStyle::Small);
-    let size = egui::vec2(width, height);
+    // The padding is part of the cell's own size, not a `Frame` around it: a frame places its
+    // rect where the row's cursor is, past a wrapping row's end (`Frame::show`).
+    let size = egui::vec2(width, height) + egui::Vec2::splat(pad + pad);
     // The whole cell is used, so the row advances past it whatever the cell holds.
     ui.allocate_ui_with_layout(size, layout, |ui| {
         ui.set_min_size(size);
+        // The padding on the side the layout starts from; the far side's is the cell's size.
+        ui.add_space(pad);
         add(ui);
     });
 }
@@ -284,7 +291,7 @@ fn icons_indicator(
         card.show(ui, |ui| {
             let width = size.max(small_width(ui, &label));
             let layout = egui::Layout::top_down(egui::Align::Center);
-            cell(ui, width, size, layout, |ui| {
+            cell(ui, (width, size), layout, None, |ui| {
                 if let Some(image) = icons::to_image(ui.ctx(), &key, frame) {
                     let image = image
                         .fit_to_exact_size(egui::Vec2::splat(size))
