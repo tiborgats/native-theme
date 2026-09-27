@@ -207,20 +207,27 @@ fn chrome_button_image(
 }
 
 /// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4):
-/// frameless at rest and filled on hover, and filled while `selected`; its icon where the set
-/// has one, else its tooltip's text as its label, as gpui's (`showcase-gpui/demo.rs:480-483`),
-/// and that text its AccessKit label either way.
+/// frameless at rest and filled on hover; while `selected`, filled with the pressed fill of the
+/// `Ui` it is added to — in `Role::Button`, `button.active_background` (§6.4) — as
+/// native-theme-gpui's `ghost_button` fills with its `active` colour
+/// (`connectors/native-theme-gpui/src/variants.rs:51-57`), not with the selected button's
+/// accent. Its icon where the set has one, else its tooltip's text as its label, as gpui's
+/// (`showcase-gpui/demo.rs:480-483`).
 fn ghost_button(
+    ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
     label: &'static str,
     selected: bool,
 ) -> egui::Button<'static> {
-    match image {
+    let button = match image {
         Some(image) => egui::Button::image(image),
         None => egui::Button::new(label),
+    };
+    if selected {
+        button.fill(ui.visuals().widgets.active.weak_bg_fill)
+    } else {
+        button.frame_when_inactive(false)
     }
-    .selected(selected)
-    .frame_when_inactive(selected)
 }
 
 /// The kind a Ghost button records, as the gpui showcase names its toolbar and status-bar
@@ -284,7 +291,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
                     RoleVariant::Normal,
                     kind,
                     |ui| {
-                        let r = ui.add(ghost_button(image, label, false));
+                        let r = ui.add(ghost_button(ui, image, label, false));
                         r.widget_info(|| {
                             egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
                         });
@@ -409,7 +416,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     RoleVariant::Normal,
                     kind,
                     |ui| {
-                        let r = ui.add(ghost_button(image, label, open).small());
+                        let r = ui.add(ghost_button(ui, image, label, open).small());
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::WidgetType::Button, true, open, label)
                         });
@@ -419,6 +426,11 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 registry.amend_last(|i| {
                     i.read
                         .push(("defaults.icon_sizes.small", format!("{icon_size}")));
+                    i.notes.push((
+                        "fill while the panel shows",
+                        "the button role's pressed fill, visuals.widgets.active.weak_bg_fill"
+                            .to_string(),
+                    ));
                 });
                 tooltip(
                     registry,
