@@ -1545,14 +1545,24 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         geometry::button,
         "button",
         &mut button_info,
-    )
-    .label(label)
-    .when_some(drawn, |button, icon| match state {
-        ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
-        ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
-    })
-    .disabled(state == ButtonState::Disabled)
-    .loading(state == ButtonState::Loading);
+    );
+    // The platform's disabled pair, which upstream's disabled style replays
+    // the caller's refinement over (button/button.rs:754-760); a Button that
+    // is not disabled must not take it, since it lands at rest too (:690).
+    let disabled_pair = (state == ButtonState::Disabled)
+        .then(|| native_geometry(cx, geometry::button_disabled))
+        .flatten();
+    if disabled_pair.is_some() {
+        button_info = button_info.geometry("button_disabled");
+    }
+    let button = refined(button, disabled_pair.as_ref())
+        .label(label)
+        .when_some(drawn, |button, icon| match state {
+            ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
+            ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
+        })
+        .disabled(state == ButtonState::Disabled)
+        .loading(state == ButtonState::Loading);
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
 }

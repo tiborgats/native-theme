@@ -451,9 +451,11 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 /// (`src/tree.rs`, `RenderOnce for Tree`) paints a border of its own: each
 /// refines a plain `div()` and leaves the frame to the application, where
 /// `DataTable` draws one from `Theme::radius` and `Theme::border` when it is
-/// `bordered` (`src/table/data_table.rs:167-171`). Apply this to a `List` or a
-/// `Tree` — both are `Styled` and the refinement lands on that outer `div` —
-/// or to the box an application draws around one, and the three agree. There
+/// `bordered` (`src/table/data_table.rs:167-171`) -- a token that carries
+/// `defaults.border.color` at `defaults.border.opacity`, not `list.border`.
+/// Apply this to a `List` or a `Tree` — both are `Styled` and the refinement
+/// lands on that outer `div` — or to the box an application draws around one,
+/// an unbordered `DataTable` included, and the three agree. There
 /// is no tree theme in the model: a tree is a list view, and reads
 /// `resolved.list`.
 ///
@@ -787,6 +789,29 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     }
 }
 
+/// The fill and label colour of a disabled `Button`: the platform's
+/// `button.disabled_background`, or `button.background_color` where it states
+/// none, and `button.disabled_text_color`. Apply it after [`button`], to a
+/// Button built disabled, only.
+///
+/// Colour, not geometry, carried because no `ThemeColor` field reaches it:
+/// upstream paints a disabled Default button with `input_background()` at
+/// half opacity and its label with `muted_foreground` at half opacity
+/// (`src/button/button.rs:1273-1319`, the label at `:1284`), literals of its
+/// own. Its disabled
+/// style replays the caller's refinement over its own (`:754-760`), so the
+/// refinement's colours win there -- and at rest too (`:690`), which is why
+/// an enabled Button must not take it.
+#[must_use]
+pub fn button_disabled(n: Native<'_>) -> StyleRefinement {
+    let b = &n.resolved.button;
+    StyleRefinement::default()
+        .bg(rgba_to_hsla(
+            b.disabled_background.unwrap_or(b.background_color),
+        ))
+        .text_color(rgba_to_hsla(b.disabled_text_color))
+}
+
 /// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's
 /// text size and weight.
 ///
@@ -1082,6 +1107,41 @@ mod tests {
             }
         }
         assert!(stated_disabled > 0, "no preset states a disabled fill");
+    }
+
+    /// `button_disabled` is `button.disabled_background` (or
+    /// `button.background_color` where none is stated) and
+    /// `button.disabled_text_color`, and carries nothing else.
+    #[test]
+    fn button_disabled_is_the_platforms_disabled_pair() {
+        let mut stated_fill = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let b = &r.button;
+                let out = button_disabled(Native::unscaled(&r));
+                let fill = b.disabled_background.unwrap_or(b.background_color);
+                assert_eq!(
+                    out.background,
+                    Some(rgba_to_hsla(fill).into()),
+                    "{at}: disabled fill"
+                );
+                assert_eq!(
+                    out.text.color,
+                    Some(rgba_to_hsla(b.disabled_text_color)),
+                    "{at}: disabled label"
+                );
+                stated_fill += usize::from(b.disabled_background.is_some());
+                let bare = StyleRefinement {
+                    background: None,
+                    text: Default::default(),
+                    ..out
+                };
+                assert_eq!(bare, StyleRefinement::default(), "{at}: only the pair");
+            }
+        }
+        assert!(stated_fill > 0, "no preset states a disabled button fill");
     }
 
     /// `link` carries the link's text size and weight, and removes upstream's

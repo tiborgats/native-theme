@@ -3770,6 +3770,47 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
     }
 }
 
+/// The Basic page's disabled Button is filled with the platform's disabled
+/// fill, through `geometry::button_disabled` -- not with upstream's
+/// `input_background()` at half opacity (button/button.rs:1291-1295) -- in
+/// either mode, and its info names the builder.
+#[gpui::test]
+fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
+    const DISABLED: &str = "basic-button-disabled";
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for (item, dark) in [("Light", false), ("Dark", true)] {
+        run_menu_item(&mut cx, "Theme", item);
+        assert_eq!(
+            cx.update(|_w, cx| Theme::global(cx).mode.is_dark()),
+            dark,
+            "Theme > {item} did not reach Theme::mode, so this proves nothing"
+        );
+        let stated = read(&mut cx, &showcase, |_this, cx| {
+            native_value(cx, |n| {
+                let b = &n.resolved.button;
+                let [r, g, bl, a] = b
+                    .disabled_background
+                    .unwrap_or(b.background_color)
+                    .to_f32_array();
+                gpui::Hsla::from(gpui::Rgba { r, g, b: bl, a })
+            })
+        });
+        assert!(stated.is_some(), "no native theme is installed");
+        show(&mut cx, &showcase, Page::Basic);
+        let info = settle_on(&mut cx, &showcase, DISABLED);
+        assert_eq!(
+            painted_fill(&mut cx, DISABLED),
+            stated,
+            "in {item} mode the disabled Button is not filled with button.disabled_background"
+        );
+        assert!(
+            info.as_ref()
+                .is_some_and(|i| i.to_text().contains("geometry::button_disabled")),
+            "in {item} mode the disabled Button's info names no geometry::button_disabled: {info:?}"
+        );
+    }
+}
+
 /// Set the text-scaling factor the connector lays controls out at, and draw
 /// the frame that follows.
 fn scale_text(cx: &mut VisualTestContext, factor: f32) {

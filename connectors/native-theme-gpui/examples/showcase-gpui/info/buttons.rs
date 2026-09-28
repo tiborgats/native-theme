@@ -486,6 +486,9 @@ pub fn button(
     let info = match state {
         ButtonState::Idle => colours(info, t, kind, styled),
         ButtonState::Loading => loading(t, kind).into_iter().fold(info, WidgetInfo::color),
+        // geometry::button_disabled's line is recorded where demo::button
+        // applies it, over the fill and label upstream paints first.
+        ButtonState::Disabled if styled => info,
         ButtonState::Disabled => {
             let info = match kind {
                 ButtonKind::Primary | ButtonKind::Danger => info.not_themeable("fill", "the variant's own token at 0.15, a literal -- not 0.5, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
@@ -550,6 +553,10 @@ pub fn button(
     };
     let info = match state {
         ButtonState::Idle => info,
+        ButtonState::Disabled if styled => info
+            .instance("fill and text", "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color, through geometry::button_disabled: upstream paints its own literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- and then replays the caller's refinement over them (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)")
+            .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; the stated disabled colours are painted as they are, as the iced and egui connectors paint them, with no further fade")
+            .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
         ButtonState::Disabled => info
             .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.disabled_text_color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")
             .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
