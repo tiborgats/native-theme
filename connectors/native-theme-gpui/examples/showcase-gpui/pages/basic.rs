@@ -419,6 +419,7 @@ impl Showcase {
                         "basic-card-text",
                         "Card content",
                         wide,
+                        geometry::container_margin(&self.layout),
                     )
                     .into_any_element(),
                 ],

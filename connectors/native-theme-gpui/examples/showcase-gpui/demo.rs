@@ -1392,12 +1392,15 @@ pub(crate) fn tab_bar(
         ),
     };
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
+    if let Some(n) = &native {
+        return native_tab_bar(ui, n, kind, container_margin, tabs, selected, on_click);
+    }
     let mut bar_info = info::tab_font(bar_info, native.as_ref().map(|n| n.resolved))
         .instance("padding", info::tab_bar_padding(container_margin));
     if container_margin.is_some() {
         bar_info = bar_info.geometry("container_margin");
     }
-    let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click = Rc::new(on_click);
     let on_tab = on_click.clone();
@@ -1455,6 +1458,167 @@ pub(crate) fn tab_bar(
     bar.info(ui, info_id, bar_info)
 }
 
+/// What a click on the tab at an index runs.
+type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
+
+/// What a click on an expander's title runs, with the items' next state.
+type ExpanderToggle = Rc<dyn Fn(&[bool; 2], &mut Window, &mut App)>;
+
+/// A tab's side padding where `tab.border.padding` states none: upstream's
+/// for a tab at the default Size (tab/tab.rs:73-80,
+/// `TabVariant::inner_paddings`), as a segment takes [`SEGMENT_PADDING`].
+const TAB_PADDING: Pixels = px(12.);
+
+/// The tabs `tabs`, each `(label, debug selector)`, as `tab.*` states a tab
+/// (ISSUES D7: exactly what the theme states, no mark of the showcase's
+/// own): at least `min_width` by `min_height`, padded by the stated
+/// `border.padding` sides ([`TAB_PADDING`] on a side left unstated), framed
+/// by `tab.border`, in `tab.font`; an idle tab filled with
+/// `background_color` and lettered in `font.color`, with `hover_background`
+/// over it and `hover_text_color` under the pointer; the one at `selected`
+/// filled with `active_background` and lettered in `active_text_color`.
+/// Nothing else marks it: where a preset states the selected tab's fill and
+/// label as the idle ones' (kde-breeze), nothing does.
+///
+/// Drawn by the showcase because no `TabBar` variant draws that: each marks
+/// the selected tab its own way -- an Underline bar with a 2px primary bar,
+/// a Tab bar with a frame in `border` -- and sets its hover and padding
+/// inside render (tab/tab.rs, `TabVariant`; tab/tab_bar.rs, `TabBar`).
+fn native_tabs(
+    n: &Native<'_>,
+    id: &'static str,
+    tabs: &[(&'static str, &'static str)],
+    selected: usize,
+    on_click: TabClick,
+) -> Vec<Stateful<Div>> {
+    let t = &n.resolved.tab;
+    let b = &t.border;
+    let colour = info::stated;
+    let idle = colour(t.background_color);
+    let hover_fill = t.hover_background.map(|hover| idle.blend(colour(hover)));
+    let hover_text = colour(t.hover_text_color);
+    tabs.iter()
+        .enumerate()
+        .map(|(ix, &(label, selector))| {
+            let on_click = on_click.clone();
+            div()
+                .id((id, ix))
+                .flex()
+                .flex_none()
+                .items_center()
+                .justify_center()
+                .min_w(px(t.min_width))
+                .min_h(px(t.min_height))
+                .pl(b.padding.left.map_or(TAB_PADDING, px))
+                .pr(b.padding.right.map_or(TAB_PADDING, px))
+                .when_some(b.padding.top, |tab, top| tab.pt(px(top)))
+                .when_some(b.padding.bottom, |tab, bottom| tab.pb(px(bottom)))
+                .border(px(b.line_width))
+                .border_color(colour(b.color))
+                .rounded(px(b.corner_radius.max(0.0)))
+                .map(|tab| {
+                    if ix == selected {
+                        tab.bg(colour(t.active_background))
+                            .text_color(colour(t.active_text_color))
+                    } else {
+                        tab.bg(idle)
+                            .text_color(colour(t.font.color))
+                            .hover(move |style| {
+                                let style = match hover_fill {
+                                    Some(fill) => style.bg(fill),
+                                    None => style,
+                                };
+                                style.text_color(hover_text)
+                            })
+                    }
+                })
+                .child(font_text(n, &t.font, label))
+                .on_click(move |_, window, cx| on_click(&ix, window, cx))
+                .debug_selector(move || selector.into())
+        })
+        .collect()
+}
+
+/// A tab row's bar: `tab.bar_background`, parted from what follows by the
+/// theme's `separator.*` line, the model stating no tab-bar rule of its own.
+fn native_tab_strip(n: &Native<'_>) -> Div {
+    let s = &n.resolved.separator;
+    h_flex()
+        .items_end()
+        .bg(info::stated(n.resolved.tab.bar_background))
+        .border_b(px(s.line_width))
+        .border_color(info::stated(s.line_color))
+}
+
+/// [`tab_bar`] under a native theme: [`native_tabs`] on a
+/// [`native_tab_strip`], inset by `container_margin` as upstream's bar is
+/// (the rule runs its full width), the page row's tabs scrolling sideways
+/// where they do not fit, with the menu of every page after them.
+fn native_tab_bar(
+    ui: &Entity<InfoRegistry>,
+    n: &Native<'_>,
+    kind: TabBarKind,
+    container_margin: Option<Pixels>,
+    tabs: Vec<(&'static str, &'static str)>,
+    selected: usize,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let (id, info_id, menu, variant) = match kind {
+        TabBarKind::Inspector => (
+            "inspector-tabs",
+            "chrome-inspector-tabs",
+            false,
+            "drawn by the showcase",
+        ),
+        TabBarKind::Pages => (
+            "page-tabs",
+            "chrome-page-tabs",
+            true,
+            "drawn by the showcase, menu",
+        ),
+    };
+    let mut bar_info = info::layout::native_tab_row(n.resolved, variant)
+        .instance("padding", info::tab_bar_padding(container_margin));
+    if container_margin.is_some() {
+        bar_info = bar_info.geometry("container_margin");
+    }
+    let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
+    let on_click: TabClick = Rc::new(on_click);
+    let row = h_flex()
+        .id((ElementId::from(id), "row"))
+        .flex_1()
+        .min_w_0()
+        .overflow_x_scroll()
+        .children(native_tabs(n, id, &tabs, selected, on_click.clone()));
+    let menu = menu.then(|| {
+        Button::new("page-tabs-menu")
+            .xsmall()
+            .ghost()
+            .dropdown_caret(true)
+            .dropdown_menu(move |menu, _, _| {
+                labels
+                    .iter()
+                    .enumerate()
+                    .fold(menu.scrollable(true), |menu, (ix, &label)| {
+                        let on_click = on_click.clone();
+                        menu.item(
+                            PopupMenuItem::new(label)
+                                .checked(selected == ix)
+                                .on_click(move |_, window, cx| on_click(&ix, window, cx)),
+                        )
+                    })
+            })
+            .anchor(gpui::Anchor::TopRight)
+    });
+    native_tab_strip(n)
+        .id(id)
+        .w_full()
+        .when_some(container_margin, |bar, margin| bar.px(margin))
+        .child(row)
+        .children(menu.map(|menu| div().flex_none().self_center().child(menu)))
+        .info(ui, info_id, bar_info)
+}
+
 /// `text` in `font`, at the size the text-scaling factor makes of it: a
 /// label a widget's own text size would otherwise set, as its child.
 fn font_text(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static str) -> Div {
@@ -1485,6 +1649,20 @@ pub(crate) fn tab_row(
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    if let Some(n) = &native {
+        let tabs: Vec<(&'static str, &'static str)> =
+            labels.iter().map(|&label| (label, label)).collect();
+        let shown = labels.get(selected).copied().unwrap_or("none");
+        let row_info = info::layout::native_tab_row(n.resolved, "drawn by the showcase")
+            .instance("tabs", labels.join(", "))
+            .instance("selected", shown)
+            .instance("click", "selects the tab; the showcase keeps the state");
+        return native_tab_strip(n)
+            .id(id)
+            .children(native_tabs(n, id, &tabs, selected, Rc::new(on_click)))
+            .info(ui, id, row_info)
+            .debug_selector(move || id.into());
+    }
     let row_info = info::layout::tab_row(
         cx.theme(),
         labels,
@@ -4987,9 +5165,14 @@ pub(crate) fn card(
     text_id: &'static str,
     text: &'static str,
     width: Pixels,
+    container_margin: Option<Pixels>,
 ) -> Stateful<Div> {
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
-    let mut card_info = info::layout::card(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let mut card_info = info::layout::card(
+        cx.theme(),
+        native.as_ref().map(|n| n.resolved),
+        container_margin,
+    );
     let content_style = native_info(
         StyleRefinement::default(),
         cx,
@@ -4997,6 +5180,38 @@ pub(crate) fn card(
         "group_box_content",
         &mut card_info,
     );
+    // A card is a container, and `layout.container_margin` is the padding
+    // inside containers (platform-facts §2.20): it pads a side
+    // `card.border.padding` leaves unstated, in place of the Fill
+    // GroupBox's own `p_4` (group_box.rs, `GroupBox`).
+    let content_style = match (&native, container_margin) {
+        (Some(n), Some(margin)) => {
+            let p = &n.resolved.card.border.padding;
+            card_info = card_info.geometry("container_margin");
+            let style = content_style;
+            let style = if p.top.is_none() {
+                style.pt(margin)
+            } else {
+                style
+            };
+            let style = if p.right.is_none() {
+                style.pr(margin)
+            } else {
+                style
+            };
+            let style = if p.bottom.is_none() {
+                style.pb(margin)
+            } else {
+                style
+            };
+            if p.left.is_none() {
+                style.pl(margin)
+            } else {
+                style
+            }
+        }
+        _ => content_style,
+    };
     let fill = native_color(cx, |n| n.resolved.card.background_color);
     let content_style = match fill {
         Some(fill) => content_style.bg(fill),
@@ -5114,6 +5329,9 @@ pub(crate) fn expander(
     on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    if let Some(n) = &native {
+        return native_expander(ui, cx, n, id, items, open, width, Rc::new(on_toggle));
+    }
     let mut expander_info = info::layout::expander(
         cx.theme(),
         cx.reduce_motion(),
@@ -5177,6 +5395,112 @@ pub(crate) fn expander(
                 }
             })
         })
+        .info(ui, id, expander_info)
+        .debug_selector(move || id.into())
+}
+
+/// An expander row's side padding, the space between its title and its
+/// arrow, and its body's side and bottom padding, none of which
+/// `expander.*` states: upstream's `AccordionItem`'s at the default Size
+/// (accordion.rs, `RenderOnce for AccordionItem`: the trigger's `px_3` and
+/// `gap_3`, the panel's `pb_2` and `px_3`).
+const EXPANDER_PADDING_X: Rems = rems(0.75);
+const EXPANDER_ARROW_GAP: Rems = rems(0.75);
+const EXPANDER_BODY_BOTTOM: Rems = rems(0.5);
+
+/// [`expander`] under a native theme, drawn by the showcase as `expander.*`
+/// states it (ISSUES D8): the whole framed by `expander.border` and the
+/// items parted by its line, as upstream's bordered `Accordion` frames
+/// them; each title row `header_height` tall (`geometry::accordion_title`)
+/// in `expander.font`, `hover_background` under the pointer; its arrow
+/// `arrow_icon_size` in `arrow_color` (the title's colour where that is
+/// unstated). The arrow's glyph and side are not stated: they stay
+/// upstream's, a ChevronDown after the title, turned while the item is
+/// open (accordion.rs, `RenderOnce for AccordionItem`), whose size and
+/// colour upstream builds inline and no caller reaches.
+#[allow(clippy::too_many_arguments)]
+fn native_expander(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    n: &Native<'_>,
+    id: &'static str,
+    items: [(&'static str, &'static str, &'static str); 2],
+    open: [bool; 2],
+    width: Pixels,
+    on_toggle: ExpanderToggle,
+) -> Stateful<Div> {
+    let e = &n.resolved.expander;
+    let colour = info::stated;
+    let line = colour(e.border.color);
+    let line_width = px(e.border.line_width);
+    let text = colour(e.font.color);
+    let arrow = colour(e.arrow_color.unwrap_or(e.font.color));
+    let hover = e.hover_background.map(colour);
+    let title_style = geometry::accordion_title(*n);
+    let text_size = px(native_theme_gpui::scaled_text_size(
+        e.font.size,
+        n.accessibility,
+    ));
+    let expander_info =
+        info::layout::native_expander(n.resolved, items.map(|(title, _, _)| title), open)
+            .geometry("accordion_title");
+    v_flex()
+        .w(width)
+        .border(line_width)
+        .border_color(line)
+        .rounded(px(e.border.corner_radius.max(0.0)))
+        .overflow_hidden()
+        .children(items.into_iter().zip(open).enumerate().map(
+            |(ix, ((title, body_id, body), is_open))| {
+                let on_toggle = on_toggle.clone();
+                let header = h_flex()
+                    .id((id, ix))
+                    .w_full()
+                    .justify_between()
+                    .items_center()
+                    .gap(EXPANDER_ARROW_GAP)
+                    .px(EXPANDER_PADDING_X)
+                    .refine_style(&title_style)
+                    .text_size(text_size)
+                    .font_weight(FontWeight(f32::from(e.font.weight)))
+                    .text_color(text)
+                    .when_some(hover, |header, hover| {
+                        header.hover(move |style| style.bg(hover))
+                    })
+                    .debug_selector(move || format!("{id}-header-{ix}"))
+                    .child(title)
+                    .child(
+                        div()
+                            .flex_none()
+                            .debug_selector(move || format!("{id}-arrow-{ix}"))
+                            .child(
+                                Icon::new(IconName::ChevronDown)
+                                    .with_size(px(e.arrow_icon_size))
+                                    .text_color(arrow)
+                                    .rotate(gpui::percentage(if is_open { 0.5 } else { 0. })),
+                            ),
+                    )
+                    .on_click(move |_, window, cx| {
+                        let mut next = open;
+                        if let Some(item) = next.get_mut(ix) {
+                            *item = !*item;
+                        }
+                        on_toggle(&next, window, cx);
+                    });
+                v_flex()
+                    .w_full()
+                    .when(ix > 0, |item| item.border_t(line_width).border_color(line))
+                    .child(header)
+                    .when(is_open, |item| {
+                        item.child(
+                            div()
+                                .px(EXPANDER_PADDING_X)
+                                .pb(EXPANDER_BODY_BOTTOM)
+                                .child(body_label(ui, cx, body_id, body)),
+                        )
+                    })
+            },
+        ))
         .info(ui, id, expander_info)
         .debug_selector(move || id.into())
 }

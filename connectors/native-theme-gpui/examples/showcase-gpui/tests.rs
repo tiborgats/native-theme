@@ -2286,7 +2286,7 @@ fn the_resize_handle_reports_itself(cx: &mut TestAppContext) {
 }
 
 /// The title the page TabBar's info shows.
-const PAGE_TABS_TITLE: &str = "TabBar · Underline, small, menu";
+const PAGE_TABS_TITLE: &str = "TabBar · drawn by the showcase, menu";
 
 /// The page TabBar sits at the top of the content panel, above the page's
 /// scroll area, across the panel (spec S3); it reports itself, and clicking a
@@ -2340,12 +2340,165 @@ fn the_page_tabs_navigate(cx: &mut TestAppContext) {
     }
 }
 
+/// The Basic page's theme-drawn controls paint the theme's colours
+/// (ISSUES D1-D4): each widest painted box is the leaf that fills it -- the
+/// checkbox indicator's fill, the switch track, the slider rail, the
+/// progress track.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
+    use native_theme::color::Rgba;
+    use native_theme_gpui::ResolvedTheme;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["kde-breeze", "material"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let expect = |cx: &mut VisualTestContext, pick: fn(&ResolvedTheme) -> Rgba| {
+            read(cx, &showcase, |_, cx| {
+                native_color(cx, |n| pick(n.resolved))
+            })
+        };
+        for (control, leaf, pick) in [
+            (
+                "basic-checkbox-checked",
+                "checkbox.checked_background",
+                (|r| r.checkbox.checked_background) as fn(&ResolvedTheme) -> Rgba,
+            ),
+            (
+                "basic-checkbox-unchecked",
+                "checkbox.unchecked_background",
+                |r| {
+                    r.checkbox
+                        .unchecked_background
+                        .unwrap_or(r.checkbox.background_color)
+                },
+            ),
+            ("basic-switch-on", "switch.checked_background", |r| {
+                r.switch.checked_background
+            }),
+            ("basic-switch-off", "switch.unchecked_background", |r| {
+                r.switch.unchecked_background
+            }),
+            ("basic-slider", "slider.track_color", |r| {
+                r.slider.track_color
+            }),
+            ("basic-progress", "progress_bar.track_color", |r| {
+                r.progress_bar.track_color
+            }),
+        ] {
+            let want = expect(&mut cx, pick);
+            assert_eq!(
+                painted_fill(&mut cx, control),
+                want,
+                "{preset}: {control} is not painted in {leaf}"
+            );
+        }
+    }
+}
+
+/// The Basic expander draws what `expander.*` states (ISSUES D8): each title
+/// row `header_height` tall, its arrow `arrow_icon_size` across; and the
+/// Basic card is padded by `layout.container_margin` where `card.border`
+/// states no padding (ISSUES D9), a card being a container.
+#[gpui::test]
+fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["kde-breeze", "material"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let (header, arrow, card_padding) = read(&mut cx, &showcase, |_, cx| {
+            native_value(cx, |n| {
+                let e = &n.resolved.expander;
+                (
+                    e.header_height,
+                    e.arrow_icon_size,
+                    n.resolved.card.border.padding,
+                )
+            })
+        })
+        .unwrap_or_default();
+        for (row, icon) in [
+            ("basic-expander-header-0", "basic-expander-arrow-0"),
+            ("basic-expander-header-1", "basic-expander-arrow-1"),
+        ] {
+            assert_eq!(
+                bounds_of(&mut cx, row).size.height,
+                px(header),
+                "{preset}: {row} is not expander.header_height"
+            );
+            let arrow_box = bounds_of(&mut cx, icon).size;
+            assert_eq!(
+                (arrow_box.width, arrow_box.height),
+                (px(arrow), px(arrow)),
+                "{preset}: {icon} is not expander.arrow_icon_size"
+            );
+        }
+        let margin = read(&mut cx, &showcase, |this, _| {
+            geometry::container_margin(&this.layout)
+        });
+        assert!(
+            card_padding.left.is_none(),
+            "{preset} states a card padding"
+        );
+        let (Some(margin), card, text) = (
+            margin,
+            bounds_of(&mut cx, "basic-card"),
+            bounds_of(&mut cx, "basic-card-text"),
+        ) else {
+            continue;
+        };
+        assert_eq!(
+            text.left() - card.left(),
+            margin,
+            "{preset}: the card's content is not layout.container_margin inside it"
+        );
+    }
+}
+
+/// The tab rows draw exactly what `tab.*` states (ISSUES D7): the selected
+/// page tab is filled with `tab.active_background` and nothing in the row is
+/// painted in the accent that upstream's Underline bar marks it with, under
+/// a preset whose selected tab looks like its idle ones (kde-breeze) and one
+/// whose does not (material).
+#[gpui::test]
+fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["kde-breeze", "material"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let active = read(&mut cx, &showcase, |_, cx| {
+            native_color(cx, |n| n.resolved.tab.active_background)
+        });
+        assert_eq!(
+            painted_fill(&mut cx, Page::Basic.tab()),
+            active,
+            "{preset}: the selected page tab is not filled with tab.active_background"
+        );
+        let row = bounds_of(&mut cx, CHROME_PAGE_TABS);
+        let accent = cx.update(|window, cx| {
+            let primary = Theme::global(cx).primary;
+            let row = row.scale(window.scale_factor());
+            window.painted_quads().into_iter().any(|q| {
+                q.background.as_solid() == Some(primary)
+                    && q.bounds.top() >= row.top()
+                    && q.bounds.bottom() <= row.bottom()
+            })
+        });
+        assert!(
+            !accent,
+            "{preset}: the page tab row paints the accent, which tab.* states nowhere"
+        );
+    }
+}
+
 /// The widest box painted inside `within` with a bottom border in the
-/// theme's `border` colour: an Underline TabBar's bottom rule (tab/tab_bar.rs:
-/// 505-513).
+/// rule's colour: under a native theme a tab row's `separator.line_color`
+/// (demo.rs, `native_tab_strip`), without one an Underline TabBar's bottom
+/// rule in `border` (tab/tab_bar.rs:505-513).
 fn bottom_rule(cx: &mut VisualTestContext, within: Bounds<Pixels>) -> Option<Bounds<Pixels>> {
     cx.update(|window, cx| {
-        let border = Theme::global(cx).border;
+        let border = native_color(cx, |n| n.resolved.separator.line_color)
+            .unwrap_or(Theme::global(cx).border);
         let scale = window.scale_factor();
         let within = within.scale(scale);
         window
@@ -6943,7 +7096,7 @@ fn hiding_the_side_panel_clears_what_left_the_screen(cx: &mut TestAppContext) {
     };
     assert_eq!(
         shown(&mut cx).as_deref(),
-        Some("TabBar · Underline, small"),
+        Some("TabBar · drawn by the showcase"),
         "the inspector's TabBar did not report itself"
     );
     run_menu_item(&mut cx, "View", "Toggle Side Panel");

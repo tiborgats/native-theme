@@ -339,7 +339,11 @@ pub fn expander(
 /// `native`'s `card.background_color` where a native theme is installed
 /// (`demo::card`). Its geometry line is recorded where the helper applies
 /// the builder.
-pub fn card(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+pub fn card(
+    t: &Theme,
+    native: Option<&ResolvedTheme>,
+    container_margin: Option<Pixels>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("GroupBox")
         .variant("Fill, a card")
         .color(claim(
@@ -364,8 +368,11 @@ pub fn card(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
             "gpui-component/group_box.rs:134",
         )),
     };
-    info.not_themeable("padding", "p_4, the Fill variant's own, on a side card.border.padding leaves unstated (group_box.rs, GroupBox)")
-        .instance("content", "a body-text Label, which reports itself")
+    let info = match (native, container_margin) {
+        (Some(_), Some(margin)) => info.config("padding", format!("layout.container_margin, {}px, the padding inside containers (platform-facts §2.20), on a side card.border.padding leaves unstated, in place of the Fill variant's p_4 (group_box.rs, GroupBox)", px_text(margin.as_f32()))),
+        _ => info.not_themeable("padding", "p_4, the Fill variant's own, on a side card.border.padding leaves unstated (group_box.rs, GroupBox)"),
+    };
+    info.instance("content", "a body-text Label, which reports itself")
 }
 
 /// A `TabBar` of the Tab variant over `labels`, the one at `selected`
@@ -428,6 +435,135 @@ pub fn tab_row(
     info.instance("tabs", labels.join(", "))
         .instance("selected", shown)
         .instance("click", "selects the tab; the showcase keeps the state")
+}
+
+/// The expanders the showcase draws as `r`'s `expander.*` states them
+/// (`demo::native_expander`), reading `titles`, each `open` or not.
+pub fn native_expander(
+    r: &ResolvedTheme,
+    titles: [&'static str; 2],
+    open: [bool; 2],
+) -> WidgetInfo {
+    let e = &r.expander;
+    let info = WidgetInfo::new("Expander")
+        .variant("drawn by the showcase")
+        .color(claim(
+            "border and the line between items",
+            "border",
+            stated(e.border.color),
+            "showcase",
+        ))
+        .color(claim("title", "font", stated(e.font.color), "showcase"))
+        .color(claim(
+            "arrow",
+            "arrow_color",
+            stated(e.arrow_color.unwrap_or(e.font.color)),
+            "showcase",
+        ));
+    let info = if e.hover_background.is_some() {
+        info.color(claim(
+            "hovered title",
+            "hover_background",
+            stated(e.hover_background.unwrap_or(e.font.color)),
+            "showcase",
+        ))
+    } else {
+        info.not_themeable(
+            "hover",
+            "none: the theme states no expander.hover_background",
+        )
+    };
+    let shown: Vec<&str> = titles
+        .iter()
+        .zip(open)
+        .filter(|(_, open)| *open)
+        .map(|(title, _)| *title)
+        .collect();
+    info.config("title row", format!("expander.header_height, {}px, in expander.font, {}px, weight {}", px_text(e.header_height), px_text(e.font.size), e.font.weight))
+        .config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
+        .config("edge", format!("expander.border: {}px, radius {}px, round the whole and between the items", px_text(e.border.line_width), px_text(e.border.corner_radius)))
+        .not_themeable("arrow glyph", "not stated: upstream's Accordion's, a ChevronDown after the title, turned while open (accordion.rs, AccordionItem::render)")
+        .not_themeable("own icons", super::own_icons("ChevronDown, the arrow (accordion.rs, AccordionItem::render)"))
+        .not_themeable("padding", "not stated: upstream's AccordionItem's, px_3 across the title and the body, gap_3 before the arrow, pb_2 under the body (accordion.rs, AccordionItem::render)")
+        .not_themeable("fill", "none: the model states no expander fill, so the window's background shows")
+        .instance("items", titles.join(", "))
+        .instance("open", if shown.is_empty() { "none".to_string() } else { shown.join(", ") })
+        .instance("click", "a title opens or closes its item; the showcase keeps the state")
+}
+
+/// A row of tabs the showcase draws as `r`'s `tab.*` states a tab
+/// (`demo::native_tabs`), under `variant`: the page tabs, the inspector's
+/// and the Basic page's, wherever a native theme is installed.
+pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
+    let t = &r.tab;
+    let info = WidgetInfo::new("TabBar")
+        .variant(variant)
+        .color(claim(
+            "bar",
+            "bar_background",
+            stated(t.bar_background),
+            "showcase",
+        ))
+        .color(claim(
+            "tab",
+            "background_color",
+            stated(t.background_color),
+            "showcase",
+        ))
+        .color(claim("label", "font", stated(t.font.color), "showcase"))
+        .color(claim(
+            "selected tab",
+            "active_background",
+            stated(t.active_background),
+            "showcase",
+        ))
+        .color(claim(
+            "selected label",
+            "active_text_color",
+            stated(t.active_text_color),
+            "showcase",
+        ))
+        .color(claim(
+            "tab edge",
+            "border",
+            stated(t.border.color),
+            "showcase",
+        ))
+        .color(claim(
+            "rule under the bar",
+            "line_color",
+            stated(r.separator.line_color),
+            "showcase",
+        ));
+    let info = if t.hover_background.is_some() {
+        info.color(claim(
+            "hover layer, over a tab",
+            "hover_background",
+            stated(t.hover_background.unwrap_or(t.background_color)),
+            "showcase",
+        ))
+    } else {
+        info
+    };
+    let info = info.color(claim(
+        "hovered label",
+        "hover_text_color",
+        stated(t.hover_text_color),
+        "showcase",
+    ));
+    let padding = t.border.padding;
+    let side = |v: Option<f32>| {
+        v.map_or(
+            "upstream's 12px (tab/tab.rs, TabVariant::inner_paddings)".to_string(),
+            |v| format!("{}px", px_text(v)),
+        )
+    };
+    info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
+        .config("font", format!("tab.font, {}px, weight {}", px_text(t.font.size), t.font.weight))
+        .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
+        .config("edge", format!("tab.border: {}px, radius {}px", px_text(t.border.line_width), px_text(t.border.corner_radius)))
+        .not_themeable("selection mark", "none beyond the selected tab's fill and label: tab.* states no underline or indicator, so a preset that states the selected tab's fill and label as the idle ones' marks nothing (upstream's TabBar variants draw a primary underline or a framed tab of their own, tab/tab_bar.rs and tab/tab.rs, TabVariant)")
+        .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own")
 }
 
 /// The segmented control over `labels`, the one at `selected` shown: drawn
