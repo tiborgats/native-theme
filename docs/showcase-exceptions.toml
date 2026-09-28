@@ -57,12 +57,10 @@ WindowBorder = "the window's own edge, drawn by `Root` and never constructed by 
 float = "a positioning wrapper: it lifts its child and its only `Style` is a drop shadow the default class leaves fully transparent, so it paints nothing unless the application asks (float.rs:413-432, :163)"
 keyed = "`Column` with continuity hints for reconciliation; it paints nothing of its own (keyed.rs:1-40, keyed/column.rs)"
 lazy = "caches a view between updates; it paints nothing of its own (lazy.rs)"
-overlay = "declares only `pub mod menu` (overlay.rs:1-2); `overlay::menu::Menu` is the drop-down surface `pick_list` and `combo_box` open (pick_list.rs:711, combo_box.rs)"
 pin = "positions a child at fixed coordinates inside its bounds; it paints nothing of its own (pin.rs:1-3)"
 responsive = "calls a closure with the available size; it paints nothing of its own (responsive.rs)"
 sensor = "emits messages when content pops in and out of view; it paints nothing of its own (sensor.rs:1)"
 shader = "a custom shader widget for wgpu applications: it needs a rendering pipeline the application supplies (shader.rs:1)"
-stack = "displays content on top of other content; it paints nothing of its own (stack.rs:1)"
 themer = "replaces the theme of a subtree; it paints nothing of its own (themer.rs)"
 
 # `iced_aw` widgets the showcase does not render. The connector's `iced_aw`
