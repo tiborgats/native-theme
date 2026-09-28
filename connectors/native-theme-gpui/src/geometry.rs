@@ -770,27 +770,41 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// neither fill can be the platform's. The fill is painted before the
 /// caller's refinement, so the refinement's wins -- in either state, which is
 /// why the caller passes the state the field is built with: a field refined
-/// with the enabled fill would lose its disabled look. A platform that states
-/// no disabled fill (`input.disabled_background` is `None`) leaves
-/// upstream's own disabled fill in place.
+/// with the enabled fill would lose its disabled look. Disabled, the field is
+/// also faded by `input.disabled_opacity`: a platform dims by its disabled
+/// colours or by that opacity, and its data makes the other an identity
+/// (docs/platform-facts.md §2.1.6), so a platform that states no disabled
+/// fill (`input.disabled_background` is `None`) gets the enabled fill, faded.
 #[must_use]
 pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     let i = &n.resolved.input;
-    let fill = if disabled {
-        i.disabled_background
+    if disabled {
+        StyleRefinement::default()
+            .bg(rgba_to_hsla(
+                i.disabled_background.unwrap_or(i.background_color),
+            ))
+            .opacity(unit(i.disabled_opacity))
     } else {
-        Some(i.background_color)
-    };
-    match fill {
-        Some(fill) => StyleRefinement::default().bg(rgba_to_hsla(fill)),
-        None => StyleRefinement::default(),
+        StyleRefinement::default().bg(rgba_to_hsla(i.background_color))
+    }
+}
+
+/// An opacity for gpui: clamped to 0–1, and 1 (no fade) where it is not a
+/// finite number.
+fn unit(opacity: f32) -> f32 {
+    if opacity.is_finite() {
+        opacity.clamp(0., 1.)
+    } else {
+        1.
     }
 }
 
 /// The fill and label colour of a disabled `Button`: the platform's
 /// `button.disabled_background`, or `button.background_color` where it states
-/// none, and `button.disabled_text_color`. Apply it after [`button`], to a
-/// Button built disabled, only.
+/// none, and `button.disabled_text_color`, the whole button faded by
+/// `button.disabled_opacity` (docs/platform-facts.md §2.1.6: the data makes
+/// the mechanism the platform does not use an identity). Apply it after
+/// [`button`], to a Button built disabled, only.
 ///
 /// Colour, not geometry, carried because no `ThemeColor` field reaches it:
 /// upstream paints a disabled Default button with `input_background()` at
@@ -808,6 +822,7 @@ pub fn button_disabled(n: Native<'_>) -> StyleRefinement {
             b.disabled_background.unwrap_or(b.background_color),
         ))
         .text_color(rgba_to_hsla(b.disabled_text_color))
+        .opacity(unit(b.disabled_opacity))
 }
 
 /// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's
@@ -1074,8 +1089,8 @@ mod tests {
     }
 
     /// `input_fill` is `input.background_color`, or for a disabled field
-    /// `input.disabled_background`, and nothing where the platform states no
-    /// disabled fill; it carries nothing else.
+    /// `input.disabled_background` (the enabled fill where none is stated)
+    /// faded by `input.disabled_opacity`; it carries nothing else.
     #[test]
     fn input_fill_is_the_platforms_in_either_state() {
         let mut stated_disabled = 0usize;
@@ -1090,18 +1105,36 @@ mod tests {
                     Some(rgba_to_hsla(r.input.background_color).into()),
                     "{at}: enabled fill"
                 );
+                assert_eq!(enabled.opacity, None, "{at}: enabled, no fade");
                 let disabled = input_fill(n, true);
                 assert_eq!(
                     disabled.background,
-                    r.input.disabled_background.map(|c| rgba_to_hsla(c).into()),
+                    Some(
+                        rgba_to_hsla(
+                            r.input
+                                .disabled_background
+                                .unwrap_or(r.input.background_color)
+                        )
+                        .into()
+                    ),
                     "{at}: disabled fill"
+                );
+                assert_eq!(
+                    disabled.opacity,
+                    Some(r.input.disabled_opacity),
+                    "{at}: disabled fade"
                 );
                 stated_disabled += usize::from(r.input.disabled_background.is_some());
                 let bare = StyleRefinement {
                     background: None,
+                    opacity: None,
                     ..disabled
                 };
-                assert_eq!(bare, StyleRefinement::default(), "{at}: only the fill");
+                assert_eq!(
+                    bare,
+                    StyleRefinement::default(),
+                    "{at}: only the fill and the fade"
+                );
             }
         }
         assert!(stated_disabled > 0, "no preset states a disabled fill");
@@ -1130,13 +1163,19 @@ mod tests {
                     Some(rgba_to_hsla(b.disabled_text_color)),
                     "{at}: disabled label"
                 );
+                assert_eq!(out.opacity, Some(b.disabled_opacity), "{at}: disabled fade");
                 stated_fill += usize::from(b.disabled_background.is_some());
                 let bare = StyleRefinement {
                     background: None,
                     text: Default::default(),
+                    opacity: None,
                     ..out
                 };
-                assert_eq!(bare, StyleRefinement::default(), "{at}: only the pair");
+                assert_eq!(
+                    bare,
+                    StyleRefinement::default(),
+                    "{at}: only the pair and the fade"
+                );
             }
         }
         assert!(stated_fill > 0, "no preset states a disabled button fill");

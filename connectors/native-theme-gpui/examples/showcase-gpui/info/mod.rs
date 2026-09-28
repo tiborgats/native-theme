@@ -264,11 +264,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "input_fill",
-        "input.background_color, or for a disabled field input.disabled_background where the theme states one, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
+        "input.background_color, or for a disabled field input.disabled_background (the enabled fill where the theme states none) faded by input.disabled_opacity, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
     ),
     (
         "button_disabled",
-        "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color on a disabled Button, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
+        "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color on a disabled Button, faded by button.disabled_opacity, over upstream's own disabled literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- which its disabled style replays the refinement over (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)",
     ),
     (
         "link",
