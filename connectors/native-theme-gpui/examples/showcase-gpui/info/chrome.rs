@@ -811,20 +811,12 @@ pub(super) fn input_background(t: &Theme) -> ColorClaim {
 
 /// The theme settings' preset Combobox (spec §3.3), the showcase's preset
 /// switch.
-pub fn preset_combobox(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Combobox")
-        .variant("searchable")
-        .not_themeable(
-            "own icons",
-            super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the search matches nothing (combobox.rs, ComboboxState::new)"),
-        )
-        .color(input_background(t))
-        .color(claim(
-            "trigger border",
-            "input",
-            t.input,
-            "gpui-component/combobox.rs:992",
-        ))
+pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("Combobox").variant("searchable").not_themeable(
+        "own icons",
+        super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the search matches nothing (combobox.rs, ComboboxState::new)"),
+    );
+    super::inputs::combo_fill(info, t, native, true)
         .color(claim(
             "text",
             "foreground",
@@ -850,10 +842,6 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
             "gpui-component/combobox.rs:999",
         ))
         .not_themeable(
-            "fill",
-            "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)",
-        )
-        .not_themeable(
             "font colour",
             "carried as size and weight only. Upstream's input_style delivers muted_foreground to the trigger when disabled (input/input.rs, input_style) before this refinement lands on it (combobox.rs, render_trigger_container), and the selected-title child sets no colour to re-mute with (combobox.rs, default_trigger_body), so a carried colour would beat the disabled colour instead of yielding to it. Select, whose title child does re-mute, takes it (native-theme-gpui geometry.rs, geometry::combobox)",
         )
@@ -877,8 +865,8 @@ pub fn preset_combobox(t: &Theme) -> WidgetInfo {
 
 /// The theme settings' colour-mode Select (spec §3.3): the Inputs page's
 /// Select, choosing System, Light or Dark.
-pub fn color_mode_select(t: &Theme) -> WidgetInfo {
-    super::inputs::select(t)
+pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    super::inputs::select(t, native)
         .instance(
             "modes",
             "System, Light and Dark; choosing one dispatches SetColorMode, the action the Theme menu's items run. System's row is the mode alone: the mode the desktop is in shows in the status bar's environment text while System is chosen",
@@ -895,8 +883,8 @@ pub fn color_mode_select(t: &Theme) -> WidgetInfo {
 
 /// The theme settings' icon-theme Select (spec §3.3, S6): the Inputs page's
 /// Select, choosing the icon theme.
-pub fn icon_set_select(t: &Theme) -> WidgetInfo {
-    super::inputs::select(t)
+pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    super::inputs::select(t, native)
         .instance(
             "choices",
             "the icon theme the showcase loads its icons from: the preset's own where it names one, the system's, each installed freedesktop theme, gpui-component's built-in Lucide, and the bundled Lucide and Material",

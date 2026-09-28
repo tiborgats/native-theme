@@ -3940,6 +3940,16 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
         sidebar,
         "the side panel is not filled with sidebar.background_color"
     );
+    assert_eq!(
+        painted_fill(&mut cx, "basic-select"),
+        stated(&mut cx, |r| r.combo_box.background_color),
+        "the drop-down is not filled with combo_box.background_color"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, "basic-textarea"),
+        stated(&mut cx, |r| r.input.background_color),
+        "the text area is not filled with input.background_color"
+    );
 
     let (divider, width) = read(&mut cx, &showcase, |_this, cx| {
         (
@@ -4271,11 +4281,11 @@ fn the_height_only_fields_note_follows_the_native_theme(cx: &mut TestAppContext)
     assert!(height(false).is_some_and(|t| t.starts_with("upstream's own")));
 }
 
-/// The preset Combobox's swatches are the colours upstream paints: in dark
-/// mode its fill is input mixed toward transparent (theme/mod.rs:381), which
-/// is the fill the frame holds inside it, and a hovered row is accent at 70%
-/// (searchable_list/item.rs:114) -- checked against that line, since no row
-/// is drawn while the popup is shut.
+/// The preset Combobox's swatches are the colours it paints: its fill is
+/// `combo_box.background_color`, which the showcase refines the trigger
+/// with over upstream's `input_background()`, and a hovered row is accent at
+/// 70% (searchable_list/item.rs:114) -- checked against that line, since no
+/// row is drawn while the popup is shut.
 #[gpui::test]
 fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4285,19 +4295,25 @@ fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut T
         "Theme > Dark did not reach Theme::mode, so this proves nothing"
     );
     let info = settle_on(&mut cx, &showcase, PROBE_COMBOBOX);
-    let (fill, row) = cx.update(|_w, cx| {
-        let t = Theme::global(cx);
-        (t.input_background(), t.accent.opacity(0.7))
+    let fill = read(&mut cx, &showcase, |_this, cx| {
+        native_color(cx, |n| n.resolved.combo_box.background_color)
     });
+    let row = cx.update(|_w, cx| Theme::global(cx).accent.opacity(0.7));
+    let swatch = info.as_ref().and_then(|info| {
+        info.colors
+            .iter()
+            .find(|c| c.role == "trigger fill")
+            .map(|c| c.value)
+    });
+    assert!(fill.is_some(), "no native theme is installed");
     assert_eq!(
-        input_fill(&info),
-        Some(fill),
-        "the preset Combobox's fill swatch is not input_background(): {info:?}"
+        swatch, fill,
+        "the preset Combobox's fill swatch is not combo_box.background_color: {info:?}"
     );
     assert_eq!(
         painted_fill(&mut cx, PROBE_COMBOBOX),
-        input_fill(&info),
-        "the fill painted inside the preset Combobox is not its fill swatch"
+        fill,
+        "the fill painted inside the preset Combobox is not combo_box.background_color"
     );
     let hover = info
         .as_ref()
@@ -5486,12 +5502,12 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ("NumberInput", inputs::number_input(&t)),
         ("Checkbox", inputs::checkbox(&t, "label", true, false)),
         ("Rating", inputs::rating(&t, 3, false)),
-        ("Select", inputs::select(&t)),
+        ("Select", inputs::select(&t, None)),
         ("DatePicker", inputs::date_picker(&t)),
         ("Calendar", inputs::calendar(&t)),
-        ("preset Combobox", chrome::preset_combobox(&t)),
-        ("colour-mode Select", chrome::color_mode_select(&t)),
-        ("icon-theme Select", chrome::icon_set_select(&t)),
+        ("preset Combobox", chrome::preset_combobox(&t, None)),
+        ("colour-mode Select", chrome::color_mode_select(&t, None)),
+        ("icon-theme Select", chrome::icon_set_select(&t, None)),
         ("command palette", chrome::command_palette(&t, "set")),
         ("Preferences Sheet", chrome::preferences_sheet(&t, false)),
         ("About Dialog", chrome::about_dialog(&t, false, false)),

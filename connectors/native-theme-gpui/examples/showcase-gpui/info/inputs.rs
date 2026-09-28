@@ -94,11 +94,16 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     }
 }
 
-/// A `Textarea`. Its geometry line is recorded where `demo::textarea`
-/// applies the builder.
-pub fn textarea(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Textarea")
-        .color(input_background(t))
+/// A `Textarea`, `filled` by `geometry::input_fill` or not. Its geometry
+/// lines are recorded where `demo::textarea` applies the builders.
+pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("Textarea");
+    let info = if filled {
+        info
+    } else {
+        info.color(input_background(t))
+    };
+    info
         // A Textarea renders as an Input (input/textarea.rs:164), which
         // drops input_style's foreground (input/input.rs:639).
         .color(claim(
@@ -127,8 +132,8 @@ pub fn textarea(t: &Theme) -> WidgetInfo {
 
 /// A `Textarea` as tall as the rows its state shows: [`textarea`]'s, with
 /// the height its rows give it.
-pub fn rows_textarea(t: &Theme) -> WidgetInfo {
-    let mut info = textarea(t);
+pub fn rows_textarea(t: &Theme, filled: bool) -> WidgetInfo {
+    let mut info = textarea(t, filled);
     info.instance.retain(|note| note.what != "height");
     info.instance("height", "the rows its state was built to show, three, each the row height above: the showcase clears the single-line height geometry::input sets, so the state's rows size it (gpui-base input/base/state.rs, InputBaseState::auto_grow)")
 }
@@ -552,20 +557,13 @@ pub fn otp_input(t: &Theme) -> WidgetInfo {
 
 /// A `Select`. Its geometry line is recorded where `demo::select` applies
 /// the builder.
-pub fn select(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Select")
-        .color(input_background(t))
+pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    combo_fill(WidgetInfo::new("Select"), t, native, false)
         .color(claim(
             "upstream trigger text",
             "foreground",
             t.foreground,
             "gpui-component/input/input.rs:105",
-        ))
-        .color(claim(
-            "trigger border",
-            "input",
-            t.input,
-            "gpui-component/select.rs:541",
         ))
         .color(claim(
             "focused border",
@@ -579,10 +577,56 @@ pub fn select(t: &Theme) -> WidgetInfo {
             t.muted_foreground,
             "gpui-component/select.rs:445",
         ))
-        .not_themeable("fill", "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)")
         .not_themeable("carried colour", "the one difference from a Combobox, such as the theme settings' preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)")
         .not_themeable("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size")
         .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the list is empty (select.rs, SelectState::new)"))
+}
+
+/// A drop-down trigger's fill and edge: `native`'s `combo_box.background_color`
+/// and `combo_box.border.color`, which the showcase refines the trigger with
+/// over upstream's (`demo::combo_fill`), where a native theme is installed;
+/// upstream's `input_background()` and `input` where none is, the edge read
+/// by a `Combobox` where `combobox`, by a `Select` where not.
+pub fn combo_fill(
+    info: WidgetInfo,
+    t: &Theme,
+    native: Option<&ResolvedTheme>,
+    combobox: bool,
+) -> WidgetInfo {
+    match native {
+        Some(r) => info
+            .color(claim(
+                "trigger fill",
+                "background_color",
+                stated(r.combo_box.background_color),
+                "showcase",
+            ))
+            .color(claim(
+                "trigger border",
+                "color",
+                stated(r.combo_box.border.color),
+                "showcase",
+            ))
+            .config("fill", "combo_box.background_color and combo_box.border.color, which the showcase refines the trigger with over the input_background() fill and input edge it paints first (select.rs, Select::render; combobox.rs, Combobox::render)"),
+        None => info
+            .color(input_background(t))
+            .color(if combobox {
+                claim(
+                    "trigger border",
+                    "input",
+                    t.input,
+                    "gpui-component/combobox.rs:992",
+                )
+            } else {
+                claim(
+                    "trigger border",
+                    "input",
+                    t.input,
+                    "gpui-component/select.rs:541",
+                )
+            })
+            .not_themeable("fill", "input_background(), as an Input's: the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs, input_background)"),
+    }
 }
 
 /// A `ColorPicker`.

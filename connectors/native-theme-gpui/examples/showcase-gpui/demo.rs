@@ -677,7 +677,8 @@ pub(crate) fn preset_combobox(
     cx: &App,
     state: &Entity<ComboboxState<PresetDelegate>>,
 ) -> Stateful<Div> {
-    let mut combobox_info = info::preset_combobox(cx.theme());
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut combobox_info = info::preset_combobox(cx.theme(), native.as_ref().map(|n| n.resolved));
     let combobox = native_info(
         Combobox::new(state)
             .placeholder("Pick a preset…")
@@ -686,8 +687,8 @@ pub(crate) fn preset_combobox(
         geometry::combobox,
         "combobox",
         &mut combobox_info,
-    )
-    .w_full();
+    );
+    let combobox = refined(combobox, combo_fill(cx).as_ref()).w_full();
     combobox.info(ui, "chrome-settings-preset", combobox_info)
 }
 
@@ -699,15 +700,16 @@ pub(crate) fn color_mode_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let mut select_info = info::color_mode_select(cx.theme());
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut select_info = info::color_mode_select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state),
         cx,
         geometry::select,
         "select",
         &mut select_info,
-    )
-    .w_full();
+    );
+    let select = refined(select, combo_fill(cx).as_ref()).w_full();
     select.info(ui, "chrome-settings-color-mode", select_info)
 }
 
@@ -718,15 +720,16 @@ pub(crate) fn icon_set_select(
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
 ) -> Stateful<Div> {
-    let mut select_info = info::icon_set_select(cx.theme());
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut select_info = info::icon_set_select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state),
         cx,
         geometry::select,
         "select",
         &mut select_info,
-    )
-    .w_full();
+    );
+    let select = refined(select, combo_fill(cx).as_ref()).w_full();
     select.info(ui, "chrome-settings-icon-theme", select_info)
 }
 
@@ -2350,14 +2353,19 @@ pub(crate) fn textarea(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let mut textarea_info = info::inputs::textarea(cx.theme());
-    let mut textarea = native_info(
+    let fill = native_geometry(cx, |n| geometry::input_fill(n, false));
+    let mut textarea_info = info::inputs::textarea(cx.theme(), fill.is_some());
+    let textarea = native_info(
         Textarea::new(state).w(width),
         cx,
         geometry::input,
         "input",
         &mut textarea_info,
     );
+    if fill.is_some() {
+        textarea_info = textarea_info.geometry("input_fill");
+    }
+    let mut textarea = refined(textarea, fill.as_ref());
     Styled::style(&mut textarea).padding = StyleRefinement::default().padding;
     Styled::h(textarea, height)
         .info(ui, id, textarea_info)
@@ -2377,14 +2385,19 @@ pub(crate) fn rows_textarea(
     state: &Entity<TextareaState>,
     width: Pixels,
 ) -> Stateful<Div> {
-    let mut textarea_info = info::inputs::rows_textarea(cx.theme());
-    let mut textarea = native_info(
+    let fill = native_geometry(cx, |n| geometry::input_fill(n, false));
+    let mut textarea_info = info::inputs::rows_textarea(cx.theme(), fill.is_some());
+    let textarea = native_info(
         Textarea::new(state).w(width),
         cx,
         geometry::input,
         "input",
         &mut textarea_info,
     );
+    if fill.is_some() {
+        textarea_info = textarea_info.geometry("input_fill");
+    }
+    let mut textarea = refined(textarea, fill.as_ref());
     let style = Styled::style(&mut textarea);
     style.padding = StyleRefinement::default().padding;
     style.size.height = None;
@@ -2736,7 +2749,8 @@ pub(crate) fn select(
     placeholder: &'static str,
     width: Pixels,
 ) -> Stateful<Div> {
-    let mut select_info = info::inputs::select(cx.theme());
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut select_info = info::inputs::select(cx.theme(), native.as_ref().map(|n| n.resolved));
     let select = native_info(
         Select::new(state).placeholder(placeholder).w(width),
         cx,
@@ -2744,9 +2758,24 @@ pub(crate) fn select(
         "select",
         &mut select_info,
     );
-    select
+    refined(select, combo_fill(cx).as_ref())
         .info(ui, id, select_info)
         .debug_selector(move || id.into())
+}
+
+/// A drop-down trigger's fill and edge, `combo_box.background_color` and
+/// `combo_box.border.color`, for a `Select` or a `Combobox` that is not
+/// disabled, or `None` before `apply` ran. The trigger paints
+/// `input_background()` and `input` first and refines itself with the
+/// caller's style after (select.rs, `Select::render`; combobox.rs,
+/// `Combobox::render`), so these land over them.
+fn combo_fill(cx: &App) -> Option<StyleRefinement> {
+    native_value(cx, |n| {
+        let c = &n.resolved.combo_box;
+        StyleRefinement::default()
+            .bg(info::stated(c.background_color))
+            .border_color(info::stated(c.border.color))
+    })
 }
 
 /// A `ColorPicker` over `state`, reading `label`.
