@@ -171,6 +171,13 @@ states. `native_theme_iced::switch(&resolved, on, on_toggle)` is a switch at
 built from a button and two containers in `styles::toggler`'s colours; it
 has no label, and `None` for `on_toggle` disables it.
 
+`radio` draws its dot at half the circle, and `radio::Style` has no size for
+it. `native_theme_iced::radio(&resolved, radio(..), is_selected)` sizes the
+radio `checkbox.indicator_width` across, `checkbox.label_gap` from its label,
+in `styles::radio`, and where the theme states `checkbox.radio_dot_diameter`
+lays a dot that many pixels across over the circle, in
+`checkbox.indicator_color`; where it states none (macOS), the dot is iced's.
+
 ### `iced_aw`
 
 native-theme models a card, a menu, a tab bar, a sidebar, a spinner and a

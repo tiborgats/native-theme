@@ -159,7 +159,7 @@
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
 //! | `styles` (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
+//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
@@ -606,6 +606,68 @@ where
             }
         })
         .into()
+}
+
+/// A radio button at the platform's size, with the platform's dot: `radio`
+/// sized `checkbox.indicator_width` across and set `checkbox.label_gap` from
+/// its label, styled by [`styles::radio()`], and, where the theme states
+/// `checkbox.radio_dot_diameter`, selected with a dot that many pixels across
+/// in `checkbox.indicator_color`, centred in the circle. `is_selected` is the
+/// selection `radio` was built with (`Some(value) == selected`), which iced
+/// keeps private.
+///
+/// iced draws its dot at half the circle (`iced_widget` 0.14.2
+/// `src/radio.rs:409-433`) and `radio::Style` has no size for it, so where a
+/// dot size is stated this paints the radio with a transparent `dot_color`
+/// and lays the dot over it in a `Stack`, whose first layer sizes it
+/// (`stack.rs:180-187`) and whose upper layers take no input
+/// (`stack.rs:249-275`): layout, input, hover and label stay the radio's.
+/// Where the theme states no dot size -- macOS publishes none
+/// (`docs/platform-facts.md:1220`) -- the dot is iced's own.
+///
+/// Set the label's `text_size` and `font` on `radio` before passing it.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn radio<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+    radio: iced_widget::Radio<'a, Message, iced_core::Theme, Renderer>,
+    is_selected: bool,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::text::Renderer + 'a,
+{
+    use iced_widget::container;
+
+    let c = &resolved.checkbox;
+    let style = styles::radio(resolved);
+    let radio = radio.size(c.indicator_width).spacing(c.label_gap);
+    let Some(dot) = c.radio_dot_diameter.filter(|d| d.is_finite() && *d >= 0.0) else {
+        return radio.style(style).into();
+    };
+    let radio = radio.style(move |theme, status| iced_widget::radio::Style {
+        dot_color: iced_core::Color::TRANSPARENT,
+        ..style(theme, status)
+    });
+    // Laid out whether selected or not, so the radio keeps its place in the
+    // widget tree, and its state, as the selection changes.
+    let colour = palette::to_color(c.indicator_color);
+    let mark = container(iced_widget::Space::new())
+        .width(dot)
+        .height(dot)
+        .style(move |_| container::Style {
+            background: is_selected.then_some(iced_core::Background::Color(colour)),
+            border: iced_core::border::rounded(dot / 2.0),
+            ..container::Style::default()
+        });
+    let seat = container(mark)
+        .width(c.indicator_width)
+        .height(iced_core::Length::Fill)
+        .align_x(iced_core::alignment::Horizontal::Center)
+        .align_y(iced_core::alignment::Vertical::Center);
+    iced_widget::Stack::new().push(radio).push(seat).into()
 }
 
 /// Lays `content` out at least `min` wide and tall, centred in the room the

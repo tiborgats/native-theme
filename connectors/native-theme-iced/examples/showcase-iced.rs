@@ -4680,17 +4680,18 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     );
 
     let option = |label: &'a str, value: usize| {
-        radio(
-            label,
-            value,
-            Some(state.basic_radio),
-            Message::BasicRadioSelected,
+        native_theme_iced::radio(
+            resolved,
+            radio(
+                label,
+                value,
+                Some(state.basic_radio),
+                Message::BasicRadioSelected,
+            )
+            .text_size(scaled_text_size(c.font.size, a11y))
+            .font(theme_font(&c.font)),
+            state.basic_radio == value,
         )
-        .spacing(c.label_gap)
-        .size(c.indicator_width)
-        .text_size(scaled_text_size(c.font.size, a11y))
-        .font(theme_font(&c.font))
-        .style(styles::radio(resolved))
     };
     let radios = group(
         "Radio buttons",
@@ -5975,6 +5976,27 @@ fn radio_info(resolved: &ResolvedTheme) -> String {
     let c = &resolved.checkbox;
     let label_gap_s = format!("{:.0}px", c.label_gap);
     let indicator_width_s = format!("{:.0}px", c.indicator_width);
+    // `checkbox.radio_dot_diameter` (platform-facts.md:1220), which
+    // `native_theme_iced::radio` draws over iced's radio; unstated, the dot is
+    // iced's own, half the circle (radio.rs:409).
+    let dot_s = c.radio_dot_diameter.map(|d| format!("{d:.0}px"));
+    let mut sizes = vec![
+        ("label gap", label_gap_s.as_str()),
+        ("indicator diameter", indicator_width_s.as_str()),
+    ];
+    let mut unthemed = vec![
+        ("border-radius", "radio::Style carries no corner radius"),
+        ("disabled", "radio::Status has no disabled value"),
+    ];
+    match &dot_s {
+        Some(dot) => sizes.push(("dot diameter", dot.as_str())),
+        None => unthemed.push((
+            "dot diameter",
+            "the theme states none: iced's own, half the circle (radio.rs:409)",
+        )),
+    }
+    let label_s = font_row("checkbox.font", &resolved.checkbox.font);
+    sizes.push(("label", label_s.as_str()));
     widget_tooltip(
         "Radio",
         &[
@@ -5999,18 +6021,8 @@ fn radio_info(resolved: &ResolvedTheme) -> String {
                 to_color(c.unchecked_background.unwrap_or(c.background_color)),
             ),
         ],
-        &[
-            ("label gap", &label_gap_s),
-            ("indicator diameter", &indicator_width_s),
-            (
-                "label",
-                font_row("checkbox.font", &resolved.checkbox.font).as_str(),
-            ),
-        ],
-        &[
-            ("border-radius", "radio::Style carries no corner radius"),
-            ("disabled", "radio::Status has no disabled value"),
-        ],
+        &sizes,
+        &unthemed,
     )
 }
 
@@ -6156,47 +6168,50 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             probe(
                 probes::RADIO_APPLE,
                 Length::Shrink,
-                radio(
-                    "Apple",
-                    Fruit::Apple,
-                    state.selected_fruit,
-                    Message::FruitSelected
+                native_theme_iced::radio(
+                    resolved,
+                    radio(
+                        "Apple",
+                        Fruit::Apple,
+                        state.selected_fruit,
+                        Message::FruitSelected
+                    )
+                    .text_size(scaled_text_size(c.font.size, a11y))
+                    .font(theme_font(&c.font)),
+                    state.selected_fruit == Some(Fruit::Apple),
                 )
-                .spacing(c.label_gap)
-                .size(c.indicator_width)
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .font(theme_font(&c.font))
-                .style(styles::radio(resolved))
             ),
             probe(
                 probes::RADIO_BANANA,
                 Length::Shrink,
-                radio(
-                    "Banana",
-                    Fruit::Banana,
-                    state.selected_fruit,
-                    Message::FruitSelected
+                native_theme_iced::radio(
+                    resolved,
+                    radio(
+                        "Banana",
+                        Fruit::Banana,
+                        state.selected_fruit,
+                        Message::FruitSelected
+                    )
+                    .text_size(scaled_text_size(c.font.size, a11y))
+                    .font(theme_font(&c.font)),
+                    state.selected_fruit == Some(Fruit::Banana),
                 )
-                .spacing(c.label_gap)
-                .size(c.indicator_width)
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .font(theme_font(&c.font))
-                .style(styles::radio(resolved))
             ),
             probe(
                 probes::RADIO_CHERRY,
                 Length::Shrink,
-                radio(
-                    "Cherry",
-                    Fruit::Cherry,
-                    state.selected_fruit,
-                    Message::FruitSelected
+                native_theme_iced::radio(
+                    resolved,
+                    radio(
+                        "Cherry",
+                        Fruit::Cherry,
+                        state.selected_fruit,
+                        Message::FruitSelected
+                    )
+                    .text_size(scaled_text_size(c.font.size, a11y))
+                    .font(theme_font(&c.font)),
+                    state.selected_fruit == Some(Fruit::Cherry),
                 )
-                .spacing(c.label_gap)
-                .size(c.indicator_width)
-                .text_size(scaled_text_size(c.font.size, a11y))
-                .font(theme_font(&c.font))
-                .style(styles::radio(resolved))
             ),
             text(format!(
                 "Selected: {}",
@@ -9909,6 +9924,48 @@ mod tests {
     }
 
     // -----------------------------------------------------------------------
+    // the_basic_radio_draws_the_themes_dot
+    // -----------------------------------------------------------------------
+
+    /// The Basic page's selected radio, Option A, is drawn by
+    /// `native_theme_iced::radio`: under kde-breeze its dot is
+    /// `checkbox.radio_dot_diameter`, 6px (platform-facts.md:1220), centred
+    /// in the circle, in the column of Option B's circle and above it.
+    #[test]
+    fn the_basic_radio_draws_the_themes_dot() {
+        let mut state = State::default();
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset("kde-breeze".to_string())),
+        );
+        assert_eq!(state.basic_radio, 0, "Option A is the selected one");
+        let c = state.current_resolved.checkbox.clone();
+        assert_eq!(c.radio_dot_diameter, Some(6.0));
+        let mut ui = interface(&state);
+        let option_b = probe_bounds(&mut ui, probes::BASIC_RADIO_B);
+        let found = ui.find(|candidate: Candidate<'_>| -> Option<Rectangle> {
+            match candidate {
+                Candidate::Container {
+                    visible_bounds: Some(bounds),
+                    ..
+                } if bounds.width == 6.0 && bounds.height == 6.0 => Some(bounds),
+                _ => None,
+            }
+        });
+        let dot = match found {
+            Ok(bounds) => bounds,
+            Err(error) => panic!("no 6px dot: {error}"),
+        };
+        let column = option_b.x + c.indicator_width / 2.0;
+        assert_eq!(
+            dot.center().x,
+            column,
+            "the dot is not in the circles' column"
+        );
+        assert!(dot.y < option_b.y, "the dot is not Option A's");
+    }
+
+    // -----------------------------------------------------------------------
     // interactive_controls_respond
     // -----------------------------------------------------------------------
 
@@ -11074,6 +11131,31 @@ mod tests {
         "container::rounded_box",
     ];
 
+    /// Constructors a connector function dresses itself, as
+    /// `(constructor, the style it applies, the function)`:
+    /// `native_theme_iced::radio(resolved, radio(..), ..)` applies
+    /// `styles::radio` with the platform's geometry and dot (`src/lib.rs`).
+    const CONNECTOR_DRESSED: &[(&str, &str, &str)] =
+        &[("radio", "styles::radio", "native_theme_iced::radio")];
+
+    /// Is the constructor at `site` the widget argument of the connector
+    /// function that dresses it -- `<function>(resolved, <site>..`?
+    fn dressed_by_connector(source: &str, site: usize, ctor: &str) -> bool {
+        CONNECTOR_DRESSED
+            .iter()
+            .filter(|(c, _, _)| *c == ctor)
+            .any(|(_, _, wrapper)| {
+                source[..site]
+                    .trim_end()
+                    .strip_suffix(',')
+                    .map(str::trim_end)
+                    .and_then(|s| s.strip_suffix("resolved"))
+                    .map(str::trim_end)
+                    .and_then(|s| s.strip_suffix('('))
+                    .is_some_and(|s| s.ends_with(wrapper))
+            })
+    }
+
     /// Every widget the showcase renders wears the platform's own style.
     #[test]
     fn styles_cover_every_widget_shown() {
@@ -11109,7 +11191,10 @@ mod tests {
             for required in row.styles {
                 let bare: Vec<String> = sites
                     .iter()
-                    .filter(|site| !is_dressed(&source, **site, required))
+                    .filter(|site| {
+                        !is_dressed(&source, **site, required)
+                            && !dressed_by_connector(&source, **site, row.ctor)
+                    })
                     .map(|site| format!("showcase-iced.rs:{}", line_at(&source, *site)))
                     .collect();
                 assert!(
@@ -11123,11 +11208,16 @@ mod tests {
         }
         assert!(total > 0, "the coverage table found nothing");
 
-        // Every public style function the connector ships is demonstrated.
+        // Every public style function the connector ships is demonstrated,
+        // itself or through the connector function that applies it.
         for function in public_functions(include_str!("../src/styles.rs")) {
             let call = format!("styles::{function}");
+            let applied_by = CONNECTOR_DRESSED
+                .iter()
+                .filter(|(_, style, _)| *style == call)
+                .any(|(_, _, wrapper)| !call_sites(&source, wrapper).is_empty());
             assert!(
-                !call_sites(&source, &call).is_empty(),
+                !call_sites(&source, &call).is_empty() || applied_by,
                 "styles::{function} has no call site in the showcase"
             );
         }

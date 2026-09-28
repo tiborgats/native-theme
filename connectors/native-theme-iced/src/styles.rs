@@ -600,6 +600,9 @@ pub fn checkbox(
 /// iced draws at half of it (`radio.rs:409`) -- and belongs to
 /// `Radio::size(..)` (`radio.rs:200`, laid out at `:300`), and
 /// `checkbox.label_gap` to `Radio::spacing(..)` (`radio.rs:212`).
+/// `checkbox.radio_dot_diameter` has no receiver in `radio::Style`;
+/// [`crate::radio()`] applies this style with both builders and draws that
+/// dot.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn radio(
     resolved: &ResolvedTheme,
