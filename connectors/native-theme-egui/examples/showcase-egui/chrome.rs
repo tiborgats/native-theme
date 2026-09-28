@@ -207,13 +207,13 @@ fn chrome_button_image(
     }
 }
 
-/// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4):
-/// frameless at rest and filled on hover; while `selected`, filled with the pressed fill of the
-/// `Ui` it is added to — in `Role::Button`, `button.active_background` (§6.4) — as
-/// native-theme-gpui's `ghost_button` fills with its `active` colour
-/// (`connectors/native-theme-gpui/src/variants.rs:51-57`), not with the selected button's
-/// accent. Its icon where the set has one, else its tooltip's text as its label, as gpui's
-/// (`showcase-gpui/demo.rs:480-483`).
+/// A Ghost button, as the gpui showcase's toolbar and status-bar buttons are (parity rule R4),
+/// for a `Ui` made Ghost with `demo::ghost`: transparent at rest and filled on hover; while
+/// `selected`, filled with the pressed fill of that `Ui` — in `Role::Button`,
+/// `button.active_background` (§6.4) — as native-theme-gpui's `ghost_button` fills with its
+/// `active` colour (`connectors/native-theme-gpui/src/variants.rs:51-57`), not with the
+/// selected button's accent. Its icon where the set has one, else its tooltip's text as its
+/// label, as gpui's (`showcase-gpui/demo.rs:480-483`).
 fn ghost_button(
     ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
@@ -227,7 +227,7 @@ fn ghost_button(
     if selected {
         button.fill(ui.visuals().widgets.active.weak_bg_fill)
     } else {
-        button.frame_when_inactive(false)
+        button
     }
 }
 
@@ -292,6 +292,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
                     RoleVariant::Normal,
                     kind,
                     |ui| {
+                        demo::ghost(ui);
                         let r = ui.add(ghost_button(ui, image, label, false));
                         r.widget_info(|| {
                             egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
@@ -299,6 +300,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
                         r
                     },
                 );
+                registry.ghost_last();
                 registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
                 tooltip(registry, ui, &response, label, action.shortcut());
                 if response.clicked() {
@@ -417,6 +419,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     RoleVariant::Normal,
                     kind,
                     |ui| {
+                        demo::ghost(ui);
                         let r = ui.add(ghost_button(ui, image, label, open).small());
                         r.widget_info(|| {
                             egui::WidgetInfo::selected(egui::WidgetType::Button, true, open, label)
@@ -424,6 +427,7 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                         r
                     },
                 );
+                registry.ghost_last();
                 registry.amend_last(|i| {
                     i.read
                         .push(("defaults.icon_sizes.small", format!("{icon_size}")));
@@ -787,7 +791,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
 /// The page tabs, the gpui showcase's page `TabBar` (`showcase-gpui/chrome.rs:215-228`): the
 /// underline tabs of `demo::tab_bar` in one `Role::Tab` scope (§10.4), padded by
 /// `container_margin`, scrolling sideways where the content is too narrow for them, and at the
-/// row's right end a frameless menu button listing every page, the current one selected, as
+/// row's right end a Ghost menu button listing every page, the current one selected, as
 /// gpui-component's tab-bar menu does (`GC/tab/tab_bar.rs:554-584`). Its caret is the chosen
 /// icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the button
 /// reads "Pages" (§10.4's icon rule).
@@ -831,8 +835,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Pages"),
             }
-            .small()
-            .frame_when_inactive(false);
+            .small();
             let response = demo::menu_button(
                 registry,
                 ui,
@@ -853,6 +856,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
                     }
                 },
             );
+            registry.ghost_last();
             response
                 .widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Pages"));
         },
@@ -953,7 +957,7 @@ pub(crate) fn inner_extent(stated: f32, frame: &egui::Frame, horizontal: bool) -
 /// A dialog's title row, as gpui-component's `Dialog` draws one (`GC/dialog/dialog.rs:182`) and
 /// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:1013`, `:1047`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
-/// read from the theme — and flush right a frameless close button, the chosen icon theme's
+/// read from the theme — and flush right a Ghost close button, the chosen icon theme's
 /// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's
 /// icon rule). Added through the dialog body's seam; returns whether the button was clicked.
 fn dialog_title(
@@ -984,12 +988,13 @@ fn dialog_title(
             ));
         });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            demo::ghost(ui);
             let button = match image {
                 Some(image) => egui::Button::image(image),
                 None => egui::Button::new("Close"),
-            }
-            .frame_when_inactive(false);
+            };
             let r = body.add(reg, ui, "Button · dialog close", |ui| ui.add(button));
+            reg.ghost_last();
             r.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, "Close"));
             clicked = r.clicked();
         });

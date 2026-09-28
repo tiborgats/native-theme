@@ -560,6 +560,22 @@
       for `x86_64-pc-windows-msvc` and `x86_64-apple-darwin`, each with and
       without its platform feature, reports no warning.
 
+- [ ] Possible upstream egui issue: a `Button` given `frame_when_inactive(false)`
+      changes size with its state. At rest egui lays it out with
+      `Frame::new().inner_margin(..)`, no stroke, and hovered or pressed with
+      the full frame, whose `bg_stroke` width adds to its outer size
+      (`egui/src/widgets/button.rs:364-368`, egui 0.36.2; the full frame's
+      margins, `egui/src/widget_style.rs:162-165`, cancel its stroke and
+      expansion, the bare margin does not), so it grows on hover by twice
+      the resting stroke width less the resting expansion: by twice the
+      border's width wherever a style gives the resting entry a border, as
+      native-theme-egui's do where the theme's border has a width
+      (`BorderEntries`, `connectors/native-theme-egui/src/style/states.rs:38-43`). `Button::selectable` (`:81`), behind `selectable_label` and
+      `selectable_value`, takes the same path. The egui showcase draws its
+      Ghost buttons in a style scope instead (`demo::ghost`: the full frame in
+      every state, the resting fill and border colour transparent), and
+      `a_ghost_button_keeps_its_size_when_hovered_and_pressed` checks it.
+
 ### native-theme-gpui connector
 
 - [x] **v0.5.9: the showcase as an application** — real chrome (the

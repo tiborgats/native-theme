@@ -1649,6 +1649,123 @@ fn the_palette_and_about_are_titled_and_close() {
     }
 }
 
+/// Where a Ghost button is found: the `n`th record of a kind, or the first button of an
+/// AccessKit label, for one no record names alone or one the content draws unrecorded.
+#[derive(Clone, Copy, Debug)]
+enum GhostAt {
+    Kind(&'static str, usize),
+    Label(&'static str),
+}
+
+/// A Ghost button's global rect, and its record's notes where it is recorded.
+fn ghost_at(
+    harness: &Harness<'_, App>,
+    at: GhostAt,
+) -> (egui::Rect, Option<Vec<(&'static str, String)>>) {
+    let records = harness.state().registry.records();
+    match at {
+        GhostAt::Kind(kind, n) => {
+            let record = records
+                .iter()
+                .filter(|r| r.info.kind == kind)
+                .nth(n)
+                .unwrap_or_else(|| panic!("no record {n} of kind {kind}"));
+            let rect = harness
+                .ctx
+                .layer_transform_to_global(record.layer)
+                .map_or(record.rect, |t| t.mul_rect(record.rect));
+            (rect, Some(record.info.notes.clone()))
+        }
+        GhostAt::Label(label) => {
+            let node = harness
+                .query_all_by_role_and_label(Role::Button, label)
+                .next()
+                .unwrap_or_else(|| panic!("no {label} button"));
+            let id = node.accesskit_node().locate().0;
+            let notes = records
+                .iter()
+                .find(|r| r.id.accesskit_id() == id)
+                .map(|r| r.info.notes.clone());
+            (node.rect(), notes)
+        }
+    }
+}
+
+/// A Ghost button keeps its size in every state. egui lays a `frame_when_inactive(false)`
+/// button out at rest without its frame and hovered or pressed with it, whose stroke adds to
+/// its size (`egui/src/widgets/button.rs:364-368`), so each Ghost button is drawn in a Ghost
+/// scope instead (`demo::ghost`), its record noting it: the rect with the pointer off it is the
+/// rect with the pointer on it and pressing it, for each kind, on the screen that draws it.
+#[test]
+fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
+    type Setup = fn(&mut Harness<'static, App>);
+    let none: Setup = |_| {};
+    let panel_hidden: Setup = |h| h.state_mut().side_panel_visible = false;
+    let about: Setup = |h| {
+        let ctx = h.ctx.clone();
+        h.state_mut().run_action(Action::OpenAbout, &ctx);
+    };
+    let info_shown: Setup = |h| {
+        let pos = centre_of(h, "Label (body text)");
+        hover_and_settle(h, pos);
+        assert!(shown_id(h).is_some(), "Widget Info shows nothing to copy");
+    };
+    let cases: [(&str, Setup, GhostAt); 8] = [
+        ("toolbar", none, GhostAt::Label("Command Palette")),
+        (
+            "side panel toggle, panel shown",
+            none,
+            GhostAt::Label("Toggle Side Panel"),
+        ),
+        (
+            "side panel toggle, panel hidden",
+            panel_hidden,
+            GhostAt::Label("Toggle Side Panel"),
+        ),
+        ("selected page tab", none, GhostAt::Kind("Tab · Page", 0)),
+        ("page tab", none, GhostAt::Kind("Tab · Page", 1)),
+        (
+            "Pages menu button",
+            none,
+            GhostAt::Kind("Menu button · Pages", 0),
+        ),
+        (
+            "dialog close",
+            about,
+            GhostAt::Kind("Button · dialog close", 0),
+        ),
+        ("Widget Info's Copy", info_shown, GhostAt::Label("Copy")),
+    ];
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        for (what, setup, at) in cases {
+            let mut harness = open(theme, cli(&[("--theme", TEST_PRESET)]));
+            harness.run_steps(4);
+            setup(&mut harness);
+            harness.run_steps(4);
+            harness.remove_cursor();
+            harness.run_steps(2);
+            let (rest, notes) = ghost_at(&harness, at);
+            harness.hover_at(rest.center());
+            harness.run_steps(2);
+            let (hovered, _) = ghost_at(&harness, at);
+            harness.drag_at(rest.center());
+            harness.run_steps(2);
+            let (pressed, _) = ghost_at(&harness, at);
+            assert_eq!(
+                (hovered, pressed),
+                (rest, rest),
+                "{what} under {theme:?}: hovered and pressed, not its resting rect"
+            );
+            if let Some(notes) = notes {
+                assert!(
+                    notes.iter().any(|(k, _)| *k == crate::demo::GHOST_NOTE.0),
+                    "{what} under {theme:?}: its record does not note it Ghost: {notes:?}"
+                );
+            }
+        }
+    }
+}
+
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
 /// each in `Role::Switch`, its checked look the button's own selected flag (§6.2), so a set
 /// flag is a selected button and a click flips it; each sits right of its title.

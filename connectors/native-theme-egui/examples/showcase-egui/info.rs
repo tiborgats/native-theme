@@ -520,12 +520,13 @@ pub(crate) fn widget_tab(
             return;
         }
     };
-    // The title, and Copy flush right: a small Ghost button, frameless at rest (parity rule R4).
+    // The title, and Copy flush right: a small Ghost button, transparent at rest (parity rule R4).
     ui.horizontal(|ui| {
         let title = crate::demo::section_text(ui, shown.info.kind);
         ui.label(title);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            let copy = egui::Button::new("Copy").small().frame_when_inactive(false);
+            crate::demo::ghost(ui);
+            let copy = egui::Button::new("Copy").small();
             if ui.add(copy).clicked() {
                 ui.ctx().copy_text(info_text(shown, manifest, json, preset));
             }

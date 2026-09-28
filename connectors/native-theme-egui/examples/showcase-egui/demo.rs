@@ -166,6 +166,31 @@ impl Registry {
             f(&mut last.info);
         }
     }
+    /// Note on the last record that it is a button drawn in a `ghost` scope.
+    pub(crate) fn ghost_last(&mut self) {
+        self.amend_last(|i| {
+            i.notes.push((GHOST_NOTE.0, GHOST_NOTE.1.to_string()));
+        });
+    }
+}
+
+/// What a button drawn in a `ghost` scope notes under *This instance*.
+pub(crate) const GHOST_NOTE: (&str, &str) = (
+    "fill and border at rest",
+    "transparent, the border's width kept: a Ghost button, as gpui-component's (GC/button/button.rs:942, :1032)",
+);
+
+/// Make the rest of `ui` Ghost: the resting entry's fill and border colour transparent, the
+/// border's width kept, so a button in it is transparent at rest, as gpui-component's ghost
+/// button is (`GC/button/button.rs:942`, `:1032`), and filled and bordered hovered and pressed
+/// as its role states. It keeps its full frame, and so its size, in every state, where
+/// `frame_when_inactive(false)` lays it out at rest without the frame's border, which the
+/// hovered frame adds to its size (`egui/src/widgets/button.rs:364-368`). Each button drawn in
+/// it is noted with `Registry::ghost_last` where it is recorded.
+pub(crate) fn ghost(ui: &mut egui::Ui) {
+    let rest = &mut ui.style_mut().visuals.widgets.inactive;
+    rest.weak_bg_fill = egui::Color32::TRANSPARENT;
+    rest.bg_stroke.color = egui::Color32::TRANSPARENT;
 }
 
 pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
@@ -798,7 +823,8 @@ pub(crate) struct TabBar<'a, T> {
 /// A row of tabs as gpui-component's underline `TabBar` draws it, the gpui showcase's
 /// `demo::tab_bar` (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:797-836`), in
 /// one `Role::Tab` scope (§10.4): each tab a `Button::new(label).selected(..)` whose own flag
-/// picks the active tab's colours (§6.2), frameless at rest as an underline tab is; under the
+/// picks the active tab's colours (§6.2), transparent at rest as an underline tab is (the row
+/// is made Ghost with `ghost`, its trailing widgets with it); under the
 /// selected tab a `TAB_UNDERLINE_WIDTH` line in `button.primary_background`, the leaf gpui's
 /// `primary` is built from (`GC/tab/tab.rs:253-261`); under the row a rule in
 /// `defaults.border`'s colour and width, from edge to edge (`GC/tab/tab_bar.rs:502-512`).
@@ -831,16 +857,18 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
             let padding = egui::Vec2::X * bar.margin.unwrap_or_default();
             let out = egui::Frame::NONE.inner_margin(padding).show(ui, |ui| {
                 ui.set_min_width(ui.available_width());
+                ghost(ui);
+                // The selected tab's fill, which `button_style` takes from `selection` in every
+                // state (`egui/src/widget_style.rs:150-155`): none, as gpui-component's selected
+                // underline tab has none (`GC/tab/tab.rs:253-261`).
+                ui.visuals_mut().selection.bg_fill = egui::Color32::TRANSPARENT;
                 let mut tabs = |ui: &mut egui::Ui, reg: &mut Registry| {
                     for (value, label) in bar.tabs {
                         let selected = *value == bar.current;
                         let r = tab.add(reg, ui, bar.tab_kind, |ui| {
-                            ui.add(
-                                egui::Button::new(*label)
-                                    .selected(selected)
-                                    .frame_when_inactive(false),
-                            )
+                            ui.add(egui::Button::new(*label).selected(selected))
                         });
+                        reg.ghost_last();
                         if selected {
                             let y = r.rect.bottom() - underline.width / 2.0;
                             ui.painter().hline(r.rect.x_range(), y, underline);
@@ -905,6 +933,10 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                 "{}px, gpui-component's underline tab",
                 crate::TAB_UNDERLINE_WIDTH
             ),
+        ));
+        i.notes.push((
+            "the selected tab's fill",
+            "none, gpui-component's underline tab".to_string(),
         ));
     });
     picked
