@@ -3,9 +3,11 @@
 //! Demonstrates every styled iced widget with live theme switching across all
 //! bundled `native-theme` presets (system / light / dark), every `native-theme`
 //! metric helper, an icon gallery with icon-theme switching and source
-//! tracking, and a theme map showing all palette colors. Layout mirrors the
-//! gpui showcase: left sidebar with theme controls and a hover-driven Widget
-//! Info inspector; tabbed content area on the right.
+//! tracking, and a theme map showing all palette colors. The chrome is the
+//! gpui and egui showcases', element by element, drawn from the theme data:
+//! a menu bar, a toolbar, a side panel with the theme settings over a
+//! hover-driven inspector, a splitter, the page tabs, a status bar, and the
+//! command palette, Preferences and About dialogs.
 //!
 //! # Running
 //!
@@ -32,12 +34,14 @@
 
 use iced::advanced::graphics::text::cosmic_text::{self, Fallback, fontdb};
 use iced::widget::{
-    button, canvas, checkbox, column, combo_box, container, grid, markdown, mouse_area, pane_grid,
-    pick_list, progress_bar, qr_code, radio, rich_text, row, rule, scrollable, slider, space, span,
-    svg, table, text, text_editor, text_input, toggler, tooltip, vertical_slider,
+    button, canvas, center, checkbox, column, combo_box, container, grid, markdown, mouse_area,
+    opaque, pane_grid, pick_list, progress_bar, qr_code, radio, rich_text, row, rule, scrollable,
+    slider, space, span, stack, svg, table, text, text_editor, text_input, toggler, tooltip,
+    vertical_slider,
 };
 use iced::{Color, Element, Fill, Length, Padding, Theme};
-#[cfg(feature = "iced_aw")]
+// The window's menu bar is iced_aw's, with or without the connector's
+// `iced_aw` feature: the showcase depends on iced_aw's menu itself.
 use iced_aw::menu::{Item, Menu, MenuBar};
 #[cfg(feature = "iced_aw")]
 use iced_aw::sidebar::Sidebar;
@@ -141,6 +145,8 @@ fn probe<'a>(
 mod probes {
     pub const THEME: &str = "probe-theme";
     pub const COLOR_MODE: &str = "probe-color-mode";
+    pub const ICON_THEME: &str = "probe-icon-theme";
+    pub const SIDE_PANEL: &str = "probe-side-panel";
     pub const TEXT_EDITOR: &str = "probe-text-editor";
     pub const RADIO_APPLE: &str = "probe-radio-apple";
     pub const RADIO_BANANA: &str = "probe-radio-banana";
@@ -170,9 +176,11 @@ mod probes {
 /// self-tests type into.
 const TEXT_INPUT_ID: &str = "showcase-text-input";
 
-/// The `widget::Id` of the page tab strip's `scrollable`, which reports its
-/// own bounds and its content's to a selector (`scrollable.rs:548-560`).
+/// The `widget::Id`s of the page and inspector tab strips' `scrollable`s,
+/// which report their own bounds and their content's to a selector
+/// (`scrollable.rs:548-560`).
 const TAB_STRIP_ID: &str = "showcase-tab-strip";
+const INSPECTOR_TABS_ID: &str = "showcase-inspector-tabs";
 
 /// The four layout distances the platform itself states.
 ///
@@ -184,8 +192,8 @@ const TAB_STRIP_ID: &str = "showcase-tab-strip";
 ///
 /// Every field of `LayoutTheme` is an `Option`: `None` is the platform saying
 /// it states no such distance, and nothing is invented for it -- the
-/// showcase's own [`Spacing`] constant stands in, and the Theme Config
-/// Inspector says which of the two is on screen.
+/// showcase's own [`Spacing`] constant stands in, and the inspector's Theme
+/// tab says which of the two is on screen.
 struct Gaps {
     /// Space between adjacent widgets, `layout.widget_gap`.
     widget: f32,
@@ -208,8 +216,8 @@ impl Gaps {
     }
 }
 
-/// How one layout distance reads in the Theme Config Inspector: the platform's
-/// value, or the showcase constant that stood in for it.
+/// How one layout distance reads in the inspector's Theme tab: the
+/// platform's value, or the showcase constant that stood in for it.
 fn layout_value(stated: Option<f32>, fallback: f32) -> String {
     match stated {
         Some(v) => format!("{v:.0}px"),
@@ -518,9 +526,11 @@ enum ThemeChoice {
 
 impl std::fmt::Display for ThemeChoice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // The preset's display name, as the gpui and egui showcases' preset
+        // switches show it; its key where no preset has that key.
         match self {
             ThemeChoice::OsTheme(label) => write!(f, "{label}"),
-            ThemeChoice::Preset(name) => write!(f, "{name}"),
+            ThemeChoice::Preset(key) => write!(f, "{}", preset_display_name(key)),
         }
     }
 }
@@ -570,6 +580,14 @@ fn load_adwaita_fallback(is_dark: bool) -> Option<AdwaitaFallback> {
     })
 }
 
+/// The display name of the preset `key`, or `key` where no preset has it.
+fn preset_display_name(key: &str) -> &str {
+    native_theme::theme::Theme::list_presets()
+        .iter()
+        .find(|info| info.key == key)
+        .map_or(key, |info| info.display_name)
+}
+
 fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
     let mut choices = vec![ThemeChoice::OsTheme(default_label.to_string())];
     choices.extend(
@@ -607,13 +625,26 @@ impl AppColorMode {
     }
 }
 
-impl std::fmt::Display for AppColorMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl AppColorMode {
+    /// The mode as the command palette names it: `System` with the mode the
+    /// OS is in.
+    fn palette_label(self) -> String {
         match self {
             AppColorMode::System => {
                 let actual = if self.is_dark() { "Dark" } else { "Light" };
-                write!(f, "System ({actual})")
+                format!("System ({actual})")
             }
+            other => other.to_string(),
+        }
+    }
+}
+
+/// The mode as the Mode drop-down and the Theme menu name it, as the gpui
+/// showcase's `AppColorMode::short_label` does.
+impl std::fmt::Display for AppColorMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppColorMode::System => write!(f, "System"),
             AppColorMode::Light => write!(f, "Light"),
             AppColorMode::Dark => write!(f, "Dark"),
         }
@@ -627,7 +658,8 @@ impl std::fmt::Display for AppColorMode {
 /// Build the available icon set choices for the dropdown.
 ///
 /// Includes `Default(X)` (if icon_theme is specified), `System`, all installed
-/// freedesktop themes, and the bundled sets (Material, Lucide).
+/// freedesktop themes, and the bundled sets, Lucide then Material, in the
+/// gpui showcase's order.
 fn build_icon_choices(
     icon_set: IconSet,
     icon_theme: Option<&str>,
@@ -641,8 +673,8 @@ fn build_icon_choices(
     for name in installed_themes {
         items.push(IconSetChoice::Freedesktop(name.clone()));
     }
-    items.push(IconSetChoice::Material);
     items.push(IconSetChoice::Lucide);
+    items.push(IconSetChoice::Material);
     items
 }
 
@@ -882,6 +914,26 @@ struct State {
     // Widget Info (hover-driven)
     widget_info: String,
 
+    // Chrome
+    /// The inspector's open tab.
+    inspector_tab: InspectorTab,
+    /// Whether the side panel is shown, and how wide the splitter left it.
+    side_panel_visible: bool,
+    side_panel_width: f32,
+    /// Whether the splitter is being dragged, and whether the pointer is on
+    /// it.
+    splitter_dragging: bool,
+    splitter_hovered: bool,
+    /// The window's logical width, which the splitter leaves the page
+    /// [`PANEL_MIN_WIDTH`] of.
+    window_width: f32,
+    /// The dialog open over the window, if any.
+    overlay: Option<Overlay>,
+    /// The command palette's query.
+    palette_query: String,
+    /// The chrome's icons, of the chosen icon theme.
+    chrome_icons: ChromeIcons,
+
     // Basic tab
     /// The Basic tab's radio button, text fields, drop-down and slider.
     basic_radio: usize,
@@ -1112,6 +1164,7 @@ impl State {
         let icon_set_choices =
             build_icon_choices(init_icon_set, init_icon_theme_opt, &installed_themes);
         let loaded_icons = load_all_icons(&icon_set_choice, &resolved, init_icon_set);
+        let chrome_icons = load_chrome_icons(&icon_set_choice, &resolved, init_icon_set);
 
         let anim_set = icon_set_choice.effective_icon_set(init_icon_set);
         let (
@@ -1170,6 +1223,15 @@ impl State {
             default_label,
             active_tab: Tab::Basic,
             widget_info: String::new(),
+            inspector_tab: InspectorTab::Widget,
+            side_panel_visible: true,
+            side_panel_width: LEFT_PANEL_WIDTH,
+            splitter_dragging: false,
+            splitter_hovered: false,
+            window_width: WINDOW_SIZE.0,
+            overlay: None,
+            palette_query: String::new(),
+            chrome_icons,
             basic_radio: 0,
             basic_hint: String::new(),
             basic_text: "Text".to_string(),
@@ -1436,6 +1498,11 @@ impl State {
             &self.current_resolved,
             self.current_icon_set,
         );
+        self.chrome_icons = load_chrome_icons(
+            &self.icon_set_choice,
+            &self.current_resolved,
+            self.current_icon_set,
+        );
         let anim_set = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
@@ -1457,6 +1524,12 @@ impl State {
         self.icon_set_choice = choice;
         self.reload_icons();
     }
+
+    /// Whether animations stop: the OS asks for reduced motion, or the
+    /// Preferences dialog's Reduce motion is on.
+    fn motion_reduced(&self) -> bool {
+        self.reduced_motion || self.accessibility.reduce_motion
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1475,6 +1548,36 @@ enum Message {
     // Widget Info hover
     WidgetHovered(String),
     WidgetUnhovered,
+
+    // Chrome: the menus', the toolbar's and the key bindings' actions
+    /// A click on a menu's title: `iced_aw` opens its menu, and nothing else
+    /// changes.
+    MenuOpened,
+    Quit,
+    ToggleSidePanel,
+    /// The desktop's settings are read again and the current theme is
+    /// installed from them, as a theme change the watcher saw is.
+    ReloadSystemTheme,
+    Open(Overlay),
+    CloseOverlay,
+    InspectorTabSelected(InspectorTab),
+    /// Text for the clipboard: Widget Info's, or the About dialog's address.
+    Copy(String),
+    SplitterPressed,
+    SplitterDragged(iced::Point),
+    SplitterReleased,
+    SplitterHovered(bool),
+    PaletteQueryChanged(String),
+    /// Enter in the command palette's query: its first entry runs.
+    PaletteSubmitted,
+    /// A command palette entry: the action it runs, then the palette closes.
+    PaletteRun(Box<Message>),
+    TextScaleSelected(TextScale),
+    ReduceMotionToggled(bool),
+    HighContrastToggled(bool),
+    ReduceTransparencyToggled(bool),
+    /// The window's new logical size, which bounds the splitter.
+    WindowResized(iced::Size),
 
     // Basic tab
     /// A click on a checkbox held in the one state it shows: nothing changes.
@@ -1630,11 +1733,10 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::core::PCWSTR;
 
     unsafe {
-        let title = format!(
-            "Native Theme \u{2013} Iced Showcase, v{}",
-            env!("CARGO_PKG_VERSION")
-        );
-        let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+        let title_w: Vec<u16> = WINDOW_TITLE
+            .encode_utf16()
+            .chain(std::iter::once(0))
+            .collect();
         let hwnd = FindWindowW(None, PCWSTR(title_w.as_ptr()))
             .map_err(|e| format!("FindWindowW failed: {e}"))?;
 
@@ -1823,6 +1925,27 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
             }
             return iced::exit();
         }
+        Message::Quit => return iced::exit(),
+        // The query takes the focus, so typing reaches it at once.
+        Message::Open(Overlay::CommandPalette) if state.overlay.is_none() => {
+            update_inner(state, Message::Open(Overlay::CommandPalette));
+            return iced::widget::operation::focus(PALETTE_QUERY_ID);
+        }
+        Message::Copy(contents) => return iced::clipboard::write(contents),
+        Message::PaletteRun(action) => {
+            state.overlay = None;
+            return update(state, *action);
+        }
+        Message::PaletteSubmitted => {
+            let first = palette_groups(state)
+                .into_iter()
+                .flat_map(|(_, entries)| entries)
+                .next();
+            if let Some(entry) = first {
+                state.overlay = None;
+                return update(state, entry.action);
+            }
+        }
         other => {
             update_inner(state, other);
         }
@@ -1849,7 +1972,38 @@ fn update_inner(state: &mut State, message: Message) {
         Message::WidgetUnhovered => {
             // Keep last info visible (like gpui showcase)
         }
-        Message::BasicHeld => {}
+        Message::ToggleSidePanel => state.side_panel_visible = !state.side_panel_visible,
+        Message::ReloadSystemTheme => {
+            native_theme::detect::invalidate_caches();
+            state.rebuild_theme();
+        }
+        // One dialog at a time: a second shortcut leaves the open one be.
+        Message::Open(overlay) => {
+            if state.overlay.is_none() {
+                state.overlay = Some(overlay);
+                state.palette_query.clear();
+            }
+        }
+        Message::CloseOverlay => state.overlay = None,
+        Message::InspectorTabSelected(tab) => state.inspector_tab = tab,
+        Message::SplitterPressed => state.splitter_dragging = true,
+        Message::SplitterDragged(at) => {
+            if state.splitter_dragging {
+                state.side_panel_width = splitter_width(at.x, state.window_width);
+            }
+        }
+        Message::SplitterReleased => state.splitter_dragging = false,
+        Message::SplitterHovered(on) => state.splitter_hovered = on,
+        Message::WindowResized(size) => {
+            state.window_width = size.width;
+            state.side_panel_width = splitter_width(state.side_panel_width, size.width);
+        }
+        Message::PaletteQueryChanged(query) => state.palette_query = query,
+        Message::TextScaleSelected(scale) => state.accessibility.text_scaling_factor = scale.0,
+        Message::ReduceMotionToggled(on) => state.accessibility.reduce_motion = on,
+        Message::HighContrastToggled(on) => state.accessibility.high_contrast = on,
+        Message::ReduceTransparencyToggled(on) => state.accessibility.reduce_transparency = on,
+        Message::BasicHeld | Message::MenuOpened => {}
         Message::BasicRadioSelected(i) => state.basic_radio = i,
         Message::BasicHintChanged(value) => state.basic_hint = value,
         Message::BasicTextChanged(value) => state.basic_text = value,
@@ -1947,208 +2101,64 @@ fn update_inner(state: &mut State, message: Message) {
 // ---------------------------------------------------------------------------
 
 fn view(state: &State) -> Element<'_, Message> {
-    let a11y = &state.accessibility;
-    let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
-    let radius = native_theme_iced::border_radius(resolved);
-    let sb_width = native_theme_iced::scrollbar_width(resolved);
     let btn_pad = native_theme_iced::button_padding(resolved);
     let inp_pad = native_theme_iced::input_padding(resolved);
 
-    // ---- Left sidebar ----
-    let sidebar = {
-        let sp = &SP;
-        let ts = &state.current_resolved.text_scale;
-        let title = text("native-theme").role(&ts.dialog_title, resolved, a11y);
-        let subtitle = text(format!("iced showcase v{}", env!("CARGO_PKG_VERSION"))).role(
-            &ts.caption,
-            resolved,
-            a11y,
-        );
-
-        // Theme selector
-        let theme_section = column![
-            text("Theme Selector").role(&ts.caption, resolved, a11y),
-            probe(
-                probes::THEME,
-                Fill,
-                pick_list(
-                    theme_choices(&state.default_label),
-                    Some(&state.current_choice),
-                    Message::ThemeSelected,
-                )
-                .handle(arrow_handle(resolved))
-                .text_size(scaled_text_size(resolved.combo_box.font.size, a11y))
-                .font(theme_font(&resolved.combo_box.font))
-                .style(styles::pick_list(resolved))
-                .menu_style(styles::menu(resolved))
-                .width(Fill),
-            ),
-        ]
-        .spacing(sp.xs);
-
-        // Color mode selector (System / Light / Dark)
-        let color_mode_section = column![
-            text("Color Mode").role(&ts.caption, resolved, a11y),
-            probe(
-                probes::COLOR_MODE,
-                Fill,
-                pick_list(
-                    AppColorMode::ALL.to_vec(),
-                    Some(&state.color_mode),
-                    Message::ColorModeSelected,
-                )
-                .handle(arrow_handle(resolved))
-                .text_size(scaled_text_size(resolved.combo_box.font.size, a11y))
-                .font(theme_font(&resolved.combo_box.font))
-                .style(styles::pick_list(resolved))
-                .menu_style(styles::menu(resolved))
-                .width(Fill),
-            ),
-        ]
-        .spacing(sp.xs);
-
-        // Icon theme selector
-        let icon_theme_section = column![
-            text("Icon Theme").role(&ts.caption, resolved, a11y),
-            pick_list(
-                state.icon_set_choices.clone(),
-                Some(&state.icon_set_choice),
-                Message::IconSetSelected,
-            )
-            .handle(arrow_handle(resolved))
-            .text_size(scaled_text_size(resolved.combo_box.font.size, a11y))
-            .font(theme_font(&resolved.combo_box.font))
-            .style(styles::pick_list(resolved))
-            .menu_style(styles::menu(resolved))
-            .width(Fill),
-        ]
-        .spacing(sp.xs);
-
-        // Theme config inspector (the gpui showcase's counterpart: its inspector's Theme tab)
-        let fi = format_font_info(&state.current_resolved);
-        let metrics_info = {
-            let r = format!("radius: {radius:.0}px");
-            let rlg = format!(
-                "radius_lg: {:.0}px",
-                native_theme_iced::border_radius_lg(&state.current_resolved)
-            );
-            let sw = format!("scrollbar: {sb_width:.0}px");
-            // Each side as button_padding / input_padding return it: the
-            // theme's where it states the side, iced's own default where not.
-            let sides =
-                |p: Padding| format!("{:.0} {:.0} {:.0} {:.0}", p.top, p.right, p.bottom, p.left);
-            let bp = format!("btn pad (t r b l): {}", sides(btn_pad));
-            let ip = format!("input pad (t r b l): {}", sides(inp_pad));
-            // The four LayoutTheme distances, and which of them the platform
-            // leaves to the showcase's own scale.
-            let lay = format!(
-                "widget gap: {}\ncontainer margin: {}\nwindow margin: {}\nsection gap: {}",
-                layout_value(state.layout.widget_gap, SP.s),
-                layout_value(state.layout.container_margin, SP.l),
-                layout_value(state.layout.window_margin, SP.l),
-                layout_value(state.layout.section_gap, SP.xl),
-            );
-            column![
-                text("Theme Config Inspector").role(&ts.caption, resolved, a11y),
-                text(r).role(&ts.caption, resolved, a11y),
-                text(rlg).role(&ts.caption, resolved, a11y),
-                text(sw).role(&ts.caption, resolved, a11y),
-                text(bp).role(&ts.caption, resolved, a11y),
-                text(ip).role(&ts.caption, resolved, a11y),
-                text(lay).role(&ts.caption, resolved, a11y),
-                text(fi).role(&ts.caption, resolved, a11y),
-            ]
-            .spacing(sp.xxs)
-        };
-
-        // Widget Info panel
-        let widget_info_panel = {
-            let info_text = if state.widget_info.is_empty() {
-                "Hover over any widget to see its theme properties.".to_string()
-            } else {
-                state.widget_info.clone()
-            };
-            column![
-                text("Widget Info").role(&ts.caption, resolved, a11y),
-                container(
-                    scrollable(text(info_text).role(&ts.caption, resolved, a11y))
-                        .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-                        .style(styles::scrollable(resolved)),
-                )
-                .padding(Padding::from(sp.s))
-                .style(styles::container_card(resolved))
-                .width(Fill)
+    let content = content_panel(state, btn_pad, inp_pad);
+    let body: Element<'_, Message> = if state.side_panel_visible {
+        let body = row![
+            container(probe(probes::SIDE_PANEL, Fill, side_panel(state)))
+                .width(Length::Fixed(state.side_panel_width))
                 .height(Fill),
-            ]
-            .spacing(sp.xs)
-            .height(Fill)
-        };
-
-        container(
-            scrollable(
-                column![
-                    title,
-                    subtitle,
-                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-                    theme_section,
-                    color_mode_section,
-                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-                    icon_theme_section,
-                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-                    metrics_info,
-                    rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-                    widget_info_panel,
-                ]
-                .spacing(gap.widget)
-                .padding(Padding::from(sp.m))
-                .width(Length::Fixed(210.0)),
-            )
-            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-            .style(styles::scrollable(resolved)),
-        )
-        .style(styles::container_card(resolved))
-        .height(Fill)
+            splitter(state),
+            content,
+        ]
+        .height(Fill);
+        // While the splitter is dragged, the pointer anywhere over the body
+        // moves it, and letting go, or leaving the body, ends the drag.
+        let area = mouse_area(body);
+        if state.splitter_dragging {
+            area.on_move(Message::SplitterDragged)
+                .on_release(Message::SplitterReleased)
+                .on_exit(Message::SplitterReleased)
+                .interaction(iced::mouse::Interaction::ResizingHorizontally)
+                .into()
+        } else {
+            area.into()
+        }
+    } else {
+        content
     };
 
-    // ---- Tab bar ----
-    let tab_bar: Element<'_, Message> = {
-        let sp = &SP;
-        let tab_pad =
-            native_theme_iced::padding_or(&resolved.tab.border.padding, button::DEFAULT_PADDING);
-        let tabs: Vec<Element<'_, Message>> = Tab::ALL
-            .iter()
-            .map(|&tab| {
-                let label = tab.label();
-                // A tab is padded like the platform's tabs: the sides
-                // tab.border.padding states, a button's own elsewhere.
-                let btn = button(text(label).typeset(&resolved.tab.font, a11y)).padding(tab_pad);
-                // The open tab is the call to action; the rest are plain.
-                let btn = if tab == state.active_tab {
-                    btn.style(styles::button_primary(resolved))
-                } else {
-                    btn.style(styles::button(resolved))
-                };
-                btn.on_press(Message::TabSelected(tab)).into()
-            })
-            .collect();
-        // More tabs than the window is wide: the strip scrolls sideways rather
-        // than clipping the last ones. The bar is laid out below the tabs even
-        // where the platform's scrollbar overlays what it scrolls: iced draws
-        // an overlay bar at all times, never only while scrolling
-        // (`scrollable.rs:1208-1270`), and over a strip no taller than its
-        // tabs it would cover their labels. An embedded bar takes its own
-        // room (`scrollable.rs:378-383`).
-        scrollable(row(tabs).spacing(sp.xs))
-            .id(TAB_STRIP_ID)
-            .direction(scrollable::Direction::Horizontal(
-                styles::scrollbar(resolved).spacing(0.0),
-            ))
-            .style(styles::scrollable(resolved))
-            .into()
+    let window = column![menu_bar(state), toolbar(state)]
+        .push(container(body).height(Fill))
+        .push(status_bar(state));
+    let page: Element<'_, Message> = match state.overlay {
+        // No backdrop: the model states none, so the window stays as it is
+        // under the dialog, and `opaque` keeps the pointer off it.
+        Some(overlay) => stack![window, opaque(center(dialog(state, overlay)))].into(),
+        None => window.into(),
     };
+    match CLI_ARGS.get() {
+        Some(cli) => held_page(
+            page,
+            cli.pointer,
+            cli.press,
+            cli.capture || cli.screenshot.is_some(),
+        ),
+        None => page,
+    }
+}
 
-    // ---- Tab content ----
+/// The content panel (spec S3): the page tab row at its top, under it the
+/// theme-error banner where a theme failed to load, then the page, which
+/// scrolls, inside `layout.window_margin`.
+fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'_, Message> {
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
     let tab_content: Element<'_, Message> = match state.active_tab {
         Tab::Basic => view_basic(state, btn_pad, inp_pad),
         Tab::Buttons => view_buttons(state, btn_pad),
@@ -2164,67 +2174,35 @@ fn view(state: &State) -> Element<'_, Message> {
         Tab::ThemeMap => view_theme_map(state),
     };
 
-    // ---- Right panel (tabs + content) ----
-    let sp = &SP;
-    let ts = &state.current_resolved.text_scale;
-    // The strip's top and right sit against the window's own edges, so those
-    // two are the window margin; its left abuts the sidebar
-    // (`row![sidebar, right_panel]`), a panel gutter that takes the same value
-    // so the strip lines up with the content below it.
-    let tab_padding = Padding::ZERO
-        .left(gap.window)
-        .right(gap.window)
-        .top(gap.window);
-    let content_padding = Padding::from(gap.window);
-    let panel_spacing = sp.xs;
-    let mut right_panel = column![].spacing(panel_spacing).width(Fill).height(Fill);
-
-    // Error banner (if any)
+    let mut panel = column![page_tabs(state), separator_line(resolved)]
+        .width(Fill)
+        .height(Fill);
+    // The banner: the platform's own error colour, not the palette slot iced
+    // derives from it, inside the window margin the page has.
     if let Some(ref msg) = state.error_message {
-        // The platform's own error colour, not the palette slot iced derives
-        // from it.
         let danger = to_color(resolved.defaults.danger_color);
-        right_panel = right_panel.push(
+        panel = panel.push(
             container(
                 text(msg.as_str())
                     .color(danger)
                     .role(&ts.caption, resolved, a11y),
             )
-            .padding(
-                Padding::ZERO
-                    .top(sp.xs)
-                    .bottom(sp.xs)
-                    .left(sp.s)
-                    .right(sp.s),
-            )
+            .padding(Padding::from(gap.window).bottom(0.0))
             .width(Fill),
         );
     }
-
-    let right_panel = right_panel
+    panel
         .push(
-            // Tab bar
-            container(tab_bar).padding(tab_padding),
+            scrollable(
+                container(tab_content)
+                    .padding(Padding::from(gap.window))
+                    .width(Fill),
+            )
+            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+            .style(styles::scrollable(resolved))
+            .height(Fill),
         )
-        .push(rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)))
-        .push(
-            // Scrollable content
-            scrollable(container(tab_content).padding(content_padding).width(Fill))
-                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-                .style(styles::scrollable(resolved))
-                .height(Fill),
-        );
-
-    let page: Element<'_, Message> = row![sidebar, right_panel].into();
-    match CLI_ARGS.get() {
-        Some(cli) => held_page(
-            page,
-            cli.pointer,
-            cli.press,
-            cli.capture || cli.screenshot.is_some(),
-        ),
-        None => page,
-    }
+        .into()
 }
 
 /// The page as a capture shows it. With a `pointer` (`--pointer X,Y`), the
@@ -2483,6 +2461,1931 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
 }
 
 // ---------------------------------------------------------------------------
+// Chrome: the menu bar, toolbar, side panel, splitter, page tabs, status bar
+// and dialogs, laid out as the gpui and egui showcases lay theirs out
+// (parity inventory items 1-21, 25-27), every visual property from the theme
+// ---------------------------------------------------------------------------
+
+/// The window's title: this crate's name and version, built as the gpui and
+/// egui showcases' `WINDOW_TITLE` is.
+const WINDOW_TITLE: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    " ",
+    env!("CARGO_PKG_VERSION"),
+    " showcase"
+);
+
+/// This crate's name and version, as the About dialog states them.
+const ABOUT_NAME_VERSION: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
+
+/// The connector README's Compatibility table, at the tag of this version,
+/// as the gpui showcase's `COMPATIBILITY_URL`: `#compatibility` is the anchor
+/// of the README's `## Compatibility` heading.
+const COMPATIBILITY_URL: &str = concat!(
+    env!("CARGO_PKG_REPOSITORY"),
+    "/blob/v",
+    env!("CARGO_PKG_VERSION"),
+    "/connectors/native-theme-iced/README.md#compatibility"
+);
+
+/// The side panel's width when the showcase opens, the gpui and egui
+/// showcases' `LEFT_PANEL_WIDTH`. The model states no side-panel width; the
+/// splitter changes it.
+const LEFT_PANEL_WIDTH: f32 = 300.0;
+
+/// The narrowest the splitter leaves the side panel, and the page beside it:
+/// gpui-base's `PANEL_MIN_SIZE` (gpui-base 0.6.6 `src/resizable/mod.rs:14`),
+/// the floor of the gpui showcase's resizable body. The model states none.
+const PANEL_MIN_WIDTH: f32 = 100.0;
+
+/// The weight of the inspector's title and section headings: semibold, the
+/// gpui showcase's `font_semibold()`, which the egui showcase draws too
+/// (parity decision 3). The model states no inspector heading.
+const HEADING_WEIGHT: u16 = 600;
+
+/// The side of a Widget Info colour swatch, the gpui and egui showcases'
+/// `SWATCH_SIZE`. The model states none.
+const SWATCH_SIZE: f32 = 16.0;
+
+/// The `widget::Id` of the command palette's query, which takes the focus
+/// when the palette opens.
+const PALETTE_QUERY_ID: &str = "showcase-palette-query";
+
+/// The side-panel width the splitter leaves at `at`, the pointer's distance
+/// from the body's left edge: at least [`PANEL_MIN_WIDTH`], and at most the
+/// window's `width` less [`PANEL_MIN_WIDTH`] for the page.
+fn splitter_width(at: f32, width: f32) -> f32 {
+    at.min(width - PANEL_MIN_WIDTH).max(PANEL_MIN_WIDTH)
+}
+
+/// The inspector's two views, in the order its tabs show them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum InspectorTab {
+    Widget,
+    Theme,
+}
+
+impl InspectorTab {
+    const ALL: [Self; 2] = [Self::Widget, Self::Theme];
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Widget => "Widget",
+            Self::Theme => "Theme",
+        }
+    }
+}
+
+/// A dialog over the window (spec §2.8).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Overlay {
+    CommandPalette,
+    Preferences,
+    About,
+}
+
+/// A text-scaling factor the Preferences dialog offers.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct TextScale(f32);
+
+impl std::fmt::Display for TextScale {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "×{}", self.0)
+    }
+}
+
+/// The factors the Preferences dialog offers: the gpui showcase's number
+/// input's range and step, 1.0 to 2.25 by 0.25
+/// (`showcase-gpui/demo.rs`, `TEXT_SCALE_MIN`, `TEXT_SCALE_MAX`,
+/// `TEXT_SCALE_STEP`).
+const TEXT_SCALES: [TextScale; 6] = [
+    TextScale(1.0),
+    TextScale(1.25),
+    TextScale(1.5),
+    TextScale(1.75),
+    TextScale(2.0),
+    TextScale(2.25),
+];
+
+/// The message a key binding sends: Ctrl (Cmd on macOS) with Q, B, K or the
+/// comma, as the gpui showcase binds `secondary-q`, `-b`, `-k` and `-,`
+/// (`showcase-gpui/app.rs`), and Escape, which closes a dialog. Only keys no
+/// widget took reach here (`keyboard::listen`).
+fn shortcut(event: iced::keyboard::Event) -> Option<Message> {
+    use iced::keyboard::{Event, Key, key::Named};
+    let Event::KeyPressed { key, modifiers, .. } = event else {
+        return None;
+    };
+    match key.as_ref() {
+        Key::Named(Named::Escape) => Some(Message::CloseOverlay),
+        Key::Character(c) if modifiers.command() => match c {
+            "q" => Some(Message::Quit),
+            "b" => Some(Message::ToggleSidePanel),
+            "k" => Some(Message::Open(Overlay::CommandPalette)),
+            "," => Some(Message::Open(Overlay::Preferences)),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+/// A key binding as the menus and tooltips spell it: Ctrl and the key, ⌘ on
+/// macOS.
+fn binding(key: &str) -> String {
+    if cfg!(target_os = "macos") {
+        format!("⌘{key}")
+    } else {
+        format!("Ctrl+{key}")
+    }
+}
+
+/// The chrome's icons of the chosen icon theme, loaded by the names the gpui
+/// showcase gives its gpui-component icons in each set
+/// (native-theme-gpui `src/icons.rs`), or by `IconRole` where the gpui
+/// showcase loads by role. `None` where the set has no such icon: the control
+/// then shows its text, never another set's icon.
+#[derive(Default)]
+struct ChromeIcons {
+    /// `SquareTerminal`: the command palette.
+    palette: Option<IconData>,
+    /// `RotateCw`: Reload System Theme.
+    reload: Option<IconData>,
+    /// `IconRole::ActionSettings`: Preferences.
+    preferences: Option<IconData>,
+    /// `PanelLeft`: the side-panel toggle.
+    panel: Option<IconData>,
+    /// `IconRole::WindowClose`: a dialog's close button.
+    close: Option<IconData>,
+    /// Whether they are an OS icon theme's, drawn in their own colours;
+    /// otherwise a bundled set's, drawn in their label's colour.
+    system: bool,
+}
+
+/// `PanelLeft`'s freedesktop name: `sidebar-show` on the GTK desktops,
+/// `sidebar-expand-left` on the others (native-theme-gpui `src/icons.rs`,
+/// `freedesktop_name_for_gpui_icon`).
+#[cfg(target_os = "linux")]
+fn panel_left_name() -> &'static str {
+    use native_theme::detect::LinuxDesktop;
+    match native_theme::detect::detect_linux_desktop() {
+        LinuxDesktop::Gnome
+        | LinuxDesktop::Budgie
+        | LinuxDesktop::Cinnamon
+        | LinuxDesktop::Mate
+        | LinuxDesktop::Xfce => "sidebar-show",
+        _ => "sidebar-expand-left",
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn panel_left_name() -> &'static str {
+    "sidebar-expand-left"
+}
+
+/// Load the chrome's icons from `choice`, as `load_all_icons` loads the Icons
+/// page's: a freedesktop theme's recoloured where they are symbolic.
+fn load_chrome_icons(
+    choice: &IconSetChoice,
+    resolved: &ResolvedTheme,
+    theme_icon_set: IconSet,
+) -> ChromeIcons {
+    let set = choice.effective_icon_set(theme_icon_set);
+    let theme = choice.freedesktop_theme();
+    let tc = resolved.defaults.text_color;
+    let fg = Some([tc.r, tc.g, tc.b]);
+    let freedesktop = |loader: FreedesktopLoader<'_>| {
+        let loader = loader.color_opt(fg);
+        match theme {
+            Some(t) => loader.theme(t).load(),
+            None => loader.load(),
+        }
+    };
+    // By gpui-component name: its Lucide, Material and freedesktop names.
+    let named = |lucide: &str, material: &str, desktop: &str| match set {
+        IconSet::Lucide => LucideLoader::new(lucide).load(),
+        IconSet::Material => MaterialLoader::new(material).load(),
+        IconSet::Freedesktop => freedesktop(FreedesktopLoader::new(desktop)),
+        _ => None,
+    };
+    let by_role = |role: IconRole| match set {
+        IconSet::Freedesktop => freedesktop(FreedesktopLoader::new(role)),
+        IconSet::Material => MaterialLoader::new(role).load(),
+        IconSet::Lucide => LucideLoader::new(role).load(),
+        IconSet::SfSymbols => SfSymbolsLoader::new(role).color_opt(fg).load(),
+        IconSet::SegoeIcons => SegoeIconsLoader::new(role).color_opt(fg).load(),
+        _ => None,
+    };
+    ChromeIcons {
+        palette: named("square-terminal", "terminal", "utilities-terminal"),
+        reload: named("rotate-cw", "rotate_right", "object-rotate-right"),
+        preferences: by_role(IconRole::ActionSettings),
+        panel: named("panel-left", "side_navigation", panel_left_name()),
+        close: by_role(IconRole::WindowClose),
+        system: matches!(
+            set,
+            IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+        ),
+    }
+}
+
+/// `icon` at `size`: an OS theme's in its own colours, a bundled set's in
+/// `color`, its label's colour.
+fn chrome_icon<'a>(
+    icon: &IconData,
+    size: f32,
+    system: bool,
+    color: Color,
+) -> Option<Element<'a, Message>> {
+    match icon {
+        IconData::Svg(_) => {
+            native_theme_iced::icons::to_svg_handle(icon, (!system).then_some(color)).map(
+                |handle| {
+                    svg(handle)
+                        .width(Length::Fixed(size))
+                        .height(Length::Fixed(size))
+                        .into()
+                },
+            )
+        }
+        IconData::Rgba { .. } => native_theme_iced::icons::to_image_handle(icon).map(|handle| {
+            iced::widget::image(handle)
+                .width(Length::Fixed(size))
+                .height(Length::Fixed(size))
+                .into()
+        }),
+        _ => None,
+    }
+}
+
+/// A flat button in the platform's button state colours, built from the
+/// leaves the gpui connector's `variants::ghost_button` takes: no fill and no
+/// frame at rest, its label `button.font.color`; `button.hover_background`
+/// and `.hover_text_color` under the pointer; `button.active_background`
+/// (the hover fill where the theme states none) and `.active_text_color`
+/// while pressed, and while `selected`, as a toggle that is on;
+/// `button.disabled_text_color` disabled; rounded by
+/// `button.border.corner_radius`. The model states no flat button, so it
+/// takes the button's own states.
+fn ghost_button(
+    resolved: &ResolvedTheme,
+    selected: bool,
+) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
+    let b = &resolved.button;
+    let label = to_color(b.font.color);
+    let hover = to_color(b.hover_background);
+    let hover_label = to_color(b.hover_text_color);
+    let pressed = to_color(b.active_background.unwrap_or(b.hover_background));
+    let pressed_label = to_color(b.active_text_color);
+    let disabled_label = to_color(b.disabled_text_color);
+    let radius = b.border.corner_radius;
+    move |_theme, status| {
+        let (background, text_color) = match status {
+            button::Status::Disabled => (None, disabled_label),
+            _ if selected => (Some(pressed), pressed_label),
+            button::Status::Pressed => (Some(pressed), pressed_label),
+            button::Status::Hovered => (Some(hover), hover_label),
+            button::Status::Active => (None, label),
+        };
+        button::Style {
+            background: background.map(iced::Background::Color),
+            text_color,
+            border: iced::Border::default().rounded(radius),
+            ..button::Style::default()
+        }
+    }
+}
+
+/// The padding of a flat button: the sides `button.border.padding` states,
+/// iced's own button padding where it states none. No line width is added:
+/// a flat button draws no border.
+fn ghost_padding(resolved: &ResolvedTheme) -> Padding {
+    native_theme_iced::padding_or(&resolved.button.border.padding, button::DEFAULT_PADDING)
+}
+
+/// A menu's title and its rows, as the model's menu item (platform-facts
+/// §2.6): no fill at rest, its label `menu.font.color`;
+/// `menu.hover_background` and `.hover_text_color` under the pointer and
+/// while pressed; `menu.disabled_text_color` disabled; rounded by
+/// `menu.border.corner_radius`, 0 where the items are rectangular.
+fn menu_row(resolved: &ResolvedTheme) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
+    let m = &resolved.menu;
+    let label = to_color(m.font.color);
+    let hover = to_color(m.hover_background);
+    let hover_label = to_color(m.hover_text_color);
+    let disabled_label = to_color(m.disabled_text_color);
+    let radius = m.border.corner_radius;
+    move |_theme, status| {
+        let (background, text_color) = match status {
+            button::Status::Active => (None, label),
+            button::Status::Hovered | button::Status::Pressed => (Some(hover), hover_label),
+            button::Status::Disabled => (None, disabled_label),
+        };
+        button::Style {
+            background: background.map(iced::Background::Color),
+            text_color,
+            border: iced::Border::default().rounded(radius),
+            ..button::Style::default()
+        }
+    }
+}
+
+/// A tab of the page and inspector tab rows, as the model's tab
+/// (platform-facts §2.11): `tab.background_color` and `tab.font.color` at
+/// rest; `tab.active_background` and `.active_text_color` while it is the
+/// open one; `tab.hover_background` (the rest fill where the theme states
+/// none) and `.hover_text_color` under the pointer; framed by `tab.border`.
+fn tab_style(
+    resolved: &ResolvedTheme,
+    selected: bool,
+) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
+    let t = &resolved.tab;
+    let rest = to_color(t.background_color);
+    let label = to_color(t.font.color);
+    let active = to_color(t.active_background);
+    let active_label = to_color(t.active_text_color);
+    let hover = to_color(t.hover_background.unwrap_or(t.background_color));
+    let hover_label = to_color(t.hover_text_color);
+    let border = iced::Border {
+        color: to_color(t.border.color),
+        width: t.border.line_width,
+        radius: t.border.corner_radius.into(),
+    };
+    move |_theme, status| {
+        let (background, text_color) = match status {
+            _ if selected => (active, active_label),
+            button::Status::Hovered | button::Status::Pressed => (hover, hover_label),
+            button::Status::Active | button::Status::Disabled => (rest, label),
+        };
+        button::Style {
+            background: Some(iced::Background::Color(background)),
+            text_color,
+            border,
+            ..button::Style::default()
+        }
+    }
+}
+
+/// A list row, as the model's list (platform-facts §2.15): no fill of its
+/// own over `list.background_color`, its label `list.item_font.color`;
+/// `list.selection_background` and `.selection_text_color` while selected;
+/// `list.hover_background` and `.hover_text_color` under the pointer;
+/// `list.disabled_text_color` disabled. Square: the model rounds the list's
+/// frame, not its rows.
+fn list_row(
+    resolved: &ResolvedTheme,
+    selected: bool,
+) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
+    let l = &resolved.list;
+    let label = to_color(l.item_font.color);
+    let selection = to_color(l.selection_background);
+    let selection_label = to_color(l.selection_text_color);
+    let hover = to_color(l.hover_background);
+    let hover_label = to_color(l.hover_text_color);
+    let disabled_label = to_color(l.disabled_text_color);
+    move |_theme, status| {
+        let (background, text_color) = match status {
+            button::Status::Disabled => (None, disabled_label),
+            _ if selected => (Some(selection), selection_label),
+            button::Status::Hovered | button::Status::Pressed => (Some(hover), hover_label),
+            button::Status::Active => (None, label),
+        };
+        button::Style {
+            background: background.map(iced::Background::Color),
+            text_color,
+            ..button::Style::default()
+        }
+    }
+}
+
+/// A horizontal separator: `separator.line_width` thick, in
+/// `separator.line_color` (`styles::rule`).
+fn separator_line<'a>(resolved: &ResolvedTheme) -> Element<'a, Message> {
+    rule::horizontal(resolved.separator.line_width)
+        .style(styles::rule(resolved))
+        .into()
+}
+
+/// The separator's style (`styles::rule`) in `color`: a line a widget's own
+/// leaf colours, as the status bar's edge and a menu's separator.
+fn line_style(resolved: &ResolvedTheme, color: Color) -> impl Fn(&Theme) -> rule::Style + use<> {
+    let separator = styles::rule(resolved);
+    move |theme| rule::Style {
+        color,
+        ..separator(theme)
+    }
+}
+
+/// A container filled with `background`, its text in `text_color`.
+fn surface(background: Color, text_color: Color) -> impl Fn(&Theme) -> container::Style + use<> {
+    move |_theme| container::Style {
+        text_color: Some(text_color),
+        background: Some(iced::Background::Color(background)),
+        ..container::Style::default()
+    }
+}
+
+/// `content` with a tooltip reading `label` and, where it has one, the key
+/// binding of `key`, in the platform's tooltip (`styles::tooltip`,
+/// `tooltip.font`, `tooltip.max_width`, and `tooltip.border.padding` where
+/// iced can carry it, [`tooltip_padding`]).
+fn chrome_tooltip<'a>(
+    state: &'a State,
+    content: impl Into<Element<'a, Message>>,
+    label: &'static str,
+    key: Option<&'static str>,
+) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let font = &resolved.tooltip.font;
+    let mut tip = row![text(label).typeset(font, a11y)].spacing(gap.widget);
+    if let Some(key) = key {
+        tip = tip.push(text(binding(key)).typeset(font, a11y));
+    }
+    let tip = tooltip(
+        content,
+        container(tip).max_width(resolved.tooltip.max_width),
+        tooltip::Position::Bottom,
+    )
+    .gap(gap.widget)
+    .style(styles::tooltip(resolved));
+    match tooltip_padding(resolved) {
+        Some(padding) => tip.padding(padding).into(),
+        None => tip.into(),
+    }
+}
+
+/// A flat button showing `icon` at `size`, or `label` in `font` where the
+/// icon theme has no icon for it, with a tooltip reading `label` and the key
+/// binding of `key`. `padding` is the button's; `selected` shows it on.
+struct IconButton<'a> {
+    icon: &'a Option<IconData>,
+    size: f32,
+    label: &'static str,
+    key: Option<&'static str>,
+    font: &'a ResolvedFontSpec,
+    padding: Padding,
+    selected: bool,
+    action: Message,
+}
+
+fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    let b = &resolved.button;
+    let color = to_color(if spec.selected {
+        b.active_text_color
+    } else {
+        b.font.color
+    });
+    let button = match spec
+        .icon
+        .as_ref()
+        .and_then(|icon| chrome_icon(icon, spec.size, state.chrome_icons.system, color))
+    {
+        Some(icon) => button(icon)
+            .padding(spec.padding)
+            .style(ghost_button(resolved, spec.selected))
+            .on_press(spec.action),
+        None => button(text(spec.label).typeset(spec.font, &state.accessibility))
+            .padding(spec.padding)
+            .style(ghost_button(resolved, spec.selected))
+            .on_press(spec.action),
+    };
+    chrome_tooltip(state, button, spec.label, spec.key)
+}
+
+/// The menu-bar row (spec S8), the gpui showcase's menus with the same items,
+/// separators and key bindings, in `iced_aw`'s `MenuBar`: each title and row
+/// a button in [`menu_row`], in `menu.font`, padded by `menu.border.padding`
+/// (iced's button padding on a side it leaves unstated), `menu.row_height`
+/// tall where the theme states one; the rows' separators
+/// `separator.line_width` thick in `menu.separator_color`. The row has the
+/// window's `window.background_color` and no frame; a menu's panel is
+/// `menu.background_color`, framed by the popover's border (platform-facts
+/// §2.6: the popup border is §2.16's); its open title
+/// `menu.hover_background`. The row's sides are `layout.container_margin`,
+/// as the gpui showcase's: the model states no menu-bar inset.
+fn menu_bar(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let m = &resolved.menu;
+    let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+    let title = |label: &'static str| {
+        button(text(label).typeset(&m.font, a11y))
+            .padding(pad)
+            .style(menu_row(resolved))
+            .on_press(Message::MenuOpened)
+    };
+    let entry = |label: &'static str, key: Option<&'static str>, action: Message| {
+        let entry = button(
+            row![
+                text(label).typeset(&m.font, a11y),
+                space().width(Fill),
+                text(key.map(binding).unwrap_or_default()).typeset(&m.font, a11y),
+            ]
+            .spacing(gap.widget)
+            .align_y(iced::Center),
+        )
+        .padding(pad)
+        .width(Fill)
+        .style(menu_row(resolved))
+        .on_press(action);
+        Item::new(match m.row_height {
+            Some(h) => entry.height(Length::Fixed(h)),
+            None => entry,
+        })
+    };
+    let separator = || {
+        Item::new(
+            rule::horizontal(resolved.separator.line_width)
+                .style(line_style(resolved, to_color(m.separator_color))),
+        )
+    };
+    let drop = |items| Menu::new(items).max_width(AW_MENU_WIDTH).offset(0.0);
+
+    let mut pages: Vec<Item<'_, Message, Theme, iced::Renderer>> = Tab::ALL
+        .iter()
+        .map(|&tab| entry(tab.label(), None, Message::TabSelected(tab)))
+        .collect();
+    pages.push(separator());
+    pages.push(entry(
+        "Toggle Side Panel",
+        Some("B"),
+        Message::ToggleSidePanel,
+    ));
+    pages.push(entry(
+        "Command Palette",
+        Some("K"),
+        Message::Open(Overlay::CommandPalette),
+    ));
+
+    let window_fill = to_color(resolved.window.background_color);
+    let popup = &resolved.popover.border;
+    let popup_border = iced::Border {
+        color: to_color(popup.color),
+        width: popup.line_width,
+        radius: popup.corner_radius.into(),
+    };
+    let bar = MenuBar::new(vec![
+        Item::with_menu(
+            title("File"),
+            drop(vec![entry("Quit", Some("Q"), Message::Quit)]),
+        ),
+        Item::with_menu(title("View"), drop(pages)),
+        Item::with_menu(
+            title("Theme"),
+            drop(vec![
+                entry("Reload System Theme", None, Message::ReloadSystemTheme),
+                separator(),
+                entry(
+                    "System",
+                    None,
+                    Message::ColorModeSelected(AppColorMode::System),
+                ),
+                entry(
+                    "Light",
+                    None,
+                    Message::ColorModeSelected(AppColorMode::Light),
+                ),
+                entry("Dark", None, Message::ColorModeSelected(AppColorMode::Dark)),
+                separator(),
+                entry(
+                    "Preferences…",
+                    Some(","),
+                    Message::Open(Overlay::Preferences),
+                ),
+            ]),
+        ),
+        Item::with_menu(
+            title("Help"),
+            drop(vec![entry("About", None, Message::Open(Overlay::About))]),
+        ),
+    ])
+    .style(menu_bar_style(resolved));
+    hoverable(
+        widget_tooltip(
+            "Menu bar",
+            &[
+                ("row", "window.background_color", window_fill),
+                (
+                    "menu",
+                    "menu.background_color",
+                    to_color(m.background_color),
+                ),
+                ("menu frame", "popover.border.color", popup_border.color),
+                (
+                    "row under the pointer",
+                    "menu.hover_background",
+                    to_color(m.hover_background),
+                ),
+                ("label", "menu.font.color", to_color(m.font.color)),
+                (
+                    "label under the pointer",
+                    "menu.hover_text_color",
+                    to_color(m.hover_text_color),
+                ),
+                (
+                    "separator",
+                    "menu.separator_color",
+                    to_color(m.separator_color),
+                ),
+            ],
+            &[
+                ("label", font_row("menu.font", &m.font).as_str()),
+                (
+                    "title and row padding",
+                    "menu.border.padding's stated sides, iced's button::DEFAULT_PADDING for the others",
+                ),
+                ("row height", "menu.row_height, where the theme states one"),
+                ("row sides", "layout.container_margin"),
+                (
+                    "menu frame",
+                    "popover.border's width and radius (platform-facts §2.6)",
+                ),
+            ],
+            &[
+                (
+                    "menu width",
+                    "MenuTheme states none: the showcase's AW_MENU_WIDTH",
+                ),
+                (
+                    "key binding colour",
+                    "the model states none: the row's label colour",
+                ),
+                ("shadows", "the model has no shadow geometry: iced_aw's own"),
+            ],
+        ),
+        container(bar)
+            .padding(Padding::ZERO.left(gap.container).right(gap.container))
+            .width(Fill)
+            .into(),
+    )
+}
+
+/// The window's toolbar (spec §2.3, platform-facts §2.13): three flat
+/// buttons in the gpui showcase's order -- the command palette, Reload
+/// System Theme and Preferences -- their icons of the chosen icon theme at
+/// `toolbar.icon_size`, in a row filled with `toolbar.background_color`,
+/// padded by `toolbar.border.padding` where the theme states a side and by
+/// `layout.container_margin` where it does not, its items `toolbar.item_gap`
+/// apart, or `layout.widget_gap` apart where that is unstated, at least
+/// `toolbar.bar_height` tall where the theme states one. No line under it:
+/// §2.13 states none.
+fn toolbar(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let gap = Gaps::from_layout(&state.layout);
+    let t = &resolved.toolbar;
+    let icons = &state.chrome_icons;
+    let pad = ghost_padding(resolved);
+    let item = |icon, label, key, action| {
+        icon_button(
+            state,
+            IconButton {
+                icon,
+                size: t.icon_size,
+                label,
+                key,
+                font: &t.font,
+                padding: pad,
+                selected: false,
+                action,
+            },
+        )
+    };
+    let items = row![
+        item(
+            &icons.palette,
+            "Command Palette",
+            Some("K"),
+            Message::Open(Overlay::CommandPalette),
+        ),
+        item(
+            &icons.reload,
+            "Reload System Theme",
+            None,
+            Message::ReloadSystemTheme,
+        ),
+        item(
+            &icons.preferences,
+            "Preferences",
+            Some(","),
+            Message::Open(Overlay::Preferences),
+        ),
+    ]
+    .spacing(t.item_gap.unwrap_or(gap.widget))
+    .align_y(iced::Center);
+    let bar = container(items)
+        .padding(native_theme_iced::padding_or(
+            &t.border.padding,
+            Padding::from(gap.container),
+        ))
+        .width(Fill)
+        .align_y(iced::Center)
+        .style(surface(
+            to_color(t.background_color),
+            to_color(t.font.color),
+        ));
+    let bar = match t.bar_height {
+        Some(h) => bar.height(Length::Fixed(h)),
+        None => bar,
+    };
+    hoverable(
+        widget_tooltip(
+            "Toolbar",
+            &[
+                (
+                    "bar",
+                    "toolbar.background_color",
+                    to_color(t.background_color),
+                ),
+                (
+                    "button under the pointer",
+                    "button.hover_background",
+                    to_color(resolved.button.hover_background),
+                ),
+            ],
+            &[
+                ("icon size", "toolbar.icon_size"),
+                (
+                    "padding",
+                    "toolbar.border.padding's stated sides, layout.container_margin for the others",
+                ),
+                (
+                    "item gap",
+                    "toolbar.item_gap, or layout.widget_gap where it is unstated",
+                ),
+                (
+                    "height",
+                    "toolbar.bar_height where stated; its content's otherwise",
+                ),
+                (
+                    "button",
+                    "flat: the button's hover and pressed states, button.border.padding",
+                ),
+            ],
+            &[
+                ("edge", "none: platform-facts §2.13 states none"),
+                (
+                    "a missing icon",
+                    "the button shows its tooltip's text, never another set's icon",
+                ),
+            ],
+        ),
+        bar.into(),
+    )
+}
+
+/// One of the theme settings: `label`, in `sidebar.font`, above `control`,
+/// `layout.widget_gap` apart.
+fn setting<'a>(
+    state: &'a State,
+    label: &'static str,
+    control: Element<'a, Message>,
+) -> Element<'a, Message> {
+    let gap = Gaps::from_layout(&state.layout);
+    column![
+        text(label).typeset(&state.current_resolved.sidebar.font, &state.accessibility),
+        control,
+    ]
+    .spacing(gap.widget)
+    .into()
+}
+
+/// A drop-down of the theme settings: as wide as the side panel's content,
+/// in the model's combo box (`styles::pick_list`, `combo_box.font`,
+/// `combo_box_padding`, at least `combo_box.min_height` tall, its arrow
+/// `combo_box.arrow_icon_size`).
+fn setting_picker<'a, T>(
+    state: &'a State,
+    options: Vec<T>,
+    selected: Option<T>,
+    on_select: fn(T) -> Message,
+) -> Element<'a, Message>
+where
+    T: ToString + PartialEq + Clone + 'a,
+{
+    let resolved = &state.current_resolved;
+    let size = scaled_text_size(resolved.combo_box.font.size, &state.accessibility);
+    let pad = combo_box_padding(resolved);
+    pick_list(options, selected, on_select)
+        .handle(arrow_handle(resolved))
+        .padding(pad)
+        .text_line_height(control_line_height(
+            resolved,
+            size,
+            resolved.combo_box.min_height,
+            pad,
+        ))
+        .text_size(size)
+        .font(theme_font(&resolved.combo_box.font))
+        .style(styles::pick_list(resolved))
+        .menu_style(styles::menu(resolved))
+        .width(Fill)
+        .into()
+}
+
+/// The side panel (spec S2): the theme settings -- Theme, Mode and Icon
+/// theme, each labelled above its drop-down -- padded by
+/// `layout.container_margin`; a separator from edge to edge; then the
+/// inspector's tabs and its content, which fills the rest of the panel and
+/// scrolls. Filled with `sidebar.background_color`, lettered in
+/// `sidebar.font.color`.
+///
+/// The panel is as wide as the splitter leaves it, whatever it holds: its
+/// scrollbar, `scrollbar.groove_width` wide where the platform's does not
+/// overlay, is laid out inside that width and moves nothing beside it.
+fn side_panel(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let gap = Gaps::from_layout(&state.layout);
+    let s = &resolved.sidebar;
+    let settings = column![
+        setting(
+            state,
+            "Theme",
+            probe(
+                probes::THEME,
+                Fill,
+                setting_picker(
+                    state,
+                    theme_choices(&state.default_label),
+                    Some(state.current_choice.clone()),
+                    Message::ThemeSelected,
+                ),
+            ),
+        ),
+        setting(
+            state,
+            "Mode",
+            probe(
+                probes::COLOR_MODE,
+                Fill,
+                setting_picker(
+                    state,
+                    AppColorMode::ALL.to_vec(),
+                    Some(state.color_mode),
+                    Message::ColorModeSelected,
+                ),
+            ),
+        ),
+        setting(
+            state,
+            "Icon theme",
+            probe(
+                probes::ICON_THEME,
+                Fill,
+                setting_picker(
+                    state,
+                    state.icon_set_choices.clone(),
+                    Some(state.icon_set_choice.clone()),
+                    Message::IconSetSelected,
+                ),
+            ),
+        ),
+    ]
+    .spacing(gap.widget);
+    let settings = hoverable(
+        widget_tooltip(
+            "Theme settings",
+            &[
+                (
+                    "panel",
+                    "sidebar.background_color",
+                    to_color(s.background_color),
+                ),
+                ("labels", "sidebar.font.color", to_color(s.font.color)),
+                (
+                    "drop-down",
+                    "combo_box.background_color",
+                    to_color(resolved.combo_box.background_color),
+                ),
+            ],
+            &[
+                ("labels", font_row("sidebar.font", &s.font).as_str()),
+                ("padding", "layout.container_margin"),
+                ("gaps", "layout.widget_gap"),
+                (
+                    "drop-downs",
+                    "combo_box.font, combo_box_padding, at least combo_box.min_height tall",
+                ),
+            ],
+            &[("width", "the side panel's: the splitter sets it")],
+        ),
+        container(settings)
+            .padding(Padding::from(gap.container))
+            .width(Fill)
+            .into(),
+    );
+    let body = match state.inspector_tab {
+        InspectorTab::Widget => inspector_widget(state),
+        InspectorTab::Theme => inspector_theme(state),
+    };
+    container(
+        column![
+            settings,
+            separator_line(resolved),
+            tab_row(
+                state,
+                ("TabBar · Inspector", INSPECTOR_TABS_ID),
+                InspectorTab::ALL
+                    .iter()
+                    .map(|&tab| {
+                        (
+                            tab.label(),
+                            tab == state.inspector_tab,
+                            Message::InspectorTabSelected(tab),
+                        )
+                    })
+                    .collect(),
+                None,
+            ),
+            scrollable(
+                container(body)
+                    .padding(Padding::from(gap.container))
+                    .width(Fill),
+            )
+            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+            .style(styles::scrollable(resolved))
+            .width(Fill)
+            .height(Fill),
+        ]
+        .width(Fill)
+        .height(Fill),
+    )
+    .style(surface(
+        to_color(s.background_color),
+        to_color(s.font.color),
+    ))
+    .width(Fill)
+    .height(Fill)
+    .into()
+}
+
+/// A tab row, the page tabs' and the inspector's: each tab `(label, open,
+/// message)` a button in [`tab_style`], labelled in `tab.font`, padded by
+/// `tab.border.padding` inside its border (iced's button padding on a side
+/// it leaves unstated), at least `tab.min_width` by `tab.min_height`, on a
+/// strip of `tab.bar_background` whose sides are
+/// `layout.container_margin`, as the gpui showcase's tab bars are inset.
+/// More tabs than the strip is wide scroll sideways, with no bar of their
+/// own; `trailing`, where given, stays at the strip's right end.
+fn tab_row<'a>(
+    state: &'a State,
+    (kind, id): (&'static str, &'static str),
+    tabs: Vec<(&'static str, bool, Message)>,
+    trailing: Option<Element<'a, Message>>,
+) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let t = &resolved.tab;
+    let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
+    let min = iced::Size::new(
+        (t.min_width - pad.x()).max(0.0),
+        (t.min_height - pad.y()).max(0.0),
+    );
+    let tabs = tabs.into_iter().map(|(label, open, message)| {
+        button(at_least(text(label).typeset(&t.font, a11y), min))
+            .padding(pad)
+            .style(tab_style(resolved, open))
+            .on_press(message)
+            .into()
+    });
+    // The strip scrolls sideways with no bar: a bar laid out under tabs no
+    // taller than their labels would cover them, and the page tabs' menu
+    // reaches every tab.
+    let strip = scrollable(row(tabs))
+        .id(id)
+        .direction(scrollable::Direction::Horizontal(
+            styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
+        ))
+        .style(styles::scrollable(resolved))
+        .width(Fill);
+    let mut bar = row![strip].align_y(iced::Center);
+    if let Some(trailing) = trailing {
+        bar = bar.push(trailing);
+    }
+    hoverable(
+        widget_tooltip(
+            kind,
+            &[
+                ("strip", "tab.bar_background", to_color(t.bar_background)),
+                ("tab", "tab.background_color", to_color(t.background_color)),
+                (
+                    "open tab",
+                    "tab.active_background",
+                    to_color(t.active_background),
+                ),
+                (
+                    "open tab label",
+                    "tab.active_text_color",
+                    to_color(t.active_text_color),
+                ),
+                (
+                    "tab under the pointer",
+                    "tab.hover_background",
+                    to_color(t.hover_background.unwrap_or(t.background_color)),
+                ),
+                ("label", "tab.font.color", to_color(t.font.color)),
+                ("frame", "tab.border.color", to_color(t.border.color)),
+            ],
+            &[
+                ("label", font_row("tab.font", &t.font).as_str()),
+                ("minimum size", "tab.min_width x tab.min_height"),
+                (
+                    "padding",
+                    "tab.border.padding's stated sides inside the border, iced's button::DEFAULT_PADDING for the others",
+                ),
+                ("strip sides", "layout.container_margin"),
+            ],
+            &[(
+                "open-tab mark",
+                "the model states none beyond active_background and active_text_color",
+            )],
+        ),
+        container(bar)
+            .padding(Padding::ZERO.left(gap.container).right(gap.container))
+            .width(Fill)
+            .style(surface(to_color(t.bar_background), to_color(t.font.color)))
+            .into(),
+    )
+}
+
+/// The content panel's tab row (spec S3): a tab per page, the shown one
+/// open, and at its right end a flat button opening a menu of every page
+/// (`iced_aw`'s `MenuBar`), as the gpui showcase's tab bar has.
+fn page_tabs(state: &State) -> Element<'_, Message> {
+    let tabs = Tab::ALL
+        .iter()
+        .map(|&tab| {
+            (
+                tab.label(),
+                tab == state.active_tab,
+                Message::TabSelected(tab),
+            )
+        })
+        .collect();
+    tab_row(
+        state,
+        ("TabBar · Pages", TAB_STRIP_ID),
+        tabs,
+        Some(page_menu(state)),
+    )
+}
+
+/// The page tabs' menu: a flat button showing the chosen icon theme's
+/// `IconRole::NavDown` at `defaults.icon_sizes.small`, or "Pages" where the
+/// set has none, opening a menu of every page in [`menu_row`]s. Unlike the
+/// gpui showcase's, the shown page carries no check mark: the model's menu
+/// states no checked row.
+fn page_menu(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let m = &resolved.menu;
+    let size = resolved.defaults.icon_sizes.small;
+    let caret = state
+        .loaded_icons
+        .iter()
+        .find(|loaded| loaded.role == IconRole::NavDown)
+        .and_then(|loaded| loaded.data.as_ref())
+        .and_then(|icon| {
+            chrome_icon(
+                icon,
+                size,
+                state.chrome_icons.system,
+                to_color(resolved.button.font.color),
+            )
+        })
+        .unwrap_or_else(|| text("Pages").typeset(&resolved.tab.font, a11y).into());
+    let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+    let rows = Tab::ALL
+        .iter()
+        .map(|&tab| {
+            Item::new(
+                button(text(tab.label()).typeset(&m.font, a11y))
+                    .padding(pad)
+                    .width(Fill)
+                    .style(menu_row(resolved))
+                    .on_press(Message::TabSelected(tab)),
+            )
+        })
+        .collect();
+    MenuBar::new(vec![Item::with_menu(
+        button(caret)
+            .padding(ghost_padding(resolved))
+            .style(ghost_button(resolved, false))
+            .on_press(Message::MenuOpened),
+        Menu::new(rows).max_width(AW_MENU_WIDTH).offset(0.0),
+    )])
+    .style(menu_bar_style(resolved))
+    .into()
+}
+
+/// The style of the window's menu bar and of the page tabs' menu, from the
+/// model's leaves: the bar is the window's `window.background_color` with no
+/// frame; a menu's panel `menu.background_color`, framed by the popover's
+/// border (platform-facts §2.6: the popup border is §2.16's); the open
+/// title's highlight `menu.hover_background`. The shadows and the
+/// highlight's border have no source -- the model has a shadow colour but no
+/// shadow geometry, and no border round a highlighted row -- and are
+/// `iced_aw`'s own (`menu_bar::primary`).
+///
+/// Not the connector's `styles::aw::menu`, which the Extra page shows: that
+/// one fills the bar as a menu and frames the popup with `menu.border`,
+/// which platform-facts §2.6 says is not the popup's.
+fn menu_bar_style(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_aw::style::Status) -> iced_aw::style::menu_bar::Style + use<> {
+    let bar = to_color(resolved.window.background_color);
+    let panel = to_color(resolved.menu.background_color);
+    let highlight = to_color(resolved.menu.hover_background);
+    let popup = &resolved.popover.border;
+    let frame = iced::Border {
+        color: to_color(popup.color),
+        width: popup.line_width,
+        radius: popup.corner_radius.into(),
+    };
+    move |theme, status| {
+        let iced = iced_aw::style::menu_bar::primary(theme, status);
+        iced_aw::style::menu_bar::Style {
+            bar_background: iced::Background::Color(bar),
+            bar_border: iced::Border::default(),
+            bar_shadow: iced.bar_shadow,
+            menu_background: iced::Background::Color(panel),
+            menu_border: frame,
+            menu_shadow: iced.menu_shadow,
+            path: iced::Background::Color(highlight),
+            path_border: iced.path_border,
+        }
+    }
+}
+
+/// The splitter between the side panel and the page (platform-facts §2.17):
+/// a line `splitter.divider_width` wide in `splitter.divider_color`, in
+/// `splitter.hover_color` under the pointer and while dragged. A press on it
+/// starts a drag, which the body follows ([`view`]).
+fn splitter(state: &State) -> Element<'_, Message> {
+    let sp = &state.current_resolved.splitter;
+    let color = to_color(if state.splitter_hovered || state.splitter_dragging {
+        sp.hover_color
+    } else {
+        sp.divider_color
+    });
+    let line = container(space())
+        .width(Length::Fixed(sp.divider_width))
+        .height(Fill)
+        .style(move |_theme: &Theme| container::Style {
+            background: Some(iced::Background::Color(color)),
+            ..container::Style::default()
+        });
+    hoverable(
+        widget_tooltip(
+            "Splitter · side panel | page",
+            &[
+                ("line", "splitter.divider_color", to_color(sp.divider_color)),
+                (
+                    "line under the pointer",
+                    "splitter.hover_color",
+                    to_color(sp.hover_color),
+                ),
+            ],
+            &[("width", "splitter.divider_width")],
+            &[
+                (
+                    "side panel's edge",
+                    "the splitter's line: sidebar.border would draw a second one beside it",
+                ),
+                (
+                    "range",
+                    "PANEL_MIN_WIDTH, gpui-base's PANEL_MIN_SIZE, for the panel and for the page",
+                ),
+            ],
+        ),
+        mouse_area(line)
+            .on_press(Message::SplitterPressed)
+            .on_enter(Message::SplitterHovered(true))
+            .on_exit(Message::SplitterHovered(false))
+            .interaction(iced::mouse::Interaction::ResizingHorizontally)
+            .into(),
+    )
+}
+
+/// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, as
+/// the gpui and egui showcases name it.
+#[cfg(target_os = "linux")]
+fn desktop() -> String {
+    format!("{:?}", native_theme::detect::detect_linux_desktop())
+}
+
+/// The operating system: `native_theme::detect` names a desktop on Linux
+/// only.
+#[cfg(not(target_os = "linux"))]
+fn desktop() -> String {
+    std::env::consts::OS.to_string()
+}
+
+/// A font's size in the unit its source stated, as the gpui showcase's
+/// `defined_size`.
+fn defined_size(font: &ResolvedFontSpec) -> String {
+    match font.defined_size {
+        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
+        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
+        None => "(size not stated)".to_string(),
+    }
+}
+
+/// The status bar's environment (spec §2.7), the gpui showcase's items: the
+/// desktop, the preset and colour mode, the theme's `defaults.font` in the
+/// unit its source stated, the text-scaling factor, and each accessibility
+/// preference that is set, by its field name.
+fn status_environment(state: &State) -> Vec<String> {
+    let preset = match &state.current_choice {
+        ThemeChoice::OsTheme(_) => state.default_label.clone(),
+        ThemeChoice::Preset(key) => key.clone(),
+    };
+    let mode = if state.is_dark { "dark" } else { "light" };
+    let font = &state.current_resolved.defaults.font;
+    let prefs = &state.accessibility;
+    let mut items = vec![
+        desktop(),
+        format!("{preset} {mode}"),
+        format!("{} {}", font.family, defined_size(font)),
+        format!("text ×{}", prefs.text_scaling_factor),
+    ];
+    let flags = [
+        ("reduce_motion", prefs.reduce_motion),
+        ("high_contrast", prefs.high_contrast),
+        ("reduce_transparency", prefs.reduce_transparency),
+    ];
+    items.extend(
+        flags
+            .into_iter()
+            .filter(|(_, set)| *set)
+            .map(|(name, _)| name.to_string()),
+    );
+    items
+}
+
+/// The title Widget Info shows: its text's first line, `None` before any
+/// hover.
+fn info_title(info: &str) -> Option<&str> {
+    info.lines().find(|line| !line.trim().is_empty())
+}
+
+/// The window's status bar (spec §2.7, platform-facts §2.14): at its left
+/// the side-panel toggle, then the environment joined by " · "; at its right
+/// the title of what Widget Info shows. Filled with
+/// `status_bar.background_color`, lettered in `status_bar.font`, padded by
+/// `status_bar.border.padding` (`layout.container_margin` on a side it
+/// leaves unstated), its top edge a `status_bar.border.line_width` line in
+/// `status_bar.border.color` painted inside the bar, as Breeze paints it.
+fn status_bar(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let s = &resolved.status_bar;
+    // A small flat button: no padding above and below its icon, as egui's
+    // `Button::small` has none (egui 0.36.2 `src/widgets/button.rs`,
+    // `button_padding.y = 0.0`), the button's own at its sides.
+    let pad = ghost_padding(resolved);
+    let toggle = icon_button(
+        state,
+        IconButton {
+            icon: &state.chrome_icons.panel,
+            size: resolved.defaults.icon_sizes.small,
+            label: "Toggle Side Panel",
+            key: Some("B"),
+            font: &s.font,
+            padding: Padding::ZERO.left(pad.left).right(pad.right),
+            selected: state.side_panel_visible,
+            action: Message::ToggleSidePanel,
+        },
+    );
+    let mut items = row![
+        toggle,
+        text(status_environment(state).join(" · ")).typeset(&s.font, a11y),
+        space().width(Fill),
+    ]
+    .spacing(gap.widget)
+    .align_y(iced::Center);
+    if let Some(title) = info_title(&state.widget_info) {
+        items = items.push(text(title.to_string()).typeset(&s.font, a11y));
+    }
+    let bar = container(items)
+        .padding(native_theme_iced::padding_or(
+            &s.border.padding,
+            Padding::from(gap.container),
+        ))
+        .width(Fill)
+        .style(surface(
+            to_color(s.background_color),
+            to_color(s.font.color),
+        ));
+    hoverable(
+        widget_tooltip(
+            "Status bar",
+            &[
+                (
+                    "bar",
+                    "status_bar.background_color",
+                    to_color(s.background_color),
+                ),
+                ("text", "status_bar.font.color", to_color(s.font.color)),
+                (
+                    "top edge",
+                    "status_bar.border.color",
+                    to_color(s.border.color),
+                ),
+                (
+                    "toggle, on",
+                    "button.active_background",
+                    to_color(
+                        resolved
+                            .button
+                            .active_background
+                            .unwrap_or(resolved.button.hover_background),
+                    ),
+                ),
+            ],
+            &[
+                ("text", font_row("status_bar.font", &s.font).as_str()),
+                (
+                    "padding",
+                    "status_bar.border.padding's stated sides, layout.container_margin for the others",
+                ),
+                (
+                    "top edge",
+                    "status_bar.border.line_width, painted inside the bar",
+                ),
+                ("toggle icon", "defaults.icon_sizes.small"),
+            ],
+            &[(
+                "toggle padding",
+                "the model states no small button: none above and below, as egui's Button::small",
+            )],
+        ),
+        stack![
+            bar,
+            rule::horizontal(s.border.line_width)
+                .style(line_style(resolved, to_color(s.border.color)))
+        ]
+        .into(),
+    )
+}
+
+/// Text in `text_scale.caption`, the inspector's size (the gpui showcase's
+/// `text_sm` and `text_xs`, parity rule R1), in `color`.
+fn caption_text<'a>(
+    state: &State,
+    content: impl text::IntoFragment<'a>,
+    color: Color,
+) -> text::Text<'a> {
+    let resolved = &state.current_resolved;
+    text(content)
+        .role(&resolved.text_scale.caption, resolved, &state.accessibility)
+        .color(color)
+}
+
+/// An inspector heading: `text_scale.caption` at [`HEADING_WEIGHT`], in
+/// `sidebar.font.color`.
+fn inspector_heading<'a>(state: &State, content: impl text::IntoFragment<'a>) -> text::Text<'a> {
+    let resolved = &state.current_resolved;
+    let heading = ResolvedTextScaleEntry {
+        weight: HEADING_WEIGHT,
+        ..resolved.text_scale.caption.clone()
+    };
+    text(content)
+        .role(&heading, resolved, &state.accessibility)
+        .color(to_color(resolved.sidebar.font.color))
+}
+
+/// A name over its value, the gpui showcase's inspector row: the name in
+/// `defaults.muted_color`, the value in `sidebar.font.color`, both in
+/// `text_scale.caption`.
+fn inspector_row<'a>(state: &State, name: String, value: String) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    column![
+        caption_text(state, name, to_color(resolved.defaults.muted_color)),
+        caption_text(state, value, to_color(resolved.sidebar.font.color)),
+    ]
+    .into()
+}
+
+/// A colour line of Widget Info, the gpui showcase's `swatch`: a
+/// [`SWATCH_SIZE`] square of `color`, framed in `defaults.border`'s colour,
+/// width and radius, beside `label`.
+fn inspector_swatch<'a>(state: &State, label: String, color: Color) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    let gap = Gaps::from_layout(&state.layout);
+    let d = &resolved.defaults.border;
+    let frame = iced::Border {
+        color: to_color(d.color),
+        width: d.line_width,
+        radius: d.corner_radius.into(),
+    };
+    row![
+        container(space())
+            .width(Length::Fixed(SWATCH_SIZE))
+            .height(Length::Fixed(SWATCH_SIZE))
+            .style(move |_theme: &Theme| container::Style {
+                background: Some(iced::Background::Color(color)),
+                border: frame,
+                ..container::Style::default()
+            }),
+        caption_text(state, label, to_color(resolved.sidebar.font.color)),
+    ]
+    .spacing(gap.widget)
+    .align_y(iced::Center)
+    .into()
+}
+
+/// A colour a Widget Info line ends in, as `color_to_hex` writes it:
+/// `#rrggbb` or `#rrggbbaa`.
+fn hex_color(line: &str) -> Option<Color> {
+    let hex = line.rsplit(' ').next()?.strip_prefix('#')?;
+    let channel = |at: usize| {
+        hex.get(at..at + 2)
+            .and_then(|pair| u8::from_str_radix(pair, 16).ok())
+    };
+    let (r, g, b) = (channel(0)?, channel(2)?, channel(4)?);
+    let a = match hex.len() {
+        6 => u8::MAX,
+        8 => channel(6)?,
+        _ => return None,
+    };
+    Some(Color::from_rgba8(
+        r,
+        g,
+        b,
+        f32::from(a) / f32::from(u8::MAX),
+    ))
+}
+
+/// The inspector's Widget tab: the hint before any hover; after one, the
+/// title with a flat Copy button flush right, then the text's sections as
+/// `widget_tooltip` writes them -- a heading per section, a swatch line per
+/// colour, a name over its value per other line.
+fn inspector_widget(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let gap = Gaps::from_layout(&state.layout);
+    let muted = to_color(resolved.defaults.muted_color);
+    let text_color = to_color(resolved.sidebar.font.color);
+    let Some(title) = info_title(&state.widget_info) else {
+        return caption_text(
+            state,
+            "Hover any widget to see what the theme sets on it.",
+            muted,
+        )
+        .into();
+    };
+    let pad = ghost_padding(resolved);
+    let copy =
+        button(text("Copy").role(&resolved.text_scale.caption, resolved, &state.accessibility))
+            .padding(Padding::ZERO.left(pad.left).right(pad.right))
+            .style(ghost_button(resolved, false))
+            .on_press(Message::Copy(state.widget_info.clone()));
+    let mut body = column![
+        row![
+            inspector_heading(state, title.to_string()),
+            space().width(Fill),
+            copy
+        ]
+        .align_y(iced::Center)
+    ]
+    .spacing(gap.widget);
+    let mut colours = false;
+    for line in state
+        .widget_info
+        .lines()
+        .skip_while(|l| l.trim().is_empty())
+        .skip(1)
+    {
+        if line.trim().is_empty() {
+            continue;
+        }
+        if !line.starts_with(' ')
+            && let Some(heading) = line.strip_suffix(':')
+        {
+            colours = heading == "Theme colors";
+            body = body.push(inspector_heading(state, heading.to_string()));
+            continue;
+        }
+        let line = line.trim();
+        body = body.push(match (colours, hex_color(line)) {
+            (true, Some(color)) => inspector_swatch(state, line.to_string(), color),
+            _ => match line.split_once(": ") {
+                Some((name, value)) => inspector_row(state, name.to_string(), value.to_string()),
+                None => caption_text(state, line.to_string(), text_color).into(),
+            },
+        });
+    }
+    body.into()
+}
+
+/// The inspector's Theme tab: what the theme and the window set that no
+/// widget carries, as the gpui showcase's -- the theme's metrics, its fonts
+/// in the unit their source stated, and the window.
+fn inspector_theme(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let gap = Gaps::from_layout(&state.layout);
+    let px = |v: f32| format!("{v}px");
+    let sides = |p: Padding| {
+        format!(
+            "top {}px, right {}px, bottom {}px, left {}px",
+            p.top, p.right, p.bottom, p.left
+        )
+    };
+    let layout = &state.layout;
+    let config = [
+        ("radius", px(native_theme_iced::border_radius(resolved))),
+        (
+            "radius_lg",
+            px(native_theme_iced::border_radius_lg(resolved)),
+        ),
+        (
+            "scrollbar",
+            px(native_theme_iced::scrollbar_width(resolved)),
+        ),
+        (
+            "scrollbar overlay",
+            resolved.scrollbar.overlay_mode.to_string(),
+        ),
+        (
+            "button padding",
+            sides(native_theme_iced::button_padding(resolved)),
+        ),
+        (
+            "input padding",
+            sides(native_theme_iced::input_padding(resolved)),
+        ),
+        ("widget_gap", layout_value(layout.widget_gap, SP.s)),
+        (
+            "container_margin",
+            layout_value(layout.container_margin, SP.l),
+        ),
+        ("window_margin", layout_value(layout.window_margin, SP.l)),
+        ("section_gap", layout_value(layout.section_gap, SP.xl)),
+    ];
+    let d = &resolved.defaults;
+    let fonts = [
+        (
+            "font_family",
+            family_label(
+                &d.font.family,
+                resolved_family(&d.font),
+                &font_drawn(&d.font),
+            ),
+        ),
+        ("font_size", defined_size(&d.font)),
+        (
+            "mono_font_family",
+            family_label(
+                &d.mono_font.family,
+                resolved_family(&d.mono_font),
+                &mono_drawn(resolved),
+            ),
+        ),
+        ("mono_font_size", defined_size(&d.mono_font)),
+    ];
+    let window = [
+        (
+            "decorations",
+            "the window manager's, where it draws them: iced asks winit for a decorated window"
+                .to_string(),
+        ),
+        (
+            "frame",
+            "whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow)"
+                .to_string(),
+        ),
+        ("title", WINDOW_TITLE.to_string()),
+    ];
+    let section = |title: &'static str, rows: Vec<(&'static str, String)>| {
+        column![inspector_heading(state, title)]
+            .extend(
+                rows.into_iter()
+                    .map(|(name, value)| inspector_row(state, name.to_string(), value)),
+            )
+            .spacing(gap.widget)
+    };
+    column![
+        section("Theme config", config.to_vec()),
+        section("Fonts", fonts.to_vec()),
+        section("Window", window.to_vec()),
+    ]
+    .spacing(gap.widget)
+    .into()
+}
+
+/// One entry of the command palette: its label, the words it is also found
+/// by, and the message it runs.
+struct PaletteEntry {
+    label: String,
+    keywords: Vec<String>,
+    action: Message,
+}
+
+/// The command palette's entries (spec §2.8), as `(group, entries)`: every
+/// page, every preset the preset switch offers, found by its key too, and
+/// the three colour modes, each sending the message its tab, drop-down or
+/// menu row sends; only those the query matches, ignoring case.
+fn palette_groups(state: &State) -> Vec<(&'static str, Vec<PaletteEntry>)> {
+    let query = state.palette_query.trim().to_lowercase();
+    let matches = |entry: &PaletteEntry| {
+        query.is_empty()
+            || entry.label.to_lowercase().contains(&query)
+            || entry
+                .keywords
+                .iter()
+                .any(|word| word.to_lowercase().contains(&query))
+    };
+    let pages = Tab::ALL
+        .iter()
+        .map(|&tab| PaletteEntry {
+            label: tab.label().to_string(),
+            keywords: Vec::new(),
+            action: Message::TabSelected(tab),
+        })
+        .collect::<Vec<_>>();
+    let presets = theme_choices(&state.default_label)
+        .into_iter()
+        .map(|choice| PaletteEntry {
+            label: choice.to_string(),
+            keywords: vec![match &choice {
+                ThemeChoice::OsTheme(_) => "default".to_string(),
+                ThemeChoice::Preset(key) => key.clone(),
+            }],
+            action: Message::ThemeSelected(choice),
+        })
+        .collect::<Vec<_>>();
+    let modes = AppColorMode::ALL
+        .iter()
+        .map(|&mode| PaletteEntry {
+            label: mode.palette_label(),
+            keywords: Vec::new(),
+            action: Message::ColorModeSelected(mode),
+        })
+        .collect::<Vec<_>>();
+    [
+        ("Pages", pages),
+        ("Presets", presets),
+        ("Colour mode", modes),
+    ]
+    .into_iter()
+    .map(|(group, entries)| (group, entries.into_iter().filter(matches).collect()))
+    .collect()
+}
+
+/// A dialog over the window (spec §2.8), as the model's dialog
+/// (platform-facts §2.22): its title in `dialog.title_font` with a flat close
+/// button at its right, the chosen icon theme's `IconRole::WindowClose` at
+/// `defaults.icon_sizes.small`; its body in `dialog.body_font`'s colour; filled
+/// with `dialog.background_color`, framed by `dialog.border`, padded by
+/// `dialog.border.padding` inside the border (`layout.container_margin` on a
+/// side it leaves unstated), `dialog.max_width` wide and at least
+/// `dialog.min_height` tall.
+fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let d = &resolved.dialog;
+    let (title, body) = match overlay {
+        Overlay::CommandPalette => ("Command Palette", command_palette(state)),
+        Overlay::Preferences => ("Preferences", preferences(state)),
+        Overlay::About => ("About", about(state)),
+    };
+    let pad = ghost_padding(resolved);
+    let close = icon_button(
+        state,
+        IconButton {
+            icon: &state.chrome_icons.close,
+            size: resolved.defaults.icon_sizes.small,
+            label: "Close",
+            key: None,
+            font: &resolved.button.font,
+            padding: Padding::ZERO.left(pad.left).right(pad.right),
+            selected: false,
+            action: Message::CloseOverlay,
+        },
+    );
+    let head = row![
+        text(title)
+            .typeset(&d.title_font, a11y)
+            .color(to_color(d.title_font.color)),
+        space().width(Fill),
+        close,
+    ]
+    .align_y(iced::Center);
+    let padding = native_theme_iced::padding_inside_border(&d.border, Padding::from(gap.container));
+    let min = iced::Size::new(0.0, (d.min_height - padding.y()).max(0.0));
+    let border = iced::Border {
+        color: to_color(d.border.color),
+        width: d.border.line_width,
+        radius: d.border.corner_radius.into(),
+    };
+    let fill = to_color(d.background_color);
+    let body_color = to_color(d.body_font.color);
+    container(at_least(
+        column![head, body].spacing(gap.widget).width(Fill),
+        min,
+    ))
+    .padding(padding)
+    .width(Fill)
+    .max_width(d.max_width)
+    .max_height(d.max_height)
+    .style(move |_theme: &Theme| container::Style {
+        text_color: Some(body_color),
+        background: Some(iced::Background::Color(fill)),
+        border,
+        ..container::Style::default()
+    })
+    .into()
+}
+
+/// The command palette: a query, in the model's text input, over the
+/// entries it matches in their groups, each group headed in
+/// `text_scale.caption` and `defaults.muted_color`, each entry a list row
+/// ([`list_row`]) in `list.item_font`, padded by `list.border.padding`.
+/// Enter runs the first entry; running one closes the palette.
+fn command_palette(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let size = scaled_text_size(resolved.input.font.size, a11y);
+    let inp_pad = native_theme_iced::input_padding(resolved);
+    let query = text_input("A page, a preset or a colour mode…", &state.palette_query)
+        .id(PALETTE_QUERY_ID)
+        .on_input(Message::PaletteQueryChanged)
+        .on_submit(Message::PaletteSubmitted)
+        .size(size)
+        .line_height(control_line_height(
+            resolved,
+            size,
+            resolved.input.min_height,
+            inp_pad,
+        ))
+        .font(theme_font(&resolved.input.font))
+        .style(styles::text_input(resolved))
+        .padding(inp_pad);
+    let l = &resolved.list;
+    let row_pad = native_theme_iced::padding_or(&l.border.padding, Padding::from(AW_LIST_PADDING));
+    let muted = to_color(resolved.defaults.muted_color);
+    let mut groups = column![].spacing(gap.widget);
+    for (group, entries) in palette_groups(state) {
+        if entries.is_empty() {
+            continue;
+        }
+        groups = groups.push(caption_text(state, group, muted));
+        groups = groups.push(column(entries.into_iter().map(|entry| {
+            button(text(entry.label).typeset(&l.item_font, a11y))
+                .padding(row_pad)
+                .width(Fill)
+                .style(list_row(resolved, false))
+                .on_press(Message::PaletteRun(Box::new(entry.action)))
+                .into()
+        })));
+    }
+    column![
+        query,
+        scrollable(groups)
+            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+            .style(styles::scrollable(resolved))
+            .height(Length::Shrink),
+    ]
+    .spacing(gap.widget)
+    .into()
+}
+
+/// One row of the Preferences dialog: `title` in the dialog's body font and
+/// `description` in `text_scale.caption` and `defaults.muted_color` on the
+/// left, `control` on the right.
+fn preference<'a>(
+    state: &'a State,
+    title: &'static str,
+    description: &'static str,
+    control: Element<'a, Message>,
+) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    let gap = Gaps::from_layout(&state.layout);
+    row![
+        column![
+            text(title).typeset(&resolved.dialog.body_font, &state.accessibility),
+            caption_text(state, description, to_color(resolved.defaults.muted_color)),
+        ]
+        .width(Fill),
+        control,
+    ]
+    .spacing(gap.section)
+    .align_y(iced::Center)
+    .into()
+}
+
+/// The Preferences dialog: the accessibility preferences the showcase
+/// applies, as the gpui showcase's Settings page lists them. Each row says
+/// what this showcase does with its preference, and no more.
+fn preferences(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let sw = &resolved.switch;
+    let switch = |on: bool, message: fn(bool) -> Message| -> Element<'_, Message> {
+        toggler(on)
+            .size(sw.track_height)
+            .style(styles::toggler(resolved))
+            .on_toggle(message)
+            .into()
+    };
+    let size = scaled_text_size(resolved.combo_box.font.size, a11y);
+    let pad = combo_box_padding(resolved);
+    let scale = pick_list(
+        TEXT_SCALES,
+        Some(TextScale(a11y.text_scaling_factor)),
+        Message::TextScaleSelected,
+    )
+    .handle(arrow_handle(resolved))
+    .padding(pad)
+    .text_line_height(control_line_height(
+        resolved,
+        size,
+        resolved.combo_box.min_height,
+        pad,
+    ))
+    .text_size(size)
+    .font(theme_font(&resolved.combo_box.font))
+    .style(styles::pick_list(resolved))
+    .menu_style(styles::menu(resolved));
+    column![
+        text("Accessibility").role(section_title(&resolved.text_scale), resolved, a11y),
+        caption_text(
+            state,
+            "Read from the OS with its theme; the showcase applies each one itself",
+            to_color(resolved.defaults.muted_color),
+        ),
+        preference(
+            state,
+            "Text scale",
+            "text_scaling_factor: every text size the showcase sets is multiplied by it",
+            scale.into(),
+        ),
+        preference(
+            state,
+            "Reduce motion",
+            "reduce_motion: the spinner and the Icons page's animations stop",
+            switch(a11y.reduce_motion, Message::ReduceMotionToggled),
+        ),
+        preference(
+            state,
+            "High contrast",
+            "high_contrast: stored with the theme, which the connector builds no differently for it",
+            switch(a11y.high_contrast, Message::HighContrastToggled),
+        ),
+        preference(
+            state,
+            "Reduce transparency",
+            "reduce_transparency: stored with the theme; no dialog here draws a backdrop to leave out",
+            switch(a11y.reduce_transparency, Message::ReduceTransparencyToggled),
+        ),
+    ]
+    .spacing(gap.widget)
+    .into()
+}
+
+/// The About dialog: this crate's name and version, and where the upstream
+/// versions it requires are, in `dialog.body_font`; the link, in the
+/// platform's link (`styles::button_link`, `link.font`), copies the README's
+/// address, since iced opens no browser.
+fn about(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let gap = Gaps::from_layout(&state.layout);
+    let body = &resolved.dialog.body_font;
+    let link = &resolved.link;
+    let label = format!(
+        "the README's Compatibility table at v{}",
+        env!("CARGO_PKG_VERSION")
+    );
+    let link_button = button(
+        rich_text([span::<(), _>(label).underline(link.underline_enabled)])
+            .size(scaled_text_size(link.font.size, a11y))
+            .font(theme_font(&link.font)),
+    )
+    .on_press(Message::Copy(COMPATIBILITY_URL.to_string()))
+    .style(styles::button_link(resolved))
+    .padding(LINK_PADDING);
+    column![
+        text(ABOUT_NAME_VERSION).typeset(body, a11y),
+        text(
+            "The iced and iced_aw versions it requires, and those it was verified \
+             against, are in"
+        )
+        .typeset(body, a11y),
+        chrome_tooltip(state, link_button, "Copies the address", None),
+    ]
+    .spacing(gap.widget)
+    .into()
+}
+
+// ---------------------------------------------------------------------------
 // Hover helper: wraps a widget in mouse_area for Widget Info updates
 // ---------------------------------------------------------------------------
 
@@ -2533,23 +4436,6 @@ fn widget_tooltip(
     }
 
     s
-}
-
-/// Format the resolved theme font settings for display.
-fn format_font_info(resolved: &native_theme::theme::ResolvedTheme) -> String {
-    let ff = family_label(
-        &resolved.defaults.font.family,
-        resolved_family(&resolved.defaults.font),
-        &font_drawn(&resolved.defaults.font),
-    );
-    let fs = format!("{:.0}px", resolved.defaults.font.size);
-    let mf = family_label(
-        &resolved.defaults.mono_font.family,
-        resolved_family(&resolved.defaults.mono_font),
-        &mono_drawn(resolved),
-    );
-    let ms = format!("{:.0}px", resolved.defaults.mono_font.size);
-    format!("Font: {ff} {fs}  Mono: {mf} {ms}")
 }
 
 /// Like [`widget_tooltip`] but appends the active theme font settings.
@@ -2640,7 +4526,6 @@ const AW_LIST_INSET: f32 = 1.0;
 /// The row padding `iced_aw` gives a `SelectionList` built without one,
 /// `padding: 5.0.into()` (iced_aw 0.14.1 `src/widget/selection_list.rs:77`),
 /// which it keeps in no constant: the side of a row the theme does not state.
-#[cfg(feature = "iced_aw")]
 const AW_LIST_PADDING: f32 = 5.0;
 
 /// The tooltip's padding, where iced can carry it: `Tooltip::padding` is one
@@ -5670,11 +7555,11 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
 // Tab: Extra widgets (iced_aw)
 // ---------------------------------------------------------------------------
 
-/// How wide a drop-down menu of the `MenuBar` is allowed to grow.
+/// How wide a drop-down menu of a `MenuBar` is allowed to grow: the
+/// window's menus', the page tabs' and the Extra page's.
 ///
 /// `MenuTheme` states no menu width, so this is the showcase's own layout
-/// number, like the sidebar's 210px.
-#[cfg(feature = "iced_aw")]
+/// number, like `LEFT_PANEL_WIDTH`.
 const AW_MENU_WIDTH: f32 = 220.0;
 
 /// A drop-down of the `MenuBar`, with the gap `iced_aw` leaves around it.
@@ -6402,7 +8287,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
     // Collect spinner columns into a row
     let mut spinners: Vec<Element<'a, Message>> = Vec::new();
 
-    if state.reduced_motion {
+    if state.motion_reduced() {
         // Reduced motion: show static first-frame for each animated icon
         for (set_name, handle) in &state.animated_static {
             let icon = svg(handle.clone())
@@ -6474,7 +8359,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
 
     let mut content = column![title, divider].spacing(gap.widget);
 
-    if state.reduced_motion {
+    if state.motion_reduced() {
         content = content.push(text("prefers-reduced-motion: showing static frames").role(
             &ts.caption,
             resolved,
@@ -7454,13 +9339,17 @@ fn theme(state: &State) -> Theme {
 fn subscription(state: &State) -> Subscription<Message> {
     let mut subs = vec![];
 
-    // Animation tick (existing logic)
-    if state.active_tab == Tab::Icons
-        && !state.reduced_motion
-        && (!state.animated_frames.is_empty() || !state.animated_spins.is_empty())
-    {
+    // Animation tick: the Icons page's animated icons, and the Basic page's
+    // spinner, whose arc turns with the time since `animation_start`.
+    let icons_animate = state.active_tab == Tab::Icons
+        && (!state.animated_frames.is_empty() || !state.animated_spins.is_empty());
+    if (icons_animate || state.active_tab == Tab::Basic) && !state.motion_reduced() {
         subs.push(iced::time::every(Duration::from_millis(50)).map(|_| Message::AnimationTick));
     }
+
+    // The key bindings the menus show, and Escape, which closes a dialog.
+    subs.push(iced::keyboard::listen().filter_map(shortcut));
+    subs.push(iced::window::resize_events().map(|(_, size)| Message::WindowResized(size)));
 
     // Theme watcher: poll the atomic flag set by on_theme_change() callback.
     // Only active when color mode is System and the watcher started successfully.
@@ -7494,12 +9383,7 @@ fn main() -> iced::Result {
         .is_some_and(|cli| cli.capture || cli.screenshot.is_some());
 
     let application = iced::application(State::default, update, view)
-        .title(|_: &State| {
-            format!(
-                "Native Theme – Iced Showcase, v{}",
-                env!("CARGO_PKG_VERSION")
-            )
-        })
+        .title(|_: &State| WINDOW_TITLE.to_string())
         .theme(theme)
         .subscription(subscription)
         .window_size(WINDOW_SIZE)
@@ -7716,6 +9600,23 @@ mod tests {
         if let Err(error) = ui.click(label) {
             panic!("{label}: {error}");
         }
+    }
+
+    /// Clicks the last text reading `label`, in the order the interface lays
+    /// its widgets out: the page's, where the chrome reads it too.
+    fn click_last_text(ui: &mut Simulator<'_, Message>, label: &str) {
+        let at = texts(ui)
+            .into_iter()
+            .filter(|(content, _)| content == label)
+            .map(|(_, bounds)| bounds.center())
+            .next_back();
+        assert!(at.is_some(), "{label}: no such text");
+        let Some(at) = at else {
+            return;
+        };
+        ui.point_at(at);
+        let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+        let _ = ui.simulate(iced_test::simulator::click());
     }
 
     /// Clicks the widget tagged with the given [`probe`] id.
@@ -8201,8 +10102,9 @@ mod tests {
             "Sidebar: the selection did not reach the state"
         );
 
-        // MenuBar: a root item is one of our own buttons.
-        let messages = drive(state, |ui| click_text(ui, "File"));
+        // MenuBar: a root item is one of our own buttons. The window's own
+        // menu bar has a File too, above the page: the page's is the last.
+        let messages = drive(state, |ui| click_last_text(ui, "File"));
         assert!(
             matches!(messages.as_slice(), [Message::AwActionChosen(what)] if what == "Menu: File"),
             "MenuBar: {messages:?}"
@@ -8943,6 +10845,13 @@ mod tests {
     /// layout and carry no class at all. `styles::container_card`'s own call
     /// sites are covered by the second half of the test, which asks every
     /// public style function for at least one caller.
+    ///
+    /// A button in a role the connector has no class for -- a flat button, a
+    /// menu row, a tab, a list row -- wears the showcase's own style
+    /// function for that role, built from that role's theme leaves alone:
+    /// `ghost_button`, `menu_row`, `tab_style`, `list_row`. A line in a
+    /// widget's own colour wears `line_style`, the separator's style in that
+    /// colour.
     const DRESSED: &[Dressed] = &[
         Dressed {
             ctor: "button",
@@ -8955,6 +10864,10 @@ mod tests {
                 "styles::button_link",
                 "styles::segment",
                 "styles::expander",
+                "ghost_button",
+                "menu_row",
+                "tab_style",
+                "list_row",
             ]],
         },
         Dressed {
@@ -9007,7 +10920,7 @@ mod tests {
         },
         Dressed {
             ctor: "rule::horizontal",
-            styles: &[&["styles::rule"]],
+            styles: &[&["styles::rule", "line_style"]],
         },
         Dressed {
             ctor: "rule::vertical",
@@ -10186,14 +12099,12 @@ mod tests {
         );
     }
 
-    /// The page tab strip's scrollbar is laid out below the tabs, not over
-    /// their labels, wherever the tabs overflow the strip. An overlay-mode
-    /// scrollbar floats over what it scrolls (`styles::scrollbar`); the tabs
-    /// overflowed the 1024px-wide window the macOS runner's display once
-    /// clamped the captures to, and every tab set
-    /// overflows one half as wide, so the check always runs.
+    /// The page tabs scroll sideways with no bar of their own, so no bar
+    /// covers their labels wherever the tabs overflow the strip: the strip is
+    /// exactly as tall as its tabs. Every tab set overflows a window 512px
+    /// wide, so the check always runs.
     #[test]
-    fn the_tab_strip_scrollbar_leaves_the_labels_clear() {
+    fn the_page_tabs_scroll_with_no_bar_over_their_labels() {
         let mut scrolled = 0;
         for preset in ["macos-sonoma", "kde-breeze"] {
             for width in [1024.0, 512.0] {
@@ -10201,11 +12112,11 @@ mod tests {
                     Ok(installed) => installed,
                     Err(error) => panic!("{preset}: {error}"),
                 };
-                let groove = resolved.scrollbar.groove_width;
                 let state = State {
                     current_theme: theme,
                     current_resolved: resolved,
                     active_tab: Tab::Buttons,
+                    side_panel_visible: false,
                     ..State::default()
                 };
                 let mut ui: Simulator<'_, Message> = Simulator::with_size(
@@ -10229,9 +12140,8 @@ mod tests {
                 }
                 scrolled += 1;
                 assert!(
-                    strip.height - tabs.height >= groove - 0.01,
-                    "{preset} at {width}px: the strip is {}px tall around {}px of tabs, \
-                     no room for the {groove}px scrollbar below them",
+                    (strip.height - tabs.height).abs() < 0.01,
+                    "{preset} at {width}px: the strip is {}px tall around {}px of tabs",
                     strip.height,
                     tabs.height
                 );
@@ -10241,6 +12151,142 @@ mod tests {
             scrolled > 0,
             "the tabs overflowed no strip, so none scrolled"
         );
+    }
+
+    /// The side panel keeps its width, and the page beside it its place,
+    /// whatever Widget Info holds: on kde-breeze, whose scrollbar does not
+    /// overlay, the panel's bar is laid out inside the panel, where round 2
+    /// found it widening the panel by `scrollbar.groove_width` and moving the
+    /// page.
+    #[test]
+    fn the_side_panel_scrollbar_moves_nothing() {
+        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        assert!(
+            !resolved.scrollbar.overlay_mode,
+            "kde-breeze's scrollbar no longer takes room of its own; pick a preset whose does"
+        );
+        let long: String = std::iter::once("Tall info".to_string())
+            .chain((0..200).map(|i| format!("  row {i}: a value")))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut drawn = Vec::new();
+        for info in [String::new(), long] {
+            let state = State {
+                current_theme: theme.clone(),
+                current_resolved: resolved.clone(),
+                widget_info: info,
+                ..State::default()
+            };
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), Size::from(WINDOW_SIZE), view(&state));
+            drawn.push((
+                probe_bounds(&mut ui, probes::SIDE_PANEL),
+                probe_bounds(&mut ui, probes::BASIC_BUTTON),
+            ));
+        }
+        for (panel, _) in &drawn {
+            assert_eq!(panel.width, LEFT_PANEL_WIDTH, "the side panel's width");
+        }
+        assert_eq!(
+            drawn[0].1.x, drawn[1].1.x,
+            "the page moved when Widget Info filled"
+        );
+    }
+
+    /// A key press: `character` with Ctrl (Cmd on macOS), or Escape where
+    /// it is `None`.
+    fn key_press(character: Option<&str>) -> iced::keyboard::Event {
+        use iced::keyboard::{Key, Location, Modifiers, key};
+        let (key, modifiers) = match character {
+            Some(c) => (Key::Character(c.into()), Modifiers::COMMAND),
+            None => (Key::Named(key::Named::Escape), Modifiers::empty()),
+        };
+        iced::keyboard::Event::KeyPressed {
+            key: key.clone(),
+            modified_key: key,
+            physical_key: key::Physical::Unidentified(key::NativeCode::Unidentified),
+            location: Location::Standard,
+            modifiers,
+            text: None,
+            repeat: false,
+        }
+    }
+
+    /// The chrome does what the gpui showcase's does: the key bindings the
+    /// menus show send their actions, the status bar's toggle hides and shows
+    /// the side panel, the inspector's tabs switch its view, the command
+    /// palette finds a page by its name and shows it, closing itself, and
+    /// Escape closes a dialog.
+    #[test]
+    fn the_chrome_responds() {
+        assert!(matches!(
+            shortcut(key_press(Some("q"))),
+            Some(Message::Quit)
+        ));
+        assert!(matches!(
+            shortcut(key_press(Some("b"))),
+            Some(Message::ToggleSidePanel)
+        ));
+        assert!(matches!(
+            shortcut(key_press(Some("k"))),
+            Some(Message::Open(Overlay::CommandPalette))
+        ));
+        assert!(matches!(
+            shortcut(key_press(Some(","))),
+            Some(Message::Open(Overlay::Preferences))
+        ));
+        assert!(matches!(
+            shortcut(key_press(None)),
+            Some(Message::CloseOverlay)
+        ));
+        assert!(shortcut(key_press(Some("x"))).is_none());
+
+        let mut state = State::default();
+        let _ = update(&mut state, Message::ToggleSidePanel);
+        assert!(!state.side_panel_visible, "the side panel is still shown");
+        let _ = update(&mut state, Message::ToggleSidePanel);
+        assert!(state.side_panel_visible, "the side panel is still hidden");
+
+        // The last "Theme" on screen is the inspector's tab: the menu bar's
+        // title and the settings' label come before it.
+        let messages = drive(&mut state, |ui| click_last_text(ui, "Theme"));
+        assert!(
+            matches!(
+                messages.as_slice(),
+                [Message::InspectorTabSelected(InspectorTab::Theme)]
+            ),
+            "inspector tabs: {messages:?}"
+        );
+        assert_eq!(state.inspector_tab, InspectorTab::Theme);
+
+        let _ = update(&mut state, Message::Open(Overlay::CommandPalette));
+        assert_eq!(state.overlay, Some(Overlay::CommandPalette));
+        let _ = drive(&mut state, |ui| {
+            click_probe(ui, PALETTE_QUERY_ID);
+            let _ = ui.typewrite("Icons");
+        });
+        assert_eq!(
+            state.palette_query, "Icons",
+            "the query did not reach the state"
+        );
+        // The palette is laid over the window, so its entry comes last.
+        let messages = drive(&mut state, |ui| click_last_text(ui, "Icons"));
+        assert!(
+            matches!(
+                messages.as_slice(),
+                [Message::PaletteRun(action)] if matches!(**action, Message::TabSelected(Tab::Icons))
+            ),
+            "command palette: {messages:?}"
+        );
+        assert_eq!(state.active_tab, Tab::Icons, "the palette showed no page");
+        assert_eq!(state.overlay, None, "the palette stayed open");
+
+        let _ = update(&mut state, Message::Open(Overlay::About));
+        let _ = update(&mut state, Message::CloseOverlay);
+        assert_eq!(state.overlay, None, "Escape left the dialog open");
     }
 
     /// Every text-bearing widget is given its size from the theme, in the
@@ -10290,7 +12336,15 @@ mod tests {
                 .unwrap_or(label)
                 .trim_start();
             let composite = label.starts_with("row![") && label.contains("text(");
-            if !label.starts_with("text(") && !label.starts_with("rich_text(") && !composite {
+            // A chrome icon button's content is its icon (`chrome_icon`), and
+            // the page tabs' menu button's is its caret icon, or where the
+            // icon theme has none a text the loop above sizes.
+            let icon = label == "icon)" || label == "caret)";
+            if !label.starts_with("text(")
+                && !label.starts_with("rich_text(")
+                && !composite
+                && !icon
+            {
                 by_iced.push(format!("button at :{}", line_at(&source, site)));
             }
         }
@@ -10310,6 +12364,11 @@ mod tests {
         for (ctor, setters) in receivers {
             for site in call_sites(&source, ctor) {
                 let calls = chained(site);
+                // A switch with no label, as the Preferences dialog's, whose
+                // row titles it, draws no text.
+                if ctor == "toggler" && !calls.contains(&"label") {
+                    continue;
+                }
                 for setter in setters {
                     if !calls.contains(setter) {
                         by_iced.push(format!(
