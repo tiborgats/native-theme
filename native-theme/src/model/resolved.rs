@@ -129,7 +129,9 @@ pub struct ResolvedDefaults {
     // ---- Global geometry ----
     /// Border sub-struct (color, corner_radius, line_width, etc.).
     pub border: ResolvedDefaultsBorder,
-    /// Opacity for disabled controls.
+    /// Opacity for disabled controls, applied to the whole widget together
+    /// with the disabled colours; 1.0 where the platform dims by colour
+    /// alone. See [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity).
     pub disabled_opacity: f32,
 
     // ---- Focus ring ----

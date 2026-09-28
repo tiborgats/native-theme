@@ -9,7 +9,8 @@ icon_theme = "segoe-fluent"
 # === Light variant ===
 
 [light.defaults]
-disabled_opacity = 0.3
+# platform-facts.md:1115 (§2.1.6): 1.0, WinUI 3 dims a disabled control by its *Disabled brushes alone
+disabled_opacity = 1.0
 line_height = 1.43
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 0.0
@@ -118,8 +119,9 @@ row_height_px = 40.0
 
 
 [light.list.border]
-# platform-facts.md:1390-1391 (§2.15): WinUI3 12; 0
-padding_horizontal_px = 12.0
+# platform-facts.md:1390-1391 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
+padding_left_px = 16.0
+padding_right_px = 12.0
 padding_vertical_px = 0.0
 [light.toolbar]
 # platform-facts.md:1351 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
@@ -213,7 +215,8 @@ padding_vertical_px = 0.0
 # === Dark variant ===
 
 [dark.defaults]
-disabled_opacity = 0.3
+# platform-facts.md:1115 (§2.1.6): 1.0, WinUI 3 dims a disabled control by its *Disabled brushes alone
+disabled_opacity = 1.0
 line_height = 1.43
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 0.0
@@ -322,8 +325,9 @@ row_height_px = 40.0
 
 
 [dark.list.border]
-# platform-facts.md:1390-1391 (§2.15): WinUI3 12; 0
-padding_horizontal_px = 12.0
+# platform-facts.md:1390-1391 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
+padding_left_px = 16.0
+padding_right_px = 12.0
 padding_vertical_px = 0.0
 [dark.toolbar]
 # platform-facts.md:1351 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48

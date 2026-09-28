@@ -561,10 +561,14 @@ accent_color = "#00ff00"
                     variant.slider.fill_color.is_none(),
                     "preset '{name}' {label}.slider.fill_color should be None (derived)"
                 );
-                // progress_bar.fill is derived from accent
-                assert!(
-                    variant.progress_bar.fill_color.is_none(),
-                    "preset '{name}' {label}.progress_bar.fill_color should be None (derived)"
+                // progress_bar.fill is derived from accent, except on KDE,
+                // where Breeze lays the accent at 0.7 over the window
+                // (docs/platform-facts.md:1301, §2.10)
+                assert_eq!(
+                    variant.progress_bar.fill_color.is_some(),
+                    *name == "kde-breeze",
+                    "preset '{name}' {label}.progress_bar.fill_color: stated only where \
+                     platform-facts does not derive it from the accent"
                 );
                 // switch.checked_background is derived from accent
                 assert!(

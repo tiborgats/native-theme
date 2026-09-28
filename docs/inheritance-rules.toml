@@ -342,6 +342,15 @@ gnome    = "preset"
 # reader or preset TOML. If still None after resolve(), validate() errors,
 # except for the interactive state colors of batches 1 and 2 below, which are
 # `soft_option`: they stay `Option` in the resolved theme and may stay None.
+#
+# Disabled state (docs/platform-facts.md §2.1.6, `disabled_opacity`): a
+# consumer paints the `disabled_*` colours AND fades the widget by its
+# `disabled_opacity`. A platform uses one of the two, and its preset makes the
+# other an identity: KDE and Windows state `defaults.disabled_opacity = 1.0`;
+# GNOME states no `disabled_*` fill (None = the enabled colour) and its
+# enabled text colours as the disabled ones. A widget without a
+# `disabled_opacity` of its own (menu, list, link) fades by
+# `defaults.disabled_opacity`.
 
 [no_inheritance]
 fields = [

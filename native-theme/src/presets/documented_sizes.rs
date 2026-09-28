@@ -266,7 +266,7 @@ const ROWS: &[Row] = &[
         extra: &[("bar_height", Some(48.0), 1351), ("item_gap", Some(0.0), 1352)],
     },
     row(Windows, "status_bar", NONE, &[1372, 1373], "(none): not specified"),
-    row(Windows, "list", axes(0.0, 12.0), &[1390, 1391], "12; 0")
+    row(Windows, "list", trbl(0.0, 12.0, 0.0, 16.0), &[1390, 1391], "Padding=16,0,12,0")
         .with(&[("row_height", Some(40.0), 1389)]),
     row(Windows, "popover", trbl(15.0, 16.0, 17.0, 16.0), &[1412, 1413], "FlyoutContentPadding=16,15,16,17"),
     row(Windows, "dialog", all(24.0), &[1491, 1492], "ContentDialogPadding=24"),

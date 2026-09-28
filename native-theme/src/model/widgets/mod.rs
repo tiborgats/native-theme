@@ -60,7 +60,9 @@ pub struct ButtonTheme {
     #[serde(rename = "icon_text_gap_px")]
     #[theme(check = "non_negative")]
     pub icon_text_gap: Option<f32>,
-    /// Opacity multiplier when the button is disabled (0.0-1.0).
+    /// Opacity multiplier when the button is disabled (0.0-1.0), applied to
+    /// the whole button on top of its disabled colours (see
+    /// [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity)).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// Button background on hover.
@@ -76,7 +78,7 @@ pub struct ButtonTheme {
     /// Button background when pressed/active.
     #[theme(category = "soft_option")]
     pub active_background: Option<Rgba>,
-    /// Button background when disabled.
+    /// Button background when disabled; `None`, the enabled background.
     #[theme(category = "soft_option")]
     pub disabled_background: Option<Rgba>,
     /// Button label font specification.
@@ -113,7 +115,9 @@ pub struct InputTheme {
     #[serde(rename = "min_height_px")]
     #[theme(check = "non_negative")]
     pub min_height: Option<f32>,
-    /// Opacity multiplier when disabled (0.0-1.0).
+    /// Opacity multiplier when disabled (0.0-1.0), applied to the whole
+    /// widget on top of its disabled colours (see
+    /// [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity)).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// Input text color when disabled.
@@ -125,7 +129,7 @@ pub struct InputTheme {
     /// Border color when the input has focus.
     #[theme(category = "soft_option")]
     pub focus_border_color: Option<Rgba>,
-    /// Input background when disabled.
+    /// Input background when disabled; `None`, the enabled background.
     #[theme(category = "soft_option")]
     pub disabled_background: Option<Rgba>,
     /// Input text font specification.
@@ -169,7 +173,9 @@ pub struct CheckboxTheme {
     #[serde(rename = "label_gap_px")]
     #[theme(check = "non_negative")]
     pub label_gap: Option<f32>,
-    /// Opacity multiplier when disabled (0.0-1.0).
+    /// Opacity multiplier when disabled (0.0-1.0), applied to the whole
+    /// widget on top of its disabled colours (see
+    /// [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity)).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// Checkbox label text color when disabled.
@@ -178,7 +184,8 @@ pub struct CheckboxTheme {
     /// Checkbox background on hover.
     #[theme(category = "soft_option")]
     pub hover_background: Option<Rgba>,
-    /// Checkbox background when disabled.
+    /// Checkbox background when disabled; `None`, the enabled box of its
+    /// state (checked or unchecked).
     #[theme(category = "soft_option")]
     pub disabled_background: Option<Rgba>,
     /// Indicator background when unchecked.
@@ -326,13 +333,16 @@ pub struct SliderTheme {
     #[serde(rename = "tick_mark_length_px")]
     #[theme(check = "non_negative")]
     pub tick_mark_length: Option<f32>,
-    /// Opacity multiplier when disabled (0.0-1.0).
+    /// Opacity multiplier when disabled (0.0-1.0), applied to the whole
+    /// widget on top of its disabled colours (see
+    /// [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity)).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// Thumb color on hover.
     #[theme(category = "soft_option")]
     pub thumb_hover_color: Option<Rgba>,
-    /// Filled track color when disabled.
+    /// Filled track color when disabled; `None`, the enabled colour (as for
+    /// the two below).
     #[theme(category = "soft_option")]
     pub disabled_fill_color: Option<Rgba>,
     /// Unfilled track color when disabled.
@@ -629,7 +639,9 @@ pub struct SwitchTheme {
     #[serde(rename = "track_radius_px")]
     #[theme(check = "non_negative")]
     pub track_radius: Option<f32>,
-    /// Opacity multiplier when disabled (0.0-1.0).
+    /// Opacity multiplier when disabled (0.0-1.0), applied to the whole
+    /// widget on top of its disabled colours (see
+    /// [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity)).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// Track hover color when checked (on).
@@ -638,7 +650,8 @@ pub struct SwitchTheme {
     /// Track hover color when unchecked (off).
     #[theme(category = "soft_option")]
     pub hover_unchecked_background: Option<Rgba>,
-    /// Track color when disabled and checked.
+    /// Track color when disabled and checked; `None`, the enabled colour (as
+    /// for the two below).
     #[theme(category = "soft_option")]
     pub disabled_checked_background: Option<Rgba>,
     /// Track color when disabled and unchecked.
@@ -751,7 +764,9 @@ pub struct ComboBoxTheme {
     #[serde(rename = "arrow_area_width_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub arrow_area_width: Option<f32>,
-    /// Opacity multiplier when disabled (0.0-1.0).
+    /// Opacity multiplier when disabled (0.0-1.0), applied to the whole
+    /// widget on top of its disabled colours (see
+    /// [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity)).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// ComboBox text color when disabled.
@@ -760,7 +775,7 @@ pub struct ComboBoxTheme {
     /// ComboBox background on hover.
     #[theme(category = "soft_option")]
     pub hover_background: Option<Rgba>,
-    /// ComboBox background when disabled.
+    /// ComboBox background when disabled; `None`, the enabled background.
     #[theme(category = "soft_option")]
     pub disabled_background: Option<Rgba>,
     /// ComboBox font specification.
@@ -796,7 +811,9 @@ pub struct SegmentedControlTheme {
     #[serde(rename = "separator_width_px")]
     #[theme(check = "non_negative")]
     pub separator_width: Option<f32>,
-    /// Opacity multiplier when disabled (0.0-1.0).
+    /// Opacity multiplier when disabled (0.0-1.0), applied to the whole
+    /// widget on top of its disabled colours (see
+    /// [`ThemeDefaults::disabled_opacity`](crate::model::ThemeDefaults::disabled_opacity)).
     #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// Segment background on hover.

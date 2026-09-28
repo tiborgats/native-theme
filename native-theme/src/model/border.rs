@@ -4,7 +4,8 @@ use crate::Rgba;
 use native_theme_derive::ThemeFields;
 use serde::{Deserialize, Serialize};
 
-/// Defaults-level border specification: color, geometry, and opacity.
+/// Defaults-level border specification: color, geometry, and the platform's
+/// line opacity.
 ///
 /// Used on [`ThemeDefaults`](crate::model::ThemeDefaults) for global border
 /// properties that are inherited by per-widget borders.
@@ -33,7 +34,14 @@ pub struct DefaultsBorderSpec {
     /// Border stroke width in logical pixels.
     #[serde(rename = "line_width_px")]
     pub line_width: Option<f32>,
-    /// Border alpha multiplier 0.0-1.0 (defaults only).
+    /// The platform's line opacity, 0.0-1.0 (defaults only): the share of the
+    /// text colour that makes a border or separator line — KDE's
+    /// `frameContrast` 0.2, libadwaita's `--border-opacity` 0.15
+    /// (docs/platform-facts.md §2.1.6).
+    ///
+    /// It is already folded into every stated border colour, which is the
+    /// final line colour: no connector multiplies any colour by it. It
+    /// documents how the platform derives its lines.
     pub opacity: Option<f32>,
     /// Whether the bordered element has a drop shadow.
     pub shadow_enabled: Option<bool>,
@@ -218,7 +226,9 @@ pub struct ResolvedDefaultsBorder {
     pub corner_radius_lg: f32,
     /// Border stroke width in logical pixels.
     pub line_width: f32,
-    /// Border alpha multiplier 0.0-1.0.
+    /// The platform's line opacity, 0.0-1.0: the share of the text colour
+    /// already folded into every stated border colour. No connector
+    /// multiplies any colour by it (see [`DefaultsBorderSpec::opacity`]).
     pub opacity: f32,
     /// Whether the bordered element has a drop shadow.
     pub shadow_enabled: bool,

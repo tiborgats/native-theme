@@ -258,8 +258,8 @@ pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     border.padding_bottom = Some(8.0);
     variant.list.row_height = Some(40.0);
     let border = variant.list.border.get_or_insert_default();
-    // platform-facts.md:1390 (§2.15): 12
-    border.padding_left = Some(12.0);
+    // platform-facts.md:1390 (§2.15): DefaultListViewItemStyle Padding=16,0,12,0
+    border.padding_left = Some(16.0);
     border.padding_right = Some(12.0);
     // platform-facts.md:1351 (§2.13): CommandBar's default compact mode, AppBarThemeCompactHeight
     variant.toolbar.bar_height = Some(48.0);

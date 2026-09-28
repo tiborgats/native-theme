@@ -74,7 +74,8 @@ pub struct ThemeDefaults {
     pub text_selection_background: Option<Rgba>,
     /// Text selection color (inline text highlight).
     pub text_selection_color: Option<Rgba>,
-    /// Text color for disabled controls.
+    /// Text color for disabled controls, before `disabled_opacity` fades the
+    /// widget: the enabled text colour where the platform dims by opacity.
     pub disabled_text_color: Option<Rgba>,
 
     // ---- Status colors ----
@@ -99,7 +100,15 @@ pub struct ThemeDefaults {
     /// Border sub-struct (color, corner_radius, line_width, etc.).
     #[serde(default, skip_serializing_if = "DefaultsBorderSpec::is_empty")]
     pub border: DefaultsBorderSpec,
-    /// Opacity for disabled controls (0.0–1.0).
+    /// Opacity for disabled controls (0.0–1.0), applied to the whole widget.
+    ///
+    /// A consumer applies both this and the disabled colours
+    /// (`disabled_text_color`, each widget's `disabled_*`). A platform dims by
+    /// one mechanism, and the data makes the other an identity: 1.0 where the
+    /// platform dims by colour (KDE, Windows), and disabled colours equal to
+    /// the enabled ones where it dims by opacity (GNOME;
+    /// docs/platform-facts.md §2.1.6). A widget with no `disabled_opacity`
+    /// of its own (menu, list, link) fades by this one.
     pub disabled_opacity: Option<f32>,
 
     // ---- Focus ring ----

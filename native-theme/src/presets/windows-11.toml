@@ -30,7 +30,8 @@ focus_ring_color = "#0078d4"
 disabled_text_color = "#c5c5c5"
 accent_text_color = "#ffffff"
 
-disabled_opacity = 0.3
+# platform-facts.md:1115 (§2.1.6): 1.0, WinUI 3 dims a disabled control by its *Disabled brushes alone
+disabled_opacity = 1.0
 line_height = 1.43
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 0.0
@@ -180,6 +181,10 @@ disabled_thumb_color = "#ffffff80"
 track_height_px = 1.0
 min_width_px = 100.0
 
+[light.progress_bar.border]
+# platform-facts.md:1308 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
+line_width_px = 0.0
+
 [light.tab]
 min_width_px = 64.0
 min_height_px = 32.0
@@ -223,8 +228,9 @@ disabled_text_color = "#c5c5c5"
 
 
 [light.list.border]
-# platform-facts.md:1390-1391 (§2.15): WinUI3 12; 0
-padding_horizontal_px = 12.0
+# platform-facts.md:1390-1391 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
+padding_left_px = 16.0
+padding_right_px = 12.0
 padding_vertical_px = 0.0
 [light.toolbar]
 # platform-facts.md:1351 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
@@ -412,7 +418,8 @@ focus_ring_color = "#0078d4"
 disabled_text_color = "#454545"
 accent_text_color = "#000000"
 
-disabled_opacity = 0.3
+# platform-facts.md:1115 (§2.1.6): 1.0, WinUI 3 dims a disabled control by its *Disabled brushes alone
+disabled_opacity = 1.0
 line_height = 1.43
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 0.0
@@ -562,6 +569,10 @@ disabled_thumb_color = "#2d2d2d80"
 track_height_px = 1.0
 min_width_px = 100.0
 
+[dark.progress_bar.border]
+# platform-facts.md:1308 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
+line_width_px = 0.0
+
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 32.0
@@ -605,8 +616,9 @@ disabled_text_color = "#454545"
 
 
 [dark.list.border]
-# platform-facts.md:1390-1391 (§2.15): WinUI3 12; 0
-padding_horizontal_px = 12.0
+# platform-facts.md:1390-1391 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
+padding_left_px = 16.0
+padding_right_px = 12.0
 padding_vertical_px = 0.0
 [dark.toolbar]
 # platform-facts.md:1351 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48

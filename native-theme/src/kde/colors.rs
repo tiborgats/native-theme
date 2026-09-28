@@ -41,6 +41,58 @@ fn mix(a: Rgba, b: Rgba, bias: f32) -> Rgba {
     Rgba::from_f32(channel(ar, br), channel(ag, bg), channel(ab, bb), 1.0)
 }
 
+/// The alpha of the accent over the window in a Breeze progress bar's
+/// contents, `alphaColor(fg, 0.7)` (breezehelper.cpp:1216 at breeze f0b1d75;
+/// docs/platform-facts.md §2.10).
+const PROGRESS_FILL_ALPHA: f32 = 0.7;
+
+/// `(x * a + 0x7f) / 0xff` as Qt's raster engine rounds it, `BYTE_MUL`
+/// (qtbase `qdrawhelper_p.h`), for 8-bit `x` and `a`.
+fn byte_mul(x: u64, a: u64) -> u64 {
+    let t = x.saturating_mul(a);
+    t.saturating_add(t.wrapping_shr(8))
+        .saturating_add(0x80)
+        .wrapping_shr(8)
+}
+
+/// `x * a / 0xffff` rounded, for 16-bit `x` and `a` (qtbase `qt_div_65535`).
+fn mul_65535(x: u64, a: u64) -> u64 {
+    let t = x.saturating_mul(a);
+    t.saturating_add(t.wrapping_shr(16))
+        .saturating_add(0x8000)
+        .wrapping_shr(16)
+}
+
+/// A 16-bit value to 8 bits, `x / 257` rounded to nearest.
+fn div_257(x: u64) -> u64 {
+    let t = x.saturating_add(0x80);
+    t.saturating_sub(t.wrapping_shr(8)).wrapping_shr(8)
+}
+
+/// `KColorUtils::overlayColors(base, paint)` for an opaque `paint` colour
+/// given the alpha `alpha` by `QColor::setAlphaF`: `paint` filled
+/// source-over onto the opaque `base` in a 1×1 `ARGB32_Premultiplied` image
+/// (kcolorutils.cpp:168-181 at kguiaddons 7c766f6f). Qt premultiplies the
+/// colour in 16 bits, stores it in 8, and blends the 8-bit destination by the
+/// 8-bit inverse alpha; this arithmetic reproduces Qt 6.11.2's pixel on
+/// 20 000 random inputs, so the result is Breeze's to the unit.
+fn overlay_colors(base: Rgba, paint: Rgba, alpha: f32) -> Rgba {
+    // QColor keeps alpha in 16 bits: qRound(alpha * 65535), in f32.
+    let alpha16 = (alpha.clamp(0.0, 1.0) * 65535.0 + 0.5).floor() as u64;
+    let alpha8 = div_257(alpha16);
+    let inverse = 255_u64.saturating_sub(alpha8);
+    let channel = |p: u8, b: u8| {
+        let premultiplied = div_257(mul_65535(u64::from(p).saturating_mul(257), alpha16));
+        let v = premultiplied.saturating_add(byte_mul(u64::from(b), inverse));
+        u8::try_from(v).unwrap_or(u8::MAX)
+    };
+    Rgba::rgb(
+        channel(paint.r, base.r),
+        channel(paint.g, base.g),
+        channel(paint.b, base.b),
+    )
+}
+
 /// `KColorScheme::frameContrast()`: `[KDE] frameContrast`, clamped to
 /// 0.0..=1.0, or its default where unset or not a number.
 fn frame_contrast(ini: &configparser::ini::Ini) -> f32 {
@@ -137,6 +189,19 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.checkbox.unchecked_border_color = get_color(ini, "Colors:Window", "BackgroundNormal")
         .zip(window_fg)
         .map(|(window, text)| mix(window, text, frame_contrast(ini)));
+
+    // Progress bar (docs/platform-facts.md §2.10): Breeze fills the contents
+    // with `QPalette::Accent`, the selection background
+    // (kcolorscheme.cpp:681 at 27066d47), at alpha 0.7 over the window, and
+    // strokes the groove in the window text at alpha `frameContrast`.
+    let window_bg = get_color(ini, "Colors:Window", "BackgroundNormal");
+    variant.progress_bar.fill_color = selection_bg
+        .zip(window_bg)
+        .map(|(accent, window)| overlay_colors(window, accent, PROGRESS_FILL_ALPHA));
+    if let Some(text) = window_fg {
+        variant.progress_bar.border.get_or_insert_default().color =
+            Some(translucent(text, frame_contrast(ini)));
+    }
 
     // Popover (from View)
     variant.popover.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
@@ -374,6 +439,57 @@ inactiveForeground=161,169,177
         assert_eq!(with("0.5"), Some(Rgba::rgb(100, 50, 0)));
         assert_eq!(with("2"), Some(Rgba::rgb(200, 100, 0)), "clamped to 1");
         assert_eq!(with("none"), Some(Rgba::rgb(40, 20, 0)), "the 0.2 default");
+    }
+
+    /// Pixels `KColorUtils::overlayColors` returned under Qt 6.11.2 and KF6
+    /// KGuiAddons for a colour `setAlphaF`'d to the alpha, over an opaque base
+    /// (scratchpad program `ovtest.cpp`, 20 000 random inputs, of which these
+    /// are six); `overlay_colors` matched all of them.
+    #[test]
+    fn overlay_colors_is_qts_pixel() {
+        let cases = [
+            ((220, 4, 101), (170, 31, 173), 0.29, (205, 12, 122)),
+            ((90, 218, 229), (172, 27, 30), 0.95, (168, 37, 40)),
+            ((209, 238, 57), (16, 203, 72), 0.48, (117, 221, 65)),
+            ((116, 55, 154), (111, 144, 12), 0.19, (115, 72, 127)),
+            ((164, 249, 31), (161, 98, 185), 0.75, (162, 135, 147)),
+            ((148, 102, 144), (95, 160, 85), 0.04, (146, 104, 141)),
+        ];
+        for (base, paint, alpha, expected) in cases {
+            let rgb = |(r, g, b): (u8, u8, u8)| Rgba::rgb(r, g, b);
+            assert_eq!(
+                overlay_colors(rgb(base), rgb(paint), alpha),
+                rgb(expected),
+                "{base:?} under {paint:?} at {alpha}"
+            );
+        }
+    }
+
+    /// docs/platform-facts.md §2.10's KDE cells, which the kde-breeze preset
+    /// states: the accent at 0.7 over the window, and the window text at the
+    /// frame contrast for the outline.
+    #[test]
+    fn test_progress_bar_colors_are_breezes() {
+        let cases = [
+            (
+                breeze_checkbox_groups("239,240,241", "35,38,41", "252,252,252", "35,38,41"),
+                Rgba::rgb(0x72, 0xc2, 0xeb),
+                Rgba::new(0x23, 0x26, 0x29, 0x33),
+            ),
+            (
+                breeze_checkbox_groups("32,35,38", "252,252,252", "41,44,48", "252,252,252"),
+                Rgba::rgb(0x35, 0x84, 0xae),
+                Rgba::new(0xfc, 0xfc, 0xfc, 0x33),
+            ),
+        ];
+        for (content, fill, outline) in cases {
+            let v = populate_fixture(&content);
+            assert_eq!(v.progress_bar.fill_color, Some(fill));
+            assert_eq!(
+                v.progress_bar.border.as_ref().and_then(|b| b.color),
+                Some(outline)
+            );
+        }
     }
 
     // === Per-widget: Button ===

@@ -5,7 +5,8 @@ name = "KDE Breeze"
 # === Light variant ===
 
 [light.defaults]
-disabled_opacity = 0.5
+# platform-facts.md:1115 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
+disabled_opacity = 1.0
 line_height = 1.36
 focus_ring_width_px = 1.0
 focus_ring_offset_px = 2.0
@@ -177,7 +178,8 @@ stroke_width_px = 2.0
 [light.combo_box]
 min_height_px = 32.0
 min_width_px = 120.0
-arrow_icon_size_px =20.0
+# platform-facts.md:1553 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
+arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
 
 
@@ -200,7 +202,8 @@ arrow_icon_size_px =10.0
 # === Dark variant ===
 
 [dark.defaults]
-disabled_opacity = 0.5
+# platform-facts.md:1115 (§2.1.6): 1.0, Breeze dims a disabled control by its colours alone
+disabled_opacity = 1.0
 line_height = 1.36
 focus_ring_width_px = 1.0
 focus_ring_offset_px = 2.0
@@ -372,7 +375,8 @@ stroke_width_px = 2.0
 [dark.combo_box]
 min_height_px = 32.0
 min_width_px = 120.0
-arrow_icon_size_px =20.0
+# platform-facts.md:1553 (§2.24): renderArrow draws min(w, h, ArrowSize = 10) in the 20px arrow column
+arrow_icon_size_px = 10.0
 arrow_area_width_px = 20.0
 
 
