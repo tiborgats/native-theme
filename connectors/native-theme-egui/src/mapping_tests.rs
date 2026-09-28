@@ -471,7 +471,7 @@ fn verdict_totals_match_the_specification() {
         ("buttons", [11, 45, 29, 14]),
         ("inputs", [4, 35, 28, 11]),
         ("indicators", [6, 17, 8, 9]),
-        ("chrome", [0, 53, 22, 16]),
+        ("chrome", [0, 53, 23, 15]),
     ];
     for (group, want) in expected {
         let got = counts.get(group).copied().unwrap_or([0; 4]);
@@ -483,7 +483,7 @@ fn verdict_totals_match_the_specification() {
     );
     assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 15);
     assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 5);
-    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 54);
+    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 53);
     assert_eq!(
         tags.get("source-void").copied().unwrap_or_default(),
         0,

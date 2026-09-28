@@ -1044,7 +1044,7 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
         notes,
     );
     // `.y` by the pair rule; `.x` is read on the trailing side only (§5.6, §7.4), so the
-    // right side alone, `.left` being UNMAPPABLE with no sink to fall back in
+    // right side alone; `.left` is `spacing.indent`, in `derived::apply_role`
     let p = &x.border.padding;
     for (side, path) in [
         (p.top, "expander.border.padding.top"),
@@ -2243,7 +2243,16 @@ mod tests {
                 right.map_or(base.spacing.button_padding.x, clamp_length),
                 "{preset}"
             );
-            assert_eq!(c.spacing.indent, base.spacing.indent, "{preset}");
+            // the leading padding: the arrow, centred on `indent / 2`, starts it plus the
+            // border's width in; egui's own indent where the side is unstated
+            let left = crate::convert::padding_with_border(&x.border).left;
+            assert_eq!(
+                c.spacing.indent,
+                left.map_or(base.spacing.indent, |l| clamp_length(
+                    2.0 * l + x.arrow_icon_size
+                )),
+                "{preset}"
+            );
         }
     }
 

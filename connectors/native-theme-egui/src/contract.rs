@@ -248,6 +248,7 @@ fn read_style(style: &Style, path: &str) -> Option<Val> {
         ["spacing", "menu_margin", side] => margin_side(sp.menu_margin, side)?,
         ["spacing", "icon_width"] => Val::F32(sp.icon_width),
         ["spacing", "icon_width_inner"] => Val::F32(sp.icon_width_inner),
+        ["spacing", "indent"] => Val::F32(sp.indent),
         ["spacing", "icon_spacing"] => Val::F32(sp.icon_spacing),
         ["spacing", "slider_rail_height"] => Val::F32(sp.slider_rail_height),
         ["spacing", "combo_width"] => Val::F32(sp.combo_width),
@@ -784,6 +785,18 @@ fn expected(
                 return Ok(None);
             }
             Val::F32(convert::clamp_length(s * (4.0 / 3.0)))
+        }
+        // the expander's leading padding: the arrow, centred on `indent / 2`, starts the stated
+        // padding plus the border's width in
+        (Some("expander"), "normal", None, "spacing.indent") => {
+            let border = &t.expander.border;
+            let arrow = t.expander.arrow_icon_size;
+            match convert::padding_with_border(border).left {
+                Some(left) if arrow.is_finite() => {
+                    Val::F32(convert::clamp_length(2.0 * left + arrow))
+                }
+                _ => return Ok(None),
+            }
         }
         (Some("checkbox"), "normal", None, "spacing.icon_width_inner") => {
             let pad = padding_of(c, "checkbox");

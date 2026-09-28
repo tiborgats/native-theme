@@ -13,10 +13,10 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | Buttons (button, link, switch, checkbox, segmented control) | 99 | 11 | 45 | 29 | 14 |
 | Inputs (input, combo box, list) | 78 | 4 | 35 | 28 | 11 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
-| Chrome (tab, sidebar, toolbar, status bar, expander) | 91 | 0 | 53 | 22 | 16 |
-| **TOTAL** | **482** | **47** | **206** | **155** | **74** |
+| Chrome (tab, sidebar, toolbar, status bar, expander) | 91 | 0 | 53 | 23 | 15 |
+| **TOTAL** | **482** | **47** | **206** | **156** | **73** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-crate` 5.
+UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-crate` 5.
 
 ## Rows
 
@@ -441,12 +441,12 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-cra
 | leaf | verdict | sinks, or the test of its route | note |
 |---|---|---|---|
 | `expander.arrow_color` | DERIVED | → T18(f) |  |
-| `expander.arrow_icon_size` | DERIVED | «expander» `spacing.icon_width_inner` |  |
+| `expander.arrow_icon_size` | DERIVED | «expander» `spacing.icon_width_inner`; «expander» `spacing.indent` (when: expander.border.padding.left is stated) |  |
 | `expander.border.color` | SCOPED | «expander» `visuals.widgets.noninteractive.bg_stroke.color`; «expander» `visuals.widgets.inactive.bg_stroke.color`; «expander» `visuals.widgets.hovered.bg_stroke.color`; «expander» `visuals.widgets.active.bg_stroke.color`; «expander» `visuals.widgets.open.bg_stroke.color` |  |
 | `expander.border.corner_radius` | SCOPED | «expander» `visuals.widgets.noninteractive.corner_radius`; «expander» `visuals.widgets.inactive.corner_radius`; «expander» `visuals.widgets.hovered.corner_radius`; «expander» `visuals.widgets.active.corner_radius`; «expander» `visuals.widgets.open.corner_radius` |  |
-| `expander.border.line_width` | SCOPED | «expander» `visuals.widgets.noninteractive.bg_stroke.width`; «expander» `visuals.widgets.inactive.bg_stroke.width`; «expander» `visuals.widgets.hovered.bg_stroke.width`; «expander» `visuals.widgets.active.bg_stroke.width`; «expander» `visuals.widgets.open.bg_stroke.width`; «expander» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «expander» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro) |  |
+| `expander.border.line_width` | SCOPED | «expander» `visuals.widgets.noninteractive.bg_stroke.width`; «expander» `visuals.widgets.inactive.bg_stroke.width`; «expander» `visuals.widgets.hovered.bg_stroke.width`; «expander» `visuals.widgets.active.bg_stroke.width`; «expander» `visuals.widgets.open.bg_stroke.width`; «expander» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «expander» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro); «expander» `spacing.indent` (when: expander.border.padding.left is stated) |  |
 | `expander.border.padding.bottom` | DERIVED | «expander» `spacing.button_padding.y` |  |
-| `expander.border.padding.left` | UNMAPPABLE |  | `egui-limited`: egui: a per-widget Margin (§14 item 35) |
+| `expander.border.padding.left` | DERIVED | «expander» `spacing.indent` |  |
 | `expander.border.padding.right` | DERIVED | «expander» `spacing.button_padding.x` |  |
 | `expander.border.padding.top` | DERIVED | «expander» `spacing.button_padding.y` |  |
 | `expander.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
@@ -546,6 +546,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.icon_spacing` | `checkbox.label_gap` |  | `button.icon_text_gap` «button», `checkbox.label_gap` «checkbox», `combo_box.arrow_area_width` «combo_box», `combo_box.arrow_icon_size` «combo_box», `menu.icon_text_gap` «menu» |
 | `spacing.icon_width` | `checkbox.indicator_width` |  | `checkbox.indicator_width` «checkbox», `combo_box.arrow_icon_size` «combo_box» |
 | `spacing.icon_width_inner` | — (egui's own value stands) |  | `checkbox.border.padding.bottom` «checkbox», `checkbox.border.padding.left` «checkbox», `checkbox.border.padding.right` «checkbox», `checkbox.border.padding.top` «checkbox», `checkbox.indicator_width` «checkbox», `expander.arrow_icon_size` «expander» |
+| `spacing.indent` | — (egui's own value stands) |  | `expander.arrow_icon_size` «expander», `expander.border.line_width` «expander», `expander.border.padding.left` «expander» |
 | `spacing.interact_size.y` | `button.min_height` |  | `button.min_height` «button», `checkbox.indicator_width` «checkbox», `combo_box.min_height` «combo_box», `expander.header_height` «expander», `list.row_height` «list», `menu.row_height` «menu», `progress_bar.track_height` «progress_bar», `segmented_control.segment_height` «segmented_control», `slider.thumb_diameter` «slider», `spinner.diameter` «spinner», `spinner.min_diameter` «spinner», `switch.track_height` «switch», `tab.min_height` «tab», `toolbar.bar_height` «toolbar», `toolbar.border.line_width` «toolbar», `toolbar.border.padding.bottom` «toolbar», `toolbar.border.padding.top` «toolbar» |
 | `spacing.item_spacing.x` | `layout.widget_gap` |  | `dialog.button_gap` «dialog», `progress_bar.border.padding.left` «progress_bar», `segmented_control.separator_width` «segmented_control», `toolbar.item_gap` «toolbar» |
 | `spacing.item_spacing.y` | `layout.widget_gap` |  |  |
@@ -763,7 +764,6 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.combo_height` | no native leaf states a combo-box maximum height (§5.9) |
 | `spacing.default_area_size.x` | sizes every free Area; dialog.max_width goes per call (§5.8 item 6) |
 | `spacing.default_area_size.y` | as spacing.default_area_size.x |
-| `spacing.indent` | no native leaf states an indent width (egui/src/style.rs:404, :1459) |
 | `spacing.indent_ends_with_horizontal_line` | whether an indented region is ruled is layout policy with no native leaf (§5.10) |
 | `spacing.interact_size.x` | no native analogue: a Grid column floor, the DragValue and colour-swatch width (§7.5) |
 | `spacing.menu_margin.bottom` | as spacing.menu_margin.left |

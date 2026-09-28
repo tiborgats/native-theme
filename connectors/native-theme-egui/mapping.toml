@@ -2569,7 +2569,10 @@ sinks   = [{ path = "spacing.interact_size.y", scope = "expander" }]
 
 ["expander.arrow_icon_size"]
 verdict = "derived"
-sinks   = [{ path = "spacing.icon_width_inner", scope = "expander" }]
+sinks   = [
+  { path = "spacing.icon_width_inner", scope = "expander" },
+  { path = "spacing.indent", scope = "expander", when = "expander.border.padding.left is stated" },
+]
 
 ["expander.hover_background"]
 verdict = "scoped"
@@ -2647,6 +2650,7 @@ sinks   = [
   { path = "visuals.widgets.open.bg_stroke.width", scope = "expander" },
   { path = "spacing.button_padding.x", scope = "expander", when = "a side of the pair is stated, §5 intro" },
   { path = "spacing.button_padding.y", scope = "expander", when = "a side of the pair is stated, §5 intro" },
+  { path = "spacing.indent", scope = "expander", when = "expander.border.padding.left is stated" },
 ]
 
 ["expander.border.shadow_enabled"]
@@ -2667,9 +2671,8 @@ verdict = "derived"
 sinks   = [{ path = "spacing.button_padding.y", scope = "expander" }]
 
 ["expander.border.padding.left"]
-verdict  = "unmappable"
-sub_tag  = "egui-limited"
-upstream = "egui: a per-widget Margin (§14 item 35)"
+verdict = "derived"
+sinks   = [{ path = "spacing.indent", scope = "expander" }]
 
 # Sinks no row writes, with the reason egui's own value stands (T10b): every path style_diff
 # can emit and every Frame field of every Surface that no row writes.
@@ -2713,7 +2716,6 @@ upstream = "egui: a per-widget Margin (§14 item 35)"
 "always_scroll_the_only_direction" = "input behaviour (§5.10)"
 "compact_menu_style"    = "no reader anywhere in egui 0.36.2 (§5.10)"
 "debug"                 = "egui's developer debug painting, DebugOptions (egui/src/style.rs:324, :1333): not appearance data"
-"spacing.indent"        = "no native leaf states an indent width (egui/src/style.rs:404, :1459)"
 "spacing.menu_width"    = "no reader anywhere in egui 0.36.2 (§5.10)"
 "spacing.menu_spacing"  = "no reader anywhere in egui 0.36.2 (§5.10)"
 "spacing.indent_ends_with_horizontal_line" = "whether an indented region is ruled is layout policy with no native leaf (§5.10)"

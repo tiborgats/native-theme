@@ -10,8 +10,8 @@
 use native_theme::theme::ResolvedTheme;
 
 use crate::convert::{
-    clamp_length, finite_or, i8_from_f32_saturating, to_color32, to_corner_radius, to_margin,
-    to_shadow, to_stroke,
+    clamp_length, finite_or, i8_from_f32_saturating, padding_with_border, to_color32,
+    to_corner_radius, to_margin, to_shadow, to_stroke,
 };
 use crate::style::{BuildInput, note_transparent_fill, push_note};
 use crate::{Note, Role};
@@ -64,7 +64,10 @@ pub(crate) fn apply_role(
         Role::Splitter => splitter_strokes(style, t, notes),
         Role::Toolbar => toolbar_bar_height(style, t, notes),
         Role::ComboBox => combo_box_arrow_area(style, t, notes),
-        Role::Expander => expander_arrow_size(style, t, notes),
+        Role::Expander => {
+            expander_arrow_size(style, t, notes);
+            expander_leading_padding(style, t, notes);
+        }
         Role::Checkbox => checkbox_mark_inset(style, t, notes),
         _ => {}
     }
@@ -292,6 +295,30 @@ fn expander_arrow_size(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut V
         style.spacing.icon_width_inner = clamp_length(size * (4.0 / 3.0));
     } else {
         sanitised("expander.arrow_icon_size", notes);
+    }
+}
+
+/// `expander.border.padding.left`: the header's arrow sits that far inside the border. egui
+/// centres the arrow on `indent / 2` from the header's left edge
+/// (`egui/src/containers/collapsing_header.rs:586-589`) and starts the title at `indent`
+/// (`:516`); the arrow is `arrow_icon_size` square after R-ARROW above. So the arrow's left
+/// edge is the padding plus the border's width in — the platform's padding lies inside its
+/// border (`padding_with_border`) — where `indent` is twice that plus the arrow. egui ties
+/// the rest to the same field: the title starts that padding after the arrow, and the
+/// expanded body is indented by `indent` (`:164`, `egui/src/ui.rs:2253`), neither of which
+/// the theme states. Written only where the side is stated and the arrow's size is finite
+/// (a non-finite one is reported by R-ARROW); an unstated side keeps egui's own `indent`.
+fn expander_leading_padding(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut Vec<Note>) {
+    let border = &t.expander.border;
+    if border.padding.left.is_some_and(|v| !v.is_finite()) {
+        sanitised("expander.border.padding.left", notes);
+        return;
+    }
+    let (Some(left), arrow) = (padding_with_border(border).left, t.expander.arrow_icon_size) else {
+        return;
+    };
+    if arrow.is_finite() {
+        style.spacing.indent = clamp_length(2.0 * left + arrow);
     }
 }
 
