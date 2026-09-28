@@ -33,6 +33,7 @@ jobs:
           - { name: "gpui connector", package: "native-theme-gpui" }
           - { name: "iced connector", package: "native-theme-iced" }
           - { name: "egui connector", package: "native-theme-egui" }
+          - { name: "egui widgets", package: "native-theme-egui-widgets" }
     env:
       RUSTFLAGS: -Dwarnings
     steps:
@@ -51,6 +52,9 @@ jobs:
       - name: Clippy (egui connector, all features)
         if: matrix.package == 'native-theme-egui'
         run: cargo clippy -p native-theme-egui --all-targets --all-features
+      - name: Clippy (egui widgets, all features)
+        if: matrix.package == 'native-theme-egui-widgets'
+        run: cargo clippy -p native-theme-egui-widgets --all-targets --all-features
 
   test:
     name: Test ${{ matrix.name }}
@@ -112,9 +116,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.88.0
-      - run: cargo check --workspace --exclude native-theme-gpui --exclude native-theme-egui --all-features --locked
+      - run: cargo check --workspace --exclude native-theme-gpui --exclude native-theme-egui --exclude native-theme-egui-widgets --all-features --locked
       - uses: dtolnay/rust-toolchain@1.95.0
-      - run: cargo check -p native-theme-egui --all-features --locked
+      - run: cargo check -p native-theme-egui -p native-theme-egui-widgets --all-features --locked
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       - run: cargo check -p native-theme-gpui --all-features --locked
@@ -140,6 +144,7 @@ jobs:
           - { name: "iced connector", package: "native-theme-iced" }
           - { name: "gpui connector", package: "native-theme-gpui" }
           - { name: "egui connector", package: "native-theme-egui" }
+          - { name: "egui widgets", package: "native-theme-egui-widgets" }
     steps:
       - uses: actions/checkout@v6
       - name: Install system dependencies (gpui)
@@ -162,6 +167,12 @@ jobs:
         run: |
           cargo test -p native-theme-egui --no-default-features
           cargo test -p native-theme-egui --all-features
+      # The companion widget crate forwards the connector's features one to one.
+      - name: Test the egui widgets' other configurations
+        if: matrix.package == 'native-theme-egui-widgets'
+        run: |
+          cargo test -p native-theme-egui-widgets --no-default-features
+          cargo test -p native-theme-egui-widgets --all-features
       # Without `svg-rasterize` the gpui connector hands gpui the SVG itself;
       # the tests for that path compile only without the default features.
       - name: Test the gpui connector without default features
@@ -198,6 +209,7 @@ jobs:
       # docs.rs builds native-theme-egui with every feature too (its
       # `[package.metadata.docs.rs]` says `all-features = true`).
       - run: cargo doc -p native-theme-egui --no-deps --all-features
+      - run: cargo doc -p native-theme-egui-widgets --no-deps --all-features
 
   audit:
     name: Security audit

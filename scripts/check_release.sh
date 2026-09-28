@@ -301,7 +301,7 @@ fi
 # panic-prone lint set using type-aware analysis.
 PANIC_FOUND=0
 PANIC_HITS_ALL=""
-for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src; do
+for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src connectors/native-theme-egui-widgets/src; do
     if [ -d "$src_dir" ]; then
         HITS=$(python3 -c "
 import sys, re, glob, os
@@ -545,6 +545,8 @@ run_check_soft "strict-panic (native-theme-gpui)" \
     cargo clippy -p native-theme-gpui --lib -- "${STRICT_PANIC_LINTS[@]}"
 run_check "strict-panic (native-theme-egui)" \
     cargo clippy -p native-theme-egui --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
+run_check "strict-panic (native-theme-egui-widgets)" \
+    cargo clippy -p native-theme-egui-widgets --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests
@@ -609,6 +611,14 @@ run_check "clippy (native-theme-egui, all features)" \
     cargo clippy -p native-theme-egui --all-targets --all-features -- -D warnings
 run_check "one skrifa (native-theme-egui)" \
     bash -c 'out=$(cargo tree -p native-theme-egui --target all -d) && ! grep -q "^skrifa " <<<"$out"'
+# The companion widget crate forwards the connector's features one to one, so it
+# has the same two further configurations.
+run_tests "test (native-theme-egui-widgets, no features)" \
+    cargo test -p native-theme-egui-widgets --no-default-features
+run_tests "test (native-theme-egui-widgets, all features)" \
+    cargo test -p native-theme-egui-widgets --all-features
+run_check "clippy (native-theme-egui-widgets, all features)" \
+    cargo clippy -p native-theme-egui-widgets --all-targets --all-features -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: examples (only crates with an examples/ directory)
@@ -681,6 +691,8 @@ run_check "docs (native-theme-iced, all features)" \
 # `[package.metadata.docs.rs]` says `all-features = true`).
 run_check "docs (native-theme-egui, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui --no-deps --all-features
+run_check "docs (native-theme-egui-widgets, all features)" \
+    env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui-widgets --no-deps --all-features
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: packaging
@@ -712,7 +724,7 @@ find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -mindepth 2 -maxdepth 2 -type d 
 PKG_TARGET="target/package-verify"
 cargo clean --target-dir "$PKG_TARGET" \
     -p native-theme-derive -p native-theme -p native-theme-build \
-    -p native-theme-iced -p native-theme-gpui -p native-theme-egui >/dev/null 2>&1 || true
+    -p native-theme-iced -p native-theme-gpui -p native-theme-egui -p native-theme-egui-widgets >/dev/null 2>&1 || true
 run_check "package (core: derive · native-theme · build)" \
     cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty --target-dir "$PKG_TARGET"
 run_check_soft "package (native-theme-iced)" \
@@ -721,6 +733,8 @@ run_check_soft "package (native-theme-gpui)" \
     cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty --target-dir "$PKG_TARGET"
 run_check_soft "package (native-theme-egui)" \
     cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty --target-dir "$PKG_TARGET"
+run_check_soft "package (native-theme-egui-widgets)" \
+    cargo package -p native-theme-derive -p native-theme -p native-theme-egui -p native-theme-egui-widgets --allow-dirty --target-dir "$PKG_TARGET"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: security & dependency freshness
