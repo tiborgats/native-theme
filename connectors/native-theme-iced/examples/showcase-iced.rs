@@ -1154,7 +1154,7 @@ impl State {
             basic_hint: String::new(),
             basic_text: "Text".to_string(),
             basic_fruit: Fruit::Apple,
-            basic_slider: 40.0,
+            basic_slider: BASIC_SLIDER,
             button_press_count: 0,
             text_input_value: String::new(),
             text_editor_content: text_editor::Content::with_text(
@@ -2514,6 +2514,27 @@ const LINK_PADDING: Padding = Padding::ZERO;
 /// The rows of the Basic tab's drop-down.
 const BASIC_FRUITS: [Fruit; 3] = [Fruit::Apple, Fruit::Banana, Fruit::Cherry];
 
+/// The Basic tab's slider value, on 0 to 100: the datum on display.
+const BASIC_SLIDER: f32 = 40.0;
+
+/// The tooltip's padding, where iced can carry it: `Tooltip::padding` is one
+/// number for all four sides (iced_widget 0.14.2 `src/tooltip.rs`,
+/// `Tooltip::padding`), laid out in from the bubble's edge with the border
+/// painted over it, so a theme that states all four sides of
+/// `tooltip.border.padding` alike gets that side plus
+/// `tooltip.border.line_width`, as `native_theme_iced::padding_inside_border`
+/// computes it. Unequal or unstated sides (adwaita's 10 and 6, windows-11's
+/// 9, 6 and 8) have no receiver: `None`, and iced's own padding stands.
+fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
+    let b = &resolved.tooltip.border;
+    let p = &b.padding;
+    let side = p.top?;
+    [p.right, p.bottom, p.left]
+        .iter()
+        .all(|s| *s == Some(side))
+        .then_some(side + b.line_width)
+}
+
 /// The controls the three showcases all draw, in the same order, with the
 /// same labels, values and states, packed onto one screen so the gpui, iced
 /// and egui captures compare control by control: buttons, checkboxes, radio
@@ -2537,10 +2558,24 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let font = &resolved.button.font;
     // `button.min_width` and `button.min_height`, as a floor under the label.
     let btn_min = native_theme_iced::button_content_min_size(resolved);
+    let tip = tooltip(
+        button(at_least(text("Tooltip").typeset(font, a11y), btn_min))
+            .on_press(Message::ButtonPressed)
+            .style(styles::button(resolved))
+            .padding(btn_pad),
+        text("A tooltip").typeset(&resolved.tooltip.font, a11y),
+        tooltip::Position::Bottom,
+    )
+    .gap(sp.xs)
+    .style(styles::tooltip(resolved));
+    let tip = match tooltip_padding(resolved) {
+        Some(padding) => tip.padding(padding),
+        None => tip,
+    };
 
     let buttons = group(
         "Buttons",
-        button_info(state),
+        button_info(state, true),
         row![
             probe(
                 probes::BASIC_BUTTON,
@@ -2557,16 +2592,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             button(at_least(text("Disabled").typeset(font, a11y), btn_min))
                 .style(styles::button(resolved))
                 .padding(btn_pad),
-            tooltip(
-                button(at_least(text("Tooltip").typeset(font, a11y), btn_min))
-                    .on_press(Message::ButtonPressed)
-                    .style(styles::button(resolved))
-                    .padding(btn_pad),
-                text("A tooltip").typeset(&resolved.tooltip.font, a11y),
-                tooltip::Position::Bottom,
-            )
-            .gap(sp.xs)
-            .style(styles::tooltip(resolved)),
+            tip,
         ]
         .spacing(gap.widget)
         .align_y(iced::Center)
@@ -2691,7 +2717,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // A field with no `on_input` is a disabled one (text_input.rs:170).
     let inputs = group(
         "Text inputs",
-        text_input_info(state),
+        text_input_info(state, true),
         row![
             probe(
                 probes::BASIC_TEXT_INPUT,
@@ -2709,7 +2735,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let combo_pad = combo_box_padding(resolved);
     let drop_down = group(
         "Drop-down",
-        pick_list_info(resolved),
+        pick_list_info(resolved, true),
         probe(
             probes::BASIC_PICK_LIST,
             Length::Shrink,
@@ -2767,11 +2793,36 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 // ---------------------------------------------------------------------------
 
 /// The Widget Info of a button, the Buttons page's primary row and the
-/// Basic page's buttons.
-fn button_info(state: &State) -> String {
+/// Basic page's buttons. `sized` is whether the buttons take the theme's
+/// minimum size (`at_least`), as the Basic page's do.
+fn button_info(state: &State, sized: bool) -> String {
     let resolved = &state.current_resolved;
     let ext = state.current_theme.extended_palette();
     let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
+    let label = font_row("button.font", &resolved.button.font);
+    let mut config = vec![
+        ("border-radius", radius_s.as_str()),
+        (
+            "padding",
+            "button_padding — each side button.border.padding states, plus \
+             button.border.line_width (the theme's padding lies inside the border, \
+             which iced paints over its padding); iced's button::DEFAULT_PADDING \
+             for the others",
+        ),
+        ("shadow", "iced's own — the model has no shadow geometry"),
+        ("label", label.as_str()),
+    ];
+    let mut not_themeable = Vec::new();
+    if sized {
+        config.push((
+            "minimum size",
+            "button.min_width × button.min_height, outer: the label in \
+             at_least(.., button_content_min_size(..)), the minimum less \
+             button_padding",
+        ));
+    } else {
+        not_themeable.push(("min-height", "hardcoded by iced"));
+    }
     widget_tooltip_themed(
         state,
         "Button (Primary)",
@@ -2792,20 +2843,8 @@ fn button_info(state: &State) -> String {
                 ext.primary.strong.color,
             ),
         ],
-        &[
-            ("border-radius", &radius_s),
-            (
-                "padding",
-                "button_padding — button.border.padding's stated sides, \
-                 iced's button::DEFAULT_PADDING for the others",
-            ),
-            ("shadow", "iced's own — the model has no shadow geometry"),
-            (
-                "label",
-                font_row("button.font", &resolved.button.font).as_str(),
-            ),
-        ],
-        &[("min-height", "hardcoded by iced")],
+        &config,
+        &not_themeable,
     )
 }
 
@@ -2829,7 +2868,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     );
 
     let primary_row = hoverable(
-        button_info(state),
+        button_info(state, false),
         column![
             text("Primary Actions").role(section_title(ts), resolved, a11y),
             row![
@@ -2954,11 +2993,38 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 // ---------------------------------------------------------------------------
 
 /// The Widget Info of a single-line text field, the Text Inputs page's and
-/// the Basic page's.
-fn text_input_info(state: &State) -> String {
+/// the Basic page's. `sized` is whether the field takes `input.min_height`
+/// (`control_line_height`), as the Basic page's do.
+fn text_input_info(state: &State, sized: bool) -> String {
     let resolved = &state.current_resolved;
     let i = &resolved.input;
     let radius_s = format!("{:.0}px", i.border.corner_radius);
+    let text = font_row("input.font", &resolved.input.font);
+    let mut config = vec![
+        ("border-radius", radius_s.as_str()),
+        (
+            "padding",
+            "input_padding — each side input.border.padding states, plus \
+             input.border.line_width (the theme's padding lies inside the border, \
+             which iced paints over its padding); iced's \
+             text_input::DEFAULT_PADDING for the others",
+        ),
+        ("text", text.as_str()),
+    ];
+    let mut not_themeable = Vec::new();
+    if sized {
+        config.push((
+            "height",
+            "input.min_height: control_line_height gives the text the line box \
+             that fills it inside input_padding",
+        ));
+    } else {
+        not_themeable.push((
+            "height",
+            "iced's: a line of the text size, plus the padding",
+        ));
+    }
+    not_themeable.push(("icon color", "no native source — iced's own"));
     widget_tooltip_themed(
         state,
         "TextInput",
@@ -2977,25 +3043,8 @@ fn text_input_info(state: &State) -> String {
                 to_color(i.selection_background),
             ),
         ],
-        &[
-            ("border-radius", &radius_s),
-            (
-                "padding",
-                "input_padding — input.border.padding's stated sides, \
-                 iced's text_input::DEFAULT_PADDING for the others",
-            ),
-            (
-                "text",
-                font_row("input.font", &resolved.input.font).as_str(),
-            ),
-        ],
-        &[
-            (
-                "height",
-                "iced's: a line of the text size, plus the padding",
-            ),
-            ("icon color", "no native source — iced's own"),
-        ],
+        &config,
+        &not_themeable,
     )
 }
 
@@ -3030,7 +3079,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         }
 
         hoverable(
-            text_input_info(state),
+            text_input_info(state, false),
             column![
                 text("TextInput (single line)").role(section_title(ts), resolved, a11y),
                 input,
@@ -3242,11 +3291,32 @@ fn radio_info(resolved: &ResolvedTheme) -> String {
 }
 
 /// The Widget Info of a pick list, the Selection page's and the Basic page's
-/// drop-down.
-fn pick_list_info(resolved: &ResolvedTheme) -> String {
+/// drop-down. `sized` is whether it takes `combo_box_padding` and
+/// `combo_box.min_height` (`control_line_height`), as the Basic page's does.
+fn pick_list_info(resolved: &ResolvedTheme, sized: bool) -> String {
     let cb = &resolved.combo_box;
     let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
     let arrow_size_s = format!("{:.0}px", cb.arrow_icon_size);
+    let rows = font_row("combo_box.font", &resolved.combo_box.font);
+    let mut config = vec![
+        ("border-radius", combo_radius_s.as_str()),
+        ("arrow size", arrow_size_s.as_str()),
+        ("label and menu rows", rows.as_str()),
+    ];
+    if sized {
+        config.push((
+            "padding",
+            "combo_box_padding — each side combo_box.border.padding states, plus \
+             combo_box.border.line_width (the theme's padding lies inside the \
+             border, which iced paints over its padding); iced's pick-list \
+             padding for the others",
+        ));
+        config.push((
+            "height",
+            "combo_box.min_height: control_line_height gives the label the line \
+             box that fills it inside combo_box_padding",
+        ));
+    }
     widget_tooltip(
         "PickList (dropdown)",
         &[
@@ -3272,16 +3342,13 @@ fn pick_list_info(resolved: &ResolvedTheme) -> String {
                 to_color(resolved.menu.hover_background),
             ),
         ],
+        &config,
         &[
-            ("border-radius", &combo_radius_s),
-            ("arrow size", &arrow_size_s),
             (
-                "label and menu rows",
-                font_row("combo_box.font", &resolved.combo_box.font).as_str(),
+                "dropdown arrow",
+                "iced's own glyph, a filled triangle pointing down \
+                 (Iced-Icons U+E800, Handle::Arrow)",
             ),
-        ],
-        &[
-            ("dropdown arrow", "iced's own chevron glyph"),
             ("arrow color", "ComboBoxTheme carries no arrow color"),
             ("arrow area width", "no receiver in iced"),
         ],
@@ -3497,7 +3564,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     .collect();
 
     let pickers = hoverable(
-        pick_list_info(resolved),
+        pick_list_info(resolved, false),
         column![
             text("PickList (dropdown)").role(section_title(ts), resolved, a11y),
             probe(
@@ -8599,6 +8666,35 @@ mod tests {
             calls.iter().all(|args| *args == "(link.underline_enabled)"),
             "an underline not taken from link.underline_enabled: {calls:?}"
         );
+    }
+
+    /// The Basic tab's tooltip takes `tooltip.border.padding` plus the border
+    /// line where the theme states all four sides alike (kde-breeze's 3,
+    /// macos-sonoma's 4), and iced's own padding where it does not: iced's
+    /// `Tooltip::padding` is one number, and adwaita states 10 and 6,
+    /// windows-11 9, 6 and 8.
+    #[test]
+    fn the_basic_tooltip_takes_a_uniform_stated_padding() {
+        for (preset, expected) in [
+            ("kde-breeze", Some(3.0 + 1.0)),
+            ("macos-sonoma", Some(4.0 + 0.5)),
+            ("adwaita", None),
+            ("windows-11", None),
+        ] {
+            let resolved = match native_theme_iced::from_preset(preset, false) {
+                Ok((_, resolved)) => resolved,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let b = &resolved.tooltip.border;
+            if let Some(side) = expected {
+                assert_eq!(
+                    b.padding.top.map(|t| t + b.line_width),
+                    Some(side),
+                    "{preset}"
+                );
+            }
+            assert_eq!(tooltip_padding(&resolved), expected, "{preset}");
+        }
     }
 
     /// The Basic tab's push button, text field and drop-down are laid out at

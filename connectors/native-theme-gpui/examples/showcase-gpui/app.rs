@@ -421,6 +421,10 @@ pub(crate) struct Showcase {
 /// `IconSetChoice` names.
 pub(crate) const GPUI_BUILTIN_ROW: &str = "gpui-component built-in (Lucide)";
 
+/// The Basic page's slider value, on 0 to 100: the datum on display, as the
+/// page's `BASIC_PROGRESS` is.
+const BASIC_SLIDER: f32 = 40.0;
+
 /// The icon-theme Select's rows for a theme of `icon_set` naming
 /// `icon_theme`: its `default` row, where the theme names an icon theme that
 /// is available (`default_icon_choice`), then `system`, the installed
@@ -868,7 +872,7 @@ impl Showcase {
                 cx,
             )
         });
-        let basic_slider_state = cx.new(|_cx| SliderState::new().default_value(40.0));
+        let basic_slider_state = cx.new(|_cx| SliderState::new().default_value(BASIC_SLIDER));
 
         let input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);

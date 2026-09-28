@@ -3623,7 +3623,9 @@ fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
 
 /// The Basic page's tooltip is built by the application and refined by
 /// `geometry::tooltip`, so it takes the platform's padding, radius and
-/// colours, as the iced and egui Basic pages' tooltips do.
+/// colours, as the egui Basic page's tooltip does. The iced one takes the
+/// padding only where the theme states all four sides alike: iced's
+/// `Tooltip::padding` is one number.
 #[gpui::test]
 fn the_basic_tooltip_is_refined(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
