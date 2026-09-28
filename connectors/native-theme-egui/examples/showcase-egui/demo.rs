@@ -904,11 +904,17 @@ pub(crate) struct TabBar<'a, T> {
 /// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
 /// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —
 /// the cell's `tab.background_color`, `tab.active_background` and `tab.active_text_color`,
-/// `tab.hover_background` and `tab.hover_text_color`, `tab.border`, `tab.min_height`, the
-/// tab's padding and font — at least `tab.min_width` wide, which egui's `Button` never reads
-/// from the style (connector spec §5.3, T18(a)), on a strip in `tab.bar_background`. The theme
-/// states no line under the selected tab or under the row, so none is drawn. `trailing` adds
-/// what follows the tabs. Returns the tab clicked.
+/// `tab.hover_background` (in place of the idle fill, over the strip) and `tab.hover_text_color`,
+/// `tab.min_height`, the tab's padding and font — at least `tab.min_width` wide, which egui's
+/// `Button` never reads from the style (connector spec §5.3, T18(a)), on a strip in
+/// `tab.bar_background`. `tab.border` is the selected tab's (docs/platform-facts.md §2.11: KDE
+/// strokes the selected tab only, an unselected one with no pen; WinUI's selected tab alone has
+/// a border), so an unselected tab's stroke is set per call to the scope's width in no colour,
+/// which keeps every tab the size its padding gives; and a tab is rounded on its two top corners
+/// only, as both platforms that state a tab radius round it (Breeze `CornersTop`, WinUI
+/// `TopCornerRadiusFilterConverter`, §2.11), the model's one `tab.border.corner_radius` on
+/// each. The theme states no line under the selected tab or under the row, so none is drawn.
+/// `trailing` adds what follows the tabs. Returns the tab clicked.
 pub(crate) fn tab_bar<T: Copy + PartialEq>(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -935,11 +941,24 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     ui.set_min_width(ui.available_width());
                 }
                 let mut tabs = |ui: &mut egui::Ui, reg: &mut Registry| {
+                    // The scope's `tab.border` radius and width.
+                    let idle = ui.visuals().widgets.inactive;
+                    let top = egui::CornerRadius {
+                        sw: 0,
+                        se: 0,
+                        ..idle.corner_radius
+                    };
+                    let no_pen =
+                        egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
                     for (value, label) in bar.tabs {
                         let selected = *value == bar.current;
-                        let button = egui::Button::new(*label)
+                        let mut button = egui::Button::new(*label)
                             .selected(selected)
-                            .min_size(egui::Vec2::X * min_width);
+                            .min_size(egui::Vec2::X * min_width)
+                            .corner_radius(top);
+                        if !selected {
+                            button = button.stroke(no_pen);
+                        }
                         let r = tab.add(reg, ui, bar.tab_kind, |ui| ui.add(button));
                         if r.clicked() {
                             picked = Some(*value);
