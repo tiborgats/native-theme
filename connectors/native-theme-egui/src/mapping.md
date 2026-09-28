@@ -13,8 +13,8 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | Buttons (button, link, switch, checkbox, segmented control) | 100 | 11 | 45 | 29 | 15 |
 | Inputs (input, combo box, list) | 78 | 4 | 35 | 28 | 11 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
-| Chrome (tab, sidebar, toolbar, status bar, expander) | 91 | 0 | 53 | 23 | 15 |
-| **TOTAL** | **483** | **47** | **206** | **155** | **75** |
+| Chrome (tab, sidebar, toolbar, status bar, expander) | 92 | 0 | 54 | 23 | 15 |
+| **TOTAL** | **484** | **47** | **207** | **155** | **75** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void` 1, `widgets-crate` 8.
 
@@ -512,6 +512,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void
 | `tab.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `tab.hover_background` | SCOPED | «tab» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None copies tab.background_color, §6.4); «tab» `visuals.widgets.active.weak_bg_fill` (when: stated; None copies tab.background_color, §6.4) |  |
 | `tab.hover_text_color` | SCOPED | «tab» `visuals.widgets.hovered.fg_stroke.color`; «tab» `visuals.widgets.active.fg_stroke.color` |  |
+| `tab.item_gap` | SCOPED | «tab» `spacing.item_spacing.x` |  |
 | `tab.min_height` | SCOPED | «tab» `spacing.interact_size.y` |  |
 | `tab.min_width` | DERIVED | → T18(a) |  |
 | `toolbar.background_color` | SCOPED | \[panel_top\] `fill`; «toolbar» `visuals.panel_fill` |  |
@@ -549,7 +550,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `spacing.icon_width_inner` | — (egui's own value stands) |  | `checkbox.border.padding.bottom` «checkbox», `checkbox.border.padding.left` «checkbox», `checkbox.border.padding.right` «checkbox», `checkbox.border.padding.top` «checkbox», `checkbox.indicator_width` «checkbox», `expander.arrow_icon_size` «expander» |
 | `spacing.indent` | — (egui's own value stands) |  | `expander.arrow_icon_size` «expander», `expander.border.line_width` «expander», `expander.border.padding.left` «expander» |
 | `spacing.interact_size.y` | `button.min_height` |  | `button.min_height` «button», `checkbox.indicator_width` «checkbox», `combo_box.min_height` «combo_box», `expander.header_height` «expander», `list.row_height` «list», `menu.row_height` «menu», `progress_bar.track_height` «progress_bar», `segmented_control.segment_height` «segmented_control», `slider.thumb_diameter` «slider», `spinner.diameter` «spinner», `spinner.min_diameter` «spinner», `switch.track_height` «switch», `tab.min_height` «tab», `toolbar.bar_height` «toolbar», `toolbar.border.line_width` «toolbar», `toolbar.border.padding.bottom` «toolbar», `toolbar.border.padding.top` «toolbar» |
-| `spacing.item_spacing.x` | `layout.widget_gap` |  | `dialog.button_gap` «dialog», `progress_bar.border.padding.left` «progress_bar», `segmented_control.separator_width` «segmented_control», `toolbar.item_gap` «toolbar» |
+| `spacing.item_spacing.x` | `layout.widget_gap` |  | `dialog.button_gap` «dialog», `progress_bar.border.padding.left` «progress_bar», `segmented_control.separator_width` «segmented_control», `tab.item_gap` «tab», `toolbar.item_gap` «toolbar» |
 | `spacing.item_spacing.y` | `layout.widget_gap` |  |  |
 | `spacing.menu_margin.bottom` | — (egui's own value stands) |  | `dialog.border.padding.bottom` \[dialog\], `popover.border.padding.bottom` \[popover\], `tooltip.border.padding.bottom` \[tooltip\] |
 | `spacing.menu_margin.left` | — (egui's own value stands) |  | `dialog.border.padding.left` \[dialog\], `popover.border.padding.left` \[popover\], `tooltip.border.padding.left` \[tooltip\] |

@@ -239,6 +239,8 @@ pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     // platform-facts.md:1303 (§2.10): the groove, ProgressBarTrackHeight
     variant.progress_bar.track_height = Some(1.0);
     variant.tab.min_height = Some(32.0);
+    // platform-facts.md:1326 (§2.11): TabView stacks its items with no margin
+    variant.tab.item_gap = Some(0.0);
     let border = variant.tab.border.get_or_insert_default();
     // platform-facts.md:1318 (§2.11): without-close-button context, 8,3,8,3
     border.padding_left = Some(8.0);
@@ -1317,6 +1319,7 @@ mod tests {
         assert_eq!(variant.button.min_height, Some(32.0));
         assert_eq!(variant.checkbox.indicator_width, Some(20.0));
         assert_eq!(variant.checkbox.radio_dot_diameter, Some(12.0));
+        assert_eq!(variant.tab.item_gap, Some(0.0));
         assert_eq!(variant.input.min_height, Some(32.0));
         assert_eq!(variant.slider.thumb_diameter, Some(18.0));
         assert_eq!(variant.progress_bar.track_height, Some(1.0));

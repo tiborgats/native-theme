@@ -97,6 +97,8 @@ min_width_px = 100.0
 [light.tab]
 min_width_px = 64.0
 min_height_px = 32.0
+# platform-facts.md:1326 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
+item_gap_px = 0.0
 
 
 [light.tab.border]
@@ -303,6 +305,8 @@ min_width_px = 100.0
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 32.0
+# platform-facts.md:1326 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
+item_gap_px = 0.0
 
 
 [dark.tab.border]

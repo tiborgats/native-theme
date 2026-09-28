@@ -580,6 +580,15 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
         own.spacing.interact_size.y,
         notes,
     );
+    // the space between neighbouring tabs, which a tab row lays out in the scope
+    if let Some(gap) = optional_length(
+        "tab.item_gap",
+        tb.item_gap,
+        own.spacing.item_spacing.x,
+        notes,
+    ) {
+        s.spacing.item_spacing.x = gap;
+    }
     s.spacing.button_padding = button_padding(
         [
             "tab.border.padding.top",
@@ -1761,6 +1770,12 @@ mod tests {
                 c.spacing.button_padding,
                 to_button_padding(base.spacing.button_padding, &tb.border),
                 "{preset}"
+            );
+            assert_eq!(
+                c.spacing.item_spacing.x,
+                tb.item_gap
+                    .map_or(base.spacing.item_spacing.x, clamp_length),
+                "{preset}: tab.item_gap, egui's own where unstated"
             );
             assert_eq!(
                 c.text_styles.get(&TextStyle::Body).unwrap().size,

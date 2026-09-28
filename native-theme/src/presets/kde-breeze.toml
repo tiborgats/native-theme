@@ -191,6 +191,8 @@ line_width_px = 1.0
 [light.tab]
 min_width_px = 80.0
 min_height_px = 30.0
+# platform-facts.md:1326 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
+item_gap_px = 0.0
 # platform-facts.md:1312 (§2.11): an unselected tab is Window.darker(120), #eff0f1 → #c7c8c9 (breezehelper.cpp:1495-1496)
 background_color = "#c7c8c9"
 active_background = "#eff0f1"
@@ -546,6 +548,8 @@ line_width_px = 1.0
 [dark.tab]
 min_width_px = 80.0
 min_height_px = 30.0
+# platform-facts.md:1326 (§2.11): QTabBar lays the tabs edge to edge (qtabbar.cpp:459-468)
+item_gap_px = 0.0
 # platform-facts.md:1312 (§2.11): an unselected tab is Window.darker(120), #202326 → #1b1d20 (breezehelper.cpp:1495-1496)
 background_color = "#1b1d20"
 # platform-facts.md:1313 (§2.11): ← defaults.background_color, [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130)

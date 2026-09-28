@@ -53,6 +53,8 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Tab
     variant.tab.min_width = Some(80.0); // TabBar_TabMinWidth
     variant.tab.min_height = Some(30.0); // TabBar_TabMinHeight
+    // platform-facts.md:1326 (§2.11): QTabBar lays the tabs edge to edge
+    variant.tab.item_gap = Some(0.0);
     let border = variant.tab.border.get_or_insert_default();
     // platform-facts.md:1318-1319 (§2.11)
     border.padding_left = Some(8.0); // TabBar_TabMarginWidth
@@ -144,6 +146,13 @@ mod tests {
             Some(1.0),
             "Splitter_SplitterWidth"
         );
+    }
+
+    #[test]
+    fn breeze_metrics_populates_tab_item_gap() {
+        let mut v = ThemeMode::default();
+        super::populate_widget_sizing(&mut v);
+        assert_eq!(v.tab.item_gap, Some(0.0), "QTabBar: tabs edge to edge");
     }
 
     #[test]

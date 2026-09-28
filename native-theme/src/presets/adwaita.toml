@@ -175,6 +175,8 @@ line_width_px = 0.0
 [light.tab]
 min_width_px = 64.0
 min_height_px = 30.0
+# platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+item_gap_px = 0.0
 active_background = "#fafafb"
 active_text_color = "#2e3436"
 hover_background = "#e8e8e8"
@@ -514,6 +516,8 @@ line_width_px = 0.0
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 30.0
+# platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+item_gap_px = 0.0
 active_background = "#222226"
 active_text_color = "#ffffff"
 hover_background = "#3a3a3e"

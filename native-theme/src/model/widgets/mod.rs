@@ -409,6 +409,12 @@ pub struct TabTheme {
     #[serde(rename = "min_height_px")]
     #[theme(check = "non_negative")]
     pub min_height: Option<f32>,
+    /// Space between adjacent tabs in logical pixels. `None` where the
+    /// platform states none: AppKit publishes no tab spacing
+    /// (docs/platform-facts.md §2.11).
+    #[serde(rename = "item_gap_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub item_gap: Option<f32>,
     /// Tab text color on hover.
     pub hover_text_color: Option<Rgba>,
     /// Tab background on hover.

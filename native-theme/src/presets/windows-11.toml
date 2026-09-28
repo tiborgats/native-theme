@@ -188,6 +188,8 @@ line_width_px = 0.0
 [light.tab]
 min_width_px = 64.0
 min_height_px = 32.0
+# platform-facts.md:1326 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
+item_gap_px = 0.0
 # Interactive state colors (platform-facts.md section 2.11 Windows)
 active_background = "#f3f3f3"
 active_text_color = "#1a1a1a"
@@ -576,6 +578,8 @@ line_width_px = 0.0
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 32.0
+# platform-facts.md:1326 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
+item_gap_px = 0.0
 # Interactive state colors (platform-facts.md section 2.11 Windows)
 active_background = "#202020"
 active_text_color = "#ffffff"

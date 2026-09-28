@@ -99,6 +99,8 @@ min_width_px = 80.0
 [light.tab]
 min_width_px = 64.0
 min_height_px = 30.0
+# platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+item_gap_px = 0.0
 
 
 [light.tab.border]
@@ -314,6 +316,8 @@ min_width_px = 80.0
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 30.0
+# platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+item_gap_px = 0.0
 
 
 [dark.tab.border]

@@ -2208,6 +2208,10 @@ tested_by = "T18(a)"
 verdict = "scoped"
 sinks   = [{ path = "spacing.interact_size.y", scope = "tab" }]
 
+["tab.item_gap"]
+verdict = "scoped"
+sinks   = [{ path = "spacing.item_spacing.x", scope = "tab" }]
+
 ["tab.hover_text_color"]
 verdict = "scoped"
 sinks   = [

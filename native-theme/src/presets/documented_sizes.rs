@@ -2,7 +2,8 @@
 //! (spec `docs/archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-spec.md` §1.4–§1.6).
 //!
 //! One row per (platform, widget) gives every padding side, and for the
-//! toolbar its `bar_height` and `item_gap`, for the menu and the list their
+//! toolbar its `bar_height` and `item_gap`, for the tab bar its `item_gap`,
+//! for the menu and the list their
 //! `row_height`, and for the combobox its `arrow_area_width` where the
 //! platform gives one number, as `Some(v)` where `docs/platform-facts.md`
 //! documents a value for that platform and `None` where it does not, or where
@@ -168,7 +169,8 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", None, 1234)]),
     row(Kde, "tooltip", all(3.0), &[1257, 1258], "ToolTip_FrameWidth = 3"),
     row(Kde, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Kde, "tab", axes(4.0, 8.0), &[1318, 1319], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4"),
+    row(Kde, "tab", axes(4.0, 8.0), &[1318, 1319], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4")
+        .with(&[("item_gap", Some(0.0), 1326)]),
     row(Kde, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
     Row {
         platform: Kde,
@@ -197,7 +199,8 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", Some(32.0), 1234)]),
     row(Gnome, "tooltip", axes(6.0, 10.0), &[1257, 1258], "10; 6"),
     row(Gnome, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Gnome, "tab", axes(3.0, 12.0), &[1318, 1319], "12; 3"),
+    row(Gnome, "tab", axes(3.0, 12.0), &[1318, 1319], "12; 3")
+        .with(&[("item_gap", Some(0.0), 1326)]),
     row(Gnome, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
     Row {
         platform: Gnome,
@@ -226,7 +229,8 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", Some(22.0), 1234)]),
     row(Macos, "tooltip", all(4.0), &[1257, 1258], "4; 4"),
     row(Macos, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Macos, "tab", axes(4.0, 12.0), &[1318, 1319], "12; 4 (measured)"),
+    row(Macos, "tab", axes(4.0, 12.0), &[1318, 1319], "12; 4 (measured)")
+        .with(&[("item_gap", None, 1326)]),
     row(Macos, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
     Row {
         platform: Macos,
@@ -255,7 +259,8 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", Some(23.0), 1234)]),
     row(Windows, "tooltip", trbl(6.0, 9.0, 8.0, 9.0), &[1257, 1258], "ToolTipBorderPadding=9,6,9,8"),
     row(Windows, "progress_bar", NONE, &[1297], "§2.10 has no padding row"),
-    row(Windows, "tab", axes(3.0, 8.0), &[1318, 1319], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3"),
+    row(Windows, "tab", axes(3.0, 8.0), &[1318, 1319], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")
+        .with(&[("item_gap", Some(0.0), 1326)]),
     row(Windows, "sidebar", NONE, &[1327], "§2.12 has no padding row"),
     Row {
         platform: Windows,
@@ -351,7 +356,8 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
 
 /// The in-scope sizing keys a preset states for one widget, unresolved: the
 /// four padding sides, and the widget's further fields (`bar_height` and
-/// `item_gap` for the toolbar, `row_height` for the menu and the list,
+/// `item_gap` for the toolbar, `item_gap` for the tab bar, `row_height` for
+/// the menu and the list,
 /// `arrow_area_width` for the combobox).
 fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option<f32>)>> {
     let border = match widget {
@@ -388,6 +394,7 @@ fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option
             sizes.push(("bar_height", v.toolbar.bar_height));
             sizes.push(("item_gap", v.toolbar.item_gap));
         }
+        "tab" => sizes.push(("item_gap", v.tab.item_gap)),
         "menu" => sizes.push(("row_height", v.menu.row_height)),
         "list" => sizes.push(("row_height", v.list.row_height)),
         "combo_box" => sizes.push(("arrow_area_width", v.combo_box.arrow_area_width)),
@@ -401,6 +408,7 @@ fn extra_field(theme: &ResolvedTheme, widget: &str, field: &str) -> Option<Optio
     match (widget, field) {
         ("toolbar", "bar_height") => Some(theme.toolbar.bar_height),
         ("toolbar", "item_gap") => Some(theme.toolbar.item_gap),
+        ("tab", "item_gap") => Some(theme.tab.item_gap),
         ("menu", "row_height") => Some(theme.menu.row_height),
         ("list", "row_height") => Some(theme.list.row_height),
         ("combo_box", "arrow_area_width") => Some(theme.combo_box.arrow_area_width),
