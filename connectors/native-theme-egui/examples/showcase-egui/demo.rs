@@ -532,7 +532,7 @@ impl PanelSeams {
 
     /// The frame's inner margin, taken off the frame and handed to the caller, who pads the
     /// content below a row that sits flush at the panel's top with it: the page tabs, as the
-    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:1741`). Recorded
+    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:1784`). Recorded
     /// with the panel.
     pub(crate) fn lift_margin(&mut self) -> egui::Margin {
         let margin = std::mem::take(&mut self.frame.inner_margin);

@@ -116,7 +116,7 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         toolbar_role,
     );
     // No line under the bar: the gpui showcase draws none under its toolbar
-    // (`showcase-gpui/app.rs:1874-1878`).
+    // (`showcase-gpui/app.rs:1921-1922`).
     let out = egui::Panel::top("chrome-bar")
         .frame(seams.frame)
         .show_separator_line(false)
@@ -577,7 +577,7 @@ fn padded<R>(ui: &mut egui::Ui, margin: Option<f32>, add: impl FnOnce(&mut egui:
 }
 
 /// A theme setting's label, above its control and as wide as its text, in `Small` (the gpui
-/// showcase's `demo::label`, `Label::text_sm()`, `showcase-gpui/demo.rs:1399-1411`), recorded
+/// showcase's `demo::label`, `Label::text_sm()`, `showcase-gpui/demo.rs:1420-1432`), recorded
 /// with the side panel body's role; the control names it as its AccessKit label.
 fn setting_label(
     reg: &mut Registry,
@@ -604,7 +604,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         .map(|(_, label)| label.clone())
         .unwrap_or_default();
     let current_mode = app.settings.mode;
-    // The gpui showcase's icon-theme list (`showcase-gpui/app.rs:417-446`), less its
+    // The gpui showcase's icon-theme list (`showcase-gpui/app.rs:428-456`), less its
     // gpui-component row: `default`, `system`, the installed themes, Lucide, Material.
     let mut icon_rows = Vec::new();
     if let choice @ IconSetChoice::Default(_) =
@@ -955,7 +955,7 @@ pub(crate) fn inner_extent(stated: f32, frame: &egui::Frame, horizontal: bool) -
 }
 
 /// A dialog's title row, as gpui-component's `Dialog` draws one (`GC/dialog/dialog.rs:182`) and
-/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:1013`, `:1047`): the
+/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:1013`, `:1048`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
 /// read from the theme — and flush right a Ghost close button, the chosen icon theme's
 /// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's

@@ -13,7 +13,7 @@ use super::{DemoState, caption};
 use crate::demo::{self, Registry};
 
 /// The contexts `defaults.icon_sizes` names, in the gpui showcase's order and by its names
-/// (`showcase-gpui/demo.rs:4981-5000`).
+/// (`showcase-gpui/demo.rs:5057-5076`).
 const CONTEXTS: [(IconContext, &str); 5] = [
     (IconContext::Toolbar, "toolbar"),
     (IconContext::Small, "small"),
@@ -35,7 +35,7 @@ pub(crate) fn show(
     let pad = atlas.layout().container_margin;
 
     // The folder icon at each context's size, above the context's name
-    // (`showcase-gpui/demo.rs:5051-5093`); where the set has no folder icon, the name alone.
+    // (`showcase-gpui/demo.rs:5127-5169`); where the set has no folder icon, the name alone.
     caption(reg, ui, "Icon Sizes");
     // One height for every cell, its content from the bottom, so the names share a line, as
     // gpui's `items_end` row has them (`showcase-gpui/pages/icons.rs:28`).
@@ -166,7 +166,7 @@ fn small_width(ui: &egui::Ui, text: &str) -> f32 {
 
 /// A cell `width` wide holding an icon of at most `icon` points over a `Small` name, its content
 /// centred in a column as the gpui showcase's icon cells are (`items_center`,
-/// `showcase-gpui/demo.rs:4916-4936`), laid out by `layout`, and padded by `pad` —
+/// `showcase-gpui/demo.rs:4992-5012`), laid out by `layout`, and padded by `pad` —
 /// `layout.container_margin` in a gallery, standing in for the gpui cell's own `px_2`/`py_2`.
 fn cell(
     ui: &mut egui::Ui,
@@ -189,7 +189,7 @@ fn cell(
     });
 }
 
-/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs:612-625`): a
+/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs:627-638`): a
 /// freedesktop set with the theme its icons load from — where that is the system's and it
 /// cannot be detected, why — else the set's name.
 fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
@@ -218,7 +218,7 @@ fn native_here(set: IconSet) -> bool {
 /// The loading indicator the chosen icon theme ships (§10.4, the Icons row), in a card framed
 /// as the gpui showcase's `demo_frame` in `defaults.border` and padded by
 /// `layout.container_margin`, at `defaults.icon_sizes.dialog`, above what it is — the gpui
-/// showcase's animated-icon card (`showcase-gpui/demo.rs:5120-5178`); where the theme ships
+/// showcase's animated-icon card (`showcase-gpui/demo.rs:5196-5253`); where the theme ships
 /// none, gpui's caption.
 fn icons_indicator(
     reg: &mut Registry,

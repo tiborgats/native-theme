@@ -21,7 +21,7 @@ mod tests;
 use app::{App, Page, Settings};
 
 /// The window's title: the crate's name and version, as the gpui showcase's
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:222-227`).
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:236-241`).
 pub(crate) const WINDOW_TITLE: &str = concat!(
     env!("CARGO_PKG_NAME"),
     " ",
@@ -31,7 +31,7 @@ pub(crate) const WINDOW_TITLE: &str = concat!(
 
 /// The side panel's initial width. The model states no side-panel width (spec §10.4); this
 /// is the gpui showcase's `LEFT_PANEL_WIDTH_PX`
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:285`).
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:299`).
 pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
 
 /// The initial window size, 1280 × 720 logical pixels: the maintainer's default for every
@@ -55,9 +55,9 @@ pub(crate) const TAB_UNDERLINE_WIDTH: f32 = 2.0;
 /// `text_scale.section_heading.weight`). The model states no inspector heading weight; this is
 /// gpui's `FontWeight::SEMIBOLD`
 /// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.6/src/text_system.rs:1169`),
-/// which the gpui showcase's headings take (`font_semibold()`,
-/// `connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1373`). Without `system-fonts`
-/// no face is looked up, and the headings keep the regular one.
+/// which the gpui showcase's inspector headings take (`font_semibold()`,
+/// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:127`, `:317`). Without
+/// `system-fonts` no face is looked up, and the headings keep the regular one.
 #[cfg(feature = "system-fonts")]
 pub(crate) const SEMIBOLD_WEIGHT: u16 = 600;
 
@@ -69,7 +69,7 @@ pub(crate) const SWATCH_SIZE: f32 = 16.0;
 
 /// How long `--screenshot` lets the showcase run before it captures, in seconds of
 /// `InputState::time`: the iced showcase's delay, "60 ticks × 50ms = 3s render delay"
-/// (`connectors/native-theme-iced/examples/showcase-iced.rs:1222-1223`). Not a style value.
+/// (`connectors/native-theme-iced/examples/showcase-iced.rs:1280-1281`). Not a style value.
 pub(crate) const SCREENSHOT_DELAY_S: f64 = 3.0;
 
 /// What `main` runs with and `the_window_asks_for_the_os_frame` reads back (§13.2):
@@ -113,7 +113,7 @@ pub(crate) fn capture_app_id() -> String {
 /// winit rounds a logical size to a physical one: the capture less the content the window has
 /// now, `content` pixels, is the frame, and around a `WINDOW_SIZE` content it makes the size
 /// the capture must be, as the gpui showcase's `check_frame_capture` checks
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:602-646`). Any other size is a
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:608-652`). Any other size is a
 /// window that did not open at its default size (a display too small for it, or a size restored
 /// from elsewhere); a capture no taller than the content has no title bar, and fails too.
 #[cfg_attr(
@@ -197,7 +197,7 @@ impl CliArgs {
 
     /// `--flag value` pairs and `--capture`; an unknown flag is ignored, and `--variant` and
     /// `--tab` are lower-cased, as the iced showcase does
-    /// (`connectors/native-theme-iced/examples/showcase-iced.rs:228-270`); a
+    /// (`connectors/native-theme-iced/examples/showcase-iced.rs:257-308`); a
     /// theme or icon-theme name keeps its case, since a freedesktop theme's is
     /// a directory name.
     pub(crate) fn parse(argv: impl IntoIterator<Item = String>) -> Self {

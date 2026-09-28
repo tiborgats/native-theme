@@ -391,7 +391,7 @@ impl App {
 
     /// The atlas `settings` select (§10.4): `default` is `SystemTheme::from_system` through
     /// `to_egui_atlas`, with Preferences' overrides on its public `accessibility`
-    /// (`native-theme/src/lib.rs:490`) after `invalidate_caches()`; a preset is `from_preset`,
+    /// (`native-theme/src/lib.rs:500`) after `invalidate_caches()`; a preset is `from_preset`,
     /// whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
     /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
     /// for `default`, the platform preset it builds on (`SystemTheme::preset`).
