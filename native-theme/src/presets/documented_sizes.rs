@@ -3,8 +3,9 @@
 //!
 //! One row per (platform, widget) gives every padding side, and for the
 //! toolbar its `bar_height` and `item_gap`, for the tab bar its `item_gap`,
-//! for the menu and the list their
-//! `row_height`, and for the combobox its `arrow_area_width` where the
+//! for the menu and the list their `row_height`, for the expander its
+//! `arrow_gap` and `content_indent`, and for the combobox its
+//! `arrow_area_width` where the
 //! platform gives one number, as `Some(v)` where `docs/platform-facts.md`
 //! documents a value for that platform and `None` where it does not, or where
 //! a ruling leaves it unstated. Each row cites the platform-facts lines it
@@ -190,7 +191,8 @@ const ROWS: &[Row] = &[
         .with(&[("arrow_area_width", Some(20.0), 1554)]),
     row(Kde, "segmented_control", NONE, &[1571, 1576], "tab bar as proxy, not the platform's value"),
     row(Kde, "card", NONE, &[1592, 1593], "(none)"),
-    row(Kde, "expander", NONE, &[1607, 1608], "(none), app-defined"),
+    row(Kde, "expander", NONE, &[1607, 1608], "(none), app-defined")
+        .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(20.0), 1615)]),
     // --- GNOME (adwaita, adwaita-live; the reader states no sizes) ---
     row(Gnome, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Gnome, "button", axes(5.0, 17.0), &[1171, 1172], "label-only .text-button 17; 5"),
@@ -220,7 +222,8 @@ const ROWS: &[Row] = &[
         .with(&[("arrow_area_width", None, 1554)]),
     row(Gnome, "segmented_control", axes(0.0, 8.0), &[1571, 1576], "AdwToggleGroup text toggle 11 − 3 = 8; 0"),
     row(Gnome, "card", NONE, &[1592, 1593], "(none), app-defined"),
-    row(Gnome, "expander", axes(8.0, 14.0), &[1607, 1608], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8"),
+    row(Gnome, "expander", axes(8.0, 14.0), &[1607, 1608], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8")
+        .with(&[("arrow_gap", Some(9.0), 1614), ("content_indent", Some(0.0), 1615)]),
     // --- macOS (macos-sonoma, macos-sonoma-live, macos_widget_defaults) ---
     row(Macos, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Macos, "button", axes(3.0, 8.0), &[1171, 1172], "~8 (WebKit); 3 (measured)"),
@@ -250,7 +253,8 @@ const ROWS: &[Row] = &[
         .with(&[("arrow_area_width", None, 1554)]),
     row(Macos, "segmented_control", [Some(3.0), None, Some(3.0), None], &[1571, 1576], "horizontal is a range; ~3 (measured)"),
     row(Macos, "card", NONE, &[1592, 1593], "(none)"),
-    row(Macos, "expander", NONE, &[1607, 1608], "(none), app-defined"),
+    row(Macos, "expander", NONE, &[1607, 1608], "(none), app-defined")
+        .with(&[("arrow_gap", None, 1614), ("content_indent", None, 1615)]),
     // --- Windows (windows-11, windows-11-live, winui3_widget_sizing) ---
     row(Windows, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Windows, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
@@ -280,7 +284,8 @@ const ROWS: &[Row] = &[
         .with(&[("arrow_area_width", Some(38.0), 1554)]),
     row(Windows, "segmented_control", NONE, &[1571, 1576], "(none)"),
     row(Windows, "card", all(12.0), &[1592, 1593], "12 (convention)"),
-    row(Windows, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1607, 1608], "header context: ExpanderHeaderPadding=16,0,0,0"),
+    row(Windows, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1607, 1608], "header context: ExpanderHeaderPadding=16,0,0,0")
+        .with(&[("arrow_gap", Some(30.0), 1614), ("content_indent", Some(16.0), 1615)]),
 ];
 
 /// Every widget whose border carries padding.
@@ -358,7 +363,7 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
 /// The in-scope sizing keys a preset states for one widget, unresolved: the
 /// four padding sides, and the widget's further fields (`bar_height` and
 /// `item_gap` for the toolbar, `item_gap` for the tab bar, `row_height` for
-/// the menu and the list,
+/// the menu and the list, `arrow_gap` and `content_indent` for the expander,
 /// `arrow_area_width` for the combobox).
 fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option<f32>)>> {
     let border = match widget {
@@ -396,6 +401,10 @@ fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option
             sizes.push(("item_gap", v.toolbar.item_gap));
         }
         "tab" => sizes.push(("item_gap", v.tab.item_gap)),
+        "expander" => {
+            sizes.push(("arrow_gap", v.expander.arrow_gap));
+            sizes.push(("content_indent", v.expander.content_indent));
+        }
         "menu" => sizes.push(("row_height", v.menu.row_height)),
         "list" => sizes.push(("row_height", v.list.row_height)),
         "combo_box" => sizes.push(("arrow_area_width", v.combo_box.arrow_area_width)),
@@ -410,6 +419,8 @@ fn extra_field(theme: &ResolvedTheme, widget: &str, field: &str) -> Option<Optio
         ("toolbar", "bar_height") => Some(theme.toolbar.bar_height),
         ("toolbar", "item_gap") => Some(theme.toolbar.item_gap),
         ("tab", "item_gap") => Some(theme.tab.item_gap),
+        ("expander", "arrow_gap") => Some(theme.expander.arrow_gap),
+        ("expander", "content_indent") => Some(theme.expander.content_indent),
         ("menu", "row_height") => Some(theme.menu.row_height),
         ("list", "row_height") => Some(theme.list.row_height),
         ("combo_box", "arrow_area_width") => Some(theme.combo_box.arrow_area_width),
@@ -1074,4 +1085,55 @@ fn native_presets_state_no_text_scale_line_height() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+/// The expander's structure per platform, from platform-facts §2.27: the
+/// arrow's side (`:1613`) and whether a frame holds header and content
+/// (`:1616`); `None` where the cell states none.
+#[rustfmt::skip]
+const EXPANDER_STRUCTURE: [(Platform, Option<crate::model::ArrowSide>, Option<bool>); 4] = [
+    (Kde, Some(crate::model::ArrowSide::Leading), Some(false)),
+    (Gnome, Some(crate::model::ArrowSide::Trailing), Some(true)),
+    (Macos, Some(crate::model::ArrowSide::Leading), None),
+    (Windows, Some(crate::model::ArrowSide::Trailing), Some(true)),
+];
+
+/// The native themes state the expander's side and frame as platform-facts
+/// gives them, static and live, and no other preset states either.
+#[test]
+fn native_themes_state_the_expanders_structure() {
+    assert!(facts_line(1613).starts_with("| `arrow_side`"));
+    assert!(facts_line(1616).starts_with("| `frame_enabled`"));
+    let mut failures = Vec::new();
+    for (platform, side, frame) in EXPANDER_STRUCTURE {
+        for variant in gate_variants(platform) {
+            match variant.and_then(|(source, name, v)| resolve(v).map(|t| (source, name, t))) {
+                Ok((source, name, t)) => {
+                    let got = (t.expander.arrow_side, t.expander.frame_enabled);
+                    if got != (side, frame) {
+                        failures.push(format!(
+                            "{source} {name}: expander side and frame {got:?}, \
+                             platform-facts gives {:?} (docs/platform-facts.md:1613, :1616)",
+                            (side, frame)
+                        ));
+                    }
+                }
+                Err(e) => failures.push(e),
+            }
+        }
+    }
+    for name in UNSOURCED_PRESETS {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            match Theme::preset(name).and_then(|t| t.into_variant(mode)) {
+                Ok(v) if v.expander.arrow_side.is_some() || v.expander.frame_enabled.is_some() => {
+                    failures.push(format!(
+                        "{name} {mode:?}: states the expander's side or frame, with no source"
+                    ));
+                }
+                Ok(_) => {}
+                Err(e) => failures.push(format!("{name} {mode:?}: {e}")),
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
 }

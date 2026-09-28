@@ -203,6 +203,12 @@ separator_width_px = 1.0
 [light.expander]
 header_height_px = 40.0
 arrow_icon_size_px =10.0
+# platform-facts.md:1613-1616 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
+# before the title, 9 from it, the content 20 in (PM_IndicatorWidth), no frame
+arrow_side = "leading"
+arrow_gap_px = 9.0
+content_indent_px = 20.0
+frame_enabled = false
 
 # === Dark variant ===
 
@@ -405,3 +411,9 @@ separator_width_px = 1.0
 [dark.expander]
 header_height_px = 40.0
 arrow_icon_size_px =10.0
+# platform-facts.md:1613-1616 (§2.27): KCollapsibleGroupBox, the arrow in the indicator
+# before the title, 9 from it, the content 20 in (PM_IndicatorWidth), no frame
+arrow_side = "leading"
+arrow_gap_px = 9.0
+content_indent_px = 20.0
+frame_enabled = false

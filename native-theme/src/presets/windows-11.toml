@@ -374,6 +374,12 @@ padding_vertical_px = 12.0
 [light.expander]
 header_height_px = 48.0
 arrow_icon_size_px =12.0
+# platform-facts.md:1613-1616 (§2.27): the chevron at the row's end, its 12px glyph
+# 20 + (32 - 12) / 2 from the content, the content padded 16, header and content framed
+arrow_side = "trailing"
+arrow_gap_px = 30.0
+content_indent_px = 16.0
+frame_enabled = true
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#0000000a"
@@ -764,6 +770,12 @@ padding_vertical_px = 12.0
 [dark.expander]
 header_height_px = 48.0
 arrow_icon_size_px =12.0
+# platform-facts.md:1613-1616 (§2.27): the chevron at the row's end, its 12px glyph
+# 20 + (32 - 12) / 2 from the content, the content padded 16, header and content framed
+arrow_side = "trailing"
+arrow_gap_px = 30.0
+content_indent_px = 16.0
+frame_enabled = true
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#ffffff0f"

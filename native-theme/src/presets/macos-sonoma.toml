@@ -330,6 +330,8 @@ padding_vertical_px = 3.0
 [light.expander]
 header_height_px = 40.0
 arrow_icon_size_px =13.0
+# platform-facts.md:1613 (§2.27): the HIG's disclosure triangle points in from the leading edge
+arrow_side = "leading"
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#e0e0e5"
@@ -687,6 +689,8 @@ padding_vertical_px = 3.0
 [dark.expander]
 header_height_px = 40.0
 arrow_icon_size_px =13.0
+# platform-facts.md:1613 (§2.27): the HIG's disclosure triangle points in from the leading edge
+arrow_side = "leading"
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#444446"

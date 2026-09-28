@@ -504,6 +504,10 @@ header_height_px             = "f32"
 arrow_icon_size_px           = "f32"
 hover_background             = "color"
 arrow_color                  = "color"
+arrow_side                   = "enum"   # Leading | Trailing
+arrow_gap_px                 = "f32"
+content_indent_px            = "f32"
+frame_enabled                = "bool"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════

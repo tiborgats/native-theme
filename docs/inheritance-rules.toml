@@ -395,6 +395,10 @@ fields = [
     "checkbox.radio_dot_diameter",     # macOS publishes no radio dot size (platform-facts §2.5)
     "tab.item_gap",                    # macOS publishes no tab spacing (platform-facts §2.11)
     "checkbox.check_mark_stroke_width", # WinUI's mark is a glyph, macOS publishes none (§2.5)
+    "expander.arrow_side",             # enum: KDE/macOS leading, GNOME/Windows trailing (§2.27)
+    "expander.arrow_gap",              # macOS documents no disclosure geometry (§2.27)
+    "expander.content_indent",         # macOS documents no disclosure geometry (§2.27)
+    "expander.frame_enabled",          # boolean: KDE unframed, GNOME/Windows framed (§2.27)
 ]
 
 # All sizing fields (min_width, min_height, border.padding_*, height, width,

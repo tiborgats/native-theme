@@ -13,10 +13,10 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | Buttons (button, link, switch, checkbox, segmented control) | 101 | 11 | 46 | 29 | 15 |
 | Inputs (input, combo box, list) | 78 | 4 | 35 | 28 | 11 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
-| Chrome (tab, sidebar, toolbar, status bar, expander) | 92 | 0 | 54 | 23 | 15 |
-| **TOTAL** | **485** | **47** | **208** | **155** | **75** |
+| Chrome (tab, sidebar, toolbar, status bar, expander) | 96 | 0 | 54 | 23 | 19 |
+| **TOTAL** | **489** | **47** | **208** | **155** | **79** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void` 1, `widgets-crate` 8.
+UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void` 1, `widgets-crate` 12.
 
 ## Rows
 
@@ -443,7 +443,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void
 | leaf | verdict | sinks, or the test of its route | note |
 |---|---|---|---|
 | `expander.arrow_color` | DERIVED | → T18(f) |  |
+| `expander.arrow_gap` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader puts the title at spacing.indent, one number with the arrow's place and the body's indent (containers/collapsing_header.rs:516, :585-589) |
 | `expander.arrow_icon_size` | DERIVED | «expander» `spacing.icon_width_inner`; «expander» `spacing.indent` (when: expander.border.padding.left is stated) |  |
+| `expander.arrow_side` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader paints its icon at indent / 2 only (containers/collapsing_header.rs:585-589) |
 | `expander.border.color` | SCOPED | «expander» `visuals.widgets.noninteractive.bg_stroke.color`; «expander» `visuals.widgets.inactive.bg_stroke.color`; «expander» `visuals.widgets.hovered.bg_stroke.color`; «expander» `visuals.widgets.active.bg_stroke.color`; «expander» `visuals.widgets.open.bg_stroke.color` |  |
 | `expander.border.corner_radius` | SCOPED | «expander» `visuals.widgets.noninteractive.corner_radius`; «expander» `visuals.widgets.inactive.corner_radius`; «expander» `visuals.widgets.hovered.corner_radius`; «expander» `visuals.widgets.active.corner_radius`; «expander» `visuals.widgets.open.corner_radius` |  |
 | `expander.border.line_width` | SCOPED | «expander» `visuals.widgets.noninteractive.bg_stroke.width`; «expander» `visuals.widgets.inactive.bg_stroke.width`; «expander» `visuals.widgets.hovered.bg_stroke.width`; «expander» `visuals.widgets.active.bg_stroke.width`; «expander» `visuals.widgets.open.bg_stroke.width`; «expander» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «expander» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro); «expander» `spacing.indent` (when: expander.border.padding.left is stated) |  |
@@ -452,12 +454,14 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void
 | `expander.border.padding.right` | DERIVED | «expander» `spacing.button_padding.x` |  |
 | `expander.border.padding.top` | DERIVED | «expander» `spacing.button_padding.y` |  |
 | `expander.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
+| `expander.content_indent` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader indents the body by spacing.indent, which also places its arrow and title (containers/collapsing_header.rs:164, :516) |
 | `expander.font.color` | SCOPED | «expander» `visuals.widgets.noninteractive.fg_stroke.color`; «expander» `visuals.widgets.inactive.fg_stroke.color`; «expander» `visuals.widgets.hovered.fg_stroke.color`; «expander» `visuals.widgets.active.fg_stroke.color`; «expander» `visuals.widgets.open.fg_stroke.color` |  |
 | `expander.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `expander.font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
 | `expander.font.size` | SCOPED | «expander» `text_styles[Button].size` |  |
 | `expander.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `expander.font.weight` | DERIVED | → T18(c) | probe `700` |
+| `expander.frame_enabled` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui frames a CollapsingHeader's header alone, never its body (containers/collapsing_header.rs:561-568) |
 | `expander.header_height` | SCOPED | «expander» `spacing.interact_size.y` |  |
 | `expander.hover_background` | SCOPED | «expander» `visuals.widgets.hovered.weak_bg_fill` (when: stated; None leaves no highlight, §6.4); «expander» `visuals.widgets.active.weak_bg_fill` (when: stated; None leaves no highlight, §6.4); «expander» `visuals.collapsing_header_frame` (when: never: written true in every expander cell, the frame the hover fill lies in, §6.1) |  |
 | `sidebar.background_color` | SCOPED | \[panel_left\] `fill`; \[panel_right\] `fill`; «sidebar» `visuals.panel_fill` |  |

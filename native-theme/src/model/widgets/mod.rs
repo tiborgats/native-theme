@@ -2,7 +2,7 @@
 
 use crate::Rgba;
 use crate::model::border::{ResolvedWidgetBorder, WidgetBorderSpec};
-use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
+use crate::model::{ArrowSide, DialogButtonOrder, FontSpec, ResolvedFontSpec};
 use native_theme_derive::{ThemeFields, ThemeWidget};
 
 // ── 2.2 Window / Application Chrome ────────────────────────────────────────
@@ -877,6 +877,31 @@ pub struct ExpanderTheme {
     /// Disclosure arrow/chevron color.
     #[theme(category = "soft_option")]
     pub arrow_color: Option<Rgba>,
+    /// Which end of the header row the disclosure arrow sits at: before the
+    /// title, or at the row's end. `None` where the theme states none
+    /// (docs/platform-facts.md §2.27).
+    #[theme(category = "soft_option")]
+    pub arrow_side: Option<ArrowSide>,
+    /// Space between the arrow's icon box (`arrow_icon_size` square) and the
+    /// title after it, or, for a trailing arrow, the header content before
+    /// it, in logical pixels. `None` where the platform states none: AppKit
+    /// documents no disclosure geometry (docs/platform-facts.md §2.27).
+    #[serde(rename = "arrow_gap_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub arrow_gap: Option<f32>,
+    /// Horizontal distance from the expander's leading inner edge (inside
+    /// its frame, where it has one) to the content it reveals, in logical
+    /// pixels. `None` where the platform states none: AppKit documents no
+    /// disclosure geometry (docs/platform-facts.md §2.27).
+    #[serde(rename = "content_indent_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub content_indent: Option<f32>,
+    /// Whether the expander draws a frame (its `border`) around its header
+    /// and the content it reveals: KDE's has none, libadwaita's and WinUI's
+    /// are framed. `None` where the theme states none
+    /// (docs/platform-facts.md §2.27).
+    #[theme(category = "soft_option")]
+    pub frame_enabled: Option<bool>,
     /// Expander font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,

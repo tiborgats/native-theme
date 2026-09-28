@@ -2627,6 +2627,26 @@ sinks   = [
 verdict   = "derived"
 tested_by = "T18(f)"
 
+["expander.arrow_side"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader paints its icon at indent / 2 only (containers/collapsing_header.rs:585-589)"
+
+["expander.arrow_gap"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader puts the title at spacing.indent, one number with the arrow's place and the body's indent (containers/collapsing_header.rs:516, :585-589)"
+
+["expander.content_indent"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui's CollapsingHeader indents the body by spacing.indent, which also places its arrow and title (containers/collapsing_header.rs:164, :516)"
+
+["expander.frame_enabled"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: Expander (docs/todo_egui-widgets-spec.md §4.10); egui frames a CollapsingHeader's header alone, never its body (containers/collapsing_header.rs:561-568)"
+
 ["expander.font.family"]
 verdict  = "unmappable"
 sub_tag  = "egui-limited"

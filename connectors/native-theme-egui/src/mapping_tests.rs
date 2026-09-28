@@ -236,8 +236,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        485,
-        "481 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        489,
+        "485 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -471,7 +471,7 @@ fn verdict_totals_match_the_specification() {
         ("buttons", [11, 46, 29, 15]),
         ("inputs", [4, 35, 28, 11]),
         ("indicators", [6, 17, 8, 9]),
-        ("chrome", [0, 54, 23, 15]),
+        ("chrome", [0, 54, 23, 19]),
     ];
     for (group, want) in expected {
         let got = counts.get(group).copied().unwrap_or([0; 4]);
@@ -482,7 +482,7 @@ fn verdict_totals_match_the_specification() {
         "a leaf outside the six groups"
     );
     assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 15);
-    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 8);
+    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 12);
     assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 51);
     assert_eq!(
         tags.get("source-void").copied().unwrap_or_default(),

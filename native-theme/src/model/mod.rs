@@ -33,6 +33,8 @@ impl ColorMode {
 
 /// Animated icon types (frame sequences and transforms).
 pub mod animated;
+/// Disclosure arrow placement convention.
+pub mod arrow_side;
 /// Border specification sub-struct for widget border properties.
 pub mod border;
 /// Bundled SVG icon lookup tables.
@@ -60,6 +62,7 @@ pub use border::{
     WidgetBorderSpec,
 };
 // G3 (Phase 93-03): demoted to pub(crate). Use the per-set loaders in `crate::icons` externally.
+pub use arrow_side::ArrowSide;
 pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;
