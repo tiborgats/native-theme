@@ -52,6 +52,7 @@ fn a_checkbox_paints_checkbox_theme() {
 
         let idle = at(false, false);
         assert_eq!(idle.indicator, px(k.indicator_width), "{preset}");
+        assert_eq!(idle.dot, k.radio_dot_diameter.map(px), "{preset}");
         assert_eq!(idle.radius, px(k.border.corner_radius), "{preset}");
         assert_eq!(idle.border_width, px(k.border.line_width), "{preset}");
         assert_eq!(idle.label_gap, px(k.label_gap), "{preset}");
@@ -469,6 +470,24 @@ fn the_radio_indicator_is_the_stated_size(cx: &mut TestAppContext) {
     let b = bounds(cx, "native-checkbox-indicator");
     assert_eq!(b.size.width, px(r.checkbox.indicator_width));
     assert_eq!(b.size.height, px(r.checkbox.indicator_width));
+}
+
+/// docs/platform-facts.md:1220: Breeze's dot is 6px across, centred in the
+/// 20px circle.
+#[gpui::test]
+fn a_selected_radio_draws_the_stated_dot(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| Radio::new("r").label("A").checked(true).into_any_element()),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    assert_eq!(r.checkbox.radio_dot_diameter, Some(6.));
+    let circle = bounds(cx, "native-checkbox-indicator");
+    let dot = bounds(cx, "native-radio-dot");
+    assert_eq!(dot.size.width, px(6.));
+    assert_eq!(dot.size.height, px(6.));
+    assert_eq!(dot.center(), circle.center(), "centred in the circle");
 }
 
 #[gpui::test]

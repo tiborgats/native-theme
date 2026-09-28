@@ -552,26 +552,26 @@ fn native_indicator(
             "fill",
             "disabled_background",
             stated(k.disabled_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:71",
+            "native-theme-gpui/widgets/checkbox.rs:75",
         )),
         (true, false) => info.color(claim(
             "fill",
             "checked_background",
             stated(k.checked_background),
-            "native-theme-gpui/widgets/checkbox.rs:72",
+            "native-theme-gpui/widgets/checkbox.rs:76",
         )),
         (false, false) => info
             .color(claim(
                 "fill",
                 "unchecked_background",
                 stated(k.unchecked_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:69",
+                "native-theme-gpui/widgets/checkbox.rs:73",
             ))
             .color(claim(
                 "hover layer, over the fill",
                 "hover_background",
                 stated(k.hover_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:78",
+                "native-theme-gpui/widgets/checkbox.rs:82",
             )),
     };
     let info = if checked {
@@ -579,14 +579,14 @@ fn native_indicator(
             "border",
             "border",
             stated(k.border.color),
-            "native-theme-gpui/widgets/checkbox.rs:82",
+            "native-theme-gpui/widgets/checkbox.rs:86",
         ))
     } else {
         info.color(claim(
             "border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:84",
+            "native-theme-gpui/widgets/checkbox.rs:88",
         ))
     };
     if disabled {
@@ -594,20 +594,20 @@ fn native_indicator(
             "mark and label",
             "disabled_text_color",
             stated(k.disabled_text_color),
-            "native-theme-gpui/widgets/checkbox.rs:87",
+            "native-theme-gpui/widgets/checkbox.rs:91",
         ))
     } else {
         info.color(claim(
             "mark",
             "indicator_color",
             stated(k.indicator_color),
-            "native-theme-gpui/widgets/checkbox.rs:89",
+            "native-theme-gpui/widgets/checkbox.rs:93",
         ))
         .color(claim(
             "label",
             "font",
             stated(k.font.color),
-            "native-theme-gpui/widgets/checkbox.rs:89",
+            "native-theme-gpui/widgets/checkbox.rs:93",
         ))
     }
 }
@@ -634,24 +634,33 @@ pub fn native_radio_column(
             "unselected fill",
             "unchecked_background",
             stated(k.unchecked_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:69",
+            "native-theme-gpui/widgets/checkbox.rs:73",
         ))
         .color(claim(
             "unselected border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:84",
+            "native-theme-gpui/widgets/checkbox.rs:88",
         ))
         .color(claim(
             "hover layer, over an unselected fill",
             "hover_background",
             stated(k.hover_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:78",
+            "native-theme-gpui/widgets/checkbox.rs:82",
         ))
         .config("indicator", format!("checkbox.indicator_width: a circle {}px across (platform-facts §2.5: radio buttons are circular)", k.indicator_width))
-        .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap))
-        .not_themeable("mark", "gpui-component's own check glyph (radio.rs, Radio::render): the model names the radio's indicator a dot (CheckboxTheme::indicator_color) but states no dot size, and gpui has no dot of its own")
-        .instance("radios", format!("{}, each a widgets::Radio told its place in the group, widget_gap apart", labels.join(", ")));
+        .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap));
+    let info = match k.radio_dot_diameter {
+        Some(dot) => info.config("dot", format!("checkbox.radio_dot_diameter: a dot {dot}px across in indicator_color, centred in the circle (platform-facts §2.5)")),
+        None => info.not_themeable("mark", "gpui-component's own check glyph (radio.rs, Radio::render): the theme states no radio dot size (checkbox.radio_dot_diameter), and gpui has no dot of its own"),
+    };
+    let info = info.instance(
+        "radios",
+        format!(
+            "{}, each a widgets::Radio told its place in the group, widget_gap apart",
+            labels.join(", ")
+        ),
+    );
     info.instance("selected", chosen)
 }
 

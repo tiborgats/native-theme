@@ -115,11 +115,13 @@ row's `radius * 0.5` rounding that ring follows (GC `checkbox.rs:280-283`).
 ### 2.2 `Radio`, `RadioGroup` — on `gpui_base::Radio` / `RadioGroup`
 
 As §2.1, from the same `CheckboxTheme` (PF §2.5: "Radio buttons use the same
-colors but with circular `border.corner_radius`", `platform-facts.md:1221`):
-the indicator is a circle of `indicator_width`. **The mark is gpui-component's
-own** (the check glyph, GC `radio.rs:242`): the model names the radio's
-indicator a dot (`CheckboxTheme::indicator_color`) but states no dot size, and
-gpui has no dot of its own to fall back on — recorded as open, not invented.
+colors but with circular `border.corner_radius`", `platform-facts.md:1222`):
+the indicator is a circle of `indicator_width`. **The mark is a dot**
+`radio_dot_diameter` across in `indicator_color`, centred in the circle
+(`platform-facts.md:1220`: KDE 6, GNOME 8, Windows 12), faded in and out on the
+check mark's spring. Where the theme states no dot size — macOS publishes none —
+the mark is gpui-component's own check glyph (GC `radio.rs:242`), since gpui has
+no dot of its own.
 `RadioGroup` is gpui-base's (role `RadioGroup`, orientation) with each radio's
 position in the set; it lays its radios out with the caller's style.
 
@@ -221,7 +223,7 @@ value and notifies.
 
 | # | what is not drawn | why |
 |---|---|---|
-| 1 | a radio dot | no dot size is stated; gpui-component's mark is kept (§2.2) |
+| 1 | a radio dot on macOS | `checkbox.radio_dot_diameter` is unstated there; gpui-component's mark is kept (§2.2) |
 | 2 | slider tick marks | the widget takes no tick positions, as gpui-component's |
 | 3 | the macOS spinner's fins | the model states no fin geometry; the arc is drawn |
 | 4 | shadows (`checkbox.border.shadow_enabled`, `progress_bar.border.shadow_enabled`) | no shadow geometry in the model |

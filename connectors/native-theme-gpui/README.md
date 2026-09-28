@@ -310,7 +310,7 @@ role, and paints every part from the theme leaf that states it:
 
 | Widget | Paints | Instead of gpui-component's |
 |---|---|---|
-| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark, label gap and font | an indicator sized in rems per `Size` |
+| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark, the radio's dot (`radio_dot_diameter`), label gap and font | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
 | `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps | a rail of its fill at 20% alpha, a thumb of its own size |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width | a track of its fill at 20% alpha |

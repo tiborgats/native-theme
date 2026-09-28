@@ -30,6 +30,10 @@ pub struct CheckboxLook {
     /// `checkbox.indicator_width`: the square's side, or the circle's
     /// diameter (docs/platform-facts.md:980).
     pub indicator: Pixels,
+    /// `checkbox.radio_dot_diameter`: the dot a selected radio draws, or
+    /// `None` where the theme states none or a length that is not finite --
+    /// the radio then draws gpui-component's own mark.
+    pub dot: Option<Pixels>,
     /// `checkbox.border.corner_radius` (a radio is round instead).
     pub radius: Pixels,
     /// `checkbox.border.line_width`.
@@ -90,6 +94,7 @@ impl CheckboxLook {
         };
         Some(Self {
             indicator: length(c.indicator_width)?,
+            dot: c.radio_dot_diameter.and_then(length),
             radius: length(c.border.corner_radius)?,
             border_width: length(c.border.line_width)?,
             fill,
@@ -145,16 +150,30 @@ fn indicator_and_label(
         window,
         cx,
     );
-    // The mark fills the indicator inside its border: "checkmark fills
-    // indicator" (docs/platform-facts.md:1216, §2.5).
-    let inner = px(f32::from(look.indicator) - f32::from(look.border_width) * 2.);
-    let mark = svg()
-        .size(inner)
-        .flex_none()
-        .text_color(look.mark)
-        .when(opacity > 0., |mark| {
-            mark.path(IconName::Check.path()).opacity(opacity)
-        });
+    let mark = match look.dot.filter(|_| round) {
+        // A radio's dot, `radio_dot_diameter` across, centred in the circle
+        // (docs/platform-facts.md:1220, §2.5).
+        Some(dot) => div()
+            .size(dot)
+            .flex_none()
+            .rounded_full()
+            .when(opacity > 0., |mark| mark.bg(look.mark).opacity(opacity))
+            .debug_selector(|| "native-radio-dot".into())
+            .into_any_element(),
+        // The mark fills the indicator inside its border: "checkmark fills
+        // indicator" (docs/platform-facts.md:1216, §2.5).
+        None => {
+            let inner = px(f32::from(look.indicator) - f32::from(look.border_width) * 2.);
+            svg()
+                .size(inner)
+                .flex_none()
+                .text_color(look.mark)
+                .when(opacity > 0., |mark| {
+                    mark.path(IconName::Check.path()).opacity(opacity)
+                })
+                .into_any_element()
+        }
+    };
     let indicator = div()
         .flex()
         .flex_none()
@@ -310,10 +329,11 @@ impl RenderOnce for Checkbox {
 }
 
 /// A radio button: [`Checkbox`]'s look in a circle (docs/platform-facts.md
-/// §2.5, :1221), on gpui-base's headless `Radio`. Activating an unchecked
-/// one requests `true`; a checked one does nothing. The mark is
-/// gpui-component's own check glyph (radio.rs:242): the model names the
-/// radio's indicator a dot but states no dot size (spec §2.2).
+/// §2.5, :1222), on gpui-base's headless `Radio`. Activating an unchecked
+/// one requests `true`; a checked one does nothing. The mark is a dot
+/// `checkbox.radio_dot_diameter` across in `indicator_color`, centred in the
+/// circle (:1220); where the theme states no dot size (macOS publishes none),
+/// it is gpui-component's own check glyph (radio.rs:242).
 pub struct Radio {
     parts: Parts,
     position: Option<(usize, usize)>,
