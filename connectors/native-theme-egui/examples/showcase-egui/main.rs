@@ -45,12 +45,6 @@ pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(1280.0, 720.0);
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs:16`).
 pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_millis(250);
 
-/// The thickness of the line under the selected tab. The model states no tab indicator; this is
-/// gpui-component's underline tab, whose selected tab has a 2px bottom border
-/// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-component-0.6.6/src/tab/tab.rs:253-261`),
-/// in the colour the theme states for the primary button.
-pub(crate) const TAB_UNDERLINE_WIDTH: f32 = 2.0;
-
 /// The weight the showcase draws its inspector's headings in (a page's section headings take
 /// `text_scale.section_heading.weight`). The model states no inspector heading weight; this is
 /// gpui's `FontWeight::SEMIBOLD`

@@ -66,12 +66,17 @@ pub(crate) struct DemoState {
     pub dnd_columns: [Vec<&'static str>; 2],
     /// The Theme Map's verdict filter; `None` lists every row.
     pub theme_map_filter: Option<crate::info::Verdict>,
-    /// The Basic page's radio button, text fields, drop-down and slider.
+    /// The Basic page's radio button, text fields, text area, drop-down, slider, tab, segment
+    /// and list row.
     pub basic_radio: usize,
     pub basic_hint: String,
     pub basic_text: String,
+    pub basic_area: String,
     pub basic_combo: usize,
     pub basic_slider: f32,
+    pub basic_tab: usize,
+    pub basic_segment: usize,
+    pub basic_list: usize,
 }
 
 impl Default for DemoState {
@@ -118,8 +123,12 @@ impl Default for DemoState {
             basic_radio: 0,
             basic_hint: String::new(),
             basic_text: "Text".to_string(),
+            basic_area: basic::AREA_TEXT.to_string(),
             basic_combo: 0,
             basic_slider: 40.0,
+            basic_tab: 0,
+            basic_segment: 1,
+            basic_list: 1,
         }
     }
 }

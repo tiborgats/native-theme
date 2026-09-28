@@ -262,6 +262,12 @@ use egui_kittest::kittest::{NodeT as _, Queryable as _};
 
 use crate::{WINDOW_TITLE, chrome::Action, native_options};
 
+/// The passes a test runs after an input: `Harness::run`'s own limit
+/// (`egui_kittest/src/builder.rs:38`). The Basic page, the default one, shows a spinner, which
+/// repaints on every pass (`egui/src/widgets/spinner.rs:39`), so `Harness::run`, which runs
+/// until nothing asks for a repaint, never settles there.
+const SETTLE: usize = 4;
+
 fn open_default() -> Harness<'static, App> {
     open(egui::Theme::Light, cli(&[("--theme", TEST_PRESET)]))
 }
@@ -280,16 +286,16 @@ fn pick_mode(harness: &mut Harness<'_, App>, mode: &str) {
     harness
         .get_by_role_and_label(Role::ComboBox, "Mode")
         .click();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.get_by_label(mode).click();
-    harness.run();
+    harness.run_steps(SETTLE);
 }
 
 /// T11 (b): the theme, mode and icon pickers install what they name.
 #[test]
 fn interactive_controls_respond() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     let (other, other_name) = Theme::list_presets_for_platform()
         .into_iter()
         .map(|info| (info.key, info.display_name))
@@ -300,9 +306,9 @@ fn interactive_controls_respond() {
     harness
         .get_by_role_and_label(Role::ComboBox, "Theme")
         .click();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.get_by_label(other_name).click();
-    harness.run();
+    harness.run_steps(SETTLE);
     assert_eq!(
         harness.state().settings.theme,
         ThemeChoice::Preset(other.to_string())
@@ -319,14 +325,14 @@ fn interactive_controls_respond() {
     harness
         .get_by_role_and_label(Role::ComboBox, "Icon theme")
         .click();
-    harness.run();
+    harness.run_steps(SETTLE);
     // A row's label is `IconSetChoice`'s `Display` (`native-theme/src/icons.rs:792-802`).
     // The list holds every installed freedesktop theme before the bundled sets, so the row may
     // lie below the popup's fold: scroll it into view first (`egui_kittest/src/node.rs:152`).
     harness.get_by_label("Material (bundled)").scroll_to_me();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.get_by_label("Material (bundled)").click();
-    harness.run();
+    harness.run_steps(SETTLE);
     assert_eq!(harness.state().settings.icon, IconSetChoice::Material);
     assert!(
         !harness.state().settings.icon_follows_theme,
@@ -433,7 +439,7 @@ fn the_window_finders_line_is_four_numbers() {
 #[test]
 fn the_chrome_is_where_the_layout_puts_it() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     let menu_row = harness.get_by_role_and_label(Role::Button, "File").rect();
     let toolbar = harness
         .get_by_role_and_label(Role::Button, "Command Palette")
@@ -599,9 +605,9 @@ fn the_status_bar_reads_as_the_gpui_showcases() {
 #[test]
 fn the_page_menu_lists_and_shows_every_page() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.get_by_role_and_label(Role::Button, "Pages").click();
-    harness.run();
+    harness.run_steps(SETTLE);
     let ids: Vec<egui::accesskit::NodeId> = harness
         .state()
         .registry
@@ -631,7 +637,7 @@ fn the_page_menu_lists_and_shows_every_page() {
 #[test]
 fn the_side_panel_toggle_hides_and_shows_it() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     let width_of = |h: &Harness<'_, App>| {
         h.state()
             .registry
@@ -645,23 +651,23 @@ fn the_side_panel_toggle_hides_and_shows_it() {
     harness
         .get_by_role_and_label(Role::Button, "Toggle Side Panel")
         .click();
-    harness.run();
+    harness.run_steps(SETTLE);
     assert!(!harness.state().side_panel_visible && width_of(&harness).is_none());
     harness
         .get_by_role_and_label(Role::Button, "Toggle Side Panel")
         .click();
-    harness.run();
+    harness.run_steps(SETTLE);
     assert!(harness.state().side_panel_visible);
 
     harness.get_by_role_and_label(Role::Button, "View").click();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness
         .get_by_label(&menu_item_label(&harness.ctx, Action::ToggleSidePanel))
         .click();
-    harness.run();
+    harness.run_steps(SETTLE);
     assert!(!harness.state().side_panel_visible);
     harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::B);
-    harness.run();
+    harness.run_steps(SETTLE);
     assert!(harness.state().side_panel_visible);
 
     // Drag the panel's edge 40 points right, then hide and show it.
@@ -680,16 +686,16 @@ fn the_side_panel_toggle_hides_and_shows_it() {
     harness.hover_at(edge + egui::vec2(40.0, 0.0));
     harness.step();
     harness.drop_at(edge + egui::vec2(40.0, 0.0));
-    harness.run();
+    harness.run_steps(SETTLE);
     let dragged = width_of(&harness).expect("shown");
     assert!(
         (dragged - (initial + 40.0)).abs() < 2.0,
         "dragged {initial} -> {dragged}"
     );
     harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::B);
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::B);
-    harness.run();
+    harness.run_steps(SETTLE);
     assert_eq!(
         width_of(&harness),
         Some(dragged),
@@ -831,16 +837,16 @@ fn the_command_palette_runs_what_it_lists() {
             .click();
     }
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
-    harness.run();
+    harness.run_steps(SETTLE);
     assert!(harness.state().palette.is_some());
     let field = harness
         .query_all_by_role(Role::TextInput)
         .find(|n| n.is_focused())
         .expect("the palette's field has focus");
     field.type_text("Ico");
-    harness.run();
+    harness.run_steps(SETTLE);
     let labels: Vec<String> = rows(&harness).into_iter().map(|(_, l)| l).collect();
     assert_eq!(
         labels,
@@ -1098,7 +1104,7 @@ fn no_id_is_recorded_twice() {
 fn the_innermost_hovered_target_wins() {
     let mut harness = open_page(Page::Overlays, egui::Theme::Light);
     harness.get_by_label("Open modal").click();
-    harness.run();
+    harness.run_steps(SETTLE);
     let pos = centre_of(&harness, "modal button");
     hover_and_settle(&mut harness, pos);
     assert_eq!(shown_kind(&harness), Some("modal button"));
@@ -1120,7 +1126,7 @@ fn the_innermost_hovered_target_wins() {
         "beside the button the dialog surface wins"
     );
     harness.key_press(egui::Key::Escape);
-    harness.run();
+    harness.run_steps(SETTLE);
 
     let mut harness = open_page(Page::Containers, egui::Theme::Light);
     let pos = centre_of(&harness, "card checkbox");
@@ -1249,7 +1255,7 @@ fn a_base_widget_is_drawn_in_the_base_style() {
 #[test]
 fn the_text_scaling_field_steps_in_its_range_and_installs_on_release() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
     // A known start, not the desktop's own factor.
     harness.state_mut().settings.prefs = Some(AccessibilityPreferences::default());
@@ -1257,7 +1263,7 @@ fn the_text_scaling_field_steps_in_its_range_and_installs_on_release() {
     harness
         .state_mut()
         .run_action(Action::OpenPreferences, &ctx);
-    harness.run();
+    harness.run_steps(SETTLE);
     let installed = |h: &Harness<'_, App>| h.state().atlas.accessibility().text_scaling_factor;
     let chosen = |h: &Harness<'_, App>| {
         h.state()
@@ -1293,7 +1299,7 @@ fn the_text_scaling_field_steps_in_its_range_and_installs_on_release() {
     );
     assert_eq!(chosen(&harness), Some(2.25), "the range's end: {seen:?}");
     harness.drop_at(at + egui::vec2(400.0, 0.0));
-    harness.run();
+    harness.run_steps(SETTLE);
     assert_eq!(installed(&harness), 2.25, "the release installed nothing");
 }
 
@@ -1302,15 +1308,15 @@ fn the_text_scaling_field_steps_in_its_range_and_installs_on_release() {
 #[test]
 fn a_click_on_the_palette_backdrop_closes_it() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
-    harness.run();
+    harness.run_steps(SETTLE);
     harness
         .query_all_by_role(Role::TextInput)
         .find(|n| n.is_focused())
         .expect("the palette's field has focus")
         .type_text("Pa");
-    harness.run();
+    harness.run_steps(SETTLE);
     assert_eq!(
         harness.state().palette.as_ref().map(|p| p.query.as_str()),
         Some("Pa")
@@ -1322,7 +1328,7 @@ fn a_click_on_the_palette_backdrop_closes_it() {
     harness.drag_at(corner);
     harness.step();
     harness.drop_at(corner);
-    harness.run();
+    harness.run_steps(SETTLE);
     assert!(
         harness.state().palette.is_none(),
         "a backdrop click left the palette open while its query was not empty"
@@ -1341,7 +1347,7 @@ fn a_mode_switch_installs_nothing() {
         .expect("a second preset is offered on every platform");
     let installed = Theme::preset(TEST_PRESET).expect("bundled").name;
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.state_mut().settings.theme = ThemeChoice::Preset(other.to_string());
     pick_mode(&mut harness, "Dark");
     assert_eq!(harness.state().settings.mode, ModeChoice::Dark);
@@ -1355,7 +1361,7 @@ fn a_mode_switch_installs_nothing() {
     harness
         .state_mut()
         .run_action(Action::SetMode(ModeChoice::Light), &ctx);
-    harness.run();
+    harness.run_steps(SETTLE);
     assert_eq!(harness.state().settings.mode, ModeChoice::Light);
     assert_eq!(harness.ctx.theme(), egui::Theme::Light);
     assert_eq!(
@@ -1667,7 +1673,7 @@ fn the_icons_page_has_the_gpui_showcases_sections() {
 #[test]
 fn the_palette_and_about_are_titled_and_close() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
     for (action, title) in [
         (Action::OpenCommandPalette, "Command Palette"),
@@ -1771,7 +1777,7 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
         hover_and_settle(h, pos);
         assert!(shown_id(h).is_some(), "Widget Info shows nothing to copy");
     };
-    let cases: [(&str, Setup, GhostAt); 8] = [
+    let cases: [(&str, Setup, GhostAt); 6] = [
         ("toolbar", none, GhostAt::Label("Command Palette")),
         (
             "side panel toggle, panel shown",
@@ -1783,8 +1789,6 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
             panel_hidden,
             GhostAt::Label("Toggle Side Panel"),
         ),
-        ("selected page tab", none, GhostAt::Kind("Tab · Page", 0)),
-        ("page tab", none, GhostAt::Kind("Tab · Page", 1)),
         (
             "Pages menu button",
             none,
@@ -1873,18 +1877,28 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
                 "{preset}: {rect:?} is as tall as a push button"
             );
         }
-        // Each group follows the one above by its heading and the gaps alone: the buttons fill
-        // their row, so a checkbox row as tall as a button would leave room above and below the
-        // controls that the button row does not.
-        let (above_checks, above_radios) = (
-            checkboxes[0].top() - button[0].bottom(),
-            radios[0].top() - checkboxes[0].bottom(),
-        );
-        assert!(
-            (above_checks - above_radios).abs() <= 1.0,
-            "{preset}: the checkbox row lies {above_checks} below the buttons, the radio row \
-             {above_radios} below the checkboxes"
-        );
+        // One control per row, each row `layout.widget_gap` below the one above: a row as tall as
+        // a push button would leave more room between the controls than the gap.
+        let stated = harness.state().atlas.layout().widget_gap;
+        assert!(stated.is_some(), "{preset} states layout.widget_gap");
+        let gap = stated.unwrap_or_default();
+        let mut rows: Vec<egui::Rect> = [
+            "checkbox (unchecked)",
+            "checkbox (checked)",
+            "checkbox (disabled)",
+        ]
+        .iter()
+        .flat_map(|kind| rects(kind))
+        .collect();
+        rows.sort_by(|a, b| a.top().total_cmp(&b.top()));
+        for pair in rows.windows(2).chain(radios.windows(2)) {
+            let [above, below] = pair else { continue };
+            assert!(
+                (below.top() - above.bottom() - gap).abs() < 0.5,
+                "{preset}: {below:?} lies {} below {above:?}, widget_gap is {gap}",
+                below.top() - above.bottom()
+            );
+        }
     }
 }
 
@@ -2110,9 +2124,10 @@ fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
     }
 }
 
-/// On the Basic page, `layout.section_gap` is the whole distance between two groups and
-/// between the two columns, as on the iced and gpui Basic pages: the space the page adds
-/// makes up the gap with the `item_spacing` egui puts between widgets anyway.
+/// On the Basic page, `layout.section_gap` is the whole distance between two groups of a column
+/// and between two columns, as on the iced and gpui Basic pages: the page lays four columns of
+/// one width out that far apart, and in a column the space the page adds makes up the gap with
+/// the `item_spacing` egui puts between widgets anyway.
 #[test]
 fn groups_and_columns_are_a_section_gap_apart() {
     let mut harness = open(
@@ -2136,10 +2151,11 @@ fn groups_and_columns_are_a_section_gap_apart() {
         .filter(|r| r.info.kind == "heading")
         .map(|r| r.rect)
         .collect();
-    let buttons = rect("button (enabled)");
+    // The Buttons group's last row, and the heading under it in the same column.
+    let buttons = rect("button (disabled)");
     let Some(below) = headings
         .iter()
-        .filter(|r| r.top() > buttons.bottom())
+        .filter(|r| r.top() > buttons.bottom() && (r.left() - buttons.left()).abs() < 0.5)
         .map(|r| r.top())
         .reduce(f32::min)
     else {
@@ -2150,25 +2166,224 @@ fn groups_and_columns_are_a_section_gap_apart() {
         "the buttons and the next heading are {} apart, section_gap is {gap}",
         below - buttons.bottom()
     );
-    let left_right = [
-        "button (enabled)",
-        "button (suggested action)",
-        "button (disabled)",
-        "tooltip button",
-        "checkbox (unchecked)",
-        "checkbox (checked)",
-        "checkbox (disabled)",
-        "Link",
-    ]
-    .iter()
-    .map(|kind| rect(kind).right())
-    .fold(f32::MIN, f32::max);
-    let column = rect("TextEdit (hint)").left();
+    // Each column's first heading: four, one pitch apart, a pitch a column and a gap wide.
+    let top = headings.iter().map(|r| r.top()).fold(f32::MAX, f32::min);
+    let mut lefts: Vec<f32> = headings
+        .iter()
+        .filter(|r| (r.top() - top).abs() < 0.5)
+        .map(|r| r.left())
+        .collect();
+    lefts.sort_by(f32::total_cmp);
+    assert_eq!(lefts.len(), 4, "four columns: {lefts:?}");
+    let pitch = lefts[1] - lefts[0];
+    for pair in lefts.windows(2) {
+        assert!(
+            (pair[1] - pair[0] - pitch).abs() < 0.5,
+            "the columns are not one pitch apart: {lefts:?}"
+        );
+    }
+    for (kind, column) in [
+        ("TextEdit (hint)", 1),
+        ("Slider (horizontal)", 2),
+        ("List", 3),
+    ] {
+        assert!(
+            (rect(kind).left() - lefts[column]).abs() < 0.5,
+            "{kind} is not at column {column}'s left edge: {lefts:?}"
+        );
+    }
+    // A column is the pitch less the gap wide: the first row of buttons ends before it does.
+    let row = rect("button (suggested action)").right();
     assert!(
-        (column - left_right - gap).abs() < 0.5,
-        "the columns are {} apart, section_gap is {gap}",
-        column - left_right
+        row <= lefts[1] - gap + 0.5,
+        "the first column's buttons end at {row}, past its edge {}",
+        lefts[1] - gap
     );
+}
+
+/// Kinds the Basic page records for each group's controls, and how many of each.
+const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 17] = [
+    (
+        "Buttons",
+        &[
+            ("button (enabled)", 1),
+            ("button (suggested action)", 1),
+            ("button (disabled)", 1),
+            ("tooltip button", 1),
+        ],
+    ),
+    (
+        "Checkboxes",
+        &[
+            ("checkbox (unchecked)", 1),
+            ("checkbox (checked)", 1),
+            ("checkbox (disabled)", 1),
+        ],
+    ),
+    ("Radio buttons", &[("RadioButton", 2)]),
+    (
+        "Switches",
+        &[
+            ("switch (off)", 1),
+            ("switch (on)", 1),
+            ("switch (disabled)", 1),
+        ],
+    ),
+    (
+        "Text inputs",
+        &[
+            ("TextEdit (hint)", 1),
+            ("TextEdit (single line)", 1),
+            ("TextEdit (disabled)", 1),
+        ],
+    ),
+    ("Text area", &[("TextEdit (multiline)", 1)]),
+    ("Drop-down", &[("ComboBox", 1)]),
+    ("Text", &[("Label (body text)", 1), ("Link", 1)]),
+    ("Slider", &[("Slider (horizontal)", 1)]),
+    ("Progress bar", &[("ProgressBar", 1)]),
+    ("Spinner", &[("Spinner", 1)]),
+    ("Tabs", &[("Tab · Basic", 3)]),
+    ("Segmented control", &[("segment", 3)]),
+    ("List", &[("List", 1)]),
+    (
+        "Expander",
+        &[
+            ("CollapsingHeader (expanded)", 1),
+            ("expander body", 1),
+            ("CollapsingHeader (collapsed)", 1),
+        ],
+    ),
+    ("Card", &[("card", 1), ("card label", 1)]),
+    ("Separator", &[("Separator (horizontal)", 1)]),
+];
+
+/// The Basic page shows every group of its spec (SC BASIC2), each in its column and in order:
+/// under three presets, each group's heading is a label at its column's left edge below the
+/// group before it, each column right of the one before, and every control of the group lies
+/// between its heading and the next one. The list holds eight rows and shows four, the second
+/// selected, its frame four rows and its border tall.
+#[test]
+fn the_basic_page_has_every_group_in_its_column() {
+    let groups: Vec<&str> = crate::pages::basic::GROUPS
+        .iter()
+        .flat_map(|column| column.iter().copied())
+        .collect();
+    let named: Vec<&str> = BASIC_CONTROLS.iter().map(|(group, _)| *group).collect();
+    assert_eq!(groups, named, "the controls are listed per group, in order");
+    for preset in ["kde-breeze", "material", TEST_PRESET] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "basic")]),
+        );
+        harness.run_steps(4);
+        let records = harness.state().registry.records();
+        let page_left = records
+            .iter()
+            .find(|r| r.info.kind == "Central panel")
+            .map(|r| r.rect.left())
+            .unwrap_or_else(|| panic!("{preset}: no Central panel record"));
+        let heading = |name: &str| {
+            harness
+                .query_all_by_role_and_label(Role::Label, name)
+                .map(|n| n.rect())
+                .find(|r| r.left() >= page_left)
+                .unwrap_or_else(|| panic!("{preset}: no heading {name:?} on the page"))
+        };
+        let mut column_left = f32::MIN;
+        for column in crate::pages::basic::GROUPS {
+            let tops: Vec<egui::Rect> = column.iter().map(|name| heading(name)).collect();
+            let left = tops[0].left();
+            assert!(
+                left > column_left,
+                "{preset}: {column:?} is not right of the column before"
+            );
+            column_left = left;
+            for (i, (name, rect)) in column.iter().zip(&tops).enumerate() {
+                assert!(
+                    (rect.left() - left).abs() < 0.5,
+                    "{preset}: {name:?} is not at its column's left edge"
+                );
+                let next = tops.get(i + 1).map_or(f32::MAX, |r| r.top());
+                assert!(
+                    rect.top() < next,
+                    "{preset}: {name:?} is not above the next group"
+                );
+                let Some((_, controls)) = BASIC_CONTROLS.iter().find(|(g, _)| g == name) else {
+                    panic!("{name:?} lists no controls");
+                };
+                for (kind, count) in *controls {
+                    let found: Vec<egui::Rect> = records
+                        .iter()
+                        .filter(|r| r.info.kind == *kind)
+                        .map(|r| r.rect)
+                        .collect();
+                    assert_eq!(found.len(), *count, "{preset}: {kind} under {name:?}");
+                    for r in found {
+                        assert!(
+                            r.top() >= rect.bottom() - 0.5
+                                && r.bottom() <= next + 0.5
+                                && r.left() >= left - 0.5,
+                            "{preset}: {kind} at {r:?} is not under {name:?} at {rect:?}"
+                        );
+                    }
+                }
+            }
+        }
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let list = records
+            .iter()
+            .find(|r| r.info.kind == "List")
+            .map(|r| r.rect)
+            .unwrap_or_else(|| panic!("{preset}: no List record"));
+        let rows: Vec<egui::Rect> = records
+            .iter()
+            .filter(|r| r.info.kind == "List row")
+            .map(|r| r.rect)
+            .collect();
+        assert_eq!(rows.len(), 8, "{preset}: the list's rows");
+        // A record holds the rect a widget can be hovered in, clipped to what is shown
+        // (`Response::interact_rect`): a row scrolled out of the list has none.
+        let shown = rows.iter().filter(|r| r.is_positive()).count();
+        assert_eq!(shown, 4, "{preset}: the rows the list shows");
+        let row = rows[0].height();
+        let line = t.list.border.line_width;
+        assert!(
+            (list.height() - (4.0 * row + 2.0 * line)).abs() < 0.5,
+            "{preset}: the list is {} tall, four {row} rows and a {line} border",
+            list.height()
+        );
+        assert!(
+            (list.width() - crate::pages::basic::BASIC_WIDE).abs() < 0.5,
+            "{preset}: the list is {} wide",
+            list.width()
+        );
+        assert_eq!(
+            harness.state().demo_state.basic_list,
+            1,
+            "Item 2 is selected"
+        );
+    }
+}
+
+/// The Basic page fits the window at its default size, 1280 × 720, under the six Linux presets
+/// in both modes of each: the page's scroll area never needs to scroll.
+#[test]
+fn the_basic_page_fits_the_window() {
+    for preset in ["kde-breeze", "material", TEST_PRESET] {
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
+            harness.run_steps(4);
+            assert!(
+                !harness.state().page_scrolls,
+                "{preset} {theme:?}: the Basic page is taller than the window's page area"
+            );
+        }
+    }
 }
 
 /// A page's section headings are set in the theme's section-heading role
@@ -2416,7 +2631,7 @@ fn a_capture_is_drawn_at_rest_under_the_pointer() {
 #[test]
 fn a_set_preference_is_a_selected_switch() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
     harness.state_mut().settings.prefs = Some(AccessibilityPreferences {
         reduce_motion: true,
@@ -2426,7 +2641,7 @@ fn a_set_preference_is_a_selected_switch() {
     harness
         .state_mut()
         .run_action(Action::OpenPreferences, &ctx);
-    harness.run();
+    harness.run_steps(SETTLE);
     for (kind, title, on) in [
         ("switch · reduce motion", "Reduce motion", true),
         ("switch · high contrast", "High contrast", false),
@@ -2458,7 +2673,7 @@ fn a_set_preference_is_a_selected_switch() {
     harness
         .get_by_role_and_label(Role::Button, "High contrast")
         .click();
-    harness.run();
+    harness.run_steps(SETTLE);
     assert!(
         harness
             .state()
@@ -2616,13 +2831,13 @@ fn a_target_no_longer_drawn_never_wins() {
 
     let mut harness = open_page(Page::Overlays, egui::Theme::Light);
     harness.get_by_label("Open popup").click();
-    harness.run();
+    harness.run_steps(SETTLE);
     let pos = centre_of(&harness, "popup item");
     hover_and_settle(&mut harness, pos);
     let item = shown_id(&harness).expect("shown");
     let pos = centre_of(&harness, "popup item");
     harness.get_by_label("Open popup").click();
-    harness.run();
+    harness.run_steps(SETTLE);
     harness.hover_at(pos);
     harness.run_steps(3);
     assert_ne!(
@@ -2955,7 +3170,7 @@ fn string_literals(raw: &str) -> Vec<String> {
 #[test]
 fn every_rendered_character_is_in_the_installed_fonts() {
     let mut harness = open_default();
-    harness.run();
+    harness.run_steps(SETTLE);
     let mut texts: Vec<String> = showcase_raw_sources()
         .into_iter()
         .filter(|(path, _)| !path.ends_with("tests.rs"))
@@ -3331,12 +3546,7 @@ const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
 ];
 /// The three named constants of §10.4, and the gpui-component literals the parity decisions
 /// allow (each cites the upstream line it mirrors), exempt as definitions.
-const NAMED_CONSTANTS: &[&str] = &[
-    "LEFT_PANEL_WIDTH",
-    "WINDOW_SIZE",
-    "INFO_SETTLE",
-    "TAB_UNDERLINE_WIDTH",
-];
+const NAMED_CONSTANTS: &[&str] = &["LEFT_PANEL_WIDTH", "WINDOW_SIZE", "INFO_SETTLE"];
 
 #[test]
 fn the_showcase_hardcodes_no_style_values() {

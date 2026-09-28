@@ -781,6 +781,7 @@ fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
             current: app.inspector_tab,
             margin,
             scroll: false,
+            full_width: true,
         },
         |_, _, _| {},
     );
@@ -841,6 +842,7 @@ pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
             current,
             margin,
             scroll: true,
+            full_width: true,
         },
         |ui, tab, registry| {
             let caret = demo::role_image(

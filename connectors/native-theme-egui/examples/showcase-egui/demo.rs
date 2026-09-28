@@ -881,17 +881,19 @@ pub(crate) struct TabBar<'a, T> {
     /// Whether the tabs scroll sideways where the row is too narrow for them, as the page
     /// tabs do; the trailing widgets stay at the row's right end.
     pub scroll: bool,
+    /// Whether the strip spans the width it is given (the page and inspector tab rows), or is
+    /// as wide as its tabs (the Basic page's).
+    pub full_width: bool,
 }
 
-/// A row of tabs as gpui-component's underline `TabBar` draws it, the gpui showcase's
-/// `demo::tab_bar` (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:797-836`), in
-/// one `Role::Tab` scope (§10.4): each tab a `Button::new(label).selected(..)` whose own flag
-/// picks the active tab's colours (§6.2), transparent at rest as an underline tab is (the row
-/// is made Ghost with `ghost`, its trailing widgets with it); under the
-/// selected tab a `TAB_UNDERLINE_WIDTH` line in `button.primary_background`, the leaf gpui's
-/// `primary` is built from (`GC/tab/tab.rs:253-261`); under the row a rule in
-/// `defaults.border`'s colour and width, from edge to edge (`GC/tab/tab_bar.rs:502-512`).
-/// `trailing` adds what follows the tabs. Returns the tab clicked.
+/// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
+/// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —
+/// the cell's `tab.background_color`, `tab.active_background` and `tab.active_text_color`,
+/// `tab.hover_background` and `tab.hover_text_color`, `tab.border`, `tab.min_height`, the
+/// tab's padding and font — at least `tab.min_width` wide, which egui's `Button` never reads
+/// from the style (connector spec §5.3, T18(a)), on a strip in `tab.bar_background`. The theme
+/// states no line under the selected tab or under the row, so none is drawn. `trailing` adds
+/// what follows the tabs. Returns the tab clicked.
 pub(crate) fn tab_bar<T: Copy + PartialEq>(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -899,14 +901,7 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
     bar: TabBar<'_, T>,
     trailing: impl FnOnce(&mut egui::Ui, Applied, &mut Registry),
 ) -> Option<T> {
-    let underline = egui::Stroke::new(
-        crate::TAB_UNDERLINE_WIDTH,
-        native_theme_egui::convert::to_color32(t.button.primary_background),
-    );
-    let rule = egui::Stroke::new(
-        t.defaults.border.line_width,
-        native_theme_egui::border_color(t),
-    );
+    let min_width = t.tab.min_width;
     let mut picked = None;
     scoped_container(
         reg,
@@ -915,41 +910,49 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
         RoleVariant::Normal,
         bar.kind,
         |ui, tab, reg| {
-            // Reserved first, so the rule lies under the tabs and the selected tab's line.
-            let rule_slot = ui.painter().add(egui::Shape::Noop);
             let padding = egui::Vec2::X * bar.margin.unwrap_or_default();
-            let out = egui::Frame::NONE.inner_margin(padding).show(ui, |ui| {
-                ui.set_min_width(ui.available_width());
-                ghost(ui);
-                // The selected tab's fill, which `button_style` takes from `selection` in every
-                // state (`egui/src/widget_style.rs:150-155`): none, as gpui-component's selected
-                // underline tab has none (`GC/tab/tab.rs:253-261`).
-                ui.visuals_mut().selection.bg_fill = egui::Color32::TRANSPARENT;
+            // The strip in `tab.bar_background`, the tab scope's `panel_fill`.
+            let strip = egui::Frame::NONE
+                .fill(ui.visuals().panel_fill)
+                .inner_margin(padding);
+            let out = strip.show(ui, |ui| {
+                if bar.full_width {
+                    ui.set_min_width(ui.available_width());
+                }
                 let mut tabs = |ui: &mut egui::Ui, reg: &mut Registry| {
                     for (value, label) in bar.tabs {
                         let selected = *value == bar.current;
-                        let r = tab.add(reg, ui, bar.tab_kind, |ui| {
-                            ui.add(egui::Button::new(*label).selected(selected))
-                        });
-                        reg.ghost_last();
-                        if selected {
-                            let y = r.rect.bottom() - underline.width / 2.0;
-                            ui.painter().hline(r.rect.x_range(), y, underline);
-                        }
+                        let button = egui::Button::new(*label)
+                            .selected(selected)
+                            .min_size(egui::Vec2::X * min_width);
+                        let r = tab.add(reg, ui, bar.tab_kind, |ui| ui.add(button));
                         if r.clicked() {
                             picked = Some(*value);
                         }
                     }
+                };
+                // The trailing widgets are the showcase's own tool buttons, which no tab leaf
+                // states: Ghost, transparent at rest.
+                let trailing = |ui: &mut egui::Ui, reg: &mut Registry| {
+                    ui.scope(|ui| {
+                        ghost(ui);
+                        trailing(ui, tab, reg);
+                    });
                 };
                 if bar.scroll {
                     // In a row, so the right-to-left layout takes the row's height, not the rest
                     // of the panel's.
                     ui.horizontal(|ui| {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                            trailing(ui, tab, reg);
+                            trailing(ui, reg);
+                            // No bar: the trailing page menu reaches every tab, and a tab row
+                            // scrolls without a scroll bar under it, as a native tab bar does.
                             egui::ScrollArea::horizontal()
                                 .id_salt(bar.kind)
                                 .auto_shrink([false, true])
+                                .scroll_bar_visibility(
+                                    egui::scroll_area::ScrollBarVisibility::AlwaysHidden,
+                                )
                                 .show(ui, |ui| {
                                     ui.with_layout(
                                         egui::Layout::left_to_right(egui::Align::Center),
@@ -961,33 +964,16 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                 } else {
                     ui.horizontal(|ui| {
                         tabs(ui, reg);
-                        trailing(ui, tab, reg);
+                        trailing(ui, reg);
                     });
                 }
             });
-            let rect = out.response.rect;
-            ui.painter().set(
-                rule_slot,
-                egui::Shape::hline(rect.x_range(), rect.bottom() - rule.width / 2.0, rule),
-            );
             out.response
         },
     );
     reg.amend_last(|i| {
         i.read.extend([
-            (
-                "button.primary_background",
-                t.button.primary_background.to_string(),
-            ),
-            ("defaults.border.color", t.defaults.border.color.to_string()),
-            (
-                "defaults.border.opacity",
-                t.defaults.border.opacity.to_string(),
-            ),
-            (
-                "defaults.border.line_width",
-                t.defaults.border.line_width.to_string(),
-            ),
+            ("tab.min_width", min_width.to_string()),
             (
                 "layout.container_margin",
                 bar.margin
@@ -995,21 +981,8 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
             ),
         ]);
         i.notes.push((
-            "the selected tab's line",
-            format!(
-                "{}px, gpui-component's underline tab",
-                crate::TAB_UNDERLINE_WIDTH
-            ),
-        ));
-        i.notes.push((
-            "the selected tab's fill",
-            "none, gpui-component's underline tab".to_string(),
-        ));
-        i.notes.push((
-            "the rule under the tabs",
-            "defaults.border.color with defaults.border.opacity folded into its alpha \
-             (native_theme_egui::border_color)"
-                .to_string(),
+            "the gap between tabs",
+            "not stated by the theme: the base style's item spacing".to_string(),
         ));
     });
     picked

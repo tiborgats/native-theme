@@ -294,6 +294,9 @@ pub(crate) struct App {
     /// Whether the inspector's content was taller than its area this pass.
     #[cfg(test)]
     pub(crate) inspector_scrolls: bool,
+    /// Whether the page was taller than the room it is shown in this pass.
+    #[cfg(test)]
+    pub(crate) page_scrolls: bool,
     /// The scheme the icon choice was last derived for; `None` forces a re-derive next pass.
     last_scheme: Option<egui::Theme>,
     screenshot: Option<Screenshot>,
@@ -373,6 +376,8 @@ impl App {
             hold_zone: None,
             #[cfg(test)]
             inspector_scrolls: false,
+            #[cfg(test)]
+            page_scrolls: false,
             last_scheme: None,
             screenshot,
             held_pointer: cli.pointer.map(|(x, y)| HeldPointer {
@@ -733,7 +738,11 @@ impl eframe::App for App {
         ui.reset_style();
         chrome::central_panel(self, ui, |app, ui| {
             pages::show_fixed(app, ui);
-            egui::ScrollArea::vertical().show(ui, |ui| pages::show(app, ui));
+            let _page = egui::ScrollArea::vertical().show(ui, |ui| pages::show(app, ui));
+            #[cfg(test)]
+            {
+                app.page_scrolls = _page.content_size.y > _page.inner_rect.height();
+            }
         });
         chrome::command_palette(self, ui);
         chrome::preferences(self, ui);
