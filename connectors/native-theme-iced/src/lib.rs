@@ -670,6 +670,36 @@ where
     iced_widget::Stack::new().push(radio).push(seat).into()
 }
 
+/// The drop-down arrow the platforms draw, for `pick_list(..).handle(..)`: an
+/// open chevron (`docs/platform-facts.md` §2.24, `arrow_icon_size`: Breeze's
+/// `renderArrow`, GNOME's `pan-down-symbolic`, WinUI's `ChevronDown`), set at
+/// `combo_box.arrow_icon_size`.
+///
+/// iced's own `Handle::Arrow` is a filled triangle, the renderer's
+/// `ARROW_DOWN_ICON` (`iced_widget` 0.14.2 `src/pick_list.rs:600-606`; U+E800
+/// in iced's `Iced-Icons` font, `iced_wgpu` 0.14.0 `src/lib.rs:724`). This is
+/// the same font's `SCROLL_DOWN_ICON` (U+E803, `:727`), the renderer's own
+/// downward chevron, at the size and line height `Handle::Arrow` takes, so no
+/// glyph of another icon set is drawn.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn pick_list_handle<Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> iced_widget::pick_list::Handle<Renderer::Font>
+where
+    Renderer: iced_core::text::Renderer,
+{
+    iced_widget::pick_list::Handle::Static(iced_widget::pick_list::Icon {
+        font: Renderer::ICON_FONT,
+        code_point: Renderer::SCROLL_DOWN_ICON,
+        size: Some(iced_core::Pixels(resolved.combo_box.arrow_icon_size)),
+        line_height: iced_core::text::LineHeight::default(),
+        shaping: iced_core::text::Shaping::Basic,
+    })
+}
+
 /// Lays `content` out at least `min` wide and tall, centred in the room the
 /// minimum gives it, and at its own size where that is larger.
 ///
@@ -848,7 +878,8 @@ pub fn mono_font_weight(resolved: &native_theme::theme::ResolvedTheme) -> u16 {
     resolved.defaults.mono_font.weight
 }
 
-/// Returns the border/divider color from the resolved theme.
+/// Returns the border/divider color from the resolved theme: the final line
+/// colour, into which the model has already folded `defaults.border.opacity`.
 #[must_use]
 pub fn border_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.border.color)
@@ -1364,6 +1395,24 @@ mod tests {
         let resolved = make_resolved(false);
         let c = border_color(&resolved);
         assert!(c.a > 0.0, "border color should have non-zero alpha");
+    }
+
+    /// The drop-down's handle is iced's own chevron glyph, at the theme's
+    /// arrow size: kde-breeze's 10px, Breeze's `ArrowSize`.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn the_pick_list_handle_is_a_chevron_at_the_arrow_size() {
+        use iced_core::text::Renderer as _;
+        let resolved = make_resolved_preset("kde-breeze", false);
+        assert_eq!(resolved.combo_box.arrow_icon_size, 10.0);
+        let handle = pick_list_handle::<iced_widget::Renderer>(&resolved);
+        let iced_widget::pick_list::Handle::Static(icon) = handle else {
+            panic!("a static handle, not iced's filled Arrow: {handle:?}");
+        };
+        assert_eq!(icon.code_point, iced_widget::Renderer::SCROLL_DOWN_ICON);
+        assert_ne!(icon.code_point, iced_widget::Renderer::ARROW_DOWN_ICON);
+        assert_eq!(icon.font, iced_widget::Renderer::ICON_FONT);
+        assert_eq!(icon.size, Some(iced_core::Pixels(10.0)));
     }
 
     #[test]

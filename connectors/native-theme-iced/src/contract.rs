@@ -428,7 +428,7 @@ macro_rules! class_button_contract {
         const $borders: &[BorderRow<button::Status>] = &[BorderRow {
             field: $prefix,
             statuses: BUTTON_STATUSES,
-            native: |r, _| native_button_border(r),
+            native: native_button_border,
             get: |t, r, s| $style(r)(t, s).border,
         }];
 
@@ -3466,10 +3466,13 @@ fn a_cleared_widget_soft_option_copies_the_base_state_value() -> native_theme::R
             fill(boxes(&theme, checkbox::Status::Hovered { is_checked: false }).background),
             over(box_fill, box_fill),
         ),
+        // No disabled fill stated is the platform dimming by opacity alone
+        // (docs/platform-facts.md §2.1.6): the box is its enabled self, the
+        // checked fill here; windows-11's `disabled_opacity` is 1.0.
         (
-            "checkbox.disabled_background -> checkbox.background_color",
+            "checkbox.disabled_background -> checkbox.checked_background",
             fill(boxes(&theme, checkbox::Status::Disabled { is_checked: true }).background),
-            box_fill,
+            to_color(resolved.checkbox.checked_background),
         ),
         (
             "checkbox.unchecked_border_color -> checkbox.border.color",

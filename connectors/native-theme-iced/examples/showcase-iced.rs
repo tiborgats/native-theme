@@ -6082,8 +6082,9 @@ fn pick_list_info(resolved: &ResolvedTheme, sized: bool) -> String {
         &[
             (
                 "dropdown arrow",
-                "iced's own glyph, a filled triangle pointing down \
-                 (Iced-Icons U+E800, Handle::Arrow)",
+                "an open chevron, the platforms' glyph, drawn as iced's own \
+                 Iced-Icons U+E803 (native_theme_iced::pick_list_handle); \
+                 its stroke is the font's, the theme states none",
             ),
             ("arrow color", "ComboBoxTheme carries no arrow color"),
             ("arrow area width", "no receiver in iced"),
@@ -8970,16 +8971,15 @@ fn hoverable_ext_section<'a>(
     hoverable(info, content)
 }
 
-/// The drop-down arrow at the platform's own icon size.
+/// The drop-down arrow: the connector's open chevron at the platform's own
+/// icon size (`native_theme_iced::pick_list_handle`).
 ///
 /// `combo_box.arrow_icon_size` is not a `pick_list::Style` field: iced carries
 /// the arrow in the `Handle` the widget is built with
 /// (`pick_list.rs:794-801`), so it is set here rather than in
 /// `styles::pick_list`.
 fn arrow_handle(resolved: &ResolvedTheme) -> pick_list::Handle<iced::Font> {
-    pick_list::Handle::Arrow {
-        size: Some(resolved.combo_box.arrow_icon_size.into()),
-    }
+    native_theme_iced::pick_list_handle::<iced::Renderer>(resolved)
 }
 
 /// The role a page's title is set in: `dialog_title`, the dialog or page title

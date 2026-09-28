@@ -100,6 +100,35 @@ pub(crate) fn composite_over(layer: Color, base: Color) -> Color {
     }
 }
 
+/// `color` as a disabled widget shows it, faded by the widget's
+/// `disabled_opacity`.
+///
+/// A platform dims a disabled widget by its disabled colours or by fading the
+/// whole widget, and the data makes the one it does not use an identity
+/// (`docs/platform-facts.md` §2.1.6: 1.0 on KDE and Windows, no disabled
+/// colours of its own on GNOME), so a disabled style applies both. iced has
+/// no widget opacity: each colour a disabled style emits has its alpha
+/// multiplied by the opacity instead. A non-finite opacity fades nothing.
+pub(crate) fn faded(color: Color, opacity: f32) -> Color {
+    let opacity = if opacity.is_finite() {
+        opacity.clamp(0.0, 1.0)
+    } else {
+        1.0
+    };
+    Color {
+        a: color.a * opacity,
+        ..color
+    }
+}
+
+/// A border as a disabled widget shows it: its colour [`faded`].
+fn faded_border(border: Border, opacity: f32) -> Border {
+    Border {
+        color: faded(border.color, opacity),
+        ..border
+    }
+}
+
 /// The platform's own plain button, for `button(..).style(..)`.
 ///
 /// This is the neutral class, so it replaces `iced_widget::button::secondary`,
@@ -139,6 +168,7 @@ pub fn button(
     let hovered_label = to_color(b.hover_text_color);
     let pressed_label = to_color(b.active_text_color);
     let disabled_label = to_color(b.disabled_text_color);
+    let opacity = b.disabled_opacity;
 
     let border = Border {
         color: to_color(b.border.color),
@@ -148,11 +178,15 @@ pub fn button(
 
     move |_theme, status| {
         let iced = Style::default();
-        let (background, text_color) = match status {
-            Status::Active => (idle, label),
-            Status::Hovered => (hovered, hovered_label),
-            Status::Pressed => (pressed, pressed_label),
-            Status::Disabled => (disabled, disabled_label),
+        let (background, text_color, border) = match status {
+            Status::Active => (idle, label, border),
+            Status::Hovered => (hovered, hovered_label, border),
+            Status::Pressed => (pressed, pressed_label, border),
+            Status::Disabled => (
+                faded(disabled, opacity),
+                faded(disabled_label, opacity),
+                faded_border(border, opacity),
+            ),
         };
         Style {
             background: Some(Background::Color(background)),
@@ -180,8 +214,11 @@ pub fn button(
 ///
 /// The border is the button's, not iced's `border::rounded(2)`
 /// (`button.rs:739`), so such a button sits beside a native one instead of
-/// beside a differently rounded one. Disabled is the button's disabled pair:
-/// the platform dims every button class the same way.
+/// beside a differently rounded one. Disabled is the button's disabled pair
+/// where the platform states a disabled fill, which it gives every button
+/// class; where it states none it dims by opacity alone
+/// (`docs/platform-facts.md` §2.1.6), and the class keeps its idle pair. Either
+/// is faded by `button.disabled_opacity` (see [`faded`]).
 fn class_button(
     resolved: &ResolvedTheme,
     fill: Rgba,
@@ -194,8 +231,11 @@ fn class_button(
 
     let idle = to_color(fill);
     let idle_label = to_color(label);
-    let disabled = to_color(b.disabled_background.unwrap_or(b.background_color));
-    let disabled_label = to_color(b.disabled_text_color);
+    let (disabled, disabled_label) = match b.disabled_background {
+        Some(background) => (to_color(background), to_color(b.disabled_text_color)),
+        None => (idle, idle_label),
+    };
+    let opacity = b.disabled_opacity;
 
     let border = Border {
         color: to_color(b.border.color),
@@ -205,12 +245,16 @@ fn class_button(
 
     move |theme, status| {
         let iced = class(theme, status);
-        let (background, text_color) = match status {
-            Status::Active => (Some(Background::Color(idle)), idle_label),
+        let (background, text_color, border) = match status {
+            Status::Active => (Some(Background::Color(idle)), idle_label, border),
             // Neither side of these two states has a native source, so both
             // are iced's own answer for this class.
-            Status::Hovered | Status::Pressed => (iced.background, iced.text_color),
-            Status::Disabled => (Some(Background::Color(disabled)), disabled_label),
+            Status::Hovered | Status::Pressed => (iced.background, iced.text_color, border),
+            Status::Disabled => (
+                Some(Background::Color(faded(disabled, opacity))),
+                faded(disabled_label, opacity),
+                faded_border(border, opacity),
+            ),
         };
         Style {
             background,
@@ -326,7 +370,11 @@ pub fn button_link(
     let label = to_color(l.font.color);
     let hovered_label = to_color(l.hover_text_color);
     let pressed_label = to_color(l.active_text_color);
-    let disabled_label = to_color(l.disabled_text_color);
+    // `LinkTheme` states no `disabled_opacity`: the defaults' fades it.
+    let disabled_label = faded(
+        to_color(l.disabled_text_color),
+        resolved.defaults.disabled_opacity,
+    );
 
     move |theme, status| {
         let iced = iced_widget::button::text(theme, status);
@@ -356,7 +404,8 @@ pub fn button_link(
 /// Every color is `input.*`: the fill, the border and its hovered and focused
 /// colors, the placeholder, the value and the selection. The disabled state is
 /// the platform's disabled fill and disabled text color, both of which the
-/// model states. `icon` has no native source -- the model carries no
+/// model states, faded by `input.disabled_opacity` (see [`faded`]). `icon` has
+/// no native source -- the model carries no
 /// input-icon color -- and comes from
 /// `text_input::default(theme, status)`.
 #[must_use = "this returns the style function; it does not apply it"]
@@ -385,6 +434,7 @@ pub fn text_input(
     let text = to_color(i.font.color);
     let disabled_text = to_color(i.disabled_text_color);
     let selection = to_color(i.selection_background);
+    let opacity = i.disabled_opacity;
 
     move |theme, status| {
         let iced = iced_widget::text_input::default(theme, status);
@@ -395,7 +445,11 @@ pub fn text_input(
             // as iced's own default does: its `Focused` arm ignores
             // `is_hovered` (`text_input.rs:1783-1789`).
             Status::Focused { is_hovered: _ } => (idle, focus_border, text),
-            Status::Disabled => (disabled, idle_border, disabled_text),
+            Status::Disabled => (
+                faded(disabled, opacity),
+                faded(idle_border, opacity),
+                faded(disabled_text, opacity),
+            ),
         };
         Style {
             background: Background::Color(background),
@@ -443,6 +497,7 @@ pub fn text_editor(
     let text = to_color(i.font.color);
     let disabled_text = to_color(i.disabled_text_color);
     let selection = to_color(i.selection_background);
+    let opacity = i.disabled_opacity;
 
     move |_theme, status| {
         let (background, border_color, value) = match status {
@@ -451,7 +506,11 @@ pub fn text_editor(
             // Focused and hovered takes the focus border here too, as iced's
             // own default does (`text_editor.rs:1490`).
             Status::Focused { is_hovered: _ } => (idle, focus_border, text),
-            Status::Disabled => (disabled, idle_border, disabled_text),
+            Status::Disabled => (
+                faded(disabled, opacity),
+                faded(idle_border, opacity),
+                faded(disabled_text, opacity),
+            ),
         };
         Style {
             background: Background::Color(background),
@@ -479,8 +538,10 @@ pub fn text_editor(
 /// as a layer over its fill; the model states no hover for a checked one, and
 /// a state the platform does not state has no distinct appearance, so a
 /// hovered checked box is exactly the checked box. `.disabled_background`
-/// replaces the fill, as given. An unchecked box may state a border color of
-/// its own, `.unchecked_border_color`.
+/// replaces the fill, as given; where it is not stated the platform dims by
+/// opacity alone and a disabled box is its enabled self. Either way a disabled
+/// box is faded by `.disabled_opacity` (see [`faded`]). An unchecked box may
+/// state a border color of its own, `.unchecked_border_color`.
 ///
 /// The check mark is `checkbox.indicator_color` -- the model has no
 /// `check_color` -- in every status but `Disabled`. `indicator_color` is the
@@ -520,8 +581,11 @@ pub fn checkbox(
     let unchecked = to_color(c.unchecked_background.unwrap_or(c.background_color));
     let hover_layer = to_color(c.hover_background.unwrap_or(c.background_color));
     let hovered_unchecked = composite_over(hover_layer, unchecked);
-    // A translucent disabled fill replaces the idle one, so it is as given.
-    let disabled = to_color(c.disabled_background.unwrap_or(c.background_color));
+    // A translucent disabled fill replaces the idle one, so it is as given. With
+    // none stated the platform dims by opacity alone
+    // (`docs/platform-facts.md` §2.1.6): the box keeps its enabled look.
+    let disabled = c.disabled_background.map(to_color);
+    let opacity = c.disabled_opacity;
 
     let mark = to_color(c.indicator_color);
     let label = to_color(c.font.color);
@@ -554,16 +618,22 @@ pub fn checkbox(
             // on-accent color, and a disabled box no longer shows the accent,
             // so the mark takes the one foreground the platform states for
             // everything it dims -- the same field the disabled label takes.
-            Status::Disabled { is_checked } => (
-                disabled,
-                if is_checked {
-                    checked_border
-                } else {
-                    unchecked_border
-                },
-                disabled_label,
-                disabled_label,
-            ),
+            // With no disabled fill stated the box is its enabled self. Every
+            // colour is then faded by `checkbox.disabled_opacity`.
+            Status::Disabled { is_checked } => {
+                let (background, border, mark) = match (disabled, is_checked) {
+                    (Some(fill), true) => (fill, checked_border, disabled_label),
+                    (Some(fill), false) => (fill, unchecked_border, disabled_label),
+                    (None, true) => (checked, checked_border, mark),
+                    (None, false) => (unchecked, unchecked_border, mark),
+                };
+                (
+                    faded(background, opacity),
+                    faded(border, opacity),
+                    faded(disabled_label, opacity),
+                    faded(mark, opacity),
+                )
+            }
         };
         Style {
             background: Background::Color(background),
@@ -660,7 +730,8 @@ pub fn radio(
 /// `is_toggled`, with `.hover_*` layered over it and `.disabled_*`
 /// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
 /// so emitted as given in every state, and `.disabled_thumb_color` whenever
-/// the switch is disabled -- toggled or not.
+/// the switch is disabled -- toggled or not. A disabled track and thumb are
+/// faded by `switch.disabled_opacity` (see [`faded`]).
 ///
 /// `border_radius` is `switch.track_radius`, and it shapes the whole widget:
 /// iced paints the track and the thumb as two quads with the *same* radius
@@ -717,8 +788,15 @@ pub fn toggler(
             .unwrap_or(s.unchecked_background),
     );
 
+    // Each disabled colour is faded by `switch.disabled_opacity` (see `faded`).
+    let disabled_checked = faded(disabled_checked, s.disabled_opacity);
+    let disabled_unchecked = faded(disabled_unchecked, s.disabled_opacity);
+
     let thumb = to_color(s.thumb_background);
-    let disabled_thumb = to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background));
+    let disabled_thumb = faded(
+        to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background)),
+        s.disabled_opacity,
+    );
 
     let track_radius = Radius::new(s.track_radius);
     // Guarded so that a track with no height, or a thumb taller than its
@@ -789,10 +867,9 @@ pub fn toggler(
 ///
 /// One native field is the consumer's builder geometry rather than a `Style`
 /// field: `combo_box.arrow_icon_size` belongs to
-/// `PickList::handle(..)` (`pick_list.rs:269`) as
-/// `pick_list::Handle::Arrow { size }` (`:798-801`), which iced uses as the
-/// font size of the arrow glyph (`:600-606`); the default is `None`, iced's
-/// own.
+/// `PickList::handle(..)` (`pick_list.rs:269`), which iced uses as the font
+/// size of the arrow glyph (`:600-634`); [`crate::pick_list_handle()`] gives
+/// the handle, the open chevron the platforms draw at that size.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn pick_list(
     resolved: &ResolvedTheme,

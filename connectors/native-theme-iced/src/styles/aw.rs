@@ -407,7 +407,12 @@ pub fn selection_list(
     let label = to_color(l.item_font.color);
     let selected_label = to_color(l.selection_text_color);
     let hovered_label = to_color(l.hover_text_color);
-    let disabled_label = to_color(l.disabled_text_color);
+    // `ListTheme` states no `disabled_opacity`: the defaults' fades a disabled
+    // row (see `styles::faded`).
+    let disabled_label = super::faded(
+        to_color(l.disabled_text_color),
+        resolved.defaults.disabled_opacity,
+    );
 
     let border_color = to_color(l.border.color);
     let border_width = l.border.line_width;

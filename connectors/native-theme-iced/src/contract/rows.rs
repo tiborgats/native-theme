@@ -117,6 +117,18 @@ pub(super) const ROWS: &[Row] = &[
 ///
 /// Each function declares its own such list, of its own widget's `Status`. A
 /// shape-B or shape-C function, which takes no status, uses `&[()]`.
+/// A colour as a disabled widget shows it: the platform fades the whole widget
+/// by its `disabled_opacity` on top of its disabled colours
+/// (`docs/platform-facts.md` §2.1.6), and iced, with no widget opacity,
+/// carries the fade in each colour's alpha.
+#[cfg(feature = "widgets")]
+pub(super) fn dim(c: Color, opacity: f32) -> Color {
+    Color {
+        a: c.a * opacity,
+        ..c
+    }
+}
+
 #[cfg(feature = "widgets")]
 pub(super) const BUTTON_STATUSES: &[button::Status] = &[
     button::Status::Active,
@@ -148,11 +160,14 @@ pub(super) fn native_button_fill(r: &ResolvedTheme, status: button::Status) -> C
             base,
         ),
         // A translucent disabled fill replaces the idle one and lets the
-        // window through, so it is emitted as given.
-        button::Status::Disabled => to_color(
-            r.button
-                .disabled_background
-                .unwrap_or(r.button.background_color),
+        // window through, so it is emitted as given, faded.
+        button::Status::Disabled => dim(
+            to_color(
+                r.button
+                    .disabled_background
+                    .unwrap_or(r.button.background_color),
+            ),
+            r.button.disabled_opacity,
         ),
     }
 }
@@ -160,19 +175,28 @@ pub(super) fn native_button_fill(r: &ResolvedTheme, status: button::Status) -> C
 /// The label color the native fields give a button in `status`.
 #[cfg(feature = "widgets")]
 pub(super) fn native_button_label(r: &ResolvedTheme, status: button::Status) -> Color {
-    to_color(match status {
-        button::Status::Active => r.button.font.color,
-        button::Status::Hovered => r.button.hover_text_color,
-        button::Status::Pressed => r.button.active_text_color,
-        button::Status::Disabled => r.button.disabled_text_color,
-    })
+    match status {
+        button::Status::Active => to_color(r.button.font.color),
+        button::Status::Hovered => to_color(r.button.hover_text_color),
+        button::Status::Pressed => to_color(r.button.active_text_color),
+        button::Status::Disabled => dim(
+            to_color(r.button.disabled_text_color),
+            r.button.disabled_opacity,
+        ),
+    }
 }
 
-/// The border every button function wears: the button's own, in every status.
+/// The border every button function wears: the button's own, in every status,
+/// faded when disabled.
 #[cfg(feature = "widgets")]
-pub(super) fn native_button_border(r: &ResolvedTheme) -> NativeBorder {
+pub(super) fn native_button_border(r: &ResolvedTheme, status: button::Status) -> NativeBorder {
+    let color = to_color(r.button.border.color);
     NativeBorder {
-        color: to_color(r.button.border.color),
+        color: if status == button::Status::Disabled {
+            dim(color, r.button.disabled_opacity)
+        } else {
+            color
+        },
         width: r.button.border.line_width,
         radius: r.button.border.corner_radius,
     }
@@ -202,7 +226,7 @@ pub(super) const BUTTON_ROWS: &[StyleRow<button::Status>] = &[
 pub(super) const BUTTON_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow {
     field: "styles::button",
     statuses: BUTTON_STATUSES,
-    native: |r, _| native_button_border(r),
+    native: native_button_border,
     get: |t, r, s| styles::button(r)(t, s).border,
 }];
 
@@ -237,10 +261,11 @@ pub(super) fn native_class_button_fill(
         button::Status::Active | button::Status::Hovered | button::Status::Pressed => {
             to_color(idle)
         }
-        button::Status::Disabled => to_color(
-            r.button
-                .disabled_background
-                .unwrap_or(r.button.background_color),
+        // The disabled fill where the platform states one; where it states
+        // none it dims by opacity alone and the class keeps its own.
+        button::Status::Disabled => dim(
+            to_color(r.button.disabled_background.unwrap_or(idle)),
+            r.button.disabled_opacity,
         ),
     }
 }
@@ -252,10 +277,19 @@ pub(super) fn native_class_button_label(
     status: button::Status,
     idle: Rgba,
 ) -> Color {
-    to_color(match status {
-        button::Status::Active | button::Status::Hovered | button::Status::Pressed => idle,
-        button::Status::Disabled => r.button.disabled_text_color,
-    })
+    match status {
+        button::Status::Active | button::Status::Hovered | button::Status::Pressed => {
+            to_color(idle)
+        }
+        button::Status::Disabled => dim(
+            to_color(if r.button.disabled_background.is_some() {
+                r.button.disabled_text_color
+            } else {
+                idle
+            }),
+            r.button.disabled_opacity,
+        ),
+    }
 }
 
 /// The fill the native fields give a link button in `status`.
@@ -273,12 +307,16 @@ pub(super) fn native_button_link_fill(r: &ResolvedTheme, status: button::Status)
 /// The label color the native fields give a link button in `status`.
 #[cfg(feature = "widgets")]
 pub(super) fn native_button_link_label(r: &ResolvedTheme, status: button::Status) -> Color {
-    to_color(match status {
-        button::Status::Active => r.link.font.color,
-        button::Status::Hovered => r.link.hover_text_color,
-        button::Status::Pressed => r.link.active_text_color,
-        button::Status::Disabled => r.link.disabled_text_color,
-    })
+    match status {
+        button::Status::Active => to_color(r.link.font.color),
+        button::Status::Hovered => to_color(r.link.hover_text_color),
+        button::Status::Pressed => to_color(r.link.active_text_color),
+        // `LinkTheme` states no `disabled_opacity`: the defaults' fades it.
+        button::Status::Disabled => dim(
+            to_color(r.link.disabled_text_color),
+            r.defaults.disabled_opacity,
+        ),
+    }
 }
 
 /// Every color field of `styles::button_link`.
@@ -318,11 +356,14 @@ pub(super) const TEXT_INPUT_STATUSES: &[text_input::Status] = &[
 fn native_input_fill(r: &ResolvedTheme, disabled: bool) -> Color {
     if disabled {
         // A translucent disabled fill replaces the idle one, so it is emitted
-        // as given.
-        to_color(
-            r.input
-                .disabled_background
-                .unwrap_or(r.input.background_color),
+        // as given, faded.
+        dim(
+            to_color(
+                r.input
+                    .disabled_background
+                    .unwrap_or(r.input.background_color),
+            ),
+            r.input.disabled_opacity,
         )
     } else {
         to_color(r.input.background_color)
@@ -348,11 +389,14 @@ fn native_input_border(r: &ResolvedTheme, hovered: bool, focused: bool) -> Color
 /// The text color the native fields give a text input's value, by state.
 #[cfg(feature = "widgets")]
 fn native_input_value(r: &ResolvedTheme, disabled: bool) -> Color {
-    to_color(if disabled {
-        r.input.disabled_text_color
+    if disabled {
+        dim(
+            to_color(r.input.disabled_text_color),
+            r.input.disabled_opacity,
+        )
     } else {
-        r.input.font.color
-    })
+        to_color(r.input.font.color)
+    }
 }
 
 /// The three `input.*` values a `text_input::Status` selects, each matched
@@ -370,9 +414,11 @@ pub(super) fn native_text_input_fill(r: &ResolvedTheme, status: text_input::Stat
 #[cfg(feature = "widgets")]
 fn native_text_input_border(r: &ResolvedTheme, status: text_input::Status) -> Color {
     match status {
-        text_input::Status::Active | text_input::Status::Disabled => {
-            native_input_border(r, false, false)
-        }
+        text_input::Status::Active => native_input_border(r, false, false),
+        text_input::Status::Disabled => dim(
+            native_input_border(r, false, false),
+            r.input.disabled_opacity,
+        ),
         text_input::Status::Hovered => native_input_border(r, true, false),
         text_input::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
     }
@@ -458,9 +504,11 @@ pub(super) fn native_text_editor_fill(r: &ResolvedTheme, status: text_editor::St
 #[cfg(feature = "widgets")]
 fn native_text_editor_border(r: &ResolvedTheme, status: text_editor::Status) -> Color {
     match status {
-        text_editor::Status::Active | text_editor::Status::Disabled => {
-            native_input_border(r, false, false)
-        }
+        text_editor::Status::Active => native_input_border(r, false, false),
+        text_editor::Status::Disabled => dim(
+            native_input_border(r, false, false),
+            r.input.disabled_opacity,
+        ),
         text_editor::Status::Hovered => native_input_border(r, true, false),
         text_editor::Status::Focused { is_hovered: _ } => native_input_border(r, false, true),
     }
@@ -580,10 +628,14 @@ pub(super) fn native_checkbox_fill(r: &ResolvedTheme, status: checkbox::Status) 
             to_color(c.hover_background.unwrap_or(c.background_color)),
             native_checkbox_idle(r, false),
         ),
-        // One disabled fill for both, replacing the idle one, as given.
-        checkbox::Status::Disabled { is_checked: _ } => {
-            to_color(c.disabled_background.unwrap_or(c.background_color))
-        }
+        // One disabled fill for both, replacing the idle one, as given; with
+        // none stated the platform dims by opacity alone and the box is its
+        // enabled self. Faded either way.
+        checkbox::Status::Disabled { is_checked } => dim(
+            c.disabled_background
+                .map_or_else(|| native_checkbox_idle(r, is_checked), to_color),
+            c.disabled_opacity,
+        ),
     }
 }
 
@@ -605,11 +657,13 @@ fn native_checkbox_outline(r: &ResolvedTheme, is_checked: bool) -> Color {
 #[cfg(feature = "widgets")]
 pub(super) fn native_checkbox_label(r: &ResolvedTheme, status: checkbox::Status) -> Color {
     let c = &r.checkbox;
-    to_color(match status {
+    match status {
         checkbox::Status::Active { is_checked: _ }
-        | checkbox::Status::Hovered { is_checked: _ } => c.font.color,
-        checkbox::Status::Disabled { is_checked: _ } => c.disabled_text_color,
-    })
+        | checkbox::Status::Hovered { is_checked: _ } => to_color(c.font.color),
+        checkbox::Status::Disabled { is_checked: _ } => {
+            dim(to_color(c.disabled_text_color), c.disabled_opacity)
+        }
+    }
 }
 
 /// The mark the native fields give a checkbox in `status`.
@@ -618,23 +672,35 @@ pub(super) fn native_checkbox_label(r: &ResolvedTheme, status: checkbox::Status)
 /// mark is drawn -- except when the box is disabled, where the platform
 /// replaces the accent fill with `disabled_background` and states one
 /// foreground for everything it dims, `disabled_text_color`. That is the same
-/// field the disabled label takes.
+/// field the disabled label takes. Where no disabled fill is stated the box
+/// keeps its enabled look, mark included. Faded when disabled.
 #[cfg(feature = "widgets")]
 pub(super) fn native_checkbox_mark(r: &ResolvedTheme, status: checkbox::Status) -> Color {
     let c = &r.checkbox;
-    to_color(match status {
+    match status {
         checkbox::Status::Active { is_checked: _ }
-        | checkbox::Status::Hovered { is_checked: _ } => c.indicator_color,
-        checkbox::Status::Disabled { is_checked: _ } => c.disabled_text_color,
-    })
+        | checkbox::Status::Hovered { is_checked: _ } => to_color(c.indicator_color),
+        checkbox::Status::Disabled { is_checked: _ } => dim(
+            to_color(if c.disabled_background.is_some() {
+                c.disabled_text_color
+            } else {
+                c.indicator_color
+            }),
+            c.disabled_opacity,
+        ),
+    }
 }
 
 #[cfg(feature = "widgets")]
 fn native_checkbox_border(r: &ResolvedTheme, status: checkbox::Status) -> Color {
     match status {
-        checkbox::Status::Active { is_checked }
-        | checkbox::Status::Hovered { is_checked }
-        | checkbox::Status::Disabled { is_checked } => native_checkbox_outline(r, is_checked),
+        checkbox::Status::Active { is_checked } | checkbox::Status::Hovered { is_checked } => {
+            native_checkbox_outline(r, is_checked)
+        }
+        checkbox::Status::Disabled { is_checked } => dim(
+            native_checkbox_outline(r, is_checked),
+            r.checkbox.disabled_opacity,
+        ),
     }
 }
 
@@ -802,14 +868,17 @@ pub(super) fn native_toggler_track(r: &ResolvedTheme, status: toggler::Status) -
             }),
             native_toggler_idle(r, is_toggled),
         ),
-        // A disabled track replaces the idle one, so it is as given.
-        toggler::Status::Disabled { is_toggled } => to_color(if is_toggled {
-            s.disabled_checked_background
-                .unwrap_or(s.checked_background)
-        } else {
-            s.disabled_unchecked_background
-                .unwrap_or(s.unchecked_background)
-        }),
+        // A disabled track replaces the idle one, so it is as given, faded.
+        toggler::Status::Disabled { is_toggled } => dim(
+            to_color(if is_toggled {
+                s.disabled_checked_background
+                    .unwrap_or(s.checked_background)
+            } else {
+                s.disabled_unchecked_background
+                    .unwrap_or(s.unchecked_background)
+            }),
+            s.disabled_opacity,
+        ),
     }
 }
 
@@ -818,14 +887,15 @@ pub(super) fn native_toggler_track(r: &ResolvedTheme, status: toggler::Status) -
 #[cfg(feature = "widgets")]
 pub(super) fn native_toggler_thumb(r: &ResolvedTheme, status: toggler::Status) -> Color {
     let s = &r.switch;
-    to_color(match status {
+    match status {
         toggler::Status::Active { is_toggled: _ } | toggler::Status::Hovered { is_toggled: _ } => {
-            s.thumb_background
+            to_color(s.thumb_background)
         }
-        toggler::Status::Disabled { is_toggled: _ } => {
-            s.disabled_thumb_color.unwrap_or(s.thumb_background)
-        }
-    })
+        toggler::Status::Disabled { is_toggled: _ } => dim(
+            to_color(s.disabled_thumb_color.unwrap_or(s.thumb_background)),
+            s.disabled_opacity,
+        ),
+    }
 }
 
 /// Every color field of `styles::toggler`. Five of the remaining seven fields
@@ -2037,12 +2107,13 @@ pub(super) fn native_aw_list_fill(r: &ResolvedTheme, status: AwStatus) -> Color 
 #[cfg(feature = "iced_aw")]
 pub(super) fn native_aw_list_label(r: &ResolvedTheme, status: AwStatus) -> Color {
     let l = &r.list;
-    to_color(match status {
-        AwStatus::Hovered => l.hover_text_color,
-        AwStatus::Selected => l.selection_text_color,
-        AwStatus::Disabled => l.disabled_text_color,
-        AwStatus::Active | AwStatus::Pressed | AwStatus::Focused => l.item_font.color,
-    })
+    match status {
+        AwStatus::Hovered => to_color(l.hover_text_color),
+        AwStatus::Selected => to_color(l.selection_text_color),
+        // `ListTheme` states no `disabled_opacity`: the defaults' fades it.
+        AwStatus::Disabled => dim(to_color(l.disabled_text_color), r.defaults.disabled_opacity),
+        AwStatus::Active | AwStatus::Pressed | AwStatus::Focused => to_color(l.item_font.color),
+    }
 }
 
 /// Every color field of `styles::aw::selection_list`.
