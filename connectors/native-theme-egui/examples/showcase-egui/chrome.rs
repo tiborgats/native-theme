@@ -242,13 +242,18 @@ fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
     }
 }
 
-/// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:103-160`): three Ghost buttons in its
+/// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:103-160`): three tool buttons in its
 /// order — the command palette, a theme reload, Preferences — each with a tooltip naming it
-/// and its shortcut, at `toolbar.icon_size` (a required size, `f32` on the resolved theme), the
-/// row at least `toolbar.bar_height` tall where the theme states a usable one. The icons are
-/// gpui's: `SquareTerminal` and `RotateCw` by their names in the chosen set, Settings by its
-/// role, loaded as the Icons page loads them — a freedesktop icon from the chosen theme in the
-/// text colour, a bundled key tinted it (§9.2, §10.4).
+/// and its shortcut. Each is a toolbar item, drawn in the toolbar's own scope: its icon at
+/// `toolbar.icon_size` (a required size, `f32` on the resolved theme), a missing icon's label in
+/// `toolbar.font`, the items `toolbar.item_gap` apart (the scope's `item_spacing.x`), the row as
+/// tall as the scope's `interact_size.y` — `toolbar.bar_height` less the bar's padding where
+/// the theme states a bar height (connector spec §6.10). The theme states no tool button
+/// geometry or fill, so each is Ghost, transparent at rest, and hovered and pressed in the
+/// scope's own fills and padding. The icons are gpui's: `SquareTerminal` and `RotateCw` by
+/// their names in the chosen set, Settings by its role, loaded as the Icons page loads them — a
+/// freedesktop icon from the chosen theme in the text colour, a bundled key tinted it (§9.2,
+/// §10.4).
 fn toolbar(app: &mut App, ui: &mut egui::Ui) {
     let theme = ui.ctx().theme();
     let chosen = app.chosen_icons();
@@ -259,13 +264,9 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
         ..
     } = app;
     let t = atlas.resolved_for(theme);
-    let bar_height = t.toolbar.bar_height.filter(|h| h.is_finite() && *h >= 0.0);
     let icon_size = t.toolbar.icon_size;
-    let toolbar_row = |ui: &mut egui::Ui, _: demo::Applied, registry: &mut Registry| {
+    let toolbar_row = |ui: &mut egui::Ui, bar: demo::Applied, registry: &mut Registry| {
         ui.horizontal(|ui| {
-            if let Some(h) = bar_height {
-                ui.set_min_height(h);
-            }
             for (icon, label, action) in [
                 (
                     ChromeButtonIcon::Named(demo::ChromeIcon::SquareTerminal),
@@ -285,21 +286,18 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
             ] {
                 let image = chrome_button_image(ui, icon, &chosen, icon_size);
                 let kind = ghost_kind(image.is_some(), false);
-                let response = demo::scoped(
-                    registry,
-                    ui,
-                    Role::Button,
-                    RoleVariant::Normal,
-                    kind,
-                    |ui| {
+                let response = ui
+                    .scope(|ui| {
                         demo::ghost(ui);
-                        let r = ui.add(ghost_button(ui, image, label, false));
-                        r.widget_info(|| {
-                            egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
-                        });
-                        r
-                    },
-                );
+                        bar.add(registry, ui, kind, |ui| {
+                            let r = ui.add(ghost_button(ui, image, label, false));
+                            r.widget_info(|| {
+                                egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
+                            });
+                            r
+                        })
+                    })
+                    .inner;
                 registry.ghost_last();
                 registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
                 tooltip(registry, ui, &response, label, action.shortcut());
@@ -397,6 +395,11 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 .defaults
                 .icon_sizes
                 .small;
+            // The model states no status-bar height: the bar sizes to its content, one line of
+            // `status_bar.font` (`Body` in the bar's scope), and its padding. `ui.horizontal`
+            // makes its row `interact_size.y` tall (`egui/src/ui.rs:2376-2379`), which the scope
+            // inherits from the base style's `button.min_height`, so the row is set to the line.
+            ui.spacing_mut().interact_size.y = ui.text_style_height(&egui::TextStyle::Body);
             ui.horizontal(|ui| {
                 let App {
                     registry,
@@ -595,19 +598,18 @@ fn padded<R>(ui: &mut egui::Ui, margin: Option<f32>, add: impl FnOnce(&mut egui:
         .inner
 }
 
-/// A theme setting's label, above its control and as wide as its text, in `Small` (the gpui
-/// showcase's `demo::label`, `Label::text_sm()`, `showcase-gpui/demo.rs:1420-1432`), recorded
-/// with the side panel body's role; the control names it as its AccessKit label.
+/// A theme setting's label, above its control and as wide as its text, as the gpui showcase's
+/// (`showcase-gpui/demo.rs:1420-1432`), in the side panel's font (`sidebar.font`, `Body` in the
+/// sidebar scope), recorded with the side panel body's role; the control names it as its
+/// AccessKit label.
 fn setting_label(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     body: demo::Applied,
     text: &'static str,
 ) -> egui::Id {
-    body.add(reg, ui, "Label · theme setting", |ui| {
-        ui.label(egui::RichText::new(text).small())
-    })
-    .id
+    body.add(reg, ui, "Label · theme setting", |ui| ui.label(text))
+        .id
 }
 
 /// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,

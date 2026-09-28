@@ -405,10 +405,10 @@ pub(crate) fn swatch_colour(value: &serde_json::Value) -> Option<egui::Color32> 
         .map(native_theme_egui::convert::to_color32)
 }
 
-/// Text in `Small`, gpui's `text_sm` and `text_xs` (parity rule R1), wrapping at the width it
-/// is given.
-fn small(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Response {
-    let mut text = egui::RichText::new(text).small();
+/// Text in the side panel's font (`sidebar.font`: `Body` in the sidebar scope the inspector is
+/// drawn in), wrapping at the width it is given.
+fn note(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Response {
+    let mut text = egui::RichText::new(text);
     if weak {
         text = text.weak();
     }
@@ -418,9 +418,10 @@ fn small(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Respon
 /// A name over its value, one label, the gpui showcase's inspector `row` and note line
 /// (`showcase-gpui/inspector.rs:321-329`, `:365-367`): the name in the weak text colour
 /// (gpui's `muted_foreground` is `defaults.muted_color`, as egui's `weak_text_color` is, parity
-/// rule R3), the value and each line after it in the text colour, all in `Small`, wrapping.
+/// rule R3), the value and each line after it in the text colour, all in the side panel's font
+/// (`sidebar.font`, `Body` in the sidebar scope), wrapping.
 pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui::Response {
-    let font = egui::TextStyle::Small.resolve(ui.style());
+    let font = egui::TextStyle::Body.resolve(ui.style());
     let (weak, strong) = (ui.visuals().weak_text_color(), ui.visuals().text_color());
     let mut job = egui::text::LayoutJob::default();
     job.append(key, 0.0, egui::TextFormat::simple(font.clone(), weak));
@@ -508,7 +509,7 @@ pub(crate) fn widget_tab(
     preset: &str,
 ) {
     let Some(shown) = shown else {
-        small(
+        note(
             ui,
             "Hover any widget to see what the theme sets on it.",
             true,
@@ -518,13 +519,13 @@ pub(crate) fn widget_tab(
     let (manifest, json) = match (manifest, json) {
         (Ok(manifest), Ok(json)) => (manifest, json),
         (Err(error), _) | (_, Err(error)) => {
-            small(ui, format!("Widget Info is unavailable: {error}"), true);
+            note(ui, format!("Widget Info is unavailable: {error}"), true);
             return;
         }
     };
     // The title, and Copy flush right: a small Ghost button, transparent at rest (parity rule R4).
     ui.horizontal(|ui| {
-        let title = crate::demo::section_text(ui, shown.info.kind);
+        let title = crate::demo::heading_text(ui, shown.info.kind);
         ui.label(title);
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             crate::demo::ghost(ui);
@@ -535,7 +536,7 @@ pub(crate) fn widget_tab(
         });
     });
     for seam in &shown.info.seams {
-        let heading = crate::demo::section_text(ui, seam_text(seam));
+        let heading = crate::demo::heading_text(ui, seam_text(seam));
         ui.label(heading);
         for row in manifest.rows_for(seam) {
             let view = row_view(row, json, preset);
@@ -549,7 +550,7 @@ pub(crate) fn widget_tab(
                         colour,
                         (
                             &format!("{} {}", view.leaf, view.value),
-                            egui::TextStyle::Small,
+                            egui::TextStyle::Body,
                         ),
                         &under,
                     );
@@ -563,14 +564,14 @@ pub(crate) fn widget_tab(
         }
     }
     if !shown.info.read.is_empty() {
-        let heading = crate::demo::section_text(ui, "Theme config");
+        let heading = crate::demo::heading_text(ui, "Theme config");
         ui.label(heading);
         for (name, value) in &shown.info.read {
             key_value(ui, name, std::slice::from_ref(value));
         }
     }
     if !shown.info.notes.is_empty() {
-        let heading = crate::demo::section_text(ui, "This instance");
+        let heading = crate::demo::heading_text(ui, "This instance");
         ui.label(heading);
         for (what, note) in &shown.info.notes {
             key_value(ui, what, std::slice::from_ref(note));
@@ -588,7 +589,7 @@ pub(crate) fn theme_tab(
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let section = |ui: &mut egui::Ui, title: &str| {
-        let heading = crate::demo::section_text(ui, title);
+        let heading = crate::demo::heading_text(ui, title);
         ui.label(heading);
     };
     let row = |ui: &mut egui::Ui, key: &str, value: String| {
@@ -613,7 +614,7 @@ pub(crate) fn theme_tab(
     );
     section(ui, "Notes");
     if atlas.notes().is_empty() {
-        small(ui, "none", true);
+        note(ui, "none", true);
     }
     for note in atlas.notes() {
         let text = format!("{note:?}");
@@ -655,7 +656,7 @@ pub(crate) fn theme_tab(
             }
         }
         Err(error) => {
-            small(ui, format!("the manifest did not parse: {error}"), true);
+            note(ui, format!("the manifest did not parse: {error}"), true);
         }
     }
 }

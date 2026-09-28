@@ -828,11 +828,11 @@ pub(crate) fn weighted_family(ui: &egui::Ui, weight: u16, body_weight: u16) -> e
     }
 }
 
-/// A page's section heading, in the theme's section-heading role (`text_scale.section_heading`,
-/// the section divider of `docs/platform-facts.md` §2.19): its size and line height through
-/// `text_role_font` and `text_role_line_height`, its weight through [`weighted_family`], in the
-/// text colour — as the iced showcase's section titles are. Without an installed atlas, egui's
-/// `Body` size, semibold.
+/// A page's or the inspector's section heading, in the theme's section-heading role
+/// (`text_scale.section_heading`, the section divider of `docs/platform-facts.md` §2.19): its
+/// size and line height through `text_role_font` and `text_role_line_height`, its weight
+/// through [`weighted_family`], in the text colour — as the iced showcase's section titles
+/// are. Without an installed atlas, egui's `Body` size, semibold.
 pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::RichText {
     let colour = ui.visuals().text_color();
     let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
@@ -855,16 +855,6 @@ pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::Rich
             t, role, prefs,
         )))
         .color(colour)
-}
-
-/// An inspector title or section heading, the gpui showcase's
-/// `Label::text_sm().font_semibold()` (`showcase-gpui/inspector.rs:127`, `:316-318`): `Small`
-/// size (gpui's `text_sm`, parity rule R1), semibold, in the text colour.
-pub(crate) fn section_text(ui: &egui::Ui, text: impl Into<String>) -> egui::RichText {
-    let size = egui::TextStyle::Small.resolve(ui.style()).size;
-    egui::RichText::new(text)
-        .font(semibold_font(ui, size))
-        .color(ui.visuals().text_color())
 }
 
 /// A row of tabs, as `tab_bar` draws it.

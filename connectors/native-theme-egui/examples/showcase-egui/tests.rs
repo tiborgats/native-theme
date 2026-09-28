@@ -1486,6 +1486,64 @@ fn the_nested_panels_stay_inside_the_page() {
     }
 }
 
+/// The status bar is as tall as its content — one line of `status_bar.font` — and its padding,
+/// as the model states no status-bar height: not a push button's `button.min_height`, which the
+/// base style's `interact_size.y` carries (kde-breeze: a 3 + 18 + 2 bar under a 32 button).
+#[test]
+fn the_status_bar_is_one_line_and_its_padding_tall() {
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let size = native_theme_egui::scaled_text_size(
+        t.status_bar.font.size,
+        harness.state().atlas.accessibility(),
+    );
+    let line = harness
+        .ctx
+        .fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
+    let padding = &t.status_bar.border.padding;
+    let (top, bottom) = (
+        padding.top.unwrap_or_default(),
+        padding.bottom.unwrap_or_default(),
+    );
+    let bar = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == "Status bar")
+        .map(|r| r.rect)
+        .unwrap_or_else(|| panic!("no Status bar record"));
+    // The side-panel toggle is content too: without an icon (no icon feature) it is a labelled
+    // button, taller than a line of text.
+    let toggle = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind.starts_with("Button · Ghost") && bar.contains_rect(r.rect))
+        .map(|r| r.rect.height())
+        .fold(0.0, f32::max);
+    // And the separator line above it, which the panel keeps room for outside its frame
+    // (`egui/src/containers/panel.rs:950-966`), in `status_bar.border.line_width`.
+    let rule = t.status_bar.border.line_width;
+    let content = line.max(toggle);
+    let expected = rule + top + content + bottom;
+    assert!(
+        (bar.height() - expected).abs() < 0.5,
+        "the status bar is {} tall, a {rule} line + {top} + {content} of content (a {line} text \
+         line, a {toggle} toggle) + {bottom} is {expected}",
+        bar.height()
+    );
+}
+
 /// The Overlays page's `Area` floats beside its anchor label; scrolled with the page in a
 /// window too short for it, it never lies over the page tabs or the status bar. The window is
 /// short enough that the page can scroll its anchor, near the page's end, under the tabs.
@@ -1493,7 +1551,7 @@ fn the_nested_panels_stay_inside_the_page() {
 fn the_area_stays_inside_the_page() {
     let mut harness = Harness::builder()
         .with_theme(egui::Theme::Light)
-        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 3.2))
+        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 3.6))
         .build_eframe(|cc| {
             App::new(cc, &cli(&[("--theme", TEST_PRESET), ("--tab", "overlays")]))
                 .expect("the showcase starts under a bundled preset")
