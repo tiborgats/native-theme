@@ -538,6 +538,25 @@
       unsourced values could go)? Record the rule where the model documents
       the field, and make the three connectors and their tests follow it.
 
+### material: the slider thumb is the page's colour
+
+- [ ] Data question for the maintainer (found 2026-09-28 on the Basic
+      pages). `material.toml` states no `slider.thumb_color` (`[light.slider]`
+      `:133-140`, `[dark.slider]` `:381-388`), so it resolves through
+      `docs/inheritance-rules.toml:197` to `defaults.surface_color`, which
+      material states as `#fffbfe` (`:13`), the same as its
+      `defaults.background_color` (`:11`); dark `#1c1b1e` (`:261`) on
+      `#1c1b1f` (`:259`). A toolkit that paints the thumb in that colour
+      without an outline draws it invisible: the iced Basic slider under
+      material light shows a gap in the track where the thumb is.
+      `docs/platform-facts.md` §2.9 (`:1291`) gives `thumb_color ←
+      defaults.surface_color` for macOS, Windows, KDE and GNOME, and has no
+      Material column; the preset's source line (`material.toml:2`,
+      "m3.material.io baseline color scheme") gives no slider handle colour,
+      and what a Material 3 slider handle takes was not researched. Decide
+      whether material states `slider.thumb_color` from a cited Material 3
+      source, or the inherited colour stands.
+
 ---
 
 ## Toolkit Connectors
