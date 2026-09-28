@@ -165,7 +165,11 @@ fn paint_arc(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) {
         .map(|i| {
             let angle = start + sweep * f64::from(i) / f64::from(points);
             let (sin, cos) = angle.sin_cos();
-            rect.center() + radius * egui::vec2(f32::from_f64(cos), f32::from_f64(sin))
+            let centre = rect.center();
+            egui::pos2(
+                centre.x + radius * f32::from_f64(cos),
+                centre.y + radius * f32::from_f64(sin),
+            )
         })
         .collect();
     ui.painter().add(egui::Shape::line(

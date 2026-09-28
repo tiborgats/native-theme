@@ -192,7 +192,7 @@ fn slider_ui(
     {
         *value = value_of(pointer.x);
     }
-    let (mut decrement, mut increment) = (0, 0);
+    let (mut decrement, mut increment): (usize, usize) = (0, 0);
     if response.has_focus() {
         ui.memory_mut(|m| {
             m.set_focus_lock_filter(
@@ -204,13 +204,17 @@ fn slider_ui(
             );
         });
         ui.input(|i| {
-            decrement += i.num_presses(egui::Key::ArrowLeft);
-            increment += i.num_presses(egui::Key::ArrowRight);
+            decrement = decrement.saturating_add(i.num_presses(egui::Key::ArrowLeft));
+            increment = increment.saturating_add(i.num_presses(egui::Key::ArrowRight));
         });
     }
     ui.input(|i| {
-        decrement += i.num_accesskit_action_requests(response.id, accesskit::Action::Decrement);
-        increment += i.num_accesskit_action_requests(response.id, accesskit::Action::Increment);
+        decrement = decrement.saturating_add(
+            i.num_accesskit_action_requests(response.id, accesskit::Action::Decrement),
+        );
+        increment = increment.saturating_add(
+            i.num_accesskit_action_requests(response.id, accesskit::Action::Increment),
+        );
     });
     if increment != decrement {
         let mut x = position_of(*value);
