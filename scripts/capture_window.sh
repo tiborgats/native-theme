@@ -308,7 +308,9 @@ EOF
 # The showcase is stopped (SIGSTOP) during the two captures, so both hold the
 # same frame of its window: a window that animates (gpui's loading button
 # spins) would otherwise differ between them. KWin keeps showing the last frame
-# the window committed.
+# the window committed. A caller's EXIT trap sends the showcase SIGCONT before
+# it kills it: a script interrupted between the two signals would otherwise
+# leave it stopped, where SIGTERM waits until it runs again.
 capture_showcase() {
     local kind="$1" pid="$2" capture="$3" app_id content status=0
     app_id="showcase-$kind-capture-$pid"
@@ -326,8 +328,10 @@ capture_showcase() {
         sleep 1
     fi
     kill -CONT "$pid" || status=1
-    [ "$status" -eq 0 ] || return 1
-    require_active "$app_id" || return 1
+    if [ "$status" -ne 0 ] || ! require_active "$app_id"; then
+        rm -f "$content"
+        return 1
+    fi
     if ! check_capture "$capture" "$content"; then
         echo "  (the content capture $content is kept for inspection)" >&2
         return 1

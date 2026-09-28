@@ -56,8 +56,8 @@ echo "--- Building iced showcase binary (release mode) ---"
 cargo build -p native-theme-iced --example showcase-iced --release --features iced_aw
 echo ""
 
-# Clean up showcase process on exit
-trap 'kill "$PID" 2>/dev/null || true' EXIT
+# Clean up showcase process on exit (continued first: capture_showcase stops it)
+trap 'kill -CONT "$PID" 2>/dev/null; kill "$PID" 2>/dev/null || true' EXIT
 
 echo "--- Capturing iced frames ---"
 for i in "${!THEMES[@]}"; do

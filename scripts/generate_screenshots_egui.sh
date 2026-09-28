@@ -57,8 +57,8 @@ mkdir -p "$OUTPUT_DIR"
 # Kill any stale spectacle instances to avoid D-Bus singleton conflicts
 pkill spectacle 2>/dev/null || true
 
-# Clean up showcase process on exit
-trap 'kill "$PID" 2>/dev/null || true' EXIT
+# Clean up showcase process on exit (continued first: capture_showcase stops it)
+trap 'kill -CONT "$PID" 2>/dev/null; kill "$PID" 2>/dev/null || true' EXIT
 
 echo "--- Capturing screenshots ---"
 echo "WARNING: Do not interact with the desktop during capture."
