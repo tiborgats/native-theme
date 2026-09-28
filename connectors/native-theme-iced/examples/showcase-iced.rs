@@ -2799,7 +2799,10 @@ fn menu_row(resolved: &ResolvedTheme) -> impl Fn(&Theme, button::Status) -> butt
 /// (platform-facts §2.11): `tab.background_color` and `tab.font.color` at
 /// rest; `tab.active_background` and `.active_text_color` while it is the
 /// open one; `tab.hover_background` (the rest fill where the theme states
-/// none) and `.hover_text_color` under the pointer; framed by `tab.border`.
+/// none) and `.hover_text_color` under the pointer. `tab.border` frames the
+/// open tab only, rounding its top corners, as `styles::aw::tab_bar` does
+/// (platform-facts §2.11): the model states no outline for another tab, so
+/// it has none, and square corners.
 fn tab_style(
     resolved: &ResolvedTheme,
     selected: bool,
@@ -2811,10 +2814,14 @@ fn tab_style(
     let active_label = to_color(t.active_text_color);
     let hover = to_color(t.hover_background.unwrap_or(t.background_color));
     let hover_label = to_color(t.hover_text_color);
-    let border = iced::Border {
-        color: to_color(t.border.color),
-        width: t.border.line_width,
-        radius: t.border.corner_radius.into(),
+    let border = if selected {
+        iced::Border {
+            color: to_color(t.border.color),
+            width: t.border.line_width,
+            radius: iced::border::Radius::new(0.0).top(t.border.corner_radius),
+        }
+    } else {
+        iced::Border::default()
     };
     move |_theme, status| {
         let (background, text_color) = match status {
@@ -3497,10 +3504,18 @@ fn tab_row<'a>(
                     to_color(t.hover_background.unwrap_or(t.background_color)),
                 ),
                 ("label", "tab.font.color", to_color(t.font.color)),
-                ("frame", "tab.border.color", to_color(t.border.color)),
+                (
+                    "open tab frame",
+                    "tab.border.color",
+                    to_color(t.border.color),
+                ),
             ],
             &[
                 ("label", font_row("tab.font", &t.font).as_str()),
+                (
+                    "open tab frame",
+                    "tab.border.line_width, its top corners tab.border.corner_radius; other tabs none",
+                ),
                 ("minimum size", "tab.min_width x tab.min_height"),
                 (
                     "padding",
@@ -5298,9 +5313,23 @@ fn tabs_info(resolved: &ResolvedTheme, padding: Padding) -> String {
                 to_color(t.active_text_color),
             ),
             ("tab", "tab.background_color", to_color(t.background_color)),
+            (
+                "tab under the pointer",
+                "tab.hover_background",
+                to_color(t.hover_background.unwrap_or(t.background_color)),
+            ),
+            (
+                "selected tab frame",
+                "tab.border.color",
+                to_color(t.border.color),
+            ),
         ],
         &[
             ("label", font_row("tab.font", &t.font).as_str()),
+            (
+                "selected tab frame",
+                "tab.border.line_width, its top corners tab.border.corner_radius; other tabs none",
+            ),
             ("tab width", "tab.min_width, as a fixed width"),
             ("bar height", "tab.min_height, as a fixed height"),
             ("padding", pad.as_str()),
@@ -11748,6 +11777,47 @@ mod tests {
                     && (label.y - card.y - margin).abs() < 0.01),
                 "{preset}: the card's label is at {label:?} in {card:?}, {margin}px in expected"
             );
+        }
+    }
+
+    /// The page and inspector tab rows frame the open tab only, with
+    /// `tab.border`, its top corners rounded: the other tabs have no outline
+    /// and square corners, in every status.
+    #[test]
+    fn only_the_open_tab_is_framed() {
+        for (preset, is_dark) in [
+            ("kde-breeze", false),
+            ("kde-breeze", true),
+            ("material", true),
+        ] {
+            let resolved = match native_theme_iced::from_preset(preset, is_dark) {
+                Ok((_, resolved)) => resolved,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let b = &resolved.tab.border;
+            for status in [
+                button::Status::Active,
+                button::Status::Hovered,
+                button::Status::Pressed,
+                button::Status::Disabled,
+            ] {
+                let open = tab_style(&resolved, true)(&Theme::Light, status).border;
+                assert_eq!(
+                    (open.color, open.width, open.radius),
+                    (
+                        to_color(b.color),
+                        b.line_width,
+                        iced::border::Radius::new(0.0).top(b.corner_radius)
+                    ),
+                    "{preset} {is_dark}: the open tab's frame ({status:?})"
+                );
+                let other = tab_style(&resolved, false)(&Theme::Light, status).border;
+                assert_eq!(
+                    (other.width, other.radius),
+                    (0.0, iced::border::Radius::new(0.0)),
+                    "{preset} {is_dark}: another tab's frame ({status:?})"
+                );
+            }
         }
     }
 

@@ -295,7 +295,7 @@ fn check_border_rows<S: Copy + std::fmt::Debug>(
 
                 ran.checks += check_corners(
                     actual.radius,
-                    expected.radius,
+                    Radius::new(expected.radius),
                     &format!("{}.border.radius", row.field),
                     &format!("{status:?}"),
                     &c.label(),
@@ -306,27 +306,28 @@ fn check_border_rows<S: Copy + std::fmt::Debug>(
     }
 }
 
-/// Compare the four corners of an emitted `Radius` against the one native
-/// value the model states for all of them, naming the exact corner. Returns
-/// how many comparisons it made.
+/// Compare the four corners of an emitted `Radius` against the corners the
+/// native value gives, naming the exact corner. Returns how many comparisons
+/// it made.
 ///
 /// The model states a corner radius as a single length, so the four corners
-/// are one native value four times over; a row that claims a `Radius` claims
-/// all four, and a failure has to say which one drifted.
+/// are mostly one native value four times over (`Radius::new`); a selected
+/// tab's is that length on its top corners only. A row that claims a `Radius`
+/// claims all four, and a failure has to say which one drifted.
 #[cfg(feature = "widgets")]
 fn check_corners(
     actual: Radius,
-    expected: f32,
+    expected: Radius,
     field: &str,
     status: &str,
     label: &str,
     failures: &mut Vec<String>,
 ) -> usize {
-    for (leaf, corner) in [
-        ("top_left", actual.top_left),
-        ("top_right", actual.top_right),
-        ("bottom_right", actual.bottom_right),
-        ("bottom_left", actual.bottom_left),
+    for (leaf, corner, expected) in [
+        ("top_left", actual.top_left, expected.top_left),
+        ("top_right", actual.top_right, expected.top_right),
+        ("bottom_right", actual.bottom_right, expected.bottom_right),
+        ("bottom_left", actual.bottom_left, expected.bottom_left),
     ] {
         if corner != expected {
             failures.push(format!(
@@ -349,7 +350,7 @@ fn check_corners(
 struct RadiusRow<S: 'static> {
     field: &'static str,
     statuses: &'static [S],
-    native: fn(&ResolvedTheme, S) -> f32,
+    native: fn(&ResolvedTheme, S) -> Radius,
     get: fn(&Theme, &ResolvedTheme, S) -> Result<Radius, String>,
 }
 

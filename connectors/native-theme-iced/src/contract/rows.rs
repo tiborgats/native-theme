@@ -893,7 +893,7 @@ pub(super) const TOGGLER_SCALAR_ROWS: &[ScalarRow<toggler::Status>] = &[ScalarRo
 pub(super) const TOGGLER_RADIUS_ROWS: &[RadiusRow<toggler::Status>] = &[RadiusRow {
     field: "styles::toggler.border_radius",
     statuses: TOGGLER_STATUSES,
-    native: |r, _| r.switch.track_radius,
+    native: |r, _| Radius::new(r.switch.track_radius),
     get: |t, r, s| {
         styles::toggler(r)(t, s).border_radius.ok_or_else(|| {
             "no radius where the contract claims one; iced's None would make \
@@ -1916,21 +1916,32 @@ pub(super) const AW_TAB_BAR_ROWS: &[StyleRow<AwStatus>] = &[
     },
 ];
 
+/// `tab.border` is the selected tab's (platform-facts §2.11): the `Active`
+/// tab is outlined `tab.border.line_width`, and every other status, the model
+/// stating no outline for it, none.
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_TAB_BAR_SCALAR_ROWS: &[ScalarRow<AwStatus>] = &[ScalarRow {
     field: "styles::aw::tab_bar.tab_label_border_width",
     statuses: AW_STATUSES,
-    native: |_, r, _| r.tab.border.line_width,
+    native: |_, r, s| match s {
+        AwStatus::Active => r.tab.border.line_width,
+        _ => 0.0,
+    },
     get: |t, r, s| Ok(styles::aw::tab_bar(r)(t, s).tab_label_border_width),
 }];
 
 /// A tab's corner radius is a whole `Radius` rather than part of a `Border`,
-/// as a toggler's is.
+/// as a toggler's is. The selected tab's top corners are
+/// `tab.border.corner_radius` and its bottom ones square (platform-facts
+/// §2.11); every other status is square.
 #[cfg(feature = "iced_aw")]
 pub(super) const AW_TAB_BAR_RADIUS_ROWS: &[RadiusRow<AwStatus>] = &[RadiusRow {
     field: "styles::aw::tab_bar.tab_border_radius",
     statuses: AW_STATUSES,
-    native: |r, _| r.tab.border.corner_radius,
+    native: |r, s| match s {
+        AwStatus::Active => Radius::new(0.0).top(r.tab.border.corner_radius),
+        _ => Radius::new(0.0),
+    },
     get: |t, r, s| Ok(styles::aw::tab_bar(r)(t, s).tab_border_radius),
 }];
 

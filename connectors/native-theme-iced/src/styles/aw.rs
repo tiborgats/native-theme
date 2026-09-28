@@ -176,9 +176,16 @@ pub fn menu(
 /// emitted as given -- a tab label is painted over the strip this same function
 /// fills, so the platform's layering happens by itself.
 ///
-/// The strip is `tab.bar_background`, and `tab.border.*` is the tab's own
-/// border: its color and width outline the labels and its corner radius rounds
-/// them. `icon_color` is the label color, which is what a tab's icon is: every
+/// The strip is `tab.bar_background`, and `tab.border.*` is the *selected*
+/// tab's border: its color and width outline the `Active` label and its
+/// corner radius rounds that label's top corners, the bottom ones square.
+/// That is the platforms' own (platform-facts §2.11): Breeze strokes the
+/// selected tab only, rounding its top corners, and draws an unselected one
+/// with no pen; WinUI's selected tab has a top-only radius and an unselected
+/// one a transparent stroke. The model states nothing for an unselected tab's
+/// outline, so `Hovered` and `Disabled` get none: no border width and square
+/// corners. `iced_aw`'s own default would outline every tab 1px
+/// (`style/tab_bar.rs:57-58`). `icon_color` is the label color, which is what a tab's icon is: every
 /// one of `iced_aw`'s own tab themes states the two as the same color
 /// (`style/tab_bar.rs:115-212`).
 ///
@@ -215,7 +222,7 @@ pub fn tab_bar(
 
     let border_color = to_color(t.border.color);
     let border_width = t.border.line_width;
-    let border_radius = Radius::new(t.border.corner_radius);
+    let selected_radius = Radius::new(0.0).top(t.border.corner_radius);
 
     move |theme, status| {
         let iced = iced_aw::style::tab_bar::primary(theme, status);
@@ -227,14 +234,18 @@ pub fn tab_bar(
                 (iced.tab_label_background, iced.text_color, iced.icon_color)
             }
         };
+        let (width, radius) = match status {
+            Status::Active => (border_width, selected_radius),
+            _ => (0.0, Radius::new(0.0)),
+        };
         Style {
             background: Some(Background::Color(strip)),
             border_color: iced.border_color,
             border_width: iced.border_width,
-            tab_border_radius: border_radius,
+            tab_border_radius: radius,
             tab_label_background: fill,
             tab_label_border_color: border_color,
-            tab_label_border_width: border_width,
+            tab_label_border_width: width,
             icon_color: icon,
             icon_background: iced.icon_background,
             icon_border_radius: iced.icon_border_radius,
