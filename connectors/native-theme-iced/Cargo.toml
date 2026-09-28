@@ -20,10 +20,11 @@ targets = [
 ]
 
 [features]
-default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
+default = ["widgets", "spinner", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
 
 # Which iced crates this connector covers. Additive, never subtractive.
 widgets = ["dep:iced_widget"]            # enables `styles`
+spinner = ["widgets", "iced_widget/svg", "iced_widget/image", "iced_widget/canvas"]  # enables `Spinner`
 iced_aw = ["widgets", "dep:iced_aw"]     # enables `styles::aw`
 
 material-icons = ["native-theme/material-icons"]
@@ -47,14 +48,14 @@ iced_aw = { version = "0.14", optional = true, default-features = false, feature
     "selection_list",
 ] }
 
-# The showcase calls `styles::*`, which `widgets` gates, and
-# `system_font_family`, which `system-fonts` gates. Both are default
+# The showcase calls `styles::*`, which `widgets` gates, `Spinner`, which
+# `spinner` gates, and `system_font_family`, which `system-fonts` gates. All are default
 # features, so `cargo test -p native-theme-iced` and the screenshot scripts
 # build the example as before; `--no-default-features` skips it, and the
 # `iced_aw` sections inside it are `#[cfg(feature = "iced_aw")]`.
 [[example]]
 name = "showcase-iced"
-required-features = ["widgets", "system-fonts"]
+required-features = ["widgets", "spinner", "system-fonts"]
 # The showcase's own `#[cfg(test)]` module (spec §6.2) then runs under a plain
 # `cargo test`, so CI and the dependency canary pick it up unchanged.
 test = true

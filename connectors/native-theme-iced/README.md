@@ -202,7 +202,8 @@ that needs dismissing a themed button of its own instead.
 
 `widgets` (default) enables `styles` and the `button_padding`,
 `input_padding`, `combo_box_padding`, `button_content_min_size` and
-`at_least` helpers; `iced_aw` (opt-in, implies `widgets`)
+`at_least` helpers; `spinner` (default, implies `widgets`) enables
+`Spinner` through `iced_widget`'s `svg`, `image` and `canvas`; `iced_aw` (opt-in, implies `widgets`)
 enables `styles::aw`. It is off by default because `iced_aw` is a third-party
 crate with its own release cadence and an embedded icon font. The icon
 features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
@@ -394,6 +395,22 @@ let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, IconSet::Material, No
 ```
 
 ### Animated spinners
+
+`Spinner` (feature `spinner`, default) is the platform's loading indicator
+at `spinner.diameter`: the icon set's own animated indicator — for a
+freedesktop set the given icon theme's `process-working`, for Material and
+Lucide their bundled one recoloured `spinner.fill_color` — and, for a set
+with none (SF Symbols, Segoe), an arc in `spinner.fill_color` at
+`spinner.stroke_width`. Build it once per theme and icon set, and redraw on a
+timer while it shows:
+
+```rust,ignore
+let spinner = native_theme_iced::Spinner::new(&resolved, icon_set, icon_theme);
+// In view(), `start` an `Instant` the application keeps:
+spinner.view(start.elapsed(), prefs.reduce_motion)
+```
+
+To play an indicator by hand:
 
 ```rust,ignore
 use native_theme::theme::AnimatedIcon;

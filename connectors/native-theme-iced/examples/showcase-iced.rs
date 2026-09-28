@@ -1048,6 +1048,8 @@ struct State {
     reduced_motion: bool,
     /// Static first-frame SVG handles for reduced motion: (set_name, handle).
     animated_static: Vec<(String, iced_core::svg::Handle)>,
+    /// The Basic page's spinner: the icon set's indicator, or the arc.
+    basic_spinner: native_theme_iced::Spinner,
 
     // Screenshot mode
     screenshot_path: Option<String>,
@@ -1176,6 +1178,11 @@ impl State {
             reduced_motion,
             animated_static,
         ) = build_animation_caches(anim_set, icon_set_choice.freedesktop_theme());
+        let basic_spinner = native_theme_iced::Spinner::new(
+            &resolved,
+            anim_set,
+            icon_set_choice.freedesktop_theme(),
+        );
 
         let default_label = format!("default ({})", system_preset);
 
@@ -1302,6 +1309,7 @@ impl State {
             animation_start,
             reduced_motion,
             animated_static,
+            basic_spinner,
             screenshot_path: None,
             screenshot_countdown: 0,
             error_message: initial_error,
@@ -1510,6 +1518,11 @@ impl State {
         self.animation_start = astart;
         self.reduced_motion = rm;
         self.animated_static = ast;
+        self.basic_spinner = native_theme_iced::Spinner::new(
+            &self.current_resolved,
+            anim_set,
+            self.icon_set_choice.freedesktop_theme(),
+        );
     }
 
     /// Choose `choice`, the user's pick of an icon theme: only its
@@ -4523,29 +4536,12 @@ const BASIC_LIST_VISIBLE: f32 = 4.0;
 /// `src/widget/selection_list.rs:77`), which it keeps in no constant.
 const AW_LIST_PADDING: f32 = 5.0;
 
-/// The sweep of the Basic page's spinner arc, in degrees: the widest egui's
-/// `Spinner` draws, which turns a turn a second and sweeps `240°` times the
-/// sine of the time (egui 0.36.2 `src/widgets/spinner.rs:48-49`). The arc
-/// keeps this sweep and turns at egui's speed: a sweep of `240°` times the
-/// sine passes through nothing every π seconds, and the capture scripts
-/// capture about 2π seconds after the start, so every capture showed a dot.
-/// The model states the arc's diameter, stroke width and colour, not its
-/// sweep.
-const SPINNER_SWEEP: f32 = 240.0;
-
 /// The gap between a Basic page switch and its label: the model states none
 /// (`SwitchTheme` has no label gap), and this is the one iced's `Toggler`
 /// leaves, `Self::DEFAULT_SIZE / 2.0` (iced_widget 0.14.2 `src/toggler.rs`,
 /// `Toggler::new`), which the page's switches drew before they took the
 /// connector's `switch`.
 const TOGGLER_LABEL_GAP: f32 = iced::widget::Toggler::<'static, Message>::DEFAULT_SIZE / 2.0;
-
-/// Where the Basic page's spinner arc starts, in radians clockwise from the
-/// right, `elapsed` seconds into its animation: egui's `Spinner`'s turn a
-/// second (egui 0.36.2 `src/widgets/spinner.rs:48`), taken within one turn.
-fn spinner_start(elapsed: f32) -> f32 {
-    elapsed.fract() * std::f32::consts::TAU
-}
 
 /// The tooltip's padding, where iced can carry it: `Tooltip::padding` is one
 /// number for all four sides (iced_widget 0.14.2 `src/tooltip.rs`,
@@ -4878,18 +4874,14 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ),
     );
 
-    // Where motion is reduced the arc stands still.
-    let start = if state.motion_reduced() {
-        0.0
-    } else {
-        spinner_start(state.animation_start.elapsed().as_secs_f32())
-    };
     let spinner = probe(
         probes::BASIC_SPINNER,
         Length::Shrink,
-        spinner_arc(resolved, start),
+        state
+            .basic_spinner
+            .view(state.animation_start.elapsed(), state.motion_reduced()),
     );
-    let spinner_group = group("Spinner", spinner_info(resolved), spinner);
+    let spinner_group = group("Spinner", spinner_info(state), spinner);
 
     let tab_t = &resolved.tab;
     let tab_pad = native_theme_iced::padding_or(&tab_t.border.padding, button::DEFAULT_PADDING);
@@ -5164,67 +5156,6 @@ impl<Message> canvas::Program<Message> for DisclosureArrow {
     }
 }
 
-/// The Basic tab's spinner starting at `start`, in radians clockwise from the
-/// right: a canvas `spinner.diameter` across holding a [`SpinnerArc`] in
-/// `spinner.stroke_width` and `spinner.fill_color`.
-fn spinner_arc<Message>(
-    resolved: &ResolvedTheme,
-    start: f32,
-) -> iced::widget::Canvas<SpinnerArc, Message> {
-    let s = &resolved.spinner;
-    canvas(SpinnerArc {
-        color: to_color(s.fill_color),
-        stroke: s.stroke_width,
-        start,
-    })
-    .width(Length::Fixed(s.diameter))
-    .height(Length::Fixed(s.diameter))
-}
-
-/// The Basic tab's spinner: an arc `stroke` wide, `spinner.stroke_width`, in
-/// `color`, `spinner.fill_color`, on the circle the canvas holds,
-/// `spinner.diameter` across, from `start` through [`SPINNER_SWEEP`],
-/// clockwise from the right. iced has no spinner, and `iced_aw`'s paints one
-/// orbiting dot (iced_aw 0.14.1 `src/widget/spinner.rs`), no arc.
-struct SpinnerArc {
-    color: Color,
-    stroke: f32,
-    start: f32,
-}
-
-impl<Message> canvas::Program<Message> for SpinnerArc {
-    type State = ();
-
-    fn draw(
-        &self,
-        _state: &Self::State,
-        renderer: &iced::Renderer,
-        _theme: &Theme,
-        bounds: iced::Rectangle,
-        _cursor: iced::mouse::Cursor,
-    ) -> Vec<canvas::Geometry> {
-        let mut frame = canvas::Frame::new(renderer, bounds.size());
-        // The stroke is centred on the circle, so the circle sits half a
-        // stroke inside the diameter.
-        let radius = ((frame.width().min(frame.height()) - self.stroke) / 2.0).max(0.0);
-        let arc = canvas::Path::new(|path| {
-            path.arc(canvas::path::Arc {
-                center: frame.center(),
-                radius,
-                start_angle: iced::Radians(self.start),
-                end_angle: iced::Radians(self.start + SPINNER_SWEEP.to_radians()),
-            });
-        });
-        frame.stroke(
-            &arc,
-            canvas::Stroke::default()
-                .with_color(self.color)
-                .with_width(self.stroke),
-        );
-        vec![frame.into_geometry()]
-    }
-}
-
 /// The Widget Info of the Basic page's switches.
 fn switch_info(resolved: &ResolvedTheme) -> String {
     let sw = &resolved.switch;
@@ -5305,26 +5236,48 @@ fn text_area_info(resolved: &ResolvedTheme) -> String {
 }
 
 /// The Widget Info of the Basic page's spinner.
-fn spinner_info(resolved: &ResolvedTheme) -> String {
-    let s = &resolved.spinner;
-    widget_tooltip(
-        "Spinner (an arc on a canvas)",
-        &[("arc", "spinner.fill_color", to_color(s.fill_color))],
-        &[
-            ("diameter", "spinner.diameter"),
-            ("stroke", "spinner.stroke_width"),
-        ],
-        &[
-            (
+fn spinner_info(state: &State) -> String {
+    let s = &state.current_resolved.spinner;
+    let fill = to_color(s.fill_color);
+    let set = state
+        .icon_set_choice
+        .effective_icon_set(state.current_icon_set);
+    if !state.basic_spinner.is_indicator() {
+        return widget_tooltip(
+            "Spinner (native_theme_iced::Spinner: an arc, the icon set has no indicator)",
+            &[("arc", "spinner.fill_color", fill)],
+            &[
+                ("diameter", "spinner.diameter"),
+                ("stroke", "spinner.stroke_width"),
+            ],
+            &[(
                 "sweep and speed",
                 "the model states none: egui's Spinner's widest, 240°, turning a turn a second",
-            ),
-            (
-                "widget",
-                "iced has none, and iced_aw's paints one orbiting dot",
-            ),
-        ],
-    )
+            )],
+        );
+    }
+    let name = format!(
+        "Spinner (native_theme_iced::Spinner: the {} icon set's animated indicator)",
+        set.name()
+    );
+    if matches!(set, IconSet::Material | IconSet::Lucide) {
+        widget_tooltip(
+            &name,
+            &[("indicator", "spinner.fill_color", fill)],
+            &[("diameter", "spinner.diameter")],
+            &[("motion", "the icon set's own frames and timing")],
+        )
+    } else {
+        widget_tooltip(
+            &name,
+            &[],
+            &[("diameter", "spinner.diameter")],
+            &[
+                ("colour", "the icon theme's own"),
+                ("motion", "the icon set's own frames and timing"),
+            ],
+        )
+    }
 }
 
 /// The Widget Info of the Basic page's tab bar; `padding` is the padding the
@@ -9472,7 +9425,7 @@ fn subscription(state: &State) -> Subscription<Message> {
     let mut subs = vec![];
 
     // Animation tick: the Icons page's animated icons, and the Basic page's
-    // spinner, whose arc turns with the time since `animation_start`.
+    // spinner, which animates with the time since `animation_start`.
     let icons_animate = state.active_tab == Tab::Icons
         && (!state.animated_frames.is_empty() || !state.animated_spins.is_empty());
     if (icons_animate || state.active_tab == Tab::Basic) && !state.motion_reduced() {
@@ -10744,6 +10697,11 @@ mod tests {
                 "{name}: the spinner is not the one {name} has"
             );
             assert_eq!(
+                state.basic_spinner.is_indicator(),
+                expected.is_some(),
+                "{name}: the Basic page's spinner is not {name}'s indicator"
+            );
+            assert_eq!(
                 spinners,
                 usize::from(expected.is_some()),
                 "{name}: {spinners} spinners animate"
@@ -11680,6 +11638,7 @@ mod tests {
                 current_resolved: resolved,
                 accessibility: native_theme_iced::AccessibilityPreferences::default(),
                 active_tab: Tab::Basic,
+                basic_spinner: native_theme_iced::Spinner::new(&r, IconSet::Material, None),
                 ..State::default()
             };
             let mut ui = interface(&state);
@@ -11776,13 +11735,14 @@ mod tests {
         }
     }
 
-    /// The Basic page's spinner draws an arc across its circle at every
-    /// moment of its turn, the moments the captures take (about 2π seconds
-    /// after the start) among them: the ink a snapshot of it shows reaches
-    /// across `spinner.diameter` (its two farthest pixels at least the
-    /// diameter less a stroke apart), and its body is `spinner.fill_color`.
+    /// Where the icon set has no indicator, the spinner draws an arc across
+    /// its circle at every moment of its turn, the moments the captures take
+    /// (about 2π seconds after the start) among them: the ink a snapshot of
+    /// it shows reaches across `spinner.diameter` (its two farthest pixels at
+    /// least the diameter less a stroke apart), and its body is
+    /// `spinner.fill_color`.
     #[test]
-    fn the_basic_spinner_draws_an_arc_across_its_diameter() {
+    fn the_spinner_arc_reaches_across_its_diameter() {
         let root =
             std::env::temp_dir().join(format!("showcase-iced-spinner-{}", std::process::id()));
         let pi = std::f32::consts::PI;
@@ -11793,6 +11753,8 @@ mod tests {
             };
             let s = &resolved.spinner;
             let fill = to_color(s.fill_color).into_rgba8();
+            let spinner = native_theme_iced::Spinner::new(&resolved, IconSet::SegoeIcons, None);
+            assert!(!spinner.is_indicator(), "{preset}: Segoe has no indicator");
             for (n, elapsed) in [0.0, 0.25, 0.5, 1.0, pi, 2.0 * pi, 6.3, 7.0, 3.0 * pi]
                 .into_iter()
                 .enumerate()
@@ -11800,7 +11762,7 @@ mod tests {
                 let mut ui: Simulator<'_, Message> = Simulator::with_size(
                     Settings::default(),
                     Size::new(s.diameter, s.diameter),
-                    spinner_arc(&resolved, spinner_start(elapsed)),
+                    spinner.view(Duration::from_secs_f32(elapsed), false),
                 );
                 let snapshot = match ui.snapshot(&Theme::Light) {
                     Ok(snapshot) => snapshot,

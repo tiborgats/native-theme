@@ -64,6 +64,7 @@
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
 //! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `combo_box_padding`, `button_content_min_size` and `at_least`, through `iced_widget` |
+//! | `spinner` | yes | [`Spinner`], the icon set's animated loading indicator (or an arc at `spinner.*`), through `iced_widget`'s `svg`, `image` and `canvas`; implies `widgets` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
 //! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, through `native-theme/system-fonts` |
@@ -191,8 +192,13 @@ mod contract;
 pub(crate) mod extended;
 pub mod icons;
 pub mod palette;
+#[cfg(feature = "spinner")]
+pub mod spinner;
 #[cfg(feature = "widgets")]
 pub mod styles;
+
+#[cfg(feature = "spinner")]
+pub use spinner::Spinner;
 
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::color::Rgba;
