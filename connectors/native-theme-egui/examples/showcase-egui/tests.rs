@@ -1956,6 +1956,68 @@ fn section_headings_take_the_section_heading_role() {
     }
 }
 
+/// `--pointer X,Y` is two whole logical pixels, and anything else holds no pointer.
+#[test]
+fn the_pointer_flag_is_a_point() {
+    let parse = |args: &[&str]| CliArgs::parse(args.iter().map(|a| (*a).to_string()));
+    let held = parse(&["--pointer", "349,175", "--press"]);
+    assert_eq!((held.pointer, held.press), (Some((349, 175)), true));
+    for bad in ["349", "x,1", "1,-2", ""] {
+        assert_eq!(parse(&["--pointer", bad]).pointer, None, "{bad:?}");
+    }
+    assert_eq!(parse(&["--press"]).pointer, None);
+}
+
+/// `--pointer` holds the pointer over a control and `--press` holds the primary button down
+/// there (`App::raw_input_hook`), for captures where nothing can drive the pointer: the Basic
+/// page's first button is filled with `button.hover_background`, and pressed with
+/// `button.active_background`.
+#[test]
+fn a_held_pointer_hovers_and_presses_the_control_under_it() {
+    let args = [("--theme", "kde-breeze"), ("--tab", "basic")];
+    let mut probe = open(egui::Theme::Light, cli(&args));
+    probe.run_steps(4);
+    let Some(rect) = probe
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == "button (enabled)")
+        .map(|r| r.rect)
+    else {
+        panic!("no button (enabled) record");
+    };
+    let t = probe.state().atlas.resolved_for(egui::Theme::Light).clone();
+    let hovered = native_theme_egui::convert::to_color32(t.button.hover_background);
+    let pressed = t
+        .button
+        .active_background
+        .map(native_theme_egui::convert::to_color32);
+    for (press, fill) in [(false, Some(hovered)), (true, pressed)] {
+        let mut args = cli(&args);
+        args.pointer = Some((rect.center().x as u16, rect.center().y as u16));
+        args.press = press;
+        let mut harness = open(egui::Theme::Light, args);
+        for step in 0..16u32 {
+            let ctx = harness.ctx.clone();
+            let mut input = std::mem::take(harness.input_mut());
+            input.time = Some(f64::from(step) * 0.5);
+            eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+            *harness.input_mut() = input;
+            harness.step();
+        }
+        let drawn = harness
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if r.rect == rect => Some(r.fill),
+                _ => None,
+            });
+        assert_eq!(drawn, fill, "press {press}: the button's fill");
+    }
+}
+
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
 /// each in `Role::Switch`, its checked look the button's own selected flag (§6.2), so a set
 /// flag is a selected button and a click flips it; each sits right of its title.

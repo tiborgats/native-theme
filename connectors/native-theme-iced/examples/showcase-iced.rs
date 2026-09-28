@@ -230,6 +230,20 @@ struct CliArgs {
     /// `--capture`: a tool outside the showcase captures its window, which
     /// opens as a `--screenshot` run's does (`capture_window_settings`).
     capture: bool,
+    /// `--pointer X,Y`: the pointer is held at that point of the window's
+    /// content, in logical pixels, so a capture shows the control under it
+    /// hovered ([`HeldPointer`]). For captures where no pointer can be
+    /// driven, as in a nested compositor.
+    pointer: Option<(u16, u16)>,
+    /// `--press`: with `--pointer`, the primary button is held down there,
+    /// so a capture shows the control pressed.
+    press: bool,
+}
+
+/// `X,Y` as two whole logical pixels, or `None`.
+fn parse_point(value: &str) -> Option<(u16, u16)> {
+    let (x, y) = value.split_once(',')?;
+    Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
 }
 
 /// Global CLI args, set once in `main()` before the iced application starts.
@@ -273,6 +287,13 @@ impl CliArgs {
                     }
                 }
                 "--capture" => args.capture = true,
+                "--press" => args.press = true,
+                "--pointer" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.pointer = parse_point(&argv[i]);
+                    }
+                }
                 _ => {} // ignore unknown args
             }
             i += 1;
@@ -2140,7 +2161,217 @@ fn view(state: &State) -> Element<'_, Message> {
                 .height(Fill),
         );
 
-    row![sidebar, right_panel].into()
+    let page: Element<'_, Message> = row![sidebar, right_panel].into();
+    match CLI_ARGS
+        .get()
+        .and_then(|cli| Some((cli.pointer?, cli.press)))
+    {
+        Some(((x, y), press)) => Element::new(HeldPointer {
+            content: page,
+            at: iced::Point::new(f32::from(x), f32::from(y)),
+            press,
+        }),
+        None => page,
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Held pointer (`--pointer`, `--press`)
+// ---------------------------------------------------------------------------
+
+/// How long [`HeldPointer`] holds the pointer before the press: long enough
+/// for the window to open at its size and the page to be laid out under the
+/// pointer. The capture scripts give a showcase six seconds before they
+/// capture it (`scripts/capture_window.sh`'s callers).
+const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
+
+/// The view with the pointer held at `at`, and with `press` the primary
+/// button held down there: for a capture of a control hovered or pressed
+/// where nothing can move the real pointer, as in a nested compositor.
+///
+/// iced takes the pointer from the window and offers no way to set it, so the
+/// view is wrapped in this widget, which hands its content every event with
+/// the cursor at `at` in place of the window's own and drops the window's own
+/// mouse events. On the first redraw it delivers a cursor move to `at`, and
+/// with `press`, once `HELD_PRESS_AFTER` has passed, a press of the primary
+/// button there: the events iced's widgets read hover and press from
+/// (iced_widget 0.14.2 `src/button.rs`, `Button::update`).
+struct HeldPointer<'a> {
+    content: Element<'a, Message>,
+    at: iced::Point,
+    press: bool,
+}
+
+/// What [`HeldPointer`] has delivered, and when it first drew.
+#[derive(Default)]
+struct HeldState {
+    started: Option<Instant>,
+    moved: bool,
+    pressed: bool,
+}
+
+impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> {
+    fn tag(&self) -> iced::advanced::widget::tree::Tag {
+        iced::advanced::widget::tree::Tag::of::<HeldState>()
+    }
+
+    fn state(&self) -> iced::advanced::widget::tree::State {
+        iced::advanced::widget::tree::State::new(HeldState::default())
+    }
+
+    fn children(&self) -> Vec<iced::advanced::widget::Tree> {
+        vec![iced::advanced::widget::Tree::new(&self.content)]
+    }
+
+    fn diff(&self, tree: &mut iced::advanced::widget::Tree) {
+        tree.diff_children(std::slice::from_ref(&self.content));
+    }
+
+    fn size(&self) -> iced::Size<Length> {
+        self.content.as_widget().size()
+    }
+
+    fn size_hint(&self) -> iced::Size<Length> {
+        self.content.as_widget().size_hint()
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        renderer: &iced::Renderer,
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
+        match tree.children.first_mut() {
+            Some(child) => self.content.as_widget_mut().layout(child, renderer, limits),
+            None => iced::advanced::layout::Node::new(iced::Size::ZERO),
+        }
+    }
+
+    fn draw(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        _cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+    ) {
+        if let Some(child) = tree.children.first() {
+            self.content.as_widget().draw(
+                child,
+                renderer,
+                theme,
+                style,
+                layout,
+                iced::mouse::Cursor::Available(self.at),
+                viewport,
+            );
+        }
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        if let Some(child) = tree.children.first_mut() {
+            self.content
+                .as_widget_mut()
+                .operate(child, layout, renderer, operation);
+        }
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        event: &iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        _cursor: iced::mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+        viewport: &iced::Rectangle,
+    ) {
+        let cursor = iced::mouse::Cursor::Available(self.at);
+        let state = tree.state.downcast_mut::<HeldState>();
+        let Some(child) = tree.children.first_mut() else {
+            return;
+        };
+        let content = self.content.as_widget_mut();
+        if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
+            let started = *state.started.get_or_insert(*now);
+            let mut held = Vec::new();
+            if !state.moved {
+                held.push(iced::mouse::Event::CursorMoved { position: self.at });
+                state.moved = true;
+            }
+            if self.press
+                && !state.pressed
+                && now.saturating_duration_since(started) >= HELD_PRESS_AFTER
+            {
+                held.push(iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left));
+                state.pressed = true;
+            }
+            for e in held {
+                content.update(
+                    child,
+                    &iced::Event::Mouse(e),
+                    layout,
+                    cursor,
+                    renderer,
+                    clipboard,
+                    shell,
+                    viewport,
+                );
+            }
+            if self.press && !state.pressed {
+                shell.request_redraw();
+            }
+        }
+        // The window's own pointer events are replaced by the held pointer.
+        if !matches!(event, iced::Event::Mouse(_)) {
+            content.update(
+                child, event, layout, cursor, renderer, clipboard, shell, viewport,
+            );
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        _cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+        renderer: &iced::Renderer,
+    ) -> iced::mouse::Interaction {
+        match tree.children.first() {
+            Some(child) => self.content.as_widget().mouse_interaction(
+                child,
+                layout,
+                iced::mouse::Cursor::Available(self.at),
+                viewport,
+                renderer,
+            ),
+            None => iced::mouse::Interaction::None,
+        }
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &iced::Rectangle,
+        translation: iced::Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        let child = tree.children.first_mut()?;
+        self.content
+            .as_widget_mut()
+            .overlay(child, layout, renderer, viewport, translation)
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -7697,6 +7928,17 @@ mod tests {
             IconSetChoice::System,
             "the user's pick of system did not stay chosen across a preset change"
         );
+    }
+
+    /// `--pointer X,Y` is two whole logical pixels, and anything else holds
+    /// no pointer.
+    #[test]
+    fn the_pointer_flag_is_a_point() {
+        assert_eq!(parse_point("259,96"), Some((259, 96)));
+        assert_eq!(parse_point(" 259 , 96 "), Some((259, 96)));
+        for bad in ["259", "x,1", "1,-2", ""] {
+            assert_eq!(parse_point(bad), None, "{bad:?}");
+        }
     }
 
     /// `--variant` and `--theme` values the showcase cannot honour are

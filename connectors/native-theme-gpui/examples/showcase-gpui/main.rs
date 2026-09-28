@@ -44,13 +44,16 @@ mod inspector;
 mod pages;
 mod support;
 
+use std::time::Duration;
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+use gpui::Window;
 use gpui::{
-    App, Bounds, Div, IntoElement, ParentElement, Pixels, WindowBounds, WindowDecorations,
+    AnyWindowHandle, App, Bounds, Div, IntoElement, Modifiers, MouseButton, MouseDownEvent,
+    MouseMoveEvent, ParentElement, Pixels, PlatformInput, WindowBounds, WindowDecorations,
     WindowOptions, div, prelude::*, px, size,
 };
 use gpui_component::{IconName, Root};
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-use {gpui::Window, std::time::Duration};
 
 use native_theme::icons::IconSetChoice;
 
@@ -667,6 +670,76 @@ struct CliArgs {
     /// `--capture`: a tool outside the showcase captures its window, which
     /// opens as a `--screenshot` run's does (`capture_window_options`).
     capture: bool,
+    /// `--pointer X,Y`: the pointer is held at that point of the window's
+    /// content, in logical pixels, so a capture shows the control under it
+    /// hovered (`hold_pointer`). For captures where no pointer can be driven,
+    /// as in a nested compositor.
+    pointer: Option<(u16, u16)>,
+    /// `--press`: with `--pointer`, the primary button is held down there,
+    /// so a capture shows the control pressed.
+    press: bool,
+}
+
+/// `X,Y` as two whole logical pixels, or `None`.
+fn parse_point(value: &str) -> Option<(u16, u16)> {
+    let (x, y) = value.split_once(',')?;
+    Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
+}
+
+/// How often `hold_pointer` hands the window the held pointer again, which
+/// the window's own pointer events could otherwise move away. The model
+/// states no such period; it is the showcase's.
+const HELD_POINTER_PERIOD: Duration = Duration::from_millis(250);
+
+/// How long `hold_pointer` holds the pointer before the press: long enough for
+/// the window to open at its size and the page to be laid out under the
+/// pointer. The capture scripts give a showcase six seconds before they
+/// capture it (`scripts/capture_window.sh`'s callers).
+const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
+
+/// `--pointer` and `--press`: hands the window a pointer move to `at` every
+/// `HELD_POINTER_PERIOD`, and after `HELD_PRESS_AFTER` a press of the primary
+/// button there when `press`, through `Window::dispatch_event`, the entry the
+/// platform's own input takes (gpui-pre 0.3.6 `src/window.rs`), until the
+/// window closes.
+fn hold_pointer(cx: &mut App, window: AnyWindowHandle, at: (u16, u16), press: bool) {
+    let position = gpui::point(px(f32::from(at.0)), px(f32::from(at.1)));
+    cx.spawn(async move |cx| {
+        let mut held = Duration::ZERO;
+        let mut pressed = false;
+        loop {
+            cx.background_executor().timer(HELD_POINTER_PERIOD).await;
+            held += HELD_POINTER_PERIOD;
+            let press_now = press && !pressed && held >= HELD_PRESS_AFTER;
+            let delivered = cx.update_window(window, |_view, window, cx| {
+                window.dispatch_event(
+                    PlatformInput::MouseMove(MouseMoveEvent {
+                        position,
+                        pressed_button: pressed.then_some(MouseButton::Left),
+                        modifiers: Modifiers::default(),
+                    }),
+                    cx,
+                );
+                if press_now {
+                    window.dispatch_event(
+                        PlatformInput::MouseDown(MouseDownEvent {
+                            button: MouseButton::Left,
+                            position,
+                            modifiers: Modifiers::default(),
+                            click_count: 1,
+                            first_mouse: false,
+                        }),
+                        cx,
+                    );
+                }
+            });
+            if delivered.is_err() {
+                break;
+            }
+            pressed |= press_now;
+        }
+    })
+    .detach();
 }
 
 impl CliArgs {
@@ -713,6 +786,13 @@ impl CliArgs {
                     }
                 }
                 "--capture" => args.capture = true,
+                "--press" => args.press = true,
+                "--pointer" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.pointer = parse_point(&argv[i]);
+                    }
+                }
                 _ => {} // ignore unknown args
             }
             i += 1;
@@ -1269,6 +1349,9 @@ fn main() {
             window_handle
                 .update(cx, |_, window, _| name_window(window))
                 .ok();
+            if let Some(at) = cli_args.pointer {
+                hold_pointer(cx, *window_handle, at, cli_args.press);
+            }
 
             // Force Metal drawable to adopt the Retina scale factor by
             // nudging the content size synchronously via ObjC.  Must happen

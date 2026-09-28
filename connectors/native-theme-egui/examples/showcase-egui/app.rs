@@ -227,6 +227,25 @@ struct Screenshot {
     written: bool,
 }
 
+/// The pointer `--pointer` holds at a point of the window, and whether `--press` holds the
+/// primary button down there: for a capture of a control hovered or pressed where nothing can
+/// move the real pointer, as in a nested compositor. egui reads the pointer from the input it is
+/// handed each pass, so the point is handed to it with every pass's input
+/// (`eframe::App::raw_input_hook`), the press once.
+struct HeldPointer {
+    at: egui::Pos2,
+    press: bool,
+    pressed: bool,
+}
+
+impl HeldPointer {
+    /// How long, in seconds of egui's input time, the pointer is held before the press: long
+    /// enough for the window to open at its size and the page to be laid out under the pointer.
+    /// The capture scripts give a showcase six seconds before they capture it
+    /// (`scripts/capture_window.sh`'s callers).
+    const PRESS_AFTER: f64 = 3.0;
+}
+
 pub(crate) struct App {
     /// The one field for theme state (§10.4's third rule).
     pub(crate) atlas: ThemeAtlas,
@@ -259,6 +278,8 @@ pub(crate) struct App {
     /// The scheme the icon choice was last derived for; `None` forces a re-derive next pass.
     last_scheme: Option<egui::Theme>,
     screenshot: Option<Screenshot>,
+    /// `--pointer` and `--press`: the pointer held at a point, and the primary button held down.
+    held_pointer: Option<HeldPointer>,
     /// What the watcher's `rebuild` reads: the UI thread writes it on each install.
     #[cfg(feature = "watch")]
     selection: Arc<std::sync::RwLock<Settings>>,
@@ -330,6 +351,11 @@ impl App {
             hold_zone: None,
             last_scheme: None,
             screenshot,
+            held_pointer: cli.pointer.map(|(x, y)| HeldPointer {
+                at: egui::pos2(f32::from(x), f32::from(y)),
+                press: cli.press,
+                pressed: false,
+            }),
             #[cfg(feature = "watch")]
             selection,
             #[cfg(feature = "watch")]
@@ -544,6 +570,43 @@ impl App {
 }
 
 impl eframe::App for App {
+    fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        let Some(held) = &mut self.held_pointer else {
+            return;
+        };
+        // The held pointer replaces the window's own: a real pointer entering or leaving the
+        // window would move it away and back, which egui reads as a drag that cancels a press.
+        raw_input.events.retain(|e| {
+            !matches!(
+                e,
+                egui::Event::PointerMoved(_)
+                    | egui::Event::MouseMoved(_)
+                    | egui::Event::PointerButton { .. }
+                    | egui::Event::PointerGone
+            )
+        });
+        raw_input.events.push(egui::Event::PointerMoved(held.at));
+        // The press lands once the page has been laid out under the pointer: a press before it
+        // hits no widget, and egui then highlights none while the button is down.
+        let (down, time) = ctx.input(|i| (i.pointer.primary_down(), i.time));
+        if held.press && (!held.pressed || !down) && time > HeldPointer::PRESS_AFTER {
+            // egui stops treating a press held longer than `max_click_duration` as a click, and
+            // stops drawing the control pressed (`InputState::could_any_button_be_click`,
+            // `egui/src/interaction.rs`), so a held press stays one until the capture.
+            ctx.options_mut(|o| o.input_options.max_click_duration = f64::INFINITY);
+            raw_input.events.push(egui::Event::PointerButton {
+                pos: held.at,
+                button: egui::PointerButton::Primary,
+                pressed: true,
+                modifiers: egui::Modifiers::NONE,
+            });
+            held.pressed = true;
+        }
+        // A widget's state is read from the pass before (`Context::read_response`), so the
+        // passes go on until the capture is taken.
+        ctx.request_repaint_after(crate::INFO_SETTLE);
+    }
+
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // The system menu's clicks, as the in-window items' (§10.4).
         #[cfg(all(target_os = "macos", not(test)))]

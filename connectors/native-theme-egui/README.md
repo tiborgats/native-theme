@@ -342,6 +342,10 @@ preset, variant, icon set and tab, or capture the window with its title bar to
 a PNG (macOS and Windows; on Linux the capture scripts take it). The window
 opens at 1280 × 720; with `--screenshot`, or `--capture` for a capture taken by
 another tool, it opens at that size whatever size the desktop remembers for it.
+`--pointer X,Y` holds the pointer at that point of the window (logical pixels)
+and `--press` holds the primary button down there, so a capture shows the
+control under it hovered or pressed where nothing can move the real pointer,
+as in a nested compositor; the gpui and iced showcases take the same flags.
 
 ## Gallery
 

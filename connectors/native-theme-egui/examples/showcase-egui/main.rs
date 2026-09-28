@@ -176,6 +176,13 @@ pub(crate) struct CliArgs {
     /// `--capture`: a tool outside the showcase captures its window, which opens as a
     /// `--screenshot` run's does (`native_options`).
     pub capture: bool,
+    /// `--pointer X,Y`: the pointer is held at that point of the window's content, in logical
+    /// pixels, so a capture shows the control under it hovered (`App::raw_input_hook`). For
+    /// captures where no pointer can be driven, as in a nested compositor.
+    pub pointer: Option<(u16, u16)>,
+    /// `--press`: with `--pointer`, the primary button is held down there, so a capture shows
+    /// the control pressed.
+    pub press: bool,
 }
 
 impl CliArgs {
@@ -198,6 +205,17 @@ impl CliArgs {
             let slot = match flag.as_str() {
                 "--capture" => {
                     cli.capture = true;
+                    continue;
+                }
+                "--press" => {
+                    cli.press = true;
+                    continue;
+                }
+                "--pointer" => {
+                    cli.pointer = argv.next().and_then(|v| {
+                        let (x, y) = v.split_once(',')?;
+                        Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
+                    });
                     continue;
                 }
                 "--theme" => &mut cli.theme,

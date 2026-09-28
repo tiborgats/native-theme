@@ -5876,6 +5876,17 @@ fn a_cli_variant_whose_install_fails_keeps_the_colour_mode_shown(cx: &mut TestAp
     );
 }
 
+/// `--pointer X,Y` is two whole logical pixels, and anything else holds no
+/// pointer.
+#[test]
+fn the_pointer_flag_is_a_point() {
+    assert_eq!(crate::parse_point("349,142"), Some((349, 142)));
+    assert_eq!(crate::parse_point(" 349 , 142 "), Some((349, 142)));
+    for bad in ["349", "x,1", "1,-2", ""] {
+        assert_eq!(crate::parse_point(bad), None, "{bad:?}");
+    }
+}
+
 /// `--variant` takes `light`, `dark` or `system` (follow the OS); `--theme`
 /// takes what the preset switch offers, which is only this platform's
 /// presets. Anything else is ignored: the theme and mode stay, and the
