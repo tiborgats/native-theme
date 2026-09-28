@@ -28,6 +28,11 @@ Turns a `native_theme::ResolvedTheme` into a fully configured
   where gpui-component applies the caller's style after its own — and the
   native text colour for the seven whose label would otherwise be left to a
   token of upstream's.
+- **Theme-drawn widgets** (feature `widgets`): a checkbox, radio, switch,
+  slider, progress bar, spinner, tab bar and separator built on gpui-base's
+  headless primitives and painted from the resolved theme, for the parts
+  gpui-component draws from literals of its own. See
+  [Theme-drawn widgets](#theme-drawn-widgets).
 - **Accessibility**: the platform's text-scaling factor scales the theme's
   fonts (and, through GPUI's rem, every rem-relative size in gpui-component);
   reduce-motion is forwarded to GPUI; under reduce-transparency no overlay
@@ -291,7 +296,59 @@ takes the text input's border colour; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
 setters fill, `tab/tab.rs:801-808`) is
 listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)
-and in the roadmap's upstream-PR list.
+and in the roadmap's upstream-PR list. The checkbox, radio, switch, slider,
+progress bar, spinner, tab bar and separator among them have theme-drawn
+replacements in the `widgets` module.
+
+## Theme-drawn widgets
+
+With the `widgets` feature (on by default), `native_theme_gpui::widgets` has
+controls for the parts gpui-component draws from literals of its own. Each is
+built the way gpui-component builds its own control, on gpui-base's headless
+primitive, which owns activation, focus, keyboard, dragging and the AccessKit
+role, and paints every part from the theme leaf that states it:
+
+| Widget | Paints | Instead of gpui-component's |
+|---|---|---|
+| `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark, label gap and font | an indicator sized in rems per `Size` |
+| `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
+| `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps | a rail of its fill at 20% alpha, a thumb of its own size |
+| `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width | a track of its fill at 20% alpha |
+| `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
+| `TabBar`, `Tab` | `tab.*`: the bar, an unselected tab's fill and label, the hover in place of that fill, the selected tab's fill, label and `tab.border` outline (the selected tab only, rounded on its top corners), sizes, padding and font | an idle tab painted transparent, and a primary underline or a frame of its own on the selected one |
+| `Separator` | a line `separator.line_width` thick in `separator.line_color` | a line a literal 1px thick |
+
+Each reads the variant `apply` installed for the current mode as it renders,
+so it follows a light/dark switch. With no native theme installed, or a
+length the theme gives that is not finite, it renders gpui-component's own
+control. Each has a `…Look` type (`CheckboxLook::of(&resolved, …)`,
+`TabLook::of(&resolved)`, …) with the values it paints, for an application
+that draws something of its own alike.
+
+```rust,ignore
+use native_theme::theme::IconSet;
+use native_theme_gpui::widgets::{Checkbox, Separator, Spinner, Tab, TabBar};
+
+Checkbox::new("autosave")
+    .label("Autosave")
+    .checked(self.autosave)
+    .on_change(cx.listener(|this, checked: &bool, _, _| this.autosave = *checked));
+
+TabBar::new("pages")
+    .children(["General", "Advanced"].map(Tab::new))
+    .selected_index(self.page)
+    .on_click(cx.listener(|this, ix: &usize, _, _| this.page = *ix));
+
+// The icon set the application's icons come from; for a freedesktop set,
+// the icon theme too. Without them: the system's.
+Spinner::new("loading").icon_set(IconSet::Freedesktop).icon_theme(SharedString::from("breeze"));
+
+Separator::horizontal();
+```
+
+The spinner loads its indicator once per set, icon theme, colour and size,
+and keeps it for the life of the application. `TabBar` leaves the bar's own
+style to the caller (`Styled`): a rule under it, its inset.
 
 ## How re-application works
 
@@ -329,10 +386,11 @@ Non-finite or non-positive scaling factors count as 1.0.
 
 ## Features
 
-All four are on by default; `default-features = false` is the way to narrow.
+All five are on by default; `default-features = false` is the way to narrow.
 
 | Feature | Enables |
 |---|---|
+| `widgets` | the theme-drawn controls of [`widgets`](#theme-drawn-widgets) |
 | `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
 | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |

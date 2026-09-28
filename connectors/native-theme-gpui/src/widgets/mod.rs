@@ -1,4 +1,4 @@
-//! Theme-drawn controls for the six widgets gpui-component draws from its own
+//! Theme-drawn controls for the widgets gpui-component draws from its own
 //! literals (feature `widgets`, on by default).
 //!
 //! gpui-component builds its checkbox, radio, switch, slider, progress bar and
@@ -11,7 +11,8 @@
 //! (`spinner.rs:25`). The controls here are built the way gpui-component
 //! builds its own -- on gpui-base's headless primitives, which own
 //! activation, focus, keyboard, dragging and the AccessKit role -- and paint
-//! every part from the [`ResolvedTheme`] leaf that states it. The spinner
+//! every part from the [`ResolvedTheme`](crate::ResolvedTheme) leaf that
+//! states it. The spinner
 //! draws the application's icon set's own loading indicator, and an arc only
 //! for a set without one.
 //!

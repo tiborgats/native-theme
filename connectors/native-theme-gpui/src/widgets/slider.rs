@@ -45,7 +45,7 @@ pub struct SliderLook {
     /// where the slider is enabled.
     pub hover_thumb: Option<Hsla>,
     /// The thumb's outline, which the model does not state: gpui-component's
-    /// fill colour at half alpha ([`THUMB_OUTLINE_ALPHA`]).
+    /// fill colour at half alpha (gpui-component's, slider.rs:216-219).
     pub outline: Hsla,
 }
 

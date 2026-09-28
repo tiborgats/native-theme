@@ -49,9 +49,9 @@ pub struct TabLook {
     pub min_width: Pixels,
     /// `tab.min_height`.
     pub min_height: Pixels,
-    /// `tab.border.padding` left, [`TAB_PADDING`] where unstated.
+    /// `tab.border.padding` left, gpui-component's 12px where unstated.
     pub padding_left: Pixels,
-    /// `tab.border.padding` right, [`TAB_PADDING`] where unstated.
+    /// `tab.border.padding` right, gpui-component's 12px where unstated.
     pub padding_right: Pixels,
     /// `tab.border.padding` top, where stated.
     pub padding_top: Option<Pixels>,

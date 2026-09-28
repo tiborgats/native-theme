@@ -96,7 +96,7 @@
 //!
 //! | Feature | Enables |
 //! |---------|---------|
-//! | `widgets` | the `widgets` module: a checkbox, radio, switch, slider, progress bar and spinner drawn from the theme, for the parts gpui-component draws from literals of its own |
+//! | `widgets` | the `widgets` module: a checkbox, radio, switch, slider, progress bar, spinner, tab bar and separator drawn from the theme, for the parts gpui-component draws from literals of its own |
 //! | `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
 //! | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
