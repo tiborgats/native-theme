@@ -2698,7 +2698,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .on_press(Message::ButtonPressed)
             .style(styles::button(resolved))
             .padding(btn_pad),
-        text("A tooltip").typeset(&resolved.tooltip.font, a11y),
+        // `tooltip.max_width` is no `Style` field: iced wraps the tip's own
+        // element, so the element is given the width.
+        container(text("A tooltip").typeset(&resolved.tooltip.font, a11y))
+            .max_width(resolved.tooltip.max_width),
         tooltip::Position::Bottom,
     )
     .gap(sp.xs)
