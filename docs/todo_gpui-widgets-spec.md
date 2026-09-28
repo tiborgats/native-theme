@@ -69,9 +69,14 @@ Text sizes carry the text-scaling factor (`scaled_text_size`), lengths do not
   `colors.rs` composites the button states, C17). A `None` soft option copies
   the base colour it would cover (C16). A state the model states nothing for
   has no look of its own; no colour is derived by alpha or interpolation.
-* **Disabled** paints the widget's stated disabled leaves; `disabled_opacity`
-  is not multiplied on top (the stated colours already carry the fade), as the
-  iced connector does (`styles.rs`, `checkbox`).
+* **Disabled** paints the widget's stated disabled leaves and fades the whole
+  control by its `disabled_opacity` (gpui's `Styled::opacity`) on top. A
+  platform dims by one of the two, and its data makes the other an identity
+  (`docs/platform-facts.md` §2.1.6: 1.0 on KDE and Windows; no disabled fills
+  and the enabled text colours on GNOME), so applying both is exact on every
+  platform. A disabled soft fill that is `None` is the enabled one: a
+  disabled checkbox with no `disabled_background` is its enabled box. The iced
+  connector does the same (`styles.rs`, `faded`).
 * **Checked / unchecked, hovered** follow the iced connector's reading of
   `CheckboxTheme` so the two draw the same control: `hover_background` is the
   hover of the *unchecked* box; a checked box's border is `border.color`, an
@@ -102,14 +107,16 @@ theme's `motion_tokens`), which gpui holds still under reduced motion
 | fill, unchecked | `unchecked_background` (`None` → `background_color`) | |
 | fill, checked | `checked_background` | |
 | fill, hovered unchecked | `hover_background` (`None` → `background_color`) over the unchecked fill | `group_hover` on the indicator |
-| fill, disabled | `disabled_background` (`None` → `background_color`), checked or not | |
+| fill, disabled | `disabled_background`, checked or not; `None` → the enabled fill of the state | |
 | border | checked: `border.color`; unchecked: `unchecked_border_color` (`None` → `border.color`) | disabled keeps the state's colour |
-| mark | `indicator_color`; disabled: `disabled_text_color` | gpui-component's `IconName::Check` path, filling the box inside its border: PF §2.5 "checkmark fills indicator" (`platform-facts.md:1216`) |
+| mark | `indicator_color`; disabled with a `disabled_background`: `disabled_text_color` | gpui-component's `IconName::Check` path, filling the box inside its border: PF §2.5 "checkmark fills indicator" (`platform-facts.md:1216`) |
 | label | `checkbox.font` size, weight, `font.color`; disabled `disabled_text_color` | |
 | label gap | `checkbox.label_gap` | |
 
-Not drawn: `border.shadow_enabled` (the model states no shadow geometry),
-`disabled_opacity` (§1.3). Kept: the ring on the whole row while focused, the
+A disabled row is faded by `checkbox.disabled_opacity` (§1.3).
+
+Not drawn: `border.shadow_enabled` (the model states no shadow geometry).
+Kept: the ring on the whole row while focused, the
 row's `radius * 0.5` rounding that ring follows (GC `checkbox.rs:280-283`).
 
 ### 2.2 `Radio`, `RadioGroup` — on `gpui_base::Radio` / `RadioGroup`

@@ -34,8 +34,10 @@
 //!   option copies the colour it would cover (a tab's hover takes the place
 //!   of its fill, over the bar, as Breeze paints it: docs/platform-facts.md
 //!   §2.11);
-//! * a disabled control paints its stated disabled colours, and its
-//!   `disabled_opacity` is not multiplied on top;
+//! * a disabled control paints its stated disabled colours and is faded by
+//!   its `disabled_opacity` on top: a platform dims by one of the two, and
+//!   its data makes the other an identity (docs/platform-facts.md §2.1.6);
+//!   a disabled soft fill that is `None` is the enabled one;
 //! * a size the theme does not state keeps gpui-component's own value, named
 //!   as a constant with its upstream line.
 //!
@@ -110,6 +112,18 @@ fn color(rgba: Rgba) -> Hsla {
 /// `colors.rs` composites the button states with.
 fn over(base: Hsla, layer: Hsla) -> Hsla {
     base.blend(layer)
+}
+
+/// The opacity of a control, `disabled` or not: its `disabled_opacity`, the
+/// whole-widget fade a platform states on top of its disabled colours
+/// (docs/platform-facts.md §2.1.6), when disabled; 1 when enabled, or when the
+/// opacity is not a finite number.
+fn disabled_opacity(disabled: bool, opacity: f32) -> f32 {
+    if disabled && opacity.is_finite() {
+        opacity.clamp(0., 1.)
+    } else {
+        1.
+    }
 }
 
 /// A stated length in pixels, or `None` when it is not a finite,

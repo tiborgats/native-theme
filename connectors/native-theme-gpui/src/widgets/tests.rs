@@ -78,16 +78,41 @@ fn a_checkbox_paints_checkbox_theme() {
             "{preset}: no stated checked hover"
         );
 
+        // A stated disabled fill replaces the box, its mark in the disabled
+        // text colour; with none the box is its enabled self. Either way the
+        // control fades by `disabled_opacity` (docs/platform-facts.md §2.1.6).
         let disabled = at(true, true);
-        assert_eq!(
-            disabled.fill,
-            c(k.disabled_background.unwrap_or(k.background_color)),
-            "{preset}"
-        );
-        assert_eq!(disabled.mark, c(k.disabled_text_color), "{preset}");
+        match k.disabled_background {
+            Some(fill) => {
+                assert_eq!(disabled.fill, c(fill), "{preset}");
+                assert_eq!(disabled.mark, c(k.disabled_text_color), "{preset}");
+            }
+            None => {
+                assert_eq!(disabled.fill, c(k.checked_background), "{preset}");
+                assert_eq!(disabled.mark, c(k.indicator_color), "{preset}");
+            }
+        }
         assert_eq!(disabled.label, c(k.disabled_text_color), "{preset}");
         assert_eq!(disabled.hover_fill, None, "{preset}");
+        assert_eq!(disabled.opacity, k.disabled_opacity, "{preset}");
+        assert_eq!(idle.opacity, 1., "{preset}");
     }
+}
+
+/// The platforms each dim by one mechanism (docs/platform-facts.md §2.1.6):
+/// kde-breeze by its disabled colours at an opacity of 1, adwaita by an
+/// opacity of 0.5 over its enabled colours.
+#[test]
+fn a_disabled_control_is_faded_by_its_disabled_opacity() {
+    let kde = CheckboxLook::of(&resolved("kde-breeze", ColorMode::Light), true, true).unwrap();
+    assert_eq!(kde.opacity, 1.);
+    let adw_theme = resolved("adwaita", ColorMode::Light);
+    let adw = CheckboxLook::of(&adw_theme, true, true).unwrap();
+    assert_eq!(adw.opacity, 0.5);
+    assert_eq!(adw.fill, c(adw_theme.checkbox.checked_background));
+    assert_eq!(SwitchLook::of(&adw_theme, true, true).unwrap().opacity, 0.5);
+    assert_eq!(SliderLook::of(&adw_theme, true).unwrap().opacity, 0.5);
+    assert_eq!(SliderLook::of(&adw_theme, false).unwrap().opacity, 1.);
 }
 
 #[test]

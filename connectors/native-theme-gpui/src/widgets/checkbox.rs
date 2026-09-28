@@ -52,6 +52,9 @@ pub struct CheckboxLook {
     pub label: Hsla,
     /// `checkbox.label_gap`.
     pub label_gap: Pixels,
+    /// The whole control's opacity: `checkbox.disabled_opacity` when
+    /// disabled, on top of the disabled colours, else 1.
+    pub opacity: f32,
 }
 
 impl CheckboxLook {
@@ -66,15 +69,22 @@ impl CheckboxLook {
     /// `unchecked_border_color`; `disabled_background` replaces the fill in
     /// either state, and there the mark takes `disabled_text_color`, because
     /// `indicator_color` is the colour stated for a foreground on the accent
-    /// the disabled fill no longer shows.
+    /// the disabled fill no longer shows. Where no disabled fill is stated the
+    /// platform dims by opacity alone, and a disabled box is its enabled self.
+    /// Either way a disabled control is faded by `checkbox.disabled_opacity`
+    /// (docs/platform-facts.md §2.1.6).
     #[must_use]
     pub fn of(resolved: &ResolvedTheme, checked: bool, disabled: bool) -> Option<Self> {
         let c = &resolved.checkbox;
         let unchecked = color(c.unchecked_background.unwrap_or(c.background_color));
-        let fill = match (checked, disabled) {
-            (_, true) => color(c.disabled_background.unwrap_or(c.background_color)),
-            (true, false) => color(c.checked_background),
-            (false, false) => unchecked,
+        let enabled_fill = if checked {
+            color(c.checked_background)
+        } else {
+            unchecked
+        };
+        let fill = match (disabled, c.disabled_background) {
+            (true, Some(fill)) => color(fill),
+            _ => enabled_fill,
         };
         let hover_fill = (!checked && !disabled).then(|| {
             over(
@@ -87,11 +97,12 @@ impl CheckboxLook {
         } else {
             color(c.unchecked_border_color.unwrap_or(c.border.color))
         };
-        let (mark, label) = if disabled {
-            (color(c.disabled_text_color), color(c.disabled_text_color))
-        } else {
-            (color(c.indicator_color), color(c.font.color))
+        let (mark, label) = match (disabled, c.disabled_background) {
+            (true, Some(_)) => (color(c.disabled_text_color), color(c.disabled_text_color)),
+            (true, None) => (color(c.indicator_color), color(c.disabled_text_color)),
+            (false, _) => (color(c.indicator_color), color(c.font.color)),
         };
+        let opacity = super::disabled_opacity(disabled, c.disabled_opacity);
         Some(Self {
             indicator: length(c.indicator_width)?,
             dot: c.radio_dot_diameter.and_then(length),
@@ -103,6 +114,7 @@ impl CheckboxLook {
             mark,
             label,
             label_gap: length(c.label_gap)?,
+            opacity,
         })
     }
 }
@@ -322,6 +334,7 @@ impl RenderOnce for Checkbox {
             .rounded(px(f32::from(cx.theme().radius) / 2.))
             .when(focused, |row| row.focus_ring_style(window, cx))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
+            .opacity(look.opacity)
             .child(indicator)
             .children(label)
             .into_any_element()
@@ -448,6 +461,7 @@ impl RenderOnce for Radio {
             .rounded(px(f32::from(cx.theme().radius) / 2.))
             .when(focused, |row| row.focus_ring_style(window, cx))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
+            .opacity(look.opacity)
             .child(indicator)
             .children(label)
             .into_any_element()

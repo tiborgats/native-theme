@@ -47,6 +47,9 @@ pub struct SliderLook {
     /// The thumb's outline, which the model does not state: gpui-component's
     /// fill colour at half alpha (gpui-component's, slider.rs:216-219).
     pub outline: Hsla,
+    /// The whole control's opacity: `slider.disabled_opacity` when disabled,
+    /// on top of the disabled colours (docs/platform-facts.md §2.1.6), else 1.
+    pub opacity: f32,
 }
 
 impl SliderLook {
@@ -82,6 +85,7 @@ impl SliderLook {
             thumb_color: color(thumb),
             hover_thumb,
             outline: color(fill).opacity(THUMB_OUTLINE_ALPHA),
+            opacity: super::disabled_opacity(disabled, s.disabled_opacity),
         })
     }
 }
@@ -278,6 +282,7 @@ impl RenderOnce for Slider {
             .flex()
             .items_center()
             .h(look.height)
+            .opacity(look.opacity)
             .refine_style(&self.style)
             .debug_selector(|| "native-slider".into())
             .when(!disabled, |root| {

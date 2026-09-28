@@ -401,13 +401,17 @@ pub fn frame_width(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.line_width
 }
 
-/// Disabled control opacity from the resolved theme defaults.
+/// Disabled control opacity from the resolved theme defaults: the whole
+/// widget fades by it on top of its disabled colours; 1.0 where the platform
+/// dims by colour alone.
 #[must_use]
 pub fn disabled_opacity(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.disabled_opacity
 }
 
-/// Border opacity multiplier from the resolved theme defaults.
+/// The platform's line opacity from the resolved theme defaults: the share
+/// of the text colour already folded into every stated border colour. Apply
+/// it to no colour; a border colour is the final line colour.
 #[must_use]
 pub fn border_opacity(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.opacity

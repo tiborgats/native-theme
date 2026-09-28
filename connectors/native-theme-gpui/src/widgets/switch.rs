@@ -47,6 +47,9 @@ pub struct SwitchLook {
     /// The label's colour: `SwitchTheme` states none, so the window's text,
     /// `defaults.text_color`, and `defaults.disabled_text_color` disabled.
     pub label: Hsla,
+    /// The whole control's opacity: `switch.disabled_opacity` when disabled,
+    /// on top of the disabled colours (docs/platform-facts.md §2.1.6), else 1.
+    pub opacity: f32,
 }
 
 impl SwitchLook {
@@ -97,6 +100,7 @@ impl SwitchLook {
             hover_track,
             thumb_color: color(thumb_color),
             label: color(label),
+            opacity: super::disabled_opacity(disabled, s.disabled_opacity),
         })
     }
 
@@ -241,6 +245,7 @@ impl RenderOnce for Switch {
             .flex_row()
             .items_center()
             .gap(LABEL_GAP)
+            .opacity(look.opacity)
             .child(track)
             .when_some(self.label, |switch, label| {
                 switch.child(

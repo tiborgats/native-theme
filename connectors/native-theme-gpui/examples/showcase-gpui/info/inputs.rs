@@ -547,68 +547,90 @@ fn native_indicator(
     checked: bool,
     disabled: bool,
 ) -> WidgetInfo {
-    let info = match (checked, disabled) {
+    // A stated disabled fill replaces the box; with none the platform dims by
+    // `disabled_opacity` alone, which fades the whole control either way
+    // (docs/platform-facts.md §2.1.6), and the box is its enabled self.
+    let stated_disabled = disabled && k.disabled_background.is_some();
+    let info = match (checked, stated_disabled) {
         (_, true) => info.color(claim(
             "fill",
             "disabled_background",
             stated(k.disabled_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:75",
+            "native-theme-gpui/widgets/checkbox.rs:85",
         )),
         (true, false) => info.color(claim(
             "fill",
             "checked_background",
             stated(k.checked_background),
-            "native-theme-gpui/widgets/checkbox.rs:76",
+            "native-theme-gpui/widgets/checkbox.rs:81",
         )),
-        (false, false) => info
-            .color(claim(
+        (false, false) => {
+            let info = info.color(claim(
                 "fill",
                 "unchecked_background",
                 stated(k.unchecked_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:73",
-            ))
-            .color(claim(
-                "hover layer, over the fill",
-                "hover_background",
-                stated(k.hover_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:82",
-            )),
+                "native-theme-gpui/widgets/checkbox.rs:79",
+            ));
+            if disabled {
+                info
+            } else {
+                info.color(claim(
+                    "hover layer, over the fill",
+                    "hover_background",
+                    stated(k.hover_background.unwrap_or(k.background_color)),
+                    "native-theme-gpui/widgets/checkbox.rs:92",
+                ))
+            }
+        }
     };
     let info = if checked {
         info.color(claim(
             "border",
             "border",
             stated(k.border.color),
-            "native-theme-gpui/widgets/checkbox.rs:86",
+            "native-theme-gpui/widgets/checkbox.rs:96",
         ))
     } else {
         info.color(claim(
             "border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:88",
+            "native-theme-gpui/widgets/checkbox.rs:98",
         ))
     };
-    if disabled {
-        info.color(claim(
+    match (disabled, stated_disabled) {
+        (true, true) => info.color(claim(
             "mark and label",
             "disabled_text_color",
             stated(k.disabled_text_color),
-            "native-theme-gpui/widgets/checkbox.rs:91",
-        ))
-    } else {
-        info.color(claim(
-            "mark",
-            "indicator_color",
-            stated(k.indicator_color),
-            "native-theme-gpui/widgets/checkbox.rs:93",
-        ))
-        .color(claim(
-            "label",
-            "font",
-            stated(k.font.color),
-            "native-theme-gpui/widgets/checkbox.rs:93",
-        ))
+            "native-theme-gpui/widgets/checkbox.rs:101",
+        )),
+        (true, false) => info
+            .color(claim(
+                "mark",
+                "indicator_color",
+                stated(k.indicator_color),
+                "native-theme-gpui/widgets/checkbox.rs:102",
+            ))
+            .color(claim(
+                "label",
+                "disabled_text_color",
+                stated(k.disabled_text_color),
+                "native-theme-gpui/widgets/checkbox.rs:102",
+            )),
+        (false, _) => info
+            .color(claim(
+                "mark",
+                "indicator_color",
+                stated(k.indicator_color),
+                "native-theme-gpui/widgets/checkbox.rs:103",
+            ))
+            .color(claim(
+                "label",
+                "font",
+                stated(k.font.color),
+                "native-theme-gpui/widgets/checkbox.rs:103",
+            )),
     }
 }
 
@@ -634,19 +656,19 @@ pub fn native_radio_column(
             "unselected fill",
             "unchecked_background",
             stated(k.unchecked_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:73",
+            "native-theme-gpui/widgets/checkbox.rs:79",
         ))
         .color(claim(
             "unselected border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:88",
+            "native-theme-gpui/widgets/checkbox.rs:98",
         ))
         .color(claim(
             "hover layer, over an unselected fill",
             "hover_background",
             stated(k.hover_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:82",
+            "native-theme-gpui/widgets/checkbox.rs:92",
         ))
         .config("indicator", format!("checkbox.indicator_width: a circle {}px across (platform-facts §2.5: radio buttons are circular)", k.indicator_width))
         .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap));
@@ -688,20 +710,20 @@ pub fn native_switch(
                 "track",
                 "checked_background",
                 stated(s.checked_background),
-                "native-theme-gpui/widgets/switch.rs:63",
+                "native-theme-gpui/widgets/switch.rs:66",
             ))
             .color(claim(
                 "hover layer, over the track",
                 "hover_checked_background",
                 stated(s.hover_checked_background.unwrap_or(s.checked_background)),
-                "native-theme-gpui/widgets/switch.rs:73",
+                "native-theme-gpui/widgets/switch.rs:76",
             )),
         (false, false) => info
             .color(claim(
                 "track",
                 "unchecked_background",
                 stated(s.unchecked_background),
-                "native-theme-gpui/widgets/switch.rs:65",
+                "native-theme-gpui/widgets/switch.rs:68",
             ))
             .color(claim(
                 "hover layer, over the track",
@@ -710,7 +732,7 @@ pub fn native_switch(
                     s.hover_unchecked_background
                         .unwrap_or(s.unchecked_background),
                 ),
-                "native-theme-gpui/widgets/switch.rs:75",
+                "native-theme-gpui/widgets/switch.rs:78",
             )),
         (true, true) => info.color(claim(
             "track",
@@ -719,7 +741,7 @@ pub fn native_switch(
                 s.disabled_checked_background
                     .unwrap_or(s.checked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:68",
+            "native-theme-gpui/widgets/switch.rs:71",
         )),
         (false, true) => info.color(claim(
             "track",
@@ -728,7 +750,7 @@ pub fn native_switch(
                 s.disabled_unchecked_background
                     .unwrap_or(s.unchecked_background),
             ),
-            "native-theme-gpui/widgets/switch.rs:69",
+            "native-theme-gpui/widgets/switch.rs:72",
         )),
     };
     let info = if disabled {
@@ -736,26 +758,26 @@ pub fn native_switch(
             "thumb",
             "disabled_thumb_color",
             stated(s.disabled_thumb_color.unwrap_or(s.thumb_background)),
-            "native-theme-gpui/widgets/switch.rs:79",
+            "native-theme-gpui/widgets/switch.rs:82",
         ))
         .color(claim(
             "label",
             "disabled_text_color",
             stated(r.defaults.disabled_text_color),
-            "native-theme-gpui/widgets/switch.rs:84",
+            "native-theme-gpui/widgets/switch.rs:87",
         ))
     } else {
         info.color(claim(
             "thumb",
             "thumb_background",
             stated(s.thumb_background),
-            "native-theme-gpui/widgets/switch.rs:81",
+            "native-theme-gpui/widgets/switch.rs:84",
         ))
         .color(claim(
             "label",
             "text_color",
             stated(r.defaults.text_color),
-            "native-theme-gpui/widgets/switch.rs:86",
+            "native-theme-gpui/widgets/switch.rs:89",
         ))
     };
     let info = info
@@ -798,10 +820,10 @@ pub fn native_slider(r: &ResolvedTheme) -> WidgetInfo {
     let s = &r.slider;
     WidgetInfo::new("Slider")
         .config("drawn by", DRAWN_BY)
-        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:66"))
-        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:66"))
-        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:66"))
-        .color(claim("hover layer, over the thumb", "thumb_hover_color", stated(s.thumb_hover_color.unwrap_or(s.thumb_color)), "native-theme-gpui/widgets/slider.rs:71"))
+        .color(claim("rail", "track_color", stated(s.track_color), "native-theme-gpui/widgets/slider.rs:69"))
+        .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:69"))
+        .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:69"))
+        .color(claim("hover layer, over the thumb", "thumb_hover_color", stated(s.thumb_hover_color.unwrap_or(s.thumb_color)), "native-theme-gpui/widgets/slider.rs:74"))
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))
         .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (slider.rs, Slider::render); the model states no thumb outline")
