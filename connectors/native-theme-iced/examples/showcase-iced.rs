@@ -4303,13 +4303,8 @@ fn preferences(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
-    let sw = &resolved.switch;
     let switch = |on: bool, message: fn(bool) -> Message| -> Element<'_, Message> {
-        toggler(on)
-            .size(sw.track_height)
-            .style(styles::toggler(resolved))
-            .on_toggle(message)
-            .into()
+        native_theme_iced::switch(resolved, on, Some(message(!on)))
     };
     let size = scaled_text_size(resolved.combo_box.font.size, a11y);
     let pad = combo_box_padding(resolved);
@@ -6187,9 +6182,31 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
-    let togglers = hoverable(
+    // The page's switch is the connector's, whose track takes
+    // `switch.track_width`, labelled as the Basic page's are. iced's own
+    // toggler stays shown below it, so the widget iced offers is on show
+    // under the theme too, its track twice its height.
+    let switch = hoverable(
+        switch_info(resolved),
+        row![
+            probe(
+                probes::TOGGLER,
+                Length::Shrink,
+                native_theme_iced::switch(
+                    resolved,
+                    state.toggler_enabled,
+                    Some(Message::TogglerToggled(!state.toggler_enabled)),
+                ),
+            ),
+            text("Feature flag enabled").body(resolved, a11y),
+        ]
+        .spacing(TOGGLER_LABEL_GAP)
+        .align_y(iced::Alignment::Center)
+        .into(),
+    );
+    let iced_toggler = hoverable(
         widget_tooltip(
-            "Toggler (Switch)",
+            "iced's Toggler",
             &[
                 (
                     "active track",
@@ -6226,28 +6243,27 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 ("animation timing", "hardcoded"),
             ],
         ),
-        column![
-            text("Toggler (Switch)").role(section_title(ts), resolved, a11y),
-            probe(
-                probes::TOGGLER,
-                Length::Shrink,
-                toggler(state.toggler_enabled)
-                    .label("Feature flag enabled")
-                    .size(sw.track_height)
-                    .text_size(scaled_text_size(resolved.defaults.font.size, a11y))
-                    .font(theme_font(&resolved.defaults.font))
-                    .style(styles::toggler(resolved))
-                    .on_toggle(Message::TogglerToggled)
-            ),
-            text(format!(
-                "State: {}",
-                if state.toggler_enabled { "ON" } else { "OFF" }
-            ))
-            .role(&ts.caption, resolved, a11y),
-        ]
-        .spacing(gap.widget)
-        .into(),
+        toggler(state.toggler_enabled)
+            .label("iced's Toggler")
+            .size(sw.track_height)
+            .text_size(scaled_text_size(resolved.defaults.font.size, a11y))
+            .font(theme_font(&resolved.defaults.font))
+            .style(styles::toggler(resolved))
+            .on_toggle(Message::TogglerToggled)
+            .into(),
     );
+    let togglers: Element<'_, Message> = column![
+        text("Switch").role(section_title(ts), resolved, a11y),
+        switch,
+        text(format!(
+            "State: {}",
+            if state.toggler_enabled { "ON" } else { "OFF" }
+        ))
+        .role(&ts.caption, resolved, a11y),
+        iced_toggler,
+    ]
+    .spacing(gap.widget)
+    .into();
 
     let languages: Vec<String> = vec![
         "Rust",
