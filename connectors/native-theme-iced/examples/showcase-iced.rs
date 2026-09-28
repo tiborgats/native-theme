@@ -4148,8 +4148,8 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 ),
                 (
                     "cell border",
-                    "defaults.border.color × defaults.border.opacity",
-                    swatch_border,
+                    "defaults.border.color",
+                    to_color(d.border.color),
                 ),
             ],
             &[

@@ -451,11 +451,9 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 /// (`src/tree.rs`, `RenderOnce for Tree`) paints a border of its own: each
 /// refines a plain `div()` and leaves the frame to the application, where
 /// `DataTable` draws one from `Theme::radius` and `Theme::border` when it is
-/// `bordered` (`src/table/data_table.rs:167-171`) -- a token that carries
-/// `defaults.border.color` at `defaults.border.opacity`, not `list.border`.
-/// Apply this to a `List` or a `Tree` — both are `Styled` and the refinement
-/// lands on that outer `div` — or to the box an application draws around one,
-/// an unbordered `DataTable` included, and the three agree. There
+/// `bordered` (`src/table/data_table.rs:167-171`). Apply this to a `List` or a
+/// `Tree` — both are `Styled` and the refinement lands on that outer `div` —
+/// or to the box an application draws around one, and the three agree. There
 /// is no tree theme in the model: a tree is a list view, and reads
 /// `resolved.list`.
 ///

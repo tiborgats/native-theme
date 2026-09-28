@@ -402,10 +402,6 @@ pub fn disabled_opacity(resolved: &ResolvedTheme) -> f32 {
 }
 
 /// Border opacity multiplier from the resolved theme defaults.
-///
-/// It multiplies `defaults.border.color` alone: the connector applies it to
-/// the `border` token and the scrollbar's active track border, which carry
-/// that colour, and to no widget's own border colour.
 #[must_use]
 pub fn border_opacity(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.opacity

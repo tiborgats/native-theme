@@ -198,9 +198,8 @@ pub(crate) trait NativeStyled: Styled + Sized {
     /// purposes goes through this, so they agree with one another and follow
     /// the selected theme instead of a number someone typed once: the colour
     /// is `Theme::border` (the connector fills it from
-    /// `defaults.border.color`, `defaults.border.opacity` applied), the radius
-    /// is `Theme::radius` (from `defaults.border.corner_radius`), and the line
-    /// width is the platform's
+    /// `defaults.border.color`), the radius is `Theme::radius` (from
+    /// `defaults.border.corner_radius`), and the line width is the platform's
     /// `defaults.border.line_width` — 0.5 px on macOS and iOS, 1 px
     /// elsewhere. It clips, because a child that paints its own background to
     /// the edge would otherwise show through the rounded corners.

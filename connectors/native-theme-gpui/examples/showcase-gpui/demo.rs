@@ -2143,15 +2143,9 @@ pub(crate) fn description_list(
         )
 }
 
-/// The striped, framed `DataTable` over `state`, `height` tall. Its rows
+/// The striped, bordered `DataTable` over `state`, `height` tall. Its rows
 /// report themselves through the delegate, which builds them with
 /// `data_table_header` and `data_table_row`.
-///
-/// Where a native theme is installed the frame is the List's and the Tree's:
-/// a box refined by `geometry::list` around an unbordered table, because the
-/// table's own frame takes the shared `border` token (table/data_table.rs:
-/// 167-171), which carries `defaults.border.color` with
-/// `defaults.border.opacity`, not the list theme's `list.border.color`.
 pub(crate) fn data_table(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2163,12 +2157,11 @@ pub(crate) fn data_table(
         let delegate = state.read(cx).delegate();
         (delegate.rows.len(), delegate.columns.len())
     };
-    // What `native_info` applies the builder under.
-    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
-    let mut table_info = info::data::data_table(cx.theme(), rows, columns, styled);
-    native_info(div().h(height), cx, geometry::list, "list", &mut table_info)
-        .child(DataTable::new(state).stripe(true).bordered(!styled))
-        .info(ui, id, table_info)
+    DataTable::new(state)
+        .stripe(true)
+        .bordered(true)
+        .info(ui, id, info::data::data_table(cx.theme(), rows, columns))
+        .h(height)
         // gpui's scroll listeners run in the bubble phase and stop at no one,
         // so without this the page under the table scrolls by the same delta
         // (div.rs, paint_scroll_listener; window.rs, HitboxBehavior::BlockMouse).

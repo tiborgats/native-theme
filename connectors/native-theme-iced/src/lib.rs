@@ -678,22 +678,10 @@ pub fn mono_font_weight(resolved: &native_theme::theme::ResolvedTheme) -> u16 {
     resolved.defaults.mono_font.weight
 }
 
-/// Returns `defaults.border.color` as painted: `defaults.border.opacity`
-/// multiplies its alpha.
-///
-/// The multiplier belongs to the defaults' border colour alone ("defaults
-/// only", `native-theme/src/model/border.rs:36`), so the widget styles paint
-/// each widget's own border colour as stated. A non-finite multiplier paints
-/// the colour as stated too.
+/// Returns the border/divider color from the resolved theme.
 #[must_use]
 pub fn border_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
-    let b = &resolved.defaults.border;
-    let opacity = if b.opacity.is_finite() {
-        b.opacity.clamp(0.0, 1.0)
-    } else {
-        1.0
-    };
-    palette::to_color(b.color).scale_alpha(opacity)
+    palette::to_color(resolved.defaults.border.color)
 }
 
 /// Returns the disabled control opacity from the resolved theme.
@@ -1193,29 +1181,6 @@ mod tests {
         let resolved = make_resolved(false);
         let c = border_color(&resolved);
         assert!(c.a > 0.0, "border color should have non-zero alpha");
-    }
-
-    /// `defaults.border.opacity` multiplies `defaults.border.color` alone
-    /// (`native-theme/src/model/border.rs:36`, "defaults only"): the accessor
-    /// carries it, a widget's own border colour does not.
-    #[cfg(feature = "widgets")]
-    #[test]
-    fn the_border_opacity_multiplies_the_defaults_border_colour_alone() {
-        let mut resolved = make_resolved_preset("kde-breeze", false);
-        let b = &resolved.defaults.border;
-        assert!(b.opacity < 1.0, "kde-breeze states 0.2");
-        let stated = palette::to_color(b.color);
-        assert_eq!(border_color(&resolved), stated.scale_alpha(b.opacity));
-
-        let theme = to_theme(&resolved, "kde-breeze");
-        let button = styles::button(&resolved)(&theme, iced_widget::button::Status::Active);
-        assert_eq!(
-            button.border.color,
-            palette::to_color(resolved.button.border.color)
-        );
-
-        resolved.defaults.border.opacity = f32::NAN;
-        assert_eq!(border_color(&resolved), stated);
     }
 
     #[test]
