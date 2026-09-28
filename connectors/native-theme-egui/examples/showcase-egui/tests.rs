@@ -1551,7 +1551,7 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
 fn the_area_stays_inside_the_page() {
     let mut harness = Harness::builder()
         .with_theme(egui::Theme::Light)
-        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 3.6))
+        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 4.0))
         .build_eframe(|cc| {
             App::new(cc, &cli(&[("--theme", TEST_PRESET), ("--tab", "overlays")]))
                 .expect("the showcase starts under a bundled preset")

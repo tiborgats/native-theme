@@ -115,11 +115,11 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         toolbar_role,
         toolbar_role,
     );
-    // No line under the bar: the gpui showcase draws none under its toolbar
-    // (`showcase-gpui/app.rs:1921-1922`).
+    // The line under the bar is the panel's own, in `toolbar.border`'s colour and width (the
+    // toolbar scope's `noninteractive.bg_stroke`, `egui/src/containers/panel.rs:909-911`), as
+    // the status bar's line above it is `status_bar.border`'s.
     let out = egui::Panel::top("chrome-bar")
         .frame(seams.frame)
-        .show_separator_line(false)
         .show(ui, |ui| {
             seams.enter(ui);
             // On macOS outside `cfg(test)` the menus are the system menu bar's.
