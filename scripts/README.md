@@ -47,7 +47,10 @@ python3 scripts/generate_gifs_spinners.py --theme-switching /path/to/frames \
 
 Captures iced showcase screenshots on Linux (KDE Wayland) using spectacle.
 Launches the showcase with each theme/variant/icon-set combination, waits for
-it to render, then makes its window the active one and captures it.
+it to render, then makes its window the active one and captures it. Every
+capture path (these scripts, `generate_gifs_theme_switching.sh` and the
+screenshot workflow) passes `--tab basic`: the Basic page, which the three
+showcases draw alike, so their captures compare control by control.
 
 On macOS/Windows, use the showcase's built-in `--screenshot` flag instead.
 

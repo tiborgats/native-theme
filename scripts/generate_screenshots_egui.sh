@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Screenshot automation for the native-theme egui showcase
-# Captures Linux-native theme presets on the Buttons tab using spectacle on KDE Wayland
+# Captures Linux-native theme presets on the Basic tab using spectacle on KDE Wayland
 #
 # Uses spectacle for external window capture (same as gpui and iced) to include
 # window decorations (title bar, buttons, borders) in screenshots.
@@ -11,7 +11,7 @@ set -euo pipefail
 # writes the window with its title bar as a PNG, as gpui's and iced's do:
 #   cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
 #     --theme macos-sonoma --variant light --icon-set system \
-#     --tab buttons --screenshot connectors/native-theme-egui/docs/assets/macos-macos-sonoma-light.png
+#     --tab basic --screenshot connectors/native-theme-egui/docs/assets/macos-macos-sonoma-light.png
 # This script uses spectacle for Linux (KDE Wayland) local captures.
 #
 # --all-features: the showcase is built with every connector feature, as the
@@ -75,7 +75,7 @@ for entry in "${THEMES[@]}"; do
 
     cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
-        --tab buttons --capture &
+        --tab basic --capture &
     PID=$!
 
     sleep "$DELAY"

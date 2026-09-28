@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Screenshot automation for native-theme iced showcase
-# Captures Linux-native theme presets on the Buttons tab using spectacle on KDE Wayland
+# Captures Linux-native theme presets on the Basic tab using spectacle on KDE Wayland
 #
 # Uses spectacle for external window capture (same as gpui) to include
 # window decorations (title bar, buttons, borders) in screenshots.
@@ -10,7 +10,7 @@ set -euo pipefail
 # NOTE: On macOS/Windows, you can use the showcase's built-in self-capture:
 #   cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
 #     --theme material --variant dark --icon-set material \
-#     --screenshot connectors/native-theme-iced/docs/assets/macos-material-dark.png
+#     --tab basic --screenshot connectors/native-theme-iced/docs/assets/macos-material-dark.png
 # This script uses spectacle for Linux (KDE Wayland) local captures.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -71,7 +71,7 @@ for entry in "${THEMES[@]}"; do
 
     cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
-        --tab buttons --capture &
+        --tab basic --capture &
     PID=$!
 
     sleep "$DELAY"

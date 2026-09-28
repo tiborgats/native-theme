@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Screenshot automation for native-theme gpui showcase
-# Captures Linux-native theme presets on the Buttons tab using spectacle on KDE Wayland
+# Captures Linux-native theme presets on the Basic tab using spectacle on KDE Wayland
 #
 # Both gpui and iced now support built-in --screenshot self-capture on macOS
 # (via screencapture -l). This script uses spectacle for Linux (KDE Wayland)
@@ -11,7 +11,7 @@ set -euo pipefail
 # NOTE: On macOS, you can use the showcase's built-in self-capture:
 #   cargo run -p native-theme-gpui --example showcase-gpui --release -- \
 #     --theme macos-sonoma --variant light --icon-set system \
-#     --screenshot connectors/native-theme-gpui/docs/assets/macos-macos-sonoma-light.png
+#     --tab basic --screenshot connectors/native-theme-gpui/docs/assets/macos-macos-sonoma-light.png
 #
 # Adwaita needs a GNOME environment (requires adwaita icon theme).
 # macOS Sonoma and Windows 11 are captured by CI on their native runners.
@@ -72,7 +72,7 @@ for entry in "${THEMES[@]}"; do
     echo "[$count/$total] Capturing: $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme}) -> $(basename "$output_file")"
 
     # Build CLI args
-    cli_args=(--theme "$theme" --variant "$variant" --tab buttons --icon-set "$icon_set" --capture)
+    cli_args=(--theme "$theme" --variant "$variant" --tab basic --icon-set "$icon_set" --capture)
     if [ -n "$icon_theme" ]; then
         cli_args+=(--icon-theme "$icon_theme")
     fi

@@ -146,7 +146,7 @@ jobs:
             echo "Capturing ${{ matrix.toolkit }}: $theme $variant (icons: $icon_set)"
             cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release ${{ matrix.features }} -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
-              --tab buttons \
+              --tab basic \
               --screenshot "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
@@ -163,7 +163,7 @@ jobs:
             echo "Capturing ${{ matrix.toolkit }}: $theme $variant (icons: $icon_set)"
             cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release ${{ matrix.features }} -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
-              --tab buttons \
+              --tab basic \
               --screenshot "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 

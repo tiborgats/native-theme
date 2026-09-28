@@ -1023,7 +1023,9 @@ What is still open on the iced side:
 - [ ] Widen the captured screenshot tabs: every capture passes `--tab buttons`
       (`scripts/generate_screenshots_gpui.sh:70`, `screenshots.yml`), so the
       InputGroup, Empty, Carousel, code-editor and Markdown sections never
-      appear in an artefact.
+      appear in an artefact. Since 2026-09-28 every capture passes
+      `--tab basic`, the Basic page all three showcases draw alike, so
+      that the captures compare; those sections still appear in none.
 - [ ] Re-verify the upstream `file:line` citations in this file,
       `docs/todo_gpui-full-theme.md` and `ROADMAP.md`, which are still
       0.6.0-era; four are known stale at 0.6.4 (`popup_menu.rs:749` — fixed in

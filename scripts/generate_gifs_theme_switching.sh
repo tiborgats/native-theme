@@ -68,7 +68,7 @@ for i in "${!THEMES[@]}"; do
     # iced has no --icon-theme: an installed theme's name picks it as the icon set.
     cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
         --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
-        --tab buttons --capture &
+        --tab basic --capture &
     PID=$!
 
     sleep "$DELAY"
@@ -104,7 +104,7 @@ for i in "${!THEMES[@]}"; do
     echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
 
     # Build CLI args
-    cli_args=(--theme "$theme" --variant "$variant" --tab buttons --icon-set "$icon_set" --capture)
+    cli_args=(--theme "$theme" --variant "$variant" --tab basic --icon-set "$icon_set" --capture)
     if [ -n "$icon_theme" ]; then
         cli_args+=(--icon-theme "$icon_theme")
     fi
@@ -147,7 +147,7 @@ for i in "${!THEMES[@]}"; do
     # egui has no --icon-theme: an installed theme's name picks it as the icon set.
     cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
         --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
-        --tab buttons --capture &
+        --tab basic --capture &
     PID=$!
 
     sleep "$DELAY"
