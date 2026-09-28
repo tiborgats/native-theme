@@ -404,11 +404,11 @@ fn colour(c: &Combination, leaf: &str) -> Option<Rgba> {
 
 // ---- the oracle -----------------------------------------------------------------------------
 
-/// §6.13's fold reaches the strokes `defaults.border.color` fills and no other colour: the
-/// model states the multiplier for the defaults' border alone ("defaults only",
-/// `native-theme/src/model/border.rs:36`), so a widget's own border colour, a separator, grid,
-/// divider or menu-separator line keeps its own stated colour (§5.1's
-/// `defaults.border.opacity` row).
+/// §6.13's fold reaches the strokes `defaults.border.color` fills and no other colour: a
+/// widget's own border colour, a separator, grid, divider or menu-separator line keeps its own
+/// stated colour (§5.1's `defaults.border.opacity` row). The model does not state which colours
+/// the multiplier applies to; this is the connector's rule until that is decided (docs/todo.md,
+/// "Border opacity").
 fn folds_opacity(leaf: &str) -> bool {
     leaf == "defaults.border.color"
 }

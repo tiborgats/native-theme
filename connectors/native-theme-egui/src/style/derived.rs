@@ -1017,9 +1017,11 @@ mod tests {
 
     // ---- §6.13 and §6.14, over the base style `base_style` builds -------------------------
 
-    /// `defaults.border.opacity` multiplies `defaults.border.color` alone ("defaults only",
-    /// `native-theme/src/model/border.rs:36`; "applied to the border color",
-    /// docs/platform-facts.md:946): a widget's own border colour is painted as stated.
+    /// The connector folds `defaults.border.opacity` into the strokes of `defaults.border.color`
+    /// alone, and paints a widget's own border colour as stated. The model does not say which
+    /// colours the multiplier applies to (docs/platform-facts.md:946, :997, "applied to the
+    /// border color"; :1116 gives every value as a preset's); the rule is open (docs/todo.md,
+    /// "Border opacity"), and this test pins what the connector does meanwhile.
     #[test]
     fn the_defaults_opacity_folds_into_the_defaults_border_colour_alone() {
         let mut t = theme();

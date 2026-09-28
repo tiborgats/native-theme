@@ -221,6 +221,9 @@ sinks   = [
   { path = "visuals.window_stroke.width" },
 ]
 
+# Folded into the strokes of defaults.border.color alone, and into no widget's own border
+# colour. The model does not state which colours the multiplier applies to; the gpui and iced
+# connectors apply it to none. Open (docs/todo.md, "Border opacity").
 ["defaults.border.opacity"]
 verdict = "derived"
 sinks   = [

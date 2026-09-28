@@ -981,6 +981,10 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
             ),
             ("defaults.border.color", t.defaults.border.color.to_string()),
             (
+                "defaults.border.opacity",
+                t.defaults.border.opacity.to_string(),
+            ),
+            (
                 "defaults.border.line_width",
                 t.defaults.border.line_width.to_string(),
             ),
@@ -1000,6 +1004,12 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
         i.notes.push((
             "the selected tab's fill",
             "none, gpui-component's underline tab".to_string(),
+        ));
+        i.notes.push((
+            "the rule under the tabs",
+            "defaults.border.color with defaults.border.opacity folded into its alpha \
+             (native_theme_egui::border_color)"
+                .to_string(),
         ));
     });
     picked

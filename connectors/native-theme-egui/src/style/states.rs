@@ -64,8 +64,8 @@ pub(crate) struct TextSource {
     pub in_noninteractive: bool,
 }
 
-/// A border: its own colour — `defaults.border.opacity` multiplies `defaults.border.color`
-/// alone (§6.13) —, width and radius, into `entries`. `paths` are the colour, corner-radius
+/// A border: its own colour as stated — the connector folds `defaults.border.opacity` into
+/// strokes of `defaults.border.color` only (§6.13) —, width and radius, into `entries`. `paths` are the colour, corner-radius
 /// and line-width leaves.
 pub(crate) struct BorderSource<'a> {
     pub border: &'a ResolvedWidgetBorder,

@@ -504,6 +504,40 @@
       field's selection takes the unfocused colour. Is it intended? Fix the
       reader or record the reason.
 
+### Border opacity: which lines `defaults.border.opacity` fades
+
+- [ ] Decision for the maintainer (found 2026-09-28, while comparing the
+      three showcases' Basic pages). The connectors disagree on where
+      `defaults.border.opacity` applies. egui folds it into the strokes of
+      `defaults.border.color` (the base style's non-interactive and window
+      strokes, and `native_theme_egui::border_color`) and into no widget's own
+      border colour (`connectors/native-theme-egui/mapping.toml`,
+      `["defaults.border.opacity"]`); gpui and iced fold it into nothing, and
+      paint every border colour, `defaults.border.color` included, as stated
+      (the `border` token, `native_theme_iced::border_color`). So lines drawn
+      in `defaults.border.color` are faded in egui and not in gpui or iced:
+      kde-breeze states 0.2 (`kde-breeze.toml:44`), which leaves `#bcc0bf`
+      faint on `#eff0f1`. The data does not settle it:
+      `native-theme/src/model/border.rs:36` says "Border alpha multiplier
+      0.0-1.0 (defaults only)", which is where the field is stored, not what
+      it applies to (the same note sits on `corner_radius_lg`, `:30`, which
+      `docs/platform-facts.md:944` gives to popover, window and dialog
+      containers); `docs/platform-facts.md:946` and `:997` say only "applied
+      to the border color"; `:1116` gives every platform's value as
+      **(preset)** (0.2, 0.14, 0.2, 0.15), with no platform source. The
+      archived egui spec folded it into every widget border stroke
+      (`docs/archive/todo_v0.6.0_egui-connector-spec.md:2682`, §6.13), and
+      the older iced design note into text input, checkbox and pick list
+      borders (`docs/todo_iced-full-theme-geometry.md:107`); at 0.2 that makes
+      kde-breeze's button border `#d1d1d2` nearly invisible where Breeze draws
+      it clearly. Decide: does the multiplier apply to lines drawn in
+      `defaults.border.color` (then gpui and iced apply it, and every
+      gpui-component frame drawn with the `border` token — dialog, tab,
+      accordion, sheet, menu separator — fades with it), to every border
+      colour, or to none (then egui stops folding it, and the presets'
+      unsourced values could go)? Record the rule where the model documents
+      the field, and make the three connectors and their tests follow it.
+
 ---
 
 ## Toolkit Connectors

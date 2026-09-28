@@ -140,8 +140,9 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     let own = input.scheme.default_style();
     let mut s = input.scheme.default_style();
 
-    // §6.13: the one border opacity, which multiplies `defaults.border.color` alone
-    // (`native-theme/src/model/border.rs:36`, "defaults only"), reported once per style
+    // §6.13: the one border opacity, folded into the strokes of `defaults.border.color` and
+    // no widget's own border colour — the connector's choice, which the model does not state
+    // (docs/todo.md, "Border opacity") —, reported once per style
     let opacity_fold = if d.border.opacity.is_finite() {
         d.border.opacity
     } else {

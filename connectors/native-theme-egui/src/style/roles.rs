@@ -1218,7 +1218,7 @@ mod tests {
             }
             assert_eq!(w.hovered.fg_stroke.color, to_color32(b.hover_text_color));
             assert_eq!(w.active.fg_stroke.color, to_color32(b.active_text_color));
-            // border in all five entries, colour × defaults.border.opacity (§6.13)
+            // border in all five entries, colour as stated (§6.13 folds only `defaults.border.color`)
             for e in [
                 &w.noninteractive,
                 &w.inactive,
