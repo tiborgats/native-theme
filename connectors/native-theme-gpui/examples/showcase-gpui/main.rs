@@ -313,6 +313,10 @@ pub(crate) const CONTENT_SCROLL: &str = "content-scroll";
 /// panel, so `dragging_the_handle_resizes_both_panels` can measure it.
 pub(crate) const CONTENT_PANEL: &str = "content-panel";
 
+/// The debug selector of the box a capture lays over the whole window so
+/// the pointer hovers nothing (`Showcase::pointer_shield`).
+pub(crate) const POINTER_SHIELD: &str = "pointer-shield";
+
 /// The debug selector the content panel's TabBar carries, above the page.
 pub(crate) const CHROME_PAGE_TABS: &str = "chrome-page-tabs";
 
@@ -751,6 +755,15 @@ fn hold_pointer(cx: &mut App, window: AnyWindowHandle, at: (u16, u16), press: bo
 }
 
 impl CliArgs {
+    /// Whether the window is captured with the pointer kept off every
+    /// widget (`Showcase::pointer_shield`): a capture, by an outside tool
+    /// or `--screenshot`, that holds no pointer of its own. Wherever the
+    /// desktop's pointer happens to be, it then hovers nothing, so two
+    /// captures of one theme draw the same.
+    fn shields_pointer(&self) -> bool {
+        (self.capture || self.screenshot.is_some()) && self.pointer.is_none()
+    }
+
     fn parse() -> Self {
         let mut args = Self::default();
         let argv: Vec<String> = std::env::args().collect();
@@ -1258,6 +1271,7 @@ fn apply_cli_args(
     window: &mut gpui::Window,
     cx: &mut gpui::Context<Showcase>,
 ) {
+    s.pointer_shield = cli_args.shields_pointer();
     let mode = cli_args
         .variant
         .as_deref()

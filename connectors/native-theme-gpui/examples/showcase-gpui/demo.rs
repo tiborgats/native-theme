@@ -89,6 +89,7 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
+use native_theme::theme::ResolvedFontSpec;
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::{
     AccessibilityPreferences, ActiveNativeTheme as _, Native, geometry, variants,
@@ -98,11 +99,11 @@ use crate::app::{Quit, ShowPage};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
-    SampleIcon, SampleListDelegate, SampleTableDelegate, native_geometry, native_value, refined,
-    with_gap, with_padding,
+    SampleIcon, SampleListDelegate, SampleTableDelegate, native_color, native_geometry,
+    native_value, refined, with_gap, with_padding,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER, LIST_DEMO,
+    CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER,
     OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE,
     OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE,
     OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY,
@@ -834,6 +835,150 @@ pub(crate) fn tab_bar(
         .selected_index(selected)
         .on_click(on_click)
         .info(ui, info_id, bar_info)
+}
+
+/// `text` in `font`, at the size the text-scaling factor makes of it: a
+/// label a widget's own text size would otherwise set, as its child.
+fn font_text(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static str) -> Div {
+    div()
+        .text_size(px(native_theme_gpui::scaled_text_size(
+            font.size,
+            n.accessibility,
+        )))
+        .font_weight(FontWeight(f32::from(font.weight)))
+        .child(text)
+}
+
+/// A `TabBar` of upstream's default variant, `TabVariant::Tab`, over
+/// `labels`, `selected` the one shown; a click hands `on_click` the index of
+/// the tab clicked.
+///
+/// What the theme states reaches it per call where upstream leaves a seam:
+/// each label is a child in `tab.font`'s size and weight over the `text_sm`
+/// the Tab sets on itself (tab/tab.rs, `RenderOnce for Tab`), and each tab
+/// is at least `tab.min_width` wide and `tab.min_height` tall through the
+/// Tab's style, which its own `h` does not clear.
+pub(crate) fn tab_row(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    labels: &[&'static str],
+    selected: usize,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let row_info = info::layout::tab_row(
+        cx.theme(),
+        labels,
+        selected,
+        native.as_ref().map(|n| n.resolved),
+    );
+    let tabs = labels.iter().map(|&label| match &native {
+        Some(n) => {
+            let t = &n.resolved.tab;
+            Tab::new()
+                .child(font_text(n, &t.font, label))
+                .min_w(px(t.min_width))
+                .min_h(px(t.min_height))
+        }
+        None => Tab::new().label(label),
+    });
+    TabBar::new(id)
+        .children(tabs)
+        .selected_index(selected)
+        .on_click(on_click)
+        .info(ui, id, row_info)
+        .debug_selector(move || id.into())
+}
+
+/// A segment's side padding where `segmented_control.border` states none:
+/// upstream's own for a segment at the default Size (tab/tab.rs:73-80,
+/// `TabVariant::inner_paddings`), which a `TabBar::segmented` would give it.
+const SEGMENT_PADDING: Pixels = px(12.);
+
+/// A segmented control over `labels`, `selected` the one shown; a click
+/// hands `on_click` the index of the segment clicked.
+///
+/// Drawn by the showcase where a native theme is installed: upstream's
+/// segmented `TabBar` paints its selected segment with the window's
+/// background through a sliding indicator and its hovered one inside
+/// render (tab/tab_bar.rs, `TabBar::render_indicator`; tab/tab.rs,
+/// `TabVariant::hovered`), and labels its segments from the tab tokens, so
+/// `segmented_control.active_background`, `hover_background`, `font.color`
+/// and `active_text_color` have no receiver there. Here every segment is
+/// `segmented_control.segment_height` tall at least, padded by the stated
+/// `border.padding` sides ([`SEGMENT_PADDING`] on a side left unstated), in
+/// `font`; the selected one filled with `active_background` and labelled in
+/// `active_text_color`; the others filled with `hover_background` under the
+/// pointer; neighbours parted by a `separator_width` line in
+/// `border.color`; the whole framed by `border` on `background_color`.
+/// Without a native theme it is upstream's segmented `TabBar`.
+pub(crate) fn segmented(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    labels: &[&'static str],
+    selected: usize,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let control_info = info::layout::segmented(
+        cx.theme(),
+        labels,
+        selected,
+        native.as_ref().map(|n| n.resolved),
+    );
+    let Some(n) = native else {
+        return TabBar::new(id)
+            .segmented()
+            .children(labels.iter().map(|&label| Tab::new().label(label)))
+            .selected_index(selected)
+            .on_click(on_click)
+            .info(ui, id, control_info)
+            .debug_selector(move || id.into());
+    };
+    let s = &n.resolved.segmented_control;
+    let b = &s.border;
+    let on_click = Rc::new(on_click);
+    let colour = info::stated;
+    let segments = labels.iter().enumerate().map(|(ix, &label)| {
+        let on_click = on_click.clone();
+        let active = ix == selected;
+        div()
+            .id((id, ix))
+            .flex()
+            .items_center()
+            .min_h(px(s.segment_height))
+            .pl(b.padding.left.map_or(SEGMENT_PADDING, px))
+            .pr(b.padding.right.map_or(SEGMENT_PADDING, px))
+            .when_some(b.padding.top, |segment, top| segment.pt(px(top)))
+            .when_some(b.padding.bottom, |segment, bottom| segment.pb(px(bottom)))
+            .when(ix > 0, |segment| {
+                segment
+                    .border_l(px(s.separator_width))
+                    .border_color(colour(b.color))
+            })
+            .map(|segment| match (active, s.hover_background) {
+                (true, _) => segment
+                    .bg(colour(s.active_background))
+                    .text_color(colour(s.active_text_color)),
+                (false, Some(hover)) => segment
+                    .text_color(colour(s.font.color))
+                    .hover(move |style| style.bg(colour(hover))),
+                (false, None) => segment.text_color(colour(s.font.color)),
+            })
+            .child(font_text(&n, &s.font, label))
+            .on_click(move |_, window, cx| on_click(&ix, window, cx))
+    });
+    h_flex()
+        .bg(colour(s.background_color))
+        .border(px(b.line_width))
+        .border_color(colour(b.color))
+        .rounded(px(b.corner_radius.max(0.0)))
+        .overflow_hidden()
+        .children(segments)
+        .info(ui, id, control_info)
+        .debug_selector(move || id.into())
 }
 
 /// gpui-base's `HANDLE_PADDING` (resizable/resize_handle.rs:11): the padding
@@ -1775,6 +1920,36 @@ pub(crate) fn textarea(
         .debug_selector(move || id.into())
 }
 
+/// A `Textarea` over `state`, `width` wide and as tall as the rows `state`
+/// was built to show, refined by `geometry::input` as [`textarea`] refines
+/// its own: the builder's height rule and padding are a single-line
+/// field's, so its height and padding sides are cleared and the rows the
+/// state holds size it (gpui-base input/base/state.rs,
+/// `InputBaseState::auto_grow`).
+pub(crate) fn rows_textarea(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<TextareaState>,
+    width: Pixels,
+) -> Stateful<Div> {
+    let mut textarea_info = info::inputs::rows_textarea(cx.theme());
+    let mut textarea = native_info(
+        Textarea::new(state).w(width),
+        cx,
+        geometry::input,
+        "input",
+        &mut textarea_info,
+    );
+    let style = Styled::style(&mut textarea);
+    style.padding = StyleRefinement::default().padding;
+    style.size.height = None;
+    style.min_size.height = None;
+    textarea
+        .info(ui, id, textarea_info)
+        .debug_selector(move || id.into())
+}
+
 /// The states of the three `InputGroup`s, and the icons of the chosen icon
 /// theme the first two show.
 pub(crate) struct InputGroupStates<'a> {
@@ -1981,8 +2156,52 @@ pub(crate) fn radio_group(
         .info(ui, id, group_info)
 }
 
-/// A `Switch` reading `label`, `checked` or not. A disabled one takes no
-/// `on_click`.
+/// A column of Radios reading `labels`, `gap` apart, each refined by
+/// `geometry::radio`, the one at `selected` selected; a click hands
+/// `on_click` the index of the Radio clicked.
+///
+/// Built Radio by Radio, not as a `RadioGroup`: a group lays its Radios out
+/// in a child of its own, `gap_3` apart (radio.rs, `RenderOnce for
+/// RadioGroup`), which the group's style does not reach, and the page sets
+/// its rows `layout.widget_gap` apart. The column reports as the group does.
+pub(crate) fn radio_column(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    labels: &[&'static str],
+    gap: Option<Pixels>,
+    selected: Option<usize>,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let mut group_info = info::inputs::radio_column(cx.theme(), labels, selected);
+    let row = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::radio,
+        "radio",
+        &mut group_info,
+    );
+    if gap.is_some() {
+        group_info = group_info.geometry("widget_gap");
+    }
+    let on_click = Rc::new(on_click);
+    with_gap(v_flex(), gap)
+        .items_start()
+        .children(labels.iter().enumerate().map(|(ix, &label)| {
+            let on_click = on_click.clone();
+            Radio::new((id, ix))
+                .refine_style(&row)
+                .label(label)
+                .checked(selected == Some(ix))
+                .on_click(move |_, window, cx| on_click(&ix, window, cx))
+        }))
+        .info(ui, id, group_info)
+        .debug_selector(move || id.into())
+}
+
+/// A `Switch` reading `label`, `checked` or not, its checked track in the
+/// platform's `switch.checked_background` through `Switch::color`. A
+/// disabled one takes no `on_click`.
 pub(crate) fn switch(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1992,16 +2211,21 @@ pub(crate) fn switch(
     on_click: Option<impl Fn(&bool, &mut Window, &mut App) + 'static>,
 ) -> Stateful<Div> {
     let disabled = on_click.is_none();
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let resolved = native.as_ref().map(|n| n.resolved);
+    let checked_background = native_color(cx, |n| n.resolved.switch.checked_background);
     Switch::new(id)
         .label(label)
         .checked(checked)
         .disabled(disabled)
+        .when_some(checked_background, |switch, color| switch.color(color))
         .when_some(on_click, |switch, on_click| switch.on_click(on_click))
         .info(
             ui,
             id,
-            info::inputs::switch(cx.theme(), label, checked, disabled),
+            info::inputs::switch(cx.theme(), label, checked, disabled, resolved),
         )
+        .debug_selector(move || id.into())
 }
 
 /// A `Slider` over `state`, `width` wide.
@@ -2015,6 +2239,7 @@ pub(crate) fn slider(
     Slider::new(state)
         .w(width)
         .info(ui, id, info::inputs::slider(cx.theme()))
+        .debug_selector(move || id.into())
 }
 
 /// A `Rating` at `value`, its stars at `geometry::icon_size_small`: they are
@@ -2075,7 +2300,9 @@ pub(crate) fn select(
         "select",
         &mut select_info,
     );
-    select.info(ui, id, select_info)
+    select
+        .info(ui, id, select_info)
+        .debug_selector(move || id.into())
 }
 
 /// A `ColorPicker` over `state`, reading `label`.
@@ -2365,21 +2592,31 @@ pub(crate) fn pagination(
         .debug_selector(move || id.into())
 }
 
-/// A box `width` by `height`, refined by `geometry::list`, around the List
-/// over `state`. A List paints no frame of its own (list/list.rs,
-/// `RenderOnce for List`), so the box is its frame; the rows report
-/// themselves (`ListRow`).
+/// A box `width` by `height`, refined by `geometry::list` and filled with
+/// `list.background_color`, around the List over `state`; `selector` is its
+/// debug selector. A List paints no frame and no fill of its own
+/// (list/list.rs, `RenderOnce for List`), so the box is its frame and its
+/// fill; the rows report themselves (`ListRow`).
 pub(crate) fn list(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
+    selector: &'static str,
     state: &Entity<ListState<SampleListDelegate>>,
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let mut list_info = info::data::list(state.read(cx).delegate().items.len());
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut list_info = info::data::list(
+        state.read(cx).delegate().items.len(),
+        native.as_ref().map(|n| n.resolved),
+    );
+    let fill = native_color(cx, |n| n.resolved.list.background_color);
     native_info(
-        div().w(width).h(height),
+        div()
+            .w(width)
+            .h(height)
+            .when_some(fill, |list, fill| list.bg(fill)),
         cx,
         geometry::list,
         "list",
@@ -2393,7 +2630,7 @@ pub(crate) fn list(
     // paint_scroll_listener; window.rs, HitboxBehavior::BlockMouse). Every
     // demo box that holds a scroller of its own carries it.
     .occlude()
-    .debug_selector(|| LIST_DEMO.into())
+    .debug_selector(move || selector.into())
 }
 
 /// What a `ListItem` row is marked as.
@@ -2416,8 +2653,8 @@ impl ListRowState {
     }
 }
 
-/// Row `ix` of the Data page's List, reading `label`: a `ListItem` refined
-/// by `geometry::list_item`.
+/// Row `ix` of a List, reading `label`: a `ListItem` refined by
+/// `geometry::list_item`, its info id and debug selector `{prefix}-{ix}`.
 ///
 /// The List marks a row selected or right-clicked after the delegate built
 /// it (list/list.rs, `ListState::render_list_item`), so the row builds its
@@ -2425,6 +2662,7 @@ impl ListRowState {
 #[derive(IntoElement)]
 pub(crate) struct ListRow {
     ui: Entity<InfoRegistry>,
+    prefix: &'static str,
     ix: usize,
     label: SharedString,
     selected: bool,
@@ -2432,9 +2670,15 @@ pub(crate) struct ListRow {
 }
 
 impl ListRow {
-    pub(crate) fn new(ui: &Entity<InfoRegistry>, ix: usize, label: SharedString) -> Self {
+    pub(crate) fn new(
+        ui: &Entity<InfoRegistry>,
+        prefix: &'static str,
+        ix: usize,
+        label: SharedString,
+    ) -> Self {
         Self {
             ui: ui.clone(),
+            prefix,
             ix,
             label,
             selected: false,
@@ -2459,7 +2703,7 @@ impl Selectable for ListRow {
 
 impl RenderOnce for ListRow {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
-        let id = format!("data-list-row-{}", self.ix);
+        let id = format!("{}-{}", self.prefix, self.ix);
         let state = ListRowState::of(self.selected, self.right_clicked);
         // What `native_info` applies the builder under.
         let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
@@ -2482,10 +2726,10 @@ impl RenderOnce for ListRow {
     }
 }
 
-/// A box `width` by `height`, refined by `geometry::list`, around the Tree
-/// over `state`. A tree is a list view and the model gives it no theme of
-/// its own, so its frame is the list's; the rows report themselves
-/// (`tree_row`).
+/// A box `width` by `height`, refined by `geometry::list` and filled with
+/// `list.background_color`, around the Tree over `state`. A tree is a list
+/// view and the model gives it no theme of its own, so its frame and fill
+/// are the list's; the rows report themselves (`tree_row`).
 pub(crate) fn tree(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2494,10 +2738,15 @@ pub(crate) fn tree(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let mut tree_info = info::data::tree();
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut tree_info = info::data::tree(native.as_ref().map(|n| n.resolved));
+    let fill = native_color(cx, |n| n.resolved.list.background_color);
     let rows = ui.clone();
     native_info(
-        div().w(width).h(height),
+        div()
+            .w(width)
+            .h(height)
+            .when_some(fill, |tree, fill| tree.bg(fill)),
         cx,
         geometry::list,
         "list",
@@ -2954,14 +3203,23 @@ pub(crate) fn spinner(
             None => (Size::Medium, false),
         },
     };
-    let spinner_info = info::feedback::spinner(cx.theme(), kind, styled, cx.reduce_motion());
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let spinner_info = info::feedback::spinner(
+        cx.theme(),
+        kind,
+        styled,
+        cx.reduce_motion(),
+        native.as_ref().map(|n| n.resolved),
+    );
     let spinner_info = if styled {
         spinner_info.geometry("spinner_size")
     } else {
         spinner_info
     };
+    let fill = native_color(cx, |n| n.resolved.spinner.fill_color);
     Spinner::new()
         .with_size(size)
+        .when_some(fill, |spinner, fill| spinner.color(fill))
         .info(ui, id, spinner_info)
         .debug_selector(move || id.into())
 }
@@ -3809,7 +4067,8 @@ impl SeparatorKind {
     }
 }
 
-/// A `Separator` of `kind`.
+/// A `Separator` of `kind`, its line in `separator.line_color` through
+/// `Separator::color` where a native theme is installed.
 pub(crate) fn separator(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3821,8 +4080,15 @@ pub(crate) fn separator(
         SeparatorKind::Labelled(label) => Separator::horizontal().label(label),
         SeparatorKind::Dashed => Separator::horizontal_dashed(),
     };
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let line = native_color(cx, |n| n.resolved.separator.line_color);
     separator
-        .info(ui, id, info::layout::separator(cx.theme(), kind))
+        .when_some(line, |separator, line| separator.color(line))
+        .info(
+            ui,
+            id,
+            info::layout::separator(cx.theme(), kind, native.as_ref().map(|n| n.resolved)),
+        )
         // A horizontal Separator's box is as tall as its label and no
         // taller: the line is an absolute child (separator.rs:79-84). The
         // padding leaves something to point at.
@@ -3887,6 +4153,42 @@ pub(crate) fn group_box(
         .title(title)
         .child(content)
         .info(ui, id, box_info)
+        .debug_selector(move || id.into())
+}
+
+/// A card: a Fill `GroupBox` with no title, `width` wide, around the text
+/// `text`, whose Label reports itself as `text_id`. Its content is refined
+/// by `geometry::group_box_content` and filled with `card.background_color`,
+/// which the content style lays over the Fill variant's `group_box` token
+/// (group_box.rs, `RenderOnce for GroupBox`).
+pub(crate) fn card(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text_id: &'static str,
+    text: &'static str,
+    width: Pixels,
+) -> Stateful<Div> {
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut card_info = info::layout::card(cx.theme(), native.as_ref().map(|n| n.resolved));
+    let content_style = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::group_box_content,
+        "group_box_content",
+        &mut card_info,
+    );
+    let fill = native_color(cx, |n| n.resolved.card.background_color);
+    let content_style = match fill {
+        Some(fill) => content_style.bg(fill),
+        None => content_style,
+    };
+    GroupBox::new()
+        .with_variant(GroupBoxVariant::Fill)
+        .content_style(content_style)
+        .w(width)
+        .child(body_label(ui, cx, text_id, text))
+        .info(ui, id, card_info)
         .debug_selector(move || id.into())
 }
 
@@ -3966,6 +4268,97 @@ pub(crate) fn accordion(
             },
         )
         .info(ui, id, accordion_info)
+        .debug_selector(move || id.into())
+}
+
+/// An Accordion of two expanders, `width` wide: an item per `(title, body
+/// id, body)`, open as `open` says; a click on a title hands `on_toggle`
+/// which are open after it. Each body is a body-text Label that reports
+/// itself.
+///
+/// What the theme states reaches it per call: each title row is
+/// `expander.header_height` tall (`geometry::accordion_title`), and fills
+/// with `expander.hover_background` under the pointer through the item's
+/// hover style (accordion.rs, `AccordionItem::hover`); each item takes
+/// `expander.font`'s size through its own style, which upstream refines it
+/// with after its `text_size` (accordion.rs, `RenderOnce for AccordionItem`),
+/// and so do the lines between items their colour; the Accordion takes
+/// `expander.border`, which it refines its bordered card with last
+/// (accordion.rs, `RenderOnce for Accordion`).
+pub(crate) fn expander(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    items: [(&'static str, &'static str, &'static str); 2],
+    open: [bool; 2],
+    width: Pixels,
+    on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut expander_info = info::layout::expander(
+        cx.theme(),
+        cx.reduce_motion(),
+        items.map(|(title, _, _)| title),
+        open,
+        native.as_ref().map(|n| n.resolved),
+    );
+    // `AccordionItem::title_style` takes a refinement rather than being one.
+    let title_style = native_info(
+        StyleRefinement::default(),
+        cx,
+        geometry::accordion_title,
+        "accordion_title",
+        &mut expander_info,
+    );
+    let accordion = Accordion::new(id)
+        .w(width)
+        .on_toggle_click(move |open, window, cx| {
+            on_toggle(&[open.contains(&0), open.contains(&1)], window, cx)
+        });
+    let accordion = match &native {
+        Some(n) => {
+            let b = &n.resolved.expander.border;
+            accordion
+                .border(px(b.line_width))
+                .border_color(info::stated(b.color))
+                .rounded(px(b.corner_radius.max(0.0)))
+        }
+        None => accordion,
+    };
+    items
+        .into_iter()
+        .zip(open)
+        .fold(accordion, |accordion, ((title, body_id, body), open)| {
+            let title_style = title_style.clone();
+            let native = native.as_ref().map(|n| {
+                let e = &n.resolved.expander;
+                (
+                    px(native_theme_gpui::scaled_text_size(
+                        e.font.size,
+                        n.accessibility,
+                    )),
+                    e.hover_background.map(info::stated),
+                    info::stated(e.border.color),
+                )
+            });
+            accordion.item(move |item| {
+                let item = item
+                    .title_style(title_style)
+                    .title(title)
+                    .open(open)
+                    .child(body_label(ui, cx, body_id, body));
+                match native {
+                    Some((size, hover, line)) => item
+                        .text_size(size)
+                        .border_color(line)
+                        .when_some(hover, |item, hover| {
+                            item.hover(move |style| style.bg(hover))
+                        }),
+                    None => item,
+                }
+            })
+        })
+        .info(ui, id, expander_info)
         .debug_selector(move || id.into())
 }
 

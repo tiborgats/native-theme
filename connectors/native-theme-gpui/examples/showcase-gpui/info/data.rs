@@ -2,10 +2,12 @@
 
 use gpui_component::{Colorize as _, attachment::AttachmentStatus, theme::Theme};
 
+use native_theme_gpui::ResolvedTheme;
+
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, ghost_colours, input_background},
-    claim,
+    claim, stated,
 };
 use crate::demo::{BubbleKind, DataTableRow, ListRowState};
 use crate::support::SampleIcon;
@@ -379,15 +381,27 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
 }
 
 /// The fill every List and Tree row lacks.
-const NO_LIST_FILL: &str = "none from a token: ThemeColor::list has no reader, and a ListItem paints no idle background (list/list_item.rs, ListItem::render). geometry::list lands on the element around the rows and carries list.border but not list.background_color, which it could -- our gap";
+const NO_LIST_FILL: &str = "none: a ListItem paints no idle background (list/list_item.rs, ListItem::render), so the fill of the box around the rows shows through";
 
-/// The List, with the box around it that is its frame. Its geometry line is
-/// recorded where `demo::list` applies the builder; its rows report
-/// themselves (`list_row`).
-pub fn list(rows: usize) -> WidgetInfo {
-    WidgetInfo::new("List")
-        .variant("selectable")
-        .not_themeable("fill", NO_LIST_FILL)
+/// The fill of the box around a List's or a Tree's rows: `list.background_color`,
+/// which the showcase paints on it, where a native theme is installed.
+fn list_fill(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    match native {
+        Some(r) => info.color(claim(
+            "fill",
+            "background_color",
+            stated(r.list.background_color),
+            "showcase",
+        )),
+        None => info.not_themeable("fill", "none: no native theme is installed, so the showcase has no list.background_color for the box around the rows, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
+    }
+}
+
+/// The List, with the box around it that is its frame and its fill. Its
+/// geometry line is recorded where `demo::list` applies the builder; its
+/// rows report themselves (`list_row`).
+pub fn list(rows: usize, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    list_fill(WidgetInfo::new("List").variant("selectable"), native)
         .not_themeable("even rows", "the list_even token has no reader anywhere in gpui-component or gpui-base: a List paints every row the same, and the connector writes the slot for nothing (Tier U)")
         .instance("frame", "List paints no frame of its own (list/list.rs, RenderOnce for List), so the frame is the application's: the box around it")
         .instance("rows", format!("{rows}; a click selects one, and each reports itself"))
@@ -448,9 +462,8 @@ pub fn list_row(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Wi
 /// The Tree, with the box around it that is its frame. Its geometry line is
 /// recorded where `demo::tree` applies the builder; its rows report
 /// themselves (`tree_row`).
-pub fn tree() -> WidgetInfo {
-    WidgetInfo::new("Tree")
-        .not_themeable("fill", NO_LIST_FILL)
+pub fn tree(native: Option<&ResolvedTheme>) -> WidgetInfo {
+    list_fill(WidgetInfo::new("Tree"), native)
         .not_themeable("indent", "none here, and none upstream: Tree::new takes a render_item closure and tree.rs draws no row content of its own (tree.rs, Tree), so a row's indent is whatever the application's closure applies -- this demo's applies none")
         .not_themeable("disclosure icon", "the same: tree.rs contains no icon, so a chevron would be the closure's to draw. The panel used to claim a hardcoded ChevronRight, which is in neither this demo nor upstream")
         .instance("frame", "a tree is a list view and the model gives it no theme of its own, so its frame is the list's: the box around it")

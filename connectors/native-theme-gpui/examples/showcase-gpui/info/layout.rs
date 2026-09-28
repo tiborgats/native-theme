@@ -2,11 +2,12 @@
 
 use gpui::Pixels;
 use gpui_component::theme::Theme;
+use native_theme_gpui::ResolvedTheme;
 
 use super::{
     WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours},
-    claim, px_text,
+    claim, px_text, stated,
 };
 use crate::Page;
 use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
@@ -52,16 +53,25 @@ pub fn spacing_box(
     )
 }
 
-/// A `Separator` of `kind`.
-pub fn separator(t: &Theme, kind: SeparatorKind) -> WidgetInfo {
-    let info = WidgetInfo::new("Separator")
-        .variant(kind.name())
-        .color(claim(
+/// A `Separator` of `kind`, its line `native`'s `separator.line_color`
+/// where a native theme is installed (`demo::separator`).
+pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("Separator").variant(kind.name());
+    let info = match native {
+        Some(r) => info.color(claim(
+            "line",
+            "line_color",
+            stated(r.separator.line_color),
+            "showcase",
+        )),
+        None => info.color(claim(
             "line",
             "border",
             t.border,
             "gpui-component/separator.rs:128",
-        ))
+        )),
+    };
+    let info = info
         .not_themeable(
             "thickness",
             "Tier U, not an absence: the platform states separator.line_width and the model carries it. Upstream draws the line on an inner absolutely-positioned div at px(1.) and applies the caller's refinement to the outer container instead, so nothing reaches the line (separator.rs, Separator::render_base)",
@@ -220,6 +230,273 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize) -> WidgetInfo {
             "an item's content springs open and shut on spring_control; the chevron turns at once (accordion.rs, AccordionItem::render)"
         })
         .instance("items", format!("{items}, the first open. Accordion::item takes a closure over an AccordionItem that the Accordion builds and renders itself (accordion.rs, Accordion::item), so an item cannot be wrapped: the Accordion reports for its items and their titles. Each answer is a Label that reports itself"))
+}
+
+/// The Basic page's two expanders, an Accordion of items titled `titles`,
+/// open as `open` says, drawn while gpui's `reduce_motion` is as given, its
+/// per-call seams taken from `native` where a native theme is installed
+/// (`demo::expander`). Its title rows' geometry line is recorded where the
+/// helper applies the builder.
+pub fn expander(
+    t: &Theme,
+    reduce_motion: bool,
+    titles: [&'static str; 2],
+    open: [bool; 2],
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("Accordion")
+        .variant("expanders")
+        .not_themeable(
+            "own icons",
+            super::own_icons("ChevronDown on each item's header, turned while the item is open (accordion.rs, AccordionItem::render)"),
+        )
+        .color(claim(
+            "bg",
+            "accordion",
+            t.accordion,
+            "gpui-component/accordion.rs:371",
+        ))
+        .color(claim(
+            "open item's title",
+            "foreground",
+            t.foreground,
+            "gpui-component/accordion.rs:305",
+        ))
+        .color(claim(
+            "closed item's title, inherited",
+            "foreground",
+            t.foreground,
+            "showcase",
+        ))
+        .color(claim(
+            "chevron",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/accordion.rs:329",
+        ))
+        .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver")
+        .not_themeable("fill", "the accordion token, which the connector gives the window's background: the model states no expander fill");
+    let info = match native {
+        Some(r) if r.expander.hover_background.is_some() => info.color(claim(
+            "hovered title",
+            "hover_background",
+            r.expander
+                .hover_background
+                .map_or(gpui::transparent_black(), stated),
+            "showcase",
+        )),
+        Some(_) => info.not_themeable(
+            "hover",
+            "none: the theme states no expander.hover_background, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)",
+        ),
+        None => info,
+    };
+    let info = match native {
+        Some(r) => info
+            .color(claim(
+                "border and the line between items",
+                "color",
+                stated(r.expander.border.color),
+                "showcase",
+            ))
+            .config("border", format!("expander.border: {}px, radius {}px, which the showcase refines the Accordion with over its bordered card (accordion.rs, RenderOnce for Accordion)", px_text(r.expander.border.line_width), px_text(r.expander.border.corner_radius)))
+            .config("font", format!("expander.font, {}px, through each item's style, which upstream refines the item with after its own text_size (accordion.rs, RenderOnce for AccordionItem)", px_text(r.expander.font.size))),
+        None => info
+            .color(claim(
+                "border",
+                "border",
+                t.border,
+                "gpui-component/accordion.rs:110",
+            ))
+            .color(claim(
+                "line between items",
+                "border",
+                t.border,
+                "gpui-component/accordion.rs:374",
+            ))
+            .not_themeable("hover", "none: no native theme is installed, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)"),
+    };
+    let state = |open: bool| if open { "open" } else { "closed" };
+    let [first, second] = titles;
+    let [first_open, second_open] = open;
+    info.instance(
+        "items",
+        format!(
+            "{first} ({}), {second} ({}); Accordion::item takes a closure over an AccordionItem the Accordion renders itself (accordion.rs, Accordion::item), so the Accordion reports for its items; each body is a Label that reports itself",
+            state(first_open),
+            state(second_open)
+        ),
+    )
+    .instance("animation", if reduce_motion {
+        "none: reduced motion is on, so an item's content opens and closes at once (gpui-base/motion.rs, spring)"
+    } else {
+        "an item's content springs open and shut on spring_control; the chevron turns at once (accordion.rs, AccordionItem::render)"
+    })
+    .instance("click", "a title opens its item and closes the other; the showcase keeps the state")
+}
+
+/// A card: a Fill `GroupBox` with no title, its content filled with
+/// `native`'s `card.background_color` where a native theme is installed
+/// (`demo::card`). Its geometry line is recorded where the helper applies
+/// the builder.
+pub fn card(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("GroupBox")
+        .variant("Fill, a card")
+        .color(claim(
+            "content text",
+            "group_box_foreground",
+            t.group_box_foreground,
+            "gpui-component/group_box.rs:157",
+        ));
+    let info = match native {
+        Some(r) => info
+            .color(claim(
+                "fill",
+                "background_color",
+                stated(r.card.background_color),
+                "showcase",
+            ))
+            .config("edge", "card.border.color at card.border.line_width, with card.border's radius and stated padding sides: geometry::group_box_content sets them on the content, which the GroupBox refines last (group_box.rs, GroupBox)"),
+        None => info.color(claim(
+            "fill",
+            "group_box",
+            t.group_box,
+            "gpui-component/group_box.rs:134",
+        )),
+    };
+    info.not_themeable("padding", "p_4, the Fill variant's own, on a side card.border.padding leaves unstated (group_box.rs, GroupBox)")
+        .instance("content", "a body-text Label, which reports itself")
+}
+
+/// A `TabBar` of the Tab variant over `labels`, the one at `selected`
+/// shown, its per-call seams taken from `native` where a native theme is
+/// installed (`demo::tab_row`).
+pub fn tab_row(
+    t: &Theme,
+    labels: &[&'static str],
+    selected: usize,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("TabBar")
+        .variant("Tab")
+        .color(claim(
+                "bar",
+                "tab_bar",
+                t.tab_bar,
+                "gpui-component/tab/tab_bar.rs:369",
+            ))
+            .color(claim(
+                "label",
+                "tab_foreground",
+                t.tab_foreground,
+                "gpui-component/tab/tab.rs:131",
+            ))
+            .color(claim(
+                "selected label",
+                "tab_active_foreground",
+                t.tab_active_foreground,
+                "gpui-component/tab/tab.rs:224",
+            ))
+            .color(claim(
+                "selected tab",
+                "tab_active",
+                t.tab_active,
+                "gpui-component/tab/tab.rs:225",
+            ))
+            .color(claim(
+                "selected tab's sides",
+                "border",
+                t.border,
+                "gpui-component/tab/tab.rs:231",
+            ))
+            .color(claim(
+                "rule under the bar",
+                "border",
+                t.border,
+                "gpui-component/tab/tab_bar.rs:512",
+            ))
+            .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
+            .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
+            .not_themeable("padding", "the tab's inner padding is a px literal per variant and Size on a child the Tab builds (tab/tab.rs, TabVariant::inner_paddings), so a caller's padding adds to it rather than replacing it, and the model's tab.border.padding is not applied");
+    let info = match native {
+        Some(r) => info
+            .config("font", format!("tab.font, {}px, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.font.size)))
+            .config("size", format!("at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
+        None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+    };
+    let shown = labels.get(selected).copied().unwrap_or("none");
+    info.instance("tabs", labels.join(", "))
+        .instance("selected", shown)
+        .instance("click", "selects the tab; the showcase keeps the state")
+}
+
+/// The segmented control over `labels`, the one at `selected` shown: drawn
+/// by the showcase from `native`'s `segmented_control` where a native theme
+/// is installed, upstream's segmented `TabBar` where none is
+/// (`demo::segmented`).
+pub fn segmented(
+    t: &Theme,
+    labels: &[&'static str],
+    selected: usize,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
+    let shown = labels.get(selected).copied().unwrap_or("none");
+    let info = match native {
+        Some(r) => {
+            let s = &r.segmented_control;
+            let info = WidgetInfo::new("Segmented control")
+                .variant("drawn by the showcase")
+                .color(claim("track", "background_color", stated(s.background_color), "showcase"))
+                .color(claim("label", "color", stated(s.font.color), "showcase"))
+                .color(claim("selected segment", "active_background", stated(s.active_background), "showcase"))
+                .color(claim("selected label", "active_text_color", stated(s.active_text_color), "showcase"))
+                .color(claim("border and separators", "color", stated(s.border.color), "showcase"));
+            let info = if s.hover_background.is_some() {
+                info.color(claim(
+                    "hovered segment",
+                    "hover_background",
+                    s.hover_background.map_or(gpui::transparent_black(), stated),
+                    "showcase",
+                ))
+            } else {
+                info.not_themeable("hover", "none: the theme states no segmented_control.hover_background")
+            };
+            info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.active_background, hover_background, font.color and active_text_color would have no receiver there")
+                .config("size", format!("each segment at least segmented_control.segment_height, {}px, tall, padded by the stated border.padding sides and, on a side left unstated, by 12px, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)", px_text(s.segment_height)))
+                .config("font", format!("segmented_control.font, {}px", px_text(s.font.size)))
+                .config("border", format!("segmented_control.border: {}px, radius {}px; {}px separators between segments (separator_width)", px_text(s.border.line_width), px_text(s.border.corner_radius), px_text(s.separator_width)))
+        }
+        None => WidgetInfo::new("TabBar")
+            .variant("Segmented")
+            .color(claim(
+                "track",
+                "tab_bar_segmented",
+                t.tab_bar_segmented,
+                "gpui-component/tab/tab_bar.rs:391",
+            ))
+            .color(claim(
+                "selected segment",
+                "background",
+                t.background,
+                "gpui-component/tab/tab_bar.rs:258",
+            ))
+            .color(claim(
+                "label",
+                "tab_foreground",
+                t.tab_foreground,
+                "gpui-component/tab/tab.rs:159",
+            ))
+            .color(claim(
+                "selected label",
+                "tab_active_foreground",
+                t.tab_active_foreground,
+                "gpui-component/tab/tab.rs:247",
+            ))
+            .not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+    };
+    info.instance("segments", labels.join(", "))
+        .instance("selected", shown)
+        .instance("click", "selects the segment; the showcase keeps the state")
 }
 
 /// The `Collapsible`, `open` or not.

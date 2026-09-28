@@ -168,6 +168,7 @@ impl Showcase {
                 ui,
                 cx,
                 "data-list",
+                crate::LIST_DEMO,
                 &self.list_state,
                 px(260.0),
                 px(200.0),

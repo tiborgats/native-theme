@@ -57,8 +57,8 @@ use crate::support::{
     parse_icon_set_choice, release_sources,
 };
 use crate::{
-    CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT, Page,
-    demo,
+    CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT,
+    POINTER_SHIELD, Page, demo,
 };
 
 /// gpui-component's mode for the showcase's light/dark flag.
@@ -275,6 +275,12 @@ pub(crate) struct Showcase {
     /// than from `cx.native_theme()`.
     pub(crate) layout: native_theme::theme::LayoutTheme,
 
+    /// Whether a box over the whole window takes the pointer, so what is
+    /// drawn does not depend on where the pointer happens to be: set for a
+    /// capture (`--capture`, `--screenshot`) that holds no pointer of its own
+    /// (`--pointer`).
+    pub(crate) pointer_shield: bool,
+
     // Basic page
     /// The Basic page's three text fields: empty with a placeholder, filled,
     /// and disabled.
@@ -285,6 +291,16 @@ pub(crate) struct Showcase {
     pub(crate) basic_select: Entity<SelectState<SearchableVec<SharedString>>>,
     pub(crate) basic_slider_state: Entity<SliderState>,
     pub(crate) basic_radio: Option<usize>,
+    /// The Basic page's text area: three rows, three lines of text.
+    pub(crate) basic_textarea: Entity<TextareaState>,
+    /// The Basic page's List: eight rows, the second selected.
+    pub(crate) basic_list: Entity<ListState<SampleListDelegate>>,
+    /// The selected tab of the Basic page's tab bar.
+    pub(crate) basic_tab: usize,
+    /// The selected segment of the Basic page's segmented control.
+    pub(crate) basic_segment: usize,
+    /// Whether each of the Basic page's two expanders is open.
+    pub(crate) basic_expanded: [bool; 2],
 
     // Inputs page
     pub(crate) input_state: Entity<InputState>,
@@ -424,6 +440,16 @@ pub(crate) const GPUI_BUILTIN_ROW: &str = "gpui-component built-in (Lucide)";
 /// The Basic page's slider value, on 0 to 100: the datum on display, as the
 /// page's `BASIC_PROGRESS` is.
 const BASIC_SLIDER: f32 = 40.0;
+
+/// The rows the Basic page's text area is tall, and the text it holds: one
+/// line per row.
+const BASIC_TEXTAREA_ROWS: usize = 3;
+const BASIC_TEXTAREA_TEXT: &str = "Line one\nLine two\nLine three";
+
+/// The Basic page's List: its rows, `Item 1` to `Item 8`, and the one
+/// selected, `Item 2`.
+const BASIC_LIST_ROWS: usize = 8;
+const BASIC_LIST_SELECTED: usize = 1;
 
 /// The icon-theme Select's rows for a theme of `icon_set` naming
 /// `icon_theme`: its `default` row, where the theme names an icon theme that
@@ -873,6 +899,11 @@ impl Showcase {
             )
         });
         let basic_slider_state = cx.new(|_cx| SliderState::new().default_value(BASIC_SLIDER));
+        let basic_textarea = cx.new(|cx| {
+            TextareaState::new(window, cx)
+                .auto_grow(BASIC_TEXTAREA_ROWS, BASIC_TEXTAREA_ROWS)
+                .default_value(BASIC_TEXTAREA_TEXT)
+        });
 
         let input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
@@ -1190,6 +1221,7 @@ impl Showcase {
         let list_state = cx.new(|cx| {
             let delegate = SampleListDelegate {
                 ui: info_ui.clone(),
+                id_prefix: "data-list-row",
                 items: vec![
                     "Inbox".into(),
                     "Starred".into(),
@@ -1201,6 +1233,23 @@ impl Showcase {
                 selected: None,
             };
             ListState::new(delegate, window, cx)
+        });
+        let basic_list = cx.new(|cx| {
+            let delegate = SampleListDelegate {
+                ui: info_ui.clone(),
+                id_prefix: "basic-list-row",
+                items: (1..=BASIC_LIST_ROWS)
+                    .map(|n| SharedString::from(format!("Item {n}")))
+                    .collect(),
+                selected: Some(BASIC_LIST_SELECTED),
+            };
+            let mut state = ListState::new(delegate, window, cx);
+            state.set_selected_index(
+                Some(gpui_component::IndexPath::default().row(BASIC_LIST_SELECTED)),
+                window,
+                cx,
+            );
+            state
         });
 
         // Tree state with sample file structure
@@ -1300,12 +1349,18 @@ impl Showcase {
             overlay_gap: Rc::new(Cell::new(None)),
             dialog_icons: SharedDialogIcons::default(),
             layout: initial_layout,
+            pointer_shield: false,
             basic_hint_state,
             basic_text_state,
             basic_disabled_state,
             basic_select,
             basic_slider_state,
             basic_radio: Some(0),
+            basic_textarea,
+            basic_list,
+            basic_tab: 0,
+            basic_segment: 1,
+            basic_expanded: [true, false],
             input_state,
             input_height_state,
             textarea_demo,
@@ -1935,5 +1990,20 @@ impl Render for Showcase {
             .children(Root::render_sheet_layer(window, cx))
             .children(Root::render_dialog_layer(window, cx))
             .children(Root::render_notification_layer(window, cx))
+            // Last, so it is the topmost hitbox: an occluding box takes the
+            // pointer out of the hit test of everything under it (gpui-pre
+            // window.rs, `HitboxBehavior::BlockMouse`), so no widget is
+            // hovered and the inspector is handed no hover.
+            .when(self.pointer_shield, |root| {
+                root.child(
+                    div()
+                        .absolute()
+                        .top_0()
+                        .left_0()
+                        .size_full()
+                        .occlude()
+                        .debug_selector(|| POINTER_SHIELD.into()),
+                )
+            })
     }
 }

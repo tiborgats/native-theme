@@ -52,11 +52,11 @@ use crate::{
     OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE,
     OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
     OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
-    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, PREF_REDUCE_MOTION,
-    PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD,
-    PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION,
-    PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
-    STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
+    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, POINTER_SHIELD,
+    PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND,
+    PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION,
+    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT,
+    STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
     TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
 };
 use native_theme::icons::IconSetChoice;
@@ -3667,6 +3667,229 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
     );
 }
 
+/// The Basic page lays its groups out as the three showcases do: four
+/// columns, left to right, each a stack of its groups in order, every group
+/// its heading over its controls, and every control the page shows drawn.
+#[gpui::test]
+fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
+    use crate::pages::basic::{BASIC_COLUMN_1, BASIC_COLUMN_2, BASIC_COLUMN_3, BASIC_COLUMN_4};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let columns: [&[(&'static str, &'static str)]; 4] = [
+        &BASIC_COLUMN_1,
+        &BASIC_COLUMN_2,
+        &BASIC_COLUMN_3,
+        &BASIC_COLUMN_4,
+    ];
+    let mut previous_left = None;
+    for column in columns {
+        let mut above: Option<Bounds<Pixels>> = None;
+        for &(id, text) in column {
+            let heading = bounds_of(&mut cx, id);
+            if let Some(above) = above {
+                assert!(
+                    heading.top() > above.bottom(),
+                    "{text} is not below the group above it"
+                );
+                assert_eq!(
+                    heading.left(),
+                    above.left(),
+                    "{text} does not start where its column does"
+                );
+            }
+            above = Some(heading);
+        }
+        let left = column.first().map(|&(id, _)| bounds_of(&mut cx, id).left());
+        assert!(
+            previous_left < left,
+            "the column headed {:?} is not right of the one before",
+            column.first()
+        );
+        previous_left = left;
+    }
+    let names: Vec<&str> = columns
+        .iter()
+        .flat_map(|column| column.iter().map(|&(_, text)| text))
+        .collect();
+    assert_eq!(
+        names,
+        [
+            "Buttons",
+            "Checkboxes",
+            "Radio buttons",
+            "Switches",
+            "Text inputs",
+            "Text area",
+            "Drop-down",
+            "Text",
+            "Slider",
+            "Progress bar",
+            "Spinner",
+            "Tabs",
+            "Segmented control",
+            "List",
+            "Expander",
+            "Card",
+            "Separator",
+        ],
+        "the Basic page's groups are not the three showcases' groups"
+    );
+    for control in [
+        "basic-button",
+        "basic-button-primary",
+        "basic-button-disabled",
+        "basic-button-tooltip",
+        "basic-checkbox-unchecked",
+        "basic-checkbox-checked",
+        "basic-checkbox-disabled",
+        "basic-radio",
+        "basic-switch-off",
+        "basic-switch-on",
+        "basic-switch-disabled",
+        "basic-input-placeholder",
+        "basic-input-filled",
+        crate::BASIC_INPUT_DISABLED,
+        "basic-textarea",
+        "basic-select",
+        "basic-body-text",
+        "basic-link",
+        "basic-slider",
+        "basic-progress",
+        "basic-spinner",
+        "basic-tabs",
+        "basic-segmented",
+        "basic-list",
+        "basic-expander",
+        "basic-card",
+        "basic-separator",
+    ] {
+        let bounds = bounds_of(&mut cx, control);
+        assert!(
+            bounds.size.width > px(0.) && bounds.size.height > px(0.),
+            "{control} is drawn with no size: {bounds:?}"
+        );
+    }
+    // Stacked one control to a row, as the other two showcases stack them.
+    let first = bounds_of(&mut cx, "basic-switch-off");
+    let second = bounds_of(&mut cx, "basic-switch-on");
+    assert!(
+        second.top() >= first.bottom(),
+        "the switches are not one to a row"
+    );
+}
+
+/// The Basic List shows four of its eight rows: its box is four rows and
+/// its frame tall, so the rest scroll.
+#[gpui::test]
+fn the_basic_list_shows_four_rows(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let list = bounds_of(&mut cx, "basic-list");
+    let row = bounds_of(&mut cx, "basic-list-row-0");
+    let frame = read(&mut cx, &showcase, |_this, cx| {
+        native_value(cx, |n| n.resolved.list.border.line_width)
+    })
+    .map(px);
+    assert!(frame.is_some(), "no native theme is installed");
+    let frame = frame.unwrap_or_default();
+    assert_eq!(
+        list.size.height,
+        row.size.height * 4. + frame + frame,
+        "the List box is not four rows ({row:?}) and its frame ({frame:?}) tall"
+    );
+}
+
+/// The Basic page fits the window without scrolling under each Linux
+/// preset the captures take, in both modes.
+#[gpui::test]
+fn the_basic_page_fits_the_window(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["kde-breeze", "material", "catppuccin-mocha"] {
+        use_preset(&mut cx, &showcase, preset);
+        for mode in ["Light", "Dark"] {
+            run_menu_item(&mut cx, "Theme", mode);
+            show(&mut cx, &showcase, Page::Basic);
+            let page = bounds_of(&mut cx, PAGE_ROOT);
+            let viewport = bounds_of(&mut cx, CONTENT_SCROLL);
+            assert!(
+                page.size.height <= viewport.size.height,
+                "{preset} {mode}: the Basic page is {}px tall in a {}px viewport",
+                page.size.height.as_f32(),
+                viewport.size.height.as_f32()
+            );
+        }
+    }
+}
+
+/// A capture that holds no pointer of its own keeps the pointer off every
+/// widget: wherever the desktop's pointer is, no widget is hovered, so the
+/// inspector and the status bar show nothing hovered.
+#[gpui::test]
+fn a_capture_hovers_nothing(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let shield = |cx: &mut VisualTestContext, on: bool| {
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.pointer_shield = on;
+                cx.notify();
+            });
+        });
+        cx.run_until_parked();
+        draw(cx);
+    };
+    shield(&mut cx, true);
+    show(&mut cx, &showcase, Page::Basic);
+    for target in ["basic-button", "basic-switch-on", CHROME_TOOLBAR] {
+        let info = settle_on(&mut cx, &showcase, target);
+        assert_eq!(
+            info.map(|info| info.title()),
+            None,
+            "under the shield the pointer over {target} still shows its info"
+        );
+    }
+    assert!(
+        cx.debug_bounds(POINTER_SHIELD).is_some(),
+        "the shield was not drawn"
+    );
+    shield(&mut cx, false);
+    assert!(
+        settle_on(&mut cx, &showcase, "basic-button").is_some(),
+        "without the shield the Button's info is not shown either, so the \
+         shield proved nothing"
+    );
+    assert!(
+        crate::CliArgs {
+            capture: true,
+            ..Default::default()
+        }
+        .shields_pointer(),
+        "a --capture run keeps the pointer on the widgets"
+    );
+    assert!(
+        crate::CliArgs {
+            screenshot: Some("out.png".into()),
+            ..Default::default()
+        }
+        .shields_pointer(),
+        "a --screenshot run keeps the pointer on the widgets"
+    );
+    assert!(
+        !crate::CliArgs {
+            capture: true,
+            pointer: Some((10, 10)),
+            ..Default::default()
+        }
+        .shields_pointer(),
+        "a --capture with --pointer cannot show what the pointer hovers"
+    );
+    assert!(
+        !crate::CliArgs::default().shields_pointer(),
+        "an interactive run keeps the pointer off the widgets"
+    );
+}
+
 /// Two Checkboxes in different states show different infos (spec §4.3.2):
 /// the one the showcase starts checked says so, and the one beside it, which
 /// starts unchecked, says that.
@@ -3903,7 +4126,7 @@ fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     let corner = |radius: f32| {
         let mut t = theme.clone();
         t.radius = px(radius);
-        crate::info::inputs::switch(&t, "Feature toggle", false, false)
+        crate::info::inputs::switch(&t, "Feature toggle", false, false, None)
             .config
             .into_iter()
             .find(|n| n.what == "border-radius")
@@ -5173,7 +5396,7 @@ fn a_widgets_own_icons_are_named_gpui_components(cx: &mut TestAppContext) {
         ),
         (
             "Spinner",
-            feedback::spinner(&t, SpinnerKind::Small, false, false),
+            feedback::spinner(&t, SpinnerKind::Small, false, false, None),
         ),
         (
             "Marker spinner",

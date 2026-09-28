@@ -2,8 +2,9 @@
 
 use gpui::transparent_white;
 use gpui_component::{Colorize as _, theme::Theme};
+use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text};
+use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
 
@@ -220,23 +221,39 @@ pub fn progress_circle(
 /// A `Spinner` of `kind`. A Medium one takes `geometry::spinner_size` where
 /// a native theme is installed, whose line is recorded where `demo::spinner`
 /// applies it; `styled` is whether it did. It is drawn while gpui's
-/// `reduce_motion` is as given.
-pub fn spinner(t: &Theme, kind: SpinnerKind, styled: bool, reduce_motion: bool) -> WidgetInfo {
+/// `reduce_motion` is as given. Its colour is `native`'s
+/// `spinner.fill_color`, which `demo::spinner` hands `Spinner::color`, where
+/// a native theme is installed.
+pub fn spinner(
+    t: &Theme,
+    kind: SpinnerKind,
+    styled: bool,
+    reduce_motion: bool,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Spinner")
         .variant(kind.name())
         .not_themeable(
             "own icons",
             super::own_icons("Loader, the icon it turns (spinner.rs, Spinner::new)"),
-        )
+        );
+    let info = match native {
+        Some(r) => info.color(claim(
+            "icon",
+            "fill_color",
+            stated(r.spinner.fill_color),
+            "showcase",
+        )),
         // No colour of its own: the Loader icon takes the text colour it
         // inherits (spinner.rs:64-66, icon.rs:219), which the showcase sets
         // on its window.
-        .color(claim(
+        None => info.color(claim(
             "icon, inherited foreground",
             "foreground",
             t.foreground,
             "showcase",
-        ));
+        )),
+    };
     let info = match kind {
         SpinnerKind::Small => info.instance("size", "Small via the Size enum: size_3p5, a rem (icon.rs, Icon::into_svg)"),
         SpinnerKind::Large => info.instance("size", "Large via the Size enum: size_6, a rem (icon.rs, Icon::into_svg)"),

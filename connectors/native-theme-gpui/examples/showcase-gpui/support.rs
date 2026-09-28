@@ -261,6 +261,19 @@ pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) ->
     cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
 }
 
+/// A colour of the installed native theme, as gpui paints it, or `None`
+/// before `apply` ran: for a widget whose own setter or refinement takes a
+/// colour the connector's tokens do not carry.
+pub(crate) fn native_color<F: FnOnce(Native<'_>) -> native_theme::color::Rgba>(
+    cx: &App,
+    pick: F,
+) -> Option<gpui::Hsla> {
+    native_value(cx, pick).map(|color| {
+        let [r, g, b, a] = color.to_f32_array();
+        gpui::Hsla::from(gpui::Rgba { r, g, b, a })
+    })
+}
+
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
 /// wherever the platform specifies nothing (platform-facts §2.20). All 16
 /// bundled presets state `layout.widget_gap`, so the `None` arm is reached
@@ -974,6 +987,9 @@ impl TableDelegate for SampleTableDelegate {
 
 pub(crate) struct SampleListDelegate {
     pub(crate) ui: Entity<InfoRegistry>,
+    /// Each row's info id and debug selector is this and its index,
+    /// `{id_prefix}-{ix}`.
+    pub(crate) id_prefix: &'static str,
     pub(crate) items: Vec<SharedString>,
     pub(crate) selected: Option<usize>,
 }
@@ -992,7 +1008,10 @@ impl ListDelegate for SampleListDelegate {
         _cx: &mut Context<ListState<Self>>,
     ) -> Option<Self::Item> {
         let label = self.items.get(ix.row)?.clone();
-        Some(demo::ListRow::new(&self.ui, ix.row, label).selected(self.selected == Some(ix.row)))
+        Some(
+            demo::ListRow::new(&self.ui, self.id_prefix, ix.row, label)
+                .selected(self.selected == Some(ix.row)),
+        )
     }
 
     fn set_selected_index(

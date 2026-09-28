@@ -1,6 +1,6 @@
 //! One module per page of the content area.
 
-mod basic;
+pub(crate) mod basic;
 mod buttons;
 mod charts;
 mod data;

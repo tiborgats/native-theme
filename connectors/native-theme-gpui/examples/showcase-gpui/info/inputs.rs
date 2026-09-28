@@ -1,8 +1,9 @@
 //! What the Inputs page's widgets report about themselves (spec §3.4).
 
 use gpui_component::theme::Theme;
+use native_theme_gpui::ResolvedTheme;
 
-use super::{WidgetInfo, chrome::input_background, claim};
+use super::{WidgetInfo, chrome::input_background, claim, stated};
 use crate::demo::InputField;
 
 /// A single-line `Input` taking the refinement `field` names. `styled` is
@@ -122,6 +123,14 @@ pub fn textarea(t: &Theme) -> WidgetInfo {
         .instance("height", "the showcase's own 90px, set after geometry::input: the builder's height rule is for a single-line field, and a Textarea's own height goes on after it, where it wins")
         .instance("padding", "none from geometry::input: the showcase clears the refinement's padding sides, because they are a single-line field's -- upstream pads only a single-line Input's root (input/input.rs, Input::render: input_px and input_py when not multi-line)")
         .instance("refinement", "geometry::input, the one the single-line Input above takes, because a Textarea renders as one (input/textarea.rs, Textarea::into_input)")
+}
+
+/// A `Textarea` as tall as the rows its state shows: [`textarea`]'s, with
+/// the height its rows give it.
+pub fn rows_textarea(t: &Theme) -> WidgetInfo {
+    let mut info = textarea(t);
+    info.instance.retain(|note| note.what != "height");
+    info.instance("height", "the rows its state was built to show, three, each the row height above: the showcase clears the single-line height geometry::input sets, so the state's rows size it (gpui-base input/base/state.rs, InputBaseState::auto_grow)")
 }
 
 /// The three `InputGroup`s, which report as one. Their geometry lines are
@@ -322,8 +331,26 @@ pub fn radio_group(t: &Theme, labels: &[&'static str], selected: Option<usize>) 
         .instance("selected", selected)
 }
 
-/// A `Switch` reading `label`, `checked` or not, `disabled` or not.
-pub fn switch(t: &Theme, label: &'static str, checked: bool, disabled: bool) -> WidgetInfo {
+/// A column of Radios reading `labels`, the one at `selected` selected,
+/// built Radio by Radio: what a `RadioGroup` paints on each (`radio_group`),
+/// in the showcase's own column. Its geometry lines are recorded where
+/// `demo::radio_column` applies the builders.
+pub fn radio_column(t: &Theme, labels: &[&'static str], selected: Option<usize>) -> WidgetInfo {
+    let mut info = radio_group(t, labels, selected).variant("vertical");
+    info.instance.retain(|note| note.what != "radios");
+    info.instance("radios", format!("{}, each built with Radio::new and reporting through this column: a RadioGroup lays its Radios out gap_3 apart in a child of its own, which its style does not reach (radio.rs, RadioGroup), so the showcase lays them out widget_gap apart itself", labels.join(", ")))
+}
+
+/// A `Switch` reading `label`, `checked` or not, `disabled` or not, its
+/// checked track handed `native`'s `switch.checked_background` where a
+/// native theme is installed.
+pub fn switch(
+    t: &Theme,
+    label: &'static str,
+    checked: bool,
+    disabled: bool,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Switch").variant(match (checked, disabled) {
         (true, false) => "on",
         (false, false) => "off",
@@ -332,8 +359,25 @@ pub fn switch(t: &Theme, label: &'static str, checked: bool, disabled: bool) -> 
     });
     // A disabled Switch fades its track alone, to half alpha (switch.rs:145);
     // the disabled style is resolved after the checked one (gpui-base
-    // switch.rs:116-126).
+    // switch.rs:116-126). The checked track is the colour `Switch::color`
+    // was handed, primary where it was handed none (switch.rs:136-139).
+    let info = match (checked, disabled, native) {
+        (true, false, Some(r)) => info.color(claim(
+            "on track",
+            "checked_background",
+            stated(r.switch.checked_background),
+            "showcase",
+        )),
+        (true, true, Some(r)) => info.color(claim(
+            "on track, at 50%",
+            "checked_background",
+            stated(r.switch.checked_background).opacity(0.5),
+            "showcase",
+        )),
+        _ => info,
+    };
     let info = match (checked, disabled) {
+        (true, _) if native.is_some() => info,
         (true, false) => info.color(claim(
             "on track",
             "primary",
@@ -382,8 +426,11 @@ pub fn switch(t: &Theme, label: &'static str, checked: bool, disabled: bool) -> 
     } else {
         info.config("border-radius", format!("fully round: the theme's radius, {}px, is 4px or more, so the track is rounded by its own height instead", t.radius.as_f32()))
     };
+    let info = match native {
+        Some(_) => info.config("on track", "switch.checked_background, which the showcase hands Switch::color, a per-instance receiver: ThemeColor has no field for it, so the connector cannot install it (gpui-component switch.rs, Switch::color)"),
+        None => info.not_themeable("on track", "primary: no native theme is installed, so the showcase has no switch.checked_background to hand Switch::color (gpui-component switch.rs, Switch::color)"),
+    };
     let info = info
-        .not_themeable("on track", "primary by default, and Switch::color replaces it -- a per-instance receiver for the model's switch.checked_background that nothing in the connector feeds, since ThemeColor has no field for it (gpui-component switch.rs, Switch::color). Our gap")
         .not_themeable("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component switch.rs, Switch::render disabled_bg)")
         .not_themeable("size", "Tier U: track and thumb are px literals per Size, on children of the wrapper the refinement lands on (gpui-component switch.rs, Switch::render), while the model states switch.track_width, track_height and thumb_diameter")
         .not_themeable("corner radius", "fully round unless the theme's radius is under 4px, in which case the theme's is used (gpui-component switch.rs, Switch::render radius). switch.track_radius is modelled and has no receiver")

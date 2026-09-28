@@ -326,6 +326,14 @@ pub fn own_icons(icons: &str) -> String {
     )
 }
 
+/// A colour of the native theme as gpui paints it: the value of a claim on a
+/// colour the showcase hands a widget itself, from the resolved theme, where
+/// no `ThemeColor` token carries it.
+pub fn stated(color: native_theme::color::Rgba) -> Hsla {
+    let [r, g, b, a] = color.to_f32_array();
+    Hsla::from(gpui::Rgba { r, g, b, a })
+}
+
 /// A size in logical pixels to two decimals, trailing zeros dropped: a rem
 /// multiple of a 13.333333px font_size prints as what it is to the eye,
 /// not as float noise.
