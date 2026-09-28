@@ -49,8 +49,8 @@ icon_text_gap_px = 8.0
 
 
 [light.button.border]
-# platform-facts.md:1171-1172 (§2.3): Adwaita CSS 10; 5
-padding_horizontal_px = 10.0
+# platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
+padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
 [light.input]
 min_height_px = 34.0
@@ -189,12 +189,18 @@ arrow_icon_size_px =16.0
 
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ← button padding (10px); ← button (5px)
+# platform-facts.md:1552, :1557 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 [light.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
+
+
+[light.segmented_control.border]
+# platform-facts.md:1571, :1576 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+padding_horizontal_px = 8.0
+padding_vertical_px = 0.0
 
 
 [light.card]
@@ -211,6 +217,9 @@ arrow_icon_size_px =16.0
 
 [light.expander.border]
 corner_radius_px = 6.0
+# platform-facts.md:1607-1608 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+padding_horizontal_px = 14.0
+padding_vertical_px = 8.0
 [dark.defaults]
 disabled_opacity = 0.5
 line_height = 1.21
@@ -252,8 +261,8 @@ icon_text_gap_px = 8.0
 
 
 [dark.button.border]
-# platform-facts.md:1171-1172 (§2.3): Adwaita CSS 10; 5
-padding_horizontal_px = 10.0
+# platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
+padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
 [dark.input]
 min_height_px = 34.0
@@ -392,12 +401,18 @@ arrow_icon_size_px =16.0
 
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ← button padding (10px); ← button (5px)
+# platform-facts.md:1552, :1557 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 [dark.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
+
+
+[dark.segmented_control.border]
+# platform-facts.md:1571, :1576 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+padding_horizontal_px = 8.0
+padding_vertical_px = 0.0
 
 
 [dark.card]
@@ -412,3 +427,6 @@ arrow_icon_size_px =16.0
 
 [dark.expander.border]
 corner_radius_px = 6.0
+# platform-facts.md:1607-1608 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+padding_horizontal_px = 14.0
+padding_vertical_px = 8.0

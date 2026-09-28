@@ -190,7 +190,7 @@ const ROWS: &[Row] = &[
     row(Kde, "expander", NONE, &[1607, 1608], "(none), app-defined"),
     // --- GNOME (adwaita, adwaita-live; the reader states no sizes) ---
     row(Gnome, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
-    row(Gnome, "button", axes(5.0, 10.0), &[1171, 1172], "10; 5"),
+    row(Gnome, "button", axes(5.0, 17.0), &[1171, 1172], "label-only .text-button 17; 5"),
     row(Gnome, "input", axes(0.0, 9.0), &[1196, 1197], "9; 0"),
     row(Gnome, "checkbox", all(3.0), &[1216, 1217], "check { padding: 3px }"),
     row(Gnome, "menu", axes(0.0, 12.0), &[1235, 1236], "12 ($menu_padding); 0")
@@ -212,11 +212,11 @@ const ROWS: &[Row] = &[
         .with(&[("row_height", None, 1389)]),
     row(Gnome, "popover", all(8.0), &[1412, 1413], "popover > contents { padding: 8px }"),
     row(Gnome, "dialog", trbl(32.0, 24.0, 24.0, 24.0), &[1491, 1492], "24; 32 top / 24 bottom"),
-    row(Gnome, "combo_box", axes(5.0, 10.0), &[1552, 1557], "← button padding (10px); ← button (5px)")
+    row(Gnome, "combo_box", axes(5.0, 10.0), &[1552, 1557], "base button rule, the dropdown's button has a box child: 10; 5")
         .with(&[("arrow_area_width", None, 1554)]),
-    row(Gnome, "segmented_control", NONE, &[1571, 1576], "(none)"),
+    row(Gnome, "segmented_control", axes(0.0, 8.0), &[1571, 1576], "AdwToggleGroup text toggle 11 − 3 = 8; 0"),
     row(Gnome, "card", NONE, &[1592, 1593], "(none), app-defined"),
-    row(Gnome, "expander", NONE, &[1607, 1608], "row padding, no number"),
+    row(Gnome, "expander", axes(8.0, 14.0), &[1607, 1608], "AdwExpanderRow header sums: 2 + 12 = 14; 2 + 6 = 8"),
     // --- macOS (macos-sonoma, macos-sonoma-live, macos_widget_defaults) ---
     row(Macos, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Macos, "button", axes(3.0, 8.0), &[1171, 1172], "~8 (WebKit); 3 (measured)"),

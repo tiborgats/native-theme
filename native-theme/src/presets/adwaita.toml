@@ -96,8 +96,8 @@ disabled_text_color = "#cccccc"
 
 
 [light.button.border]
-# platform-facts.md:1171-1172 (§2.3): Adwaita CSS 10; 5
-padding_horizontal_px = 10.0
+# platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
+padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
 
 [light.button.font]
@@ -308,7 +308,7 @@ disabled_text_color = "#cccccc"
 
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ← button padding (10px); ← button (5px)
+# platform-facts.md:1552, :1557 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 [light.segmented_control]
@@ -318,6 +318,11 @@ active_background = "#3584e4"
 active_text_color = "#ffffff"
 hover_background = "#d5d5d5"
 
+
+[light.segmented_control.border]
+# platform-facts.md:1571, :1576 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+padding_horizontal_px = 8.0
+padding_vertical_px = 0.0
 
 [light.card]
 
@@ -335,6 +340,9 @@ arrow_color = "#2e3436"
 
 [light.expander.border]
 corner_radius_px = 6.0
+# platform-facts.md:1607-1608 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+padding_horizontal_px = 14.0
+padding_vertical_px = 8.0
 [dark.defaults]
 accent_color = "#3584e4"
 background_color = "#222226"
@@ -425,8 +433,8 @@ disabled_text_color = "#4a4a4e"
 
 
 [dark.button.border]
-# platform-facts.md:1171-1172 (§2.3): Adwaita CSS 10; 5
-padding_horizontal_px = 10.0
+# platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
+padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
 
 [dark.button.font]
@@ -637,7 +645,7 @@ disabled_text_color = "#4a4a4e"
 
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): ← button padding (10px); ← button (5px)
+# platform-facts.md:1552, :1557 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 [dark.segmented_control]
@@ -647,6 +655,11 @@ active_background = "#3584e4"
 active_text_color = "#ffffff"
 hover_background = "#464649"
 
+
+[dark.segmented_control.border]
+# platform-facts.md:1571, :1576 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+padding_horizontal_px = 8.0
+padding_vertical_px = 0.0
 
 [dark.card]
 
@@ -662,6 +675,9 @@ arrow_color = "#ffffff"
 
 [dark.expander.border]
 corner_radius_px = 6.0
+# platform-facts.md:1607-1608 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+padding_horizontal_px = 14.0
+padding_vertical_px = 8.0
 
 [layout]
 widget_gap_px = 6.0
