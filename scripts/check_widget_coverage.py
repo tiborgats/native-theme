@@ -308,6 +308,21 @@ def shows(haystack, name):
     return re.search(r"(?<!\w)" + re.escape(name) + r"(?!\w)", haystack) is not None
 
 
+def shows_iced(haystack, name):
+    # A module of iced_widget is shown where the showcase names it, never
+    # where a name only coincides with it: `iced::advanced::overlay` is
+    # iced_core's overlay module, and `fn overlay` / `.overlay(` are the
+    # `Widget::overlay` method a widget wrapper implements and forwards, none
+    # of them iced_widget's `overlay` module.
+    return (
+        re.search(
+            r"(?<!\w)(?<!advanced::)(?<!\.)(?<!fn )" + re.escape(name) + r"(?!\w)",
+            haystack,
+        )
+        is not None
+    )
+
+
 # gpui widgets the showcase renders without ever naming their type: an
 # extension method builds one from the element it is called on. Each pattern is
 # that call, so the proof stays as specific as a constructor would be.
@@ -809,7 +824,7 @@ def main():
     report, missing, stale = [], [], []
     for section, discovered, universe, showcase, matches in (
         ("gpui", gpui, gpui, gpui_show, shows_in_gpui),
-        ("iced_widget", iced, iced, iced_show, shows),
+        ("iced_widget", iced, iced, iced_show, shows_iced),
         ("iced_aw", aw, aw_all, iced_show, shows),
         ("egui", egui, egui, egui_show, shows_in_egui),
         ("egui_ui", egui_ui, egui_ui, egui_show, shows_ui_method),
