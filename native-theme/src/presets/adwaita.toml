@@ -125,6 +125,8 @@ color = "#2e3436"
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
 radio_dot_diameter_px = 8.0
+# platform-facts.md:1221 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
+check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 hover_background = "#d5d5d5"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled check is its enabled self at disabled_opacity
@@ -466,6 +468,8 @@ color = "#ffffff"
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
 radio_dot_diameter_px = 8.0
+# platform-facts.md:1221 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
+check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 hover_background = "#464649"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled check is its enabled self at disabled_opacity

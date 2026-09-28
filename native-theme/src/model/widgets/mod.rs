@@ -169,6 +169,12 @@ pub struct CheckboxTheme {
     #[serde(rename = "radio_dot_diameter_px")]
     #[theme(category = "soft_option", check = "non_negative")]
     pub radio_dot_diameter: Option<f32>,
+    /// Stroke width of the check mark a checked checkbox draws, in logical
+    /// pixels. `None` where the platform states none: WinUI's mark is a font
+    /// glyph and AppKit publishes none (docs/platform-facts.md §2.5).
+    #[serde(rename = "check_mark_stroke_width_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub check_mark_stroke_width: Option<f32>,
     /// Space between indicator and label.
     #[serde(rename = "label_gap_px")]
     #[theme(check = "non_negative")]

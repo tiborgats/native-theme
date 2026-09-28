@@ -366,6 +366,26 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
         },
         notes,
     );
+    // The check mark is a line in the state's `fg_stroke` (`egui/src/widgets/checkbox.rs:151-158`,
+    // `check_stroke` from `widget_style.rs:131`, `:188`), so its width is the stroke width, one in
+    // every state (§6.1); the radio's dot takes only the stroke's colour (`radio_button.rs:97-103`).
+    if let Some(width) = optional_length(
+        "checkbox.check_mark_stroke_width",
+        k.check_mark_stroke_width,
+        own.visuals.widgets.inactive.fg_stroke.width,
+        notes,
+    ) {
+        let w = &mut s.visuals.widgets;
+        for e in [
+            &mut w.noninteractive,
+            &mut w.inactive,
+            &mut w.hovered,
+            &mut w.active,
+            &mut w.open,
+        ] {
+            e.fg_stroke.width = width;
+        }
+    }
     s.visuals.override_text_color = Some(to_color32(k.font.color)); // the label (B4)
     override_font(s, "checkbox.font.size", k.font.size, input, notes);
     s.spacing.icon_width = length(
@@ -1475,8 +1495,12 @@ mod tests {
             assert_eq!(w.hovered.bg_fill, hovered, "{preset}");
             assert_eq!(w.active.bg_fill, hovered, "{preset}");
             let border = k.unchecked_border_color.unwrap_or(k.border.color);
+            let mark = k
+                .check_mark_stroke_width
+                .map_or(base.visuals.widgets.inactive.fg_stroke.width, clamp_length);
             for e in all5(w) {
                 assert_eq!(e.fg_stroke.color, to_color32(k.indicator_color), "{preset}");
+                assert_eq!(e.fg_stroke.width, mark, "{preset}: the check mark's stroke");
                 assert_eq!(e.bg_stroke.color, to_color32(border), "{preset}");
                 assert_eq!(
                     e.bg_stroke.width,

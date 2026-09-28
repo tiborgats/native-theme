@@ -122,7 +122,7 @@ row's `radius * 0.5` rounding that ring follows (GC `checkbox.rs:280-283`).
 ### 2.2 `Radio`, `RadioGroup` — on `gpui_base::Radio` / `RadioGroup`
 
 As §2.1, from the same `CheckboxTheme` (PF §2.5: "Radio buttons use the same
-colors but with circular `border.corner_radius`", `platform-facts.md:1222`):
+colors but with circular `border.corner_radius`", `platform-facts.md:1223`):
 the indicator is a circle of `indicator_width`. **The mark is a dot**
 `radio_dot_diameter` across in `indicator_color`, centred in the circle
 (`platform-facts.md:1220`: KDE 6, GNOME 8, Windows 12), faded in and out on the

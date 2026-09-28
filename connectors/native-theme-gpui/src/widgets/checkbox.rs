@@ -342,7 +342,7 @@ impl RenderOnce for Checkbox {
 }
 
 /// A radio button: [`Checkbox`]'s look in a circle (docs/platform-facts.md
-/// §2.5, :1222), on gpui-base's headless `Radio`. Activating an unchecked
+/// §2.5, :1223), on gpui-base's headless `Radio`. Activating an unchecked
 /// one requests `true`; a checked one does nothing. The mark is a dot
 /// `checkbox.radio_dot_diameter` across in `indicator_color`, centred in the
 /// circle (:1220); where the theme states no dot size (macOS publishes none),

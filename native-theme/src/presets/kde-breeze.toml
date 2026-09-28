@@ -130,6 +130,8 @@ color = "#232629"
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
 radio_dot_diameter_px = 6.0
+# platform-facts.md:1221 (§2.5): Breeze's check pen, PenWidth::Frame * 2 = 2.002
+check_mark_stroke_width_px = 2.0
 label_gap_px = 4.0
 # platform-facts.md:1218 (§2.5): Button #fcfcfc under Selection #3daee9 at alpha 0.3
 checked_background = "#c2e4f6"
@@ -486,6 +488,8 @@ color = "#fcfcfc"
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
 radio_dot_diameter_px = 6.0
+# platform-facts.md:1221 (§2.5): Breeze's check pen, PenWidth::Frame * 2 = 2.002
+check_mark_stroke_width_px = 2.0
 label_gap_px = 4.0
 # platform-facts.md:1218 (§2.5): Button #292c30 under Selection #3daee9 at alpha 0.3
 checked_background = "#2f5368"

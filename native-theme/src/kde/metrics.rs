@@ -23,6 +23,8 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // platform-facts.md:1220 (§2.5): renderRadioButton's radius
     // (CheckBox_Size - 2 - 12) / 2 = 3
     variant.checkbox.radio_dot_diameter = Some(6.0);
+    // platform-facts.md:1221 (§2.5): the check pen, PenWidth::Frame * 2 = 2.002
+    variant.checkbox.check_mark_stroke_width = Some(2.0);
     variant.checkbox.label_gap = Some(4.0); // CheckBox_ItemSpacing
 
     // Input

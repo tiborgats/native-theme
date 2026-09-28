@@ -1259,6 +1259,16 @@ verdict  = "unmappable"
 sub_tag  = "widgets-crate"
 upstream = "native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8)"
 
+["checkbox.check_mark_stroke_width"]
+verdict = "scoped"
+sinks   = [
+  { path = "visuals.widgets.noninteractive.fg_stroke.width", scope = "checkbox" },
+  { path = "visuals.widgets.inactive.fg_stroke.width", scope = "checkbox" },
+  { path = "visuals.widgets.hovered.fg_stroke.width", scope = "checkbox" },
+  { path = "visuals.widgets.active.fg_stroke.width", scope = "checkbox" },
+  { path = "visuals.widgets.open.fg_stroke.width", scope = "checkbox" },
+]
+
 ["checkbox.label_gap"]
 verdict = "direct"
 sinks   = [
@@ -2770,9 +2780,6 @@ sinks   = [{ path = "spacing.indent", scope = "expander" }]
 "visuals.text_options.font_hinting"     = "an operating-system text-rendering setting with no native leaf (§5.10)"
 "visuals.text_options.subpixel_binning" = "fractional glyph positions, with no native leaf (§5.10)"
 "visuals.weak_text_alpha" = "read only where visuals.weak_text_color is None (egui/src/style.rs:1141-1143), which defaults.muted_color writes (§5.9)"
-"visuals.widgets.noninteractive.fg_stroke.width" = "no native text-stroke width; egui's own stands (§6.1)"
-"visuals.widgets.inactive.fg_stroke.width"       = "no native text-stroke width; egui's own stands, and §6.1 copies it into hovered, active and open"
-"visuals.widgets.open.fg_stroke.width"           = "written only as §6.1's copy of inactive's width, which is egui's own: no native text-stroke width"
 "visuals.ime_composition.active_underline_stroke.width"   = "native-theme carries no IME-composition colour or width (§5.10)"
 "visuals.ime_composition.active_underline_stroke.color"   = "as visuals.ime_composition.active_underline_stroke.width"
 "visuals.ime_composition.inactive_underline_stroke.width" = "as visuals.ime_composition.active_underline_stroke.width"
