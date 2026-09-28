@@ -5,8 +5,9 @@
 
 use egui::Button;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_stroke};
-use native_theme_egui::{Role, RoleVariant, Surface, ThemeAtlas, expander_icon, input_frame};
+use native_theme_egui::{Role, RoleVariant, Surface, ThemeAtlas, input_frame, text_area_frame};
 use native_theme_egui_widgets::combo_box::ComboBox;
+use native_theme_egui_widgets::expander::Expander;
 use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::radio_button::RadioButton;
 use native_theme_egui_widgets::segmented_control::SegmentedControl;
@@ -328,7 +329,7 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
                 .desired_width(BASIC_WIDE)
                 .desired_rows(AREA_ROWS)
                 .id(id)
-                .frame(input_frame(ui, id, t)),
+                .frame(text_area_frame(ui, id, t)),
         )
     });
 
@@ -473,32 +474,23 @@ fn column_4(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     caption(reg, ui, "List");
     list(reg, state, t, ui);
 
-    // The expander's arrow in `expander.arrow_color` at `expander.arrow_icon_size`
-    // (`expander_icon`), its header `expander.header_height` tall (the expander scope's
+    // The companion crate's expander (docs/todo_egui-widgets-spec.md §4.10): the arrow in
+    // `expander.arrow_color` at `expander.arrow_icon_size` on `expander.arrow_side`,
+    // `arrow_gap` from the title, the body `content_indent` in, framed as `frame_enabled`
+    // states; the header `expander.header_height` tall (the expander scope's
     // `interact_size.y`).
     caption(reg, ui, "Expander");
     ui.scope(|ui| {
         ui.set_max_width(BASIC_WIDE);
         for (title, body, open, kind) in [
-            (
-                "Details",
-                "Expanded content",
-                true,
-                "CollapsingHeader (expanded)",
-            ),
-            (
-                "More",
-                "More content",
-                false,
-                "CollapsingHeader (collapsed)",
-            ),
+            ("Details", "Expanded content", true, "Expander (expanded)"),
+            ("More", "More content", false, "Expander (collapsed)"),
         ] {
             let mut shown = None;
             demo::scoped(reg, ui, Role::Expander, normal, kind, |ui| {
-                let out = egui::CollapsingHeader::new(title)
+                let out = Expander::new(title)
                     .id_salt(("basic/expander", title))
                     .default_open(open)
-                    .icon(expander_icon(t))
                     .show(ui, |ui| ui.label(body));
                 shown = out.body_returned;
                 out.header_response

@@ -2310,9 +2310,9 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 17] = [
     (
         "Expander",
         &[
-            ("CollapsingHeader (expanded)", 1),
+            ("Expander (expanded)", 1),
             ("expander body", 1),
-            ("CollapsingHeader (collapsed)", 1),
+            ("Expander (collapsed)", 1),
         ],
     ),
     ("Card", &[("card", 1), ("card label", 1)]),

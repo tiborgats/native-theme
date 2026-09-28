@@ -1,7 +1,7 @@
 //! Inputs (spec §10.4's palette table): `Role::Input` for every `TextEdit` and `DragValue`,
 //! each `TextEdit` the page builds given `input_frame`; the date picker in the base style.
 
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas, input_frame};
+use native_theme_egui::{Role, RoleVariant, ThemeAtlas, input_frame, text_area_frame};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -33,7 +33,7 @@ pub(crate) fn show(
         },
     );
     let id = ui.make_persistent_id("inputs/multiline");
-    let frame = input_frame(ui, id, t);
+    let frame = text_area_frame(ui, id, t);
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (multiline)", |ui| {
         ui.add(
             egui::TextEdit::multiline(&mut state.multiline)
