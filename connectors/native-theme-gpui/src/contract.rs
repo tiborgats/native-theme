@@ -886,7 +886,17 @@ struct NoReceiver {
     field: &'static str,
     native: fn(&ResolvedTheme) -> Rgba,
     evidence: &'static str,
+    /// Presets whose platform states no value, which they express as fully
+    /// transparent, with the source that says so: nothing is dropped there,
+    /// and a preset listed here that states a colour fails as loudly as a
+    /// missing one.
+    stated_none: &'static [(&'static str, &'static str)],
 }
+
+/// Why kde-breeze, adwaita and macos-sonoma leave `link.hover_background`
+/// transparent.
+const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1626 (§2.28) states no \
+                               link hover background for macOS, KDE and GNOME";
 
 const NO_RECEIVER: &[NoReceiver] = &[
     NoReceiver {
@@ -900,9 +910,15 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    `link_hover` and `link_active` are the link's hover and \
                    pressed *text* (`theme_color.rs:178-179`), which is what \
                    their rows give them.",
+        stated_none: &[
+            ("kde-breeze", LINK_HOVER_NONE),
+            ("adwaita", LINK_HOVER_NONE),
+            ("macos-sonoma", LINK_HOVER_NONE),
+        ],
     },
     NoReceiver {
         field: "segmented_control.active_background",
+        stated_none: &[],
         native: |r| r.segmented_control.active_background,
         evidence: "the selected segment of a `TabVariant::Segmented` bar is \
                    filled with `tokens.background` (`tab/tab.rs:249`, and \
@@ -913,6 +929,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
     },
     NoReceiver {
         field: "segmented_control.active_text_color",
+        stated_none: &[],
         native: |r| r.segmented_control.active_text_color,
         evidence: "the selected segment's label is `tab_active_foreground` \
                    (`tab/tab.rs:247`), the token the `tab_active_foreground` \
@@ -922,6 +939,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
     },
     NoReceiver {
         field: "segmented_control.font.color",
+        stated_none: &[],
         native: |r| r.segmented_control.font.color,
         evidence: "a `TabBar` labels every segment from the tab family -- \
                    `tab_foreground` on the bar (`tab/tab_bar.rs:500`) and on \
@@ -932,6 +950,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
     },
     NoReceiver {
         field: "segmented_control.border.color",
+        stated_none: &[],
         native: |r| r.segmented_control.border.color,
         evidence: "a segmented `TabBar` paints no border at all: the bottom \
                    rule is drawn only for the `Underline` and `Tab` variants \
@@ -941,6 +960,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
     },
     NoReceiver {
         field: "switch.checked_background",
+        stated_none: &[],
         native: |r| r.switch.checked_background,
         evidence: "`ThemeColor` has no checked-state field for a switch -- \
                    only `switch` and `switch_thumb` -- and upstream paints a \
@@ -1056,7 +1076,8 @@ fn the_contract_covers_sixteen_presets_in_both_modes() -> crate::Result<()> {
     Ok(())
 }
 
-/// Each colour `NO_RECEIVER` records is one the presets really state.
+/// Each colour `NO_RECEIVER` records is one the presets really state, but
+/// where the entry's `stated_none` says the platform states none.
 ///
 /// A note about a value nothing receives is worth only as much as the value:
 /// if every preset left it empty there would be nothing to record. The values
@@ -1070,7 +1091,17 @@ fn every_unreachable_native_colour_is_stated_by_every_preset() -> crate::Result<
         let mut stated = Vec::new();
         for c in &combinations {
             let value = rgba_to_hsla((entry.native)(&c.resolved));
-            if value.a <= 0.0 {
+            let none = entry.stated_none.iter().find(|(key, _)| *key == c.key);
+            if let Some((_, why)) = none {
+                if value.a > 0.0 {
+                    missing.push(format!(
+                        "{}: {} states {} where it should state none ({why})",
+                        c.label(),
+                        entry.field,
+                        show(value)
+                    ));
+                }
+            } else if value.a <= 0.0 {
                 missing.push(format!("{}: {}", c.label(), entry.field));
             } else {
                 stated.push(format!("{}: {}", c.label(), show(value)));

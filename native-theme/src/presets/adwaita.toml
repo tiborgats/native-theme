@@ -286,7 +286,8 @@ padding_bottom_px = 24.0
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#3584e418"
+# platform-facts.md:1626 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+hover_background = "#00000000"
 hover_text_color = "#1b6acb"
 active_text_color = "#1b6acb"
 disabled_text_color = "#cccccc"
@@ -614,7 +615,8 @@ padding_bottom_px = 24.0
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#3584e418"
+# platform-facts.md:1626 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+hover_background = "#00000000"
 hover_text_color = "#5b9bf8"
 active_text_color = "#5b9bf8"
 disabled_text_color = "#4a4a4e"

@@ -282,7 +282,8 @@ padding_vertical_px = 20.0
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#007aff18"
+# platform-facts.md:1626 (§2.28): macOS hover_background **(none)**, transparent as background_color
+hover_background = "#00000000"
 # Interactive state colors (platform-facts.md section 2.28 macOS)
 hover_text_color = "#007aff"
 active_text_color = "#007aff"
@@ -638,7 +639,8 @@ padding_vertical_px = 20.0
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#0a84ff18"
+# platform-facts.md:1626 (§2.28): macOS hover_background **(none)**, transparent as background_color
+hover_background = "#00000000"
 # Interactive state colors (platform-facts.md section 2.28 macOS)
 hover_text_color = "#0a84ff"
 active_text_color = "#0a84ff"

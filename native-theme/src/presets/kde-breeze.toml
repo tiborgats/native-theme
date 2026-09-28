@@ -270,7 +270,8 @@ padding_vertical_px = 10.0
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#3daee918"
+# platform-facts.md:1626 (§2.28): KDE hover_background **(none)**, transparent as background_color
+hover_background = "#00000000"
 hover_text_color = "#2980b9"
 active_text_color = "#2980b9"
 disabled_text_color = "#bcc0bf"
@@ -578,7 +579,8 @@ padding_vertical_px = 10.0
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
-hover_background = "#3daee918"
+# platform-facts.md:1626 (§2.28): KDE hover_background **(none)**, transparent as background_color
+hover_background = "#00000000"
 hover_text_color = "#1d99f3"
 active_text_color = "#1d99f3"
 disabled_text_color = "#4d545b"

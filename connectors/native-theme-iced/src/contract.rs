@@ -3535,11 +3535,32 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
         && (a.a - b.a).abs() <= tolerance
 }
 
+/// The presets whose platform states no link hover background
+/// (docs/platform-facts.md:1626, §2.28: macOS, KDE and GNOME), which they
+/// express as fully transparent.
+#[cfg(feature = "widgets")]
+const LINK_HOVER_NONE: [&str; 3] = ["kde-breeze", "adwaita", "macos-sonoma"];
+
 #[cfg(feature = "widgets")]
 #[test]
 fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme::Result<()> {
     let combinations = combinations()?;
     let mut failures = Vec::new();
+    let no_link_hover = combinations
+        .iter()
+        .filter(|c| LINK_HOVER_NONE.contains(&c.key))
+        .count();
+    for c in &combinations {
+        let stated_none = LINK_HOVER_NONE.contains(&c.key);
+        if stated_none != (c.resolved.link.hover_background.a == 0) {
+            failures.push(format!(
+                "{}: link.hover_background is {:?}, and the platform states {}",
+                c.label(),
+                c.resolved.link.hover_background,
+                if stated_none { "none" } else { "one" }
+            ));
+        }
+    }
     let mut transparent_bases = 0usize;
     let mut visible_layers = 0usize;
     let mut opaque_bases = 0usize;
@@ -3684,10 +3705,11 @@ fn compositing_holds_its_four_properties_on_every_native_color() -> native_theme
     );
     assert_eq!(
         visible_layers,
-        combinations.len() * 4,
+        combinations.len() * 4 - no_link_hover,
         "property (a) runs only on a layer with alpha above zero; if a preset \
          starts stating one of these four colors as fully transparent, the \
-         count says so instead of the property quietly shrinking"
+         count says so instead of the property quietly shrinking (the \
+         LINK_HOVER_NONE presets state no link hover background)"
     );
     assert_eq!(
         opaque_bases,
