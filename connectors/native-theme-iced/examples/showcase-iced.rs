@@ -4167,7 +4167,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     ]
     .align_y(iced::Center);
     let padding = native_theme_iced::padding_inside_border(&d.border, Padding::from(gap.container));
-    let min = iced::Size::new(0.0, (d.min_height - padding.y()).max(0.0));
+    let min_height = (d.min_height - padding.y()).max(0.0);
     let border = iced::Border {
         color: to_color(d.border.color),
         width: d.border.line_width,
@@ -4175,10 +4175,12 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     };
     let fill = to_color(d.background_color);
     let body_color = to_color(d.body_font.color);
-    container(at_least(
+    // A row is as tall as its tallest child, and keeps the content at its
+    // top: the space beside the content is the dialog's minimum height.
+    container(row![
         column![head, body].spacing(gap.widget).width(Fill),
-        min,
-    ))
+        space().height(Length::Fixed(min_height)),
+    ])
     .padding(padding)
     .width(Fill)
     .max_width(d.max_width)
