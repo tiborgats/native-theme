@@ -91,7 +91,7 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
-use native_theme::theme::{ResolvedFontSpec, ResolvedPadding};
+use native_theme::theme::{IconSet, ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets;
@@ -4171,12 +4171,26 @@ impl SpinnerKind {
     }
 }
 
-/// A `Spinner` of `kind`.
+/// The icon set a theme-drawn Spinner draws its indicator from, as the
+/// page's icons come: their set (`None` for gpui-component's own icons), the
+/// freedesktop theme they load from (`None`: the system's), and whether the
+/// set has an indicator (the Icons page's animated icons, loaded the same
+/// way).
+#[derive(Clone, Default)]
+#[cfg_attr(not(feature = "widgets"), allow(dead_code))]
+pub(crate) struct SpinnerIcons {
+    pub(crate) set: Option<IconSet>,
+    pub(crate) theme: Option<SharedString>,
+    pub(crate) indicator: bool,
+}
+
+/// A `Spinner` of `kind`; the theme-drawn one draws `icons`' indicator.
 pub(crate) fn spinner(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     kind: SpinnerKind,
+    icons: &SpinnerIcons,
 ) -> Stateful<Div> {
     // The theme states one spinner, `spinner.*`: the Medium one is drawn
     // from it; Small and Large stay gpui-component's, sizes of its own.
@@ -4185,13 +4199,17 @@ pub(crate) fn spinner(
         && let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx))
     {
         return widgets::Spinner::new(id)
+            .icon_set(icons.set)
+            .icon_theme(icons.theme.clone())
             .info(
                 ui,
                 id,
-                info::feedback::native_spinner(r, cx.reduce_motion()),
+                info::feedback::native_spinner(r, cx.reduce_motion(), icons),
             )
             .debug_selector(move || id.into());
     }
+    #[cfg(not(feature = "widgets"))]
+    let _ = icons;
     let (size, styled) = match kind {
         SpinnerKind::Small => (Size::Small, false),
         SpinnerKind::Large => (Size::Large, false),

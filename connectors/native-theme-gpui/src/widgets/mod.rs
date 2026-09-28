@@ -11,7 +11,9 @@
 //! (`spinner.rs:25`). The controls here are built the way gpui-component
 //! builds its own -- on gpui-base's headless primitives, which own
 //! activation, focus, keyboard, dragging and the AccessKit role -- and paint
-//! every part from the [`ResolvedTheme`] leaf that states it.
+//! every part from the [`ResolvedTheme`] leaf that states it. The spinner
+//! draws the application's icon set's own loading indicator, and an arc only
+//! for a set without one.
 //!
 //! Each widget reads the variant [`apply`](crate::apply) installed for the
 //! current mode at render, through [`ActiveNativeTheme`]. With none installed,
@@ -51,13 +53,15 @@ macro_rules! into_element {
 mod checkbox;
 mod progress;
 mod slider;
+mod spinner;
 mod switch;
 #[cfg(test)]
 mod tests;
 
 pub use checkbox::{Checkbox, CheckboxLook, Radio, RadioGroup};
-pub use progress::{ProgressBar, ProgressBarLook, Spinner, SpinnerLook};
+pub use progress::{ProgressBar, ProgressBarLook};
 pub use slider::{Slider, SliderLook};
+pub use spinner::{Spinner, SpinnerLook};
 pub use switch::{Switch, SwitchLook};
 
 into_element!(

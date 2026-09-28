@@ -342,7 +342,14 @@ impl Showcase {
             group(
                 spinner,
                 vec![
-                    demo::spinner(ui, cx, "basic-spinner", SpinnerKind::Medium).into_any_element(),
+                    demo::spinner(
+                        ui,
+                        cx,
+                        "basic-spinner",
+                        SpinnerKind::Medium,
+                        &self.spinner_icons(),
+                    )
+                    .into_any_element(),
                 ],
             ),
             group(

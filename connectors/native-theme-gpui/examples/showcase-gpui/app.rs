@@ -647,6 +647,19 @@ impl Showcase {
             .or(self.icon_set_choice.freedesktop_theme())
     }
 
+    /// The icon set the theme-drawn Spinner draws its indicator from: the
+    /// page's own, with the freedesktop theme its icons load from.
+    pub(crate) fn spinner_icons(&self) -> crate::demo::SpinnerIcons {
+        crate::demo::SpinnerIcons {
+            set: self.icon_set_enum,
+            theme: self
+                .freedesktop_theme()
+                .map(|t| SharedString::from(t.to_owned())),
+            indicator: !self.animated_frame_sources.is_empty()
+                || !self.animated_spin_sources.is_empty(),
+        }
+    }
+
     /// The icon theme as the Icons page names it: a freedesktop set with the
     /// theme its icons load from -- where that is the system's and it cannot
     /// be detected, why, as no theme's icons load then.

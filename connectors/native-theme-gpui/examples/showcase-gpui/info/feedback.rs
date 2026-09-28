@@ -171,9 +171,9 @@ pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo
     let p = &r.progress_bar;
     WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:54"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:53"))
-        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:52"))
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:49"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:48"))
+        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:47"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
         .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
@@ -185,19 +185,51 @@ pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo
 /// A theme-drawn `widgets::Spinner` (spec §2.6), drawn while gpui's
 /// `reduce_motion` is as given.
 #[cfg(feature = "widgets")]
-pub fn native_spinner(r: &ResolvedTheme, reduce_motion: bool) -> WidgetInfo {
+pub fn native_spinner(
+    r: &ResolvedTheme,
+    reduce_motion: bool,
+    icons: &crate::demo::SpinnerIcons,
+) -> WidgetInfo {
+    use native_theme::theme::IconSet;
     let s = &r.spinner;
-    WidgetInfo::new("Spinner")
-        .variant("Medium")
-        .config("drawn by", "native_theme_gpui::widgets::Spinner, an arc on gpui-base's headless Progress (docs/todo_gpui-widgets-spec.md)")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/progress.rs:194"))
-        .config("size", format!("spinner.diameter: {}px across (at least spinner.min_diameter, {}px)", s.diameter, s.min_diameter))
-        .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
-        .not_themeable("motion", "gpui-component's indeterminate arc (progress/progress_circle.rs, ProgressCircle::render): the head eased round the circle over a second, the tail following over its second half; native-theme models no motion")
-        .instance("animation", if reduce_motion {
-            "none: reduced motion is on, so the arc stands still at the motion's half-way frame"
+    let info = WidgetInfo::new("Spinner").variant("Medium").config(
+        "size",
+        format!(
+            "spinner.diameter: {}px across (at least spinner.min_diameter, {}px)",
+            s.diameter, s.min_diameter
+        ),
+    );
+    if icons.indicator {
+        let set = icons.set.map_or("none", |set| set.name());
+        let tinted = matches!(icons.set, Some(IconSet::Material | IconSet::Lucide));
+        let info = info
+            .config("drawn by", format!("native_theme_gpui::widgets::Spinner: the {set} icon set's own loading indicator (native_theme::icons::load_icon_indicator; FreedesktopLoader::load_indicator for a freedesktop theme), on gpui-base's headless Progress"));
+        let info = if tinted {
+            info.color(claim(
+                "indicator",
+                "fill_color",
+                stated(s.fill_color),
+                "native-theme-gpui/widgets/spinner.rs:367",
+            ))
         } else {
-            "the arc's head and tail chase round the circle every second"
+            info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
+        };
+        return info
+            .not_themeable("motion", "the indicator's own frames or turn (native-theme's AnimatedIcon); native-theme models no motion")
+            .instance("animation", if reduce_motion {
+                "none: reduced motion is on, so the indicator's first frame stands still"
+            } else {
+                "the indicator plays at its own frame duration"
+            });
+    }
+    info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:51"))
+        .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
+        .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
+        .instance("animation", if reduce_motion {
+            "none: reduced motion is on, so the arc stands still"
+        } else {
+            "the arc turns a turn a second"
         })
 }
 

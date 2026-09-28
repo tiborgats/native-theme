@@ -169,6 +169,7 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
+        let spinner_icons = self.spinner_icons();
         let marker_icon = self.sample_icon(IconName::CircleCheck);
         let widget_gap = geometry::widget_gap(&self.layout);
         v_flex()
@@ -260,7 +261,7 @@ impl Showcase {
                     h_flex()
                         .gap_2()
                         .items_center()
-                        .child(demo::spinner(ui, cx, id, kind))
+                        .child(demo::spinner(ui, cx, id, kind, &spinner_icons))
                         .child(demo::label(ui, cx, label_id, kind.name()))
                 },
             )))

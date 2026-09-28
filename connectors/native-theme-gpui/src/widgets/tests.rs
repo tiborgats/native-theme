@@ -447,6 +447,51 @@ fn the_progress_bar_and_spinner_are_the_stated_sizes(cx: &mut TestAppContext) {
     assert_eq!(spinner.size.height, px(r.spinner.diameter));
 }
 
+/// The spinner draws the icon set's indicator where the set has one, filling
+/// `spinner.diameter`, and the arc for a set without one.
+#[gpui::test]
+fn the_spinner_is_the_icon_sets_indicator_or_an_arc(cx: &mut TestAppContext) {
+    use native_theme::theme::IconSet;
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .flex()
+                .flex_col()
+                .child(
+                    div()
+                        .debug_selector(|| "set".into())
+                        .child(Spinner::new("set").icon_set(IconSet::Lucide)),
+                )
+                .child(
+                    div()
+                        .debug_selector(|| "none".into())
+                        .child(Spinner::new("none").icon_set(None)),
+                )
+                .into_any_element()
+        }),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let within = |outer: Bounds<Pixels>, inner: Bounds<Pixels>| {
+        outer.origin.y <= inner.origin.y
+            && inner.origin.y + inner.size.height <= outer.origin.y + outer.size.height
+    };
+    let arc = bounds(cx, "native-spinner-arc");
+    assert!(within(bounds(cx, "none"), arc), "icon_set(None): the arc");
+    assert_eq!(arc.size.width, px(r.spinner.diameter));
+    #[cfg(feature = "lucide-icons")]
+    {
+        let indicator = bounds(cx, "native-spinner-indicator");
+        assert!(
+            within(bounds(cx, "set"), indicator),
+            "Lucide: its indicator"
+        );
+        assert_eq!(indicator.size.width, px(r.spinner.diameter));
+        assert_eq!(indicator.size.height, px(r.spinner.diameter));
+    }
+}
+
 #[gpui::test]
 fn without_a_native_theme_the_widgets_are_gpui_components(cx: &mut TestAppContext) {
     let state = cx.new(|_| SliderState::new());
