@@ -1827,6 +1827,67 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
     }
 }
 
+/// The Basic page's check boxes and radio buttons, and the rows they sit in, are as tall as the
+/// indicator the theme states or their label, not a push button's `button.min_height`: the
+/// model states no row height for either (kde-breeze: a 20 indicator under a 32 button,
+/// material 18 under 40).
+#[test]
+fn basic_checkbox_and_radio_rows_fit_the_indicator() {
+    for preset in ["kde-breeze", "material"] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "basic")]),
+        );
+        harness.run_steps(4);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let records = harness.state().registry.records();
+        let rects = |kind: &str| -> Vec<egui::Rect> {
+            records
+                .iter()
+                .filter(|r| r.info.kind == kind)
+                .map(|r| r.rect)
+                .collect()
+        };
+        let (checkboxes, radios) = (rects("checkbox (unchecked)"), rects("RadioButton"));
+        assert!(
+            !checkboxes.is_empty() && radios.len() == 2,
+            "{preset}: the controls were not recorded"
+        );
+        let button = rects("button (enabled)");
+        let tallest_label = t.checkbox.font.size * t.defaults.line_height + 1.0;
+        for rect in checkboxes.iter().chain(&radios) {
+            assert!(
+                rect.height() >= t.checkbox.indicator_width - 0.01,
+                "{preset}: {rect:?} is shorter than the indicator"
+            );
+            assert!(
+                rect.height() <= t.checkbox.indicator_width.max(tallest_label),
+                "{preset}: {rect:?} is taller than the indicator and its label"
+            );
+            assert!(
+                button.iter().all(|b| rect.height() < b.height()),
+                "{preset}: {rect:?} is as tall as a push button"
+            );
+        }
+        // Each group follows the one above by its heading and the gaps alone: the buttons fill
+        // their row, so a checkbox row as tall as a button would leave room above and below the
+        // controls that the button row does not.
+        let (above_checks, above_radios) = (
+            checkboxes[0].top() - button[0].bottom(),
+            radios[0].top() - checkboxes[0].bottom(),
+        );
+        assert!(
+            (above_checks - above_radios).abs() <= 1.0,
+            "{preset}: the checkbox row lies {above_checks} below the buttons, the radio row \
+             {above_radios} below the checkboxes"
+        );
+    }
+}
+
 /// The Basic page applies the leaves egui never reads from the style, per call, as the connector
 /// spec asks of the application (§5.3, §5.4): each push button is at least `button.min_width`
 /// wide and `button.min_height` tall, each text field `input.min_height` tall; the disabled

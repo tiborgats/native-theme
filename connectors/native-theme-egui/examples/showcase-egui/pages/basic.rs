@@ -105,7 +105,7 @@ fn left_column(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui
     });
 
     caption(reg, ui, "Checkboxes");
-    ui.horizontal(|ui| {
+    checkbox_row(reg, ui, "checkbox row", |ui, reg| {
         // Each shows one state and is held in it: a click changes a copy made for the pass.
         let mut unchecked = false;
         demo::scoped(
@@ -138,7 +138,7 @@ fn left_column(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui
 
     // The selected radio button is drawn in `RoleVariant::Selected`, as on the Selection page.
     caption(reg, ui, "Radio buttons");
-    ui.horizontal(|ui| {
+    checkbox_row(reg, ui, "radio row", |ui, reg| {
         for (i, label) in ["Option A", "Option B"].into_iter().enumerate() {
             let selected = state.basic_radio == i;
             let variant = if selected {
@@ -179,6 +179,26 @@ fn left_column(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui
                 .push(("link.font.color", format!("{:?}", t.link.font.color)));
         });
     });
+}
+
+/// A row of check boxes or radio buttons, laid out in the checkbox cell: `ui.horizontal` is as
+/// tall as the `interact_size.y` of the `Ui` it is called on (`egui/src/ui.rs:2376-2379`), which
+/// outside the cell is `button.min_height` and in it the indicator's. Each control still takes
+/// its own variant's scope inside.
+fn checkbox_row(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, &mut Registry),
+) {
+    demo::scoped_container(
+        reg,
+        ui,
+        Role::Checkbox,
+        RoleVariant::Normal,
+        kind,
+        |ui, _, reg| ui.horizontal(|ui| add(ui, reg)).response,
+    );
 }
 
 /// A text field of the Basic page, built inside its `Role::Input` scope (`ui` is the scope's), so
