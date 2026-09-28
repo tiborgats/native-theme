@@ -1393,6 +1393,7 @@ pub(crate) fn tab_bar(
     };
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
     let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
+    #[cfg(feature = "widgets")]
     if let Some(n) = &native {
         return native_tab_bar(ui, n, kind, container_margin, tabs, selected, on_click);
     }
@@ -1459,101 +1460,37 @@ pub(crate) fn tab_bar(
 }
 
 /// What a click on the tab at an index runs.
+#[cfg(feature = "widgets")]
 type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 
 /// What a click on an expander's title runs, with the items' next state.
 type ExpanderToggle = Rc<dyn Fn(&[bool; 2], &mut Window, &mut App)>;
 
-/// A tab's side padding where `tab.border.padding` states none: upstream's
-/// for a tab at the default Size (tab/tab.rs:73-80,
-/// `TabVariant::inner_paddings`), as a segment takes [`SEGMENT_PADDING`].
-const TAB_PADDING: Pixels = px(12.);
-
-/// The tabs `tabs`, each `(label, debug selector)`, as `tab.*` states a tab
-/// (ISSUES D7: exactly what the theme states, no mark of the showcase's
-/// own): at least `min_width` by `min_height`, padded by the stated
-/// `border.padding` sides ([`TAB_PADDING`] on a side left unstated), framed
-/// by `tab.border`, in `tab.font`; an idle tab filled with
-/// `background_color` and lettered in `font.color`, with `hover_background`
-/// over it and `hover_text_color` under the pointer; the one at `selected`
-/// filled with `active_background` and lettered in `active_text_color`.
-/// Nothing else marks it: where a preset states the selected tab's fill and
-/// label as the idle ones' (kde-breeze), nothing does.
-///
-/// Drawn by the showcase because no `TabBar` variant draws that: each marks
-/// the selected tab its own way -- an Underline bar with a 2px primary bar,
-/// a Tab bar with a frame in `border` -- and sets its hover and padding
-/// inside render (tab/tab.rs, `TabVariant`; tab/tab_bar.rs, `TabBar`).
-fn native_tabs(
-    n: &Native<'_>,
-    id: &'static str,
-    tabs: &[(&'static str, &'static str)],
-    selected: usize,
-    on_click: TabClick,
-) -> Vec<Stateful<Div>> {
-    let t = &n.resolved.tab;
-    let b = &t.border;
-    let colour = info::stated;
-    let idle = colour(t.background_color);
-    let hover_fill = t.hover_background.map(|hover| idle.blend(colour(hover)));
-    let hover_text = colour(t.hover_text_color);
+/// `tabs`, each `(label, debug selector)`, as `widgets::Tab`s.
+#[cfg(feature = "widgets")]
+fn native_tabs(tabs: &[(&'static str, &'static str)]) -> Vec<widgets::Tab> {
     tabs.iter()
-        .enumerate()
-        .map(|(ix, &(label, selector))| {
-            let on_click = on_click.clone();
-            div()
-                .id((id, ix))
-                .flex()
-                .flex_none()
-                .items_center()
-                .justify_center()
-                .min_w(px(t.min_width))
-                .min_h(px(t.min_height))
-                .pl(b.padding.left.map_or(TAB_PADDING, px))
-                .pr(b.padding.right.map_or(TAB_PADDING, px))
-                .when_some(b.padding.top, |tab, top| tab.pt(px(top)))
-                .when_some(b.padding.bottom, |tab, bottom| tab.pb(px(bottom)))
-                .border(px(b.line_width))
-                .border_color(colour(b.color))
-                .rounded(px(b.corner_radius.max(0.0)))
-                .map(|tab| {
-                    if ix == selected {
-                        tab.bg(colour(t.active_background))
-                            .text_color(colour(t.active_text_color))
-                    } else {
-                        tab.bg(idle)
-                            .text_color(colour(t.font.color))
-                            .hover(move |style| {
-                                let style = match hover_fill {
-                                    Some(fill) => style.bg(fill),
-                                    None => style,
-                                };
-                                style.text_color(hover_text)
-                            })
-                    }
-                })
-                .child(font_text(n, &t.font, label))
-                .on_click(move |_, window, cx| on_click(&ix, window, cx))
-                .debug_selector(move || selector.into())
-        })
+        .map(|&(label, selector)| widgets::Tab::new(label).debug_selector(|| selector.into()))
         .collect()
 }
 
-/// A tab row's bar: `tab.bar_background`, parted from what follows by the
-/// theme's `separator.*` line, the model stating no tab-bar rule of its own.
-fn native_tab_strip(n: &Native<'_>) -> Div {
+/// A tab row under a native theme: the connector's `widgets::TabBar`, which
+/// draws exactly what `tab.*` states (ISSUES D7), parted from what follows
+/// by the theme's `separator.*` line, the model stating no tab-bar rule of
+/// its own.
+#[cfg(feature = "widgets")]
+fn native_tab_strip(n: &Native<'_>, id: &'static str) -> widgets::TabBar {
     let s = &n.resolved.separator;
-    h_flex()
-        .items_end()
-        .bg(info::stated(n.resolved.tab.bar_background))
+    widgets::TabBar::new(id)
         .border_b(px(s.line_width))
         .border_color(info::stated(s.line_color))
 }
 
-/// [`tab_bar`] under a native theme: [`native_tabs`] on a
-/// [`native_tab_strip`], inset by `container_margin` as upstream's bar is
-/// (the rule runs its full width), the page row's tabs scrolling sideways
-/// where they do not fit, with the menu of every page after them.
+/// [`tab_bar`] under a native theme: a [`native_tab_strip`], inset by
+/// `container_margin` as upstream's bar is (the rule runs its full width),
+/// the page row's tabs scrolling sideways where they do not fit, with the
+/// menu of every page after them.
+#[cfg(feature = "widgets")]
 fn native_tab_bar(
     ui: &Entity<InfoRegistry>,
     n: &Native<'_>,
@@ -1568,14 +1505,9 @@ fn native_tab_bar(
             "inspector-tabs",
             "chrome-inspector-tabs",
             false,
-            "drawn by the showcase",
+            NATIVE_TAB_BAR,
         ),
-        TabBarKind::Pages => (
-            "page-tabs",
-            "chrome-page-tabs",
-            true,
-            "drawn by the showcase, menu",
-        ),
+        TabBarKind::Pages => ("page-tabs", "chrome-page-tabs", true, NATIVE_TAB_BAR_MENU),
     };
     let mut bar_info = info::layout::native_tab_row(n.resolved, variant)
         .instance("padding", info::tab_bar_padding(container_margin));
@@ -1584,12 +1516,7 @@ fn native_tab_bar(
     }
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click: TabClick = Rc::new(on_click);
-    let row = h_flex()
-        .id((ElementId::from(id), "row"))
-        .flex_1()
-        .min_w_0()
-        .overflow_x_scroll()
-        .children(native_tabs(n, id, &tabs, selected, on_click.clone()));
+    let on_tab = on_click.clone();
     let menu = menu.then(|| {
         Button::new("page-tabs-menu")
             .xsmall()
@@ -1610,14 +1537,22 @@ fn native_tab_bar(
             })
             .anchor(gpui::Anchor::TopRight)
     });
-    native_tab_strip(n)
-        .id(id)
+    native_tab_strip(n, id)
         .w_full()
         .when_some(container_margin, |bar, margin| bar.px(margin))
-        .child(row)
-        .children(menu.map(|menu| div().flex_none().self_center().child(menu)))
+        .children(native_tabs(&tabs))
+        .selected_index(selected)
+        .on_click(move |ix, window, cx| on_tab(ix, window, cx))
+        .when_some(menu, |bar, menu| bar.suffix(menu))
         .info(ui, info_id, bar_info)
 }
+
+/// The variant a theme-drawn tab row's info names.
+#[cfg(feature = "widgets")]
+pub(crate) const NATIVE_TAB_BAR: &str = "widgets::TabBar";
+/// The same, for the page row with its menu.
+#[cfg(feature = "widgets")]
+pub(crate) const NATIVE_TAB_BAR_MENU: &str = "widgets::TabBar, menu";
 
 /// `text` in `font`, at the size the text-scaling factor makes of it: a
 /// label a widget's own text size would otherwise set, as its child.
@@ -1649,17 +1584,19 @@ pub(crate) fn tab_row(
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    #[cfg(feature = "widgets")]
     if let Some(n) = &native {
         let tabs: Vec<(&'static str, &'static str)> =
             labels.iter().map(|&label| (label, label)).collect();
         let shown = labels.get(selected).copied().unwrap_or("none");
-        let row_info = info::layout::native_tab_row(n.resolved, "drawn by the showcase")
+        let row_info = info::layout::native_tab_row(n.resolved, NATIVE_TAB_BAR)
             .instance("tabs", labels.join(", "))
             .instance("selected", shown)
             .instance("click", "selects the tab; the showcase keeps the state");
-        return native_tab_strip(n)
-            .id(id)
-            .children(native_tabs(n, id, &tabs, selected, Rc::new(on_click)))
+        return native_tab_strip(n, id)
+            .children(native_tabs(&tabs))
+            .selected_index(selected)
+            .on_click(on_click)
             .info(ui, id, row_info)
             .debug_selector(move || id.into());
     }

@@ -491,9 +491,11 @@ pub fn native_expander(
         .instance("click", "a title opens or closes its item; the showcase keeps the state")
 }
 
-/// A row of tabs the showcase draws as `r`'s `tab.*` states a tab
-/// (`demo::native_tabs`), under `variant`: the page tabs, the inspector's
-/// and the Basic page's, wherever a native theme is installed.
+/// A row of tabs `native_theme_gpui::widgets::TabBar` draws as `r`'s
+/// `tab.*` states a tab (`demo::native_tab_strip`), under `variant`: the
+/// page tabs, the inspector's and the Basic page's, wherever a native theme
+/// is installed.
+#[cfg(feature = "widgets")]
 pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
     let t = &r.tab;
     let info = WidgetInfo::new("TabBar")
@@ -502,32 +504,37 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "bar",
             "bar_background",
             stated(t.bar_background),
-            "showcase",
+            "native-theme-gpui/widgets/tab_bar.rs:75",
         ))
         .color(claim(
-            "tab",
+            "unselected tab",
             "background_color",
             stated(t.background_color),
-            "showcase",
+            "native-theme-gpui/widgets/tab_bar.rs:76",
         ))
-        .color(claim("label", "font", stated(t.font.color), "showcase"))
+        .color(claim(
+            "label",
+            "font",
+            stated(t.font.color),
+            "native-theme-gpui/widgets/tab_bar.rs:81",
+        ))
         .color(claim(
             "selected tab",
             "active_background",
             stated(t.active_background),
-            "showcase",
+            "native-theme-gpui/widgets/tab_bar.rs:84",
         ))
         .color(claim(
             "selected label",
             "active_text_color",
             stated(t.active_text_color),
-            "showcase",
+            "native-theme-gpui/widgets/tab_bar.rs:85",
         ))
         .color(claim(
-            "tab edge",
+            "selected tab's outline",
             "border",
             stated(t.border.color),
-            "showcase",
+            "native-theme-gpui/widgets/tab_bar.rs:86",
         ))
         .color(claim(
             "rule under the bar",
@@ -537,10 +544,10 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         ));
     let info = if t.hover_background.is_some() {
         info.color(claim(
-            "hover layer, over a tab",
+            "hovered unselected tab, in place of its fill, over the bar",
             "hover_background",
             stated(t.hover_background.unwrap_or(t.background_color)),
-            "showcase",
+            "native-theme-gpui/widgets/tab_bar.rs:82",
         ))
     } else {
         info
@@ -549,7 +556,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         "hovered label",
         "hover_text_color",
         stated(t.hover_text_color),
-        "showcase",
+        "native-theme-gpui/widgets/tab_bar.rs:83",
     ));
     let padding = t.border.padding;
     let side = |v: Option<f32>| {
@@ -561,8 +568,8 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
     info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
         .config("font", format!("tab.font, {}px, weight {}", px_text(t.font.size), t.font.weight))
         .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
-        .config("edge", format!("tab.border: {}px, radius {}px", px_text(t.border.line_width), px_text(t.border.corner_radius)))
-        .not_themeable("selection mark", "none beyond the selected tab's fill and label: tab.* states no underline or indicator, so a preset that states the selected tab's fill and label as the idle ones' marks nothing (upstream's TabBar variants draw a primary underline or a framed tab of their own, tab/tab_bar.rs and tab/tab.rs, TabVariant)")
+        .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11)", px_text(t.border.line_width), px_text(t.border.corner_radius)))
+        .not_themeable("selection mark", "none beyond the selected tab's fill, label and outline: tab.* states no underline or indicator (upstream's TabBar variants draw a primary underline or a framed tab of their own, tab/tab_bar.rs and tab/tab.rs, TabVariant; Breeze's 3px Highlight strip on the selected tab is no tab field)")
         .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own")
 }
 

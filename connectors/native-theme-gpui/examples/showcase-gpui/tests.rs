@@ -2286,7 +2286,16 @@ fn the_resize_handle_reports_itself(cx: &mut TestAppContext) {
 }
 
 /// The title the page TabBar's info shows.
-const PAGE_TABS_TITLE: &str = "TabBar · drawn by the showcase, menu";
+#[cfg(feature = "widgets")]
+const PAGE_TABS_TITLE: &str = "TabBar · widgets::TabBar, menu";
+#[cfg(not(feature = "widgets"))]
+const PAGE_TABS_TITLE: &str = "TabBar · Underline, small, menu";
+
+/// The title the inspector's TabBar's info shows.
+#[cfg(feature = "widgets")]
+const INSPECTOR_TABS_TITLE: &str = "TabBar · widgets::TabBar";
+#[cfg(not(feature = "widgets"))]
+const INSPECTOR_TABS_TITLE: &str = "TabBar · Underline, small";
 
 /// The page TabBar sits at the top of the content panel, above the page's
 /// scroll area, across the panel (spec S3); it reports itself, and clicking a
@@ -2455,24 +2464,56 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     }
 }
 
-/// The tab rows draw exactly what `tab.*` states (ISSUES D7): the selected
-/// page tab is filled with `tab.active_background` and nothing in the row is
-/// painted in the accent that upstream's Underline bar marks it with, under
-/// a preset whose selected tab looks like its idle ones (kde-breeze) and one
-/// whose does not (material).
+/// The tab rows draw exactly what `tab.*` states (ISSUES D7), through the
+/// connector's `widgets::TabBar`: the selected page tab is filled with
+/// `tab.active_background` and outlined in `tab.border`, an unselected one
+/// filled with `tab.background_color` and outlined in nothing, and nothing
+/// in the row is painted in the accent that upstream's Underline bar marks
+/// it with, under a preset whose unselected tab differs from its bar
+/// (kde-breeze) and one whose does not (material).
+#[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     for preset in ["kde-breeze", "material"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
-        let active = read(&mut cx, &showcase, |_, cx| {
-            native_color(cx, |n| n.resolved.tab.active_background)
+        let (active, idle, edge) = read(&mut cx, &showcase, |_, cx| {
+            (
+                native_color(cx, |n| n.resolved.tab.active_background),
+                native_color(cx, |n| n.resolved.tab.background_color),
+                // An outline shows where it has a width and a colour.
+                native_color(cx, |n| n.resolved.tab.border.color).filter(|c| {
+                    !c.is_transparent()
+                        && native_value(cx, |n| n.resolved.tab.border.line_width)
+                            .is_some_and(|w| w > 0.)
+                }),
+            )
         });
         assert_eq!(
             painted_fill(&mut cx, Page::Basic.tab()),
             active,
             "{preset}: the selected page tab is not filled with tab.active_background"
+        );
+        assert_eq!(
+            painted_fill(&mut cx, Page::Buttons.tab()),
+            idle,
+            "{preset}: an unselected page tab is not filled with tab.background_color"
+        );
+        assert_eq!(
+            painted_edge(&mut cx, Page::Basic.tab()).filter(|c| !c.is_transparent()),
+            edge,
+            "{preset}: the selected page tab is not outlined in tab.border.color"
+        );
+        if preset == "kde-breeze" {
+            assert!(
+                edge.is_some(),
+                "kde-breeze states the selected tab's outline"
+            );
+        }
+        assert!(
+            painted_edge(&mut cx, Page::Buttons.tab()).is_none_or(|c| c.is_transparent()),
+            "{preset}: an unselected page tab is outlined"
         );
         let row = bounds_of(&mut cx, CHROME_PAGE_TABS);
         let accent = cx.update(|window, cx| {
@@ -2497,8 +2538,11 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
 /// rule in `border` (tab/tab_bar.rs:505-513).
 fn bottom_rule(cx: &mut VisualTestContext, within: Bounds<Pixels>) -> Option<Bounds<Pixels>> {
     cx.update(|window, cx| {
+        #[cfg(feature = "widgets")]
         let border = native_color(cx, |n| n.resolved.separator.line_color)
             .unwrap_or(Theme::global(cx).border);
+        #[cfg(not(feature = "widgets"))]
+        let border = Theme::global(cx).border;
         let scale = window.scale_factor();
         let within = within.scale(scale);
         window
@@ -5916,6 +5960,21 @@ fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
     })
 }
 
+/// The border colour of the largest box with a border painted exactly over
+/// `selector`'s bounds.
+#[cfg(feature = "widgets")]
+fn painted_edge(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
+    let bounds = bounds_of(cx, selector);
+    cx.update(|window, _cx| {
+        let bounds = bounds.scale(window.scale_factor());
+        window
+            .painted_quads()
+            .into_iter()
+            .find(|q| q.bounds == bounds && q.border_widths.top.0 > 0.)
+            .map(|q| q.border_color)
+    })
+}
+
 /// A hovered Tag fades to 90% (tag.rs:265), and its info names the fill
 /// that paints -- the painted value, not the token it fades.
 #[gpui::test]
@@ -7098,7 +7157,7 @@ fn hiding_the_side_panel_clears_what_left_the_screen(cx: &mut TestAppContext) {
     };
     assert_eq!(
         shown(&mut cx).as_deref(),
-        Some("TabBar · drawn by the showcase"),
+        Some(INSPECTOR_TABS_TITLE),
         "the inspector's TabBar did not report itself"
     );
     run_menu_item(&mut cx, "View", "Toggle Side Panel");

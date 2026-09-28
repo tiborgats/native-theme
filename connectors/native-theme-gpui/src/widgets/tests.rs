@@ -235,6 +235,96 @@ fn a_progress_bar_and_a_spinner_paint_their_themes() {
 }
 
 #[test]
+fn a_tab_bar_paints_tab_theme() {
+    for (preset, mode) in PRESETS {
+        let r = resolved(preset, mode);
+        let t = &r.tab;
+        let look = TabLook::of(&r).expect("finite");
+        assert_eq!(look.bar, c(t.bar_background), "{preset}");
+        assert_eq!(look.idle, c(t.background_color), "{preset}");
+        assert_eq!(look.idle_text, c(t.font.color), "{preset}");
+        assert_eq!(look.hover_text, c(t.hover_text_color), "{preset}");
+        assert_eq!(look.active, c(t.active_background), "{preset}");
+        assert_eq!(look.active_text, c(t.active_text_color), "{preset}");
+        assert_eq!(look.border, c(t.border.color), "{preset}");
+        assert_eq!(look.border_width, px(t.border.line_width), "{preset}");
+        assert_eq!(look.radius, px(t.border.corner_radius), "{preset}");
+        assert_eq!(look.min_width, px(t.min_width), "{preset}");
+        assert_eq!(look.min_height, px(t.min_height), "{preset}");
+        let hover = t.hover_background.expect("both presets state a tab hover");
+        assert_eq!(look.hover, c(t.bar_background).blend(c(hover)), "{preset}");
+    }
+    // Breeze: the unselected tab is darker than the bar, and the hover
+    // replaces that fill (docs/platform-facts.md §2.11).
+    let r = resolved("kde-breeze", ColorMode::Dark);
+    let look = TabLook::of(&r).expect("finite");
+    assert_ne!(look.idle, look.bar);
+    assert_eq!(look.padding_left, px(8.));
+}
+
+#[gpui::test]
+fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .child(
+                    TabBar::new("t")
+                        .child(Tab::new("One").debug_selector(|| "one".into()))
+                        .child(Tab::new("Two").debug_selector(|| "two".into()))
+                        .selected_index(1),
+                )
+                .into_any_element()
+        }),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let (one, two) = (bounds(cx, "one"), bounds(cx, "two"));
+    assert_eq!(one.size.height, px(r.tab.min_height));
+    assert!(one.size.width >= px(r.tab.min_width));
+    // gpui paints a box's fill and its border as two quads.
+    let painted = |cx: &mut VisualTestContext, b: Bounds<Pixels>| {
+        cx.update(|window, _| {
+            let b = b.scale(window.scale_factor());
+            let quads = window.painted_quads();
+            let fill = quads
+                .iter()
+                .find(|q| q.bounds == b && !q.background.is_transparent())
+                .and_then(|q| q.background.as_solid());
+            let edge = quads
+                .iter()
+                .find(|q| q.bounds == b && q.border_widths.top.0 > 0.)
+                .map(|q| q.border_color);
+            (fill, edge)
+        })
+    };
+    assert_eq!(
+        painted(cx, two),
+        (
+            Some(c(r.tab.active_background)),
+            Some(c(r.tab.border.color))
+        ),
+        "the selected tab: active_background outlined in tab.border"
+    );
+    let look = TabLook::of(&r).expect("finite");
+    cx.simulate_mouse_move(centre(one), None, Modifiers::default());
+    redraw(cx);
+    assert_eq!(
+        painted(cx, one).0,
+        Some(look.hover),
+        "hovered: tab.hover_background"
+    );
+    cx.simulate_mouse_move(point(px(500.), px(400.)), None, Modifiers::default());
+    redraw(cx);
+    let (fill, edge) = painted(cx, one);
+    assert_eq!(fill, Some(c(r.tab.background_color)));
+    assert!(
+        edge.is_none_or(|e| e.is_transparent()),
+        "the unselected tab has no outline"
+    );
+}
+
+#[test]
 fn a_length_that_is_not_finite_falls_back() {
     let mut r = resolved("kde-breeze", ColorMode::Light);
     r.checkbox.indicator_width = f32::NAN;

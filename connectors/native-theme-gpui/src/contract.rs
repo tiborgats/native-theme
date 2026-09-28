@@ -1338,7 +1338,10 @@ struct Pair {
     /// The pair the platform's own fields give. `is_dark` is the mode, which
     /// a soft option's fallback needs.
     native: fn(&ResolvedTheme, bool) -> (Hsla, Hsla, Hsla),
-    emitted: fn(&ThemeColor) -> (Hsla, Hsla, Hsla),
+    /// What the connector draws: out of the tokens it writes, or, for a
+    /// surface a [`widgets`](crate::widgets) control draws, out of the
+    /// resolved theme the control paints from.
+    emitted: fn(&ThemeColor, &ResolvedTheme) -> (Hsla, Hsla, Hsla),
     /// Combinations -- `preset/mode`, because the two this release knows are
     /// one mode of their preset -- where the emitted pair is legitimately
     /// worse than the platform's, each with its reason.
@@ -1366,10 +1369,50 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
 /// platform's idle-tab fill. Breeze fills an unselected tab with
 /// `Window.darker(120)` (`docs/platform-facts.md:1312`, §2.11), which under
 /// Breeze Dark (`#1b1d20` on the `#202326` window) lifts the label's contrast
-/// above the bar's; the emitted pair stays above 15:1.
+/// above the bar's; the emitted pair stays above 15:1. Without the `widgets`
+/// feature only: `widgets::TabBar` paints the idle fill.
+#[cfg(not(feature = "widgets"))]
 const IDLE_TAB_SURFACE: &str = "upstream paints an idle tab transparent \
                                 (tab/tab.rs:132) and Breeze Dark's idle tab fill, \
                                 Window.darker(120), is darker than the bar";
+
+/// Where the `tab label` pair may be worse than the platform's.
+#[cfg(not(feature = "widgets"))]
+const IDLE_TAB_EXCEPTIONS: &[(&str, &str)] = &[("kde-breeze/dark", IDLE_TAB_SURFACE)];
+#[cfg(feature = "widgets")]
+const IDLE_TAB_EXCEPTIONS: &[(&str, &str)] = &[];
+
+/// The idle tab label as the connector draws it: `widgets::TabBar`'s idle
+/// tab on its bar.
+#[cfg(feature = "widgets")]
+fn idle_tab_drawn(tc: &ThemeColor, r: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
+    crate::widgets::TabLook::of(r).map_or((tc.tab_foreground, tc.tab_bar, tc.tab_bar), |t| {
+        (t.idle_text, t.idle, t.bar)
+    })
+}
+
+/// The idle tab label as the connector draws it: gpui-component's, on the
+/// bar.
+#[cfg(not(feature = "widgets"))]
+fn idle_tab_drawn(tc: &ThemeColor, _: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
+    (tc.tab_foreground, tc.tab_bar, tc.tab_bar)
+}
+
+/// The selected tab label as the connector draws it: `widgets::TabBar`'s
+/// selected tab on its bar.
+#[cfg(feature = "widgets")]
+fn active_tab_drawn(tc: &ThemeColor, r: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
+    crate::widgets::TabLook::of(r)
+        .map_or((tc.tab_active_foreground, tc.tab_active, tc.tab_bar), |t| {
+            (t.active_text, t.active, t.bar)
+        })
+}
+
+/// The selected tab label as the connector draws it: gpui-component's.
+#[cfg(not(feature = "widgets"))]
+fn active_tab_drawn(tc: &ThemeColor, _: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
+    (tc.tab_active_foreground, tc.tab_active, tc.tab_bar)
+}
 
 /// The asserted pairs.
 ///
@@ -1395,7 +1438,7 @@ const PAIRS: &[Pair] = &[
             let bg = native_window(r);
             (rgba_to_hsla(r.defaults.text_color), bg, bg)
         },
-        emitted: |tc| (tc.foreground, tc.background, tc.background),
+        emitted: |tc, _| (tc.foreground, tc.background, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1404,7 +1447,7 @@ const PAIRS: &[Pair] = &[
             let bg = native_window(r);
             (rgba_to_hsla(r.defaults.muted_color), bg, bg)
         },
-        emitted: |tc| (tc.muted_foreground, tc.background, tc.background),
+        emitted: |tc, _| (tc.muted_foreground, tc.background, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1416,7 +1459,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.primary_foreground, tc.primary, tc.background),
+        emitted: |tc, _| (tc.primary_foreground, tc.primary, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1428,7 +1471,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.secondary_foreground, tc.secondary, tc.background),
+        emitted: |tc, _| (tc.secondary_foreground, tc.secondary, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1443,7 +1486,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.button_foreground, tc.button_hover, tc.background),
+        emitted: |tc, _| (tc.button_foreground, tc.button_hover, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1455,7 +1498,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.button_foreground, tc.button_active, tc.background),
+        emitted: |tc, _| (tc.button_foreground, tc.button_active, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1467,7 +1510,7 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.menu.background_color),
             )
         },
-        emitted: |tc| (tc.accent_foreground, tc.accent, tc.popover),
+        emitted: |tc, _| (tc.accent_foreground, tc.accent, tc.popover),
         exceptions: &[
             ("windows-11/dark", MENU_SURFACE),
             ("material/dark", MENU_SURFACE),
@@ -1482,7 +1525,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.popover_foreground, tc.popover, tc.background),
+        emitted: |tc, _| (tc.popover_foreground, tc.popover, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1494,7 +1537,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.danger_foreground, tc.danger, tc.background),
+        emitted: |tc, _| (tc.danger_foreground, tc.danger, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1506,7 +1549,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.success_foreground, tc.success, tc.background),
+        emitted: |tc, _| (tc.success_foreground, tc.success, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1518,7 +1561,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.warning_foreground, tc.warning, tc.background),
+        emitted: |tc, _| (tc.warning_foreground, tc.warning, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1530,7 +1573,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.info_foreground, tc.info, tc.background),
+        emitted: |tc, _| (tc.info_foreground, tc.info, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1542,7 +1585,7 @@ const PAIRS: &[Pair] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.sidebar_foreground, tc.sidebar, tc.background),
+        emitted: |tc, _| (tc.sidebar_foreground, tc.sidebar, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1554,7 +1597,7 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.sidebar.background_color),
             )
         },
-        emitted: |tc| (tc.sidebar_accent_foreground, tc.sidebar_accent, tc.sidebar),
+        emitted: |tc, _| (tc.sidebar_accent_foreground, tc.sidebar_accent, tc.sidebar),
         exceptions: &[],
     },
     Pair {
@@ -1566,7 +1609,7 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.sidebar.background_color),
             )
         },
-        emitted: |tc| {
+        emitted: |tc, _| {
             (
                 tc.sidebar_primary_foreground,
                 tc.sidebar_primary,
@@ -1575,12 +1618,15 @@ const PAIRS: &[Pair] = &[
         },
         exceptions: &[],
     },
-    // An idle tab paints `transparent` in every variant (`tab/tab.rs:132,
-    // 143, 150, 155, 160`), so its label lands on the bar -- a live surface
-    // (`tab/tab_bar.rs:369`, `tab/tab.rs:309`), which is what the emitted side
-    // measures. The platform puts the same label on its own tab fill, and the
-    // two surfaces differing is exactly what this pair is for. `tokens.tab`,
-    // which nothing in 0.6.6 reads, keeps its row but takes no part here.
+    // With the `widgets` feature a tab row is `widgets::TabBar`, and the
+    // emitted side is what it paints (`TabLook`). Without it, gpui-component's
+    // idle tab paints `transparent` in every variant (`tab/tab.rs:132, 143,
+    // 150, 155, 160`), so its label lands on the bar -- a live surface
+    // (`tab/tab_bar.rs:369`, `tab/tab.rs:309`), which is what the emitted
+    // side measures then. The platform puts the same label on its own tab
+    // fill, and the two surfaces differing is exactly what this pair is for.
+    // `tokens.tab`, which nothing in 0.6.6 reads, keeps its row but takes no
+    // part here.
     Pair {
         what: "tab label",
         native: |r, _| {
@@ -1590,8 +1636,8 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.tab.bar_background),
             )
         },
-        emitted: |tc| (tc.tab_foreground, tc.tab_bar, tc.tab_bar),
-        exceptions: &[("kde-breeze/dark", IDLE_TAB_SURFACE)],
+        emitted: idle_tab_drawn,
+        exceptions: IDLE_TAB_EXCEPTIONS,
     },
     Pair {
         what: "active tab label",
@@ -1602,7 +1648,7 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.tab.bar_background),
             )
         },
-        emitted: |tc| (tc.tab_active_foreground, tc.tab_active, tc.tab_bar),
+        emitted: active_tab_drawn,
         exceptions: &[],
     },
     // The header row upstream paints: `table_head_foreground` on
@@ -1617,7 +1663,7 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.window.background_color),
             )
         },
-        emitted: |tc| (tc.table_head_foreground, tc.table_head, tc.background),
+        emitted: |tc, _| (tc.table_head_foreground, tc.table_head, tc.background),
         exceptions: &[],
     },
     // A list row keeps the inherited text colour whatever its state
@@ -1629,7 +1675,7 @@ const PAIRS: &[Pair] = &[
             let bg = rgba_to_hsla(r.list.background_color);
             (rgba_to_hsla(r.list.item_font.color), bg, bg)
         },
-        emitted: |tc| (tc.foreground, tc.list, tc.background),
+        emitted: |tc, _| (tc.foreground, tc.list, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1641,7 +1687,7 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.list.background_color),
             )
         },
-        emitted: |tc| (tc.foreground, tc.list_hover, tc.list),
+        emitted: |tc, _| (tc.foreground, tc.list_hover, tc.list),
         exceptions: &[],
     },
     Pair {
@@ -1650,7 +1696,7 @@ const PAIRS: &[Pair] = &[
             let bg = native_window(r);
             (rgba_to_hsla(r.link.font.color), bg, bg)
         },
-        emitted: |tc| (tc.link, tc.background, tc.background),
+        emitted: |tc, _| (tc.link, tc.background, tc.background),
         exceptions: &[],
     },
     // A `Button::link` paints no fill in any state
@@ -1662,7 +1708,7 @@ const PAIRS: &[Pair] = &[
             let bg = native_window(r);
             (rgba_to_hsla(r.link.hover_text_color), bg, bg)
         },
-        emitted: |tc| (tc.link_hover, tc.background, tc.background),
+        emitted: |tc, _| (tc.link_hover, tc.background, tc.background),
         exceptions: &[],
     },
     Pair {
@@ -1671,7 +1717,7 @@ const PAIRS: &[Pair] = &[
             let bg = native_window(r);
             (rgba_to_hsla(r.link.active_text_color), bg, bg)
         },
-        emitted: |tc| (tc.link_active, tc.background, tc.background),
+        emitted: |tc, _| (tc.link_active, tc.background, tc.background),
         exceptions: &[],
     },
 ];
@@ -1693,7 +1739,7 @@ struct Reported {
     what: &'static str,
     why: &'static str,
     native: fn(&ResolvedTheme) -> (Hsla, Hsla, Hsla),
-    emitted: fn(&ThemeColor) -> (Hsla, Hsla, Hsla),
+    emitted: fn(&ThemeColor, &ResolvedTheme) -> (Hsla, Hsla, Hsla),
 }
 
 /// Pairs measured and printed, never asserted.
@@ -1711,7 +1757,7 @@ const REPORTED: &[Reported] = &[
                 rgba_to_hsla(r.list.background_color),
             )
         },
-        emitted: |tc| (tc.foreground, tc.list_active, tc.list),
+        emitted: |tc, _| (tc.foreground, tc.list_active, tc.list),
     },
     Reported {
         what: "selected text",
@@ -1726,7 +1772,7 @@ const REPORTED: &[Reported] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.foreground, tc.selection, tc.background),
+        emitted: |tc, _| (tc.foreground, tc.selection, tc.background),
     },
     // Upstream paints a status bar's text with `muted_foreground`
     // (`status_bar.rs:95`) on `tokens.status_bar` (`:93`), and refines one line
@@ -1750,7 +1796,7 @@ const REPORTED: &[Reported] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| (tc.muted_foreground, tc.status_bar, tc.background),
+        emitted: |tc, _| (tc.muted_foreground, tc.status_bar, tc.background),
     },
     // Upstream's title bar has no text colour of its own: its children
     // inherit, and the one thing it paints itself -- the window controls --
@@ -1778,7 +1824,7 @@ const REPORTED: &[Reported] = &[
                 native_window(r),
             )
         },
-        emitted: |tc| {
+        emitted: |tc, _| {
             (
                 tc.foreground,
                 worse_title_bar_end(tc.foreground, tc.title_bar, tc.background),
@@ -1869,7 +1915,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
         for pair in PAIRS {
             let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved, c.is_dark);
             let native = pair_ratio(native_fg, native_bg, native_surface);
-            let (fg, bg, surface) = (pair.emitted)(&c.colors);
+            let (fg, bg, surface) = (pair.emitted)(&c.colors, &c.resolved);
             let emitted = pair_ratio(fg, bg, surface);
             match pair.exceptions.iter().find(|(key, _)| *key == label) {
                 // An exception claims the pair degrades here, so it is checked
@@ -1925,7 +1971,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
         .filter(|pair| {
             combinations.iter().all(|c| {
                 let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved, c.is_dark);
-                let (fg, bg, surface) = (pair.emitted)(&c.colors);
+                let (fg, bg, surface) = (pair.emitted)(&c.colors, &c.resolved);
                 pair_ratio(fg, bg, surface) == pair_ratio(native_fg, native_bg, native_surface)
             })
         })
@@ -1960,7 +2006,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
         for c in &combinations {
             let (native_fg, native_bg, native_surface) = (pair.native)(&c.resolved);
             let native = pair_ratio(native_fg, native_bg, native_surface);
-            let (fg, bg, surface) = (pair.emitted)(&c.colors);
+            let (fg, bg, surface) = (pair.emitted)(&c.colors, &c.resolved);
             let emitted = pair_ratio(fg, bg, surface);
             if emitted < native {
                 worse += 1;

@@ -15,6 +15,11 @@
 //! draws the application's icon set's own loading indicator, and an arc only
 //! for a set without one.
 //!
+//! The tab bar joins them because no gpui-component `TabBar` variant draws
+//! what `tab.*` states: each paints an idle tab transparent
+//! (`tab/tab.rs:132`) and marks the selected one its own way, with a primary
+//! underline or a frame in `border` (`tab/tab.rs`, `TabVariant`).
+//!
 //! Each widget reads the variant [`apply`](crate::apply) installed for the
 //! current mode at render, through [`ActiveNativeTheme`]. With none installed,
 //! or with a length that is not finite, it renders gpui-component's own
@@ -23,7 +28,9 @@
 //! Rules, from `docs/todo_gpui-widgets-spec.md` §1:
 //!
 //! * a hover colour is a layer composited over the idle fill; a `None` soft
-//!   option copies the colour it would cover;
+//!   option copies the colour it would cover (a tab's hover takes the place
+//!   of its fill, over the bar, as Breeze paints it: docs/platform-facts.md
+//!   §2.11);
 //! * a disabled control paints its stated disabled colours, and its
 //!   `disabled_opacity` is not multiplied on top;
 //! * a size the theme does not state keeps gpui-component's own value, named
@@ -55,6 +62,7 @@ mod progress;
 mod slider;
 mod spinner;
 mod switch;
+mod tab_bar;
 #[cfg(test)]
 mod tests;
 
@@ -63,6 +71,7 @@ pub use progress::{ProgressBar, ProgressBarLook};
 pub use slider::{Slider, SliderLook};
 pub use spinner::{Spinner, SpinnerLook};
 pub use switch::{Switch, SwitchLook};
+pub use tab_bar::{Tab, TabBar, TabLook};
 
 into_element!(
     Checkbox,
@@ -71,7 +80,8 @@ into_element!(
     Switch,
     Slider,
     ProgressBar,
-    Spinner
+    Spinner,
+    TabBar
 );
 
 use gpui::{App, Hsla, Pixels, px};
