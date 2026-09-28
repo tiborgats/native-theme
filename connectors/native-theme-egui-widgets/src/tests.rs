@@ -463,6 +463,96 @@ fn the_radio_dot_is_the_themes() {
     assert_eq!(flat(&out.shapes), flat(&egui_out.shapes), "egui's own dot");
 }
 
+/// The expander lays out what `expander.*` states. KDE: the arrow before the title,
+/// `arrow_gap` between its box and the title, the body `content_indent` in, and no frame.
+/// GNOME: the arrow at the row's end and one frame round header and body.
+#[test]
+fn the_expander_is_laid_out_as_stated() {
+    use crate::expander::Expander;
+    use native_theme_egui::NativeThemeUiExt as _;
+
+    let t = kde();
+    let e = &t.expander;
+    assert!(
+        e.arrow_gap.is_some() && e.content_indent.is_some(),
+        "kde-breeze states the expander's gap and indent"
+    );
+    let (gap, indent) = (
+        e.arrow_gap.unwrap_or_default(),
+        e.content_indent.unwrap_or_default(),
+    );
+    assert_eq!(e.frame_enabled, Some(false));
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let mut shown = None;
+    let mut pad_left = 0.0;
+    let show = |ui: &mut egui::Ui| {
+        Expander::new("Details")
+            .default_open(true)
+            .show(ui, |ui| ui.label("Body"))
+    };
+    let _ = pass(&ctx, at(0.0), |ui| {
+        let _ = show(ui);
+    });
+    let out = pass(&ctx, at(0.0), |ui| {
+        pad_left = ui
+            .native_scope(
+                native_theme_egui::Role::Expander,
+                native_theme_egui::RoleVariant::Normal,
+                |ui| ui.spacing().button_padding.x,
+            )
+            .inner;
+        let r = show(ui);
+        shown = Some((r.header_response.rect, r.body_returned.map(|l| l.rect)));
+    });
+    assert!(
+        matches!(shown, Some((_, Some(_)))),
+        "the expander shows its open body"
+    );
+    let (header, body) = match shown {
+        Some((header, Some(body))) => (header, body),
+        _ => (egui::Rect::NOTHING, egui::Rect::NOTHING),
+    };
+    assert_eq!(body.left() - header.left(), indent, "content_indent");
+    let title = flat(&out.shapes).into_iter().find_map(|s| match s {
+        egui::Shape::Text(text) if text.galley.text() == "Details" => Some(text.pos.x),
+        _ => None,
+    });
+    assert_eq!(
+        title,
+        Some(header.left() + pad_left + e.arrow_icon_size + gap),
+        "the title arrow_gap after the arrow's box"
+    );
+    assert!(
+        !rects(&out).iter().any(|r| r.stroke.width > 0.0),
+        "an unframed expander strokes nothing"
+    );
+
+    let adw = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    assert_eq!(adw.expander.frame_enabled, Some(true));
+    let ctx = installed(&adw, &AccessibilityPreferences::default());
+    let _ = pass(&ctx, at(0.0), |ui| {
+        let _ = show(ui);
+    });
+    let mut header = egui::Rect::NOTHING;
+    let out = pass(&ctx, at(0.0), |ui| header = show(ui).header_response.rect);
+    let title = flat(&out.shapes).into_iter().find_map(|s| match s {
+        egui::Shape::Text(text) if text.galley.text() == "Details" => Some(text.pos.x),
+        _ => None,
+    });
+    assert!(
+        title.is_some_and(|x| x < header.center().x),
+        "a trailing arrow leaves the title at the row's start"
+    );
+    assert!(
+        rects(&out)
+            .iter()
+            .any(|r| r.stroke.width > 0.0 && r.rect.contains_rect(header)),
+        "one frame round the header and the body"
+    );
+}
+
 /// T3: a clicked hyperlink is visited on the next pass, in `link.visited_text_color`.
 #[test]
 fn a_clicked_hyperlink_is_visited() {
@@ -891,11 +981,12 @@ fn literals(code: &str) -> Vec<String> {
 
 /// T6: the only numeric literals are §2.3's: `0.5`, the identities `0` `0.0` `1.0`, egui's
 /// spinner constants `240` `8` `128`, egui's slider key step `1.0`, egui's combo-box arrow
-/// proportions `0.7` `0.45` and egui's radio dot divisor `3.0`.
+/// proportions `0.7` `0.45`, egui's radio dot divisor `3.0` and egui's collapsing-header
+/// arrow share `0.75`.
 #[test]
 fn the_crate_hardcodes_no_values() {
     let allowed = [
-        "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0",
+        "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0", "0.75",
     ];
     let mut found = Vec::new();
     for (file, code) in painting_sources() {
@@ -968,6 +1059,18 @@ fn the_painted_widgets_are_still_needed() {
     // The radio button's per-instance change: egui's dot is a third of `icon_width_inner`.
     let radio = std::fs::read_to_string(widgets.join("radio_button.rs")).unwrap();
     assert!(radio.contains("radius: small_icon_rect.width() / 3.0,"));
+    // The expander: egui's header puts its title and its arrow by one `indent`, the arrow
+    // always first and three quarters of its box; its body is `indent` in.
+    let collapsing =
+        std::fs::read_to_string(egui_src().join("containers").join("collapsing_header.rs"))
+            .unwrap_or_default();
+    assert!(collapsing.contains("let text_pos = available.min + vec2(ui.spacing().indent, 0.0);"));
+    assert!(collapsing.contains("header_response.rect.left() + ui.spacing().indent / 2.0,"));
+    assert!(collapsing.contains(&format!(
+        "vec2(rect.width(), rect.height()) * {});",
+        crate::expander::EGUI_ARROW_SHARE
+    )));
+    assert!(collapsing.contains("ui.indent(id, |ui| {"));
     // The progress bar's outline: egui's paints only filled rectangles, no stroke round the bar.
     let progress = std::fs::read_to_string(widgets.join("progress_bar.rs")).unwrap();
     assert!(!progress.contains("rect_stroke"));

@@ -11,8 +11,10 @@
 //! egui's drop-down at the height the theme states, which egui's square
 //! arrow box can exceed, with the open chevron the platforms draw, egui's
 //! radio button with the dot the theme states, which egui sizes from the
-//! check mark's box, and egui's progress bar with the outline the theme
-//! states, which egui does not draw.
+//! check mark's box, egui's progress bar with the outline the theme
+//! states, which egui does not draw, and an expander whose arrow side, gap,
+//! body indent and frame are the theme's, which egui's `CollapsingHeader`
+//! ties to one indent and one side.
 //!
 //! Everything it draws is driven by the `ResolvedTheme` of the atlas the
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
@@ -25,7 +27,7 @@
 //! buttons, the [`wrap`] functions as egui's `Link` and `Hyperlink`,
 //! [`combo_box::ComboBox`] as `egui::ComboBox`, [`radio_button::RadioButton`]
 //! as `egui::RadioButton`, [`progress_bar::ProgressBar`] as
-//! `egui::ProgressBar`.
+//! `egui::ProgressBar`, [`expander::Expander`] as `egui::CollapsingHeader`.
 //!
 //! ```rust,no_run
 //! use native_theme_egui_widgets::connector::egui;
@@ -75,6 +77,7 @@
 #![deny(clippy::unimplemented)]
 
 pub mod combo_box;
+pub mod expander;
 pub mod progress_bar;
 pub mod radio_button;
 pub mod segmented_control;

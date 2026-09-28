@@ -795,6 +795,48 @@ rectangle over what egui painted, so the bar stays `track_height` tall. With no
 atlas installed, or a radius or width that is not finite, it is
 `egui::ProgressBar` with the width alone (§2.1).
 
+### 4.10 `expander::Expander` — Tier P
+
+```rust
+pub struct Expander { /* … */ }
+pub struct ExpanderResponse<R> { pub header_response: Response, pub body_returned: Option<R> }
+
+impl Expander {
+    pub fn new(title: impl Into<WidgetText>) -> Self;
+    pub fn id_salt(self, salt: impl AsIdSalt) -> Self;
+    pub fn default_open(self, open: bool) -> Self;
+    pub fn show<R>(self, ui: &mut Ui, add_body: impl FnOnce(&mut Ui) -> R) -> ExpanderResponse<R>;
+}
+```
+
+**What egui hardcodes.** `CollapsingHeader` lays its title out at
+`Spacing::indent` (`containers/collapsing_header.rs:516`), centres its arrow at
+half of it (`:585-589`) and indents its body by it (`ui.indent`, `:164`): one
+number for the three the platforms set apart. Its arrow always leads, and it
+frames the header alone (`:561-568`). `docs/platform-facts.md` §2.27 states
+`expander.arrow_side`, `arrow_gap`, `content_indent` and `frame_enabled`:
+KDE's `KCollapsibleGroupBox` leads with its arrow 9 from the title, indents
+its body 20 and draws no frame; libadwaita's `AdwExpanderRow` and WinUI's
+`Expander` end the row with the arrow and frame header and body together.
+
+**Tier P.** Where the theme states any of the four, `Expander` allocates,
+senses and paints the header itself in the `Role::Expander` scope: as wide as
+the `Ui`, at least the scope's `interact_size.y` (`header_height`), padded by
+the stated `expander.border.padding` sides (the scope's `button_padding`
+elsewhere), filled with the state's `weak_bg_fill` (`hover_background` under
+the pointer); egui's triangle, three quarters of an `arrow_icon_size` box, in
+`arrow_color` (the state's text colour where unstated), turned from the title
+to down as the body opens where it leads, from down to up where it trails;
+`arrow_gap` between the arrow's box and the title (`Spacing::icon_spacing`
+where unstated). The body is `content_indent` in (`Spacing::indent` where
+unstated), with no guide line, shown through egui's `CollapsingState`, which
+keeps the open state and its animation. Where `frame_enabled` is true one frame
+in the scope's `noninteractive` stroke and radius (`expander.border`) holds the
+header and the body; false or unstated, none. Where the theme states none of
+the four, or with no atlas installed, it is `egui::CollapsingHeader` (with the
+connector's `expander_icon` in the scope where an atlas is installed). T7 keeps
+the promotion: the four `collapsing_header.rs` lines above.
+
 ---
 
 ## 5 -- Cargo.toml, features, MSRV

@@ -17,6 +17,7 @@ from a hardcoded value or does not draw them at all. This crate draws those:
 | `combo_box::ComboBox` | a drop-down at the height the theme states, with the open chevron the platforms draw: egui's square arrow box can make its own taller, and its arrow is a filled triangle |
 | `radio_button::RadioButton` | a radio button's dot at the size the theme states: egui sizes it from the check mark's box |
 | `progress_bar::ProgressBar` | a progress bar with the outline the theme states: egui's draws none |
+| `expander::Expander` | an expander with the arrow side, arrow gap, body indent and frame the theme states: egui's `CollapsingHeader` ties the arrow, the title and the body to one indent, leads with its arrow and frames the header alone |
 
 Every widget reads the `ResolvedTheme` of the atlas the connector installed,
 in the colour scheme egui is drawing, and contains no colour, radius or
