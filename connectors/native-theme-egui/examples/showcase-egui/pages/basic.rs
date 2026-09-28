@@ -180,19 +180,34 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
 
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
+    // The disabled box is checked. Where the theme states a disabled fill it is the `Disabled`
+    // cell's; where it states none the platform dims by opacity alone
+    // (docs/platform-facts.md §2.1.6), so the box is the checked (`Selected`) cell's, faded by
+    // its `disabled_alpha`, `checkbox.disabled_opacity`: egui's cells are one variant each.
     caption(reg, ui, "Checkboxes");
-    for (label, checked, variant, kind) in [
-        ("Unchecked", false, normal, "checkbox (unchecked)"),
-        ("Checked", true, RoleVariant::Selected, "checkbox (checked)"),
+    let disabled_variant = if t.checkbox.disabled_background.is_some() {
+        RoleVariant::Disabled
+    } else {
+        RoleVariant::Selected
+    };
+    for (label, checked, variant, enabled, kind) in [
+        ("Unchecked", false, normal, true, "checkbox (unchecked)"),
+        (
+            "Checked",
+            true,
+            RoleVariant::Selected,
+            true,
+            "checkbox (checked)",
+        ),
         (
             "Disabled",
             true,
-            RoleVariant::Disabled,
+            disabled_variant,
+            false,
             "checkbox (disabled)",
         ),
     ] {
         let mut value = checked;
-        let enabled = variant != RoleVariant::Disabled;
         demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
             ui.add_enabled(enabled, egui::Checkbox::new(&mut value, label))
         });
