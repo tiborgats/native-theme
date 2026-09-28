@@ -33,8 +33,8 @@
 use iced::advanced::graphics::text::cosmic_text::{self, Fallback, fontdb};
 use iced::widget::{
     button, canvas, checkbox, column, combo_box, container, grid, markdown, mouse_area, pane_grid,
-    pick_list, progress_bar, qr_code, radio, row, rule, scrollable, slider, space, svg, table,
-    text, text_editor, text_input, toggler, tooltip, vertical_slider,
+    pick_list, progress_bar, qr_code, radio, rich_text, row, rule, scrollable, slider, space, span,
+    svg, table, text, text_editor, text_input, toggler, tooltip, vertical_slider,
 };
 use iced::{Color, Element, Fill, Length, Padding, Theme};
 #[cfg(feature = "iced_aw")]
@@ -2392,9 +2392,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ],
         &[(
             "link",
-            "iced has no link widget: a text button in styles::button_link, \
-             padded as a button, as the Buttons tab's Text Style link; \
-             LinkTheme states no padding",
+            "iced has no link widget: a button in styles::button_link, \
+             padded as a button, as the Buttons tab's Text Style link \
+             (LinkTheme states no padding), its label a rich-text span \
+             underlined where link.underline_enabled",
         )],
     );
     let texts = group(
@@ -2402,10 +2403,17 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         text_info,
         row![
             text("Body text").body(resolved, a11y),
-            button(text("Link").typeset(&link.font, a11y))
-                .on_press(Message::ButtonPressed)
-                .style(styles::button_link(resolved))
-                .padding(btn_pad),
+            // `link.underline_enabled`, which a text button cannot carry: the
+            // label is a span, which iced underlines in its own colour, the
+            // colour `styles::button_link` gives the button's text.
+            button(
+                rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
+                    .size(scaled_text_size(link.font.size, a11y))
+                    .font(theme_font(&link.font))
+            )
+            .on_press(Message::ButtonPressed)
+            .style(styles::button_link(resolved))
+            .padding(btn_pad),
         ]
         .spacing(gap.widget)
         .align_y(iced::Center)
@@ -8233,6 +8241,36 @@ mod tests {
         }
     }
 
+    /// A link is underlined exactly where the theme says the platform
+    /// underlines links: every underline the showcase asks iced for is
+    /// `link.underline_enabled`, and the Basic tab's link asks for one.
+    #[test]
+    fn a_link_is_underlined_by_link_underline_enabled() {
+        let source = strip_comments_and_strings(SHOWCASE);
+        let basic = match (
+            source.find("fn view_basic<"),
+            source.find("fn button_info("),
+        ) {
+            (Some(start), Some(end)) if start < end => &source[start..end],
+            _ => panic!("view_basic not found"),
+        };
+        let calls: Vec<&str> = source
+            .match_indices(".underline(")
+            .map(|(at, _)| {
+                let open = at + ".underline".len();
+                close_of_call(&source, open).map_or("", |end| &source[open..end])
+            })
+            .collect();
+        assert!(
+            basic.contains(".underline("),
+            "the Basic tab's link asks for no underline"
+        );
+        assert!(
+            calls.iter().all(|args| *args == "(link.underline_enabled)"),
+            "an underline not taken from link.underline_enabled: {calls:?}"
+        );
+    }
+
     /// The Basic tab's push button, text field and drop-down are laid out at
     /// the minimum sizes the theme states (`button.min_width` and
     /// `.min_height`, `input.min_height`, `combo_box.min_height`), or at their
@@ -8791,13 +8829,15 @@ mod tests {
                 Some(end) => source[site + "button(".len()..end].trim_start(),
                 None => "",
             };
-            // A label under the button's minimum size is still a text.
+            // A label under the button's minimum size is still a text, and a
+            // link's underlined label is rich text, sized below.
             let label = label.strip_prefix("at_least(").unwrap_or(label);
-            if !label.starts_with("text(") {
+            if !label.starts_with("text(") && !label.starts_with("rich_text(") {
                 by_iced.push(format!("button at :{}", line_at(&source, site)));
             }
         }
-        let receivers: [(&str, &[&str]); 10] = [
+        let receivers: [(&str, &[&str]); 11] = [
+            ("rich_text", &["size", "font"]),
             ("checkbox", &["text_size", "font"]),
             ("radio", &["text_size", "font"]),
             ("toggler", &["text_size", "font"]),
