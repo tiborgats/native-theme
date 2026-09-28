@@ -140,7 +140,11 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
     let section_gap = atlas.as_ref().and_then(|atlas| atlas.layout().section_gap);
     let first = ui.min_rect().height() <= 0.0;
     if let Some(gap) = section_gap.filter(|_| !first) {
-        ui.add_space(gap);
+        // The layout puts `item_spacing` between the section above and the heading already.
+        let space = gap - ui.spacing().item_spacing.y;
+        if space > 0.0 {
+            ui.add_space(space);
+        }
     }
     demo::base(reg, ui, "heading", |ui| {
         let heading = demo::heading_text(ui, text);

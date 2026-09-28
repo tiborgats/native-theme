@@ -1460,12 +1460,13 @@ fn the_nested_panels_stay_inside_the_page() {
 }
 
 /// The Overlays page's `Area` floats beside its anchor label; scrolled with the page in a
-/// window too short for it, it never lies over the page tabs or the status bar.
+/// window too short for it, it never lies over the page tabs or the status bar. The window is
+/// short enough that the page can scroll its anchor, near the page's end, under the tabs.
 #[test]
 fn the_area_stays_inside_the_page() {
     let mut harness = Harness::builder()
         .with_theme(egui::Theme::Light)
-        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 3.0))
+        .with_size(egui::vec2(crate::WINDOW_SIZE.x, crate::WINDOW_SIZE.y / 3.2))
         .build_eframe(|cc| {
             App::new(cc, &cli(&[("--theme", TEST_PRESET), ("--tab", "overlays")]))
                 .expect("the showcase starts under a bundled preset")
@@ -1896,6 +1897,67 @@ fn the_basic_page_applies_the_per_call_leaves() {
             "{preset}: the link's underline at rest is not link.underline_enabled"
         );
     }
+}
+
+/// On the Basic page, `layout.section_gap` is the whole distance between two groups and
+/// between the two columns, as on the iced and gpui Basic pages: the space the page adds
+/// makes up the gap with the `item_spacing` egui puts between widgets anyway.
+#[test]
+fn groups_and_columns_are_a_section_gap_apart() {
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let Some(gap) = harness.state().atlas.layout().section_gap else {
+        panic!("kde-breeze states layout.section_gap");
+    };
+    let records = harness.state().registry.records();
+    let rect = |kind: &str| {
+        records
+            .iter()
+            .find(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .unwrap_or_else(|| panic!("no {kind} record"))
+    };
+    let headings: Vec<egui::Rect> = records
+        .iter()
+        .filter(|r| r.info.kind == "heading")
+        .map(|r| r.rect)
+        .collect();
+    let buttons = rect("button (enabled)");
+    let Some(below) = headings
+        .iter()
+        .filter(|r| r.top() > buttons.bottom())
+        .map(|r| r.top())
+        .reduce(f32::min)
+    else {
+        panic!("no heading below the buttons");
+    };
+    assert!(
+        (below - buttons.bottom() - gap).abs() < 0.5,
+        "the buttons and the next heading are {} apart, section_gap is {gap}",
+        below - buttons.bottom()
+    );
+    let left_right = [
+        "button (enabled)",
+        "button (suggested action)",
+        "button (disabled)",
+        "tooltip button",
+        "checkbox (unchecked)",
+        "checkbox (checked)",
+        "checkbox (disabled)",
+        "Link",
+    ]
+    .iter()
+    .map(|kind| rect(kind).right())
+    .fold(f32::MIN, f32::max);
+    let column = rect("TextEdit (hint)").left();
+    assert!(
+        (column - left_right - gap).abs() < 0.5,
+        "the columns are {} apart, section_gap is {gap}",
+        column - left_right
+    );
 }
 
 /// A page's section headings are set in the theme's section-heading role

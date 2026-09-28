@@ -29,7 +29,11 @@ pub(crate) fn show(
     ui.horizontal_top(|ui| {
         ui.vertical(|ui| left_column(reg, state, atlas, ui));
         if let Some(gap) = section_gap {
-            ui.add_space(gap);
+            // The layout puts `item_spacing` between the two columns already.
+            let space = gap - ui.spacing().item_spacing.x;
+            if space > 0.0 {
+                ui.add_space(space);
+            }
         }
         ui.vertical(|ui| right_column(reg, state, atlas, ui));
     });
