@@ -1,0 +1,43 @@
+[package]
+name = "native-theme-egui-widgets"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+# NOT `rust-version.workspace = true` — egui 0.36.2 declares 1.95
+# (`egui/Cargo.toml:14`), exactly as the connector does.
+rust-version = "1.95"
+repository.workspace = true
+homepage.workspace = true
+keywords = ["theme", "egui", "gui", "native", "widgets"]
+categories = ["gui"]
+readme = "README.md"
+description = "egui widgets the native-theme-egui connector cannot give egui's own: a switch, a slider knob, a spinner stroke, a segmented control, links"
+
+[package.metadata.docs.rs]
+all-features = true
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+
+[features]
+# The connector's default set, forwarded one to one; `svg-rasterize` is
+# forwarded but off by default, as it is there.
+default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]
+material-icons = ["native-theme-egui/material-icons"]
+lucide-icons   = ["native-theme-egui/lucide-icons"]
+system-icons   = ["native-theme-egui/system-icons"]
+svg-rasterize  = ["native-theme-egui/svg-rasterize"]
+system-fonts   = ["native-theme-egui/system-fonts"]
+
+[dependencies]
+# egui and native-theme are reached through the connector's re-exports
+# (`native_theme_egui::egui`, `native_theme_egui::native_theme`), so the graph
+# holds one copy of each and this crate names no version of either.
+native-theme-egui = { version = "0.6.0", path = "../native-theme-egui", default-features = false }
+
+[dev-dependencies]
+# T7 finds egui's published sources through `cargo metadata`, as
+# `scripts/check_widget_coverage.py` does, and reads its JSON.
+serde_json = "1.0.151"

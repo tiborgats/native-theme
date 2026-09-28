@@ -6,6 +6,7 @@ members = [
     "connectors/native-theme-gpui",
     "connectors/native-theme-iced",
     "connectors/native-theme-egui",
+    "connectors/native-theme-egui-widgets",
 ]
 resolver = "3"
 

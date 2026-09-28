@@ -5696,6 +5696,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "native-theme-egui-widgets"
+version = "0.6.0"
+dependencies = [
+ "native-theme-egui",
+ "serde_json",
+]
+
+[[package]]
 name = "native-theme-gpui"
 version = "0.6.0"
 dependencies = [
