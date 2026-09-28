@@ -736,14 +736,29 @@ fn expected(
                 },
             ))
         }
+        // ---- §2 *Unstated sizes*: an unstated row height leaves egui's own `interact_size.y`,
+        // never the base style's `button.min_height` (`style::roles::row_height`) ----
+        (Some(w @ ("menu" | "list")), "normal", None, "spacing.interact_size.y") => {
+            let own = c.scheme.default_style().spacing.interact_size.y; // egui/src/memory/theme.rs:24-29
+            let stated = if w == "menu" {
+                t.menu.row_height
+            } else {
+                t.list.row_height
+            };
+            Val::F32(
+                stated
+                    .filter(|h| h.is_finite())
+                    .map_or(own, convert::clamp_length),
+            )
+        }
         // ---- §6.10 R-BAR: the toolbar's bar height less its frame ----
         (Some("toolbar"), "normal", None, "spacing.interact_size.y") => {
-            let Some(h) = t.toolbar.bar_height else {
-                return Ok(None);
+            // Unstated or non-finite: egui's own (§2 *Unstated sizes*, `style::roles::row_height`).
+            let Some(h) = t.toolbar.bar_height.filter(|h| h.is_finite()) else {
+                return Ok(Some(Val::F32(
+                    c.scheme.default_style().spacing.interact_size.y, // egui/src/memory/theme.rs:24-29
+                )));
             };
-            if !h.is_finite() {
-                return Ok(None);
-            }
             let frame = c.styles().frame(Surface::Panel(crate::PanelSide::Top));
             let cell = cell().ok_or("a scoped sink")?;
             let total_v = f32::from(frame.inner_margin.top)

@@ -85,6 +85,25 @@ fn slot_size(
     }
 }
 
+/// A row height the theme may leave unstated — `menu.row_height`, `list.row_height`,
+/// `toolbar.bar_height`, the three `soft_option` claimants of `interact_size.y` (§1.3, §5.11) —
+/// into the cell's `interact_size.y`: stated, its length; unstated, egui's own value for the
+/// scheme (`Theme::default_style`, which the base style starts from), so egui's own value
+/// stands as §2 *Unstated sizes* promises. A cell is a copy of the base style, whose
+/// `interact_size.y` is `button.min_height` (§5.9), and leaving that there would make a row
+/// the platform sizes to its content (`docs/platform-facts.md` §2.6, §2.13, §2.15) at least a
+/// push button tall. The toolbar's stated height is §6.10's, written after this.
+fn row_height(
+    s: &mut egui::Style,
+    path: &'static str,
+    v: Option<f32>,
+    input: &BuildInput<'_>,
+    notes: &mut Vec<Note>,
+) {
+    let own = input.scheme.default_style().spacing.interact_size.y;
+    s.spacing.interact_size.y = optional_length(path, v, own, notes).unwrap_or(own);
+}
+
 /// An `Option<f32>` size (rationale §3.23, S2): `None` writes nothing and egui's value stands.
 fn optional_length(
     path: &'static str,
@@ -244,14 +263,7 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         after_menu_style,
         notes,
     );
-    if let Some(h) = optional_length(
-        "menu.row_height",
-        m.row_height,
-        own.spacing.interact_size.y,
-        notes,
-    ) {
-        s.spacing.interact_size.y = h;
-    }
+    row_height(s, "menu.row_height", m.row_height, input, notes);
     s.spacing.icon_spacing = length(
         "menu.icon_text_gap",
         m.icon_text_gap,
@@ -632,6 +644,11 @@ fn toolbar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
     let t = input.theme;
     let tb = &t.toolbar;
     s.visuals.panel_fill = to_color32(tb.background_color);
+    if !tb.bar_height.is_some_and(f32::is_finite) {
+        // A stated height is R-BAR's (§6.10, `derived::apply_role`), which also reports a
+        // non-finite one.
+        row_height(s, "toolbar.bar_height", None, input, notes);
+    }
     if let Some(gap) = optional_length(
         "toolbar.item_gap",
         tb.item_gap,
@@ -725,14 +742,7 @@ fn list(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         l.border.corner_radius,
         notes,
     );
-    if let Some(h) = optional_length(
-        "list.row_height",
-        l.row_height,
-        own.spacing.interact_size.y,
-        notes,
-    ) {
-        s.spacing.interact_size.y = h;
-    }
+    row_height(s, "list.row_height", l.row_height, input, notes);
     write_states(
         &mut s.visuals.widgets,
         &StateSource {
@@ -1326,9 +1336,14 @@ mod tests {
             to_button_padding(after_menu_style.spacing.button_padding, &m.border)
         );
         assert_eq!(c.spacing.icon_spacing, clamp_length(m.icon_text_gap));
+        // §2 *Unstated sizes*: egui's own row where the theme states none, not the base's
+        // `button.min_height`
         match m.row_height {
             Some(h) => assert_eq!(c.spacing.interact_size.y, clamp_length(h)),
-            None => assert_eq!(c.spacing.interact_size.y, base.spacing.interact_size.y),
+            None => assert_eq!(
+                c.spacing.interact_size.y,
+                egui::Theme::Light.default_style().spacing.interact_size.y
+            ),
         }
         assert_eq!(
             c.text_styles.get(&TextStyle::Body).unwrap().size,
@@ -1906,10 +1921,12 @@ mod tests {
                 ),
                 "{preset}"
             );
+            // §2 *Unstated sizes*: egui's own row where the theme states none
             match l.row_height {
                 Some(h) => assert_eq!(c.spacing.interact_size.y, clamp_length(h), "{preset}"),
                 None => assert_eq!(
-                    c.spacing.interact_size.y, base.spacing.interact_size.y,
+                    c.spacing.interact_size.y,
+                    egui::Theme::Light.default_style().spacing.interact_size.y,
                     "{preset}"
                 ),
             }

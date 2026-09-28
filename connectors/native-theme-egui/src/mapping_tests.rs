@@ -1056,6 +1056,11 @@ pub(crate) fn no_row_write(role: Role, variant: RoleVariant, path: &str) -> bool
         || (role == Role::Menu
             && variant == RoleVariant::Normal
             && MENU_STYLE_PATHS.iter().any(|p| covers(p, path)))
+        // §2 *Unstated sizes*: an unstated row height writes egui's own `interact_size.y`
+        // (`style::roles::row_height`), so these cells never carry the base style's.
+        || (matches!(role, Role::Menu | Role::List | Role::Toolbar)
+            && variant == RoleVariant::Normal
+            && path == "spacing.interact_size.y")
 }
 
 /// Whether the cell (`role`, `variant`) writes `path` itself: the sinks the manifest declares
