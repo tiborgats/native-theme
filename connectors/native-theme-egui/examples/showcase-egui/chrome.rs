@@ -529,15 +529,30 @@ fn desktop() -> String {
 /// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note). As the gpui
 /// showcase's (`showcase-gpui/demo.rs:606-630`): the settings padded by `container_margin`,
 /// a separator and the inspector's tabs from edge to edge, the inspector's content padded too.
+/// Where the theme states the side panel's own padding (`sidebar.border.padding`, the left
+/// panel surface's inner margin), the panel keeps it and its content adds none.
 pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
-    let margin = app.atlas.layout().container_margin;
+    let padding = &app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .sidebar
+        .border
+        .padding;
+    let stated = [padding.top, padding.right, padding.bottom, padding.left]
+        .iter()
+        .any(Option::is_some);
     let seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Left),
         Some((Role::Splitter, RoleVariant::Normal)),
         Some((Role::Sidebar, RoleVariant::Normal)),
-    )
-    .unpadded(margin);
+    );
+    let (seams, margin) = if stated {
+        (seams, None)
+    } else {
+        let margin = app.atlas.layout().container_margin;
+        (seams.unpadded(margin), margin)
+    };
     let mut visible = app.side_panel_visible;
     app.hold_zone = None; // set again while the inspector is drawn
     let out = egui::Panel::left("side-panel")
