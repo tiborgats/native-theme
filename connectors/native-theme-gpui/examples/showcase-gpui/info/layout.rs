@@ -55,6 +55,25 @@ pub fn spacing_box(
 
 /// A `Separator` of `kind`, its line `native`'s `separator.line_color`
 /// where a native theme is installed (`demo::separator`).
+/// A plain line drawn by `native_theme_gpui::widgets::Separator` from `r`.
+#[cfg(feature = "widgets")]
+pub fn native_separator(r: &ResolvedTheme) -> WidgetInfo {
+    let s = &r.separator;
+    WidgetInfo::new("Separator")
+        .variant(SeparatorKind::Horizontal.name())
+        .config("drawn by", "native_theme_gpui::widgets::Separator, a line as thick as the theme states: gpui-component's Separator draws its line an absolute child at px(1.), which no caller style reaches (separator.rs, Separator::render_base)")
+        .color(claim(
+            "line",
+            "line_color",
+            stated(s.line_color),
+            "native-theme-gpui/widgets/separator.rs:28",
+        ))
+        .config(
+            "thickness",
+            format!("separator.line_width: {}px", px_text(s.line_width)),
+        )
+}
+
 pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Separator").variant(kind.name());
     let info = match native {

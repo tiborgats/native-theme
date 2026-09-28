@@ -4668,10 +4668,21 @@ fn the_preset_combobox_paints_its_fill_swatch_and_names_its_row_hover(cx: &mut T
         swatch, fill,
         "the preset Combobox's fill swatch is not combo_box.background_color: {info:?}"
     );
+    // `settle_on` leaves the pointer on the Combobox, so the surface under
+    // its trigger shows `combo_box.hover_background` over the fill.
+    let hovered = read(&mut cx, &showcase, |_this, cx| {
+        native_value(cx, |n| {
+            let c = &n.resolved.combo_box;
+            let fill = crate::info::stated(c.background_color);
+            c.hover_background
+                .map_or(fill, |hover| fill.blend(crate::info::stated(hover)))
+        })
+    });
     assert_eq!(
         painted_fill(&mut cx, PROBE_COMBOBOX),
-        fill,
-        "the fill painted inside the preset Combobox is not combo_box.background_color"
+        hovered,
+        "the fill painted under the hovered preset Combobox is not combo_box.hover_background \
+         over combo_box.background_color"
     );
     let hover = info
         .as_ref()

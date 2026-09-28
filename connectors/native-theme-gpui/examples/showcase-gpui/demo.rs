@@ -886,7 +886,9 @@ pub(crate) fn preset_combobox(
         &mut combobox_info,
     );
     let combobox = refined(combobox, combo_fill(cx).as_ref()).w_full();
-    combobox.info(ui, "chrome-settings-preset", combobox_info)
+    combo_surface(cx, combobox)
+        .w_full()
+        .info(ui, "chrome-settings-preset", combobox_info)
 }
 
 /// The colour-mode `Select` over `state`, refined by `geometry::select`, as
@@ -907,7 +909,9 @@ pub(crate) fn color_mode_select(
         &mut select_info,
     );
     let select = refined(select, combo_fill(cx).as_ref()).w_full();
-    select.info(ui, "chrome-settings-color-mode", select_info)
+    combo_surface(cx, select)
+        .w_full()
+        .info(ui, "chrome-settings-color-mode", select_info)
 }
 
 /// The icon-theme `Select` over `state`, refined by `geometry::select`, as
@@ -927,7 +931,9 @@ pub(crate) fn icon_set_select(
         &mut select_info,
     );
     let select = refined(select, combo_fill(cx).as_ref()).w_full();
-    select.info(ui, "chrome-settings-icon-theme", select_info)
+    combo_surface(cx, select)
+        .w_full()
+        .info(ui, "chrome-settings-icon-theme", select_info)
 }
 
 /// One of the toolbar's icon Buttons.
@@ -1006,7 +1012,9 @@ pub(crate) fn toolbar_button(
 /// Not `Button::tooltip_with_action`: the Button builds that Tooltip itself
 /// as it renders (button/button.rs, `RenderOnce for Button`), so the
 /// platform's tooltip fill, edge, padding, radius and text colour would not
-/// reach it.
+/// reach it. The text is a content element refined by
+/// `geometry::tooltip_content`, which is where `tooltip.max_width` makes it
+/// wrap: `Tooltip::new(text)` has no element to carry the width.
 fn action_tooltip(
     cx: &App,
     text: &'static str,
@@ -1016,11 +1024,14 @@ fn action_tooltip(
     bool,
 ) {
     let style = native_geometry(cx, geometry::tooltip);
+    let content = native_geometry(cx, geometry::tooltip_content);
     let styled = style.is_some();
     let action = action.boxed_clone();
     let build = move |window: &mut Window, cx: &mut App| {
+        let content = content.clone();
         refined(
-            Tooltip::new(text).action(action.as_ref(), None),
+            Tooltip::element(move |_window, _cx| refined(div().child(text), content.as_ref()))
+                .action(action.as_ref(), None),
             style.as_ref(),
         )
         .build(window, cx)
@@ -3171,24 +3182,58 @@ pub(crate) fn select(
         "select",
         &mut select_info,
     );
-    refined(select, combo_fill(cx).as_ref())
+    combo_surface(cx, refined(select, combo_fill(cx).as_ref()))
+        .w(width)
         .info(ui, id, select_info)
         .debug_selector(move || id.into())
 }
 
-/// A drop-down trigger's fill and edge, `combo_box.background_color` and
-/// `combo_box.border.color`, for a `Select` or a `Combobox` that is not
-/// disabled, or `None` before `apply` ran. The trigger paints
-/// `input_background()` and `input` first and refines itself with the
-/// caller's style after (select.rs, `Select::render`; combobox.rs,
+/// A drop-down trigger's edge, `combo_box.border.color`, and no fill of its
+/// own, for a `Select` or a `Combobox` that is not disabled, or `None`
+/// before `apply` ran: [`combo_surface`] paints the fill under it. The
+/// trigger paints `input_background()` and `input` first and refines itself
+/// with the caller's style after (select.rs, `Select::render`; combobox.rs,
 /// `Combobox::render`), so these land over them.
 fn combo_fill(cx: &App) -> Option<StyleRefinement> {
+    // Upstream's own `transparent` token, which the trigger starts its edge
+    // with (select.rs:535).
+    let none = cx.theme().transparent;
     native_value(cx, |n| {
         let c = &n.resolved.combo_box;
         StyleRefinement::default()
-            .bg(info::stated(c.background_color))
+            .bg(none)
             .border_color(info::stated(c.border.color))
     })
+}
+
+/// The surface under a drop-down `trigger` refined by [`combo_fill`]:
+/// `combo_box.background_color`, and under the pointer
+/// `combo_box.hover_background` over it, rounded as the trigger is
+/// (`combo_box.border.corner_radius`, `geometry::select`). Upstream's trigger
+/// sets no hover (select.rs:528-546; combobox.rs:980-997) and neither
+/// `Select` nor `Combobox` is an `InteractiveElement` (select.rs:788), so the
+/// hover fill is this element's. Before `apply` ran it is a plain box.
+fn combo_surface(cx: &App, trigger: impl IntoElement) -> Div {
+    let look = native_value(cx, |n| {
+        let c = &n.resolved.combo_box;
+        let fill = info::stated(c.background_color);
+        (
+            fill,
+            c.hover_background
+                .map(|hover| fill.blend(info::stated(hover))),
+            px(c.border.corner_radius.max(0.0)),
+        )
+    });
+    match look {
+        Some((fill, hover, radius)) => div()
+            .rounded(radius)
+            .bg(fill)
+            .when_some(hover, |surface, hover| {
+                surface.hover(move |style| style.bg(hover))
+            })
+            .child(trigger),
+        None => div().child(trigger),
+    }
 }
 
 /// A `ColorPicker` over `state`, reading `label`.
@@ -3587,6 +3632,9 @@ impl Selectable for ListRow {
     }
 }
 
+/// The group a list row's label takes its hover colour from.
+const LIST_ROW_GROUP: &str = "list-row";
+
 impl RenderOnce for ListRow {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = format!("{}-{}", self.prefix, self.ix);
@@ -3608,6 +3656,20 @@ impl RenderOnce for ListRow {
                 "list.selection_text_color, which the showcase sets on the selected row over the list font's colour",
             );
         }
+        // A row under the pointer lettered in `list.hover_text_color`: the
+        // ListItem's own hover sets its fill alone, inside render
+        // (list/list_item.rs:209), so the label takes the colour from the
+        // row's group hover. Not on a selected row, which does not hover
+        // (:208).
+        let hover_text = (!self.selected && !self.right_clicked)
+            .then(|| native_color(cx, |n| n.resolved.list.hover_text_color))
+            .flatten();
+        if hover_text.is_some() {
+            row_info = row_info.config(
+                "hovered text",
+                "list.hover_text_color, which the showcase sets on the label while the row is hovered",
+            );
+        }
         let item = native_info(
             ListItem::new(SharedString::from(id.clone())),
             cx,
@@ -3616,9 +3678,16 @@ impl RenderOnce for ListRow {
             &mut row_info,
         )
         .when_some(selected_text, |item, text| item.text_color(text))
+        .group(LIST_ROW_GROUP)
         // Plain text, not a Label: `Label::render` paints foreground on its
         // own element (label.rs:211) over the list font the row carries.
-        .child(self.label)
+        .child(
+            div()
+                .child(self.label)
+                .when_some(hover_text, |label, text| {
+                    label.group_hover(LIST_ROW_GROUP, move |style| style.text_color(text))
+                }),
+        )
         .selected(self.selected)
         .secondary_selected(self.right_clicked);
         item.info(&self.ui, SharedString::from(id.clone()), row_info)
@@ -5027,6 +5096,18 @@ pub(crate) fn separator(
     id: &'static str,
     kind: SeparatorKind,
 ) -> Stateful<Div> {
+    // The plain line under a native theme is the connector's: its thickness
+    // is `separator.line_width`, which gpui-component's literal 1px line does
+    // not take (separator.rs:78-82).
+    #[cfg(feature = "widgets")]
+    if kind == SeparatorKind::Horizontal
+        && let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx))
+    {
+        return widgets::Separator::horizontal()
+            .info(ui, id, info::layout::native_separator(r))
+            .py_1()
+            .debug_selector(move || id.into());
+    }
     let separator = match kind {
         SeparatorKind::Horizontal => Separator::horizontal(),
         SeparatorKind::Labelled(label) => Separator::horizontal().label(label),

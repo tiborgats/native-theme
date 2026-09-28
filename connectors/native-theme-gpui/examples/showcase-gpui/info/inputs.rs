@@ -898,20 +898,33 @@ pub fn combo_fill(
     combobox: bool,
 ) -> WidgetInfo {
     match native {
-        Some(r) => info
-            .color(claim(
-                "trigger fill",
-                "background_color",
-                stated(r.combo_box.background_color),
-                "showcase",
-            ))
-            .color(claim(
-                "trigger border",
-                "color",
-                stated(r.combo_box.border.color),
-                "showcase",
-            ))
-            .config("fill", "combo_box.background_color and combo_box.border.color, which the showcase refines the trigger with over the input_background() fill and input edge it paints first (select.rs, Select::render; combobox.rs, Combobox::render)"),
+        Some(r) => {
+            let info = info
+                .color(claim(
+                    "trigger fill",
+                    "background_color",
+                    stated(r.combo_box.background_color),
+                    "showcase",
+                ))
+                .color(claim(
+                    "trigger border",
+                    "color",
+                    stated(r.combo_box.border.color),
+                    "showcase",
+                ));
+            let c = &r.combo_box;
+            let info = if c.hover_background.is_some() {
+                info.color(claim(
+                    "hover layer, over the fill",
+                    "hover_background",
+                    stated(c.hover_background.unwrap_or(c.background_color)),
+                    "showcase",
+                ))
+            } else {
+                info
+            };
+            info.config("fill", "combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color over the input edge it paints first")
+        }
         None => info
             .color(input_background(t))
             .color(if combobox {

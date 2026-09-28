@@ -974,7 +974,7 @@ fn action_tooltip(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
     };
     info.instance(
         "tooltip",
-        "Tooltip::new with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach",
+        "Tooltip::element with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach. The text is the element, refined by geometry::tooltip_content where a native theme is installed, so it wraps within tooltip.max_width; a key binding beside it is not counted in that width",
     )
     .not_themeable(
         "tooltip delay",
