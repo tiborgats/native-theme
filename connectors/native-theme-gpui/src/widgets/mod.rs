@@ -18,7 +18,9 @@
 //! The tab bar joins them because no gpui-component `TabBar` variant draws
 //! what `tab.*` states: each paints an idle tab transparent
 //! (`tab/tab.rs:132`) and marks the selected one its own way, with a primary
-//! underline or a frame in `border` (`tab/tab.rs`, `TabVariant`).
+//! underline or a frame in `border` (`tab/tab.rs`, `TabVariant`). The
+//! separator joins them because gpui-component's draws its line a literal
+//! `px(1.)` thick (`separator.rs:78-82`).
 //!
 //! Each widget reads the variant [`apply`](crate::apply) installed for the
 //! current mode at render, through [`ActiveNativeTheme`]. With none installed,
@@ -59,6 +61,7 @@ macro_rules! into_element {
 
 mod checkbox;
 mod progress;
+mod separator;
 mod slider;
 mod spinner;
 mod switch;
@@ -68,6 +71,7 @@ mod tests;
 
 pub use checkbox::{Checkbox, CheckboxLook, Radio, RadioGroup};
 pub use progress::{ProgressBar, ProgressBarLook};
+pub use separator::{Separator, SeparatorLook};
 pub use slider::{Slider, SliderLook};
 pub use spinner::{Spinner, SpinnerLook};
 pub use switch::{Switch, SwitchLook};
@@ -81,7 +85,8 @@ into_element!(
     Slider,
     ProgressBar,
     Spinner,
-    TabBar
+    TabBar,
+    Separator
 );
 
 use gpui::{App, Hsla, Pixels, px};

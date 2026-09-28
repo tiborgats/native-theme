@@ -324,6 +324,26 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
     );
 }
 
+#[gpui::test]
+fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("material", ColorMode::Dark)),
+        Box::new(|_, _| {
+            div()
+                .w(px(200.))
+                .child(Separator::horizontal())
+                .into_any_element()
+        }),
+    );
+    let r = resolved("material", ColorMode::Dark);
+    let line = bounds(cx, "native-separator");
+    assert_eq!(line.size.height, px(r.separator.line_width));
+    assert_eq!(line.size.width, px(200.));
+    let look = SeparatorLook::of(&r).expect("finite");
+    assert_eq!(look.color, c(r.separator.line_color));
+}
+
 #[test]
 fn a_length_that_is_not_finite_falls_back() {
     let mut r = resolved("kde-breeze", ColorMode::Light);
