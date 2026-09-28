@@ -162,7 +162,7 @@ const ROWS: &[Row] = &[
     // --- KDE (kde-breeze, kde-breeze-live, kde_metrics) ---
     row(Kde, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Kde, "button", all(6.0), &[1171, 1172], "Button_MarginWidth = 6, both axes"),
-    row(Kde, "input", axes(3.0, 6.0), &[1196, 1197], "LineEdit_FrameWidth = 6; 3 (measured)"),
+    row(Kde, "input", axes(6.0, 7.0), &[1196, 1197], "inside the frame line: LineEdit_FrameWidth 6 + QLineEdit's 2 / 1 − 1"),
     row(Kde, "checkbox", NONE, &[1216, 1217], "(none)"),
     row(Kde, "menu", all(4.0), &[1235, 1236], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
         .with(&[("row_height", None, 1234)]),

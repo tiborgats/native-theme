@@ -714,7 +714,7 @@
 
 ### KDE: the single-line input's padding
 
-- [ ] `docs/platform-facts.md:1196-1197` gives KDE's single-line input
+- [x] `docs/platform-facts.md:1196-1197` gives KDE's single-line input
       padding as `LineEdit_FrameWidth` = 6 horizontal and 3 vertical
       **(measured)**. The sources give 8 and 7: Breeze's line edit frame is
       6 on every side when the field is tall enough (`lineEditContentsRect`,
@@ -724,6 +724,13 @@
       Not changed: measure a Breeze `QLineEdit` in a screenshot (text to the
       frame's outer edge, at 1× scale) to settle which PF measured, then
       correct PF and kde-breeze's `input.border`.
+      Done 2026-09-28: a real Breeze QLineEdit (`kdialog --inputbox`, nested
+      KWin, scale 1.0, Noto Sans 10pt) is 32px tall with a 1px frame line;
+      its text starts 8px from the frame's outer left edge and its 18px line
+      box 7px below the outer top edge, as the sources give. The model's
+      padding lies inside the border line (platform-facts.md:948-949), so
+      KDE's is 7 horizontal and 6 vertical: platform-facts §2.4, kde-breeze
+      (and -live), the KDE reader and the documented-sizes gate state it.
 
 ### Progress bar: Breeze's groove, the radii, the shadow
 

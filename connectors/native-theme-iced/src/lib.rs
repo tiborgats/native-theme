@@ -1244,8 +1244,12 @@ mod tests {
             let own = size * r.defaults.line_height + pad.top + pad.bottom;
             assert_eq!(height, min.max(own), "{what}: {height} for {min}");
         }
-        // The input is 3 + 1 top and bottom: its line box is 24, not 18.13.
-        assert_eq!(line(r.input.font.size, 32.0, input_padding(&r)), 24.0);
+        // The input is 6 + 1 top and bottom: the 18 the minimum leaves is
+        // below the theme's 18.13 line box, which stands; a 40px minimum
+        // leaves 26.
+        let input_own = r.input.font.size * r.defaults.line_height;
+        assert_eq!(line(r.input.font.size, 32.0, input_padding(&r)), input_own);
+        assert_eq!(line(r.input.font.size, 40.0, input_padding(&r)), 26.0);
         // A minimum below the theme's own line box leaves that line box.
         let own = r.defaults.font.size * r.defaults.line_height;
         assert_eq!(line(r.defaults.font.size, 0.0, input_padding(&r)), own);

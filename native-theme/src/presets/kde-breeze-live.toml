@@ -60,9 +60,10 @@ min_height_px = 32.0
 
 
 [light.input.border]
-# platform-facts.md:1196-1197 (§2.4): LineEdit_FrameWidth = 6; 3 (measured)
-padding_horizontal_px = 6.0
-padding_vertical_px = 3.0
+# platform-facts.md:1196-1197 (§2.4): inside the frame line, LineEdit_FrameWidth 6 + QLineEdit's
+# margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
+padding_horizontal_px = 7.0
+padding_vertical_px = 6.0
 [light.checkbox]
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
@@ -257,9 +258,10 @@ min_height_px = 32.0
 
 
 [dark.input.border]
-# platform-facts.md:1196-1197 (§2.4): LineEdit_FrameWidth = 6; 3 (measured)
-padding_horizontal_px = 6.0
-padding_vertical_px = 3.0
+# platform-facts.md:1196-1197 (§2.4): inside the frame line, LineEdit_FrameWidth 6 + QLineEdit's
+# margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
+padding_horizontal_px = 7.0
+padding_vertical_px = 6.0
 [dark.checkbox]
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3

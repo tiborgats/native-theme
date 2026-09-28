@@ -27,11 +27,12 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Input
     let border = variant.input.border.get_or_insert_default();
-    // platform-facts.md:1196-1197 (§2.4)
-    border.padding_left = Some(6.0); // LineEdit_FrameWidth
-    border.padding_right = Some(6.0); // LineEdit_FrameWidth
-    border.padding_top = Some(3.0); // Breeze measured frame
-    border.padding_bottom = Some(3.0); // Breeze measured frame
+    // platform-facts.md:1196-1197 (§2.4): inside the 1px frame line,
+    // LineEdit_FrameWidth 6 plus QLineEdit's horizontalMargin 2 / verticalMargin 1
+    border.padding_left = Some(7.0); // LineEdit_FrameWidth + 2 - 1
+    border.padding_right = Some(7.0); // LineEdit_FrameWidth + 2 - 1
+    border.padding_top = Some(6.0); // LineEdit_FrameWidth + 1 - 1
+    border.padding_bottom = Some(6.0); // LineEdit_FrameWidth + 1 - 1
 
     // Scrollbar
     variant.scrollbar.groove_width = Some(21.0); // ScrollBar_Extend
