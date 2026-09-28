@@ -5971,6 +5971,55 @@ fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
     })
 }
 
+/// A Basic text field under the pointer is framed by
+/// `input.hover_border_color`, at rest by `input.border.color` (DIFFS H5),
+/// under a preset that states the hover edge.
+#[gpui::test]
+fn a_hovered_field_takes_the_hover_border(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let (edge, hovered_edge) = read(&mut cx, &showcase, |_, cx| {
+        (
+            native_color(cx, |n| n.resolved.input.border.color),
+            native_value(cx, |n| n.resolved.input.hover_border_color)
+                .flatten()
+                .map(crate::info::stated),
+        )
+    });
+    assert!(
+        hovered_edge.is_some(),
+        "kde-breeze states input.hover_border_color"
+    );
+    let field = "basic-input-placeholder";
+    let edge_of = |cx: &mut VisualTestContext| {
+        let bounds = bounds_of(cx, field);
+        cx.update(|window, _| {
+            let bounds = bounds.scale(window.scale_factor());
+            window
+                .painted_quads()
+                .into_iter()
+                .find(|q| q.bounds == bounds && q.border_widths.top.0 > 0.)
+                .map(|q| q.border_color)
+        })
+    };
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        edge_of(&mut cx),
+        edge,
+        "a field at rest is not input.border.color"
+    );
+    let at = bounds_of(&mut cx, field).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        edge_of(&mut cx),
+        hovered_edge,
+        "a hovered field is not input.hover_border_color"
+    );
+}
+
 /// The border colour of the largest box with a border painted exactly over
 /// `selector`'s bounds.
 #[cfg(feature = "widgets")]

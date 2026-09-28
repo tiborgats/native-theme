@@ -2670,7 +2670,17 @@ pub(crate) fn text_input(
             if fill.is_some() {
                 input_info = input_info.geometry("input_fill");
             }
-            refined(input, fill.as_ref())
+            let input = refined(input, fill.as_ref());
+            let surface = (!disabled)
+                .then(|| cx.native_theme().and_then(|nt| nt.resolved(cx)))
+                .flatten();
+            if let Some(r) = surface {
+                input_info = info::inputs::input_surface(input_info, r);
+                return input_surface(cx, r, input, width)
+                    .info(ui, id, input_info)
+                    .debug_selector(move || id.into());
+            }
+            input
         }
         // Through the caller's style, which Input applies after its own
         // height and line height (input/input.rs:699-703, then :719).
@@ -2685,6 +2695,47 @@ pub(crate) fn text_input(
     input
         .info(ui, id, input_info)
         .debug_selector(move || id.into())
+}
+
+/// The group an enabled field's surface takes its hover from.
+const INPUT_GROUP: &str = "input-surface";
+
+/// An enabled, refined `input` `width` wide over its surface, drawn from
+/// `r`: `input.background_color` framed by `input.border.color`, and by
+/// `input.hover_border_color` under the pointer.
+///
+/// `Input` is `Styled` only (input/input.rs:481) and its root's one state is
+/// `focused` (:677-684), so it has no hover edge of its own: the field is
+/// left without a fill or an edge colour (its caller's style lands after its
+/// own, :719) and an absolute box under it, the field's size, paints them.
+/// Focused, the field's own edge in `ring` shows over the surface's.
+fn input_surface(
+    cx: &App,
+    r: &native_theme_gpui::ResolvedTheme,
+    input: Input,
+    width: Pixels,
+) -> Div {
+    let i = &r.input;
+    // Upstream's own `transparent` token (theme/schema.rs): no fill or edge
+    // colour of the field's own.
+    let none = cx.theme().transparent;
+    // A soft option the theme leaves unstated keeps the edge it would cover.
+    let hover = info::stated(i.hover_border_color.unwrap_or(i.border.color));
+    div()
+        .relative()
+        .w(width)
+        .group(INPUT_GROUP)
+        .child(
+            div()
+                .absolute()
+                .inset_0()
+                .rounded(px(i.border.corner_radius.max(0.0)))
+                .bg(info::stated(i.background_color))
+                .border(px(i.border.line_width))
+                .border_color(info::stated(i.border.color))
+                .group_hover(INPUT_GROUP, move |style| style.border_color(hover)),
+        )
+        .child(input.bg(none).border_color(none))
 }
 
 /// A `Textarea` over `state`, `width` by `height`, refined by

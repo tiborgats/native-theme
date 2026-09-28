@@ -6,6 +6,24 @@ use native_theme_gpui::ResolvedTheme;
 use super::{WidgetInfo, chrome::input_background, claim, stated};
 use crate::demo::InputField;
 
+/// A refined, enabled field's surface, which the showcase draws under the
+/// field (`demo::text_input`): `r`'s `input.background_color` and
+/// `input.border.color`, and `input.hover_border_color` under the pointer.
+pub fn input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
+    let i = &r.input;
+    let info = if i.hover_border_color.is_some() {
+        info.color(claim(
+            "hovered border",
+            "hover_border_color",
+            stated(i.hover_border_color.unwrap_or(i.border.color)),
+            "showcase",
+        ))
+    } else {
+        info
+    };
+    info.config("surface", "input.background_color framed by input.border.color, and by input.hover_border_color (where stated) under the pointer, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface")
+}
+
 /// A single-line `Input` taking the refinement `field` names. `styled` is
 /// whether a native theme is installed, so whether `geometry::input` refined
 /// a `Refined` field and `geometry::input_height` sized a `HeightOnly` one.
