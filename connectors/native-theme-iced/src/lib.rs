@@ -63,7 +63,7 @@
 //!
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
-//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `combo_box_padding`, `button_content_min_size` and `at_least`, through `iced_widget` |
+//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size` and `at_least`, through `iced_widget` |
 //! | `spinner` | yes | [`Spinner`], the icon set's animated loading indicator (or an arc at `spinner.*`), through `iced_widget`'s `svg`, `image` and `canvas`; implies `widgets` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
@@ -438,6 +438,34 @@ pub fn input_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core
     padding_inside_border(
         &resolved.input.border,
         iced_widget::text_input::DEFAULT_PADDING,
+    )
+}
+
+/// iced's own text-editor padding: `TextEditor::new` pads 5 on every side
+/// (iced_widget 0.14.2 `src/text_editor.rs:152`, `Padding::new(5.0)`), a value
+/// the crate keeps in the constructor rather than a constant.
+#[cfg(feature = "widgets")]
+const TEXT_EDITOR_PADDING: f32 = 5.0;
+
+/// Returns multi-line text-editor padding from the resolved theme as an iced
+/// [`Padding`](iced_core::Padding), for `TextEditor::padding`.
+///
+/// [`padding_inside_border()`] of `text_area.border`: each side is the stated
+/// side plus `text_area.border.line_width` where the theme states it, and
+/// iced's own text-editor padding where it does not, 5 on every side
+/// (iced_widget 0.14.2 `src/text_editor.rs:152`). A platform pads its
+/// multi-line field apart from its single-line one
+/// (`docs/platform-facts.md` §2.29: Breeze's QTextEdit 5 where its line edit
+/// is 7 / 6, GTK's text view 0 where its entry is 9 / 0); everything else
+/// of a text area is the input's.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn text_area_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
+    padding_inside_border(
+        &resolved.text_area.border,
+        iced_core::Padding::new(TEXT_EDITOR_PADDING),
     )
 }
 
@@ -1190,6 +1218,22 @@ mod tests {
         );
         assert_eq!(pad.right, default.right, "an unstated side is iced's");
         assert_eq!(pad.bottom, default.bottom, "an unstated side is iced's");
+    }
+
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn text_area_padding_fills_unstated_sides_from_iceds_default() {
+        let mut resolved = make_resolved(false);
+        resolved.text_area.border.padding = partly_stated();
+        resolved.text_area.border.line_width = 2.0;
+        let pad = text_area_padding(&resolved);
+        assert_eq!(pad.top, 2.0, "a stated zero, inside the border");
+        assert_eq!(pad.left, 9.0, "a stated side, inside the border");
+        assert_eq!(pad.right, TEXT_EDITOR_PADDING, "an unstated side is iced's");
+        assert_eq!(
+            pad.bottom, TEXT_EDITOR_PADDING,
+            "an unstated side is iced's"
+        );
     }
 
     #[cfg(feature = "widgets")]

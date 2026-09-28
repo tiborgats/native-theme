@@ -55,8 +55,8 @@ use native_theme::icons::{
     SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale,
-    ResolvedTextScaleEntry, ResolvedTheme, TransformAnimation,
+    AnimatedIcon, ArrowSide, IconData, IconRole, IconSet, LayoutTheme, ResolvedFontSpec,
+    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, TransformAnimation,
 };
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
@@ -3471,13 +3471,17 @@ fn tab_row<'a>(
     // The strip scrolls sideways with no bar: a bar laid out under tabs no
     // taller than their labels would cover them, and the page tabs' menu
     // reaches every tab.
-    let strip = scrollable(row(tabs))
-        .id(id)
-        .direction(scrollable::Direction::Horizontal(
-            styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
-        ))
-        .style(styles::scrollable(resolved))
-        .width(Fill);
+    // tab.item_gap between the tabs, where stated; a row's own none otherwise.
+    let strip = scrollable(match t.item_gap {
+        Some(gap) => row(tabs).spacing(gap),
+        None => row(tabs),
+    })
+    .id(id)
+    .direction(scrollable::Direction::Horizontal(
+        styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
+    ))
+    .style(styles::scrollable(resolved))
+    .width(Fill);
     let mut bar = row![strip].align_y(iced::Center);
     if let Some(trailing) = trailing {
         bar = bar.push(trailing);
@@ -4652,20 +4656,56 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
-    let check = |checked: bool, label: &'a str, enabled: bool| {
+    let check = |checked: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
+        let stated = c.check_mark_stroke_width;
         let boxed = checkbox(checked)
             .label(label)
             .spacing(c.label_gap)
             .size(c.indicator_width)
             .text_size(scaled_text_size(c.font.size, a11y))
             .font(theme_font(&c.font))
-            .style(styles::checkbox(resolved));
+            .style(glyphless_when_stated(styles::checkbox(resolved), stated));
         // A box with no `on_toggle` is a disabled one (checkbox.rs:154).
-        if enabled {
+        let boxed = if enabled {
             boxed.on_toggle(|_| Message::BasicHeld)
         } else {
             boxed
-        }
+        };
+        let Some(stroke) = stated else {
+            return boxed.into();
+        };
+        // The mark the theme states a line for, over iced's glyph made
+        // transparent: laid out whether checked or not, so the box keeps its
+        // place in the widget tree as it toggles.
+        let status = if enabled {
+            checkbox::Status::Active {
+                is_checked: checked,
+            }
+        } else {
+            checkbox::Status::Disabled {
+                is_checked: checked,
+            }
+        };
+        let colour = styles::checkbox(resolved)(&Theme::Light, status).icon_color;
+        // The mark box: inside the border and the padding where the theme
+        // states the padding (GNOME's 3, docs/platform-facts.md §2.5), and
+        // egui's own share of the box, centred, where it does not.
+        let inset = |side: Option<f32>| match side {
+            Some(pad) => c.border.line_width + pad.max(0.0),
+            None => c.indicator_width * (1.0 - EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH) / 2.0,
+        };
+        let mark = canvas(CheckMark {
+            checked,
+            color: colour,
+            stroke,
+            inset: (inset(c.border.padding.left), inset(c.border.padding.top)),
+        })
+        .width(Length::Fixed(c.indicator_width))
+        .height(Length::Fixed(c.indicator_width));
+        let seat = container(mark)
+            .height(Length::Fill)
+            .align_y(iced::alignment::Vertical::Center);
+        iced::widget::Stack::new().push(boxed).push(seat).into()
     };
     let checkboxes = group(
         "Checkboxes",
@@ -4875,8 +4915,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
-    // Three of the theme's text lines, inside the field's padding.
+    // Three of the theme's text lines, inside the multi-line field's own
+    // padding (docs/platform-facts.md §2.29).
     let area_line = input_size * resolved.defaults.line_height;
+    let area_pad = native_theme_iced::text_area_padding(resolved);
     let text_area = group(
         "Text area",
         text_area_info(resolved),
@@ -4889,10 +4931,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 .line_height(iced::Pixels(area_line))
                 .font(theme_font(&resolved.input.font))
                 .style(styles::text_editor(resolved))
-                .padding(inp_pad)
+                .padding(area_pad)
                 .width(BASIC_WIDE)
                 .height(Length::Fixed(
-                    BASIC_TEXT_AREA_LINES * area_line + inp_pad.y(),
+                    BASIC_TEXT_AREA_LINES * area_line + area_pad.y(),
                 )),
         ),
     );
@@ -4922,6 +4964,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .height(Length::Fixed(tab_t.min_height))
             .width(Length::Shrink)
             .style(styles::aw::tab_bar(resolved));
+        // tab.item_gap between the tabs, where stated; iced_aw's own none
+        // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`).
+        let bar = match tab_t.item_gap {
+            Some(gap) => bar.spacing(gap),
+            None => bar,
+        };
         // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
         // and takes a padding whole.
         match native_theme_iced::stated_padding(&tab_t.border.padding) {
@@ -4942,7 +4990,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             tab.style(styles::button(resolved)).into()
         }
     }))
-    .spacing(sp.xs)
+    .spacing(tab_t.item_gap.unwrap_or(sp.xs))
     .into();
     let tabs = group("Tabs", tabs_info(resolved, tab_pad), tab_row);
 
@@ -5035,54 +5083,88 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let x_pad = native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING);
     let x_min = iced::Size::new(0.0, (x.header_height - x_pad.y()).max(0.0));
     let arrow_color = native_theme_iced::expander_arrow_color(resolved);
-    let header = |title: &'a str, expanded: bool, toggle: Message| {
-        let arrow = canvas(DisclosureArrow {
-            expanded,
-            color: arrow_color,
-        })
-        .width(Length::Fixed(x.arrow_icon_size))
-        .height(Length::Fixed(x.arrow_icon_size));
+    // expander.arrow_side, arrow_gap, content_indent and frame_enabled
+    // (docs/platform-facts.md §2.27); where one is unstated the showcase's
+    // own stands: the arrow before the title, the widget gap, the body
+    // under the title, and each header framed by `styles::expander`.
+    let trailing = x.arrow_side == Some(ArrowSide::Trailing);
+    let arrow_gap = x.arrow_gap.unwrap_or(gap.widget);
+    let header = move |title: &'a str, expanded: bool, toggle: Message| {
+        let arrow = || {
+            canvas(DisclosureArrow {
+                expanded,
+                trailing,
+                color: arrow_color,
+            })
+            .width(Length::Fixed(x.arrow_icon_size))
+            .height(Length::Fixed(x.arrow_icon_size))
+        };
         button(at_least(
-            row![arrow, text(title).typeset(&x.font, a11y)]
-                .spacing(gap.widget)
+            row![]
+                .push((!trailing).then(arrow))
+                .push(text(title).typeset(&x.font, a11y).width(if trailing {
+                    Fill
+                } else {
+                    Length::Shrink
+                }))
+                .push(trailing.then(arrow))
+                .spacing(arrow_gap)
                 .align_y(iced::Center),
             x_min,
         ))
         .padding(x_pad)
-        .width(Length::Fixed(BASIC_WIDE))
-        .style(styles::expander(resolved))
+        .width(Fill)
+        .style(unframed_when_stated(
+            styles::expander(resolved),
+            x.frame_enabled,
+        ))
         .on_press(toggle)
     };
-    // The body sits under the title, past the arrow and its gap.
-    let body_inset = x_pad.left + x.arrow_icon_size + gap.widget;
-    let mut details = column![probe(
-        probes::BASIC_EXPANDER,
-        Length::Shrink,
-        header(
-            "Details",
-            state.basic_details_open,
-            Message::BasicDetailsToggled
-        )
-    )]
-    .spacing(gap.widget);
-    if state.basic_details_open {
-        details = details.push(
-            container(text("Expanded content").body(resolved, a11y))
-                .padding(Padding::ZERO.left(body_inset)),
-        );
-    }
-    let mut more = column![header(
-        "More",
-        state.basic_more_open,
-        Message::BasicMoreToggled
-    )]
-    .spacing(gap.widget);
-    if state.basic_more_open {
-        more = more.push(
-            container(text("More content").body(resolved, a11y))
-                .padding(Padding::ZERO.left(body_inset)),
-        );
-    }
+    // The body sits content_indent in, or under the title, past the arrow
+    // and its gap, where the theme states no indent.
+    let body_inset = x
+        .content_indent
+        .unwrap_or(x_pad.left + x.arrow_icon_size + arrow_gap);
+    let frame = iced::Border {
+        color: to_color(x.border.color),
+        width: x.border.line_width,
+        radius: x.border.corner_radius.into(),
+    };
+    let item = move |head: Element<'a, Message>, body: Option<&'a str>| -> Element<'a, Message> {
+        let mut item = column![head].spacing(gap.widget);
+        if let Some(body) = body {
+            item = item.push(
+                container(text(body).body(resolved, a11y)).padding(Padding::ZERO.left(body_inset)),
+            );
+        }
+        match x.frame_enabled {
+            Some(true) => container(item)
+                .padding(x.border.line_width)
+                .width(Length::Fixed(BASIC_WIDE))
+                .style(move |_: &Theme| container::Style {
+                    border: frame,
+                    ..container::Style::default()
+                })
+                .into(),
+            _ => container(item).width(Length::Fixed(BASIC_WIDE)).into(),
+        }
+    };
+    let details = item(
+        probe(
+            probes::BASIC_EXPANDER,
+            Fill,
+            header(
+                "Details",
+                state.basic_details_open,
+                Message::BasicDetailsToggled,
+            ),
+        ),
+        state.basic_details_open.then_some("Expanded content"),
+    );
+    let more = item(
+        header("More", state.basic_more_open, Message::BasicMoreToggled).into(),
+        state.basic_more_open.then_some("More content"),
+    );
     let expanders = group(
         "Expander",
         expander_info(resolved),
@@ -5140,13 +5222,116 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     .into()
 }
 
+/// `style` with no border where the theme states whether the expander is
+/// framed (`frame`): a framed expander's frame holds its header and its body
+/// together, and an unframed one has none (docs/platform-facts.md §2.27), so
+/// the header draws no border of its own. Where the theme states nothing the
+/// header keeps `styles::expander`'s border.
+fn unframed_when_stated(
+    style: impl Fn(&Theme, button::Status) -> button::Style + Clone,
+    frame: Option<bool>,
+) -> impl Fn(&Theme, button::Status) -> button::Style + Clone {
+    move |theme, status| {
+        let s = style(theme, status);
+        match frame {
+            Some(_) => button::Style {
+                border: iced::Border {
+                    width: 0.0,
+                    ..s.border
+                },
+                ..s
+            },
+            None => s,
+        }
+    }
+}
+
+/// `style` with a transparent glyph where the theme states the check mark's
+/// line (`stroke`): the showcase paints that mark itself ([`CheckMark`]).
+/// Where the theme states none, iced's own glyph stands.
+fn glyphless_when_stated(
+    style: impl Fn(&Theme, checkbox::Status) -> checkbox::Style + Clone,
+    stroke: Option<f32>,
+) -> impl Fn(&Theme, checkbox::Status) -> checkbox::Style + Clone {
+    move |theme, status| {
+        let s = style(theme, status);
+        match stroke {
+            Some(_) => checkbox::Style {
+                icon_color: Color::TRANSPARENT,
+                ..s
+            },
+            None => s,
+        }
+    }
+}
+
+/// egui's check box and the box its tick fills: `Spacing::icon_width` 14 and
+/// `icon_width_inner` 8 (egui 0.36.2 `src/style.rs:1466-1467`), the tick's box
+/// centred in the check box (`:478`). [`CheckMark`] draws egui's tick, so where
+/// the theme states no padding round the mark it takes egui's share of the box.
+const EGUI_ICON_WIDTH: f32 = 14.0;
+const EGUI_ICON_WIDTH_INNER: f32 = 8.0;
+
+/// A checked box's mark where the theme states `checkbox.check_mark_stroke_width`:
+/// iced draws its check as a glyph of its icon font (`checkbox.rs`, `Icon`), whose
+/// line no style reaches, so the showcase paints the mark over the box at the
+/// stated width, in the colour the style gives the glyph. The model states the
+/// line, not the shape: the tick is egui's `Checkbox`'s (egui 0.36.2
+/// `src/widgets/checkbox.rs:151-158`), from the middle of the mark box's left
+/// edge through the middle of its bottom edge to its top-right corner, the mark
+/// box being the indicator inside `inset` on each side: its border and the
+/// stated padding, or egui's share of the box where the theme states none.
+struct CheckMark {
+    checked: bool,
+    color: Color,
+    stroke: f32,
+    /// Horizontal and vertical inset of the mark box.
+    inset: (f32, f32),
+}
+
+impl<Message> canvas::Program<Message> for CheckMark {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &Self::State,
+        renderer: &iced::Renderer,
+        _theme: &Theme,
+        bounds: iced::Rectangle,
+        _cursor: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        if self.checked {
+            let (x, y) = self.inset;
+            let (left, right) = (x, frame.width() - x);
+            let (top, bottom) = (y, frame.height() - y);
+            let tick = canvas::Path::new(|path| {
+                path.move_to(iced::Point::new(left, (top + bottom) / 2.0));
+                path.line_to(iced::Point::new((left + right) / 2.0, bottom));
+                path.line_to(iced::Point::new(right, top));
+            });
+            frame.stroke(
+                &tick,
+                canvas::Stroke::default()
+                    .with_color(self.color)
+                    .with_width(self.stroke),
+            );
+        }
+        vec![frame.into_geometry()]
+    }
+}
+
 /// The disclosure arrow of the Basic tab's expanders, a filled triangle as
 /// wide and as tall as `expander.arrow_icon_size`, in
-/// `native_theme_iced::expander_arrow_color`: pointing right while collapsed
-/// and down while expanded. The model states the arrow's size and colour, and
-/// no shape; iced has no expander, so the arrow is drawn here.
+/// `native_theme_iced::expander_arrow_color`: before the title it points at
+/// the title while collapsed and down while expanded, and after it
+/// (`expander.arrow_side` trailing) down while collapsed and up while
+/// expanded, as libadwaita's and WinUI's trailing chevrons turn
+/// (docs/platform-facts.md §2.27). The model states the arrow's size, colour
+/// and side, and no shape; iced has no expander, so the arrow is drawn here.
 struct DisclosureArrow {
     expanded: bool,
+    trailing: bool,
     color: Color,
 }
 
@@ -5163,16 +5348,28 @@ impl<Message> canvas::Program<Message> for DisclosureArrow {
     ) -> Vec<canvas::Geometry> {
         let mut frame = canvas::Frame::new(renderer, bounds.size());
         let (w, h) = (frame.width(), frame.height());
-        let arrow = canvas::Path::new(|path| {
-            path.move_to(iced::Point::ORIGIN);
-            if self.expanded {
+        let arrow = canvas::Path::new(|path| match (self.trailing, self.expanded) {
+            // up
+            (true, true) => {
+                path.move_to(iced::Point::new(0.0, h));
+                path.line_to(iced::Point::new(w, h));
+                path.line_to(iced::Point::new(w / 2.0, 0.0));
+                path.close();
+            }
+            // down
+            (true, false) | (false, true) => {
+                path.move_to(iced::Point::ORIGIN);
                 path.line_to(iced::Point::new(w, 0.0));
                 path.line_to(iced::Point::new(w / 2.0, h));
-            } else {
+                path.close();
+            }
+            // right
+            (false, false) => {
+                path.move_to(iced::Point::ORIGIN);
                 path.line_to(iced::Point::new(w, h / 2.0));
                 path.line_to(iced::Point::new(0.0, h));
+                path.close();
             }
-            path.close();
         });
         frame.fill(&arrow, self.color);
         vec![frame.into_geometry()]
@@ -5247,7 +5444,7 @@ fn text_area_info(resolved: &ResolvedTheme) -> String {
             ("line box", "input.font.size x defaults.line_height"),
             (
                 "padding",
-                "input_padding: input.border.padding + line width",
+                "text_area_padding: text_area.border.padding + line width",
             ),
             ("height", "three line boxes and the padding"),
         ],
@@ -5474,14 +5671,43 @@ fn expander_info(resolved: &ResolvedTheme) -> String {
             ("title", font_row("expander.font", &x.font).as_str()),
             ("header height", "expander.header_height"),
             ("arrow size", "expander.arrow_icon_size"),
-        ],
-        &[
             (
-                "arrow shape",
-                "the model states none: a filled triangle drawn on a canvas",
+                "arrow side",
+                if x.arrow_side.is_some() {
+                    "expander.arrow_side"
+                } else {
+                    "not stated: before the title"
+                },
             ),
-            ("arrow gap", "the model states none: layout.widget_gap"),
+            (
+                "arrow gap",
+                if x.arrow_gap.is_some() {
+                    "expander.arrow_gap"
+                } else {
+                    "not stated: layout.widget_gap"
+                },
+            ),
+            (
+                "body indent",
+                if x.content_indent.is_some() {
+                    "expander.content_indent"
+                } else {
+                    "not stated: under the title"
+                },
+            ),
+            (
+                "frame",
+                match x.frame_enabled {
+                    Some(true) => "expander.frame_enabled: header and body in one expander.border",
+                    Some(false) => "expander.frame_enabled: none",
+                    None => "not stated: each header framed by expander.border",
+                },
+            ),
         ],
+        &[(
+            "arrow shape",
+            "the model states none: a filled triangle drawn on a canvas",
+        )],
     )
 }
 
@@ -5902,6 +6128,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
                     .size(scaled_text_size(resolved.input.font.size, a11y))
                     .font(theme_font(&resolved.input.font))
                     .style(styles::text_editor(resolved))
+                    .padding(native_theme_iced::text_area_padding(resolved))
                     .height(Length::Fixed(180.0)),
             ),
             text("Supports multi-line editing, selection, and scrolling").role(
@@ -11791,7 +12018,7 @@ mod tests {
             let mut ui = interface(&state);
 
             let area = probe_bounds(&mut ui, probes::BASIC_TEXT_AREA);
-            let pad = native_theme_iced::input_padding(&r);
+            let pad = native_theme_iced::text_area_padding(&r);
             let expected = 3.0 * r.input.font.size * r.defaults.line_height + pad.y();
             assert!(
                 (area.height - expected).abs() < 0.01 && (area.width - BASIC_WIDE).abs() < 0.01,

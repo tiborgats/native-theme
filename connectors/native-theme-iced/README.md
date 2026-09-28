@@ -232,7 +232,8 @@ let radius  = border_radius(&resolved);
 // Apply with .padding(padding), .border(...) on your widget builders.
 ```
 
-Full helper list: `button_padding`, `input_padding`, `combo_box_padding`,
+Full helper list: `button_padding`, `input_padding`, `text_area_padding`
+(a multi-line field's own padding, `text_area.border`), `combo_box_padding`,
 `padding_or`, `padding_inside_border`, `stated_padding`,
 `control_line_height`, `button_content_min_size`, `at_least`,
 `border_radius`, `border_radius_lg`, `scrollbar_width`,
