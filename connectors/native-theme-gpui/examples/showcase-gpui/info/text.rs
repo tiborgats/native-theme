@@ -17,18 +17,24 @@ pub(super) fn label_of(variant: impl Into<String>) -> WidgetInfo {
 }
 
 /// A section heading, built by `demo::heading`.
-pub fn heading(t: &Theme) -> WidgetInfo {
-    label_of("heading")
-        .color(claim(
-            "text",
-            "foreground",
-            t.foreground,
-            "gpui-component/label.rs:211",
-        ))
-        .instance(
+pub fn heading(t: &Theme, native: bool) -> WidgetInfo {
+    let info = label_of("heading").color(claim(
+        "text",
+        "foreground",
+        t.foreground,
+        "gpui-component/label.rs:211",
+    ));
+    if native {
+        info.config(
             "style",
-            "semibold at text_base -- one rem, so it follows the platform's font, a step above the text_sm of the captions and labels -- in the foreground the Label paints itself (label.rs, Label::render): the showcase's own heading style",
+            "text_scale.section_heading: its size and line height, scaled by the text-scaling factor, and its weight -- the platform's section heading (platform-facts §2.19) -- in the foreground the Label paints itself (label.rs, Label::render)",
         )
+    } else {
+        info.instance(
+            "style",
+            "semibold at text_base -- one rem, so it follows the platform's font, a step above the text_sm of the captions and labels -- in the foreground the Label paints itself (label.rs, Label::render): no native theme is installed, so the showcase's own heading style",
+        )
+    }
 }
 
 /// A caption, built by `demo::caption`.

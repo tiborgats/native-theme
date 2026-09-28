@@ -51,7 +51,8 @@ pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_mi
 /// in the colour the theme states for the primary button.
 pub(crate) const TAB_UNDERLINE_WIDTH: f32 = 2.0;
 
-/// The weight the showcase draws its headings in. The model states no heading weight; this is
+/// The weight the showcase draws its inspector's headings in (a page's section headings take
+/// `text_scale.section_heading.weight`). The model states no inspector heading weight; this is
 /// gpui's `FontWeight::SEMIBOLD`
 /// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.6/src/text_system.rs:1169`),
 /// which the gpui showcase's headings take (`font_semibold()`,

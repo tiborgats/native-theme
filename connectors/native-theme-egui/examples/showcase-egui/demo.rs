@@ -722,43 +722,67 @@ pub(crate) fn named_image(
 /// code only: the connector registers one face per family and never a `Name` (§8).
 pub(crate) const SEMIBOLD_FAMILY: &str = "showcase-semibold";
 
-/// The OS's semibold face of the theme's family, for the headings gpui draws `font_semibold()`
-/// (parity decision 3): `native_theme::fonts::system_face` at `SEMIBOLD_WEIGHT`, added with
-/// `Context::add_font` under `SEMIBOLD_FAMILY` after every `ThemeAtlas::install`, whose
-/// `set_fonts` replaces the definitions. `add_font` skips a name the loaded fonts already hold
-/// (`egui/src/context.rs:2133-2143`), and they still hold the previous install's face when the
-/// next install is pending, so each registration takes a name of its own.
+/// The `FontFamily::Name` the showcase registers the OS's face of the theme's family at `weight`
+/// under, for text the theme sets at a weight other than its body's: the section headings, at
+/// `text_scale.section_heading.weight`. Application code only, as `SEMIBOLD_FAMILY`.
+pub(crate) fn weight_family(weight: u16) -> egui::FontFamily {
+    egui::FontFamily::Name(format!("showcase-weight-{weight}").into())
+}
+
+/// The OS's faces of the theme's family at the weights the showcase draws besides the body's:
+/// its semibold face, for the inspector's headings gpui draws `font_semibold()` (parity decision
+/// 3), and the face at each variant's `text_scale.section_heading.weight`, for the page's
+/// section headings. Each is `native_theme::fonts::system_face` at its weight, added with
+/// `Context::add_font` after every `ThemeAtlas::install`, whose `set_fonts` replaces the
+/// definitions: the semibold one under `SEMIBOLD_FAMILY`, the others under [`weight_family`].
+/// `add_font` skips a name the loaded fonts already hold (`egui/src/context.rs:2133-2143`), and
+/// they still hold the previous install's face when the next install is pending, so each
+/// registration takes a name of its own.
 #[derive(Default)]
 pub(crate) struct Semibold {
     registrations: u64,
 }
 
 impl Semibold {
-    /// After `atlas.install(ctx)`: the face of the family the theme's light variant names, the
-    /// one the connector's font plan registers (§4.6), where the OS has one; none otherwise, and
-    /// the headings keep the regular face.
+    /// After `atlas.install(ctx)`: the faces of the family the theme's light variant names, the
+    /// one the connector's font plan registers (§4.6), where the OS has them; none otherwise,
+    /// and the text keeps the regular face.
     pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &ThemeAtlas) {
         #[cfg(feature = "system-fonts")]
         {
-            let font = &atlas.resolved_for(egui::Theme::Light).defaults.font;
-            let Some(face) =
-                native_theme::fonts::system_face(&font.family, crate::SEMIBOLD_WEIGHT, font.style)
-            else {
-                return;
-            };
-            let mut data = egui::FontData::from_owned(face.data.to_vec());
-            data.index = face.index;
-            // A face with a `wght` axis is set to the weight; a static face ignores it (§8.3).
-            data.tweak.coords = native_theme_egui::fonts::weight_coords(crate::SEMIBOLD_WEIGHT);
+            let light = atlas.resolved_for(egui::Theme::Light);
+            let body = &light.defaults.font;
             self.registrations += 1;
-            ctx.add_font(egui::epaint::text::FontInsert::new(
-                &format!("{SEMIBOLD_FAMILY}-{}", self.registrations),
-                data,
-                vec![egui::epaint::text::InsertFontFamily {
-                    family: egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
-                    priority: egui::epaint::text::FontPriority::Highest,
-                }],
-            ));
+            let mut families = vec![(
+                crate::SEMIBOLD_WEIGHT,
+                egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
+            )];
+            for scheme in [egui::Theme::Light, egui::Theme::Dark] {
+                let t = atlas.resolved_for(scheme);
+                let weight = t.text_scale.section_heading.weight;
+                let family = weight_family(weight);
+                if weight != t.defaults.font.weight && !families.iter().any(|(_, f)| *f == family) {
+                    families.push((weight, family));
+                }
+            }
+            for (weight, family) in families {
+                let Some(face) = native_theme::fonts::system_face(&body.family, weight, body.style)
+                else {
+                    continue;
+                };
+                let mut data = egui::FontData::from_owned(face.data.to_vec());
+                data.index = face.index;
+                // A face with a `wght` axis is set to the weight; a static face ignores it (§8.3).
+                data.tweak.coords = native_theme_egui::fonts::weight_coords(weight);
+                ctx.add_font(egui::epaint::text::FontInsert::new(
+                    &format!("{family:?}-{}", self.registrations),
+                    data,
+                    vec![egui::epaint::text::InsertFontFamily {
+                        family,
+                        priority: egui::epaint::text::FontPriority::Highest,
+                    }],
+                ));
+            }
         }
         #[cfg(not(feature = "system-fonts"))]
         let _ = (ctx, atlas, &mut self.registrations);
@@ -784,14 +808,53 @@ pub(crate) fn semibold_font(ui: &egui::Ui, size: f32) -> egui::FontId {
     )
 }
 
-/// A page's section heading, the gpui showcase's `demo::heading`
-/// (`Label::text_base().font_semibold()`, `showcase-gpui/demo.rs:1365-1379`): `Body` size,
-/// semibold, in the text colour.
+/// The family text at `weight` is drawn in: the proportional one at the body's own weight, the
+/// face registered under [`weight_family`] at another where the fonts this pass draws with hold
+/// it, and the proportional one where they do not (none is registered where the OS has no such
+/// face or feature `system-fonts` is off): a `Name` family the fonts do not hold panics at the
+/// first text that names it (`epaint/src/text/fonts.rs:1025`).
+pub(crate) fn weighted_family(ui: &egui::Ui, weight: u16, body_weight: u16) -> egui::FontFamily {
+    if weight == body_weight {
+        return egui::FontFamily::Proportional;
+    }
+    let family = weight_family(weight);
+    let held = ui
+        .ctx()
+        .fonts(|f| f.definitions().families.contains_key(&family));
+    if held {
+        family
+    } else {
+        egui::FontFamily::Proportional
+    }
+}
+
+/// A page's section heading, in the theme's section-heading role (`text_scale.section_heading`,
+/// the section divider of `docs/platform-facts.md` §2.19): its size and line height through
+/// `text_role_font` and `text_role_line_height`, its weight through [`weighted_family`], in the
+/// text colour — as the iced showcase's section titles are. Without an installed atlas, egui's
+/// `Body` size, semibold.
 pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::RichText {
-    let size = egui::TextStyle::Body.resolve(ui.style()).size;
+    let colour = ui.visuals().text_color();
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+        let size = egui::TextStyle::Body.resolve(ui.style()).size;
+        return egui::RichText::new(text)
+            .font(semibold_font(ui, size))
+            .color(colour);
+    };
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let prefs = atlas.accessibility();
+    let role = native_theme_egui::TextRole::SectionHeading;
+    let size = native_theme_egui::text_role_font(t, role, prefs).size;
+    let weight = native_theme_egui::text_role_weight(t, role);
     egui::RichText::new(text)
-        .font(semibold_font(ui, size))
-        .color(ui.visuals().text_color())
+        .font(egui::FontId::new(
+            size,
+            weighted_family(ui, weight, t.defaults.font.weight),
+        ))
+        .line_height(Some(native_theme_egui::text_role_line_height(
+            t, role, prefs,
+        )))
+        .color(colour)
 }
 
 /// An inspector title or section heading, the gpui showcase's

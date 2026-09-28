@@ -3598,6 +3598,29 @@ fn a_section_heading_reports_itself(cx: &mut TestAppContext) {
     );
 }
 
+/// A section heading is set in the theme's section-heading role, as the iced
+/// showcase's section titles are: its info says so, and under kde-breeze,
+/// whose role is 16px (12pt) against a 13.33px body, the heading is taller
+/// than a body-text label.
+#[gpui::test]
+fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let info = settle_on(&mut cx, &showcase, "basic-heading-buttons");
+    assert!(
+        info.as_ref()
+            .is_some_and(|i| i.to_text().contains("text_scale.section_heading")),
+        "the heading's info names no text_scale.section_heading: {info:?}"
+    );
+    let heading = bounds_of(&mut cx, "basic-heading-buttons");
+    let body = bounds_of(&mut cx, "basic-body-text");
+    assert!(
+        heading.size.height > body.size.height,
+        "the heading ({heading:?}) is no taller than body text ({body:?})"
+    );
+}
+
 /// Two Checkboxes in different states show different infos (spec §4.3.2):
 /// the one the showcase starts checked says so, and the one beside it, which
 /// starts unchecked, says that.

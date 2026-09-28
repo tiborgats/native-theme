@@ -10,7 +10,7 @@ use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{self, ButtonKind, ButtonState, DemoButton, InputField, LabelKind};
-use crate::support::with_gap;
+use crate::support::{with_gap, with_padding};
 
 /// The width, in logical pixels, of the Basic page's text fields, drop-down,
 /// slider and progress bar. The model states no such width; it is the Basic
@@ -57,6 +57,11 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let widget_gap = geometry::widget_gap(&self.layout);
+        // The space between the groups and between the two columns, and round
+        // the page: the theme's section gap and window margin, as the iced and
+        // egui Basic pages lay them out.
+        let section_gap = geometry::section_gap(&self.layout);
+        let window_margin = geometry::window_margin(&self.layout);
         let on_radio = cx.listener(|this, ix: &usize, _w, _cx| {
             this.basic_radio = Some(*ix);
         });
@@ -67,8 +72,7 @@ impl Showcase {
         let row = || with_gap(h_flex(), widget_gap).items_center();
         let width = px(BASIC_WIDTH);
 
-        let left = v_flex()
-            .gap_5()
+        let left = with_gap(v_flex(), section_gap)
             .child(group(
                 demo::heading(ui, cx, "basic-heading-buttons", "Buttons"),
                 row()
@@ -151,8 +155,7 @@ impl Showcase {
                     )),
             ));
 
-        let right = v_flex()
-            .gap_5()
+        let right = with_gap(v_flex(), section_gap)
             .child(group(
                 demo::heading(ui, cx, "basic-heading-inputs", "Text inputs"),
                 row()
@@ -216,10 +219,8 @@ impl Showcase {
                 ))),
             ));
 
-        h_flex()
+        with_padding(with_gap(h_flex(), section_gap), window_margin)
             .items_start()
-            .gap_5()
-            .p_4()
             .flex_1()
             .child(left)
             .child(right)

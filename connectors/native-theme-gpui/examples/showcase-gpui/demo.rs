@@ -1360,18 +1360,39 @@ pub(crate) fn alert(
 // Page text (spec §5.3)
 // ---------------------------------------------------------------------------
 
-/// A section heading reading `text`. `id` is its info's id and its debug
-/// selector.
+/// A section heading reading `text`, in the theme's section-heading role
+/// (`text_scale.section_heading`, the section divider of
+/// `docs/platform-facts.md` §2.19): its size and line height, scaled by the
+/// user's text-scaling factor, and its weight, as the iced showcase's section
+/// titles are. Without an installed native theme, upstream's `text_base`,
+/// semibold. `id` is its info's id and its debug selector.
 pub(crate) fn heading(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     text: impl Into<SharedString>,
 ) -> Stateful<Div> {
-    Label::new(text)
-        .text_base()
-        .font_semibold()
-        .info(ui, id, info::text::heading(cx.theme()))
+    let role = native_value(cx, |n| {
+        let h = &n.resolved.text_scale.section_heading;
+        (
+            px(native_theme_gpui::scaled_text_size(h.size, n.accessibility)),
+            px(native_theme_gpui::scaled_text_size(
+                h.line_height,
+                n.accessibility,
+            )),
+            FontWeight(f32::from(h.weight)),
+        )
+    });
+    let label = Label::new(text);
+    let label = match role {
+        Some((size, line_height, weight)) => label
+            .text_size(size)
+            .line_height(line_height)
+            .font_weight(weight),
+        None => label.text_base().font_semibold(),
+    };
+    label
+        .info(ui, id, info::text::heading(cx.theme(), role.is_some()))
         // As wide as its text, not its column: the space beside a heading
         // is not the heading.
         .self_start()

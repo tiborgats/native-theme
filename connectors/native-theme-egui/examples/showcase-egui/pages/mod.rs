@@ -129,14 +129,15 @@ fn demo_colour() -> egui::Color32 {
     egui::Color32::from_rgb(0x3d, 0x8b, 0xd1)
 }
 
-/// A heading above a group of items, the gpui showcase's `demo::heading`: `Body` size,
-/// semibold, in the text colour (`demo::heading_text`), not `ui.strong`, whose colour is the
-/// active-state text colour (`egui/src/style.rs:1147-1149`); a `Label` in the base style,
-/// recorded like any other. Every heading but a page's first is `layout.section_gap` below the
-/// section before it, where the theme states that gap: the theme's space between sections, which
-/// stands in for the gpui pages' `gap_5` (parity item 11).
+/// A heading above a group of items, as the gpui showcase's `demo::heading` and the iced
+/// showcase's section titles: the theme's section-heading role, in the text colour
+/// (`demo::heading_text`), not `ui.strong`, whose colour is the active-state text colour
+/// (`egui/src/style.rs:1147-1149`); a `Label` in the base style, recorded like any other. Every
+/// heading but a page's first is `layout.section_gap` below the section before it, where the
+/// theme states that gap: the theme's space between sections (parity item 11).
 pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
-    let section_gap = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| atlas.layout().section_gap);
+    let atlas = ThemeAtlas::from_ctx(ui.ctx());
+    let section_gap = atlas.as_ref().and_then(|atlas| atlas.layout().section_gap);
     let first = ui.min_rect().height() <= 0.0;
     if let Some(gap) = section_gap.filter(|_| !first) {
         ui.add_space(gap);
@@ -145,11 +146,34 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) {
         let heading = demo::heading_text(ui, text);
         ui.label(heading)
     });
+    let role = atlas.map(|atlas| {
+        let t = atlas.resolved_for(ui.ctx().theme());
+        let prefs = atlas.accessibility();
+        let r = native_theme_egui::TextRole::SectionHeading;
+        let weight = native_theme_egui::text_role_weight(t, r);
+        (
+            native_theme_egui::text_role_font(t, r, prefs),
+            native_theme_egui::text_role_line_height(t, r, prefs),
+            weight,
+            demo::weighted_family(ui, weight, t.defaults.font.weight),
+        )
+    });
     reg.amend_last(|i| {
         i.read.push((
             "layout.section_gap",
             section_gap.map_or_else(|| "not stated: no gap".to_string(), |g| g.to_string()),
         ));
+        if let Some((font, line_height, weight, family)) = role {
+            i.read.push(("text_role_font", format!("{font:?}")));
+            i.read
+                .push(("text_role_line_height", format!("{line_height}")));
+            i.read.push(("text_role_weight", format!("{weight}")));
+            let drawn = match family {
+                egui::FontFamily::Proportional => "the body font's face",
+                _ => "the OS's face of the body family at that weight",
+            };
+            i.notes.push(("weight drawn in", drawn.to_string()));
+        }
     });
 }
 

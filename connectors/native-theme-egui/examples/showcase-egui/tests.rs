@@ -1898,6 +1898,64 @@ fn the_basic_page_applies_the_per_call_leaves() {
     }
 }
 
+/// A page's section headings are set in the theme's section-heading role
+/// (`text_scale.section_heading`), as the iced showcase's section titles are: its size and line
+/// height, and at the body's weight in the proportional family (kde-breeze states 400 for both).
+#[test]
+fn section_headings_take_the_section_heading_role() {
+    for preset in ["kde-breeze", "catppuccin-mocha"] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "basic")]),
+        );
+        harness.run_steps(4);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let prefs = harness.state().atlas.accessibility().clone();
+        let role = native_theme_egui::TextRole::SectionHeading;
+        let size = native_theme_egui::text_role_font(&t, role, &prefs).size;
+        let line_height = native_theme_egui::text_role_line_height(&t, role, &prefs);
+        // The page's own "Buttons" heading, not the page tab of that name.
+        let headings: Vec<egui::Rect> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "heading")
+            .map(|r| r.rect)
+            .collect();
+        let shapes = harness.output().shapes.clone();
+        let heading = shapes.iter().find_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(text)
+                if text.galley.job.text == "Buttons"
+                    && headings.iter().any(|r| r.contains(text.pos)) =>
+            {
+                text.galley.job.sections.first().map(|s| s.format.clone())
+            }
+            _ => None,
+        });
+        let Some(format) = heading else {
+            panic!("{preset}: no \"Buttons\" heading was painted");
+        };
+        assert_eq!(format.font_id.size, size, "{preset}: heading size");
+        assert_eq!(
+            format.line_height,
+            Some(line_height),
+            "{preset}: heading line height"
+        );
+        if t.text_scale.section_heading.weight == t.defaults.font.weight {
+            assert_eq!(
+                format.font_id.family,
+                egui::FontFamily::Proportional,
+                "{preset}: a heading at the body's weight is in the body's face"
+            );
+        }
+    }
+}
+
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
 /// each in `Role::Switch`, its checked look the button's own selected flag (§6.2), so a set
 /// flag is a selected button and a click flips it; each sits right of its title.
