@@ -6,6 +6,11 @@
 use egui::Button;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_stroke};
 use native_theme_egui::{Role, RoleVariant, Surface, ThemeAtlas, expander_icon, input_frame};
+use native_theme_egui_widgets::segmented_control::SegmentedControl;
+use native_theme_egui_widgets::slider::Slider;
+use native_theme_egui_widgets::spinner::Spinner;
+use native_theme_egui_widgets::switch::Switch;
+use native_theme_egui_widgets::wrap;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -207,13 +212,10 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         }
     }
 
-    // The connector's switch (connector spec §5.3, `Role::Switch`): a button whose selected flag
-    // is the switch's state, its track colours as the button's fill, `switch.track_height` its
-    // height and `switch.track_width`, which egui never reads from the style, its minimum width
-    // per call. egui has no switch widget: its thumb is the planned widgets crate's
-    // (docs/todo_egui-widgets-spec.md §4.1), so the label sits in the track.
+    // The companion crate's switch (docs/todo_egui-widgets-spec.md §4.1): `switch.*`'s track
+    // and thumb, which no egui widget draws, the label after it; `.enabled(false)` is the
+    // platform's disabled switch. Each is held in its state, as the check boxes are.
     caption(reg, ui, "Switches");
-    let track = egui::vec2(t.switch.track_width, t.switch.track_height);
     for (label, on, enabled, kind) in [
         ("Off", false, true, "switch (off)"),
         ("On", true, true, "switch (on)"),
@@ -224,12 +226,9 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         } else {
             RoleVariant::Disabled
         };
-        demo::scoped(reg, ui, Role::Switch, variant, kind, |ui| {
-            ui.add_enabled(enabled, Button::new(label).selected(on).min_size(track))
-        });
-        reg.amend_last(|i| {
-            i.read
-                .push(("switch.track_width", t.switch.track_width.to_string()));
+        let mut value = on;
+        demo::widget(reg, ui, Role::Switch, variant, kind, |ui| {
+            ui.add(Switch::new(&mut value).label(label).enabled(enabled))
         });
     }
 }
@@ -342,16 +341,13 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
 
     caption(reg, ui, "Text");
     demo::base(reg, ui, "Label (body text)", |ui| ui.label("Body text"));
-    // `link.underline_enabled`, which egui's `Link` never reads: it underlines only on hover
-    // or focus (`egui/src/widgets/hyperlink.rs:50-54`). An underline in the text's own format
-    // is painted at rest, in the text's colour, so the text takes `link.font.color` too, the
-    // `hyperlink_color` of the link scope (connector spec §5.3).
-    let mut text = egui::RichText::new("Link").color(to_color32(t.link.font.color));
-    if t.link.underline_enabled {
-        text = text.underline();
-    }
-    demo::scoped(reg, ui, Role::Link, normal, "Link", |ui| {
-        ui.add(egui::Link::new(text))
+    // The companion crate's link (docs/todo_egui-widgets-spec.md §4.5): egui's `Link` in the
+    // link scope, its text in `link.*`'s rest, hover, pressed and disabled colours and
+    // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
+    // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
+    demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
+        let link = wrap::link(ui, "Link");
+        ui.add(link)
     });
     reg.amend_last(|i| {
         i.read.push((
@@ -368,10 +364,15 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
+    // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2): `slider.*`'s rail,
+    // trailing fill and a knob in `slider.thumb_color`, which egui paints in the rail's colour.
     caption(reg, ui, "Slider");
-    demo::scoped(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
-        ui.spacing_mut().slider_width = BASIC_WIDTH;
-        ui.add(egui::Slider::new(&mut state.basic_slider, 0.0..=100.0).show_value(false))
+    demo::widget(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
+        ui.scope(|ui| {
+            ui.spacing_mut().slider_width = BASIC_WIDTH;
+            ui.add(Slider::new(&mut state.basic_slider, 0.0..=100.0))
+        })
+        .inner
     });
     reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
 
@@ -396,9 +397,12 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         ));
     });
 
+    // The companion crate's spinner (docs/todo_egui-widgets-spec.md §4.3): the icon set's
+    // loading indicator at `spinner.diameter`, or an arc at `spinner.stroke_width`, which
+    // egui's `Spinner` hardcodes.
     caption(reg, ui, "Spinner");
-    demo::scoped(reg, ui, Role::Spinner, normal, "Spinner", |ui| {
-        ui.add(egui::Spinner::new())
+    demo::widget(reg, ui, Role::Spinner, normal, "Spinner", |ui| {
+        ui.add(Spinner::new())
     });
 
     caption(reg, ui, "Tabs");
@@ -422,32 +426,17 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         state.basic_tab = tab;
     }
 
-    // As the Buttons page's (connector spec §5.3): one row in one `Role::SegmentedControl`
-    // scope, whose cell carries the segment height, padding and colours and puts
-    // `separator_width` between the segments.
+    // The companion crate's segmented control (docs/todo_egui-widgets-spec.md §4.4): one row
+    // of buttons in one `Role::SegmentedControl` scope, whose cell carries the segment height,
+    // padding and colours and puts `separator_width` between the segments; a radio group.
     caption(reg, ui, "Segmented control");
-    demo::scoped_container(
+    demo::widget(
         reg,
         ui,
         Role::SegmentedControl,
         normal,
         "segmented control",
-        |ui, segment, reg| {
-            ui.horizontal(|ui| {
-                for (i, label) in SEGMENTS.into_iter().enumerate() {
-                    let selected = i == state.basic_segment;
-                    if segment
-                        .add(reg, ui, "segment", |ui| {
-                            ui.add(Button::new(label).selected(selected))
-                        })
-                        .clicked()
-                    {
-                        state.basic_segment = i;
-                    }
-                }
-            })
-            .response
-        },
+        |ui| ui.add(SegmentedControl::new(&mut state.basic_segment, SEGMENTS)),
     );
 }
 

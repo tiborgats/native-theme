@@ -6,6 +6,7 @@ use native_theme_egui::{
     DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
     window_title_bar_font, window_title_bar_text_color,
 };
+use native_theme_egui_widgets::switch::Switch;
 
 use crate::{
     LEFT_PANEL_WIDTH,
@@ -1397,9 +1398,8 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                     }
                     scale_dragged = scale.dragged();
                     scale_settled = scale.drag_stopped() || scale.lost_focus();
-                    // Switches, as gpui's Settings rows have (§5.3's spelling: a
-                    // `Button::new(..).selected(on)` in `Role::Switch`, whose own flag picks the
-                    // checked look, §6.2).
+                    // Switches, as gpui's Settings rows have: the companion crate's
+                    // (docs/todo_egui-widgets-spec.md §4.1), `switch.*`'s track and thumb.
                     for (kind, title, description, flag) in [
                                 (
                                     "switch · reduce motion",
@@ -1420,33 +1420,26 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                                     &mut prefs.reduce_transparency,
                                 ),
                             ] {
-                                let on = *flag;
+                                let mut on = *flag;
                                 let r = preference_row(registry, ui, body, (title, description), |ui, registry| {
-                                    demo::scoped(
+                                    demo::widget(
                                         registry,
                                         ui,
                                         Role::Switch,
                                         RoleVariant::Normal,
                                         kind,
                                         |ui| {
-                                            let r = ui.add(
-                                                egui::Button::new(if on { "On" } else { "Off" })
-                                                    .selected(on),
-                                            );
-                                            r.widget_info(|| {
-                                                egui::WidgetInfo::selected(
-                                                    egui::WidgetType::Button,
-                                                    true,
-                                                    on,
-                                                    title,
-                                                )
+                                            let r = ui.add(Switch::new(&mut on));
+                                            // Named by the row's title, which it sits right of.
+                                            ui.ctx().accesskit_node_builder(r.id, |node| {
+                                                node.set_label(title);
                                             });
                                             r
                                         },
                                     )
                                 });
-                                if r.clicked() {
-                                    *flag = !on;
+                                if r.changed() {
+                                    *flag = on;
                                 }
                             }
                 })

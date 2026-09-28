@@ -231,6 +231,31 @@ pub(crate) fn scoped(
     response
 }
 
+/// What a widget of the companion crate notes under *This instance*.
+pub(crate) const WIDGETS_NOTE: (&str, &str) = (
+    "drawn by",
+    "native-theme-egui-widgets, in the role's scope, painted from the role's leaves themselves (docs/todo_egui-widgets-spec.md §4)",
+);
+
+/// A widget of the companion crate `native-theme-egui-widgets`, which opens `role`'s scope in
+/// `variant` itself: the closure adds it, and its `Response` is recorded with that role seam
+/// and `WIDGETS_NOTE`.
+pub(crate) fn widget(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui) -> egui::Response,
+) -> egui::Response {
+    let response = add(ui);
+    let mut info = info(kind, vec![Seam::Role(role, variant)]);
+    info.notes
+        .push((WIDGETS_NOTE.0, WIDGETS_NOTE.1.to_string()));
+    reg.record(&response, info, false);
+    response
+}
+
 /// The seam a helper applied to a `Ui` whose widgets are added straight into it — a row of
 /// tabs or links, a menu bar's buttons — handed to the closure, so each widget records that
 /// seam rather than one written a second time. A widget in a scope of its own sits in a child

@@ -74,6 +74,10 @@ egui_kittest = { version = "0.36.2", features = ["eframe"] }
 # `serde_json` is dev-only (`native-theme/Cargo.toml:125`).
 serde_json = "1.0.151"
 toml = { workspace = true }
+# The showcase draws the switch, slider, spinner, segmented control and links with the
+# companion widget crate. A path with no version: `cargo package` strips it, and no default
+# features, so a `--no-default-features` test of this crate stays one.
+native-theme-egui-widgets = { path = "../native-theme-egui-widgets", default-features = false }
 
 [[example]]
 name = "showcase-egui"

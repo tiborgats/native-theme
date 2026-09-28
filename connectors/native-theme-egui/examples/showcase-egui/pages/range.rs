@@ -1,6 +1,9 @@
-//! Range (spec §10.4's palette table): `Role::Slider`, `Role::ProgressBar`, `Role::Spinner`.
+//! Range (spec §10.4's palette table): `Role::Slider`, `Role::ProgressBar`, `Role::Spinner`,
+//! egui's own widgets and the companion crate's slider and spinner.
 
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui_widgets::slider::Slider;
+use native_theme_egui_widgets::spinner::Spinner;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -48,6 +51,26 @@ pub(crate) fn show(
                 RoleVariant::Disabled,
                 "Slider (disabled)",
                 |ui| ui.add_enabled(false, egui::Slider::new(&mut disabled, range.clone())),
+            );
+            // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2): its knob in
+            // `slider.thumb_color`, where egui's resting knob takes the rail's colour.
+            demo::widget(
+                reg,
+                ui,
+                Role::Slider,
+                normal,
+                "Slider (native-theme-egui-widgets)",
+                |ui| ui.add(Slider::new(&mut state.slider, range.clone())),
+            );
+            reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
+            let mut disabled = state.slider;
+            demo::widget(
+                reg,
+                ui,
+                Role::Slider,
+                RoleVariant::Disabled,
+                "Slider (native-theme-egui-widgets, disabled)",
+                |ui| ui.add(Slider::new(&mut disabled, range.clone()).enabled(false)),
             );
         });
         demo::scoped(reg, ui, Role::Slider, normal, "Slider (vertical)", |ui| {
@@ -97,5 +120,15 @@ pub(crate) fn show(
         demo::scoped(reg, ui, Role::Spinner, normal, "ui.spinner", |ui| {
             ui.spinner()
         });
+        // The companion crate's spinner (docs/todo_egui-widgets-spec.md §4.3): the icon set's
+        // indicator at `spinner.diameter`, or an arc at `spinner.stroke_width`.
+        demo::widget(
+            reg,
+            ui,
+            Role::Spinner,
+            normal,
+            "Spinner (native-theme-egui-widgets)",
+            |ui| ui.add(Spinner::new()),
+        );
     });
 }

@@ -2303,7 +2303,7 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 17] = [
     ("Progress bar", &[("ProgressBar", 1)]),
     ("Spinner", &[("Spinner", 1)]),
     ("Tabs", &[("Tab · Basic", 3)]),
-    ("Segmented control", &[("segment", 3)]),
+    ("Segmented control", &[("segmented control", 1)]),
     ("List", &[("List", 1)]),
     (
         "Expander",
@@ -2685,8 +2685,8 @@ fn a_capture_is_drawn_at_rest_under_the_pointer() {
 }
 
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
-/// each in `Role::Switch`, its checked look the button's own selected flag (§6.2), so a set
-/// flag is a selected button and a click flips it; each sits right of its title.
+/// the companion crate's, in `Role::Switch`, so a set flag is a toggled switch named by its
+/// row's title, and a click flips it; each sits right of its title.
 #[test]
 fn a_set_preference_is_a_selected_switch() {
     let mut harness = open_default();
@@ -2721,7 +2721,7 @@ fn a_set_preference_is_a_selected_switch() {
             )]),
             "{kind}"
         );
-        let switch = harness.get_by_role_and_label(Role::Button, title);
+        let switch = harness.get_by_role_and_label(Role::Switch, title);
         let toggled = if on {
             egui::accesskit::Toggled::True
         } else {
@@ -2730,7 +2730,7 @@ fn a_set_preference_is_a_selected_switch() {
         assert_eq!(switch.accesskit_node().toggled(), Some(toggled), "{title}");
     }
     harness
-        .get_by_role_and_label(Role::Button, "High contrast")
+        .get_by_role_and_label(Role::Switch, "High contrast")
         .click();
     harness.run_steps(SETTLE);
     assert!(

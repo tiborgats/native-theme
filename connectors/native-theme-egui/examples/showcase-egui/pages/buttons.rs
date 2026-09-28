@@ -1,10 +1,12 @@
 //! Buttons (spec §10.4's palette table): `Role::Button`, the base style's selectables,
-//! a segmented control, `AtomLayout` and the switch substitute.
+//! `AtomLayout`, and the companion crate's segmented control and switch.
 
 use egui::Button;
 use native_theme::theme::{IconRole, IconSet};
 use native_theme_egui::icons::{IconContext, icon_size};
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui_widgets::segmented_control::SegmentedControl;
+use native_theme_egui_widgets::switch::Switch;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -106,28 +108,19 @@ pub(crate) fn show(
         });
     });
 
+    // The companion crate's segmented control (docs/todo_egui-widgets-spec.md §4.4).
     caption(reg, ui, "Segmented control (Role::SegmentedControl)");
-    demo::scoped_container(
+    demo::widget(
         reg,
         ui,
         Role::SegmentedControl,
         normal,
         "segmented control",
-        |ui, segment, reg| {
-            ui.horizontal(|ui| {
-                for (i, label) in ["Day", "Week", "Month"].into_iter().enumerate() {
-                    let selected = i == state.segment;
-                    if segment
-                        .add(reg, ui, "segment", |ui| {
-                            ui.add(Button::new(label).selected(selected))
-                        })
-                        .clicked()
-                    {
-                        state.segment = i;
-                    }
-                }
-            })
-            .response
+        |ui| {
+            ui.add(SegmentedControl::new(
+                &mut state.segment,
+                ["Day", "Week", "Month"],
+            ))
         },
     );
 
@@ -136,27 +129,23 @@ pub(crate) fn show(
         ui.add(egui::AtomLayout::new(("AtomLayout", "of two atoms")))
     });
 
+    // The companion crate's switch (docs/todo_egui-widgets-spec.md §4.1).
     caption(reg, ui, "Switch (Role::Switch)");
     ui.horizontal_wrapped(|ui| {
         // Held off, as the disabled one is held on: each shows one state; the next one toggles.
-        demo::scoped(reg, ui, Role::Switch, normal, "switch (off)", |ui| {
-            ui.add(Button::new("Off").selected(false))
+        demo::widget(reg, ui, Role::Switch, normal, "switch (off)", |ui| {
+            ui.add(Switch::new(&mut false).label("Off"))
         });
-        demo::scoped(reg, ui, Role::Switch, normal, "switch", |ui| {
-            let r =
-                ui.add(Button::new(if state.switch { "On" } else { "Off" }).selected(state.switch));
-            if r.clicked() {
-                state.switch = !state.switch;
-            }
-            r
+        demo::widget(reg, ui, Role::Switch, normal, "switch", |ui| {
+            ui.add(Switch::new(&mut state.switch).label("Switch"))
         });
-        demo::scoped(
+        demo::widget(
             reg,
             ui,
             Role::Switch,
             RoleVariant::Disabled,
             "switch (disabled)",
-            |ui| ui.add_enabled(false, Button::new("Disabled").selected(true)),
+            |ui| ui.add(Switch::new(&mut true).label("Disabled").enabled(false)),
         );
     });
 }
