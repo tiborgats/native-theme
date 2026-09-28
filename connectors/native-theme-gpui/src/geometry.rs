@@ -760,8 +760,8 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// platform's `input.background_color`, or disabled its
 /// `input.disabled_background`. Apply it after [`input`].
 ///
-/// Colour, not geometry, and carried for the reason [`with_coloured_text`]
-/// carries text: no `ThemeColor` field maps to it. Upstream fills an enabled
+/// Colour, not geometry, and carried for the reason the builders that carry a
+/// text colour carry it (module doc): no `ThemeColor` field maps to it. Upstream fills an enabled
 /// field with `Theme::input_background`, which is the window's `background`
 /// in a light theme and `input` mixed with transparent in a dark one
 /// (`theme/mod.rs:379-385`), and a disabled one with `input` mixed with
