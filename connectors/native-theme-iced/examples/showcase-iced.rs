@@ -9148,7 +9148,8 @@ mod tests {
         assert_eq!(check_content_capture((2560, 1440), 2.0), Ok(()));
         assert!(check_content_capture((1060, 750), 1.0).is_err());
         // A frame 2px wider and 32px taller than the content, as the Windows
-        // runner's captures measured (1062 x 782 around a 1060 x 750 content).
+        // runner's captures measured at the old default size (1062 x 782
+        // around a 1060 x 750 content).
         assert_eq!(check_frame_capture((1282, 752), (1280, 720), 1.0), Ok(()));
         // A 1024px-wide display clamped the window.
         let clamped = check_frame_capture((1024, 674), (1024, 646), 1.0);

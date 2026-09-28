@@ -29,6 +29,10 @@ pub fn heading(t: &Theme, native: bool) -> WidgetInfo {
             "style",
             "text_scale.section_heading: its size and line height, scaled by the text-scaling factor, and its weight -- the platform's section heading (platform-facts §2.19) -- in the foreground the Label paints itself (label.rs, Label::render)",
         )
+        .not_themeable(
+            "weight of a variable face",
+            "on Linux gpui-pre-wgpu picks a face by style and weight and sets no variation axis (cosmic_text_system.rs:985-1030), so a weight a variable face covers only through its wght axis draws at the face's default: adwaita's 700 over Adwaita Sans draws regular",
+        )
     } else {
         info.instance(
             "style",

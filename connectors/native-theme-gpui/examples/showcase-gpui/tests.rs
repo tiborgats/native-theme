@@ -1957,7 +1957,8 @@ fn a_capture_opens_at_the_default_size() {
 fn a_frame_capture_of_another_size_fails() {
     use crate::check_frame_capture;
     // A frame 2px wider and 32px taller than the content, as the Windows
-    // runner's captures measured (1182 x 882 around a 1180 x 850 content).
+    // runner's captures measured at the old default size (1182 x 882 around
+    // a 1180 x 850 content).
     assert_eq!(check_frame_capture((1282, 752), (1280, 720), 1.), Ok(()));
     assert_eq!(check_frame_capture((2560, 1496), (2560, 1440), 2.), Ok(()));
     // A 1024px-wide display clamped the window.
