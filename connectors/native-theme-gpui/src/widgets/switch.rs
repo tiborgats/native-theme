@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use gpui::{
     AnyElement, App, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement, ParentElement,
-    Pixels, RenderOnce, SharedString, Styled, Window, div, prelude::FluentBuilder as _, rems,
+    Pixels, RenderOnce, SharedString, Styled, Window, div, prelude::FluentBuilder as _, px, rems,
 };
 use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
 use gpui_component::{ActiveTheme as _, Disableable as _};
@@ -92,7 +92,7 @@ impl SwitchLook {
             track_height,
             track_radius: length(s.track_radius)?,
             thumb,
-            inset: (track_height - thumb) / 2.,
+            inset: px((f32::from(track_height) - f32::from(thumb)) / 2.),
             track: color(track),
             hover_track,
             thumb_color: color(thumb_color),
@@ -105,7 +105,7 @@ impl SwitchLook {
     #[must_use]
     pub fn thumb_left(&self, checked: bool) -> Pixels {
         if checked {
-            self.track_width - self.inset - self.thumb
+            px(f32::from(self.track_width) - f32::from(self.inset) - f32::from(self.thumb))
         } else {
             self.inset
         }

@@ -5,7 +5,7 @@ use gpui::{
     AccessibleAction, AnyElement, App, ElementId, Entity, Hsla, InteractiveElement, IntoElement,
     KeyDownEvent, MouseButton, Orientation, ParentElement, Pixels, RenderOnce, Role,
     StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
-    prelude::FluentBuilder as _, relative,
+    prelude::FluentBuilder as _, px, relative,
 };
 use gpui_base::slider::{SliderEvent, SliderState};
 use gpui_base::{SliderIndicator, SliderThumb, SliderTrack};
@@ -200,7 +200,7 @@ impl RenderOnce for Slider {
             .read(cx)
             .clone();
         let focused = !disabled && focus_handle.is_focused(window);
-        let radius = look.thumb / 2.;
+        let radius = px(f32::from(look.thumb) / 2.);
         // The rail is a pill unless the theme squares its corners
         // (slider.rs:174); `SliderTheme` states no rail radius.
         let pill = cx.theme().radius_full();
@@ -209,9 +209,11 @@ impl RenderOnce for Slider {
             .disabled(disabled)
             .group(THUMB_GROUP)
             .absolute()
-            .top((look.track_height - look.thumb) / 2.)
+            .top(px(
+                (f32::from(look.track_height) - f32::from(look.thumb)) / 2.
+            ))
             .left(relative(percentage))
-            .ml(-radius)
+            .ml(px(-f32::from(radius)))
             .size(look.thumb)
             .rounded_full()
             .bg(look.outline)
@@ -239,8 +241,8 @@ impl RenderOnce for Slider {
                     .absolute()
                     .top_0()
                     .bottom_0()
-                    .left(-radius)
-                    .right(-radius)
+                    .left(px(-f32::from(radius)))
+                    .right(px(-f32::from(radius)))
                     .rounded(pill)
                     .bg(look.track)
                     .debug_selector(|| "native-slider-rail".into()),
@@ -250,7 +252,7 @@ impl RenderOnce for Slider {
                     .absolute()
                     .top_0()
                     .bottom_0()
-                    .left(-radius)
+                    .left(px(-f32::from(radius)))
                     .right(relative(1. - percentage))
                     .rounded(pill)
                     .bg(look.fill)

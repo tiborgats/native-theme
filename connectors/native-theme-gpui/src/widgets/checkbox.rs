@@ -6,7 +6,7 @@ use std::rc::Rc;
 use gpui::{
     AnyElement, App, Axis, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement,
     MouseButton, ParentElement, Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window,
-    div, prelude::FluentBuilder as _, relative, svg,
+    div, prelude::FluentBuilder as _, px, relative, svg,
 };
 use gpui_base::{
     Checkbox as BaseCheckbox, Radio as BaseRadio, RadioGroup as BaseRadioGroup, spring,
@@ -147,7 +147,7 @@ fn indicator_and_label(
     );
     // The mark fills the indicator inside its border: "checkmark fills
     // indicator" (docs/platform-facts.md:1216, §2.5).
-    let inner = look.indicator - look.border_width - look.border_width;
+    let inner = px(f32::from(look.indicator) - f32::from(look.border_width) * 2.);
     let mark = svg()
         .size(inner)
         .flex_none()
@@ -300,7 +300,7 @@ impl RenderOnce for Checkbox {
             .gap(look.label_gap)
             // The row the focus ring follows, as gpui-component rounds it
             // (checkbox.rs:280).
-            .rounded(cx.theme().radius / 2.)
+            .rounded(px(f32::from(cx.theme().radius) / 2.))
             .when(focused, |row| row.focus_ring_style(window, cx))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
             .child(indicator)
@@ -425,7 +425,7 @@ impl RenderOnce for Radio {
             .flex_row()
             .items_center()
             .gap(look.label_gap)
-            .rounded(cx.theme().radius / 2.)
+            .rounded(px(f32::from(cx.theme().radius) / 2.))
             .when(focused, |row| row.focus_ring_style(window, cx))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
             .child(indicator)
@@ -490,7 +490,7 @@ impl RenderOnce for RadioGroup {
                 self.radios
                     .into_iter()
                     .enumerate()
-                    .map(|(ix, radio)| radio.set_position(ix + 1, total)),
+                    .map(|(ix, radio)| radio.set_position(ix.saturating_add(1), total)),
             ),
         )
     }

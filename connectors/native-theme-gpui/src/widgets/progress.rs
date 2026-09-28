@@ -7,7 +7,7 @@ use std::time::Duration;
 use gpui::{
     Animation, AnimationExt as _, AnyElement, App, Bounds, ElementId, Hsla,
     InteractiveElement as _, IntoElement, ParentElement, Pixels, RenderOnce, SharedString,
-    StyleRefinement, Styled, Window, canvas, div, ease_in_out, prelude::FluentBuilder as _,
+    StyleRefinement, Styled, Window, canvas, div, ease_in_out, prelude::FluentBuilder as _, px,
     relative,
 };
 use gpui_base::{
@@ -199,7 +199,7 @@ impl SpinnerLook {
     /// as the ring's outer size, and the stroke is centred on its path.
     #[must_use]
     pub fn path_radius(&self) -> Pixels {
-        (self.diameter - self.stroke) / 2.
+        px((f32::from(self.diameter) - f32::from(self.stroke)) / 2.)
     }
 }
 
