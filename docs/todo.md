@@ -544,7 +544,7 @@
 
 ### platform-facts: whether a progress bar draws a border
 
-- [ ] `docs/platform-facts.md` §2.10 states no `border.color` or
+- [x] `docs/platform-facts.md` §2.10 states no `border.color` or
       `border.line_width` for the progress bar, so both are `defaults.border`'s
       by inheritance (`docs/inheritance-rules.toml:86-93`), and a connector
       stroking them would outline the bar on every preset. The platforms
@@ -565,6 +565,16 @@
       Then the egui connector's `Frame::stroke` route is exact on every
       preset, and the decline in its spec's §5.8 item 8 can go
       (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.8).
+      Done 2026-09-28: §2.10 has the `border.color` and `border.line_width`
+      rows (KDE: `WindowText` at alpha 0.2, `#23262933` / `#fcfcfc33`, 1px,
+      from Breeze f0b1d75; GNOME and Windows 0; macOS still unread). kde-breeze
+      states the colour and the width, adwaita and windows-11 a width of 0,
+      and the KDE reader derives the colour from `kdeglobals`. gpui's
+      `widgets::ProgressBar` and iced's `styles::progress_bar` stroke what is
+      stated; egui draws it through the companion crate's
+      `progress_bar::ProgressBar` (egui's `ProgressBar::ui` strokes nothing,
+      `progress_bar.rs:130-204`), and the egui ledger grades the two leaves
+      `widgets-crate`.
 
 ### Selection: the text colour macOS pairs with the unemphasised selection
 
@@ -594,7 +604,7 @@
 
 ### Border opacity: which lines `defaults.border.opacity` fades
 
-- [ ] Decision for the maintainer (found 2026-09-28, while comparing the
+- [x] Decision for the maintainer (found 2026-09-28, while comparing the
       three showcases' Basic pages). The connectors disagree on where
       `defaults.border.opacity` applies. egui folds it into the strokes of
       `defaults.border.color` (the base style's non-interactive and window
@@ -625,6 +635,94 @@
       colour, or to none (then egui stops folding it, and the presets'
       unsourced values could go)? Record the rule where the model documents
       the field, and make the three connectors and their tests follow it.
+      Resolved 2026-09-28, from the sources: none. The opacity is the share
+      of the text colour that makes a line, already folded into every
+      stated border colour, which is the final line colour. KDE's 0.2 is
+      `frameIntensityBias()` = `KColorScheme::frameContrast()`, in
+      `mix(Window, WindowText, 0.2)` for frames and separators
+      ([breezehelper.cpp:142-144](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L142-L144),
+      [kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538));
+      libadwaita's 0.15 is `--border-opacity` in
+      `$border_color: color-mix(in srgb, currentColor var(--border-opacity), transparent)`
+      ([_colors.scss:257-264](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/5789add99c79cee0fae624b56706c7c0bea7fb2b/src/stylesheet/_colors.scss#L257-L264));
+      WinUI has no multiplier, each stroke role being a colour with its own
+      alpha ([Common_themeresources_any.xaml:243-257](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/Common_themeresources_any.xaml#L243-L257)).
+      The rule is in `DefaultsBorderSpec::opacity`
+      (`native-theme/src/model/border.rs`) and `docs/platform-facts.md`
+      §2.1.6: no connector multiplies any colour by it. egui stopped folding
+      it (its `mapping.toml` row is UNMAPPABLE `source-void`); gpui and iced
+      folded it into nothing already. The windows-11 (0.14) and macos-sonoma
+      (0.2) values have no source; nothing reads them.
+
+### Presets: colours with no reproducible source
+
+- [ ] These preset colours are reproduced by no platform computation, and
+      stay until a source is found (found 2026-09-28, while checking the
+      border opacity):
+      kde-breeze `defaults.border.color = "#bcc0bf"` (light) is not
+      `mix(Window, WindowText, frameContrast 0.2)` = `#c6c8c9`, the colour
+      Breeze draws its frames and separators in (`docs/platform-facts.md`
+      §2.11 `border.color`); dark `#4d545b` is not `#4c4e51`. The same
+      `#bcc0bf` / `#4d545b` are kde-breeze's `slider.disabled_fill_color`,
+      `splitter.hover_color`, `switch.unchecked_background` and (at alpha
+      `80`) `switch.disabled_unchecked_background`, and the switch's and
+      slider's other disabled colours (`#dee0e2`, `#3daee980`, `#fcfcfc80`;
+      dark `#2d3035`) are not KColorScheme's Disabled palette either
+      (§2.1.6 `disabled_opacity` gives the palette; Breeze has no
+      QtWidgets switch). adwaita `defaults.border.color` `#d5d5d5` / `#4a4a4e`
+      is not `currentColor` at `--border-opacity` 15 % over the window,
+      `#dcdcde` / `#434347` (window text `RGB(0 0 6 / 80%)` over `#fafafb`,
+      white over `#222226`). windows-11 dark `defaults.border.color` and
+      `disabled_text_color` `#454545` match no WinUI brush
+      (`ControlStrokeColorDefault` dark is `#12FFFFFF`,
+      `TextFillColorDisabled` dark `#5DFFFFFF`, Common_themeresources_any.xaml).
+      Find each one's source, or replace it with the computed platform
+      value, citing the computation.
+
+### KDE: the live reader's disabled text colour
+
+- [ ] `native-theme/src/kde/colors.rs` reads `defaults.disabled_text_color`
+      from `[Colors:View] ForegroundInactive`; Breeze paints disabled text
+      from the palette's Disabled group, which KColorScheme derives with the
+      scheme's `[ColorEffects:Disabled]` (`docs/platform-facts.md` §2.1.3,
+      §2.1.6: Breeze `#a0a1a3`, Breeze Dark `#686a6c`, which kde-breeze
+      states). Port KColorScheme's `StateEffects` (`kcolorscheme.cpp:36-101`
+      at 27066d47: Fade by `mix`, Darken in KColorUtils' HCY space) to the
+      reader, check it against the computed values, and derive the widgets'
+      disabled colours from it as the preset states them (Button, View and
+      Window sets, `ForegroundLink`); until then the live reader's
+      `defaults.disabled_text_color` is not Breeze's.
+
+### KDE: the single-line input's padding
+
+- [ ] `docs/platform-facts.md:1196-1197` gives KDE's single-line input
+      padding as `LineEdit_FrameWidth` = 6 horizontal and 3 vertical
+      **(measured)**. The sources give 8 and 7: Breeze's line edit frame is
+      6 on every side when the field is tall enough (`lineEditContentsRect`,
+      [breezestyle.cpp:2228-2251](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L2228-L2251)),
+      and QLineEdit adds its own `horizontalMargin = 2`, `verticalMargin = 1`
+      ([qlineedit_p.cpp:35-36](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/widgets/widgets/qlineedit_p.cpp#L35-L36)).
+      Not changed: measure a Breeze `QLineEdit` in a screenshot (text to the
+      frame's outer edge, at 1× scale) to settle which PF measured, then
+      correct PF and kde-breeze's `input.border`.
+
+### Progress bar: Breeze's groove, the radii, the shadow
+
+- [ ] Found with the progress-bar border (2026-09-28), not changed: Breeze
+      fills the groove with the window text at 0.2 × 0.7 over the window
+      (`renderProgressBarGroove`, breezehelper.cpp:1204-1219; `#d2d3d5`,
+      dark `#3e4144`, computed with Qt 6.11.2 and KF6 KColorUtils) where the
+      preset's track inherits `defaults.muted_color`, and rounds it
+      `0.5 × ProgressBar_Thickness` = 3 where it inherits
+      `defaults.border.corner_radius` 5; libadwaita's trough and fill are
+      pills (`border-radius: 99px`, `_scale.scss:1-10`,
+      `_progress-bar.scss`); WinUI's track is `ControlStrongStrokeColorDefault`,
+      the track's radius 0.5 and the indicator's 1.5
+      (ProgressBar_themeresources.xaml:7, :31-32 at 8463f451).
+      No preset states `progress_bar.border.shadow_enabled`, so it inherits
+      `defaults.border.shadow_enabled` (true) where `docs/platform-facts.md`
+      §2.10 gives no shadow on any platform. Correct §2.10 and the presets
+      from these sources.
 
 ### material: the slider thumb is the page's colour
 
@@ -892,7 +990,14 @@
       `defaults.disabled_opacity`), every platform states them, and upstream
       reads none of the three. Found 2026-09-22 while auditing the showcase's
       "Not themeable" notes, which had said "hardcoded 0.5" -- the wrong
-      number for the fill and the wrong story for the text.
+      number for the fill and the wrong story for the text. Since the
+      disabled rule of 2026-09-28 (`docs/platform-facts.md` §2.1.6: the
+      disabled colours and `disabled_opacity`, one of them an identity in the
+      data) the same holds for `Input`, `Select` and every other
+      gpui-component control with a disabled state: nothing reaches its
+      opacity, so on adwaita (0.5) a disabled gpui-component control is not
+      faded as libadwaita fades it. The connector's `widgets::Checkbox`,
+      `Radio`, `Switch` and `Slider` apply both.
 - [ ] the `Link` widget should read `link_hover` and `link_active`. It computes
       both from the one token instead — `link.opacity(0.8)` hovered,
       `link.opacity(0.6)` pressed (`link.rs:80, 85`) — while the two tokens
@@ -1126,6 +1231,17 @@ What is still open on the iced side:
       in 26. Decide whether the model should state a disabled *checked* fill
       (or the connector apply `disabled_opacity`), then revisit that arm; it is
       one match arm plus `native_checkbox_mark` in the contract.
+      Half settled 2026-09-28 by the disabled rule (`docs/platform-facts.md`
+      §2.1.6: a connector applies the disabled colours *and*
+      `disabled_opacity`; the data makes the one the platform does not use an
+      identity): `styles::checkbox` now multiplies every disabled colour's
+      alpha by `checkbox.disabled_opacity`, and where no `disabled_background`
+      is stated (adwaita) a disabled box is its enabled self, checked fill and
+      on-accent mark included. What stays open is a platform that dims by
+      colour and draws a checked box differently from an unchecked one
+      (Breeze's Disabled palette has a Selection set, `#e3e5e7` / `#1f2124`,
+      computed with KColorScheme 6.30.0): the model's one
+      `disabled_background` cannot say so.
 - [ ] `windows-11` states `checkbox.disabled_background = "#f9f9f900"` (alpha
       zero) and `material` `#1c1b1f1f`, so on those four combinations a disabled
       box is effectively absent — the same shape as the button item below.
