@@ -557,12 +557,15 @@ fn list(
         "List",
         |ui, rows, reg| {
             let font = egui::TextStyle::Body.resolve(ui.style());
+            // A side the theme leaves unstated is what egui gives a selectable row there: the
+            // scope's `button_padding` (`egui/src/widgets/button.rs:333-337`).
             let padding = &l.border.padding;
+            let own = ui.spacing().button_padding;
             let content = ui.fonts_mut(|f| f.row_height(&font))
-                + padding.top.unwrap_or_default()
-                + padding.bottom.unwrap_or_default();
+                + padding.top.unwrap_or(own.y)
+                + padding.bottom.unwrap_or(own.y);
             let row_height = l.row_height.unwrap_or(content);
-            let inset = padding.left.unwrap_or_default();
+            let inset = padding.left.unwrap_or(own.x);
             let line = to_stroke(egui::Stroke::NONE, l.border.color, l.border.line_width);
             let frame = egui::Frame::NONE
                 .fill(to_color32(l.background_color))
