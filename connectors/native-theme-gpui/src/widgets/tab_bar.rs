@@ -59,7 +59,7 @@ pub struct TabLook {
     pub padding_bottom: Option<Pixels>,
     /// `tab.item_gap`: the space between neighbouring tabs; where the theme
     /// states none, gpui-component's for its `TabVariant::Tab`, none
-    /// (tab/tab_bar.rs:366-369, [`TAB_GAP`]).
+    /// (tab/tab_bar.rs:366-369).
     pub gap: Pixels,
 }
 
