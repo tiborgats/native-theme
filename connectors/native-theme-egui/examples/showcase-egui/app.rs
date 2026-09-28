@@ -230,11 +230,12 @@ struct Screenshot {
 /// The pointer `--pointer` holds at a point of the window, and whether `--press` holds the
 /// primary button down there: for a capture of a control hovered or pressed where nothing can
 /// move the real pointer, as in a nested compositor. egui reads the pointer from the input it is
-/// handed each pass, so the point is handed to it with every pass's input
-/// (`eframe::App::raw_input_hook`), the press once.
+/// handed each pass, so the move to the point and the press are handed to it in a pass's input
+/// (`eframe::App::raw_input_hook`), in place of the window's own pointer events.
 struct HeldPointer {
     at: egui::Pos2,
     press: bool,
+    moved: bool,
     pressed: bool,
 }
 
@@ -354,6 +355,7 @@ impl App {
             held_pointer: cli.pointer.map(|(x, y)| HeldPointer {
                 at: egui::pos2(f32::from(x), f32::from(y)),
                 press: cli.press,
+                moved: false,
                 pressed: false,
             }),
             #[cfg(feature = "watch")]
@@ -585,7 +587,12 @@ impl eframe::App for App {
                     | egui::Event::PointerGone
             )
         });
-        raw_input.events.push(egui::Event::PointerMoved(held.at));
+        // Moved there once: egui keeps the pointer where it last moved, and a move every pass
+        // would keep it from ever being still, which a tooltip waits for.
+        if !held.moved {
+            raw_input.events.push(egui::Event::PointerMoved(held.at));
+            held.moved = true;
+        }
         // The press lands once the page has been laid out under the pointer: a press before it
         // hits no widget, and egui then highlights none while the button is down.
         let (down, time) = ctx.input(|i| (i.pointer.primary_down(), i.time));
