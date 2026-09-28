@@ -4836,16 +4836,28 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // The connector's switch, whose track takes `switch.track_width`: iced's
     // toggler draws every track twice its height. The model states no font
     // and no label gap for a switch: the label is body text, at the gap
-    // iced's toggler leaves.
+    // iced's toggler leaves. A disabled switch's label is the disabled text
+    // colour, faded with the switch by `switch.disabled_opacity`, as the gpui
+    // and egui switches draw it (docs/platform-facts.md §2.1.6).
+    let disabled_label = {
+        let mut c = to_color(resolved.defaults.disabled_text_color);
+        c.a *= resolved.switch.disabled_opacity;
+        c
+    };
     let switch =
         |id: &'static str, on: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
+            let label = text(label).body(resolved, a11y);
             row![
                 probe(
                     id,
                     Length::Shrink,
                     native_theme_iced::switch(resolved, on, enabled.then_some(Message::BasicHeld)),
                 ),
-                text(label).body(resolved, a11y),
+                if enabled {
+                    label
+                } else {
+                    label.color(disabled_label)
+                },
             ]
             .spacing(TOGGLER_LABEL_GAP)
             .align_y(iced::Alignment::Center)
