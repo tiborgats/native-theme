@@ -679,6 +679,25 @@
       Find each one's source, or replace it with the computed platform
       value, citing the computation.
 
+### Disabled: presets that state both mechanisms
+
+- [ ] The disabled rule (`docs/platform-facts.md` §2.1.6, 2026-09-28) has
+      connectors apply the disabled colours *and* `disabled_opacity`, with
+      the data making the one the platform does not use an identity.
+      kde-breeze, windows-11, adwaita and material (Material 3 dims by
+      colour: `disabled-container-opacity` 0.12 and
+      `disabled-label-text-opacity` 0.38 on the parts,
+      material-web cbd34a8 `_md-comp-filled-button.scss:42-46`,
+      `button/internal/_shared.scss:141-150`) follow it. macos-sonoma
+      (0.3, and `disabledControlTextColor` colours; PF §2.1.6 says the
+      measured ≈0.25–0.3 is the text colour's alpha, "not global opacity",
+      and the research found no source for bezel dimming), ios (0.3) and
+      the community presets (catppuccin ×4, dracula, gruvbox, nord,
+      one-dark, solarized, tokyo-night: 0.5) state both a disabled opacity
+      below 1 and disabled colours, so a disabled control is dimmed twice.
+      Settle each from its source, then state 1.0 or drop the disabled
+      colours.
+
 ### KDE: the live reader's disabled text colour
 
 - [ ] `native-theme/src/kde/colors.rs` reads `defaults.disabled_text_color`
