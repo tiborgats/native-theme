@@ -285,16 +285,22 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 /// from `Tooltip::new(text)` has no element to put it on and stays as wide as
 /// its text.
 ///
-/// The colour is carried because upstream labels a tooltip with
-/// `popover_foreground` (`:115`), which this connector fills from
-/// `popover.font.color`; 16 of the 32 bundled preset/mode combinations state a
-/// different colour for a tooltip than for a popover.
+/// The colours are carried because upstream paints a tooltip as a popover:
+/// its text `popover_foreground` (`:115`) and its fill `tokens.popover`
+/// (`:114`, `:116`), which this connector fills from `popover.font.color` and
+/// `popover.background_color`, and its border `border` (`:118`), from
+/// `defaults.border.color` -- all before this refinement. 16 of the 32
+/// bundled preset/mode combinations state a different text colour for a
+/// tooltip than for a popover, and more a different fill: kde-breeze's
+/// tooltip is `#f7f7f7` on a white popover, adwaita's dark on a light one.
 #[must_use]
 pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
     with_coloured_text(
         with_padding(StyleRefinement::default(), &t.border.padding)
-            .rounded(px(t.border.corner_radius.max(0.0))),
+            .rounded(px(t.border.corner_radius.max(0.0)))
+            .bg(rgba_to_hsla(t.background_color))
+            .border_color(rgba_to_hsla(t.border.color)),
         &t.font,
         n,
     )
@@ -1166,6 +1172,12 @@ mod tests {
                 abs(t.border.corner_radius.max(0.0))
             );
             assert_text(&out, &t.font, s);
+            assert_eq!(
+                out.background,
+                Some(rgba_to_hsla(t.background_color).into()),
+                "the tooltip's own fill, not the popover's"
+            );
+            assert_eq!(out.border_color, Some(rgba_to_hsla(t.border.color)));
 
             let p = &r.popover;
             let out = popover(n);

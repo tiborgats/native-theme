@@ -630,10 +630,15 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
         } else {
             "Button::tooltip"
         })
-        // geometry::tooltip paints the text with tooltip.font's colour,
-        // which no ThemeColor field holds, over upstream's, and rounds it
-        // with the platform's corner radius.
-        .colors(tooltip_colours(t, !(built && styled)));
+        // geometry::tooltip paints the fill, the edge and the text with
+        // tooltip.background_color, .border.color and .font's colour, which
+        // no ThemeColor field holds, over upstream's, and rounds it with the
+        // platform's corner radius: its geometry line names them.
+        .colors(if built && styled {
+            Vec::new()
+        } else {
+            tooltip_colours(t, true)
+        });
     let info = if built && styled {
         info
     } else {
@@ -656,7 +661,7 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
 
 /// What upstream's `Tooltip` paints: its surface and edge, and, with
 /// `text`, its text -- which a Tooltip refined by `geometry::tooltip` takes
-/// from tooltip.font instead. A Button's own tooltip is upstream's, so the
+/// from the tooltip's own fields instead. A Button's own tooltip is upstream's, so the
 /// window's toolbar buttons and the status bar's side-panel toggle report
 /// these too.
 pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {

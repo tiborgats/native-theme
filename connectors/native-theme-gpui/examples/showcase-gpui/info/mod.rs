@@ -172,7 +172,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "tooltip",
-        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground (tooltip.rs, Tooltip::render: text_color then refine_style)",
+        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border (tooltip.rs, Tooltip::render: bg, text_color and border_color, then refine_style)",
     ),
     (
         "tooltip_content",

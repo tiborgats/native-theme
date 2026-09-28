@@ -89,7 +89,10 @@ impl Showcase {
                             },
                         )
                     }))
-                    .child(demo::tooltip_button(
+                    // Built by the application, so the tooltip takes the
+                    // platform's padding, radius and colours
+                    // (`geometry::tooltip`); `Button::tooltip` builds its own.
+                    .child(demo::built_tooltip_button(
                         ui,
                         cx,
                         "basic-button-tooltip",

@@ -3598,6 +3598,26 @@ fn a_section_heading_reports_itself(cx: &mut TestAppContext) {
     );
 }
 
+/// The Basic page's tooltip is built by the application and refined by
+/// `geometry::tooltip`, so it takes the platform's padding, radius and
+/// colours, as the iced and egui Basic pages' tooltips do.
+#[gpui::test]
+fn the_basic_tooltip_is_refined(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let info = settle_on(&mut cx, &showcase, "basic-button-tooltip");
+    assert_eq!(
+        info.as_ref().map(|i| i.title()).as_deref(),
+        Some("Tooltip · built by the application")
+    );
+    assert!(
+        info.as_ref()
+            .is_some_and(|i| i.to_text().contains("geometry::tooltip:")),
+        "the Basic tooltip names no geometry::tooltip: {info:?}"
+    );
+}
+
 /// A section heading is set in the theme's section-heading role, as the iced
 /// showcase's section titles are: its info says so, and under kde-breeze,
 /// whose role is 16px (12pt) against a 13.33px body, the heading is taller
