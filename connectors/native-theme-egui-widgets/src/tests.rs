@@ -595,6 +595,43 @@ fn the_painted_arc_is_the_themes() {
     }
 }
 
+/// The painted arc turns but keeps egui's widest sweep, 240°, at every frame: egui's own
+/// `240° · sin(time)` is nothing at time 0, which a still frame catches as a dot.
+#[test]
+fn the_painted_arc_keeps_its_sweep() {
+    let t = kde();
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let span = |time: f64| {
+        let (out, r) = response(&ctx, at(time), |ui| ui.add(Spinner::new()));
+        let line = flat(&out.shapes)
+            .into_iter()
+            .find_map(|s| match s {
+                egui::Shape::Path(p) => Some(p),
+                _ => None,
+            })
+            .unwrap();
+        let angle = |p: egui::Pos2| {
+            let v = p - r.rect.center();
+            v.y.atan2(v.x)
+        };
+        let n = line.points.len();
+        let step = angle(line.points[1]) - angle(line.points[0]);
+        (n, step.rem_euclid(std::f32::consts::TAU))
+    };
+    let (n, step) = span(0.0);
+    let swept = step * n as f32;
+    assert!(
+        (swept.to_degrees() - 240.0).abs() < 0.1,
+        "{}",
+        swept.to_degrees()
+    );
+    for time in [0.25, 0.5, 1.0] {
+        let (m, other) = span(time);
+        assert_eq!(m, n);
+        assert!((other - step).abs() < 1.0e-4, "{time}: {other} != {step}");
+    }
+}
+
 // ---- T5: disabled ------------------------------------------------------------------------------
 
 /// T5: `.enabled(false)` paints the disabled leaves unfaded and takes no click.

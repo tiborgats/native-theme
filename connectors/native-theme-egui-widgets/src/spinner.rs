@@ -38,8 +38,10 @@ const MAX_POINTS: u8 = 128;
 /// `Stroke::new(3.0, color)` (`:58`) and its radius inset by a literal `- 2.0` (`:45`), so
 /// `spinner.stroke_width` cannot reach it. The arc is `spinner.diameter` across its outer
 /// edge, in `spinner.fill_color` at `spinner.stroke_width`, the stroke centred on a path of
-/// radius `0.5 · (diameter − stroke_width)`; its motion is egui's own (`:46-49`), and under
-/// reduced motion it is that motion's widest sweep, 240°, drawn still from angle 0.
+/// radius `0.5 · (diameter − stroke_width)`. It turns as egui's does, from `time · TAU`
+/// (`:48`), and always sweeps egui's widest arc, 240° (`:49`): egui's `240° · sin(time)` shrinks
+/// it to nothing twice a cycle, which a still frame catches as a dot. Under reduced motion it
+/// is drawn still from angle 0.
 ///
 /// `spinner.min_diameter` is not read: the spinner offers no size of its own for it to bound.
 ///
@@ -154,12 +156,11 @@ fn paint_arc(ui: &egui::Ui, rect: egui::Rect, paint: &Paint) {
     let radius = (0.5 * (paint.diameter - paint.stroke_width)).max(0.0);
     let points = u8_from_f32_saturating(radius).clamp(MIN_POINTS, MAX_POINTS);
     let sweep = SWEEP_DEGREES.to_radians();
-    let (start, sweep) = if paint.reduce_motion {
-        (0.0, sweep)
+    let start = if paint.reduce_motion {
+        0.0
     } else {
         ui.ctx().request_repaint(); // animated, as egui's (`:39-40`)
-        let time = ui.input(|i| i.time);
-        (time * TAU, sweep * time.sin())
+        ui.input(|i| i.time) * TAU
     };
     let path: Vec<egui::Pos2> = (0..points)
         .map(|i| {

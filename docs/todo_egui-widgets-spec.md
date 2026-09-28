@@ -514,15 +514,17 @@ size (`native-theme/src/model/widgets/mod.rs:701`), as platform-facts' outer-box
 rule measures every element (`docs/platform-facts.md:897-902`), and a `Stroke`
 becomes a `PathStroke` centred on its path (`epaint/src/stroke.rs:212-222`,
 `StrokeKind::Middle` at `:106-107`), so the path's radius is
-`0.5 * (diameter − stroke_width)`. The motion is egui's own, with egui's
-constants cited as egui's values: the arc starts at `time · TAU` and sweeps
-`240°·sin(time)`, `time` being the input's seconds (`widgets/spinner.rs:47-49`), in
-`round(radius)` points clamped to `8..=128` (`:46`, counted here with
+`0.5 * (diameter − stroke_width)`. The rotation is egui's own, with egui's
+constants cited as egui's values: the arc starts at `time · TAU`, `time` being
+the input's seconds (`widgets/spinner.rs:47-48`), in `round(radius)` points
+clamped to `8..=128` (`:46`, counted here with
 `convert::u8_from_f32_saturating` instead of an `as` cast), repainting every
-pass it is visible (`:39-40`). Under reduced motion
-(`ThemeAtlas::accessibility`) it paints that motion's widest sweep, `240°`,
-still, from angle `0` (§2.3's identity), since egui's frame at time `0` sweeps
-nothing.
+pass it is visible (`:39-40`). Its sweep is egui's widest, `240°`, at every
+frame: egui's `240°·sin(time)` (`:49`) shrinks the arc to nothing twice a
+cycle, which a still frame — a screenshot — catches as a dot, where the iced
+and gpui showcases keep a constant sweep. Under reduced motion
+(`ThemeAtlas::accessibility`) it paints that arc still, from angle `0` (§2.3's
+identity).
 
 `spinner.min_diameter` is not read: `Spinner` offers no size of its own for it
 to bound. On macOS the platform draws radiating fins, not a ring
