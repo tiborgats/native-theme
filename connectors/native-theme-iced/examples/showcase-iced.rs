@@ -160,6 +160,9 @@ mod probes {
     pub const BASIC_EXPANDER: &str = "probe-basic-expander";
     pub const BASIC_LIST: &str = "probe-basic-list";
     pub const BASIC_SPINNER: &str = "probe-basic-spinner";
+    pub const BASIC_SWITCH_OFF: &str = "probe-basic-switch-off";
+    pub const BASIC_SWITCH_ON: &str = "probe-basic-switch-on";
+    pub const BASIC_SWITCH_DISABLED: &str = "probe-basic-switch-disabled";
     pub const BASIC_CARD: &str = "probe-basic-card";
     pub const TOGGLER: &str = "probe-toggler";
     pub const PICK_LIST: &str = "probe-pick-list";
@@ -4530,6 +4533,13 @@ const AW_LIST_PADDING: f32 = 5.0;
 /// sweep.
 const SPINNER_SWEEP: f32 = 240.0;
 
+/// The gap between a Basic page switch and its label: the model states none
+/// (`SwitchTheme` has no label gap), and this is the one iced's `Toggler`
+/// leaves, `Self::DEFAULT_SIZE / 2.0` (iced_widget 0.14.2 `src/toggler.rs`,
+/// `Toggler::new`), which the page's switches drew before they took the
+/// connector's `switch`.
+const TOGGLER_LABEL_GAP: f32 = iced::widget::Toggler::<'static, Message>::DEFAULT_SIZE / 2.0;
+
 /// Where the Basic page's spinner arc starts, in radians clockwise from the
 /// right, `elapsed` seconds into its animation: egui's `Spinner`'s turn a
 /// second (egui 0.36.2 `src/widgets/spinner.rs:48`), taken within one turn.
@@ -4816,30 +4826,31 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .into(),
     );
 
-    let sw = &resolved.switch;
-    // The model states no font and no label gap for a switch: the label is
-    // body text, at iced's own spacing.
-    let switch = |on: bool, label: &'a str, enabled: bool| {
-        let toggle = toggler(on)
-            .label(label)
-            .size(sw.track_height)
-            .text_size(scaled_text_size(resolved.defaults.font.size, a11y))
-            .font(theme_font(&resolved.defaults.font))
-            .style(styles::toggler(resolved));
-        // A toggler with no `on_toggle` is a disabled one (toggler.rs:150-160).
-        if enabled {
-            toggle.on_toggle(|_| Message::BasicHeld)
-        } else {
-            toggle
-        }
-    };
+    // The connector's switch, whose track takes `switch.track_width`: iced's
+    // toggler draws every track twice its height. The model states no font
+    // and no label gap for a switch: the label is body text, at the gap
+    // iced's toggler leaves.
+    let switch =
+        |id: &'static str, on: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
+            row![
+                probe(
+                    id,
+                    Length::Shrink,
+                    native_theme_iced::switch(resolved, on, enabled.then_some(Message::BasicHeld)),
+                ),
+                text(label).body(resolved, a11y),
+            ]
+            .spacing(TOGGLER_LABEL_GAP)
+            .align_y(iced::Alignment::Center)
+            .into()
+        };
     let switches = group(
         "Switches",
         switch_info(resolved),
         column![
-            switch(false, "Off", true),
-            switch(true, "On", true),
-            switch(true, "Disabled", false),
+            switch(probes::BASIC_SWITCH_OFF, false, "Off", true),
+            switch(probes::BASIC_SWITCH_ON, true, "On", true),
+            switch(probes::BASIC_SWITCH_DISABLED, true, "Disabled", false),
         ]
         .spacing(gap.widget)
         .into(),
@@ -5218,7 +5229,7 @@ impl<Message> canvas::Program<Message> for SpinnerArc {
 fn switch_info(resolved: &ResolvedTheme) -> String {
     let sw = &resolved.switch;
     widget_tooltip(
-        "Switch (toggler)",
+        "Switch (native_theme_iced::switch)",
         &[
             (
                 "on track",
@@ -5237,10 +5248,10 @@ fn switch_info(resolved: &ResolvedTheme) -> String {
             ),
         ],
         &[
-            ("track height", "switch.track_height, Toggler::size"),
+            ("track", "switch.track_width x switch.track_height"),
             (
                 "thumb",
-                "switch.thumb_diameter, as styles::toggler's padding_ratio",
+                "switch.thumb_diameter, inset by half the difference of the heights",
             ),
             ("track radius", "switch.track_radius"),
             (
@@ -5254,10 +5265,11 @@ fn switch_info(resolved: &ResolvedTheme) -> String {
         ],
         &[
             (
-                "switch.track_width",
-                "no receiver: iced lays the track out 2 x its height (toggler.rs:287)",
+                "widget",
+                "iced's toggler lays its track out 2 x its height (toggler.rs:287): \
+                 a button and two containers instead, in styles::toggler's colours",
             ),
-            ("label gap", "the model states none: iced's own spacing"),
+            ("label gap", "the model states none: iced's toggler's"),
         ],
     )
 }
@@ -11730,6 +11742,22 @@ mod tests {
                 "{preset}: the spinner is {spinner:?}, expected {} across",
                 s.diameter
             );
+
+            let sw = &r.switch;
+            for id in [
+                probes::BASIC_SWITCH_OFF,
+                probes::BASIC_SWITCH_ON,
+                probes::BASIC_SWITCH_DISABLED,
+            ] {
+                let track = probe_bounds(&mut ui, id);
+                assert!(
+                    (track.width - sw.track_width).abs() < 0.01
+                        && (track.height - sw.track_height).abs() < 0.01,
+                    "{preset}: {id} is {track:?}, expected {} x {}",
+                    sw.track_width,
+                    sw.track_height
+                );
+            }
 
             // "Card content" sits the card's padding in from its edges:
             // `layout.container_margin` on every Linux preset, whose cards

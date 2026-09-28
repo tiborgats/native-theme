@@ -164,6 +164,13 @@ An expander's header is a button in `styles::expander`, whose label is the
 disclosure arrow, drawn in `expander_arrow_color(&resolved)` at
 `expander.arrow_icon_size`, and the title.
 
+`toggler` lays its track out twice its height, so a platform whose track is
+not — material's 52 × 32, adwaita's 46 × 26 — gets a wider one than it
+states. `native_theme_iced::switch(&resolved, on, on_toggle)` is a switch at
+`switch.track_width` × `.track_height` with its thumb at `.thumb_diameter`,
+built from a button and two containers in `styles::toggler`'s colours; it
+has no label, and `None` for `on_toggle` disables it.
+
 ### `iced_aw`
 
 native-theme models a card, a menu, a tab bar, a sidebar, a spinner and a

@@ -500,6 +500,108 @@ pub fn button_content_min_size(resolved: &native_theme::theme::ResolvedTheme) ->
     )
 }
 
+/// A switch at the platform's size: a track `switch.track_width` by
+/// `.track_height`, holding a thumb `switch.thumb_diameter` across, inset by
+/// half the difference of the two heights, at the right end while
+/// `is_toggled`. `on_toggle` is the message a press sends; `None` is a
+/// disabled switch.
+///
+/// iced's `Toggler` lays its track out as twice its height
+/// (`iced_widget` 0.14.2 `src/toggler.rs:287`) and has no width setter, so
+/// every platform whose track is not twice its height -- material's 52 by 32,
+/// adwaita's 46 by 26 -- would get a wider track than it states. This switch
+/// is a button and two containers instead, coloured by
+/// [`styles::toggler()`] for the toggler status each button status stands
+/// for: `Hovered` and `Pressed` are the toggler's `Hovered` (iced's toggler
+/// has no pressed state), `Disabled` its `Disabled`, and `Active` its
+/// `Active`. The thumb takes the toggler's foreground for `Active` or
+/// `Disabled`, as the toggler's own thumb does in every state, and both take
+/// its `border_radius`, as iced paints them (`toggler.rs:435`, `:461`).
+///
+/// The switch has no label: `SwitchTheme` states no font and no gap for one.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn switch<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+    is_toggled: bool,
+    on_toggle: Option<Message>,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: Clone + 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    use iced_widget::toggler::Status as Toggler;
+    use iced_widget::{button, container};
+
+    let s = &resolved.switch;
+    let enabled = on_toggle.is_some();
+    let track = styles::toggler(resolved);
+    let thumb_style = track.clone();
+    let round = iced_core::border::Radius::new(s.track_height / 2.0);
+
+    let thumb = container(iced_widget::Space::new())
+        .width(s.thumb_diameter)
+        .height(s.thumb_diameter)
+        .style(move |theme| {
+            let status = if enabled {
+                Toggler::Active { is_toggled }
+            } else {
+                Toggler::Disabled { is_toggled }
+            };
+            let t = thumb_style(theme, status);
+            container::Style {
+                background: Some(t.foreground),
+                border: iced_core::Border {
+                    color: t.foreground_border_color,
+                    width: t.foreground_border_width,
+                    radius: t.border_radius.unwrap_or(round),
+                },
+                ..container::Style::default()
+            }
+        });
+    let seat = container(thumb)
+        .padding(((s.track_height - s.thumb_diameter) / 2.0).max(0.0))
+        .width(iced_core::Length::Fill)
+        .height(iced_core::Length::Fill)
+        .align_x(if is_toggled {
+            iced_core::alignment::Horizontal::Right
+        } else {
+            iced_core::alignment::Horizontal::Left
+        })
+        .align_y(iced_core::alignment::Vertical::Center);
+
+    button(seat)
+        .padding(0)
+        .width(s.track_width)
+        .height(s.track_height)
+        .on_press_maybe(on_toggle)
+        .style(move |theme, status| {
+            let status = match status {
+                button::Status::Active => Toggler::Active { is_toggled },
+                button::Status::Hovered | button::Status::Pressed => {
+                    Toggler::Hovered { is_toggled }
+                }
+                button::Status::Disabled => Toggler::Disabled { is_toggled },
+            };
+            let t = track(theme, status);
+            let iced = button::Style::default();
+            button::Style {
+                background: Some(t.background),
+                text_color: t.text_color.unwrap_or(iced.text_color),
+                border: iced_core::Border {
+                    color: t.background_border_color,
+                    width: t.background_border_width,
+                    radius: t.border_radius.unwrap_or(round),
+                },
+                shadow: iced.shadow,
+                snap: iced.snap,
+            }
+        })
+        .into()
+}
+
 /// Lays `content` out at least `min` wide and tall, centred in the room the
 /// minimum gives it, and at its own size where that is larger.
 ///
