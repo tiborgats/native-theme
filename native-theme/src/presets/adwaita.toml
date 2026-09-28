@@ -118,6 +118,11 @@ focus_border_color = "#3584e4"
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
 
+[light.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
+
 [light.input.font]
 color = "#2e3436"
 [light.checkbox]
@@ -465,6 +470,11 @@ focus_border_color = "#3584e4"
 [dark.input.border]
 # platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
+padding_vertical_px = 0.0
+
+[dark.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 
 [dark.input.font]

@@ -167,6 +167,30 @@ fn resolve_phase1_font_color_explicit_preserved() {
     );
 }
 
+#[test]
+fn resolve_text_area_frame_is_the_inputs_and_its_padding_its_own() {
+    let mut v = ThemeMode::default();
+    v.defaults.border.color = Some(Rgba::rgb(100, 100, 100));
+    v.defaults.border.corner_radius = Some(3.0);
+    v.defaults.border.line_width = Some(1.0);
+    v.defaults.border.shadow_enabled = Some(false);
+    v.input.border.get_or_insert_default().color = Some(Rgba::rgb(10, 20, 30));
+    v.input.border.get_or_insert_default().padding_left = Some(7.0);
+    v.text_area.border.get_or_insert_default().padding_top = Some(5.0);
+    v.resolve();
+    let area = v.text_area.border.as_ref();
+    assert_eq!(area.and_then(|b| b.color), Some(Rgba::rgb(10, 20, 30)));
+    assert_eq!(area.and_then(|b| b.corner_radius), Some(3.0));
+    assert_eq!(area.and_then(|b| b.line_width), Some(1.0));
+    assert_eq!(area.and_then(|b| b.shadow_enabled), Some(false));
+    assert_eq!(area.and_then(|b| b.padding_top), Some(5.0));
+    assert_eq!(
+        area.and_then(|b| b.padding_left),
+        None,
+        "the input's padding is not the text area's"
+    );
+}
+
 // ===== Phase 2: Safety nets =====
 
 #[test]
@@ -808,6 +832,17 @@ fn fully_populated_variant() -> ThemeMode {
         ..Default::default()
     });
 
+    // text_area
+    {
+        let b = v.text_area.border.get_or_insert_default();
+        b.color = Some(c);
+        b.corner_radius = Some(4.0);
+        b.line_width = Some(1.0);
+        b.shadow_enabled = Some(false);
+        b.padding_top = Some(6.0);
+        b.padding_bottom = Some(6.0);
+    }
+
     // checkbox
     v.checkbox.background_color = Some(c);
     v.checkbox.checked_background = Some(c);
@@ -1308,6 +1343,7 @@ fn validate_checks_all_widget_structs() {
         "window.",
         "button.",
         "input.",
+        "text_area.",
         "checkbox.",
         "menu.",
         "tooltip.",

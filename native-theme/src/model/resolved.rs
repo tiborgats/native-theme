@@ -168,6 +168,8 @@ pub struct ResolvedTheme {
     pub button: super::widgets::ResolvedButtonTheme,
     /// Text input.
     pub input: super::widgets::ResolvedInputTheme,
+    /// Multi-line text field's padding; the rest is `input`'s.
+    pub text_area: super::widgets::ResolvedTextAreaTheme,
     /// Checkbox / radio button.
     pub checkbox: super::widgets::ResolvedCheckboxTheme,
     /// Popup / context menu.

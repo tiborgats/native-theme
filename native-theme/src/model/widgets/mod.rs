@@ -91,7 +91,8 @@ pub struct ButtonTheme {
 
 // ── 2.4 Text Input ──────────────────────────────────────────────────────────
 
-/// Single-line and multi-line text input fields.
+/// Single-line and multi-line text input fields: everything of a multi-line
+/// field but its padding, which is [`TextAreaTheme`]'s.
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
@@ -136,6 +137,24 @@ pub struct InputTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Input border specification.
+    #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
+    pub border: Option<WidgetBorderSpec>,
+}
+
+// ── 2.29 Text Area (multi-line) ──────────────────────────────────────────────
+
+/// Multi-line text field: the padding in which it differs from the
+/// single-line field. Everything else a text area shows -- its fill, text,
+/// placeholder, caret, selection, states and font -- is [`InputTheme`]'s.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct TextAreaTheme {
+    /// Text area border specification. Its padding sides are the multi-line
+    /// field's own, `None` where the platform states none
+    /// (docs/platform-facts.md §2.29); its colour, corner radius, line width
+    /// and shadow inherit `input.border`'s: the platforms frame both fields
+    /// alike.
     #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
     pub border: Option<WidgetBorderSpec>,
 }

@@ -399,7 +399,10 @@ mod tests {
 
     /// §4.4: exactly one `Role` per widget field of `ResolvedTheme`, and `key()` is that
     /// field's name. `serde_json`'s object keys are sorted, so the set is compared; the order
-    /// is `ROLES`'s by construction.
+    /// is `ROLES`'s by construction. `text_area` is no role of its own: a multi-line `TextEdit`
+    /// is drawn in `Role::Input`, and the one thing it does not share with the single-line
+    /// field, its border, reaches it through `text_area_margin` and `text_area_frame`
+    /// (`docs/platform-facts.md` §2.29).
     #[test]
     fn roles_are_the_widget_fields_of_resolved_theme() {
         let resolved = Theme::preset("kde-breeze")
@@ -414,7 +417,7 @@ mod tests {
             .unwrap()
             .keys()
             .map(String::as_str)
-            .filter(|k| *k != "defaults" && *k != "text_scale")
+            .filter(|k| *k != "defaults" && *k != "text_scale" && *k != "text_area")
             .collect();
         let keys: BTreeSet<&str> = Role::all().iter().map(|r| r.key()).collect();
         assert_eq!(keys, fields);

@@ -1674,6 +1674,39 @@ tested_by = "T18(b)"
 verdict   = "derived"
 tested_by = "T18(b)"
 
+["text_area.border.color"]
+verdict   = "derived"
+tested_by = "T18(b)"
+
+["text_area.border.corner_radius"]
+verdict   = "derived"
+tested_by = "T18(b)"
+
+["text_area.border.line_width"]
+verdict   = "derived"
+tested_by = "T18(b)"
+
+["text_area.border.shadow_enabled"]
+verdict  = "unmappable"
+sub_tag  = "source-side gap"
+upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10)"
+
+["text_area.border.padding.top"]
+verdict   = "derived"
+tested_by = "T18(b)"
+
+["text_area.border.padding.right"]
+verdict   = "derived"
+tested_by = "T18(b)"
+
+["text_area.border.padding.bottom"]
+verdict   = "derived"
+tested_by = "T18(b)"
+
+["text_area.border.padding.left"]
+verdict   = "derived"
+tested_by = "T18(b)"
+
 ["combo_box.background_color"]
 verdict = "scoped"
 sinks   = [

@@ -1487,6 +1487,50 @@ mod t18_accessors {
         )
     }
 
+    /// T18 (b), the multi-line field: `text_area_margin` is `text_area.border`'s padding as
+    /// `input_margin` is the input's, and `text_area_frame` strokes the field at
+    /// `text_area.border.line_width` in `text_area.border.color` at rest, rounded
+    /// `text_area.border.corner_radius`.
+    #[test]
+    fn t18_b_text_area_margin_and_frame_are_the_text_areas() {
+        let mut t = resolved("adwaita", ColorMode::Light);
+        let colour = native_theme::color::Rgba::rgb(1, 2, 3);
+        t.text_area.border.line_width = 2.0;
+        t.text_area.border.corner_radius = 7.0;
+        t.text_area.border.color = colour;
+        t.text_area.border.padding = ResolvedPadding {
+            top: Some(5.0),
+            right: None,
+            bottom: Some(5.0),
+            left: Some(5.0),
+        };
+        let m = crate::text_area_margin(&t);
+        assert_eq!((m.left, m.top, m.bottom), (7, 7, 7), "5 + the 2px line");
+        assert_eq!(m.right, 4, "egui's own where unstated");
+
+        let ctx = egui::Context::default();
+        let atlas = ThemeAtlas::builder("t18b-area", &t, &t).build();
+        atlas.install(&ctx);
+        let id = egui::Id::new("t18b-area");
+        let mut text = String::new();
+        let mut frame = None;
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(Role::Input, RoleVariant::Normal, |ui| {
+                let f = crate::text_area_frame(ui, id, &t);
+                frame = Some(f);
+                ui.add(egui::TextEdit::multiline(&mut text).id(id).frame(f));
+            });
+        });
+        assert_eq!(
+            frame.map(|f| f.stroke),
+            Some(egui::Stroke::new(2.0, to_color32(colour)))
+        );
+        assert_eq!(
+            frame.map(|f| f.corner_radius),
+            Some(egui::CornerRadius::same(7))
+        );
+    }
+
     /// T18 (b): a stated side is the side plus the border's line width; `None` and `NaN` keep
     /// egui's `Margin::symmetric(4, 2)` (`egui/src/widgets/text_edit/builder.rs:136`).
     #[test]

@@ -64,6 +64,12 @@ padding_right_px = 6.0
 padding_left_px = 10.0
 padding_top_px = 5.0
 padding_bottom_px = 6.0
+[light.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
+padding_right_px = 6.0
+padding_left_px = 10.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
 [light.checkbox]
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
@@ -274,6 +280,12 @@ min_height_px = 32.0
 
 [dark.input.border]
 # platform-facts.md:1196-1197 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
+padding_right_px = 6.0
+padding_left_px = 10.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
+[dark.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
 padding_right_px = 6.0
 padding_left_px = 10.0
 padding_top_px = 5.0

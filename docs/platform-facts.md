@@ -1628,6 +1628,21 @@ resources but no Card control (open proposal #6543). GNOME defines
 Windows `HyperlinkButton` is a full button control with hover/press
 states. Other platforms style links as inline text with underline.
 
+### 2.29 Text Area (multi-line)
+
+A multi-line text field is framed, filled and lettered as the single-line
+field (§2.4) on every platform; its padding alone differs. The model keeps it
+in `text_area.border`, whose frame inherits `input.border`.
+
+| Property          | macOS                       | Windows                  | KDE                          | GNOME                        |
+|-------------------|-----------------------------|--------------------------|------------------------------|------------------------------|
+| `border.padding_horizontal` | **(none)** — an NSTextView sets each line `lineFragmentPadding` in from its text container's edges ("The default value for this property is `5.0`", [NSTextContainer.lineFragmentPadding](https://developer.apple.com/documentation/appkit/nstextcontainer/linefragmentpadding)), and the container `textContainerInset` in from the view's, a default its page does not state ([NSTextView.textContainerInset](https://developer.apple.com/documentation/appkit/nstextview/textcontainerinset)) | WinUI3: 10 left / 6 right — a multi-line field is the same TextBox (`AcceptsReturn`), padded `TextControlThemePadding` = 10,5,6,6 ([Common_themeresources.xaml:12](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/Common_themeresources.xaml#L12); [TextBox_themeresources.xaml:194](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/TextBox_themeresources.xaml#L194)) inside its border | **(Breeze src)** 5 inside the frame line — a QTextEdit is a scroll area, which Breeze frames `Frame_FrameWidth` = 2 wide when it shares a layout with spacing (`PM_DefaultFrameWidth`, [breezestyle.cpp:659-720](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezestyle.cpp#L659-L720); [breezemetrics.h:41](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L41)), its 1px line the outermost, and its document sets the text `documentMargin` = 4 in ([qtextdocument_p.cpp:180](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/text/qtextdocument_p.cpp#L180)): 2 + 4 − 1. **(measured)** 2026-09-28, a Breeze QTextEdit (`kdialog --textinputbox`, KWin, scale 1.0, Noto Sans 10pt): the text starts 6px from the frame's outer left edge | **(GTK)** 0 — `textview` sets no padding ([_views.scss:20-44](https://gitlab.gnome.org/GNOME/libadwaita/-/blob/5789add99c79cee0fae624b56706c7c0bea7fb2b/src/stylesheet/widgets/_views.scss#L20-L44)), and GtkTextView's `left-margin` and `right-margin` default to 0 ([gtktextview.c:1021-1042](https://gitlab.gnome.org/GNOME/gtk/-/blob/bd25f1e2dc2c2fbf3b8864e61afe642910ba359c/gtk/gtktextview.c#L1021-L1042)) |
+| `border.padding_vertical` | **(none)** — the same `textContainerInset`, whose default is not stated | WinUI3: 5 top / 6 bottom — the same `TextControlThemePadding` | **(Breeze src)** 5 — the same 2 + 4 − 1. **(measured)** the same field: its first 18px line box starts 6px below the frame's outer top edge | **(GTK)** 0 — `top-margin` and `bottom-margin` default to 0 (gtktextview.c:1055-1076) |
+| `border.color`    | ← `input.border.color`      | ← `input.border.color`   | ← `input.border.color`       | ← `input.border.color`       |
+| `border.line_width` | ← `input.border.line_width` | ← `input.border.line_width` | ← `input.border.line_width` | ← `input.border.line_width` |
+| `border.corner_radius` | ← `input.border.corner_radius` | ← `input.border.corner_radius` | ← `input.border.corner_radius` | ← `input.border.corner_radius` |
+| `border.shadow_enabled` | ← `input.border.shadow_enabled` | ← `input.border.shadow_enabled` | ← `input.border.shadow_enabled` | ← `input.border.shadow_enabled` |
+
 ---
 
 ## Appendix: Verification Sources (2026-03-24)

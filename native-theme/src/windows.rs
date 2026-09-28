@@ -233,6 +233,10 @@ pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     // platform-facts.md:1196 (§2.4): TextControlThemePadding=10,5,6,6
     border.padding_left = Some(10.0);
     border.padding_right = Some(6.0);
+    let border = variant.text_area.border.get_or_insert_default();
+    // platform-facts.md:1639 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
+    border.padding_left = Some(10.0);
+    border.padding_right = Some(6.0);
     // platform-facts.md:1292-1293 (§2.9)
     variant.slider.track_height = Some(4.0);
     variant.slider.thumb_diameter = Some(18.0);
@@ -488,7 +492,7 @@ fn build_theme(
     // Per Microsoft Common Buttons guideline (Win7) and modern WinUI 3
     // ContentDialog ("PrimaryButton ... Appears as the leftmost button"),
     // Windows dialogs place the affirmative action on the LEFT of the
-    // button row. See `docs/platform-facts.md:1481, 1500-1507, 1807-1808`.
+    // button row. See `docs/platform-facts.md:1494, 1513-1520, 1835-1836`.
     variant.dialog.button_order = Some(crate::model::DialogButtonOrder::PrimaryLeft);
 
     // --- DWM title bar color (WIN-02) ---

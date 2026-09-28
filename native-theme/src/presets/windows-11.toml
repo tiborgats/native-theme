@@ -121,6 +121,13 @@ padding_left_px = 10.0
 padding_top_px = 5.0
 padding_bottom_px = 6.0
 
+[light.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
+padding_right_px = 6.0
+padding_left_px = 10.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
+
 [light.input.font]
 color = "#1a1a1a"
 [light.checkbox]
@@ -299,7 +306,7 @@ disabled_thumb_color = "#ffffff80"
 
 [light.dialog]
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
-# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1481, 1807-1808.
+# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1494, 1835-1836.
 button_order = "primary_left"
 min_width_px = 320.0
 max_width_px = 548.0
@@ -517,6 +524,13 @@ padding_left_px = 10.0
 padding_top_px = 5.0
 padding_bottom_px = 6.0
 
+[dark.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
+padding_right_px = 6.0
+padding_left_px = 10.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
+
 [dark.input.font]
 color = "#ffffff"
 [dark.checkbox]
@@ -695,7 +709,7 @@ disabled_thumb_color = "#ffffff80"
 
 [dark.dialog]
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
-# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1481, 1807-1808.
+# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1494, 1835-1836.
 button_order = "primary_left"
 min_width_px = 320.0
 max_width_px = 548.0

@@ -236,8 +236,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        489,
-        "485 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        497,
+        "493 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -441,7 +441,7 @@ fn verdict_totals_match_the_specification() {
             "defaults" | "text_scale" | "layout" => "foundation",
             "window" | "dialog" | "popover" | "card" | "tooltip" | "menu" => "surfaces",
             "button" | "link" | "switch" | "checkbox" | "segmented_control" => "buttons",
-            "input" | "combo_box" | "list" => "inputs",
+            "input" | "text_area" | "combo_box" | "list" => "inputs",
             "scrollbar" | "slider" | "progress_bar" | "splitter" | "separator" | "spinner" => {
                 "indicators"
             }
@@ -469,7 +469,7 @@ fn verdict_totals_match_the_specification() {
         ("foundation", [18, 1, 36, 11]),
         ("surfaces", [8, 55, 31, 14]),
         ("buttons", [11, 46, 29, 15]),
-        ("inputs", [4, 35, 28, 11]),
+        ("inputs", [4, 35, 35, 12]),
         ("indicators", [6, 17, 8, 9]),
         ("chrome", [0, 54, 23, 19]),
     ];
@@ -481,7 +481,7 @@ fn verdict_totals_match_the_specification() {
         !counts.contains_key("unknown"),
         "a leaf outside the six groups"
     );
-    assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 15);
+    assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 16);
     assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 12);
     assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 51);
     assert_eq!(

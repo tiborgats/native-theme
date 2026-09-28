@@ -36,6 +36,15 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     border.padding_top = Some(6.0); // LineEdit_FrameWidth + 1 - 1
     border.padding_bottom = Some(6.0); // LineEdit_FrameWidth + 1 - 1
 
+    // Text area
+    let border = variant.text_area.border.get_or_insert_default();
+    // platform-facts.md:1639-1640 (§2.29): inside the 1px frame line,
+    // Frame_FrameWidth 2 plus QTextDocument's documentMargin 4
+    border.padding_left = Some(5.0); // Frame_FrameWidth + 4 - 1
+    border.padding_right = Some(5.0); // Frame_FrameWidth + 4 - 1
+    border.padding_top = Some(5.0); // Frame_FrameWidth + 4 - 1
+    border.padding_bottom = Some(5.0); // Frame_FrameWidth + 4 - 1
+
     // Scrollbar
     variant.scrollbar.groove_width = Some(21.0); // ScrollBar_Extend
     variant.scrollbar.min_thumb_length = Some(20.0); // ScrollBar_MinSliderHeight

@@ -106,8 +106,8 @@ pub use accessors::{
     is_high_contrast, is_reduced_motion, is_reduced_transparency, line_height_multiplier,
     list_header_font, mono_font_family, mono_font_size, mono_font_weight, role_font_is_italic,
     role_font_weight, scaled_text_size, scrollbar_width, selection_inactive_background,
-    text_role_font, text_role_line_height, text_role_weight, text_scaling_factor,
-    warning_text_color, window_title_bar_font, window_title_bar_text_color,
+    text_area_frame, text_area_margin, text_role_font, text_role_line_height, text_role_weight,
+    text_scaling_factor, warning_text_color, window_title_bar_font, window_title_bar_text_color,
 };
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};

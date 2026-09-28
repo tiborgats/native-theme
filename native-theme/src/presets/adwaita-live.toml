@@ -60,6 +60,10 @@ min_height_px = 34.0
 # platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
+[light.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 [light.checkbox]
 # platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
@@ -284,6 +288,10 @@ min_height_px = 34.0
 [dark.input.border]
 # platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
+padding_vertical_px = 0.0
+[dark.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 [dark.checkbox]
 # platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side

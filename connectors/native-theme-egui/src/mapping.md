@@ -11,12 +11,12 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 108 | 8 | 55 | 31 | 14 |
 | Buttons (button, link, switch, checkbox, segmented control) | 101 | 11 | 46 | 29 | 15 |
-| Inputs (input, combo box, list) | 78 | 4 | 35 | 28 | 11 |
+| Inputs (input, text area, combo box, list) | 86 | 4 | 35 | 35 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 96 | 0 | 54 | 23 | 19 |
-| **TOTAL** | **489** | **47** | **208** | **155** | **79** |
+| **TOTAL** | **497** | **47** | **208** | **162** | **80** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void` 1, `widgets-crate` 12.
+UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 16, `source-void` 1, `widgets-crate` 12.
 
 ## Rows
 
@@ -310,7 +310,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void
 | `switch.track_width` | DERIVED | → T18(a) |  |
 | `switch.unchecked_background` | SCOPED | «switch» `visuals.widgets.inactive.weak_bg_fill`; «switch» `visuals.widgets.open.weak_bg_fill`; «switch» `visuals.widgets.hovered.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch» `visuals.widgets.active.weak_bg_fill` (when: switch.hover_unchecked_background is translucent or None, §6.1, §6.4); «switch:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: switch.disabled_unchecked_background is None, §6.4) |  |
 
-### Inputs (input, combo box, list)
+### Inputs (input, text area, combo box, list)
 
 | leaf | verdict | sinks, or the test of its route | note |
 |---|---|---|---|
@@ -392,6 +392,14 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void
 | `list.row_height` | SCOPED | «list» `spacing.interact_size.y` |  |
 | `list.selection_background` | SCOPED | «list» `visuals.selection.bg_fill` |  |
 | `list.selection_text_color` | SCOPED | «list» `visuals.selection.stroke.color` |  |
+| `text_area.border.color` | DERIVED | → T18(b) |  |
+| `text_area.border.corner_radius` | DERIVED | → T18(b) |  |
+| `text_area.border.line_width` | DERIVED | → T18(b) |  |
+| `text_area.border.padding.bottom` | DERIVED | → T18(b) |  |
+| `text_area.border.padding.left` | DERIVED | → T18(b) |  |
+| `text_area.border.padding.right` | DERIVED | → T18(b) |  |
+| `text_area.border.padding.top` | DERIVED | → T18(b) |  |
+| `text_area.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 
 ### Indicators (scrollbar, slider, progress bar, splitter, separator, spinner)
 

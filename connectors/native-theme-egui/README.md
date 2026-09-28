@@ -208,7 +208,8 @@ fn form(ui: &mut egui::Ui, t: &ResolvedTheme, name: &mut String) {
 ```
 
 The free accessors cover what no `Style` field holds: `input_margin` and
-`input_frame` for a `TextEdit`, `expander_icon` for a `CollapsingHeader`'s
+`input_frame` for a `TextEdit`, `text_area_margin` and `text_area_frame` for
+a multi-line one, `expander_icon` for a `CollapsingHeader`'s
 arrow, `text_role_font` and `text_role_line_height` for the caption, heading,
 dialog-title and display roles, `window_title_bar_font` and
 `window_title_bar_text_color`, `dialog_button_order`, `icons::icon_size`, and

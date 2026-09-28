@@ -64,6 +64,11 @@ min_height_px = 32.0
 # margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
+[light.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
 [light.checkbox]
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
@@ -272,6 +277,11 @@ min_height_px = 32.0
 # margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
+[dark.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
 [dark.checkbox]
 indicator_width_px = 20.0
 # platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3

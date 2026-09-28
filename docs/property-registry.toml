@@ -206,6 +206,16 @@ disabled_text_color          = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
+# §2.29 Text Area (multi-line)
+# ═══════════════════════════════════════════════════════════════════════════
+# Only the padding is the multi-line field's own; the border's colour, corner
+# radius, line width and shadow inherit input.border, and everything else a
+# text area shows is [input]'s.
+
+[text_area]
+border                       = "border"
+
+# ═══════════════════════════════════════════════════════════════════════════
 # §2.5 Checkbox / Radio Button
 # ═══════════════════════════════════════════════════════════════════════════
 

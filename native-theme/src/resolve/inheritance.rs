@@ -58,7 +58,7 @@ fn resolve_text_scale_entry(
 /// left). On GNOME, macOS, and iOS the convention is trailing-affirmative.
 /// Windows uses primary-leftmost per the Microsoft Common Buttons guideline
 /// and modern WinUI 3 ContentDialog — see
-/// `docs/platform-facts.md:1481, 1500-1507, 1807-1808`.
+/// `docs/platform-facts.md:1494, 1513-1520, 1835-1836`.
 pub(crate) fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
@@ -291,6 +291,24 @@ impl ThemeMode {
         if self.window.inactive_title_bar_text_color.is_none() {
             self.window.inactive_title_bar_text_color =
                 self.window.title_bar_font.as_ref().and_then(|f| f.color);
+        }
+        // text_area.border <- input.border (widget-to-widget): the multi-line
+        // field is framed as the single-line one; its padding alone is its own.
+        // Must run AFTER resolve_border_inheritance has filled input.border.
+        if let Some(input) = &self.input.border {
+            let area = self.text_area.border.get_or_insert_default();
+            if area.color.is_none() {
+                area.color = input.color;
+            }
+            if area.corner_radius.is_none() {
+                area.corner_radius = input.corner_radius;
+            }
+            if area.line_width.is_none() {
+                area.line_width = input.line_width;
+            }
+            if area.shadow_enabled.is_none() {
+                area.shadow_enabled = input.shadow_enabled;
+            }
         }
         // button.hover_text_color <- button.font.color (widget-to-widget)
         // Must run AFTER resolve_font_inheritance has populated button.font.color
@@ -749,6 +767,10 @@ mod tests {
         let widget_to_widget_rules: &[&str] = &[
             "window.inactive_title_bar_background",
             "window.inactive_title_bar_text_color",
+            "text_area.border.color",
+            "text_area.border.corner_radius",
+            "text_area.border.line_width",
+            "text_area.border.shadow_enabled",
             "button.hover_text_color",
             "button.active_text_color",
             "tab.hover_text_color",

@@ -122,6 +122,10 @@ pub struct ThemeMode {
     #[serde(default, skip_serializing_if = "InputTheme::is_empty")]
     pub input: InputTheme,
 
+    /// Multi-line text field: its own padding; the rest is `input`'s.
+    #[serde(default, skip_serializing_if = "TextAreaTheme::is_empty")]
+    pub text_area: TextAreaTheme,
+
     /// Checkbox and radio button indicator geometry.
     #[serde(default, skip_serializing_if = "CheckboxTheme::is_empty")]
     pub checkbox: CheckboxTheme,
@@ -213,7 +217,7 @@ pub struct ThemeMode {
 
 impl_merge!(ThemeMode {
     nested {
-        defaults, text_scale, window, button, input, checkbox, menu,
+        defaults, text_scale, window, button, input, text_area, checkbox, menu,
         tooltip, scrollbar, slider, progress_bar, tab, sidebar,
         toolbar, status_bar, list, popover, splitter, separator,
         switch, dialog, spinner, combo_box, segmented_control,

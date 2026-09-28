@@ -124,6 +124,12 @@ disabled_text_color = "#aaabac"
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
 
+[light.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
+
 [light.input.font]
 color = "#232629"
 [light.checkbox]
@@ -487,6 +493,12 @@ disabled_text_color = "#606263"
 # margins 2 / 1 − the 1px line (measured 2026-09-28: 8 / 7 from the outer edge)
 padding_horizontal_px = 7.0
 padding_vertical_px = 6.0
+
+[dark.text_area.border]
+# platform-facts.md:1639-1640 (§2.29): inside the frame line, Frame_FrameWidth 2 + QTextDocument's
+# documentMargin 4 − the 1px line (measured 2026-09-28: 6 from the outer edge)
+padding_horizontal_px = 5.0
+padding_vertical_px = 5.0
 
 [dark.input.font]
 color = "#fcfcfc"

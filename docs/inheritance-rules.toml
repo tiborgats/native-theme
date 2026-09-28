@@ -169,6 +169,12 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "input.disabled_opacity"                     = "defaults.disabled_opacity"
 "input.disabled_text_color"                  = "defaults.disabled_text_color"
 
+# text_area (§2.29) — widget-to-widget: framed as the input; padding its own
+"text_area.border.color"                     = "input.border.color"
+"text_area.border.corner_radius"             = "input.border.corner_radius"
+"text_area.border.line_width"                = "input.border.line_width"
+"text_area.border.shadow_enabled"            = "input.border.shadow_enabled"
+
 # checkbox (§2.5)
 "checkbox.background_color"                  = "defaults.background_color"
 "checkbox.checked_background"                = "defaults.accent_color"

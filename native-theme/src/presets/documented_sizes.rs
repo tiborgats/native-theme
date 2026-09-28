@@ -166,6 +166,7 @@ const ROWS: &[Row] = &[
     row(Kde, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Kde, "button", all(6.0), &[1171, 1172], "Button_MarginWidth = 6, both axes"),
     row(Kde, "input", axes(6.0, 7.0), &[1196, 1197], "inside the frame line: LineEdit_FrameWidth 6 + QLineEdit's 2 / 1 − 1"),
+    row(Kde, "text_area", all(5.0), &[1639, 1640], "inside the frame line: Frame_FrameWidth 2 + documentMargin 4 − 1"),
     row(Kde, "checkbox", NONE, &[1216, 1217], "(none)"),
     row(Kde, "menu", all(4.0), &[1235, 1236], "MenuItem_MarginWidth = 4; MenuItem_MarginHeight = 4")
         .with(&[("row_height", None, 1234)]),
@@ -197,6 +198,7 @@ const ROWS: &[Row] = &[
     row(Gnome, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Gnome, "button", axes(5.0, 17.0), &[1171, 1172], "label-only .text-button 17; 5"),
     row(Gnome, "input", axes(0.0, 9.0), &[1196, 1197], "9; 0"),
+    row(Gnome, "text_area", all(0.0), &[1639, 1640], "textview: no padding, GtkTextView margins 0"),
     row(Gnome, "checkbox", all(3.0), &[1216, 1217], "check { padding: 3px }"),
     row(Gnome, "menu", axes(0.0, 12.0), &[1235, 1236], "12 ($menu_padding); 0")
         .with(&[("row_height", Some(32.0), 1234)]),
@@ -228,6 +230,7 @@ const ROWS: &[Row] = &[
     row(Macos, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Macos, "button", axes(3.0, 8.0), &[1171, 1172], "~8 (WebKit); 3 (measured)"),
     row(Macos, "input", axes(3.0, 4.0), &[1196, 1197], "4; 3 (measured)"),
+    row(Macos, "text_area", NONE, &[1639, 1640], "(none): textContainerInset's default is not stated"),
     row(Macos, "checkbox", NONE, &[1216, 1217], "(none)"),
     row(Macos, "menu", axes(3.0, 12.0), &[1235, 1236], "12; 3 (measured)")
         .with(&[("row_height", Some(22.0), 1234)]),
@@ -259,6 +262,7 @@ const ROWS: &[Row] = &[
     row(Windows, "window", NONE, &[1157, 1158], "pointer to §2.20 layout margins"),
     row(Windows, "button", trbl(5.0, 11.0, 6.0, 11.0), &[1171, 1172], "11; 5 top / 6 bottom"),
     row(Windows, "input", trbl(5.0, 6.0, 6.0, 10.0), &[1196, 1197], "10 left / 6 right; 5 top / 6 bottom"),
+    row(Windows, "text_area", trbl(5.0, 6.0, 6.0, 10.0), &[1639, 1640], "the same TextBox: TextControlThemePadding=10,5,6,6"),
     row(Windows, "checkbox", NONE, &[1216, 1217], "(none)"),
     row(Windows, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1235, 1236], "11; mouse context 4 top / 5 bottom")
         .with(&[("row_height", Some(23.0), 1234)]),
@@ -289,10 +293,11 @@ const ROWS: &[Row] = &[
 ];
 
 /// Every widget whose border carries padding.
-const WIDGETS: [&str; 18] = [
+const WIDGETS: [&str; 19] = [
     "window",
     "button",
     "input",
+    "text_area",
     "checkbox",
     "menu",
     "tooltip",
@@ -316,6 +321,7 @@ fn section(widget: &str) -> &'static str {
         "window" => "2.2",
         "button" => "2.3",
         "input" => "2.4",
+        "text_area" => "2.29",
         "checkbox" => "2.5",
         "menu" => "2.6",
         "tooltip" => "2.7",
@@ -340,6 +346,7 @@ fn padding(theme: &ResolvedTheme, widget: &str) -> Option<ResolvedPadding> {
         "window" => &theme.window.border,
         "button" => &theme.button.border,
         "input" => &theme.input.border,
+        "text_area" => &theme.text_area.border,
         "checkbox" => &theme.checkbox.border,
         "menu" => &theme.menu.border,
         "tooltip" => &theme.tooltip.border,
@@ -370,6 +377,7 @@ fn stated_sizes(v: &ThemeMode, widget: &str) -> Option<Vec<(&'static str, Option
         "window" => &v.window.border,
         "button" => &v.button.border,
         "input" => &v.input.border,
+        "text_area" => &v.text_area.border,
         "checkbox" => &v.checkbox.border,
         "menu" => &v.menu.border,
         "tooltip" => &v.tooltip.border,

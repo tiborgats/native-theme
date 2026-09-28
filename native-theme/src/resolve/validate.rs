@@ -96,6 +96,8 @@ impl ThemeMode {
         let button =
             ResolvedButtonTheme::validate_widget(&self.button, "button", dpi, &mut missing);
         let input = ResolvedInputTheme::validate_widget(&self.input, "input", dpi, &mut missing);
+        let text_area =
+            ResolvedTextAreaTheme::validate_widget(&self.text_area, "text_area", dpi, &mut missing);
         let checkbox =
             ResolvedCheckboxTheme::validate_widget(&self.checkbox, "checkbox", dpi, &mut missing);
         let menu = ResolvedMenuTheme::validate_widget(&self.menu, "menu", dpi, &mut missing);
@@ -168,6 +170,7 @@ impl ThemeMode {
         window.check_ranges("window", &mut range_errors);
         button.check_ranges("button", &mut range_errors);
         input.check_ranges("input", &mut range_errors);
+        text_area.check_ranges("text_area", &mut range_errors);
         checkbox.check_ranges("checkbox", &mut range_errors);
         menu.check_ranges("menu", &mut range_errors);
         tooltip.check_ranges("tooltip", &mut range_errors);
@@ -202,6 +205,7 @@ impl ThemeMode {
             window,
             button,
             input,
+            text_area,
             checkbox,
             menu,
             tooltip,

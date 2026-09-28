@@ -413,6 +413,7 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
                     checkbox,
                     dialog,
                     // Remaining widgets use defaults -- exercises their empty round-trip paths
+                    text_area: TextAreaTheme::default(),
                     menu: MenuTheme::default(),
                     tooltip: TooltipTheme::default(),
                     scrollbar: ScrollbarTheme::default(),

@@ -33,8 +33,8 @@ const GROUPS: &[(&str, &[&str])] = &[
         &["button", "link", "switch", "checkbox", "segmented_control"],
     ),
     (
-        "Inputs (input, combo box, list)",
-        &["input", "combo_box", "list"],
+        "Inputs (input, text area, combo box, list)",
+        &["input", "text_area", "combo_box", "list"],
     ),
     (
         "Indicators (scrollbar, slider, progress bar, splitter, separator, spinner)",
