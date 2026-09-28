@@ -242,19 +242,44 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 /// → `:719`).
 ///
 /// [`input`]'s refinement for the multi-line field: `text_area.border`'s
-/// padding sides, corner radius and line width in place of the input's
-/// (the frame's inherit the input's, docs/platform-facts.md §2.29), the
-/// input's font, and no height -- the rows the field's state holds size it
-/// (gpui-base `input/base/state.rs`, `InputBaseState::auto_grow`). Upstream
-/// pads only a single-line root (`input/input.rs:700-702`), so a side the
-/// theme leaves unstated keeps upstream's multi-line field unpadded there.
+/// padding, corner radius and line width in place of the input's (the
+/// frame's inherit the input's, docs/platform-facts.md §2.29), the input's
+/// font at `defaults.line_height`, and no height -- the rows the field's
+/// state holds size it (gpui-base `input/base/state.rs`,
+/// `InputBaseState::auto_grow`).
+///
+/// **Padding.** Upstream pads a multi-line field's editor, inside the root,
+/// by its `Size`'s `input_px` and `input_py`, from render, where no caller
+/// reaches it (`input/input.rs:531-541`), and pads no multi-line root
+/// (`:700-702`). A `Textarea` offers no size and renders an `Input` at the
+/// default `Size::Medium` (`input/textarea.rs:141-158`), whose editor padding
+/// is 10 across and 8 down (`sizing.rs:147-166`). This refinement pads the
+/// root by the rest of each stated side, so a side at least the editor's
+/// sits the stated distance inside the border; a stated side below it --
+/// KDE's 5, GNOME's 0 -- stays the editor's, the one part of the platform's
+/// padding no seam reaches; an unstated side is upstream's own.
 #[must_use]
 pub fn text_area(n: Native<'_>) -> StyleRefinement {
     let a = &n.resolved.text_area;
+    let p = &a.border.padding;
+    let (across, down) = (
+        f32::from(Size::Medium.input_px()),
+        f32::from(Size::Medium.input_py()),
+    );
+    let rest = |stated: Option<f32>, editor: f32| stated.map(|v| (v - editor).max(0.0));
+    let root = ResolvedPadding {
+        top: rest(p.top, down),
+        right: rest(p.right, across),
+        bottom: rest(p.bottom, down),
+        left: rest(p.left, across),
+    };
     with_text(
-        with_padding(StyleRefinement::default(), &a.border.padding)
-            .rounded(px(a.border.corner_radius.max(0.0)))
-            .border(px(a.border.line_width)),
+        with_padding(
+            StyleRefinement::default().line_height(relative(n.resolved.defaults.line_height)),
+            &root,
+        )
+        .rounded(px(a.border.corner_radius.max(0.0)))
+        .border(px(a.border.line_width)),
         &n.resolved.input.font,
         n,
     )
@@ -1870,10 +1895,9 @@ mod tests {
         let r = partly_stated();
         let n = Native::unscaled(&r);
         type Builder = fn(Native<'_>) -> StyleRefinement;
-        let builders: [(&str, Builder); 12] = [
+        let builders: [(&str, Builder); 11] = [
             ("button", button),
             ("input", input),
-            ("text_area", text_area),
             ("menu_item", menu_item),
             ("list_item", list_item),
             ("tooltip", tooltip),
@@ -1894,6 +1918,25 @@ mod tests {
         let out = combobox(n);
         assert_eq!(out.padding.right, None, "combobox: an unstated side is set");
         assert_eq!(out.padding.left, def(7.0), "combobox");
+    }
+
+    /// The multi-line field's root pads by the rest of each stated side past
+    /// the editor padding upstream gives a Textarea (`Size::Medium`: 10
+    /// across, 8 down), nothing below it, and leaves an unstated side unset.
+    #[test]
+    fn the_text_area_pads_the_root_by_the_rest_of_each_side() {
+        let mut r = partly_stated();
+        r.text_area.border.padding = ResolvedPadding {
+            top: Some(5.0),
+            right: None,
+            bottom: Some(9.0),
+            left: Some(12.0),
+        };
+        let out = text_area(Native::unscaled(&r));
+        assert_eq!(out.padding.top, def(0.0), "5 down, below the editor's 8");
+        assert_eq!(out.padding.bottom, def(1.0), "9 down: 9 − 8");
+        assert_eq!(out.padding.left, def(2.0), "12 across: 12 − 10");
+        assert_eq!(out.padding.right, None, "an unstated side is upstream's");
     }
 
     /// Without a stated bar height the application's row keeps its own.

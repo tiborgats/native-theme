@@ -144,7 +144,7 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
         ))
         .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base input/base/element.rs, TextElement::request_layout)")
         .instance("height", "the showcase's own 90px, set after geometry::text_area, which sets none")
-        .instance("padding", "text_area.border.padding, the multi-line field's own (docs/platform-facts.md §2.29), inside text_area.border; a side the theme leaves unstated stays upstream's, unpadded -- upstream pads only a single-line Input's root (input/input.rs, Input::render: input_px and input_py when not multi-line)")
+        .instance("padding", "text_area.border.padding, the multi-line field's own (docs/platform-facts.md §2.29), where it reaches: upstream pads a Textarea's editor by Size::Medium's 10 across and 8 down in render (input/input.rs, Input::render; sizing.rs, input_px and input_py), with no seam, and geometry::text_area pads the root by the rest of each stated side; a stated side below the editor's stays the editor's, and an unstated side is upstream's")
         .instance("refinement", "geometry::text_area: the input's font, and text_area.border's padding, radius and line width, which inherit the input's frame (a Textarea renders as an Input, input/textarea.rs, Textarea::into_input)")
 }
 

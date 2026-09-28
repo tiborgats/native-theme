@@ -164,7 +164,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "text_area",
-        "the multi-line field's own text_area.border padding sides the theme states (docs/platform-facts.md §2.29) -- upstream pads only a single-line root (input/input.rs, Input::render: input_px and input_py when not multi-line), so an unstated side stays unpadded --, text_area.border.corner_radius and line_width, which inherit the input's, input.font; no height: the rows its state holds size it",
+        "the multi-line field's own text_area.border padding (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.border.corner_radius and line_width, which inherit the input's, input.font at defaults.line_height; no height: the rows its state holds size it",
     ),
     (
         "menu_item",
