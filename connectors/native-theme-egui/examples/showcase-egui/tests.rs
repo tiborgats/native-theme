@@ -71,11 +71,32 @@ fn page_kinds(page: Page) -> &'static [&'static str] {
 /// Widget Info matches `mapping.toml`'s per-preset `exceptions` by preset key, so the key it is
 /// handed is the preset's key — never the atlas's display name — and `default`'s the preset it
 /// builds on.
+///
+/// No bundled row states an exception, so one is added to every row for the test preset: the
+/// Widget tab of a hovered checkbox prints it only if the inspector is handed the key.
 #[test]
 fn widget_info_is_handed_the_preset_key() {
     let mut harness = open(egui::Theme::Light, cli(&[("--theme", TEST_PRESET)]));
     assert_eq!(harness.state().preset_key(), TEST_PRESET);
     assert_ne!(harness.state().preset_key(), harness.state().atlas.name());
+
+    const WHY: &str = "an exception the test adds";
+    let line = format!("on {TEST_PRESET}: {WHY}");
+    if let Ok(manifest) = harness.state_mut().manifest.as_mut() {
+        for row in &mut manifest.rows {
+            row.exceptions
+                .push((TEST_PRESET.to_string(), WHY.to_string()));
+        }
+    }
+    harness.run_steps(4);
+    let pos = centre_of(&harness, "checkbox (unchecked)");
+    hover_and_settle(&mut harness, pos);
+    assert_eq!(shown_kind(&harness), Some("checkbox (unchecked)"));
+    assert!(
+        harness.query_all_by_label_contains(&line).next().is_some(),
+        "the Widget tab does not print {line:?}"
+    );
+
     harness.state_mut().settings.theme = ThemeChoice::Default;
     let app = harness.state();
     assert_eq!(app.preset_key(), app.default_preset);
@@ -2030,10 +2051,13 @@ fn groups_and_columns_are_a_section_gap_apart() {
 
 /// A page's section headings are set in the theme's section-heading role
 /// (`text_scale.section_heading`), as the iced showcase's section titles are: its size and line
-/// height, and at the body's weight in the proportional family (kde-breeze states 400 for both).
+/// height, and at the body's weight in the proportional family (kde-breeze states 400 for both);
+/// at another weight (adwaita's 700 over a 400 body) in the face registered at that weight,
+/// where the fonts hold one, and the proportional family where they do not.
 #[test]
 fn section_headings_take_the_section_heading_role() {
-    for preset in ["kde-breeze", "catppuccin-mocha"] {
+    let mut other_weight = Vec::new();
+    for preset in ["kde-breeze", "catppuccin-mocha", "adwaita"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -2076,14 +2100,34 @@ fn section_headings_take_the_section_heading_role() {
             Some(line_height),
             "{preset}: heading line height"
         );
-        if t.text_scale.section_heading.weight == t.defaults.font.weight {
+        let (weight, body) = (t.text_scale.section_heading.weight, t.defaults.font.weight);
+        if weight == body {
             assert_eq!(
                 format.font_id.family,
                 egui::FontFamily::Proportional,
                 "{preset}: a heading at the body's weight is in the body's face"
             );
+        } else {
+            other_weight.push(preset);
+            let named = crate::demo::weight_family(weight);
+            let held = harness
+                .ctx
+                .fonts(|f| f.definitions().families.contains_key(&named));
+            let expected = if held {
+                named
+            } else {
+                egui::FontFamily::Proportional
+            };
+            assert_eq!(
+                format.font_id.family, expected,
+                "{preset}: a heading at {weight} over a {body} body"
+            );
         }
     }
+    assert!(
+        other_weight.contains(&"adwaita"),
+        "adwaita's heading is not at the body's weight: {other_weight:?}"
+    );
 }
 
 /// `--pointer X,Y` is two whole logical pixels; anything else holds no pointer and is kept for
@@ -2152,6 +2196,45 @@ fn a_held_pointer_hovers_and_presses_the_control_under_it() {
             });
         assert_eq!(drawn, fill, "press {press}: the button's fill");
     }
+}
+
+/// A held pointer is moved there once and then left still, so the Basic page's tooltip, which
+/// egui shows only under a pointer at rest, opens under it: a move on every pass would keep it
+/// shut.
+#[test]
+fn a_held_pointer_opens_the_tooltip_under_it() {
+    let args = [("--theme", "kde-breeze"), ("--tab", "basic")];
+    let mut probe = open(egui::Theme::Light, cli(&args));
+    probe.run_steps(4);
+    let Some(rect) = probe
+        .state()
+        .registry
+        .records()
+        .iter()
+        .find(|r| r.info.kind == "tooltip button")
+        .map(|r| r.rect)
+    else {
+        panic!("no tooltip button record");
+    };
+    let mut args = cli(&args);
+    args.pointer = Some((rect.center().x as u16, rect.center().y as u16));
+    let mut harness = open(egui::Theme::Light, args);
+    assert!(
+        harness.query_by_label("A tooltip").is_none(),
+        "the tooltip is open before the pointer is held"
+    );
+    for step in 0..16u32 {
+        let ctx = harness.ctx.clone();
+        let mut input = std::mem::take(harness.input_mut());
+        input.time = Some(f64::from(step) * 0.5);
+        eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+        *harness.input_mut() = input;
+        harness.step();
+    }
+    assert!(
+        harness.query_by_label("A tooltip").is_some(),
+        "no tooltip under the held pointer"
+    );
 }
 
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
