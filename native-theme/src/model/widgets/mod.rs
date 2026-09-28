@@ -1,4 +1,4 @@
-// Per-widget struct pairs: all 25 per-variant widgets + LayoutTheme use #[derive(ThemeWidget)].
+// Per-widget struct pairs: all 26 per-variant widgets + LayoutTheme use #[derive(ThemeWidget)].
 
 use crate::Rgba;
 use crate::model::border::{ResolvedWidgetBorder, WidgetBorderSpec};

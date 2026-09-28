@@ -77,7 +77,7 @@ pub use resolved::{
     Resolved, ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry,
     ResolvedTheme,
 };
-pub use widgets::*; // All 25 XxxTheme + ResolvedXxxTheme pairs
+pub use widgets::*; // All 26 XxxTheme + ResolvedXxxTheme pairs
 
 use std::borrow::Cow;
 

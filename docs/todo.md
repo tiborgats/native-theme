@@ -732,6 +732,40 @@
       KDE's is 7 horizontal and 6 vertical: platform-facts §2.4, kde-breeze
       (and -live), the KDE reader and the documented-sizes gate state it.
 
+### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28)
+
+`tab.item_gap`, `checkbox.check_mark_stroke_width`, `expander.arrow_side` /
+`arrow_gap` / `content_indent` / `frame_enabled` and `[text_area]` are in the
+model, the platform presets and the three connectors
+(`docs/platform-facts.md` §2.11, §2.5, §2.27, §2.29). Left open:
+
+- [ ] **gpui Textarea padding below upstream's editor padding.** gpui-component
+      pads a multi-line field's editor by its `Size`'s `input_px` / `input_py`
+      in render (`input/input.rs:531-541`), and a `Textarea` offers no size
+      (Medium: 10 across, 8 down). `geometry::text_area` pads the root by the
+      rest of a stated side; a smaller side — KDE's 5, GNOME's 0 — stays 10 / 8.
+      Needs an upstream seam (a size or editor padding on `Textarea`).
+- [ ] **macOS text area padding.** NSTextView's `lineFragmentPadding` is 5, but
+      `textContainerInset`'s default is not stated on its documentation page, so
+      the total is not sourced and macos-sonoma states none.
+- [ ] **KDE expander header.** `KCollapsibleGroupBox` puts its 10px arrow in the
+      middle of a 20px indicator box at the widget's edge and sizes the header
+      as `CT_CheckBox` (text + 2 × 2, at least 20); kde-breeze states
+      `expander.header_height_px = 40` and no header padding, while
+      platform-facts §2.27 says the KDE height is content-sized. Neither was
+      changed in this round.
+- [ ] **The expander's arrow glyph.** KDE, GNOME and Windows draw a chevron,
+      macOS a triangle (§2.27, `arrow_side` row); the model states no shape, so
+      the iced showcase and egui draw a filled triangle and gpui a chevron.
+- [ ] **iced Basic tabs under adwaita.** The iced_aw tab bar clips "Three"
+      ("Thr") at `tab.min_width` 64 (seen before this round in the r9 captures).
+- [ ] **egui Inputs page.** `pages/inputs.rs` computes `input_frame` /
+      `text_area_frame` before entering the `Role::Input` scope, so the frame
+      reads the outer `Ui`'s widget visuals.
+- [ ] **Card as a group box** (CORE-PLAN3b item 6): KDE's `QGroupBox` pads 8,
+      macOS's `NSBox` 5 — awaits the maintainer's ruling on whether a group box
+      is the model's card.
+
 ### Progress bar: Breeze's groove, the radii, the shadow
 
 - [ ] Found with the progress-bar border (2026-09-28), not changed: Breeze
