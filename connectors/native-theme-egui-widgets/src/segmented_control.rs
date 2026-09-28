@@ -16,6 +16,16 @@ use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant, ThemeAtlas};
 /// (`egui/src/widgets/button.rs:78-83`) and would lose the background colour. A click on a
 /// segment selects it.
 ///
+/// `segment_height` is a button's minimum height there (`egui/src/widgets/button.rs:307-309`),
+/// which the text and its padding can exceed. Where `segmented_control.border.padding` states
+/// neither its top nor its bottom, the scope's vertical padding is one the theme does not
+/// state for this widget, so it is narrowed, never widened, until a one-line segment is
+/// `segment_height` tall: `0.5 · (segment_height − the tallest label's height)`, since a
+/// button's frame adds its padding exactly on each side — `button_padding + expansion − stroke`
+/// inside, the stroke, `−expansion` outside (`egui/src/widget_style.rs:158-165`) — and its
+/// text is in the style's `override_font_id`, else its Body font (`:137`). A stated padding is
+/// kept as stated.
+///
 /// **What is not drawn**, because no source states it: the divider's line (no leaf states its
 /// colour, so what lies behind the row shows through the gap), and a joined outline (nothing
 /// states whether a segment's corners that face a divider are rounded, so every segment keeps
@@ -52,14 +62,55 @@ impl<'a> SegmentedControl<'a> {
 impl egui::Widget for SegmentedControl<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let SegmentedControl { selected, segments } = self;
-        if ThemeAtlas::from_ctx(ui.ctx()).is_some() {
+        if let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) {
+            let padding = &atlas
+                .resolved_for(ui.ctx().theme())
+                .segmented_control
+                .border
+                .padding;
+            let unstated = padding.top.is_none() && padding.bottom.is_none();
             ui.native_scope(Role::SegmentedControl, RoleVariant::Normal, |ui| {
+                if unstated {
+                    fit_height(ui, &segments);
+                }
                 row(ui, selected, segments)
             })
             .inner
         } else {
             row(ui, selected, segments)
         }
+    }
+}
+
+/// Narrow the scope's vertical button padding until the tallest one-line segment is the
+/// scope's `interact_size.y` (`segment_height`) tall; never widen it. Each label is laid out
+/// as the button lays it out (`egui/src/atomics/atom_kind.rs:134-135`): unwrapped, in the
+/// style's `override_font_id`, else its Body font.
+fn fit_height(ui: &mut egui::Ui, segments: &[egui::WidgetText]) {
+    let font = ui
+        .style()
+        .override_font_id
+        .clone()
+        .unwrap_or_else(|| egui::TextStyle::Body.resolve(ui.style()));
+    let text = segments
+        .iter()
+        .map(|label| {
+            label
+                .clone()
+                .into_galley(
+                    ui,
+                    Some(egui::TextWrapMode::Extend),
+                    f32::INFINITY,
+                    font.clone(),
+                )
+                .size()
+                .y
+        })
+        .fold(0.0, f32::max);
+    let fit = (0.5 * (ui.spacing().interact_size.y - text)).max(0.0);
+    let padding = &mut ui.spacing_mut().button_padding.y;
+    if fit < *padding {
+        *padding = fit;
     }
 }
 

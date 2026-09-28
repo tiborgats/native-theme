@@ -812,9 +812,12 @@ fn the_segments_are_separator_width_apart() {
             f64::from(t.segmented_control.separator_width)
         );
     }
-    // At least `segment_height`: the connector's scope carries it as `interact_size.y`, a
-    // button's minimum height (`egui/src/widgets/button.rs:307-309`).
+    // kde-breeze states no segment padding: the scope's, the button's, is narrowed until the
+    // segment is `segment_height` tall, within egui's layout rounding.
+    assert!(t.segmented_control.border.padding.top.is_none());
     for b in &buttons {
-        assert!(b.y1 - b.y0 >= f64::from(t.segmented_control.segment_height));
+        let height = b.y1 - b.y0;
+        let want = f64::from(t.segmented_control.segment_height);
+        assert!((height - want).abs() < 0.5, "{height} != {want}");
     }
 }
