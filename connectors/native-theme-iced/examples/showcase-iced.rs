@@ -2485,6 +2485,12 @@ const BASIC_WIDTH: f32 = 140.0;
 /// The Basic tab's progress bar value, on 0 to 100: the datum on display.
 const BASIC_PROGRESS: f32 = 40.0;
 
+/// The padding of the Basic tab's link: none, because the theme states none
+/// for a link (`docs/property-registry.toml` `[link]` has no padding; a link
+/// is inline text), where iced's button, which stands in for one, has its
+/// own default.
+const LINK_PADDING: Padding = Padding::ZERO;
+
 /// The rows of the Basic tab's drop-down.
 const BASIC_FRUITS: [Fruit; 3] = [Fruit::Apple, Fruit::Banana, Fruit::Cherry];
 
@@ -2623,10 +2629,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ],
         &[(
             "link",
-            "iced has no link widget: a button in styles::button_link, \
-             padded as a button, as the Buttons tab's Text Style link \
-             (LinkTheme states no padding), its label a rich-text span \
-             underlined where link.underline_enabled",
+            "iced has no link widget: a button in styles::button_link \
+             with no padding, as LinkTheme states none, its label a \
+             rich-text span underlined where link.underline_enabled",
         )],
     );
     let texts = group(
@@ -2644,7 +2649,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             )
             .on_press(Message::ButtonPressed)
             .style(styles::button_link(resolved))
-            .padding(btn_pad),
+            .padding(LINK_PADDING),
         ]
         .spacing(gap.widget)
         .align_y(iced::Center)
@@ -8257,7 +8262,9 @@ mod tests {
     /// padding through one of the connector's padding helpers, rather than a
     /// spacing of the showcase's own or iced's default -- the push buttons
     /// `button.border.padding`, and the buttons that stand in for a menu item
-    /// or a tab that widget's padding.
+    /// or a tab that widget's padding. A button that stands in for a link
+    /// takes `LINK_PADDING`, none, because the theme states none for a link
+    /// (`docs/property-registry.toml` `[link]` has no padding).
     #[test]
     fn themed_buttons_take_the_themes_padding() {
         let source = strip_comments_and_strings(SHOWCASE);
@@ -8282,6 +8289,7 @@ mod tests {
         };
 
         let mut checked = 0usize;
+        let mut links = 0usize;
         let mut unpadded = Vec::new();
         for site in call_sites(&source, "button") {
             if !is_dressed(&source, site, &classes) {
@@ -8289,6 +8297,18 @@ mod tests {
             }
             checked += 1;
             if source[..site].trim_end().ends_with("apply_pad(") {
+                continue;
+            }
+            // A link has no padding: docs/property-registry.toml `[link]`
+            // states none, and `LINK_PADDING` is that none.
+            let unpadded_link = is_dressed(&source, site, &["styles::button_link"])
+                && close_of_call(&source, site).is_some_and(|end| {
+                    method_calls(&source, end)
+                        .iter()
+                        .any(|(name, args)| *name == "padding" && args.trim() == "(LINK_PADDING)")
+                });
+            if unpadded_link {
+                links += 1;
                 continue;
             }
             let padded = close_of_call(&source, site).is_some_and(|end| {
@@ -8301,6 +8321,11 @@ mod tests {
             }
         }
         assert!(checked > 0, "no themed button was found");
+        assert!(
+            links > 0,
+            "no link-styled button takes LINK_PADDING, so the link exemption \
+             describes nothing"
+        );
         assert!(
             unpadded.is_empty(),
             "themed buttons not padded from the theme: {}",
