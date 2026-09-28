@@ -28,10 +28,8 @@
 //! inset is upstream's own, and without one the stated right side is drawn.
 //! Every other builder rests on the source citation in its doc comment.
 
-use std::num::NonZeroU32;
-
 use gpui::{
-    AbsoluteLength, AnyElement, AppContext as _, Bounds, Context, DefiniteLength, ImageSource,
+    AbsoluteLength, AnyElement, AppContext as _, Bounds, Context, DefiniteLength,
     InteractiveElement as _, IntoElement, Length, ParentElement as _, Pixels, Render, SharedString,
     Size, StyleRefinement, Styled as _, TestAppContext, Window, div, px,
 };
@@ -45,9 +43,9 @@ use gpui_component::{
     select::{SearchableVec, Select, SelectItem, SelectState},
     tooltip::Tooltip,
 };
-use native_theme::theme::{AnimatedIcon, ColorMode, IconData, ResolvedTheme, Theme};
+use native_theme::theme::{ColorMode, ResolvedTheme, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext};
-use native_theme_gpui::{ActiveNativeTheme as _, Native, apply, geometry, icons, to_theme};
+use native_theme_gpui::{ActiveNativeTheme as _, Native, apply, geometry, to_theme};
 
 fn scaled_by(factor: f32) -> AccessibilityPreferences {
     AccessibilityPreferences {
@@ -238,81 +236,97 @@ fn progress(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harness
 
 // --- Icons: what an animated icon shows on its first frame -----------------
 
-/// The size one animation frame is rasterised at here; a size this file names,
-/// so the expected bounds are that number and not a default.
-const FRAME_SIZE: u32 = 32;
-const FRAME_SVG: &[u8] = b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+/// The first-draw promise is the `svg-rasterize` feature's: without it an SVG
+/// frame is an undecoded `ImageSource::Image`, which gpui decodes in the
+/// background and which is blank the first time it is shown, as
+/// `icons::animated_frames_to_image_sources` documents.
+#[cfg(feature = "svg-rasterize")]
+mod first_draw {
+    use std::num::NonZeroU32;
+
+    use gpui::{
+        Context, ImageSource, InteractiveElement as _, IntoElement, ParentElement as _, Render,
+        Styled as _, TestAppContext, Window, div, px,
+    };
+    use native_theme::theme::{AnimatedIcon, IconData};
+    use native_theme_gpui::icons;
+
+    /// The size one animation frame is rasterised at here; a size this file names,
+    /// so the expected bounds are that number and not a default.
+    const FRAME_SIZE: u32 = 32;
+    const FRAME_SVG: &[u8] = b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
                            <circle cx='12' cy='12' r='10' fill='red'/></svg>";
 
-/// The first frame of a frame-based animation, converted the way the showcase
-/// converts the ones it caches.
-fn first_animation_frame() -> Option<ImageSource> {
-    let frame = IconData::Svg(std::borrow::Cow::Borrowed(FRAME_SVG));
-    let anim = AnimatedIcon::frames(
-        vec![frame.clone(), frame.clone(), frame],
-        NonZeroU32::new(80)?,
-    )
-    .ok()?;
-    icons::animated_frames_to_image_sources(&anim, None, Some(FRAME_SIZE))?
-        .sources
-        .into_iter()
-        .next()
-}
-
-/// A view that shows the frame only once it is asked to.
-///
-/// `add_window_view` runs the executor to a standstill before it returns
-/// (gpui-pre `src/app/test_context.rs:342-367`), so an element built in the
-/// opening frame has had every asynchronous decode finish behind it. Holding
-/// the frame back means the draw the test asks for is the first one that ever
-/// needs the image, which is the frame the maintainer sees blink.
-struct FirstDraw {
-    showing: bool,
-}
-
-impl Render for FirstDraw {
-    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
-        let frame = match (self.showing, first_animation_frame()) {
-            (true, Some(source)) => gpui::img(source).into_any_element(),
-            _ => div().into_any_element(),
-        };
-        div().size(px(600.)).flex().items_start().child(
-            div()
-                .debug_selector(|| "probe".into())
-                .flex_none()
-                .child(frame),
+    /// The first frame of a frame-based animation, converted the way the showcase
+    /// converts the ones it caches.
+    fn first_animation_frame() -> Option<ImageSource> {
+        let frame = IconData::Svg(std::borrow::Cow::Borrowed(FRAME_SVG));
+        let anim = AnimatedIcon::frames(
+            vec![frame.clone(), frame.clone(), frame],
+            NonZeroU32::new(80)?,
         )
+        .ok()?;
+        icons::animated_frames_to_image_sources(&anim, None, Some(FRAME_SIZE))?
+            .sources
+            .into_iter()
+            .next()
     }
-}
 
-/// An animated icon is on the screen in the frame it first appears in.
-///
-/// An `img` whose size is auto takes the image's own size, and it can only do
-/// that once the image data is in hand (gpui-pre
-/// `src/elements/img.rs:348-380`); with no data it lays out at nothing and
-/// paints nothing. `ImageSource::Image` is answered by
-/// `window.use_asset`, which returns `None` until a background decode finishes
-/// (`src/elements/img.rs:534-553`), so every frame of an animation is blank
-/// the first time it comes up -- the blink. `ImageSource::Render` is answered
-/// from the value itself, in the same frame.
-#[gpui::test]
-fn an_animation_frame_is_there_on_its_first_draw(cx: &mut TestAppContext) {
-    let (view, cx) = cx.add_window_view(|_, _| FirstDraw { showing: false });
-    cx.update(|_window, cx| {
-        view.update(cx, |this, cx| {
-            this.showing = true;
-            cx.notify();
+    /// A view that shows the frame only once it is asked to.
+    ///
+    /// `add_window_view` runs the executor to a standstill before it returns
+    /// (gpui-pre `src/app/test_context.rs:342-367`), so an element built in the
+    /// opening frame has had every asynchronous decode finish behind it. Holding
+    /// the frame back means the draw the test asks for is the first one that ever
+    /// needs the image, which is the frame the maintainer sees blink.
+    struct FirstDraw {
+        showing: bool,
+    }
+
+    impl Render for FirstDraw {
+        fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+            let frame = match (self.showing, first_animation_frame()) {
+                (true, Some(source)) => gpui::img(source).into_any_element(),
+                _ => div().into_any_element(),
+            };
+            div().size(px(600.)).flex().items_start().child(
+                div()
+                    .debug_selector(|| "probe".into())
+                    .flex_none()
+                    .child(frame),
+            )
+        }
+    }
+
+    /// An animated icon is on the screen in the frame it first appears in.
+    ///
+    /// An `img` whose size is auto takes the image's own size, and it can only do
+    /// that once the image data is in hand (gpui-pre
+    /// `src/elements/img.rs:348-380`); with no data it lays out at nothing and
+    /// paints nothing. `ImageSource::Image` is answered by
+    /// `window.use_asset`, which returns `None` until a background decode finishes
+    /// (`src/elements/img.rs:534-553`), so every frame of an animation is blank
+    /// the first time it comes up -- the blink. `ImageSource::Render` is answered
+    /// from the value itself, in the same frame.
+    #[gpui::test]
+    fn an_animation_frame_is_there_on_its_first_draw(cx: &mut TestAppContext) {
+        let (view, cx) = cx.add_window_view(|_, _| FirstDraw { showing: false });
+        cx.update(|_window, cx| {
+            view.update(cx, |this, cx| {
+                this.showing = true;
+                cx.notify();
+            });
         });
-    });
-    cx.update(|window, cx| window.draw(cx).clear(cx));
-    let probe = cx.debug_bounds("probe");
-    let raster = px(FRAME_SIZE as f32);
-    assert_eq!(
-        probe.map(|b| b.size),
-        Some(gpui::size(raster, raster)),
-        "the frame laid out at {probe:?} on the draw it first appeared in, so gpui \
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        let probe = cx.debug_bounds("probe");
+        let raster = px(FRAME_SIZE as f32);
+        assert_eq!(
+            probe.map(|b| b.size),
+            Some(gpui::size(raster, raster)),
+            "the frame laid out at {probe:?} on the draw it first appeared in, so gpui \
          had no image to measure and painted nothing"
-    );
+        );
+    }
 }
 
 /// kde-breeze states a 300 px tooltip with a 3 px padding on the left and the
