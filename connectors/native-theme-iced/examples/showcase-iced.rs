@@ -59,7 +59,9 @@ use native_theme_iced::icons::{
 };
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
-use native_theme_iced::{AccessibilityPreferences, scaled_text_size};
+use native_theme_iced::{
+    AccessibilityPreferences, at_least, combo_box_padding, control_line_height, scaled_text_size,
+};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -144,6 +146,9 @@ mod probes {
     pub const RADIO_BANANA: &str = "probe-radio-banana";
     pub const RADIO_CHERRY: &str = "probe-radio-cherry";
     pub const BASIC_RADIO_B: &str = "probe-basic-radio-b";
+    pub const BASIC_BUTTON: &str = "probe-basic-button";
+    pub const BASIC_TEXT_INPUT: &str = "probe-basic-text-input";
+    pub const BASIC_PICK_LIST: &str = "probe-basic-pick-list";
     pub const TOGGLER: &str = "probe-toggler";
     pub const PICK_LIST: &str = "probe-pick-list";
     pub const COMBO_BOX: &str = "probe-combo-box";
@@ -2273,24 +2278,30 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         )
     };
     let font = &resolved.button.font;
+    // `button.min_width` and `button.min_height`, as a floor under the label.
+    let btn_min = native_theme_iced::button_content_min_size(resolved);
 
     let buttons = group(
         "Buttons",
         button_info(state),
         row![
-            button(text("Button").typeset(font, a11y))
-                .on_press(Message::ButtonPressed)
-                .style(styles::button(resolved))
-                .padding(btn_pad),
-            button(text("Primary").typeset(font, a11y))
+            probe(
+                probes::BASIC_BUTTON,
+                Length::Shrink,
+                button(at_least(text("Button").typeset(font, a11y), btn_min))
+                    .on_press(Message::ButtonPressed)
+                    .style(styles::button(resolved))
+                    .padding(btn_pad),
+            ),
+            button(at_least(text("Primary").typeset(font, a11y), btn_min))
                 .on_press(Message::ButtonPressed)
                 .style(styles::button_primary(resolved))
                 .padding(btn_pad),
-            button(text("Disabled").typeset(font, a11y))
+            button(at_least(text("Disabled").typeset(font, a11y), btn_min))
                 .style(styles::button(resolved))
                 .padding(btn_pad),
             tooltip(
-                button(text("Tooltip").typeset(font, a11y))
+                button(at_least(text("Tooltip").typeset(font, a11y), btn_min))
                     .on_press(Message::ButtonPressed)
                     .style(styles::button(resolved))
                     .padding(btn_pad),
@@ -2401,9 +2412,13 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
+    let input_size = scaled_text_size(resolved.input.font.size, a11y);
+    // `input.min_height`, as the line box that fills it inside the padding.
+    let input_line = control_line_height(resolved, input_size, resolved.input.min_height, inp_pad);
     let field = |placeholder: &'a str, value: &'a str| {
         text_input(placeholder, value)
-            .size(scaled_text_size(resolved.input.font.size, a11y))
+            .size(input_size)
+            .line_height(input_line)
             .font(theme_font(&resolved.input.font))
             .style(styles::text_input(resolved))
             .padding(inp_pad)
@@ -2414,7 +2429,11 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         "Text inputs",
         text_input_info(state),
         row![
-            field("Placeholder", &state.basic_hint).on_input(Message::BasicHintChanged),
+            probe(
+                probes::BASIC_TEXT_INPUT,
+                Length::Shrink,
+                field("Placeholder", &state.basic_hint).on_input(Message::BasicHintChanged),
+            ),
             field("", &state.basic_text).on_input(Message::BasicTextChanged),
             field("", "Disabled"),
         ]
@@ -2422,21 +2441,34 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
+    let combo_size = scaled_text_size(resolved.combo_box.font.size, a11y);
+    let combo_pad = combo_box_padding(resolved);
     let drop_down = group(
         "Drop-down",
         pick_list_info(resolved),
-        pick_list(
-            BASIC_FRUITS,
-            Some(state.basic_fruit),
-            Message::BasicFruitSelected,
-        )
-        .handle(arrow_handle(resolved))
-        .text_size(scaled_text_size(resolved.combo_box.font.size, a11y))
-        .font(theme_font(&resolved.combo_box.font))
-        .style(styles::pick_list(resolved))
-        .menu_style(styles::menu(resolved))
-        .width(Length::Fixed(BASIC_WIDTH))
-        .into(),
+        probe(
+            probes::BASIC_PICK_LIST,
+            Length::Shrink,
+            pick_list(
+                BASIC_FRUITS,
+                Some(state.basic_fruit),
+                Message::BasicFruitSelected,
+            )
+            .handle(arrow_handle(resolved))
+            .padding(combo_pad)
+            // `combo_box.min_height`, as the line box that fills it inside the padding.
+            .text_line_height(control_line_height(
+                resolved,
+                combo_size,
+                resolved.combo_box.min_height,
+                combo_pad,
+            ))
+            .text_size(combo_size)
+            .font(theme_font(&resolved.combo_box.font))
+            .style(styles::pick_list(resolved))
+            .menu_style(styles::menu(resolved))
+            .width(Length::Fixed(BASIC_WIDTH)),
+        ),
     );
 
     let slider_group = group(
@@ -8201,6 +8233,69 @@ mod tests {
         }
     }
 
+    /// The Basic tab's push button, text field and drop-down are laid out at
+    /// the minimum sizes the theme states (`button.min_width` and
+    /// `.min_height`, `input.min_height`, `combo_box.min_height`), or at their
+    /// own size where their content, padded, is larger — as gpui-component's
+    /// are through `native_theme_gpui::geometry` and the platform's own are.
+    #[test]
+    fn basic_controls_take_the_stated_minimum_sizes() {
+        for preset in ["kde-breeze", "adwaita", "material"] {
+            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let r = resolved.clone();
+            let own = |size: f32, pad: Padding| size * r.defaults.line_height + pad.y();
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                active_tab: Tab::Basic,
+                ..State::default()
+            };
+            let mut ui = interface(&state);
+
+            let button = probe_bounds(&mut ui, probes::BASIC_BUTTON);
+            let label = height_of(&mut ui, "Button");
+            let pad = native_theme_iced::button_padding(&r);
+            assert!(
+                button.width >= r.button.min_width - 0.01,
+                "{preset}: the button is {}px wide, button.min_width is {}px",
+                button.width,
+                r.button.min_width
+            );
+            let expected = r.button.min_height.max(label + pad.y());
+            assert!(
+                (button.height - expected).abs() < 0.01,
+                "{preset}: the button is {}px tall, expected {expected}px",
+                button.height
+            );
+
+            let input = probe_bounds(&mut ui, probes::BASIC_TEXT_INPUT);
+            let expected = r
+                .input
+                .min_height
+                .max(own(r.input.font.size, native_theme_iced::input_padding(&r)));
+            assert!(
+                (input.height - expected).abs() < 0.01,
+                "{preset}: the text input is {}px tall, expected {expected}px",
+                input.height
+            );
+
+            let pick = probe_bounds(&mut ui, probes::BASIC_PICK_LIST);
+            let expected = r.combo_box.min_height.max(own(
+                r.combo_box.font.size,
+                native_theme_iced::combo_box_padding(&r),
+            ));
+            assert!(
+                (pick.height - expected).abs() < 0.01,
+                "{preset}: the drop-down is {}px tall, expected {expected}px",
+                pick.height
+            );
+        }
+    }
+
     /// The user's text-scaling factor reaches every text alike: at 1.5, a
     /// button label and body text are both drawn at 1.5 times the theme's size.
     #[test]
@@ -8696,6 +8791,8 @@ mod tests {
                 Some(end) => source[site + "button(".len()..end].trim_start(),
                 None => "",
             };
+            // A label under the button's minimum size is still a text.
+            let label = label.strip_prefix("at_least(").unwrap_or(label);
             if !label.starts_with("text(") {
                 by_iced.push(format!("button at :{}", line_at(&source, site)));
             }

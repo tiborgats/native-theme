@@ -172,8 +172,9 @@ that needs dismissing a themed button of its own instead.
 | the palette only, no `iced_widget` | `default-features = false` |
 | the palette plus icons, no `iced_widget` | `default-features = false, features = ["lucide-icons"]` |
 
-`widgets` (default) enables `styles` and the `button_padding` and
-`input_padding` helpers; `iced_aw` (opt-in, implies `widgets`)
+`widgets` (default) enables `styles` and the `button_padding`,
+`input_padding`, `combo_box_padding`, `button_content_min_size` and
+`at_least` helpers; `iced_aw` (opt-in, implies `widgets`)
 enables `styles::aw`. It is off by default because `iced_aw` is a third-party
 crate with its own release cadence and an embedded icon font. The icon
 features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
@@ -195,8 +196,10 @@ let radius  = border_radius(&resolved);
 // Apply with .padding(padding), .border(...) on your widget builders.
 ```
 
-Full helper list: `button_padding`, `input_padding`, `padding_or`,
-`stated_padding`, `border_radius`, `border_radius_lg`, `scrollbar_width`,
+Full helper list: `button_padding`, `input_padding`, `combo_box_padding`,
+`padding_or`, `padding_inside_border`, `stated_padding`,
+`control_line_height`, `button_content_min_size`, `at_least`,
+`border_radius`, `border_radius_lg`, `scrollbar_width`,
 `font_family`, `font_size`, `font_weight`, `mono_font_family`,
 `mono_font_size`, `mono_font_weight`, `system_font_family` (feature
 `system-fonts`), `scaled_text_size`,
@@ -206,10 +209,42 @@ Full helper list: `button_padding`, `input_padding`, `padding_or`,
 `warning_foreground_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum.
 
-`button_padding` and `input_padding` need the `widgets` feature (on by
-default). Each side is the theme's where it states that side; a side it does
-not state is iced's own default, `iced_widget::button::DEFAULT_PADDING` or
+`button_padding`, `input_padding` and `combo_box_padding` need the `widgets`
+feature (on by default). Each side is the theme's where it states that side,
+plus the border's line width: the theme's padding lies inside the border,
+and iced paints the border inside the widget's bounds, over its padding
+(`padding_inside_border`). A side the theme does not state is iced's own
+default, `iced_widget::button::DEFAULT_PADDING` or
 `iced_widget::text_input::DEFAULT_PADDING`.
+
+### Minimum sizes
+
+iced's size setters take the extent itself, so a platform minimum passed to
+`Button::height` would make the button exactly that tall. A single-line
+control reaches its minimum height through its line height instead, and a
+button through a floor under its label:
+
+```rust,ignore
+use iced::widget::{button, pick_list, text, text_input};
+use native_theme_iced::{
+    at_least, button_content_min_size, button_padding, combo_box_padding,
+    control_line_height, input_padding, styles,
+};
+
+let size = resolved.input.font.size;
+let field = text_input("Name", &value)
+    .size(size)
+    .padding(input_padding(&resolved))
+    .line_height(control_line_height(
+        &resolved, size, resolved.input.min_height, input_padding(&resolved),
+    ));
+let save = button(at_least(text("Save"), button_content_min_size(&resolved)))
+    .padding(button_padding(&resolved))
+    .style(styles::button(&resolved));
+```
+
+`combo_box.min_height` reaches a `PickList` the same way, through
+`text_line_height` with `combo_box_padding`.
 
 For any other widget the theme states a padding for, `padding_or(&stated,
 default)` does the same over a default you name — a menu item drawn as a

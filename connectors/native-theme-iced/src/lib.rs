@@ -63,15 +63,16 @@
 //!
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
-//! | `widgets` | yes | `styles`, `button_padding` and `input_padding`, through `iced_widget` |
+//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `combo_box_padding`, `button_content_min_size` and `at_least`, through `iced_widget` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
 //! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, through `native-theme/system-fonts` |
 //!
 //! Every feature adds coverage. `default-features = false` leaves the palette
-//! and the metric helpers that need `iced_core` only; `button_padding` and
-//! `input_padding` read iced's own default padding from `iced_widget`, so
-//! `widgets` gates them as well.
+//! and the metric helpers that need `iced_core` only; `button_padding`,
+//! `input_padding`, `combo_box_padding` and `button_content_min_size` read
+//! iced's own default padding from `iced_widget`, and `at_least` lays out
+//! `iced_widget`'s column, row and space, so `widgets` gates them as well.
 //!
 //! # Accessibility
 //!
@@ -157,7 +158,7 @@
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
 //! | `styles` (20 items) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input padding (the stated sides, iced's own default for the others; `widgets` feature), any other widget's padding over a default the caller names (`padding_or`) or where every side is stated (`stated_padding`), border radius, scrollbar width | Per-widget resolved fields |
+//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
@@ -169,10 +170,14 @@
 //! builder -- `Checkbox::size`, `Toggler::size`, `ProgressBar::girth`, the
 //! thickness argument of `rule::horizontal`, `TextEditor::min_height` for
 //! `input.min_height`. Where a widget has such a receiver, its `styles`
-//! function's doc comment names it. Most minimum sizes have none: a button's,
-//! a combo box's or a progress bar's width setter takes the extent itself,
-//! with no minimum form, so a platform minimum passed there makes the widget
-//! exactly that size.
+//! function's doc comment names it. A widget's size setter takes the extent
+//! itself, with no minimum form, so a platform minimum passed there would
+//! make the widget exactly that size; the minimum heights of the single-line
+//! controls reach iced as a line height instead ([`control_line_height()`],
+//! for `input.min_height` and `combo_box.min_height`), and a button's
+//! minimum size as a floor under its label ([`at_least()`] of
+//! [`button_content_min_size()`]). A combo box's or a progress bar's minimum
+//! width has no receiver.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -363,10 +368,42 @@ pub fn stated_padding(stated: &native_theme::theme::ResolvedPadding) -> Option<i
     })
 }
 
+/// Returns each side a widget border's padding states, plus the border's line
+/// width, and `default`'s side where it states none.
+///
+/// The model's padding lies inside the border (`ResolvedWidgetBorder::padding`,
+/// "padding inside the border"), while iced lays a widget's content out
+/// `padding` in from the widget's bounds (`layout::padded`, iced_core 0.14.0
+/// `src/layout.rs:170-199`) and paints the border inside those same bounds,
+/// over the padding (`renderer::Quad { bounds, border, .. }`, iced_widget
+/// 0.14.2 `src/button.rs:382-388`, `src/text_input.rs:473-478`,
+/// `src/pick_list.rs:590-595`). So a stated side reaches iced as the side
+/// plus the line width, and the content sits where the platform puts it. An
+/// unstated side is `default`'s, the widget's own geometry, measured as iced
+/// measures it.
+#[must_use]
+pub fn padding_inside_border(
+    border: &native_theme::theme::ResolvedWidgetBorder,
+    default: iced_core::Padding,
+) -> iced_core::Padding {
+    let side = |stated: Option<f32>, default: f32| match stated {
+        Some(v) => v + border.line_width,
+        None => default,
+    };
+    let stated = &border.padding;
+    iced_core::Padding {
+        top: side(stated.top, default.top),
+        right: side(stated.right, default.right),
+        bottom: side(stated.bottom, default.bottom),
+        left: side(stated.left, default.left),
+    }
+}
+
 /// Returns button padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
 ///
-/// Each side is `button.border.padding`'s side where the theme states it,
-/// and iced's own button padding where it does not:
+/// [`padding_inside_border()`] of `button.border`: each side is the stated
+/// side plus `button.border.line_width` where the theme states it, and iced's
+/// own button padding where it does not:
 /// `iced_widget::button::DEFAULT_PADDING` (iced_widget 0.14.2
 /// `src/button.rs:462`), 5 top and bottom, 10 left and right.
 ///
@@ -374,16 +411,17 @@ pub fn stated_padding(stated: &native_theme::theme::ResolvedPadding) -> Option<i
 #[cfg(feature = "widgets")]
 #[must_use]
 pub fn button_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
-    padding_or(
-        &resolved.button.border.padding,
+    padding_inside_border(
+        &resolved.button.border,
         iced_widget::button::DEFAULT_PADDING,
     )
 }
 
 /// Returns text input padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
 ///
-/// Each side is `input.border.padding`'s side where the theme states it,
-/// and iced's own text-input padding where it does not:
+/// [`padding_inside_border()`] of `input.border`: each side is the stated
+/// side plus `input.border.line_width` where the theme states it, and iced's
+/// own text-input padding where it does not:
 /// `iced_widget::text_input::DEFAULT_PADDING` (iced_widget 0.14.2
 /// `src/text_input.rs:125`), 5 on every side.
 ///
@@ -391,10 +429,110 @@ pub fn button_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_cor
 #[cfg(feature = "widgets")]
 #[must_use]
 pub fn input_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
-    padding_or(
-        &resolved.input.border.padding,
+    padding_inside_border(
+        &resolved.input.border,
         iced_widget::text_input::DEFAULT_PADDING,
     )
+}
+
+/// Returns pick-list padding from the resolved theme as an iced [`Padding`](iced_core::Padding),
+/// for `PickList::padding`.
+///
+/// [`padding_inside_border()`] of `combo_box.border`: each side is the stated
+/// side plus `combo_box.border.line_width` where the theme states it, and
+/// iced's own pick-list padding where it does not, the button's
+/// `iced_widget::button::DEFAULT_PADDING` (iced_widget 0.14.2
+/// `src/pick_list.rs:204`). The arrow is drawn right-aligned at the right
+/// padding's inner edge (`src/pick_list.rs:636-660`), so a stated right side
+/// measured to the platform's arrow column (`combo_box.arrow_area_width`)
+/// puts the arrow's box in that column.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn combo_box_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
+    padding_inside_border(
+        &resolved.combo_box.border,
+        iced_widget::button::DEFAULT_PADDING,
+    )
+}
+
+/// Returns the line height for a single-line control's text that makes the
+/// control at least `min_height` tall inside `padding`: the theme's own line
+/// box, `defaults.line_height` times `text_size`, where that reaches the
+/// minimum already, and otherwise the height the minimum leaves inside the
+/// padding.
+///
+/// For `TextInput::line_height`, `PickList::text_line_height` and a button
+/// label's `Text::line_height`: iced lays each out one text line plus its
+/// padding tall (`text_input.rs:309`, `pick_list.rs:421-432`, `button.rs:242-254`)
+/// with no minimum-height setter, and centres the text in its line box
+/// (`alignment::Vertical::Center`, `text_input.rs:321`, `pick_list.rs:382`),
+/// so a taller line box is the control's minimum height. Pass the text size
+/// the control is drawn at (scaled by the text-scaling factor): at a large
+/// factor the line box grows past the minimum, and the control with it.
+#[must_use]
+pub fn control_line_height(
+    resolved: &native_theme::theme::ResolvedTheme,
+    text_size: f32,
+    min_height: f32,
+    padding: iced_core::Padding,
+) -> iced_core::text::LineHeight {
+    let own = text_size * resolved.defaults.line_height;
+    let room = min_height - padding.top - padding.bottom;
+    iced_core::text::LineHeight::Absolute(iced_core::Pixels(own.max(room)))
+}
+
+/// Returns the smallest content box a themed button has: `button.min_width`
+/// and `button.min_height`, outer sizes (`docs/platform-facts.md`, "minimum
+/// outer width/height"), less [`button_padding()`] on each side, and never
+/// below zero. Hand it to [`at_least()`] round the button's label.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn button_content_min_size(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Size {
+    let b = &resolved.button;
+    let p = button_padding(resolved);
+    iced_core::Size::new(
+        (b.min_width - p.left - p.right).max(0.0),
+        (b.min_height - p.top - p.bottom).max(0.0),
+    )
+}
+
+/// Lays `content` out at least `min` wide and tall, centred in the room the
+/// minimum gives it, and at its own size where that is larger.
+///
+/// iced's widgets take their extent (`Button::width`, `Button::height`) with
+/// no minimum form, so a platform minimum passed there would make the widget
+/// exactly that size. This column holds a `min.width`-wide space above a row
+/// of a `min.height`-tall space and the content: a column is as wide as its
+/// widest child and a row as tall as its tallest, so the pair is the floor,
+/// and the content grows past it. `button(at_least(label, button_content_min_size(&r)))`
+/// is a button at least `button.min_width` by `button.min_height`.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn at_least<'a, Message, Theme, Renderer>(
+    content: impl Into<iced_core::Element<'a, Message, Theme, Renderer>>,
+    min: iced_core::Size,
+) -> iced_core::Element<'a, Message, Theme, Renderer>
+where
+    Message: 'a,
+    Theme: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    iced_widget::Column::new()
+        .push(iced_widget::Space::new().width(min.width))
+        .push(
+            iced_widget::Row::new()
+                .push(iced_widget::Space::new().height(min.height))
+                .push(content)
+                .align_y(iced_core::alignment::Vertical::Center),
+        )
+        .align_x(iced_core::alignment::Horizontal::Center)
+        .into()
 }
 
 /// Returns the standard border radius from the resolved theme.
@@ -805,10 +943,17 @@ mod tests {
     fn button_padding_fills_unstated_sides_from_iceds_default() {
         let mut resolved = make_resolved(false);
         resolved.button.border.padding = partly_stated();
+        resolved.button.border.line_width = 2.0;
         let pad = button_padding(&resolved);
         let default = iced_widget::button::DEFAULT_PADDING;
-        assert_eq!(pad.top, 0.0, "a stated zero is the theme's");
-        assert_eq!(pad.left, 7.0, "a stated side is the theme's");
+        assert_eq!(
+            pad.top, 2.0,
+            "a stated zero is the theme's, inside the border"
+        );
+        assert_eq!(
+            pad.left, 9.0,
+            "a stated side is the theme's, inside the border"
+        );
         assert_eq!(pad.right, default.right, "an unstated side is iced's");
         assert_eq!(pad.bottom, default.bottom, "an unstated side is iced's");
     }
@@ -818,12 +963,123 @@ mod tests {
     fn input_padding_fills_unstated_sides_from_iceds_default() {
         let mut resolved = make_resolved(false);
         resolved.input.border.padding = partly_stated();
+        resolved.input.border.line_width = 2.0;
         let pad = input_padding(&resolved);
         let default = iced_widget::text_input::DEFAULT_PADDING;
-        assert_eq!(pad.top, 0.0, "a stated zero is the theme's");
-        assert_eq!(pad.left, 7.0, "a stated side is the theme's");
+        assert_eq!(
+            pad.top, 2.0,
+            "a stated zero is the theme's, inside the border"
+        );
+        assert_eq!(
+            pad.left, 9.0,
+            "a stated side is the theme's, inside the border"
+        );
         assert_eq!(pad.right, default.right, "an unstated side is iced's");
         assert_eq!(pad.bottom, default.bottom, "an unstated side is iced's");
+    }
+
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn combo_box_padding_fills_unstated_sides_from_iceds_default() {
+        let mut resolved = make_resolved(false);
+        resolved.combo_box.border.padding = partly_stated();
+        resolved.combo_box.border.line_width = 2.0;
+        let pad = combo_box_padding(&resolved);
+        let default = iced_widget::button::DEFAULT_PADDING;
+        assert_eq!(
+            pad.top, 2.0,
+            "a stated zero is the theme's, inside the border"
+        );
+        assert_eq!(
+            pad.left, 9.0,
+            "a stated side is the theme's, inside the border"
+        );
+        assert_eq!(pad.right, default.right, "an unstated side is iced's");
+        assert_eq!(pad.bottom, default.bottom, "an unstated side is iced's");
+    }
+
+    /// kde-breeze states a 32px minimum for the button, the text input and
+    /// the combo box, and a 13.33px body font at a 1.36 line height: each
+    /// control's line box fills the minimum inside its padding, and the
+    /// theme's own line box stands where it is taller.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn control_line_height_reaches_the_stated_minimum() {
+        let r = make_resolved_preset("kde-breeze", false);
+        let line = |size: f32, min: f32, pad: iced_core::Padding| match control_line_height(
+            &r, size, min, pad,
+        ) {
+            iced_core::text::LineHeight::Absolute(px) => px.0,
+            iced_core::text::LineHeight::Relative(_) => f32::NAN,
+        };
+        for (what, size, min, pad) in [
+            (
+                "input",
+                r.input.font.size,
+                r.input.min_height,
+                input_padding(&r),
+            ),
+            (
+                "combo box",
+                r.combo_box.font.size,
+                r.combo_box.min_height,
+                combo_box_padding(&r),
+            ),
+        ] {
+            let height = line(size, min, pad) + pad.top + pad.bottom;
+            let own = size * r.defaults.line_height + pad.top + pad.bottom;
+            assert_eq!(height, min.max(own), "{what}: {height} for {min}");
+        }
+        // The input is 3 + 1 top and bottom: its line box is 24, not 18.13.
+        assert_eq!(line(r.input.font.size, 32.0, input_padding(&r)), 24.0);
+        // A minimum below the theme's own line box leaves that line box.
+        let own = r.defaults.font.size * r.defaults.line_height;
+        assert_eq!(line(r.defaults.font.size, 0.0, input_padding(&r)), own);
+    }
+
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn button_content_min_size_is_the_minimum_inside_the_padding() {
+        let r = make_resolved_preset("kde-breeze", false);
+        let p = button_padding(&r);
+        let min = button_content_min_size(&r);
+        assert_eq!(min.width + p.left + p.right, r.button.min_width);
+        assert_eq!(min.height + p.top + p.bottom, r.button.min_height);
+        // kde-breeze: 80 x 32 outer, 6 + 1 on every side.
+        assert_eq!((min.width, min.height), (66.0, 18.0));
+        let mut small = r.clone();
+        small.button.min_width = 0.0;
+        small.button.min_height = 0.0;
+        let none = button_content_min_size(&small);
+        assert_eq!((none.width, none.height), (0.0, 0.0), "never below zero");
+    }
+
+    /// `at_least` is the floor and no ceiling: laid out headlessly (iced's
+    /// null renderer, `()`), smaller content takes the minimum and larger
+    /// content its own size.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn at_least_is_a_floor_under_the_content() {
+        use iced_core::widget::Tree;
+        let size_of = |content: iced_core::Size, min: iced_core::Size| {
+            let mut element: iced_core::Element<'_, (), iced_core::Theme, ()> = at_least(
+                iced_widget::Space::new()
+                    .width(content.width)
+                    .height(content.height),
+                min,
+            );
+            let mut tree = Tree::new(&element);
+            let limits = iced_core::layout::Limits::new(
+                iced_core::Size::ZERO,
+                iced_core::Size::new(1000.0, 1000.0),
+            );
+            let node = element.as_widget_mut().layout(&mut tree, &(), &limits);
+            (node.size().width, node.size().height)
+        };
+        let min = iced_core::Size::new(66.0, 18.0);
+        assert_eq!(size_of(iced_core::Size::new(41.0, 10.0), min), (66.0, 18.0));
+        assert_eq!(size_of(iced_core::Size::new(90.0, 25.0), min), (90.0, 25.0));
+        assert_eq!(size_of(iced_core::Size::new(90.0, 10.0), min), (90.0, 18.0));
     }
 
     #[test]
@@ -883,18 +1139,22 @@ mod tests {
     #[test]
     fn stated_padding_sides_are_the_themes() {
         let resolved = make_resolved_preset("windows-11", false);
-        for (what, stated, pad) in [
+        for (what, border, pad) in [
+            ("button", &resolved.button.border, button_padding(&resolved)),
+            ("input", &resolved.input.border, input_padding(&resolved)),
             (
-                "button",
-                resolved.button.border.padding,
-                button_padding(&resolved),
-            ),
-            (
-                "input",
-                resolved.input.border.padding,
-                input_padding(&resolved),
+                "combo box",
+                &resolved.combo_box.border,
+                combo_box_padding(&resolved),
             ),
         ] {
+            let inside = |side: Option<f32>| side.map(|v| v + border.line_width);
+            let stated = native_theme::theme::ResolvedPadding {
+                top: inside(border.padding.top),
+                right: inside(border.padding.right),
+                bottom: inside(border.padding.bottom),
+                left: inside(border.padding.left),
+            };
             let mut compared = 0usize;
             for (side, stated, got) in [
                 ("top", stated.top, pad.top),
