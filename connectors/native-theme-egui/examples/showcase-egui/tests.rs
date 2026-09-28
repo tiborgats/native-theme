@@ -1805,6 +1805,99 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
     }
 }
 
+/// The Basic page applies the leaves egui never reads from the style, per call, as the connector
+/// spec asks of the application (§5.3, §5.4): each push button is at least `button.min_width`
+/// wide and `button.min_height` tall, each text field `input.min_height` tall; the disabled
+/// field is filled with `input.disabled_background`, its frame built in the disabled cell; and
+/// the link's text is underlined, at rest, exactly where `link.underline_enabled` says so
+/// (kde-breeze states it, material does not).
+#[test]
+fn the_basic_page_applies_the_per_call_leaves() {
+    for preset in ["kde-breeze", "material"] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "basic")]),
+        );
+        harness.run_steps(4);
+        harness.remove_cursor();
+        harness.run_steps(2);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let rect_of = |kind: &str| {
+            harness
+                .state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == kind)
+                .map(|r| r.rect)
+                .unwrap_or_else(|| panic!("{preset}: no record of kind {kind}"))
+        };
+        for kind in [
+            "button (enabled)",
+            "button (suggested action)",
+            "button (disabled)",
+            "tooltip button",
+        ] {
+            let rect = rect_of(kind);
+            assert!(
+                rect.width() >= t.button.min_width - 0.01
+                    && rect.height() >= t.button.min_height - 0.01,
+                "{preset}: {kind} is {rect:?}, under button.min_width x min_height"
+            );
+        }
+        for kind in [
+            "TextEdit (hint)",
+            "TextEdit (single line)",
+            "TextEdit (disabled)",
+        ] {
+            let rect = rect_of(kind);
+            assert!(
+                rect.height() >= t.input.min_height - 0.01,
+                "{preset}: {kind} is {rect:?}, under input.min_height"
+            );
+        }
+        let disabled = rect_of("TextEdit (disabled)");
+        // Both presets state it; `None` would be filled with nothing and fail.
+        let fill = t
+            .input
+            .disabled_background
+            .map(native_theme_egui::convert::to_color32);
+        let shapes = harness.output().shapes.clone();
+        let filled = shapes.iter().any(|clipped| match &clipped.shape {
+            egui::Shape::Rect(r) => {
+                Some(r.fill) == fill && disabled.contains_rect(r.rect.shrink(1.0))
+            }
+            _ => false,
+        });
+        assert!(
+            filled,
+            "{preset}: the disabled field is not filled with input.disabled_background"
+        );
+        let underlined: Vec<bool> = shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Text(text) if text.galley.job.text == "Link" => Some(
+                    text.galley
+                        .job
+                        .sections
+                        .iter()
+                        .all(|s| s.format.underline.width > 0.0),
+                ),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(
+            underlined,
+            vec![t.link.underline_enabled],
+            "{preset}: the link's underline at rest is not link.underline_enabled"
+        );
+    }
+}
+
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
 /// each in `Role::Switch`, its checked look the button's own selected flag (§6.2), so a set
 /// flag is a selected button and a click flips it; each sits right of its title.

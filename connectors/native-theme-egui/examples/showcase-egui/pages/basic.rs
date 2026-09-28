@@ -27,7 +27,7 @@ pub(crate) fn show(
 ) {
     let section_gap = atlas.layout().section_gap;
     ui.horizontal_top(|ui| {
-        ui.vertical(|ui| left_column(reg, state, ui));
+        ui.vertical(|ui| left_column(reg, state, atlas, ui));
         if let Some(gap) = section_gap {
             ui.add_space(gap);
         }
@@ -36,33 +36,47 @@ pub(crate) fn show(
 }
 
 /// Buttons, check boxes, radio buttons, text.
-fn left_column(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
+fn left_column(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
+    // `button.min_width`, which egui's `Button` never reads from the style: it raises only its
+    // height, to `interact_size.y` (`button.min_height` in the button scope), so the width is
+    // the application's, per call (connector spec §5.3, `Button::min_size`).
+    let button_min = egui::vec2(t.button.min_width, t.button.min_height);
+
+    let read_min = |i: &mut demo::InstanceInfo| {
+        i.read.push(("button.min_width", button_min.x.to_string()));
+        i.read.push(("button.min_height", button_min.y.to_string()));
+    };
 
     caption(reg, ui, "Buttons");
     ui.horizontal(|ui| {
         demo::scoped(reg, ui, Role::Button, normal, "button (enabled)", |ui| {
-            ui.add(Button::new("Button"))
+            ui.add(Button::new("Button").min_size(button_min))
         });
+        reg.amend_last(read_min);
         demo::scoped(
             reg,
             ui,
             Role::Button,
             normal,
             "button (suggested action)",
-            |ui| ui.add(Button::new("Primary").selected(true)),
+            |ui| ui.add(Button::new("Primary").selected(true).min_size(button_min)),
         );
+        reg.amend_last(read_min);
         demo::scoped(
             reg,
             ui,
             Role::Button,
             RoleVariant::Disabled,
             "button (disabled)",
-            |ui| ui.add_enabled(false, Button::new("Disabled")),
+            |ui| ui.add_enabled(false, Button::new("Disabled").min_size(button_min)),
         );
+        reg.amend_last(read_min);
         let owner = demo::scoped(reg, ui, Role::Button, normal, "tooltip button", |ui| {
-            ui.add(Button::new("Tooltip"))
+            ui.add(Button::new("Tooltip").min_size(button_min))
         });
+        reg.amend_last(read_min);
         demo::surfaced(
             reg,
             ui,
@@ -140,10 +154,47 @@ fn left_column(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     caption(reg, ui, "Text");
     ui.horizontal(|ui| {
         demo::base(reg, ui, "Label (body text)", |ui| ui.label("Body text"));
+        // `link.underline_enabled`, which egui's `Link` never reads: it underlines only on hover
+        // or focus (`egui/src/widgets/hyperlink.rs:50-54`). An underline in the text's own format
+        // is painted at rest, in the text's colour, so the text takes `link.font.color` too, the
+        // `hyperlink_color` of the link scope (connector spec §5.3).
+        let mut text = egui::RichText::new("Link")
+            .color(native_theme_egui::convert::to_color32(t.link.font.color));
+        if t.link.underline_enabled {
+            text = text.underline();
+        }
         demo::scoped(reg, ui, Role::Link, normal, "Link", |ui| {
-            ui.add(egui::Link::new("Link"))
+            ui.add(egui::Link::new(text))
+        });
+        reg.amend_last(|i| {
+            i.read.push((
+                "link.underline_enabled",
+                t.link.underline_enabled.to_string(),
+            ));
+            i.read
+                .push(("link.font.color", format!("{:?}", t.link.font.color)));
         });
     });
+}
+
+/// A text field of the Basic page, built inside its `Role::Input` scope (`ui` is the scope's), so
+/// its frame is the style it paints in: the disabled field takes the disabled cell's
+/// `input.disabled_background`. `input.min_height` is a per-instance `min_size`, which a
+/// `TextEdit` never reads from the style: it is one row plus its margin tall, at least its
+/// `min_size` (connector spec §5.4); the row is centred in the height the minimum adds, as the
+/// platform centres a field's text.
+fn field<'a>(
+    text: &'a mut String,
+    id: egui::Id,
+    ui: &egui::Ui,
+    t: &native_theme_egui::ResolvedTheme,
+) -> egui::TextEdit<'a> {
+    egui::TextEdit::singleline(text)
+        .desired_width(BASIC_WIDTH)
+        .min_size(egui::vec2(BASIC_WIDTH, t.input.min_height))
+        .vertical_align(egui::Align::Center)
+        .id(id)
+        .frame(input_frame(ui, id, t))
 }
 
 /// Text inputs, the drop-down, the slider, the progress bar.
@@ -151,22 +202,23 @@ fn right_column(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
+    let read_min = |i: &mut demo::InstanceInfo| {
+        i.read
+            .push(("input.min_height", t.input.min_height.to_string()));
+    };
+
     caption(reg, ui, "Text inputs");
     ui.horizontal(|ui| {
         let id = ui.make_persistent_id("basic/placeholder");
-        let frame = input_frame(ui, id, t);
         demo::scoped(reg, ui, Role::Input, normal, "TextEdit (hint)", |ui| {
-            ui.add(
-                egui::TextEdit::singleline(&mut state.basic_hint)
-                    .hint_text("Placeholder")
-                    .desired_width(BASIC_WIDTH)
-                    .id(id)
-                    .frame(frame),
-            )
+            let edit = field(&mut state.basic_hint, id, ui, t).hint_text("Placeholder");
+            ui.add(edit)
         });
-        reg.amend_last(|i| i.notes.push(("hint text", "\"Placeholder\"".to_string())));
+        reg.amend_last(|i| {
+            read_min(i);
+            i.notes.push(("hint text", "\"Placeholder\"".to_string()));
+        });
         let id = ui.make_persistent_id("basic/filled");
-        let frame = input_frame(ui, id, t);
         demo::scoped(
             reg,
             ui,
@@ -174,16 +226,12 @@ fn right_column(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
             normal,
             "TextEdit (single line)",
             |ui| {
-                ui.add(
-                    egui::TextEdit::singleline(&mut state.basic_text)
-                        .desired_width(BASIC_WIDTH)
-                        .id(id)
-                        .frame(frame),
-                )
+                let edit = field(&mut state.basic_text, id, ui, t);
+                ui.add(edit)
             },
         );
+        reg.amend_last(read_min);
         let id = ui.make_persistent_id("basic/disabled");
-        let frame = input_frame(ui, id, t);
         let mut disabled = "Disabled".to_string();
         demo::scoped(
             reg,
@@ -192,15 +240,11 @@ fn right_column(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
             RoleVariant::Disabled,
             "TextEdit (disabled)",
             |ui| {
-                ui.add_enabled(
-                    false,
-                    egui::TextEdit::singleline(&mut disabled)
-                        .desired_width(BASIC_WIDTH)
-                        .id(id)
-                        .frame(frame),
-                )
+                let edit = field(&mut disabled, id, ui, t);
+                ui.add_enabled(false, edit)
             },
         );
+        reg.amend_last(read_min);
     });
 
     caption(reg, ui, "Drop-down");
