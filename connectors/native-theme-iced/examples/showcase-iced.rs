@@ -149,6 +149,11 @@ mod probes {
     pub const BASIC_BUTTON: &str = "probe-basic-button";
     pub const BASIC_TEXT_INPUT: &str = "probe-basic-text-input";
     pub const BASIC_PICK_LIST: &str = "probe-basic-pick-list";
+    pub const BASIC_TEXT_AREA: &str = "probe-basic-text-area";
+    pub const BASIC_SEGMENTED: &str = "probe-basic-segmented";
+    pub const BASIC_EXPANDER: &str = "probe-basic-expander";
+    #[cfg(feature = "iced_aw")]
+    pub const BASIC_LIST: &str = "probe-basic-list";
     pub const TOGGLER: &str = "probe-toggler";
     pub const PICK_LIST: &str = "probe-pick-list";
     pub const COMBO_BOX: &str = "probe-combo-box";
@@ -884,6 +889,21 @@ struct State {
     basic_text: String,
     basic_fruit: Fruit,
     basic_slider: f32,
+    /// The Basic tab's text area.
+    basic_text_area: text_editor::Content,
+    /// The Basic tab's chosen segment, and whether its two expanders are
+    /// open.
+    basic_segment: usize,
+    basic_details_open: bool,
+    basic_more_open: bool,
+    /// The Basic tab's tab bar and list: their selection, and the list's
+    /// rows, which the `SelectionList` borrows.
+    #[cfg(feature = "iced_aw")]
+    basic_tab: usize,
+    #[cfg(feature = "iced_aw")]
+    basic_list_options: Vec<String>,
+    #[cfg(feature = "iced_aw")]
+    basic_list_selected: Option<usize>,
 
     // Button tab
     button_press_count: u32,
@@ -1155,6 +1175,18 @@ impl State {
             basic_text: "Text".to_string(),
             basic_fruit: Fruit::Apple,
             basic_slider: BASIC_SLIDER,
+            basic_text_area: text_editor::Content::with_text(BASIC_TEXT_AREA),
+            basic_segment: BASIC_SEGMENT,
+            basic_details_open: true,
+            basic_more_open: false,
+            #[cfg(feature = "iced_aw")]
+            basic_tab: 0,
+            #[cfg(feature = "iced_aw")]
+            basic_list_options: (1..=BASIC_LIST_ITEMS)
+                .map(|n| format!("Item {n}"))
+                .collect(),
+            #[cfg(feature = "iced_aw")]
+            basic_list_selected: Some(BASIC_LIST_SELECTED),
             button_press_count: 0,
             text_input_value: String::new(),
             text_editor_content: text_editor::Content::with_text(
@@ -1452,6 +1484,14 @@ enum Message {
     BasicTextChanged(String),
     BasicFruitSelected(Fruit),
     BasicSliderChanged(f32),
+    BasicTextAreaAction(text_editor::Action),
+    BasicSegmentSelected(usize),
+    BasicDetailsToggled,
+    BasicMoreToggled,
+    #[cfg(feature = "iced_aw")]
+    BasicTabSelected(usize),
+    #[cfg(feature = "iced_aw")]
+    BasicListSelected(usize),
 
     // Button tab
     ButtonPressed,
@@ -1815,6 +1855,14 @@ fn update_inner(state: &mut State, message: Message) {
         Message::BasicTextChanged(value) => state.basic_text = value,
         Message::BasicFruitSelected(fruit) => state.basic_fruit = fruit,
         Message::BasicSliderChanged(v) => state.basic_slider = v,
+        Message::BasicTextAreaAction(action) => state.basic_text_area.perform(action),
+        Message::BasicSegmentSelected(i) => state.basic_segment = i,
+        Message::BasicDetailsToggled => state.basic_details_open = !state.basic_details_open,
+        Message::BasicMoreToggled => state.basic_more_open = !state.basic_more_open,
+        #[cfg(feature = "iced_aw")]
+        Message::BasicTabSelected(i) => state.basic_tab = i,
+        #[cfg(feature = "iced_aw")]
+        Message::BasicListSelected(i) => state.basic_list_selected = Some(i),
         Message::ButtonPressed => {
             state.button_press_count = state.button_press_count.saturating_add(1);
         }
@@ -2168,16 +2216,41 @@ fn view(state: &State) -> Element<'_, Message> {
         );
 
     let page: Element<'_, Message> = row![sidebar, right_panel].into();
-    match CLI_ARGS
-        .get()
-        .and_then(|cli| Some((cli.pointer?, cli.press)))
-    {
-        Some(((x, y), press)) => Element::new(HeldPointer {
+    match CLI_ARGS.get() {
+        Some(cli) => held_page(
+            page,
+            cli.pointer,
+            cli.press,
+            cli.capture || cli.screenshot.is_some(),
+        ),
+        None => page,
+    }
+}
+
+/// The page as a capture shows it. With a `pointer` (`--pointer X,Y`), the
+/// pointer held there, and with `press` the primary button held down
+/// ([`HeldPointer`]). Otherwise, while `capturing` (`--capture`,
+/// `--screenshot`), no pointer at all: the real one, wherever the desktop
+/// left it, hovers nothing, opens no tooltip and fills no Widget Info, so a
+/// capture shows every control at rest. Neither: the page as it is.
+fn held_page<'a>(
+    page: Element<'a, Message>,
+    pointer: Option<(u16, u16)>,
+    press: bool,
+    capturing: bool,
+) -> Element<'a, Message> {
+    match (pointer, capturing) {
+        (Some((x, y)), _) => Element::new(HeldPointer {
             content: page,
-            at: iced::Point::new(f32::from(x), f32::from(y)),
+            at: Some(iced::Point::new(f32::from(x), f32::from(y))),
             press,
         }),
-        None => page,
+        (None, true) => Element::new(HeldPointer {
+            content: page,
+            at: None,
+            press: false,
+        }),
+        (None, false) => page,
     }
 }
 
@@ -2205,11 +2278,23 @@ const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
 /// mouse events. On the first redraw it delivers a cursor move to `at`, and
 /// with `press`, once `HELD_PRESS_AFTER` has passed, a press of the primary
 /// button there: the events iced's widgets read hover and press from
-/// (iced_widget 0.14.2 `src/button.rs`, `Button::update`).
+/// (iced_widget 0.14.2 `src/button.rs`, `Button::update`). With `at` `None`
+/// the cursor is `Cursor::Unavailable` and nothing is delivered: the content
+/// sees no pointer at all.
 struct HeldPointer<'a> {
     content: Element<'a, Message>,
-    at: iced::Point,
+    at: Option<iced::Point>,
     press: bool,
+}
+
+impl HeldPointer<'_> {
+    /// The cursor the content is drawn and updated with.
+    fn cursor(&self) -> iced::mouse::Cursor {
+        self.at.map_or(
+            iced::mouse::Cursor::Unavailable,
+            iced::mouse::Cursor::Available,
+        )
+    }
 }
 
 /// What [`HeldPointer`] has delivered, and when it first drew.
@@ -2274,7 +2359,7 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
                 theme,
                 style,
                 layout,
-                iced::mouse::Cursor::Available(self.at),
+                self.cursor(),
                 viewport,
             );
         }
@@ -2305,7 +2390,7 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
         shell: &mut iced::advanced::Shell<'_, Message>,
         viewport: &iced::Rectangle,
     ) {
-        let cursor = iced::mouse::Cursor::Available(self.at);
+        let cursor = self.cursor();
         // `State::downcast_mut` panics on a state of another type; this cannot.
         let iced::advanced::widget::tree::State::Some(any) = &mut tree.state else {
             return;
@@ -2320,11 +2405,14 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
         if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event {
             let started = *state.started.get_or_insert(*now);
             let mut held = Vec::new();
-            if !state.moved {
-                held.push(iced::mouse::Event::CursorMoved { position: self.at });
+            if let Some(position) = self.at
+                && !state.moved
+            {
+                held.push(iced::mouse::Event::CursorMoved { position });
                 state.moved = true;
             }
             if self.press
+                && self.at.is_some()
                 && !state.pressed
                 && now.saturating_duration_since(started) >= HELD_PRESS_AFTER
             {
@@ -2367,7 +2455,7 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
             Some(child) => self.content.as_widget().mouse_interaction(
                 child,
                 layout,
-                iced::mouse::Cursor::Available(self.at),
+                self.cursor(),
                 viewport,
                 renderer,
             ),
@@ -2517,6 +2605,44 @@ const BASIC_FRUITS: [Fruit; 3] = [Fruit::Apple, Fruit::Banana, Fruit::Cherry];
 /// The Basic tab's slider value, on 0 to 100: the datum on display.
 const BASIC_SLIDER: f32 = 40.0;
 
+/// The width of the Basic tab's text area, list, expanders, card and
+/// separator. The model states no such width; it is the Basic page's own, the
+/// gpui and egui showcases' `BASIC_WIDE` too.
+const BASIC_WIDE: f32 = 200.0;
+
+/// The Basic tab's text area: its text, and how many lines tall it is.
+const BASIC_TEXT_AREA: &str = "Line one\nLine two\nLine three";
+const BASIC_TEXT_AREA_LINES: f32 = 3.0;
+
+/// The Basic tab's segmented control: its segments, and the one selected.
+const BASIC_SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
+const BASIC_SEGMENT: usize = 1;
+
+/// The Basic tab's tab bar.
+const BASIC_TABS: [&str; 3] = ["One", "Two", "Three"];
+
+/// The Basic tab's list: how many rows it has (`Item 1` to `Item 8`), the one
+/// selected (`Item 2`), and how many rows it shows, fewer than it has, so its
+/// scrollbar is part of the page.
+#[cfg(feature = "iced_aw")]
+const BASIC_LIST_ITEMS: usize = 8;
+#[cfg(feature = "iced_aw")]
+const BASIC_LIST_SELECTED: usize = 1;
+#[cfg(feature = "iced_aw")]
+const BASIC_LIST_VISIBLE: f32 = 4.0;
+
+/// The inset `iced_aw` lays a `SelectionList`'s rows out in from its bounds,
+/// on every side: `Container::new(Scrollable::new(List { .. })).padding(1)`
+/// (iced_aw 0.14.1 `src/widget/selection_list.rs:119-130`), with no setter.
+#[cfg(feature = "iced_aw")]
+const AW_LIST_INSET: f32 = 1.0;
+
+/// The row padding `iced_aw` gives a `SelectionList` built without one,
+/// `padding: 5.0.into()` (iced_aw 0.14.1 `src/widget/selection_list.rs:77`),
+/// which it keeps in no constant: the side of a row the theme does not state.
+#[cfg(feature = "iced_aw")]
+const AW_LIST_PADDING: f32 = 5.0;
+
 /// The tooltip's padding, where iced can carry it: `Tooltip::padding` is one
 /// number for all four sides (iced_widget 0.14.2 `src/tooltip.rs`,
 /// `Tooltip::padding`), laid out in from the bubble's edge with the border
@@ -2537,10 +2663,19 @@ fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
 
 /// The controls the three showcases all draw, in the same order, with the
 /// same labels, values and states, packed onto one screen so the gpui, iced
-/// and egui captures compare control by control: buttons, checkboxes, radio
-/// buttons and text on the left; text inputs, a drop-down, a slider and a
-/// progress bar on the right. Each group is one hover target, with the info
-/// of its widget's own tab.
+/// and egui captures compare control by control, in four equal columns:
+/// buttons, checkboxes, radio buttons and switches; text inputs, a text area,
+/// a drop-down and text; a slider, a progress bar, a spinner, tabs and a
+/// segmented control; a list, expanders, a card and a separator. Each group
+/// is one hover target, with its widget's info.
+///
+/// iced has no segmented control and no expander: they are built from
+/// buttons in the connector's `styles::segmented_control`, `styles::segment`
+/// and `styles::expander`. The card is the Layout page's, a container in
+/// `styles::container_card`. The list, the tab bar and the spinner are
+/// `iced_aw`'s; without the `iced_aw` feature the tab bar is drawn as the
+/// page tab strip's buttons, and the list and the spinner say they need the
+/// feature.
 fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -2576,26 +2711,31 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let buttons = group(
         "Buttons",
         button_info(state, true),
-        row![
-            probe(
-                probes::BASIC_BUTTON,
-                Length::Shrink,
-                button(at_least(text("Button").typeset(font, a11y), btn_min))
+        column![
+            row![
+                probe(
+                    probes::BASIC_BUTTON,
+                    Length::Shrink,
+                    button(at_least(text("Button").typeset(font, a11y), btn_min))
+                        .on_press(Message::ButtonPressed)
+                        .style(styles::button(resolved))
+                        .padding(btn_pad),
+                ),
+                button(at_least(text("Primary").typeset(font, a11y), btn_min))
                     .on_press(Message::ButtonPressed)
+                    .style(styles::button_primary(resolved))
+                    .padding(btn_pad),
+            ]
+            .spacing(gap.widget),
+            row![
+                button(at_least(text("Disabled").typeset(font, a11y), btn_min))
                     .style(styles::button(resolved))
                     .padding(btn_pad),
-            ),
-            button(at_least(text("Primary").typeset(font, a11y), btn_min))
-                .on_press(Message::ButtonPressed)
-                .style(styles::button_primary(resolved))
-                .padding(btn_pad),
-            button(at_least(text("Disabled").typeset(font, a11y), btn_min))
-                .style(styles::button(resolved))
-                .padding(btn_pad),
-            tip,
+                tip,
+            ]
+            .spacing(gap.widget),
         ]
         .spacing(gap.widget)
-        .align_y(iced::Center)
         .into(),
     );
 
@@ -2617,7 +2757,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let checkboxes = group(
         "Checkboxes",
         checkbox_info(resolved),
-        row![
+        column![
             check(false, "Unchecked", true),
             check(true, "Checked", true),
             check(true, "Disabled", false),
@@ -2642,7 +2782,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let radios = group(
         "Radio buttons",
         radio_info(resolved),
-        row![
+        column![
             option("Option A", 0),
             probe(probes::BASIC_RADIO_B, Length::Shrink, option("Option B", 1)),
         ]
@@ -2683,7 +2823,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let texts = group(
         "Text",
         text_info,
-        row![
+        column![
             text("Body text").body(resolved, a11y),
             // `link.underline_enabled`, which a text button cannot carry: the
             // label is a span, which iced underlines in its own colour, the
@@ -2698,7 +2838,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .padding(LINK_PADDING),
         ]
         .spacing(gap.widget)
-        .align_y(iced::Center)
         .into(),
     );
 
@@ -2718,7 +2857,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let inputs = group(
         "Text inputs",
         text_input_info(state, true),
-        row![
+        column![
             probe(
                 probes::BASIC_TEXT_INPUT,
                 Length::Shrink,
@@ -2780,12 +2919,616 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .into(),
     );
 
+    let sw = &resolved.switch;
+    // The model states no font and no label gap for a switch: the label is
+    // body text, at iced's own spacing.
+    let switch = |on: bool, label: &'a str, enabled: bool| {
+        let toggle = toggler(on)
+            .label(label)
+            .size(sw.track_height)
+            .text_size(scaled_text_size(resolved.defaults.font.size, a11y))
+            .font(theme_font(&resolved.defaults.font))
+            .style(styles::toggler(resolved));
+        // A toggler with no `on_toggle` is a disabled one (toggler.rs:150-160).
+        if enabled {
+            toggle.on_toggle(|_| Message::BasicHeld)
+        } else {
+            toggle
+        }
+    };
+    let switches = group(
+        "Switches",
+        switch_info(resolved),
+        column![
+            switch(false, "Off", true),
+            switch(true, "On", true),
+            switch(true, "Disabled", false),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    // Three of the theme's text lines, inside the field's padding.
+    let area_line = input_size * resolved.defaults.line_height;
+    let text_area = group(
+        "Text area",
+        text_area_info(resolved),
+        probe(
+            probes::BASIC_TEXT_AREA,
+            Length::Shrink,
+            text_editor(&state.basic_text_area)
+                .on_action(Message::BasicTextAreaAction)
+                .size(input_size)
+                .line_height(iced::Pixels(area_line))
+                .font(theme_font(&resolved.input.font))
+                .style(styles::text_editor(resolved))
+                .padding(inp_pad)
+                .width(BASIC_WIDE)
+                .height(Length::Fixed(
+                    BASIC_TEXT_AREA_LINES * area_line + inp_pad.y(),
+                )),
+        ),
+    );
+
+    #[cfg(feature = "iced_aw")]
+    let spinner: Element<'a, Message> = container(
+        Spinner::new()
+            .width(Length::Fixed(resolved.spinner.diameter))
+            .height(Length::Fixed(resolved.spinner.diameter)),
+    )
+    .style(styles::aw::spinner(resolved))
+    .into();
+    #[cfg(not(feature = "iced_aw"))]
+    let spinner: Element<'a, Message> =
+        text("The spinner is iced_aw's: build with --features iced_aw")
+            .role(&ts.caption, resolved, a11y)
+            .into();
+    let spinner_group = group("Spinner", spinner_info(resolved), spinner);
+
+    let tab_t = &resolved.tab;
+    let tab_pad = native_theme_iced::padding_or(&tab_t.border.padding, button::DEFAULT_PADDING);
+    #[cfg(feature = "iced_aw")]
+    let tab_row: Element<'a, Message> = {
+        let [one, two, three] = BASIC_TABS;
+        let bar = TabBar::new(Message::BasicTabSelected)
+            .push(0, TabLabel::Text(one.to_string()))
+            .push(1, TabLabel::Text(two.to_string()))
+            .push(2, TabLabel::Text(three.to_string()))
+            .set_active_tab(&state.basic_tab)
+            .text_size(scaled_text_size(tab_t.font.size, a11y))
+            .text_font(theme_font(&tab_t.font))
+            .tab_width(Length::Fixed(tab_t.min_width))
+            .height(Length::Fixed(tab_t.min_height))
+            .width(Length::Shrink)
+            .style(styles::aw::tab_bar(resolved));
+        // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
+        // and takes a padding whole.
+        match native_theme_iced::stated_padding(&tab_t.border.padding) {
+            Some(padding) => bar.padding(padding).into(),
+            None => bar.into(),
+        }
+    };
+    // Without iced_aw, the page tab strip's tabs: buttons padded like the
+    // platform's tabs, the open one the call to action.
+    #[cfg(not(feature = "iced_aw"))]
+    let tab_row: Element<'a, Message> = row(BASIC_TABS.iter().enumerate().map(|(i, label)| {
+        let tab = button(text(*label).typeset(&tab_t.font, a11y))
+            .padding(tab_pad)
+            .on_press(Message::ButtonPressed);
+        if i == 0 {
+            tab.style(styles::button_primary(resolved)).into()
+        } else {
+            tab.style(styles::button(resolved)).into()
+        }
+    }))
+    .spacing(sp.xs)
+    .into();
+    let tabs = group("Tabs", tabs_info(resolved, tab_pad), tab_row);
+
+    let sc = &resolved.segmented_control;
+    // A segment has no border of its own (the control's outline is the
+    // container's), so its padding is the stated sides as they are.
+    let seg_pad = native_theme_iced::padding_or(&sc.border.padding, button::DEFAULT_PADDING);
+    // `segment_height` is the control's outer height: the segments fill it
+    // inside the outline above and below them.
+    let seg_min = iced::Size::new(
+        0.0,
+        (sc.segment_height - 2.0 * sc.border.line_width - seg_pad.y()).max(0.0),
+    );
+    let segments = BASIC_SEGMENTS.iter().enumerate().map(|(i, label)| {
+        button(at_least(text(*label).typeset(&sc.font, a11y), seg_min))
+            .padding(seg_pad)
+            .style(styles::segment(
+                resolved,
+                i == state.basic_segment,
+                styles::SegmentPosition::of(i, BASIC_SEGMENTS.len()),
+            ))
+            .on_press(Message::BasicSegmentSelected(i))
+            .into()
+    });
+    let segmented = group(
+        "Segmented control",
+        segmented_info(resolved),
+        probe(
+            probes::BASIC_SEGMENTED,
+            Length::Shrink,
+            container(row(segments).spacing(sc.separator_width))
+                .padding(sc.border.line_width)
+                .style(styles::segmented_control(resolved)),
+        ),
+    );
+
+    #[cfg(feature = "iced_aw")]
+    let list: Element<'a, Message> = {
+        let list_t = &resolved.list;
+        let label = scaled_text_size(list_t.item_font.size, a11y);
+        let stated =
+            native_theme_iced::padding_or(&list_t.border.padding, Padding::from(AW_LIST_PADDING));
+        // KDE's rows size to their content: the label's line box and the
+        // padding the theme states above and below it.
+        let row_height = list_t
+            .row_height
+            .unwrap_or(label * resolved.defaults.line_height + stated.y());
+        // `iced_aw` lays a row out `text_size + padding.y()` tall
+        // (`selection_list/list.rs:118`, `:209`) and has no row-height setter,
+        // so the height is reached through the vertical padding, split evenly.
+        let inset = ((row_height - label) / 2.0).max(0.0);
+        let padding = Padding::ZERO
+            .top(inset)
+            .bottom(inset)
+            .left(stated.left)
+            .right(stated.right);
+        probe(
+            probes::BASIC_LIST,
+            Length::Shrink,
+            SelectionList::new_with(
+                &state.basic_list_options,
+                |i, _| Message::BasicListSelected(i),
+                label,
+                padding,
+                styles::aw::selection_list(resolved),
+                state.basic_list_selected,
+                theme_font(&list_t.item_font),
+            )
+            .width(Length::Fixed(BASIC_WIDE))
+            .height(Length::Fixed(
+                BASIC_LIST_VISIBLE * (label + padding.y()) + 2.0 * AW_LIST_INSET,
+            )),
+        )
+    };
+    #[cfg(not(feature = "iced_aw"))]
+    let list: Element<'a, Message> = text("The list is iced_aw's: build with --features iced_aw")
+        .role(&ts.caption, resolved, a11y)
+        .into();
+    let list_group = group("List", list_info(resolved), list);
+
+    let x = &resolved.expander;
+    let x_pad = native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING);
+    let x_min = iced::Size::new(0.0, (x.header_height - x_pad.y()).max(0.0));
+    let arrow_color = native_theme_iced::expander_arrow_color(resolved);
+    let header = |title: &'a str, expanded: bool, toggle: Message| {
+        let arrow = canvas(DisclosureArrow {
+            expanded,
+            color: arrow_color,
+        })
+        .width(Length::Fixed(x.arrow_icon_size))
+        .height(Length::Fixed(x.arrow_icon_size));
+        button(at_least(
+            row![arrow, text(title).typeset(&x.font, a11y)]
+                .spacing(gap.widget)
+                .align_y(iced::Center),
+            x_min,
+        ))
+        .padding(x_pad)
+        .width(Length::Fixed(BASIC_WIDE))
+        .style(styles::expander(resolved))
+        .on_press(toggle)
+    };
+    // The body sits under the title, past the arrow and its gap.
+    let body_inset = x_pad.left + x.arrow_icon_size + gap.widget;
+    let mut details = column![probe(
+        probes::BASIC_EXPANDER,
+        Length::Shrink,
+        header(
+            "Details",
+            state.basic_details_open,
+            Message::BasicDetailsToggled
+        )
+    )]
+    .spacing(gap.widget);
+    if state.basic_details_open {
+        details = details.push(
+            container(text("Expanded content").body(resolved, a11y))
+                .padding(Padding::ZERO.left(body_inset)),
+        );
+    }
+    let mut more = column![header(
+        "More",
+        state.basic_more_open,
+        Message::BasicMoreToggled
+    )]
+    .spacing(gap.widget);
+    if state.basic_more_open {
+        more = more.push(
+            container(text("More content").body(resolved, a11y))
+                .padding(Padding::ZERO.left(body_inset)),
+        );
+    }
+    let expanders = group(
+        "Expander",
+        expander_info(resolved),
+        column![details, more].spacing(gap.widget).into(),
+    );
+
+    // The Layout page's card, a container in `styles::container_card`, not
+    // `iced_aw`'s `Card`: a card with no title has no head, and iced_aw's
+    // squares a card's lower corners under its head or body fill
+    // (`widget/card.rs`, `draw_head`, `draw_body`), where the theme rounds all
+    // four.
+    let card_group = group(
+        "Card",
+        card_info(resolved),
+        container(text("Card content").body(resolved, a11y))
+            .padding(native_theme_iced::padding_or(
+                &resolved.card.border.padding,
+                Padding::ZERO,
+            ))
+            .width(Length::Fixed(BASIC_WIDE))
+            .style(styles::container_card(resolved))
+            .into(),
+    );
+
+    let separator = group(
+        "Separator",
+        separator_info(resolved),
+        container(rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)))
+            .width(Length::Fixed(BASIC_WIDE))
+            .into(),
+    );
+
     row![
-        column![buttons, checkboxes, radios, texts].spacing(gap.section),
-        column![inputs, drop_down, slider_group, progress].spacing(gap.section),
+        column![buttons, checkboxes, radios, switches]
+            .spacing(gap.section)
+            .width(Fill),
+        column![inputs, text_area, drop_down, texts]
+            .spacing(gap.section)
+            .width(Fill),
+        column![slider_group, progress, spinner_group, tabs, segmented]
+            .spacing(gap.section)
+            .width(Fill),
+        column![list_group, expanders, card_group, separator]
+            .spacing(gap.section)
+            .width(Fill),
     ]
     .spacing(gap.section)
     .into()
+}
+
+/// The disclosure arrow of the Basic tab's expanders, a filled triangle as
+/// wide and as tall as `expander.arrow_icon_size`, in
+/// `native_theme_iced::expander_arrow_color`: pointing right while collapsed
+/// and down while expanded. The model states the arrow's size and colour, and
+/// no shape; iced has no expander, so the arrow is drawn here.
+struct DisclosureArrow {
+    expanded: bool,
+    color: Color,
+}
+
+impl<Message> canvas::Program<Message> for DisclosureArrow {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &Self::State,
+        renderer: &iced::Renderer,
+        _theme: &Theme,
+        bounds: iced::Rectangle,
+        _cursor: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        let (w, h) = (frame.width(), frame.height());
+        let arrow = canvas::Path::new(|path| {
+            path.move_to(iced::Point::ORIGIN);
+            if self.expanded {
+                path.line_to(iced::Point::new(w, 0.0));
+                path.line_to(iced::Point::new(w / 2.0, h));
+            } else {
+                path.line_to(iced::Point::new(w, h / 2.0));
+                path.line_to(iced::Point::new(0.0, h));
+            }
+            path.close();
+        });
+        frame.fill(&arrow, self.color);
+        vec![frame.into_geometry()]
+    }
+}
+
+/// The Widget Info of the Basic page's switches.
+fn switch_info(resolved: &ResolvedTheme) -> String {
+    let sw = &resolved.switch;
+    widget_tooltip(
+        "Switch (toggler)",
+        &[
+            (
+                "on track",
+                "switch.checked_background",
+                to_color(sw.checked_background),
+            ),
+            (
+                "off track",
+                "switch.unchecked_background",
+                to_color(sw.unchecked_background),
+            ),
+            (
+                "thumb",
+                "switch.thumb_background",
+                to_color(sw.thumb_background),
+            ),
+        ],
+        &[
+            ("track height", "switch.track_height, Toggler::size"),
+            (
+                "thumb",
+                "switch.thumb_diameter, as styles::toggler's padding_ratio",
+            ),
+            ("track radius", "switch.track_radius"),
+            (
+                "label",
+                format!(
+                    "{} -- the model states no font for a switch",
+                    font_row("defaults.font", &resolved.defaults.font)
+                )
+                .as_str(),
+            ),
+        ],
+        &[
+            (
+                "switch.track_width",
+                "no receiver: iced lays the track out 2 x its height (toggler.rs:287)",
+            ),
+            ("label gap", "the model states none: iced's own spacing"),
+        ],
+    )
+}
+
+/// The Widget Info of the Basic page's text area.
+fn text_area_info(resolved: &ResolvedTheme) -> String {
+    let i = &resolved.input;
+    widget_tooltip(
+        "Text area (text_editor)",
+        &[
+            (
+                "field",
+                "input.background_color",
+                to_color(i.background_color),
+            ),
+            ("text", "input.font.color", to_color(i.font.color)),
+            ("border", "input.border.color", to_color(i.border.color)),
+        ],
+        &[
+            ("text", font_row("input.font", &i.font).as_str()),
+            ("line box", "input.font.size x defaults.line_height"),
+            (
+                "padding",
+                "input_padding: input.border.padding + line width",
+            ),
+            ("height", "three line boxes and the padding"),
+        ],
+        &[(
+            "caret",
+            "text_editor::Style has no caret colour: input.caret_color has no receiver",
+        )],
+    )
+}
+
+/// The Widget Info of the Basic page's spinner.
+fn spinner_info(resolved: &ResolvedTheme) -> String {
+    let s = &resolved.spinner;
+    widget_tooltip(
+        "Spinner (iced_aw)",
+        &[("dot", "spinner.fill_color", to_color(s.fill_color))],
+        &[("size", "spinner.diameter, Spinner::width and ::height")],
+        &[(
+            "spinner.stroke_width",
+            "no receiver: iced_aw paints one orbiting dot, no stroked arc (spinner.rs:151)",
+        )],
+    )
+}
+
+/// The Widget Info of the Basic page's tab bar; `padding` is the padding the
+/// tabs are given.
+fn tabs_info(resolved: &ResolvedTheme, padding: Padding) -> String {
+    let t = &resolved.tab;
+    let pad = format!(
+        "{:.0} {:.0} {:.0} {:.0} (t r b l): tab.border.padding",
+        padding.top, padding.right, padding.bottom, padding.left
+    );
+    widget_tooltip(
+        "Tab bar (iced_aw TabBar)",
+        &[
+            ("strip", "tab.bar_background", to_color(t.bar_background)),
+            (
+                "selected tab",
+                "tab.active_background",
+                to_color(t.active_background),
+            ),
+            (
+                "selected label",
+                "tab.active_text_color",
+                to_color(t.active_text_color),
+            ),
+            ("tab", "tab.background_color", to_color(t.background_color)),
+        ],
+        &[
+            ("label", font_row("tab.font", &t.font).as_str()),
+            ("tab width", "tab.min_width, as a fixed width"),
+            ("bar height", "tab.min_height, as a fixed height"),
+            ("padding", pad.as_str()),
+        ],
+        &[(
+            "minimum sizes",
+            "iced_aw takes fixed lengths only, so a tab is exactly its minimum",
+        )],
+    )
+}
+
+/// The Widget Info of the Basic page's segmented control.
+fn segmented_info(resolved: &ResolvedTheme) -> String {
+    let s = &resolved.segmented_control;
+    widget_tooltip(
+        "Segmented control (buttons in a container)",
+        &[
+            (
+                "segment",
+                "segmented_control.background_color",
+                to_color(s.background_color),
+            ),
+            (
+                "selected",
+                "segmented_control.active_background",
+                to_color(s.active_background),
+            ),
+            (
+                "selected label",
+                "segmented_control.active_text_color",
+                to_color(s.active_text_color),
+            ),
+            (
+                "outline, separators",
+                "segmented_control.border.color",
+                to_color(s.border.color),
+            ),
+        ],
+        &[
+            (
+                "label",
+                font_row("segmented_control.font", &s.font).as_str(),
+            ),
+            ("height", "segmented_control.segment_height, outer"),
+            ("separators", "segmented_control.separator_width"),
+            ("radius", "segmented_control.border.corner_radius"),
+        ],
+        &[(
+            "widget",
+            "iced has none: styles::segmented_control frames buttons in styles::segment",
+        )],
+    )
+}
+
+/// The Widget Info of the Basic page's list.
+fn list_info(resolved: &ResolvedTheme) -> String {
+    let l = &resolved.list;
+    widget_tooltip(
+        "List (iced_aw SelectionList)",
+        &[
+            (
+                "list",
+                "list.background_color",
+                to_color(l.background_color),
+            ),
+            (
+                "selected row",
+                "list.selection_background",
+                to_color(l.selection_background),
+            ),
+            (
+                "selected label",
+                "list.selection_text_color",
+                to_color(l.selection_text_color),
+            ),
+            ("border", "list.border.color", to_color(l.border.color)),
+        ],
+        &[
+            ("label", font_row("list.item_font", &l.item_font).as_str()),
+            (
+                "row height",
+                "list.row_height, or the label's line box and list.border.padding \
+                 above and below it",
+            ),
+            ("height", "four rows and iced_aw's 1px inset"),
+        ],
+        &[
+            (
+                "corner radius",
+                "iced_aw outlines the list with a hardcoded 0 (selection_list.rs:309)",
+            ),
+            (
+                "scrollbar",
+                "iced_aw's inner Scrollable takes no style: iced's own default class",
+            ),
+        ],
+    )
+}
+
+/// The Widget Info of the Basic page's expanders.
+fn expander_info(resolved: &ResolvedTheme) -> String {
+    let x = &resolved.expander;
+    let hover = x.hover_background.map_or(Color::TRANSPARENT, to_color);
+    widget_tooltip(
+        "Expander (a button and its body)",
+        &[
+            ("title", "expander.font.color", to_color(x.font.color)),
+            (
+                "arrow",
+                "expander.arrow_color",
+                native_theme_iced::expander_arrow_color(resolved),
+            ),
+            ("hovered header", "expander.hover_background", hover),
+            ("border", "expander.border.color", to_color(x.border.color)),
+        ],
+        &[
+            ("title", font_row("expander.font", &x.font).as_str()),
+            ("header height", "expander.header_height"),
+            ("arrow size", "expander.arrow_icon_size"),
+        ],
+        &[
+            (
+                "arrow shape",
+                "the model states none: a filled triangle drawn on a canvas",
+            ),
+            ("arrow gap", "the model states none: layout.widget_gap"),
+        ],
+    )
+}
+
+/// The Widget Info of the Basic page's card.
+fn card_info(resolved: &ResolvedTheme) -> String {
+    let c = &resolved.card;
+    widget_tooltip(
+        "Card (container in styles::container_card)",
+        &[
+            (
+                "surface",
+                "card.background_color",
+                to_color(c.background_color),
+            ),
+            ("border", "card.border.color", to_color(c.border.color)),
+            (
+                "label",
+                "defaults.text_color",
+                to_color(resolved.defaults.text_color),
+            ),
+        ],
+        &[
+            ("radius", "card.border.corner_radius"),
+            (
+                "padding",
+                "card.border.padding's stated sides; a container's none elsewhere",
+            ),
+        ],
+        &[],
+    )
+}
+
+/// The Widget Info of the Basic page's separator.
+fn separator_info(resolved: &ResolvedTheme) -> String {
+    let s = &resolved.separator;
+    widget_tooltip(
+        "Separator (rule)",
+        &[("line", "separator.line_color", to_color(s.line_color))],
+        &[("thickness", "separator.line_width")],
+        &[],
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -8207,6 +8950,8 @@ mod tests {
                 "styles::button_success",
                 "styles::button_warning",
                 "styles::button_link",
+                "styles::segment",
+                "styles::expander",
             ]],
         },
         Dressed {
@@ -8760,6 +9505,283 @@ mod tests {
         }
     }
 
+    /// Every text the Basic page lays out, with its bounds.
+    fn texts(ui: &mut Simulator<'_, Message>) -> Vec<(String, Rectangle)> {
+        let mut found = Vec::new();
+        {
+            let sink = &mut found;
+            let _ = ui.find(move |candidate: Candidate<'_>| -> Option<()> {
+                if let Candidate::Text {
+                    content, bounds, ..
+                } = candidate
+                {
+                    sink.push((content.to_string(), bounds));
+                }
+                None
+            });
+        }
+        found
+    }
+
+    /// The Basic page is BASIC2's: its four columns hold their groups in
+    /// order, each group under its heading, and every control label the spec
+    /// names is on the page.
+    #[test]
+    fn the_basic_page_has_every_group_in_its_column() {
+        const COLUMNS: [&[&str]; 4] = [
+            &["Buttons", "Checkboxes", "Radio buttons", "Switches"],
+            &["Text inputs", "Text area", "Drop-down", "Text"],
+            &[
+                "Slider",
+                "Progress bar",
+                "Spinner",
+                "Tabs",
+                "Segmented control",
+            ],
+            &["List", "Expander", "Card", "Separator"],
+        ];
+        let state = State::default();
+        let mut ui = interface(&state);
+        let texts = texts(&mut ui);
+        // A heading shares its words with a page tab ("Buttons"), which sits
+        // above the page: the lowest text with the words is the heading.
+        let heading = |label: &str| -> Rectangle {
+            match texts
+                .iter()
+                .filter(|(content, _)| content == label)
+                .map(|(_, bounds)| *bounds)
+                .max_by(|a, b| a.y.total_cmp(&b.y))
+            {
+                Some(bounds) => bounds,
+                None => panic!("the Basic page has no {label:?} group"),
+            }
+        };
+        let mut previous_x = f32::NEG_INFINITY;
+        for column in COLUMNS {
+            let first = heading(column[0]);
+            assert!(
+                first.x > previous_x,
+                "{:?} is not right of the column before it",
+                column[0]
+            );
+            previous_x = first.x;
+            let mut previous_y = f32::NEG_INFINITY;
+            for label in column {
+                let bounds = heading(label);
+                assert!(
+                    (bounds.x - first.x).abs() < 0.01,
+                    "{label:?} is not in {:?}'s column",
+                    column[0]
+                );
+                assert!(bounds.y > previous_y, "{label:?} is out of order");
+                previous_y = bounds.y;
+            }
+        }
+        // Not the radio buttons', the switches' and the drop-down's labels,
+        // nor the text area's lines: `radio`, `toggler`, `pick_list` and
+        // `text_editor` implement no `Widget::operate`, so no selector sees
+        // them ([`probe`]); their probes are found instead.
+        for id in [
+            probes::BASIC_RADIO_B,
+            probes::BASIC_PICK_LIST,
+            probes::BASIC_TEXT_AREA,
+        ] {
+            let _ = probe_bounds(&mut ui, id);
+        }
+        let mut labels = vec![
+            "Button",
+            "Primary",
+            "Disabled",
+            "Tooltip",
+            "Unchecked",
+            "Checked",
+            "Body text",
+            "Day",
+            "Week",
+            "Month",
+            "Details",
+            "Expanded content",
+            "More",
+            "Card content",
+        ];
+        if cfg!(feature = "iced_aw") {
+            labels.extend(["One", "Two", "Three", "Item 1", "Item 2"]);
+        }
+        for label in labels {
+            let _ = ui
+                .find(label)
+                .unwrap_or_else(|error| panic!("{label:?} is not on the Basic page: {error}"));
+        }
+    }
+
+    /// The Basic page's text area, segmented control, expander and list take
+    /// the sizes the theme states: three of the theme's lines inside the
+    /// field's padding; `segmented_control.segment_height` and
+    /// `expander.header_height` as outer heights, where the label fits;
+    /// four rows of the list, each `list.row_height` or its content.
+    #[test]
+    fn basic_composites_take_the_stated_sizes() {
+        for preset in ["kde-breeze", "material", "adwaita"] {
+            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let r = resolved.clone();
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                active_tab: Tab::Basic,
+                ..State::default()
+            };
+            let mut ui = interface(&state);
+
+            let area = probe_bounds(&mut ui, probes::BASIC_TEXT_AREA);
+            let pad = native_theme_iced::input_padding(&r);
+            let expected = 3.0 * r.input.font.size * r.defaults.line_height + pad.y();
+            assert!(
+                (area.height - expected).abs() < 0.01 && (area.width - BASIC_WIDE).abs() < 0.01,
+                "{preset}: the text area is {area:?}, expected {BASIC_WIDE} x {expected}"
+            );
+
+            let sc = &r.segmented_control;
+            let segmented = probe_bounds(&mut ui, probes::BASIC_SEGMENTED);
+            let seg_pad = native_theme_iced::padding_or(
+                &sc.border.padding,
+                iced::widget::button::DEFAULT_PADDING,
+            );
+            let expected = sc
+                .segment_height
+                .max(line_of(sc.font.size) + seg_pad.y() + 2.0 * sc.border.line_width);
+            assert!(
+                (segmented.height - expected).abs() < 0.01,
+                "{preset}: the segmented control is {}px tall, expected {expected}px",
+                segmented.height
+            );
+
+            let x = &r.expander;
+            let header = probe_bounds(&mut ui, probes::BASIC_EXPANDER);
+            let x_pad = native_theme_iced::padding_inside_border(
+                &x.border,
+                iced::widget::button::DEFAULT_PADDING,
+            );
+            let expected = x.header_height.max(line_of(x.font.size) + x_pad.y());
+            assert!(
+                (header.height - expected).abs() < 0.01,
+                "{preset}: the expander header is {}px tall, expected {expected}px",
+                header.height
+            );
+
+            #[cfg(feature = "iced_aw")]
+            {
+                let list = probe_bounds(&mut ui, probes::BASIC_LIST);
+                let l = &r.list;
+                let stated = native_theme_iced::padding_or(
+                    &l.border.padding,
+                    Padding::from(AW_LIST_PADDING),
+                );
+                let row = l
+                    .row_height
+                    .unwrap_or(l.item_font.size * r.defaults.line_height + stated.y());
+                let expected = BASIC_LIST_VISIBLE * row + 2.0 * AW_LIST_INSET;
+                assert!(
+                    (list.height - expected).abs() < 0.01,
+                    "{preset}: the list is {}px tall, expected {expected}px",
+                    list.height
+                );
+            }
+        }
+    }
+
+    /// The Basic page fits the window without scrolling under every Linux
+    /// preset the captures take: its content, laid out in the page area of a
+    /// 1280 x 720 window, ends inside the window.
+    #[test]
+    fn the_basic_page_fits_the_window() {
+        for preset in ["kde-breeze", "material", "catppuccin-mocha"] {
+            for dark in [false, true] {
+                let (theme, resolved) = match native_theme_iced::from_preset(preset, dark) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("{preset}: {error}"),
+                };
+                let state = State {
+                    current_theme: theme,
+                    current_resolved: resolved,
+                    accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                    active_tab: Tab::Basic,
+                    ..State::default()
+                };
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                // The page's scrollable is the rightmost one as tall as half
+                // the window: the side panel's are left of it, the list's and
+                // the tab strip's are short.
+                let mut scrollables: Vec<(Rectangle, Rectangle)> = Vec::new();
+                {
+                    let sink = &mut scrollables;
+                    let _ = ui.find(move |candidate: Candidate<'_>| -> Option<()> {
+                        if let Candidate::Scrollable {
+                            bounds,
+                            content_bounds,
+                            ..
+                        } = candidate
+                        {
+                            sink.push((bounds, content_bounds));
+                        }
+                        None
+                    });
+                }
+                let page = scrollables
+                    .into_iter()
+                    .filter(|(bounds, _)| bounds.height > WINDOW_SIZE.1 / 2.0)
+                    .max_by(|a, b| a.0.x.total_cmp(&b.0.x));
+                assert!(
+                    page.is_some(),
+                    "{preset} (dark: {dark}): no page scrollable found"
+                );
+                if let Some((bounds, content)) = page {
+                    assert!(
+                        content.height <= bounds.height + 0.01,
+                        "{preset} (dark: {dark}): the Basic page is {}px tall, its area {}px",
+                        content.height,
+                        bounds.height
+                    );
+                }
+            }
+        }
+    }
+
+    /// In a capture the pointer hovers nothing: the page `held_page` wraps
+    /// for `--capture` and `--screenshot` hands its content no pointer, so the
+    /// real one, wherever the desktop left it, shows no control hovered and
+    /// fills no Widget Info. The page as it is does report the hover, which
+    /// is what makes the first half mean something.
+    #[test]
+    fn a_capture_is_not_hovered_by_the_pointer() {
+        let state = State::default();
+        let at = {
+            let mut ui = interface(&state);
+            probe_bounds(&mut ui, probes::BASIC_BUTTON).center()
+        };
+        let hover = |page: Element<'_, Message>| -> Vec<Message> {
+            let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
+            ui.point_at(at);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            ui.into_messages().collect()
+        };
+        let live = hover(view(&state));
+        assert!(
+            live.iter().any(|m| matches!(m, Message::WidgetHovered(_))),
+            "the page as it is reports no hover over the Basic button, so the \
+             capture half of this test proves nothing: {live:?}"
+        );
+        let captured = hover(held_page(view(&state), None, false, true));
+        assert!(
+            captured.is_empty(),
+            "a capture reacted to the pointer: {captured:?}"
+        );
+    }
+
     /// The user's text-scaling factor reaches every text alike: at 1.5, a
     /// button label and body text are both drawn at 1.5 times the theme's size.
     #[test]
@@ -9257,9 +10279,15 @@ mod tests {
                 None => "",
             };
             // A label under the button's minimum size is still a text, and a
-            // link's underlined label is rich text, sized below.
-            let label = label.strip_prefix("at_least(").unwrap_or(label);
-            if !label.starts_with("text(") && !label.starts_with("rich_text(") {
+            // link's underlined label is rich text, sized below. An expander
+            // header's label is a row of its arrow and its title, a text the
+            // loop above sizes.
+            let label = label
+                .strip_prefix("at_least(")
+                .unwrap_or(label)
+                .trim_start();
+            let composite = label.starts_with("row![") && label.contains("text(");
+            if !label.starts_with("text(") && !label.starts_with("rich_text(") && !composite {
                 by_iced.push(format!("button at :{}", line_at(&source, site)));
             }
         }
