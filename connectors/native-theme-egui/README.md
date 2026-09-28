@@ -336,7 +336,11 @@ cargo run -p native-theme-egui --example showcase-egui
 ```
 
 The gpui showcase's application built from egui's own containers, with
-per-instance Widget Info for every widget on screen. Its flags `--theme`,
+per-instance Widget Info for every widget on screen. It opens on the Basic
+page, the controls all three showcases draw — buttons, checkboxes, radio
+buttons, text, text fields, a drop-down, a slider and a progress bar — in the
+same order and states, packed onto one screen, so the three showcases' captures
+compare control by control. Its flags `--theme`,
 `--variant`, `--icon-set`, `--tab` and `--screenshot` start it on a given
 preset, variant, icon set and tab, or capture the window with its title bar to
 a PNG (macOS and Windows; on Linux the capture scripts take it). The window

@@ -241,9 +241,16 @@ let field = text_input("Name", &value)
 let save = button(at_least(text("Save"), button_content_min_size(&resolved)))
     .padding(button_padding(&resolved))
     .style(styles::button(&resolved));
+let combo_size = resolved.combo_box.font.size;
+let choice = pick_list(options, selected, on_select)
+    .text_size(combo_size)
+    .padding(combo_box_padding(&resolved))
+    .text_line_height(control_line_height(
+        &resolved, combo_size, resolved.combo_box.min_height, combo_box_padding(&resolved),
+    ));
 ```
 
-`combo_box.min_height` reaches a `PickList` the same way, through
+`combo_box.min_height` reaches the `PickList` the same way, through
 `text_line_height` with `combo_box_padding`.
 
 For any other widget the theme states a padding for, `padding_or(&stated,
@@ -408,7 +415,11 @@ cargo run -p native-theme-iced --example showcase-iced
 
 Displays every widget iced has, each styled through `styles::*`, with live
 theme switching, a colour map, and an inspector that says which native field
-every part of a widget comes from — and which parts iced still decides. Add
+every part of a widget comes from — and which parts iced still decides. It
+opens on the Basic tab, the controls all three showcases draw — buttons,
+checkboxes, radio buttons, text, text fields, a drop-down, a slider and a
+progress bar — in the same order and states, packed onto one screen, so the
+three showcases' captures compare control by control. Add
 `--features iced_aw` for the tab with the `iced_aw` widgets:
 
 ```sh

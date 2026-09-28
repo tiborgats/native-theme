@@ -458,7 +458,11 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 Displays every gpui-component widget themed with native-theme presets, with
 live theme switching, the geometry builders applied where they reach, a
-138-field colour map and a 101-icon gallery. The window asks the window
+138-field colour map and a 101-icon gallery. It opens on the Basic page, the
+controls all three showcases draw — buttons, checkboxes, radio buttons, text,
+text fields, a drop-down, a slider and a progress bar — in the same order and
+states, packed onto one screen, so the three showcases' captures compare
+control by control. The window asks the window
 manager to draw its frame. Where it does, as KWin does, the frame is the
 desktop's own and the menus sit in a row at the top of the window (on macOS,
 in the system's menu bar); where it does not, as GNOME's Mutter does not for
