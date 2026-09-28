@@ -404,7 +404,8 @@ pub fn button_link(
 /// Every color is `input.*`: the fill, the border and its hovered and focused
 /// colors, the placeholder, the value and the selection. The disabled state is
 /// the platform's disabled fill and disabled text color, both of which the
-/// model states, faded by `input.disabled_opacity` (see [`faded`]). `icon` has
+/// model states, each colour's alpha multiplied by `input.disabled_opacity`
+/// (iced has no widget opacity; `docs/platform-facts.md` §2.1.6). `icon` has
 /// no native source -- the model carries no
 /// input-icon color -- and comes from
 /// `text_input::default(theme, status)`.
@@ -540,7 +541,7 @@ pub fn text_editor(
 /// hovered checked box is exactly the checked box. `.disabled_background`
 /// replaces the fill, as given; where it is not stated the platform dims by
 /// opacity alone and a disabled box is its enabled self. Either way a disabled
-/// box is faded by `.disabled_opacity` (see [`faded`]). An unchecked box may
+/// box has each colour's alpha multiplied by `.disabled_opacity`. An unchecked box may
 /// state a border color of its own, `.unchecked_border_color`.
 ///
 /// The check mark is `checkbox.indicator_color` -- the model has no
@@ -730,8 +731,8 @@ pub fn radio(
 /// `is_toggled`, with `.hover_*` layered over it and `.disabled_*`
 /// replacing it, as given. The thumb is `switch.thumb_background`, a thumb and
 /// so emitted as given in every state, and `.disabled_thumb_color` whenever
-/// the switch is disabled -- toggled or not. A disabled track and thumb are
-/// faded by `switch.disabled_opacity` (see [`faded`]).
+/// the switch is disabled -- toggled or not. A disabled track and thumb have
+/// their alpha multiplied by `switch.disabled_opacity`.
 ///
 /// `border_radius` is `switch.track_radius`, and it shapes the whole widget:
 /// iced paints the track and the thumb as two quads with the *same* radius
