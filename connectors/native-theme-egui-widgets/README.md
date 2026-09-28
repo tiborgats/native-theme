@@ -14,6 +14,7 @@ from a hardcoded value or does not draw them at all. This crate draws those:
 | `spinner::Spinner` | a spinner at the theme's stroke: `egui::Spinner` hardcodes its stroke width; where the icon set has an animated indicator, that is drawn |
 | `segmented_control::SegmentedControl` | a segmented control: egui has none |
 | `wrap::link`, `wrap::hyperlink` | a link in its hover, pressed, disabled and visited colours |
+| `combo_box::ComboBox` | a drop-down at the height the theme states: egui's square arrow box can make its own taller |
 
 Every widget reads the `ResolvedTheme` of the atlas the connector installed,
 in the colour scheme egui is drawing, and contains no colour, radius or
@@ -48,8 +49,8 @@ and `svg-rasterize`. This crate adds none of its own.
 * A bare `link` has no visited colour (egui's `Link` carries no URL), and
   egui underlines every link on hover or focus.
 * On macOS the spinner is an arc, not fins: the theme states no fin geometry.
-* A segmented control's divider line and joined outline are not drawn: no
-  source states them.
+* A segmented control's dividers are its border's colour: the theme states
+  their width and no colour of their own.
 * No slider tick marks.
 
 ## License

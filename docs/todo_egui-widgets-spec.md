@@ -24,7 +24,8 @@ published. Paths are given the way the sibling documents give them:
 > slider whose knob is not its rail, a spinner at the theme's stroke, and a
 > segmented control, which egui does not have. It also wraps egui's links in
 > their state and visited colours, the per-call route the connector names for
-> them, written once (§4.5).
+> them, written once (§4.5), and egui's drop-down at the height the theme
+> states, which egui's square arrow box exceeds (§4.6).
 
 Everything it draws is driven by `ResolvedTheme` values obtained from the
 connector's `ThemeAtlas`. It contains no colour, no radius and no metric of its
@@ -33,7 +34,7 @@ own beyond the structural constants of §2.3.
 Where the connector already delivers a native look — a role scope around egui's
 own widget, a `Surface` frame around a container, an accessor handed to one
 builder call — this crate adds nothing: an application writes that one call
-itself. §4.6 lists those cases.
+itself. §4.7 lists those cases.
 
 ### 0.2 What this crate is not
 
@@ -150,7 +151,7 @@ a `&ResolvedTheme` parameter.
 `Switch` adds `egui::Checkbox`, egui's two-state control; `Slider` adds
 `egui::Slider`; `Spinner` adds `egui::Spinner`; `SegmentedControl` adds its
 buttons unscoped; the link wrappers add egui's `Link` and `Hyperlink`
-unchanged. It never panics, never draws nothing and never emits a fabricated
+unchanged; `ComboBox` shows `egui::ComboBox` unchanged. It never panics, never draws nothing and never emits a fabricated
 colour, so a user who adds this crate before calling `install()` sees ordinary
 egui. A Tier P widget also takes that fallback when a size its geometry is
 built from is not finite: there is no egui sink for a switch track or a
@@ -177,6 +178,7 @@ only other numeric literals allowed in painting code:
 | identity | `0.0`, `1.0` | offsets, the animation's ends, opacity identity |
 | egui's own spinner constants | `240°`, `8`, `128` | cited to `widgets/spinner.rs` at their use (§4.3) |
 | egui's own slider key step | `1.0` point per press | cited to `widgets/slider.rs:722` (§4.2) |
+| egui's own combo-box arrow proportions | `0.7`, `0.45` | cited to `containers/combo_box.rs:472-486` (§4.6) |
 
 A numeric literal in painting code that is not in this table is a bug, and T6
 catches it.
@@ -272,11 +274,27 @@ AccessKit 0.24.1 is a non-optional egui 0.36.2 dependency
 | `Switch` | `Checkbox` | `Role::Switch` (accesskit 0.24.1 `src/lib.rs`, line 101), toggled | a switch is a two-state control, which `WidgetType` can say only as a checkbox |
 | `Slider` | `Slider` | egui's `Role::Slider` | exact match |
 | `Spinner` | `ProgressIndicator` | egui's `Role::ProgressIndicator` | exact match, as egui's own spinner reports (`widgets/spinner.rs:69`) |
-| `SegmentedControl` | — (its buttons' own) | `Role::RadioGroup` on the row's content `Ui`; `Role::RadioButton` on each segment, whose toggled state `Button::selected` reports (`response.rs:975-980`) | an exclusive choice among siblings; egui's own radio button reports its state through `toggled` the same way (`widgets/radio_button.rs:71`) |
+| `SegmentedControl` | — (its buttons' own) | `Role::RadioGroup` on the row's content `Ui` — inside the outline's frame, a child of the control's node (§4.4); `Role::RadioButton` on each segment, whose toggled state `Button::selected` reports (`response.rs:975-980`) | an exclusive choice among siblings; egui's own radio button reports its state through `toggled` the same way (`widgets/radio_button.rs:71`) |
 | `wrap::hyperlink` | `Link` | egui's `Role::Link`, `visited` set once visited | §4.5 |
 
 A row's node is its content `Ui`'s, keyed by `Ui::unique_id` (`ui.rs:357`),
 which egui creates as a `GenericContainer` (`ui.rs:314-318`).
+
+**Deviation note (implementation, 2026-09-28): the links report what egui's
+own `Link` reports, which is `Role::Label` under egui's defaults.** `Link` sets
+`WidgetType::Link` (`widgets/hyperlink.rs:44`), but with
+`Style::interaction.selectable_labels` on — egui's default
+(`style.rs:1489`) — it paints its text through
+`LabelSelectionState::label_text_selection` (`widgets/hyperlink.rs:56-60`),
+which then sets the node's role to `accesskit::Role::Label`
+(`text_selection/label_text_selection.rs:666-673`) after `widget_info` wrote
+`Role::Link`. The wrappers add egui's own `Link` and overwrite nothing, so
+their node carries the role egui's `Link` ends with, `Link` only where an
+application turns `selectable_labels` off; T3 checks the wrappers against
+egui's `Link` rather than a fixed role. `visited` is set on the node either
+way (§4.5). Restoring `Role::Link` would mean overwriting a role egui's own
+text selection sets on purpose, which this crate does not do for a Tier W
+widget.
 
 ---
 
@@ -299,6 +317,7 @@ pub mod switch;
 pub mod slider;
 pub mod spinner;
 pub mod segmented_control;
+pub mod combo_box; // Tier W: `ComboBox`
 pub mod wrap;   // Tier W: `link`, `hyperlink`
 
 pub use native_theme_egui as connector;
@@ -324,6 +343,11 @@ that failure impossible, and `ui.add_sized` (`ui.rs:1538`) and `ui.add_enabled`
 (`ui.rs:1588`) accept our widgets for free. **No extension trait on `Ui` is
 provided, and none may be added later**: a second spelling for every widget
 leaves a permanent question at each call site about which is current.
+
+The one widget that is not an `egui::Widget` is `combo_box::ComboBox`: a
+drop-down's contents are a closure, so, as egui's own `ComboBox`, it is shown
+with `show_ui(ui, contents)` (§4.6). It is a type of its own, not a method on
+`Ui`, so it competes with no inherent method either.
 
 ### 3.3 The builder shape
 
@@ -353,8 +377,9 @@ impl egui::Widget for Switch<'_> {
 | `spinner::Spinner` | `new()` | — |
 | `segmented_control::SegmentedControl` | `new(selected: &mut usize, segments: impl IntoIterator<Item = impl Into<egui::WidgetText>>)` | — |
 | `wrap::link`, `wrap::hyperlink` | functions, §4.5 | — |
+| `combo_box::ComboBox` | `from_id_salt(id_salt: impl egui::AsIdSalt)`, as egui's | `selected_text`, `width`, `popup_style`, `enabled`; shown with `show_ui` (§4.6) |
 
-`SegmentedControl` returns the row's `Response`, marked changed
+`SegmentedControl` returns the control's `Response` (its outline's rect), marked changed
 (`response.rs:625`) when a click moved the selection. It has no `enabled`: its
 role has no disabled colour, so `ui.add_enabled` — egui's fade at the calling
 `Ui`'s `disabled_alpha` (`ui.rs:1588-1596`) — is its disabled appearance;
@@ -426,6 +451,16 @@ egui's `Spacing::slider_width` (`style.rs:412`), and the height the larger of
 interaction state's `fg_stroke` (`widgets/slider.rs:817`): the model states
 none. No tick marks are painted and no value field is shown; an application
 that wants the number adds a `DragValue`.
+
+**Deviation note (implementation, 2026-09-28): the width is read from the
+`Ui` the slider is added to, before its scope opens.** Inside the
+`Role::Slider` scope, `Spacing::slider_width` is the scope cell's, which the
+connector builds from its base style, so an application's own
+`ui.spacing_mut().slider_width` around the call — the way it sizes egui's
+`Slider` — would be discarded by the scope. The widget therefore reads
+`slider_width` from the calling `Ui` first and builds its geometry from that
+(commit a863003e); the model states no slider width, so the value is egui's
+own either way, the one the application set where it set one.
 
 **Colours.** Rail `track_color`, trailing fill `fill_color`, knob
 `thumb_color`, with `thumb_hover_color` composited over it while hovered.
@@ -505,27 +540,69 @@ whose unselected button paints no frame at rest (`widgets/button.rs:78-83`) and
 would lose `segmented_control.background_color`. A click on a segment sets
 `*selected` to its index.
 
-**The divider.** `separator_width` is "the width of the divider line between
-segments" (`docs/platform-facts.md:987`), so the segments sit
-`separator_width` apart. The connector's `Role::SegmentedControl` cell carries
-that gap as `spacing.item_spacing.x`, through `finite_or` and `clamp_length`,
-so the horizontal row laid out in that scope has it with no work here; what this
-widget adds is the composition above and the radio-group semantics (§2.7).
+**One joined control.** A segmented control is one control parted by
+dividers wherever the platforms have one (`docs/platform-facts.md` §2.25):
+macOS's `NSSegmentedControl` (a 1px `separator_width`) and libadwaita's
+`AdwToggleGroup`; KDE, which has none, states it through its tab bar as a proxy
+(`TabBar_TabOverlap` = 1), and Windows states none of it.
+`separator_width` is "the width of the divider line between segments"
+(`docs/platform-facts.md:987`). So the row is drawn as one shape:
 
-**What is not drawn**, because no source states it:
-
-* **the divider's line.** No leaf states its colour —
+* **the outline.** The row sits in one `egui::Frame` — the non-interactive
+  decoration Tier C admits (§1.2) — filled with the segmented control scope's
+  border colour (`widgets.inactive.bg_stroke.color`, which the connector's
+  `Role::SegmentedControl` cell writes from `segmented_control.border.color`),
+  inset by that stroke's width on every side and rounded to the scope's
+  `corner_radius` (`segmented_control.border.corner_radius`). What shows of the
+  fill round the segments is the control's outline;
+* **the dividers.** The cell carries `separator_width` as
+  `spacing.item_spacing.x`, through `finite_or` and `clamp_length`, so the
+  segments of the horizontal row sit `separator_width` apart and the frame's
+  fill shows through each gap, the full height of the segments. The model
+  states the dividers' width and no colour of their own —
   `SegmentedControlTheme` has one line colour, its border's
-  (`native-theme/src/model/widgets/mod.rs:773-803`) — so nothing is painted in
-  the gap; what lies behind the row shows through it;
-* **a joined outline.** Nothing states whether a segment's corners that face a
-  divider are rounded, so every segment keeps the scope's radius,
-  `segmented_control.border.corner_radius`, on all four corners, and the
-  control reads as a row of separate segments rather than one rounded shape.
+  (`native-theme/src/model/widgets/mod.rs:773-803`) — so they are the one line
+  colour the control states, as the iced connector's `segmented_control` style
+  and the gpui showcase draw them;
+* **the segments.** Each paints no stroke of its own (`Button::stroke`,
+  `widgets/button.rs:151`, with `Stroke::NONE`), and rounds only the corners it
+  shares with the outline, to the outline's inner radius —
+  `border.corner_radius` less the border's width — through
+  `Button::corner_radius` (`widgets/button.rs:200`); a corner that meets a
+  divider is square.
 
-Both arrive when native-theme states them, researched in
-`docs/platform-facts.md` first (`docs/todo.md`, Core API, *Segmented control:
-the join and the divider*).
+**Height and padding.** `segment_height` is "height of each segment button"
+(`docs/platform-facts.md:986`), a button's minimum height in the scope
+(`interact_size.y`, `widgets/button.rs:307-309`); the outline adds its width
+above and below, as libadwaita's group pads round its 28px toggles
+(`docs/platform-facts.md` §2.25). A segment's padding is `segmented_control.border.padding` inside the
+outline: the scope's `button_padding` holds each stated side plus the border's
+width (the connector's `padding_with_border`), and `Button`'s frame margin
+takes the scope's stroke width off again (`widget_style.rs:163-165`) for a
+stroke the segment no longer paints. Where the padding states neither its top
+nor its bottom, the scope's vertical padding is one the theme does not state
+for this widget, so it is narrowed, never widened, until a one-line segment is
+`segment_height` tall.
+
+**Deviation note (implementation, 2026-09-28): the segment height where no
+segment padding is stated.** This section first read `segment_height` as a
+minimum only, which the text and the scope's padding may exceed. Where
+`segmented_control.border.padding` states nothing — `kde-breeze`, whose cell
+then keeps the base style's button padding, 6 plus the border — an 18px label
+padded so is 32px, over the stated 30. A padding the theme does not state for
+this widget is egui's or the base style's value standing in (§2.2), not a
+platform fact, so it yields to the height the theme does state: the widget
+lowers the scope's `button_padding.y` to `0.5 · (segment_height − the tallest
+label's height)`, the label laid out as the button lays it out
+(`atomics/atom_kind.rs:134-135`: unwrapped, in the style's `override_font_id`,
+else its Body font), and never raises it (commit c38b0838). A stated padding is
+kept as stated, and a segment then grows past `segment_height` where its text
+and that padding need the room.
+
+**The response.** `SegmentedControl` returns the control's `Response`, whose
+rect is the outline's; the row inside the outline is the radio group (§2.7).
+With no atlas installed the buttons are added in a plain row, with no outline
+(§2.1).
 
 ### 4.5 `wrap::link`, `wrap::hyperlink` — Tier W
 
@@ -573,11 +650,74 @@ rest, and its AccessKit node is marked visited (`set_visited`, accesskit 0.24.1
 `src/lib.rs`, line 1804). The set holds what this `Context` saw clicked, and
 nothing else: an application's own history is its own.
 
-### 4.6 Delivered by the connector — not a widget here
+### 4.6 `combo_box::ComboBox` — Tier W
+
+```rust
+pub struct ComboBox { /* … */ }
+
+impl ComboBox {
+    pub fn from_id_salt(id_salt: impl egui::AsIdSalt) -> Self;
+    pub fn selected_text(self, text: impl Into<egui::WidgetText>) -> Self;
+    pub fn width(self, width: f32) -> Self;
+    pub fn popup_style(self, style: egui::style::StyleModifier) -> Self;
+    pub fn enabled(self, enabled: bool) -> Self;
+    pub fn show_ui<R>(self, ui: &mut egui::Ui, contents: impl FnOnce(&mut egui::Ui) -> R)
+        -> egui::InnerResponse<Option<R>>;
+}
+```
+
+**What egui hardcodes.** egui's `ComboBox` makes its arrow's box square,
+`Vec2::splat(ui.spacing().icon_width)` (`containers/combo_box.rs:342`), and its
+content as tall as the taller of the selected text and that box,
+`galley.size().y.max(icon_size.y)` (`:361`); `button_padding` goes round that
+content (`:433-444`). The connector's `Role::ComboBox` cell writes
+`combo_box.arrow_icon_size` into `icon_width` (the arrow's size) and
+`arrow_area_width` into `icon_width + icon_spacing` (its column), so an arrow
+taller than the text's line raises the drop-down: `kde-breeze`'s 20px arrow
+over its 18px line, padded 6 + 1 above and below, is 34px tall where
+`combo_box.min_height` states 32. No `Style` field separates the arrow's box
+height from its width, so the scope alone cannot reach the stated height.
+
+**Why the arrow sets no height.** A platform's drop-down arrow sits in a
+column the control's full height: Breeze's `SC_ComboBoxArrow` is a
+`MenuButton_IndicatorWidth` column and the edit field ends at it, WinUI's a
+38px column (`docs/platform-facts.md` §2.24, `border.padding_horizontal`).
+KDE's `arrow_icon_size` is that column's width, `MenuButton_IndicatorWidth`
+(§2.24, `arrow_icon_size`); what sets the height is the text, the padding and
+`min_height`.
+
+**Tier W.** `ComboBox` is one `egui::ComboBox` in the `Role::ComboBox` scope —
+the `Disabled` variant and `Ui::disable` for `.enabled(false)` (§2.4) — its
+popup in the role's modifier (`ThemeAtlas::role_modifier`, the connector's
+route for a popup the scope does not reach; `ComboBox::popup_style`,
+`containers/combo_box.rs:199`) unless the application passes its own, with one
+per-instance change: where the scope's `icon_width` is taller than the selected
+text's line — laid out as egui lays it out, unwrapped in `TextStyle::Button`
+(`:358`) — the scope's `icon_width` becomes that line's height and its
+`icon_spacing` grows by the difference, so the arrow's column keeps the width
+the theme states and the content is the text's height. The arrow is then
+painted through `ComboBox::icon` (`:155`) as egui paints its own — a downward
+triangle `0.7` of its box wide and `0.45` tall, in the interaction state's
+`fg_stroke` colour (`paint_default_icon`, `:472-486`) — in a box of the stated
+`icon_width`, right-aligned in the column and centred on the drop-down's
+height, so the arrow is the size egui draws it at the theme's
+`arrow_icon_size`. Where the text is as tall as the arrow's box or taller,
+nothing is changed and egui's own arrow is drawn. Everything else is egui's:
+layout, interaction, the popup, keyboard handling and accessibility
+(`WidgetType::ComboBox`).
+
+This is not the reimplementation §1.4 forbids: nothing of `ComboBox` is
+repeated but its arrow's triangle, and the widget remains egui's. A drop-down's
+contents are a closure, so, like egui's own, it is shown with `show_ui`, not
+added with `Ui::add` (§3.2): the call site changes `egui::ComboBox` to this
+type and nothing else. With no atlas installed it is `egui::ComboBox`
+unchanged (§2.1).
+
+### 4.7 Delivered by the connector — not a widget here
 
 | wanted | how the application gets it |
 |---|---|
-| any egui widget in its native role colours — button, checkbox, radio button, text field, combo box, separator, progress bar, tab | the connector's `native_scope` with the widget's `Role`: `RoleVariant::Selected` for a checked checkbox, while an active tab or a primary button is a `Button::selected(true)` in the `Normal` scope, whose cell carries those colours in `selection.*`. A `ScrollArea`'s bars need no scope: the base style carries them (connector spec §5.9) |
+| any egui widget in its native role colours — button, checkbox, radio button, text field, combo box (whose height §4.6 fixes), separator, progress bar, tab | the connector's `native_scope` with the widget's `Role`: `RoleVariant::Selected` for a checked checkbox, while an active tab or a primary button is a `Button::selected(true)` in the `Normal` scope, whose cell carries those colours in `selection.*`. A `ScrollArea`'s bars need no scope: the base style carries them (connector spec §5.9) |
 | toolbar, status bar, sidebar, card, window, dialog, popover, tooltip and menu chrome | the connector's `Surface` frames and role scopes |
 | an expander's arrow colour | the connector's `expander_icon`, passed to `CollapsingHeader::icon` |
 | a text field's focused border | the connector's `input_frame`, passed to `TextEdit::frame` |
@@ -630,14 +770,15 @@ Headless: tests drive a bare `egui::Context` with `RawInput`, AccessKit enabled
 
 | # | group | proves |
 |---|---|---|
-| T1 | **No-atlas fallback** | every widget renders with no atlas installed, adds the egui counterpart §2.1 names, returns a `Response`, and panics nowhere |
+| T1 | **No-atlas fallback** | every widget renders with no atlas installed, adds the egui counterpart §2.1 names (the `ComboBox` shows it), returns a `Response`, and panics nowhere |
 | T2 | **Hostile theme** | `NaN`, `±∞`, `-0.0` and extreme magnitudes in every `f32` leaf a widget reads; every widget allocates finite space, and a Tier P widget whose geometry is not finite takes §2.1's fallback |
 | T3 | **Accessibility** | every widget's node carries the role and states of §2.7; a clicked `wrap::hyperlink` is visited on the next pass — its node carries `visited` and its text `link.visited_text_color`; focused with `Key::Tab`, the `Switch` has registered its track as its focus shape and no widget paints a ring |
 | T4 | **Reduced motion** | under reduced motion the `Switch` thumb reaches its end in the pass of the click, the painted `Spinner` requests no repaint and paints the same shapes on two passes |
 | T5 | **Disabled** | `.enabled(false)` paints the widget's disabled leaves (or the base colour where a leaf is `None`), its painter's opacity is unchanged inside the scope, and a click does not change the value |
 | T6 | **No hardcoded values** | a source scan for numeric literals in painting code, allowing only §2.3's table |
-| T7 | **Tier P promotions are still justified** | each §4 citation still describes the hardcoded upstream fact: no switch module under `widgets/`; `Stroke::new(3.0` and `- 2.0` in `widgets/spinner.rs`; rail and resting knob both from `inactive.bg_fill` in `widgets/slider.rs`. A failure demotes the widget (§1.5) |
-| T8 | **Tier C stays cheap** | `SegmentedControl` calls neither `Ui::allocate_response` nor `Ui::allocate_exact_size` and senses nothing itself; every segment is an egui `Button` |
+| T7 | **Tier P promotions are still justified** | each §4 citation still describes the hardcoded upstream fact: no switch module under `widgets/`; `Stroke::new(3.0` and `- 2.0` in `widgets/spinner.rs`; rail and resting knob both from `inactive.bg_fill` in `widgets/slider.rs`. A failure demotes the widget (§1.5). The same for the `ComboBox`'s per-instance change: the square `icon_size`, the height `max`, and the arrow's `0.7` / `0.45` in `containers/combo_box.rs`; a failure retires the change (§4.6) |
+| T9 | **The drop-down's height** | on `kde-breeze`, whose arrow box is taller than its text, `ComboBox` is as tall as its text and padding make it, `combo_box.min_height`; the arrow is egui's triangle at `arrow_icon_size`, right-aligned in its column and centred on the height (§4.6) |
+| T8 | **Tier C stays cheap** | `SegmentedControl` calls neither `Ui::allocate_response` nor `Ui::allocate_exact_size`, senses nothing and paints nothing itself; every segment is an egui `Button`; the segments are joined: one outline in the scope's border colour as wide as the border all round, no segment stroked, only the outer corners rounded, to the inner radius, the segments `separator_width` apart (§4.4) |
 
 T6 is the mechanical enforcement of the project's no-hardcoded-values rule.
 
@@ -651,5 +792,5 @@ T6 is the mechanical enforcement of the project's no-hardcoded-values rule.
 | 2 | **Third-party egui crates are unaffected.** They render with the style of the `Ui` they are given — the connector's base style unless the application scopes them; only the connector's focus ring reaches them | they call egui's widgets directly; nothing here is in their path |
 | 3 | **A bare `Link`'s visited colour, and every link's hover underline, stay egui's.** `Link` carries no URL (`widgets/hyperlink.rs:27-29`) and egui records no visited state, so `wrap::link` has nothing to attach `link.visited_text_color` to; and `Link` underlines itself on hover or focus (`:50-54`) whatever `link.underline_enabled` states for the link at rest | native-theme states nothing about a hover underline, so the theme specifies no appearance `:50-54` prevents, and §1.5 admits no promotion on it |
 | 4 | **The macOS spinner is an arc, not fins** | §4.3; the model states no fin geometry |
-| 5 | **A segmented control's divider line and joined outline are not drawn** | §4.4; no source states them |
+| 5 | **A segmented control's dividers are its border's colour** — the model states no divider colour, so the outline's colour shows through the `separator_width` gaps | §4.4; `SegmentedControlTheme` has one line colour |
 | 6 | **No slider tick marks** — `slider.tick_mark_length` | `Slider` takes no tick positions; egui's paints none either |

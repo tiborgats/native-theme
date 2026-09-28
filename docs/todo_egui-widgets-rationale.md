@@ -35,10 +35,12 @@ a call reaches only through a choice every call site would otherwise repeat:
 | a spinner at the theme's stroke | `egui::Spinner` hardcodes `Stroke::new(3.0, color)` (`widgets/spinner.rs:58`) |
 | a link in its hover, pressed, disabled and visited colours | `Link` paints one `hyperlink_color` (`widgets/hyperlink.rs:47`), and egui records no visited state. The connector grades the hover, pressed and visited colours DERIVED (the disabled one is SCOPED), a per-call text colour chosen by this pass's interaction, read before the widget is added (`Context::read_response`, `context.rs:1350-1355`; connector spec §5.3), so what is missing is not a route but that choice and a visit set, which the wrappers make once (spec §4.5) |
 | a segmented control | egui has none; the connector's `SegmentedControl` scope carries its colours — the active segment's in the `Normal` cell's `selection.*` — and the divider's width as the row's gap; what no `Style` says is the row itself — one exclusive choice, reported as a radio group (spec §4.4, §2.7) |
+| a drop-down at the stated height | egui's `ComboBox` makes its arrow's box square, `icon_width` by `icon_width` (`containers/combo_box.rs:342`), and its content at least that box tall (`:361`), so an arrow taller than the text raises it above `combo_box.min_height`; no `Style` field separates the box's height from its width (spec §4.6) |
 
-This crate is those five, and nothing else.
+This crate is those six, and nothing else. The sixth was found after the first
+five were built (§3.13).
 
-### 1.1 Why it is only those five
+### 1.1 Why it is only those six
 
 An earlier design of this crate also carried a toolbar, a status bar, a
 sidebar, a tab bar, an expander, a list, a dialog button row and a wrapper
@@ -47,7 +49,7 @@ the role scope or `Surface` frame the connector already builds, or passed it
 one connector accessor. That is one call the application writes itself; the
 wrapper added a name, an API and a per-release audit, and no pixel. Under the
 admission rule (spec §1.5) the cheapest tier for each of them is no widget at
-all, so they are gone (spec §4.6).
+all, so they are gone (spec §4.7).
 
 What stays is where this crate draws what the connector cannot:
 the five of §1, each at the cheapest tier that draws it.
@@ -204,14 +206,20 @@ motion, so egui's is the value nobody had to invent (§3.8). Its radius follows
 from the diameter being an outer size and egui's stroke being centred on its
 path (spec §4.3).
 
-### 3.10 The segmented control draws only what is stated
+### 3.10 The segmented control is one control
 
-`separator_width` is a width; nothing in the model states the divider's colour
-or the shape where two segments meet. Painting the divider in the border's
-colour, or squaring the inner corners, would each state something no source
-does, so neither is drawn, and the control shows as segments `separator_width`
-apart (spec §4.4, §7 item 5). The research that would state them is filed in
-`docs/todo.md`, as the tab bar's active-tab indicator was before it.
+A segmented control is one control parted by dividers wherever a platform has
+one: `NSSegmentedControl` and libadwaita's `AdwToggleGroup` draw one rounded
+shape, and `separator_width` is "the width of the divider line between
+segments" (`docs/platform-facts.md` §2.25, :987) — a line inside one control,
+not a gap between separate ones. So the row is joined (spec §4.4): one outline
+in the control's border, its fill showing through the `separator_width` gaps,
+the segments unstroked and square where they meet a divider. The model states
+the dividers' width and no colour of their own; the control states one line
+colour, its border's, which is therefore the dividers' too, as the iced
+connector and the gpui showcase draw them. An earlier draft drew separate
+segments `separator_width` apart because no leaf names the join; that read the
+field as a gap, which its definition does not say (spec §7 item 5).
 
 ### 3.11 Fonts: nothing to add today
 
@@ -236,6 +244,34 @@ dependency's features upward. `rust-version = "1.95"` is egui 0.36.2's, not
 the workspace's `1.88.0` floor; this crate is downstream of the connector and
 can never require less.
 
+### 3.13 The drop-down: egui's, one scope value changed
+
+The first five were chosen from what egui draws from a hardcoded value. The
+sixth showed on the Basic page's captures: `kde-breeze`'s drop-down was 34px
+tall where the theme states `combo_box.min_height` 32, because egui's
+`ComboBox` makes its arrow's box square and its content at least that box tall
+(`containers/combo_box.rs:342`, `:361`), and KDE's 20px arrow width is taller
+than its text. A platform's arrow sits in a column the control's full height
+and sets no height of its own (spec §4.6), so the height the theme states is
+the one to reach. Reimplementing `ComboBox` is closed (spec §1.4) and would
+buy nothing here: the only thing wrong is one number egui derives from
+another, so the wrapper changes that number for one instance — the arrow box's
+height to the text's line, the column's width kept through `icon_spacing` —
+and repaints egui's own arrow at the stated size. That is Tier W: egui still
+lays out, senses, pops up and reports the drop-down, and T7 retires the change
+the release egui stops squaring the box.
+
+### 3.14 What the implementation changed in the specification
+
+Three places where the built crate departs from the first draft of the
+specification, each recorded where the specification describes it, as a
+deviation note: the links report `Role::Label`, as egui's own `Link` does
+under its default text selection (spec §2.7); the slider takes its width from
+the `Ui` it is added to, not from its own scope (spec §4.2); and a segment
+whose padding the theme leaves unstated is `segment_height` tall, its padding
+narrowed to fit (spec §4.4). A fourth change is a decision rather than a
+deviation: the segmented control is drawn joined (§3.10).
+
 ---
 
 ## 4 -- Why the charter is satisfied rather than circumvented
@@ -255,8 +291,9 @@ replaced, not inherited (spec §1.5), for two defects:
 
 Under the replacement, three widgets are painted, each with a citation proving
 no cheaper tier draws it (spec §4.1–§4.3); one is composed; two functions wrap;
-and everything the connector already delivers with one call is no widget at
-all (spec §4.6).
+egui's drop-down is wrapped with one per-instance change (spec §4.6); and
+everything the connector already delivers with one call is no widget at all
+(spec §4.7).
 
 ---
 
@@ -269,8 +306,8 @@ least volatile primitives — `allocate_response`, `painter`, `Response`,
 is the connector's: one egui minor at a time.
 
 **When native-theme grows a widget or a field**, it adds a candidate, tiered by
-spec §1.5; a divider colour or a joined-outline field turns spec §4.4's "not
-drawn" into a drawn pixel.
+spec §1.5; a divider colour of its own replaces the border colour spec §4.4
+paints the dividers in.
 
 **If the upstream change lands**, nothing here changes: it reaches none of the
 five things of §1. The crate bets only that egui keeps its `Widget` trait, its

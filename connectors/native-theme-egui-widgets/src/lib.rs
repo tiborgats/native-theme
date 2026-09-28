@@ -7,7 +7,9 @@
 //! cannot give egui's own widgets: a switch, a slider whose knob is not its
 //! rail, a spinner at the theme's stroke, and a segmented control, which egui
 //! does not have. It also wraps egui's links in their state and visited
-//! colours, the per-call route the connector names for them, written once.
+//! colours, the per-call route the connector names for them, written once,
+//! and egui's drop-down at the height the theme states, which egui's square
+//! arrow box can exceed.
 //!
 //! Everything it draws is driven by the `ResolvedTheme` of the atlas the
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
@@ -17,7 +19,8 @@
 //! egui's own counterpart** — [`switch::Switch`] as `egui::Checkbox`,
 //! [`slider::Slider`] as `egui::Slider`, [`spinner::Spinner`] as
 //! `egui::Spinner`, [`segmented_control::SegmentedControl`] as unscoped
-//! buttons, the [`wrap`] functions as egui's `Link` and `Hyperlink`.
+//! buttons, the [`wrap`] functions as egui's `Link` and `Hyperlink`,
+//! [`combo_box::ComboBox`] as `egui::ComboBox`.
 //!
 //! ```rust,no_run
 //! use native_theme_egui_widgets::connector::egui;
@@ -29,7 +32,9 @@
 //! ```
 //!
 //! Every widget is an [`egui::Widget`](native_theme_egui::egui::Widget) added
-//! with `ui.add(..)`, so `ui.add_sized` and `ui.add_enabled` take them too. No
+//! with `ui.add(..)`, so `ui.add_sized` and `ui.add_enabled` take them too —
+//! but the drop-down, whose contents are a closure: as egui's own, it is shown
+//! with [`combo_box::ComboBox::show_ui`]. No
 //! extension trait on `egui::Ui` is provided: `Ui::button` and its siblings
 //! are inherent methods, which Rust resolves before a trait's, so a trait
 //! method of the same name would be silently ignored at every call site.
@@ -60,6 +65,7 @@
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
 
+pub mod combo_box;
 pub mod segmented_control;
 pub mod slider;
 pub mod spinner;

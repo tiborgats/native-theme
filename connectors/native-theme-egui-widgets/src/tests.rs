@@ -18,6 +18,7 @@ use native_theme_egui::{
     from_preset,
 };
 
+use crate::combo_box::ComboBox;
 use crate::segmented_control::SegmentedControl;
 use crate::slider::Slider;
 use crate::spinner::Spinner;
@@ -241,6 +242,24 @@ fn with_no_atlas_every_widget_is_its_egui_counterpart() {
             }),
         ),
     ];
+    let mut cases = cases;
+    cases.push((
+        "combo box",
+        Box::new(|ui| {
+            ComboBox::from_id_salt("fruit")
+                .selected_text("Apple")
+                .width(140.0)
+                .show_ui(ui, |ui| ui.label("Banana"))
+                .response
+        }),
+        Box::new(|ui| {
+            egui::ComboBox::from_id_salt("fruit")
+                .selected_text("Apple")
+                .width(140.0)
+                .show_ui(ui, |ui| ui.label("Banana"))
+                .response
+        }),
+    ));
     for (name, ours, egui_s) in cases {
         let (a, ra) = response(&bare(), at(1.0), |ui| ours(ui));
         let (b, rb) = response(&bare(), at(1.0), |ui| egui_s(ui));
@@ -273,10 +292,10 @@ fn hostile(v: f32) -> ResolvedTheme {
 }
 
 /// How many widgets `one_widget` adds.
-const WIDGETS: usize = 6;
+const WIDGETS: usize = 7;
 
 /// Widget `i` of every widget of the crate: switch, slider, spinner, segmented control, link,
-/// hyperlink.
+/// hyperlink, combo box.
 fn one_widget(ui: &mut egui::Ui, i: usize) -> egui::Response {
     match i {
         0 => ui.add(Switch::new(&mut true).label("Wi-Fi")),
@@ -287,9 +306,15 @@ fn one_widget(ui: &mut egui::Ui, i: usize) -> egui::Response {
             let link = wrap::link(ui, "Link");
             ui.add(link)
         }
-        _ => {
+        5 => {
             let hyperlink = wrap::hyperlink(ui, "Docs", "https://example.org");
             ui.add(hyperlink)
+        }
+        _ => {
+            ComboBox::from_id_salt("fruit")
+                .selected_text("Apple")
+                .show_ui(ui, |ui| ui.label("Banana"))
+                .response
         }
     }
 }
@@ -347,21 +372,24 @@ fn every_widget_reports_its_role() {
         node(&out, ids[2]).role(),
         accesskit::Role::ProgressIndicator
     );
-    let row = node(&out, ids[3]);
-    assert_eq!(row.role(), accesskit::Role::RadioGroup);
-    let buttons: Vec<accesskit::Node> = row
+    let update = out.platform_output.accesskit_update.as_ref().unwrap();
+    let by_id = |id: &accesskit::NodeId| {
+        update
+            .nodes
+            .iter()
+            .find(|(n, _)| n == id)
+            .map(|(_, node)| node.clone())
+            .unwrap()
+    };
+    // The control is the outline; the row inside it, its child, is the radio group.
+    let groups: Vec<accesskit::Node> = node(&out, ids[3])
         .children()
         .iter()
-        .map(|child| {
-            let update = out.platform_output.accesskit_update.as_ref().unwrap();
-            update
-                .nodes
-                .iter()
-                .find(|(n, _)| n == child)
-                .map(|(_, node)| node.clone())
-                .unwrap()
-        })
+        .map(by_id)
+        .filter(|n| n.role() == accesskit::Role::RadioGroup)
         .collect();
+    assert_eq!(groups.len(), 1);
+    let buttons: Vec<accesskit::Node> = groups[0].children().iter().map(by_id).collect();
     assert_eq!(buttons.len(), 2);
     assert!(
         buttons
@@ -377,6 +405,8 @@ fn every_widget_reports_its_role() {
     assert_eq!(node(&out, ids[4]).role(), egui_role);
     assert_eq!(node(&out, ids[5]).role(), egui_role);
     assert!(!node(&out, ids[5]).is_visited());
+    // The drop-down is egui's own, and reports what egui's reports.
+    assert_eq!(node(&out, ids[6]).role(), accesskit::Role::ComboBox);
 }
 
 /// T3: a clicked hyperlink is visited on the next pass, in `link.visited_text_color`.
@@ -698,10 +728,11 @@ fn literals(code: &str) -> Vec<String> {
 }
 
 /// T6: the only numeric literals are §2.3's: `0.5`, the identities `0` `0.0` `1.0`, egui's
-/// spinner constants `240` `8` `128` and egui's slider key step `1.0`.
+/// spinner constants `240` `8` `128`, egui's slider key step `1.0` and egui's combo-box arrow
+/// proportions `0.7` `0.45`.
 #[test]
 fn the_crate_hardcodes_no_values() {
-    let allowed = ["0", "0.0", "0.5", "1.0", "240.0", "8", "128"];
+    let allowed = ["0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45"];
     let mut found = Vec::new();
     for (file, code) in painting_sources() {
         for literal in literals(&code) {
@@ -763,6 +794,13 @@ fn the_painted_widgets_are_still_needed() {
     );
     assert!(slider.contains("let visuals = ui.style().interact(response);"));
     assert!(slider.contains("fill: visuals.bg_fill,"));
+    // The drop-down's per-instance change: egui's arrow box is square and raises the content
+    // to its height; its arrow is the triangle `ComboBox` repaints in the stated box.
+    let combo =
+        std::fs::read_to_string(egui_src().join("containers").join("combo_box.rs")).unwrap();
+    assert!(combo.contains("let icon_size = Vec2::splat(ui.spacing().icon_width);"));
+    assert!(combo.contains("let actual_height = galley.size().y.max(icon_size.y);"));
+    assert!(combo.contains("vec2(rect.width() * 0.7, rect.height() * 0.45),"));
 }
 
 // ---- T8: Tier C stays cheap --------------------------------------------------------------------
@@ -820,4 +858,134 @@ fn the_segments_are_separator_width_apart() {
         let want = f64::from(t.segmented_control.segment_height);
         assert!((height - want).abs() < 0.5, "{height} != {want}");
     }
+}
+
+/// The segments are joined: one outline in the scope's border colour, as wide as the border
+/// all round, its fill showing between the segments; no segment strokes itself, and only the
+/// outer corners are rounded, to the outline's inner radius.
+#[test]
+fn the_segments_are_joined() {
+    let t = kde();
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let add = |ui: &mut egui::Ui| ui.add(SegmentedControl::new(&mut 1, ["Day", "Week", "Month"]));
+    let _ = response(&ctx, at(0.0), add);
+    let mut border = egui::Stroke::NONE;
+    let mut radius = egui::CornerRadius::ZERO;
+    let (out, control) = response(&ctx, at(0.0), |ui| {
+        use native_theme_egui::NativeThemeUiExt as _;
+        let idle = ui
+            .native_scope(
+                native_theme_egui::Role::SegmentedControl,
+                native_theme_egui::RoleVariant::Normal,
+                |ui| ui.visuals().widgets.inactive,
+            )
+            .inner;
+        border = idle.bg_stroke;
+        radius = idle.corner_radius;
+        add(ui)
+    });
+    assert!(border.width > 0.0);
+    let all = rects(&out);
+    let outline: Vec<_> = all.iter().filter(|r| r.fill == border.color).collect();
+    assert_eq!(outline.len(), 1, "{all:#?}");
+    assert_eq!(outline[0].rect, control.rect);
+    assert_eq!(outline[0].corner_radius, radius);
+    let segments: Vec<_> = all.iter().filter(|r| r.fill != border.color).collect();
+    assert_eq!(segments.len(), 3, "{all:#?}");
+    let inner = control.rect.shrink(border.width);
+    let inset = native_theme_egui::convert::u8_from_f32_saturating(border.width);
+    for (i, s) in segments.iter().enumerate() {
+        assert_eq!(s.stroke.width, 0.0, "segment {i}");
+        assert_eq!(s.rect.top(), inner.top(), "segment {i}");
+        assert_eq!(s.rect.bottom(), inner.bottom(), "segment {i}");
+        let c = s.corner_radius;
+        let (left, right) = (i == 0, i == 2);
+        assert_eq!(
+            c.nw,
+            if left { radius.nw - inset } else { 0 },
+            "segment {i}"
+        );
+        assert_eq!(
+            c.sw,
+            if left { radius.sw - inset } else { 0 },
+            "segment {i}"
+        );
+        assert_eq!(
+            c.ne,
+            if right { radius.ne - inset } else { 0 },
+            "segment {i}"
+        );
+        assert_eq!(
+            c.se,
+            if right { radius.se - inset } else { 0 },
+            "segment {i}"
+        );
+    }
+    assert_eq!(segments[0].rect.left(), inner.left());
+    assert_eq!(segments[2].rect.right(), inner.right());
+    for pair in segments.windows(2) {
+        assert_eq!(
+            pair[1].rect.left() - pair[0].rect.right(),
+            t.segmented_control.separator_width
+        );
+    }
+}
+
+/// The drop-down is as tall as its text and padding, at least `combo_box.min_height`, where
+/// egui's square arrow box would make it taller; the arrow keeps `arrow_icon_size`'s box, its
+/// column the stated width.
+#[test]
+fn the_drop_down_is_as_tall_as_its_text() {
+    let t = kde();
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let add = |ui: &mut egui::Ui| {
+        ComboBox::from_id_salt("fruit")
+            .selected_text("Apple")
+            .width(140.0)
+            .show_ui(ui, |ui| ui.label("Banana"))
+            .response
+    };
+    let _ = response(&ctx, at(0.0), add);
+    let mut line = 0.0;
+    let mut padding = egui::Vec2::ZERO;
+    let (out, combo) = response(&ctx, at(0.0), |ui| {
+        use native_theme_egui::NativeThemeUiExt as _;
+        (line, padding) = ui
+            .native_scope(
+                native_theme_egui::Role::ComboBox,
+                native_theme_egui::RoleVariant::Normal,
+                |ui| {
+                    let galley = egui::WidgetText::from("Apple").into_galley(
+                        ui,
+                        Some(egui::TextWrapMode::Extend),
+                        f32::INFINITY,
+                        egui::TextStyle::Button,
+                    );
+                    (galley.size().y, ui.spacing().button_padding)
+                },
+            )
+            .inner;
+        add(ui)
+    });
+    let arrow = t.combo_box.arrow_icon_size;
+    assert!(line < arrow, "the case this covers: {line} < {arrow}");
+    let want = (line + 2.0 * padding.y).max(t.combo_box.min_height);
+    let height = combo.rect.height();
+    assert!((height - want).abs() < 0.5, "{height} != {want}");
+    assert!((height - t.combo_box.min_height).abs() < 0.5, "{height}");
+    let triangles: Vec<egui::Rect> = flat(&out.shapes)
+        .into_iter()
+        .filter_map(|s| match s {
+            egui::Shape::Path(p) if p.points.len() == 3 => Some(egui::Rect::from_points(&p.points)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(triangles.len(), 1);
+    let a = triangles[0];
+    assert!((a.width() - 0.7 * arrow).abs() < 1e-3, "{a:?}");
+    assert!((a.height() - 0.45 * arrow).abs() < 1e-3, "{a:?}");
+    // The arrow's box ends at the column's right edge, the padding in from the frame's.
+    let right = combo.rect.right() - padding.x;
+    assert!((a.center().x - (right - 0.5 * arrow)).abs() < 1e-3, "{a:?}");
+    assert!((a.center().y - combo.rect.center().y).abs() < 0.5, "{a:?}");
 }
