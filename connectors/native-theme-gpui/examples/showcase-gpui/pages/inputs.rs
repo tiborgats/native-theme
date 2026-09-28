@@ -60,6 +60,7 @@ impl Showcase {
                             INPUTS_FIELD,
                             &self.input_state,
                             InputField::Refined,
+                            false,
                             px(360.0),
                         )
                         .self_start(),
@@ -73,6 +74,7 @@ impl Showcase {
                             INPUTS_FIELD_HEIGHT_ONLY,
                             &self.input_height_state,
                             InputField::HeightOnly,
+                            false,
                             px(360.0),
                         )
                         .self_start(),

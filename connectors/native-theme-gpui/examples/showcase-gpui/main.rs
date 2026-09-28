@@ -67,6 +67,9 @@ use crate::app::{AppColorMode, Showcase};
 /// the `--tab` names and the layout self-test all read [`Page::ALL`].
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Page {
+    /// The controls all three showcases draw, alike, on one screen: the page
+    /// the showcase opens on.
+    Basic,
     Buttons,
     Inputs,
     Data,
@@ -89,7 +92,8 @@ impl Page {
     /// neither the compiler nor that block can see is a variant added to the
     /// enum and to the matches but not to this list: it would take an index
     /// the array does not have, and the assertion fires.
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 11] = [
+        Self::Basic,
         Self::Buttons,
         Self::Inputs,
         Self::Data,
@@ -105,16 +109,17 @@ impl Page {
     /// The page's position in the TabBar, which is what `ShowPage` carries.
     const fn index(self) -> usize {
         match self {
-            Self::Buttons => 0,
-            Self::Inputs => 1,
-            Self::Data => 2,
-            Self::Feedback => 3,
-            Self::Typography => 4,
-            Self::Layout => 5,
-            Self::Overlays => 6,
-            Self::Charts => 7,
-            Self::Icons => 8,
-            Self::ThemeMap => 9,
+            Self::Basic => 0,
+            Self::Buttons => 1,
+            Self::Inputs => 2,
+            Self::Data => 3,
+            Self::Feedback => 4,
+            Self::Typography => 5,
+            Self::Layout => 6,
+            Self::Overlays => 7,
+            Self::Charts => 8,
+            Self::Icons => 9,
+            Self::ThemeMap => 10,
         }
     }
 
@@ -126,6 +131,7 @@ impl Page {
     /// The label the page's tab, the View menu and the command palette show.
     const fn label(self) -> &'static str {
         match self {
+            Self::Basic => "Basic",
             Self::Buttons => "Buttons",
             Self::Inputs => "Inputs",
             Self::Data => "Data",
@@ -142,6 +148,7 @@ impl Page {
     /// The name `--tab` takes for the page.
     const fn flag(self) -> &'static str {
         match self {
+            Self::Basic => "basic",
             Self::Buttons => "buttons",
             Self::Inputs => "inputs",
             Self::Data => "data",
@@ -158,6 +165,7 @@ impl Page {
     /// The icon the page's command-palette entry shows.
     const fn icon(self) -> IconName {
         match self {
+            Self::Basic => IconName::Eye,
             Self::Buttons => IconName::CircleCheck,
             Self::Inputs => IconName::ALargeSmall,
             Self::Data => IconName::Inbox,
@@ -175,6 +183,7 @@ impl Page {
     /// so `the_page_tabs_navigate` can click the tab the render code built.
     const fn tab(self) -> &'static str {
         match self {
+            Self::Basic => "chrome-page-tab-basic",
             Self::Buttons => "chrome-page-tab-buttons",
             Self::Inputs => "chrome-page-tab-inputs",
             Self::Data => "chrome-page-tab-data",

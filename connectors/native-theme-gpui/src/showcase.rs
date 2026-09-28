@@ -95,6 +95,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
     ),
     ("main.rs", include_str!("../examples/showcase-gpui/main.rs")),
     (
+        "pages/basic.rs",
+        include_str!("../examples/showcase-gpui/pages/basic.rs"),
+    ),
+    (
         "pages/buttons.rs",
         include_str!("../examples/showcase-gpui/pages/buttons.rs"),
     ),

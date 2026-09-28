@@ -1670,19 +1670,26 @@ pub(crate) enum InputField {
 }
 
 /// A single-line `Input` over `state`, `width` wide, taking the refinement
-/// `field` names.
+/// `field` names; `disabled` or not.
 pub(crate) fn text_input(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     state: &Entity<InputState>,
     field: InputField,
+    disabled: bool,
     width: Pixels,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut input_info = info::inputs::input(cx.theme(), field, styled);
-    let input = Input::new(state).with_size(Size::Medium).w(width);
+    if disabled {
+        input_info = input_info.variant("disabled");
+    }
+    let input = Input::new(state)
+        .with_size(Size::Medium)
+        .disabled(disabled)
+        .w(width);
     let input = match field {
         InputField::Refined => native_info(input, cx, geometry::input, "input", &mut input_info),
         // Through the caller's style, which Input applies after its own

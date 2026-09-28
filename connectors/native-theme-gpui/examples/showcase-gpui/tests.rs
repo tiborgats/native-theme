@@ -202,7 +202,7 @@ fn read<R>(
     cx.update(|_window, cx| f(showcase.read(cx), cx))
 }
 
-/// Every page lays out: the TabBar's ten pages each render on the test
+/// Every page lays out: the TabBar's eleven pages each render on the test
 /// platform, each leaves a page root behind, and that root has a size.
 ///
 /// And no frame draws two info targets under one id (info/registry.rs,
@@ -216,7 +216,13 @@ fn read<R>(
 #[gpui::test]
 fn every_page_lays_out(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    assert_eq!(Page::ALL.len(), 10, "the TabBar no longer has ten pages");
+    assert_eq!(Page::ALL.len(), 11, "the TabBar no longer has eleven pages");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Basic,
+        "the showcase does not open on the Basic page"
+    );
+    assert_eq!(Page::ALL[0], Page::Basic, "Basic is not the first page");
     for page in Page::ALL {
         show(&mut cx, &showcase, page);
         assert_eq!(read(&mut cx, &showcase, |this, _| this.active_page), page);
@@ -1735,8 +1741,8 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
         "the showcase starts on Feedback, so showing it proves nothing"
     );
     assert!(
-        menu_action("View", "Feedback").partial_eq(&ShowPage(3)),
-        "View > Feedback does not carry ShowPage(3)"
+        menu_action("View", "Feedback").partial_eq(&ShowPage(4)),
+        "View > Feedback does not carry ShowPage(4)"
     );
     run_menu_item(&mut cx, "View", "Feedback");
     assert_eq!(
@@ -3001,6 +3007,7 @@ fn status_title(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Opti
 #[gpui::test]
 fn the_status_bar_names_the_hovered_widget(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Buttons);
     assert_eq!(
         status_title(&mut cx, &showcase),
         None,
@@ -6107,6 +6114,7 @@ fn the_tab_flag_names_every_page() {
         assert_eq!(crate::CliArgs::page(page.flag()), Ok(page));
     }
     assert_eq!(crate::CliArgs::page("text-inputs"), Ok(Page::Inputs));
+    assert_eq!(crate::CliArgs::page("basic"), Ok(Page::Basic));
     match crate::CliArgs::page("no-such-page") {
         Ok(page) => panic!("--tab no-such-page opened {page:?}"),
         Err(error) => {

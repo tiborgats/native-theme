@@ -275,6 +275,17 @@ pub(crate) struct Showcase {
     /// than from `cx.native_theme()`.
     pub(crate) layout: native_theme::theme::LayoutTheme,
 
+    // Basic page
+    /// The Basic page's three text fields: empty with a placeholder, filled,
+    /// and disabled.
+    pub(crate) basic_hint_state: Entity<InputState>,
+    pub(crate) basic_text_state: Entity<InputState>,
+    pub(crate) basic_disabled_state: Entity<InputState>,
+    /// The Basic page's drop-down, Apple chosen.
+    pub(crate) basic_select: Entity<SelectState<SearchableVec<SharedString>>>,
+    pub(crate) basic_slider_state: Entity<SliderState>,
+    pub(crate) basic_radio: Option<usize>,
+
     // Inputs page
     pub(crate) input_state: Entity<InputState>,
     /// The field sized by `geometry::input_height` alone.
@@ -837,6 +848,28 @@ impl Showcase {
         )
         .detach();
 
+        let basic_hint_state = cx.new(|cx| {
+            let mut state = InputState::new(window, cx);
+            state.set_placeholder("Placeholder", window, cx);
+            state
+        });
+        let basic_text_state = cx.new(|cx| InputState::new(window, cx).default_value("Text"));
+        let basic_disabled_state =
+            cx.new(|cx| InputState::new(window, cx).default_value("Disabled"));
+        let basic_select = cx.new(|cx| {
+            SelectState::new(
+                SearchableVec::new(vec![
+                    SharedString::from("Apple"),
+                    SharedString::from("Banana"),
+                    SharedString::from("Cherry"),
+                ]),
+                Some(gpui_component::IndexPath::default().row(0)),
+                window,
+                cx,
+            )
+        });
+        let basic_slider_state = cx.new(|_cx| SliderState::new().default_value(40.0));
+
         let input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
             state.set_placeholder("Type something here...", window, cx);
@@ -1243,7 +1276,7 @@ impl Showcase {
             color_mode,
             original_font,
             original_mono_font,
-            active_page: Page::Buttons,
+            active_page: Page::Basic,
             side_panel_visible: true,
             body_layout,
             side_panel_width: LEFT_PANEL_WIDTH,
@@ -1263,6 +1296,12 @@ impl Showcase {
             overlay_gap: Rc::new(Cell::new(None)),
             dialog_icons: SharedDialogIcons::default(),
             layout: initial_layout,
+            basic_hint_state,
+            basic_text_state,
+            basic_disabled_state,
+            basic_select,
+            basic_slider_state,
+            basic_radio: Some(0),
             input_state,
             input_height_state,
             textarea_demo,
@@ -1769,6 +1808,10 @@ impl Render for Showcase {
                     // `impl IntoElement + InteractiveElement` signatures worth
                     // their noise.
                     .child(match active_page {
+                        Page::Basic => self
+                            .render_basic_page(window, cx)
+                            .debug_selector(|| PAGE_ROOT.into())
+                            .into_any_element(),
                         Page::Buttons => self
                             .render_buttons_page(window, cx)
                             .debug_selector(|| PAGE_ROOT.into())
