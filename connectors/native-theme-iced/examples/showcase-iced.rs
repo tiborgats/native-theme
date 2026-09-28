@@ -158,8 +158,9 @@ mod probes {
     pub const BASIC_TEXT_AREA: &str = "probe-basic-text-area";
     pub const BASIC_SEGMENTED: &str = "probe-basic-segmented";
     pub const BASIC_EXPANDER: &str = "probe-basic-expander";
-    #[cfg(feature = "iced_aw")]
     pub const BASIC_LIST: &str = "probe-basic-list";
+    pub const BASIC_SPINNER: &str = "probe-basic-spinner";
+    pub const BASIC_CARD: &str = "probe-basic-card";
     pub const TOGGLER: &str = "probe-toggler";
     pub const PICK_LIST: &str = "probe-pick-list";
     pub const COMBO_BOX: &str = "probe-combo-box";
@@ -948,13 +949,9 @@ struct State {
     basic_segment: usize,
     basic_details_open: bool,
     basic_more_open: bool,
-    /// The Basic tab's tab bar and list: their selection, and the list's
-    /// rows, which the `SelectionList` borrows.
+    /// The Basic tab's tab bar and list: their selection.
     #[cfg(feature = "iced_aw")]
     basic_tab: usize,
-    #[cfg(feature = "iced_aw")]
-    basic_list_options: Vec<String>,
-    #[cfg(feature = "iced_aw")]
     basic_list_selected: Option<usize>,
 
     // Button tab
@@ -1243,11 +1240,6 @@ impl State {
             basic_more_open: false,
             #[cfg(feature = "iced_aw")]
             basic_tab: 0,
-            #[cfg(feature = "iced_aw")]
-            basic_list_options: (1..=BASIC_LIST_ITEMS)
-                .map(|n| format!("Item {n}"))
-                .collect(),
-            #[cfg(feature = "iced_aw")]
             basic_list_selected: Some(BASIC_LIST_SELECTED),
             button_press_count: 0,
             text_input_value: String::new(),
@@ -1593,7 +1585,6 @@ enum Message {
     BasicMoreToggled,
     #[cfg(feature = "iced_aw")]
     BasicTabSelected(usize),
-    #[cfg(feature = "iced_aw")]
     BasicListSelected(usize),
 
     // Button tab
@@ -2015,7 +2006,6 @@ fn update_inner(state: &mut State, message: Message) {
         Message::BasicMoreToggled => state.basic_more_open = !state.basic_more_open,
         #[cfg(feature = "iced_aw")]
         Message::BasicTabSelected(i) => state.basic_tab = i,
-        #[cfg(feature = "iced_aw")]
         Message::BasicListSelected(i) => state.basic_list_selected = Some(i),
         Message::ButtonPressed => {
             state.button_press_count = state.button_press_count.saturating_add(1);
@@ -4510,23 +4500,22 @@ const BASIC_TABS: [&str; 3] = ["One", "Two", "Three"];
 /// The Basic tab's list: how many rows it has (`Item 1` to `Item 8`), the one
 /// selected (`Item 2`), and how many rows it shows, fewer than it has, so its
 /// scrollbar is part of the page.
-#[cfg(feature = "iced_aw")]
 const BASIC_LIST_ITEMS: usize = 8;
-#[cfg(feature = "iced_aw")]
 const BASIC_LIST_SELECTED: usize = 1;
-#[cfg(feature = "iced_aw")]
 const BASIC_LIST_VISIBLE: f32 = 4.0;
 
-/// The inset `iced_aw` lays a `SelectionList`'s rows out in from its bounds,
-/// on every side: `Container::new(Scrollable::new(List { .. })).padding(1)`
-/// (iced_aw 0.14.1 `src/widget/selection_list.rs:119-130`), with no setter.
-#[cfg(feature = "iced_aw")]
-const AW_LIST_INSET: f32 = 1.0;
-
-/// The row padding `iced_aw` gives a `SelectionList` built without one,
-/// `padding: 5.0.into()` (iced_aw 0.14.1 `src/widget/selection_list.rs:77`),
-/// which it keeps in no constant: the side of a row the theme does not state.
+/// A list row's padding on a side `list.border.padding` leaves unstated:
+/// iced has no list, and this is the row padding `iced_aw` gives its
+/// `SelectionList` built without one, `padding: 5.0.into()` (iced_aw 0.14.1
+/// `src/widget/selection_list.rs:77`), which it keeps in no constant.
 const AW_LIST_PADDING: f32 = 5.0;
+
+/// The sweep of the Basic page's spinner arc, in degrees, at its widest:
+/// egui's `Spinner`, which the egui showcase's Basic page draws, sweeps
+/// `240°` times the sine of the time (egui 0.36.2
+/// `src/widgets/spinner.rs:48-49`). The model states the arc's diameter,
+/// stroke width and colour, not its sweep.
+const SPINNER_SWEEP: f32 = 240.0;
 
 /// The tooltip's padding, where iced can carry it: `Tooltip::padding` is one
 /// number for all four sides (iced_widget 0.14.2 `src/tooltip.rs`,
@@ -4557,10 +4546,10 @@ fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
 /// iced has no segmented control and no expander: they are built from
 /// buttons in the connector's `styles::segmented_control`, `styles::segment`
 /// and `styles::expander`. The card is the Layout page's, a container in
-/// `styles::container_card`. The list, the tab bar and the spinner are
-/// `iced_aw`'s; without the `iced_aw` feature the tab bar is drawn as the
-/// page tab strip's buttons, and the list and the spinner say they need the
-/// feature.
+/// `styles::container_card`. The list is list rows in a scrollable and the
+/// spinner an arc on a canvas, each drawn from its `list.*` and `spinner.*`
+/// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
+/// drawn as buttons.
 fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -4858,19 +4847,28 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ),
     );
 
-    #[cfg(feature = "iced_aw")]
-    let spinner: Element<'a, Message> = container(
-        Spinner::new()
-            .width(Length::Fixed(resolved.spinner.diameter))
-            .height(Length::Fixed(resolved.spinner.diameter)),
-    )
-    .style(styles::aw::spinner(resolved))
-    .into();
-    #[cfg(not(feature = "iced_aw"))]
-    let spinner: Element<'a, Message> =
-        text("The spinner is iced_aw's: build with --features iced_aw")
-            .role(&ts.caption, resolved, a11y)
-            .into();
+    // Where motion is reduced the arc stands still at its widest.
+    let (start, sweep) = if state.motion_reduced() {
+        (0.0, SPINNER_SWEEP.to_radians())
+    } else {
+        let t = state.animation_start.elapsed().as_secs_f32();
+        (
+            t * std::f32::consts::TAU,
+            SPINNER_SWEEP.to_radians() * t.sin(),
+        )
+    };
+    let spinner = probe(
+        probes::BASIC_SPINNER,
+        Length::Shrink,
+        canvas(SpinnerArc {
+            color: to_color(resolved.spinner.fill_color),
+            stroke: resolved.spinner.stroke_width,
+            start,
+            sweep,
+        })
+        .width(Length::Fixed(resolved.spinner.diameter))
+        .height(Length::Fixed(resolved.spinner.diameter)),
+    );
     let spinner_group = group("Spinner", spinner_info(resolved), spinner);
 
     let tab_t = &resolved.tab;
@@ -4946,48 +4944,56 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ),
     );
 
-    #[cfg(feature = "iced_aw")]
-    let list: Element<'a, Message> = {
-        let list_t = &resolved.list;
-        let label = scaled_text_size(list_t.item_font.size, a11y);
-        let stated =
-            native_theme_iced::padding_or(&list_t.border.padding, Padding::from(AW_LIST_PADDING));
-        // KDE's rows size to their content: the label's line box and the
-        // padding the theme states above and below it.
-        let row_height = list_t
-            .row_height
-            .unwrap_or(label * resolved.defaults.line_height + stated.y());
-        // `iced_aw` lays a row out `text_size + padding.y()` tall
-        // (`selection_list/list.rs:118`, `:209`) and has no row-height setter,
-        // so the height is reached through the vertical padding, split evenly.
-        let inset = ((row_height - label) / 2.0).max(0.0);
-        let padding = Padding::ZERO
-            .top(inset)
-            .bottom(inset)
-            .left(stated.left)
-            .right(stated.right);
-        probe(
-            probes::BASIC_LIST,
-            Length::Shrink,
-            SelectionList::new_with(
-                &state.basic_list_options,
-                |i, _| Message::BasicListSelected(i),
-                label,
-                padding,
-                styles::aw::selection_list(resolved),
-                state.basic_list_selected,
-                theme_font(&list_t.item_font),
-            )
-            .width(Length::Fixed(BASIC_WIDE))
-            .height(Length::Fixed(
-                BASIC_LIST_VISIBLE * (label + padding.y()) + 2.0 * AW_LIST_INSET,
-            )),
+    // The list is built from iced's own widgets: `iced_aw`'s `SelectionList`
+    // draws its rows' text at their left edge whatever padding it is given
+    // (iced_aw 0.14.1 `src/widget/selection_list/list.rs:263-276`), rounds
+    // nothing and styles no scrollbar, so it could not reach `list.*`.
+    let list_t = &resolved.list;
+    let label = scaled_text_size(list_t.item_font.size, a11y);
+    let row_pad =
+        native_theme_iced::padding_or(&list_t.border.padding, Padding::from(AW_LIST_PADDING));
+    // KDE's rows size to their content: the label's line box and the padding
+    // the theme states above and below it.
+    let label_line = label * resolved.defaults.line_height;
+    let row_height = list_t.row_height.unwrap_or(label_line + row_pad.y());
+    let rows = (0..BASIC_LIST_ITEMS).map(|i| {
+        button(
+            text(format!("Item {}", i + 1))
+                .typeset(&list_t.item_font, a11y)
+                .line_height(iced::Pixels(label_line)),
         )
+        .padding(row_pad)
+        .width(Fill)
+        .height(Length::Fixed(row_height))
+        .style(list_row(resolved, state.basic_list_selected == Some(i)))
+        .on_press(Message::BasicListSelected(i))
+        .into()
+    });
+    let frame = iced::Border {
+        color: to_color(list_t.border.color),
+        width: list_t.border.line_width,
+        radius: list_t.border.corner_radius.into(),
     };
-    #[cfg(not(feature = "iced_aw"))]
-    let list: Element<'a, Message> = text("The list is iced_aw's: build with --features iced_aw")
-        .role(&ts.caption, resolved, a11y)
-        .into();
+    let list_fill = to_color(list_t.background_color);
+    let list: Element<'a, Message> = probe(
+        probes::BASIC_LIST,
+        Length::Shrink,
+        // The rows inside the frame's line, which iced paints over the
+        // container's padding.
+        container(
+            scrollable(column(rows))
+                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+                .style(styles::scrollable(resolved))
+                .height(Length::Fixed(BASIC_LIST_VISIBLE * row_height)),
+        )
+        .padding(list_t.border.line_width)
+        .width(Length::Fixed(BASIC_WIDE))
+        .style(move |_theme: &Theme| container::Style {
+            background: Some(iced::Background::Color(list_fill)),
+            border: frame,
+            ..container::Style::default()
+        }),
+    );
     let list_group = group("List", list_info(resolved), list);
 
     let x = &resolved.expander;
@@ -5056,14 +5062,21 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let card_group = group(
         "Card",
         card_info(resolved),
-        container(text("Card content").body(resolved, a11y))
-            .padding(native_theme_iced::padding_or(
-                &resolved.card.border.padding,
-                Padding::ZERO,
-            ))
-            .width(Length::Fixed(BASIC_WIDE))
-            .style(styles::container_card(resolved))
-            .into(),
+        // A side `card.border.padding` leaves unstated -- every side on the
+        // Linux presets, whose cards leave the padding to their content
+        // (platform-facts §2.26) -- is `layout.container_margin`, the
+        // theme's padding inside a container.
+        probe(
+            probes::BASIC_CARD,
+            Length::Shrink,
+            container(text("Card content").body(resolved, a11y))
+                .padding(native_theme_iced::padding_or(
+                    &resolved.card.border.padding,
+                    Padding::from(gap.container),
+                ))
+                .width(Length::Fixed(BASIC_WIDE))
+                .style(styles::container_card(resolved)),
+        ),
     );
 
     let separator = group(
@@ -5127,6 +5140,56 @@ impl<Message> canvas::Program<Message> for DisclosureArrow {
             path.close();
         });
         frame.fill(&arrow, self.color);
+        vec![frame.into_geometry()]
+    }
+}
+
+/// The Basic tab's spinner: an arc `stroke` wide, `spinner.stroke_width`, in
+/// `color`, `spinner.fill_color`, on the circle the canvas holds,
+/// `spinner.diameter` across, from `start` through `sweep`, in radians,
+/// clockwise from the right. iced has no spinner, and `iced_aw`'s paints one
+/// orbiting dot (iced_aw 0.14.1 `src/widget/spinner.rs`), no arc.
+struct SpinnerArc {
+    color: Color,
+    stroke: f32,
+    start: f32,
+    sweep: f32,
+}
+
+impl<Message> canvas::Program<Message> for SpinnerArc {
+    type State = ();
+
+    fn draw(
+        &self,
+        _state: &Self::State,
+        renderer: &iced::Renderer,
+        _theme: &Theme,
+        bounds: iced::Rectangle,
+        _cursor: iced::mouse::Cursor,
+    ) -> Vec<canvas::Geometry> {
+        let mut frame = canvas::Frame::new(renderer, bounds.size());
+        // The stroke is centred on the circle, so the circle sits half a
+        // stroke inside the diameter.
+        let radius = ((frame.width().min(frame.height()) - self.stroke) / 2.0).max(0.0);
+        let (from, to) = if self.sweep < 0.0 {
+            (self.start + self.sweep, self.start)
+        } else {
+            (self.start, self.start + self.sweep)
+        };
+        let arc = canvas::Path::new(|path| {
+            path.arc(canvas::path::Arc {
+                center: frame.center(),
+                radius,
+                start_angle: iced::Radians(from),
+                end_angle: iced::Radians(to),
+            });
+        });
+        frame.stroke(
+            &arc,
+            canvas::Stroke::default()
+                .with_color(self.color)
+                .with_width(self.stroke),
+        );
         vec![frame.into_geometry()]
     }
 }
@@ -5213,13 +5276,22 @@ fn text_area_info(resolved: &ResolvedTheme) -> String {
 fn spinner_info(resolved: &ResolvedTheme) -> String {
     let s = &resolved.spinner;
     widget_tooltip(
-        "Spinner (iced_aw)",
-        &[("dot", "spinner.fill_color", to_color(s.fill_color))],
-        &[("size", "spinner.diameter, Spinner::width and ::height")],
-        &[(
-            "spinner.stroke_width",
-            "no receiver: iced_aw paints one orbiting dot, no stroked arc (spinner.rs:151)",
-        )],
+        "Spinner (an arc on a canvas)",
+        &[("arc", "spinner.fill_color", to_color(s.fill_color))],
+        &[
+            ("diameter", "spinner.diameter"),
+            ("stroke", "spinner.stroke_width"),
+        ],
+        &[
+            (
+                "sweep and speed",
+                "the model states none: egui's Spinner's, a turn a second, 240° times the sine of the time",
+            ),
+            (
+                "widget",
+                "iced has none, and iced_aw's paints one orbiting dot",
+            ),
+        ],
     )
 }
 
@@ -5307,7 +5379,7 @@ fn segmented_info(resolved: &ResolvedTheme) -> String {
 fn list_info(resolved: &ResolvedTheme) -> String {
     let l = &resolved.list;
     widget_tooltip(
-        "List (iced_aw SelectionList)",
+        "List (list rows in a scrollable)",
         &[
             (
                 "list",
@@ -5324,6 +5396,17 @@ fn list_info(resolved: &ResolvedTheme) -> String {
                 "list.selection_text_color",
                 to_color(l.selection_text_color),
             ),
+            (
+                "row under the pointer",
+                "list.hover_background",
+                to_color(l.hover_background),
+            ),
+            (
+                "label under the pointer",
+                "list.hover_text_color",
+                to_color(l.hover_text_color),
+            ),
+            ("label", "list.item_font.color", to_color(l.item_font.color)),
             ("border", "list.border.color", to_color(l.border.color)),
         ],
         &[
@@ -5333,18 +5416,19 @@ fn list_info(resolved: &ResolvedTheme) -> String {
                 "list.row_height, or the label's line box and list.border.padding \
                  above and below it",
             ),
-            ("height", "four rows and iced_aw's 1px inset"),
-        ],
-        &[
             (
-                "corner radius",
-                "iced_aw outlines the list with a hardcoded 0 (selection_list.rs:309)",
+                "row padding",
+                "list.border.padding's stated sides, iced_aw's list's 5px for the others",
             ),
-            (
-                "scrollbar",
-                "iced_aw's inner Scrollable takes no style: iced's own default class",
-            ),
+            ("frame", "list.border's width and corner radius"),
+            ("scrollbar", "styles::scrollable and styles::scrollbar"),
+            ("height", "four rows inside the frame's line"),
         ],
+        &[(
+            "widget",
+            "iced has no list: buttons in list_row in a scrollable; iced_aw's \
+             SelectionList draws its labels at the row's edge",
+        )],
     )
 }
 
@@ -5401,7 +5485,7 @@ fn card_info(resolved: &ResolvedTheme) -> String {
             ("radius", "card.border.corner_radius"),
             (
                 "padding",
-                "card.border.padding's stated sides; a container's none elsewhere",
+                "card.border.padding's stated sides; layout.container_margin for the others",
             ),
         ],
         &[],
@@ -11588,24 +11672,43 @@ mod tests {
                 header.height
             );
 
-            #[cfg(feature = "iced_aw")]
-            {
-                let list = probe_bounds(&mut ui, probes::BASIC_LIST);
-                let l = &r.list;
-                let stated = native_theme_iced::padding_or(
-                    &l.border.padding,
-                    Padding::from(AW_LIST_PADDING),
-                );
-                let row = l
-                    .row_height
-                    .unwrap_or(l.item_font.size * r.defaults.line_height + stated.y());
-                let expected = BASIC_LIST_VISIBLE * row + 2.0 * AW_LIST_INSET;
-                assert!(
-                    (list.height - expected).abs() < 0.01,
-                    "{preset}: the list is {}px tall, expected {expected}px",
-                    list.height
-                );
-            }
+            let list = probe_bounds(&mut ui, probes::BASIC_LIST);
+            let l = &r.list;
+            let stated =
+                native_theme_iced::padding_or(&l.border.padding, Padding::from(AW_LIST_PADDING));
+            let row = l
+                .row_height
+                .unwrap_or(l.item_font.size * r.defaults.line_height + stated.y());
+            let expected = BASIC_LIST_VISIBLE * row + 2.0 * l.border.line_width;
+            assert!(
+                (list.height - expected).abs() < 0.01,
+                "{preset}: the list is {}px tall, expected {expected}px",
+                list.height
+            );
+
+            let s = &r.spinner;
+            let spinner = probe_bounds(&mut ui, probes::BASIC_SPINNER);
+            assert!(
+                (spinner.width - s.diameter).abs() < 0.01
+                    && (spinner.height - s.diameter).abs() < 0.01,
+                "{preset}: the spinner is {spinner:?}, expected {} across",
+                s.diameter
+            );
+
+            // "Card content" sits the card's padding in from its edges:
+            // `layout.container_margin` on every Linux preset, whose cards
+            // state none.
+            let card = probe_bounds(&mut ui, probes::BASIC_CARD);
+            let margin = Gaps::from_layout(&state.layout).container;
+            let label = texts(&mut ui)
+                .into_iter()
+                .find(|(content, _)| content == "Card content")
+                .map(|(_, bounds)| bounds);
+            assert!(
+                label.is_some_and(|label| (label.x - card.x - margin).abs() < 0.01
+                    && (label.y - card.y - margin).abs() < 0.01),
+                "{preset}: the card's label is at {label:?} in {card:?}, {margin}px in expected"
+            );
         }
     }
 
