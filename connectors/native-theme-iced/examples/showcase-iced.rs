@@ -4520,12 +4520,22 @@ const BASIC_LIST_VISIBLE: f32 = 4.0;
 /// `src/widget/selection_list.rs:77`), which it keeps in no constant.
 const AW_LIST_PADDING: f32 = 5.0;
 
-/// The sweep of the Basic page's spinner arc, in degrees, at its widest:
-/// egui's `Spinner`, which the egui showcase's Basic page draws, sweeps
-/// `240°` times the sine of the time (egui 0.36.2
-/// `src/widgets/spinner.rs:48-49`). The model states the arc's diameter,
-/// stroke width and colour, not its sweep.
+/// The sweep of the Basic page's spinner arc, in degrees: the widest egui's
+/// `Spinner` draws, which turns a turn a second and sweeps `240°` times the
+/// sine of the time (egui 0.36.2 `src/widgets/spinner.rs:48-49`). The arc
+/// keeps this sweep and turns at egui's speed: a sweep of `240°` times the
+/// sine passes through nothing every π seconds, and the capture scripts
+/// capture about 2π seconds after the start, so every capture showed a dot.
+/// The model states the arc's diameter, stroke width and colour, not its
+/// sweep.
 const SPINNER_SWEEP: f32 = 240.0;
+
+/// Where the Basic page's spinner arc starts, in radians clockwise from the
+/// right, `elapsed` seconds into its animation: egui's `Spinner`'s turn a
+/// second (egui 0.36.2 `src/widgets/spinner.rs:48`), taken within one turn.
+fn spinner_start(elapsed: f32) -> f32 {
+    elapsed.fract() * std::f32::consts::TAU
+}
 
 /// The tooltip's padding, where iced can carry it: `Tooltip::padding` is one
 /// number for all four sides (iced_widget 0.14.2 `src/tooltip.rs`,
@@ -4857,27 +4867,16 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ),
     );
 
-    // Where motion is reduced the arc stands still at its widest.
-    let (start, sweep) = if state.motion_reduced() {
-        (0.0, SPINNER_SWEEP.to_radians())
+    // Where motion is reduced the arc stands still.
+    let start = if state.motion_reduced() {
+        0.0
     } else {
-        let t = state.animation_start.elapsed().as_secs_f32();
-        (
-            t * std::f32::consts::TAU,
-            SPINNER_SWEEP.to_radians() * t.sin(),
-        )
+        spinner_start(state.animation_start.elapsed().as_secs_f32())
     };
     let spinner = probe(
         probes::BASIC_SPINNER,
         Length::Shrink,
-        canvas(SpinnerArc {
-            color: to_color(resolved.spinner.fill_color),
-            stroke: resolved.spinner.stroke_width,
-            start,
-            sweep,
-        })
-        .width(Length::Fixed(resolved.spinner.diameter))
-        .height(Length::Fixed(resolved.spinner.diameter)),
+        spinner_arc(resolved, start),
     );
     let spinner_group = group("Spinner", spinner_info(resolved), spinner);
 
@@ -5154,16 +5153,32 @@ impl<Message> canvas::Program<Message> for DisclosureArrow {
     }
 }
 
+/// The Basic tab's spinner starting at `start`, in radians clockwise from the
+/// right: a canvas `spinner.diameter` across holding a [`SpinnerArc`] in
+/// `spinner.stroke_width` and `spinner.fill_color`.
+fn spinner_arc<Message>(
+    resolved: &ResolvedTheme,
+    start: f32,
+) -> iced::widget::Canvas<SpinnerArc, Message> {
+    let s = &resolved.spinner;
+    canvas(SpinnerArc {
+        color: to_color(s.fill_color),
+        stroke: s.stroke_width,
+        start,
+    })
+    .width(Length::Fixed(s.diameter))
+    .height(Length::Fixed(s.diameter))
+}
+
 /// The Basic tab's spinner: an arc `stroke` wide, `spinner.stroke_width`, in
 /// `color`, `spinner.fill_color`, on the circle the canvas holds,
-/// `spinner.diameter` across, from `start` through `sweep`, in radians,
+/// `spinner.diameter` across, from `start` through [`SPINNER_SWEEP`],
 /// clockwise from the right. iced has no spinner, and `iced_aw`'s paints one
 /// orbiting dot (iced_aw 0.14.1 `src/widget/spinner.rs`), no arc.
 struct SpinnerArc {
     color: Color,
     stroke: f32,
     start: f32,
-    sweep: f32,
 }
 
 impl<Message> canvas::Program<Message> for SpinnerArc {
@@ -5181,17 +5196,12 @@ impl<Message> canvas::Program<Message> for SpinnerArc {
         // The stroke is centred on the circle, so the circle sits half a
         // stroke inside the diameter.
         let radius = ((frame.width().min(frame.height()) - self.stroke) / 2.0).max(0.0);
-        let (from, to) = if self.sweep < 0.0 {
-            (self.start + self.sweep, self.start)
-        } else {
-            (self.start, self.start + self.sweep)
-        };
         let arc = canvas::Path::new(|path| {
             path.arc(canvas::path::Arc {
                 center: frame.center(),
                 radius,
-                start_angle: iced::Radians(from),
-                end_angle: iced::Radians(to),
+                start_angle: iced::Radians(self.start),
+                end_angle: iced::Radians(self.start + SPINNER_SWEEP.to_radians()),
             });
         });
         frame.stroke(
@@ -5295,7 +5305,7 @@ fn spinner_info(resolved: &ResolvedTheme) -> String {
         &[
             (
                 "sweep and speed",
-                "the model states none: egui's Spinner's, a turn a second, 240° times the sine of the time",
+                "the model states none: egui's Spinner's widest, 240°, turning a turn a second",
             ),
             (
                 "widget",
@@ -11736,6 +11746,95 @@ mod tests {
                 "{preset}: the card's label is at {label:?} in {card:?}, {margin}px in expected"
             );
         }
+    }
+
+    /// The Basic page's spinner draws an arc across its circle at every
+    /// moment of its turn, the moments the captures take (about 2π seconds
+    /// after the start) among them: the ink a snapshot of it shows reaches
+    /// across `spinner.diameter` (its two farthest pixels at least the
+    /// diameter less a stroke apart), and its body is `spinner.fill_color`.
+    #[test]
+    fn the_basic_spinner_draws_an_arc_across_its_diameter() {
+        let root =
+            std::env::temp_dir().join(format!("showcase-iced-spinner-{}", std::process::id()));
+        let pi = std::f32::consts::PI;
+        for preset in ["kde-breeze", "material", "adwaita"] {
+            let resolved = match native_theme_iced::from_preset(preset, false) {
+                Ok((_, resolved)) => resolved,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let s = &resolved.spinner;
+            let fill = to_color(s.fill_color).into_rgba8();
+            for (n, elapsed) in [0.0, 0.25, 0.5, 1.0, pi, 2.0 * pi, 6.3, 7.0, 3.0 * pi]
+                .into_iter()
+                .enumerate()
+            {
+                let mut ui: Simulator<'_, Message> = Simulator::with_size(
+                    Settings::default(),
+                    Size::new(s.diameter, s.diameter),
+                    spinner_arc(&resolved, spinner_start(elapsed)),
+                );
+                let snapshot = match ui.snapshot(&Theme::Light) {
+                    Ok(snapshot) => snapshot,
+                    Err(error) => panic!("{preset} at {elapsed}s: {error}"),
+                };
+                let dir = root.join(format!("{preset}-{n}"));
+                let image = match snapshot
+                    .matches_image(dir.join("arc.png"))
+                    .map_err(|error| error.to_string())
+                    .and_then(|_| {
+                        std::fs::read_dir(&dir)
+                            .and_then(|mut entries| {
+                                entries.next().unwrap_or_else(|| {
+                                    Err(std::io::Error::other("no snapshot written"))
+                                })
+                            })
+                            .map_err(|error| error.to_string())
+                    })
+                    .and_then(|entry| {
+                        image::open(entry.path())
+                            .map(|image| image.to_rgba8())
+                            .map_err(|error| error.to_string())
+                    }) {
+                    Ok(image) => image,
+                    Err(error) => panic!("{preset} at {elapsed}s: {error}"),
+                };
+                let scale = image.width() as f32 / s.diameter;
+                let background = image.get_pixel(0, 0).0;
+                let ink: Vec<(f32, f32)> = image
+                    .enumerate_pixels()
+                    .filter(|(_, _, pixel)| {
+                        pixel
+                            .0
+                            .iter()
+                            .zip(background)
+                            .map(|(a, b)| a.abs_diff(b) as u32)
+                            .sum::<u32>()
+                            > 96
+                    })
+                    .map(|(x, y, _)| ((x as f32 + 0.5) / scale, (y as f32 + 0.5) / scale))
+                    .collect();
+                let span = ink
+                    .iter()
+                    .flat_map(|a| ink.iter().map(move |b| (a.0 - b.0).hypot(a.1 - b.1)))
+                    .fold(0.0_f32, f32::max);
+                assert!(
+                    span >= s.diameter - s.stroke_width,
+                    "{preset} at {elapsed}s: the arc's ink spans {span}px, the spinner is {}px \
+                     across",
+                    s.diameter
+                );
+                assert!(
+                    image.pixels().any(|pixel| pixel
+                        .0
+                        .iter()
+                        .zip(fill)
+                        .all(|(a, b)| a.abs_diff(b) <= 2)),
+                    "{preset} at {elapsed}s: no pixel of the arc is spinner.fill_color"
+                );
+            }
+        }
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     /// The Basic page fits the window without scrolling under every Linux
