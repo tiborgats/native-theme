@@ -152,7 +152,7 @@
 
 ### Checkbox: KDE's checked checkbox is not a solid accent box
 
-- [ ] Re-research KDE's checked checkbox in `docs/platform-facts.md` §2.5.
+- [x] Re-research KDE's checked checkbox in `docs/platform-facts.md` §2.5.
       Breeze (its source at tree `be6e137e`) paints the checked box as the unchecked one — a rounded rectangle
       filled with the button colour, `palette.button()` — then fills it again
       with the highlight colour made translucent at `highlightBackgroundAlpha`
@@ -172,6 +172,28 @@
       `Metrics::Blend_Value` (`breezemetrics.h`, not read), which Breeze release
       shipped this code, and whether the model states Breeze's box as one
       composited `checked_background` or needs a layer of its own.
+
+      Done 2026-09-28, from breeze v6.7.5 (the release Plasma 6.7 ships):
+      `Metrics::Blend_Value` is 0.3
+      ([breezemetrics.h:176](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezemetrics.h#L176)),
+      which `highlightBackgroundAlpha` reads
+      ([breezehelper.cpp:40](https://invent.kde.org/plasma/breeze/-/blob/v6.7.5/kstyle/breezehelper.cpp#L40));
+      breeze v6.4.0 had a literal 0.33 there
+      ([breezehelper.cpp:39](https://invent.kde.org/plasma/breeze/-/blob/v6.4.0/kstyle/breezehelper.cpp#L39)).
+      The radio button is drawn the same way (`breezehelper.cpp:995-1024`, its
+      dot in `palette.text()` at `:1059`). The model states the box as one
+      composited `checked_background` — the button colour under the selection
+      colour at alpha 0.3, Breeze #c2e4f6, Breeze Dark #2f5368 — with
+      `indicator_color` the View foreground, the checked outline
+      (`checkbox.border.color`) the selection colour and
+      `unchecked_border_color` Breeze's `separatorColor()`
+      (`docs/platform-facts.md:1209`, `:1211`, `:1218`). The kde-breeze preset
+      states them, and the KDE reader computes them from `kdeglobals`
+      (`native-theme/src/kde/colors.rs`). Not settled: `hover_background`
+      (`#93cee9` in the preset, with no source): Breeze draws a hovered
+      indicator's outline in the focus colour (`breezehelper.cpp:897-910`,
+      `:1043-1057`) and leaves its fill alone, and the model has no hover
+      outline colour for the checkbox.
 
 ### Checkbox: the check mark's glyph and size
 
@@ -199,6 +221,28 @@
       the model does not, which is the hardcoded value the project's rules
       forbid; a platform value reaches a connector only through a model field
       that the readers and presets fill.
+
+### Radio: Material's radio is not the checkbox's shape
+
+- [ ] Decision for the maintainer (found 2026-09-28, while adding
+      `checkbox.radio_dot_diameter`). Material 3's radio differs from its
+      checkbox in size and in shape, which the model's shared `CheckboxTheme`
+      cannot state: `md.comp.radio-button.icon-size` is 20px
+      ([material-web v2.5.0 `_md-comp-radio-button.scss:34`](https://github.com/material-components/material-web/blob/v2.5.0/tokens/versions/v0_192/_md-comp-radio-button.scss#L34))
+      while `md.comp.checkbox.container-size` is 18px (`_md-comp-checkbox.scss:32`),
+      and the `material` preset's one `indicator_width_px = 18.0` makes the
+      radio 18; and a checked Material radio is an unfilled ring and a dot,
+      both `md.sys.color.primary` (`radio/internal/_radio.scss:126-127`), not
+      a filled accent disc with an on-accent dot. Neither token set has a dot
+      size: material-web's SVG draws a 10px dot (`radio.ts:108-119`,
+      `r="5"` in a 20px viewBox) and Compose `RadioButtonDotSize = 12.dp`
+      drawn at radius 6 − 1 (`RadioButton.kt:320-323`), both implementation
+      constants. `docs/platform-facts.md` has no Material column, and
+      `native-theme/src/presets/documented_sizes.rs:12-15` keeps the
+      `material` preset from stating a size no platform-facts row documents,
+      so the preset states no `radio_dot_diameter` and each toolkit draws its
+      own dot. Carrying Material's radio would need a radio indicator width
+      and radio-specific colours (or a ring-style flag) in the model.
 
 ### Theme watcher: OS changes it does not report
 
