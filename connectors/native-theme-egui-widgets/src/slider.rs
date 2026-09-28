@@ -31,8 +31,10 @@ const KEY_STEP: f32 = 1.0;
 ///   interaction state's `fg_stroke` (`:817`), as the theme states none. Its centre travels
 ///   the width less one knob radius at each end, as egui's `position_range` does
 ///   (`:853-865`).
-/// * The width is egui's `Spacing::slider_width`, the height the larger of `thumb_diameter`
-///   and `track_height`. No tick marks and no value field are drawn.
+/// * The width is egui's `Spacing::slider_width` (`egui/src/style.rs:412`) of the `Ui` it is
+///   added to, read before the slider scope opens, so an application sizes it as it sizes
+///   egui's own; the height is the larger of `thumb_diameter` and `track_height`. No tick marks
+///   and no value field are drawn.
 /// * `.enabled(false)` paints `disabled_track_color`, `disabled_fill_color` and
 ///   `disabled_thumb_color` (a `None` copies the colour it stands for), unfaded;
 ///   `ui.add_enabled(false, ..)` fades them at the calling `Ui`'s `disabled_alpha` on top.
@@ -78,27 +80,30 @@ impl<'a> Slider<'a> {
     }
 }
 
-/// The knob and rail sizes, every one finite.
+/// The knob and rail sizes, every one finite, and the slider's width.
 #[derive(Clone, Copy)]
 struct Geometry {
     thumb: f32,
     rail: f32,
+    width: f32,
 }
 
 impl Geometry {
-    fn of(sl: &ResolvedSliderTheme) -> Option<Self> {
+    fn of(sl: &ResolvedSliderTheme, width: f32) -> Option<Self> {
         Some(Self {
             thumb: scope::length(sl.thumb_diameter)?,
             rail: scope::length(sl.track_height)?,
+            width: scope::length(width)?,
         })
     }
 }
 
 impl egui::Widget for Slider<'_> {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
+        let width = ui.spacing().slider_width;
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let sl = &atlas.resolved_for(ui.ctx().theme()).slider;
-            Geometry::of(sl).map(|g| (g, sl.clone()))
+            Geometry::of(sl, width).map(|g| (g, sl.clone()))
         });
         let Slider {
             value,
@@ -168,7 +173,7 @@ fn slider_ui(
 ) -> egui::Response {
     let old = *value;
     *value = clamp_to(*value, range);
-    let size = egui::vec2(ui.spacing().slider_width, g.thumb.max(g.rail));
+    let size = egui::vec2(g.width, g.thumb.max(g.rail));
     let mut response = ui.allocate_response(size, egui::Sense::drag());
     let rect = response.rect;
     let knob_radius = 0.5 * g.thumb;
