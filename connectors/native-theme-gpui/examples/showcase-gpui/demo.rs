@@ -3152,6 +3152,20 @@ impl RenderOnce for ListRow {
         // What `native_info` applies the builder under.
         let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
         let mut row_info = info::data::list_row(cx.theme(), &self.label, state, styled);
+        // A selected row's text in `list.selection_text_color`, over the
+        // list font's colour `geometry::list_item` gives every row: the row
+        // refines itself with its style after its own `foreground`
+        // (list/list_item.rs, `RenderOnce for ListItem`).
+        let selected_text = self
+            .selected
+            .then(|| native_color(cx, |n| n.resolved.list.selection_text_color))
+            .flatten();
+        if selected_text.is_some() {
+            row_info = row_info.config(
+                "selected text",
+                "list.selection_text_color, which the showcase sets on the selected row over the list font's colour",
+            );
+        }
         let item = native_info(
             ListItem::new(SharedString::from(id.clone())),
             cx,
@@ -3159,6 +3173,7 @@ impl RenderOnce for ListRow {
             "list_item",
             &mut row_info,
         )
+        .when_some(selected_text, |item, text| item.text_color(text))
         // Plain text, not a Label: `Label::render` paints foreground on its
         // own element (label.rs:211) over the list font the row carries.
         .child(self.label)
@@ -3227,13 +3242,24 @@ fn tree_row(
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled);
+    // As a List row's: a selected row's text in `list.selection_text_color`.
+    let selected_text = selected
+        .then(|| native_color(cx, |n| n.resolved.list.selection_text_color))
+        .flatten();
+    if selected_text.is_some() {
+        row_info = row_info.config(
+            "selected text",
+            "list.selection_text_color, which the showcase sets on the selected row over the list font's colour",
+        );
+    }
     let item = native_info(
         ListItem::new(SharedString::from(id.clone())),
         cx,
         geometry::list_item,
         "list_item",
         &mut row_info,
-    );
+    )
+    .when_some(selected_text, |item, text| item.text_color(text));
     let ui = ui.clone();
     // Plain text, as the List's rows.
     item.child(label)

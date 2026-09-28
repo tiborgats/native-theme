@@ -3812,6 +3812,17 @@ fn the_basic_list_shows_four_rows(cx: &mut TestAppContext) {
         row.size.height * 4. + frame + frame,
         "the List box is not four rows ({row:?}) and its frame ({frame:?}) tall"
     );
+    // Item 2 is selected, its text in the list's selection text colour.
+    let info = settle_on(&mut cx, &showcase, "basic-list-row-1");
+    assert_eq!(
+        info.as_ref().map(|i| i.title()).as_deref(),
+        Some("ListItem · Item 2, selected")
+    );
+    assert!(
+        info.as_ref()
+            .is_some_and(|i| i.to_text().contains("list.selection_text_color")),
+        "the selected row's text is not list.selection_text_color: {info:?}"
+    );
 }
 
 /// The Basic page fits the window without scrolling under each Linux
