@@ -6171,7 +6171,9 @@ impl Typeset for iced::widget::Text<'_> {
         resolved: &ResolvedTheme,
         a11y: &AccessibilityPreferences,
     ) -> Self {
+        // The role's own line box, as the theme states it, scaled with its size.
         self.size(scaled_text_size(entry.size, a11y))
+            .line_height(iced::Pixels(scaled_text_size(entry.line_height, a11y)))
             .font(role_font(entry, resolved))
     }
 
@@ -6181,7 +6183,10 @@ impl Typeset for iced::widget::Text<'_> {
     }
 
     fn body(self, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Self {
+        // The theme's line height, where iced's own is 1.3 times the size
+        // (`LineHeight::default`).
         self.typeset(&resolved.defaults.font, a11y)
+            .line_height(native_theme_iced::line_height_multiplier(resolved))
     }
 }
 
@@ -8443,7 +8448,8 @@ mod tests {
                 Err(error) => panic!("{preset}: {error}"),
             };
             let button_line = line_of(resolved.button.font.size);
-            let body_line = line_of(resolved.defaults.font.size);
+            // Body text is laid out at the theme's line height.
+            let body_line = resolved.defaults.font.size * resolved.defaults.line_height;
             let input_height =
                 line_of(resolved.input.font.size) + native_theme_iced::input_padding(&resolved).y();
             // The OS's text-scaling factor is left out: the sizes compared are
@@ -8481,6 +8487,38 @@ mod tests {
                  {input_height}px"
             );
         }
+    }
+
+    /// Text in a `text_scale` role and body text are laid out in the theme's
+    /// line boxes (the role's `line_height`, `defaults.line_height` times the
+    /// size), not iced's own 1.3: the Basic tab's section title and its body
+    /// text.
+    #[test]
+    fn text_takes_the_themes_line_height() {
+        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        let heading = resolved.text_scale.section_heading.line_height;
+        let body = resolved.defaults.font.size * resolved.defaults.line_height;
+        let state = State {
+            current_theme: theme,
+            current_resolved: resolved,
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            active_tab: Tab::Basic,
+            ..State::default()
+        };
+        let mut ui = interface(&state);
+        let title = height_of(&mut ui, "Checkboxes");
+        assert!(
+            (title - heading).abs() < 0.01,
+            "a section title is {title}px tall, section_heading.line_height is {heading}px"
+        );
+        let text = height_of(&mut ui, "Body text");
+        assert!(
+            (text - body).abs() < 0.01,
+            "body text is {text}px tall, the theme's line box is {body}px"
+        );
     }
 
     /// A link is underlined exactly where the theme says the platform
@@ -8586,7 +8624,7 @@ mod tests {
             Err(error) => panic!("kde-breeze: {error}"),
         };
         let button_line = line_of(resolved.button.font.size * factor);
-        let body_line = line_of(resolved.defaults.font.size * factor);
+        let body_line = resolved.defaults.font.size * factor * resolved.defaults.line_height;
         let state = State {
             current_theme: theme,
             current_resolved: resolved,

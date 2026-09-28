@@ -5,7 +5,7 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
     FontWeight, Global, Hsla, ImageSource, Keystroke, Pixels, Rems, RenderOnce, SharedString,
-    Stateful, StyleRefinement, Window, div, prelude::*, px, rems,
+    Stateful, StyleRefinement, Window, div, prelude::*, px, relative, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
@@ -3371,6 +3371,34 @@ pub(crate) fn gallery_label(
     };
     label
         .info(ui, id, info::text::gallery_label(cx.theme(), kind, text))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// Body text reading `text`: a plain `Label` in the theme's line box,
+/// `defaults.line_height` times the text size, where upstream lays a Label out
+/// at `rems(1.25)` (label.rs, `Label::render`, before the caller's
+/// refinement). Without an installed native theme, upstream's.
+pub(crate) fn body_label(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: &'static str,
+) -> Stateful<Div> {
+    let line_height = native_value(cx, |n| n.resolved.defaults.line_height);
+    let mut label_info = info::text::gallery_label(cx.theme(), LabelKind::Plain, text);
+    let label = match line_height {
+        Some(ratio) => {
+            label_info = label_info.config(
+                "line height",
+                format!("defaults.line_height, {ratio} times the text size"),
+            );
+            Label::new(text).line_height(relative(ratio))
+        }
+        None => Label::new(text),
+    };
+    label
+        .info(ui, id, label_info)
         .self_start()
         .debug_selector(move || id.into())
 }

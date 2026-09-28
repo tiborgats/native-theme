@@ -9,7 +9,7 @@ use gpui_component::{h_flex, v_flex};
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
-use crate::demo::{self, ButtonKind, ButtonState, DemoButton, InputField, LabelKind};
+use crate::demo::{self, ButtonKind, ButtonState, DemoButton, InputField};
 use crate::support::{with_gap, with_padding};
 
 /// The width, in logical pixels, of the Basic page's text fields, drop-down,
@@ -142,13 +142,7 @@ impl Showcase {
             .child(group(
                 demo::heading(ui, cx, "basic-heading-text", "Text"),
                 row()
-                    .child(demo::gallery_label(
-                        ui,
-                        cx,
-                        "basic-body-text",
-                        LabelKind::Plain,
-                        "Body text",
-                    ))
+                    .child(demo::body_label(ui, cx, "basic-body-text", "Body text"))
                     .child(demo::link(
                         ui,
                         cx,

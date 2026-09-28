@@ -3598,6 +3598,28 @@ fn a_section_heading_reports_itself(cx: &mut TestAppContext) {
     );
 }
 
+/// The Basic page's body text is laid out in the theme's line box,
+/// `defaults.line_height` times the text size, where a Label's own is
+/// `rems(1.25)`.
+#[gpui::test]
+fn basic_body_text_takes_the_themes_line_height(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let expected = read(&mut cx, &showcase, |_this, cx| {
+        cx.native_theme()
+            .and_then(|nt| nt.native(cx))
+            .map(|n| n.resolved.defaults.font.size * n.resolved.defaults.line_height)
+    });
+    let body = bounds_of(&mut cx, "basic-body-text").size.height.as_f32();
+    // gpui lays a text line out on whole pixels; upstream's own would be
+    // 16.67px, a pixel less.
+    assert!(
+        expected.is_some_and(|e| (body - e).abs() < 0.5),
+        "body text is {body}px tall, the theme's line box is {expected:?}"
+    );
+}
+
 /// The Basic page's tooltip is built by the application and refined by
 /// `geometry::tooltip`, so it takes the platform's padding, radius and
 /// colours, as the iced and egui Basic pages' tooltips do.
