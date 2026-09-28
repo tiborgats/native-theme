@@ -252,8 +252,8 @@ pub(crate) fn name_window(window: &mut gpui::Window) {
 /// was laid out.
 pub(crate) const CHROME_TITLE_BAR: &str = "chrome-title-bar";
 
-/// The debug selector the AppMenuBar carries, in the menu-bar row or in the
-/// title bar.
+/// The debug selector the application's menus carry (`demo::app_menus`), in
+/// the menu-bar row or in the title bar.
 pub(crate) const CHROME_APP_MENU_BAR: &str = "chrome-app-menu-bar";
 
 /// The debug selector of the menu-bar row at the top of a window whose frame
@@ -312,6 +312,9 @@ pub(crate) const CONTENT_SCROLL: &str = "content-scroll";
 /// The debug selector the content column carries, as wide as its resizable
 /// panel, so `dragging_the_handle_resizes_both_panels` can measure it.
 pub(crate) const CONTENT_PANEL: &str = "content-panel";
+
+/// The debug selector of the line the side panel's resize handle paints.
+pub(crate) const CHROME_SPLITTER_LINE: &str = "chrome-splitter-line";
 
 /// The debug selector of the box a capture lays over the whole window so
 /// the pointer hovers nothing (`Showcase::pointer_shield`).

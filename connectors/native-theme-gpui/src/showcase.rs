@@ -1050,13 +1050,6 @@ const DRAWN_TRAITS: &[&str] = &["RenderOnce", "Render", "Element", "IntoElement"
 const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[
     (
         "app.rs",
-        "AppMenuBar::new",
-        "returns an Entity<AppMenuBar> (menu/app_menu_bar.rs, AppMenuBar::new), which \
-         the view keeps so that an open menu outlives the frame; demo::menu_bar or \
-         demo::title_bar draws it and reports it",
-    ),
-    (
-        "app.rs",
         "Root::render_dialog_layer",
         "draws the Dialogs Root keeps (root.rs, Root::render_dialog_layer); each is \
          built by the demo helper its opener hands `open_dialog` or \

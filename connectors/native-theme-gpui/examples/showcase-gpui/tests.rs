@@ -30,7 +30,8 @@ use crate::info::{
 };
 use crate::inspector::InspectorTab;
 use crate::support::{
-    CAROUSEL_SLIDES, ChromeIcon, load_all_icons, load_gpui_icons, native_geometry, native_value,
+    CAROUSEL_SLIDES, ChromeIcon, load_all_icons, load_gpui_icons, native_color, native_geometry,
+    native_value,
 };
 use crate::{
     BASIC_INPUT_DISABLED, BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS,
@@ -38,26 +39,27 @@ use crate::{
     CHARTS_LINE_CHART, CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE,
     CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR,
     CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE,
-    CHROME_STATUS_BAR, CHROME_THEME_SETTINGS, CHROME_TITLE_BAR, CHROME_TOOLBAR,
-    CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, CONTENT_ALERT,
-    CONTENT_PANEL, CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER,
-    FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
-    FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
-    INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA,
-    INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE,
-    LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
-    LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
-    LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
-    LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK,
-    OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE,
-    OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER,
-    OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
-    OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT, PAGE_WIDTH_PX, POINTER_SHIELD,
-    PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT, PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND,
-    PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX, PROBE_ICON_THEME, PROBE_NOTIFICATION,
-    PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW, PROBE_STEPPER, Page, STATUS_ENVIRONMENT,
-    STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN,
-    TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE, WINDOW_TITLE,
+    CHROME_SPLITTER_LINE, CHROME_STATUS_BAR, CHROME_THEME_SETTINGS, CHROME_TITLE_BAR,
+    CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD,
+    CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT,
+    DATA_TABLE_HEADER, FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT,
+    FEEDBACK_CIRCLE_LOADING, FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY,
+    INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
+    INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
+    INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
+    LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_GROUP_BOX_NORMAL,
+    LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID,
+    LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED, LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR,
+    LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
+    OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
+    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM,
+    OVERLAYS_SHEET_BOTTOM_TITLE, OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PAGE_ROOT,
+    PAGE_WIDTH_PX, POINTER_SHIELD, PREF_REDUCE_MOTION, PROBE_ALERT_DIALOG, PROBE_ATTACHMENT,
+    PROBE_CAROUSEL_LAST, PROBE_CHAT_SEND, PROBE_CLIPBOARD, PROBE_COLOR_MODE, PROBE_COMBOBOX,
+    PROBE_ICON_THEME, PROBE_NOTIFICATION, PROBE_PAGINATION, PROBE_RATING, PROBE_SETTINGS_ROW,
+    PROBE_STEPPER, Page, STATUS_ENVIRONMENT, STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO,
+    TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY, WINDOW_SIZE,
+    WINDOW_TITLE,
 };
 use native_theme::icons::IconSetChoice;
 
@@ -746,7 +748,7 @@ fn frame_under_request(cx: &mut TestAppContext, request: gpui::WindowDecorations
 
 /// The chrome of a window whose frame the window manager draws (spec S8):
 /// no TitleBar, and at the top of the window, across its whole width, the
-/// menu-bar row with the AppMenuBar in it, the toolbar right under it. On
+/// menu-bar row with the menus in it, the toolbar right under it. On
 /// macOS the menus are in the system's menu bar and there is no row.
 fn server_chrome(cx: &mut VisualTestContext) {
     assert_eq!(
@@ -830,7 +832,7 @@ const CLIENT_SIDE: gpui::Decorations = gpui::Decorations::Client {
 /// Granted client-side decorations -- where a compositor draws none, as
 /// GNOME's Mutter does for a Wayland client -- the TitleBar is the window's
 /// title bar (spec S8): the first thing in the window, across its whole
-/// width, with the AppMenuBar inside it where the platform has no menu bar
+/// width, with the menus inside it where the platform has no menu bar
 /// of its own, and no menu-bar row. The Layout page then draws no TitleBar
 /// sample: the window's own title bar is one.
 ///
@@ -1588,20 +1590,30 @@ fn the_side_panel_and_its_separator_report_themselves(cx: &mut TestAppContext) {
 /// chooses among -- the preset's own theme, the system's, the installed
 /// freedesktop themes, gpui-component's built-in icons, Lucide and Material
 /// -- are icon themes. The frame's text is not readable from the test, so
-/// the label's width shows it: `demo::label` gives its Label `text_sm`,
-/// 0.875rem, and `self_start` keeps it as wide as its text, and "Icon theme"
-/// and "Icon set" differ in width.
+/// the label's width shows it: the side panel's label is set in
+/// `sidebar.font`, and `self_start` keeps it as wide as its text, and "Icon
+/// theme" and "Icon set" differ in width.
 #[gpui::test]
 fn the_third_row_reads_icon_theme(cx: &mut TestAppContext) {
-    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let label = bounds_of(&mut cx, CHROME_LABEL_ICON_THEME);
+    let size = read(&mut cx, &showcase, |_this, cx| {
+        native_value(cx, |n| {
+            px(native_theme_gpui::scaled_text_size(
+                n.resolved.sidebar.font.size,
+                n.accessibility,
+            ))
+        })
+    });
+    assert!(size.is_some(), "no native theme is installed");
+    let size = size.unwrap_or_default();
     let width = |cx: &mut VisualTestContext, text: &'static str| {
         cx.update(|window, _| {
             let text = gpui::SharedString::from(text);
             let run = window.text_style().to_run(text.len());
             window
                 .text_system()
-                .shape_line(text, rems(0.875).to_pixels(window.rem_size()), &[run], None)
+                .shape_line(text, size, &[run], None)
                 .width()
         })
     };
@@ -1679,7 +1691,8 @@ fn run_menu_item(cx: &mut VisualTestContext, menu: &str, item: &str) {
     draw(cx);
 }
 
-/// Run a menu item the way an `AppMenuBar` menu does: record the focus the
+/// Run a menu item the way upstream's `AppMenuBar` menu does, which the
+/// platform's own menu bar runs alike: record the focus the
 /// menu interrupted when it opens, refocus it on confirm, then dispatch the
 /// item's action into the window (gpui-component menu/app_menu_bar.rs,
 /// AppMenuBar::set_selected_index; menu/popup_menu.rs,
@@ -3887,6 +3900,81 @@ fn a_capture_hovers_nothing(cx: &mut TestAppContext) {
     assert!(
         !crate::CliArgs::default().shields_pointer(),
         "an interactive run keeps the pointer off the widgets"
+    );
+}
+
+/// The chrome takes what the theme states: the side panel is filled with
+/// `sidebar.background_color`; the splitter is `splitter.divider_width`
+/// wide in `splitter.divider_color`; a menu title under the pointer fills
+/// with `menu.hover_background`, opens its menu, and a row of it runs its
+/// action; and a page tab is at least `tab.min_width` by `tab.min_height`.
+/// Under material dark, whose splitter is wider than upstream's 1px line.
+#[gpui::test]
+fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "material");
+    run_menu_item(&mut cx, "Theme", "Dark");
+    show(&mut cx, &showcase, Page::Basic);
+    let stated =
+        |cx: &mut VisualTestContext,
+         pick: fn(&native_theme_gpui::ResolvedTheme) -> native_theme::color::Rgba| {
+            read(cx, &showcase, |_this, cx| {
+                native_color(cx, |n| pick(n.resolved))
+            })
+        };
+    let sidebar = stated(&mut cx, |r| r.sidebar.background_color);
+    assert!(sidebar.is_some(), "no native theme is installed");
+    assert_eq!(
+        painted_fill(&mut cx, CHROME_SIDE_PANEL),
+        sidebar,
+        "the side panel is not filled with sidebar.background_color"
+    );
+
+    let (divider, width) = read(&mut cx, &showcase, |_this, cx| {
+        (
+            native_color(cx, |n| n.resolved.splitter.divider_color),
+            native_value(cx, |n| n.resolved.splitter.divider_width),
+        )
+    });
+    let line = bounds_of(&mut cx, CHROME_SPLITTER_LINE);
+    assert_eq!(
+        Some(line.size.width.as_f32()),
+        width,
+        "the splitter line is not splitter.divider_width wide"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, CHROME_SPLITTER_LINE),
+        divider,
+        "the splitter line is not splitter.divider_color"
+    );
+
+    let title = bounds_of(&mut cx, "menu-title-View");
+    hover(&mut cx, title.center());
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, "menu-title-View"),
+        stated(&mut cx, |r| r.menu.hover_background),
+        "a hovered menu title is not filled with menu.hover_background"
+    );
+    click(&mut cx, "menu-title-View");
+    click(&mut cx, "menu-row-Buttons");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Buttons,
+        "View > Buttons did not show the Buttons page"
+    );
+
+    let (min_width, min_height) = read(&mut cx, &showcase, |_this, cx| {
+        native_value(cx, |n| {
+            (n.resolved.tab.min_width, n.resolved.tab.min_height)
+        })
+    })
+    .unwrap_or_default();
+    let tab = bounds_of(&mut cx, Page::Basic.tab());
+    assert!(
+        tab.size.width.as_f32() >= min_width && tab.size.height.as_f32() >= min_height,
+        "a page tab is {:?}, under tab.min_width {min_width} by tab.min_height {min_height}",
+        tab.size
     );
 }
 

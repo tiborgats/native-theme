@@ -3,8 +3,9 @@
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::theme::ResolvedPadding;
+use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, claim, px_text};
+use super::{ColorClaim, WidgetInfo, claim, px_text, stated};
 use crate::demo::{Severity, SheetSide};
 use crate::support::ChromeIcon;
 
@@ -45,9 +46,9 @@ pub fn title_bar(t: &Theme, label: &str) -> WidgetInfo {
     .instance(
         "menus",
         if cfg!(target_os = "macos") {
-            "in the system's menu bar, through cx.set_menus; the bar holds no AppMenuBar"
+            "in the system's menu bar, through cx.set_menus; the bar holds none"
         } else {
-            "the AppMenuBar is the bar's second child, after the label"
+            "the showcase's menus are the bar's second child, after the label"
         },
     )
 }
@@ -168,7 +169,7 @@ fn title_bar_notes(info: WidgetInfo) -> WidgetInfo {
     )
 }
 
-/// What an `AppMenuBar` sits in, and so what shows through it.
+/// What the application's menus sit in, and so what shows through them.
 #[derive(Clone, Copy)]
 pub enum MenuHost {
     /// The menu-bar row, under the window manager's frame.
@@ -196,7 +197,7 @@ pub fn menu_bar(t: &Theme, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
         .color(claim("bg (the window's)", "background", t.background, "showcase"))
         .not_themeable(
             "widget",
-            "gpui-component has no menu-bar row, so this row is the application's own h_flex around the AppMenuBar. The model states no menu bar either: its menu is the popup a menu opens (platform-facts §2.6)",
+            "gpui-component has no menu-bar row, so this row is the application's own h_flex around its menus. The model states no menu bar either: its menu is the popup a menu opens (platform-facts §2.6)",
         )
         .not_themeable(
             "inset",
@@ -212,54 +213,76 @@ pub fn menu_bar(t: &Theme, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
         )
         .instance(
             "padding",
-            format!("{sides}; top and bottom none: the AppMenuBar's items set the row's height"),
+            format!("{sides}; top and bottom none: the menu titles set the row's height"),
         )
 }
 
-/// The `AppMenuBar` (spec §2.2), in `host`.
-pub fn app_menu_bar(t: &Theme, host: MenuHost) -> WidgetInfo {
-    let info = WidgetInfo::new("AppMenuBar")
-        .colors(ghost_rest_and_hover(t, GhostContent::Text))
-        .color(claim(
-            "item of the open menu",
-            "secondary_active",
-            t.secondary_active,
-            "gpui-component/button/button.rs:1245",
-        ));
-    popup_menu(info, t)
-        .color(claim(
-            "menu shortcut text",
-            "muted_foreground",
-            t.muted_foreground,
-            "gpui-component/kbd.rs:237",
-        ))
-        .not_themeable(
-            "fill",
-            match host {
-                MenuHost::Row => "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background, so the window's background shows through",
-                MenuHost::TitleBar => "none: an AppMenuBar reads no theme field at all (menu/app_menu_bar.rs) and paints no bar background, so the title bar's fill shows through",
-            },
-        )
-        .not_themeable(
-            "items",
-            "ghost Buttons, so they hover with accent -- at half alpha in dark mode -- rather than the button family, and their label is the Ghost variant's secondary_foreground",
-        )
-        .not_themeable(
-            "press",
-            "opens the item's menu at once, and the item of an open menu is selected, which a Ghost paints secondary_active (menu/app_menu_bar.rs, AppMenu::render). A selected Button takes no hover or press style (button/button.rs, RenderOnce for Button), so the Ghost's pressed colour never shows here",
-        )
-        .instance(
-            "source",
-            "gpui-base's GlobalState app menus, which only set_app_menus fills -- not gpui's cx.set_menus, which feeds the platform's own menu bar. The showcase gives both the same menus (menu/app_menu_bar.rs, AppMenuBar::reload)",
-        )
-        .instance(
-            "menus",
-            "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding, the binding runs the same action",
-        )
+/// The application's menus as the showcase draws them (spec §2.2), in
+/// `host`: their titles, and the popups they open, in `native`'s menu theme
+/// where a native theme is installed (`demo::app_menus`).
+pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("Menus").variant("drawn by the showcase");
+    let info = match native {
+        Some(r) => {
+            let m = &r.menu;
+            info.color(claim("title and item text", "color", stated(m.font.color), "showcase"))
+                .color(claim("hovered or open title, hovered item", "hover_background", stated(m.hover_background), "showcase"))
+                .color(claim("its text", "hover_text_color", stated(m.hover_text_color), "showcase"))
+                .color(claim("menu bg", "background_color", stated(m.background_color), "showcase"))
+                .color(claim("menu separator", "separator_color", stated(m.separator_color), "showcase"))
+                .color(claim("menu edge", "color", stated(r.popover.border.color), "showcase"))
+                .config("font", format!("menu.font, {}px, on the titles and the items", px_text(m.font.size)))
+                .config("highlight", format!("rectangular where menu.border.corner_radius is 0 (platform-facts §2.6: the items are rectangular), here {}px", px_text(m.border.corner_radius)))
+                .config("padding", "menu.border.padding's stated sides on each title and item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5 and an item's 8px (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)")
+                .config("item height", match m.row_height {
+                    Some(h) => format!("at least menu.row_height, {}px", px_text(h)),
+                    None if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => "26px, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item): the theme states neither menu.row_height nor a vertical padding".to_string(),
+                    None => "the font's line and menu.border.padding: the theme states no menu.row_height, the item sizes to its font (platform-facts §2.6)".to_string(),
+                })
+                .config("menu edge", format!("popover.border: {}px, radius {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.line_width), px_text(r.popover.border.corner_radius)))
+                .config("menu separator", format!("separator.line_width, {}px", px_text(r.separator.line_width)))
+        }
+        None => info
+            .color(claim(
+                "menu bg",
+                "popover",
+                t.popover,
+                "gpui-component/styled.rs:197",
+            ))
+            .color(claim("hovered item", "accent", t.accent, "showcase"))
+            .color(claim("menu separator", "border", t.border, "showcase"))
+            .not_themeable(
+                "font",
+                "text_sm, a rem step: no native theme is installed, so there is no menu.font",
+            ),
+    };
+    info.not_themeable(
+        "widget",
+        "the showcase's own titles, each a Popover (popover.rs, Popover) opening the showcase's own rows: upstream's AppMenuBar builds its titles as Small ghost Buttons and its menus as PopupMenus, which set text_sm, a rounded hover in accent and the popover fill on themselves (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item), so menu.font, the rectangular items and menu.background_color would not reach them",
+    )
+    .not_themeable(
+        "keyboard",
+        "no arrow-key travel between the menus or their items, which the AppMenuBar and the PopupMenu gave: the showcase's rows are clicked, and each runs its action through its key binding too",
+    )
+    .not_themeable(
+        "menu shadow",
+        "the Popover's own, popover_style's ring and shadow (styled.rs, popover_style); the model states popover.border.shadow_enabled and no shadow geometry",
+    )
+    .not_themeable(
+        "fill",
+        match host {
+            MenuHost::Row => "none behind the titles: the window's background shows through; the model states no menu-bar fill (platform-facts §2.6: its menu is the popup)",
+            MenuHost::TitleBar => "none behind the titles: the title bar's fill shows through; the model states no menu-bar fill (platform-facts §2.6: its menu is the popup)",
+        },
+    )
+    .instance(
+        "menus",
+        "File, View, Theme and Help; each item runs a gpui action, and where the item has a key binding it shows it, and the binding runs the same action",
+    )
 }
 
-/// What every `PopupMenu` the showcase opens paints -- the AppMenuBar's, the
-/// Overlays page's ContextMenu's and its dropdown menu's -- and what cannot
+/// What every `PopupMenu` the showcase opens paints -- the Overlays page's
+/// ContextMenu's and its dropdown menu's -- and what cannot
 /// be given to it. Its menus hold plain items and separators, so every row
 /// is one `MenuItemElement` of upstream's.
 pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
@@ -465,15 +488,22 @@ pub fn panel_toggle(
 /// inspector. `container_margin` is the installed layout's, which pads the
 /// settings. Its geometry line is recorded where `demo::side_panel` applies
 /// the margin.
-pub fn side_panel(container_margin: Option<Pixels>) -> WidgetInfo {
+pub fn side_panel(t: &Theme, container_margin: Option<Pixels>) -> WidgetInfo {
     WidgetInfo::new("Side panel")
         .not_themeable(
             "widget",
             "the application's own column of plain elements, not upstream's Sidebar: a Sidebar's children must implement SidebarItem (sidebar/mod.rs, SidebarItem), and neither the theme settings nor the inspector is an item",
         )
-        .not_themeable(
-            "fill",
-            "none of its own: the window's background, which the showcase's root paints, shows through",
+        .color(claim("fill", "sidebar", t.sidebar, "showcase"))
+        .color(claim(
+            "text",
+            "sidebar_foreground",
+            t.sidebar_foreground,
+            "showcase",
+        ))
+        .config(
+            "colours",
+            "sidebar.background_color and sidebar.font's colour, the sidebar and sidebar_foreground tokens the connector installs, which the showcase paints the panel with",
         )
         .instance(
             "holds",
@@ -497,6 +527,31 @@ pub fn side_panel(container_margin: Option<Pixels>) -> WidgetInfo {
             "hidden",
             "by the status bar's side-panel toggle, View > Toggle Side Panel or Ctrl+B (Cmd+B on macOS), the whole panel at once: no rail stays. Shown again, it takes the width it had",
         )
+}
+
+/// A label of the side panel's theme settings: plain text in `native`'s
+/// `sidebar.font` where a native theme is installed (`demo::sidebar_label`).
+pub fn sidebar_label(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("Side panel label").color(claim(
+        "text, inherited",
+        "sidebar_foreground",
+        t.sidebar_foreground,
+        "showcase",
+    ));
+    match native {
+        Some(r) => info.config(
+            "font",
+            format!(
+                "sidebar.font, {}px, weight {}: plain text, not a Label, whose render paints foreground over the side panel's colour (label.rs, Label::render)",
+                px_text(r.sidebar.font.size),
+                r.sidebar.font.weight
+            ),
+        ),
+        None => info.not_themeable(
+            "font",
+            "text_sm, a rem step: no native theme is installed, so there is no sidebar.font",
+        ),
+    }
 }
 
 /// The theme settings (spec §3.1, §3.3, S2), each a label above its control.
@@ -598,6 +653,18 @@ pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
     )
 }
 
+/// What `native`'s tab theme sets on a chrome TabBar's tabs where a native
+/// theme is installed (`demo::tab_bar`): each label a child in `tab.font`,
+/// each tab at least `tab.min_width` by `tab.min_height`.
+pub fn tab_font(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    match native {
+        Some(r) => info
+            .config("font", format!("tab.font, {}px, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.font.size)))
+            .config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
+        None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+    }
+}
+
 /// A TabBar's left and right padding: `container_margin`, the installed
 /// layout's, where it states one.
 pub fn tab_bar_padding(container_margin: Option<Pixels>) -> String {
@@ -620,7 +687,7 @@ pub fn page_tab_bar(t: &Theme) -> WidgetInfo {
         )
         .not_themeable(
             "menu",
-            "menu(true): after the tabs, an extra-small ghost Button with a caret opens a menu of every page, the shown one checked, whose rows show their pages too. Upstream adds that Button whether or not the tabs overflow, and the tabs scroll sideways where they do not fit (tab/tab_bar.rs, TabBar::render)",
+            "after the tabs, an extra-small ghost Button with a caret opens a menu of every page, the shown one checked, whose rows show their pages too: the showcase builds it as the bar's suffix as menu(true) would, since upstream's names each tab by a label, and a tab's label here is a child in tab.font. The Button shows whether or not the tabs overflow, and the tabs scroll sideways where they do not fit (tab/tab_bar.rs, TabBar::render)",
         )
         .not_themeable(
             "own icons",
@@ -991,8 +1058,12 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
 /// A handle of the window's resizable group (spec §1.1, §4.3.5), between the
 /// panels `between` names. `base` is gpui-base's theme, where the handle's
 /// colours live.
-pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetInfo {
-    WidgetInfo::new("ResizeHandle")
+pub fn resize_handle(
+    base: &gpui_base::Theme,
+    between: &'static str,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("ResizeHandle")
         .variant(between)
         .color(claim(
             "line",
@@ -1012,18 +1083,40 @@ pub fn resize_handle(base: &gpui_base::Theme, between: &'static str) -> WidgetIn
             "colour source",
             "handle and active_handle are gpui-base's fields, always filled: upstream projects border and drag_border into them (theme/mod.rs, Theme::base_theme), and the connector then writes the platform's splitter.divider_color and splitter.hover_color over both (native-theme-gpui/base_layer.rs, resizable_theme). Only where the installed theme has no variant for the current colour mode are border and drag_border written back (native-theme-gpui/lib.rs, base_overrides_for). So the fallbacks gpui-base reads for an unset field, border at rest and ring while pressed, never apply here (gpui-base/resizable/resize_handle.rs, handle_color)",
         )
-        .not_themeable(
-            "hover",
-            "none: a hovered handle keeps its resting colour, and the model's splitter.hover_color reaches it only while it is pressed -- a press inside the handle sets it and any release clears it (resizable/resize_handle.rs, ResizeHandleState)",
-        )
-        .not_themeable(
-            "width",
-            "a 1px line with a hit area of 4px on its left and 3px on its right: the handle is 1px wide with 4px of padding on each side, which layout widens to the 8px of its padding. Upstream's constants; the model's splitter.divider_width does not reach it (resizable/resize_handle.rs, HANDLE_SIZE)",
-        )
         .instance(
             "drawn by",
             "the showcase, which with_handle_appearance hands the painted part of each handle to (resizable/panel.rs, with_handle_appearance): it paints the colour upstream would (resizable/resize_handle.rs, handle_color) and lays this info over the hit area. The drag and the cursor stay upstream's",
-        )
+        );
+    let info = match native {
+        Some(r) => info
+            .color(claim(
+                "line under the pointer",
+                "hover_color",
+                stated(r.splitter.hover_color),
+                "showcase",
+            ))
+            .config(
+                "width",
+                format!(
+                    "splitter.divider_width, {}px, which the showcase paints the line at, reaching from the boundary into the side panel: the handle itself lays out 1px wide with 4px of padding on each side, upstream's constants (resizable/resize_handle.rs, HANDLE_SIZE), and is absolutely placed, so the wider line moves no panel",
+                    px_text(r.splitter.divider_width)
+                ),
+            )
+            .config(
+                "hover",
+                "splitter.hover_color under the pointer, through the group the handle is named in (resizable/resize_handle.rs, ResizeHandle); while it is pressed, active_handle, which the connector fills with the same colour",
+            ),
+        None => info
+            .not_themeable(
+                "hover",
+                "none: a hovered handle keeps its resting colour; no native theme is installed, so there is no splitter.hover_color to paint (resizable/resize_handle.rs, ResizeHandleState)",
+            )
+            .not_themeable(
+                "width",
+                "a 1px line, upstream's HANDLE_SIZE: no native theme is installed, so there is no splitter.divider_width (resizable/resize_handle.rs, HANDLE_SIZE)",
+            ),
+    };
+    info
         .instance(
             "drag",
             "moves the boundary to the pointer until a panel reaches PANEL_MIN_SIZE, 100px, the least a panel takes unless it sets a size range of its own (gpui-base/resizable/mod.rs, PANEL_MIN_SIZE; gpui-base/resizable/panel.rs, size_range); the body's panels set none. The side panel keeps the width it leaves when it hides and comes back",

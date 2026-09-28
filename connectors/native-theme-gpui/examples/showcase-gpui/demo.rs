@@ -2,6 +2,7 @@
 
 use std::{cell::Cell, rc::Rc, time::Duration};
 
+use gpui::DefiniteLength;
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
     FontWeight, Global, Hsla, ImageSource, Keystroke, Pixels, Rems, RenderOnce, SharedString,
@@ -59,7 +60,7 @@ use gpui_component::{
     link::Link,
     list::{List, ListItem, ListState},
     marker::{Marker, MarkerContent, MarkerIcon, MarkerLoadingStyle, MarkerVariant},
-    menu::{AppMenuBar, ContextMenuExt as _, DropdownMenu as _, PopupMenu},
+    menu::{ContextMenuExt as _, DropdownMenu as _, PopupMenu, PopupMenuItem},
     message::{Message, MessageAlignment, MessageContent},
     message_scroller::{MessageScroller, MessageScrollerState},
     notification::Notification,
@@ -89,7 +90,7 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
-use native_theme::theme::ResolvedFontSpec;
+use native_theme::theme::{ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 use native_theme_gpui::{
     AccessibilityPreferences, ActiveNativeTheme as _, Native, geometry, variants,
@@ -103,12 +104,12 @@ use crate::support::{
     native_value, refined, with_gap, with_padding,
 };
 use crate::{
-    CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_THEME_SETTINGS, DATA_TABLE_HEADER,
-    OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT, OVERLAY_ABOUT_TITLE,
-    OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES, OVERLAYS_DIALOG_CLOSE,
-    OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION, PREF_REDUCE_TRANSPARENCY,
-    PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT, STATUS_HOVERED,
-    STATUS_MIDDLE, TREE_DEMO, probe,
+    CHROME_APP_MENU_BAR, CHROME_SIDE_PANEL, CHROME_SPLITTER_LINE, CHROME_THEME_SETTINGS,
+    DATA_TABLE_HEADER, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
+    OVERLAY_ABOUT_TITLE, OVERLAY_PALETTE, OVERLAY_PALETTE_TITLE, OVERLAY_PREFERENCES,
+    OVERLAYS_DIALOG_CLOSE, OVERLAYS_DIALOG_FOOTER, PREF_HIGH_CONTRAST, PREF_REDUCE_MOTION,
+    PREF_REDUCE_TRANSPARENCY, PROBE_CAROUSEL_LAST, PROBE_SETTINGS_ROW, Page, STATUS_ENVIRONMENT,
+    STATUS_HOVERED, STATUS_MIDDLE, TREE_DEMO, probe,
 };
 
 /// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
@@ -149,14 +150,14 @@ fn native_sized(cx: &App, icon: Icon, role: fn(Native<'_>) -> Size) -> Icon {
 }
 
 /// A `TitleBar` refined by `geometry::title_bar`, reading `label`, holding
-/// `app_menu_bar` where the platform has no menu bar of its own, and quitting
+/// the application's menus (`app_menus`) where the platform has no menu bar
+/// of its own, and quitting
 /// the application from its close button: the window's title bar, where the
 /// window was granted client-side decorations (spec S8).
 pub(crate) fn title_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     label: impl Into<SharedString>,
-    app_menu_bar: Entity<AppMenuBar>,
 ) -> Stateful<Div> {
     let label: SharedString = label.into();
     let mut bar_info = info::title_bar(cx.theme(), &label);
@@ -176,30 +177,319 @@ pub(crate) fn title_bar(
     // `geometry::title_bar` just gave the bar.
     .child(label)
     .when(cfg!(not(target_os = "macos")), |bar| {
-        bar.child(reported_menus(
-            ui,
-            cx,
-            app_menu_bar,
-            info::MenuHost::TitleBar,
-        ))
+        bar.child(app_menus(ui, cx, info::MenuHost::TitleBar))
     });
     bar.info(ui, "chrome-title-bar", bar_info)
 }
 
-/// `app_menu_bar`, reporting itself as the menus of `host`. A part: the
+/// A menu title's side and top/bottom padding where `menu.border.padding`
+/// states no side: upstream's for a title of its `AppMenuBar`, a Small
+/// compact Button (button/button.rs:629-631, `px_1p5`) given `py_0p5`
+/// (menu/app_menu_bar.rs:265).
+const MENU_TITLE_PADDING_X: Rems = rems(0.375);
+const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
+
+/// A menu row's side padding where `menu.border.padding` states no side,
+/// and its height where neither `menu.row_height` nor a vertical padding
+/// side is stated: upstream's `PopupMenu` row at the default Size
+/// (menu/popup_menu.rs:1216, `INNER_PADDING`; :1222, the item height).
+const MENU_ROW_PADDING_X: Pixels = px(8.);
+const MENU_ROW_HEIGHT: Pixels = px(26.);
+
+/// What upstream's `PopupMenu` leaves round and between its rows, and
+/// between a row's label and its shortcut (menu/popup_menu.rs:1483-1485,
+/// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1321, `gap_3`); the model states
+/// none of them.
+const MENU_POPUP_PADDING: Rems = rems(0.25);
+const MENU_POPUP_ROW_GAP: Rems = rems(0.125);
+const MENU_POPUP_MIN_WIDTH: Rems = rems(8.);
+const MENU_SHORTCUT_GAP: Rems = rems(0.75);
+
+/// A menu separator's thickness without a native theme: upstream's
+/// `PopupMenu` separator (menu/popup_menu.rs:1252, `border_b(px(2.))`).
+/// With one, it is `separator.line_width`.
+const MENU_SEPARATOR: Pixels = px(2.);
+
+/// The model's menu, as the showcase draws a menu title and a menu row:
+/// `menu.font`, `menu.hover_background` and `hover_text_color`,
+/// `menu.border`'s padding sides and corner radius (platform-facts §2.6: the
+/// items are rectangular where it is 0), `menu.row_height`, and the popup
+/// `menu.background_color` framed by the popover's border (§2.6: the popup
+/// border is §2.16's).
+#[derive(Clone)]
+struct MenuLook {
+    font_size: Pixels,
+    weight: FontWeight,
+    /// `defaults.line_height`, the platform's line box, as the connector's
+    /// control-height rule lays text out (geometry.rs, `with_height_rule`).
+    line_height: DefiniteLength,
+    text: Hsla,
+    hover: Hsla,
+    hover_text: Hsla,
+    radius: Pixels,
+    padding: ResolvedPadding,
+    row_height: Option<Pixels>,
+    background: Hsla,
+    separator: Hsla,
+    separator_width: Pixels,
+    frame: Hsla,
+    frame_width: Pixels,
+    frame_radius: Pixels,
+}
+
+impl MenuLook {
+    fn of(n: &Native<'_>) -> Self {
+        let m = &n.resolved.menu;
+        let p = &n.resolved.popover.border;
+        Self {
+            font_size: px(native_theme_gpui::scaled_text_size(
+                m.font.size,
+                n.accessibility,
+            )),
+            weight: FontWeight(f32::from(m.font.weight)),
+            line_height: relative(n.resolved.defaults.line_height),
+            text: info::stated(m.font.color),
+            hover: info::stated(m.hover_background),
+            hover_text: info::stated(m.hover_text_color),
+            radius: px(m.border.corner_radius.max(0.0)),
+            padding: m.border.padding,
+            row_height: m.row_height.map(px),
+            background: info::stated(m.background_color),
+            separator: info::stated(m.separator_color),
+            separator_width: px(n.resolved.separator.line_width),
+            frame: info::stated(p.color),
+            frame_width: px(p.line_width),
+            frame_radius: px(p.corner_radius.max(0.0)),
+        }
+    }
+}
+
+/// `el` padded by the stated sides of `padding`, and on a side left
+/// unstated by `x` (left and right) or `y` (top and bottom), where given.
+fn padded<E: Styled>(
+    el: E,
+    padding: &ResolvedPadding,
+    x: impl Into<DefiniteLength> + Copy,
+    y: Option<Rems>,
+) -> E {
+    let el = match padding.left {
+        Some(v) => el.pl(px(v)),
+        None => el.pl(x),
+    };
+    let el = match padding.right {
+        Some(v) => el.pr(px(v)),
+        None => el.pr(x),
+    };
+    let el = match (padding.top, y) {
+        (Some(v), _) => el.pt(px(v)),
+        (None, Some(y)) => el.pt(y),
+        (None, None) => el,
+    };
+    match (padding.bottom, y) {
+        (Some(v), _) => el.pb(px(v)),
+        (None, Some(y)) => el.pb(y),
+        (None, None) => el,
+    }
+}
+
+/// A menu's title in the showcase's menu bar: the Popover's trigger,
+/// selected while its menu is open.
+#[derive(IntoElement)]
+struct MenuTitle {
+    ix: usize,
+    name: SharedString,
+    look: Option<MenuLook>,
+    selected: bool,
+}
+
+impl Selectable for MenuTitle {
+    fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
+    fn is_selected(&self) -> bool {
+        self.selected
+    }
+}
+
+impl RenderOnce for MenuTitle {
+    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        let title = div()
+            .id(("menu-title", self.ix))
+            .flex()
+            .items_center()
+            .cursor_default()
+            .debug_selector({
+                let name = self.name.clone();
+                move || format!("menu-title-{name}")
+            })
+            .child(self.name);
+        match self.look {
+            Some(look) => {
+                let (hover, hover_text) = (look.hover, look.hover_text);
+                padded(
+                    title,
+                    &look.padding,
+                    MENU_TITLE_PADDING_X,
+                    Some(MENU_TITLE_PADDING_Y),
+                )
+                .text_size(look.font_size)
+                .line_height(look.line_height)
+                .font_weight(look.weight)
+                .rounded(look.radius)
+                .map(|title| {
+                    if self.selected {
+                        title.bg(hover).text_color(hover_text)
+                    } else {
+                        title
+                            .text_color(look.text)
+                            .hover(move |style| style.bg(hover).text_color(hover_text))
+                    }
+                })
+            }
+            None => title
+                .px(MENU_TITLE_PADDING_X)
+                .py(MENU_TITLE_PADDING_Y)
+                .text_sm(),
+        }
+    }
+}
+
+/// One row of a menu the showcase draws.
+enum MenuRow {
+    Separator,
+    Action(SharedString, Box<dyn Action>),
+}
+
+/// The popup of a menu: its `rows`, drawn in `look` where a native theme is
+/// installed; a click runs a row's action and closes the popup.
+fn menu_popup(
+    rows: &[MenuRow],
+    look: Option<&MenuLook>,
+    window: &mut Window,
+    cx: &mut Context<gpui_base::PopoverState>,
+) -> Div {
+    let popover = cx.entity();
+    v_flex()
+        .p(MENU_POPUP_PADDING)
+        .gap(MENU_POPUP_ROW_GAP)
+        .min_w(MENU_POPUP_MIN_WIDTH)
+        .children(rows.iter().enumerate().map(|(ix, row)| {
+            match row {
+                MenuRow::Separator => div()
+                    .h(look.map_or(MENU_SEPARATOR, |l| l.separator_width))
+                    .w_full()
+                    .bg(look.map_or(cx.theme().border, |l| l.separator))
+                    .into_any_element(),
+                MenuRow::Action(name, action) => {
+                    let shortcut = Kbd::global_binding_for_action(action.as_ref(), window)
+                        .map(|kbd| kbd.appearance(false));
+                    let dispatched = action.boxed_clone();
+                    let popover = popover.clone();
+                    let row = h_flex()
+                        .id(("menu-row", ix))
+                        .w_full()
+                        .gap(MENU_SHORTCUT_GAP)
+                        .justify_between()
+                        .items_center()
+                        .cursor_default()
+                        .debug_selector({
+                            let name = name.clone();
+                            move || format!("menu-row-{name}")
+                        })
+                        .child(name.clone())
+                        .children(shortcut)
+                        .on_click(move |_, window, cx| {
+                            popover.update(cx, |state, cx| state.dismiss(window, cx));
+                            window.dispatch_action(dispatched.boxed_clone(), cx);
+                        });
+                    let row = match look {
+                        Some(look) => {
+                            let (hover, hover_text) = (look.hover, look.hover_text);
+                            let row = padded(row, &look.padding, MENU_ROW_PADDING_X, None)
+                                .text_size(look.font_size)
+                                .line_height(look.line_height)
+                                .font_weight(look.weight)
+                                .text_color(look.text)
+                                .rounded(look.radius)
+                                .hover(move |style| style.bg(hover).text_color(hover_text));
+                            match (look.row_height, look.padding.top, look.padding.bottom) {
+                                (Some(height), _, _) => row.min_h(height),
+                                (None, None, None) => row.h(MENU_ROW_HEIGHT),
+                                (None, _, _) => row,
+                            }
+                        }
+                        None => row
+                            .px(MENU_ROW_PADDING_X)
+                            .h(MENU_ROW_HEIGHT)
+                            .text_sm()
+                            .hover(|style| {
+                                style
+                                    .bg(cx.theme().accent)
+                                    .text_color(cx.theme().accent_foreground)
+                            }),
+                    };
+                    row.into_any_element()
+                }
+            }
+        }))
+}
+
+/// The application's menus (`chrome::menus`) as the showcase draws them,
+/// reporting themselves as the menus of `host`: a title per menu, each
+/// opening its popup under it. Not upstream's `AppMenuBar`: its titles are
+/// Small ghost Buttons and its menus `PopupMenu`s, which set `text_sm`, a
+/// rounded hover in `accent` and the `popover` fill on themselves
+/// (menu/app_menu_bar.rs, `AppMenu::render`; menu/popup_menu.rs,
+/// `PopupMenu::render_item`), so the model's `menu.font`, its rectangular
+/// items and `menu.background_color` would not reach them. A part: the
 /// helper that places it reports its host.
-fn reported_menus(
-    ui: &Entity<InfoRegistry>,
-    cx: &App,
-    app_menu_bar: Entity<AppMenuBar>,
-    host: info::MenuHost,
-) -> Stateful<Div> {
-    app_menu_bar
-        .info(
-            ui,
-            "chrome-app-menu-bar",
-            info::app_menu_bar(cx.theme(), host),
+fn app_menus(ui: &Entity<InfoRegistry>, cx: &App, host: info::MenuHost) -> Stateful<Div> {
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let look = native.as_ref().map(MenuLook::of);
+    let menus_info = info::app_menus(cx.theme(), host, native.as_ref().map(|n| n.resolved));
+    h_flex()
+        .children(
+            crate::chrome::menus()
+                .into_iter()
+                .enumerate()
+                .map(|(ix, menu)| {
+                    let rows: Rc<Vec<MenuRow>> = Rc::new(
+                        menu.items
+                            .into_iter()
+                            .filter_map(|item| match item {
+                                gpui::MenuItem::Separator => Some(MenuRow::Separator),
+                                gpui::MenuItem::Action { name, action, .. } => {
+                                    Some(MenuRow::Action(name, action))
+                                }
+                                _ => None,
+                            })
+                            .collect(),
+                    );
+                    let popup_look = look.clone();
+                    let popover = Popover::new(("app-menu", ix))
+                        .anchor(gpui::Anchor::TopLeft)
+                        .trigger(MenuTitle {
+                            ix,
+                            name: menu.name,
+                            look: look.clone(),
+                            selected: false,
+                        })
+                        .content(move |_state, window, cx| {
+                            menu_popup(&rows, popup_look.as_ref(), window, cx)
+                        });
+                    match &look {
+                        Some(look) => popover
+                            .p_0()
+                            .bg(look.background)
+                            .border(look.frame_width)
+                            .border_color(look.frame)
+                            .rounded(look.frame_radius),
+                        None => popover.p_0(),
+                    }
+                }),
         )
+        .info(ui, "chrome-app-menu-bar", menus_info)
         .debug_selector(|| CHROME_APP_MENU_BAR.into())
 }
 
@@ -212,23 +502,22 @@ fn reported_menus(
 pub(crate) const MENU_BAR_PADDING: Pixels = px(8.);
 
 /// The menu-bar row (spec S8): at the top of a window whose frame the window
-/// manager draws, the application's own row holding `app_menu_bar`, as a KDE
-/// application places its menus. The model states no menu-bar inset, so its
-/// sides borrow `container_margin`, the installed layout's
+/// manager draws, the application's own row holding its menus (`app_menus`),
+/// as a KDE application places its menus. The model states no menu-bar
+/// inset, so its sides borrow `container_margin`, the installed layout's
 /// `geometry::container_margin`, and where that is unstated take
-/// [`MENU_BAR_PADDING`]; the AppMenuBar's items set its height.
+/// [`MENU_BAR_PADDING`]; the menu titles set its height.
 pub(crate) fn menu_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     container_margin: Option<Pixels>,
-    app_menu_bar: Entity<AppMenuBar>,
 ) -> Stateful<Div> {
     // No geometry line: the model states no menu-bar inset, and the row only
     // borrows container_margin, which its info says in its own words.
     let row_info = info::menu_bar(cx.theme(), container_margin, MENU_BAR_PADDING);
     h_flex()
         .px(container_margin.unwrap_or(MENU_BAR_PADDING))
-        .child(reported_menus(ui, cx, app_menu_bar, info::MenuHost::Row))
+        .child(app_menus(ui, cx, info::MenuHost::Row))
         .info(ui, "chrome-menu-bar", row_info)
 }
 
@@ -594,7 +883,7 @@ pub(crate) fn theme_settings<const N: usize>(
             v_flex()
                 .w_full()
                 .gap(gap)
-                .child(label(ui, cx, id, text))
+                .child(sidebar_label(ui, cx, id, text))
                 .child(control)
         }))
         .info(ui, CHROME_THEME_SETTINGS, settings_info)
@@ -603,26 +892,59 @@ pub(crate) fn theme_settings<const N: usize>(
         .debug_selector(|| CHROME_THEME_SETTINGS.into())
 }
 
+/// A label of the side panel reading `text`, `id` its info's id and debug
+/// selector: plain text in `sidebar.font`'s size and weight where a native
+/// theme is installed, in the colour the side panel sets. Not a `Label`:
+/// `Label::render` paints `foreground` on its own element (label.rs:211),
+/// over the sidebar's text colour.
+fn sidebar_label(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: &'static str,
+) -> Stateful<Div> {
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let text_div = match &native {
+        Some(n) => font_text(n, &n.resolved.sidebar.font, text),
+        None => div().text_sm().child(text),
+    };
+    text_div
+        .info(
+            ui,
+            id,
+            info::sidebar_label(cx.theme(), native.as_ref().map(|n| n.resolved)),
+        )
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
 /// The side panel (spec S2): `settings`, padded by `container_margin` where
 /// the installed layout states one, over `separator`, over `inspector`, which
-/// fills the rest of the panel's height and scrolls its own content.
+/// fills the rest of the panel's height and scrolls its own content; filled
+/// with the model's sidebar colour and lettered in its font's colour.
 ///
 /// Plain elements, not upstream's `Sidebar`: a Sidebar's children must
 /// implement `SidebarItem` (sidebar/mod.rs:211), and neither the settings
 /// nor the inspector is an item.
 pub(crate) fn side_panel(
     ui: &Entity<InfoRegistry>,
+    cx: &App,
     container_margin: Option<Pixels>,
     settings: impl IntoElement,
     separator: impl IntoElement,
     inspector: impl IntoElement,
 ) -> Stateful<Div> {
-    let mut panel_info = info::side_panel(container_margin);
+    let mut panel_info = info::side_panel(cx.theme(), container_margin);
     if container_margin.is_some() {
         panel_info = panel_info.geometry("container_margin");
     }
+    // The model's sidebar: `sidebar.background_color` and `sidebar.font`'s
+    // colour, which the connector installs as the `sidebar` and
+    // `sidebar_foreground` tokens.
     v_flex()
         .size_full()
+        .bg(cx.theme().sidebar)
+        .text_color(cx.theme().sidebar_foreground)
         .child(with_padding(div().w_full(), container_margin).child(settings))
         .child(separator)
         .child(div().w_full().flex_1().min_h_0().child(inspector))
@@ -818,23 +1140,68 @@ pub(crate) fn tab_bar(
             info::page_tab_bar(cx.theme()),
         ),
     };
-    let mut bar_info = bar_info.instance("padding", info::tab_bar_padding(container_margin));
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let mut bar_info = info::tab_font(bar_info, native.as_ref().map(|n| n.resolved))
+        .instance("padding", info::tab_bar_padding(container_margin));
     if container_margin.is_some() {
         bar_info = bar_info.geometry("container_margin");
     }
-    TabBar::new(id)
+    let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
+    let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
+    let on_click = Rc::new(on_click);
+    let on_tab = on_click.clone();
+    let bar = TabBar::new(id)
         .underline()
         .with_size(Size::Small)
-        .menu(menu)
         .when_some(container_margin, |bar, margin| bar.px(margin))
         .children(tabs.into_iter().map(|(label, selector)| {
-            Tab::new()
-                .label(label)
-                .debug_selector(move || selector.into())
+            // The label as a child in `tab.font`, over the `text_sm` the Tab
+            // sets on itself (tab/tab.rs, `RenderOnce for Tab`), and the
+            // tab at least `tab.min_width` by `tab.min_height`, through its
+            // style, which its own `h` does not clear.
+            let tab = match &native {
+                Some(n) => {
+                    let t = &n.resolved.tab;
+                    Tab::new()
+                        .child(font_text(n, &t.font, label))
+                        .min_w(px(t.min_width))
+                        .min_h(px(t.min_height))
+                }
+                None => Tab::new().label(label),
+            };
+            tab.debug_selector(move || selector.into())
         }))
         .selected_index(selected)
-        .on_click(on_click)
-        .info(ui, info_id, bar_info)
+        .on_click(move |ix, window, cx| on_tab(ix, window, cx));
+    // Upstream's menu of every tab names each by its `label` (tab/tab_bar.rs,
+    // `RenderOnce for TabBar`), which a tab whose label is a child has not
+    // got, so the showcase builds the same Button and menu as the bar's
+    // suffix.
+    let bar = if menu {
+        bar.suffix(
+            Button::new("page-tabs-menu")
+                .xsmall()
+                .ghost()
+                .dropdown_caret(true)
+                .dropdown_menu(move |menu, _, _| {
+                    labels
+                        .iter()
+                        .enumerate()
+                        .fold(menu.scrollable(true), |menu, (ix, &label)| {
+                            let on_click = on_click.clone();
+                            menu.item(
+                                PopupMenuItem::new(label)
+                                    .checked(selected == ix)
+                                    .on_click(move |_, window, cx| on_click(&ix, window, cx)),
+                            )
+                        })
+                })
+                .anchor(gpui::Anchor::TopRight),
+        )
+    } else {
+        bar
+    };
+    bar.info(ui, info_id, bar_info)
 }
 
 /// `text` in `font`, at the size the text-scaling factor makes of it: a
@@ -1039,22 +1406,48 @@ pub(crate) fn resize_handles(
             } else {
                 base.resizable.handle.unwrap_or(base.tokens.colors.border)
             };
+            // The model's splitter: its line `splitter.divider_width` wide,
+            // widened into the panel before the boundary, since the handle
+            // lays out no wider than HANDLE_SIZE; `splitter.hover_color`
+            // under the pointer, through the group upstream names the
+            // handle (resizable/resize_handle.rs, `ResizeHandle`).
+            let native = cx.native_theme().and_then(|nt| nt.native(cx));
+            let splitter = native.as_ref().map(|n| {
+                let s = &n.resolved.splitter;
+                (px(s.divider_width), info::stated(s.hover_color))
+            });
+            let line_info =
+                info::resize_handle(&base, between, native.as_ref().map(|n| n.resolved));
             let target = div()
                 .size_full()
-                .info(&ui, id, info::resize_handle(&base, between))
+                .info(&ui, id, line_info)
                 .absolute()
                 .top_0()
                 .bottom_0()
                 .left(-HANDLE_PADDING)
                 .right(-(HANDLE_PADDING - HANDLE_SIZE))
                 .debug_selector(move || id.into());
+            let painted = match splitter {
+                Some((width, hover)) => div()
+                    .absolute()
+                    .top_0()
+                    .bottom_0()
+                    .right_0()
+                    .w(width)
+                    .bg(line)
+                    .debug_selector(|| CHROME_SPLITTER_LINE.into())
+                    .when(!handle.is_active(), |line| {
+                        line.group_hover("handle", move |style| style.bg(hover))
+                    }),
+                None => div().size_full().bg(line),
+            };
             Some(
                 div()
                     .flex_none()
                     .relative()
                     .h_full()
                     .w(HANDLE_SIZE)
-                    .bg(line)
+                    .child(painted)
                     .child(target)
                     .into_any_element(),
             )

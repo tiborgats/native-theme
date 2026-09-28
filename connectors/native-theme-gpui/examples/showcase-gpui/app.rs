@@ -2,11 +2,11 @@
 
 use gpui::{
     Action, App, Context, Decorations, Entity, FocusHandle, Hsla, ImageSource, IntoElement,
-    KeyBinding, Menu, ParentElement, Pixels, Render, SharedString, Styled, Subscription, Task,
-    Window, actions, div, prelude::*,
+    KeyBinding, ParentElement, Pixels, Render, SharedString, Styled, Subscription, Task, Window,
+    actions, div, prelude::*,
 };
 use gpui_component::{
-    ActiveTheme, GlobalState, IconName, ResizableState, Root,
+    ActiveTheme, IconName, ResizableState, Root,
     attachment::AttachmentStatus,
     carousel::CarouselState,
     color_picker::ColorPickerState,
@@ -15,7 +15,6 @@ use gpui_component::{
     h_flex, h_resizable,
     input::{EditorState, InputState, NumberInputEvent, OtpState, StepAction, TextareaState},
     list::ListState,
-    menu::AppMenuBar,
     message_scroller::MessageScrollerState,
     resizable_panel,
     scroll::ScrollableElement,
@@ -228,8 +227,6 @@ pub(crate) struct Showcase {
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
     pub(crate) status_title_drawn: Option<SharedString>,
-    /// The application's menus, in the menu-bar row or in the title bar.
-    pub(crate) menu_bar: Entity<AppMenuBar>,
     /// The decorations the self-tests say the window was granted. gpui's test
     /// platform grants server-side decorations whatever it is asked for (gpui-pre
     /// platform.rs, `PlatformWindow::window_decorations`), so this is how a test
@@ -1279,17 +1276,10 @@ impl Showcase {
                 .default_value(EDITOR_SAMPLE)
         });
 
-        // Set up application menus. `cx.set_menus` hands them to the
-        // platform's own menu bar; `AppMenuBar` does not read those, it
-        // reads gpui-base's `GlobalState` list, which only
-        // `set_app_menus` fills (`menu/app_menu_bar.rs:49-50`), so the
-        // same menus go there too, before the bar is built and reads them.
+        // Set up application menus: `cx.set_menus` hands them to the
+        // platform's own menu bar; the showcase draws them itself where the
+        // platform has none (`demo::menu_bar`, `demo::title_bar`).
         cx.set_menus(chrome::menus());
-        if cx.has_global::<GlobalState>() {
-            GlobalState::global_mut(cx)
-                .set_app_menus(chrome::menus().into_iter().map(Menu::owned).collect());
-        }
-        let menu_bar = AppMenuBar::new(cx);
         let focus_handle = cx.focus_handle();
         focus_handle.focus(window, cx);
         let _refocus = cx.on_focus_lost(window, |this: &mut Self, window, cx| {
@@ -1336,7 +1326,6 @@ impl Showcase {
             info_ui,
             inspector,
             status_title_drawn: None,
-            menu_bar,
             #[cfg(test)]
             frame_for_test: None,
             #[cfg(test)]
