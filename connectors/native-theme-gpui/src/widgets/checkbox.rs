@@ -4,9 +4,9 @@
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, App, Axis, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement,
-    MouseButton, ParentElement, Pixels, RenderOnce, SharedString, StyleRefinement, Styled, Window,
-    div, prelude::FluentBuilder as _, px, relative, svg,
+    AnyElement, App, Axis, Bounds, ElementId, FontWeight, Hsla, InteractiveElement, IntoElement,
+    MouseButton, ParentElement, PathBuilder, Pixels, RenderOnce, SharedString, StyleRefinement,
+    Styled, Window, canvas, div, fill, point, prelude::FluentBuilder as _, px, relative, svg,
 };
 use gpui_base::{
     Checkbox as BaseCheckbox, Radio as BaseRadio, RadioGroup as BaseRadioGroup, spring,
@@ -48,6 +48,11 @@ pub struct CheckboxLook {
     pub border: Hsla,
     /// The check mark's colour.
     pub mark: Hsla,
+    /// `checkbox.check_mark_stroke_width`: the check mark's line, or `None`
+    /// where the theme states none or a length that is not finite -- the
+    /// checkbox then draws gpui-component's own `Check` icon, at its own
+    /// stroke.
+    pub mark_stroke: Option<Pixels>,
     /// The label's colour.
     pub label: Hsla,
     /// `checkbox.label_gap`.
@@ -112,6 +117,7 @@ impl CheckboxLook {
             hover_fill,
             border,
             mark,
+            mark_stroke: c.check_mark_stroke_width.and_then(length),
             label,
             label_gap: length(c.label_gap)?,
             opacity,
@@ -140,6 +146,72 @@ impl Parts {
             on_change: None,
         }
     }
+}
+
+/// gpui-component's check mark, the Lucide `check` icon it draws as
+/// `IconName::Check` (gpui-kit-assets 0.6.6 `assets/icons/check.svg`,
+/// `M20 6 9 17l-5-5`): a polyline through these points of its view box,
+/// round-capped and round-joined (`stroke-linecap`, `stroke-linejoin`).
+const CHECK_POINTS: [(f32, f32); 3] = [(20., 6.), (9., 17.), (4., 12.)];
+
+/// The side of that icon's view box (`viewBox="0 0 24 24"`).
+const CHECK_VIEW_BOX: f32 = 24.;
+
+/// gpui-component's check mark `size` square, its line `stroke` wide in
+/// `colour`, faded to `opacity`: the icon's polyline scaled to the box and
+/// stroked at the width the theme states, where the icon file strokes it at
+/// its own two view-box units. Its round caps and join are discs as wide as
+/// the line on the three points.
+fn stroked_check(size: Pixels, stroke: Pixels, colour: Hsla, opacity: f32) -> AnyElement {
+    let colour = Hsla {
+        a: colour.a * opacity,
+        ..colour
+    };
+    let mark = canvas(
+        move |bounds: Bounds<Pixels>, _, _| bounds,
+        move |_, bounds, window, _| {
+            if opacity <= 0. {
+                return;
+            }
+            let scale = f32::from(size) / CHECK_VIEW_BOX;
+            let at = |(x, y): (f32, f32)| {
+                point(
+                    px(f32::from(bounds.origin.x) + x * scale),
+                    px(f32::from(bounds.origin.y) + y * scale),
+                )
+            };
+            let mut path = PathBuilder::stroke(stroke);
+            let [first, rest @ ..] = CHECK_POINTS;
+            path.move_to(at(first));
+            for p in rest {
+                path.line_to(at(p));
+            }
+            if let Ok(path) = path.build() {
+                window.paint_path(path, colour);
+            }
+            let r = f32::from(stroke) / 2.;
+            for p in CHECK_POINTS {
+                let c = at(p);
+                window.paint_quad(
+                    fill(
+                        Bounds::new(
+                            point(px(f32::from(c.x) - r), px(f32::from(c.y) - r)),
+                            gpui::size(stroke, stroke),
+                        ),
+                        colour,
+                    )
+                    .corner_radii(px(r)),
+                );
+            }
+        },
+    )
+    .size_full();
+    div()
+        .size(size)
+        .flex_none()
+        .debug_selector(|| "native-checkbox-mark".into())
+        .child(mark)
+        .into_any_element()
 }
 
 /// The indicator box, its mark and the label of a checkbox or radio in
@@ -176,14 +248,19 @@ fn indicator_and_label(
         // indicator" (docs/platform-facts.md:1216, §2.5).
         None => {
             let inner = px(f32::from(look.indicator) - f32::from(look.border_width) * 2.);
-            svg()
-                .size(inner)
-                .flex_none()
-                .text_color(look.mark)
-                .when(opacity > 0., |mark| {
-                    mark.path(IconName::Check.path()).opacity(opacity)
-                })
-                .into_any_element()
+            match look.mark_stroke {
+                // gpui-component's own glyph, stroked as the theme states
+                // (docs/platform-facts.md:1221, §2.5).
+                Some(stroke) => stroked_check(inner, stroke, look.mark, opacity),
+                None => svg()
+                    .size(inner)
+                    .flex_none()
+                    .text_color(look.mark)
+                    .when(opacity > 0., |mark| {
+                        mark.path(IconName::Check.path()).opacity(opacity)
+                    })
+                    .into_any_element(),
+            }
         }
     };
     let indicator = div()

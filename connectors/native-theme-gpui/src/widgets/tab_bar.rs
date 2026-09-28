@@ -57,7 +57,16 @@ pub struct TabLook {
     pub padding_top: Option<Pixels>,
     /// `tab.border.padding` bottom, where stated.
     pub padding_bottom: Option<Pixels>,
+    /// `tab.item_gap`: the space between neighbouring tabs; where the theme
+    /// states none, gpui-component's for its `TabVariant::Tab`, none
+    /// (tab/tab_bar.rs:366-369, [`TAB_GAP`]).
+    pub gap: Pixels,
 }
+
+/// The space between tabs where `tab.item_gap` is unstated: gpui-component
+/// lays the tabs of its default variant, `TabVariant::Tab`, with no gap
+/// (tab/tab_bar.rs:366-369).
+const TAB_GAP: f32 = 0.;
 
 /// A stated side, `None` where it is unstated, or `Err` where it is not a
 /// finite, non-negative length.
@@ -92,6 +101,7 @@ impl TabLook {
             padding_right: side(b.padding.right).ok()?.unwrap_or(unstated),
             padding_top: side(b.padding.top).ok()?,
             padding_bottom: side(b.padding.bottom).ok()?,
+            gap: side(t.item_gap).ok()?.unwrap_or(px(TAB_GAP)),
         })
     }
 }
@@ -140,7 +150,8 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// (tab/tab.rs, `TabVariant`), and `tab.*` states neither. Every tab is at
 /// least `min_width` by `min_height`, padded by the stated `border.padding`
 /// sides (gpui-component's 12px on a side left unstated), in `tab.font`'s
-/// size and weight. The tabs scroll sideways where they do not fit; a
+/// size and weight, `item_gap` from its neighbours (none where unstated, as
+/// gpui-component's). The tabs scroll sideways where they do not fit; a
 /// [`suffix`](Self::suffix) follows them.
 ///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its
@@ -290,6 +301,7 @@ impl RenderOnce for TabBar {
             .flex_auto()
             .min_w_0()
             .overflow_x_scroll()
+            .gap(look.gap)
             .children(tabs);
         div()
             .id(self.id)

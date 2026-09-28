@@ -142,10 +142,10 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
             t.ring,
             "gpui-component/input/input.rs:681",
         ))
-        .instance("row height", "defaults.line_height times the text size: geometry::input carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base input/base/element.rs, TextElement::request_layout)")
-        .instance("height", "the showcase's own 90px, set after geometry::input: the builder's height rule is for a single-line field, and a Textarea's own height goes on after it, where it wins")
-        .instance("padding", "none from geometry::input: the showcase clears the refinement's padding sides, because they are a single-line field's -- upstream pads only a single-line Input's root (input/input.rs, Input::render: input_px and input_py when not multi-line)")
-        .instance("refinement", "geometry::input, the one the single-line Input above takes, because a Textarea renders as one (input/textarea.rs, Textarea::into_input)")
+        .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base input/base/element.rs, TextElement::request_layout)")
+        .instance("height", "the showcase's own 90px, set after geometry::text_area, which sets none")
+        .instance("padding", "text_area.border.padding, the multi-line field's own (docs/platform-facts.md §2.29), inside text_area.border; a side the theme leaves unstated stays upstream's, unpadded -- upstream pads only a single-line Input's root (input/input.rs, Input::render: input_px and input_py when not multi-line)")
+        .instance("refinement", "geometry::text_area: the input's font, and text_area.border's padding, radius and line width, which inherit the input's frame (a Textarea renders as an Input, input/textarea.rs, Textarea::into_input)")
 }
 
 /// A `Textarea` as tall as the rows its state shows: [`textarea`]'s, with
@@ -153,7 +153,7 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
 pub fn rows_textarea(t: &Theme, filled: bool) -> WidgetInfo {
     let mut info = textarea(t, filled);
     info.instance.retain(|note| note.what != "height");
-    info.instance("height", "the rows its state was built to show, three, each the row height above: the showcase clears the single-line height geometry::input sets, so the state's rows size it (gpui-base input/base/state.rs, InputBaseState::auto_grow)")
+    info.instance("height", "the rows its state was built to show, three, each the row height above: geometry::text_area sets no height, so the state's rows size it (gpui-base input/base/state.rs, InputBaseState::auto_grow)")
 }
 
 /// The three `InputGroup`s, which report as one. Their geometry lines are
@@ -556,20 +556,20 @@ fn native_indicator(
             "fill",
             "disabled_background",
             stated(k.disabled_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:85",
+            "native-theme-gpui/widgets/checkbox.rs:90",
         )),
         (true, false) => info.color(claim(
             "fill",
             "checked_background",
             stated(k.checked_background),
-            "native-theme-gpui/widgets/checkbox.rs:81",
+            "native-theme-gpui/widgets/checkbox.rs:86",
         )),
         (false, false) => {
             let info = info.color(claim(
                 "fill",
                 "unchecked_background",
                 stated(k.unchecked_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:79",
+                "native-theme-gpui/widgets/checkbox.rs:84",
             ));
             if disabled {
                 info
@@ -578,7 +578,7 @@ fn native_indicator(
                     "hover layer, over the fill",
                     "hover_background",
                     stated(k.hover_background.unwrap_or(k.background_color)),
-                    "native-theme-gpui/widgets/checkbox.rs:92",
+                    "native-theme-gpui/widgets/checkbox.rs:97",
                 ))
             }
         }
@@ -588,14 +588,14 @@ fn native_indicator(
             "border",
             "border",
             stated(k.border.color),
-            "native-theme-gpui/widgets/checkbox.rs:96",
+            "native-theme-gpui/widgets/checkbox.rs:101",
         ))
     } else {
         info.color(claim(
             "border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:98",
+            "native-theme-gpui/widgets/checkbox.rs:103",
         ))
     };
     match (disabled, stated_disabled) {
@@ -603,33 +603,33 @@ fn native_indicator(
             "mark and label",
             "disabled_text_color",
             stated(k.disabled_text_color),
-            "native-theme-gpui/widgets/checkbox.rs:101",
+            "native-theme-gpui/widgets/checkbox.rs:106",
         )),
         (true, false) => info
             .color(claim(
                 "mark",
                 "indicator_color",
                 stated(k.indicator_color),
-                "native-theme-gpui/widgets/checkbox.rs:102",
+                "native-theme-gpui/widgets/checkbox.rs:107",
             ))
             .color(claim(
                 "label",
                 "disabled_text_color",
                 stated(k.disabled_text_color),
-                "native-theme-gpui/widgets/checkbox.rs:102",
+                "native-theme-gpui/widgets/checkbox.rs:107",
             )),
         (false, _) => info
             .color(claim(
                 "mark",
                 "indicator_color",
                 stated(k.indicator_color),
-                "native-theme-gpui/widgets/checkbox.rs:103",
+                "native-theme-gpui/widgets/checkbox.rs:108",
             ))
             .color(claim(
                 "label",
                 "font",
                 stated(k.font.color),
-                "native-theme-gpui/widgets/checkbox.rs:103",
+                "native-theme-gpui/widgets/checkbox.rs:108",
             )),
     }
 }
@@ -656,19 +656,19 @@ pub fn native_radio_column(
             "unselected fill",
             "unchecked_background",
             stated(k.unchecked_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:79",
+            "native-theme-gpui/widgets/checkbox.rs:84",
         ))
         .color(claim(
             "unselected border",
             "unchecked_border_color",
             stated(k.unchecked_border_color.unwrap_or(k.border.color)),
-            "native-theme-gpui/widgets/checkbox.rs:98",
+            "native-theme-gpui/widgets/checkbox.rs:103",
         ))
         .color(claim(
             "hover layer, over an unselected fill",
             "hover_background",
             stated(k.hover_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:92",
+            "native-theme-gpui/widgets/checkbox.rs:97",
         ))
         .config("indicator", format!("checkbox.indicator_width: a circle {}px across (platform-facts §2.5: radio buttons are circular)", k.indicator_width))
         .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap));

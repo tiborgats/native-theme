@@ -4562,9 +4562,9 @@ fn the_height_only_field_takes_the_height_rule(cx: &mut TestAppContext) {
     );
 }
 
-/// The Textarea keeps its own 90px under `geometry::input`, whose height
-/// rule is for a single-line field, at text scale 1 and 2, and takes none of
-/// the builder's padding, which is a single-line field's too.
+/// The Textarea keeps its own 90px under `geometry::text_area`, which sets
+/// no height, at text scale 1 and 2, and is padded as `text_area.border`
+/// states, the multi-line field's own padding.
 #[gpui::test]
 fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -4574,14 +4574,14 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
     assert!(
         info.as_ref()
             .and_then(|i| i.config.iter().find(|n| n.what == "geometry"))
-            .is_some_and(|g| g.text.starts_with("geometry::input:")),
-        "the Textarea does not take geometry::input: {info:?}"
+            .is_some_and(|g| g.text.starts_with("geometry::text_area:")),
+        "the Textarea does not take geometry::text_area: {info:?}"
     );
     assert!(
         info.as_ref()
             .and_then(|i| i.instance.iter().find(|n| n.what == "padding"))
-            .is_some_and(|p| p.text.starts_with("none from geometry::input")),
-        "the Textarea's info does not say it takes no padding: {info:?}"
+            .is_some_and(|p| p.text.starts_with("text_area.border.padding")),
+        "the Textarea's info does not say it takes the text area's padding: {info:?}"
     );
     for factor in [1.0, 2.0] {
         scale_text(&mut cx, factor);

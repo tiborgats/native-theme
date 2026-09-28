@@ -238,6 +238,28 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
     )
 }
 
+/// A multi-line `Input` or a `Textarea` root (`src/input/input.rs:704-714`
+/// → `:719`).
+///
+/// [`input`]'s refinement for the multi-line field: `text_area.border`'s
+/// padding sides, corner radius and line width in place of the input's
+/// (the frame's inherit the input's, docs/platform-facts.md §2.29), the
+/// input's font, and no height -- the rows the field's state holds size it
+/// (gpui-base `input/base/state.rs`, `InputBaseState::auto_grow`). Upstream
+/// pads only a single-line root (`input/input.rs:700-702`), so a side the
+/// theme leaves unstated keeps upstream's multi-line field unpadded there.
+#[must_use]
+pub fn text_area(n: Native<'_>) -> StyleRefinement {
+    let a = &n.resolved.text_area;
+    with_text(
+        with_padding(StyleRefinement::default(), &a.border.padding)
+            .rounded(px(a.border.corner_radius.max(0.0)))
+            .border(px(a.border.line_width)),
+        &n.resolved.input.font,
+        n,
+    )
+}
+
 /// A menu row the application draws with its own elements
 /// (`src/menu/menu_item.rs:103-105` → `:111`).
 ///
@@ -1825,6 +1847,7 @@ mod tests {
         for b in [
             &mut r.button.border,
             &mut r.input.border,
+            &mut r.text_area.border,
             &mut r.menu.border,
             &mut r.list.border,
             &mut r.tooltip.border,
@@ -1847,9 +1870,10 @@ mod tests {
         let r = partly_stated();
         let n = Native::unscaled(&r);
         type Builder = fn(Native<'_>) -> StyleRefinement;
-        let builders: [(&str, Builder); 11] = [
+        let builders: [(&str, Builder); 12] = [
             ("button", button),
             ("input", input),
+            ("text_area", text_area),
             ("menu_item", menu_item),
             ("list_item", list_item),
             ("tooltip", tooltip),

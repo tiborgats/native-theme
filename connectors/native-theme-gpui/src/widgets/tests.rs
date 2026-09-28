@@ -121,8 +121,14 @@ fn the_checkbox_look_is_the_presets_values() {
     // kbl.flat / md.flat): the mapping reaches the stated numbers.
     let kbl = CheckboxLook::of(&resolved("kde-breeze", ColorMode::Light), false, false).unwrap();
     assert_eq!(kbl.indicator, px(20.));
+    assert_eq!(
+        kbl.mark_stroke,
+        Some(px(2.)),
+        "Breeze's check pen (docs/platform-facts.md:1221)"
+    );
     let md = CheckboxLook::of(&resolved("material", ColorMode::Dark), false, false).unwrap();
     assert_eq!(md.indicator, px(18.));
+    assert_eq!(md.mark_stroke, None, "material states none: the icon's own");
 }
 
 #[test]
@@ -277,6 +283,9 @@ fn a_tab_bar_paints_tab_theme() {
         assert_eq!(look.radius, px(t.border.corner_radius), "{preset}");
         assert_eq!(look.min_width, px(t.min_width), "{preset}");
         assert_eq!(look.min_height, px(t.min_height), "{preset}");
+        if let Some(gap) = t.item_gap {
+            assert_eq!(look.gap, px(gap), "{preset}: tab.item_gap");
+        }
         let hover = t.hover_background.expect("both presets state a tab hover");
         assert_eq!(look.hover, c(t.bar_background).blend(c(hover)), "{preset}");
     }
@@ -308,6 +317,11 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
     let (one, two) = (bounds(cx, "one"), bounds(cx, "two"));
     assert_eq!(one.size.height, px(r.tab.min_height));
     assert!(one.size.width >= px(r.tab.min_width));
+    assert_eq!(
+        Some(two.origin.x - (one.origin.x + one.size.width)),
+        r.tab.item_gap.map(px),
+        "neighbouring tabs tab.item_gap apart"
+    );
     // gpui paints a box's fill and its border as two quads.
     let painted = |cx: &mut VisualTestContext, b: Bounds<Pixels>| {
         cx.update(|window, _| {

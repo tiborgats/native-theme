@@ -109,7 +109,7 @@ theme's `motion_tokens`), which gpui holds still under reduced motion
 | fill, hovered unchecked | `hover_background` (`None` → `background_color`) over the unchecked fill | `group_hover` on the indicator |
 | fill, disabled | `disabled_background`, checked or not; `None` → the enabled fill of the state | |
 | border | checked: `border.color`; unchecked: `unchecked_border_color` (`None` → `border.color`) | disabled keeps the state's colour |
-| mark | `indicator_color`; disabled with a `disabled_background`: `disabled_text_color` | gpui-component's `IconName::Check` path, filling the box inside its border: PF §2.5 "checkmark fills indicator" (`platform-facts.md:1216`) |
+| mark | `indicator_color`; disabled with a `disabled_background`: `disabled_text_color` | gpui-component's `IconName::Check` path, filling the box inside its border: PF §2.5 "checkmark fills indicator" (`platform-facts.md:1216`); where `check_mark_stroke_width` is stated (`platform-facts.md:1221`), the icon's polyline (`M20 6 9 17l-5-5` of its 24-unit box) painted at that width, its round caps and join kept |
 | label | `checkbox.font` size, weight, `font.color`; disabled `disabled_text_color` | |
 | label gap | `checkbox.label_gap` | |
 

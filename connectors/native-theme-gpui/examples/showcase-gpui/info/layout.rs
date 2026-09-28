@@ -500,10 +500,25 @@ pub fn native_expander(
         .collect();
     info.config("title row", format!("expander.header_height, {}px, in expander.font, {}px, weight {}", px_text(e.header_height), px_text(e.font.size), e.font.weight))
         .config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
-        .config("edge", format!("expander.border: {}px, radius {}px, round the whole and between the items", px_text(e.border.line_width), px_text(e.border.corner_radius)))
-        .not_themeable("arrow glyph", "not stated: upstream's Accordion's, a ChevronDown after the title, turned while open (accordion.rs, AccordionItem::render)")
-        .not_themeable("own icons", super::own_icons("ChevronDown, the arrow (accordion.rs, AccordionItem::render)"))
-        .not_themeable("padding", "not stated: upstream's AccordionItem's, px_3 across the title and the body, gap_3 before the arrow, pb_2 under the body (accordion.rs, AccordionItem::render)")
+        .config("edge", match e.frame_enabled {
+            Some(false) => "none: expander.frame_enabled is false, no frame and no line between the items".to_string(),
+            _ => format!("expander.border: {}px, radius {}px, round the whole and between the items", px_text(e.border.line_width), px_text(e.border.corner_radius)),
+        })
+        .config("arrow side", match e.arrow_side {
+            Some(side) => format!("expander.arrow_side, {side:?}"),
+            None => "not stated: upstream's Accordion's, after the title (accordion.rs, AccordionItem::render)".to_string(),
+        })
+        .config("arrow gap", match e.arrow_gap {
+            Some(gap) => format!("expander.arrow_gap, {}px", px_text(gap)),
+            None => "not stated: upstream's AccordionItem's gap_3 (accordion.rs, AccordionItem::render)".to_string(),
+        })
+        .config("body indent", match e.content_indent {
+            Some(indent) => format!("expander.content_indent, {}px", px_text(indent)),
+            None => "not stated: upstream's AccordionItem's px_3 (accordion.rs, AccordionItem::render)".to_string(),
+        })
+        .not_themeable("arrow glyph", "not stated: a chevron, ChevronRight turned down while open before the title, upstream's ChevronDown turned while open after it (accordion.rs, AccordionItem::render)")
+        .not_themeable("own icons", super::own_icons("ChevronDown and ChevronRight, the arrow (accordion.rs, AccordionItem::render)"))
+        .not_themeable("padding", "not stated: upstream's AccordionItem's, px_3 across the title and right of the body, pb_2 under the body (accordion.rs, AccordionItem::render)")
         .not_themeable("fill", "none: the model states no expander fill, so the window's background shows")
         .instance("items", titles.join(", "))
         .instance("open", if shown.is_empty() { "none".to_string() } else { shown.join(", ") })
@@ -523,37 +538,37 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "bar",
             "bar_background",
             stated(t.bar_background),
-            "native-theme-gpui/widgets/tab_bar.rs:75",
+            "native-theme-gpui/widgets/tab_bar.rs:84",
         ))
         .color(claim(
             "unselected tab",
             "background_color",
             stated(t.background_color),
-            "native-theme-gpui/widgets/tab_bar.rs:76",
+            "native-theme-gpui/widgets/tab_bar.rs:85",
         ))
         .color(claim(
             "label",
             "font",
             stated(t.font.color),
-            "native-theme-gpui/widgets/tab_bar.rs:81",
+            "native-theme-gpui/widgets/tab_bar.rs:90",
         ))
         .color(claim(
             "selected tab",
             "active_background",
             stated(t.active_background),
-            "native-theme-gpui/widgets/tab_bar.rs:84",
+            "native-theme-gpui/widgets/tab_bar.rs:93",
         ))
         .color(claim(
             "selected label",
             "active_text_color",
             stated(t.active_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:85",
+            "native-theme-gpui/widgets/tab_bar.rs:94",
         ))
         .color(claim(
             "selected tab's outline",
             "border",
             stated(t.border.color),
-            "native-theme-gpui/widgets/tab_bar.rs:86",
+            "native-theme-gpui/widgets/tab_bar.rs:95",
         ))
         .color(claim(
             "rule under the bar",
@@ -566,7 +581,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "hovered unselected tab, in place of its fill, over the bar",
             "hover_background",
             stated(t.hover_background.unwrap_or(t.background_color)),
-            "native-theme-gpui/widgets/tab_bar.rs:82",
+            "native-theme-gpui/widgets/tab_bar.rs:91",
         ))
     } else {
         info
@@ -575,7 +590,7 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         "hovered label",
         "hover_text_color",
         stated(t.hover_text_color),
-        "native-theme-gpui/widgets/tab_bar.rs:83",
+        "native-theme-gpui/widgets/tab_bar.rs:92",
     ));
     let padding = t.border.padding;
     let side = |v: Option<f32>| {

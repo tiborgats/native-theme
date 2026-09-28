@@ -91,7 +91,7 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
-use native_theme::theme::{IconSet, ResolvedFontSpec, ResolvedPadding};
+use native_theme::theme::{ArrowSide, IconSet, ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets;
@@ -2739,11 +2739,10 @@ fn input_surface(
 }
 
 /// A `Textarea` over `state`, `width` by `height`, refined by
-/// `geometry::input`: it renders as an `Input` (input/textarea.rs:164).
-/// `geometry::input`'s height rule and padding are for a single-line field:
-/// the Textarea's own `height` goes on after the builder, where it wins, and
-/// the refinement's padding sides are cleared, because upstream pads only a
-/// single-line root (input/input.rs:700-702).
+/// `geometry::text_area`: it renders as an `Input` (input/textarea.rs:164),
+/// padded by the sides `text_area.border.padding` states, the multi-line
+/// field's own (docs/platform-facts.md §2.29); its `height` goes on after
+/// the builder.
 pub(crate) fn textarea(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -2757,25 +2756,23 @@ pub(crate) fn textarea(
     let textarea = native_info(
         Textarea::new(state).w(width),
         cx,
-        geometry::input,
-        "input",
+        geometry::text_area,
+        "text_area",
         &mut textarea_info,
     );
     if fill.is_some() {
         textarea_info = textarea_info.geometry("input_fill");
     }
-    let mut textarea = refined(textarea, fill.as_ref());
-    Styled::style(&mut textarea).padding = StyleRefinement::default().padding;
+    let textarea = refined(textarea, fill.as_ref());
     Styled::h(textarea, height)
         .info(ui, id, textarea_info)
         .debug_selector(move || id.into())
 }
 
 /// A `Textarea` over `state`, `width` wide and as tall as the rows `state`
-/// was built to show, refined by `geometry::input` as [`textarea`] refines
-/// its own: the builder's height rule and padding are a single-line
-/// field's, so its height and padding sides are cleared and the rows the
-/// state holds size it (gpui-base input/base/state.rs,
+/// was built to show, refined by `geometry::text_area` as [`textarea`]
+/// refines its own; the refinement sets no height, and the rows the state
+/// holds size it (gpui-base input/base/state.rs,
 /// `InputBaseState::auto_grow`).
 pub(crate) fn rows_textarea(
     ui: &Entity<InfoRegistry>,
@@ -2789,8 +2786,8 @@ pub(crate) fn rows_textarea(
     let textarea = native_info(
         Textarea::new(state).w(width),
         cx,
-        geometry::input,
-        "input",
+        geometry::text_area,
+        "text_area",
         &mut textarea_info,
     );
     if fill.is_some() {
@@ -2798,7 +2795,6 @@ pub(crate) fn rows_textarea(
     }
     let mut textarea = refined(textarea, fill.as_ref());
     let style = Styled::style(&mut textarea);
-    style.padding = StyleRefinement::default().padding;
     style.size.height = None;
     style.min_size.height = None;
     textarea
@@ -5496,15 +5492,21 @@ const EXPANDER_ARROW_GAP: Rems = rems(0.75);
 const EXPANDER_BODY_BOTTOM: Rems = rems(0.5);
 
 /// [`expander`] under a native theme, drawn by the showcase as `expander.*`
-/// states it (ISSUES D8): the whole framed by `expander.border` and the
-/// items parted by its line, as upstream's bordered `Accordion` frames
-/// them; each title row `header_height` tall (`geometry::accordion_title`)
+/// states it (ISSUES D8): where `frame_enabled` is not `false`, the whole
+/// framed by `expander.border` and the items parted by its line, as
+/// upstream's bordered `Accordion` frames them, and none of either where it
+/// is (KDE's `KCollapsibleGroupBox` draws neither, docs/platform-facts.md
+/// §2.27); each title row `header_height` tall (`geometry::accordion_title`)
 /// in `expander.font`, `hover_background` under the pointer; its arrow
 /// `arrow_icon_size` in `arrow_color` (the title's colour where that is
-/// unstated). The arrow's glyph and side are not stated: they stay
-/// upstream's, a ChevronDown after the title, turned while the item is
-/// open (accordion.rs, `RenderOnce for AccordionItem`), whose size and
-/// colour upstream builds inline and no caller reaches.
+/// unstated), on the `arrow_side` the theme states, `arrow_gap` from the
+/// title; the body `content_indent` in from the leading edge. Where the
+/// theme states no side the arrow is upstream's, after the title; a
+/// trailing arrow is upstream's ChevronDown, turned while the item is open,
+/// and a leading one ChevronRight turned down while it is open, as Breeze
+/// and the HIG draw a leading arrow (§2.27). Upstream builds its arrow's
+/// size and colour inline, where no caller reaches them
+/// (accordion.rs, `RenderOnce for AccordionItem`).
 #[allow(clippy::too_many_arguments)]
 fn native_expander(
     ui: &Entity<InfoRegistry>,
@@ -5531,21 +5533,52 @@ fn native_expander(
     let expander_info =
         info::layout::native_expander(n.resolved, items.map(|(title, _, _)| title), open)
             .geometry("accordion_title");
+    // KDE's expander has no frame and no line between items (§2.27); where
+    // the theme states nothing the frame stays, as upstream's.
+    let framed = e.frame_enabled != Some(false);
+    let leading = e.arrow_side == Some(ArrowSide::Leading);
+    let arrow_gap: DefiniteLength = match e.arrow_gap {
+        Some(gap) => px(gap).into(),
+        None => EXPANDER_ARROW_GAP.into(),
+    };
+    let body_indent: DefiniteLength = match e.content_indent {
+        Some(indent) => px(indent).into(),
+        None => EXPANDER_PADDING_X.into(),
+    };
     v_flex()
         .w(width)
-        .border(line_width)
-        .border_color(line)
-        .rounded(px(e.border.corner_radius.max(0.0)))
+        .when(framed, |frame| {
+            frame
+                .border(line_width)
+                .border_color(line)
+                .rounded(px(e.border.corner_radius.max(0.0)))
+        })
         .overflow_hidden()
         .children(items.into_iter().zip(open).enumerate().map(
             |(ix, ((title, body_id, body), is_open))| {
                 let on_toggle = on_toggle.clone();
+                // A leading arrow points at the title while closed and down
+                // while open; a trailing one down while closed and up while
+                // open (§2.27, `arrow_side`).
+                let (glyph, turn) = if leading {
+                    (IconName::ChevronRight, if is_open { 0.25 } else { 0. })
+                } else {
+                    (IconName::ChevronDown, if is_open { 0.5 } else { 0. })
+                };
+                let arrow = div()
+                    .flex_none()
+                    .debug_selector(move || format!("{id}-arrow-{ix}"))
+                    .child(
+                        Icon::new(glyph)
+                            .with_size(px(e.arrow_icon_size))
+                            .text_color(arrow)
+                            .rotate(gpui::percentage(turn)),
+                    );
                 let header = h_flex()
                     .id((id, ix))
                     .w_full()
-                    .justify_between()
                     .items_center()
-                    .gap(EXPANDER_ARROW_GAP)
+                    .gap(arrow_gap)
                     .px(EXPANDER_PADDING_X)
                     .refine_style(&title_style)
                     .text_size(text_size)
@@ -5555,18 +5588,13 @@ fn native_expander(
                         header.hover(move |style| style.bg(hover))
                     })
                     .debug_selector(move || format!("{id}-header-{ix}"))
-                    .child(title)
-                    .child(
-                        div()
-                            .flex_none()
-                            .debug_selector(move || format!("{id}-arrow-{ix}"))
-                            .child(
-                                Icon::new(IconName::ChevronDown)
-                                    .with_size(px(e.arrow_icon_size))
-                                    .text_color(arrow)
-                                    .rotate(gpui::percentage(if is_open { 0.5 } else { 0. })),
-                            ),
-                    )
+                    .map(|header| {
+                        if leading {
+                            header.child(arrow).child(title)
+                        } else {
+                            header.justify_between().child(title).child(arrow)
+                        }
+                    })
                     .on_click(move |_, window, cx| {
                         let mut next = open;
                         if let Some(item) = next.get_mut(ix) {
@@ -5576,13 +5604,17 @@ fn native_expander(
                     });
                 v_flex()
                     .w_full()
-                    .when(ix > 0, |item| item.border_t(line_width).border_color(line))
+                    .when(framed && ix > 0, |item| {
+                        item.border_t(line_width).border_color(line)
+                    })
                     .child(header)
                     .when(is_open, |item| {
                         item.child(
                             div()
-                                .px(EXPANDER_PADDING_X)
+                                .pl(body_indent)
+                                .pr(EXPANDER_PADDING_X)
                                 .pb(EXPANDER_BODY_BOTTOM)
+                                .debug_selector(move || format!("{id}-body-{ix}"))
                                 .child(body_label(ui, cx, body_id, body)),
                         )
                     })

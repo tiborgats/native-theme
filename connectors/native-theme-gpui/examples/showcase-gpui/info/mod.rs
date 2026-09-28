@@ -163,6 +163,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "input.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the border.padding sides the theme states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, border.corner_radius, line_width, input.font",
     ),
     (
+        "text_area",
+        "the multi-line field's own text_area.border padding sides the theme states (docs/platform-facts.md §2.29) -- upstream pads only a single-line root (input/input.rs, Input::render: input_px and input_py when not multi-line), so an unstated side stays unpadded --, text_area.border.corner_radius and line_width, which inherit the input's, input.font; no height: the rows its state holds size it",
+    ),
+    (
         "menu_item",
         "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
     ),
