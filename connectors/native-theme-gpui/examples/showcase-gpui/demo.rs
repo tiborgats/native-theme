@@ -92,6 +92,8 @@ use gpui_component::{
 };
 use native_theme::theme::{ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
+#[cfg(feature = "widgets")]
+use native_theme_gpui::widgets;
 use native_theme_gpui::{
     AccessibilityPreferences, ActiveNativeTheme as _, Native, geometry, variants,
 };
@@ -1812,6 +1814,19 @@ fn preference_item(
         let checked = installed_preferences(cx).is_some_and(|p| pref.get(&p));
         let selector = pref.selector();
         let clicked = ui.clone();
+        #[cfg(feature = "widgets")]
+        if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+            let switch_info =
+                info::inputs::native_switch(r, pref.field(), checked, options.is_disabled());
+            return widgets::Switch::new(selector)
+                .checked(checked)
+                .disabled(options.is_disabled())
+                .on_change(move |on: &bool, _window, cx| {
+                    change_preferences(&clicked, cx, |overrides| pref.set(overrides, *on));
+                })
+                .info(&ui, selector, switch_info)
+                .debug_selector(move || selector.into());
+        }
         Switch::new(selector)
             .checked(checked)
             .disabled(options.is_disabled())
@@ -2560,6 +2575,19 @@ pub(crate) fn checkbox(
     on_click: Option<impl Fn(&bool, &mut Window, &mut App) + 'static>,
 ) -> Stateful<Div> {
     let disabled = on_click.is_none();
+    // Under a native theme, the connector's theme-drawn checkbox: every part
+    // gpui-component draws from literals of its own is the theme's there.
+    #[cfg(feature = "widgets")]
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        let checkbox_info = info::inputs::native_checkbox(r, label, checked, disabled);
+        return widgets::Checkbox::new(id)
+            .label(label)
+            .checked(checked)
+            .disabled(disabled)
+            .when_some(on_click, |checkbox, on_click| checkbox.on_change(on_click))
+            .info(ui, id, checkbox_info)
+            .debug_selector(move || id.into());
+    }
     let mut checkbox_info = info::inputs::checkbox(cx.theme(), label, checked, disabled);
     let checkbox = native_info(
         Checkbox::new(id),
@@ -2577,6 +2605,12 @@ pub(crate) fn checkbox(
         .debug_selector(move || id.into())
 }
 
+/// The space between the radios of a horizontal group, which the model does
+/// not state: gpui-component's own `RadioGroup`'s, `gap_3` (radio.rs,
+/// `RenderOnce for RadioGroup`).
+#[cfg(feature = "widgets")]
+const RADIO_GROUP_GAP: Rems = rems(0.75);
+
 /// A horizontal `RadioGroup` of Radios reading `labels`, each refined by
 /// `geometry::radio`, the one at `selected` selected; a click hands
 /// `on_click` the index of the Radio clicked.
@@ -2593,6 +2627,23 @@ pub(crate) fn radio_group(
     selected: Option<usize>,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    #[cfg(feature = "widgets")]
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        let group_info =
+            info::inputs::native_radio_column(r, labels, selected).variant("horizontal");
+        let on_click = Rc::new(on_click);
+        return widgets::RadioGroup::new(id)
+            .axis(Axis::Horizontal)
+            .gap(RADIO_GROUP_GAP)
+            .children(labels.iter().enumerate().map(|(ix, &label)| {
+                let on_click = on_click.clone();
+                widgets::Radio::new((id, ix))
+                    .label(label)
+                    .checked(selected == Some(ix))
+                    .on_change(move |_, window, cx| on_click(&ix, window, cx))
+            }))
+            .info(ui, id, group_info);
+    }
     let mut group_info = info::inputs::radio_group(cx.theme(), labels, selected);
     // One refinement, recorded once, for every Radio of the group.
     let row = native_info(
@@ -2630,6 +2681,28 @@ pub(crate) fn radio_column(
     selected: Option<usize>,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    #[cfg(feature = "widgets")]
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        let mut group_info = info::inputs::native_radio_column(r, labels, selected);
+        if gap.is_some() {
+            group_info = group_info.geometry("widget_gap");
+        }
+        let on_click = Rc::new(on_click);
+        return with_gap(
+            widgets::RadioGroup::new(id)
+                .items_start()
+                .children(labels.iter().enumerate().map(|(ix, &label)| {
+                    let on_click = on_click.clone();
+                    widgets::Radio::new((id, ix))
+                        .label(label)
+                        .checked(selected == Some(ix))
+                        .on_change(move |_, window, cx| on_click(&ix, window, cx))
+                })),
+            gap,
+        )
+        .info(ui, id, group_info)
+        .debug_selector(move || id.into());
+    }
     let mut group_info = info::inputs::radio_column(cx.theme(), labels, selected);
     let row = native_info(
         StyleRefinement::default(),
@@ -2668,6 +2741,17 @@ pub(crate) fn switch(
     on_click: Option<impl Fn(&bool, &mut Window, &mut App) + 'static>,
 ) -> Stateful<Div> {
     let disabled = on_click.is_none();
+    #[cfg(feature = "widgets")]
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        let switch_info = info::inputs::native_switch(r, label, checked, disabled);
+        return widgets::Switch::new(id)
+            .label(label)
+            .checked(checked)
+            .disabled(disabled)
+            .when_some(on_click, |switch, on_click| switch.on_change(on_click))
+            .info(ui, id, switch_info)
+            .debug_selector(move || id.into());
+    }
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
     let resolved = native.as_ref().map(|n| n.resolved);
     let checked_background = native_color(cx, |n| n.resolved.switch.checked_background);
@@ -2693,6 +2777,13 @@ pub(crate) fn slider(
     state: &Entity<SliderState>,
     width: Pixels,
 ) -> Stateful<Div> {
+    #[cfg(feature = "widgets")]
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        return widgets::Slider::new(state)
+            .w(width)
+            .info(ui, id, info::inputs::native_slider(r))
+            .debug_selector(move || id.into());
+    }
     Slider::new(state)
         .w(width)
         .info(ui, id, info::inputs::slider(cx.theme()))
@@ -3605,6 +3696,14 @@ pub(crate) fn progress(
     label: &'static str,
     value: f32,
 ) -> Stateful<Div> {
+    #[cfg(feature = "widgets")]
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        return widgets::ProgressBar::new(id)
+            .value(value)
+            .accessibility_label(label)
+            .info(ui, id, info::feedback::native_progress(r, label, value))
+            .debug_selector(move || id.into());
+    }
     let mut bar_info = info::feedback::progress(cx.theme(), label, value, cx.reduce_motion());
     native_info(
         Progress::new(id).value(value),
@@ -3694,6 +3793,20 @@ pub(crate) fn spinner(
     id: &'static str,
     kind: SpinnerKind,
 ) -> Stateful<Div> {
+    // The theme states one spinner, `spinner.*`: the Medium one is drawn
+    // from it; Small and Large stay gpui-component's, sizes of its own.
+    #[cfg(feature = "widgets")]
+    if kind == SpinnerKind::Medium
+        && let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx))
+    {
+        return widgets::Spinner::new(id)
+            .info(
+                ui,
+                id,
+                info::feedback::native_spinner(r, cx.reduce_motion()),
+            )
+            .debug_selector(move || id.into());
+    }
     let (size, styled) = match kind {
         SpinnerKind::Small => (Size::Small, false),
         SpinnerKind::Large => (Size::Large, false),

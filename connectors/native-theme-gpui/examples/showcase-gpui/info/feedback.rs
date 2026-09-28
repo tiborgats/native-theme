@@ -164,6 +164,43 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
         .instance("label", label.to_string())
 }
 
+/// A theme-drawn `widgets::ProgressBar` at `value` (spec §2.5 of
+/// docs/todo_gpui-widgets-spec.md).
+#[cfg(feature = "widgets")]
+pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo {
+    let p = &r.progress_bar;
+    WidgetInfo::new("ProgressBar")
+        .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/todo_gpui-widgets-spec.md)")
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:54"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:53"))
+        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:52"))
+        .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
+        .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
+        .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
+        .not_themeable("animation", "gpui-component's eased transition to a new value (progress/progress.rs, Progress): native-theme models no motion")
+        .instance("value", format!("{value}%"))
+        .instance("label", label.to_string())
+}
+
+/// A theme-drawn `widgets::Spinner` (spec §2.6), drawn while gpui's
+/// `reduce_motion` is as given.
+#[cfg(feature = "widgets")]
+pub fn native_spinner(r: &ResolvedTheme, reduce_motion: bool) -> WidgetInfo {
+    let s = &r.spinner;
+    WidgetInfo::new("Spinner")
+        .variant("Medium")
+        .config("drawn by", "native_theme_gpui::widgets::Spinner, an arc on gpui-base's headless Progress (docs/todo_gpui-widgets-spec.md)")
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/progress.rs:194"))
+        .config("size", format!("spinner.diameter: {}px across (at least spinner.min_diameter, {}px)", s.diameter, s.min_diameter))
+        .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
+        .not_themeable("motion", "gpui-component's indeterminate arc (progress/progress_circle.rs, ProgressCircle::render): the head eased round the circle over a second, the tail following over its second half; native-theme models no motion")
+        .instance("animation", if reduce_motion {
+            "none: reduced motion is on, so the arc stands still at the motion's half-way frame"
+        } else {
+            "the arc's head and tail chase round the circle every second"
+        })
+}
+
 /// A `ProgressCircle` of `kind`, drawn while gpui's `reduce_motion` is as
 /// given. `styled` is whether an indeterminate one took its size from
 /// `geometry::spinner_size`, whose line is recorded where

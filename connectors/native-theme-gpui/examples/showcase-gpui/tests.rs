@@ -3792,6 +3792,72 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
     );
 }
 
+/// Under a native theme the Basic page's checkboxes, radios, switches,
+/// slider, progress bar and spinner are the connector's theme-drawn widgets
+/// (docs/todo_gpui-widgets-spec.md), each at the sizes the theme states,
+/// under two presets whose sizes all differ.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_basic_controls_take_the_themes_sizes(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    for preset in ["kde-breeze", "material"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = read(&mut cx, &showcase, |_, cx| {
+            cx.native_theme().and_then(|nt| nt.resolved(cx)).cloned()
+        });
+        assert!(r.is_some(), "{preset}: no native theme is installed");
+        let Some(r) = r else { return };
+        let size =
+            |cx: &mut VisualTestContext, selector: &'static str| bounds_of(cx, selector).size;
+        let indicator = size(&mut cx, "native-checkbox-indicator");
+        assert_eq!(
+            (indicator.width, indicator.height),
+            (
+                px(r.checkbox.indicator_width),
+                px(r.checkbox.indicator_width)
+            ),
+            "{preset}: checkbox.indicator_width"
+        );
+        let track = size(&mut cx, "native-switch-track");
+        assert_eq!(
+            (track.width, track.height),
+            (px(r.switch.track_width), px(r.switch.track_height)),
+            "{preset}: switch.track_width × track_height"
+        );
+        let thumb = size(&mut cx, "native-switch-thumb");
+        assert_eq!(
+            thumb.width,
+            px(r.switch.thumb_diameter),
+            "{preset}: switch.thumb_diameter"
+        );
+        let rail = size(&mut cx, "native-slider-rail");
+        assert_eq!(
+            rail.height,
+            px(r.slider.track_height),
+            "{preset}: slider.track_height"
+        );
+        let knob = size(&mut cx, "native-slider-thumb");
+        assert_eq!(
+            knob.width,
+            px(r.slider.thumb_diameter),
+            "{preset}: slider.thumb_diameter"
+        );
+        let bar = size(&mut cx, "native-progress");
+        assert_eq!(
+            bar.height,
+            px(r.progress_bar.track_height),
+            "{preset}: progress_bar.track_height"
+        );
+        let spinner = size(&mut cx, "native-spinner");
+        assert_eq!(
+            spinner.width,
+            px(r.spinner.diameter.max(r.spinner.min_diameter)),
+            "{preset}: spinner.diameter"
+        );
+    }
+}
+
 /// The Basic List shows four of its eight rows: its box is four rows and
 /// its frame tall, so the rest scroll.
 #[gpui::test]
