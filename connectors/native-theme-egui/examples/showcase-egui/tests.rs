@@ -2359,6 +2359,57 @@ fn a_held_pointer_opens_the_tooltip_under_it() {
     );
 }
 
+/// A captured window (`--capture`) is drawn at rest wherever the real pointer is: the window's
+/// pointer moved over the tooltip button, in the input `raw_input_hook` is handed (the
+/// harness's own `hover_at` queues its event past the hook), hovers nothing, opens no tooltip
+/// and chooses no Widget Info, while the same pointer does all three in a window that is not
+/// captured.
+#[test]
+fn a_capture_is_drawn_at_rest_under_the_pointer() {
+    let args = [("--theme", "kde-breeze"), ("--tab", "basic")];
+    for capturing in [false, true] {
+        let mut args = cli(&args);
+        args.capture = capturing;
+        let mut harness = open(egui::Theme::Light, args);
+        harness.run_steps(4);
+        let Some(rect) = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == "tooltip button")
+            .map(|r| r.rect)
+        else {
+            panic!("no tooltip button record");
+        };
+        for step in 0..16u32 {
+            let ctx = harness.ctx.clone();
+            let mut input = std::mem::take(harness.input_mut());
+            input.time = Some(f64::from(step) * 0.5);
+            if step == 0 {
+                input.events.push(egui::Event::PointerMoved(rect.center()));
+            }
+            eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+            *harness.input_mut() = input;
+            harness.step();
+        }
+        let hovered = harness.ctx.pointer_hover_pos().is_some();
+        let tooltip = harness.query_by_label("A tooltip").is_some();
+        let shown = shown_kind(&harness);
+        if capturing {
+            assert!(
+                !hovered && !tooltip && shown.is_none(),
+                "captured: hovered {hovered}, tooltip {tooltip}, Widget Info {shown:?}"
+            );
+        } else {
+            assert!(
+                hovered && tooltip && shown == Some("tooltip button"),
+                "not captured: hovered {hovered}, tooltip {tooltip}, Widget Info {shown:?}"
+            );
+        }
+    }
+}
+
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
 /// each in `Role::Switch`, its checked look the button's own selected flag (§6.2), so a set
 /// flag is a selected button and a click flips it; each sits right of its title.

@@ -250,6 +250,18 @@ impl HeldPointer {
     const PRESS_AFTER: f64 = 3.0;
 }
 
+/// Whether `event` moves, presses, touches or leaves with the window's own pointer.
+fn pointer_event(event: &egui::Event) -> bool {
+    matches!(
+        event,
+        egui::Event::PointerMoved(_)
+            | egui::Event::MouseMoved(_)
+            | egui::Event::PointerButton { .. }
+            | egui::Event::PointerGone
+            | egui::Event::Touch { .. }
+    )
+}
+
 pub(crate) struct App {
     /// The one field for theme state (§10.4's third rule).
     pub(crate) atlas: ThemeAtlas,
@@ -287,6 +299,9 @@ pub(crate) struct App {
     screenshot: Option<Screenshot>,
     /// `--pointer` and `--press`: the pointer held at a point, and the primary button held down.
     held_pointer: Option<HeldPointer>,
+    /// `--capture` or `--screenshot`: the window is captured, so the real pointer draws nothing
+    /// (`raw_input_hook`).
+    capturing: bool,
     /// What the watcher's `rebuild` reads: the UI thread writes it on each install.
     #[cfg(feature = "watch")]
     selection: Arc<std::sync::RwLock<Settings>>,
@@ -366,6 +381,7 @@ impl App {
                 moved: false,
                 pressed: false,
             }),
+            capturing: cli.capturing(),
             #[cfg(feature = "watch")]
             selection,
             #[cfg(feature = "watch")]
@@ -582,19 +598,18 @@ impl App {
 impl eframe::App for App {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
         let Some(held) = &mut self.held_pointer else {
+            // A captured window shows the page at rest wherever the real pointer is: no control
+            // hovered or pressed under it, no Widget Info chosen by it, nothing scrolled by it.
+            if self.capturing {
+                raw_input
+                    .events
+                    .retain(|e| !pointer_event(e) && !matches!(e, egui::Event::MouseWheel { .. }));
+            }
             return;
         };
         // The held pointer replaces the window's own: a real pointer entering or leaving the
         // window would move it away and back, which egui reads as a drag that cancels a press.
-        raw_input.events.retain(|e| {
-            !matches!(
-                e,
-                egui::Event::PointerMoved(_)
-                    | egui::Event::MouseMoved(_)
-                    | egui::Event::PointerButton { .. }
-                    | egui::Event::PointerGone
-            )
-        });
+        raw_input.events.retain(|e| !pointer_event(e));
         // Moved there once: egui keeps the pointer where it last moved, and a move every pass
         // would keep it from ever being still, which a tooltip waits for.
         if !held.moved {
