@@ -1899,6 +1899,74 @@ fn the_basic_page_applies_the_per_call_leaves() {
     }
 }
 
+/// The kinds drawn with egui's own selectable button (`Button::selectable`, frameless at rest
+/// and framed when hovered), which are one border width narrower at rest on each side than
+/// hovered under a theme whose buttons have a resting border: egui lays the frameless resting
+/// button out with the inner margin of a frame, the button padding less the resting stroke's
+/// width (`egui/src/widget_style.rs:163-165`), without painting that stroke
+/// (`egui/src/widgets/button.rs:364-368`). No `Style` value keeps both a framed button's resting
+/// border and a selectable's size, so it is egui's to change.
+const GROWS_WHEN_HOVERED: &[&str] = &[
+    "ui.toggle_value",
+    "ui.selectable_label",
+    "ui.selectable_value",
+    "verdict",
+];
+
+/// No other widget changes size when hovered, as no native control does: on every page, under
+/// a preset whose buttons have a resting border (kde-breeze), each recorded widget keeps its
+/// rect with the pointer on it, but egui's own selectables (`GROWS_WHEN_HOVERED`).
+#[test]
+fn no_widget_changes_size_when_hovered() {
+    let mut grew = Vec::new();
+    let mut compared = 0usize;
+    for page in Page::ALL {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", "kde-breeze"), ("--tab", page.key())]),
+        );
+        harness.run_steps(4);
+        harness.remove_cursor();
+        harness.run_steps(2);
+        let rest: Vec<(egui::Id, &'static str, egui::Rect)> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| !r.container && !GROWS_WHEN_HOVERED.contains(&r.info.kind))
+            .map(|r| (r.id, r.info.kind, r.rect))
+            .collect();
+        for (id, kind, rect) in rest {
+            if !rect.is_positive() {
+                continue;
+            }
+            harness.hover_at(rect.center());
+            harness.run_steps(3);
+            let now = harness
+                .state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.id == id)
+                .map(|r| r.rect);
+            if let Some(now) = now {
+                compared += 1;
+                if now.size() != rect.size() {
+                    grew.push(format!("{page:?}: {kind}: {rect:?} -> {now:?}"));
+                }
+            }
+            harness.remove_cursor();
+            harness.run_steps(2);
+        }
+    }
+    assert!(compared > 0, "no widget was compared");
+    assert!(
+        grew.is_empty(),
+        "sized differently when hovered:\n  {}",
+        grew.join("\n  ")
+    );
+}
+
 /// On the Basic page, `layout.section_gap` is the whole distance between two groups and
 /// between the two columns, as on the iced and gpui Basic pages: the space the page adds
 /// makes up the gap with the `item_spacing` egui puts between widgets anyway.
