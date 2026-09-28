@@ -36,8 +36,9 @@ const KEY_STEP: f32 = 1.0;
 ///   egui's own; the height is the larger of `thumb_diameter` and `track_height`. No tick marks
 ///   and no value field are drawn.
 /// * `.enabled(false)` paints `disabled_track_color`, `disabled_fill_color` and
-///   `disabled_thumb_color` (a `None` copies the colour it stands for), unfaded;
-///   `ui.add_enabled(false, ..)` fades them at the calling `Ui`'s `disabled_alpha` on top.
+///   `disabled_thumb_color` (a `None` copies the colour it stands for), faded by
+///   `slider.disabled_opacity` (the crate's *Disabled*); under `ui.add_enabled(false, ..)` the
+///   fade is the calling `Ui`'s `disabled_alpha`.
 ///
 /// Interaction is egui's on a linear range: it senses `Sense::drag()` (`:655`); a drag sets
 /// the value from the pointer (`:666-678`); while focused, the arrow keys along the rail move
@@ -73,7 +74,8 @@ impl<'a> Slider<'a> {
         self
     }
 
-    /// `false` shows the platform's disabled slider, unfaded, and takes no input.
+    /// `false` shows the platform's disabled slider, its disabled colours faded by its
+    /// `disabled_opacity`, and takes no input.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self

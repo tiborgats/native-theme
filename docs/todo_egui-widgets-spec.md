@@ -213,20 +213,20 @@ opens the widget's `Disabled` variant scope and calls `Ui::disable` inside it
 surrenders focus (`context.rs:1256`, `:1274-1276`), and its `WidgetInfo`
 reports `enabled: false` from `Ui::is_enabled` (`ui.rs:471`) — and
 multiplies the painter's opacity by the scope's `disabled_alpha`, which the
-connector's `Disabled` cell sets to `1.0` for every role that has disabled
-colours, so the widget's own disabled colours are painted unfaded. A Tier P
-widget paints its role's disabled leaves whenever `Ui::is_enabled` is false;
-a `None` copies the base colour (C16), and the role's
-`disabled_opacity` is not multiplied on top, since the stated disabled colours
-already carry the platform's fade.
+connector's `Disabled` cell carries as the role's `disabled_opacity`. So a
+disabled widget paints its disabled colours and is faded by that opacity:
+both of the platform's mechanisms, one of which its data makes an identity
+(`docs/platform-facts.md` §2.1.6: `disabled_opacity` 1.0 on KDE and Windows;
+no disabled fills and the enabled text colours on GNOME). A Tier P widget
+paints its role's disabled leaves whenever `Ui::is_enabled` is false; a `None`
+copies the base colour (C16).
 
 Disablement *inherited* from an enclosing `Ui` — `ui.add_enabled(false, w)` or
-an application's own `ui.disable()` — arrives already faded: that call
-multiplied the painter every child clones (`ui.rs:225`) by the enclosing
-style's `disabled_alpha` (`ui.rs:1588-1596`), and this crate does not undo an
-opacity the application set. The widget then paints its disabled colours under
-that fade. `.enabled(false)` is the spelling that shows the platform's disabled
-colours unfaded, and each widget's rustdoc says so.
+an application's own `ui.disable()` — opens the `Disabled` scope too, and
+arrives already faded: that call multiplied the painter every child clones
+(`ui.rs:225`) by the enclosing style's `disabled_alpha` (`ui.rs:1588-1596`).
+`Ui::disable` multiplies again on every call, so the scope does not call it a
+second time; the fade is the enclosing `Ui`'s.
 
 ### 2.5 Focus
 
@@ -319,6 +319,8 @@ pub mod slider;
 pub mod spinner;
 pub mod segmented_control;
 pub mod combo_box; // Tier W: `ComboBox`
+pub mod progress_bar; // Tier W: `ProgressBar`
+pub mod radio_button; // Tier W: `RadioButton`
 pub mod wrap;   // Tier W: `link`, `hyperlink`
 
 pub use native_theme_egui as connector;
@@ -379,6 +381,7 @@ impl egui::Widget for Switch<'_> {
 | `segmented_control::SegmentedControl` | `new(selected: &mut usize, segments: impl IntoIterator<Item = impl Into<egui::WidgetText>>)` | — |
 | `wrap::link`, `wrap::hyperlink` | functions, §4.5 | — |
 | `combo_box::ComboBox` | `from_id_salt(id_salt: impl egui::AsIdSalt)`, as egui's | `selected_text`, `width`, `popup_style`, `enabled`; shown with `show_ui` (§4.6) |
+| `progress_bar::ProgressBar` | `new(progress: f32)`, as egui's | `desired_width` (§4.9) |
 
 `SegmentedControl` returns the control's `Response` (its outline's rect), marked changed
 (`response.rs:625`) when a click moved the selection. It has no `enabled`: its
@@ -676,18 +679,23 @@ content as tall as the taller of the selected text and that box,
 content (`:433-444`). The connector's `Role::ComboBox` cell writes
 `combo_box.arrow_icon_size` into `icon_width` (the arrow's size) and
 `arrow_area_width` into `icon_width + icon_spacing` (its column), so an arrow
-taller than the text's line raises the drop-down: `kde-breeze`'s 20px arrow
-over its 18px line, padded 6 + 1 above and below, is 34px tall where
-`combo_box.min_height` states 32. No `Style` field separates the arrow's box
-height from its width, so the scope alone cannot reach the stated height.
+taller than the text's line would raise the drop-down: a 20px arrow over an
+18px line, padded 6 + 1 above and below, is 34px tall where `min_height`
+states 32 (kde-breeze stated 20, its arrow column's width, until its
+`arrow_icon_size` became Breeze's 10px `ArrowSize`, 2026-09-28). No `Style`
+field separates the arrow's box height from its width, so the scope alone
+cannot keep such an arrow from setting the height.
 
 **Why the arrow sets no height.** A platform's drop-down arrow sits in a
 column the control's full height: Breeze's `SC_ComboBoxArrow` is a
 `MenuButton_IndicatorWidth` column and the edit field ends at it, WinUI's a
-38px column (`docs/platform-facts.md` §2.24, `border.padding_horizontal`).
-KDE's `arrow_icon_size` is that column's width, `MenuButton_IndicatorWidth`
-(§2.24, `arrow_icon_size`); what sets the height is the text, the padding and
-`min_height`.
+38px column (`docs/platform-facts.md` §2.24, `border.padding_horizontal`);
+the glyph in it is smaller (§2.24, `arrow_icon_size`: Breeze 10 in its 20px
+column); what sets the height is the text, the padding and `min_height`.
+
+**The arrow is an open chevron.** Breeze, libadwaita and WinUI draw it open
+(§2.24, `arrow_icon_size`), where egui fills a triangle
+(`paint_default_icon`, `:472-486`).
 
 **Tier W.** `ComboBox` is one `egui::ComboBox` in the `Role::ComboBox` scope —
 the `Disabled` variant and `Ui::disable` for `.enabled(false)` (§2.4) — its
@@ -698,19 +706,18 @@ per-instance change: where the scope's `icon_width` is taller than the selected
 text's line — laid out as egui lays it out, unwrapped in `TextStyle::Button`
 (`:358`) — the scope's `icon_width` becomes that line's height and its
 `icon_spacing` grows by the difference, so the arrow's column keeps the width
-the theme states and the content is the text's height. The arrow is then
-painted through `ComboBox::icon` (`:155`) as egui paints its own — a downward
-triangle `0.7` of its box wide and `0.45` tall, in the interaction state's
-`fg_stroke` colour (`paint_default_icon`, `:472-486`) — in a box of the stated
-`icon_width`, right-aligned in the column and centred on the drop-down's
-height, so the arrow is the size egui draws it at the theme's
-`arrow_icon_size`. Where the text is as tall as the arrow's box or taller,
-nothing is changed and egui's own arrow is drawn. Everything else is egui's:
-layout, interaction, the popup, keyboard handling and accessibility
-(`WidgetType::ComboBox`).
+the theme states and the content is the text's height. In every case the
+arrow is painted through `ComboBox::icon` (`:155`): an open chevron over the
+rectangle egui's triangle spans — `0.7` of its box wide and `0.45` tall — from
+its top-left corner down to its bottom centre and up to its top-right corner,
+stroked in the interaction state's `fg_stroke` (colour and width), in a box of
+the stated `icon_width`, right-aligned in the column and centred on the
+drop-down's height. Where the text is as tall as the arrow's box or taller,
+egui's own layout stands. Everything else is egui's: layout, interaction, the
+popup, keyboard handling and accessibility (`WidgetType::ComboBox`).
 
 This is not the reimplementation §1.4 forbids: nothing of `ComboBox` is
-repeated but its arrow's triangle, and the widget remains egui's. A drop-down's
+repeated but its arrow's box, and the widget remains egui's. A drop-down's
 contents are a closure, so, like egui's own, it is shown with `show_ui`, not
 added with `Ui::add` (§3.2): the call site changes `egui::ComboBox` to this
 type and nothing else. With no atlas installed it is `egui::ComboBox`
@@ -720,7 +727,7 @@ unchanged (§2.1).
 
 | wanted | how the application gets it |
 |---|---|
-| any egui widget in its native role colours — button, checkbox, radio button (whose dot §4.8 sizes), text field, combo box (whose height §4.6 fixes), separator, progress bar, tab | the connector's `native_scope` with the widget's `Role`: `RoleVariant::Selected` for a checked checkbox, while an active tab or a primary button is a `Button::selected(true)` in the `Normal` scope, whose cell carries those colours in `selection.*`. A `ScrollArea`'s bars need no scope: the base style carries them (connector spec §5.9) |
+| any egui widget in its native role colours — button, checkbox, radio button (whose dot §4.8 sizes), text field, combo box (whose height and chevron §4.6 fix), separator, progress bar (whose outline §4.9 draws), tab | the connector's `native_scope` with the widget's `Role`: `RoleVariant::Selected` for a checked checkbox, while an active tab or a primary button is a `Button::selected(true)` in the `Normal` scope, whose cell carries those colours in `selection.*`. A `ScrollArea`'s bars need no scope: the base style carries them (connector spec §5.9) |
 | toolbar, status bar, sidebar, card, window, dialog, popover, tooltip and menu chrome | the connector's `Surface` frames and role scopes |
 | an expander's arrow colour | the connector's `expander_icon`, passed to `CollapsingHeader::icon` |
 | a text field's focused border | the connector's `input_frame`, passed to `TextEdit::frame` |
@@ -759,6 +766,34 @@ the dot is that many pixels across, in the cell's `fg_stroke`,
 that is not finite, nothing is changed and the dot is egui's own. Like egui's,
 it holds no value: a click is `Response::clicked`. With no atlas installed it is
 `egui::RadioButton` unchanged (§2.1).
+
+### 4.9 `progress_bar::ProgressBar` — Tier W
+
+```rust
+pub struct ProgressBar { /* … */ }
+
+impl ProgressBar {
+    pub fn new(progress: f32) -> Self;
+    pub fn desired_width(self, width: f32) -> Self;
+}
+```
+
+**What egui hardcodes.** `ProgressBar::ui` paints the track and the fill as
+filled rectangles and a galley, and no outline
+(`widgets/progress_bar.rs:130-204`); it has no builder for one. Breeze strokes
+its groove 1px in the window text at 20 %; libadwaita and WinUI draw none, and
+their presets state `progress_bar.border.line_width` 0
+(`docs/platform-facts.md` §2.10, `border.color`, `border.line_width`).
+
+**Tier W.** `ProgressBar` is one `egui::ProgressBar` in the `Role::ProgressBar`
+scope, whose cell carries `fill_color` (`selection.bg_fill`), `track_color`
+(`extreme_bg_color`) and `track_height` (`interact_size.y`), with two
+per-instance changes: `ProgressBar::corner_radius` takes
+`progress_bar.border.corner_radius`, and where `progress_bar.border.line_width`
+is above zero the stated outline is stroked `StrokeKind::Inside` the bar's
+rectangle over what egui painted, so the bar stays `track_height` tall. With no
+atlas installed, or a radius or width that is not finite, it is
+`egui::ProgressBar` with the width alone (§2.1).
 
 ---
 

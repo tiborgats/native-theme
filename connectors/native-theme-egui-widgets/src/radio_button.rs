@@ -47,7 +47,8 @@ impl RadioButton {
         }
     }
 
-    /// `false` shows the platform's disabled radio button, unfaded, and takes no input.
+    /// `false` shows the platform's disabled radio button, its disabled colours faded by
+    /// `checkbox.disabled_opacity`, and takes no input.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self

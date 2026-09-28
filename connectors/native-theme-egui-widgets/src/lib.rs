@@ -9,8 +9,10 @@
 //! does not have. It also wraps egui's links in their state and visited
 //! colours, the per-call route the connector names for them, written once,
 //! egui's drop-down at the height the theme states, which egui's square
-//! arrow box can exceed, and egui's radio button with the dot the theme
-//! states, which egui sizes from the check mark's box.
+//! arrow box can exceed, with the open chevron the platforms draw, egui's
+//! radio button with the dot the theme states, which egui sizes from the
+//! check mark's box, and egui's progress bar with the outline the theme
+//! states, which egui does not draw.
 //!
 //! Everything it draws is driven by the `ResolvedTheme` of the atlas the
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
@@ -22,7 +24,8 @@
 //! `egui::Spinner`, [`segmented_control::SegmentedControl`] as unscoped
 //! buttons, the [`wrap`] functions as egui's `Link` and `Hyperlink`,
 //! [`combo_box::ComboBox`] as `egui::ComboBox`, [`radio_button::RadioButton`]
-//! as `egui::RadioButton`.
+//! as `egui::RadioButton`, [`progress_bar::ProgressBar`] as
+//! `egui::ProgressBar`.
 //!
 //! ```rust,no_run
 //! use native_theme_egui_widgets::connector::egui;
@@ -51,11 +54,15 @@
 //!
 //! # Disabled
 //!
-//! A widget built with `.enabled(false)` opens its role's `Disabled` scope and
-//! calls `Ui::disable` inside it: egui's own disabled semantics (no click or
-//! drag, no focus, `enabled: false` for assistive technology) with the
-//! platform's disabled colours unfaded. `ui.add_enabled(false, w)` fades the
-//! widget at the calling `Ui`'s `disabled_alpha` on top of those colours.
+//! A widget built with `.enabled(false)`, or added to a disabled `Ui`, opens
+//! its role's `Disabled` scope and calls `Ui::disable` inside it: egui's own
+//! disabled semantics (no click or drag, no focus, `enabled: false` for
+//! assistive technology), the platform's disabled colours, and egui's fade
+//! by the scope's `disabled_alpha`, the role's `disabled_opacity`. A platform
+//! dims by one of the two, and its data makes the other an identity
+//! (`docs/platform-facts.md` §2.1.6): 1.0 on KDE and Windows, no disabled
+//! colours of its own on GNOME. Under `ui.add_enabled(false, w)` the fade is
+//! the calling `Ui`'s, which egui applied before the widget's scope opened.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -68,6 +75,7 @@
 #![deny(clippy::unimplemented)]
 
 pub mod combo_box;
+pub mod progress_bar;
 pub mod radio_button;
 pub mod segmented_control;
 pub mod slider;

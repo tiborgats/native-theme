@@ -19,6 +19,7 @@ use native_theme_egui::{
 };
 
 use crate::combo_box::ComboBox;
+use crate::progress_bar::ProgressBar;
 use crate::radio_button::RadioButton;
 use crate::segmented_control::SegmentedControl;
 use crate::slider::Slider;
@@ -634,7 +635,8 @@ fn the_painted_arc_keeps_its_sweep() {
 
 // ---- T5: disabled ------------------------------------------------------------------------------
 
-/// T5: `.enabled(false)` paints the disabled leaves unfaded and takes no click.
+/// T5: `.enabled(false)` paints the disabled leaves and takes no click; on kde-breeze, which
+/// dims by colour alone, `disabled_opacity` is 1.0 and they are painted as stated.
 #[test]
 fn a_disabled_widget_paints_its_disabled_leaves() {
     let t = kde();
@@ -674,6 +676,76 @@ fn a_disabled_widget_paints_its_disabled_leaves() {
     assert!(rects(&out).iter().any(|s| s.fill == rail));
     assert!(rects(&out).iter().any(|s| s.fill == fill));
     assert!(circles(&out).iter().any(|c| c.fill == knob));
+}
+
+/// The disabled rule (docs/platform-facts.md §2.1.6): adwaita dims by opacity alone, stating
+/// no disabled switch colours and `disabled_opacity` 0.5, so a disabled switch is its enabled
+/// self at half its alpha — both mechanisms applied, the colours an identity. A disabled
+/// calling `Ui` disables the widget as `.enabled(false)` does.
+#[test]
+fn a_disabled_widget_fades_by_its_disabled_opacity() {
+    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    assert_eq!(t.switch.disabled_checked_background, None);
+    assert_eq!(t.switch.disabled_opacity, 0.5);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let track = to_color32(t.switch.checked_background).gamma_multiply(0.5);
+    let mut on = true;
+    let (out, _) = click(&ctx, |ui| ui.add(Switch::new(&mut on).enabled(false)));
+    assert!(
+        rects(&out).iter().any(|s| s.fill == track),
+        "{:#?}",
+        rects(&out)
+    );
+    let (out, r) = click(&ctx, |ui| {
+        ui.add_enabled_ui(false, |ui| ui.add(Switch::new(&mut on)))
+            .inner
+    });
+    assert!(on && !r.changed());
+    assert!(
+        rects(&out).iter().any(|s| s.fill == track),
+        "{:#?}",
+        rects(&out)
+    );
+}
+
+/// The progress bar is outlined as `progress_bar.border` states: kde-breeze's 1px in the
+/// window text at 20 % inside the bar, adwaita's width 0 not at all.
+#[test]
+fn the_progress_bar_is_outlined_as_stated() {
+    let t = kde();
+    assert!(t.progress_bar.border.line_width > 0.0);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let add = |ui: &mut egui::Ui| ui.add(ProgressBar::new(0.4).desired_width(200.0));
+    let (out, bar) = response(&ctx, at(0.0), add);
+    assert_eq!(bar.rect.height(), t.progress_bar.track_height);
+    let outline: Vec<_> = rects(&out)
+        .into_iter()
+        .filter(|r| r.stroke.width > 0.0)
+        .collect();
+    assert_eq!(outline.len(), 1, "{outline:#?}");
+    assert_eq!(outline[0].rect, bar.rect);
+    assert_eq!(
+        outline[0].stroke,
+        egui::Stroke::new(
+            t.progress_bar.border.line_width,
+            to_color32(t.progress_bar.border.color)
+        )
+    );
+    assert!(
+        rects(&out)
+            .iter()
+            .any(|r| r.fill == to_color32(t.progress_bar.fill_color))
+    );
+
+    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    assert_eq!(t.progress_bar.border.line_width, 0.0);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (out, _) = response(&ctx, at(0.0), add);
+    assert!(rects(&out).iter().all(|r| r.stroke.width == 0.0));
 }
 
 /// The slider's rail, fill and knob are the theme's, the knob's hover a layer over it.
@@ -896,6 +968,12 @@ fn the_painted_widgets_are_still_needed() {
     // The radio button's per-instance change: egui's dot is a third of `icon_width_inner`.
     let radio = std::fs::read_to_string(widgets.join("radio_button.rs")).unwrap();
     assert!(radio.contains("radius: small_icon_rect.width() / 3.0,"));
+    // The progress bar's outline: egui's paints only filled rectangles, no stroke round the bar.
+    let progress = std::fs::read_to_string(widgets.join("progress_bar.rs")).unwrap();
+    assert!(!progress.contains("rect_stroke"));
+    assert!(
+        progress.contains(".rect_filled(outer_rect, corner_radius, visuals.extreme_bg_color);")
+    );
 }
 
 // ---- T8: Tier C stays cheap --------------------------------------------------------------------
@@ -1028,10 +1106,12 @@ fn the_segments_are_joined() {
 
 /// The drop-down is as tall as its text and padding, at least `combo_box.min_height`, where
 /// egui's square arrow box would make it taller; the arrow keeps `arrow_icon_size`'s box, its
-/// column the stated width.
+/// column the stated width. kde-breeze's 10px arrow is shorter than its line, so the case is
+/// an arrow box taller than the text: 20px over the 18px line.
 #[test]
 fn the_drop_down_is_as_tall_as_its_text() {
-    let t = kde();
+    let mut t = kde();
+    t.combo_box.arrow_icon_size = 20.0;
     let ctx = installed(&t, &AccessibilityPreferences::default());
     let add = |ui: &mut egui::Ui| {
         ComboBox::from_id_salt("fruit")
@@ -1068,19 +1148,58 @@ fn the_drop_down_is_as_tall_as_its_text() {
     let height = combo.rect.height();
     assert!((height - want).abs() < 0.5, "{height} != {want}");
     assert!((height - t.combo_box.min_height).abs() < 0.5, "{height}");
-    let triangles: Vec<egui::Rect> = flat(&out.shapes)
-        .into_iter()
-        .filter_map(|s| match s {
-            egui::Shape::Path(p) if p.points.len() == 3 => Some(egui::Rect::from_points(&p.points)),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(triangles.len(), 1);
-    let a = triangles[0];
+    let a = chevron(&out);
     assert!((a.width() - 0.7 * arrow).abs() < 1e-3, "{a:?}");
     assert!((a.height() - 0.45 * arrow).abs() < 1e-3, "{a:?}");
     // The arrow's box ends at the column's right edge, the padding in from the frame's.
     let right = combo.rect.right() - padding.x;
     assert!((a.center().x - (right - 0.5 * arrow)).abs() < 1e-3, "{a:?}");
     assert!((a.center().y - combo.rect.center().y).abs() < 0.5, "{a:?}");
+}
+
+/// The one open chevron a drop-down paints (`docs/platform-facts.md` §2.24): a three-point
+/// path, not closed and not filled, stroked; its bounding rectangle.
+fn chevron(out: &egui::FullOutput) -> egui::Rect {
+    let chevrons: Vec<egui::Rect> = flat(&out.shapes)
+        .into_iter()
+        .filter_map(|s| match s {
+            egui::Shape::Path(p) if p.points.len() == 3 => {
+                assert!(!p.closed, "a chevron, not a triangle: {p:?}");
+                assert_eq!(p.fill, egui::Color32::TRANSPARENT, "{p:?}");
+                assert!(p.stroke.width > 0.0, "{p:?}");
+                Some(egui::Rect::from_points(&p.points))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(chevrons.len(), 1, "{chevrons:?}");
+    chevrons[0]
+}
+
+/// kde-breeze's drop-down as the theme states it: its 10px chevron (Breeze's `ArrowSize`) is
+/// shorter than the text, so the drop-down is `combo_box.min_height`, 32, tall, and the
+/// chevron spans egui's arrow rectangle of that box.
+#[test]
+fn the_kde_drop_down_is_its_min_height_with_a_chevron() {
+    let t = kde();
+    assert_eq!(t.combo_box.arrow_icon_size, 10.0);
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let add = |ui: &mut egui::Ui| {
+        ComboBox::from_id_salt("fruit")
+            .selected_text("Apple")
+            .width(140.0)
+            .show_ui(ui, |ui| ui.label("Banana"))
+            .response
+    };
+    let _ = response(&ctx, at(0.0), add);
+    let (out, combo) = response(&ctx, at(0.0), add);
+    assert!(
+        (combo.rect.height() - t.combo_box.min_height).abs() < 0.5,
+        "{}",
+        combo.rect.height()
+    );
+    let a = chevron(&out);
+    let arrow = t.combo_box.arrow_icon_size;
+    assert!((a.width() - 0.7 * arrow).abs() < 1e-3, "{a:?}");
+    assert!((a.height() - 0.45 * arrow).abs() < 1e-3, "{a:?}");
 }

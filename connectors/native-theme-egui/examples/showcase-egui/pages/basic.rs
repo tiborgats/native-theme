@@ -7,6 +7,7 @@ use egui::Button;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_stroke};
 use native_theme_egui::{Role, RoleVariant, Surface, ThemeAtlas, expander_icon, input_frame};
 use native_theme_egui_widgets::combo_box::ComboBox;
+use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::radio_button::RadioButton;
 use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
@@ -383,24 +384,25 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     });
     reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
 
-    // `progress_bar.border.corner_radius`, which `ProgressBar` takes per call (connector spec
-    // §5.5).
+    // The companion crate's progress bar (docs/todo_egui-widgets-spec.md §4.9): egui's, rounded
+    // `progress_bar.border.corner_radius` and outlined as `progress_bar.border` states, which
+    // egui's `ProgressBar` does not draw.
     caption(reg, ui, "Progress bar");
-    let radius = to_corner_radius(
-        egui::CornerRadius::default(),
-        t.progress_bar.border.corner_radius,
-    );
     demo::scoped(reg, ui, Role::ProgressBar, normal, "ProgressBar", |ui| {
-        ui.add(
-            egui::ProgressBar::new(PROGRESS)
-                .desired_width(BASIC_WIDTH)
-                .corner_radius(radius),
-        )
+        ui.add(ProgressBar::new(PROGRESS).desired_width(BASIC_WIDTH))
     });
     reg.amend_last(|i| {
         i.read.push((
             "progress_bar.border.corner_radius",
             t.progress_bar.border.corner_radius.to_string(),
+        ));
+        i.read.push((
+            "progress_bar.border.line_width",
+            t.progress_bar.border.line_width.to_string(),
+        ));
+        i.read.push((
+            "progress_bar.border.color",
+            format!("{:?}", t.progress_bar.border.color),
         ));
     });
 

@@ -5,7 +5,11 @@ use native_theme_egui::egui;
 use native_theme_egui::{NativeThemeUiExt as _, Role, RoleVariant};
 
 /// Run `add` in `role`'s scope: the `Disabled` variant with `Ui::disable` called inside it
-/// when `enabled` is `false` (`egui/src/ui.rs:497-502`), the `Normal` one otherwise.
+/// when `enabled` is `false` or the calling `Ui` is disabled (`egui/src/ui.rs:497-502`), the
+/// `Normal` one otherwise. The `Disabled` cell carries the platform's disabled colours and
+/// the role's `disabled_opacity` as `disabled_alpha`, so egui fades the widget by it on top:
+/// both of the platform's disabled mechanisms, one of which its data makes an identity
+/// (docs/platform-facts.md §2.1.6).
 pub(crate) fn open<R>(
     ui: &mut egui::Ui,
     role: Role,
@@ -24,13 +28,17 @@ pub(crate) fn open_selected<R>(
     enabled: bool,
     add: impl FnOnce(&mut egui::Ui) -> R,
 ) -> R {
-    let variant = match (enabled, selected) {
+    // A disabled calling `Ui` has faded its painter already, and `Ui::disable` multiplies the
+    // opacity again on every call (`egui/src/ui.rs:497-502`), so only an enabled one is
+    // disabled here.
+    let outer = ui.is_enabled();
+    let variant = match (enabled && outer, selected) {
         (false, _) => RoleVariant::Disabled,
         (true, true) => RoleVariant::Selected,
         (true, false) => RoleVariant::Normal,
     };
     ui.native_scope(role, variant, |ui| {
-        if !enabled {
+        if !enabled && outer {
             ui.disable();
         }
         add(ui)

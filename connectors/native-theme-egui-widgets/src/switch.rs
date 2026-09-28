@@ -31,8 +31,9 @@ use crate::scope;
 ///   `Style::animation_time`, which the connector sets to `0.0` under reduced motion.
 /// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`
 ///   and `disabled_thumb_color` (a `None` copies the colour it stands for) and the label in
-///   `defaults.disabled_text_color`, unfaded; `ui.add_enabled(false, ..)` fades them at the
-///   calling `Ui`'s `disabled_alpha` on top.
+///   `defaults.disabled_text_color`, faded by `switch.disabled_opacity` (the crate's
+///   *Disabled*); under `ui.add_enabled(false, ..)` the fade is the calling `Ui`'s
+///   `disabled_alpha`.
 ///
 /// The focus ring surrounds the track (`register_focus_shape`). AccessKit sees a
 /// `Role::Switch`, toggled as the value is.
@@ -62,7 +63,8 @@ impl<'a> Switch<'a> {
         self
     }
 
-    /// `false` shows the platform's disabled switch, unfaded, and takes no input.
+    /// `false` shows the platform's disabled switch, its disabled colours faded by its
+    /// `disabled_opacity`, and takes no input.
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self
