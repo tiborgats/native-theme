@@ -6,6 +6,7 @@
 use egui::Button;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_stroke};
 use native_theme_egui::{Role, RoleVariant, Surface, ThemeAtlas, expander_icon, input_frame};
+use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
@@ -312,6 +313,9 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         )
     });
 
+    // The companion crate's drop-down (docs/todo_egui-widgets-spec.md §4.6): egui's own
+    // `ComboBox` in the combo-box scope, as tall as its text and padding make it, at least
+    // `combo_box.min_height`, where egui's square arrow box would make it taller.
     caption(reg, ui, "Drop-down");
     let current = FRUITS.get(state.basic_combo).copied().unwrap_or_default();
     demo::scoped_popup(
@@ -321,7 +325,7 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         normal,
         "ComboBox",
         |ui, modifier, row, reg| {
-            let mut combo = egui::ComboBox::from_id_salt("basic/combo")
+            let mut combo = ComboBox::from_id_salt("basic/combo")
                 .selected_text(current)
                 .width(BASIC_WIDTH);
             if let Some(modifier) = modifier {
@@ -426,9 +430,10 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         state.basic_tab = tab;
     }
 
-    // The companion crate's segmented control (docs/todo_egui-widgets-spec.md §4.4): one row
-    // of buttons in one `Role::SegmentedControl` scope, whose cell carries the segment height,
-    // padding and colours and puts `separator_width` between the segments; a radio group.
+    // The companion crate's segmented control (docs/todo_egui-widgets-spec.md §4.4): one
+    // control of joined buttons in one `Role::SegmentedControl` scope, whose cell carries the
+    // segment height, padding and colours; one outline in `border`, `separator_width`
+    // dividers between the segments; a radio group.
     caption(reg, ui, "Segmented control");
     demo::widget(
         reg,

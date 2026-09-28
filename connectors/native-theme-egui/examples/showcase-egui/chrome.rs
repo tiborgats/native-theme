@@ -6,6 +6,7 @@ use native_theme_egui::{
     DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
     window_title_bar_font, window_title_bar_text_color,
 };
+use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::switch::Switch;
 
 use crate::{
@@ -736,8 +737,10 @@ struct Setting<'a, T> {
     current_text: String,
 }
 
-/// A theme setting: its label, then a `ComboBox` as wide as the panel in `Role::ComboBox`, its
-/// popup through `popup_style` (§10.4), a `selectable_label` per row. Returns the row picked.
+/// A theme setting: its label, then the companion crate's drop-down (egui's `ComboBox` as tall
+/// as `combo_box.*` states it, docs/todo_egui-widgets-spec.md §4.6) as wide as the panel in
+/// `Role::ComboBox`, its popup through `popup_style` (§10.4), a `selectable_label` per row.
+/// Returns the row picked.
 fn setting<T: Clone + PartialEq>(
     registry: &mut Registry,
     ui: &mut egui::Ui,
@@ -753,7 +756,7 @@ fn setting<T: Clone + PartialEq>(
         RoleVariant::Normal,
         setting.kind,
         |ui, modifier, row, registry| {
-            let mut combo = egui::ComboBox::from_id_salt(setting.label)
+            let mut combo = ComboBox::from_id_salt(setting.label)
                 .width(ui.available_width())
                 .selected_text(setting.current_text);
             if let Some(modifier) = modifier {
