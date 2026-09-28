@@ -143,6 +143,7 @@ mod probes {
     pub const RADIO_APPLE: &str = "probe-radio-apple";
     pub const RADIO_BANANA: &str = "probe-radio-banana";
     pub const RADIO_CHERRY: &str = "probe-radio-cherry";
+    pub const BASIC_RADIO_B: &str = "probe-basic-radio-b";
     pub const TOGGLER: &str = "probe-toggler";
     pub const PICK_LIST: &str = "probe-pick-list";
     pub const COMBO_BOX: &str = "probe-combo-box";
@@ -375,6 +376,9 @@ impl CliArgs {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
+    /// The controls all three showcases draw, alike, on one screen: the tab
+    /// the showcase opens on.
+    Basic,
     Buttons,
     TextInputs,
     Selection,
@@ -400,6 +404,7 @@ impl Tab {
     /// appended *after* `ThemeMap` and left out of the list, which `label` and
     /// `view`'s exhaustive matches still force the author to write.
     const ALL: &[Tab] = &[
+        Tab::Basic,
         Tab::Buttons,
         Tab::TextInputs,
         Tab::Selection,
@@ -416,6 +421,7 @@ impl Tab {
     /// The name `--tab` takes for the tab.
     fn flag(self) -> &'static str {
         match self {
+            Tab::Basic => "basic",
             Tab::Buttons => "buttons",
             Tab::TextInputs => "text-inputs",
             Tab::Selection => "selection",
@@ -432,6 +438,7 @@ impl Tab {
 
     fn label(self) -> &'static str {
         match self {
+            Tab::Basic => "Basic",
             Tab::Buttons => "Buttons",
             Tab::TextInputs => "Text Inputs",
             Tab::Selection => "Selection",
@@ -838,6 +845,14 @@ struct State {
     // Widget Info (hover-driven)
     widget_info: String,
 
+    // Basic tab
+    /// The Basic tab's radio button, text fields, drop-down and slider.
+    basic_radio: usize,
+    basic_hint: String,
+    basic_text: String,
+    basic_fruit: Fruit,
+    basic_slider: f32,
+
     // Button tab
     button_press_count: u32,
 
@@ -1101,8 +1116,13 @@ impl State {
             current_icon_set: init_icon_set,
             current_icon_theme: init_icon_theme,
             default_label,
-            active_tab: Tab::Buttons,
+            active_tab: Tab::Basic,
             widget_info: String::new(),
+            basic_radio: 0,
+            basic_hint: String::new(),
+            basic_text: "Text".to_string(),
+            basic_fruit: Fruit::Apple,
+            basic_slider: 40.0,
             button_press_count: 0,
             text_input_value: String::new(),
             text_editor_content: text_editor::Content::with_text(
@@ -1391,6 +1411,15 @@ enum Message {
     // Widget Info hover
     WidgetHovered(String),
     WidgetUnhovered,
+
+    // Basic tab
+    /// A click on a checkbox held in the one state it shows: nothing changes.
+    BasicHeld,
+    BasicRadioSelected(usize),
+    BasicHintChanged(String),
+    BasicTextChanged(String),
+    BasicFruitSelected(Fruit),
+    BasicSliderChanged(f32),
 
     // Button tab
     ButtonPressed,
@@ -1748,6 +1777,12 @@ fn update_inner(state: &mut State, message: Message) {
         Message::WidgetUnhovered => {
             // Keep last info visible (like gpui showcase)
         }
+        Message::BasicHeld => {}
+        Message::BasicRadioSelected(i) => state.basic_radio = i,
+        Message::BasicHintChanged(value) => state.basic_hint = value,
+        Message::BasicTextChanged(value) => state.basic_text = value,
+        Message::BasicFruitSelected(fruit) => state.basic_fruit = fruit,
+        Message::BasicSliderChanged(v) => state.basic_slider = v,
         Message::ButtonPressed => {
             state.button_press_count = state.button_press_count.saturating_add(1);
         }
@@ -2035,6 +2070,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
     // ---- Tab content ----
     let tab_content: Element<'_, Message> = match state.active_tab {
+        Tab::Basic => view_basic(state, btn_pad, inp_pad),
         Tab::Buttons => view_buttons(state, btn_pad),
         Tab::TextInputs => view_text_inputs(state, inp_pad),
         Tab::Selection => view_selection(state),
@@ -2201,8 +2237,281 @@ fn widget_tooltip_themed(
 }
 
 // ---------------------------------------------------------------------------
+// Tab: Basic
+// ---------------------------------------------------------------------------
+
+/// The width of the Basic tab's text fields, drop-down, slider and progress
+/// bar. The model states no such width; it is the Basic page's own, the gpui
+/// and egui showcases' `BASIC_WIDTH` too, so the three pages lay the same
+/// controls out alike.
+const BASIC_WIDTH: f32 = 140.0;
+
+/// The Basic tab's progress bar value, on 0 to 100: the datum on display.
+const BASIC_PROGRESS: f32 = 40.0;
+
+/// The rows of the Basic tab's drop-down.
+const BASIC_FRUITS: [Fruit; 3] = [Fruit::Apple, Fruit::Banana, Fruit::Cherry];
+
+/// The controls the three showcases all draw, in the same order, with the
+/// same labels, values and states, packed onto one screen so the gpui, iced
+/// and egui captures compare control by control: buttons, checkboxes, radio
+/// buttons and text on the left; text inputs, a drop-down, a slider and a
+/// progress bar on the right. Each group is one hover target, with the info
+/// of its widget's own tab.
+fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Element<'a, Message> {
+    let a11y = &state.accessibility;
+    let sp = &SP;
+    let gap = Gaps::from_layout(&state.layout);
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    let c = &resolved.checkbox;
+    let heading = |label: &'a str| text(label).role(section_title(ts), resolved, a11y);
+    let group = |label: &'a str, info: String, controls: Element<'a, Message>| {
+        hoverable(
+            info,
+            column![heading(label), controls].spacing(gap.widget).into(),
+        )
+    };
+    let font = &resolved.button.font;
+
+    let buttons = group(
+        "Buttons",
+        button_info(state),
+        row![
+            button(text("Button").typeset(font, a11y))
+                .on_press(Message::ButtonPressed)
+                .style(styles::button(resolved))
+                .padding(btn_pad),
+            button(text("Primary").typeset(font, a11y))
+                .on_press(Message::ButtonPressed)
+                .style(styles::button_primary(resolved))
+                .padding(btn_pad),
+            button(text("Disabled").typeset(font, a11y))
+                .style(styles::button(resolved))
+                .padding(btn_pad),
+            tooltip(
+                button(text("Tooltip").typeset(font, a11y))
+                    .on_press(Message::ButtonPressed)
+                    .style(styles::button(resolved))
+                    .padding(btn_pad),
+                text("A tooltip").typeset(&resolved.tooltip.font, a11y),
+                tooltip::Position::Bottom,
+            )
+            .gap(sp.xs)
+            .style(styles::tooltip(resolved)),
+        ]
+        .spacing(gap.widget)
+        .align_y(iced::Center)
+        .into(),
+    );
+
+    let check = |checked: bool, label: &'a str, enabled: bool| {
+        let boxed = checkbox(checked)
+            .label(label)
+            .spacing(c.label_gap)
+            .size(c.indicator_width)
+            .text_size(scaled_text_size(c.font.size, a11y))
+            .font(theme_font(&c.font))
+            .style(styles::checkbox(resolved));
+        // A box with no `on_toggle` is a disabled one (checkbox.rs:154).
+        if enabled {
+            boxed.on_toggle(|_| Message::BasicHeld)
+        } else {
+            boxed
+        }
+    };
+    let checkboxes = group(
+        "Checkboxes",
+        checkbox_info(resolved),
+        row![
+            check(false, "Unchecked", true),
+            check(true, "Checked", true),
+            check(true, "Disabled", false),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    let option = |label: &'a str, value: usize| {
+        radio(
+            label,
+            value,
+            Some(state.basic_radio),
+            Message::BasicRadioSelected,
+        )
+        .spacing(c.label_gap)
+        .size(c.indicator_width)
+        .text_size(scaled_text_size(c.font.size, a11y))
+        .font(theme_font(&c.font))
+        .style(styles::radio(resolved))
+    };
+    let radios = group(
+        "Radio buttons",
+        radio_info(resolved),
+        row![
+            option("Option A", 0),
+            probe(probes::BASIC_RADIO_B, Length::Shrink, option("Option B", 1)),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    let link = &resolved.link;
+    let text_info = widget_tooltip(
+        "Text and link",
+        &[
+            (
+                "text",
+                "defaults.text_color",
+                to_color(resolved.defaults.text_color),
+            ),
+            ("link", "link.font.color", to_color(link.font.color)),
+            (
+                "hovered link",
+                "link.hover_text_color",
+                to_color(link.hover_text_color),
+            ),
+        ],
+        &[
+            (
+                "text",
+                font_row("defaults.font", &resolved.defaults.font).as_str(),
+            ),
+            ("link", font_row("link.font", &link.font).as_str()),
+        ],
+        &[(
+            "link",
+            "iced has no link widget: a text button in styles::button_link, \
+             padded as a button, as the Buttons tab's Text Style link; \
+             LinkTheme states no padding",
+        )],
+    );
+    let texts = group(
+        "Text",
+        text_info,
+        row![
+            text("Body text").body(resolved, a11y),
+            button(text("Link").typeset(&link.font, a11y))
+                .on_press(Message::ButtonPressed)
+                .style(styles::button_link(resolved))
+                .padding(btn_pad),
+        ]
+        .spacing(gap.widget)
+        .align_y(iced::Center)
+        .into(),
+    );
+
+    let field = |placeholder: &'a str, value: &'a str| {
+        text_input(placeholder, value)
+            .size(scaled_text_size(resolved.input.font.size, a11y))
+            .font(theme_font(&resolved.input.font))
+            .style(styles::text_input(resolved))
+            .padding(inp_pad)
+            .width(Length::Fixed(BASIC_WIDTH))
+    };
+    // A field with no `on_input` is a disabled one (text_input.rs:170).
+    let inputs = group(
+        "Text inputs",
+        text_input_info(state),
+        row![
+            field("Placeholder", &state.basic_hint).on_input(Message::BasicHintChanged),
+            field("", &state.basic_text).on_input(Message::BasicTextChanged),
+            field("", "Disabled"),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    let drop_down = group(
+        "Drop-down",
+        pick_list_info(resolved),
+        pick_list(
+            BASIC_FRUITS,
+            Some(state.basic_fruit),
+            Message::BasicFruitSelected,
+        )
+        .handle(arrow_handle(resolved))
+        .text_size(scaled_text_size(resolved.combo_box.font.size, a11y))
+        .font(theme_font(&resolved.combo_box.font))
+        .style(styles::pick_list(resolved))
+        .menu_style(styles::menu(resolved))
+        .width(Length::Fixed(BASIC_WIDTH))
+        .into(),
+    );
+
+    let slider_group = group(
+        "Slider",
+        slider_info(resolved),
+        slider(0.0..=100.0, state.basic_slider, Message::BasicSliderChanged)
+            .style(styles::slider(resolved))
+            .width(Length::Fixed(BASIC_WIDTH))
+            .into(),
+    );
+
+    let progress = group(
+        "Progress bar",
+        progress_bar_info(resolved),
+        progress_bar(0.0..=100.0, BASIC_PROGRESS)
+            .length(Length::Fixed(BASIC_WIDTH))
+            .girth(Length::Fixed(resolved.progress_bar.track_height))
+            .style(styles::progress_bar(resolved))
+            .into(),
+    );
+
+    row![
+        column![buttons, checkboxes, radios, texts].spacing(gap.section),
+        column![inputs, drop_down, slider_group, progress].spacing(gap.section),
+    ]
+    .spacing(gap.section)
+    .into()
+}
+
+// ---------------------------------------------------------------------------
 // Tab: Buttons
 // ---------------------------------------------------------------------------
+
+/// The Widget Info of a button, the Buttons page's primary row and the
+/// Basic page's buttons.
+fn button_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let ext = state.current_theme.extended_palette();
+    let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
+    widget_tooltip_themed(
+        state,
+        "Button (Primary)",
+        &[
+            (
+                "bg",
+                "button.primary_background",
+                to_color(resolved.button.primary_background),
+            ),
+            (
+                "text",
+                "button.primary_text_color",
+                to_color(resolved.button.primary_text_color),
+            ),
+            (
+                "hover bg",
+                "iced's primary.strong",
+                ext.primary.strong.color,
+            ),
+        ],
+        &[
+            ("border-radius", &radius_s),
+            (
+                "padding",
+                "button_padding — button.border.padding's stated sides, \
+                 iced's button::DEFAULT_PADDING for the others",
+            ),
+            ("shadow", "iced's own — the model has no shadow geometry"),
+            (
+                "label",
+                font_row("button.font", &resolved.button.font).as_str(),
+            ),
+        ],
+        &[("min-height", "hardcoded by iced")],
+    )
+}
 
 fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
@@ -2210,8 +2519,6 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
-    let ext = state.current_theme.extended_palette();
-    let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
 
     let apply_pad =
         |b: button::Button<'a, Message>| -> button::Button<'a, Message> { b.padding(btn_pad) };
@@ -2226,41 +2533,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     );
 
     let primary_row = hoverable(
-        widget_tooltip_themed(
-            state,
-            "Button (Primary)",
-            &[
-                (
-                    "bg",
-                    "button.primary_background",
-                    to_color(resolved.button.primary_background),
-                ),
-                (
-                    "text",
-                    "button.primary_text_color",
-                    to_color(resolved.button.primary_text_color),
-                ),
-                (
-                    "hover bg",
-                    "iced's primary.strong",
-                    ext.primary.strong.color,
-                ),
-            ],
-            &[
-                ("border-radius", &radius_s),
-                (
-                    "padding",
-                    "button_padding — button.border.padding's stated sides, \
-                     iced's button::DEFAULT_PADDING for the others",
-                ),
-                ("shadow", "iced's own — the model has no shadow geometry"),
-                (
-                    "label",
-                    font_row("button.font", &resolved.button.font).as_str(),
-                ),
-            ],
-            &[("min-height", "hardcoded by iced")],
-        ),
+        button_info(state),
         column![
             text("Primary Actions").role(section_title(ts), resolved, a11y),
             row![
@@ -2384,6 +2657,52 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 // Tab: Text Inputs
 // ---------------------------------------------------------------------------
 
+/// The Widget Info of a single-line text field, the Text Inputs page's and
+/// the Basic page's.
+fn text_input_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let i = &resolved.input;
+    let radius_s = format!("{:.0}px", i.border.corner_radius);
+    widget_tooltip_themed(
+        state,
+        "TextInput",
+        &[
+            ("border", "input.border.color", to_color(i.border.color)),
+            ("bg", "input.background_color", to_color(i.background_color)),
+            ("text", "input.font.color", to_color(i.font.color)),
+            (
+                "placeholder",
+                "input.placeholder_color",
+                to_color(i.placeholder_color),
+            ),
+            (
+                "selection",
+                "input.selection_background",
+                to_color(i.selection_background),
+            ),
+        ],
+        &[
+            ("border-radius", &radius_s),
+            (
+                "padding",
+                "input_padding — input.border.padding's stated sides, \
+                 iced's text_input::DEFAULT_PADDING for the others",
+            ),
+            (
+                "text",
+                font_row("input.font", &resolved.input.font).as_str(),
+            ),
+        ],
+        &[
+            (
+                "height",
+                "iced's: a line of the text size, plus the padding",
+            ),
+            ("icon color", "no native source — iced's own"),
+        ],
+    )
+}
+
 fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -2415,44 +2734,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         }
 
         hoverable(
-            widget_tooltip_themed(
-                state,
-                "TextInput",
-                &[
-                    ("border", "input.border.color", to_color(i.border.color)),
-                    ("bg", "input.background_color", to_color(i.background_color)),
-                    ("text", "input.font.color", to_color(i.font.color)),
-                    (
-                        "placeholder",
-                        "input.placeholder_color",
-                        to_color(i.placeholder_color),
-                    ),
-                    (
-                        "selection",
-                        "input.selection_background",
-                        to_color(i.selection_background),
-                    ),
-                ],
-                &[
-                    ("border-radius", &radius_s),
-                    (
-                        "padding",
-                        "input_padding — input.border.padding's stated sides, \
-                         iced's text_input::DEFAULT_PADDING for the others",
-                    ),
-                    (
-                        "text",
-                        font_row("input.font", &resolved.input.font).as_str(),
-                    ),
-                ],
-                &[
-                    (
-                        "height",
-                        "iced's: a line of the text size, plus the padding",
-                    ),
-                    ("icon color", "no native source — iced's own"),
-                ],
-            ),
+            text_input_info(state),
             column![
                 text("TextInput (single line)").role(section_title(ts), resolved, a11y),
                 input,
@@ -2567,6 +2849,149 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
 // Tab: Selection
 // ---------------------------------------------------------------------------
 
+/// The Widget Info of a checkbox, the Selection page's and the Basic page's.
+fn checkbox_info(resolved: &ResolvedTheme) -> String {
+    let c = &resolved.checkbox;
+    let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
+    let label_gap_s = format!("{:.0}px", c.label_gap);
+    // `checkbox.indicator_width` is the indicator's side length, square for a
+    // checkbox and a diameter for a radio (platform-facts.md:980), and both
+    // `Checkbox::size` (checkbox.rs:176, laid out at :287) and `Radio::size`
+    // (radio.rs:200, :300) take exactly that.
+    let indicator_width_s = format!("{:.0}px", c.indicator_width);
+    widget_tooltip(
+        "Checkbox",
+        &[
+            (
+                "checked bg",
+                "checkbox.checked_background",
+                to_color(c.checked_background),
+            ),
+            (
+                "checkmark",
+                "checkbox.indicator_color",
+                to_color(c.indicator_color),
+            ),
+            (
+                "unchecked border",
+                "checkbox.unchecked_border_color",
+                to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
+            ),
+            (
+                "bg",
+                "checkbox.unchecked_background",
+                to_color(c.unchecked_background.unwrap_or(c.background_color)),
+            ),
+        ],
+        &[
+            ("border-radius", &checkbox_radius_s),
+            ("label gap", &label_gap_s),
+            ("box size", &indicator_width_s),
+            (
+                "label",
+                font_row("checkbox.font", &resolved.checkbox.font).as_str(),
+            ),
+        ],
+        &[(
+            "check mark",
+            "Checkbox::icon takes an Icon — a font glyph — so the mark's own \
+             shape is the font's, not the theme's (checkbox.rs:229, :493-504)",
+        )],
+    )
+}
+
+/// The Widget Info of a radio button, the Selection page's and the Basic
+/// page's.
+fn radio_info(resolved: &ResolvedTheme) -> String {
+    let c = &resolved.checkbox;
+    let label_gap_s = format!("{:.0}px", c.label_gap);
+    let indicator_width_s = format!("{:.0}px", c.indicator_width);
+    widget_tooltip(
+        "Radio",
+        &[
+            (
+                "selected",
+                "checkbox.checked_background",
+                to_color(c.checked_background),
+            ),
+            (
+                "dot",
+                "checkbox.indicator_color",
+                to_color(c.indicator_color),
+            ),
+            (
+                "unselected border",
+                "checkbox.unchecked_border_color",
+                to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
+            ),
+            (
+                "bg",
+                "checkbox.unchecked_background",
+                to_color(c.unchecked_background.unwrap_or(c.background_color)),
+            ),
+        ],
+        &[
+            ("label gap", &label_gap_s),
+            ("indicator diameter", &indicator_width_s),
+            (
+                "label",
+                font_row("checkbox.font", &resolved.checkbox.font).as_str(),
+            ),
+        ],
+        &[
+            ("border-radius", "radio::Style carries no corner radius"),
+            ("disabled", "radio::Status has no disabled value"),
+        ],
+    )
+}
+
+/// The Widget Info of a pick list, the Selection page's and the Basic page's
+/// drop-down.
+fn pick_list_info(resolved: &ResolvedTheme) -> String {
+    let cb = &resolved.combo_box;
+    let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
+    let arrow_size_s = format!("{:.0}px", cb.arrow_icon_size);
+    widget_tooltip(
+        "PickList (dropdown)",
+        &[
+            (
+                "bg",
+                "combo_box.background_color",
+                to_color(cb.background_color),
+            ),
+            ("text", "combo_box.font.color", to_color(cb.font.color)),
+            (
+                "border",
+                "combo_box.border.color",
+                to_color(cb.border.color),
+            ),
+            (
+                "menu bg",
+                "menu.background_color",
+                to_color(resolved.menu.background_color),
+            ),
+            (
+                "menu selected",
+                "menu.hover_background",
+                to_color(resolved.menu.hover_background),
+            ),
+        ],
+        &[
+            ("border-radius", &combo_radius_s),
+            ("arrow size", &arrow_size_s),
+            (
+                "label and menu rows",
+                font_row("combo_box.font", &resolved.combo_box.font).as_str(),
+            ),
+        ],
+        &[
+            ("dropdown arrow", "iced's own chevron glyph"),
+            ("arrow color", "ComboBoxTheme carries no arrow color"),
+            ("arrow area width", "no receiver in iced"),
+        ],
+    )
+}
+
 fn view_selection(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -2576,18 +3001,9 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let c = &resolved.checkbox;
     let sw = &resolved.switch;
     let cb = &resolved.combo_box;
-    let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
-    let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
-    let label_gap_s = format!("{:.0}px", c.label_gap);
-    // `checkbox.indicator_width` is the indicator's side length, square for a
-    // checkbox and a diameter for a radio (platform-facts.md:980), and both
-    // `Checkbox::size` (checkbox.rs:176, laid out at :287) and `Radio::size`
-    // (radio.rs:200, :300) take exactly that.
-    let indicator_width_s = format!("{:.0}px", c.indicator_width);
     let track_radius_s = format!("{:.0}px", sw.track_radius);
     let track_height_s = format!("{:.0}px", sw.track_height);
     let thumb_diameter_s = format!("{:.0}px", sw.thumb_diameter);
-    let arrow_size_s = format!("{:.0}px", cb.arrow_icon_size);
     let input_radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
 
     let header = section_header(
@@ -2600,45 +3016,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     );
 
     let checkboxes = hoverable(
-        widget_tooltip(
-            "Checkbox",
-            &[
-                (
-                    "checked bg",
-                    "checkbox.checked_background",
-                    to_color(c.checked_background),
-                ),
-                (
-                    "checkmark",
-                    "checkbox.indicator_color",
-                    to_color(c.indicator_color),
-                ),
-                (
-                    "unchecked border",
-                    "checkbox.unchecked_border_color",
-                    to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
-                ),
-                (
-                    "bg",
-                    "checkbox.unchecked_background",
-                    to_color(c.unchecked_background.unwrap_or(c.background_color)),
-                ),
-            ],
-            &[
-                ("border-radius", &checkbox_radius_s),
-                ("label gap", &label_gap_s),
-                ("box size", &indicator_width_s),
-                (
-                    "label",
-                    font_row("checkbox.font", &resolved.checkbox.font).as_str(),
-                ),
-            ],
-            &[(
-                "check mark",
-                "Checkbox::icon takes an Icon — a font glyph — so the mark's own \
-                 shape is the font's, not the theme's (checkbox.rs:229, :493-504)",
-            )],
-        ),
+        checkbox_info(resolved),
         column![
             text("Checkboxes").role(section_title(ts), resolved, a11y),
             checkbox(state.checkbox_a)
@@ -2685,43 +3063,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     );
 
     let radios = hoverable(
-        widget_tooltip(
-            "Radio",
-            &[
-                (
-                    "selected",
-                    "checkbox.checked_background",
-                    to_color(c.checked_background),
-                ),
-                (
-                    "dot",
-                    "checkbox.indicator_color",
-                    to_color(c.indicator_color),
-                ),
-                (
-                    "unselected border",
-                    "checkbox.unchecked_border_color",
-                    to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
-                ),
-                (
-                    "bg",
-                    "checkbox.unchecked_background",
-                    to_color(c.unchecked_background.unwrap_or(c.background_color)),
-                ),
-            ],
-            &[
-                ("label gap", &label_gap_s),
-                ("indicator diameter", &indicator_width_s),
-                (
-                    "label",
-                    font_row("checkbox.font", &resolved.checkbox.font).as_str(),
-                ),
-            ],
-            &[
-                ("border-radius", "radio::Style carries no corner radius"),
-                ("disabled", "radio::Status has no disabled value"),
-            ],
-        ),
+        radio_info(resolved),
         column![
             text("Radio Buttons").role(section_title(ts), resolved, a11y),
             probe(
@@ -2859,45 +3201,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     .collect();
 
     let pickers = hoverable(
-        widget_tooltip(
-            "PickList (dropdown)",
-            &[
-                (
-                    "bg",
-                    "combo_box.background_color",
-                    to_color(cb.background_color),
-                ),
-                ("text", "combo_box.font.color", to_color(cb.font.color)),
-                (
-                    "border",
-                    "combo_box.border.color",
-                    to_color(cb.border.color),
-                ),
-                (
-                    "menu bg",
-                    "menu.background_color",
-                    to_color(resolved.menu.background_color),
-                ),
-                (
-                    "menu selected",
-                    "menu.hover_background",
-                    to_color(resolved.menu.hover_background),
-                ),
-            ],
-            &[
-                ("border-radius", &combo_radius_s),
-                ("arrow size", &arrow_size_s),
-                (
-                    "label and menu rows",
-                    font_row("combo_box.font", &resolved.combo_box.font).as_str(),
-                ),
-            ],
-            &[
-                ("dropdown arrow", "iced's own chevron glyph"),
-                ("arrow color", "ComboBoxTheme carries no arrow color"),
-                ("arrow area width", "no receiver in iced"),
-            ],
-        ),
+        pick_list_info(resolved),
         column![
             text("PickList (dropdown)").role(section_title(ts), resolved, a11y),
             probe(
@@ -3021,6 +3325,63 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 // Tab: Range
 // ---------------------------------------------------------------------------
 
+/// The Widget Info of a horizontal slider, the Range page's and the Basic
+/// page's.
+fn slider_info(resolved: &ResolvedTheme) -> String {
+    let sl = &resolved.slider;
+    let rail_s = format!("{:.0}px", sl.track_height);
+    let thumb_s = format!("{:.0}px", sl.thumb_diameter);
+    widget_tooltip(
+        "Horizontal Slider",
+        &[
+            ("active track", "slider.fill_color", to_color(sl.fill_color)),
+            (
+                "inactive track",
+                "slider.track_color",
+                to_color(sl.track_color),
+            ),
+            ("handle", "slider.thumb_color", to_color(sl.thumb_color)),
+            (
+                "hovered handle",
+                "slider.thumb_hover_color",
+                to_color(sl.thumb_hover_color.unwrap_or(sl.thumb_color)),
+            ),
+        ],
+        &[("rail width", &rail_s), ("thumb diameter", &thumb_s)],
+        &[
+            ("widget height", "no native source — iced's own"),
+            ("dragged handle fill", "no native source — iced's own"),
+        ],
+    )
+}
+
+/// The Widget Info of a progress bar, the Range page's and the Basic page's.
+fn progress_bar_info(resolved: &ResolvedTheme) -> String {
+    let pb = &resolved.progress_bar;
+    let bar_girth_s = format!("{:.0}px", pb.track_height);
+    widget_tooltip(
+        "Progress Bar",
+        &[
+            ("fill", "progress_bar.fill_color", to_color(pb.fill_color)),
+            (
+                "track bg",
+                "progress_bar.track_color",
+                to_color(pb.track_color),
+            ),
+            (
+                "border",
+                "progress_bar.border.color",
+                to_color(pb.border.color),
+            ),
+        ],
+        &[("girth", &bar_girth_s)],
+        &[
+            ("min width", "progress_bar.min_width has no receiver"),
+            ("animation", "none — immediate"),
+        ],
+    )
+}
+
 fn view_range(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -3031,7 +3392,6 @@ fn view_range(state: &State) -> Element<'_, Message> {
     let pb = &resolved.progress_bar;
     let rail_s = format!("{:.0}px", sl.track_height);
     let thumb_s = format!("{:.0}px", sl.thumb_diameter);
-    let bar_girth_s = format!("{:.0}px", pb.track_height);
 
     let header = section_header(
         "Range Widgets",
@@ -3044,28 +3404,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
 
     let horiz_slider =
         hoverable(
-            widget_tooltip(
-                "Horizontal Slider",
-                &[
-                    ("active track", "slider.fill_color", to_color(sl.fill_color)),
-                    (
-                        "inactive track",
-                        "slider.track_color",
-                        to_color(sl.track_color),
-                    ),
-                    ("handle", "slider.thumb_color", to_color(sl.thumb_color)),
-                    (
-                        "hovered handle",
-                        "slider.thumb_hover_color",
-                        to_color(sl.thumb_hover_color.unwrap_or(sl.thumb_color)),
-                    ),
-                ],
-                &[("rail width", &rail_s), ("thumb diameter", &thumb_s)],
-                &[
-                    ("widget height", "no native source — iced's own"),
-                    ("dragged handle fill", "no native source — iced's own"),
-                ],
-            ),
+            slider_info(resolved),
             column![
                 text("Horizontal Slider").role(section_title(ts), resolved, a11y),
                 row![
@@ -3153,27 +3492,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     );
 
     let progress = hoverable(
-        widget_tooltip(
-            "Progress Bar",
-            &[
-                ("fill", "progress_bar.fill_color", to_color(pb.fill_color)),
-                (
-                    "track bg",
-                    "progress_bar.track_color",
-                    to_color(pb.track_color),
-                ),
-                (
-                    "border",
-                    "progress_bar.border.color",
-                    to_color(pb.border.color),
-                ),
-            ],
-            &[("girth", &bar_girth_s)],
-            &[
-                ("min width", "progress_bar.min_width has no receiver"),
-                ("animation", "none — immediate"),
-            ],
-        ),
+        progress_bar_info(resolved),
         column![
             text("Progress Bars").role(section_title(ts), resolved, a11y),
             text("Driven by horizontal slider value:").body(resolved, a11y),
@@ -6450,21 +6769,35 @@ mod tests {
         let mut state = State::default();
 
         // ---- the tab strip ----
-        assert_eq!(
-            state.active_tab,
-            Tab::Buttons,
-            "the showcase opens on Buttons"
+        assert_eq!(state.active_tab, Tab::Basic, "the showcase opens on Basic");
+
+        // ---- Basic tab: its button, its held checkbox and its radio ----
+        press(&mut state, "Primary", "ButtonPressed");
+        assert_eq!(state.button_press_count, 1, "Primary: the press was lost");
+        // The first "Disabled" in the tab is its disabled button.
+        let messages = drive(&mut state, |ui| click_text(ui, "Disabled"));
+        assert!(
+            messages.is_empty(),
+            "Disabled: a button with no on_press must stay silent, got {messages:?}"
         );
+        press(&mut state, "Checked", "BasicHeld");
+        let messages = drive(&mut state, |ui| click_probe(ui, probes::BASIC_RADIO_B));
+        assert!(
+            matches!(messages.as_slice(), [Message::BasicRadioSelected(1)]),
+            "Option B: {messages:?}"
+        );
+        assert_eq!(state.basic_radio, 1, "Option B: the choice was lost");
+        let _ = update(&mut state, Message::TabSelected(Tab::Buttons));
 
         // ---- Buttons tab: one message per class, and none from a disabled one ----
         for (label, count) in [
-            ("Primary", 1),
-            ("Secondary", 2),
-            ("Success", 3),
-            ("Warning", 4),
-            ("Danger", 5),
-            ("Text Style", 6),
-            ("Click me!", 7),
+            ("Primary", 2),
+            ("Secondary", 3),
+            ("Success", 4),
+            ("Warning", 5),
+            ("Danger", 6),
+            ("Text Style", 7),
+            ("Click me!", 8),
         ] {
             press(&mut state, label, "ButtonPressed");
             assert_eq!(
@@ -6485,7 +6818,7 @@ mod tests {
                 messages.is_empty(),
                 "{label}: a button with no on_press must stay silent, got {messages:?}"
             );
-            assert_eq!(state.button_press_count, 7, "{label}: the counter moved");
+            assert_eq!(state.button_press_count, 8, "{label}: the counter moved");
         }
 
         // ---- the tab strip carries the view to the next tab ----
@@ -7207,6 +7540,12 @@ mod tests {
         }
         assert_eq!(CliArgs::parse_tab("textinputs"), Ok(Tab::TextInputs));
         assert_eq!(CliArgs::parse_tab("thememap"), Ok(Tab::ThemeMap));
+        assert_eq!(CliArgs::parse_tab("basic"), Ok(Tab::Basic));
+        assert_eq!(
+            Tab::ALL.first(),
+            Some(&Tab::Basic),
+            "Basic is the first tab"
+        );
         match CliArgs::parse_tab("no-such-tab") {
             Ok(tab) => panic!("--tab no-such-tab opened {tab:?}"),
             Err(error) => {
