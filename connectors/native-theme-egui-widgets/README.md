@@ -15,6 +15,7 @@ from a hardcoded value or does not draw them at all. This crate draws those:
 | `segmented_control::SegmentedControl` | a segmented control: egui has none |
 | `wrap::link`, `wrap::hyperlink` | a link in its hover, pressed, disabled and visited colours |
 | `combo_box::ComboBox` | a drop-down at the height the theme states: egui's square arrow box can make its own taller |
+| `radio_button::RadioButton` | a radio button's dot at the size the theme states: egui sizes it from the check mark's box |
 
 Every widget reads the `ResolvedTheme` of the atlas the connector installed,
 in the colour scheme egui is drawing, and contains no colour, radius or

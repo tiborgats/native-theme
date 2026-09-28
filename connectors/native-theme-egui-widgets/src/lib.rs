@@ -8,8 +8,9 @@
 //! rail, a spinner at the theme's stroke, and a segmented control, which egui
 //! does not have. It also wraps egui's links in their state and visited
 //! colours, the per-call route the connector names for them, written once,
-//! and egui's drop-down at the height the theme states, which egui's square
-//! arrow box can exceed.
+//! egui's drop-down at the height the theme states, which egui's square
+//! arrow box can exceed, and egui's radio button with the dot the theme
+//! states, which egui sizes from the check mark's box.
 //!
 //! Everything it draws is driven by the `ResolvedTheme` of the atlas the
 //! connector installed ([`ThemeAtlas::from_ctx`](native_theme_egui::ThemeAtlas::from_ctx)),
@@ -20,7 +21,8 @@
 //! [`slider::Slider`] as `egui::Slider`, [`spinner::Spinner`] as
 //! `egui::Spinner`, [`segmented_control::SegmentedControl`] as unscoped
 //! buttons, the [`wrap`] functions as egui's `Link` and `Hyperlink`,
-//! [`combo_box::ComboBox`] as `egui::ComboBox`.
+//! [`combo_box::ComboBox`] as `egui::ComboBox`, [`radio_button::RadioButton`]
+//! as `egui::RadioButton`.
 //!
 //! ```rust,no_run
 //! use native_theme_egui_widgets::connector::egui;
@@ -66,6 +68,7 @@
 #![deny(clippy::unimplemented)]
 
 pub mod combo_box;
+pub mod radio_button;
 pub mod segmented_control;
 pub mod slider;
 pub mod spinner;

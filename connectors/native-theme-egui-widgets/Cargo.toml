@@ -11,7 +11,7 @@ homepage.workspace = true
 keywords = ["theme", "egui", "gui", "native", "widgets"]
 categories = ["gui"]
 readme = "README.md"
-description = "egui widgets the native-theme-egui connector cannot give egui's own: a switch, a slider knob, a spinner stroke, a segmented control, links"
+description = "egui widgets the native-theme-egui connector cannot give egui's own: a switch, a slider knob, a spinner stroke, a segmented control, links, a radio dot"
 
 [package.metadata.docs.rs]
 all-features = true

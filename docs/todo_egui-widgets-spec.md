@@ -179,6 +179,7 @@ only other numeric literals allowed in painting code:
 | egui's own spinner constants | `240°`, `8`, `128` | cited to `widgets/spinner.rs` at their use (§4.3) |
 | egui's own slider key step | `1.0` point per press | cited to `widgets/slider.rs:722` (§4.2) |
 | egui's own combo-box arrow proportions | `0.7`, `0.45` | cited to `containers/combo_box.rs:472-486` (§4.6) |
+| egui's own radio dot divisor | `3.0` | cited to `widgets/radio_button.rs:101` (§4.8) |
 
 A numeric literal in painting code that is not in this table is a bug, and T6
 catches it.
@@ -717,13 +718,45 @@ unchanged (§2.1).
 
 | wanted | how the application gets it |
 |---|---|
-| any egui widget in its native role colours — button, checkbox, radio button, text field, combo box (whose height §4.6 fixes), separator, progress bar, tab | the connector's `native_scope` with the widget's `Role`: `RoleVariant::Selected` for a checked checkbox, while an active tab or a primary button is a `Button::selected(true)` in the `Normal` scope, whose cell carries those colours in `selection.*`. A `ScrollArea`'s bars need no scope: the base style carries them (connector spec §5.9) |
+| any egui widget in its native role colours — button, checkbox, radio button (whose dot §4.8 sizes), text field, combo box (whose height §4.6 fixes), separator, progress bar, tab | the connector's `native_scope` with the widget's `Role`: `RoleVariant::Selected` for a checked checkbox, while an active tab or a primary button is a `Button::selected(true)` in the `Normal` scope, whose cell carries those colours in `selection.*`. A `ScrollArea`'s bars need no scope: the base style carries them (connector spec §5.9) |
 | toolbar, status bar, sidebar, card, window, dialog, popover, tooltip and menu chrome | the connector's `Surface` frames and role scopes |
 | an expander's arrow colour | the connector's `expander_icon`, passed to `CollapsingHeader::icon` |
 | a text field's focused border | the connector's `input_frame`, passed to `TextEdit::frame` |
 
 Each is one call at the call site with no pixel this crate could add, which
 §1.5 settles: the cheapest tier is no widget at all.
+
+### 4.8 `radio_button::RadioButton` — Tier W
+
+```rust
+pub struct RadioButton { /* … */ }
+
+impl RadioButton {
+    pub fn new(checked: bool, text: impl Into<egui::WidgetText>) -> Self;
+    pub fn enabled(self, enabled: bool) -> Self;
+}
+```
+
+**What egui hardcodes.** egui paints a checked radio's dot at a third of
+`Spacing::icon_width_inner` in radius (`widgets/radio_button.rs:101`), the
+square `icon_rectangles` centres in the circle (`style.rs:477-478`) and the
+checkbox's mark shares (`widgets/checkbox.rs:132-133`). The connector's
+`Role::Checkbox` cell, which a radio button shares, writes that sink from the
+checkbox's mark inset (connector spec §6.11), so the scope alone cannot give
+the radio `checkbox.radio_dot_diameter` (`docs/platform-facts.md:1220`: KDE 6,
+GNOME 8, Windows 12) without resizing the check mark.
+
+**Tier W.** `RadioButton` is one `egui::RadioButton` in the `Role::Checkbox`
+scope — the `Selected` variant while it is checked, whose cell fills the circle
+with `checked_background` and outlines it in `border.color`; the `Disabled`
+variant and `Ui::disable` for `.enabled(false)` (§2.4) — with one per-instance
+change: where the theme states `radio_dot_diameter`, the scope's
+`icon_width_inner` is `3.0 · 0.5 · radio_dot_diameter` for this radio alone, so
+the dot is that many pixels across, in the cell's `fg_stroke`,
+`indicator_color`. Where the theme states none (macOS publishes none) or a size
+that is not finite, nothing is changed and the dot is egui's own. Like egui's,
+it holds no value: a click is `Response::clicked`. With no atlas installed it is
+`egui::RadioButton` unchanged (§2.1).
 
 ---
 
@@ -776,7 +809,7 @@ Headless: tests drive a bare `egui::Context` with `RawInput`, AccessKit enabled
 | T4 | **Reduced motion** | under reduced motion the `Switch` thumb reaches its end in the pass of the click, the painted `Spinner` requests no repaint and paints the same shapes on two passes |
 | T5 | **Disabled** | `.enabled(false)` paints the widget's disabled leaves (or the base colour where a leaf is `None`), its painter's opacity is unchanged inside the scope, and a click does not change the value |
 | T6 | **No hardcoded values** | a source scan for numeric literals in painting code, allowing only §2.3's table |
-| T7 | **Tier P promotions are still justified** | each §4 citation still describes the hardcoded upstream fact: no switch module under `widgets/`; `Stroke::new(3.0` and `- 2.0` in `widgets/spinner.rs`; rail and resting knob both from `inactive.bg_fill` in `widgets/slider.rs`. A failure demotes the widget (§1.5). The same for the `ComboBox`'s per-instance change: the square `icon_size`, the height `max`, and the arrow's `0.7` / `0.45` in `containers/combo_box.rs`; a failure retires the change (§4.6) |
+| T7 | **Tier P promotions are still justified** | each §4 citation still describes the hardcoded upstream fact: no switch module under `widgets/`; `Stroke::new(3.0` and `- 2.0` in `widgets/spinner.rs`; rail and resting knob both from `inactive.bg_fill` in `widgets/slider.rs`. A failure demotes the widget (§1.5). The same for the `ComboBox`'s per-instance change: the square `icon_size`, the height `max`, and the arrow's `0.7` / `0.45` in `containers/combo_box.rs`; a failure retires the change (§4.6). The same for the `RadioButton`'s: the dot's `/ 3.0` in `widgets/radio_button.rs` (§4.8) |
 | T9 | **The drop-down's height** | on `kde-breeze`, whose arrow box is taller than its text, `ComboBox` is as tall as its text and padding make it, `combo_box.min_height`; the arrow is egui's triangle at `arrow_icon_size`, right-aligned in its column and centred on the height (§4.6) |
 | T8 | **Tier C stays cheap** | `SegmentedControl` calls neither `Ui::allocate_response` nor `Ui::allocate_exact_size`, senses nothing and paints nothing itself; every segment is an egui `Button`; the segments are joined: one outline in the scope's border colour as wide as the border all round, no segment stroked, only the outer corners rounded, to the inner radius, the segments `separator_width` apart (§4.4) |
 

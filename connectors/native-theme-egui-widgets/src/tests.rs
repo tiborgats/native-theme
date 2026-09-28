@@ -19,6 +19,7 @@ use native_theme_egui::{
 };
 
 use crate::combo_box::ComboBox;
+use crate::radio_button::RadioButton;
 use crate::segmented_control::SegmentedControl;
 use crate::slider::Slider;
 use crate::spinner::Spinner;
@@ -210,6 +211,16 @@ fn with_no_atlas_every_widget_is_its_egui_counterpart() {
             Box::new(|ui| ui.add(egui::Spinner::new())),
         ),
         (
+            "radio button",
+            Box::new(|ui| ui.add(RadioButton::new(true, "Radio"))),
+            Box::new(|ui| ui.add(egui::RadioButton::new(true, "Radio"))),
+        ),
+        (
+            "disabled radio button",
+            Box::new(|ui| ui.add(RadioButton::new(false, "Radio").enabled(false))),
+            Box::new(|ui| ui.add_enabled(false, egui::RadioButton::new(false, "Radio"))),
+        ),
+        (
             "segmented control",
             Box::new(|ui| ui.add(SegmentedControl::new(&mut 1, ["Day", "Week"]))),
             Box::new(|ui| {
@@ -288,14 +299,15 @@ fn hostile(v: f32) -> ResolvedTheme {
     t.spinner.min_diameter = v;
     t.segmented_control.segment_height = v;
     t.segmented_control.separator_width = v;
+    t.checkbox.radio_dot_diameter = Some(v);
     t
 }
 
 /// How many widgets `one_widget` adds.
-const WIDGETS: usize = 7;
+const WIDGETS: usize = 8;
 
 /// Widget `i` of every widget of the crate: switch, slider, spinner, segmented control, link,
-/// hyperlink, combo box.
+/// hyperlink, combo box, radio button.
 fn one_widget(ui: &mut egui::Ui, i: usize) -> egui::Response {
     match i {
         0 => ui.add(Switch::new(&mut true).label("Wi-Fi")),
@@ -310,12 +322,13 @@ fn one_widget(ui: &mut egui::Ui, i: usize) -> egui::Response {
             let hyperlink = wrap::hyperlink(ui, "Docs", "https://example.org");
             ui.add(hyperlink)
         }
-        _ => {
+        6 => {
             ComboBox::from_id_salt("fruit")
                 .selected_text("Apple")
                 .show_ui(ui, |ui| ui.label("Banana"))
                 .response
         }
+        _ => ui.add(RadioButton::new(true, "Radio")),
     }
 }
 
@@ -407,6 +420,46 @@ fn every_widget_reports_its_role() {
     assert!(!node(&out, ids[5]).is_visited());
     // The drop-down is egui's own, and reports what egui's reports.
     assert_eq!(node(&out, ids[6]).role(), accesskit::Role::ComboBox);
+    // So is the radio button.
+    assert_eq!(node(&out, ids[7]).role(), accesskit::Role::RadioButton);
+}
+
+/// The radio button's dot is `checkbox.radio_dot_diameter` across, in `indicator_color`, on
+/// the checked circle `indicator_width` across in `checked_background`; where the theme states
+/// no dot size it is egui's own.
+#[test]
+fn the_radio_dot_is_the_themes() {
+    let t = kde();
+    assert_eq!(t.checkbox.radio_dot_diameter, Some(6.0));
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (out, _) = response(&ctx, at(0.0), |ui| ui.add(RadioButton::new(true, "Radio")));
+    let shapes = circles(&out);
+    let circle = shapes
+        .iter()
+        .find(|c| c.fill == to_color32(t.checkbox.checked_background))
+        .unwrap();
+    assert_eq!(2.0 * circle.radius, t.checkbox.indicator_width);
+    let dot = shapes
+        .iter()
+        .find(|c| c.fill == to_color32(t.checkbox.indicator_color))
+        .unwrap();
+    assert_eq!(2.0 * dot.radius, 6.0);
+    assert_eq!(dot.center, circle.center);
+
+    let mut unstated = t.clone();
+    unstated.checkbox.radio_dot_diameter = None;
+    let ctx = installed(&unstated, &AccessibilityPreferences::default());
+    let (out, _) = response(&ctx, at(0.0), |ui| ui.add(RadioButton::new(true, "Radio")));
+    let (egui_out, _) = response(&ctx, at(0.0), |ui| {
+        native_theme_egui::NativeThemeUiExt::native_scope(
+            ui,
+            native_theme_egui::Role::Checkbox,
+            native_theme_egui::RoleVariant::Selected,
+            |ui| ui.add(egui::RadioButton::new(true, "Radio")),
+        )
+        .inner
+    });
+    assert_eq!(flat(&out.shapes), flat(&egui_out.shapes), "egui's own dot");
 }
 
 /// T3: a clicked hyperlink is visited on the next pass, in `link.visited_text_color`.
@@ -728,11 +781,13 @@ fn literals(code: &str) -> Vec<String> {
 }
 
 /// T6: the only numeric literals are §2.3's: `0.5`, the identities `0` `0.0` `1.0`, egui's
-/// spinner constants `240` `8` `128`, egui's slider key step `1.0` and egui's combo-box arrow
-/// proportions `0.7` `0.45`.
+/// spinner constants `240` `8` `128`, egui's slider key step `1.0`, egui's combo-box arrow
+/// proportions `0.7` `0.45` and egui's radio dot divisor `3.0`.
 #[test]
 fn the_crate_hardcodes_no_values() {
-    let allowed = ["0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45"];
+    let allowed = [
+        "0", "0.0", "0.5", "1.0", "240.0", "8", "128", "0.7", "0.45", "3.0",
+    ];
     let mut found = Vec::new();
     for (file, code) in painting_sources() {
         for literal in literals(&code) {
@@ -801,6 +856,9 @@ fn the_painted_widgets_are_still_needed() {
     assert!(combo.contains("let icon_size = Vec2::splat(ui.spacing().icon_width);"));
     assert!(combo.contains("let actual_height = galley.size().y.max(icon_size.y);"));
     assert!(combo.contains("vec2(rect.width() * 0.7, rect.height() * 0.45),"));
+    // The radio button's per-instance change: egui's dot is a third of `icon_width_inner`.
+    let radio = std::fs::read_to_string(widgets.join("radio_button.rs")).unwrap();
+    assert!(radio.contains("radius: small_icon_rect.width() / 3.0,"));
 }
 
 // ---- T8: Tier C stays cheap --------------------------------------------------------------------

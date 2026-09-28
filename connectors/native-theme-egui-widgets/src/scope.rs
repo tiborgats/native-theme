@@ -12,10 +12,22 @@ pub(crate) fn open<R>(
     enabled: bool,
     add: impl FnOnce(&mut egui::Ui) -> R,
 ) -> R {
-    let variant = if enabled {
-        RoleVariant::Normal
-    } else {
-        RoleVariant::Disabled
+    open_selected(ui, role, false, enabled, add)
+}
+
+/// [`open`], with the `Selected` variant for an enabled control that is `selected`: the
+/// checked appearance of a `Checkbox` or `RadioButton` (the connector's `RoleVariant`).
+pub(crate) fn open_selected<R>(
+    ui: &mut egui::Ui,
+    role: Role,
+    selected: bool,
+    enabled: bool,
+    add: impl FnOnce(&mut egui::Ui) -> R,
+) -> R {
+    let variant = match (enabled, selected) {
+        (false, _) => RoleVariant::Disabled,
+        (true, true) => RoleVariant::Selected,
+        (true, false) => RoleVariant::Normal,
     };
     ui.native_scope(role, variant, |ui| {
         if !enabled {

@@ -7,6 +7,7 @@ use egui::Button;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_stroke};
 use native_theme_egui::{Role, RoleVariant, Surface, ThemeAtlas, expander_icon, input_frame};
 use native_theme_egui_widgets::combo_box::ComboBox;
+use native_theme_egui_widgets::radio_button::RadioButton;
 use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
@@ -196,7 +197,9 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         });
     }
 
-    // The selected radio button is drawn in `RoleVariant::Selected`, as on the Selection page.
+    // The companion crate's radio button (docs/todo_egui-widgets-spec.md §4.8): egui's, in
+    // `RoleVariant::Selected` while selected as on the Selection page, its dot
+    // `checkbox.radio_dot_diameter` across where the theme states one.
     caption(reg, ui, "Radio buttons");
     for (i, label) in ["Option A", "Option B"].into_iter().enumerate() {
         let selected = state.basic_radio == i;
@@ -205,8 +208,8 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         } else {
             normal
         };
-        let r = demo::scoped(reg, ui, Role::Checkbox, variant, "RadioButton", |ui| {
-            ui.add(egui::RadioButton::new(selected, label))
+        let r = demo::widget(reg, ui, Role::Checkbox, variant, "RadioButton", |ui| {
+            ui.add(RadioButton::new(selected, label))
         });
         if r.clicked() {
             state.basic_radio = i;
