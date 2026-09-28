@@ -3976,6 +3976,16 @@ fn the_chrome_follows_the_theme(cx: &mut TestAppContext) {
         "a page tab is {:?}, under tab.min_width {min_width} by tab.min_height {min_height}",
         tab.size
     );
+
+    // The chrome Buttons' tooltips are the application's, refined.
+    for button in [CHROME_TOOLBAR_PALETTE, CHROME_SIDE_PANEL_TOGGLE] {
+        let info = settle_on(&mut cx, &showcase, button);
+        assert!(
+            info.as_ref()
+                .is_some_and(|i| i.to_text().contains("geometry::tooltip:")),
+            "{button}'s tooltip names no geometry::tooltip: {info:?}"
+        );
+    }
 }
 
 /// Two Checkboxes in different states show different infos (spec §4.3.2):

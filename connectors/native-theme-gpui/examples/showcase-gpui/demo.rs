@@ -632,6 +632,19 @@ pub(crate) fn status_bar(
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut bar_info = info::status_bar(cx.theme(), styled);
+    // Its top edge `status_bar.border.line_width` thick, over upstream's
+    // `border_t_1` (status_bar.rs, `RenderOnce for StatusBar`), which the
+    // bar's style is refined over.
+    let edge = native_value(cx, |n| px(n.resolved.status_bar.border.line_width));
+    if let Some(edge) = edge {
+        bar_info = bar_info.config(
+            "top edge",
+            format!(
+                "status_bar.border.line_width, {}px",
+                info::px_text(edge.as_f32())
+            ),
+        );
+    }
     let bar = native_info(
         StatusBar::new(),
         cx,
@@ -639,6 +652,7 @@ pub(crate) fn status_bar(
         "status_bar",
         &mut bar_info,
     )
+    .when_some(edge, |bar, edge| bar.border_t(edge))
     .left(toggle)
     // Plain text, not Labels, as in the title bar: a Label would paint
     // foreground over the colour `geometry::status_bar` gives the bar.
@@ -757,7 +771,11 @@ pub(crate) fn toolbar_button(
         action,
         about,
     } = spec;
-    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set);
+    let (tip, styled) = action_tooltip(cx, tooltip, action);
+    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set, styled);
+    if styled {
+        button_info = button_info.geometry("tooltip");
+    }
     let icon =
         chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
@@ -766,7 +784,6 @@ pub(crate) fn toolbar_button(
     let dispatched = action.boxed_clone();
     let button = ButtonKind::Ghost
         .apply(Button::new(id), cx)
-        .tooltip_with_action(tooltip, action, None)
         .map(|button| match icon {
             Some(icon) => button.child(icon),
             None => button.label(tooltip),
@@ -779,6 +796,36 @@ pub(crate) fn toolbar_button(
         SharedString::from(format!("chrome-button-{id}")),
         button_info,
     )
+    .tooltip(tip)
+}
+
+/// A tooltip reading `text` and the key binding of `action`, built by the
+/// application and refined by `geometry::tooltip`, for the element that
+/// wraps a chrome Button; and whether a native theme refined it.
+///
+/// Not `Button::tooltip_with_action`: the Button builds that Tooltip itself
+/// as it renders (button/button.rs, `RenderOnce for Button`), so the
+/// platform's tooltip fill, edge, padding, radius and text colour would not
+/// reach it.
+fn action_tooltip(
+    cx: &App,
+    text: &'static str,
+    action: &dyn Action,
+) -> (
+    impl Fn(&mut Window, &mut App) -> gpui::AnyView + 'static,
+    bool,
+) {
+    let style = native_geometry(cx, geometry::tooltip);
+    let styled = style.is_some();
+    let action = action.boxed_clone();
+    let build = move |window: &mut Window, cx: &mut App| {
+        refined(
+            Tooltip::new(text).action(action.as_ref(), None),
+            style.as_ref(),
+        )
+        .build(window, cx)
+    };
+    (build, styled)
 }
 
 /// The status bar's panel toggle (spec §3.2, S4).
@@ -825,7 +872,11 @@ pub(crate) fn panel_toggle(
         about,
         state,
     } = spec;
-    let mut button_info = info::panel_toggle(cx.theme(), about, &drawn, set, open, state);
+    let (tip, styled) = action_tooltip(cx, tooltip, action);
+    let mut button_info = info::panel_toggle(cx.theme(), about, &drawn, set, open, state, styled);
+    if styled {
+        button_info = button_info.geometry("tooltip");
+    }
     let icon =
         chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_small));
     if icon.is_some() && native_value(cx, geometry::icon_size_small).is_some() {
@@ -837,7 +888,6 @@ pub(crate) fn panel_toggle(
         .small()
         .selected(open)
         .toggled(open)
-        .tooltip_with_action(tooltip, action, None)
         .map(|button| match icon {
             Some(icon) => button.child(icon),
             None => button.label(tooltip),
@@ -850,6 +900,7 @@ pub(crate) fn panel_toggle(
         SharedString::from(format!("chrome-button-{id}")),
         button_info,
     )
+    .tooltip(tip)
 }
 
 /// The gap between the theme settings' rows, and between each row's label

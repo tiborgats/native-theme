@@ -432,6 +432,7 @@ pub fn panel_toggle(
     set: &str,
     open: bool,
     state: &'static str,
+    tooltip_styled: bool,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(match (drawn, open) {
@@ -451,7 +452,7 @@ pub fn panel_toggle(
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
         )
     };
-    let info = info.colors(super::feedback::tooltip_colours(t, true));
+    let info = action_tooltip(info, t, tooltip_styled);
     let info = if drawn {
         info.not_themeable(
             "icon",
@@ -471,10 +472,6 @@ pub fn panel_toggle(
             set,
             "the toggle shows the tooltip's text as its label instead",
         ),
-    )
-    .not_themeable(
-        "tooltip",
-        "upstream's Tooltip, which the Button builds as it renders from the text and action tooltip_with_action stored (button/button.rs, RenderOnce for Button), so geometry::tooltip cannot reach it; it shows the action's key binding (tooltip.rs, Tooltip::action)",
     )
     .instance(
         "place",
@@ -933,15 +930,20 @@ pub fn icon_set_select(t: &Theme) -> WidgetInfo {
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
 /// showing `icon` of the icon theme named `set`. Its icon-size line is
 /// recorded where `demo::toolbar_button` applies the builder.
-pub fn toolbar_button(t: &Theme, action: &'static str, icon: &ChromeIcon, set: &str) -> WidgetInfo {
+pub fn toolbar_button(
+    t: &Theme,
+    action: &'static str,
+    icon: &ChromeIcon,
+    set: &str,
+    tooltip_styled: bool,
+) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
         "Ghost, icon"
     } else {
         "Ghost, labelled"
     });
-    let info = super::buttons::native_ghost(info, t)
-        .colors(super::feedback::tooltip_colours(t, true))
+    let info = action_tooltip(super::buttons::native_ghost(info, t), t, tooltip_styled)
         .not_themeable(
             "fill",
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
@@ -969,11 +971,27 @@ pub fn toolbar_button(t: &Theme, action: &'static str, icon: &ChromeIcon, set: &
             "the button shows the tooltip's text as its label instead",
         ),
     )
-        .not_themeable(
-            "tooltip",
-            "upstream's Tooltip, which the Button builds as it renders from the text and action tooltip_with_action stored (button/button.rs, RenderOnce for Button). The only way to hand a Button a Tooltip of one's own is its tooltip_builder, which has no public setter (button/button.rs, Button), so geometry::tooltip cannot reach it; it shows the action's key binding where one is bound (tooltip.rs, Tooltip::action)",
-        )
-        .instance("action", action)
+    .instance("action", action)
+}
+
+/// What a chrome Button's tooltip paints: built by the application on the
+/// element around the Button (`demo::action_tooltip`) and refined by
+/// `geometry::tooltip` where `styled`, whose line the helper records;
+/// upstream's colours where no native theme refined it.
+fn action_tooltip(info: WidgetInfo, t: &Theme, styled: bool) -> WidgetInfo {
+    let info = if styled {
+        info
+    } else {
+        info.colors(super::feedback::tooltip_colours(t, true))
+    };
+    info.instance(
+        "tooltip",
+        "Tooltip::new with the action, which shows its key binding where one is bound (tooltip.rs, Tooltip::action), built by the showcase on the element around the Button: Button::tooltip_with_action would have the Button build its own as it renders (button/button.rs, RenderOnce for Button), which the platform's tooltip fill, edge, padding, radius and text colour could not reach",
+    )
+    .not_themeable(
+        "tooltip delay",
+        "gpui's own tooltip, set on an element rather than through the Button, so it takes tooltip_show_delay (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase does not set. native-theme states no hover delay",
+    )
 }
 
 /// What a chrome icon's info says it is: `icon` as the icon theme named
