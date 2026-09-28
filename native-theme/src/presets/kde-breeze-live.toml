@@ -95,6 +95,12 @@ min_height_px = 30.0
 
 
 [light.tab.border]
+# platform-facts.md:1321 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
+line_width_px = 1.0
+# platform-facts.md:1322 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
+corner_radius_px = 4.5
+# platform-facts.md:1323 (§2.11): no shadow
+shadow_enabled = false
 # platform-facts.md:1318-1319 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
@@ -282,6 +288,12 @@ min_height_px = 30.0
 
 
 [dark.tab.border]
+# platform-facts.md:1321 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
+line_width_px = 1.0
+# platform-facts.md:1322 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
+corner_radius_px = 4.5
+# platform-facts.md:1323 (§2.11): no shadow
+shadow_enabled = false
 # platform-facts.md:1318-1319 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0

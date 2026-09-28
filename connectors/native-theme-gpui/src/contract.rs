@@ -1360,6 +1360,17 @@ const MENU_SURFACE: &str = "upstream paints menus on the popover token \
                             (menu/popup_menu.rs:1476) and the platform's menu \
                             background differs from its popover background";
 
+/// Upstream paints an idle tab `transparent` in every variant
+/// (`gpui-component-0.6.6/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
+/// label lands on the bar, and `tokens.tab` has no reader to carry the
+/// platform's idle-tab fill. Breeze fills an unselected tab with
+/// `Window.darker(120)` (`docs/platform-facts.md:1312`, §2.11), which under
+/// Breeze Dark (`#1b1d20` on the `#202326` window) lifts the label's contrast
+/// above the bar's; the emitted pair stays above 15:1.
+const IDLE_TAB_SURFACE: &str = "upstream paints an idle tab transparent \
+                                (tab/tab.rs:132) and Breeze Dark's idle tab fill, \
+                                Window.darker(120), is darker than the bar";
+
 /// The asserted pairs.
 ///
 /// Every pair here and in `REPORTED` is built the same way: the emitted side
@@ -1580,7 +1591,7 @@ const PAIRS: &[Pair] = &[
             )
         },
         emitted: |tc| (tc.tab_foreground, tc.tab_bar, tc.tab_bar),
-        exceptions: &[],
+        exceptions: &[("kde-breeze/dark", IDLE_TAB_SURFACE)],
     },
     Pair {
         what: "active tab label",
@@ -1904,10 +1915,11 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     // equality, not a structural property: a pair whose two sides are pinned
     // to the same native fields lands here by construction, and one whose
     // sides read *different* fields lands here too whenever the two ratios
-    // come out equal in every combination -- `tab label` is the case, with
+    // come out equal in every combination -- `tab label`, with
     // `tab.background_color` on the native side and `tab.bar_background` on
-    // the emitted one. Derived here rather than claimed, so the figure cannot
-    // drift from the pairs.
+    // the emitted one, was the case until kde-breeze stated Breeze's idle-tab
+    // fill. Derived here rather than claimed, so the figure cannot drift from
+    // the pairs.
     let unbiting: Vec<&'static str> = PAIRS
         .iter()
         .filter(|pair| {

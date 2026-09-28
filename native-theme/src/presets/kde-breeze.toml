@@ -166,13 +166,24 @@ min_width_px = 6.0
 [light.tab]
 min_width_px = 80.0
 min_height_px = 30.0
+# platform-facts.md:1312 (§2.11): an unselected tab is Window.darker(120), #eff0f1 → #c7c8c9 (breezehelper.cpp:1495-1496)
+background_color = "#c7c8c9"
 active_background = "#eff0f1"
 active_text_color = "#232629"
-hover_background = "#dee0e2"
+# platform-facts.md:1312 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
+hover_background = "#3daee933"
 hover_text_color = "#232629"
 
 
 [light.tab.border]
+# platform-facts.md:1320 (§2.11): selected tab only, mix(Window #eff0f1, WindowText #232629, frameContrast 0.2)
+color = "#c6c8c9"
+# platform-facts.md:1321 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
+line_width_px = 1.0
+# platform-facts.md:1322 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
+corner_radius_px = 4.5
+# platform-facts.md:1323 (§2.11): no shadow
+shadow_enabled = false
 # platform-facts.md:1318-1319 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
@@ -480,13 +491,25 @@ min_width_px = 6.0
 [dark.tab]
 min_width_px = 80.0
 min_height_px = 30.0
-active_background = "#232629"
+# platform-facts.md:1312 (§2.11): an unselected tab is Window.darker(120), #202326 → #1b1d20 (breezehelper.cpp:1495-1496)
+background_color = "#1b1d20"
+# platform-facts.md:1313 (§2.11): ← defaults.background_color, [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130)
+active_background = "#202326"
 active_text_color = "#fcfcfc"
-hover_background = "#31363b"
+# platform-facts.md:1312 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
+hover_background = "#3daee933"
 hover_text_color = "#fcfcfc"
 
 
 [dark.tab.border]
+# platform-facts.md:1320 (§2.11): selected tab only, mix(Window #202326, WindowText #fcfcfc, frameContrast 0.2)
+color = "#4c4e51"
+# platform-facts.md:1321 (§2.11): PenWidth::Frame = 1.001, rounded as defaults.border.line_width_px is
+line_width_px = 1.0
+# platform-facts.md:1322 (§2.11): Frame_FrameRadius 5 − 0.5 × int(PenWidth::Frame), top corners
+corner_radius_px = 4.5
+# platform-facts.md:1323 (§2.11): no shadow
+shadow_enabled = false
 # platform-facts.md:1318-1319 (§2.11): TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4
 padding_horizontal_px = 8.0
 padding_vertical_px = 4.0
