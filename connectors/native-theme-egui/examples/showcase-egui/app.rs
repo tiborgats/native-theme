@@ -279,6 +279,9 @@ pub(crate) struct App {
     pub(crate) json: info::JsonCache,
     /// The inspector's content rect this pass: Widget Info's hold zone (§10.4).
     pub(crate) hold_zone: Option<egui::Rect>,
+    /// Whether the inspector's content was taller than its area this pass.
+    #[cfg(test)]
+    pub(crate) inspector_scrolls: bool,
     /// The scheme the icon choice was last derived for; `None` forces a re-derive next pass.
     last_scheme: Option<egui::Theme>,
     screenshot: Option<Screenshot>,
@@ -353,6 +356,8 @@ impl App {
             manifest: info::Manifest::parse(include_str!("../../mapping.toml")),
             json: info::JsonCache::default(),
             hold_zone: None,
+            #[cfg(test)]
+            inspector_scrolls: false,
             last_scheme: None,
             screenshot,
             held_pointer: cli.pointer.map(|(x, y)| HeldPointer {

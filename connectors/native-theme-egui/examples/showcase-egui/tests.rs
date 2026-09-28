@@ -2049,6 +2049,67 @@ fn no_widget_changes_size_when_hovered() {
     );
 }
 
+/// The side panel keeps `LEFT_PANEL_WIDTH` whatever Widget Info shows: hovering each widget of
+/// the Basic page in turn shows infos short enough to fit and long enough to scroll, and the
+/// panel is as wide after each as it opened. Stepped at 60 passes a second, as a display
+/// draws the scroll bar's show animation over several passes (`ScrollArea`'s
+/// `animate_bool_responsive`, `egui/src/containers/scroll_area.rs:751-761`).
+#[test]
+fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
+    const STEP: f32 = 1.0 / 60.0;
+    for (preset, theme) in [
+        ("kde-breeze", egui::Theme::Light),
+        (TEST_PRESET, egui::Theme::Dark),
+    ] {
+        let cli = cli(&[("--theme", preset), ("--tab", "basic")]);
+        let mut harness = Harness::builder()
+            .with_theme(theme)
+            .with_size(crate::WINDOW_SIZE)
+            .with_step_dt(STEP)
+            .build_eframe(move |cc| {
+                App::new(cc, &cli).expect("the showcase starts under a bundled preset")
+            });
+        // The harness turns animations off (`egui_kittest/src/lib.rs:144-150`); a display runs
+        // them for egui's own `animation_time`.
+        let animation_time = egui::Style::default().animation_time;
+        harness
+            .ctx
+            .all_styles_mut(|style| style.animation_time = animation_time);
+        harness.run_steps(4);
+        let width_of = |h: &Harness<'_, App>| {
+            h.state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == "Side panel")
+                .map(|r| r.rect.width())
+                .expect("the side panel is shown")
+        };
+        assert_eq!(width_of(&harness), crate::LEFT_PANEL_WIDTH);
+        let centres: Vec<(&'static str, egui::Pos2)> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| !r.container && r.rect.is_positive())
+            .map(|r| (r.info.kind, r.rect.center()))
+            .collect();
+        let mut scrolled = false;
+        for (kind, centre) in centres {
+            harness.hover_at(centre);
+            // Past `INFO_SETTLE` and the scroll bar's animation.
+            harness.run_steps(40);
+            scrolled |= harness.state().inspector_scrolls;
+            assert_eq!(
+                width_of(&harness),
+                crate::LEFT_PANEL_WIDTH,
+                "{preset} {theme:?}: the side panel changed width after {kind} was hovered"
+            );
+        }
+        assert!(scrolled, "{preset} {theme:?}: no Widget Info scrolled");
+    }
+}
+
 /// On the Basic page, `layout.section_gap` is the whole distance between two groups and
 /// between the two columns, as on the iced and gpui Basic pages: the space the page adds
 /// makes up the gap with the `item_spacing` egui puts between widgets anyway.

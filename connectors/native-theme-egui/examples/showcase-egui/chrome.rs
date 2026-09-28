@@ -555,11 +555,30 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                 |ui| ui.separator(),
             );
             inspector_tabs(app, ui, margin);
+            // The inspector takes the rest of the panel and never sizes it. A resizable panel
+            // keeps its content's width as its own (`egui/src/containers/panel.rs:893-896`),
+            // and while a solid scroll bar's show animation leaves the area's inner width
+            // fractional, egui rounds the content's room to whole pixels
+            // (`egui/src/containers/scroll_area.rs:800-803`): content as wide as that room — the
+            // Widget tab's title row with Copy flush right — is up to half a pixel wider than
+            // the area, which `auto_shrink([false, false])` widens to it (`:1184-1195`), and the
+            // panel kept every such fraction. So the area is laid out in a child `Ui` the panel
+            // does not measure, and the panel advances past the room it gave it.
+            let room = ui.available_rect_before_wrap();
+            let mut inspector =
+                ui.new_child(egui::UiBuilder::new().id_salt("inspector").max_rect(room));
             let area = egui::ScrollArea::vertical()
                 .auto_shrink([false, false])
-                .show(ui, |ui| padded(ui, margin, |ui| inspector_content(app, ui)));
+                .show(&mut inspector, |ui| {
+                    padded(ui, margin, |ui| inspector_content(app, ui))
+                });
+            ui.advance_cursor_after_rect(room);
             // The content records nothing and is Widget Info's hold zone (§10.4).
             app.hold_zone = Some(area.inner_rect);
+            #[cfg(test)]
+            {
+                app.inspector_scrolls = area.content_size.y > area.inner_rect.height();
+            }
         });
     app.side_panel_visible = visible;
     if let Some(out) = out {
