@@ -675,6 +675,10 @@ struct CliArgs {
     /// hovered (`hold_pointer`). For captures where no pointer can be driven,
     /// as in a nested compositor.
     pointer: Option<(u16, u16)>,
+    /// A `--pointer` value that is not `X,Y`, or its missing value: `main`
+    /// reports it and exits with 1, as a failed `--screenshot` does, rather
+    /// than capture the window at rest.
+    bad_pointer: Option<String>,
     /// `--press`: with `--pointer`, the primary button is held down there,
     /// so a capture shows the control pressed.
     press: bool,
@@ -693,8 +697,12 @@ const HELD_POINTER_PERIOD: Duration = Duration::from_millis(250);
 
 /// How long `hold_pointer` holds the pointer before the press: long enough for
 /// the window to open at its size and the page to be laid out under the
-/// pointer. The capture scripts give a showcase six seconds before they
-/// capture it (`scripts/capture_window.sh`'s callers).
+/// pointer. No repository script passes `--press`. The capture scripts
+/// capture a showcase at least four seconds after starting it (`DELAY=3` in
+/// `scripts/generate_screenshots_*.sh`, then `capture_showcase`'s `sleep 1` in
+/// `scripts/capture_window.sh`), so a press three seconds after the first
+/// frame lands about a second before such a capture; a capture with `--press`
+/// should wait longer.
 const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
 
 /// `--pointer` and `--press`: hands the window a pointer move to `at` every
@@ -789,8 +797,10 @@ impl CliArgs {
                 "--press" => args.press = true,
                 "--pointer" => {
                     i += 1;
-                    if i < argv.len() {
-                        args.pointer = parse_point(&argv[i]);
+                    let value = argv.get(i).map_or("", String::as_str);
+                    match parse_point(value) {
+                        Some(point) => args.pointer = Some(point),
+                        None => args.bad_pointer = Some(value.to_string()),
                     }
                 }
                 _ => {} // ignore unknown args
@@ -1308,6 +1318,10 @@ fn reported<T>(result: Result<T, String>) -> Option<T> {
 #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 fn main() {
     let cli_args = CliArgs::parse();
+    if let Some(value) = &cli_args.bad_pointer {
+        eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
+        std::process::exit(1);
+    }
 
     gpui_kit::application()
         .with_assets(gpui_kit::assets::Assets)

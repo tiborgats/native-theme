@@ -180,6 +180,9 @@ pub(crate) struct CliArgs {
     /// pixels, so a capture shows the control under it hovered (`App::raw_input_hook`). For
     /// captures where no pointer can be driven, as in a nested compositor.
     pub pointer: Option<(u16, u16)>,
+    /// A `--pointer` value that is not `X,Y`, or its missing value: `main` reports it and exits
+    /// with 1, as a failed `--screenshot` does, rather than capture the window at rest.
+    pub bad_pointer: Option<String>,
     /// `--press`: with `--pointer`, the primary button is held down there, so a capture shows
     /// the control pressed.
     pub press: bool,
@@ -212,10 +215,14 @@ impl CliArgs {
                     continue;
                 }
                 "--pointer" => {
-                    cli.pointer = argv.next().and_then(|v| {
-                        let (x, y) = v.split_once(',')?;
-                        Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
-                    });
+                    let value = argv.next().unwrap_or_default();
+                    let point = value
+                        .split_once(',')
+                        .and_then(|(x, y)| Some((x.trim().parse().ok()?, y.trim().parse().ok()?)));
+                    match point {
+                        Some(point) => cli.pointer = Some(point),
+                        None => cli.bad_pointer = Some(value),
+                    }
                     continue;
                 }
                 "--theme" => &mut cli.theme,
@@ -275,6 +282,10 @@ fn main() -> eframe::Result {
         std::process::exit(code);
     }
     let cli = CliArgs::parse(args);
+    if let Some(value) = &cli.bad_pointer {
+        eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
+        std::process::exit(1);
+    }
     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     if cli.screenshot.is_some() {
         eprintln!("ERROR: {}", capture::UNSUPPORTED);

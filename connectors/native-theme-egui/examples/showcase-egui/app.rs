@@ -242,8 +242,11 @@ struct HeldPointer {
 impl HeldPointer {
     /// How long, in seconds of egui's input time, the pointer is held before the press: long
     /// enough for the window to open at its size and the page to be laid out under the pointer.
-    /// The capture scripts give a showcase six seconds before they capture it
-    /// (`scripts/capture_window.sh`'s callers).
+    /// No repository script passes `--press`. The capture scripts capture a showcase at least
+    /// four seconds after starting it (`DELAY=3` in `scripts/generate_screenshots_*.sh`, then
+    /// `capture_showcase`'s `sleep 1` in `scripts/capture_window.sh`), so a press three seconds
+    /// after the first frame lands about a second before such a capture; a capture with
+    /// `--press` should wait longer.
     const PRESS_AFTER: f64 = 3.0;
 }
 

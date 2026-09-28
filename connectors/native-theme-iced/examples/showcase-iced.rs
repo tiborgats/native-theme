@@ -235,6 +235,10 @@ struct CliArgs {
     /// hovered ([`HeldPointer`]). For captures where no pointer can be
     /// driven, as in a nested compositor.
     pointer: Option<(u16, u16)>,
+    /// A `--pointer` value that is not `X,Y`, or its missing value: `main`
+    /// reports it and exits with 1, as a failed `--screenshot` does, rather
+    /// than capture the window at rest.
+    bad_pointer: Option<String>,
     /// `--press`: with `--pointer`, the primary button is held down there,
     /// so a capture shows the control pressed.
     press: bool,
@@ -290,8 +294,10 @@ impl CliArgs {
                 "--press" => args.press = true,
                 "--pointer" => {
                     i += 1;
-                    if i < argv.len() {
-                        args.pointer = parse_point(&argv[i]);
+                    let value = argv.get(i).map_or("", String::as_str);
+                    match parse_point(value) {
+                        Some(point) => args.pointer = Some(point),
+                        None => args.bad_pointer = Some(value.to_string()),
                     }
                 }
                 _ => {} // ignore unknown args
@@ -2181,8 +2187,12 @@ fn view(state: &State) -> Element<'_, Message> {
 
 /// How long [`HeldPointer`] holds the pointer before the press: long enough
 /// for the window to open at its size and the page to be laid out under the
-/// pointer. The capture scripts give a showcase six seconds before they
-/// capture it (`scripts/capture_window.sh`'s callers).
+/// pointer. No repository script passes `--press`. The capture scripts
+/// capture a showcase at least four seconds after starting it (`DELAY=3` in
+/// `scripts/generate_screenshots_*.sh`, then `capture_showcase`'s `sleep 1` in
+/// `scripts/capture_window.sh`), so a press three seconds after the first
+/// frame lands about a second before such a capture; a capture with `--press`
+/// should wait longer.
 const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
 
 /// The view with the pointer held at `at`, and with `press` the primary
@@ -2296,7 +2306,13 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
         viewport: &iced::Rectangle,
     ) {
         let cursor = iced::mouse::Cursor::Available(self.at);
-        let state = tree.state.downcast_mut::<HeldState>();
+        // `State::downcast_mut` panics on a state of another type; this cannot.
+        let iced::advanced::widget::tree::State::Some(any) = &mut tree.state else {
+            return;
+        };
+        let Some(state) = any.downcast_mut::<HeldState>() else {
+            return;
+        };
         let Some(child) = tree.children.first_mut() else {
             return;
         };
@@ -2359,6 +2375,10 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
         }
     }
 
+    /// The content's overlays, unwrapped: iced hands an overlay its events
+    /// and draws it with the window's own cursor, not the held one, so a
+    /// held pointer hovers and presses nothing inside an open menu or a
+    /// tooltip bubble.
     fn overlay<'b>(
         &'b mut self,
         tree: &'b mut iced::advanced::widget::Tree,
@@ -6650,7 +6670,12 @@ fn subscription(state: &State) -> Subscription<Message> {
 fn main() -> iced::Result {
     // Parse CLI args and store globally before the iced application starts.
     // State::default() reads from CLI_ARGS to apply overrides.
-    let _ = CLI_ARGS.set(CliArgs::parse());
+    let cli = CliArgs::parse();
+    if let Some(value) = &cli.bad_pointer {
+        eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
+        std::process::exit(1);
+    }
+    let _ = CLI_ARGS.set(cli);
     let capturing = CLI_ARGS
         .get()
         .is_some_and(|cli| cli.capture || cli.screenshot.is_some());

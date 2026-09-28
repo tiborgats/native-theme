@@ -2086,16 +2086,22 @@ fn section_headings_take_the_section_heading_role() {
     }
 }
 
-/// `--pointer X,Y` is two whole logical pixels, and anything else holds no pointer.
+/// `--pointer X,Y` is two whole logical pixels; anything else holds no pointer and is kept for
+/// `main` to report, a missing value included.
 #[test]
 fn the_pointer_flag_is_a_point() {
     let parse = |args: &[&str]| CliArgs::parse(args.iter().map(|a| (*a).to_string()));
     let held = parse(&["--pointer", "349,175", "--press"]);
     assert_eq!((held.pointer, held.press), (Some((349, 175)), true));
+    assert_eq!(held.bad_pointer, None);
     for bad in ["349", "x,1", "1,-2", ""] {
-        assert_eq!(parse(&["--pointer", bad]).pointer, None, "{bad:?}");
+        let cli = parse(&["--pointer", bad]);
+        assert_eq!(cli.pointer, None, "{bad:?}");
+        assert_eq!(cli.bad_pointer.as_deref(), Some(bad), "{bad:?}");
     }
+    assert_eq!(parse(&["--pointer"]).bad_pointer.as_deref(), Some(""));
     assert_eq!(parse(&["--press"]).pointer, None);
+    assert_eq!(parse(&["--press"]).bad_pointer, None);
 }
 
 /// `--pointer` holds the pointer over a control and `--press` holds the primary button down
