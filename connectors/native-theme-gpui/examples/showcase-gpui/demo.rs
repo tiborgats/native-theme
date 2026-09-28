@@ -5,13 +5,14 @@ use std::{cell::Cell, rc::Rc, time::Duration};
 use gpui::DefiniteLength;
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
-    FontWeight, Global, Hsla, ImageSource, Keystroke, Pixels, Rems, RenderOnce, SharedString,
-    Stateful, StyleRefinement, Window, div, prelude::*, px, relative, rems,
+    FontWeight, Global, Hsla, ImageSource, KeyDownEvent, Keystroke, MouseButton, Pixels, Rems,
+    RenderOnce, SharedString, Stateful, StyleRefinement, Window, anchored, deferred, div,
+    prelude::*, px, relative, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
     ActiveTheme, ChildElement, Collapsible, Disableable as _, Icon, IconName, Selectable, Sizable,
-    Size, StyledExt as _, TitleBar, WindowExt as _,
+    Size, StyledExt as _, ThemeStyled as _, TitleBar, WindowExt as _,
     accordion::Accordion,
     alert::Alert,
     attachment::{
@@ -160,6 +161,7 @@ pub(crate) fn title_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     label: impl Into<SharedString>,
+    menus: &Entity<MenuBar>,
 ) -> Stateful<Div> {
     let label: SharedString = label.into();
     let mut bar_info = info::title_bar(cx.theme(), &label);
@@ -179,7 +181,7 @@ pub(crate) fn title_bar(
     // `geometry::title_bar` just gave the bar.
     .child(label)
     .when(cfg!(not(target_os = "macos")), |bar| {
-        bar.child(app_menus(ui, cx, info::MenuHost::TitleBar))
+        bar.child(app_menus(ui, cx, info::MenuHost::TitleBar, menus))
     });
     bar.info(ui, "chrome-title-bar", bar_info)
 }
@@ -363,134 +365,326 @@ enum MenuRow {
     Action(SharedString, Box<dyn Action>),
 }
 
-/// The popup of a menu: its `rows`, drawn in `look` where a native theme is
-/// installed; a click runs a row's action and closes the popup.
-fn menu_popup(
-    rows: &[MenuRow],
-    look: Option<&MenuLook>,
-    window: &mut Window,
-    cx: &mut Context<gpui_base::PopoverState>,
-) -> Div {
-    let popover = cx.entity();
-    v_flex()
-        .p(MENU_POPUP_PADDING)
-        .gap(MENU_POPUP_ROW_GAP)
-        .min_w(MENU_POPUP_MIN_WIDTH)
-        .children(rows.iter().enumerate().map(|(ix, row)| {
-            match row {
-                MenuRow::Separator => div()
-                    .h(look.map_or(MENU_SEPARATOR, |l| l.separator_width))
-                    .w_full()
-                    .bg(look.map_or(cx.theme().border, |l| l.separator))
-                    .into_any_element(),
-                MenuRow::Action(name, action) => {
-                    let shortcut = Kbd::global_binding_for_action(action.as_ref(), window)
-                        .map(|kbd| kbd.appearance(false));
-                    let dispatched = action.boxed_clone();
-                    let popover = popover.clone();
-                    let row = h_flex()
-                        .id(("menu-row", ix))
-                        .w_full()
-                        .gap(MENU_SHORTCUT_GAP)
-                        .justify_between()
-                        .items_center()
-                        .cursor_default()
-                        .debug_selector({
-                            let name = name.clone();
-                            move || format!("menu-row-{name}")
-                        })
-                        .child(name.clone())
-                        .children(shortcut)
-                        .on_click(move |_, window, cx| {
-                            popover.update(cx, |state, cx| state.dismiss(window, cx));
-                            window.dispatch_action(dispatched.boxed_clone(), cx);
-                        });
-                    let row = match look {
-                        Some(look) => {
-                            let (hover, hover_text) = (look.hover, look.hover_text);
-                            let row = padded(row, &look.padding, MENU_ROW_PADDING_X, None)
-                                .text_size(look.font_size)
-                                .line_height(look.line_height)
-                                .font_weight(look.weight)
-                                .text_color(look.text)
-                                .rounded(look.radius)
-                                .hover(move |style| style.bg(hover).text_color(hover_text));
-                            match (look.row_height, look.padding.top, look.padding.bottom) {
-                                (Some(height), _, _) => row.min_h(height),
-                                (None, None, None) => row.h(MENU_ROW_HEIGHT),
-                                (None, _, _) => row,
-                            }
-                        }
-                        None => row
-                            .px(MENU_ROW_PADDING_X)
-                            .h(MENU_ROW_HEIGHT)
-                            .text_sm()
-                            .hover(|style| {
-                                style
-                                    .bg(cx.theme().accent)
-                                    .text_color(cx.theme().accent_foreground)
-                            }),
-                    };
-                    row.into_any_element()
-                }
-            }
-        }))
+/// The application's menus (`chrome::menus`), each as its title and rows.
+fn app_menu_rows() -> Vec<(SharedString, Vec<MenuRow>)> {
+    crate::chrome::menus()
+        .into_iter()
+        .map(|menu| {
+            let rows = menu
+                .items
+                .into_iter()
+                .filter_map(|item| match item {
+                    gpui::MenuItem::Separator => Some(MenuRow::Separator),
+                    gpui::MenuItem::Action { name, action, .. } => {
+                        Some(MenuRow::Action(name, action))
+                    }
+                    _ => None,
+                })
+                .collect();
+            (menu.name, rows)
+        })
+        .collect()
 }
 
-/// The application's menus (`chrome::menus`) as the showcase draws them,
-/// reporting themselves as the menus of `host`: a title per menu, each
-/// opening its popup under it. Not upstream's `AppMenuBar`: its titles are
-/// Small ghost Buttons and its menus `PopupMenu`s, which set `text_sm`, a
-/// rounded hover in `accent` and the `popover` fill on themselves
-/// (menu/app_menu_bar.rs, `AppMenu::render`; menu/popup_menu.rs,
-/// `PopupMenu::render_item`), so the model's `menu.font`, its rectangular
-/// items and `menu.background_color` would not reach them. A part: the
-/// helper that places it reports its host.
-fn app_menus(ui: &Entity<InfoRegistry>, cx: &App, host: info::MenuHost) -> Stateful<Div> {
-    let native = cx.native_theme().and_then(|nt| nt.native(cx));
-    let look = native.as_ref().map(MenuLook::of);
-    let menus_info = info::app_menus(cx.theme(), host, native.as_ref().map(|n| n.resolved));
-    h_flex()
-        .children(
-            crate::chrome::menus()
-                .into_iter()
-                .enumerate()
-                .map(|(ix, menu)| {
-                    let rows: Rc<Vec<MenuRow>> = Rc::new(
-                        menu.items
-                            .into_iter()
-                            .filter_map(|item| match item {
-                                gpui::MenuItem::Separator => Some(MenuRow::Separator),
-                                gpui::MenuItem::Action { name, action, .. } => {
-                                    Some(MenuRow::Action(name, action))
-                                }
-                                _ => None,
+/// The next of `menu`'s rows a key moves the highlight to from `from`:
+/// forward (`down`) or back, over the separators, wrapping at the ends, and
+/// the first (or last) where nothing is highlighted yet.
+fn next_row(menu: &[MenuRow], from: Option<usize>, forward: bool) -> Option<usize> {
+    let actions: Vec<usize> = menu
+        .iter()
+        .enumerate()
+        .filter(|(_, row)| matches!(row, MenuRow::Action(..)))
+        .map(|(ix, _)| ix)
+        .collect();
+    let at = from.and_then(|from| actions.iter().position(|&ix| ix == from));
+    let next = match (at, forward) {
+        (None, true) => Some(0),
+        (None, false) => actions.len().checked_sub(1),
+        (Some(at), true) => (at + 1).checked_rem(actions.len()),
+        (Some(at), false) => (at + actions.len() - 1).checked_rem(actions.len()),
+    };
+    next.and_then(|at| actions.get(at).copied())
+}
+
+/// The application's menus (`chrome::menus`) as the showcase draws them: a
+/// title per menu, each opening its popup under it, with the keyboard of
+/// upstream's `AppMenuBar` and `PopupMenu` (menu/app_menu_bar.rs,
+/// `AppMenuBar`: Left and Right move to the neighbouring menu, Escape closes
+/// it; menu/popup_menu.rs, `PopupMenu`: Up and Down move between the items,
+/// Enter runs one). An open menu holds the keyboard focus and hands it back
+/// on closing, as `AppMenuBar` restores its action context, so an item's
+/// action is dispatched from the element that had the focus.
+///
+/// Not upstream's `AppMenuBar`: its titles are Small ghost Buttons and its
+/// menus `PopupMenu`s, which set `text_sm`, a rounded hover in `accent` and
+/// the `popover` fill on themselves (menu/app_menu_bar.rs,
+/// `AppMenu::render`; menu/popup_menu.rs, `PopupMenu::render_item`), so the
+/// model's `menu.font`, its rectangular items and `menu.background_color`
+/// would not reach them. The row that holds it reports it
+/// ([`app_menus`]).
+pub(crate) struct MenuBar {
+    open: Option<usize>,
+    highlighted: Option<usize>,
+    focus: gpui::FocusHandle,
+    restore: Option<gpui::FocusHandle>,
+}
+
+impl MenuBar {
+    pub(crate) fn new(cx: &mut Context<Self>) -> Self {
+        Self {
+            open: None,
+            highlighted: None,
+            focus: cx.focus_handle(),
+            restore: None,
+        }
+    }
+
+    /// The open menu, by its index in `chrome::menus`.
+    #[cfg(test)]
+    pub(crate) fn open_menu(&self) -> Option<usize> {
+        self.open
+    }
+
+    fn open(&mut self, ix: usize, window: &mut Window, cx: &mut Context<Self>) {
+        if self.open.is_none() {
+            self.restore = window.focused(cx);
+            self.focus.focus(window, cx);
+        }
+        self.open = Some(ix);
+        self.highlighted = None;
+        cx.notify();
+    }
+
+    fn close(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if self.open.take().is_none() {
+            return;
+        }
+        self.highlighted = None;
+        match self.restore.take() {
+            Some(focus) => focus.focus(window, cx),
+            None => window.blur(cx),
+        }
+        cx.notify();
+    }
+
+    /// Close the menu, then dispatch `action` from the focus it handed back.
+    fn run(&mut self, action: &dyn Action, window: &mut Window, cx: &mut Context<Self>) {
+        let action = action.boxed_clone();
+        self.close(window, cx);
+        window.dispatch_action(action, cx);
+    }
+
+    fn on_key(&mut self, event: &KeyDownEvent, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(open) = self.open else {
+            return;
+        };
+        let menus = app_menu_rows();
+        let count = menus.len();
+        let rows = menus
+            .get(open)
+            .map(|(_, rows)| rows.as_slice())
+            .unwrap_or(&[]);
+        match event.keystroke.key.as_str() {
+            "escape" => self.close(window, cx),
+            "left" => {
+                if let Some(ix) = (open + count.saturating_sub(1)).checked_rem(count) {
+                    self.open(ix, window, cx);
+                }
+            }
+            "right" => {
+                if let Some(ix) = (open + 1).checked_rem(count) {
+                    self.open(ix, window, cx);
+                }
+            }
+            "down" | "up" => {
+                self.highlighted = next_row(rows, self.highlighted, event.keystroke.key == "down");
+                cx.notify();
+            }
+            "enter" => {
+                let action = self.highlighted.and_then(|ix| match rows.get(ix) {
+                    Some(MenuRow::Action(_, action)) => Some(action.boxed_clone()),
+                    _ => None,
+                });
+                if let Some(action) = action {
+                    self.run(action.as_ref(), window, cx);
+                }
+            }
+            _ => return,
+        }
+        cx.stop_propagation();
+    }
+
+    /// The popup of the open menu: its `rows`, drawn in `look` where a
+    /// native theme is installed; a click, or Enter on the highlighted row,
+    /// runs a row's action and closes the popup, and a press outside it
+    /// closes it.
+    fn popup(
+        &self,
+        rows: &[MenuRow],
+        look: Option<&MenuLook>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> impl IntoElement {
+        let highlighted = self.highlighted;
+        let body = v_flex()
+            .p(MENU_POPUP_PADDING)
+            .gap(MENU_POPUP_ROW_GAP)
+            .min_w(MENU_POPUP_MIN_WIDTH)
+            .children(rows.iter().enumerate().map(|(ix, row)| {
+                match row {
+                    MenuRow::Separator => div()
+                        .h(look.map_or(MENU_SEPARATOR, |l| l.separator_width))
+                        .w_full()
+                        .bg(look.map_or(cx.theme().border, |l| l.separator))
+                        .into_any_element(),
+                    MenuRow::Action(name, action) => {
+                        let shortcut = Kbd::global_binding_for_action(action.as_ref(), window)
+                            .map(|kbd| kbd.appearance(false));
+                        let dispatched = action.boxed_clone();
+                        let lit = highlighted == Some(ix);
+                        let row = h_flex()
+                            .id(("menu-row", ix))
+                            .w_full()
+                            .gap(MENU_SHORTCUT_GAP)
+                            .justify_between()
+                            .items_center()
+                            .cursor_default()
+                            .debug_selector({
+                                let name = name.clone();
+                                move || format!("menu-row-{name}")
                             })
-                            .collect(),
-                    );
-                    let popup_look = look.clone();
-                    let popover = Popover::new(("app-menu", ix))
-                        .anchor(gpui::Anchor::TopLeft)
-                        .trigger(MenuTitle {
-                            ix,
-                            name: menu.name,
-                            look: look.clone(),
-                            selected: false,
-                        })
-                        .content(move |_state, window, cx| {
-                            menu_popup(&rows, popup_look.as_ref(), window, cx)
-                        });
-                    match &look {
-                        Some(look) => popover
-                            .p_0()
-                            .bg(look.background)
-                            .border(look.frame_width)
-                            .border_color(look.frame)
-                            .rounded(look.frame_radius),
-                        None => popover.p_0(),
+                            .child(name.clone())
+                            .children(shortcut)
+                            .on_hover(cx.listener(move |this, hovered: &bool, _, cx| {
+                                if *hovered && this.highlighted != Some(ix) {
+                                    this.highlighted = Some(ix);
+                                    cx.notify();
+                                }
+                            }))
+                            .on_click(cx.listener(move |this, _, window, cx| {
+                                this.run(dispatched.as_ref(), window, cx);
+                            }));
+                        let row = match look {
+                            Some(look) => {
+                                let row = padded(row, &look.padding, MENU_ROW_PADDING_X, None)
+                                    .text_size(look.font_size)
+                                    .line_height(look.line_height)
+                                    .font_weight(look.weight)
+                                    .rounded(look.radius)
+                                    .map(|row| {
+                                        if lit {
+                                            row.bg(look.hover).text_color(look.hover_text)
+                                        } else {
+                                            row.text_color(look.text)
+                                        }
+                                    });
+                                match (look.row_height, look.padding.top, look.padding.bottom) {
+                                    (Some(height), _, _) => row.min_h(height),
+                                    (None, None, None) => row.h(MENU_ROW_HEIGHT),
+                                    (None, _, _) => row,
+                                }
+                            }
+                            None => row
+                                .px(MENU_ROW_PADDING_X)
+                                .h(MENU_ROW_HEIGHT)
+                                .text_sm()
+                                .when(lit, |row| {
+                                    row.bg(cx.theme().accent)
+                                        .text_color(cx.theme().accent_foreground)
+                                }),
+                        };
+                        row.into_any_element()
                     }
-                }),
-        )
+                }
+            }));
+        let frame = div()
+            .occlude()
+            .popover_style(cx)
+            .p_0()
+            .on_mouse_down_out(cx.listener(|this, _, window, cx| this.close(window, cx)))
+            .child(body);
+        match look {
+            Some(look) => frame
+                .bg(look.background)
+                .border(look.frame_width)
+                .border_color(look.frame)
+                .rounded(look.frame_radius),
+            None => frame,
+        }
+    }
+}
+
+impl Render for MenuBar {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let native = cx.native_theme().and_then(|nt| nt.native(cx));
+        let look = native.as_ref().map(MenuLook::of);
+        let open = self.open;
+        let menus = app_menu_rows();
+        let mut popup = open.and_then(|ix| menus.get(ix)).map(|(_, rows)| {
+            self.popup(rows, look.as_ref(), window, cx)
+                .into_any_element()
+        });
+        h_flex()
+            .id("app-menus")
+            .track_focus(&self.focus)
+            .on_key_down(cx.listener(Self::on_key))
+            .children(menus.into_iter().enumerate().map(|(ix, (name, _))| {
+                let selected = open == Some(ix);
+                div()
+                    .id(("app-menu", ix))
+                    .relative()
+                    .child(MenuTitle {
+                        ix,
+                        name,
+                        look: look.clone(),
+                        selected,
+                    })
+                    .on_mouse_down(
+                        MouseButton::Left,
+                        cx.listener(move |this, _, window, cx| {
+                            window.prevent_default();
+                            cx.stop_propagation();
+                            if selected {
+                                this.close(window, cx);
+                            } else {
+                                this.open(ix, window, cx);
+                            }
+                        }),
+                    )
+                    .on_hover(cx.listener(move |this, hovered: &bool, window, cx| {
+                        if *hovered && this.open.is_some() && this.open != Some(ix) {
+                            this.open(ix, window, cx);
+                        }
+                    }))
+                    .when_some(selected.then(|| popup.take()).flatten(), |menu, popup| {
+                        menu.child(deferred(
+                            anchored()
+                                .anchor(gpui::Anchor::TopLeft)
+                                .snap_to_window_with_margin(MENU_POPUP_WINDOW_MARGIN)
+                                .child(popup),
+                        ))
+                    })
+            }))
+    }
+}
+
+/// How near the window's edge a menu's popup may come: upstream's
+/// `AppMenu` popup's (menu/app_menu_bar.rs, `AppMenu::render`,
+/// `snap_to_window_with_margin(px(8.))`).
+const MENU_POPUP_WINDOW_MARGIN: Pixels = px(8.);
+
+/// The application's menus, `menus`, reporting themselves as the menus of
+/// `host`. A part: the helper that places it reports its host.
+fn app_menus(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    host: info::MenuHost,
+    menus: &Entity<MenuBar>,
+) -> Stateful<Div> {
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let menus_info = info::app_menus(cx.theme(), host, native.as_ref().map(|n| n.resolved));
+    div()
+        .child(menus.clone())
         .info(ui, "chrome-app-menu-bar", menus_info)
         .debug_selector(|| CHROME_APP_MENU_BAR.into())
 }
@@ -513,13 +707,14 @@ pub(crate) fn menu_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     container_margin: Option<Pixels>,
+    menus: &Entity<MenuBar>,
 ) -> Stateful<Div> {
     // No geometry line: the model states no menu-bar inset, and the row only
     // borrows container_margin, which its info says in its own words.
     let row_info = info::menu_bar(cx.theme(), container_margin, MENU_BAR_PADDING);
     h_flex()
         .px(container_margin.unwrap_or(MENU_BAR_PADDING))
-        .child(app_menus(ui, cx, info::MenuHost::Row))
+        .child(app_menus(ui, cx, info::MenuHost::Row, menus))
         .info(ui, "chrome-menu-bar", row_info)
 }
 
@@ -1414,6 +1609,17 @@ const HANDLE_PADDING: Pixels = px(4.);
 /// well.
 const HANDLE_SIZE: Pixels = px(1.);
 
+/// The room the side panel keeps clear at its right edge for the splitter's
+/// line: `splitter.divider_width` beyond the `HANDLE_SIZE` the handle's own
+/// line takes, where the theme states it wider. The handle is absolutely
+/// placed (resizable/resize_handle.rs, `ResizeHandle`), so no layout makes
+/// room for a wider line; [`resize_handles`] paints it from the boundary
+/// back over this strip, so it takes neither panel's content or margin.
+pub(crate) fn splitter_reserve(cx: &App) -> Option<Pixels> {
+    let width = native_value(cx, |n| px(n.resolved.splitter.divider_width))?;
+    (width > HANDLE_SIZE).then(|| width - HANDLE_SIZE)
+}
+
 /// What each handle of a horizontal resizable group paints: upstream's line
 /// in upstream's colour, with an info target over the handle's whole hit
 /// area.
@@ -1463,7 +1669,8 @@ pub(crate) fn resize_handles(
                 base.resizable.handle.unwrap_or(base.tokens.colors.border)
             };
             // The model's splitter: its line `splitter.divider_width` wide,
-            // widened into the panel before the boundary, since the handle
+            // widened back over the strip the panel before the boundary
+            // keeps clear for it (`splitter_reserve`), since the handle
             // lays out no wider than HANDLE_SIZE; `splitter.hover_color`
             // under the pointer, through the group upstream names the
             // handle (resizable/resize_handle.rs, `ResizeHandle`).

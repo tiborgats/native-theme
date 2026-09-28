@@ -1444,8 +1444,14 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
             use_preset_scaled(&mut cx, &showcase, preset, dpi, text_scale);
             let at = format!("{preset} at text scale {text_scale}");
             let panel = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+            // Less the strip it keeps clear for a splitter line wider than
+            // the handle's own (demo.rs, `splitter_reserve`).
+            let reserve = read(&mut cx, &showcase, |_, cx| {
+                crate::demo::splitter_reserve(cx)
+            });
             assert_eq!(
-                panel.size.width, LEFT_PANEL_WIDTH,
+                panel.size.width + reserve.unwrap_or_default(),
+                LEFT_PANEL_WIDTH,
                 "{at}: the side panel is not LEFT_PANEL_WIDTH wide, so this is not its fit there"
             );
             let settings = bounds_of(&mut cx, CHROME_THEME_SETTINGS);
@@ -1739,6 +1745,67 @@ fn a_menu_acts_after_the_focused_widget_left_the_page(cx: &mut TestAppContext) {
         Page::Inputs,
         "View > Inputs did nothing once the focused input had left the screen"
     );
+}
+
+/// The showcase's menus answer the keyboard as upstream's `AppMenuBar` and
+/// `PopupMenu` do (demo.rs, `MenuBar`): with a menu open, Left and Right
+/// move to the neighbouring menu, wrapping; Down and Up move between its
+/// items over the separators; Enter runs the highlighted one and closes the
+/// menu; Escape closes it and hands the focus back.
+#[gpui::test]
+fn the_menus_answer_the_keyboard(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let open_menu = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| this.menus.read(cx).open_menu())
+    };
+    let names: Vec<String> = menus().into_iter().map(|m| m.name.to_string()).collect();
+    let at = |name: &str| names.iter().position(|n| n == name);
+
+    click(&mut cx, "menu-title-View");
+    assert_eq!(open_menu(&mut cx), at("View"), "a click did not open View");
+    cx.simulate_keystrokes("right");
+    draw(&mut cx);
+    assert_eq!(
+        open_menu(&mut cx),
+        at("Theme"),
+        "Right did not move to Theme"
+    );
+    cx.simulate_keystrokes("left left left");
+    draw(&mut cx);
+    assert_eq!(
+        open_menu(&mut cx),
+        at("Help"),
+        "Left did not wrap from File to Help"
+    );
+    cx.simulate_keystrokes("escape");
+    draw(&mut cx);
+    assert_eq!(open_menu(&mut cx), None, "Escape did not close the menu");
+
+    // View's items: Basic, Buttons, ... -- Down twice highlights the second.
+    click(&mut cx, "menu-title-View");
+    cx.simulate_keystrokes("down down");
+    draw(&mut cx);
+    cx.simulate_keystrokes("enter");
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(open_menu(&mut cx), None, "Enter did not close the menu");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::ALL[1],
+        "View > Down, Down, Enter did not run the second item"
+    );
+
+    // Up from nothing highlighted wraps to the last item, over the
+    // separator before it: View's last is Command Palette.
+    click(&mut cx, "menu-title-View");
+    cx.simulate_keystrokes("up");
+    draw(&mut cx);
+    let lit = bounds_of(&mut cx, "menu-row-Command Palette");
+    assert!(
+        lit.size.width > px(0.),
+        "View's last item is not drawn while highlighted"
+    );
+    cx.simulate_keystrokes("escape");
 }
 
 /// The menus act (spec §2.2): a View menu page item shows that page, a Theme
@@ -2150,6 +2217,32 @@ fn toggling_the_side_panel_mid_drag_is_safe(cx: &mut TestAppContext) {
         cx.debug_bounds(CHROME_SIDE_PANEL).is_some(),
         "Ctrl+B did not show the side panel again after the drag"
     );
+}
+
+/// The splitter's line takes a margin of neither panel: where the theme
+/// states it wider than the handle's own 1px line (material, 4px), the side
+/// panel keeps that strip clear, so its content ends where the line starts,
+/// and the line reaches no further into the content panel than the handle's
+/// own line does.
+#[gpui::test]
+fn the_splitter_line_keeps_off_both_panels(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let slack = device_pixel(&mut cx);
+    for preset in ["kde-breeze", "material"] {
+        use_preset(&mut cx, &showcase, preset);
+        let line = bounds_of(&mut cx, CHROME_SPLITTER_LINE);
+        let side = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+        let content = bounds_of(&mut cx, CONTENT_PANEL);
+        assert!(
+            side.right() <= line.left() + slack,
+            "{preset}: the side panel at {side:?} runs under the splitter line at {line:?}"
+        );
+        assert!(
+            line.right() <= content.left() + px(1.) + slack,
+            "{preset}: the splitter line at {line:?} reaches into the content panel at \
+             {content:?} past the handle's own 1px"
+        );
+    }
 }
 
 /// The resizable group's handle reports itself (spec §4.3.5), over its

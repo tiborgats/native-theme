@@ -67,15 +67,21 @@ pub(crate) fn window_top(app: &Showcase, frame: Decorations, cx: &App) -> Option
 /// S8): this crate's name and version, the window's title, and the
 /// application's menus where the platform has no menu bar of its own.
 fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
-    demo::title_bar(&app.info_ui, cx, WINDOW_TITLE).debug_selector(|| CHROME_TITLE_BAR.into())
+    demo::title_bar(&app.info_ui, cx, WINDOW_TITLE, &app.menus)
+        .debug_selector(|| CHROME_TITLE_BAR.into())
 }
 
 /// The menu-bar row under the window manager's frame (spec S8): the
 /// application's menus at the top of the window, their sides borrowing the
 /// installed layout's `container_margin`: the model states no menu-bar inset.
 fn menu_bar(app: &Showcase, cx: &App) -> impl IntoElement {
-    demo::menu_bar(&app.info_ui, cx, geometry::container_margin(&app.layout))
-        .debug_selector(|| CHROME_MENU_BAR.into())
+    demo::menu_bar(
+        &app.info_ui,
+        cx,
+        geometry::container_margin(&app.layout),
+        &app.menus,
+    )
+    .debug_selector(|| CHROME_MENU_BAR.into())
 }
 
 /// The installed preset, the default one by the platform preset it stands

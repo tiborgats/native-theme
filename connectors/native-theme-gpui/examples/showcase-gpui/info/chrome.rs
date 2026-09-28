@@ -258,15 +258,15 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
     };
     info.not_themeable(
         "widget",
-        "the showcase's own titles, each a Popover (popover.rs, Popover) opening the showcase's own rows: upstream's AppMenuBar builds its titles as Small ghost Buttons and its menus as PopupMenus, which set text_sm, a rounded hover in accent and the popover fill on themselves (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item), so menu.font, the rectangular items and menu.background_color would not reach them",
+        "the showcase's own titles, each opening the showcase's own popup under it as upstream's AppMenu places its menu: upstream's AppMenuBar builds its titles as Small ghost Buttons and its menus as PopupMenus, which set text_sm, a rounded hover in accent and the popover fill on themselves (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item), so menu.font, the rectangular items and menu.background_color would not reach them",
     )
-    .not_themeable(
+    .instance(
         "keyboard",
-        "no arrow-key travel between the menus or their items, which the AppMenuBar and the PopupMenu gave: the showcase's rows are clicked, and each runs its action through its key binding too",
+        "as the AppMenuBar and its PopupMenus answer it (menu/app_menu_bar.rs, AppMenuBar; menu/popup_menu.rs, PopupMenu): with a menu open, Left and Right move to the neighbouring menu, Up and Down between its items, Enter runs the highlighted one and Escape closes the menu, handing the focus back",
     )
     .not_themeable(
         "menu shadow",
-        "the Popover's own, popover_style's ring and shadow (styled.rs, popover_style); the model states popover.border.shadow_enabled and no shadow geometry",
+        "popover_style's ring and shadow, the popover's own (styled.rs, popover_style); the model states popover.border.shadow_enabled and no shadow geometry",
     )
     .not_themeable(
         "fill",
@@ -1104,7 +1104,7 @@ pub fn resize_handle(
             .config(
                 "width",
                 format!(
-                    "splitter.divider_width, {}px, which the showcase paints the line at, reaching from the boundary into the side panel: the handle itself lays out 1px wide with 4px of padding on each side, upstream's constants (resizable/resize_handle.rs, HANDLE_SIZE), and is absolutely placed, so the wider line moves no panel",
+                    "splitter.divider_width, {}px, which the showcase paints the line at, reaching from the boundary back over the side panel's edge: the handle itself lays out 1px wide with 4px of padding on each side, upstream's constants (resizable/resize_handle.rs, HANDLE_SIZE), and is absolutely placed, so the side panel's content keeps clear of the line by the width beyond that 1px (demo.rs, splitter_reserve), and the line takes a margin of neither panel",
                     px_text(r.splitter.divider_width)
                 ),
             )

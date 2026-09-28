@@ -221,6 +221,9 @@ pub(crate) struct Showcase {
 
     /// Where the showcase's widgets report their info (spec §4).
     pub(crate) info_ui: Entity<InfoRegistry>,
+    /// The application's menus as the showcase draws them, with their
+    /// keyboard (`demo::MenuBar`).
+    pub(crate) menus: Entity<demo::MenuBar>,
     /// The inspector, in the side panel, which shows the info the registry
     /// settles on.
     pub(crate) inspector: Entity<Inspector>,
@@ -1181,6 +1184,7 @@ impl Showcase {
         // What the inspector shows. Created before the Data page's states:
         // their delegates build rows that report themselves to it.
         let info_ui = cx.new(|_| InfoRegistry::new());
+        let menus = cx.new(demo::MenuBar::new);
 
         // Table state with sample data
         let table_state = cx.new(|cx| {
@@ -1324,6 +1328,7 @@ impl Showcase {
             body_layout,
             side_panel_width: LEFT_PANEL_WIDTH,
             info_ui,
+            menus,
             inspector,
             status_title_drawn: None,
             #[cfg(test)]
@@ -1906,10 +1911,19 @@ impl Render for Showcase {
         // The body: the side panel | content, one resizable group (spec S1).
         // A hidden side panel leaves the group, the content taking its room.
         let side_panel = self.side_panel_visible.then(|| {
+            // The splitter's line is painted back from the boundary over the
+            // strip the panel keeps clear for it (`demo::splitter_reserve`).
             resizable_panel()
                 .size(self.side_panel_width)
                 .flex_none()
-                .child(chrome::side_panel(self, cx))
+                .child(
+                    div()
+                        .size_full()
+                        .when_some(demo::splitter_reserve(cx), |panel, reserve| {
+                            panel.pr(reserve)
+                        })
+                        .child(chrome::side_panel(self, cx)),
+                )
         });
         // The content panel carries the handle on its left edge (gpui-base
         // resizable/panel.rs, `ResizablePanel::render`).
