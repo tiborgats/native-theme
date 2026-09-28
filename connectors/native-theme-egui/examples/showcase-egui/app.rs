@@ -1,5 +1,6 @@
 //! The application: its settings, its atlas, and the `eframe::App` impl (spec §10.4).
 
+#[cfg(feature = "watch")]
 use std::sync::Arc;
 
 use native_theme::icons::{IconSetChoice, default_icon_choice};
@@ -217,11 +218,13 @@ impl Settings {
     }
 }
 
-/// `--screenshot`: where the capture goes, when the first pass ran, whether the command went out.
+/// `--screenshot`: where the capture goes, when the first pass ran, the capture while under
+/// way, whether it was written.
 struct Screenshot {
     path: String,
     started: Option<f64>,
-    sent: bool,
+    capture: Option<crate::capture::FrameCapture>,
+    written: bool,
 }
 
 pub(crate) struct App {
@@ -302,7 +305,8 @@ impl App {
         let screenshot = settings.screenshot.clone().map(|path| Screenshot {
             path,
             started: None,
-            sent: false,
+            capture: None,
+            written: false,
         });
         #[cfg(feature = "watch")]
         let selection = Arc::new(std::sync::RwLock::new(settings.clone()));
@@ -587,7 +591,7 @@ impl eframe::App for App {
         if let Some(shot) = &mut self.screenshot {
             let now = ctx.input(|i| i.time);
             let started = *shot.started.get_or_insert(now);
-            if !shot.sent && now - started >= SCREENSHOT_DELAY_S {
+            if !shot.written && shot.capture.is_none() && now - started >= SCREENSHOT_DELAY_S {
                 // The macOS runner's check (§13): a capture step fails when the menu did not install.
                 if menu_installed == Some(false) {
                     eprintln!(
@@ -595,21 +599,8 @@ impl eframe::App for App {
                     );
                     std::process::exit(1);
                 }
-                ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::default()));
-                shot.sent = true;
-            }
-            let image = ctx.input(|i| {
-                i.events.iter().find_map(|e| match e {
-                    egui::Event::Screenshot { image, .. } => Some(Arc::clone(image)),
-                    _ => None,
-                })
-            });
-            if let Some(image) = image {
-                let scale = ctx.input(|i| i.viewport().native_pixels_per_point);
-                match crate::check_capture_size(image.size, scale)
-                    .and_then(|()| write_png(&image, &shot.path))
-                {
-                    Ok(()) => ctx.send_viewport_cmd(egui::ViewportCommand::Close),
+                match crate::capture::FrameCapture::start(&shot.path) {
+                    Ok(capture) => shot.capture = Some(capture),
                     Err(error) => {
                         eprintln!(
                             "ERROR: screenshot capture failed for {}: {error}",
@@ -617,6 +608,22 @@ impl eframe::App for App {
                         );
                         std::process::exit(1);
                     }
+                }
+            }
+            match shot.capture.as_mut().and_then(|c| c.poll(ctx)) {
+                None => {}
+                Some(Ok(())) => {
+                    eprintln!("Screenshot saved to {}", shot.path);
+                    shot.capture = None;
+                    shot.written = true;
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                }
+                Some(Err(error)) => {
+                    eprintln!(
+                        "ERROR: screenshot capture failed for {}: {error}",
+                        shot.path
+                    );
+                    std::process::exit(1);
                 }
             }
             // egui repaints only on demand (`egui/src/memory/mod.rs:341`): keep the passes
@@ -649,13 +656,4 @@ impl eframe::App for App {
     fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {
         visuals.panel_fill.to_normalized_gamma_f32()
     }
-}
-
-/// The captured frame as a PNG through the `image` dev-dependency (§11);
-/// `ColorImage::as_raw` is RGBA, `epaint/src/image.rs:177`.
-fn write_png(image: &egui::ColorImage, path: &str) -> Result<(), String> {
-    let (w, h) = (image.width() as u32, image.height() as u32);
-    let rgba = image::RgbaImage::from_raw(w, h, image.as_raw().to_vec())
-        .ok_or_else(|| "the image's buffer does not match its size".to_string())?;
-    rgba.save(path).map_err(|e| e.to_string())
 }

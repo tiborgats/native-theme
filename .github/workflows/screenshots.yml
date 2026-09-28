@@ -130,9 +130,10 @@ jobs:
 
       # `--screenshot` opens the window at the showcases' default 1280 x 720
       # and exits non-zero, with the measured and the expected size, unless
-      # the capture is of that window: egui's frame is its content,
-      # 1280 x 720 times the display's scale factor; gpui's and iced's OS
-      # capture is the window with its frame, the content at that size.
+      # the capture is of that window: each showcase's OS capture is the
+      # window with its frame and title bar, the content 1280 x 720 times the
+      # display's scale factor (egui's through xcap: `screencapture -l` of the
+      # window it lists on macOS, a BitBlt of its frame on Windows).
       - name: Capture screenshots (macOS)
         if: runner.os == 'macOS'
         run: |

@@ -10,6 +10,7 @@
 #![deny(clippy::unimplemented)]
 
 mod app;
+mod capture;
 mod chrome;
 mod demo;
 mod info;
@@ -106,24 +107,58 @@ pub(crate) fn capture_app_id() -> String {
     format!("showcase-egui-capture-{}", std::process::id())
 }
 
-/// Whether a frame `--screenshot` captured, `measured` physical pixels, is `WINDOW_SIZE` at the
-/// display's scale factor `scale`, rounded as winit rounds a logical size to a physical one. The
-/// frame is the window's content alone, so any other size is a window that did not open at its
-/// default size (a display too small for it, or a size restored from elsewhere).
-pub(crate) fn check_capture_size(measured: [usize; 2], scale: Option<f32>) -> Result<(), String> {
+/// Whether an OS capture of the window with its frame, `captured` pixels, is the frame of a
+/// window whose content is `WINDOW_SIZE` at the display's scale factor `scale`, rounded as
+/// winit rounds a logical size to a physical one: the capture less the content the window has
+/// now, `content` pixels, is the frame, and around a `WINDOW_SIZE` content it makes the size
+/// the capture must be, as the gpui showcase's `check_frame_capture` checks
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:602-646`). Any other size is a
+/// window that did not open at its default size (a display too small for it, or a size restored
+/// from elsewhere); a capture no taller than the content has no title bar, and fails too.
+#[cfg_attr(
+    not(any(target_os = "macos", target_os = "windows", test)),
+    allow(dead_code)
+)]
+pub(crate) fn check_frame_capture(
+    captured: (i64, i64),
+    content: (i64, i64),
+    scale: Option<f32>,
+) -> Result<(), String> {
     let scale = scale.ok_or("the display's scale factor is unknown")?;
-    let expected = [
-        (WINDOW_SIZE.x * scale).round() as usize,
-        (WINDOW_SIZE.y * scale).round() as usize,
-    ];
-    if measured == expected {
+    if captured.1 <= content.1 || captured.0 < content.0 {
+        return Err(format!(
+            "the capture is {}x{} px around a {}x{} px content: it is not the window with its \
+             frame and title bar",
+            captured.0, captured.1, content.0, content.1
+        ));
+    }
+    let default = (
+        (WINDOW_SIZE.x * scale).round() as i64,
+        (WINDOW_SIZE.y * scale).round() as i64,
+    );
+    let expected = (
+        default.0 + captured.0 - content.0,
+        default.1 + captured.1 - content.1,
+    );
+    if captured == expected {
         Ok(())
     } else {
-        let ([w, h], [ew, eh]) = (measured, expected);
         Err(format!(
-            "the captured frame is {w}x{h} px, expected {ew}x{eh} ({}x{} at scale {scale}): \
-             the window did not open at its default size",
-            WINDOW_SIZE.x, WINDOW_SIZE.y
+            "the capture is {}x{} px, expected {}x{}: a {}x{} content area ({}x{} at scale \
+             {scale}) in the frame's {}x{} px, but the content is {}x{} px, so the window did \
+             not open at its default size",
+            captured.0,
+            captured.1,
+            expected.0,
+            expected.1,
+            default.0,
+            default.1,
+            WINDOW_SIZE.x,
+            WINDOW_SIZE.y,
+            captured.0 - content.0,
+            captured.1 - content.1,
+            content.0,
+            content.1,
         ))
     }
 }
@@ -215,7 +250,17 @@ fn reported<T>(result: Result<T, String>) -> Option<T> {
 }
 
 fn main() -> eframe::Result {
-    let cli = CliArgs::parse(std::env::args().skip(1));
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    #[cfg(target_os = "windows")]
+    if let Some(code) = capture::run_finder(&args) {
+        std::process::exit(code);
+    }
+    let cli = CliArgs::parse(args);
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    if cli.screenshot.is_some() {
+        eprintln!("ERROR: {}", capture::UNSUPPORTED);
+        std::process::exit(1);
+    }
     eframe::run_native(
         WINDOW_TITLE,
         native_options(cli.capturing()),

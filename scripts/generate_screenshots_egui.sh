@@ -8,7 +8,7 @@ set -euo pipefail
 # window decorations (title bar, buttons, borders) in screenshots.
 #
 # NOTE: On macOS/Windows, use the showcase's built-in self-capture, which
-# writes the frame egui rendered (ViewportCommand::Screenshot) as a PNG:
+# writes the window with its title bar as a PNG, as gpui's and iced's do:
 #   cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
 #     --theme macos-sonoma --variant light --icon-set system \
 #     --tab buttons --screenshot connectors/native-theme-egui/docs/assets/macos-macos-sonoma-light.png

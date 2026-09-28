@@ -67,8 +67,6 @@ jiff = { version = "0.2.35", default-features = false }
 # neither `wgpu` nor `snapshot`: nothing is rasterised and no baseline is kept
 # (rationale §8, Q-3).
 egui_kittest = { version = "0.36.2", features = ["eframe"] }
-# `--screenshot` (§10.4) writes the captured frame as a PNG.
-image = { version = "0.25.10", default-features = false, features = ["png"] }
 # §13 T2 and T10 parse `mapping.toml`; T3 walks `serde_json::to_value(&resolved)`;
 # the showcase's Widget Info does both (§10.4).
 # Neither crate is reachable transitively: `native-theme` depends on `toml`
@@ -99,3 +97,15 @@ winit = { version = "0.30.13", default-features = false }
 muda = { version = "0.20.0", default-features = false }
 objc2 = "0.6.4"
 objc2-app-kit = { version = "0.3.2", features = ["NSApplication", "NSMenu", "NSResponder"] }
+
+# `--screenshot` captures the window with its frame, as the gpui and iced
+# showcases do, through xcap's safe API: its window list finds the showcase's
+# window (on macOS its `CGWindowID` for `screencapture -l <id> -o`, the
+# siblings' capture; on Windows its `DWMWA_EXTENDED_FRAME_BOUNDS`, which a
+# monitor-region `BitBlt` then captures, as the siblings' `BitBlt` does). No
+# default features: `image` is `image/default`, `wgc` Windows.Graphics.Capture.
+# `image` reads the size of the PNG `screencapture` wrote and writes the
+# Windows capture as a PNG (§10.4).
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dev-dependencies]
+xcap = { version = "0.9.8", default-features = false }
+image = { version = "0.25.10", default-features = false, features = ["png"] }

@@ -350,22 +350,61 @@ fn a_capture_opens_at_the_default_size() {
     assert!(args(&["--screenshot", "out.png"]).capturing());
 }
 
-/// A captured frame passes only at `WINDOW_SIZE` times the display's scale factor.
+/// An OS capture of the window passes only when it is the window with its frame and title bar
+/// around a content of `WINDOW_SIZE` times the display's scale factor, as the gpui showcase's
+/// `a_frame_capture_of_another_size_fails` checks its own.
 #[test]
-fn a_capture_of_another_size_fails() {
-    use crate::check_capture_size;
-    assert_eq!(check_capture_size([1280, 720], Some(1.0)), Ok(()));
-    assert_eq!(check_capture_size([1600, 900], Some(1.25)), Ok(()));
-    assert_eq!(check_capture_size([2560, 1440], Some(2.0)), Ok(()));
-    let clamped = check_capture_size([1024, 642], Some(1.0));
+fn a_frame_capture_of_another_size_fails() {
+    use crate::check_frame_capture;
+    // A frame 2px wider and 32px taller than the content, as the Windows runner's gpui
+    // captures measured (`showcase-gpui/tests.rs:1959-1961`), and a 28px title bar alone.
+    assert_eq!(
+        check_frame_capture((1282, 752), (1280, 720), Some(1.0)),
+        Ok(())
+    );
+    assert_eq!(
+        check_frame_capture((1600, 928), (1600, 900), Some(1.25)),
+        Ok(())
+    );
+    assert_eq!(
+        check_frame_capture((2560, 1496), (2560, 1440), Some(2.0)),
+        Ok(())
+    );
+    // A 1024px-wide display clamped the window.
+    let clamped = check_frame_capture((1024, 674), (1024, 642), Some(1.0));
     assert!(
         clamped
             .as_ref()
-            .is_err_and(|e| e.contains("1024x642") && e.contains("1280x720")),
+            .is_err_and(|e| e.contains("1024x674") && e.contains("1280x752")),
         "{clamped:?}"
     );
-    assert!(check_capture_size([1280, 720], Some(2.0)).is_err());
-    assert!(check_capture_size([1280, 720], None).is_err());
+    assert!(check_frame_capture((1282, 752), (1280, 720), Some(2.0)).is_err());
+    assert!(check_frame_capture((1282, 752), (1280, 720), None).is_err());
+    // egui's own frame capture, the content alone: never passed as the window.
+    let frameless = check_frame_capture((1280, 720), (1280, 720), Some(1.0));
+    assert!(
+        frameless.as_ref().is_err_and(|e| e.contains("title bar")),
+        "{frameless:?}"
+    );
+    assert!(check_frame_capture((1278, 752), (1280, 720), Some(1.0)).is_err());
+}
+
+/// The Windows window finder's line, `x y width height`, and nothing else.
+#[test]
+fn the_window_finders_line_is_four_numbers() {
+    use crate::capture::{Frame, parse_frame};
+    assert_eq!(
+        parse_frame("-8 0 1282 752\n"),
+        Ok(Frame {
+            x: -8,
+            y: 0,
+            width: 1282,
+            height: 752
+        })
+    );
+    for bad in ["", "1 2 3", "1 2 3 4 5", "1 2 -3 4", "a 2 3 4"] {
+        assert!(parse_frame(bad).is_err(), "{bad:?} parsed");
+    }
 }
 
 /// §13.2: menu row above the toolbar; the side panel's rows, a separator, the
