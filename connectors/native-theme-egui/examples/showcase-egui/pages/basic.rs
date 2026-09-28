@@ -75,7 +75,12 @@ pub(crate) fn show(
     let width = ((ui.available_width() - gap * (columns - 1.0)) / columns).max(0.0);
     let mut used = egui::Rect::NOTHING;
     for column in 0..COLUMNS {
-        let left = origin.x + column as f32 * (width + gap);
+        // On a whole pixel, so a one-pixel border the column draws is one pixel wide, not two
+        // half-covered ones.
+        let left = egui::emath::GuiRounding::round_to_pixels(
+            origin.x + column as f32 * (width + gap),
+            ui.pixels_per_point(),
+        );
         let rect = egui::Rect::from_min_size(
             egui::pos2(left, origin.y),
             egui::vec2(width, ui.available_height()),

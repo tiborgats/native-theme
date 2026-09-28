@@ -2233,10 +2233,11 @@ fn groups_and_columns_are_a_section_gap_apart() {
         .collect();
     lefts.sort_by(f32::total_cmp);
     assert_eq!(lefts.len(), 4, "four columns: {lefts:?}");
-    let pitch = lefts[1] - lefts[0];
+    // One pitch apart, each left edge rounded to a whole pixel: two roundings apart at most.
+    let pitch = (lefts[3] - lefts[0]) / 3.0;
     for pair in lefts.windows(2) {
         assert!(
-            (pair[1] - pair[0] - pitch).abs() < 0.5,
+            (pair[1] - pair[0] - pitch).abs() <= 1.0,
             "the columns are not one pitch apart: {lefts:?}"
         );
     }
