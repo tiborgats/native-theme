@@ -85,14 +85,18 @@
 //! style bag the caller's setters fill (`tab/tab.rs:801-808`), stay upstream
 //! work; §14 of the v0.5.8 specification
 //! (<https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md>)
-//! lists each item with the upstream line that makes it unreachable.
+//! lists each item with the upstream line that makes it unreachable. For
+//! the checkbox, radio, switch, slider, progress bar and spinner, the
+//! `widgets` module (feature `widgets`) draws controls of its own on
+//! gpui-base's headless primitives, every part from the theme.
 //!
 //! # Features
 //!
-//! All four are on by default.
+//! All five are on by default.
 //!
 //! | Feature | Enables |
 //! |---------|---------|
+//! | `widgets` | the `widgets` module: a checkbox, radio, switch, slider, progress bar and spinner drawn from the theme, for the parts gpui-component draws from literals of its own |
 //! | `material-icons` | the bundled Material Symbols set (`native-theme/material-icons`) |
 //! | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
@@ -121,6 +125,8 @@ pub mod icons;
 #[cfg(test)]
 mod showcase;
 pub mod variants;
+#[cfg(feature = "widgets")]
+pub mod widgets;
 
 // Re-export native-theme types that appear in public signatures so downstream
 // crates don't need native-theme as a direct dependency.

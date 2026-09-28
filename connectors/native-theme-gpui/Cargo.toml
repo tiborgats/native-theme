@@ -24,7 +24,11 @@ description = "gpui toolkit connector for native-theme"
 all-features = true
 
 [features]
-default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+# `widgets`: the theme-drawn checkbox, radio, switch, slider, progress bar and
+# spinner (docs/todo_gpui-widgets-spec.md), for the parts gpui-component
+# draws from literals of its own.
+widgets = []
 material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
 system-icons = ["native-theme/system-icons"]
