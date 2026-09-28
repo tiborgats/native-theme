@@ -30,7 +30,11 @@ focus_ring_color = "#6750a4"
 disabled_text_color = "#c4c7c5"
 accent_text_color = "#ffffff"
 
-disabled_opacity = 0.38
+# 1.0: Material 3 dims a disabled component by its colours alone, the container at
+# disabled-container-opacity 0.12 and the label at disabled-label-text-opacity 0.38 of
+# on-surface (material-web cbd34a8, tokens/versions/v0_192/_md-comp-filled-button.scss:42-46;
+# button/internal/_shared.scss:141-150), which this preset's disabled colours carry (#…1f, #…61)
+disabled_opacity = 1.0
 line_height = 1.2
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 1.0
@@ -280,7 +284,11 @@ focus_ring_color = "#d0bcff"
 disabled_text_color = "#49454f"
 accent_text_color = "#381e72"
 
-disabled_opacity = 0.38
+# 1.0: Material 3 dims a disabled component by its colours alone, the container at
+# disabled-container-opacity 0.12 and the label at disabled-label-text-opacity 0.38 of
+# on-surface (material-web cbd34a8, tokens/versions/v0_192/_md-comp-filled-button.scss:42-46;
+# button/internal/_shared.scss:141-150), which this preset's disabled colours carry (#…1f, #…61)
+disabled_opacity = 1.0
 line_height = 1.2
 focus_ring_width_px = 2.0
 focus_ring_offset_px = 1.0
