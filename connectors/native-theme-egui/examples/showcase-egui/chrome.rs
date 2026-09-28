@@ -33,6 +33,7 @@ impl Action {
         (
             "View",
             &[
+                Some(Action::ShowPage(Page::Basic)),
                 Some(Action::ShowPage(Page::Buttons)),
                 Some(Action::ShowPage(Page::Selection)),
                 Some(Action::ShowPage(Page::Inputs)),

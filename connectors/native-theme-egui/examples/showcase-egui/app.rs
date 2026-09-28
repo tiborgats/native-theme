@@ -11,6 +11,7 @@ use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, info, pages};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Page {
+    Basic,
     Buttons,
     Selection,
     Inputs,
@@ -25,7 +26,8 @@ pub(crate) enum Page {
 }
 
 impl Page {
-    pub(crate) const ALL: [Page; 11] = [
+    pub(crate) const ALL: [Page; 12] = [
+        Page::Basic,
         Page::Buttons,
         Page::Selection,
         Page::Inputs,
@@ -41,6 +43,7 @@ impl Page {
     /// The `--tab` name (§10.4's palette table).
     pub(crate) fn key(self) -> &'static str {
         match self {
+            Page::Basic => "basic",
             Page::Buttons => "buttons",
             Page::Selection => "selection",
             Page::Inputs => "inputs",
@@ -56,6 +59,7 @@ impl Page {
     }
     pub(crate) fn label(self) -> &'static str {
         match self {
+            Page::Basic => "Basic",
             Page::Buttons => "Buttons",
             Page::Selection => "Selection",
             Page::Inputs => "Inputs",
@@ -124,7 +128,7 @@ impl Settings {
             icon: IconSetChoice::System,
             icon_follows_theme: true,
             prefs: None,
-            page: Page::Buttons,
+            page: Page::Basic,
             screenshot: None,
             installed_themes: native_theme::icons::list_freedesktop_themes(),
         }

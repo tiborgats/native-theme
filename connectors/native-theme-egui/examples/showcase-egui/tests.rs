@@ -52,6 +52,7 @@ pub(crate) fn cli(pairs: &[(&str, &str)]) -> CliArgs {
 /// not only the chrome around it.
 fn page_kinds(page: Page) -> &'static [&'static str] {
     match page {
+        Page::Basic => &["Label (body text)"],
         Page::Buttons => &["button (enabled)"],
         Page::Selection => &["checkbox (unchecked)"],
         Page::Inputs => &["TextEdit (single line)"],
@@ -169,6 +170,26 @@ fn the_command_line_rejects_what_it_cannot_honour() {
     assert_eq!(settings, before);
     apply_cli_args(&mut settings, &cli(&[("--tab", "icons")]));
     assert_eq!(settings.page, Page::Icons);
+    apply_cli_args(&mut settings, &cli(&[("--tab", "basic")]));
+    assert_eq!(settings.page, Page::Basic);
+}
+
+/// The Basic page is the first page and the one the showcase opens on, with no `--tab`: the
+/// page the three showcases' captures are compared on.
+#[test]
+fn the_showcase_opens_on_the_basic_page() {
+    assert_eq!(Page::ALL.first(), Some(&Page::Basic));
+    assert_eq!(Page::from_key("basic"), Ok(Page::Basic));
+    let mut settings = Settings::for_tests();
+    assert_eq!(settings.page, Page::Basic);
+    apply_cli_args(&mut settings, &cli(&[("--theme", TEST_PRESET)]));
+    assert_eq!(
+        settings.page,
+        Page::Basic,
+        "a flag other than --tab kept the page"
+    );
+    let harness = open_default();
+    assert_eq!(harness.state().settings.page, Page::Basic);
 }
 
 /// T11 (c), second rule of §10.4: the icon choice follows the theme until the
@@ -536,7 +557,7 @@ fn the_page_menu_lists_and_shows_every_page() {
         .filter(|n| ids.contains(&n.accesskit_node().locate().0))
         .filter_map(|n| n.accesskit_node().label())
         .collect();
-    assert_eq!(selected, vec![Page::Buttons.label().to_string()]);
+    assert_eq!(selected, vec![Page::Basic.label().to_string()]);
     let item = harness
         .query_all_by_label(Page::ThemeMap.label())
         .find(|n| ids.contains(&n.accesskit_node().locate().0))

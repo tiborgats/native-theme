@@ -1,5 +1,6 @@
-//! The ten palette pages (spec §10.4).
+//! The Basic page, the ten palette pages (spec §10.4) and the Theme Map.
 
+pub(crate) mod basic;
 pub(crate) mod buttons;
 pub(crate) mod colour;
 pub(crate) mod containers;
@@ -65,6 +66,12 @@ pub(crate) struct DemoState {
     pub dnd_columns: [Vec<&'static str>; 2],
     /// The Theme Map's verdict filter; `None` lists every row.
     pub theme_map_filter: Option<crate::info::Verdict>,
+    /// The Basic page's radio button, text fields, drop-down and slider.
+    pub basic_radio: usize,
+    pub basic_hint: String,
+    pub basic_text: String,
+    pub basic_combo: usize,
+    pub basic_slider: f32,
 }
 
 impl Default for DemoState {
@@ -108,6 +115,11 @@ impl Default for DemoState {
             scene_rect: egui::Rect::ZERO,
             dnd_columns: [vec!["First", "Second"], vec!["Third"]],
             theme_map_filter: None,
+            basic_radio: 0,
+            basic_hint: String::new(),
+            basic_text: "Text".to_string(),
+            basic_combo: 0,
+            basic_slider: 40.0,
         }
     }
 }
@@ -162,6 +174,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         ..
     } = app;
     match settings.page {
+        Page::Basic => basic::show(registry, demo_state, atlas, ui),
         Page::Buttons => buttons::show(registry, demo_state, atlas, ui, &chosen),
         Page::Selection => selection::show(registry, demo_state, atlas, ui),
         Page::Inputs => inputs::show(registry, demo_state, atlas, ui),
