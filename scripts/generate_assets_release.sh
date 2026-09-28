@@ -31,6 +31,11 @@ ok()   { echo -e "${GREEN}✓${NC} $1"; }
 fail() { echo -e "${RED}✗ $1${NC}"; exit 1; }
 info() { echo -e "${YELLOW}→${NC} $1"; }
 
+# `set -e` ends the script at the first failing command without a word, and a
+# step's script can fail after its last message (its EXIT trap, say); name the
+# command and line so a stop is never silent.
+trap 'status=$?; echo -e "${RED}✗ Stopped: \`$BASH_COMMAND\` (line $LINENO) exited $status${NC}" >&2' ERR
+
 cd "$PROJECT_ROOT"
 
 # ── Preflight checks ─────────────────────────────────────────────────
