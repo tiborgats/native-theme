@@ -2888,9 +2888,9 @@ fn chrome_tooltip<'a>(
     let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let font = &resolved.tooltip.font;
-    let mut tip = row![text(label).typeset(font, a11y)].spacing(gap.widget);
+    let mut tip = row![text(label).themed(font, resolved, a11y)].spacing(gap.widget);
     if let Some(key) = key {
-        tip = tip.push(text(binding(key)).typeset(font, a11y));
+        tip = tip.push(text(binding(key)).themed(font, resolved, a11y));
     }
     let tip = tooltip(
         content,
@@ -2936,7 +2936,7 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
             .padding(spec.padding)
             .style(ghost_button(resolved, spec.selected))
             .on_press(spec.action),
-        None => button(text(spec.label).typeset(spec.font, &state.accessibility))
+        None => button(text(spec.label).themed(spec.font, resolved, &state.accessibility))
             .padding(spec.padding)
             .style(ghost_button(resolved, spec.selected))
             .on_press(spec.action),
@@ -2962,7 +2962,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     let m = &resolved.menu;
     let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
     let title = |label: &'static str| {
-        button(text(label).typeset(&m.font, a11y))
+        button(text(label).themed(&m.font, resolved, a11y))
             .padding(pad)
             .style(menu_row(resolved))
             .on_press(Message::MenuOpened)
@@ -2970,9 +2970,9 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     let entry = |label: &'static str, key: Option<&'static str>, action: Message| {
         let entry = button(
             row![
-                text(label).typeset(&m.font, a11y),
+                text(label).themed(&m.font, resolved, a11y),
                 space().width(Fill),
-                text(key.map(binding).unwrap_or_default()).typeset(&m.font, a11y),
+                text(key.map(binding).unwrap_or_default()).themed(&m.font, resolved, a11y),
             ]
             .spacing(gap.widget)
             .align_y(iced::Center),
@@ -3235,7 +3235,11 @@ fn setting<'a>(
 ) -> Element<'a, Message> {
     let gap = Gaps::from_layout(&state.layout);
     column![
-        text(label).typeset(&state.current_resolved.sidebar.font, &state.accessibility),
+        text(label).themed(
+            &state.current_resolved.sidebar.font,
+            &state.current_resolved,
+            &state.accessibility
+        ),
         control,
     ]
     .spacing(gap.widget)
@@ -3435,7 +3439,7 @@ fn tab_row<'a>(
         (t.min_height - pad.y()).max(0.0),
     );
     let tabs = tabs.into_iter().map(|(label, open, message)| {
-        button(at_least(text(label).typeset(&t.font, a11y), min))
+        button(at_least(text(label).themed(&t.font, resolved, a11y), min))
             .padding(pad)
             .style(tab_style(resolved, open))
             .on_press(message)
@@ -3546,13 +3550,17 @@ fn page_menu(state: &State) -> Element<'_, Message> {
                 to_color(resolved.button.font.color),
             )
         })
-        .unwrap_or_else(|| text("Pages").typeset(&resolved.tab.font, a11y).into());
+        .unwrap_or_else(|| {
+            text("Pages")
+                .themed(&resolved.tab.font, resolved, a11y)
+                .into()
+        });
     let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
     let rows = Tab::ALL
         .iter()
         .map(|&tab| {
             Item::new(
-                button(text(tab.label()).typeset(&m.font, a11y))
+                button(text(tab.label()).themed(&m.font, resolved, a11y))
                     .padding(pad)
                     .width(Fill)
                     .style(menu_row(resolved))
@@ -3753,13 +3761,13 @@ fn status_bar(state: &State) -> Element<'_, Message> {
     );
     let mut items = row![
         toggle,
-        text(status_environment(state).join(" · ")).typeset(&s.font, a11y),
+        text(status_environment(state).join(" · ")).themed(&s.font, resolved, a11y),
         space().width(Fill),
     ]
     .spacing(gap.widget)
     .align_y(iced::Center);
     if let Some(title) = info_title(&state.widget_info) {
-        items = items.push(text(title.to_string()).typeset(&s.font, a11y));
+        items = items.push(text(title.to_string()).themed(&s.font, resolved, a11y));
     }
     let bar = container(items)
         .padding(native_theme_iced::padding_or(
@@ -4160,7 +4168,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     );
     let head = row![
         text(title)
-            .typeset(&d.title_font, a11y)
+            .themed(&d.title_font, resolved, a11y)
             .color(to_color(d.title_font.color)),
         space().width(Fill),
         close,
@@ -4229,7 +4237,7 @@ fn command_palette(state: &State) -> Element<'_, Message> {
         }
         groups = groups.push(caption_text(state, group, muted));
         groups = groups.push(column(entries.into_iter().map(|entry| {
-            button(text(entry.label).typeset(&l.item_font, a11y))
+            button(text(entry.label).themed(&l.item_font, resolved, a11y))
                 .padding(row_pad)
                 .width(Fill)
                 .style(list_row(resolved, false))
@@ -4261,7 +4269,7 @@ fn preference<'a>(
     let gap = Gaps::from_layout(&state.layout);
     row![
         column![
-            text(title).typeset(&resolved.dialog.body_font, &state.accessibility),
+            text(title).themed(&resolved.dialog.body_font, resolved, &state.accessibility),
             caption_text(state, description, to_color(resolved.defaults.muted_color)),
         ]
         .width(Fill),
@@ -4365,12 +4373,12 @@ fn about(state: &State) -> Element<'_, Message> {
     .style(styles::button_link(resolved))
     .padding(LINK_PADDING);
     column![
-        text(ABOUT_NAME_VERSION).typeset(body, a11y),
+        text(ABOUT_NAME_VERSION).themed(body, resolved, a11y),
         text(
             "The iced and iced_aw versions it requires, and those it was verified \
              against, are in"
         )
-        .typeset(body, a11y),
+        .themed(body, resolved, a11y),
         chrome_tooltip(state, link_button, "Copies the address", None),
     ]
     .spacing(gap.widget)
@@ -8971,6 +8979,13 @@ trait Typeset {
     ) -> Self;
     fn typeset(self, font: &ResolvedFontSpec, a11y: &AccessibilityPreferences) -> Self;
     fn body(self, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Self;
+    /// `typeset`, on the theme's line height, `defaults.line_height`.
+    fn themed(
+        self,
+        font: &ResolvedFontSpec,
+        resolved: &ResolvedTheme,
+        a11y: &AccessibilityPreferences,
+    ) -> Self;
 }
 
 impl Typeset for iced::widget::Text<'_> {
@@ -8992,9 +9007,18 @@ impl Typeset for iced::widget::Text<'_> {
     }
 
     fn body(self, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Self {
+        self.themed(&resolved.defaults.font, resolved, a11y)
+    }
+
+    fn themed(
+        self,
+        font: &ResolvedFontSpec,
+        resolved: &ResolvedTheme,
+        a11y: &AccessibilityPreferences,
+    ) -> Self {
         // The theme's line height, where iced's own is 1.3 times the size
         // (`LineHeight::default`).
-        self.typeset(&resolved.defaults.font, a11y)
+        self.typeset(font, a11y)
             .line_height(native_theme_iced::line_height_multiplier(resolved))
     }
 }
@@ -12420,7 +12444,7 @@ mod tests {
             // The one glyph in an icon's slot, `placeholder_icon`'s "?", is
             // sized as the icon.
             let sized = calls.iter().any(|(name, args)| {
-                ["role", "body", "typeset"].contains(name)
+                ["role", "body", "typeset", "themed"].contains(name)
                     || (*name == "size" && *args == "(icon_px)")
             });
             if !sized {
