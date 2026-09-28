@@ -547,7 +547,9 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
                 idle: Some((tb.background_color, "tab.background_color")),
                 hover: tb.hover_background.map(|h| (h, "tab.hover_background")),
                 active: None,
-                layer: Layer::Composite,
+                // a row highlight (C17): it replaces the idle tab's fill and lies over the tab
+                // bar, as Breeze paints it (docs/platform-facts.md §2.11, `background_color`)
+                layer: Layer::AsGiven,
             }),
             text: Some(TextSource {
                 idle: tb.font.color,
@@ -1686,7 +1688,7 @@ mod tests {
         }
     }
 
-    /// §5.6's Tab rows: the resting fill with the hover layer composited over it (C17), the
+    /// §5.6's Tab rows: the resting fill, the hover as given in its place (C17's row highlight), the
     /// hover text colour into {hovered,active}, the border in all five, the selected tab on
     /// `selection.*` (§6.2), the bar on `panel_fill`.
     #[test]
@@ -1706,10 +1708,7 @@ mod tests {
                 to_color32(tb.background_color),
                 "{preset}"
             );
-            let hovered = match tb.hover_background {
-                Some(h) => composite_over(h, tb.background_color),
-                None => to_color32(tb.background_color),
-            };
+            let hovered = to_color32(tb.hover_background.unwrap_or(tb.background_color));
             assert_eq!(w.hovered.weak_bg_fill, hovered, "{preset}");
             assert_eq!(w.active.weak_bg_fill, hovered, "{preset}");
             for e in [&w.noninteractive, &w.inactive, &w.open] {

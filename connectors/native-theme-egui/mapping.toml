@@ -2157,8 +2157,8 @@ verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "tab" },
   { path = "visuals.widgets.open.weak_bg_fill", scope = "tab" },
-  { path = "visuals.widgets.hovered.weak_bg_fill", scope = "tab", when = "tab.hover_background is translucent or None, §6.1, §6.4" },
-  { path = "visuals.widgets.active.weak_bg_fill", scope = "tab", when = "tab.hover_background is translucent or None, §6.1, §6.4" },
+  { path = "visuals.widgets.hovered.weak_bg_fill", scope = "tab", when = "tab.hover_background is None, §6.4" },
+  { path = "visuals.widgets.active.weak_bg_fill", scope = "tab", when = "tab.hover_background is None, §6.4" },
 ]
 
 ["tab.active_background"]

@@ -493,7 +493,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 54, `source-side gap` 15, `widgets-cra
 | `status_bar.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `tab.active_background` | SCOPED | «tab» `visuals.selection.bg_fill` |  |
 | `tab.active_text_color` | SCOPED | «tab» `visuals.selection.stroke.color` |  |
-| `tab.background_color` | SCOPED | «tab» `visuals.widgets.inactive.weak_bg_fill`; «tab» `visuals.widgets.open.weak_bg_fill`; «tab» `visuals.widgets.hovered.weak_bg_fill` (when: tab.hover_background is translucent or None, §6.1, §6.4); «tab» `visuals.widgets.active.weak_bg_fill` (when: tab.hover_background is translucent or None, §6.1, §6.4) |  |
+| `tab.background_color` | SCOPED | «tab» `visuals.widgets.inactive.weak_bg_fill`; «tab» `visuals.widgets.open.weak_bg_fill`; «tab» `visuals.widgets.hovered.weak_bg_fill` (when: tab.hover_background is None, §6.4); «tab» `visuals.widgets.active.weak_bg_fill` (when: tab.hover_background is None, §6.4) |  |
 | `tab.bar_background` | SCOPED | «tab» `visuals.panel_fill` |  |
 | `tab.border.color` | SCOPED | «tab» `visuals.widgets.noninteractive.bg_stroke.color`; «tab» `visuals.widgets.inactive.bg_stroke.color`; «tab» `visuals.widgets.hovered.bg_stroke.color`; «tab» `visuals.widgets.active.bg_stroke.color`; «tab» `visuals.widgets.open.bg_stroke.color` | probe `"#ff000080"` |
 | `tab.border.corner_radius` | SCOPED | «tab» `visuals.widgets.noninteractive.corner_radius`; «tab» `visuals.widgets.inactive.corner_radius`; «tab» `visuals.widgets.hovered.corner_radius`; «tab» `visuals.widgets.active.corner_radius`; «tab» `visuals.widgets.open.corner_radius` | probe `4.0` |

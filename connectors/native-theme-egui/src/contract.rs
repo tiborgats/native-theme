@@ -542,13 +542,19 @@ fn expected(
             colour(c, "button.active_background").or_else(|| colour(c, "button.hover_background")),
             req("button.background_color")?,
         ),
-        (Some(w @ ("combo_box" | "segmented_control" | "tab")), "normal", None, p)
+        (Some(w @ ("combo_box" | "segmented_control")), "normal", None, p)
             if hover_or_press && p.ends_with(".weak_bg_fill") =>
         {
             layered(
                 colour(c, &format!("{w}.hover_background")),
                 req(&format!("{w}.background_color"))?,
             )
+        }
+        // A tab's hover is a row highlight (C17): it replaces the idle fill, as given; an
+        // unstated one copies the idle fill (§6.4).
+        (Some("tab"), "normal", None, p) if hover_or_press && p.ends_with(".weak_bg_fill") => {
+            c32(colour(c, "tab.hover_background")
+                .map_or_else(|| req("tab.background_color"), Ok)?)
         }
         (Some("switch"), "normal", None, p) if hover_or_press && p.ends_with(".weak_bg_fill") => {
             layered(
