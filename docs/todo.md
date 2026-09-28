@@ -98,6 +98,43 @@
       states one — the egui connector marks the active tab only by the
       `selection.*` colours of its `Tab` scope's `Normal` cell
       (`tab.active_background`, `tab.active_text_color`; connector spec §6.2); no thickness is to be invented in the meantime.
+      Found 2026-09-28 for KDE: Breeze fills a 3px `QPalette::Highlight`
+      strip along the selected North tab's top edge (the bottom edge for
+      South tabs), with no pen, rounded `Frame_FrameRadius` = 5 on the
+      selected tab's corners — `TabBar_ActiveEffectSize` = 3
+      ([breezemetrics.h:137](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L137)),
+      painted after the tab's frame in `Helper::renderTabBarTab`
+      ([breezehelper.cpp:1471-1487](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1471-L1487));
+      recorded in `docs/platform-facts.md:1320` (§2.11). The other three
+      platforms are still to be researched before the field is added.
+
+### Tab: the border is the selected tab's, and KDE's live tab colours
+
+- [ ] `kde-breeze` now states `tab.border.color`, `line_width_px`,
+      `corner_radius_px` and `shadow_enabled` (`docs/platform-facts.md:1320-1323`,
+      §2.11). Breeze strokes only the selected tab; an unselected tab has no
+      pen and rounds 5 on the row's outer ends only (breezehelper.cpp:1488-1507,
+      breezestyle.cpp:7248-7253), and Windows' cell (`:1320`) is also
+      selected-only. `TabTheme::border` (`native-theme/src/model/widgets/mod.rs`)
+      does not say which tab its colour, width and radius belong to: document
+      that it is the selected tab's, and check that each connector strokes the
+      active tab only. `tab.hover_background` (`#3daee933`) replaces the
+      unselected tab's fill rather than tinting it (breezehelper.cpp:1497-1502),
+      so it is painted over what lies under the tab, the window.
+      gpui-component 0.6.6 paints an idle tab `transparent` in every variant
+      (`tab/tab.rs:132, 143, 150, 155, 160`) and nothing reads `tokens.tab`, so
+      the gpui connector cannot show `tab.background_color`; its contrast
+      contract records `kde-breeze/dark` as an exception for the `tab label`
+      pair (`IDLE_TAB_SURFACE`, `connectors/native-theme-gpui/src/contract.rs`).
+      On the live path the KDE reader (`native-theme/src/kde/colors.rs`) sets no
+      `tab` colour, so the full preset's stock-Breeze values
+      (`Window.darker(120)`, `mix(Window, WindowText, 0.2)`) stand for any colour
+      scheme; computing them from the user's scheme needs `QColor::darker`
+      ([qcolor.cpp:2993-3004](https://github.com/qt/qtbase/blob/ef55f427f2c8b410d34f8a7681020a3000cf6866/src/gui/painting/qcolor.cpp#L2993-L3004))
+      and `KColorUtils::mix`
+      ([kcolorutils.cpp:144-165](https://invent.kde.org/frameworks/kguiaddons/-/blob/7c766f6f99238c13acb8c50d8391600e964f3b8a/src/colors/kcolorutils.cpp#L144-L165))
+      ported to the reader, with `[KDE] frameContrast` read from kdeglobals
+      (default 0.2, [kcolorscheme.cpp:529-538](https://invent.kde.org/frameworks/kcolorscheme/-/blob/27066d471c93629efee8459d9f69490caa92b7c4/src/kcolorscheme.cpp#L529-L538)).
 
 ### Segmented control: the join and the divider
 
@@ -279,6 +316,13 @@
       those platforms. The egui widgets crate paints its spinner arc from this
       field where the icon set has no animated indicator
       (`docs/todo_egui-widgets-spec.md` §4.3).
+      Found again 2026-09-28 (iced review): §2.23 gives KDE and GNOME no
+      `min_diameter` either (**(none)**, `docs/platform-facts.md:1534`), yet
+      `kde-breeze`, `kde-breeze-live`, `adwaita` and `adwaita-live` state
+      `min_diameter_px = 16.0` in both variants. `min_diameter` is required in
+      `ResolvedSpinnerTheme` too (`native-theme/src/model/widgets/mod.rs`,
+      `SpinnerTheme`, no `soft_option`), so the same model decision covers both
+      fields; the presets keep the values until it is made.
 
 ### Presets: the scrollbar thumb colour platform-facts measures
 
@@ -540,7 +584,7 @@
 
 ### material: the slider thumb is the page's colour
 
-- [ ] Data question for the maintainer (found 2026-09-28 on the Basic
+- [x] Data question for the maintainer (found 2026-09-28 on the Basic
       pages). `material.toml` states no `slider.thumb_color` (`[light.slider]`
       `:133-140`, `[dark.slider]` `:381-388`), so it resolves through
       `docs/inheritance-rules.toml:197` to `defaults.surface_color`, which
@@ -556,6 +600,14 @@
       and what a Material 3 slider handle takes was not researched. Decide
       whether material states `slider.thumb_color` from a cited Material 3
       source, or the inherited colour stands.
+      Resolved 2026-09-28: the Material 3 enabled slider handle is
+      `md.sys.color.primary` — `'handle-color': map.get($deps, 'md-sys-color',
+      'primary')` ([material-web tokens/versions/v0_192/_md-comp-slider.scss:52](https://github.com/material-components/material-web/blob/cbd34a8921915af94d5ef65c2a69eece41d5b4f3/tokens/versions/v0_192/_md-comp-slider.scss#L52);
+      the M3 token build's `md.comp.slider.handle.color`,
+      [tokens/versions/latest/sass/_md-comp-slider.scss:164-165](https://github.com/material-components/material-web/blob/cbd34a8921915af94d5ef65c2a69eece41d5b4f3/tokens/versions/latest/sass/_md-comp-slider.scss#L164-L165)),
+      baseline primary40 `#6750a4` light and primary80 `#d0bcff` dark
+      (`_md-sys-color.scss:110`, `:51`; `_md-ref-palette.scss:73`, `:77`).
+      `material.toml` states `slider.thumb_color` so in both variants.
 
 ---
 
