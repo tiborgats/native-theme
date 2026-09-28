@@ -3267,6 +3267,7 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
 /// is as wide as its tooltip's text at a Small Button's `text_sm`
 /// (sizing.rs:322) plus the `px_2` on either side (button/button.rs:629-631),
 /// and says why in its info.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4480,8 +4481,11 @@ fn the_area_charts_fill_swatch_is_the_series_at_the_fill_opacity(cx: &mut TestAp
 /// The ids and debug selectors of three of the Icons page's icons, one from
 /// each gallery, with Material's icons loaded. The page forms them from the
 /// animation's place, the role's name and the IconName's (pages/icons.rs).
+#[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
 const ICONS_ANIMATED_FRAMES: &str = "icons-animated-frames-0";
+#[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
 const ICONS_NATIVE_DIALOG_WARNING: &str = "icons-native-DialogWarning";
+#[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
 const ICONS_GPUI_TRIANGLE_ALERT: &str = "icons-gpui-TriangleAlert";
 /// The role gpui-component has no icon for (native-theme-gpui icons.rs,
 /// `icon_name`), whose cell the page forms the same way.
@@ -4499,6 +4503,9 @@ fn show_icons(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, display: 
 /// The Icons page's galleries report each icon, not one info for a block
 /// (spec §4.3.2): an animated icon, a role's icon and an IconName's each
 /// show their own.
+// The bundled Material set, and its frames drawn on their first draw, which
+// only `svg-rasterize` promises (`icons::animated_frames_to_image_sources`).
+#[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
 #[gpui::test]
 fn icons_from_different_galleries_show_different_infos(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -4523,6 +4530,9 @@ fn icons_from_different_galleries_show_different_infos(cx: &mut TestAppContext) 
 /// An animated icon's info holds under reduced motion as the page does:
 /// with motion on the showcase steps through the frames, and under reduced
 /// motion it shows the first and says that nothing moves.
+// The bundled Material set, and its frames drawn on their first draw, which
+// only `svg-rasterize` promises (`icons::animated_frames_to_image_sources`).
+#[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
 #[gpui::test]
 fn an_animated_icons_info_follows_reduced_motion(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -4682,6 +4692,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
 /// A chrome icon the chosen set has none for is absent, not another set's:
 /// with Material's SquareTerminal taken out of the loaded gallery, the
 /// Command Palette button shows its tooltip's text and says why.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn a_chrome_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4746,6 +4757,7 @@ fn a_chrome_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
 /// `painted_quads` and `painted_underlines` only), so the check is on the
 /// `ChromeIcon` app.rs hands `demo::alert`, which both its drawing and its
 /// info are built from.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn the_theme_error_alerts_icon_follows_the_chosen_set(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -4867,6 +4879,7 @@ fn choose_icon_theme(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, di
 
 /// Take `names` out of the loaded gallery, as if the chosen icon theme had
 /// no icon for them.
+#[cfg(feature = "material-icons")]
 fn remove_icons(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, names: &[&str]) {
     cx.update(|_window, cx| {
         showcase.update(cx, |this, cx| {
@@ -4951,6 +4964,7 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
 /// Material's loaded gallery, every sample's info reports none, the icon
 /// Button loses the width its icon took, and the Toggle shows its icon's
 /// name instead.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -5016,6 +5030,7 @@ fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
 /// the Dialog's CircleX beside its description and the AlertDialog's
 /// TriangleAlert, each reported by the dialog's info, with Material chosen
 /// and then with those icons taken out of its loaded gallery.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn the_dialog_samples_icons_follow_the_chosen_set(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
