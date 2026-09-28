@@ -83,12 +83,6 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     Row {
-        slot: "border",
-        native: |r| r.defaults.border.color,
-        get: |tc| tc.border,
-        exceptions: &[],
-    },
-    Row {
         slot: "muted_foreground",
         native: |r| r.defaults.muted_color,
         get: |tc| tc.muted_foreground,
@@ -733,6 +727,15 @@ fn native_pressed_fill(r: &ResolvedTheme, is_dark: bool) -> Hsla {
 
 /// The `ThemeColor` fields whose native value is composited or soft-optional.
 const COMPUTED_ROWS: &[ComputedRow] = &[
+    // `defaults.border.opacity` multiplies the defaults' border colour alone
+    // ("defaults only", `native-theme/src/model/border.rs:36`).
+    ComputedRow {
+        slot: "border",
+        source: "defaults.border.color with defaults.border.opacity applied",
+        native: |r, _| rgba_to_hsla(r.defaults.border.color).opacity(r.defaults.border.opacity),
+        get: |tc| tc.border,
+        exceptions: &[],
+    },
     ComputedRow {
         slot: "secondary_active",
         source: "button.active_background, or the connector's darkening of \

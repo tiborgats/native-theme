@@ -45,25 +45,30 @@ pub fn description_list(t: &Theme, items: usize, columns: usize) -> WidgetInfo {
         .instance("items", format!("{items}, in {columns} columns"))
 }
 
-/// The striped, bordered `DataTable`: its frame and fill. Its rows report
-/// themselves (`data_table_row`).
-pub fn data_table(t: &Theme, rows: usize, columns: usize) -> WidgetInfo {
-    WidgetInfo::new("DataTable")
-        .variant("striped, bordered")
-        .color(claim(
+/// The striped, framed `DataTable`: its frame and fill. Its rows report
+/// themselves (`data_table_row`). `styled` is whether a native theme is
+/// installed, so whether the frame is the box `geometry::list` refines,
+/// whose line `native_info` records, or the table's own.
+pub fn data_table(t: &Theme, rows: usize, columns: usize, styled: bool) -> WidgetInfo {
+    let info = WidgetInfo::new("DataTable").variant("striped, framed");
+    let info = if styled {
+        info.instance("frame", "the box around it, refined by geometry::list, as the List's and the Tree's: the table is built unbordered, because its own frame takes the shared border token (table/data_table.rs, DataTable::render), which carries defaults.border.color at defaults.border.opacity, not list.border.color")
+    } else {
+        info.color(claim(
             "frame",
             "border",
             t.border,
             "gpui-component/table/data_table.rs:171",
         ))
-        .color(claim(
-            "bg",
-            "table",
-            t.table,
-            "gpui-component/table/data_table.rs:167",
-        ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
-        .not_themeable("geometry", "DataTable is not Styled (table/data_table.rs: DataTable impls \
+    };
+    info.color(claim(
+        "bg",
+        "table",
+        t.table,
+        "gpui-component/table/data_table.rs:167",
+    ))
+    .not_themeable("geometry", "DataTable is not Styled (table/data_table.rs: DataTable impls \
                          Sizable and RenderOnce, not Styled); \
                          geometry::table goes to the declarative Table below")
         .not_themeable("row height", "per Size, but Size::Size(px) is an escape hatch that returns the pixel value verbatim (sizing.rs, table_row_height) while table_cell_padding has no Size::Size arm and stays on the Medium edges this demo already uses -- so DataTable::with_size(Size::Size(px(list.row_height))) would carry the platform's row height and change nothing else. list.row_height is modelled; nothing applies it here yet")

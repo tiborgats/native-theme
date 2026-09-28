@@ -171,7 +171,7 @@ pub fn to_theme_color(
         menu_hover_fg: rgba_to_hsla(resolved.menu.hover_text_color),
         sidebar_selection_bg: rgba_to_hsla(resolved.sidebar.selection_background),
         sidebar_selection_fg: rgba_to_hsla(resolved.sidebar.selection_text_color),
-        border: rgba_to_hsla(d.border.color),
+        border: defaults_border_color(resolved),
         muted: muted_bg,
         muted_fg,
         primary: rgba_to_hsla(resolved.button.primary_background),
@@ -676,6 +676,21 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &BasePaletteInputs, is_dark: bool)
     tc.cyan_light = light_variant(c.bg, cyan, is_dark);
 }
 
+/// `defaults.border.color` as painted: `defaults.border.opacity` multiplies its
+/// alpha. The multiplier belongs to the defaults' border colour alone ("defaults
+/// only", `native-theme/src/model/border.rs:36`; "applied to the border color",
+/// `docs/platform-facts.md:946`), so a widget's own border colour is painted as
+/// stated. A non-finite multiplier paints the colour as stated too.
+pub(crate) fn defaults_border_color(resolved: &ResolvedTheme) -> Hsla {
+    let b = &resolved.defaults.border;
+    let opacity = if b.opacity.is_finite() {
+        b.opacity
+    } else {
+        1.0
+    };
+    rgba_to_hsla(b.color).opacity(opacity)
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -816,6 +831,29 @@ mod tests {
         assert_ne!(tc.primary, default.primary, "primary should be set");
         assert_ne!(tc.danger, default.danger, "danger should be set");
         assert_ne!(tc.border, default.border, "border should be set");
+    }
+
+    /// `defaults.border.opacity` multiplies `defaults.border.color` alone
+    /// (`native-theme/src/model/border.rs:36`, "defaults only"): the `border`
+    /// token carries it, a widget's own border colour does not.
+    #[test]
+    fn the_border_opacity_multiplies_the_defaults_border_colour_alone() {
+        let r = resolved_preset("kde-breeze", ColorMode::Light);
+        assert!(r.defaults.border.opacity < 1.0, "kde-breeze states 0.2");
+        let tc = to_theme_color(&r, false, false);
+        let stated = rgba_to_hsla(r.defaults.border.color);
+        assert_eq!(tc.border, stated.opacity(r.defaults.border.opacity));
+        assert!(tc.border.a < stated.a);
+        assert_eq!(tc.input, rgba_to_hsla(r.input.border.color));
+        assert_eq!(tc.window_border, rgba_to_hsla(r.window.border.color));
+        assert_eq!(
+            tc.status_bar_border,
+            rgba_to_hsla(r.status_bar.border.color)
+        );
+
+        let mut r = r;
+        r.defaults.border.opacity = f32::NAN;
+        assert_eq!(defaults_border_color(&r), stated);
     }
 
     #[test]

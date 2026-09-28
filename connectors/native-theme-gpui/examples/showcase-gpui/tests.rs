@@ -407,12 +407,14 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
 
 /// Table, List and Tree are framed alike, and by the list theme.
 ///
-/// The `DataTable` draws a frame of its own from `Theme::radius` and
-/// `Theme::border` (gpui-component `src/table/data_table.rs:167-171`); the
-/// `List` and the `Tree` draw none — both only refine a plain `div()`
-/// (`src/list/list.rs`, `RenderOnce for List<D>`; `src/tree.rs`,
-/// `RenderOnce for Tree`) — so the box around them is the showcase's own
-/// and has to carry the same border.
+/// The `List` and the `Tree` draw no frame — both only refine a plain
+/// `div()` (`src/list/list.rs`, `RenderOnce for List<D>`; `src/tree.rs`,
+/// `RenderOnce for Tree`) — so the box around them is the showcase's own,
+/// refined by `geometry::list`. The `DataTable`'s own frame takes
+/// `Theme::border` (gpui-component `src/table/data_table.rs:167-171`), which
+/// carries `defaults.border.color` at `defaults.border.opacity`, so the
+/// showcase builds it unbordered inside the same box; the radius it rounds
+/// itself to is still `Theme::radius`.
 ///
 /// gpui's test API reports bounds, not corner radii, so the radius is
 /// asserted where it is built rather than where it is painted: on the
@@ -464,10 +466,15 @@ fn the_list_frames_agree_with_the_list_theme(cx: &mut TestAppContext) {
             Some(gpui::AbsoluteLength::Pixels(width)),
             "{preset}: the frame's line width is not the list theme's {width:?}"
         );
+        let list_colour = read(&mut cx, &showcase, |_this, cx| {
+            native_value(cx, |n| {
+                let [r, g, b, a] = n.resolved.list.border.color.to_f32_array();
+                gpui::Hsla::from(gpui::Rgba { r, g, b, a })
+            })
+        });
         assert_eq!(
-            frame.border_color,
-            Some(theme.border),
-            "{preset}: the frame's colour is not the one the DataTable's frame takes"
+            frame.border_color, list_colour,
+            "{preset}: the frame's colour is not list.border.color"
         );
     }
 }

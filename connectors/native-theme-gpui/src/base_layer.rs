@@ -14,7 +14,7 @@ use gpui_base::{ResizableTheme, Theme as BaseTheme};
 use gpui_component::scroll::ScrollbarStyles;
 use native_theme::theme::ResolvedTheme;
 
-use crate::colors::rgba_to_hsla;
+use crate::colors::{defaults_border_color, rgba_to_hsla};
 
 /// The scrollbar values written onto gpui-base, computed from a
 /// [`ResolvedTheme`].
@@ -43,8 +43,8 @@ pub struct ScrollbarGeometry {
     pub min_thumb_length: Pixels,
     /// `scrollbar.track_color`, all three track states (upstream uses one colour).
     pub track: Hsla,
-    /// `defaults.border.color` for the active track border, mirroring upstream
-    /// (`src/theme/mod.rs:309`).
+    /// `defaults.border.color` × `defaults.border.opacity` for the active track
+    /// border, mirroring upstream (`src/theme/mod.rs:309`).
     pub track_active_border: Hsla,
     /// `scrollbar.thumb_color`.
     pub thumb: Hsla,
@@ -68,7 +68,7 @@ pub fn scrollbar_geometry(resolved: &ResolvedTheme) -> ScrollbarGeometry {
         thumb_radius: px(d.border.corner_radius.max(0.0)),
         min_thumb_length: px(sb.min_thumb_length),
         track: rgba_to_hsla(sb.track_color),
-        track_active_border: rgba_to_hsla(d.border.color),
+        track_active_border: defaults_border_color(resolved),
         thumb: rgba_to_hsla(sb.thumb_color),
         thumb_hover: rgba_to_hsla(sb.thumb_hover_color),
         thumb_active: rgba_to_hsla(sb.thumb_active_color.unwrap_or(sb.thumb_hover_color)),
@@ -171,7 +171,10 @@ mod tests {
             assert_eq!(g.thumb_radius, px(r.defaults.border.corner_radius.max(0.0)));
             assert_eq!(g.min_thumb_length, px(sb.min_thumb_length));
             assert_eq!(g.track, rgba_to_hsla(sb.track_color));
-            assert_eq!(g.track_active_border, rgba_to_hsla(r.defaults.border.color));
+            assert_eq!(
+                g.track_active_border,
+                rgba_to_hsla(r.defaults.border.color).opacity(r.defaults.border.opacity)
+            );
             assert_eq!(g.thumb, rgba_to_hsla(sb.thumb_color));
             assert_eq!(g.thumb_hover, rgba_to_hsla(sb.thumb_hover_color));
             assert_eq!(
