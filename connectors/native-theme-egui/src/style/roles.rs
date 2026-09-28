@@ -362,6 +362,12 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
         own.spacing.icon_width,
         notes,
     );
+    // The row: `Checkbox` and `RadioButton` take their minimum size from
+    // `Vec2::splat(interact_size.y)` (`widgets/checkbox.rs:85`, `widgets/radio_button.rs:54`),
+    // which the base style fills from `button.min_height`. The model states no row height for
+    // either, so the floor is the indicator the theme states, and the row grows round a taller
+    // label as egui lays it out.
+    s.spacing.interact_size.y = s.spacing.icon_width;
     s.spacing.icon_spacing = length(
         "checkbox.label_gap",
         k.label_gap,
@@ -1473,6 +1479,16 @@ mod tests {
             assert_eq!(
                 c.spacing.icon_width,
                 clamp_length(k.indicator_width),
+                "{preset}"
+            );
+            // the row's floor is the indicator, not the base's `button.min_height`
+            assert_eq!(
+                c.spacing.interact_size.y,
+                clamp_length(k.indicator_width),
+                "{preset}"
+            );
+            assert_eq!(
+                c.spacing.interact_size.x, base.spacing.interact_size.x,
                 "{preset}"
             );
             assert_eq!(

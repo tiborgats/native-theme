@@ -1240,6 +1240,7 @@ verdict = "direct"
 sinks   = [
   { path = "spacing.icon_width" },
   { path = "spacing.icon_width", scope = "checkbox" },
+  { path = "spacing.interact_size.y", scope = "checkbox" },
   { path = "spacing.icon_width_inner", scope = "checkbox", when = "all four checkbox.border.padding sides are stated, §6.11" },
 ]
 
