@@ -404,14 +404,13 @@ fn colour(c: &Combination, leaf: &str) -> Option<Rgba> {
 
 // ---- the oracle -----------------------------------------------------------------------------
 
-/// §6.13's fold reaches the strokes a border-colour leaf fills — `*.border.color`,
-/// `checkbox.unchecked_border_color`, `input.hover_border_color` — and no other colour: a
-/// separator, grid, divider or menu-separator line keeps its own stated colour (§5.1's
+/// §6.13's fold reaches the strokes `defaults.border.color` fills and no other colour: the
+/// model states the multiplier for the defaults' border alone ("defaults only",
+/// `native-theme/src/model/border.rs:36`), so a widget's own border colour, a separator, grid,
+/// divider or menu-separator line keeps its own stated colour (§5.1's
 /// `defaults.border.opacity` row).
 fn folds_opacity(leaf: &str) -> bool {
-    leaf.ends_with(".border.color")
-        || leaf == "checkbox.unchecked_border_color"
-        || leaf == "input.hover_border_color"
+    leaf == "defaults.border.color"
 }
 fn is_text_size(path: &str) -> bool {
     (path.starts_with("text_styles[") || path.starts_with("override_font_id"))
@@ -438,7 +437,7 @@ fn converted(
     Ok(Some(match (native(c, leaf), inherited) {
         (Native::Null, _) => return Ok(None),
         (Native::Color(x), Val::Color(_)) => Val::Color(if folds_opacity(leaf) {
-            convert::to_color32_with_opacity(x, t.defaults.border.opacity) // §6.13: a border colour carries the fold
+            convert::to_color32_with_opacity(x, t.defaults.border.opacity) // §6.13: the defaults' border colour carries the fold
         } else {
             convert::to_color32(x)
         }),
@@ -498,8 +497,9 @@ fn chain(c: &Combination, leaves: &[&str]) -> Result<Rgba, String> {
 /// What `sink` must hold (§5, §6): `Ok(Some(v))`, or `Ok(None)` where the location keeps what it
 /// inherits (§13.1, *Inheritance*: a sink moves only where its leaf is stated). The value is a
 /// property of the location, not of one declaring row: where several rows declare one sink — a
-/// §6.4 fallback chain, a §6.1 state layer over its idle fill, §6.13's opacity fold over a border
-/// colour, a formula of several inputs — every one of them is held to the one formula that fills
+/// §6.4 fallback chain, a §6.1 state layer over its idle fill, §6.13's opacity fold over the
+/// defaults' border colour, a formula of several inputs — every one of them is held to the one
+/// formula that fills
 /// it (T10: "for a `when` sink the formula of the row that writes it"). A location with one
 /// declaring row and no formula here is that row's §7.2 conversion. `Err` names a sink no formula
 /// covers: add its §6 formula here, never skip it.
@@ -520,12 +520,6 @@ fn expected(
         .unwrap_or("");
     let hover_or_press = matches!(state, "hovered" | "active");
     let c32 = |x: Rgba| Val::Color(convert::to_color32(x));
-    let folded = |x: Rgba| {
-        Val::Color(convert::to_color32_with_opacity(
-            x,
-            t.defaults.border.opacity,
-        ))
-    };
     // §6.1 (C17): a stated layer composited over the idle fill; an unstated one copies the idle
     // fill, written as given (§6.4).
     let layered = |layer: Option<Rgba>, idle: Rgba| {
@@ -640,13 +634,13 @@ fn expected(
             chain(c, &["slider.thumb_hover_color", "slider.thumb_color"])?,
         ),
         (Some(_), "disabled", None, "visuals.disabled_alpha") => Val::F32(1.0), // §6.3, §6.17
-        // ---- §6.13: border colours, folded, with their §6.4 fallbacks ----
-        (Some("checkbox"), "normal", None, p) if p.ends_with(".bg_stroke.color") => folded(chain(
+        // ---- border colours with their §6.4 fallbacks, as stated (§6.13 folds none) ----
+        (Some("checkbox"), "normal", None, p) if p.ends_with(".bg_stroke.color") => c32(chain(
             c,
             &["checkbox.unchecked_border_color", "checkbox.border.color"],
         )?),
         (Some("input"), "normal", None, p) if hover_or_press && p.ends_with(".bg_stroke.color") => {
-            folded(chain(
+            c32(chain(
                 c,
                 &["input.hover_border_color", "input.border.color"],
             )?)

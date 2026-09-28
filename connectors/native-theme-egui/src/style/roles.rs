@@ -11,10 +11,7 @@ use super::states::{
 };
 use super::{BuildInput, push_note};
 use crate::accessors::scaled_text_size;
-use crate::convert::{
-    Rgba, clamp_length, finite_or, padding_with_border, to_button_padding, to_color32,
-    to_color32_with_opacity,
-};
+use crate::convert::{Rgba, clamp_length, padding_with_border, to_button_padding, to_color32};
 use crate::{Note, Role};
 
 /// One role's `Normal` cell: `base` copied, then the role's writes (§3.4).
@@ -117,15 +114,13 @@ fn panel_edge(
     own: &egui::Style,
     paths: [&'static str; 2],
     border: &ResolvedWidgetBorder,
-    fold: f32,
     notes: &mut Vec<Note>,
 ) {
     s.visuals.widgets.noninteractive.bg_stroke = stroke(
         paths,
         own.visuals.widgets.noninteractive.bg_stroke,
-        border.color,
+        to_color32(border.color),
         border.line_width,
-        fold,
         notes,
     );
 }
@@ -133,7 +128,6 @@ fn panel_edge(
 fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     let b = &t.button;
-    let fold = finite_or(t.defaults.border.opacity, 1.0); // reported once by the base (§6.13)
     write_states(
         &mut s.visuals.widgets,
         &StateSource {
@@ -155,7 +149,6 @@ fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             }),
             border: Some(BorderSource {
                 border: &b.border,
-                opacity: fold,
                 paths: [
                     "button.border.color",
                     "button.border.corner_radius",
@@ -205,7 +198,6 @@ fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
 fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     let m = &t.menu;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     // egui's own menu look first (§3.4): item padding vec2(2.0, 0.0), no item outlines, a
     // transparent resting item (`egui/src/containers/menu.rs:22-29`)
     egui::containers::menu::menu_style(s);
@@ -227,7 +219,6 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
             }),
             border: Some(BorderSource {
                 border: &m.border,
-                opacity: fold,
                 paths: [
                     "menu.border.color",
                     "menu.border.corner_radius",
@@ -286,7 +277,6 @@ fn input_role(
 ) {
     let t = input.theme;
     let i = &t.input;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     write_states(
         &mut s.visuals.widgets,
         &StateSource {
@@ -294,7 +284,6 @@ fn input_role(
             text: text_in_all(i.font.color),
             border: Some(BorderSource {
                 border: &i.border,
-                opacity: fold,
                 paths: [
                     "input.border.color",
                     "input.border.corner_radius",
@@ -307,7 +296,7 @@ fn input_role(
         notes,
     );
     // the hovered and pressed field's border (§6.4: `None` copies `border.color`)
-    let hover = to_color32_with_opacity(i.hover_border_color.unwrap_or(i.border.color), fold);
+    let hover = to_color32(i.hover_border_color.unwrap_or(i.border.color));
     s.visuals.widgets.hovered.bg_stroke.color = hover;
     s.visuals.widgets.active.bg_stroke.color = hover;
     s.visuals.weak_text_color = Some(to_color32(i.placeholder_color));
@@ -333,7 +322,6 @@ fn input_role(
 fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     let k = &t.checkbox;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     // §6.4: the unchecked box and its outline fall back to the widget's own colours
     let border = ResolvedWidgetBorder {
         color: k.unchecked_border_color.unwrap_or(k.border.color),
@@ -355,7 +343,6 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             text: text_in_all(k.indicator_color), // the check mark is `fg_stroke` (§5.3)
             border: Some(BorderSource {
                 border: &border,
-                opacity: fold,
                 paths: [
                     "checkbox.unchecked_border_color",
                     "checkbox.border.corner_radius",
@@ -534,7 +521,6 @@ fn progress_bar(
 fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     let tb = &t.tab;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     write_states(
         &mut s.visuals.widgets,
         &StateSource {
@@ -553,7 +539,6 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
             }),
             border: Some(BorderSource {
                 border: &tb.border,
-                opacity: fold,
                 paths: [
                     "tab.border.color",
                     "tab.border.corner_radius",
@@ -600,7 +585,6 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
 fn sidebar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     let sb = &t.sidebar;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     s.visuals.panel_fill = to_color32(sb.background_color);
     s.visuals.selection.bg_fill = to_color32(sb.selection_background);
     s.visuals.selection.stroke.color = to_color32(sb.selection_text_color);
@@ -625,7 +609,6 @@ fn sidebar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
         own,
         ["sidebar.border.color", "sidebar.border.line_width"],
         &sb.border,
-        fold,
         notes,
     );
     slot_size(
@@ -642,7 +625,6 @@ fn sidebar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
 fn toolbar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     let tb = &t.toolbar;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     s.visuals.panel_fill = to_color32(tb.background_color);
     if let Some(gap) = optional_length(
         "toolbar.item_gap",
@@ -667,7 +649,6 @@ fn toolbar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
         own,
         ["toolbar.border.color", "toolbar.border.line_width"],
         &tb.border,
-        fold,
         notes,
     );
     slot_size(
@@ -689,7 +670,6 @@ fn status_bar(
 ) {
     let t = input.theme;
     let sb = &t.status_bar;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     s.visuals.panel_fill = to_color32(sb.background_color);
     write_states(
         &mut s.visuals.widgets,
@@ -706,7 +686,6 @@ fn status_bar(
         own,
         ["status_bar.border.color", "status_bar.border.line_width"],
         &sb.border,
-        fold,
         notes,
     );
     slot_size(
@@ -865,7 +844,6 @@ fn combo_box(
 ) {
     let t = input.theme;
     let cb = &t.combo_box;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     write_states(
         &mut s.visuals.widgets,
         &StateSource {
@@ -881,7 +859,6 @@ fn combo_box(
             text: text_in_all(cb.font.color),
             border: Some(BorderSource {
                 border: &cb.border,
-                opacity: fold,
                 paths: [
                     "combo_box.border.color",
                     "combo_box.border.corner_radius",
@@ -941,7 +918,6 @@ fn segmented_control(
 ) {
     let t = input.theme;
     let sc = &t.segmented_control;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     write_states(
         &mut s.visuals.widgets,
         &StateSource {
@@ -957,7 +933,6 @@ fn segmented_control(
             text: text_in_all(sc.font.color),
             border: Some(BorderSource {
                 border: &sc.border,
-                opacity: fold,
                 paths: [
                     "segmented_control.border.color",
                     "segmented_control.border.corner_radius",
@@ -1007,7 +982,6 @@ fn segmented_control(
 fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
     let t = input.theme;
     let x = &t.expander;
-    let fold = finite_or(t.defaults.border.opacity, 1.0);
     // the header's one frame layer, with no resting fill (§6.1, `collapsing_header.rs:561-568`)
     s.visuals.collapsing_header_frame = true;
     s.visuals.widgets.inactive.weak_bg_fill = egui::Color32::TRANSPARENT;
@@ -1025,7 +999,6 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             text: text_in_all(x.font.color),
             border: Some(BorderSource {
                 border: &x.border,
-                opacity: fold,
                 paths: [
                     "expander.border.color",
                     "expander.border.corner_radius",
@@ -1093,8 +1066,8 @@ mod tests {
 
     use super::*;
     use crate::convert::{
-        clamp_length, composite_over, to_button_padding, to_color32, to_color32_with_opacity,
-        to_corner_radius, unit_interval,
+        clamp_length, composite_over, to_button_padding, to_color32, to_corner_radius,
+        unit_interval,
     };
     use crate::install_tests::resolved;
     use crate::style::BuildInput;
@@ -1253,10 +1226,7 @@ mod tests {
                 &w.active,
                 &w.open,
             ] {
-                assert_eq!(
-                    e.bg_stroke.color,
-                    to_color32_with_opacity(b.border.color, t.defaults.border.opacity)
-                );
+                assert_eq!(e.bg_stroke.color, to_color32(b.border.color));
                 assert_eq!(e.bg_stroke.width, clamp_length(b.border.line_width));
                 assert_eq!(
                     e.corner_radius,
@@ -1328,10 +1298,7 @@ mod tests {
         }
         // the item's border, in the four interactive entries only
         for e in [&w.inactive, &w.hovered, &w.active, &w.open] {
-            assert_eq!(
-                e.bg_stroke.color,
-                to_color32_with_opacity(m.border.color, t.defaults.border.opacity)
-            );
+            assert_eq!(e.bg_stroke.color, to_color32(m.border.color));
             assert_eq!(e.bg_stroke.width, clamp_length(m.border.line_width));
             assert_eq!(
                 e.corner_radius,
@@ -1427,17 +1394,11 @@ mod tests {
             );
         }
         for e in [&w.noninteractive, &w.inactive, &w.open] {
-            assert_eq!(
-                e.bg_stroke.color,
-                to_color32_with_opacity(i.border.color, t.defaults.border.opacity)
-            );
+            assert_eq!(e.bg_stroke.color, to_color32(i.border.color));
         }
         let hover = i.hover_border_color.unwrap_or(i.border.color);
         for e in [&w.hovered, &w.active] {
-            assert_eq!(
-                e.bg_stroke.color,
-                to_color32_with_opacity(hover, t.defaults.border.opacity)
-            );
+            assert_eq!(e.bg_stroke.color, to_color32(hover));
         }
         assert_eq!(
             c.visuals.weak_text_color,
@@ -1484,11 +1445,7 @@ mod tests {
             let border = k.unchecked_border_color.unwrap_or(k.border.color);
             for e in all5(w) {
                 assert_eq!(e.fg_stroke.color, to_color32(k.indicator_color), "{preset}");
-                assert_eq!(
-                    e.bg_stroke.color,
-                    to_color32_with_opacity(border, t.defaults.border.opacity),
-                    "{preset}"
-                );
+                assert_eq!(e.bg_stroke.color, to_color32(border), "{preset}");
                 assert_eq!(
                     e.bg_stroke.width,
                     clamp_length(k.border.line_width),
@@ -1735,11 +1692,7 @@ mod tests {
                 );
             }
             for e in all5(w) {
-                assert_eq!(
-                    e.bg_stroke.color,
-                    to_color32_with_opacity(tb.border.color, t.defaults.border.opacity),
-                    "{preset}"
-                );
+                assert_eq!(e.bg_stroke.color, to_color32(tb.border.color), "{preset}");
                 assert_eq!(
                     e.bg_stroke.width,
                     clamp_length(tb.border.line_width),
@@ -1824,7 +1777,7 @@ mod tests {
                 }
                 assert_eq!(
                     w.noninteractive.bg_stroke.color,
-                    to_color32_with_opacity(border.color, t.defaults.border.opacity),
+                    to_color32(border.color),
                     "{preset} {role:?}"
                 );
                 assert_eq!(
@@ -2098,11 +2051,7 @@ mod tests {
             assert_eq!(w.active.weak_bg_fill, hovered, "{preset}");
             for e in all5(w) {
                 assert_eq!(e.fg_stroke.color, to_color32(cb.font.color), "{preset}");
-                assert_eq!(
-                    e.bg_stroke.color,
-                    to_color32_with_opacity(cb.border.color, t.defaults.border.opacity),
-                    "{preset}"
-                );
+                assert_eq!(e.bg_stroke.color, to_color32(cb.border.color), "{preset}");
                 assert_eq!(
                     e.bg_stroke.width,
                     clamp_length(cb.border.line_width),
@@ -2161,11 +2110,7 @@ mod tests {
             assert_eq!(w.active.weak_bg_fill, hovered, "{preset}");
             for e in all5(w) {
                 assert_eq!(e.fg_stroke.color, to_color32(sc.font.color), "{preset}");
-                assert_eq!(
-                    e.bg_stroke.color,
-                    to_color32_with_opacity(sc.border.color, t.defaults.border.opacity),
-                    "{preset}"
-                );
+                assert_eq!(e.bg_stroke.color, to_color32(sc.border.color), "{preset}");
                 assert_eq!(
                     e.corner_radius,
                     to_corner_radius(
@@ -2235,11 +2180,7 @@ mod tests {
             assert_eq!(w.active.weak_bg_fill, hovered, "{preset}");
             for e in all5(w) {
                 assert_eq!(e.fg_stroke.color, to_color32(x.font.color), "{preset}");
-                assert_eq!(
-                    e.bg_stroke.color,
-                    to_color32_with_opacity(x.border.color, t.defaults.border.opacity),
-                    "{preset}"
-                );
+                assert_eq!(e.bg_stroke.color, to_color32(x.border.color), "{preset}");
                 assert_eq!(
                     e.corner_radius,
                     to_corner_radius(

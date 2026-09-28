@@ -931,7 +931,6 @@ mod tests {
     #[test]
     fn a_none_soft_option_copies_its_fallback_leaf() {
         let mut t = theme();
-        let opacity = t.defaults.border.opacity;
         t.button.active_background = None;
         t.tab.hover_background = None;
         t.expander.hover_background = None;
@@ -974,7 +973,7 @@ mod tests {
         );
         assert_eq!(
             cb.visuals.widgets.inactive.bg_stroke.color,
-            to_color32_with_opacity(t.checkbox.border.color, opacity)
+            to_color32(t.checkbox.border.color)
         );
         assert_eq!(
             cell(Role::ComboBox).visuals.widgets.hovered.weak_bg_fill,
@@ -994,7 +993,7 @@ mod tests {
         );
         assert_eq!(
             cell(Role::Input).visuals.widgets.hovered.bg_stroke.color,
-            to_color32_with_opacity(t.input.border.color, opacity)
+            to_color32(t.input.border.color)
         );
 
         // A stated hover fill is a layer over the idle fill (§6.1); the fallback was not.
@@ -1018,8 +1017,11 @@ mod tests {
 
     // ---- §6.13 and §6.14, over the base style `base_style` builds -------------------------
 
+    /// `defaults.border.opacity` multiplies `defaults.border.color` alone ("defaults only",
+    /// `native-theme/src/model/border.rs:36`; "applied to the border color",
+    /// docs/platform-facts.md:946): a widget's own border colour is painted as stated.
     #[test]
-    fn every_border_stroke_folds_the_defaults_opacity_into_its_alpha() {
+    fn the_defaults_opacity_folds_into_the_defaults_border_colour_alone() {
         let mut t = theme();
         t.defaults.border.opacity = 0.5;
         let (s, notes) = build(&t);
@@ -1029,17 +1031,41 @@ mod tests {
             to_color32_with_opacity(t.defaults.border.color, 0.5)
         );
         assert_eq!(
-            w.inactive.bg_stroke.color,
-            to_color32_with_opacity(t.button.border.color, 0.5)
-        );
-        assert_eq!(
             s.base.visuals.window_stroke.color,
             to_color32_with_opacity(t.defaults.border.color, 0.5)
         );
+        assert_eq!(
+            w.inactive.bg_stroke.color,
+            to_color32(t.button.border.color)
+        );
         for e in entries(&s.cell(Role::Button, RoleVariant::Normal).visuals.widgets) {
+            assert_eq!(e.bg_stroke.color, to_color32(t.button.border.color));
+        }
+        let checkbox = t
+            .checkbox
+            .unchecked_border_color
+            .unwrap_or(t.checkbox.border.color);
+        for e in entries(&s.cell(Role::Checkbox, RoleVariant::Normal).visuals.widgets) {
+            assert_eq!(e.bg_stroke.color, to_color32(checkbox));
+        }
+        let input = s.cell(Role::Input, RoleVariant::Normal);
+        assert_eq!(
+            input.visuals.widgets.inactive.bg_stroke.color,
+            to_color32(t.input.border.color)
+        );
+        assert_eq!(
+            input.visuals.widgets.hovered.bg_stroke.color,
+            to_color32(t.input.hover_border_color.unwrap_or(t.input.border.color))
+        );
+        for (surface, color) in [
+            (crate::Surface::Window, t.window.border.color),
+            (crate::Surface::Tooltip, t.tooltip.border.color),
+            (crate::Surface::Card, t.card.border.color),
+        ] {
             assert_eq!(
-                e.bg_stroke.color,
-                to_color32_with_opacity(t.button.border.color, 0.5)
+                s.frame(surface).stroke.color,
+                to_color32(color),
+                "{surface:?}"
             );
         }
         assert_eq!(sanitised(&notes, "defaults.border.opacity"), 0);

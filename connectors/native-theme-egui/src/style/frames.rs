@@ -2,13 +2,14 @@
 //!
 //! Each frame starts from the frame egui builds for that container over the scheme's base
 //! style and sets only the fields its surface's rows state; every other field keeps the
-//! preset's value, and through it whatever the base style holds (§3.4). A stroke colour folds
-//! `defaults.border.opacity` (§6.13); the shadow gate keeps egui's geometry (§6.14); a padding
-//! side the theme leaves unstated keeps the preset's, and a stated one is rounded to a whole
-//! point, saturating (`convert::to_margin`, §7.2).
+//! preset's value, and through it whatever the base style holds (§3.4). A stroke keeps its
+//! widget's own colour, which `defaults.border.opacity` does not multiply (§6.13); the shadow
+//! gate keeps egui's geometry (§6.14); a padding side the theme leaves unstated keeps the
+//! preset's, and a stated one is rounded to a whole point, saturating (`convert::to_margin`,
+//! §7.2).
 
 use native_theme::color::Rgba;
-use native_theme::theme::{ResolvedTheme, ResolvedWidgetBorder};
+use native_theme::theme::ResolvedWidgetBorder;
 
 use super::base::{margin, radius, stroke};
 use crate::convert::{i8_from_f32_saturating, to_color32, to_shadow};
@@ -51,21 +52,19 @@ const TOOLBAR: BorderPaths = border_paths!("toolbar");
 const STATUS_BAR: BorderPaths = border_paths!("status_bar");
 
 /// A widget border's stroke over the preset frame's, through `base::stroke`: the width by §6's
-/// rule (a non-finite one keeps the preset's, reported), the colour folded with
-/// `defaults.border.opacity` (§6.13).
+/// rule (a non-finite one keeps the preset's, reported), the widget's own colour —
+/// `defaults.border.opacity` multiplies `defaults.border.color` alone (§6.13).
 fn border_stroke(
     own: egui::Stroke,
     border: &ResolvedWidgetBorder,
     paths: &BorderPaths,
-    t: &ResolvedTheme,
     notes: &mut Vec<Note>,
 ) -> egui::Stroke {
     stroke(
         [paths.color, paths.line_width],
         own,
-        border.color,
+        to_color32(border.color),
         border.line_width,
-        t.defaults.border.opacity,
         notes,
     )
 }
@@ -84,7 +83,7 @@ fn popup_like(
     let t = input.theme;
     let mut f = egui::Frame::popup(base);
     f.fill = to_color32(fill);
-    f.stroke = border_stroke(f.stroke, border, paths, t, notes);
+    f.stroke = border_stroke(f.stroke, border, paths, notes);
     f.corner_radius = radius(
         paths.corner_radius,
         f.corner_radius,
@@ -137,7 +136,7 @@ pub(crate) fn surface_frame(
         Surface::Window => {
             let mut f = egui::Frame::window(base);
             f.fill = to_color32(t.window.background_color);
-            f.stroke = border_stroke(f.stroke, &t.window.border, &WINDOW, t, notes);
+            f.stroke = border_stroke(f.stroke, &t.window.border, &WINDOW, notes);
             f
         }
         // `Window::title_frame` (`window.rs:272`): the window frame with the inactive title-bar
@@ -177,7 +176,7 @@ pub(crate) fn surface_frame(
         Surface::Card => {
             let mut f = egui::Frame::group(base);
             f.fill = to_color32(t.card.background_color);
-            f.stroke = border_stroke(f.stroke, &t.card.border, &CARD, t, notes);
+            f.stroke = border_stroke(f.stroke, &t.card.border, &CARD, notes);
             f.corner_radius = radius(
                 CARD.corner_radius,
                 f.corner_radius,
@@ -250,7 +249,7 @@ mod tests {
     use native_theme::theme::{ColorMode, ResolvedPadding, ResolvedTheme};
 
     use super::*;
-    use crate::convert::{clamp_length, to_color32, to_color32_with_opacity, to_shadow};
+    use crate::convert::{clamp_length, to_color32, to_shadow};
     use crate::install_tests::resolved;
     use crate::{AccessibilityPreferences, LayoutTheme, Note, PanelSide, Surface};
 
@@ -313,10 +312,7 @@ mod tests {
         let own = egui::Frame::window(&base());
         let (f, notes) = frame(Surface::Window, &t, &LayoutTheme::default());
         assert_eq!(f.fill, to_color32(t.window.background_color));
-        assert_eq!(
-            f.stroke.color,
-            to_color32_with_opacity(t.window.border.color, t.defaults.border.opacity)
-        );
+        assert_eq!(f.stroke.color, to_color32(t.window.border.color));
         assert_eq!(f.stroke.width, clamp_length(t.window.border.line_width));
         assert_eq!(f.corner_radius, own.corner_radius);
         assert_eq!(f.inner_margin, own.inner_margin);
@@ -341,16 +337,12 @@ mod tests {
     fn dialog_popover_and_tooltip_write_their_rows_over_egui_s_popup_preset() {
         let mut t = theme();
         let own = egui::Frame::popup(&base());
-        let opacity = t.defaults.border.opacity;
         t.dialog.border.padding = unstated();
         t.dialog.border.shadow_enabled = true;
         t.popover.border.shadow_enabled = false;
         let (d, notes) = frame(Surface::Dialog, &t, &LayoutTheme::default());
         assert_eq!(d.fill, to_color32(t.dialog.background_color));
-        assert_eq!(
-            d.stroke.color,
-            to_color32_with_opacity(t.dialog.border.color, opacity)
-        );
+        assert_eq!(d.stroke.color, to_color32(t.dialog.border.color));
         assert_eq!(d.stroke.width, clamp_length(t.dialog.border.line_width));
         assert_eq!(
             d.corner_radius,
@@ -383,10 +375,7 @@ mod tests {
 
         let (tt, _) = frame(Surface::Tooltip, &t, &LayoutTheme::default());
         assert_eq!(tt.fill, to_color32(t.tooltip.background_color));
-        assert_eq!(
-            tt.stroke.color,
-            to_color32_with_opacity(t.tooltip.border.color, opacity)
-        );
+        assert_eq!(tt.stroke.color, to_color32(t.tooltip.border.color));
     }
 
     /// §5.2: a stated side is rounded to a whole point and lands on its own side; the others
@@ -420,10 +409,7 @@ mod tests {
         t.card.border.shadow_enabled = true;
         let (c, _) = frame(Surface::Card, &t, &LayoutTheme::default());
         assert_eq!(c.fill, to_color32(t.card.background_color));
-        assert_eq!(
-            c.stroke.color,
-            to_color32_with_opacity(t.card.border.color, t.defaults.border.opacity)
-        );
+        assert_eq!(c.stroke.color, to_color32(t.card.border.color));
         assert_eq!(c.stroke.width, clamp_length(t.card.border.line_width));
         assert_eq!(c.inner_margin, own.inner_margin);
         assert_eq!(c.shadow, egui::Shadow::NONE);
@@ -533,7 +519,7 @@ mod tests {
         assert_eq!(d.stroke.width, own.stroke.width);
         assert_eq!(
             d.stroke.color,
-            to_color32_with_opacity(t.dialog.border.color, t.defaults.border.opacity),
+            to_color32(t.dialog.border.color),
             "the colour is still written"
         );
         assert_eq!(d.corner_radius, own.corner_radius);

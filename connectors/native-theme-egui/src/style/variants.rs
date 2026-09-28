@@ -3,7 +3,7 @@
 //! Each cell starts from its role's `Normal` cell and writes only the variant's leaves (§3.4).
 //! A role with no variant data returns `None`, and `compile` then shares the `Normal` `Arc`.
 
-use crate::convert::{to_color32, to_color32_with_opacity};
+use crate::convert::to_color32;
 use crate::style::{BuildInput, note_transparent_fill};
 use crate::{Note, Role};
 
@@ -26,7 +26,7 @@ pub(crate) fn selected_cell(
     // box's hover fill, so the hovered entry holds the checked fill too (§6.4).
     let fill = to_color32(t.checkbox.checked_background);
     note_transparent_fill(fill, "checkbox.checked_background", notes);
-    let outline = to_color32_with_opacity(t.checkbox.border.color, t.defaults.border.opacity);
+    let outline = to_color32(t.checkbox.border.color);
     let w = &mut style.visuals.widgets;
     for entry in [
         &mut w.noninteractive,
@@ -173,7 +173,7 @@ mod tests {
     use native_theme::color::Rgba;
     use native_theme::theme::{ColorMode, ResolvedTheme};
 
-    use crate::convert::{to_color32, to_color32_with_opacity};
+    use crate::convert::to_color32;
     use crate::install_tests::resolved;
     use crate::style::{BuildInput, SchemeStyles, compile};
     use crate::{AccessibilityPreferences, LayoutTheme, Note, Role, RoleVariant};
@@ -237,7 +237,7 @@ mod tests {
         let normal = s.cell(Role::Checkbox, RoleVariant::Normal);
         let sel = s.cell(Role::Checkbox, RoleVariant::Selected);
         let fill = to_color32(t.checkbox.checked_background);
-        let outline = to_color32_with_opacity(t.checkbox.border.color, t.defaults.border.opacity);
+        let outline = to_color32(t.checkbox.border.color);
         let entries =
             |w: &egui::style::Widgets| [w.noninteractive, w.inactive, w.hovered, w.active, w.open];
         for (n, e) in entries(&normal.visuals.widgets)

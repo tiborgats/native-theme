@@ -9,7 +9,7 @@ use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
 use super::{BuildInput, push_note, saturates_i8};
 use crate::accessors::scaled_text_size;
 use crate::convert::{
-    Rgba, clamp_length, finite_or, to_button_padding, to_color32, to_color32_with_opacity,
+    clamp_length, finite_or, to_button_padding, to_color32, to_color32_with_opacity,
     to_corner_radius, to_margin, unit_interval,
 };
 use crate::{AccessibilityPreferences, Note};
@@ -54,25 +54,22 @@ pub(crate) fn radius(
     to_corner_radius(own, v)
 }
 
-/// A border stroke: the colour with `defaults.border.opacity` folded into its alpha (§6.13),
-/// the width over the sink's own (`to_stroke`'s rule, §7.2). `paths` are the colour's and the
-/// width's leaves; the opacity's own note is emitted once per style by `base_style`.
+/// A border stroke: the colour as converted, the width over the sink's own (`to_stroke`'s
+/// rule, §7.2). `paths` are the colour's and the width's leaves. Only a stroke of
+/// `defaults.border.color` carries `defaults.border.opacity` (§6.13), folded by the caller;
+/// the opacity's own note is emitted once per style by `base_style`.
 pub(crate) fn stroke(
     paths: [&'static str; 2],
     own: egui::Stroke,
-    color: Rgba,
+    color: egui::Color32,
     width: f32,
-    opacity: f32,
     notes: &mut Vec<Note>,
 ) -> egui::Stroke {
     let [_color_path, width_path] = paths;
     if !width.is_finite() {
         push_note(notes, Note::ValueSanitised { path: width_path });
     }
-    egui::Stroke::new(
-        clamp_length(finite_or(width, own.width)),
-        to_color32_with_opacity(color, opacity),
-    )
+    egui::Stroke::new(clamp_length(finite_or(width, own.width)), color)
 }
 
 /// An opacity sink (`disabled_alpha`): egui's own when non-finite, reported; else clamped
@@ -143,7 +140,8 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     let own = input.scheme.default_style();
     let mut s = input.scheme.default_style();
 
-    // §6.13: the one border opacity, reported once per style
+    // §6.13: the one border opacity, which multiplies `defaults.border.color` alone
+    // (`native-theme/src/model/border.rs:36`, "defaults only"), reported once per style
     let opacity_fold = if d.border.opacity.is_finite() {
         d.border.opacity
     } else {
@@ -204,9 +202,8 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     v.window_stroke = stroke(
         ["defaults.border.color", "defaults.border.line_width"],
         own.visuals.window_stroke,
-        d.border.color,
+        to_color32_with_opacity(d.border.color, opacity_fold),
         d.border.line_width,
-        opacity_fold,
         notes,
     );
     v.disabled_alpha = opacity(
@@ -326,9 +323,8 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     w.noninteractive.bg_stroke = stroke(
         ["defaults.border.color", "defaults.border.line_width"],
         own.visuals.widgets.noninteractive.bg_stroke,
-        d.border.color,
+        to_color32_with_opacity(d.border.color, opacity_fold),
         d.border.line_width,
-        opacity_fold,
         notes,
     );
     w.noninteractive.corner_radius = radius(
@@ -361,7 +357,6 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
             }),
             border: Some(BorderSource {
                 border: &b.border,
-                opacity: opacity_fold,
                 paths: [
                     "button.border.color",
                     "button.border.corner_radius",

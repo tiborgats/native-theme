@@ -64,11 +64,11 @@ pub(crate) struct TextSource {
     pub in_noninteractive: bool,
 }
 
-/// A border: colour × `defaults.border.opacity` (§6.13), width and radius, into `entries`.
-/// `paths` are the colour, corner-radius and line-width leaves.
+/// A border: its own colour — `defaults.border.opacity` multiplies `defaults.border.color`
+/// alone (§6.13) —, width and radius, into `entries`. `paths` are the colour, corner-radius
+/// and line-width leaves.
 pub(crate) struct BorderSource<'a> {
     pub border: &'a ResolvedWidgetBorder,
-    pub opacity: f32,
     pub paths: [&'static str; 3],
     pub entries: BorderEntries,
 }
@@ -178,9 +178,8 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
                 stroke(
                     [color_path, width_path],
                     own.bg_stroke,
-                    b.border.color,
+                    to_color32(b.border.color),
                     b.border.line_width,
-                    b.opacity,
                     notes,
                 ),
                 radius(
@@ -316,7 +315,7 @@ mod tests {
             }
             assert_eq!(
                 w.inactive.bg_stroke.color,
-                to_color32_with_opacity(t.button.border.color, t.defaults.border.opacity),
+                to_color32(t.button.border.color),
                 "{preset}"
             );
             assert_eq!(
@@ -366,7 +365,6 @@ mod tests {
                     text: None,
                     border: Some(BorderSource {
                         border: &t.button.border,
-                        opacity: 1.0,
                         paths: ["test.color", "test.corner_radius", "test.line_width"],
                         entries: BorderEntries::All,
                     }),

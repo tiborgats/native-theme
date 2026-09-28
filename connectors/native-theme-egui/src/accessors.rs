@@ -456,7 +456,9 @@ pub fn border_radius_lg(t: &ResolvedTheme) -> f32 {
     t.defaults.border.corner_radius_lg
 }
 /// `defaults.border.color` with `defaults.border.opacity` folded into its alpha —
-/// [`convert::to_color32_with_opacity`](crate::convert::to_color32_with_opacity), the fold every border stroke the atlas writes goes through (§6.13).
+/// [`convert::to_color32_with_opacity`](crate::convert::to_color32_with_opacity), the fold the
+/// atlas's strokes of `defaults.border.color` go through; a widget's own border colour is
+/// painted as stated (§6.13).
 #[must_use]
 pub fn border_color(t: &ResolvedTheme) -> egui::Color32 {
     to_color32_with_opacity(t.defaults.border.color, t.defaults.border.opacity)
