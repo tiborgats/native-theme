@@ -89,8 +89,10 @@ pub enum RoleVariant {
     /// carried by their `Normal` cells, which the `Button`'s own `.selected(..)` flag picks
     /// from; their `Selected` cell is the `Normal` one.
     Selected,
-    /// The platform's disabled appearance, written into the `inactive` entry with
-    /// `Visuals::disabled_alpha` neutralised to `1.0`. See §6.3.
+    /// The platform's disabled appearance, written into the `inactive` entry, with the role's
+    /// `disabled_opacity` as `Visuals::disabled_alpha`, which `Ui::disable` fades the widget by
+    /// on top of those colours. A platform dims by one of the two, and its data makes the other
+    /// an identity (docs/platform-facts.md §2.1.6). See §6.3.
     Disabled,
 }
 

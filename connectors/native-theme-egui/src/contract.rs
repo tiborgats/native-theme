@@ -405,14 +405,6 @@ fn colour(c: &Combination, leaf: &str) -> Option<Rgba> {
 
 // ---- the oracle -----------------------------------------------------------------------------
 
-/// §6.13's fold reaches the strokes `defaults.border.color` fills and no other colour: a
-/// widget's own border colour, a separator, grid, divider or menu-separator line keeps its own
-/// stated colour (§5.1's `defaults.border.opacity` row). The model does not state which colours
-/// the multiplier applies to; this is the connector's rule until that is decided (docs/todo.md,
-/// "Border opacity").
-fn folds_opacity(leaf: &str) -> bool {
-    leaf == "defaults.border.color"
-}
 fn is_text_size(path: &str) -> bool {
     (path.starts_with("text_styles[") || path.starts_with("override_font_id"))
         && path.ends_with(".size")
@@ -427,7 +419,6 @@ fn converted(
     sink: &Sink,
     inherited: Val,
 ) -> Result<Option<Val>, String> {
-    let t = &c.resolved;
     let size = |x: f32| {
         if is_text_size(&sink.path) {
             crate::scaled_text_size(x, c.atlas.accessibility()) // §8.5, §8.6
@@ -437,11 +428,7 @@ fn converted(
     };
     Ok(Some(match (native(c, leaf), inherited) {
         (Native::Null, _) => return Ok(None),
-        (Native::Color(x), Val::Color(_)) => Val::Color(if folds_opacity(leaf) {
-            convert::to_color32_with_opacity(x, t.defaults.border.opacity) // §6.13: the defaults' border colour carries the fold
-        } else {
-            convert::to_color32(x)
-        }),
+        (Native::Color(x), Val::Color(_)) => Val::Color(convert::to_color32(x)),
         (Native::Color(x), Val::OptColor(_)) => Val::OptColor(Some(convert::to_color32(x))),
         (Native::Number(x), Val::F32(base)) => Val::F32(if sink.path == "visuals.disabled_alpha" {
             convert::unit_interval(x)
@@ -586,14 +573,26 @@ fn expected(
             "disabled",
             None,
             "visuals.widgets.inactive.weak_bg_fill",
-        )
-        | (Some(w @ "button"), "disabled", None, "visuals.selection.bg_fill") => c32(chain(
+        ) => c32(chain(
             c,
             &[
                 &format!("{w}.disabled_background"),
                 &format!("{w}.background_color"),
             ],
         )?),
+        // §6.3: a primary button takes the disabled pair where the platform states a disabled
+        // fill, and keeps its own pair where it states none and dims by opacity alone.
+        (Some("button"), "disabled", None, "visuals.selection.bg_fill") => c32(chain(
+            c,
+            &["button.disabled_background", "button.primary_background"],
+        )?),
+        (Some("button"), "disabled", None, "visuals.selection.stroke.color") => {
+            c32(if colour(c, "button.disabled_background").is_some() {
+                req("button.disabled_text_color")?
+            } else {
+                req("button.primary_text_color")?
+            })
+        }
         (Some("checkbox"), "disabled", None, "visuals.widgets.inactive.bg_fill") => c32(chain(
             c,
             &[
@@ -640,7 +639,20 @@ fn expected(
         (Some("slider"), "normal", None, p) if hover_or_press && p.ends_with(".bg_fill") => c32(
             chain(c, &["slider.thumb_hover_color", "slider.thumb_color"])?,
         ),
-        (Some(_), "disabled", None, "visuals.disabled_alpha") => Val::F32(1.0), // §6.3, §6.17
+        // §6.3: the role's own `disabled_opacity`, the defaults' for a role with none, which egui
+        // fades a disabled widget by on top of its disabled colours (docs/platform-facts.md
+        // §2.1.6)
+        (Some(w), "disabled", None, "visuals.disabled_alpha") => {
+            Val::F32(convert::unit_interval(match w {
+                "button" => t.button.disabled_opacity,
+                "combo_box" => t.combo_box.disabled_opacity,
+                "checkbox" => t.checkbox.disabled_opacity,
+                "input" => t.input.disabled_opacity,
+                "slider" => t.slider.disabled_opacity,
+                "switch" => t.switch.disabled_opacity,
+                _ => t.defaults.disabled_opacity,
+            }))
+        }
         // ---- border colours with their §6.4 fallbacks, as stated (§6.13 folds none) ----
         (Some("checkbox"), "normal", None, p) if p.ends_with(".bg_stroke.color") => c32(chain(
             c,
@@ -897,10 +909,8 @@ fn expected(
         }
         // ---- one declaring row: its §7.2 conversion ----
         _ => {
-            // `defaults.border.opacity` is §6.13's fold, part of the border colour's conversion.
             let declaring: Vec<(&str, &Row)> = rows
                 .iter()
-                .filter(|(leaf, _)| leaf.as_str() != "defaults.border.opacity")
                 .filter(|(_, r)| {
                     r.sinks.iter().any(|s| {
                         s.path == sink.path

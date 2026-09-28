@@ -466,7 +466,7 @@ fn verdict_totals_match_the_specification() {
     }
     // [direct, scoped, derived, unmappable] per group: §5.7's table
     let expected = [
-        ("foundation", [18, 1, 37, 10]),
+        ("foundation", [18, 1, 36, 11]),
         ("surfaces", [8, 55, 31, 14]),
         ("buttons", [11, 45, 29, 15]),
         ("inputs", [4, 35, 28, 11]),
@@ -482,12 +482,12 @@ fn verdict_totals_match_the_specification() {
         "a leaf outside the six groups"
     );
     assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 15);
-    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 6);
-    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 53);
+    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 8);
+    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 51);
     assert_eq!(
         tags.get("source-void").copied().unwrap_or_default(),
-        0,
-        "no row is source-void (§5.7)"
+        1,
+        "one row is source-void: defaults.border.opacity, already folded into every border colour"
     );
 }
 
@@ -902,18 +902,6 @@ const PAIRS: [(&str, &str); 8] = [
     ("dracula", "solarized"),
 ];
 
-const DISABLED_CELLS: [Role; 9] = [
-    Role::Button,
-    Role::ComboBox,
-    Role::Checkbox,
-    Role::Input,
-    Role::Slider,
-    Role::Switch,
-    Role::Menu,
-    Role::List,
-    Role::Link,
-];
-
 /// What `menu_style` sets in the `Role::Menu` cells before the role's writes
 /// (`egui/src/containers/menu.rs:22-29`, §3.4).
 const MENU_STYLE_PATHS: [&str; 6] = [
@@ -1046,10 +1034,7 @@ fn own_write(m: &Manifest, a: &Cached, at: impl Fn(&Sink) -> bool) -> Own {
 
 /// Whether §6 writes `path` in the cell (`role`, `variant`) with no manifest row.
 pub(crate) fn no_row_write(role: Role, variant: RoleVariant, path: &str) -> bool {
-    (variant == RoleVariant::Disabled
-        && DISABLED_CELLS.contains(&role)
-        && path == "visuals.disabled_alpha")
-        || (role == Role::Expander
+    (role == Role::Expander
             && variant == RoleVariant::Normal
             && (path == "visuals.widgets.inactive.weak_bg_fill"
                 || path == "visuals.widgets.open.weak_bg_fill"))

@@ -221,15 +221,13 @@ sinks   = [
   { path = "visuals.window_stroke.width" },
 ]
 
-# Folded into the strokes of defaults.border.color alone, and into no widget's own border
-# colour. The model does not state which colours the multiplier applies to; the gpui and iced
-# connectors apply it to none. Open (docs/todo.md, "Border opacity").
+# The text colour's share already folded into every stated border colour, which is the final
+# line colour; no connector multiplies any colour by it (native-theme/src/model/border.rs,
+# DefaultsBorderSpec::opacity; docs/platform-facts.md §2.1.6).
 ["defaults.border.opacity"]
-verdict = "derived"
-sinks   = [
-  { path = "visuals.widgets.noninteractive.bg_stroke.color" },
-  { path = "visuals.window_stroke.color" },
-]
+verdict  = "unmappable"
+sub_tag  = "source-void"
+upstream = "none: the model folds it into every border colour it states, so it carries nothing to apply"
 
 ["defaults.border.shadow_enabled"]
 verdict = "derived"
@@ -887,16 +885,21 @@ sinks   = [
   { path = "visuals.widgets.hovered.weak_bg_fill", scope = "button", when = "button.hover_background is translucent, §6.1" },
   { path = "visuals.widgets.active.weak_bg_fill", scope = "button", when = "the pressed layer is translucent, §6.1" },
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "button", variant = "disabled", when = "button.disabled_background is None, §6.4" },
-  { path = "visuals.selection.bg_fill", scope = "button", variant = "disabled", when = "button.disabled_background is None, §6.4" },
 ]
 
 ["button.primary_background"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.selection.bg_fill", scope = "button" }]
+sinks   = [
+  { path = "visuals.selection.bg_fill", scope = "button" },
+  { path = "visuals.selection.bg_fill", scope = "button", variant = "disabled", when = "button.disabled_background is None: the platform dims by opacity alone, §6.3" },
+]
 
 ["button.primary_text_color"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.selection.stroke.color", scope = "button" }]
+sinks   = [
+  { path = "visuals.selection.stroke.color", scope = "button" },
+  { path = "visuals.selection.stroke.color", scope = "button", variant = "disabled", when = "button.disabled_background is None: the platform dims by opacity alone, §6.3" },
+]
 
 ["button.min_width"]
 verdict   = "derived"
@@ -915,7 +918,10 @@ sinks   = [{ path = "spacing.icon_spacing", scope = "button" }]
 
 ["button.disabled_opacity"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.disabled_alpha", scope = "button" }]
+sinks   = [
+  { path = "visuals.disabled_alpha", scope = "button" },
+  { path = "visuals.disabled_alpha", scope = "button", variant = "disabled" },
+]
 
 ["button.hover_background"]
 verdict = "direct"
@@ -942,7 +948,7 @@ verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.noninteractive.fg_stroke.color", scope = "button", variant = "disabled" },
   { path = "visuals.widgets.inactive.fg_stroke.color", scope = "button", variant = "disabled" },
-  { path = "visuals.selection.stroke.color", scope = "button", variant = "disabled" },
+  { path = "visuals.selection.stroke.color", scope = "button", variant = "disabled", when = "button.disabled_background is stated, §6.3" },
 ]
 
 ["button.active_background"]
@@ -956,7 +962,8 @@ sinks   = [
 verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.inactive.weak_bg_fill", scope = "button", variant = "disabled", when = "stated; None copies button.background_color, §6.4" },
-  { path = "visuals.selection.bg_fill", scope = "button", variant = "disabled", when = "stated; None copies button.background_color, §6.4" },
+  { path = "visuals.selection.bg_fill", scope = "button", variant = "disabled", when = "stated; None keeps button.primary_background, §6.3" },
+  { path = "visuals.selection.stroke.color", scope = "button", variant = "disabled", when = "stated: button.disabled_text_color, else button.primary_text_color, §6.3" },
 ]
 
 ["button.font.family"]
@@ -1179,7 +1186,10 @@ sinks   = [
 
 ["switch.disabled_opacity"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.disabled_alpha", scope = "switch" }]
+sinks   = [
+  { path = "visuals.disabled_alpha", scope = "switch" },
+  { path = "visuals.disabled_alpha", scope = "switch", variant = "disabled" },
+]
 
 ["switch.hover_checked_background"]
 verdict   = "derived"
@@ -1258,7 +1268,10 @@ sinks   = [
 
 ["checkbox.disabled_opacity"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.disabled_alpha", scope = "checkbox" }]
+sinks   = [
+  { path = "visuals.disabled_alpha", scope = "checkbox" },
+  { path = "visuals.disabled_alpha", scope = "checkbox", variant = "disabled" },
+]
 
 ["checkbox.disabled_text_color"]
 verdict = "scoped"
@@ -1539,7 +1552,10 @@ tested_by = "T18(a)"
 
 ["input.disabled_opacity"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.disabled_alpha", scope = "input" }]
+sinks   = [
+  { path = "visuals.disabled_alpha", scope = "input" },
+  { path = "visuals.disabled_alpha", scope = "input", variant = "disabled" },
+]
 
 ["input.disabled_text_color"]
 verdict = "scoped"
@@ -1679,7 +1695,10 @@ sinks   = [{ path = "spacing.icon_spacing", scope = "combo_box" }]
 
 ["combo_box.disabled_opacity"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.disabled_alpha", scope = "combo_box" }]
+sinks   = [
+  { path = "visuals.disabled_alpha", scope = "combo_box" },
+  { path = "visuals.disabled_alpha", scope = "combo_box", variant = "disabled" },
+]
 
 ["combo_box.disabled_text_color"]
 verdict = "scoped"
@@ -2034,7 +2053,10 @@ upstream = "egui: tick marks on Slider"
 
 ["slider.disabled_opacity"]
 verdict = "scoped"
-sinks   = [{ path = "visuals.disabled_alpha", scope = "slider" }]
+sinks   = [
+  { path = "visuals.disabled_alpha", scope = "slider" },
+  { path = "visuals.disabled_alpha", scope = "slider", variant = "disabled" },
+]
 
 ["slider.thumb_hover_color"]
 verdict = "scoped"
@@ -2074,8 +2096,8 @@ tested_by = "T18(a)"
 
 ["progress_bar.border.color"]
 verdict  = "unmappable"
-sub_tag  = "egui-limited"
-upstream = "Frame::stroke on a Frame laid round the bar (declined, §5.8 item 8)"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9)"
 
 ["progress_bar.border.corner_radius"]
 verdict   = "derived"
@@ -2083,8 +2105,8 @@ tested_by = "T18(a)"
 
 ["progress_bar.border.line_width"]
 verdict  = "unmappable"
-sub_tag  = "egui-limited"
-upstream = "Frame::stroke on a Frame laid round the bar (declined, §5.8 item 8)"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9)"
 
 ["progress_bar.border.shadow_enabled"]
 verdict  = "unmappable"

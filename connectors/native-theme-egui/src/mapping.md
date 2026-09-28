@@ -8,15 +8,15 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
-| Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 37 | 10 |
+| Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 36 | 11 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 108 | 8 | 55 | 31 | 14 |
 | Buttons (button, link, switch, checkbox, segmented control) | 100 | 11 | 45 | 29 | 15 |
 | Inputs (input, combo box, list) | 78 | 4 | 35 | 28 | 11 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 91 | 0 | 53 | 23 | 15 |
-| **TOTAL** | **483** | **47** | **206** | **156** | **74** |
+| **TOTAL** | **483** | **47** | **206** | **155** | **75** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-crate` 6.
+UNMAPPABLE sub-tags (§2): `egui-limited` 51, `source-side gap` 15, `source-void` 1, `widgets-crate` 8.
 
 ## Rows
 
@@ -31,7 +31,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `defaults.border.corner_radius` | DIRECT | `visuals.widgets.noninteractive.corner_radius`; «scrollbar» `visuals.widgets.inactive.corner_radius`; «scrollbar» `visuals.widgets.hovered.corner_radius`; «scrollbar» `visuals.widgets.active.corner_radius`; «slider» `visuals.widgets.inactive.corner_radius` (when: the radius is below half the slider rail height, §6.8) |  |
 | `defaults.border.corner_radius_lg` | DIRECT | `visuals.menu_corner_radius` |  |
 | `defaults.border.line_width` | DIRECT | `visuals.widgets.noninteractive.bg_stroke.width`; `visuals.window_stroke.width` |  |
-| `defaults.border.opacity` | DERIVED | `visuals.widgets.noninteractive.bg_stroke.color`; `visuals.window_stroke.color` |  |
+| `defaults.border.opacity` | UNMAPPABLE |  | `source-void`: none: the model folds it into every border colour it states, so it carries nothing to apply |
 | `defaults.border.shadow_enabled` | DERIVED | `visuals.popup_shadow.offset`; `visuals.popup_shadow.blur`; `visuals.popup_shadow.spread` (when: never: egui's own spread, 0, is Shadow::NONE's, §6.14); `visuals.popup_shadow.color` | probe `false` |
 | `defaults.danger_color` | DIRECT | `visuals.error_fg_color` |  |
 | `defaults.danger_text_color` | DERIVED | → T18(a) |  |
@@ -210,7 +210,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 |---|---|---|---|
 | `button.active_background` | DIRECT | `visuals.widgets.active.weak_bg_fill` (when: stated; None copies button.hover_background, §6.4); «button» `visuals.widgets.active.weak_bg_fill` (when: stated; None copies button.hover_background, §6.4) |  |
 | `button.active_text_color` | SCOPED | «button» `visuals.widgets.active.fg_stroke.color` |  |
-| `button.background_color` | DIRECT | `visuals.widgets.inactive.weak_bg_fill`; `visuals.widgets.hovered.weak_bg_fill` (when: button.hover_background is translucent, §6.1); `visuals.widgets.active.weak_bg_fill` (when: the pressed layer is translucent, §6.1); «button» `visuals.widgets.inactive.weak_bg_fill`; «button» `visuals.widgets.open.weak_bg_fill`; «button» `visuals.widgets.hovered.weak_bg_fill` (when: button.hover_background is translucent, §6.1); «button» `visuals.widgets.active.weak_bg_fill` (when: the pressed layer is translucent, §6.1); «button:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: button.disabled_background is None, §6.4); «button:disabled» `visuals.selection.bg_fill` (when: button.disabled_background is None, §6.4) |  |
+| `button.background_color` | DIRECT | `visuals.widgets.inactive.weak_bg_fill`; `visuals.widgets.hovered.weak_bg_fill` (when: button.hover_background is translucent, §6.1); `visuals.widgets.active.weak_bg_fill` (when: the pressed layer is translucent, §6.1); «button» `visuals.widgets.inactive.weak_bg_fill`; «button» `visuals.widgets.open.weak_bg_fill`; «button» `visuals.widgets.hovered.weak_bg_fill` (when: button.hover_background is translucent, §6.1); «button» `visuals.widgets.active.weak_bg_fill` (when: the pressed layer is translucent, §6.1); «button:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: button.disabled_background is None, §6.4) |  |
 | `button.border.color` | DIRECT | `visuals.widgets.inactive.bg_stroke.color`; `visuals.widgets.hovered.bg_stroke.color`; `visuals.widgets.active.bg_stroke.color`; `visuals.widgets.open.bg_stroke.color`; «button» `visuals.widgets.noninteractive.bg_stroke.color`; «button» `visuals.widgets.inactive.bg_stroke.color`; «button» `visuals.widgets.hovered.bg_stroke.color`; «button» `visuals.widgets.active.bg_stroke.color`; «button» `visuals.widgets.open.bg_stroke.color` |  |
 | `button.border.corner_radius` | DIRECT | «button» `visuals.widgets.noninteractive.corner_radius`; «button» `visuals.widgets.inactive.corner_radius`; «button» `visuals.widgets.hovered.corner_radius`; «button» `visuals.widgets.active.corner_radius`; «button» `visuals.widgets.open.corner_radius`; `visuals.widgets.inactive.corner_radius`; `visuals.widgets.hovered.corner_radius`; `visuals.widgets.active.corner_radius`; `visuals.widgets.open.corner_radius` |  |
 | `button.border.line_width` | DIRECT | «button» `visuals.widgets.noninteractive.bg_stroke.width`; «button» `visuals.widgets.inactive.bg_stroke.width`; «button» `visuals.widgets.hovered.bg_stroke.width`; «button» `visuals.widgets.active.bg_stroke.width`; «button» `visuals.widgets.open.bg_stroke.width`; `visuals.widgets.inactive.bg_stroke.width`; `visuals.widgets.hovered.bg_stroke.width`; `visuals.widgets.active.bg_stroke.width`; `visuals.widgets.open.bg_stroke.width`; `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro); «button» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «button» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro) |  |
@@ -219,9 +219,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `button.border.padding.right` | DERIVED | `spacing.button_padding.x`; «button» `spacing.button_padding.x` |  |
 | `button.border.padding.top` | DERIVED | `spacing.button_padding.y`; «button» `spacing.button_padding.y` |  |
 | `button.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
-| `button.disabled_background` | SCOPED | «button:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies button.background_color, §6.4); «button:disabled» `visuals.selection.bg_fill` (when: stated; None copies button.background_color, §6.4) |  |
-| `button.disabled_opacity` | SCOPED | «button» `visuals.disabled_alpha` |  |
-| `button.disabled_text_color` | SCOPED | «button:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «button:disabled» `visuals.widgets.inactive.fg_stroke.color`; «button:disabled» `visuals.selection.stroke.color` |  |
+| `button.disabled_background` | SCOPED | «button:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies button.background_color, §6.4); «button:disabled» `visuals.selection.bg_fill` (when: stated; None keeps button.primary_background, §6.3); «button:disabled» `visuals.selection.stroke.color` (when: stated: button.disabled_text_color, else button.primary_text_color, §6.3) |  |
+| `button.disabled_opacity` | SCOPED | «button» `visuals.disabled_alpha`; «button:disabled» `visuals.disabled_alpha` |  |
+| `button.disabled_text_color` | SCOPED | «button:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «button:disabled» `visuals.widgets.inactive.fg_stroke.color`; «button:disabled» `visuals.selection.stroke.color` (when: button.disabled_background is stated, §6.3) |  |
 | `button.font.color` | DIRECT | `visuals.widgets.inactive.fg_stroke.color`; `visuals.widgets.open.fg_stroke.color`; «button» `visuals.widgets.noninteractive.fg_stroke.color`; «button» `visuals.widgets.inactive.fg_stroke.color`; «button» `visuals.widgets.open.fg_stroke.color` |  |
 | `button.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `button.font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
@@ -233,8 +233,8 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `button.icon_text_gap` | SCOPED | «button» `spacing.icon_spacing` |  |
 | `button.min_height` | DIRECT | `spacing.interact_size.y`; «button» `spacing.interact_size.y` |  |
 | `button.min_width` | DERIVED | → T18(a) |  |
-| `button.primary_background` | SCOPED | «button» `visuals.selection.bg_fill` |  |
-| `button.primary_text_color` | SCOPED | «button» `visuals.selection.stroke.color` |  |
+| `button.primary_background` | SCOPED | «button» `visuals.selection.bg_fill`; «button:disabled» `visuals.selection.bg_fill` (when: button.disabled_background is None: the platform dims by opacity alone, §6.3) |  |
+| `button.primary_text_color` | SCOPED | «button» `visuals.selection.stroke.color`; «button:disabled» `visuals.selection.stroke.color` (when: button.disabled_background is None: the platform dims by opacity alone, §6.3) |  |
 | `checkbox.background_color` | SCOPED | «checkbox» `visuals.widgets.inactive.bg_fill` (when: checkbox.unchecked_background is None, §6.4); «checkbox» `visuals.widgets.open.bg_fill` (when: checkbox.unchecked_background is None, §6.4); «checkbox» `visuals.widgets.hovered.bg_fill` (when: checkbox.unchecked_background is None and the hover layer is translucent or None, §6.1, §6.4); «checkbox» `visuals.widgets.active.bg_fill` (when: checkbox.unchecked_background is None and the hover layer is translucent or None, §6.1, §6.4); «checkbox:disabled» `visuals.widgets.inactive.bg_fill` (when: checkbox.disabled_background and checkbox.unchecked_background are None, §6.4) |  |
 | `checkbox.border.color` | SCOPED | «checkbox:selected» `visuals.widgets.noninteractive.bg_stroke.color`; «checkbox:selected» `visuals.widgets.inactive.bg_stroke.color`; «checkbox:selected» `visuals.widgets.hovered.bg_stroke.color`; «checkbox:selected» `visuals.widgets.active.bg_stroke.color`; «checkbox:selected» `visuals.widgets.open.bg_stroke.color`; «checkbox» `visuals.widgets.noninteractive.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.inactive.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.hovered.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.active.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4); «checkbox» `visuals.widgets.open.bg_stroke.color` (when: checkbox.unchecked_border_color is None, §6.4) |  |
 | `checkbox.border.corner_radius` | SCOPED | «checkbox» `visuals.widgets.noninteractive.corner_radius`; «checkbox» `visuals.widgets.inactive.corner_radius`; «checkbox» `visuals.widgets.hovered.corner_radius`; «checkbox» `visuals.widgets.active.corner_radius`; «checkbox» `visuals.widgets.open.corner_radius` |  |
@@ -246,7 +246,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `checkbox.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `checkbox.checked_background` | SCOPED | «checkbox:selected» `visuals.widgets.noninteractive.bg_fill`; «checkbox:selected» `visuals.widgets.inactive.bg_fill`; «checkbox:selected» `visuals.widgets.hovered.bg_fill`; «checkbox:selected» `visuals.widgets.active.bg_fill`; «checkbox:selected» `visuals.widgets.open.bg_fill` |  |
 | `checkbox.disabled_background` | SCOPED | «checkbox:disabled» `visuals.widgets.inactive.bg_fill` (when: stated; None copies the idle fill, §6.4) |  |
-| `checkbox.disabled_opacity` | SCOPED | «checkbox» `visuals.disabled_alpha` |  |
+| `checkbox.disabled_opacity` | SCOPED | «checkbox» `visuals.disabled_alpha`; «checkbox:disabled» `visuals.disabled_alpha` |  |
 | `checkbox.disabled_text_color` | SCOPED | «checkbox:disabled» `visuals.override_text_color`; «checkbox:disabled» `visuals.widgets.inactive.fg_stroke.color` |  |
 | `checkbox.font.color` | SCOPED | «checkbox» `visuals.override_text_color` |  |
 | `checkbox.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
@@ -297,7 +297,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `segmented_control.separator_width` | SCOPED | «segmented_control» `spacing.item_spacing.x` | probe `2.0` |
 | `switch.checked_background` | SCOPED | «switch» `visuals.selection.bg_fill`; «switch:disabled» `visuals.selection.bg_fill` (when: switch.disabled_checked_background is None, §6.4) |  |
 | `switch.disabled_checked_background` | SCOPED | «switch:disabled» `visuals.selection.bg_fill` (when: stated; None copies switch.checked_background, §6.4) |  |
-| `switch.disabled_opacity` | SCOPED | «switch» `visuals.disabled_alpha` |  |
+| `switch.disabled_opacity` | SCOPED | «switch» `visuals.disabled_alpha`; «switch:disabled» `visuals.disabled_alpha` |  |
 | `switch.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Switch (docs/todo_egui-widgets-spec.md §4.1) |
 | `switch.disabled_unchecked_background` | SCOPED | «switch:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies switch.unchecked_background, §6.4) |  |
 | `switch.hover_checked_background` | DERIVED | → T18(a) |  |
@@ -325,7 +325,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `combo_box.border.padding.top` | DERIVED | «combo_box» `spacing.button_padding.y` |  |
 | `combo_box.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `combo_box.disabled_background` | SCOPED | «combo_box:disabled» `visuals.widgets.inactive.weak_bg_fill` (when: stated; None copies combo_box.background_color, §6.4) |  |
-| `combo_box.disabled_opacity` | SCOPED | «combo_box» `visuals.disabled_alpha` |  |
+| `combo_box.disabled_opacity` | SCOPED | «combo_box» `visuals.disabled_alpha`; «combo_box:disabled» `visuals.disabled_alpha` |  |
 | `combo_box.disabled_text_color` | SCOPED | «combo_box:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «combo_box:disabled» `visuals.widgets.inactive.fg_stroke.color` |  |
 | `combo_box.font.color` | SCOPED | «combo_box» `visuals.widgets.noninteractive.fg_stroke.color`; «combo_box» `visuals.widgets.inactive.fg_stroke.color`; «combo_box» `visuals.widgets.hovered.fg_stroke.color`; «combo_box» `visuals.widgets.active.fg_stroke.color`; «combo_box» `visuals.widgets.open.fg_stroke.color` |  |
 | `combo_box.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
@@ -347,7 +347,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `input.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `input.caret_color` | DIRECT | `visuals.text_cursor.stroke.color` |  |
 | `input.disabled_background` | SCOPED | «input:disabled» `visuals.text_edit_bg_color` (when: stated; None copies input.background_color, §6.4) |  |
-| `input.disabled_opacity` | SCOPED | «input» `visuals.disabled_alpha` |  |
+| `input.disabled_opacity` | SCOPED | «input» `visuals.disabled_alpha`; «input:disabled» `visuals.disabled_alpha` |  |
 | `input.disabled_text_color` | SCOPED | «input:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «input:disabled» `visuals.widgets.inactive.fg_stroke.color` |  |
 | `input.focus_border_color` | DERIVED | → T18(h) |  |
 | `input.font.color` | SCOPED | «input» `visuals.widgets.noninteractive.fg_stroke.color`; «input» `visuals.widgets.inactive.fg_stroke.color`; «input» `visuals.widgets.hovered.fg_stroke.color`; «input» `visuals.widgets.active.fg_stroke.color`; «input» `visuals.widgets.open.fg_stroke.color` |  |
@@ -396,9 +396,9 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 
 | leaf | verdict | sinks, or the test of its route | note |
 |---|---|---|---|
-| `progress_bar.border.color` | UNMAPPABLE |  | `egui-limited`: Frame::stroke on a Frame laid round the bar (declined, §5.8 item 8) |
+| `progress_bar.border.color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9) |
 | `progress_bar.border.corner_radius` | DERIVED | → T18(a) |  |
-| `progress_bar.border.line_width` | UNMAPPABLE |  | `egui-limited`: Frame::stroke on a Frame laid round the bar (declined, §5.8 item 8) |
+| `progress_bar.border.line_width` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: ProgressBar (docs/todo_egui-widgets-spec.md §4.9) |
 | `progress_bar.border.padding.bottom` | UNMAPPABLE |  | `egui-limited`: egui: a progress-bar style (§14 item 36) |
 | `progress_bar.border.padding.left` | SCOPED | «progress_bar» `spacing.item_spacing.x` | probe `5.0` |
 | `progress_bar.border.padding.right` | UNMAPPABLE |  | `egui-limited`: egui: a progress-bar style (§14 item 36) |
@@ -419,7 +419,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `separator.line_color` | SCOPED | «separator» `visuals.widgets.noninteractive.bg_stroke.color` |  |
 | `separator.line_width` | SCOPED | «separator» `visuals.widgets.noninteractive.bg_stroke.width` |  |
 | `slider.disabled_fill_color` | SCOPED | «slider:disabled» `visuals.selection.bg_fill` (when: stated; None copies slider.fill_color, §6.4) |  |
-| `slider.disabled_opacity` | SCOPED | «slider» `visuals.disabled_alpha` |  |
+| `slider.disabled_opacity` | SCOPED | «slider» `visuals.disabled_alpha`; «slider:disabled» `visuals.disabled_alpha` |  |
 | `slider.disabled_thumb_color` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: Slider (docs/todo_egui-widgets-spec.md §4.2) |
 | `slider.disabled_track_color` | SCOPED | «slider:disabled» `visuals.widgets.inactive.bg_fill` (when: stated; None copies slider.track_color, §6.4) |  |
 | `slider.fill_color` | SCOPED | «slider» `visuals.selection.bg_fill`; `visuals.slider_trailing_fill` (when: never: written true in the base style, which every cell inherits, §5.9); «slider:disabled» `visuals.selection.bg_fill` (when: slider.disabled_fill_color is None, §6.4) |  |
@@ -575,7 +575,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `text_styles[Monospace].size` | `defaults.mono_font.size` |  |  |
 | `text_styles[Small].size` | `text_scale.caption.size` |  |  |
 | `visuals.collapsing_header_frame` | — (egui's own value stands) |  | `expander.hover_background` «expander» |
-| `visuals.disabled_alpha` | `defaults.disabled_opacity` |  | `button.disabled_opacity` «button», `checkbox.disabled_opacity` «checkbox», `combo_box.disabled_opacity` «combo_box», `input.disabled_opacity` «input», `segmented_control.disabled_opacity` «segmented_control», `slider.disabled_opacity` «slider», `switch.disabled_opacity` «switch» |
+| `visuals.disabled_alpha` | `defaults.disabled_opacity` |  | `button.disabled_opacity` «button», `button.disabled_opacity` «button:disabled», `checkbox.disabled_opacity` «checkbox», `checkbox.disabled_opacity` «checkbox:disabled», `combo_box.disabled_opacity` «combo_box», `combo_box.disabled_opacity` «combo_box:disabled», `input.disabled_opacity` «input», `input.disabled_opacity` «input:disabled», `segmented_control.disabled_opacity` «segmented_control», `slider.disabled_opacity` «slider», `slider.disabled_opacity` «slider:disabled», `switch.disabled_opacity` «switch», `switch.disabled_opacity` «switch:disabled» |
 | `visuals.error_fg_color` | `defaults.danger_color` |  |  |
 | `visuals.extreme_bg_color` | `scrollbar.track_color` |  | `progress_bar.track_color` «progress_bar», `scrollbar.track_color` «scrollbar» |
 | `visuals.faint_bg_color` | `list.alternate_row_background` |  |  |
@@ -588,8 +588,8 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `visuals.popup_shadow.color` | `defaults.border.shadow_enabled` | `defaults.shadow_color` | `defaults.shadow_color` \[dialog\], `defaults.shadow_color` \[popover\], `defaults.shadow_color` \[tooltip\], `dialog.border.shadow_enabled` \[dialog\], `popover.border.shadow_enabled` \[popover\], `tooltip.border.shadow_enabled` \[tooltip\] |
 | `visuals.popup_shadow.offset` | `defaults.border.shadow_enabled` |  | `dialog.border.shadow_enabled` \[dialog\], `popover.border.shadow_enabled` \[popover\], `tooltip.border.shadow_enabled` \[tooltip\] |
 | `visuals.popup_shadow.spread` | — (a constant this crate writes) | `defaults.border.shadow_enabled` forces it: egui's own spread, 0, is Shadow::NONE's, §6.14 | `dialog.border.shadow_enabled` \[dialog\], `popover.border.shadow_enabled` \[popover\], `tooltip.border.shadow_enabled` \[tooltip\] |
-| `visuals.selection.bg_fill` | `defaults.selection_background` |  | `button.background_color` «button:disabled», `button.disabled_background` «button:disabled», `button.primary_background` «button», `input.selection_background` «input», `list.selection_background` «list», `progress_bar.fill_color` «progress_bar», `segmented_control.active_background` «segmented_control», `sidebar.selection_background` «sidebar», `slider.disabled_fill_color` «slider:disabled», `slider.fill_color` «slider», `slider.fill_color` «slider:disabled», `switch.checked_background` «switch», `switch.checked_background` «switch:disabled», `switch.disabled_checked_background` «switch:disabled», `tab.active_background` «tab» |
-| `visuals.selection.stroke.color` | `defaults.selection_text_color` |  | `button.disabled_text_color` «button:disabled», `button.primary_text_color` «button», `input.selection_text_color` «input», `list.selection_text_color` «list», `segmented_control.active_text_color` «segmented_control», `sidebar.selection_text_color` «sidebar», `tab.active_text_color` «tab» |
+| `visuals.selection.bg_fill` | `defaults.selection_background` |  | `button.disabled_background` «button:disabled», `button.primary_background` «button», `button.primary_background` «button:disabled», `input.selection_background` «input», `list.selection_background` «list», `progress_bar.fill_color` «progress_bar», `segmented_control.active_background` «segmented_control», `sidebar.selection_background` «sidebar», `slider.disabled_fill_color` «slider:disabled», `slider.fill_color` «slider», `slider.fill_color` «slider:disabled», `switch.checked_background` «switch», `switch.checked_background` «switch:disabled», `switch.disabled_checked_background` «switch:disabled», `tab.active_background` «tab» |
+| `visuals.selection.stroke.color` | `defaults.selection_text_color` |  | `button.disabled_background` «button:disabled», `button.disabled_text_color` «button:disabled», `button.primary_text_color` «button», `button.primary_text_color` «button:disabled», `input.selection_text_color` «input», `list.selection_text_color` «list», `segmented_control.active_text_color` «segmented_control», `sidebar.selection_text_color` «sidebar», `tab.active_text_color` «tab» |
 | `visuals.slider_trailing_fill` | — (a constant this crate writes) | `slider.fill_color` forces it: written true in the base style, which every cell inherits, §5.9 |  |
 | `visuals.text_cursor.stroke.color` | `input.caret_color` |  |  |
 | `visuals.text_edit_bg_color` | `input.background_color` |  | `input.background_color` «input:disabled», `input.disabled_background` «input:disabled» |
@@ -619,7 +619,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `visuals.widgets.inactive.fg_stroke.color` | `button.font.color` |  | `button.disabled_text_color` «button:disabled», `button.font.color` «button», `checkbox.disabled_text_color` «checkbox:disabled», `checkbox.indicator_color` «checkbox», `combo_box.disabled_text_color` «combo_box:disabled», `combo_box.font.color` «combo_box», `expander.font.color` «expander», `input.disabled_text_color` «input:disabled», `input.font.color` «input», `menu.disabled_text_color` «menu:disabled», `menu.font.color` «menu», `segmented_control.font.color` «segmented_control», `sidebar.font.color` «sidebar», `status_bar.font.color` «status_bar», `tab.font.color` «tab», `toolbar.font.color` «toolbar» |
 | `visuals.widgets.inactive.weak_bg_fill` | `button.background_color` |  | `button.background_color` «button», `button.background_color` «button:disabled», `button.disabled_background` «button:disabled», `combo_box.background_color` «combo_box», `combo_box.background_color` «combo_box:disabled», `combo_box.disabled_background` «combo_box:disabled», `segmented_control.background_color` «segmented_control», `switch.disabled_unchecked_background` «switch:disabled», `switch.unchecked_background` «switch», `switch.unchecked_background` «switch:disabled», `tab.background_color` «tab» |
 | `visuals.widgets.noninteractive.bg_fill` | `defaults.background_color` |  | `checkbox.checked_background` «checkbox:selected» |
-| `visuals.widgets.noninteractive.bg_stroke.color` | `defaults.border.color` | `defaults.border.opacity` | `button.border.color` «button», `card.border.color` \[card\], `checkbox.border.color` «checkbox:selected», `checkbox.border.color` «checkbox», `checkbox.unchecked_border_color` «checkbox», `combo_box.border.color` «combo_box», `expander.border.color` «expander», `input.border.color` «input», `list.grid_color` «list», `menu.separator_color` «menu», `segmented_control.border.color` «segmented_control», `separator.line_color` «separator», `sidebar.border.color` «sidebar», `splitter.divider_color` «splitter», `status_bar.border.color` «status_bar», `tab.border.color` «tab», `toolbar.border.color` «toolbar» |
+| `visuals.widgets.noninteractive.bg_stroke.color` | `defaults.border.color` |  | `button.border.color` «button», `card.border.color` \[card\], `checkbox.border.color` «checkbox:selected», `checkbox.border.color` «checkbox», `checkbox.unchecked_border_color` «checkbox», `combo_box.border.color` «combo_box», `expander.border.color` «expander», `input.border.color` «input», `list.grid_color` «list», `menu.separator_color` «menu», `segmented_control.border.color` «segmented_control», `separator.line_color` «separator», `sidebar.border.color` «sidebar», `splitter.divider_color` «splitter», `status_bar.border.color` «status_bar», `tab.border.color` «tab», `toolbar.border.color` «toolbar» |
 | `visuals.widgets.noninteractive.bg_stroke.width` | `defaults.border.line_width` |  | `button.border.line_width` «button», `card.border.line_width` \[card\], `checkbox.border.line_width` «checkbox», `combo_box.border.line_width` «combo_box», `expander.border.line_width` «expander», `input.border.line_width` «input», `list.border.line_width` «list», `segmented_control.border.line_width` «segmented_control», `separator.line_width` «separator», `sidebar.border.line_width` «sidebar», `splitter.divider_width` «splitter», `status_bar.border.line_width` «status_bar», `tab.border.line_width` «tab», `toolbar.border.line_width` «toolbar» |
 | `visuals.widgets.noninteractive.corner_radius` | `defaults.border.corner_radius` |  | `button.border.corner_radius` «button», `card.border.corner_radius` \[card\], `checkbox.border.corner_radius` «checkbox», `combo_box.border.corner_radius` «combo_box», `expander.border.corner_radius` «expander», `input.border.corner_radius` «input», `list.border.corner_radius` «list», `segmented_control.border.corner_radius` «segmented_control», `switch.track_radius` «switch», `tab.border.corner_radius` «tab» |
 | `visuals.widgets.noninteractive.expansion` | — (egui's own value stands) |  | `defaults.font.size` «slider», `slider.thumb_diameter` «slider» |
@@ -638,7 +638,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `visuals.window_shadow.color` | `window.border.shadow_enabled` | `defaults.shadow_color` |  |
 | `visuals.window_shadow.offset` | `window.border.shadow_enabled` |  |  |
 | `visuals.window_shadow.spread` | — (a constant this crate writes) | `window.border.shadow_enabled` forces it: egui's own spread, 0, is Shadow::NONE's, §6.14 |  |
-| `visuals.window_stroke.color` | `defaults.border.color` | `defaults.border.opacity` | `dialog.border.color` \[dialog\], `popover.border.color` \[popover\], `tooltip.border.color` \[tooltip\], `window.border.color` \[window\] |
+| `visuals.window_stroke.color` | `defaults.border.color` |  | `dialog.border.color` \[dialog\], `popover.border.color` \[popover\], `tooltip.border.color` \[tooltip\], `window.border.color` \[window\] |
 | `visuals.window_stroke.width` | `defaults.border.line_width` |  | `dialog.border.line_width` \[dialog\], `popover.border.line_width` \[popover\], `tooltip.border.line_width` \[tooltip\], `window.border.line_width` \[window\] |
 | \[card\] `fill` | — (the `Frame` preset's own value) |  | `card.background_color` \[card\] |
 | \[card\] `inner_margin.bottom` | — (the `Frame` preset's own value) |  | `card.border.padding.bottom` \[card\] |

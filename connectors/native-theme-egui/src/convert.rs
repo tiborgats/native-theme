@@ -172,13 +172,13 @@ pub const fn to_color32(c: Rgba) -> egui::Color32 {
     egui::Color32::from_rgba_unmultiplied_const(c.r, c.g, c.b, c.a)
 }
 
-/// [`to_color32`] with an opacity multiplier folded into alpha. See §6.13.
+/// [`to_color32`] with an opacity multiplier folded into alpha.
 ///
-/// This is how `defaults.border.opacity` (`native-theme/src/model/border.rs:222`), the
-/// model's only border opacity, reaches egui: `epaint::Stroke` is
-/// `{ width: f32, color: Color32 }` and nothing else (`epaint/src/stroke.rs:13-16`). A
-/// non-finite `opacity` is `1.0`, egui's own value for a stroke (no fold), per the
-/// non-finite rule; the call site reports it. Never use the result for
+/// Not for a border: every border colour the model states is the final line colour, with
+/// `defaults.border.opacity` already folded in (`native-theme/src/model/border.rs`,
+/// `DefaultsBorderSpec::opacity`), and the connector paints it as stated. A
+/// non-finite `opacity` is `1.0` (no fold), per the non-finite rule; the call site reports
+/// it. Never use the result for
 /// `WidgetVisuals::bg_fill`, documented "Must never be `Color32::TRANSPARENT`"
 /// (`egui/src/style.rs:1292-1294`); `opacity == 0.0` produces exactly that.
 #[inline]

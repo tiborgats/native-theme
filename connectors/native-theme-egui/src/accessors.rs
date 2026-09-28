@@ -6,9 +6,7 @@ use native_theme::theme::{
     DialogButtonOrder, FontStyle, ResolvedFontSpec, ResolvedTextScaleEntry, ResolvedTheme,
 };
 
-use crate::convert::{
-    i8_from_f32_saturating, padding_with_border, to_color32, to_color32_with_opacity, to_margin,
-};
+use crate::convert::{i8_from_f32_saturating, padding_with_border, to_color32, to_margin};
 use crate::{AccessibilityPreferences, Role, TextRole};
 
 /// A text size from the theme times the user's text-scaling factor; a factor that is not
@@ -455,13 +453,11 @@ pub fn border_radius(t: &ResolvedTheme) -> f32 {
 pub fn border_radius_lg(t: &ResolvedTheme) -> f32 {
     t.defaults.border.corner_radius_lg
 }
-/// `defaults.border.color` with `defaults.border.opacity` folded into its alpha —
-/// [`convert::to_color32_with_opacity`](crate::convert::to_color32_with_opacity), the fold the
-/// atlas's strokes of `defaults.border.color` go through; a widget's own border colour is
-/// painted as stated (§6.13).
+/// `defaults.border.color` as an `egui::Color32`: the final line colour, into which the model
+/// has already folded `defaults.border.opacity`, so nothing multiplies it again.
 #[must_use]
 pub fn border_color(t: &ResolvedTheme) -> egui::Color32 {
-    to_color32_with_opacity(t.defaults.border.color, t.defaults.border.opacity)
+    to_color32(t.defaults.border.color)
 }
 /// `defaults.disabled_opacity`, the opacity for disabled controls.
 #[must_use]

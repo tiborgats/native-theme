@@ -381,9 +381,7 @@ mod tests {
     use native_theme::theme::{ColorMode, ResolvedTheme};
 
     use super::*;
-    use crate::convert::{
-        clamp_length, composite_over, to_color32, to_color32_with_opacity, to_margin, to_shadow,
-    };
+    use crate::convert::{clamp_length, composite_over, to_color32, to_margin, to_shadow};
     use crate::install_tests::resolved;
     use crate::style::{BuildInput, SchemeStyles, compile};
     use crate::{AccessibilityPreferences, LayoutTheme, Note, Role, RoleVariant};
@@ -1044,24 +1042,24 @@ mod tests {
 
     // ---- §6.13 and §6.14, over the base style `base_style` builds -------------------------
 
-    /// The connector folds `defaults.border.opacity` into the strokes of `defaults.border.color`
-    /// alone, and paints a widget's own border colour as stated. The model does not say which
-    /// colours the multiplier applies to (docs/platform-facts.md:946, :997, "applied to the
-    /// border color"; :1116 gives every value as a preset's); the rule is open (docs/todo.md,
-    /// "Border opacity"), and this test pins what the connector does meanwhile.
+    /// `defaults.border.opacity` is the text colour's share already folded into every stated
+    /// border colour (native-theme/src/model/border.rs, `DefaultsBorderSpec::opacity`;
+    /// docs/platform-facts.md §2.1.6), so the connector multiplies no colour by it: the
+    /// defaults' border and every widget's own border are painted as stated, whatever the
+    /// opacity, and a non-finite one is never read.
     #[test]
-    fn the_defaults_opacity_folds_into_the_defaults_border_colour_alone() {
+    fn no_border_colour_carries_the_border_opacity() {
         let mut t = theme();
         t.defaults.border.opacity = 0.5;
         let (s, notes) = build(&t);
         let w = &s.base.visuals.widgets;
         assert_eq!(
             w.noninteractive.bg_stroke.color,
-            to_color32_with_opacity(t.defaults.border.color, 0.5)
+            to_color32(t.defaults.border.color)
         );
         assert_eq!(
             s.base.visuals.window_stroke.color,
-            to_color32_with_opacity(t.defaults.border.color, 0.5)
+            to_color32(t.defaults.border.color)
         );
         assert_eq!(
             w.inactive.bg_stroke.color,
@@ -1099,14 +1097,13 @@ mod tests {
         }
         assert_eq!(sanitised(&notes, "defaults.border.opacity"), 0);
 
-        // A non-finite opacity is `1.0` — egui folds none — reported once, by the base style.
         t.defaults.border.opacity = f32::NAN;
         let (s, notes) = build(&t);
         assert_eq!(
             s.base.visuals.widgets.noninteractive.bg_stroke.color,
             to_color32(t.defaults.border.color)
         );
-        assert_eq!(sanitised(&notes, "defaults.border.opacity"), 1);
+        assert_eq!(sanitised(&notes, "defaults.border.opacity"), 0);
     }
 
     #[test]

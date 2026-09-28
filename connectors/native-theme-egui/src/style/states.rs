@@ -64,9 +64,9 @@ pub(crate) struct TextSource {
     pub in_noninteractive: bool,
 }
 
-/// A border: its own colour as stated — the connector folds `defaults.border.opacity` into
-/// strokes of `defaults.border.color` only (§6.13) —, width and radius, into `entries`. `paths` are the colour, corner-radius
-/// and line-width leaves.
+/// A border: its own colour as stated — the final line colour, into which the model has
+/// already folded `defaults.border.opacity` —, width and radius, into `entries`. `paths` are
+/// the colour, corner-radius and line-width leaves.
 pub(crate) struct BorderSource<'a> {
     pub border: &'a ResolvedWidgetBorder,
     pub paths: [&'static str; 3],
@@ -220,9 +220,7 @@ mod tests {
     use native_theme::theme::ColorMode;
 
     use super::*;
-    use crate::convert::{
-        Rgba, clamp_length, composite_over, to_color32, to_color32_with_opacity, to_corner_radius,
-    };
+    use crate::convert::{Rgba, clamp_length, composite_over, to_color32, to_corner_radius};
     use crate::install_tests::resolved;
     use crate::style::BuildInput;
     use crate::style::base::base_style;
@@ -458,10 +456,7 @@ mod tests {
         let (s, _) = base(egui::Theme::Dark, &t);
         let w = &s.visuals.widgets;
         assert_eq!(w.noninteractive.fg_stroke.color, to_color32(d.text_color));
-        assert_eq!(
-            w.noninteractive.bg_stroke.color,
-            to_color32_with_opacity(d.border.color, d.border.opacity)
-        );
+        assert_eq!(w.noninteractive.bg_stroke.color, to_color32(d.border.color));
         assert_eq!(
             w.noninteractive.bg_stroke.width,
             clamp_length(d.border.line_width)

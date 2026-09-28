@@ -9,8 +9,8 @@ use native_theme::theme::{ResolvedPadding, ResolvedWidgetBorder};
 use super::{BuildInput, push_note, saturates_i8};
 use crate::accessors::scaled_text_size;
 use crate::convert::{
-    clamp_length, finite_or, to_button_padding, to_color32, to_color32_with_opacity,
-    to_corner_radius, to_margin, unit_interval,
+    clamp_length, finite_or, to_button_padding, to_color32, to_corner_radius, to_margin,
+    unit_interval,
 };
 use crate::{AccessibilityPreferences, Note};
 
@@ -55,9 +55,9 @@ pub(crate) fn radius(
 }
 
 /// A border stroke: the colour as converted, the width over the sink's own (`to_stroke`'s
-/// rule, §7.2). `paths` are the colour's and the width's leaves. Only a stroke of
-/// `defaults.border.color` carries `defaults.border.opacity` (§6.13), folded by the caller;
-/// the opacity's own note is emitted once per style by `base_style`.
+/// rule, §7.2). `paths` are the colour's and the width's leaves. Every border colour is the
+/// final line colour: `defaults.border.opacity` is already folded into it, and no stroke
+/// multiplies it again (native-theme/src/model/border.rs, `DefaultsBorderSpec::opacity`).
 pub(crate) fn stroke(
     paths: [&'static str; 2],
     own: egui::Stroke,
@@ -140,21 +140,6 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     let own = input.scheme.default_style();
     let mut s = input.scheme.default_style();
 
-    // §6.13: the one border opacity, folded into the strokes of `defaults.border.color` and
-    // no widget's own border colour — the connector's choice, which the model does not state
-    // (docs/todo.md, "Border opacity") —, reported once per style
-    let opacity_fold = if d.border.opacity.is_finite() {
-        d.border.opacity
-    } else {
-        push_note(
-            notes,
-            Note::ValueSanitised {
-                path: "defaults.border.opacity",
-            },
-        );
-        1.0
-    };
-
     // §8.5: the five slots, sizes only — the families stay Proportional / Monospace (§8.1)
     let slots = [
         (
@@ -203,7 +188,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     v.window_stroke = stroke(
         ["defaults.border.color", "defaults.border.line_width"],
         own.visuals.window_stroke,
-        to_color32_with_opacity(d.border.color, opacity_fold),
+        to_color32(d.border.color),
         d.border.line_width,
         notes,
     );
@@ -324,7 +309,7 @@ pub(crate) fn base_style(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> egui:
     w.noninteractive.bg_stroke = stroke(
         ["defaults.border.color", "defaults.border.line_width"],
         own.visuals.widgets.noninteractive.bg_stroke,
-        to_color32_with_opacity(d.border.color, opacity_fold),
+        to_color32(d.border.color),
         d.border.line_width,
         notes,
     );
@@ -428,8 +413,7 @@ mod tests {
 
     use super::*;
     use crate::convert::{
-        clamp_length, to_button_padding, to_color32, to_color32_with_opacity, to_corner_radius,
-        to_margin, unit_interval,
+        clamp_length, to_button_padding, to_color32, to_corner_radius, to_margin, unit_interval,
     };
     use crate::install_tests::resolved;
     use crate::{AccessibilityPreferences, LayoutTheme, Note, ResolvedTheme};
@@ -515,10 +499,7 @@ mod tests {
                 v.menu_corner_radius,
                 to_corner_radius(own.visuals.menu_corner_radius, d.border.corner_radius_lg)
             );
-            assert_eq!(
-                v.window_stroke.color,
-                to_color32_with_opacity(d.border.color, d.border.opacity)
-            );
+            assert_eq!(v.window_stroke.color, to_color32(d.border.color));
             assert_eq!(v.window_stroke.width, clamp_length(d.border.line_width));
             assert_eq!(v.disabled_alpha, unit_interval(d.disabled_opacity));
             assert_eq!(v.window_fill, to_color32(t.menu.background_color));

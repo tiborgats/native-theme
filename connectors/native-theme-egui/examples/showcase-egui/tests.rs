@@ -1963,7 +1963,8 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
 /// The Basic page applies the leaves egui never reads from the style, per call, as the connector
 /// spec asks of the application (§5.3, §5.4): each push button is at least `button.min_width`
 /// wide and `button.min_height` tall, each text field `input.min_height` tall; the disabled
-/// field is filled with `input.disabled_background`, its frame built in the disabled cell; and
+/// field is filled with `input.disabled_background` at `input.disabled_opacity`, its frame
+/// built in the disabled cell; and
 /// the link's text is underlined, at rest, exactly where `link.underline_enabled` says so
 /// (kde-breeze states it, material does not).
 #[test]
@@ -2016,11 +2017,12 @@ fn the_basic_page_applies_the_per_call_leaves() {
             );
         }
         let disabled = rect_of("TextEdit (disabled)");
-        // Both presets state it; `None` would be filled with nothing and fail.
-        let fill = t
-            .input
-            .disabled_background
-            .map(native_theme_egui::convert::to_color32);
+        // Both presets state it; `None` would be filled with nothing and fail. egui fades the
+        // disabled field by `input.disabled_opacity` on top (docs/platform-facts.md §2.1.6):
+        // 1.0 on kde-breeze, material's own on material.
+        let fill = t.input.disabled_background.map(|c| {
+            native_theme_egui::convert::to_color32(c).gamma_multiply(t.input.disabled_opacity)
+        });
         let shapes = harness.output().shapes.clone();
         let filled = shapes.iter().any(|clipped| match &clipped.shape {
             egui::Shape::Rect(r) => {

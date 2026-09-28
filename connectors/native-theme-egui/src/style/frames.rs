@@ -3,7 +3,8 @@
 //! Each frame starts from the frame egui builds for that container over the scheme's base
 //! style and sets only the fields its surface's rows state; every other field keeps the
 //! preset's value, and through it whatever the base style holds (§3.4). A stroke keeps its
-//! widget's own colour, into which the connector folds no `defaults.border.opacity` (§6.13);
+//! widget's own colour, the final line colour (the model folds `defaults.border.opacity`
+//! into every border colour, and nothing applies it again);
 //! the shadow gate keeps egui's geometry (§6.14); a padding side the theme leaves unstated
 //! keeps the preset's, and a stated one is rounded to a whole point, saturating
 //! (`convert::to_margin`, §7.2).
@@ -52,9 +53,8 @@ const TOOLBAR: BorderPaths = border_paths!("toolbar");
 const STATUS_BAR: BorderPaths = border_paths!("status_bar");
 
 /// A widget border's stroke over the preset frame's, through `base::stroke`: the width by §6's
-/// rule (a non-finite one keeps the preset's, reported), the widget's own colour as stated —
-/// the connector folds `defaults.border.opacity` into strokes of `defaults.border.color` only
-/// (§6.13).
+/// rule (a non-finite one keeps the preset's, reported), the widget's own colour as stated,
+/// the final line colour.
 fn border_stroke(
     own: egui::Stroke,
     border: &ResolvedWidgetBorder,

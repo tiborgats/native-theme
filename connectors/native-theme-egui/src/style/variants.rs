@@ -54,18 +54,22 @@ pub(crate) fn disabled_cell(
     match role {
         // `button_style` fills a button from `weak_bg_fill` (`egui/src/widget_style.rs:159`) and
         // a selected one from `selection.*` regardless of state (`:150-155`), so the primary
-        // button in a disabled scope takes the disabled pair too (§6.2).
+        // button in a disabled scope takes the disabled pair too (§6.2) — where the platform
+        // states a disabled fill. With none, it dims by opacity alone (docs/platform-facts.md
+        // §2.1.6), and the primary button keeps its own pair.
         Role::Button => {
-            let fill = t
-                .button
-                .disabled_background
-                .unwrap_or(t.button.background_color);
             let text = to_color32(t.button.disabled_text_color);
-            v.widgets.inactive.weak_bg_fill = to_color32(fill);
-            v.selection.bg_fill = to_color32(fill);
+            v.widgets.inactive.weak_bg_fill = to_color32(
+                t.button
+                    .disabled_background
+                    .unwrap_or(t.button.background_color),
+            );
             v.widgets.inactive.fg_stroke.color = text;
             v.widgets.noninteractive.fg_stroke.color = text;
-            v.selection.stroke.color = text;
+            if let Some(fill) = t.button.disabled_background {
+                v.selection.bg_fill = to_color32(fill);
+                v.selection.stroke.color = text;
+            }
         }
         // `button_frame` fills the trigger from `weak_bg_fill` (`egui/src/containers/combo_box.rs:460`).
         Role::ComboBox => {
@@ -151,10 +155,10 @@ pub(crate) fn disabled_cell(
         }
         _ => return None,
     }
-    // The multiplicative identity, one of §6.17's three structural constants: `Ui::disable`
-    // multiplies painter opacity by it (`egui/src/ui.rs:497-502`), and `1.0` keeps the
-    // platform's own disabled colours from being faded a second time (§6.3).
-    v.disabled_alpha = 1.0;
+    // `disabled_alpha` stays the role's own, its `disabled_opacity` (or, for a role with none,
+    // `defaults.disabled_opacity`, the base style's): `Ui::disable` multiplies painter opacity
+    // by it (`egui/src/ui.rs:497-502`) on top of these colours. A platform dims by one of the
+    // two, and the data makes the other an identity (docs/platform-facts.md §2.1.6).
     Some(style)
 }
 
@@ -287,7 +291,8 @@ mod tests {
     }
 
     /// §6.3: the Button `Disabled` cell — stated fills and text colour, the selection pair for a
-    /// primary button, the `1.0` identity; the `hovered` entry is untouched.
+    /// primary button, and the button's own `disabled_opacity` for egui to fade it by on top
+    /// (docs/platform-facts.md §2.1.6); the `hovered` entry is untouched.
     #[test]
     fn the_button_disabled_cell_writes_what_a_disabled_button_reads() {
         let mut t = resolved("kde-breeze", ColorMode::Light);
@@ -314,7 +319,11 @@ mod tests {
         assert_eq!(w.inactive.fg_stroke.color, to_color32(text));
         assert_eq!(w.noninteractive.fg_stroke.color, to_color32(text));
         assert_eq!(dis.visuals.selection.stroke.color, to_color32(text));
-        assert_eq!(dis.visuals.disabled_alpha, 1.0);
+        assert_eq!(dis.visuals.disabled_alpha, normal.visuals.disabled_alpha);
+        assert_eq!(
+            dis.visuals.disabled_alpha,
+            crate::convert::unit_interval(t.button.disabled_opacity)
+        );
         assert_eq!(w.hovered, normal.visuals.widgets.hovered);
         assert_eq!(
             w.inactive.bg_stroke,
@@ -322,18 +331,17 @@ mod tests {
         );
 
         // A `None` disabled fill is the platform stating no distinct fill: the idle fill is
-        // copied as given (§6.4, C16), never composited.
+        // copied as given (§6.4, C16), never composited, and a primary button keeps its own
+        // pair, which `disabled_opacity` alone dims.
         t.button.disabled_background = None;
         let (s, _) = build(&t);
+        let normal = s.cell(Role::Button, RoleVariant::Normal);
         let dis = s.cell(Role::Button, RoleVariant::Disabled);
         assert_eq!(
             dis.visuals.widgets.inactive.weak_bg_fill,
             to_color32(t.button.background_color)
         );
-        assert_eq!(
-            dis.visuals.selection.bg_fill,
-            to_color32(t.button.background_color)
-        );
+        assert_eq!(dis.visuals.selection, normal.visuals.selection);
     }
 
     /// §6.3: each of the other eight `Disabled` cells writes the field its widget reads.
@@ -419,18 +427,55 @@ mod tests {
         let d = cell(Role::Link);
         assert_eq!(d.visuals.hyperlink_color, to_color32(c(81)));
 
-        for role in [
-            Role::ComboBox,
-            Role::Checkbox,
-            Role::Input,
-            Role::Slider,
-            Role::Switch,
-            Role::Menu,
-            Role::List,
-            Role::Link,
+        // Each keeps its role's `disabled_opacity`, and a role with none the defaults' one, for
+        // egui to fade it by on top of those colours (docs/platform-facts.md §2.1.6).
+        let u = crate::convert::unit_interval;
+        for (role, opacity) in [
+            (Role::ComboBox, t.combo_box.disabled_opacity),
+            (Role::Checkbox, t.checkbox.disabled_opacity),
+            (Role::Input, t.input.disabled_opacity),
+            (Role::Slider, t.slider.disabled_opacity),
+            (Role::Switch, t.switch.disabled_opacity),
+            (Role::Menu, t.defaults.disabled_opacity),
+            (Role::List, t.defaults.disabled_opacity),
+            (Role::Link, t.defaults.disabled_opacity),
         ] {
-            assert_eq!(cell(role).visuals.disabled_alpha, 1.0, "{role:?}");
+            assert_eq!(cell(role).visuals.disabled_alpha, u(opacity), "{role:?}");
         }
+    }
+
+    /// The disabled rule on the platforms (docs/platform-facts.md §2.1.6): kde-breeze dims by
+    /// its disabled colours with an opacity of 1.0, adwaita by its opacity of 0.5 with no
+    /// disabled fill of its own, so each `Disabled` cell carries exactly one of the two.
+    #[test]
+    fn each_platform_dims_by_one_mechanism() {
+        let kde = resolved("kde-breeze", ColorMode::Light);
+        let (s, _) = build(&kde);
+        let dis = s.cell(Role::Button, RoleVariant::Disabled);
+        assert_eq!(dis.visuals.disabled_alpha, 1.0);
+        assert_eq!(
+            dis.visuals.widgets.inactive.weak_bg_fill,
+            to_color32(
+                kde.button
+                    .disabled_background
+                    .expect("kde-breeze states it")
+            )
+        );
+
+        let adw = resolved("adwaita", ColorMode::Light);
+        let (s, _) = build(&adw);
+        let normal = s.cell(Role::Button, RoleVariant::Normal);
+        let dis = s.cell(Role::Button, RoleVariant::Disabled);
+        assert_eq!(dis.visuals.disabled_alpha, 0.5);
+        assert_eq!(adw.button.disabled_background, None);
+        assert_eq!(
+            dis.visuals.widgets.inactive.weak_bg_fill,
+            normal.visuals.widgets.inactive.weak_bg_fill
+        );
+        assert_eq!(
+            dis.visuals.widgets.inactive.fg_stroke.color,
+            normal.visuals.widgets.inactive.fg_stroke.color
+        );
     }
 
     /// §6.3: the eight disabled fills fall back to the role's own fill for that part.
