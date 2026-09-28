@@ -702,6 +702,19 @@ pub fn link_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::C
     palette::to_color(resolved.defaults.link_color)
 }
 
+/// Returns the colour of an expander's disclosure arrow from the resolved
+/// theme: `expander.arrow_color`, and the header's label colour,
+/// `expander.font.color`, where the theme states none -- the arrow is then
+/// the colour of the title it sits beside.
+///
+/// For the arrow a consumer draws in the header `styles::expander` styles:
+/// iced has no expander, so the arrow is the consumer's own drawing.
+#[must_use]
+pub fn expander_arrow_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+    let x = &resolved.expander;
+    palette::to_color(x.arrow_color.unwrap_or(x.font.color))
+}
+
 /// Returns the selection highlight background color from the resolved theme.
 #[must_use]
 pub fn selection_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
@@ -1207,6 +1220,20 @@ mod tests {
         assert!(
             c.r > 0.0 || c.g > 0.0 || c.b > 0.0,
             "link color should be non-black"
+        );
+    }
+
+    /// The arrow is `expander.arrow_color` where the theme states one, and
+    /// the header's label colour where it does not.
+    #[test]
+    fn expander_arrow_color_is_the_stated_one_or_the_labels() {
+        let mut resolved = make_resolved_preset("kde-breeze", false);
+        let stated = resolved.expander.arrow_color.unwrap();
+        assert_eq!(expander_arrow_color(&resolved), palette::to_color(stated));
+        resolved.expander.arrow_color = None;
+        assert_eq!(
+            expander_arrow_color(&resolved),
+            palette::to_color(resolved.expander.font.color)
         );
     }
 

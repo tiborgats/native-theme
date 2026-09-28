@@ -1428,6 +1428,238 @@ pub(super) const CONTAINER_CARD_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::container_card(r)(t).border,
 }];
 
+/// A segmented control's frame has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENTED_CONTROL_STATUSES: &[()] = &[()];
+
+/// Every color field of `styles::segmented_control`: the frame's fill is the
+/// control's line colour, which shows as the outline and the separators, and
+/// its label is the control's own.
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENTED_CONTROL_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::segmented_control.text_color",
+        statuses: SEGMENTED_CONTROL_STATUSES,
+        native: |r, ()| to_color(r.segmented_control.font.color),
+        get: |t, r, ()| stated(styles::segmented_control(r)(t).text_color),
+    },
+    StyleRow {
+        field: "styles::segmented_control.background",
+        statuses: SEGMENTED_CONTROL_STATUSES,
+        native: |r, ()| to_color(r.segmented_control.border.color),
+        get: |t, r, ()| flat(styles::segmented_control(r)(t).background),
+    },
+];
+
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENTED_CONTROL_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::segmented_control",
+    statuses: SEGMENTED_CONTROL_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.segmented_control.border.color),
+        width: r.segmented_control.border.line_width,
+        radius: r.segmented_control.border.corner_radius,
+    },
+    get: |t, r, ()| styles::segmented_control(r)(t).border,
+}];
+
+/// Every state of a segment: whether it is the selected one, and its
+/// `button::Status`.
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENT_STATUSES: &[(bool, button::Status)] = &[
+    (false, button::Status::Active),
+    (false, button::Status::Hovered),
+    (false, button::Status::Pressed),
+    (false, button::Status::Disabled),
+    (true, button::Status::Active),
+    (true, button::Status::Hovered),
+    (true, button::Status::Pressed),
+    (true, button::Status::Disabled),
+];
+
+/// Every place a segment can sit.
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENT_POSITIONS: &[styles::SegmentPosition] = &[
+    styles::SegmentPosition::First,
+    styles::SegmentPosition::Middle,
+    styles::SegmentPosition::Last,
+    styles::SegmentPosition::Only,
+];
+
+/// The fill and the label the native fields give a segment, computed from the
+/// resolved theme alone.
+///
+/// Unselected, the control's fill with its hover layered over it; selected,
+/// the active pair in every enabled status, since the model states no hover
+/// of its own for it; pressed, the hovered look, since the model states no
+/// pressed segment. Disabled, the enabled pair at
+/// `segmented_control.disabled_opacity`, the fill faded over the control's
+/// fill.
+#[cfg(feature = "widgets")]
+pub(super) fn native_segment(
+    r: &ResolvedTheme,
+    (selected, status): (bool, button::Status),
+) -> (Color, Color) {
+    let s = &r.segmented_control;
+    let base = to_color(s.background_color);
+    let (idle, hovered, label) = if selected {
+        let fill = to_color(s.active_background);
+        (fill, fill, to_color(s.active_text_color))
+    } else {
+        let layer = to_color(s.hover_background.unwrap_or(s.background_color));
+        (base, over(layer, base), to_color(s.font.color))
+    };
+    let fade = |c: Color| Color {
+        a: c.a * s.disabled_opacity,
+        ..c
+    };
+    match status {
+        button::Status::Active => (idle, label),
+        button::Status::Hovered | button::Status::Pressed => (hovered, label),
+        button::Status::Disabled => (over(fade(idle), base), fade(label)),
+    }
+}
+
+/// Every color field of `styles::segment`.
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENT_ROWS: &[StyleRow<(bool, button::Status)>] = &[
+    StyleRow {
+        field: "styles::segment.background",
+        statuses: SEGMENT_STATUSES,
+        native: |r, s| native_segment(r, s).0,
+        get: |t, r, (selected, status)| {
+            flat(
+                styles::segment(r, selected, styles::SegmentPosition::Middle)(t, status).background,
+            )
+        },
+    },
+    StyleRow {
+        field: "styles::segment.text_color",
+        statuses: SEGMENT_STATUSES,
+        native: |r, s| native_segment(r, s).1,
+        get: |t, r, (selected, status)| {
+            Ok(styles::segment(r, selected, styles::SegmentPosition::Middle)(t, status).text_color)
+        },
+    },
+];
+
+/// The inner radius of the control's outline, which a segment rounds its
+/// outer corners to.
+#[cfg(feature = "widgets")]
+pub(super) fn native_segment_corner(r: &ResolvedTheme, rounded: bool) -> f32 {
+    let b = &r.segmented_control.border;
+    if rounded {
+        (b.corner_radius - b.line_width).max(0.0)
+    } else {
+        0.0
+    }
+}
+
+/// The corner of a segment at `position`, read from `styles::segment`.
+#[cfg(feature = "widgets")]
+fn segment_radius(
+    t: &Theme,
+    r: &ResolvedTheme,
+    position: styles::SegmentPosition,
+) -> iced_core::border::Radius {
+    styles::segment(r, true, position)(t, button::Status::Active)
+        .border
+        .radius
+}
+
+/// The four corners of `styles::segment`: rounded where the segment meets the
+/// control's outline -- the left pair of the first, the right pair of the
+/// last, all four of an only segment -- and square elsewhere.
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENT_SCALAR_ROWS: &[ScalarRow<styles::SegmentPosition>] = &[
+    ScalarRow {
+        field: "styles::segment.border.radius.top_left",
+        statuses: SEGMENT_POSITIONS,
+        native: |_, r, p| {
+            use styles::SegmentPosition::{First, Only};
+            native_segment_corner(r, matches!(p, First | Only))
+        },
+        get: |t, r, p| Ok(segment_radius(t, r, p).top_left),
+    },
+    ScalarRow {
+        field: "styles::segment.border.radius.bottom_left",
+        statuses: SEGMENT_POSITIONS,
+        native: |_, r, p| {
+            use styles::SegmentPosition::{First, Only};
+            native_segment_corner(r, matches!(p, First | Only))
+        },
+        get: |t, r, p| Ok(segment_radius(t, r, p).bottom_left),
+    },
+    ScalarRow {
+        field: "styles::segment.border.radius.top_right",
+        statuses: SEGMENT_POSITIONS,
+        native: |_, r, p| {
+            use styles::SegmentPosition::{Last, Only};
+            native_segment_corner(r, matches!(p, Last | Only))
+        },
+        get: |t, r, p| Ok(segment_radius(t, r, p).top_right),
+    },
+    ScalarRow {
+        field: "styles::segment.border.radius.bottom_right",
+        statuses: SEGMENT_POSITIONS,
+        native: |_, r, p| {
+            use styles::SegmentPosition::{Last, Only};
+            native_segment_corner(r, matches!(p, Last | Only))
+        },
+        get: |t, r, p| Ok(segment_radius(t, r, p).bottom_right),
+    },
+];
+
+/// The fill the native fields give an expander header in `status`: none at
+/// rest and when disabled, which the model states no fill for, and
+/// `expander.hover_background` under the pointer and pressed, none where that
+/// soft option is `None`. "None" is fully transparent here, the colour a
+/// `None` background paints.
+#[cfg(feature = "widgets")]
+pub(super) fn native_expander_fill(r: &ResolvedTheme, status: button::Status) -> Color {
+    match status {
+        button::Status::Active | button::Status::Disabled => Color::TRANSPARENT,
+        button::Status::Hovered | button::Status::Pressed => r
+            .expander
+            .hover_background
+            .map_or(Color::TRANSPARENT, to_color),
+    }
+}
+
+/// Every color field of `styles::expander`.
+#[cfg(feature = "widgets")]
+pub(super) const EXPANDER_ROWS: &[StyleRow<button::Status>] = &[
+    StyleRow {
+        field: "styles::expander.background",
+        statuses: BUTTON_STATUSES,
+        native: native_expander_fill,
+        // A `None` background is the header painting nothing; any other
+        // background must be a flat color.
+        get: |t, r, s| match styles::expander(r)(t, s).background {
+            None => Ok(Color::TRANSPARENT),
+            some => flat(some),
+        },
+    },
+    StyleRow {
+        field: "styles::expander.text_color",
+        statuses: BUTTON_STATUSES,
+        native: |r, _| to_color(r.expander.font.color),
+        get: |t, r, s| Ok(styles::expander(r)(t, s).text_color),
+    },
+];
+
+#[cfg(feature = "widgets")]
+pub(super) const EXPANDER_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRow {
+    field: "styles::expander",
+    statuses: BUTTON_STATUSES,
+    native: |r, _| NativeBorder {
+        color: to_color(r.expander.border.color),
+        width: r.expander.border.line_width,
+        radius: r.expander.border.corner_radius,
+    },
+    get: |t, r, s| styles::expander(r)(t, s).border,
+}];
+
 // ---- `styles::aw`: the six `iced_aw` widgets (section 3a) ----
 
 /// Every value of `iced_aw`'s shared `Status`, which each of its widgets
@@ -1881,6 +2113,14 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(RULE_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(TOOLTIP_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(
+        SEGMENTED_CONTROL_ROWS
+            .iter()
+            .map(|row| row.field.to_string()),
+    );
+    out.extend(SEGMENT_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(SEGMENT_SCALAR_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(EXPANDER_ROWS.iter().map(|row| row.field.to_string()));
     // One border row claims six leaves, so its names are built rather than
     // written -- by the same walker the tripwire uses.
     out.extend(border_row_fields(BUTTON_BORDER_ROWS));
@@ -1896,6 +2136,8 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(PROGRESS_BAR_BORDER_ROWS));
     out.extend(border_row_fields(TOOLTIP_BORDER_ROWS));
     out.extend(border_row_fields(CONTAINER_CARD_BORDER_ROWS));
+    out.extend(border_row_fields(SEGMENTED_CONTROL_BORDER_ROWS));
+    out.extend(border_row_fields(EXPANDER_BORDER_ROWS));
     // `styles::aw`, gated on the feature that declares it: its rows, its
     // `check_*` calls, its walkers and its pairs all carry the same gate, so
     // the two directions of `Checked::covers` agree in every configuration.

@@ -1283,3 +1283,234 @@ pub fn container_card(
         }
     }
 }
+
+/// Where a segment sits in its segmented control, which decides the corners
+/// [`segment`] rounds: a segment rounds the corners it shares with the
+/// control's outline and no others.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SegmentPosition {
+    /// The leftmost of several segments: its left corners are rounded.
+    First,
+    /// Between two others: no corner is rounded.
+    Middle,
+    /// The rightmost of several segments: its right corners are rounded.
+    Last,
+    /// The one segment of its control: all four corners are rounded.
+    Only,
+}
+
+impl SegmentPosition {
+    /// The position of segment `index` among `count` segments, counted from
+    /// the left.
+    #[must_use]
+    pub fn of(index: usize, count: usize) -> Self {
+        let last = count.saturating_sub(1);
+        match (index == 0, index >= last) {
+            (true, true) => Self::Only,
+            (true, false) => Self::First,
+            (false, true) => Self::Last,
+            (false, false) => Self::Middle,
+        }
+    }
+}
+
+/// The platform's own segmented control, for the `container(..).style(..)`
+/// that holds its segments.
+///
+/// iced has no segmented control, so one is built from iced's own widgets: a
+/// container holding a row of buttons, each styled by [`segment`]. The
+/// container is the control's outline and its separators:
+///
+/// ```rust,ignore
+/// let sc = &resolved.segmented_control;
+/// container(row(segments).spacing(sc.separator_width))
+///     .padding(sc.border.line_width)
+///     .style(styles::segmented_control(&resolved))
+/// ```
+///
+/// Its fill is `segmented_control.border.color`, and every segment paints its
+/// own fill over it, so what shows of it is the outline -- the
+/// `border.line_width` the container's padding leaves round the row -- and
+/// the `separator_width` gaps the row leaves between the segments. The model
+/// states the separators' width and no colour of their own, so they are the
+/// one line colour the control states. The outline itself is
+/// `segmented_control.border.*`, drawn over that fill in the same colour, so
+/// its corner radius rounds the control.
+///
+/// `text_color` is `segmented_control.font.color`, which the segments'
+/// labels also take from [`segment`]. `shadow` and `snap` have no native
+/// source and come from `container::Style::default()`: the model carries a
+/// shadow color but no offset or blur, and `snap` is a renderer setting.
+///
+/// The control's height is not a `Style` field: `segmented_control.segment_height`
+/// is the control's outer height, which a consumer gives the segments less
+/// the outline above and below them.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn segmented_control(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
+    use iced_widget::container::Style;
+
+    let s = &resolved.segmented_control;
+
+    let lines = to_color(s.border.color);
+    let label = to_color(s.font.color);
+
+    let border = Border {
+        color: lines,
+        width: s.border.line_width,
+        radius: Radius::new(s.border.corner_radius),
+    };
+
+    move |_theme| {
+        let iced = Style::default();
+        Style {
+            text_color: Some(label),
+            background: Some(Background::Color(lines)),
+            border,
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}
+
+/// One segment of the platform's own segmented control, for
+/// `button(..).style(..)` inside the container [`segmented_control`] styles.
+///
+/// `selected` is whether this is the chosen segment, and `position` where it
+/// sits, which decides its corners.
+///
+/// An unselected segment is `segmented_control.background_color` with
+/// `.font.color`, and `.hover_background` layered over that fill under the
+/// pointer -- a soft option, whose `None` is the platform saying a hovered
+/// segment looks no different. The selected segment is
+/// `segmented_control.active_background` with `.active_text_color`, and the
+/// model states no hover for it, so a hovered selected segment is exactly the
+/// selected one. The model states no pressed segment either: a pressed
+/// segment is the hovered one.
+///
+/// A disabled segment is its enabled self at `segmented_control.disabled_opacity`:
+/// the model states the dimming as the control's opacity, and iced has no
+/// widget opacity, so the fill is faded over the control's own
+/// `background_color` -- not over the container's border-coloured fill, which
+/// the fade would otherwise uncover -- and the label's alpha is multiplied by
+/// it.
+///
+/// Each segment rounds the corners it shares with the control's outline, to
+/// the outline's inner radius -- `border.corner_radius` less
+/// `border.line_width`, and never below zero -- so its fill stays inside the
+/// rounded outline; its other corners are square. The segment has no border
+/// of its own -- the control's outline and its separators are the container's
+/// -- so the border's colour and width are iced's own for a button,
+/// `button::Style::default()`'s none, and so are `shadow` and `snap`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn segment(
+    resolved: &ResolvedTheme,
+    selected: bool,
+    position: SegmentPosition,
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
+    use iced_widget::button::{Status, Style};
+
+    let s = &resolved.segmented_control;
+
+    let base = to_color(s.background_color);
+    let (idle, hovered, label) = if selected {
+        let fill = to_color(s.active_background);
+        (fill, fill, to_color(s.active_text_color))
+    } else {
+        (
+            base,
+            composite_over(
+                to_color(s.hover_background.unwrap_or(s.background_color)),
+                base,
+            ),
+            to_color(s.font.color),
+        )
+    };
+    let fade = |color: Color| Color {
+        a: color.a * s.disabled_opacity,
+        ..color
+    };
+    let disabled = composite_over(fade(idle), base);
+    let disabled_label = fade(label);
+
+    let outer = (s.border.corner_radius - s.border.line_width).max(0.0);
+    let radius = match position {
+        SegmentPosition::First => Radius::new(0.0).left(outer),
+        SegmentPosition::Middle => Radius::new(0.0),
+        SegmentPosition::Last => Radius::new(0.0).right(outer),
+        SegmentPosition::Only => Radius::new(outer),
+    };
+
+    move |_theme, status| {
+        let iced = Style::default();
+        let (background, text_color) = match status {
+            Status::Active => (idle, label),
+            Status::Hovered | Status::Pressed => (hovered, label),
+            Status::Disabled => (disabled, disabled_label),
+        };
+        Style {
+            background: Some(Background::Color(background)),
+            text_color,
+            border: Border {
+                radius,
+                ..iced.border
+            },
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}
+
+/// The header of the platform's own expander, for `button(..).style(..)`.
+///
+/// iced has no expander, so one is built from iced's own widgets: a button
+/// whose label is the disclosure arrow and the title, above the body a
+/// consumer shows while it is expanded. The arrow's colour is
+/// [`expander_arrow_color`](crate::expander_arrow_color); its size is
+/// `expander.arrow_icon_size`, and the header's height `expander.header_height`,
+/// both builder geometry.
+///
+/// The model states no resting fill for an expander header, so it paints
+/// none: `background` is `None` at rest. Under the pointer it is
+/// `expander.hover_background` -- a soft option, whose `None` is the platform
+/// saying a hovered header looks no different -- emitted as given, because
+/// there is no fill of the header's own beneath it to layer it over. The model
+/// states no pressed and no disabled header, so a pressed header is the
+/// hovered one and a disabled header the resting one.
+///
+/// The label is `expander.font.color` in every status, and the outline is
+/// `expander.border.*`. `shadow` and `snap` have no native source and come
+/// from `button::Style::default()`.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn expander(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_widget::button::Status) -> iced_widget::button::Style + Clone + use<> {
+    use iced_widget::button::{Status, Style};
+
+    let x = &resolved.expander;
+
+    let hovered = x.hover_background.map(to_color);
+    let label = to_color(x.font.color);
+
+    let border = Border {
+        color: to_color(x.border.color),
+        width: x.border.line_width,
+        radius: Radius::new(x.border.corner_radius),
+    };
+
+    move |_theme, status| {
+        let iced = Style::default();
+        let background = match status {
+            Status::Active | Status::Disabled => None,
+            Status::Hovered | Status::Pressed => hovered,
+        };
+        Style {
+            background: background.map(Background::Color),
+            text_color: label,
+            border,
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}

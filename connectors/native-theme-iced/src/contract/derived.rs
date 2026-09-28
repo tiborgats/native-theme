@@ -607,6 +607,55 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
         "iced default: container::Style::default().snap -- a renderer setting, \
          cfg!(feature = \"crisp\")",
     ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segmented_control.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segmented_control.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment.border.color",
+        "iced default: button::Style::default().border.color -- a segment has \
+         no border of its own; the control's outline and separators are the \
+         frame styles::segmented_control styles",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment.border.width",
+        "iced default: button::Style::default().border.width, none -- the \
+         same: the lines are the frame's",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment.shadow",
+        "iced default: button::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment.snap",
+        "iced default: button::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander.shadow",
+        "iced default: button::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander.snap",
+        "iced default: button::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
     #[cfg(feature = "iced_aw")]
     (
         "styles::aw::menu.bar_shadow",

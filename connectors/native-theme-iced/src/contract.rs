@@ -1183,6 +1183,28 @@ fn button_link_style_fields(style: &button::Style) -> Vec<String> {
     out
 }
 
+/// Every field of the `button::Style` `styles::segment` emits.
+#[cfg(feature = "widgets")]
+fn segment_style_fields(style: &button::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::segment", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    out.extend(border_fields(border, "styles::segment.border"));
+    out
+}
+
+/// Every field of the `button::Style` `styles::expander` emits.
+#[cfg(feature = "widgets")]
+fn expander_style_fields(style: &button::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(out, style, "styles::expander", button::Style {
+        background, text_color, shadow, snap, @nested border
+    });
+    out.extend(border_fields(border, "styles::expander.border"));
+    out
+}
+
 /// Every field of the `text_input::Style` the connector emits.
 #[cfg(feature = "widgets")]
 fn text_input_style_fields(style: &text_input::Style) -> Vec<String> {
@@ -1601,6 +1623,21 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             &styles::container_card(resolved)(theme),
             "styles::container_card",
         ));
+        out.extend(container_fields(
+            &styles::segmented_control(resolved)(theme),
+            "styles::segmented_control",
+        ));
+        out.extend(segment_style_fields(&styles::segment(
+            resolved,
+            false,
+            styles::SegmentPosition::Middle,
+        )(
+            theme, button::Status::Active
+        )));
+        out.extend(expander_style_fields(&styles::expander(resolved)(
+            theme,
+            button::Status::Active,
+        )));
     }
     #[cfg(feature = "iced_aw")]
     {
@@ -2281,6 +2318,7 @@ fn every_status_list_names_each_status_once() {
         ("RULE_STATUSES", RULE_STATUSES),
         ("TOOLTIP_STATUSES", TOOLTIP_STATUSES),
         ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
+        ("SEGMENTED_CONTROL_STATUSES", SEGMENTED_CONTROL_STATUSES),
     ] {
         assert_eq!(
             statuses,
@@ -2289,6 +2327,47 @@ fn every_status_list_names_each_status_once() {
              value exactly once"
         );
     }
+
+    // A segment is a button that is selected or not: every button status,
+    // once for each.
+    for selected in [false, true] {
+        for status in BUTTON_STATUSES {
+            assert!(
+                SEGMENT_STATUSES.contains(&(selected, *status)),
+                "SEGMENT_STATUSES does not list {status:?} with selected = \
+                 {selected}, so no segment row covers it"
+            );
+        }
+    }
+    assert_eq!(
+        SEGMENT_STATUSES.len(),
+        2 * BUTTON_STATUSES.len(),
+        "SEGMENT_STATUSES must name each state exactly once"
+    );
+    let all = [
+        styles::SegmentPosition::First,
+        styles::SegmentPosition::Middle,
+        styles::SegmentPosition::Last,
+        styles::SegmentPosition::Only,
+    ];
+    for position in all {
+        match position {
+            styles::SegmentPosition::First
+            | styles::SegmentPosition::Middle
+            | styles::SegmentPosition::Last
+            | styles::SegmentPosition::Only => {}
+        }
+        assert!(
+            SEGMENT_POSITIONS.contains(&position),
+            "SEGMENT_POSITIONS does not list {position:?}, so no corner row \
+             covers it"
+        );
+    }
+    assert_eq!(
+        SEGMENT_POSITIONS.len(),
+        all.len(),
+        "SEGMENT_POSITIONS must name each position exactly once"
+    );
 
     // `iced_aw` states one `Status` for all of its widgets, and each widget
     // requests a subset of it. `AW_STATUSES` is the root of trust for the
@@ -2948,6 +3027,22 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut failures,
         &mut ran,
     );
+    check_style_rows(
+        SEGMENTED_CONTROL_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_border_rows(
+        SEGMENTED_CONTROL_BORDER_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
+    check_style_rows(SEGMENT_ROWS, &combinations, &mut failures, &mut ran);
+    check_scalar_rows(SEGMENT_SCALAR_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(EXPANDER_ROWS, &combinations, &mut failures, &mut ran);
+    check_border_rows(EXPANDER_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     #[cfg(feature = "iced_aw")]
     {
         check_style_rows(AW_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -3097,6 +3192,8 @@ fn style_contrast_never_degrades_the_native_pair() -> native_theme::Result<()> {
         &mut ran,
     );
     check_style_pairs(TOOLTIP_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(SEGMENT_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
+    check_style_pairs(EXPANDER_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
     #[cfg(feature = "iced_aw")]
     {
         check_style_pairs(AW_CARD_PAIRS, all, &mut failures, &mut below_aa, &mut ran);
@@ -3780,6 +3877,9 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::rule(r));
     assert_clone(&styles::tooltip(r));
     assert_clone(&styles::container_card(r));
+    assert_clone(&styles::segmented_control(r));
+    assert_clone(&styles::segment(r, true, styles::SegmentPosition::First));
+    assert_clone(&styles::expander(r));
 
     // `styles::scrollbar` returns a value rather than a closure, and
     // `iced_widget::scrollable::Scrollbar` derives `Clone` and `Copy`

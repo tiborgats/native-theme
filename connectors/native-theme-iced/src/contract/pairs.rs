@@ -634,6 +634,60 @@ pub(super) const TOOLTIP_PAIRS: &[StylePair<()>] = &[StylePair {
     },
 }];
 
+/// A segment's label on the fill it paints, over the control's own fill: the
+/// segment covers the frame's line-coloured fill wherever its label is.
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENT_PAIRS: &[StylePair<(bool, button::Status)>] = &[StylePair {
+    what: "segment label",
+    indicator: false,
+    statuses: SEGMENT_STATUSES,
+    emitted: |t, r, (selected, status)| {
+        let style = styles::segment(r, selected, styles::SegmentPosition::Middle)(t, status);
+        flat(style.background).map(|fill| {
+            (
+                style.text_color,
+                fill,
+                to_color(r.segmented_control.background_color),
+            )
+        })
+    },
+    native: |r, s| {
+        let (fill, label) = native_segment(r, s);
+        (label, fill, to_color(r.segmented_control.background_color))
+    },
+}];
+
+/// An expander header's label on whatever fill it paints, over the window it
+/// sits on: at rest it paints none, so the label is on the window itself.
+#[cfg(feature = "widgets")]
+pub(super) const EXPANDER_PAIRS: &[StylePair<button::Status>] = &[StylePair {
+    what: "expander label",
+    indicator: false,
+    statuses: BUTTON_STATUSES,
+    emitted: |t, r, s| {
+        let style = styles::expander(r)(t, s);
+        let fill = match style.background {
+            None => Ok(Color::TRANSPARENT),
+            some => flat(some),
+        }?;
+        Ok((
+            style.text_color,
+            fill,
+            to_color(r.defaults.background_color),
+        ))
+    },
+    native: |r, s| {
+        (
+            to_color(r.expander.font.color),
+            native_expander_fill(r, s),
+            to_color(r.defaults.background_color),
+        )
+    },
+}];
+
+// `styles::segmented_control` has no pair of its own: its label colour is
+// the one the segments paint, which `SEGMENT_PAIRS` holds on their fills.
+
 // `styles::rule` and `styles::container_card` have no pair. A separator is one
 // color with no fill of its own, and a card paints a fill but leaves the label
 // on it to be inherited (`text_color: None`), so the connector does not
@@ -829,6 +883,8 @@ pub(super) fn style_pair_names() -> Vec<String> {
     out.extend(SCROLLABLE_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(PROGRESS_BAR_PAIRS.iter().map(|p| p.what.to_string()));
     out.extend(TOOLTIP_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(SEGMENT_PAIRS.iter().map(|p| p.what.to_string()));
+    out.extend(EXPANDER_PAIRS.iter().map(|p| p.what.to_string()));
     #[cfg(feature = "iced_aw")]
     {
         out.extend(AW_CARD_PAIRS.iter().map(|p| p.what.to_string()));

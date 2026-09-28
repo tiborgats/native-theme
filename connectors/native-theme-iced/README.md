@@ -121,8 +121,8 @@ the iced default it replaces:
 
 | Shape | Closure | Functions | Passed to |
 |---|---|---|---|
-| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `text_input`, `text_editor`, `checkbox`, `radio`, `toggler`, `pick_list`, `scrollable`, `slider` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)` |
-| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip` | `.style(..)` |
+| with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `text_input`, `text_editor`, `checkbox`, `radio`, `toggler`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks |
+| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `segmented_control` | `.style(..)` — `segmented_control` styles the container holding the segments |
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
 | a value | `scrollable::Scrollbar` | `scrollbar` | `.direction(Direction::Vertical(..))` — widths, and an embedded bar where the platform does not overlay its scrollbars |
 
@@ -142,6 +142,27 @@ progress_bar(0.0..=1.0, value)
     .style(styles::progress_bar(&resolved));
 rule::horizontal(resolved.separator.line_width).style(styles::rule(&resolved));
 ```
+
+iced has no segmented control and no expander; both are built from its own
+buttons and containers. A segmented control is a container of segment
+buttons, whose fill shows as the outline and the separators:
+
+```rust,ignore
+let sc = &resolved.segmented_control;
+let segments = labels.iter().enumerate().map(|(i, label)| {
+    let position = styles::SegmentPosition::of(i, labels.len());
+    button(text(*label))
+        .style(styles::segment(&resolved, i == chosen, position))
+        .into()
+});
+container(row(segments).spacing(sc.separator_width))
+    .padding(sc.border.line_width)
+    .style(styles::segmented_control(&resolved));
+```
+
+An expander's header is a button in `styles::expander`, whose label is the
+disclosure arrow, drawn in `expander_arrow_color(&resolved)` at
+`expander.arrow_icon_size`, and the title.
 
 ### `iced_aw`
 
@@ -205,6 +226,7 @@ Full helper list: `button_padding`, `input_padding`, `combo_box_padding`,
 `system-fonts`), `scaled_text_size`,
 `line_height_multiplier`,
 `border_color`, `disabled_opacity`, `focus_ring_color`, `link_color`,
+`expander_arrow_color`,
 `selection_color`, `info_color`, `info_foreground_color`,
 `warning_foreground_color`, `icon_sizes`, plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum.
