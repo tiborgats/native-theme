@@ -61,7 +61,10 @@ min_height_px = 34.0
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
 [light.checkbox]
+# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+radio_dot_diameter_px = 8.0
 label_gap_px = 8.0
 
 
@@ -273,7 +276,10 @@ min_height_px = 34.0
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
 [dark.checkbox]
+# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+radio_dot_diameter_px = 8.0
 label_gap_px = 8.0
 
 

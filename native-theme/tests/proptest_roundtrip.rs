@@ -286,25 +286,29 @@ fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {
         proptest::collection::vec(proptest::option::of(arb_rgba()), 7..=7),
         proptest::option::of(1.0f32..50.0),
         proptest::option::of(0.0f32..50.0),
+        proptest::option::of(0.0f32..50.0),
         proptest::option::of(0.0f32..1.0),
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_widget_border_spec()),
     )
-        .prop_map(|(colors, ind_w, gap, dis_op, font, border)| CheckboxTheme {
-            background_color: colors[0],
-            checked_background: colors[1],
-            indicator_color: colors[2],
-            indicator_width: ind_w,
-            label_gap: gap,
-            disabled_opacity: dis_op,
-            disabled_text_color: colors[3],
-            hover_background: colors[4],
-            disabled_background: colors[5],
-            unchecked_background: colors[6],
-            unchecked_border_color: colors[3],
-            font,
-            border,
-        })
+        .prop_map(
+            |(colors, ind_w, dot, gap, dis_op, font, border)| CheckboxTheme {
+                background_color: colors[0],
+                checked_background: colors[1],
+                indicator_color: colors[2],
+                indicator_width: ind_w,
+                radio_dot_diameter: dot,
+                label_gap: gap,
+                disabled_opacity: dis_op,
+                disabled_text_color: colors[3],
+                hover_background: colors[4],
+                disabled_background: colors[5],
+                unchecked_background: colors[6],
+                unchecked_border_color: colors[3],
+                font,
+                border,
+            },
+        )
 }
 
 fn arb_dialog_button_order() -> impl Strategy<Value = DialogButtonOrder> {

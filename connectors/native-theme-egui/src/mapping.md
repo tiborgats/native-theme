@@ -10,13 +10,13 @@ One row per native leaf (spec §5, §13.1). A sink is a base-style field; «scop
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 18 | 1 | 37 | 10 |
 | Surfaces (window, dialog, popover, card, tooltip, menu) | 108 | 8 | 55 | 31 | 14 |
-| Buttons (button, link, switch, checkbox, segmented control) | 99 | 11 | 45 | 29 | 14 |
+| Buttons (button, link, switch, checkbox, segmented control) | 100 | 11 | 45 | 29 | 15 |
 | Inputs (input, combo box, list) | 78 | 4 | 35 | 28 | 11 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 6 | 17 | 8 | 9 |
 | Chrome (tab, sidebar, toolbar, status bar, expander) | 91 | 0 | 53 | 23 | 15 |
-| **TOTAL** | **482** | **47** | **206** | **156** | **73** |
+| **TOTAL** | **483** | **47** | **206** | **156** | **74** |
 
-UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-crate` 5.
+UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-crate` 6.
 
 ## Rows
 
@@ -258,6 +258,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 53, `source-side gap` 15, `widgets-cra
 | `checkbox.indicator_color` | SCOPED | «checkbox» `visuals.widgets.noninteractive.fg_stroke.color`; «checkbox» `visuals.widgets.inactive.fg_stroke.color`; «checkbox» `visuals.widgets.hovered.fg_stroke.color`; «checkbox» `visuals.widgets.active.fg_stroke.color`; «checkbox» `visuals.widgets.open.fg_stroke.color` |  |
 | `checkbox.indicator_width` | DIRECT | `spacing.icon_width`; «checkbox» `spacing.icon_width`; «checkbox» `spacing.interact_size.y`; «checkbox» `spacing.icon_width_inner` (when: all four checkbox.border.padding sides are stated, §6.11) |  |
 | `checkbox.label_gap` | DIRECT | `spacing.icon_spacing`; «checkbox» `spacing.icon_spacing` |  |
+| `checkbox.radio_dot_diameter` | UNMAPPABLE |  | `widgets-crate`: native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8) |
 | `checkbox.unchecked_background` | SCOPED | «checkbox» `visuals.widgets.inactive.bg_fill` (when: stated; None copies checkbox.background_color, §6.4); «checkbox» `visuals.widgets.open.bg_fill` (when: stated; None copies checkbox.background_color, §6.4); «checkbox» `visuals.widgets.hovered.bg_fill` (when: checkbox.hover_background is translucent or None, §6.1, §6.4); «checkbox» `visuals.widgets.active.bg_fill` (when: checkbox.hover_background is translucent or None, §6.1, §6.4); «checkbox:disabled» `visuals.widgets.inactive.bg_fill` (when: checkbox.disabled_background is None, §6.4) |  |
 | `checkbox.unchecked_border_color` | SCOPED | «checkbox» `visuals.widgets.noninteractive.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.inactive.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.hovered.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.active.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4); «checkbox» `visuals.widgets.open.bg_stroke.color` (when: stated; None copies checkbox.border.color, §6.4) |  |
 | `link.active_text_color` | DERIVED | → T18(a) |  |

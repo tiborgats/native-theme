@@ -547,10 +547,14 @@ accent_color = "#00ff00"
                     variant.button.primary_background.is_none(),
                     "preset '{name}' {label}.button.primary_background should be None (derived)"
                 );
-                // checkbox.checked_background is derived from accent
-                assert!(
-                    variant.checkbox.checked_background.is_none(),
-                    "preset '{name}' {label}.checkbox.checked_background should be None (derived)"
+                // checkbox.checked_background is derived from accent, except on
+                // KDE, where Breeze tints the button colour instead
+                // (docs/platform-facts.md:1218, §2.5)
+                assert_eq!(
+                    variant.checkbox.checked_background.is_some(),
+                    *name == "kde-breeze",
+                    "preset '{name}' {label}.checkbox.checked_background: stated only where \
+                     platform-facts does not derive it from the accent"
                 );
                 // slider.fill is derived from accent
                 assert!(

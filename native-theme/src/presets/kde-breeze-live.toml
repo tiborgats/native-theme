@@ -64,6 +64,8 @@ padding_horizontal_px = 6.0
 padding_vertical_px = 3.0
 [light.checkbox]
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
+radio_dot_diameter_px = 6.0
 label_gap_px = 4.0
 
 [light.tooltip]
@@ -257,6 +259,8 @@ padding_horizontal_px = 6.0
 padding_vertical_px = 3.0
 [dark.checkbox]
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
+radio_dot_diameter_px = 6.0
 label_gap_px = 4.0
 
 [dark.tooltip]

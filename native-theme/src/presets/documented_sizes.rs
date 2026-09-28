@@ -16,9 +16,9 @@
 //!
 //! A second table, one row per (platform, field), gives the text scale's
 //! sizes and weights, the dialog title font's size and weight, the slider's
-//! `track_height` and `thumb_diameter`, and the progress bar's
-//! `track_height`. A cell that leaves the field to inheritance
-//! ("← `defaults.font`", "(none)") is checked as not stated.
+//! `track_height` and `thumb_diameter`, the progress bar's `track_height`,
+//! and the checkbox's `radio_dot_diameter`. A cell that leaves the field to
+//! inheritance ("← `defaults.font`", "(none)") is checked as not stated.
 //!
 //! Every row is checked in both variants against two resolutions:
 //!
@@ -705,8 +705,8 @@ enum Want {
 struct FieldRow {
     platform: Platform,
     /// `text_scale.<role>.size` / `.weight`, `dialog.title_font.size` /
-    /// `.weight`, `slider.track_height`, `slider.thumb_diameter` or
-    /// `progress_bar.track_height`.
+    /// `.weight`, `slider.track_height`, `slider.thumb_diameter`,
+    /// `progress_bar.track_height` or `checkbox.radio_dot_diameter`.
     field: &'static str,
     want: Want,
     /// The platform-facts.md line of the cell.
@@ -749,6 +749,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Kde, "slider.track_height", Px(6.0), 1292, "Slider_GrooveThickness = 6"),
     field(Kde, "slider.thumb_diameter", Px(20.0), 1293, "Slider_ControlThickness = 20"),
     field(Kde, "progress_bar.track_height", Px(6.0), 1303, "ProgressBar_Thickness = 6"),
+    field(Kde, "checkbox.radio_dot_diameter", Px(6.0), 1220, "renderRadioButton: radius (18 - 12) / 2 = 3"),
     // --- GNOME ---
     field(Gnome, "text_scale.caption.size", Pt(9.0), 1435, ".caption: ≈9pt"),
     field(Gnome, "text_scale.caption.weight", Weight(400), 1435, ".caption: 400"),
@@ -763,6 +764,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Gnome, "slider.track_height", Px(10.0), 1292, "libadwaita .scale: 10"),
     field(Gnome, "slider.thumb_diameter", Px(20.0), 1293, "libadwaita: 20"),
     field(Gnome, "progress_bar.track_height", Px(8.0), 1303, "libadwaita .progressbar: 8"),
+    field(Gnome, "checkbox.radio_dot_diameter", Px(8.0), 1220, "bullet.svg: a circle of radius 4"),
     // --- macOS ---
     field(Macos, "text_scale.caption.size", Pt(10.0), 1435, ".caption1: 10pt"),
     field(Macos, "text_scale.caption.weight", Weight(400), 1435, ".caption1: 400"),
@@ -777,6 +779,7 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Macos, "slider.track_height", Px(5.0), 1292, "NSSlider: 5"),
     field(Macos, "slider.thumb_diameter", Px(21.0), 1293, "NSSlider knob: 21"),
     field(Macos, "progress_bar.track_height", Px(6.0), 1303, "NSProgressIndicator: 6"),
+    field(Macos, "checkbox.radio_dot_diameter", Unstated, 1220, "(none): not published"),
     // --- Windows ---
     // The presets state the type ramp and title in points, each epx × 72/96
     // (Caption 9pt, Subtitle 15, Title 21, Display 51, dialog title 15). The
@@ -795,10 +798,11 @@ const FIELD_ROWS: &[FieldRow] = &[
     field(Windows, "slider.track_height", Px(4.0), 1292, "WinUI3: 4"),
     field(Windows, "slider.thumb_diameter", Px(18.0), 1293, "WinUI3: 18"),
     field(Windows, "progress_bar.track_height", Px(1.0), 1303, "the groove, ProgressBarTrackHeight: 1"),
+    field(Windows, "checkbox.radio_dot_diameter", Px(12.0), 1220, "RadioButtonCheckGlyphSize: 12"),
 ];
 
 /// Every field a [`FieldRow`] may name.
-const FIELDS: [&str; 13] = [
+const FIELDS: [&str; 14] = [
     "text_scale.caption.size",
     "text_scale.caption.weight",
     "text_scale.section_heading.size",
@@ -812,6 +816,7 @@ const FIELDS: [&str; 13] = [
     "slider.track_height",
     "slider.thumb_diameter",
     "progress_bar.track_height",
+    "checkbox.radio_dot_diameter",
 ];
 
 /// The platform-facts section and row key of a field's cell.
@@ -830,6 +835,7 @@ fn field_cell(field: &str) -> Option<(&'static str, &'static str)> {
         "slider.track_height" => ("2.9", "track_height"),
         "slider.thumb_diameter" => ("2.9", "thumb_diameter"),
         "progress_bar.track_height" => ("2.10", "track_height"),
+        "checkbox.radio_dot_diameter" => ("2.5", "radio_dot_diameter"),
         _ => return None,
     })
 }
@@ -853,6 +859,7 @@ fn states_field(v: &ThemeMode, field: &str) -> Option<bool> {
         "slider.track_height" => v.slider.track_height.is_some(),
         "slider.thumb_diameter" => v.slider.thumb_diameter.is_some(),
         "progress_bar.track_height" => v.progress_bar.track_height.is_some(),
+        "checkbox.radio_dot_diameter" => v.checkbox.radio_dot_diameter.is_some(),
         _ => {
             let (role, sub) = field.strip_prefix("text_scale.")?.split_once('.')?;
             let entry = stated_entry(v, role);
@@ -882,6 +889,7 @@ fn resolved_field(theme: &ResolvedTheme, field: &str) -> Option<f32> {
         "slider.track_height" => theme.slider.track_height,
         "slider.thumb_diameter" => theme.slider.thumb_diameter,
         "progress_bar.track_height" => theme.progress_bar.track_height,
+        "checkbox.radio_dot_diameter" => theme.checkbox.radio_dot_diameter?,
         _ => return None,
     })
 }

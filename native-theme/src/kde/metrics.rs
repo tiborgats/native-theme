@@ -20,6 +20,9 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
 
     // Checkbox
     variant.checkbox.indicator_width = Some(20.0); // CheckBox_Size
+    // platform-facts.md:1220 (§2.5): renderRadioButton's radius
+    // (CheckBox_Size - 2 - 12) / 2 = 3
+    variant.checkbox.radio_dot_diameter = Some(6.0);
     variant.checkbox.label_gap = Some(4.0); // CheckBox_ItemSpacing
 
     // Input
@@ -106,6 +109,11 @@ mod tests {
         let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert_eq!(v.checkbox.indicator_width, Some(20.0), "CheckBox_Size");
+        assert_eq!(
+            v.checkbox.radio_dot_diameter,
+            Some(6.0),
+            "renderRadioButton"
+        );
     }
 
     #[test]

@@ -123,12 +123,24 @@ padding_vertical_px = 3.0
 color = "#232629"
 [light.checkbox]
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
+radio_dot_diameter_px = 6.0
 label_gap_px = 4.0
+# platform-facts.md:1218 (§2.5): Button #fcfcfc under Selection #3daee9 at alpha 0.3
+checked_background = "#c2e4f6"
+# platform-facts.md:1211 (§2.5): palette.text(), [Colors:View] ForegroundNormal
+indicator_color = "#232629"
 hover_background = "#93cee9"
 disabled_background = "#f0f0f0"
 disabled_text_color = "#bcc0bf"
+# platform-facts.md:1206 (§2.5): [Colors:Button] BackgroundNormal 252,252,252
 unchecked_background = "#fcfcfc"
-unchecked_border_color = "#bcc0bf"
+# platform-facts.md:1209 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
+unchecked_border_color = "#c6c8c9"
+
+[light.checkbox.border]
+# platform-facts.md:1209 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
+color = "#3daee9"
 
 [light.tooltip]
 background_color = "#f7f7f7"
@@ -447,12 +459,24 @@ padding_vertical_px = 3.0
 color = "#fcfcfc"
 [dark.checkbox]
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): Breeze's dot, radius (18 - 12) / 2 = 3
+radio_dot_diameter_px = 6.0
 label_gap_px = 4.0
+# platform-facts.md:1218 (§2.5): Button #292c30 under Selection #3daee9 at alpha 0.3
+checked_background = "#2f5368"
+# platform-facts.md:1211 (§2.5): palette.text(), [Colors:View] ForegroundNormal
+indicator_color = "#fcfcfc"
 hover_background = "#93cee9"
 disabled_background = "#3a3f44"
 disabled_text_color = "#4d545b"
-unchecked_background = "#1b1e20"
-unchecked_border_color = "#4d545b"
+# platform-facts.md:1206 (§2.5): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32)
+unchecked_background = "#292c30"
+# platform-facts.md:1209 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
+unchecked_border_color = "#4c4e51"
+
+[dark.checkbox.border]
+# platform-facts.md:1209 (§2.5): checked, palette.highlight(), [Colors:Selection] BackgroundNormal
+color = "#3daee9"
 
 [dark.tooltip]
 # platform-facts.md:1251 (§2.7): [Colors:Tooltip] BackgroundNormal 41,44,48 (BreezeDark.colors:102)

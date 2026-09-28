@@ -65,6 +65,8 @@ padding_top_px = 5.0
 padding_bottom_px = 6.0
 [light.checkbox]
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
+radio_dot_diameter_px = 12.0
 label_gap_px = 8.0
 
 [light.tooltip]
@@ -267,6 +269,8 @@ padding_top_px = 5.0
 padding_bottom_px = 6.0
 [dark.checkbox]
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
+radio_dot_diameter_px = 12.0
 label_gap_px = 8.0
 
 [dark.tooltip]

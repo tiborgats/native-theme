@@ -225,6 +225,8 @@ pub(crate) fn winui3_widget_sizing(variant: &mut crate::ThemeMode) {
     border.padding_left = Some(11.0);
     border.padding_right = Some(11.0);
     variant.checkbox.indicator_width = Some(20.0);
+    // platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
+    variant.checkbox.radio_dot_diameter = Some(12.0);
     variant.checkbox.label_gap = Some(8.0);
     variant.input.min_height = Some(32.0);
     let border = variant.input.border.get_or_insert_default();
@@ -1314,6 +1316,7 @@ mod tests {
         let variant = reader_mode(&result);
         assert_eq!(variant.button.min_height, Some(32.0));
         assert_eq!(variant.checkbox.indicator_width, Some(20.0));
+        assert_eq!(variant.checkbox.radio_dot_diameter, Some(12.0));
         assert_eq!(variant.input.min_height, Some(32.0));
         assert_eq!(variant.slider.thumb_diameter, Some(18.0));
         assert_eq!(variant.progress_bar.track_height, Some(1.0));

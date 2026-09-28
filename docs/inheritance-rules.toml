@@ -382,6 +382,8 @@ fields = [
     "segmented_control.hover_background", # platform-specific hover bg
     "expander.hover_background",       # platform-specific hover bg
     "expander.arrow_color",            # platform-specific arrow/chevron color
+    # soft_option size: stays None where the platform states none
+    "checkbox.radio_dot_diameter",     # macOS publishes no radio dot size (platform-facts §2.5)
 ]
 
 # All sizing fields (min_width, min_height, border.padding_*, height, width,

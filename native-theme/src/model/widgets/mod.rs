@@ -153,10 +153,18 @@ pub struct CheckboxTheme {
     /// Indicator (check mark / radio dot) color.
     #[theme(inherit_from = "defaults.accent_text_color")]
     pub indicator_color: Option<Rgba>,
-    /// Indicator (check mark / radio dot) width in logical pixels.
+    /// Side length of the checkbox indicator (square), or diameter of the
+    /// radio indicator (circle), in logical pixels: the whole indicator, not
+    /// the mark drawn inside it (docs/platform-facts.md:980).
     #[serde(rename = "indicator_width_px")]
     #[theme(check = "non_negative")]
     pub indicator_width: Option<f32>,
+    /// Diameter of the filled dot a selected radio button draws at the centre
+    /// of its indicator, in logical pixels. `None` where the platform states
+    /// no dot size: AppKit draws its own (docs/platform-facts.md §2.5).
+    #[serde(rename = "radio_dot_diameter_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub radio_dot_diameter: Option<f32>,
     /// Space between indicator and label.
     #[serde(rename = "label_gap_px")]
     #[theme(check = "non_negative")]

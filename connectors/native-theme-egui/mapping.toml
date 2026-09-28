@@ -1244,6 +1244,11 @@ sinks   = [
   { path = "spacing.icon_width_inner", scope = "checkbox", when = "all four checkbox.border.padding sides are stated, §6.11" },
 ]
 
+["checkbox.radio_dot_diameter"]
+verdict  = "unmappable"
+sub_tag  = "widgets-crate"
+upstream = "native-theme-egui-widgets: RadioButton (docs/todo_egui-widgets-spec.md §4.8)"
+
 ["checkbox.label_gap"]
 verdict = "direct"
 sinks   = [

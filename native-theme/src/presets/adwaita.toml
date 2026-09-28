@@ -121,7 +121,10 @@ padding_vertical_px = 0.0
 [light.input.font]
 color = "#2e3436"
 [light.checkbox]
+# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+radio_dot_diameter_px = 8.0
 label_gap_px = 8.0
 hover_background = "#d5d5d5"
 disabled_background = "#e8e8e880"
@@ -458,7 +461,10 @@ padding_vertical_px = 0.0
 [dark.input.font]
 color = "#ffffff"
 [dark.checkbox]
+# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
+# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+radio_dot_diameter_px = 8.0
 label_gap_px = 8.0
 hover_background = "#464649"
 disabled_background = "#3a3a3e80"

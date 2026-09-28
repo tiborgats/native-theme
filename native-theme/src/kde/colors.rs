@@ -9,6 +9,47 @@ fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<R
     super::parse_rgb(&value)
 }
 
+/// Breeze's `Metrics::Blend_Value`, the alpha of the selection colour over a
+/// checked indicator's fill (breezemetrics.h:176 and breezehelper.cpp:40 at
+/// breeze v6.7.5; docs/platform-facts.md §2.5).
+const BLEND_VALUE: f32 = 0.3;
+
+/// `kdeglobals` `[KDE] frameContrast` where it is unset, KColorScheme's own
+/// default (kcolorscheme.cpp:529-538 at 27066d47; docs/platform-facts.md §2.11).
+const FRAME_CONTRAST_DEFAULT: f32 = 0.2;
+
+/// `color` at `alpha`, held in 8 bits as `Rgba` holds every alpha.
+fn translucent(color: Rgba, alpha: f32) -> Rgba {
+    let [r, g, b, _] = color.to_f32_array();
+    Rgba::from_f32(r, g, b, alpha)
+}
+
+/// `top` painted over the opaque `bottom` (source over).
+fn over(top: Rgba, bottom: Rgba) -> Rgba {
+    let [tr, tg, tb, alpha] = top.to_f32_array();
+    let [br, bg, bb, _] = bottom.to_f32_array();
+    let channel = |t: f32, b: f32| t * alpha + b * (1.0 - alpha);
+    Rgba::from_f32(channel(tr, br), channel(tg, bg), channel(tb, bb), 1.0)
+}
+
+/// `KColorUtils::mix(a, b, bias)`: each channel moved from `a` towards `b` by
+/// `bias` (kcolorutils.cpp:144-165 at kguiaddons 7c766f6f).
+fn mix(a: Rgba, b: Rgba, bias: f32) -> Rgba {
+    let [ar, ag, ab, _] = a.to_f32_array();
+    let [br, bg, bb, _] = b.to_f32_array();
+    let channel = |from: f32, to: f32| from + (to - from) * bias;
+    Rgba::from_f32(channel(ar, br), channel(ag, bg), channel(ab, bb), 1.0)
+}
+
+/// `KColorScheme::frameContrast()`: `[KDE] frameContrast`, clamped to
+/// 0.0..=1.0, or its default where unset or not a number.
+fn frame_contrast(ini: &configparser::ini::Ini) -> f32 {
+    ini.get("KDE", "frameContrast")
+        .and_then(|v| v.trim().parse::<f32>().ok())
+        .filter(|v| v.is_finite())
+        .map_or(FRAME_CONTRAST_DEFAULT, |v| v.clamp(0.0, 1.0))
+}
+
 /// Populate a ThemeMode with colors from KDE INI color groups.
 ///
 /// Maps all standard KDE color groups (View, Window, Button, Selection,
@@ -77,6 +118,25 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.input.placeholder_color = get_color(ini, "Colors:View", "ForegroundInactive");
     // input.caret from View/DecorationFocus (the focus decoration color)
     variant.input.caret_color = get_color(ini, "Colors:View", "DecorationFocus");
+
+    // Checkbox and radio (docs/platform-facts.md §2.5): Breeze fills an
+    // unchecked indicator with the button colour and outlines it in
+    // `separatorColor()`; a checked one is that fill under the selection
+    // colour at `Metrics::Blend_Value`, outlined in the selection colour; the
+    // mark is the text colour.
+    let button_bg = get_color(ini, "Colors:Button", "BackgroundNormal");
+    let selection_bg = get_color(ini, "Colors:Selection", "BackgroundNormal");
+    variant.checkbox.unchecked_background = button_bg;
+    variant.checkbox.checked_background = button_bg
+        .zip(selection_bg)
+        .map(|(button, selection)| over(translucent(selection, BLEND_VALUE), button));
+    variant.checkbox.indicator_color = get_color(ini, "Colors:View", "ForegroundNormal");
+    if let Some(color) = selection_bg {
+        variant.checkbox.border.get_or_insert_default().color = Some(color);
+    }
+    variant.checkbox.unchecked_border_color = get_color(ini, "Colors:Window", "BackgroundNormal")
+        .zip(window_fg)
+        .map(|(window, text)| mix(window, text, frame_contrast(ini)));
 
     // Popover (from View)
     variant.popover.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
@@ -251,6 +311,69 @@ inactiveForeground=161,169,177
             v.defaults.selection_text_color,
             Some(Rgba::rgb(252, 252, 252))
         );
+    }
+
+    // === Per-widget: Checkbox and radio ===
+
+    /// The groups Breeze's checkbox reads, from BreezeLight.colors and
+    /// BreezeDark.colors at breeze v6.7.5 (:29-39, :85-95, :113-137).
+    fn breeze_checkbox_groups(
+        window: &str,
+        window_fg: &str,
+        button: &str,
+        view_fg: &str,
+    ) -> String {
+        format!(
+            "[Colors:Window]\nBackgroundNormal={window}\nForegroundNormal={window_fg}\n\n\
+             [Colors:Button]\nBackgroundNormal={button}\n\n\
+             [Colors:View]\nForegroundNormal={view_fg}\n\n\
+             [Colors:Selection]\nBackgroundNormal=61,174,233\n"
+        )
+    }
+
+    /// docs/platform-facts.md §2.5's KDE cells, which the kde-breeze preset states.
+    #[test]
+    fn test_checkbox_colors_are_breezes() {
+        let cases = [
+            (
+                breeze_checkbox_groups("239,240,241", "35,38,41", "252,252,252", "35,38,41"),
+                [
+                    (194, 228, 246),
+                    (252, 252, 252),
+                    (35, 38, 41),
+                    (198, 200, 201),
+                ],
+            ),
+            (
+                breeze_checkbox_groups("32,35,38", "252,252,252", "41,44,48", "252,252,252"),
+                [(47, 83, 104), (41, 44, 48), (252, 252, 252), (76, 78, 81)],
+            ),
+        ];
+        for (content, [checked, unchecked, mark, unchecked_border]) in cases {
+            let v = populate_fixture(&content);
+            let rgb = |(r, g, b): (u8, u8, u8)| Some(Rgba::rgb(r, g, b));
+            assert_eq!(v.checkbox.checked_background, rgb(checked));
+            assert_eq!(v.checkbox.unchecked_background, rgb(unchecked));
+            assert_eq!(v.checkbox.indicator_color, rgb(mark));
+            assert_eq!(v.checkbox.unchecked_border_color, rgb(unchecked_border));
+            assert_eq!(
+                v.checkbox.border.as_ref().and_then(|b| b.color),
+                rgb((61, 174, 233))
+            );
+        }
+    }
+
+    #[test]
+    fn test_checkbox_unchecked_border_follows_frame_contrast() {
+        let content = breeze_checkbox_groups("0,0,0", "200,100,0", "0,0,0", "0,0,0");
+        let with = |contrast: &str| {
+            populate_fixture(&format!("{content}\n[KDE]\nframeContrast={contrast}\n"))
+                .checkbox
+                .unchecked_border_color
+        };
+        assert_eq!(with("0.5"), Some(Rgba::rgb(100, 50, 0)));
+        assert_eq!(with("2"), Some(Rgba::rgb(200, 100, 0)), "clamped to 1");
+        assert_eq!(with("none"), Some(Rgba::rgb(40, 20, 0)), "the 0.2 default");
     }
 
     // === Per-widget: Button ===
