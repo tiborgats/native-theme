@@ -317,9 +317,11 @@ arrow_color = "#232629"
 [dark.defaults]
 icon_theme = "breeze-dark"
 accent_color = "#3daee9"
-background_color = "#232629"
+# platform-facts.md:1046 (§2.1.3): [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130, breeze f0b1d75)
+background_color = "#202326"
 text_color = "#fcfcfc"
-surface_color = "#1b1e20"
+# platform-facts.md:1050 (§2.1.3): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116)
+surface_color = "#141618"
 muted_color = "#a1a9b1"
 shadow_color = "#00000060"
 
@@ -390,7 +392,8 @@ weight = 400
 # from the body font.
 
 [dark.window]
-inactive_title_bar_background = "#2d3035"
+# platform-facts.md:1153 (§2.2): [WM] inactiveBackground 32,36,40 (BreezeDark.colors:208, breeze f0b1d75)
+inactive_title_bar_background = "#202428"
 inactive_title_bar_text_color = "#a1a4a6"
 
 [dark.button]
@@ -415,7 +418,8 @@ padding_vertical_px = 6.0
 [dark.button.font]
 color = "#fcfcfc"
 [dark.input]
-background_color = "#1b1e20"
+# platform-facts.md:1186 (§2.4): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116)
+background_color = "#141618"
 min_height_px = 32.0
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
@@ -440,7 +444,8 @@ unchecked_background = "#1b1e20"
 unchecked_border_color = "#4d545b"
 
 [dark.tooltip]
-background_color = "#31363b"
+# platform-facts.md:1251 (§2.7): [Colors:Tooltip] BackgroundNormal 41,44,48 (BreezeDark.colors:102)
+background_color = "#292c30"
 max_width_px = 300.0
 
 

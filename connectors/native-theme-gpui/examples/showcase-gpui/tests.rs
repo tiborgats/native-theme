@@ -3611,14 +3611,16 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
     }
 }
 
-/// The popover-filled boxes painted in the last frame.
-fn popover_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
+/// The boxes painted in the tooltip's fill in the last frame: upstream fills
+/// a tooltip with `popover` (tooltip.rs:113-114), and the connector's
+/// `geometry::tooltip` refinement repaints it in `tooltip.background_color`.
+fn tooltip_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
     cx.update(|window, cx| {
-        let popover = Theme::global(cx).popover;
+        let fill = native_color(cx, |n| n.resolved.tooltip.background_color);
         window
             .painted_quads()
             .into_iter()
-            .filter(|q| q.background.as_solid() == Some(popover))
+            .filter(|q| fill.is_some() && q.background.as_solid() == fill)
             .map(|q| q.bounds)
             .collect()
     })
@@ -3627,7 +3629,7 @@ fn popover_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> 
 /// The width of the tooltip that shows once the pointer rests on the
 /// element tagged `selector` past gpui's tooltip delay (gpui-pre
 /// elements/div.rs:53, 500ms): the widest box painted in the tooltip's
-/// `popover` fill (tooltip.rs:113-114) that was not painted before. `None`
+/// `tooltip.background_color` fill that was not painted before. `None`
 /// where no such box is painted.
 fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<Pixels> {
     // Off any widget first, so a tooltip shown before is gone.
@@ -3636,7 +3638,7 @@ fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<P
     cx.executor()
         .advance_clock(std::time::Duration::from_secs(1));
     draw(cx);
-    let before = popover_boxes(cx);
+    let before = tooltip_boxes(cx);
     let at = bounds_of(cx, selector).center();
     hover(cx, at);
     cx.executor()
@@ -3644,7 +3646,7 @@ fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<P
     cx.run_until_parked();
     draw(cx);
     let scale = cx.update(|window, _| window.scale_factor());
-    popover_boxes(cx)
+    tooltip_boxes(cx)
         .into_iter()
         .filter(|b| !before.contains(b))
         .map(|b| px(b.size.width.0 / scale))
