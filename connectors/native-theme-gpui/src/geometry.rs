@@ -749,6 +749,60 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
     )
 }
 
+/// The fill of an `Input` root (`src/input/input.rs:639-650`, painted at
+/// `:711`, refined at `:719`), for a field built with `disabled`: the
+/// platform's `input.background_color`, or disabled its
+/// `input.disabled_background`. Apply it after [`input`].
+///
+/// Colour, not geometry, and carried for the reason [`with_coloured_text`]
+/// carries text: no `ThemeColor` field maps to it. Upstream fills an enabled
+/// field with `Theme::input_background`, which is the window's `background`
+/// in a light theme and `input` mixed with transparent in a dark one
+/// (`theme/mod.rs:379-385`), and a disabled one with `input` mixed with
+/// transparent at half opacity (`input/input.rs:98-101`, `:646-650`); the
+/// `input` token is the field's border (`contract.rs`'s `input` row), so
+/// neither fill can be the platform's. The fill is painted before the
+/// caller's refinement, so the refinement's wins -- in either state, which is
+/// why the caller passes the state the field is built with: a field refined
+/// with the enabled fill would lose its disabled look. A platform that states
+/// no disabled fill (`input.disabled_background` is `None`) leaves
+/// upstream's own disabled fill in place.
+#[must_use]
+pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
+    let i = &n.resolved.input;
+    let fill = if disabled {
+        i.disabled_background
+    } else {
+        Some(i.background_color)
+    };
+    match fill {
+        Some(fill) => StyleRefinement::default().bg(rgba_to_hsla(fill)),
+        None => StyleRefinement::default(),
+    }
+}
+
+/// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's
+/// text size and weight.
+///
+/// Upstream underlines a link at rest (`text_decoration_1`, `link.rs:77-78`)
+/// before the caller's refinement (`:90`). Where the platform draws its links
+/// without an underline (`link.underline_enabled` false), the refinement sets
+/// the underline's thickness to zero, so none is painted; where it underlines
+/// them, upstream's underline stands. The underline's colour, and the one
+/// upstream adds on hover and press (`:79-88`), are upstream's: the model
+/// states neither. The text colour is `ThemeColor::link`, the
+/// `link.font.color` row.
+#[must_use]
+pub fn link(n: Native<'_>) -> StyleRefinement {
+    let l = &n.resolved.link;
+    let r = with_text(StyleRefinement::default(), &l.font, n);
+    if l.underline_enabled {
+        r
+    } else {
+        r.text_decoration_0()
+    }
+}
+
 // --- Layout accessors (spec §9.5) ---------------------------------------------
 // The input is `Theme::layout` on the preset path and `SystemTheme.layout` on
 // the system path. There is no receiver to map these into: gpui-component's
@@ -988,6 +1042,65 @@ mod tests {
             assert_text(&out, &i.font, s);
         });
         stated.assert_each_compared();
+    }
+
+    /// `input_fill` is `input.background_color`, or for a disabled field
+    /// `input.disabled_background`, and nothing where the platform states no
+    /// disabled fill; it carries nothing else.
+    #[test]
+    fn input_fill_is_the_platforms_in_either_state() {
+        let mut stated_disabled = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let n = Native::unscaled(&r);
+                let at = format!("{}/{mode:?}", info.key);
+                let enabled = input_fill(n, false);
+                assert_eq!(
+                    enabled.background,
+                    Some(rgba_to_hsla(r.input.background_color).into()),
+                    "{at}: enabled fill"
+                );
+                let disabled = input_fill(n, true);
+                assert_eq!(
+                    disabled.background,
+                    r.input.disabled_background.map(|c| rgba_to_hsla(c).into()),
+                    "{at}: disabled fill"
+                );
+                stated_disabled += usize::from(r.input.disabled_background.is_some());
+                let bare = StyleRefinement {
+                    background: None,
+                    ..disabled
+                };
+                assert_eq!(bare, StyleRefinement::default(), "{at}: only the fill");
+            }
+        }
+        assert!(stated_disabled > 0, "no preset states a disabled fill");
+    }
+
+    /// `link` carries the link's text size and weight, and removes upstream's
+    /// resting underline exactly where `link.underline_enabled` is false
+    /// (material states it false, the others true).
+    #[test]
+    fn a_link_is_underlined_exactly_where_the_platform_underlines_it() {
+        let mut seen = [false, false];
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let n = Native::unscaled(&r);
+                let at = format!("{}/{mode:?}", info.key);
+                let out = link(n);
+                assert_text(&out, &r.link.font, 1.0);
+                let thickness = out.text.underline.as_ref().map(|u| u.thickness);
+                if r.link.underline_enabled {
+                    assert_eq!(thickness, None, "{at}: upstream's underline stands");
+                } else {
+                    assert_eq!(thickness, Some(px(0.)), "{at}: no underline");
+                }
+                seen[usize::from(r.link.underline_enabled)] = true;
+            }
+        }
+        assert_eq!(seen, [true, true], "both kinds of platform are compared");
     }
 
     /// `input_height` is the height rule [`input`] applies, and nothing else

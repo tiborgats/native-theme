@@ -151,7 +151,7 @@ pub fn link(t: &Theme) -> WidgetInfo {
             "gpui-component/link.rs:76",
         ))
         .color(claim(
-            "underline, at 50%",
+            "resting underline, at 50%, where link.underline_enabled",
             "link",
             t.link.opacity(0.5),
             "gpui-component/link.rs:78",

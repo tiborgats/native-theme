@@ -263,6 +263,14 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "input.min_height by the control-height rule geometry::input applies (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), and nothing else of geometry::input",
     ),
     (
+        "input_fill",
+        "input.background_color, or for a disabled field input.disabled_background where the theme states one, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
+    ),
+    (
+        "link",
+        "link.font size and weight, and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
+    ),
+    (
         "widget_gap",
         "layout.widget_gap, the space between adjacent widgets; none where the platform specifies none (platform-facts §2.20)",
     ),

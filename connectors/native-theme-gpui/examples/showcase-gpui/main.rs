@@ -400,8 +400,11 @@ pub(crate) const BUTTONS_HEADING_VARIANTS: &str = "buttons-heading-variants";
 pub(crate) const INPUTS_CHECKBOX_NOTIFICATIONS: &str = "inputs-checkbox-notifications";
 pub(crate) const INPUTS_CHECKBOX_AUTOSAVE: &str = "inputs-checkbox-autosave";
 /// The id and debug selector of the Inputs page's first Input, whose fill
-/// `an_input_fill_is_what_input_background_paints` reads.
+/// `a_refined_input_is_filled_with_the_platforms_fill` reads.
 pub(crate) const INPUTS_FIELD: &str = "inputs-field";
+/// The id and debug selector of the Basic page's disabled Input, whose fill
+/// `a_refined_input_is_filled_with_the_platforms_fill` reads.
+pub(crate) const BASIC_INPUT_DISABLED: &str = "basic-input-disabled";
 /// The id and debug selector of the Input below it, sized by
 /// `geometry::input_height` alone, which
 /// `the_height_only_field_takes_the_height_rule` measures.

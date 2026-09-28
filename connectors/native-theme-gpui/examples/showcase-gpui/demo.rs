@@ -1691,7 +1691,16 @@ pub(crate) fn text_input(
         .disabled(disabled)
         .w(width);
     let input = match field {
-        InputField::Refined => native_info(input, cx, geometry::input, "input", &mut input_info),
+        InputField::Refined => {
+            let input = native_info(input, cx, geometry::input, "input", &mut input_info);
+            // The platform's fill for the state the field is built in, after
+            // upstream's (input/input.rs:711, then :719).
+            let fill = native_geometry(cx, |n| geometry::input_fill(n, disabled));
+            if fill.is_some() {
+                input_info = input_info.geometry("input_fill");
+            }
+            refined(input, fill.as_ref())
+        }
         // Through the caller's style, which Input applies after its own
         // height and line height (input/input.rs:699-703, then :719).
         InputField::HeightOnly => native_info(
@@ -3599,17 +3608,18 @@ pub(crate) fn link(
     text: &'static str,
     href: &'static str,
 ) -> Stateful<Div> {
-    Link::new(id)
-        .child(text)
-        .href(href)
-        .info(
-            ui,
-            id,
-            info::typography::link(cx.theme())
-                .instance("text", text)
-                .instance("target", href),
-        )
-        .debug_selector(move || id.into())
+    let mut link_info = info::typography::link(cx.theme())
+        .instance("text", text)
+        .instance("target", href);
+    native_info(
+        Link::new(id).child(text).href(href),
+        cx,
+        geometry::link,
+        "link",
+        &mut link_info,
+    )
+    .info(ui, id, link_info)
+    .debug_selector(move || id.into())
 }
 
 /// A `Kbd` for `keys`, in gpui's keystroke syntax; `None` where they do not

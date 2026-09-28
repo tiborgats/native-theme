@@ -177,7 +177,7 @@ impl Showcase {
                     .child(demo::text_input(
                         ui,
                         cx,
-                        "basic-input-disabled",
+                        crate::BASIC_INPUT_DISABLED,
                         &self.basic_disabled_state,
                         InputField::Refined,
                         true,

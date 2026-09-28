@@ -33,14 +33,14 @@ use crate::support::{
     CAROUSEL_SLIDES, ChromeIcon, load_all_icons, load_gpui_icons, native_geometry, native_value,
 };
 use crate::{
-    BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS, BUTTONS_PRIMARY,
-    BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
-    CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE, CHROME_LABEL_ICON_THEME,
-    CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR, CHROME_PAGE_TABS, CHROME_SIDE_PANEL,
-    CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE, CHROME_STATUS_BAR,
-    CHROME_THEME_SETTINGS, CHROME_TITLE_BAR, CHROME_TOOLBAR, CHROME_TOOLBAR_PALETTE,
-    CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, CONTENT_ALERT, CONTENT_PANEL,
-    CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER,
+    BASIC_INPUT_DISABLED, BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS,
+    BUTTONS_PRIMARY, BUTTONS_TEXT, CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART,
+    CHARTS_LINE_CHART, CHARTS_PIE_CHART, CHROME_APP_MENU_BAR, CHROME_HANDLE,
+    CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR,
+    CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE,
+    CHROME_STATUS_BAR, CHROME_THEME_SETTINGS, CHROME_TITLE_BAR, CHROME_TOOLBAR,
+    CHROME_TOOLBAR_PALETTE, CHROME_TOOLBAR_PREFERENCES, CHROME_TOOLBAR_RELOAD, CONTENT_ALERT,
+    CONTENT_PANEL, CONTENT_SCROLL, DATA_PAGINATION, DATA_PAGINATION_COMPACT, DATA_TABLE_HEADER,
     FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
     FEEDBACK_SPINNER_SMALL, FEEDBACK_TAG_DANGER, FEEDBACK_TAG_PRIMARY, INPUTS_CHECKBOX_AUTOSAVE,
     INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD, INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA,
@@ -3634,14 +3634,16 @@ fn input_fill(info: &Option<WidgetInfo>) -> Option<gpui::Hsla> {
         .map(|c| c.value)
 }
 
-/// An Input's fill swatch is what `Theme::input_background()` paints in
-/// either mode: the window background in light mode, input mixed toward
-/// transparent in dark (theme/mod.rs:379-384) -- not the background in both.
-/// And it is the fill the frame holds inside the Input.
+/// A refined Input is filled with the platform's `input.background_color`
+/// in either mode, through `geometry::input_fill` -- not with
+/// `Theme::input_background()`, which is the window background in light mode
+/// and input mixed toward transparent in dark (theme/mod.rs:379-384) -- and
+/// its info shows no swatch for the fill upstream no longer paints, but the
+/// builder's geometry line. The Basic page's disabled field is filled with
+/// `input.disabled_background`.
 #[gpui::test]
-fn an_input_fill_is_what_input_background_paints(cx: &mut TestAppContext) {
+fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    show(&mut cx, &showcase, Page::Inputs);
     for (item, dark) in [("Light", false), ("Dark", true)] {
         run_menu_item(&mut cx, "Theme", item);
         assert_eq!(
@@ -3649,17 +3651,48 @@ fn an_input_fill_is_what_input_background_paints(cx: &mut TestAppContext) {
             dark,
             "Theme > {item} did not reach Theme::mode, so this proves nothing"
         );
+        // The builder's fills, which its unit test holds to the two fields.
+        let (fill, disabled_fill) = read(&mut cx, &showcase, |_this, cx| {
+            match cx.native_theme().and_then(|nt| nt.native(cx)) {
+                Some(n) => {
+                    let solid = |r: gpui::StyleRefinement| {
+                        r.background
+                            .and_then(|f| f.color())
+                            .and_then(|b| b.as_solid())
+                    };
+                    (
+                        solid(geometry::input_fill(n, false)),
+                        solid(geometry::input_fill(n, true)),
+                    )
+                }
+                None => (None, None),
+            }
+        });
+        assert!(fill.is_some(), "no native theme is installed");
+
+        show(&mut cx, &showcase, Page::Inputs);
         let info = settle_on(&mut cx, &showcase, INPUTS_FIELD);
-        let painted = cx.update(|_w, cx| Theme::global(cx).input_background());
-        assert_eq!(
-            input_fill(&info),
-            Some(painted),
-            "in {item} mode the Input's fill swatch is not input_background(): {info:?}"
-        );
         assert_eq!(
             painted_fill(&mut cx, INPUTS_FIELD),
+            fill,
+            "in {item} mode the fill painted inside the Input is not input.background_color"
+        );
+        assert_eq!(
             input_fill(&info),
-            "in {item} mode the fill painted inside the Input is not its fill swatch"
+            None,
+            "in {item} mode the Input's info still shows upstream's fill: {info:?}"
+        );
+        assert!(
+            info.as_ref()
+                .is_some_and(|i| i.to_text().contains("geometry::input_fill")),
+            "in {item} mode the Input's info names no geometry::input_fill: {info:?}"
+        );
+
+        show(&mut cx, &showcase, Page::Basic);
+        assert_eq!(
+            painted_fill(&mut cx, BASIC_INPUT_DISABLED),
+            disabled_fill,
+            "in {item} mode the disabled field is not filled with input.disabled_background"
         );
     }
 }

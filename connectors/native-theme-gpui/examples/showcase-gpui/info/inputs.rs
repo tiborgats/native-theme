@@ -16,14 +16,22 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         InputField::Refined => info,
         InputField::HeightOnly => info.variant("control height only"),
     };
+    // geometry::input_fill gives a refined field the platform's fill, in
+    // place of upstream's (input/input.rs:711, then :719); its geometry line
+    // names the fields.
+    let filled = field == InputField::Refined && styled;
+    let info = info.color(claim(
+        "border",
+        "input",
+        t.input,
+        "gpui-component/input/input.rs:714",
+    ));
+    let info = if filled {
+        info
+    } else {
+        info.color(input_background(t))
+    };
     let info = info
-        .color(claim(
-            "border",
-            "input",
-            t.input,
-            "gpui-component/input/input.rs:714",
-        ))
-        .color(input_background(t))
         // Input takes only the fill from input_style and drops its foreground
         // (input/input.rs:639), so the text is the colour the showcase sets
         // on its window.
@@ -46,12 +54,22 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     } else {
         info
     };
+    let info = info.config("focus_ring", format!("{}", t.focus_ring));
+    let info = if filled {
+        info
+    } else {
+        info.not_themeable("fill", "input_background(): the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs); geometry::input_fill gives a refined field the platform's")
+    };
     let info = info
-        .config("focus_ring", format!("{}", t.focus_ring))
-        .not_themeable("fill", "input_background(): the window background in light mode, and input mixed toward transparent in dark -- one accessor, two sources (theme/mod.rs)")
         .not_themeable("text colour", "none of its own: Input takes only the fill from input_style and drops its foreground (input/input.rs, Input::render), so the text takes the colour the showcase sets on its window")
-        .not_themeable("focus ring", "the connector uses the platform's focus_ring_width only as a switch: upstream drops the ring where Theme::focus_ring is off (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide at half the ring colour's alpha where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` at that half alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border")
-        .not_themeable("disabled fill", "input_style's Oklab mix of 80% input and 20% transparent, then faded to half alpha, because a disabled Input fades its fill again (input/input.rs, Input::render) -- a literal pair, and not muted")
+        .not_themeable("focus ring", "the connector uses the platform's focus_ring_width only as a switch: upstream drops the ring where Theme::focus_ring is off (styled.rs, FocusableExt::focus_ring_style), and draws it 3px wide at half the ring colour's alpha where it is on (styled.rs, FOCUS_RING_WIDTH), so the platform's width itself is Tier U. The ring is `ring` at that half alpha, shown on the InputGroup's info; the OtpInput and Select show `ring` only as their focused border");
+    let info = if filled {
+        info
+    } else {
+        info.not_themeable("disabled fill", "input_style's Oklab mix of 80% input and 20% transparent, then faded to half alpha, because a disabled Input fades its fill again (input/input.rs, Input::render) -- a literal pair, and not muted")
+    };
+    let info = info
+        .not_themeable("disabled text colour", "the window's text colour at half alpha: the editor dims its own text when disabled, in its paint preparation (gpui-base/input/base/element.rs, prepaint), so input.disabled_text_color has no route")
         .not_themeable("placeholder colour", "Tier U: input.placeholder_color is modelled from each platform's own placeholder colour -- inheritance-rules.toml lists falling back to muted_color as wrong -- but Input hands its editor the shared muted_foreground on every render and takes no colour of its own (input/input.rs, Input::render)");
     match field {
         InputField::Refined if styled => info,
