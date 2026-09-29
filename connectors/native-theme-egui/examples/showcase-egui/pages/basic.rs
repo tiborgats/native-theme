@@ -1,5 +1,5 @@
 //! Basic: the controls the three showcases all draw, in the same order, with the same labels,
-//! values and states, packed onto one screen in four columns, so the gpui, iced and egui
+//! values and states, packed onto one screen in five columns, so the gpui, iced and egui
 //! captures compare control by control. Each control goes through the seam its palette page
 //! gives it; what egui leaves to the call site is applied per call from the theme. Every
 //! element of `docs/showcase-elements.toml` the page draws is placed where it is drawn, its
@@ -33,10 +33,10 @@ pub(crate) const BASIC_WIDTH: f32 = 140.0;
 
 /// The width of the Basic page's text area, list, expander, card, separator and table: the
 /// Basic page's own, as `BASIC_WIDTH`, and the gpui and iced showcases' `BASIC_WIDE`.
-pub(crate) const BASIC_WIDE: f32 = 200.0;
+pub(crate) const BASIC_WIDE: f32 = 170.0;
 
 /// The page's columns: the Basic page's layout (a datum of the page, not a style value).
-const COLUMNS: usize = 4;
+const COLUMNS: usize = 5;
 
 /// The drop-down's rows.
 const FRUITS: [&str; 3] = ["Apple", "Banana", "Cherry"];
@@ -45,7 +45,7 @@ const FRUITS: [&str; 3] = ["Apple", "Banana", "Cherry"];
 const PROGRESS: f32 = 0.4;
 
 /// The tab bar's tabs, and the segmented control's segments.
-const TABS: [&str; 3] = ["One", "Two", "Three"];
+const TABS: [&str; 2] = ["One", "Two"];
 const SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
 
 /// The list's rows, and how many of them it shows: data of the page.
@@ -65,38 +65,25 @@ const TABLE_HEADER: [&str; 2] = ["Name", "Size"];
 const TABLE_ROWS: [[&str; 2]; 3] = [["a.txt", "1 KB"], ["b.png", "20 KB"], ["c.rs", "3 KB"]];
 const TABLE_SELECTED: usize = 1;
 
-/// The groups of the page, column by column, in order (R11 §D), which the tests check the page
-/// against.
+/// The groups of the page, column by column, in order (Basic page v4), which the tests check
+/// the page against.
 #[cfg(test)]
 pub(crate) const GROUPS: [&[&str]; COLUMNS] = [
+    &["Buttons", "Checkboxes", "Radio buttons", "Switches"],
+    &["Text inputs", "Text area", "Drop-down"],
     &[
-        "Buttons",
-        "Checkboxes",
-        "Radio buttons",
-        "Switches",
-        "Toggle button",
-        "Icon buttons",
-    ],
-    &[
-        "Text inputs",
-        "Text area",
-        "Drop-down",
-        "Text",
         "Number input",
-        "Focused input",
-    ],
-    &[
         "Slider",
         "Progress bar",
         "Spinner",
         "Tabs",
         "Segmented control",
-        "Typography",
     ],
-    &["List", "Expander", "Card", "Separator", "Table", "Icons"],
+    &["Typography", "Icons", "Card", "Separator"],
+    &["List", "Expander", "Table"],
 ];
 
-/// Four columns of equal width, `layout.section_gap` apart (the page's gap where the theme
+/// Five columns of equal width, `layout.section_gap` apart (the page's gap where the theme
 /// states none: egui's `item_spacing`), each a stack of groups top-aligned: each column is laid
 /// out in a `Ui` of its own at its place, so a group wider than its column (a preset's tab
 /// minimum width) shows as the overflow it is, and the next column does not move.
@@ -134,10 +121,11 @@ pub(crate) fn show(
                 .layout(egui::Layout::top_down(egui::Align::Min)),
         );
         match column {
-            0 => column_1(reg, state, atlas, &mut child, chosen),
+            0 => column_1(reg, state, atlas, &mut child),
             1 => column_2(reg, state, atlas, &mut child),
             2 => column_3(reg, state, atlas, &mut child),
-            _ => column_4(reg, state, atlas, &mut child, chosen),
+            3 => column_4(reg, atlas, &mut child, chosen),
+            _ => column_5(reg, state, atlas, &mut child),
         }
         let content = child.min_rect();
         reg.place(
@@ -287,14 +275,8 @@ fn text_button(
     response
 }
 
-/// Buttons, check boxes, radio buttons, switches, toggle buttons, icon buttons.
-fn column_1(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    atlas: &ThemeAtlas,
-    ui: &mut egui::Ui,
-    chosen: &(IconSet, Option<String>),
-) {
+/// Buttons (the toggle button their third row), check boxes, radio buttons, switches.
+fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     // `button.min_width`, which egui's `Button` never reads from the style: it raises only its
@@ -345,6 +327,23 @@ fn column_1(
         if let Some(bubble) = bubble {
             reg.tag("basic.buttons.tooltip.bubble", &bubble);
         }
+    });
+    // A toggle button: `Off` a button at rest, `On` the same button held on, in the button
+    // role's pressed colours, `button.active_background` (its hover fill where it states none,
+    // §6.4) and `button.active_text_color` — the model has no checked-button colour — per call:
+    // egui's `selected` flag would take the suggested action's `selection` colours.
+    let on_fill = to_color32(
+        t.button
+            .active_background
+            .unwrap_or(t.button.hover_background),
+    );
+    let on_text = to_color32(t.button.active_text_color);
+    ui.horizontal(|ui| {
+        let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
+        text_button(reg, ui, kind, ("Off", min), plain, true);
+        let kind = ("basic.buttons.toggle_on", "toggle button (on)", normal);
+        let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
+        text_button(reg, ui, kind, ("On", min), held, true);
     });
 
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
@@ -470,77 +469,6 @@ fn column_1(
         let names = [("track", "track"), ("thumb", "thumb"), ("label", "label")];
         place_parts(reg, ui, id, &r, &names);
     }
-
-    // A toggle button: `Off` a button at rest, `On` the same button held on, in the button
-    // role's pressed colours, `button.active_background` (its hover fill where it states none,
-    // §6.4) and `button.active_text_color` — the model has no checked-button colour — per call:
-    // egui's `selected` flag would take the suggested action's `selection` colours.
-    heading(reg, ui, "basic.toggle_buttons.heading", "Toggle button");
-    let on_fill = to_color32(
-        t.button
-            .active_background
-            .unwrap_or(t.button.hover_background),
-    );
-    let on_text = to_color32(t.button.active_text_color);
-    ui.horizontal(|ui| {
-        let kind = ("basic.toggle_buttons.off", "toggle button (off)", normal);
-        text_button(reg, ui, kind, ("Off", min), plain, true);
-        let kind = ("basic.toggle_buttons.on", "toggle button (on)", normal);
-        let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
-        text_button(reg, ui, kind, ("On", min), held, true);
-    });
-
-    // Three icon-only tool buttons, as the toolbar's (`crate::chrome`'s toolbar): the chosen
-    // set's Copy, Paste and Delete at `toolbar.icon_size`, in the toolbar's scope, Ghost.
-    heading(reg, ui, "basic.icon_buttons.heading", "Icon buttons");
-    let size = t.toolbar.icon_size;
-    let (set, icon_theme) = chosen;
-    demo::scoped_container(
-        reg,
-        ui,
-        Role::Toolbar,
-        normal,
-        "icon buttons",
-        |ui, bar, reg| {
-            ui.horizontal(|ui| {
-                demo::toolbar_gap(ui, t, atlas.layout());
-                for (role, label, id) in [
-                    (IconRole::ActionCopy, "Copy", "basic.icon_buttons.copy"),
-                    (IconRole::ActionPaste, "Paste", "basic.icon_buttons.paste"),
-                    (
-                        IconRole::ActionDelete,
-                        "Delete",
-                        "basic.icon_buttons.delete",
-                    ),
-                ] {
-                    let image = demo::role_image(ui, role, *set, icon_theme.as_deref(), size);
-                    let drawn = image.is_some();
-                    let response = ui
-                        .scope(|ui| {
-                            demo::tool_button(ui, &t.button.border.padding);
-                            bar.add(reg, ui, "icon button", |ui| {
-                                let button = match image {
-                                    Some(image) => Button::image(image),
-                                    None => Button::new(label),
-                                };
-                                let r = ui.add(button);
-                                r.widget_info(|| {
-                                    egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
-                                });
-                                r
-                            })
-                        })
-                        .inner;
-                    reg.ghost_last();
-                    reg.tag(id, &response);
-                    if drawn {
-                        crate::chrome::place_icon(reg, ui, id, &response, size);
-                    }
-                }
-            })
-            .response
-        },
-    );
 }
 
 /// A text field of the Basic page, built inside its `Role::Input` scope (`ui` is the scope's), so
@@ -617,7 +545,7 @@ fn text_field(
     response
 }
 
-/// Text inputs, the text area, the drop-down, text, the number input, the focused input.
+/// Text inputs (the focused one their fourth row), the text area, the drop-down.
 fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
@@ -642,6 +570,16 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     text_field(reg, ui, kind, t, "Disabled", |ui, id| {
         ui.add_enabled(false, field(&mut disabled, id, ui, t))
     });
+    // A text field holding the keyboard focus from the start, so its focus border shows.
+    let kind = ("basic.text_inputs.focused", "TextEdit (focused)", normal);
+    let shown = state.basic_focused.clone();
+    let focused = text_field(reg, ui, kind, t, &shown, |ui, id| {
+        ui.add(field(&mut state.basic_focused, id, ui, t))
+    });
+    if !state.basic_focus_given {
+        focused.request_focus();
+        state.basic_focus_given = true;
+    }
 
     heading(reg, ui, "basic.text_area.heading", "Text area");
     let id = ui.make_persistent_id("basic/area");
@@ -695,29 +633,13 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     reg.tag("basic.drop_down.trigger", &combo);
     let names = [("text", "text"), ("arrow", "arrow")];
     place_parts(reg, ui, "basic.drop_down.trigger", &combo, &names);
+}
 
-    heading(reg, ui, "basic.text.heading", "Text");
-    let body = demo::base(reg, ui, "Label (body text)", |ui| {
-        ui.label(demo::lined(ui, "Body text", egui::TextStyle::Body))
-    });
-    reg.tag("basic.text.body", &body);
-    // The companion crate's link (docs/todo_egui-widgets-spec.md §4.5): egui's `Link` in the
-    // link scope, its text in `link.*`'s rest, hover, pressed and disabled colours and
-    // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
-    // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
-    let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
-        let link = wrap::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
-        ui.add(link)
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "link.underline_enabled",
-            t.link.underline_enabled.to_string(),
-        ));
-        i.read
-            .push(("link.font.color", format!("{:?}", t.link.font.color)));
-    });
-    reg.tag("basic.text.link", &link);
+/// The number input, the slider, the progress bar, the spinner, a tab bar, the segmented
+/// control.
+fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let normal = RoleVariant::Normal;
 
     // A number input: egui's `DragValue`, the number field egui has, in the input role's
     // scope, `BASIC_WIDTH` wide and `input.min_height` tall (its `interact_size`, which
@@ -737,24 +659,6 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     if let Some(text) = text {
         reg.place(ui, "basic.number_input.field.text", text);
     }
-
-    // A text field holding the keyboard focus from the start, so its focus border shows.
-    heading(reg, ui, "basic.focused_input.heading", "Focused input");
-    let kind = ("basic.focused_input.field", "TextEdit (focused)", normal);
-    let shown = state.basic_focused.clone();
-    let focused = text_field(reg, ui, kind, t, &shown, |ui, id| {
-        ui.add(field(&mut state.basic_focused, id, ui, t))
-    });
-    if !state.basic_focus_given {
-        focused.request_focus();
-        state.basic_focus_given = true;
-    }
-}
-
-/// The slider, the progress bar, the spinner, a tab bar, the segmented control, typography.
-fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
-    let normal = RoleVariant::Normal;
 
     // The companion crate's slider (docs/todo_egui-widgets-spec.md §4.2): `slider.*`'s rail,
     // trailing fill and a knob in `slider.thumb_color`, which egui paints in the rail's colour.
@@ -819,7 +723,7 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             scroll: false,
             full_width: false,
             element: "basic.tabs.bar",
-            tab_elements: &["basic.tabs.one", "basic.tabs.two", "basic.tabs.three"],
+            tab_elements: &["basic.tabs.one", "basic.tabs.two"],
         },
         |_, _, _| {},
     );
@@ -857,39 +761,77 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
             }
         }
     }
+}
+
+/// One line of the Typography group in `role` (the base style's `Body`, `defaults.font`, for
+/// `None`), the element `id`.
+fn typography_line(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Option<TextRole>,
+    text: &str,
+    id: &str,
+) {
+    let line = demo::base(reg, ui, "Label (typography)", |ui| match role {
+        Some(role) => ui.label(demo::role_text(ui, role, text)),
+        None => ui.label(demo::lined(ui, text, egui::TextStyle::Body)),
+    });
+    reg.tag(id, &line);
+}
+
+/// Typography, icons (the icon buttons their first row), a card, a separator.
+fn column_4(
+    reg: &mut Registry,
+    atlas: &ThemeAtlas,
+    ui: &mut egui::Ui,
+    chosen: &(IconSet, Option<String>),
+) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let normal = RoleVariant::Normal;
 
     // One line in each of the theme's text roles: the text-scale roles through
-    // `demo::role_text`, the body in the base style's `Body` (`defaults.font`), the monospace
-    // line in its `Monospace` (`defaults.mono_font`).
+    // `demo::role_text`, the body in the base style's `Body` (`defaults.font`), the link in the
+    // link role, the monospace line in the base style's `Monospace` (`defaults.mono_font`).
     heading(reg, ui, "basic.typography.heading", "Typography");
+    typography_line(
+        reg,
+        ui,
+        Some(TextRole::Caption),
+        "Caption",
+        "basic.typography.caption",
+    );
+    typography_line(reg, ui, None, "Body", "basic.typography.body");
+    // The companion crate's link (docs/todo_egui-widgets-spec.md §4.5): egui's `Link` in the
+    // link scope, its text in `link.*`'s rest, hover, pressed and disabled colours and
+    // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
+    // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
+    let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
+        let link = wrap::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
+        ui.add(link)
+    });
+    reg.amend_last(|i| {
+        i.read.push((
+            "link.underline_enabled",
+            t.link.underline_enabled.to_string(),
+        ));
+        i.read
+            .push(("link.font.color", format!("{:?}", t.link.font.color)));
+    });
+    reg.tag("basic.typography.link", &link);
     for (role, text, id) in [
         (
-            Some(TextRole::Caption),
-            "Caption",
-            "basic.typography.caption",
-        ),
-        (None, "Body", "basic.typography.body"),
-        (
-            Some(TextRole::SectionHeading),
+            TextRole::SectionHeading,
             "Section heading",
             "basic.typography.section_heading",
         ),
         (
-            Some(TextRole::DialogTitle),
+            TextRole::DialogTitle,
             "Dialog title",
             "basic.typography.dialog_title",
         ),
-        (
-            Some(TextRole::Display),
-            "Display",
-            "basic.typography.display",
-        ),
+        (TextRole::Display, "Display", "basic.typography.display"),
     ] {
-        let line = demo::base(reg, ui, "Label (typography)", |ui| match role {
-            Some(role) => ui.label(demo::role_text(ui, role, text)),
-            None => ui.label(demo::lined(ui, text, egui::TextStyle::Body)),
-        });
-        reg.tag(id, &line);
+        typography_line(reg, ui, Some(role), text, id);
     }
     // The line box `defaults.line_height` of the monospace font's size, as a body line's is.
     let mono = demo::base(reg, ui, "Label (monospace)", |ui| {
@@ -901,16 +843,129 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         )
     });
     reg.tag("basic.typography.monospace", &mono);
+
+    heading(reg, ui, "basic.icons.heading", "Icons");
+    icon_buttons(reg, atlas, ui, chosen);
+    icons(reg, t, ui, chosen);
+
+    card(reg, atlas, ui);
+
+    heading(reg, ui, "basic.separator.heading", "Separator");
+    ui.scope(|ui| {
+        ui.set_max_width(BASIC_WIDE);
+        let mut width = 0.0;
+        let line = demo::scoped(
+            reg,
+            ui,
+            Role::Separator,
+            normal,
+            "Separator (horizontal)",
+            |ui| {
+                width = ui.visuals().widgets.noninteractive.bg_stroke.width;
+                // The line alone: the group's spacing is the room around it.
+                ui.add(egui::Separator::default().horizontal().spacing(width))
+            },
+        );
+        reg.name("basic.separator.line", &line);
+        reg.place(
+            ui,
+            "basic.separator.line",
+            crate::chrome::separator_line(&line, width),
+        );
+    });
 }
 
-/// The list, the expander, a card, a separator, a table, icons.
-fn column_4(
+/// The Icons group's first row: three icon-only tool buttons, as the toolbar's
+/// (`crate::chrome`'s toolbar): the chosen set's Copy, Paste and Delete at
+/// `toolbar.icon_size`, in the toolbar's scope, Ghost.
+fn icon_buttons(
     reg: &mut Registry,
-    state: &mut DemoState,
     atlas: &ThemeAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let size = t.toolbar.icon_size;
+    let (set, icon_theme) = chosen;
+    demo::scoped_container(
+        reg,
+        ui,
+        Role::Toolbar,
+        RoleVariant::Normal,
+        "icon buttons",
+        |ui, bar, reg| {
+            ui.horizontal(|ui| {
+                demo::toolbar_gap(ui, t, atlas.layout());
+                for (role, label, id) in [
+                    (IconRole::ActionCopy, "Copy", "basic.icons.copy"),
+                    (IconRole::ActionPaste, "Paste", "basic.icons.paste"),
+                    (IconRole::ActionDelete, "Delete", "basic.icons.delete"),
+                ] {
+                    let image = demo::role_image(ui, role, *set, icon_theme.as_deref(), size);
+                    let drawn = image.is_some();
+                    let response = ui
+                        .scope(|ui| {
+                            demo::tool_button(ui, &t.button.border.padding);
+                            bar.add(reg, ui, "icon button", |ui| {
+                                let button = match image {
+                                    Some(image) => Button::image(image),
+                                    None => Button::new(label),
+                                };
+                                let r = ui.add(button);
+                                r.widget_info(|| {
+                                    egui::WidgetInfo::labeled(egui::WidgetType::Button, true, label)
+                                });
+                                r
+                            })
+                        })
+                        .inner;
+                    reg.ghost_last();
+                    reg.tag(id, &response);
+                    if drawn {
+                        crate::chrome::place_icon(reg, ui, id, &response, size);
+                    }
+                }
+            })
+            .response
+        },
+    );
+}
+
+/// The Icons group's second row: the chosen set's open folder at the theme's three icon sizes,
+/// `defaults.icon_sizes`' small, toolbar and large, never another set's.
+fn icons(
+    reg: &mut Registry,
+    t: &native_theme_egui::ResolvedTheme,
+    ui: &mut egui::Ui,
+    chosen: &(IconSet, Option<String>),
+) {
+    let (set, icon_theme) = chosen;
+    let sizes = &t.defaults.icon_sizes;
+    ui.scope(|ui| {
+        // One row, as tall as the largest icon, each icon centred on it: `ui.horizontal`
+        // centres on the row's `interact_size.y` (`egui/src/ui.rs:2376-2379`).
+        ui.spacing_mut().interact_size.y = sizes.small.max(sizes.toolbar).max(sizes.large);
+        ui.horizontal(|ui| {
+            for (size, id) in [
+                (sizes.small, "basic.icons.small"),
+                (sizes.toolbar, "basic.icons.toolbar"),
+                (sizes.large, "basic.icons.large"),
+            ] {
+                let Some(image) =
+                    demo::role_image(ui, IconRole::FolderOpen, *set, icon_theme.as_deref(), size)
+                else {
+                    continue;
+                };
+                let icon = demo::base(reg, ui, "Image · icon", |ui| ui.add(image));
+                reg.amend_last(|i| i.read.push(("size", format!("{size}"))));
+                reg.tag(id, &icon);
+            }
+        });
+    });
+}
+
+/// The list, the expander, a table.
+fn column_5(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
 
@@ -980,8 +1035,15 @@ fn column_4(
         }
     });
 
-    // The card surface's frame (`card.background_color`, `card.border.*`), `BASIC_WIDE` across
-    // its border.
+    heading(reg, ui, "basic.table.heading", "Table");
+    table(reg, t, ui);
+}
+
+/// The Card group: the card surface's frame (`card.background_color`, `card.border.*`),
+/// `BASIC_WIDE` across its border.
+fn card(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.card.heading", "Card");
     // A side of the card's padding the theme leaves unstated is the container margin, inside
     // its border (R11, D-card: KDE and macOS state no card padding, the card pads by the
@@ -1019,58 +1081,6 @@ fn column_4(
             },
         );
         reg.tag("basic.card.frame", &card.response);
-    });
-
-    heading(reg, ui, "basic.separator.heading", "Separator");
-    ui.scope(|ui| {
-        ui.set_max_width(BASIC_WIDE);
-        let mut width = 0.0;
-        let line = demo::scoped(
-            reg,
-            ui,
-            Role::Separator,
-            normal,
-            "Separator (horizontal)",
-            |ui| {
-                width = ui.visuals().widgets.noninteractive.bg_stroke.width;
-                // The line alone: the group's spacing is the room around it.
-                ui.add(egui::Separator::default().horizontal().spacing(width))
-            },
-        );
-        reg.name("basic.separator.line", &line);
-        reg.place(
-            ui,
-            "basic.separator.line",
-            crate::chrome::separator_line(&line, width),
-        );
-    });
-
-    heading(reg, ui, "basic.table.heading", "Table");
-    table(reg, t, ui);
-
-    // The chosen set's open folder at the theme's three icon sizes, `defaults.icon_sizes`'
-    // small, toolbar and large, never another set's.
-    heading(reg, ui, "basic.icons.heading", "Icons");
-    let (set, icon_theme) = chosen;
-    let sizes = &t.defaults.icon_sizes;
-    // One row, as tall as the largest icon, each icon centred on it: `ui.horizontal` centres
-    // on the row's `interact_size.y` (`egui/src/ui.rs:2376-2379`).
-    ui.spacing_mut().interact_size.y = sizes.small.max(sizes.toolbar).max(sizes.large);
-    ui.horizontal(|ui| {
-        for (size, id) in [
-            (sizes.small, "basic.icons.small"),
-            (sizes.toolbar, "basic.icons.toolbar"),
-            (sizes.large, "basic.icons.large"),
-        ] {
-            let Some(image) =
-                demo::role_image(ui, IconRole::FolderOpen, *set, icon_theme.as_deref(), size)
-            else {
-                continue;
-            };
-            let icon = demo::base(reg, ui, "Image · icon", |ui| ui.add(image));
-            reg.amend_last(|i| i.read.push(("size", format!("{size}"))));
-            reg.tag(id, &icon);
-        }
     });
 }
 

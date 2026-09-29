@@ -347,6 +347,11 @@ pub(crate) struct App {
     /// `--capture` or `--screenshot`: the window is captured, so the real pointer draws nothing
     /// (`raw_input_hook`).
     capturing: bool,
+    /// `--open-menu <title>`: the menu bar's menu of that title (lower case) still to be opened;
+    /// the menu bar opens it at its first pass and clears this. On macOS the menus are the
+    /// system menu bar's, which the flag does not reach.
+    #[cfg_attr(all(target_os = "macos", not(test)), allow(dead_code))]
+    pub(crate) open_menu: Option<String>,
     /// What the watcher's `rebuild` reads: the UI thread writes it on each install.
     #[cfg(feature = "watch")]
     selection: Arc<std::sync::RwLock<Settings>>,
@@ -436,6 +441,15 @@ impl App {
                 pressed: false,
             }),
             capturing: cli.capturing(),
+            open_menu: cli.open_menu.clone().filter(|menu| {
+                let known = crate::chrome::Action::MENUS
+                    .iter()
+                    .any(|(title, _)| title.to_lowercase() == *menu);
+                if !known {
+                    eprintln!("--open-menu {menu:?}: the menu bar has no such menu; ignored");
+                }
+                known
+            }),
             #[cfg(feature = "watch")]
             selection,
             #[cfg(feature = "watch")]

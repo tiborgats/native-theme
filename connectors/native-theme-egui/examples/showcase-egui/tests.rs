@@ -42,6 +42,7 @@ pub(crate) fn cli(pairs: &[(&str, &str)]) -> CliArgs {
             "--tab" => cli.tab = value,
             "--icon-set" => cli.icon_set = value,
             "--screenshot" => cli.screenshot = value,
+            "--open-menu" => cli.open_menu = value,
             other => panic!("the tests do not pass {other}"),
         }
     }
@@ -52,7 +53,7 @@ pub(crate) fn cli(pairs: &[(&str, &str)]) -> CliArgs {
 /// not only the chrome around it.
 fn page_kinds(page: Page) -> &'static [&'static str] {
     match page {
-        Page::Basic => &["Label (body text)"],
+        Page::Basic => &["Label (typography)"],
         Page::Buttons => &["button (enabled)"],
         Page::Selection => &["checkbox (unchecked)"],
         Page::Inputs => &["TextEdit (single line)"],
@@ -1842,7 +1843,7 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
         h.state_mut().run_action(Action::OpenAbout, &ctx);
     };
     let info_shown: Setup = |h| {
-        let pos = centre_of(h, "Label (body text)");
+        let pos = centre_of(h, "Label (typography)");
         hover_and_settle(h, pos);
         assert!(shown_id(h).is_some(), "Widget Info shows nothing to copy");
     };
@@ -2204,7 +2205,7 @@ fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
 }
 
 /// On the Basic page, `layout.section_gap` is the whole distance between two groups of a column
-/// and between two columns, as on the iced and gpui Basic pages: the page lays four columns of
+/// and between two columns, as on the iced and gpui Basic pages: the page lays five columns of
 /// one width out that far apart, and in a column the space the page adds makes up the gap with
 /// the `item_spacing` egui puts between widgets anyway.
 #[test]
@@ -2231,7 +2232,7 @@ fn groups_and_columns_are_a_section_gap_apart() {
         .map(|r| r.rect)
         .collect();
     // The Buttons group's last row, and the heading under it in the same column.
-    let buttons = rect("button (disabled)");
+    let buttons = rect("toggle button (off)");
     let Some(below) = headings
         .iter()
         .filter(|r| r.top() > buttons.bottom() && (r.left() - buttons.left()).abs() < 0.5)
@@ -2245,7 +2246,7 @@ fn groups_and_columns_are_a_section_gap_apart() {
         "the buttons and the next heading are {} apart, section_gap is {gap}",
         below - buttons.bottom()
     );
-    // Each column's first heading: four, one pitch apart, a pitch a column and a gap wide.
+    // Each column's first heading: five, one pitch apart, a pitch a column and a gap wide.
     let top = headings.iter().map(|r| r.top()).fold(f32::MAX, f32::min);
     let mut lefts: Vec<f32> = headings
         .iter()
@@ -2253,9 +2254,9 @@ fn groups_and_columns_are_a_section_gap_apart() {
         .map(|r| r.left())
         .collect();
     lefts.sort_by(f32::total_cmp);
-    assert_eq!(lefts.len(), 4, "four columns: {lefts:?}");
+    assert_eq!(lefts.len(), 5, "five columns: {lefts:?}");
     // One pitch apart, each left edge rounded to a whole pixel: two roundings apart at most.
-    let pitch = (lefts[3] - lefts[0]) / 3.0;
+    let pitch = (lefts[4] - lefts[0]) / 4.0;
     for pair in lefts.windows(2) {
         assert!(
             (pair[1] - pair[0] - pitch).abs() <= 1.0,
@@ -2264,8 +2265,9 @@ fn groups_and_columns_are_a_section_gap_apart() {
     }
     for (kind, column) in [
         ("TextEdit (hint)", 1),
-        ("Slider (horizontal)", 2),
-        ("List", 3),
+        ("DragValue", 2),
+        ("Label (typography)", 3),
+        ("List", 4),
     ] {
         assert!(
             (rect(kind).left() - lefts[column]).abs() < 0.5,
@@ -2282,7 +2284,7 @@ fn groups_and_columns_are_a_section_gap_apart() {
 }
 
 /// Kinds the Basic page records for each group's controls, and how many of each.
-const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 24] = [
+const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
     (
         "Buttons",
         &[
@@ -2290,6 +2292,8 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 24] = [
             ("button (suggested action)", 1),
             ("button (disabled)", 1),
             ("tooltip button", 1),
+            ("toggle button (off)", 1),
+            ("toggle button (on)", 1),
         ],
     ),
     (
@@ -2310,32 +2314,35 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 24] = [
         ],
     ),
     (
-        "Toggle button",
-        &[("toggle button (off)", 1), ("toggle button (on)", 1)],
-    ),
-    ("Icon buttons", &[("icon button", 3)]),
-    (
         "Text inputs",
         &[
             ("TextEdit (hint)", 1),
             ("TextEdit (single line)", 1),
             ("TextEdit (disabled)", 1),
+            ("TextEdit (focused)", 1),
         ],
     ),
     ("Text area", &[("TextEdit (multiline)", 1)]),
     ("Drop-down", &[("ComboBox", 1)]),
-    ("Text", &[("Label (body text)", 1), ("Link", 1)]),
     ("Number input", &[("DragValue", 1)]),
-    ("Focused input", &[("TextEdit (focused)", 1)]),
     ("Slider", &[("Slider (horizontal)", 1)]),
     ("Progress bar", &[("ProgressBar", 1)]),
     ("Spinner", &[("Spinner", 1)]),
-    ("Tabs", &[("Tab · Basic", 3)]),
+    ("Tabs", &[("Tab · Basic", 2)]),
     ("Segmented control", &[("segmented control", 1)]),
     (
         "Typography",
-        &[("Label (typography)", 5), ("Label (monospace)", 1)],
+        &[
+            ("Label (typography)", 5),
+            ("Link", 1),
+            ("Label (monospace)", 1),
+        ],
     ),
+    // The icon buttons; the chosen set's open folder, where the set has one, is not counted: a
+    // freedesktop theme the test's machine lacks shows none, never another set's.
+    ("Icons", &[("icon button", 3)]),
+    ("Card", &[("card", 1), ("card label", 1)]),
+    ("Separator", &[("Separator (horizontal)", 1)]),
     ("List", &[("List", 1)]),
     (
         "Expander",
@@ -2345,12 +2352,7 @@ const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 24] = [
             ("Expander (collapsed)", 1),
         ],
     ),
-    ("Card", &[("card", 1), ("card label", 1)]),
-    ("Separator", &[("Separator (horizontal)", 1)]),
     ("Table", &[("Table", 1)]),
-    // The chosen set's open folder, where the set has one: a freedesktop theme the test's
-    // machine lacks shows none, never another set's.
-    ("Icons", &[]),
 ];
 
 /// The Basic page shows every group of its spec (SC BASIC2), each in its column and in order:
@@ -2465,13 +2467,11 @@ fn the_basic_page_has_every_group_in_its_column() {
     }
 }
 
-/// The Basic page fits the window at its default size, 1280 × 720, in both modes, where the
-/// theme's sizes let it: its page area never needs to scroll. With the groups R11 §D adds, the
-/// sizes kde-breeze, material and adwaita state make the fourth column taller than the page
-/// area (R11 §D: reported, not shrunk — the brief's report lists them).
+/// The Basic page fits the window at its default size, 1280 × 720, in both modes, under the
+/// four presets the captures compare: its page area never needs to scroll.
 #[test]
 fn the_basic_page_fits_the_window() {
-    for preset in [TEST_PRESET] {
+    for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
             harness.run_steps(4);
@@ -3832,6 +3832,51 @@ fn the_layout_dump_names_every_listed_element_the_basic_page_draws() {
                 element.parent
             );
         }
+    }
+}
+
+/// R12: `--open-menu theme` opens the Theme menu before the first settled frame, so the dump
+/// holds the list's Theme-menu elements (`when = "the Theme menu is open ..."`), its popup and
+/// every row, each below the one before; and a run without the flag holds none of them.
+#[test]
+fn open_menu_theme_places_the_theme_menus_rows() {
+    let elements = listed_elements();
+    let menu: Vec<&str> = elements
+        .iter()
+        .filter(|e| e.when.as_deref().is_some_and(|w| w.contains("Theme menu")))
+        .map(|e| e.id.as_str())
+        .collect();
+    assert!(!menu.is_empty(), "the list names the Theme menu's elements");
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let mut shown = open(theme, cli(&[("--tab", "basic"), ("--open-menu", "theme")]));
+        shown.run_steps(4);
+        let places = shown.state().registry.places();
+        let missing: Vec<&&str> = menu
+            .iter()
+            .filter(|id| !places.contains_key(**id))
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "{theme:?}: Theme menu elements not placed: {missing:?}"
+        );
+        let rows: Vec<egui::Rect> = menu
+            .iter()
+            .filter(|id| id.starts_with("chrome.menu.theme.") && !id.ends_with(".shortcut"))
+            .filter_map(|id| places.get(*id).copied())
+            .collect();
+        for pair in rows.windows(2) {
+            assert!(
+                pair[1].top() >= pair[0].bottom() - 0.5,
+                "{theme:?}: the Theme menu's rows are not one under another: {rows:?}"
+            );
+        }
+        let mut closed = open(theme, cli(&[("--tab", "basic")]));
+        closed.run_steps(4);
+        let places = closed.state().registry.places();
+        assert!(
+            !menu.iter().any(|id| places.contains_key(*id)),
+            "{theme:?}: a run without --open-menu places the Theme menu"
+        );
     }
 }
 

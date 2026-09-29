@@ -195,6 +195,9 @@ pub(crate) struct CliArgs {
     /// of `docs/showcase-elements.toml` the showcase draws is written there; the showcase then
     /// closes, or with `--capture` keeps running for the capture.
     pub dump_layout: Option<String>,
+    /// `--open-menu <title>`: the menu bar's menu of that title (`theme`) is opened before the
+    /// first settled frame, so a capture and a layout dump show it open with its rows.
+    pub open_menu: Option<String>,
 }
 
 impl CliArgs {
@@ -213,7 +216,7 @@ impl CliArgs {
         let mut cli = Self::default();
         let mut argv = argv.into_iter();
         while let Some(flag) = argv.next() {
-            let lower = matches!(flag.as_str(), "--variant" | "--tab");
+            let lower = matches!(flag.as_str(), "--variant" | "--tab" | "--open-menu");
             let slot = match flag.as_str() {
                 "--capture" => {
                     cli.capture = true;
@@ -240,6 +243,7 @@ impl CliArgs {
                 "--icon-set" => &mut cli.icon_set,
                 "--screenshot" => &mut cli.screenshot,
                 "--dump-layout" => &mut cli.dump_layout,
+                "--open-menu" => &mut cli.open_menu,
                 _ => continue,
             };
             *slot = argv

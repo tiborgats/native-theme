@@ -212,7 +212,10 @@ fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
     let App {
-        registry, pending, ..
+        registry,
+        pending,
+        open_menu,
+        ..
     } = app;
     let normal = RoleVariant::Normal;
     demo::menu_bar(
@@ -298,6 +301,16 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                     });
                     menu_seam.record(registry, &response.response, "Menu button");
                     registry.tag(&format!("chrome.menu_bar.{key}"), &response.response);
+                    // `--open-menu`: the menu opens as a click on its title opens it, through
+                    // the popup's memory (`egui/src/containers/popup.rs:237-243`, `:679-681`),
+                    // and shows from the next pass on.
+                    if open_menu.as_deref() == Some(key.as_str()) {
+                        egui::Popup::open_id(
+                            ui.ctx(),
+                            egui::Popup::default_response_id(&response.response),
+                        );
+                        *open_menu = None;
+                    }
                 }
             })
             .response
