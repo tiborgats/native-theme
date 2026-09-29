@@ -229,7 +229,20 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                 for (menu, items) in Action::MENUS {
                     let key = menu.to_lowercase();
                     let title = demo::lined(ui, *menu, egui::TextStyle::Button);
-                    let response = ui.menu_button(title, |ui| {
+                    // The title of the open menu is the bar's current item, drawn as a hovered
+                    // title — `menu.hover_background` under `menu.hover_text_color`, the title's
+                    // own leaves — whether or not the pointer is over it, as a desktop menu bar
+                    // marks the item whose menu is open. Known from the pass before: the popup is
+                    // keyed by the title's response (`egui/src/containers/popup.rs:653-655`).
+                    let flag = egui::Id::new(("menu title open", key.as_str()));
+                    let opened = ui.ctx().data(|d| d.get_temp::<bool>(flag)).unwrap_or(false);
+                    let resting = ui.visuals().widgets.inactive;
+                    if opened {
+                        ui.visuals_mut().widgets.inactive = ui.visuals().widgets.hovered;
+                    }
+                    let menu_button =
+                        egui::containers::menu::MenuButton::from_button(egui::Button::new(title));
+                    let (title_response, _) = menu_button.ui(ui, |ui| {
                         // The popup's frame, built from the menu's modifier before the body's
                         // cell style replaces it (`egui/src/containers/popup.rs:602-603`).
                         let (margin, stroke) =
@@ -309,17 +322,21 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                             registry.place(ui, "chrome.menu.theme", rect);
                         }
                     });
-                    menu_seam.record(registry, &response.response, "Menu button");
-                    registry.tag(&format!("chrome.menu_bar.{key}"), &response.response);
+                    ui.visuals_mut().widgets.inactive = resting;
+                    menu_seam.record(registry, &title_response, "Menu button");
+                    registry.tag(&format!("chrome.menu_bar.{key}"), &title_response);
+                    let popup = egui::Popup::default_response_id(&title_response);
                     // `--open-menu`: the menu opens as a click on its title opens it, through
                     // the popup's memory (`egui/src/containers/popup.rs:237-243`, `:679-681`),
                     // and shows from the next pass on.
                     if open_menu.as_deref() == Some(key.as_str()) {
-                        egui::Popup::open_id(
-                            ui.ctx(),
-                            egui::Popup::default_response_id(&response.response),
-                        );
+                        egui::Popup::open_id(ui.ctx(), popup);
                         *open_menu = None;
+                    }
+                    let open_now = egui::Popup::is_id_open(ui.ctx(), popup);
+                    if open_now != opened {
+                        ui.ctx().data_mut(|d| d.insert_temp(flag, open_now));
+                        ui.ctx().request_repaint();
                     }
                 }
             })
