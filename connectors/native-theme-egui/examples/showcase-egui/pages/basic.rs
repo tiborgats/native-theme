@@ -943,10 +943,14 @@ fn column_4(
                 out.header_response
             });
             reg.name(id, &header);
-            // The expander: its header and, while open, its body's text, `content_indent` in.
-            let whole = shown
-                .as_ref()
-                .map_or(header.rect, |label| header.rect.union(label.rect));
+            // The expander: its frame where `frame_enabled` draws one, else its header and, while
+            // open, its body's text, `content_indent` in.
+            let frame = Parts::of(&header).and_then(|parts| parts.get("frame"));
+            let whole = frame.unwrap_or_else(|| {
+                shown
+                    .as_ref()
+                    .map_or(header.rect, |label| header.rect.union(label.rect))
+            });
             reg.place(ui, id, whole);
             let names = [("header", "header"), ("arrow", "arrow"), ("title", "title")];
             place_parts(reg, ui, id, &header, &names);
@@ -1080,16 +1084,16 @@ fn list_frame(l: &native_theme::theme::ResolvedListTheme) -> egui::Frame {
 /// as tall as its content — one line of the item font, `defaults.line_height` of its size, and
 /// `list.border.padding` above and below it, the platform's "sizes to content"
 /// (docs/platform-facts.md §2.15) — its text `list.border.padding.left` in. A side the theme
-/// leaves unstated is what egui gives a selectable row there: the scope's `button_padding`
-/// (`egui/src/widgets/button.rs:333-337`).
+/// leaves unstated is `own`'s: for the list what egui gives a selectable row there, the scope's
+/// `button_padding` (`egui/src/widgets/button.rs:333-337`); for the table nothing, as the three
+/// showcases lay their tables out.
 fn row_metrics(
-    ui: &egui::Ui,
     t: &native_theme_egui::ResolvedTheme,
     font: &egui::FontId,
+    own: egui::Vec2,
 ) -> (f32, f32, f32) {
     let l = &t.list;
     let padding = &l.border.padding;
-    let own = ui.spacing().button_padding;
     let line = font.size * t.defaults.line_height;
     let content = line + padding.top.unwrap_or(own.y) + padding.bottom.unwrap_or(own.y);
     // On egui's layout grid (`emath::GUI_ROUNDING`), as `allocate_exact_size` lays each row out,
@@ -1124,7 +1128,7 @@ fn list(
         "List",
         |ui, rows, reg| {
             let font = egui::TextStyle::Body.resolve(ui.style());
-            let (row_height, inset, line) = row_metrics(ui, t, &font);
+            let (row_height, inset, line) = row_metrics(t, &font, ui.spacing().button_padding);
             let frame = list_frame(l);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             let visible = row_height * LIST_VISIBLE as f32;
@@ -1290,8 +1294,8 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                 l.header_font.size,
                 demo::weighted_family(ui, l.header_font.weight, t.defaults.font.weight),
             );
-            let (row_height, inset, line) = row_metrics(ui, t, &item_font);
-            let (header_height, _, header_line) = row_metrics(ui, t, &header_font);
+            let (row_height, inset, line) = row_metrics(t, &item_font, egui::Vec2::ZERO);
+            let (header_height, _, header_line) = row_metrics(t, &header_font, egui::Vec2::ZERO);
             let grid = to_color32(l.grid_color);
             let grid_width = t.separator.line_width;
             let frame = list_frame(l);
