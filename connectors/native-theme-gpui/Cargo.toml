@@ -73,8 +73,12 @@ gpui = { package = "gpui-pre", version = "0.3.6", features = ["test-support"] }
 # for the showcase's code editor section.
 gpui-kit = { version = "0.6.6", features = ["tree-sitter-rust"] }
 native-theme = { workspace = true, features = ["watch"] }
-# Field-by-field completeness check of ThemeColor via its Serialize impl.
+# Field-by-field completeness check of ThemeColor via its Serialize impl,
+# and the showcase's layout dump (`--dump-layout`).
 serde_json = "1.0.151"
+# The showcase reads docs/showcase-elements.toml, the elements the three
+# showcases share. Already in Cargo.lock as native-theme's dependency.
+toml = { workspace = true }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 # `png`: the showcase reads back the size of the PNG `screencapture` wrote.
