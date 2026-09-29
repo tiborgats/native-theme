@@ -368,7 +368,42 @@ struct Tagged<'a> {
     id: &'static str,
     content: Element<'a, Message>,
     parts: Vec<(&'static str, PartRect<'a>)>,
+    texts: Vec<(&'static str, MeasuredText, PartOrigin<'a>)>,
     root: bool,
+    loose: bool,
+}
+
+/// Where a measured text part starts, found from the element's layout.
+type PartOrigin<'a> = Box<dyn Fn(iced::advanced::Layout<'_>) -> Option<iced::Point> + 'a>;
+
+/// A text a widget draws inside itself, which the layout dump records at its
+/// own extent -- the list's "a label's is its text box" -- measured as iced
+/// shapes it: its widest line by its lines' height.
+struct MeasuredText {
+    content: String,
+    size: f32,
+    line_height: text::LineHeight,
+    font: iced::Font,
+}
+
+impl MeasuredText {
+    fn extent(&self) -> iced::Size {
+        use iced::advanced::text::Paragraph as _;
+        let paragraph = <iced::Renderer as iced::advanced::text::Renderer>::Paragraph::with_text(
+            iced::advanced::Text {
+                content: self.content.as_str(),
+                bounds: iced::Size::INFINITE,
+                size: iced::Pixels(self.size),
+                line_height: self.line_height,
+                font: self.font,
+                align_x: text::Alignment::Default,
+                align_y: iced::alignment::Vertical::Top,
+                shaping: text::Shaping::Advanced,
+                wrapping: text::Wrapping::None,
+            },
+        );
+        paragraph.min_bounds()
+    }
 }
 
 /// Tags `content` as the list's element `id`.
@@ -377,11 +412,33 @@ fn tagged<'a>(id: &'static str, content: impl Into<Element<'a, Message>>) -> Tag
         id,
         content: content.into(),
         parts: Vec::new(),
+        texts: Vec::new(),
         root: false,
+        loose: false,
     }
 }
 
 impl<'a> Tagged<'a> {
+    /// A text part of the element, `id`: `text` as iced shapes it, from the
+    /// point `origin` finds.
+    fn text_part(
+        mut self,
+        id: &'static str,
+        text: MeasuredText,
+        origin: impl Fn(iced::advanced::Layout<'_>) -> Option<iced::Point> + 'a,
+    ) -> Self {
+        self.texts.push((id, text, Box::new(origin)));
+        self
+    }
+
+    /// The element laid out at its own width even where that is wider than
+    /// the room it is given, so it shows past its column as the overflow it
+    /// is, rather than squeezed.
+    fn loose(mut self) -> Self {
+        self.loose = true;
+        self
+    }
+
     /// A part of the element, `id`, at the rectangle `rect` finds.
     fn part(
         mut self,
@@ -487,6 +544,13 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
         renderer: &iced::Renderer,
         limits: &iced::advanced::layout::Limits,
     ) -> iced::advanced::layout::Node {
+        if self.loose {
+            let room = iced::advanced::layout::Limits::new(
+                iced::Size::ZERO,
+                iced::Size::new(f32::INFINITY, limits.max().height),
+            );
+            return self.content.as_widget_mut().layout(tree, renderer, &room);
+        }
         self.content.as_widget_mut().layout(tree, renderer, limits)
     }
 
@@ -511,6 +575,11 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
             for (id, rect) in &self.parts {
                 if let Some(bounds) = rect(layout) {
                     drawing.insert(id, bounds);
+                }
+            }
+            for (id, measured, origin) in &self.texts {
+                if let Some(at) = origin(layout) {
+                    drawing.insert(id, iced::Rectangle::new(at, measured.extent()));
                 }
             }
         });
@@ -4202,15 +4271,15 @@ fn info_title(info: &str) -> Option<&str> {
 /// `status_bar.background_color`, lettered in `status_bar.font`, padded by
 /// `status_bar.border.padding` (`layout.container_margin` on a side it
 /// leaves unstated), its top edge a `status_bar.border.line_width` line in
-/// `status_bar.border.color` painted inside the bar, as Breeze paints it.
+/// `status_bar.border.color` outside that padding: the bar is its line, its
+/// padding and its content, the model's box (padding lies inside the
+/// border).
 fn status_bar(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let s = &resolved.status_bar;
-    // A small flat button: no padding above and below its icon, as egui's
-    // `Button::small` has none (egui 0.36.2 `src/widgets/button.rs`,
-    // `button_padding.y = 0.0`), the button's own at its sides.
+    // A flat button padded as the toolbar's are, by the button's own sides.
     let pad = ghost_padding(resolved);
     let toggle = icon_button(
         state,
@@ -4220,7 +4289,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             label: "Toggle Side Panel",
             key: Some("B"),
             font: &s.font,
-            padding: Padding::ZERO.left(pad.left).right(pad.right),
+            padding: pad,
             selected: state.side_panel_visible,
             action: Message::ToggleSidePanel,
             tags: Some(("chrome.status_bar.toggle", "chrome.status_bar.toggle.icon")),
@@ -4254,10 +4323,10 @@ fn status_bar(state: &State) -> Element<'_, Message> {
         ));
     tagged(
         "chrome.status_bar",
-        stack![
-            bar,
+        column![
             rule::horizontal(s.border.line_width)
-                .style(line_style(resolved, to_color(s.border.color)))
+                .style(line_style(resolved, to_color(s.border.color))),
+            bar,
         ],
     )
     .into()
@@ -4969,7 +5038,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("status_bar", "background_color") => "surface: the bar container's background".into(),
         ("status_bar", "border.color") => "line_style: the top edge's colour".into(),
         ("status_bar", "border.line_width_px") => {
-            "the top edge rule's height, painted inside the bar".into()
+            "the top edge rule's height, above the bar's padding".into()
         }
         ("status_bar", f) if side(f).is_some() => {
             "the bar container's padding; layout.container_margin where unstated".into()
@@ -5016,7 +5085,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("slider", "thumb_color") => "styles::slider: the handle's background".into(),
         ("slider", "thumb_hover_color") => "styles::slider: the Hovered handle".into(),
         ("slider", "track_height_px") => "styles::slider: the rail's width".into(),
-        ("slider", "thumb_diameter_px") => "styles::slider: a circle handle of half of it".into(),
+        ("slider", "thumb_diameter_px") => {
+            "styles::slider: a circle handle of half of it; Slider::height".into()
+        }
         ("progress_bar", "fill_color") => "styles::progress_bar: progress_bar::Style::bar".into(),
         ("progress_bar", "track_color") => {
             "styles::progress_bar: progress_bar::Style::background".into()
@@ -5051,7 +5122,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("segmented_control", "hover_background") => "styles::segment: the Hovered fill".into(),
         ("segmented_control", "segment_height_px") => {
-            "at_least(label, ..): the outer height less outline and padding".into()
+            "at_least(label, ..): each segment's outer height less its padding".into()
         }
         ("segmented_control", "separator_width_px") => {
             "the segments' Row::spacing, over the outline colour".into()
@@ -5104,6 +5175,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("list", "border.corner_radius_px") => "the frame container's border.radius".into(),
         ("list", "border.line_width_px") => {
             "the frame container's border.width and padding".into()
+        }
+        ("list", f) if side(f).is_some() && under("basic.table.") => {
+            "a cell's padding; none where unstated".into()
         }
         ("list", f) if side(f).is_some() => {
             "a row's padding; iced_aw's list's 5 px where unstated".into()
@@ -5853,10 +5927,6 @@ const BASIC_TABLE_ROWS: [(&str, &str, &str); 3] = [
 const BASIC_TABLE_SELECTED: usize = 1;
 const BASIC_TABLE_ALTERNATE: usize = 2;
 
-/// How the table's width is shared between its Name and Size columns. The
-/// model states no column width; the name gets twice the size's.
-const BASIC_TABLE_SHARES: [u16; 2] = [2, 1];
-
 /// The padding iced gives a tooltip's bubble where the showcase sets none:
 /// `Tooltip::DEFAULT_PADDING` (iced_widget 0.14.2 `src/tooltip.rs:89`),
 /// which iced keeps private. The layout dump reads the bubble's rectangle
@@ -5990,19 +6060,19 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 on_press: Option<Message>| {
         let pushed = match kind {
             Push::Plain => button(at_least(
-                tagged(label_id, text(label).typeset(font, a11y)),
+                tagged(label_id, text(label).themed(font, resolved, a11y)),
                 btn_min,
             ))
             .style(styles::button(resolved))
             .padding(btn_pad),
             Push::Primary => button(at_least(
-                tagged(label_id, text(label).typeset(font, a11y)),
+                tagged(label_id, text(label).themed(font, resolved, a11y)),
                 btn_min,
             ))
             .style(styles::button_primary(resolved))
             .padding(btn_pad),
             Push::On => button(at_least(
-                tagged(label_id, text(label).typeset(font, a11y)),
+                tagged(label_id, text(label).themed(font, resolved, a11y)),
                 btn_min,
             ))
             .style(toggle_on(styles::button(resolved)))
@@ -6025,7 +6095,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         // element, so the element is given the width.
         tagged(
             "basic.buttons.tooltip.bubble.text",
-            container(text("A tooltip").typeset(&resolved.tooltip.font, a11y))
+            container(text("A tooltip").themed(&resolved.tooltip.font, resolved, a11y))
                 .max_width(resolved.tooltip.max_width),
         )
         .part("basic.buttons.tooltip.bubble", move |layout| {
@@ -6093,6 +6163,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 .spacing(c.label_gap)
                 .size(c.indicator_width)
                 .text_size(scaled_text_size(c.font.size, a11y))
+                .text_line_height(native_theme_iced::line_height_multiplier(resolved))
                 .font(theme_font(&c.font))
                 .style(glyphless_when_stated(styles::checkbox(resolved), stated));
             // A box with no `on_toggle` is a disabled one (checkbox.rs:154).
@@ -6225,6 +6296,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     Message::BasicRadioSelected,
                 )
                 .text_size(scaled_text_size(c.font.size, a11y))
+                .text_line_height(native_theme_iced::line_height_multiplier(resolved))
                 .font(theme_font(&c.font)),
                 state.basic_radio == value,
             ),
@@ -6294,6 +6366,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 button(
                     rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
                         .size(scaled_text_size(link.font.size, a11y))
+                        .line_height(native_theme_iced::line_height_multiplier(resolved))
                         .font(theme_font(&link.font))
                 )
                 .on_press(Message::ButtonPressed)
@@ -6317,13 +6390,23 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .padding(inp_pad)
             .width(Length::Fixed(BASIC_WIDTH))
     };
-    // A field and its text: the text is the field's first layout node, the
-    // line inside its padding (iced_widget 0.14.2 `src/text_input.rs`,
-    // `layout`).
-    let fielded = |id: &'static str, field: text_input::TextInput<'a, Message>| {
+    // The text a field shows, `shown` (its value, or its placeholder while
+    // empty), as the input's font sets it.
+    let input_text = |shown: &str| MeasuredText {
+        content: shown.to_string(),
+        size: input_size,
+        line_height: input_line,
+        font: theme_font(&resolved.input.font),
+    };
+    // A field and its text: the text starts where the field's first layout
+    // node does, the line inside its padding (iced_widget 0.14.2
+    // `src/text_input.rs`, `layout`).
+    let fielded = |id: &'static str, field: text_input::TextInput<'a, Message>, shown: &str| {
         let field = tagged(id, field);
         match listed_part(id, "text") {
-            Some(text_id) => field.node(text_id, &[0]),
+            Some(text_id) => field.text_part(text_id, input_text(shown), |layout| {
+                node_at(layout, &[0]).map(|node| node.bounds().position())
+            }),
             None => field,
         }
     };
@@ -6337,14 +6420,24 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 Length::Shrink,
                 fielded(
                     "basic.text_inputs.placeholder",
-                    field("Placeholder", &state.basic_hint).on_input(Message::BasicHintChanged)
+                    field("Placeholder", &state.basic_hint).on_input(Message::BasicHintChanged),
+                    if state.basic_hint.is_empty() {
+                        "Placeholder"
+                    } else {
+                        &state.basic_hint
+                    },
                 ),
             ),
             fielded(
                 "basic.text_inputs.filled",
-                field("", &state.basic_text).on_input(Message::BasicTextChanged)
+                field("", &state.basic_text).on_input(Message::BasicTextChanged),
+                &state.basic_text,
             ),
-            fielded("basic.text_inputs.disabled", field("", "Disabled")),
+            fielded(
+                "basic.text_inputs.disabled",
+                field("", "Disabled"),
+                "Disabled"
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -6367,13 +6460,18 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .style(number_steps(resolved))
             .width(Length::Fixed(BASIC_WIDTH)),
     )
-    .node("basic.number_input.field.text", &[0, 0])
+    .text_part(
+        "basic.number_input.field.text",
+        input_text(&state.basic_number.to_string()),
+        |layout| node_at(layout, &[0, 0]).map(|node| node.bounds().position()),
+    )
     .into();
     // Without iced_aw, the value in a plain field.
     #[cfg(not(feature = "iced_aw"))]
     let number: Element<'a, Message> = fielded(
         "basic.number_input.field",
         field("", &state.basic_number_text),
+        &state.basic_number_text,
     )
     .into();
     let number = group("basic.number_input.heading", "Number input", number);
@@ -6388,6 +6486,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             field("", &state.basic_focused)
                 .id(FOCUSED_INPUT_ID)
                 .on_input(Message::BasicFocusedChanged),
+            &state.basic_focused,
         )
         .into(),
     );
@@ -6426,12 +6525,21 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             // The text inside the padding, left of the arrow; the arrow
             // right-aligned at the right padding's inner edge, centred
             // (iced_widget 0.14.2 `src/pick_list.rs:636-660`).
-            .part("basic.drop_down.trigger.text", move |layout| {
-                Some(layout.bounds().shrink(combo_pad)).map(|inner| iced::Rectangle {
-                    width: (inner.width - arrow_size).max(0.0),
-                    ..inner
-                })
-            })
+            .text_part(
+                "basic.drop_down.trigger.text",
+                MeasuredText {
+                    content: state.basic_fruit.to_string(),
+                    size: combo_size,
+                    line_height: control_line_height(
+                        resolved,
+                        combo_size,
+                        resolved.combo_box.min_height,
+                        combo_pad,
+                    ),
+                    font: theme_font(&resolved.combo_box.font),
+                },
+                move |layout| Some(layout.bounds().shrink(combo_pad).position()),
+            )
             .part("basic.drop_down.trigger.arrow", move |layout| {
                 let inner = layout.bounds().shrink(combo_pad);
                 Some(iced::Rectangle::new(
@@ -6465,8 +6573,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         "Slider",
         tagged(
             "basic.slider.control",
+            // As tall as what it paints: the thumb, or the track where that is
+            // taller; iced's own height (16) would leave a larger thumb
+            // outside the control.
             slider(0.0..=100.0, state.basic_slider, Message::BasicSliderChanged)
                 .style(styles::slider(resolved))
+                .height(handle.max(rail))
                 .width(Length::Fixed(BASIC_WIDTH)),
         )
         .part("basic.slider.control.track", move |l| {
@@ -6632,9 +6744,16 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     )),
             )
             // The text: the three lines inside the padding.
-            .part("basic.text_area.field.text", move |l| {
-                Some(l.bounds().shrink(area_pad))
-            }),
+            .text_part(
+                "basic.text_area.field.text",
+                MeasuredText {
+                    content: state.basic_text_area.text(),
+                    size: input_size,
+                    line_height: text::LineHeight::Absolute(iced::Pixels(area_line)),
+                    font: theme_font(&resolved.input.font),
+                },
+                move |l| Some(l.bounds().shrink(area_pad).position()),
+            ),
         ),
     );
 
@@ -6683,6 +6802,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         // The tabs are the bar's row's nodes, one per label
         // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
         tagged("basic.tabs.bar", bar)
+            .loose()
             .node("basic.tabs.one", &[0])
             .node("basic.tabs.two", &[1])
             .node("basic.tabs.three", &[2])
@@ -6694,7 +6814,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let tab_row: Element<'a, Message> = tagged(
         "basic.tabs.bar",
         row(BASIC_TABS.iter().enumerate().map(|(i, label)| {
-            let tab = button(text(*label).typeset(&tab_t.font, a11y))
+            let tab = button(text(*label).themed(&tab_t.font, resolved, a11y))
                 .padding(tab_pad)
                 .on_press(Message::ButtonPressed);
             if i == 0 {
@@ -6705,6 +6825,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         }))
         .spacing(tab_t.item_gap.unwrap_or(sp.xs)),
     )
+    .loose()
     .node("basic.tabs.one", &[0])
     .node("basic.tabs.two", &[1])
     .node("basic.tabs.three", &[2])
@@ -6715,22 +6836,24 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // A segment has no border of its own (the control's outline is the
     // container's), so its padding is the stated sides as they are.
     let seg_pad = native_theme_iced::padding_or(&sc.border.padding, button::DEFAULT_PADDING);
-    // `segment_height` is the control's outer height: the segments fill it
-    // inside the outline above and below them.
-    let seg_min = iced::Size::new(
-        0.0,
-        (sc.segment_height - 2.0 * sc.border.line_width - seg_pad.y()).max(0.0),
-    );
+    // `segment_height` is each segment's outer height ("height of each
+    // segment button", docs/platform-facts.md §2 dimension rules): a segment
+    // has no border of its own, so its content is that less its padding, and
+    // the control is the segments inside its outline.
+    let seg_min = iced::Size::new(0.0, (sc.segment_height - seg_pad.y()).max(0.0));
     let segments = BASIC_SEGMENTS.iter().enumerate().map(|(i, label)| {
-        button(at_least(text(*label).typeset(&sc.font, a11y), seg_min))
-            .padding(seg_pad)
-            .style(styles::segment(
-                resolved,
-                i == state.basic_segment,
-                styles::SegmentPosition::of(i, BASIC_SEGMENTS.len()),
-            ))
-            .on_press(Message::BasicSegmentSelected(i))
-            .into()
+        button(at_least(
+            text(*label).themed(&sc.font, resolved, a11y),
+            seg_min,
+        ))
+        .padding(seg_pad)
+        .style(styles::segment(
+            resolved,
+            i == state.basic_segment,
+            styles::SegmentPosition::of(i, BASIC_SEGMENTS.len()),
+        ))
+        .on_press(Message::BasicSegmentSelected(i))
+        .into()
     });
     // A divider: the gap between two segments, where the outline shows
     // through, `segmented_control.separator_width` wide.
@@ -6897,11 +7020,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             row![]
                 .push((!trailing).then(arrow))
                 .push(tag_title(
-                    text(title).typeset(&x.font, a11y).width(if trailing {
-                        Fill
-                    } else {
-                        Length::Shrink
-                    }),
+                    text(title)
+                        .themed(&x.font, resolved, a11y)
+                        .width(if trailing { Fill } else { Length::Shrink }),
                 ))
                 .push(trailing.then(arrow))
                 .spacing(arrow_gap)
@@ -7212,34 +7333,45 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 /// rows in `list.item_font` -- the second selected, in
 /// `list.selection_background` and `.selection_text_color`, the third on
 /// `list.alternate_row_background` -- each `list.row_height` tall, or its
-/// line box and padding where unstated; the cells padded by
-/// `list.border.padding` (iced_aw's list's padding on a side it leaves
-/// unstated, as the list's rows); a `list.grid_color` line between the
-/// columns and under the header, `separator.line_width` thick (the theme
-/// states no grid width); the frame `list.border` on
-/// `list.background_color`.
+/// line box and padding where unstated; the two columns half the width
+/// inside the frame each (the model states no column width); the cells
+/// padded by `list.border.padding`, none on a side it leaves unstated; a
+/// `list.grid_color` line between the columns and under the header,
+/// `separator.line_width` thick (the theme states no grid width), inside the
+/// cell it closes; the frame `list.border` on `list.background_color`. The
+/// table the gpui and egui showcases build.
 fn basic_table(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
     let l = &resolved.list;
     let line = resolved.separator.line_width;
-    let pad = native_theme_iced::padding_or(&l.border.padding, Padding::from(AW_LIST_PADDING));
+    let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
     let height = |font: &ResolvedFontSpec| {
         l.row_height
             .unwrap_or(scaled_text_size(font.size, a11y) * resolved.defaults.line_height + pad.y())
     };
     let grid = to_color(l.grid_color);
-    let rule_v = move |h: f32| {
+    let grid_line = move |w: Length, h: Length| {
         container(space())
-            .width(Length::Fixed(line))
-            .height(Length::Fixed(h))
+            .width(w)
+            .height(h)
             .style(move |_: &Theme| container::Style {
                 background: Some(iced::Background::Color(grid)),
                 ..container::Style::default()
             })
     };
-    let cell =
-        |content: &'static str, font: &ResolvedFontSpec, color: Color, share: u16, h: f32| {
+    // A cell: its text, vertically centred inside the padding, `h` tall;
+    // the first column's cell with the column line inside its right edge,
+    // a header cell with the header's line inside its bottom edge.
+    let cell = move |content: &'static str,
+                     font: &ResolvedFontSpec,
+                     color: Color,
+                     first: bool,
+                     header: bool,
+                     h: f32|
+          -> Element<'_, Message> {
+        let text_h = if header { (h - line).max(0.0) } else { h };
+        let mut body = column![
             container(
                 text(content)
                     .themed(font, resolved, a11y)
@@ -7247,20 +7379,29 @@ fn basic_table(state: &State) -> Element<'_, Message> {
                     .wrapping(text::Wrapping::None),
             )
             .padding(pad)
-            .width(Length::FillPortion(share))
-            .height(Length::Fixed(h))
+            .width(Fill)
+            .height(Length::Fixed(text_h))
             .align_y(iced::Center)
+        ];
+        if header {
+            body = body.push(grid_line(Fill, Length::Fixed(line)));
+        }
+        let cell = row![body.width(Fill)];
+        let cell = if first {
+            cell.push(grid_line(Length::Fixed(line), Length::Fixed(h)))
+        } else {
+            cell
         };
-    let [name_share, size_share] = BASIC_TABLE_SHARES;
+        cell.width(Length::FillPortion(1)).into()
+    };
     let head_h = height(&l.header_font);
     let head_ink = to_color(l.header_font.color);
     let head_fill = to_color(l.header_background);
     let header = tagged(
         "basic.table.header",
         container(row![
-            cell("Name", &l.header_font, head_ink, name_share, head_h),
-            rule_v(head_h),
-            cell("Size", &l.header_font, head_ink, size_share, head_h),
+            cell("Name", &l.header_font, head_ink, true, true, head_h),
+            cell("Size", &l.header_font, head_ink, false, true, head_h),
         ])
         .style(move |_: &Theme| container::Style {
             background: Some(iced::Background::Color(head_fill)),
@@ -7268,14 +7409,7 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         }),
     )
     .node("basic.table.header.name", &[0, 0])
-    .node("basic.table.header.size", &[0, 2]);
-    let under_header = container(space())
-        .width(Fill)
-        .height(Length::Fixed(line))
-        .style(move |_: &Theme| container::Style {
-            background: Some(iced::Background::Color(grid)),
-            ..container::Style::default()
-        });
+    .node("basic.table.header.size", &[0, 1]);
     let row_h = height(&l.item_font);
     let rows = BASIC_TABLE_ROWS
         .iter()
@@ -7298,9 +7432,8 @@ fn basic_table(state: &State) -> Element<'_, Message> {
             tagged(
                 id,
                 container(row![
-                    cell(name, &l.item_font, ink, name_share, row_h),
-                    rule_v(row_h),
-                    cell(size, &l.item_font, ink, size_share, row_h),
+                    cell(name, &l.item_font, ink, true, false, row_h),
+                    cell(size, &l.item_font, ink, false, false, row_h),
                 ])
                 .style(move |_: &Theme| container::Style {
                     background: fill.map(iced::Background::Color),
@@ -7317,7 +7450,7 @@ fn basic_table(state: &State) -> Element<'_, Message> {
     let fill = to_color(l.background_color);
     tagged(
         "basic.table.frame",
-        container(column![header, under_header].extend(rows))
+        container(column![header].extend(rows))
             .padding(l.border.line_width)
             .width(Length::Fixed(BASIC_WIDE))
             .style(move |_: &Theme| container::Style {
@@ -13831,9 +13964,13 @@ mod tests {
                 &sc.border.padding,
                 iced::widget::button::DEFAULT_PADDING,
             );
+            // Each segment `segment_height` tall (its outer height; a segment
+            // has no border), or its label's line and padding where taller,
+            // inside the control's outline.
             let expected = sc
                 .segment_height
-                .max(line_of(sc.font.size) + seg_pad.y() + 2.0 * sc.border.line_width);
+                .max(sc.font.size * r.defaults.line_height + seg_pad.y())
+                + 2.0 * sc.border.line_width;
             assert!(
                 (segmented.height - expected).abs() < 0.01,
                 "{preset}: the segmented control is {}px tall, expected {expected}px",
