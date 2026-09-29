@@ -72,6 +72,10 @@ iced = { version = "0.14", features = [
     # `advanced` reaches the font database iced draws text from, which the
     # showcase reads to build fonts iced can draw (`drawable_font`).
     "advanced",
+    # Every text shaped, with the font's kerning, as GTK (Pango) and Qt shape
+    # theirs: iced's default shapes ASCII text with the glyphs' advances alone
+    # (`Shaping::Auto` picks `Basic`, iced_core 0.14.0 `src/text.rs:135-175`).
+    "advanced-shaping",
 ] }
 iced_aw = { version = "0.14", default-features = false, features = [
     "card",

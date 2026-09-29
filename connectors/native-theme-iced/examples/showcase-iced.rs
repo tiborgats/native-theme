@@ -1510,6 +1510,9 @@ struct State {
     /// it.
     splitter_dragging: bool,
     splitter_hovered: bool,
+    /// The menu bar's title whose menu is open, by its index among the
+    /// bar's titles.
+    menu_title_open: Option<usize>,
     /// The window's logical width, which the splitter leaves the page
     /// [`PANEL_MIN_WIDTH`] of.
     window_width: f32,
@@ -1824,6 +1827,7 @@ impl State {
             side_panel_width: LEFT_PANEL_WIDTH,
             splitter_dragging: false,
             splitter_hovered: false,
+            menu_title_open: None,
             window_width: WINDOW_SIZE.0,
             overlay: None,
             palette_query: String::new(),
@@ -2164,6 +2168,9 @@ enum Message {
     /// A click on a menu's title: `iced_aw` opens its menu, and nothing else
     /// changes.
     MenuOpened,
+    /// The menu bar's title whose menu is open, by its index, or none
+    /// ([`MenuTitles`]).
+    MenuTitleOpened(Option<usize>),
     Quit,
     ToggleSidePanel,
     /// The desktop's settings are read again and the current theme is
@@ -2641,6 +2648,7 @@ fn update_inner(state: &mut State, message: Message) {
         Message::HighContrastToggled(on) => state.accessibility.high_contrast = on,
         Message::ReduceTransparencyToggled(on) => state.accessibility.reduce_transparency = on,
         Message::BasicHeld | Message::MenuOpened => {}
+        Message::MenuTitleOpened(title) => state.menu_title_open = title,
         Message::BasicRadioSelected(i) => state.basic_radio = i,
         Message::BasicHintChanged(value) => state.basic_hint = value,
         Message::BasicTextChanged(value) => state.basic_text = value,
@@ -3429,6 +3437,181 @@ impl iced::advanced::Overlay<Message, Theme, iced::Renderer> for HeldOverlay<'_>
     }
 }
 
+// ---------------------------------------------------------------------------
+// The open menu's title
+// ---------------------------------------------------------------------------
+
+/// A menu bar that tells the page which of its titles has its menu open
+/// ([`Message::MenuTitleOpened`]), for that title to be drawn as the bar's
+/// current item ([`menu_title`]).
+///
+/// `iced_aw`'s `MenuBar` keeps its open title to itself (`MenuBarState` is
+/// private, iced_aw 0.14.1 `src/widget/menu/menu_bar.rs:51`) and styles only
+/// the fill under it (`Style::path`); the title's label is the title's own
+/// widget. This follows the bar by the bar's own rules: it is open while it
+/// has an overlay (`menu_bar.rs:639-651`); the release that opens it, and a
+/// pointer move over the bar while it is open, make the title under the
+/// pointer the open one (`menu_bar.rs:452-481`, `try_open_menu` in
+/// `src/widget/menu/common.rs:212-228`); the bar's titles are its layout's
+/// first child's children (`menu_bar.rs:400`).
+struct MenuTitles<'a> {
+    content: Element<'a, Message>,
+}
+
+/// The title [`MenuTitles`] last reported open.
+#[derive(Default)]
+struct MenuTitlesState {
+    open: Option<usize>,
+}
+
+impl iced::advanced::Widget<Message, Theme, iced::Renderer> for MenuTitles<'_> {
+    fn tag(&self) -> iced::advanced::widget::tree::Tag {
+        iced::advanced::widget::tree::Tag::of::<MenuTitlesState>()
+    }
+
+    fn state(&self) -> iced::advanced::widget::tree::State {
+        iced::advanced::widget::tree::State::new(MenuTitlesState::default())
+    }
+
+    fn children(&self) -> Vec<iced::advanced::widget::Tree> {
+        vec![iced::advanced::widget::Tree::new(&self.content)]
+    }
+
+    fn diff(&self, tree: &mut iced::advanced::widget::Tree) {
+        tree.diff_children(std::slice::from_ref(&self.content));
+    }
+
+    fn size(&self) -> iced::Size<Length> {
+        self.content.as_widget().size()
+    }
+
+    fn size_hint(&self) -> iced::Size<Length> {
+        self.content.as_widget().size_hint()
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        renderer: &iced::Renderer,
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
+        match tree.children.first_mut() {
+            Some(child) => self.content.as_widget_mut().layout(child, renderer, limits),
+            None => iced::advanced::layout::Node::new(iced::Size::ZERO),
+        }
+    }
+
+    fn draw(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+    ) {
+        if let Some(child) = tree.children.first() {
+            self.content
+                .as_widget()
+                .draw(child, renderer, theme, style, layout, cursor, viewport);
+        }
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        if let Some(child) = tree.children.first_mut() {
+            self.content
+                .as_widget_mut()
+                .operate(child, layout, renderer, operation);
+        }
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        event: &iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+        viewport: &iced::Rectangle,
+    ) {
+        // `State::downcast_mut` panics on a state of another type; this cannot.
+        let iced::advanced::widget::tree::State::Some(any) = &mut tree.state else {
+            return;
+        };
+        let Some(state) = any.downcast_mut::<MenuTitlesState>() else {
+            return;
+        };
+        let Some(child) = tree.children.first_mut() else {
+            return;
+        };
+        let content = self.content.as_widget_mut();
+        content.update(
+            child, event, layout, cursor, renderer, clipboard, shell, viewport,
+        );
+        let bar_open = content
+            .overlay(child, layout, renderer, viewport, iced::Vector::ZERO)
+            .is_some();
+        let pointed = || {
+            node_at(layout, &[0])
+                .and_then(|titles| titles.children().position(|t| cursor.is_over(t.bounds())))
+        };
+        let open = match event {
+            _ if !bar_open => None,
+            iced::Event::Mouse(iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left))
+                if state.open.is_none() =>
+            {
+                pointed()
+            }
+            iced::Event::Mouse(iced::mouse::Event::CursorMoved { .. }) => pointed().or(state.open),
+            _ => state.open,
+        };
+        if open != state.open {
+            state.open = open;
+            shell.publish(Message::MenuTitleOpened(open));
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+        renderer: &iced::Renderer,
+    ) -> iced::mouse::Interaction {
+        match tree.children.first() {
+            Some(child) => self
+                .content
+                .as_widget()
+                .mouse_interaction(child, layout, cursor, viewport, renderer),
+            None => iced::mouse::Interaction::None,
+        }
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &iced::Rectangle,
+        translation: iced::Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        let child = tree.children.first_mut()?;
+        self.content
+            .as_widget_mut()
+            .overlay(child, layout, renderer, viewport, translation)
+    }
+}
+
 /// Runs `update` on a shell of its own and hands `shell` what it asked for
 /// -- its messages, a redraw, a new layout, a rebuild of the widgets -- but
 /// not the capture of the event, so the event still reaches the rest of the
@@ -3796,6 +3979,31 @@ fn menu_row(resolved: &ResolvedTheme) -> impl Fn(&Theme, button::Status) -> butt
     }
 }
 
+/// A menu bar's title: a menu item ([`menu_row`]); while its menu is `open`,
+/// the bar's current item, drawn as a hovered title whether or not the
+/// pointer is on it, as a desktop menu bar marks the item whose menu is
+/// open: `menu.hover_background` under `menu.hover_text_color`. `iced_aw`
+/// marks it only by handing the titles a pointer at the open one's centre
+/// as its menu takes an event (`DrawPath::FakeHovering`, the bar's
+/// default, iced_aw 0.14.1 `src/widget/menu/menu_bar.rs:143`,
+/// `src/widget/menu/menu_bar_overlay.rs:382-422`), which a held menu
+/// ([`HeldOverlay`]) is never handed.
+fn menu_title(
+    resolved: &ResolvedTheme,
+    open: bool,
+) -> impl Fn(&Theme, button::Status) -> button::Style + use<> {
+    let row = menu_row(resolved);
+    move |theme, status| {
+        row(
+            theme,
+            match status {
+                button::Status::Active if open => button::Status::Hovered,
+                other => other,
+            },
+        )
+    }
+}
+
 /// A tab of the page and inspector tab rows, as the model's tab
 /// (platform-facts §2.11): `tab.background_color` and `tab.font.color` at
 /// rest; `tab.active_background` and `.active_text_color` while it is the
@@ -3989,21 +4197,22 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 /// `separator.line_width` thick in `menu.separator_color`. The row has the
 /// window's `window.background_color` and no frame; a menu's panel is
 /// `menu.background_color`, framed by the popover's border (platform-facts
-/// §2.6: the popup border is §2.16's); its open title
-/// `menu.hover_background`. The row's sides are `layout.container_margin`,
-/// as the gpui showcase's: the model states no menu-bar inset.
+/// §2.6: the popup border is §2.16's); its open title the bar's current
+/// item ([`menu_title`]). The row's sides are `layout.container_margin`, as
+/// the gpui showcase's: the model states no menu-bar inset.
 fn menu_bar(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let m = &resolved.menu;
     let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-    let title = |id: &'static str, label: &'static str| {
+    // The bar's `index`th title.
+    let title = |index: usize, id: &'static str, label: &'static str| {
         tagged(
             id,
             button(text(label).themed(&m.font, resolved, a11y))
                 .padding(pad)
-                .style(menu_row(resolved))
+                .style(menu_title(resolved, state.menu_title_open == Some(index)))
                 .on_press(Message::MenuOpened),
         )
     };
@@ -4093,12 +4302,12 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     let theme_row = |id, label, action| tagged_entry(Some(id), label, None, action);
     let bar = MenuBar::new(vec![
         Item::with_menu(
-            title("chrome.menu_bar.file", "File"),
+            title(0, "chrome.menu_bar.file", "File"),
             drop(vec![entry("Quit", Some("Q"), Message::Quit)]),
         ),
-        Item::with_menu(title("chrome.menu_bar.view", "View"), drop(pages)),
+        Item::with_menu(title(1, "chrome.menu_bar.view", "View"), drop(pages)),
         Item::with_menu(
-            title("chrome.menu_bar.theme", "Theme"),
+            title(2, "chrome.menu_bar.theme", "Theme"),
             drop(vec![
                 theme_row(
                     "chrome.menu.theme.reload",
@@ -4131,20 +4340,23 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
             ]),
         ),
         Item::with_menu(
-            title("chrome.menu_bar.help", "Help"),
+            title(3, "chrome.menu_bar.help", "Help"),
             drop(vec![entry("About", None, Message::Open(Overlay::About))]),
         ),
     ])
     .style(menu_bar_style(resolved));
+    let bar = Element::new(MenuTitles {
+        content: bar.into(),
+    });
     // `--open-menu theme`: the Theme menu, the bar's third, held open.
     let bar: Element<'_, Message> = match CLI_ARGS.get().and_then(|cli| cli.open_menu.as_deref()) {
         Some(OPEN_MENU_THEME) => Element::new(HeldMenu {
-            content: bar.into(),
+            content: bar,
             root: 2,
             popup: "chrome.menu.theme",
             padding: popup_pad,
         }),
-        _ => bar.into(),
+        _ => bar,
     };
     tagged(
         "chrome.menu_bar",
@@ -5408,7 +5620,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("checkbox", "disabled_background") => "styles::checkbox: the Disabled fill".into(),
         ("checkbox", "disabled_text_color") => "styles::checkbox: the Disabled label and mark".into(),
         ("checkbox", "disabled_opacity") => {
-            "styles::checkbox: the Disabled colours' alpha times it".into()
+            "styles::checkbox: the Disabled colours' alpha times it; a drawn mark fades with its box's fill".into()
         }
         ("checkbox", "border.color") => {
             "styles::checkbox / styles::radio: the checked border colour".into()
@@ -6717,14 +6929,41 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 }
             };
             // The style's mark colour over the box's fill over the page, one
-            // opaque colour: a translucent one (a disabled box's, faded by
-            // `checkbox.disabled_opacity`) comes out of iced's mesh pipeline
-            // darker than the same colour on a quad, where the box's fill
-            // blends as the connector composites (`styles::composite_over`).
+            // opaque colour: a translucent one comes out of iced's mesh
+            // pipeline darker than the same colour on a quad, where the box's
+            // fill blends as the connector composites
+            // (`styles::composite_over`). A disabled check fades as a whole,
+            // its mark over its fill and the pair at
+            // `checkbox.disabled_opacity` over the page (docs/platform-facts.md
+            // §2.1.6: GNOME's `filter: Opacity` on the whole widget, which
+            // keeps its normal colours), where the style fades each colour on
+            // its own: each is taken back to its unfaded self first.
             let style = styles::checkbox(resolved)(&Theme::Light, status);
             let page = to_color(resolved.window.background_color);
+            let opacity = if enabled || !c.disabled_opacity.is_finite() {
+                1.0
+            } else {
+                c.disabled_opacity.clamp(0.0, 1.0)
+            };
+            let unfaded = |colour: Color| Color {
+                a: if opacity > 0.0 {
+                    (colour.a / opacity).min(1.0)
+                } else {
+                    0.0
+                },
+                ..colour
+            };
             let colour = match style.background {
-                iced::Background::Color(fill) => over(style.icon_color, over(fill, page)),
+                iced::Background::Color(fill) => {
+                    let whole = over(unfaded(style.icon_color), over(unfaded(fill), page));
+                    over(
+                        Color {
+                            a: opacity,
+                            ..whole
+                        },
+                        page,
+                    )
+                }
                 _ => style.icon_color,
             };
             let mark = canvas(CheckMark {
@@ -7460,7 +7699,15 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let list_group = group("basic.list.heading", "List", list);
 
     let x = &resolved.expander;
-    let x_pad = native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING);
+    // The header's padding: inside its own border where it draws one; where
+    // the theme states whether the expander is framed the header draws none
+    // ([`unframed_when_stated`]) -- a framed one sits inside the item's
+    // frame, `expander.border.line_width` in -- so the stated sides are its
+    // padding as they are.
+    let x_pad = match x.frame_enabled {
+        Some(_) => native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING),
+        None => native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING),
+    };
     let x_min = iced::Size::new(0.0, (x.header_height - x_pad.y()).max(0.0));
     let arrow_color = native_theme_iced::expander_arrow_color(resolved);
     // expander.arrow_side, arrow_gap, content_indent and frame_enabled
@@ -13708,7 +13955,8 @@ mod tests {
     /// A button in a role the connector has no class for -- a flat button, a
     /// menu row, a tab, a list row -- wears the showcase's own style
     /// function for that role, built from that role's theme leaves alone:
-    /// `ghost_button`, `menu_row`, `tab_style`, `list_row`. A line in a
+    /// `ghost_button`, `menu_row` (`menu_title`, a menu bar's title, is a
+    /// menu row), `tab_style`, `list_row`. A line in a
     /// widget's own colour wears `line_style`, the separator's style in that
     /// colour.
     const DRESSED: &[Dressed] = &[
@@ -13725,6 +13973,7 @@ mod tests {
                 "styles::expander",
                 "ghost_button",
                 "menu_row",
+                "menu_title",
                 "tab_style",
                 "list_row",
             ]],
