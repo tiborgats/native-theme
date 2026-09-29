@@ -76,7 +76,6 @@ color_picker = "native-theme models no colour picker (spec §3a); the feature is
 date_picker = "native-theme models no date picker (spec §3a); the feature is not enabled"
 drop_down = "native-theme models no drop-down surface (spec §3a); the feature is not enabled"
 labeled_frame = "native-theme models no labelled frame (spec §3a); the feature is not enabled"
-number_input = "native-theme models no number input (spec §3a); the feature is not enabled"
 quad = "native-theme models no bare quad primitive (spec §3a); the feature is not enabled"
 slide_bar = "native-theme models no slide bar (spec §3a); the feature is not enabled"
 time_picker = "native-theme models no time picker (spec §3a); the feature is not enabled"

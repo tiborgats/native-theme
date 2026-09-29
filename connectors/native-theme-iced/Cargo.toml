@@ -46,6 +46,7 @@ iced_aw = { version = "0.14", optional = true, default-features = false, feature
     "sidebar",
     "spinner",
     "selection_list",
+    "number_input",
 ] }
 
 # The showcase calls `styles::*`, which `widgets` gates, `Spinner`, which
@@ -81,6 +82,7 @@ iced_aw = { version = "0.14", default-features = false, features = [
     "sidebar",
     "spinner",
     "selection_list",
+    "number_input",
 ] }
 # The showcase's self-tests (spec §6.2) drive the real `view` headlessly.
 iced_test = "0.14"
@@ -90,6 +92,10 @@ native-theme = { workspace = true, features = [
     "watch",
 ] }
 image = { version = "0.25.10", default-features = false, features = ["png"] }
+# The showcase reads docs/showcase-elements.toml, the element list the three
+# showcases share, and writes its layout dump (`--dump-layout`) as JSON.
+toml = { workspace = true }
+serde_json = "1.0.151"
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 native-theme = { workspace = true, features = ["system-icons", "linux"] }

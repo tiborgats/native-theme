@@ -230,6 +230,427 @@ fn layout_value(stated: Option<f32>, fallback: f32) -> String {
 }
 
 // ---------------------------------------------------------------------------
+// The shared element list (docs/showcase-elements.toml)
+// ---------------------------------------------------------------------------
+
+/// One element of `docs/showcase-elements.toml`, the list of what the gpui,
+/// iced and egui showcases all draw. Widget Info takes an element's title and
+/// rows from it, and the layout dump (`--dump-layout`) its ids.
+#[derive(Debug, Clone)]
+struct ShowcaseElement {
+    id: String,
+    name: String,
+    /// Read by the self-tests, which check the dump against the list.
+    #[cfg_attr(not(test), allow(dead_code))]
+    parent: String,
+    leaves: Vec<String>,
+    states: Vec<String>,
+    part: bool,
+    /// Read by the self-tests: an element on screen only while this holds.
+    #[cfg_attr(not(test), allow(dead_code))]
+    when: Option<String>,
+}
+
+/// The list, as the three showcases read it: at build time, so the showcase
+/// needs no file beside it when it runs.
+const SHOWCASE_ELEMENTS: &str = include_str!("../../../docs/showcase-elements.toml");
+
+/// `docs/showcase-elements.toml` parsed into its elements, walked by hand as
+/// the list's header shows.
+fn showcase_elements() -> Result<Vec<ShowcaseElement>, String> {
+    let table: toml::Table = toml::from_str(SHOWCASE_ELEMENTS).map_err(|e| e.to_string())?;
+    let rows = table
+        .get("element")
+        .and_then(toml::Value::as_array)
+        .ok_or("docs/showcase-elements.toml: no [[element]] entries")?;
+    rows.iter()
+        .map(|row| {
+            let string = |key: &str| {
+                row.get(key)
+                    .and_then(toml::Value::as_str)
+                    .map(str::to_owned)
+                    .ok_or_else(|| format!("an element has no `{key}`"))
+            };
+            let list = |key: &str| {
+                row.get(key)
+                    .and_then(toml::Value::as_array)
+                    .ok_or_else(|| format!("an element has no `{key}`"))?
+                    .iter()
+                    .map(|v| {
+                        v.as_str()
+                            .map(str::to_owned)
+                            .ok_or_else(|| format!("`{key}` holds a value that is not a string"))
+                    })
+                    .collect::<Result<Vec<_>, _>>()
+            };
+            Ok(ShowcaseElement {
+                id: string("id")?,
+                name: string("name")?,
+                parent: string("parent")?,
+                leaves: list("leaves")?,
+                states: list("states")?,
+                part: row
+                    .get("part")
+                    .and_then(toml::Value::as_bool)
+                    .unwrap_or(false),
+                when: row
+                    .get("when")
+                    .and_then(toml::Value::as_str)
+                    .map(str::to_owned),
+            })
+        })
+        .collect()
+}
+
+/// The list, parsed once. `main` stops the showcase where it does not parse,
+/// so an empty list is only ever seen by a test that broke it.
+static ELEMENTS: OnceLock<Result<Vec<ShowcaseElement>, String>> = OnceLock::new();
+
+fn elements() -> &'static [ShowcaseElement] {
+    match ELEMENTS.get_or_init(showcase_elements) {
+        Ok(list) => list,
+        Err(_) => &[],
+    }
+}
+
+/// The element of the list with this id.
+fn listed(id: &str) -> Option<&'static ShowcaseElement> {
+    elements().iter().find(|element| element.id == id)
+}
+
+/// The id of the list's part `<id>.<part>`, where the list has one.
+fn listed_part(id: &str, part: &str) -> Option<&'static str> {
+    listed(&format!("{id}.{part}")).map(|element| element.id.as_str())
+}
+
+/// The listed elements that are layout boxes rather than something drawn to
+/// be looked at: the pointer over the space between controls keeps what
+/// Widget Info shows, as it does over a part of the page no element covers.
+const LAYOUT_BOXES: [&str; 7] = [
+    "chrome.window",
+    "chrome.content",
+    "basic.page",
+    "basic.column_1",
+    "basic.column_2",
+    "basic.column_3",
+    "basic.column_4",
+];
+
+/// Whether the pointer over `id` makes Widget Info show it: every listed
+/// element but a part (hovered as its control, which holds it), a layout box
+/// ([`LAYOUT_BOXES`]), and Widget Info itself, whose own lines would replace
+/// what it shows on the way to its Copy button.
+fn hover_target(id: &str) -> bool {
+    listed(id).is_some_and(|element| !element.part)
+        && !LAYOUT_BOXES.contains(&id)
+        && id != "chrome.side_panel.inspector"
+        && !id.starts_with("chrome.info.")
+}
+
+// ---------------------------------------------------------------------------
+// Element tags: what the layout dump records, and what the pointer hovers
+// ---------------------------------------------------------------------------
+
+/// Where a part of a tagged element lies, found from the element's layout.
+type PartRect<'a> = Box<dyn Fn(iced::advanced::Layout<'_>) -> Option<iced::Rectangle> + 'a>;
+
+/// `content`, one element of the list: while it is drawn its rectangle, and
+/// its parts', are recorded under their ids for the layout dump; while the
+/// pointer is over it, it is the hover target Widget Info shows, unless a
+/// smaller one under the pointer is ([`hover_target`]).
+///
+/// The wrapper is invisible to the widget tree: it hands its content the
+/// tree, the layout and every event as they are, so wrapping a widget keeps
+/// its state and its place. The one element tagged as the `root` (the
+/// window) starts each frame's record and reports the hover target once the
+/// whole tree has seen a pointer move.
+struct Tagged<'a> {
+    id: &'static str,
+    content: Element<'a, Message>,
+    parts: Vec<(&'static str, PartRect<'a>)>,
+    root: bool,
+}
+
+/// Tags `content` as the list's element `id`.
+fn tagged<'a>(id: &'static str, content: impl Into<Element<'a, Message>>) -> Tagged<'a> {
+    Tagged {
+        id,
+        content: content.into(),
+        parts: Vec::new(),
+        root: false,
+    }
+}
+
+impl<'a> Tagged<'a> {
+    /// A part of the element, `id`, at the rectangle `rect` finds.
+    fn part(
+        mut self,
+        id: &'static str,
+        rect: impl Fn(iced::advanced::Layout<'_>) -> Option<iced::Rectangle> + 'a,
+    ) -> Self {
+        self.parts.push((id, Box::new(rect)));
+        self
+    }
+
+    /// A part of the element, `id`, that is the node of its layout reached
+    /// by taking the child `path` names at each level.
+    fn node(self, id: &'static str, path: &'static [usize]) -> Self {
+        self.part(id, move |layout| node_at(layout, path).map(|n| n.bounds()))
+    }
+
+    /// The window: the element that starts each frame's record and reports
+    /// the hover target.
+    fn root(mut self) -> Self {
+        self.root = true;
+        self
+    }
+}
+
+impl<'a> From<Tagged<'a>> for Element<'a, Message> {
+    fn from(tagged: Tagged<'a>) -> Self {
+        Element::new(tagged)
+    }
+}
+
+/// The node `path` reaches from `layout`, a child index at each level.
+fn node_at<'l>(
+    layout: iced::advanced::Layout<'l>,
+    path: &[usize],
+) -> Option<iced::advanced::Layout<'l>> {
+    path.iter()
+        .try_fold(layout, |node, &index| node.children().nth(index))
+}
+
+/// The rectangles of an element tree, by element id.
+type ElementRects = BTreeMap<&'static str, iced::Rectangle>;
+
+thread_local! {
+    /// The rectangles of the frame being drawn.
+    static DRAWING: std::cell::RefCell<ElementRects> =
+        const { std::cell::RefCell::new(BTreeMap::new()) };
+    /// The rectangles of the last frame drawn whole, its overlays included.
+    static DRAWN: std::cell::RefCell<ElementRects> =
+        const { std::cell::RefCell::new(BTreeMap::new()) };
+    /// The smallest hover target under the pointer, and its area, while a
+    /// pointer move goes through the tree.
+    static UNDER_POINTER: std::cell::Cell<Option<(&'static str, f32)>> =
+        const { std::cell::Cell::new(None) };
+    /// The hover target last reported, `None` once the pointer left them all.
+    static REPORTED: std::cell::Cell<Option<&'static str>> = const { std::cell::Cell::new(None) };
+    /// When the window first asked to be drawn.
+    static FIRST_FRAME: std::cell::Cell<Option<Instant>> = const { std::cell::Cell::new(None) };
+    /// The rectangles the layout dump last wrote.
+    static DUMPED: std::cell::RefCell<Option<ElementRects>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+/// How long after the window's first frame the layout dump waits before it
+/// writes: the showcase's fonts, icons and theme are all loaded before its
+/// first frame, and a second is many frames for anything laid out late to
+/// settle. The capture scripts capture no sooner than four seconds after
+/// the start (`HELD_PRESS_AFTER`'s note), so the dump is written before.
+const LAYOUT_SETTLES_AFTER: Duration = Duration::from_secs(1);
+
+/// The rectangles of the last frame drawn whole.
+fn drawn_layout() -> ElementRects {
+    DRAWN.with_borrow(Clone::clone)
+}
+
+impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
+    fn tag(&self) -> iced::advanced::widget::tree::Tag {
+        self.content.as_widget().tag()
+    }
+
+    fn state(&self) -> iced::advanced::widget::tree::State {
+        self.content.as_widget().state()
+    }
+
+    fn children(&self) -> Vec<iced::advanced::widget::Tree> {
+        self.content.as_widget().children()
+    }
+
+    fn diff(&self, tree: &mut iced::advanced::widget::Tree) {
+        self.content.as_widget().diff(tree);
+    }
+
+    fn size(&self) -> iced::Size<Length> {
+        self.content.as_widget().size()
+    }
+
+    fn size_hint(&self) -> iced::Size<Length> {
+        self.content.as_widget().size_hint()
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        renderer: &iced::Renderer,
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
+        self.content.as_widget_mut().layout(tree, renderer, limits)
+    }
+
+    fn draw(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+    ) {
+        if self.root {
+            let frame = DRAWING.take();
+            if !frame.is_empty() {
+                DRAWN.set(frame);
+            }
+        }
+        DRAWING.with_borrow_mut(|drawing| {
+            drawing.insert(self.id, layout.bounds());
+            for (id, rect) in &self.parts {
+                if let Some(bounds) = rect(layout) {
+                    drawing.insert(id, bounds);
+                }
+            }
+        });
+        self.content
+            .as_widget()
+            .draw(tree, renderer, theme, style, layout, cursor, viewport);
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        self.content
+            .as_widget_mut()
+            .operate(tree, layout, renderer, operation);
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        event: &iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+        viewport: &iced::Rectangle,
+    ) {
+        let moved = matches!(
+            event,
+            iced::Event::Mouse(iced::mouse::Event::CursorMoved { .. })
+        );
+        if self.root && moved {
+            UNDER_POINTER.set(None);
+        }
+        self.content.as_widget_mut().update(
+            tree, event, layout, cursor, renderer, clipboard, shell, viewport,
+        );
+        let bounds = layout.bounds();
+        if moved && cursor.is_over(bounds) && hover_target(self.id) {
+            let area = bounds.width * bounds.height;
+            if UNDER_POINTER
+                .get()
+                .is_none_or(|(_, smallest)| area < smallest)
+            {
+                UNDER_POINTER.set(Some((self.id, area)));
+            }
+        }
+        if !self.root {
+            return;
+        }
+        if moved {
+            let under = UNDER_POINTER.get().map(|(id, _)| id);
+            if under != REPORTED.get() {
+                REPORTED.set(under);
+                if let Some(id) = under {
+                    shell.publish(Message::ElementHovered(id));
+                }
+            }
+        }
+        if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event
+            && CLI_ARGS.get().is_some_and(|cli| cli.dump_layout.is_some())
+        {
+            let first = *FIRST_FRAME.get().get_or_insert(*now);
+            FIRST_FRAME.set(Some(first));
+            if now.saturating_duration_since(first) < LAYOUT_SETTLES_AFTER {
+                shell.request_redraw();
+                return;
+            }
+            let frame = drawn_layout();
+            let changed = DUMPED.with_borrow(|dumped| dumped.as_ref() != Some(&frame));
+            if changed && !frame.is_empty() {
+                DUMPED.set(Some(frame));
+                shell.publish(Message::LayoutSettled);
+            } else if DUMPED.with_borrow(Option::is_none) {
+                shell.request_redraw();
+            }
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+        renderer: &iced::Renderer,
+    ) -> iced::mouse::Interaction {
+        self.content
+            .as_widget()
+            .mouse_interaction(tree, layout, cursor, viewport, renderer)
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &iced::Rectangle,
+        translation: iced::Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        self.content
+            .as_widget_mut()
+            .overlay(tree, layout, renderer, viewport, translation)
+    }
+}
+
+/// The layout dump `--dump-layout` writes: the rectangles of the last frame
+/// drawn whole, in logical pixels of the window's content, by element id,
+/// with the theme and the scale factor, in the list's schema
+/// (docs/showcase-elements.toml, "The layout dump").
+fn write_layout_dump(state: &State, path: &str, scale: f32) -> Result<(), String> {
+    let elements: serde_json::Map<String, serde_json::Value> = drawn_layout()
+        .into_iter()
+        .map(|(id, r)| {
+            (
+                id.to_string(),
+                serde_json::json!({"x": r.x, "y": r.y, "w": r.width, "h": r.height}),
+            )
+        })
+        .collect();
+    let preset = match &state.current_choice {
+        ThemeChoice::OsTheme(_) => state.default_label.clone(),
+        ThemeChoice::Preset(key) => key.clone(),
+    };
+    let dump = serde_json::json!({
+        "kind": "iced",
+        "preset": preset,
+        "variant": if state.is_dark { "dark" } else { "light" },
+        "scale": scale,
+        "elements": elements,
+    });
+    let text = serde_json::to_string_pretty(&dump).map_err(|e| e.to_string())?;
+    std::fs::write(path, text).map_err(|e| format!("{path}: {e}"))
+}
+
+// ---------------------------------------------------------------------------
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
@@ -259,6 +680,11 @@ struct CliArgs {
     /// `--press`: with `--pointer`, the primary button is held down there,
     /// so a capture shows the control pressed.
     press: bool,
+    /// `--dump-layout FILE`: once the layout has settled, the rectangle of
+    /// every element of docs/showcase-elements.toml the showcase draws is
+    /// written to FILE as JSON ([`write_layout_dump`]), and again whenever it
+    /// changes; without `--capture` the showcase then exits.
+    dump_layout: Option<String>,
 }
 
 /// `X,Y` as two whole logical pixels, or `None`.
@@ -308,6 +734,12 @@ impl CliArgs {
                     }
                 }
                 "--capture" => args.capture = true,
+                "--dump-layout" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.dump_layout = Some(argv[i].clone());
+                    }
+                }
                 "--press" => args.press = true,
                 "--pointer" => {
                     i += 1;
@@ -917,6 +1349,10 @@ struct State {
 
     // Widget Info (hover-driven)
     widget_info: String,
+    /// The element of docs/showcase-elements.toml the pointer was last over,
+    /// which Widget Info shows in place of `widget_info`; `None` after a
+    /// hover of another page's widget.
+    hovered_element: Option<&'static str>,
 
     // Chrome
     /// The inspector's open tab.
@@ -956,6 +1392,12 @@ struct State {
     #[cfg(feature = "iced_aw")]
     basic_tab: usize,
     basic_list_selected: Option<usize>,
+    /// The Basic tab's number input and focused input.
+    #[cfg(feature = "iced_aw")]
+    basic_number: i32,
+    #[cfg(not(feature = "iced_aw"))]
+    basic_number_text: String,
+    basic_focused: String,
 
     // Button tab
     button_press_count: u32,
@@ -1230,6 +1672,7 @@ impl State {
             default_label,
             active_tab: Tab::Basic,
             widget_info: String::new(),
+            hovered_element: None,
             inspector_tab: InspectorTab::Widget,
             side_panel_visible: true,
             side_panel_width: LEFT_PANEL_WIDTH,
@@ -1251,6 +1694,11 @@ impl State {
             #[cfg(feature = "iced_aw")]
             basic_tab: 0,
             basic_list_selected: Some(BASIC_LIST_SELECTED),
+            #[cfg(feature = "iced_aw")]
+            basic_number: BASIC_NUMBER,
+            #[cfg(not(feature = "iced_aw"))]
+            basic_number_text: BASIC_NUMBER.to_string(),
+            basic_focused: "Focused".to_string(),
             button_press_count: 0,
             text_input_value: String::new(),
             text_editor_content: text_editor::Content::with_text(
@@ -1556,6 +2004,15 @@ enum Message {
     // Widget Info hover
     WidgetHovered(String),
     WidgetUnhovered,
+    /// The pointer moved onto an element of docs/showcase-elements.toml
+    /// ([`Tagged`]): Widget Info shows it.
+    ElementHovered(&'static str),
+
+    // Layout dump (`--dump-layout`)
+    /// The layout has settled, or changed since it was last written.
+    LayoutSettled,
+    /// The window's scale factor, read for the layout dump.
+    LayoutScaled(f32),
 
     // Chrome: the menus', the toolbar's and the key bindings' actions
     /// A click on a menu's title: `iced_aw` opens its menu, and nothing else
@@ -1602,6 +2059,9 @@ enum Message {
     #[cfg(feature = "iced_aw")]
     BasicTabSelected(usize),
     BasicListSelected(usize),
+    #[cfg(feature = "iced_aw")]
+    BasicNumberChanged(i32),
+    BasicFocusedChanged(String),
 
     // Button tab
     ButtonPressed,
@@ -1933,6 +2393,25 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
             return iced::exit();
         }
         Message::Quit => return iced::exit(),
+        Message::LayoutSettled => {
+            return iced::window::latest()
+                .and_then(iced::window::scale_factor)
+                .map(Message::LayoutScaled);
+        }
+        Message::LayoutScaled(scale) => {
+            let Some(cli) = CLI_ARGS.get() else {
+                return iced::Task::none();
+            };
+            if let Some(path) = &cli.dump_layout {
+                if let Err(error) = write_layout_dump(state, path, scale) {
+                    eprintln!("ERROR: --dump-layout: {error}");
+                    std::process::exit(1);
+                }
+                if !cli.capture {
+                    return iced::exit();
+                }
+            }
+        }
         // The query takes the focus, so typing reaches it at once.
         Message::Open(Overlay::CommandPalette) if state.overlay.is_none() => {
             update_inner(state, Message::Open(Overlay::CommandPalette));
@@ -1975,6 +2454,10 @@ fn update_inner(state: &mut State, message: Message) {
         }
         Message::WidgetHovered(info) => {
             state.widget_info = info;
+            state.hovered_element = None;
+        }
+        Message::ElementHovered(id) => {
+            state.hovered_element = Some(id);
         }
         Message::WidgetUnhovered => {
             // Keep last info visible (like gpui showcase)
@@ -2023,6 +2506,9 @@ fn update_inner(state: &mut State, message: Message) {
         #[cfg(feature = "iced_aw")]
         Message::BasicTabSelected(i) => state.basic_tab = i,
         Message::BasicListSelected(i) => state.basic_list_selected = Some(i),
+        #[cfg(feature = "iced_aw")]
+        Message::BasicNumberChanged(value) => state.basic_number = value,
+        Message::BasicFocusedChanged(value) => state.basic_focused = value,
         Message::ButtonPressed => {
             state.button_press_count = state.button_press_count.saturating_add(1);
         }
@@ -2112,11 +2598,15 @@ fn view(state: &State) -> Element<'_, Message> {
     let inp_pad = native_theme_iced::input_padding(resolved);
 
     let content = content_panel(state, btn_pad, inp_pad);
+    let content = tagged("chrome.content", content);
     let body: Element<'_, Message> = if state.side_panel_visible {
         let body = row![
-            container(probe(probes::SIDE_PANEL, Fill, side_panel(state)))
-                .width(Length::Fixed(state.side_panel_width))
-                .height(Fill),
+            tagged(
+                "chrome.side_panel",
+                container(probe(probes::SIDE_PANEL, Fill, side_panel(state)))
+                    .width(Length::Fixed(state.side_panel_width))
+                    .height(Fill)
+            ),
             splitter(state),
             content,
         ]
@@ -2134,12 +2624,21 @@ fn view(state: &State) -> Element<'_, Message> {
             area.into()
         }
     } else {
-        content
+        content.into()
     };
 
     let window = column![menu_bar(state), toolbar(state)]
         .push(container(body).height(Fill))
         .push(status_bar(state));
+    // The window's fill, `window.background_color`, under everything.
+    let window = tagged(
+        "chrome.window",
+        container(window).width(Fill).height(Fill).style(surface(
+            to_color(resolved.window.background_color),
+            to_color(resolved.defaults.text_color),
+        )),
+    )
+    .root();
     let page: Element<'_, Message> = match state.overlay {
         // No backdrop: the model states none, so the window stays as it is
         // under the dialog, and `opaque` keeps the pointer off it.
@@ -2180,9 +2679,12 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
         Tab::ThemeMap => view_theme_map(state),
     };
 
-    let mut panel = column![page_tabs(state), separator_line(resolved)]
-        .width(Fill)
-        .height(Fill);
+    let mut panel = column![
+        page_tabs(state),
+        tagged("chrome.page_tabs.rule", separator_line(resolved))
+    ]
+    .width(Fill)
+    .height(Fill);
     // The banner: the platform's own error colour, not the palette slot iced
     // derives from it, inside the window margin the page has.
     if let Some(ref msg) = state.error_message {
@@ -2622,6 +3124,13 @@ struct ChromeIcons {
     panel: Option<IconData>,
     /// `IconRole::WindowClose`: a dialog's close button.
     close: Option<IconData>,
+    /// `IconRole::ActionCopy`, `ActionPaste`, `ActionDelete`: the Basic
+    /// page's icon buttons.
+    copy: Option<IconData>,
+    paste: Option<IconData>,
+    delete: Option<IconData>,
+    /// `IconRole::FolderOpen`: the Basic page's icons at the theme's sizes.
+    folder: Option<IconData>,
     /// Whether they are an OS icon theme's, drawn in their own colours;
     /// otherwise a bundled set's, drawn in their label's colour.
     system: bool,
@@ -2687,6 +3196,10 @@ fn load_chrome_icons(
         preferences: by_role(IconRole::ActionSettings),
         panel: named("panel-left", "side_navigation", panel_left_name()),
         close: by_role(IconRole::WindowClose),
+        copy: by_role(IconRole::ActionCopy),
+        paste: by_role(IconRole::ActionPaste),
+        delete: by_role(IconRole::ActionDelete),
+        folder: by_role(IconRole::FolderOpen),
         system: matches!(
             set,
             IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
@@ -2940,6 +3453,9 @@ struct IconButton<'a> {
     padding: Padding,
     selected: bool,
     action: Message,
+    /// The list's ids of the button and of its icon, where the list names
+    /// the button.
+    tags: Option<(&'static str, &'static str)>,
 }
 
 fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Message> {
@@ -2955,14 +3471,24 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
         .as_ref()
         .and_then(|icon| chrome_icon(icon, spec.size, state.chrome_icons.system, color))
     {
-        Some(icon) => button(icon)
-            .padding(spec.padding)
-            .style(ghost_button(resolved, spec.selected))
-            .on_press(spec.action),
+        Some(icon) => {
+            let icon: Element<'a, Message> = match spec.tags {
+                Some((_, icon_id)) => tagged(icon_id, icon).into(),
+                None => icon,
+            };
+            button(icon)
+                .padding(spec.padding)
+                .style(ghost_button(resolved, spec.selected))
+                .on_press(spec.action)
+        }
         None => button(text(spec.label).themed(spec.font, resolved, &state.accessibility))
             .padding(spec.padding)
             .style(ghost_button(resolved, spec.selected))
             .on_press(spec.action),
+    };
+    let button: Element<'a, Message> = match spec.tags {
+        Some((button_id, _)) => tagged(button_id, button).into(),
+        None => button.into(),
     };
     chrome_tooltip(state, button, spec.label, spec.key)
 }
@@ -2984,18 +3510,34 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     let gap = Gaps::from_layout(&state.layout);
     let m = &resolved.menu;
     let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-    let title = |label: &'static str| {
-        button(text(label).themed(&m.font, resolved, a11y))
-            .padding(pad)
-            .style(menu_row(resolved))
-            .on_press(Message::MenuOpened)
+    let title = |id: &'static str, label: &'static str| {
+        tagged(
+            id,
+            button(text(label).themed(&m.font, resolved, a11y))
+                .padding(pad)
+                .style(menu_row(resolved))
+                .on_press(Message::MenuOpened),
+        )
     };
-    let entry = |label: &'static str, key: Option<&'static str>, action: Message| {
+    // A row of a menu, tagged `id` where the list names it (the Theme
+    // menu's rows, the one menu the three showcases share), its key binding
+    // tagged `<id>.shortcut` where it has one.
+    let tagged_entry = |id: Option<&'static str>,
+                        label: &'static str,
+                        key: Option<&'static str>,
+                        action: Message| {
+        let shortcut = text(key.map(binding).unwrap_or_default()).themed(&m.font, resolved, a11y);
+        let shortcut: Element<'_, Message> = match (id, key) {
+            (Some("chrome.menu.theme.preferences"), Some(_)) => {
+                tagged("chrome.menu.theme.preferences.shortcut", shortcut).into()
+            }
+            _ => shortcut.into(),
+        };
         let entry = button(
             row![
                 text(label).themed(&m.font, resolved, a11y),
                 space().width(Fill),
-                text(key.map(binding).unwrap_or_default()).themed(&m.font, resolved, a11y),
+                shortcut,
             ]
             .spacing(gap.widget)
             .align_y(iced::Center),
@@ -3004,16 +3546,25 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         .width(Fill)
         .style(menu_row(resolved))
         .on_press(action);
-        Item::new(match m.row_height {
+        let entry = match m.row_height {
             Some(h) => entry.height(Length::Fixed(h)),
             None => entry,
+        };
+        Item::new(match id {
+            Some(id) => Element::from(tagged(id, entry)),
+            None => entry.into(),
         })
     };
-    let separator = || {
-        Item::new(
-            rule::horizontal(resolved.separator.line_width)
-                .style(line_style(resolved, to_color(m.separator_color))),
-        )
+    let entry = |label: &'static str, key: Option<&'static str>, action: Message| {
+        tagged_entry(None, label, key, action)
+    };
+    let separator = |id: Option<&'static str>| {
+        let line = rule::horizontal(resolved.separator.line_width)
+            .style(line_style(resolved, to_color(m.separator_color)));
+        Item::new(match id {
+            Some(id) => Element::from(tagged(id, line)),
+            None => line.into(),
+        })
     };
     let drop = |items| Menu::new(items).max_width(AW_MENU_WIDTH).offset(0.0);
 
@@ -3021,7 +3572,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         .iter()
         .map(|&tab| entry(tab.label(), None, Message::TabSelected(tab)))
         .collect();
-    pages.push(separator());
+    pages.push(separator(None));
     pages.push(entry(
         "Toggle Side Panel",
         Some("B"),
@@ -3033,37 +3584,40 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         Message::Open(Overlay::CommandPalette),
     ));
 
-    let window_fill = to_color(resolved.window.background_color);
-    let popup = &resolved.popover.border;
-    let popup_border = iced::Border {
-        color: to_color(popup.color),
-        width: popup.line_width,
-        radius: popup.corner_radius.into(),
-    };
+    let theme_row = |id, label, action| tagged_entry(Some(id), label, None, action);
     let bar = MenuBar::new(vec![
         Item::with_menu(
-            title("File"),
+            title("chrome.menu_bar.file", "File"),
             drop(vec![entry("Quit", Some("Q"), Message::Quit)]),
         ),
-        Item::with_menu(title("View"), drop(pages)),
+        Item::with_menu(title("chrome.menu_bar.view", "View"), drop(pages)),
         Item::with_menu(
-            title("Theme"),
+            title("chrome.menu_bar.theme", "Theme"),
             drop(vec![
-                entry("Reload System Theme", None, Message::ReloadSystemTheme),
-                separator(),
-                entry(
+                theme_row(
+                    "chrome.menu.theme.reload",
+                    "Reload System Theme",
+                    Message::ReloadSystemTheme,
+                ),
+                separator(Some("chrome.menu.theme.separator_1")),
+                theme_row(
+                    "chrome.menu.theme.system",
                     "System",
-                    None,
                     Message::ColorModeSelected(AppColorMode::System),
                 ),
-                entry(
+                theme_row(
+                    "chrome.menu.theme.light",
                     "Light",
-                    None,
                     Message::ColorModeSelected(AppColorMode::Light),
                 ),
-                entry("Dark", None, Message::ColorModeSelected(AppColorMode::Dark)),
-                separator(),
-                entry(
+                theme_row(
+                    "chrome.menu.theme.dark",
+                    "Dark",
+                    Message::ColorModeSelected(AppColorMode::Dark),
+                ),
+                separator(Some("chrome.menu.theme.separator_2")),
+                tagged_entry(
+                    Some("chrome.menu.theme.preferences"),
                     "Preferences…",
                     Some(","),
                     Message::Open(Overlay::Preferences),
@@ -3071,69 +3625,18 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
             ]),
         ),
         Item::with_menu(
-            title("Help"),
+            title("chrome.menu_bar.help", "Help"),
             drop(vec![entry("About", None, Message::Open(Overlay::About))]),
         ),
     ])
     .style(menu_bar_style(resolved));
-    hoverable(
-        widget_tooltip(
-            "Menu bar",
-            &[
-                ("row", "window.background_color", window_fill),
-                (
-                    "menu",
-                    "menu.background_color",
-                    to_color(m.background_color),
-                ),
-                ("menu frame", "popover.border.color", popup_border.color),
-                (
-                    "row under the pointer",
-                    "menu.hover_background",
-                    to_color(m.hover_background),
-                ),
-                ("label", "menu.font.color", to_color(m.font.color)),
-                (
-                    "label under the pointer",
-                    "menu.hover_text_color",
-                    to_color(m.hover_text_color),
-                ),
-                (
-                    "separator",
-                    "menu.separator_color",
-                    to_color(m.separator_color),
-                ),
-            ],
-            &[
-                ("label", font_row("menu.font", &m.font).as_str()),
-                (
-                    "title and row padding",
-                    "menu.border.padding's stated sides, iced's button::DEFAULT_PADDING for the others",
-                ),
-                ("row height", "menu.row_height, where the theme states one"),
-                ("row sides", "layout.container_margin"),
-                (
-                    "menu frame",
-                    "popover.border's width and radius (platform-facts §2.6)",
-                ),
-            ],
-            &[
-                (
-                    "menu width",
-                    "MenuTheme states none: the showcase's AW_MENU_WIDTH",
-                ),
-                (
-                    "key binding colour",
-                    "the model states none: the row's label colour",
-                ),
-                ("shadows", "the model has no shadow geometry: iced_aw's own"),
-            ],
-        ),
+    tagged(
+        "chrome.menu_bar",
         container(bar)
             .padding(Padding::ZERO.left(gap.container).right(gap.container))
-            .width(Fill)
-            .into(),
+            .width(Fill),
     )
+    .into()
 }
 
 /// The window's toolbar (spec §2.3, platform-facts §2.13): three flat
@@ -3151,7 +3654,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
     let t = &resolved.toolbar;
     let icons = &state.chrome_icons;
     let pad = ghost_padding(resolved);
-    let item = |icon, label, key, action| {
+    let item = |tags, icon, label, key, action| {
         icon_button(
             state,
             IconButton {
@@ -3163,23 +3666,36 @@ fn toolbar(state: &State) -> Element<'_, Message> {
                 padding: pad,
                 selected: false,
                 action,
+                tags: Some(tags),
             },
         )
     };
     let items = row![
         item(
+            (
+                "chrome.toolbar.command_palette",
+                "chrome.toolbar.command_palette.icon"
+            ),
             &icons.palette,
             "Command Palette",
             Some("K"),
             Message::Open(Overlay::CommandPalette),
         ),
         item(
+            (
+                "chrome.toolbar.reload_theme",
+                "chrome.toolbar.reload_theme.icon"
+            ),
             &icons.reload,
             "Reload System Theme",
             None,
             Message::ReloadSystemTheme,
         ),
         item(
+            (
+                "chrome.toolbar.preferences",
+                "chrome.toolbar.preferences.icon"
+            ),
             &icons.preferences,
             "Preferences",
             Some(","),
@@ -3203,67 +3719,29 @@ fn toolbar(state: &State) -> Element<'_, Message> {
         Some(h) => bar.height(Length::Fixed(h)),
         None => bar,
     };
-    hoverable(
-        widget_tooltip(
-            "Toolbar",
-            &[
-                (
-                    "bar",
-                    "toolbar.background_color",
-                    to_color(t.background_color),
-                ),
-                (
-                    "button under the pointer",
-                    "button.hover_background",
-                    to_color(resolved.button.hover_background),
-                ),
-            ],
-            &[
-                ("icon size", "toolbar.icon_size"),
-                (
-                    "padding",
-                    "toolbar.border.padding's stated sides, layout.container_margin for the others",
-                ),
-                (
-                    "item gap",
-                    "toolbar.item_gap, or layout.widget_gap where it is unstated",
-                ),
-                (
-                    "height",
-                    "toolbar.bar_height where stated; its content's otherwise",
-                ),
-                (
-                    "button",
-                    "flat: the button's hover and pressed states, button.border.padding",
-                ),
-            ],
-            &[
-                ("edge", "none: platform-facts §2.13 states none"),
-                (
-                    "a missing icon",
-                    "the button shows its tooltip's text, never another set's icon",
-                ),
-            ],
-        ),
-        bar.into(),
-    )
+    tagged("chrome.toolbar", bar).into()
 }
 
 /// One of the theme settings: `label`, in `sidebar.font`, above `control`,
-/// `layout.widget_gap` apart.
+/// `layout.widget_gap` apart; `tags` are the list's ids of the label and of
+/// the control.
 fn setting<'a>(
     state: &'a State,
+    tags: (&'static str, &'static str),
     label: &'static str,
     control: Element<'a, Message>,
 ) -> Element<'a, Message> {
     let gap = Gaps::from_layout(&state.layout);
     column![
-        text(label).themed(
-            &state.current_resolved.sidebar.font,
-            &state.current_resolved,
-            &state.accessibility
+        tagged(
+            tags.0,
+            text(label).themed(
+                &state.current_resolved.sidebar.font,
+                &state.current_resolved,
+                &state.accessibility
+            )
         ),
-        control,
+        tagged(tags.1, control),
     ]
     .spacing(gap.widget)
     .into()
@@ -3319,6 +3797,10 @@ fn side_panel(state: &State) -> Element<'_, Message> {
     let settings = column![
         setting(
             state,
+            (
+                "chrome.side_panel.settings.theme_label",
+                "chrome.side_panel.settings.theme"
+            ),
             "Theme",
             probe(
                 probes::THEME,
@@ -3333,6 +3815,10 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         ),
         setting(
             state,
+            (
+                "chrome.side_panel.settings.mode_label",
+                "chrome.side_panel.settings.mode"
+            ),
             "Mode",
             probe(
                 probes::COLOR_MODE,
@@ -3347,6 +3833,10 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         ),
         setting(
             state,
+            (
+                "chrome.side_panel.settings.icon_theme_label",
+                "chrome.side_panel.settings.icon_theme"
+            ),
             "Icon theme",
             probe(
                 probes::ICON_THEME,
@@ -3361,70 +3851,52 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         ),
     ]
     .spacing(gap.widget);
-    let settings = hoverable(
-        widget_tooltip(
-            "Theme settings",
-            &[
-                (
-                    "panel",
-                    "sidebar.background_color",
-                    to_color(s.background_color),
-                ),
-                ("labels", "sidebar.font.color", to_color(s.font.color)),
-                (
-                    "drop-down",
-                    "combo_box.background_color",
-                    to_color(resolved.combo_box.background_color),
-                ),
-            ],
-            &[
-                ("labels", font_row("sidebar.font", &s.font).as_str()),
-                ("padding", "layout.container_margin"),
-                ("gaps", "layout.widget_gap"),
-                (
-                    "drop-downs",
-                    "combo_box.font, combo_box_padding, at least combo_box.min_height tall",
-                ),
-            ],
-            &[("width", "the side panel's: the splitter sets it")],
-        ),
+    let settings = tagged(
+        "chrome.side_panel.settings",
         container(settings)
             .padding(Padding::from(gap.container))
-            .width(Fill)
-            .into(),
+            .width(Fill),
     );
     let body = match state.inspector_tab {
         InspectorTab::Widget => inspector_widget(state),
         InspectorTab::Theme => inspector_theme(state),
     };
+    // The inspector's two tabs, Widget and Theme, first and second.
+    const INSPECTOR_TAB_IDS: [&str; 2] = [
+        "chrome.side_panel.inspector_tabs.widget",
+        "chrome.side_panel.inspector_tabs.theme",
+    ];
     container(
         column![
             settings,
-            separator_line(resolved),
+            tagged("chrome.side_panel.separator", separator_line(resolved)),
             tab_row(
                 state,
-                ("TabBar · Inspector", INSPECTOR_TABS_ID),
+                ("chrome.side_panel.inspector_tabs", INSPECTOR_TABS_ID),
                 InspectorTab::ALL
                     .iter()
-                    .map(|&tab| {
-                        (
-                            tab.label(),
-                            tab == state.inspector_tab,
-                            Message::InspectorTabSelected(tab),
-                        )
+                    .enumerate()
+                    .map(|(i, &tab)| TabSpec {
+                        label: tab.label(),
+                        open: tab == state.inspector_tab,
+                        message: Message::InspectorTabSelected(tab),
+                        tag: INSPECTOR_TAB_IDS.get(i).copied(),
                     })
                     .collect(),
                 None,
             ),
-            scrollable(
-                container(body)
-                    .padding(Padding::from(gap.container))
-                    .width(Fill),
-            )
-            .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-            .style(styles::scrollable(resolved))
-            .width(Fill)
-            .height(Fill),
+            tagged(
+                "chrome.side_panel.inspector",
+                scrollable(
+                    container(body)
+                        .padding(Padding::from(gap.container))
+                        .width(Fill),
+                )
+                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+                .style(styles::scrollable(resolved))
+                .width(Fill)
+                .height(Fill)
+            ),
         ]
         .width(Fill)
         .height(Fill),
@@ -3438,18 +3910,28 @@ fn side_panel(state: &State) -> Element<'_, Message> {
     .into()
 }
 
-/// A tab row, the page tabs' and the inspector's: each tab `(label, open,
-/// message)` a button in [`tab_style`], labelled in `tab.font`, padded by
-/// `tab.border.padding` inside its border (iced's button padding on a side
-/// it leaves unstated), at least `tab.min_width` by `tab.min_height`, on a
-/// strip of `tab.bar_background` whose sides are
-/// `layout.container_margin`, as the gpui showcase's tab bars are inset.
-/// More tabs than the strip is wide scroll sideways, with no bar of their
-/// own; `trailing`, where given, stays at the strip's right end.
+/// One tab of a [`tab_row`]: its label, whether it is the open one, the
+/// message a press sends, and its id in the list where the list names it.
+struct TabSpec {
+    label: &'static str,
+    open: bool,
+    message: Message,
+    tag: Option<&'static str>,
+}
+
+/// A tab row, the page tabs' and the inspector's: each tab a button in
+/// [`tab_style`], labelled in `tab.font`, padded by `tab.border.padding`
+/// inside its border (iced's button padding on a side it leaves unstated),
+/// at least `tab.min_width` by `tab.min_height`, on a strip of
+/// `tab.bar_background` whose sides are `layout.container_margin`, as the
+/// gpui showcase's tab bars are inset. More tabs than the strip is wide
+/// scroll sideways, with no bar of their own; `trailing`, where given, stays
+/// at the strip's right end. `tag` is the strip's id in the list, `id` its
+/// scrollable's widget id.
 fn tab_row<'a>(
     state: &'a State,
-    (kind, id): (&'static str, &'static str),
-    tabs: Vec<(&'static str, bool, Message)>,
+    (tag, id): (&'static str, &'static str),
+    tabs: Vec<TabSpec>,
     trailing: Option<Element<'a, Message>>,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
@@ -3461,12 +3943,18 @@ fn tab_row<'a>(
         (t.min_width - pad.x()).max(0.0),
         (t.min_height - pad.y()).max(0.0),
     );
-    let tabs = tabs.into_iter().map(|(label, open, message)| {
-        button(at_least(text(label).themed(&t.font, resolved, a11y), min))
-            .padding(pad)
-            .style(tab_style(resolved, open))
-            .on_press(message)
-            .into()
+    let tabs = tabs.into_iter().map(|spec| {
+        let tab = button(at_least(
+            text(spec.label).themed(&t.font, resolved, a11y),
+            min,
+        ))
+        .padding(pad)
+        .style(tab_style(resolved, spec.open))
+        .on_press(spec.message);
+        match spec.tag {
+            Some(tag) => tagged(tag, tab).into(),
+            None => tab.into(),
+        }
     });
     // The strip scrolls sideways with no bar: a bar laid out under tabs no
     // taller than their labels would cover them, and the page tabs' menu
@@ -3486,58 +3974,14 @@ fn tab_row<'a>(
     if let Some(trailing) = trailing {
         bar = bar.push(trailing);
     }
-    hoverable(
-        widget_tooltip(
-            kind,
-            &[
-                ("strip", "tab.bar_background", to_color(t.bar_background)),
-                ("tab", "tab.background_color", to_color(t.background_color)),
-                (
-                    "open tab",
-                    "tab.active_background",
-                    to_color(t.active_background),
-                ),
-                (
-                    "open tab label",
-                    "tab.active_text_color",
-                    to_color(t.active_text_color),
-                ),
-                (
-                    "tab under the pointer",
-                    "tab.hover_background",
-                    to_color(t.hover_background.unwrap_or(t.background_color)),
-                ),
-                ("label", "tab.font.color", to_color(t.font.color)),
-                (
-                    "open tab frame",
-                    "tab.border.color",
-                    to_color(t.border.color),
-                ),
-            ],
-            &[
-                ("label", font_row("tab.font", &t.font).as_str()),
-                (
-                    "open tab frame",
-                    "tab.border.line_width, its top corners tab.border.corner_radius; other tabs none",
-                ),
-                ("minimum size", "tab.min_width x tab.min_height"),
-                (
-                    "padding",
-                    "tab.border.padding's stated sides inside the border, iced's button::DEFAULT_PADDING for the others",
-                ),
-                ("strip sides", "layout.container_margin"),
-            ],
-            &[(
-                "open-tab mark",
-                "the model states none beyond active_background and active_text_color",
-            )],
-        ),
+    tagged(
+        tag,
         container(bar)
             .padding(Padding::ZERO.left(gap.container).right(gap.container))
             .width(Fill)
-            .style(surface(to_color(t.bar_background), to_color(t.font.color)))
-            .into(),
+            .style(surface(to_color(t.bar_background), to_color(t.font.color))),
     )
+    .into()
 }
 
 /// The content panel's tab row (spec S3): a tab per page, the shown one
@@ -3546,17 +3990,21 @@ fn tab_row<'a>(
 fn page_tabs(state: &State) -> Element<'_, Message> {
     let tabs = Tab::ALL
         .iter()
-        .map(|&tab| {
-            (
-                tab.label(),
-                tab == state.active_tab,
-                Message::TabSelected(tab),
-            )
+        .map(|&tab| TabSpec {
+            label: tab.label(),
+            open: tab == state.active_tab,
+            message: Message::TabSelected(tab),
+            // The list names the two pages the three showcases open first.
+            tag: match tab {
+                Tab::Basic => Some("chrome.page_tabs.basic"),
+                Tab::Buttons => Some("chrome.page_tabs.buttons"),
+                _ => None,
+            },
         })
         .collect();
     tab_row(
         state,
-        ("TabBar · Pages", TAB_STRIP_ID),
+        ("chrome.page_tabs", TAB_STRIP_ID),
         tabs,
         Some(page_menu(state)),
     )
@@ -3585,6 +4033,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
                 to_color(resolved.button.font.color),
             )
         })
+        .map(|icon| Element::from(tagged("chrome.page_tabs.menu.icon", icon)))
         .unwrap_or_else(|| {
             text("Pages")
                 .themed(&resolved.tab.font, resolved, a11y)
@@ -3604,10 +4053,13 @@ fn page_menu(state: &State) -> Element<'_, Message> {
         })
         .collect();
     MenuBar::new(vec![Item::with_menu(
-        button(caret)
-            .padding(ghost_padding(resolved))
-            .style(ghost_button(resolved, false))
-            .on_press(Message::MenuOpened),
+        tagged(
+            "chrome.page_tabs.menu",
+            button(caret)
+                .padding(ghost_padding(resolved))
+                .style(ghost_button(resolved, false))
+                .on_press(Message::MenuOpened),
+        ),
         Menu::new(rows).max_width(AW_MENU_WIDTH).offset(0.0),
     )])
     .style(menu_bar_style(resolved))
@@ -3671,36 +4123,15 @@ fn splitter(state: &State) -> Element<'_, Message> {
             background: Some(iced::Background::Color(color)),
             ..container::Style::default()
         });
-    hoverable(
-        widget_tooltip(
-            "Splitter · side panel | page",
-            &[
-                ("line", "splitter.divider_color", to_color(sp.divider_color)),
-                (
-                    "line under the pointer",
-                    "splitter.hover_color",
-                    to_color(sp.hover_color),
-                ),
-            ],
-            &[("width", "splitter.divider_width")],
-            &[
-                (
-                    "side panel's edge",
-                    "the splitter's line: sidebar.border would draw a second one beside it",
-                ),
-                (
-                    "range",
-                    "PANEL_MIN_WIDTH, gpui-base's PANEL_MIN_SIZE, for the panel and for the page",
-                ),
-            ],
-        ),
+    tagged(
+        "chrome.splitter",
         mouse_area(line)
             .on_press(Message::SplitterPressed)
             .on_enter(Message::SplitterHovered(true))
             .on_exit(Message::SplitterHovered(false))
-            .interaction(iced::mouse::Interaction::ResizingHorizontally)
-            .into(),
+            .interaction(iced::mouse::Interaction::ResizingHorizontally),
     )
+    .into()
 }
 
 /// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, as
@@ -3792,17 +4223,24 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             padding: Padding::ZERO.left(pad.left).right(pad.right),
             selected: state.side_panel_visible,
             action: Message::ToggleSidePanel,
+            tags: Some(("chrome.status_bar.toggle", "chrome.status_bar.toggle.icon")),
         },
     );
     let mut items = row![
         toggle,
-        text(status_environment(state).join(" · ")).themed(&s.font, resolved, a11y),
+        tagged(
+            "chrome.status_bar.environment",
+            text(status_environment(state).join(" · ")).themed(&s.font, resolved, a11y)
+        ),
         space().width(Fill),
     ]
     .spacing(gap.widget)
     .align_y(iced::Center);
-    if let Some(title) = info_title(&state.widget_info) {
-        items = items.push(text(title.to_string()).themed(&s.font, resolved, a11y));
+    if let Some(title) = shown_title(state) {
+        items = items.push(tagged(
+            "chrome.status_bar.shown",
+            text(title).themed(&s.font, resolved, a11y),
+        ));
     }
     let bar = container(items)
         .padding(native_theme_iced::padding_or(
@@ -3814,56 +4252,25 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             to_color(s.background_color),
             to_color(s.font.color),
         ));
-    hoverable(
-        widget_tooltip(
-            "Status bar",
-            &[
-                (
-                    "bar",
-                    "status_bar.background_color",
-                    to_color(s.background_color),
-                ),
-                ("text", "status_bar.font.color", to_color(s.font.color)),
-                (
-                    "top edge",
-                    "status_bar.border.color",
-                    to_color(s.border.color),
-                ),
-                (
-                    "toggle, on",
-                    "button.active_background",
-                    to_color(
-                        resolved
-                            .button
-                            .active_background
-                            .unwrap_or(resolved.button.hover_background),
-                    ),
-                ),
-            ],
-            &[
-                ("text", font_row("status_bar.font", &s.font).as_str()),
-                (
-                    "padding",
-                    "status_bar.border.padding's stated sides, layout.container_margin for the others",
-                ),
-                (
-                    "top edge",
-                    "status_bar.border.line_width, painted inside the bar",
-                ),
-                ("toggle icon", "defaults.icon_sizes.small"),
-            ],
-            &[(
-                "toggle padding",
-                "the model states no small button: none above and below, as egui's Button::small",
-            )],
-        ),
+    tagged(
+        "chrome.status_bar",
         stack![
             bar,
             rule::horizontal(s.border.line_width)
                 .style(line_style(resolved, to_color(s.border.color)))
-        ]
-        .into(),
+        ],
     )
+    .into()
+}
+
+/// The title of what Widget Info shows, for the status bar: the hovered
+/// element's (`name · state`), or the first line of another page's widget
+/// info; `None` before any hover.
+fn shown_title(state: &State) -> Option<String> {
+    match state.hovered_element.and_then(listed) {
+        Some(element) => Some(element_title(element)),
+        None => info_title(&state.widget_info).map(str::to_string),
+    }
 }
 
 /// Text in `text_scale.caption`, the inspector's size (the gpui showcase's
@@ -3954,20 +4361,905 @@ fn hex_color(line: &str) -> Option<Color> {
     ))
 }
 
-/// The inspector's Widget tab: the hint before any hover; after one, the
-/// title with a flat Copy button flush right, then the text's sections as
-/// `widget_tooltip` writes them -- a heading per section, a swatch line per
-/// colour, a name over its value per other line.
+// ---------------------------------------------------------------------------
+// Widget Info of a listed element (docs/showcase-elements.toml, section B)
+// ---------------------------------------------------------------------------
+
+/// What a leaf whose value the theme leaves unset reads as.
+const NOT_STATED: &str = "not stated";
+
+/// One "Theme" row of Widget Info: the leaf as the list spells it, its value
+/// as the resolved theme holds it, its colour where it is one, and how iced
+/// applies it.
+struct InfoRow {
+    leaf: &'static str,
+    value: String,
+    colour: Option<Color>,
+    how: String,
+}
+
+/// Widget Info of one element of the list: its title, a row per leaf in the
+/// list's order, and what iced draws for it that the theme states nothing
+/// for.
+struct ElementInfo {
+    title: String,
+    rows: Vec<InfoRow>,
+    not_themeable: Vec<&'static str>,
+}
+
+impl ElementInfo {
+    fn of(state: &State, element: &'static ShowcaseElement) -> Self {
+        let values = toml::Value::try_from(&state.current_resolved)
+            .unwrap_or_else(|_| toml::Value::Table(toml::Table::new()));
+        let rows = element
+            .leaves
+            .iter()
+            .map(|leaf| {
+                let (value, colour) = leaf_value(state, &values, leaf);
+                InfoRow {
+                    leaf: leaf.as_str(),
+                    value,
+                    colour,
+                    how: iced_route(element, leaf),
+                }
+            })
+            .collect();
+        Self {
+            title: element_title(element),
+            rows,
+            not_themeable: iced_not_themeable(element),
+        }
+    }
+
+    /// The panel's text, line for line, as the Copy button copies it.
+    fn copied(&self) -> String {
+        let mut text = format!("{}\n\nTheme\n", self.title);
+        for row in &self.rows {
+            text.push_str(&format!("{} {}\n  {}\n", row.leaf, row.value, row.how));
+        }
+        if !self.not_themeable.is_empty() {
+            text.push_str("\nNot themeable\n");
+            for line in &self.not_themeable {
+                text.push_str(line);
+                text.push('\n');
+            }
+        }
+        text
+    }
+}
+
+/// The title Widget Info and the status bar show for an element: its name
+/// and the state or variant the page shows, " · " between them.
+fn element_title(element: &ShowcaseElement) -> String {
+    match element.states.first() {
+        Some(state) => format!("{} · {state}", element.name),
+        None => element.name.clone(),
+    }
+}
+
+/// A leaf's value as the theme holds it, and its colour where it is one. The
+/// leaf is the registry's path (`button.border.padding_top_px`); the resolved
+/// theme spells the same field without the unit and with the padding's
+/// sides nested (`button.border.padding.top`). The layout distances, the
+/// icon set and the icon theme are not in `ResolvedTheme`: they are read
+/// where the showcase keeps them.
+fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Option<Color>) {
+    let px = leaf.ends_with("_px");
+    if let Some(field) = leaf.strip_prefix("layout.") {
+        let l = &state.layout;
+        let stated = match field {
+            "widget_gap_px" => l.widget_gap,
+            "container_margin_px" => l.container_margin,
+            "window_margin_px" => l.window_margin,
+            "section_gap_px" => l.section_gap,
+            _ => None,
+        };
+        return (
+            stated.map_or(NOT_STATED.to_string(), |v| format!("{v} px")),
+            None,
+        );
+    }
+    match leaf {
+        "theme_variant.icon_set" => return (state.current_icon_set.to_string(), None),
+        "defaults.icon_theme" => {
+            return (
+                state
+                    .current_icon_theme
+                    .clone()
+                    .unwrap_or_else(|| NOT_STATED.to_string()),
+                None,
+            );
+        }
+        _ => {}
+    }
+    let found = leaf.split('.').try_fold(values, |node, segment| {
+        let segment = segment.strip_suffix("_px").unwrap_or(segment);
+        match segment.strip_prefix("padding_") {
+            Some(side) => node.get("padding").and_then(|p| p.get(side)),
+            None => node.get(segment),
+        }
+    });
+    match found {
+        None => (NOT_STATED.to_string(), None),
+        Some(value) => value_text(value, px),
+    }
+}
+
+/// A value of the resolved theme as Widget Info writes it: a colour as its
+/// `#rrggbb[aa]`, a size in px, a font as its family, the size its source
+/// stated and its weight, a text-scale entry as its size and weight.
+fn value_text(value: &toml::Value, px: bool) -> (String, Option<Color>) {
+    let number = |v: f32| {
+        if px {
+            format!("{v} px")
+        } else {
+            format!("{v}")
+        }
+    };
+    match value {
+        toml::Value::String(s) => (s.clone(), hex_color(s)),
+        toml::Value::Float(f) => (number(*f as f32), None),
+        toml::Value::Integer(i) => (if px { format!("{i} px") } else { i.to_string() }, None),
+        toml::Value::Boolean(b) => (b.to_string(), None),
+        toml::Value::Table(t) => (compound_text(t), None),
+        other => (other.to_string(), None),
+    }
+}
+
+/// A font (`family`, `defined_size`, `weight`, `style`) or a text-scale entry
+/// (`size`, `weight`) as one line: `Noto Sans 10 pt 400`, `16 px 400`.
+fn compound_text(t: &toml::Table) -> String {
+    let number_at = |table: &toml::Table, key: &str| {
+        table
+            .get(key)
+            .and_then(toml::Value::as_float)
+            .map(|v| v as f32)
+    };
+    let weight = t.get("weight").and_then(toml::Value::as_integer);
+    let size = match t.get("defined_size").and_then(toml::Value::as_table) {
+        Some(defined) => number_at(defined, "Pt")
+            .map(|v| format!("{v} pt"))
+            .or_else(|| number_at(defined, "Px").map(|v| format!("{v} px"))),
+        None => number_at(t, "size").map(|v| format!("{v} px")),
+    };
+    let mut line = Vec::new();
+    if let Some(family) = t.get("family").and_then(toml::Value::as_str) {
+        line.push(family.to_string());
+    }
+    line.push(size.unwrap_or_else(|| NOT_STATED.to_string()));
+    if let Some(weight) = weight {
+        line.push(weight.to_string());
+    }
+    if let Some(style) = t.get("style").and_then(toml::Value::as_str)
+        && style != "normal"
+    {
+        line.push(style.to_string());
+    }
+    line.join(" ")
+}
+
+/// Text in the side panel's font, `sidebar.font` (size, family), at
+/// `weight`, on the theme's line height, on one line: Widget Info's text,
+/// the same in the three showcases (docs/showcase-elements.toml, section B).
+fn info_text<'a>(
+    state: &State,
+    content: impl text::IntoFragment<'a>,
+    weight: u16,
+    color: Color,
+) -> text::Text<'a> {
+    let resolved = &state.current_resolved;
+    let font = ResolvedFontSpec {
+        weight,
+        ..resolved.sidebar.font.clone()
+    };
+    text(content)
+        .themed(&font, resolved, &state.accessibility)
+        .color(color)
+        .wrapping(text::Wrapping::None)
+}
+
+/// A layout gap of Widget Info: the theme's, or none where it states none,
+/// as the gpui and egui showcases' Widget Info lay it out.
+fn info_gap(stated: Option<f32>) -> f32 {
+    stated.unwrap_or_default()
+}
+
+/// Widget Info of the element `element`: the title (`name · state`) flush
+/// left and Copy flush right; `layout.section_gap` below them the "Theme"
+/// section, a row per leaf `layout.widget_gap` apart -- a swatch of a colour
+/// one line tall, then `<leaf> <value>` over the muted line that says how
+/// iced applies it -- and, where iced draws something the theme states
+/// nothing for, the "Not themeable" section. Every line in `sidebar.font`, the
+/// title and the section names at [`HEADING_WEIGHT`] ([`info_gap`] for the
+/// gaps). The layout the gpui and egui showcases' Widget Info has.
+fn element_info_view<'a>(
+    state: &'a State,
+    element: &'static ShowcaseElement,
+) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    let widget_gap = info_gap(state.layout.widget_gap);
+    let section_gap = info_gap(state.layout.section_gap);
+    let ink = to_color(resolved.sidebar.font.color);
+    let muted = to_color(resolved.defaults.muted_color);
+    let regular = resolved.sidebar.font.weight;
+    let line = scaled_text_size(resolved.sidebar.font.size, &state.accessibility)
+        * resolved.defaults.line_height;
+    let info = ElementInfo::of(state, element);
+    let b = &resolved.button;
+    let copy = button(text("Copy").themed(&resolved.sidebar.font, resolved, &state.accessibility))
+        .padding(native_theme_iced::padding_or(
+            &b.border.padding,
+            Padding::ZERO,
+        ))
+        .style(copy_button(ghost_button(resolved, false), resolved))
+        .on_press(Message::Copy(info.copied()));
+    let mut body = column![
+        row![
+            tagged(
+                "chrome.info.title",
+                info_text(state, info.title.clone(), HEADING_WEIGHT, ink)
+            ),
+            space().width(Fill),
+            tagged("chrome.info.copy", copy),
+        ]
+        .align_y(iced::Center),
+        space().height(section_gap),
+        tagged(
+            "chrome.info.section.theme",
+            info_text(state, "Theme", HEADING_WEIGHT, ink)
+        ),
+    ];
+    let d = &resolved.defaults.border;
+    let frame = iced::Border {
+        color: to_color(d.color),
+        width: d.line_width,
+        radius: d.corner_radius.into(),
+    };
+    for (index, row) in info.rows.into_iter().enumerate() {
+        let first = index == 0;
+        let leaf = info_text(state, format!("{} {}", row.leaf, row.value), regular, ink);
+        let how = info_text(state, row.how, regular, muted);
+        let (leaf, how): (Element<'a, Message>, Element<'a, Message>) = if first {
+            (
+                tagged("chrome.info.row_1.text", leaf).into(),
+                tagged("chrome.info.row_1.how", how).into(),
+            )
+        } else {
+            (leaf.into(), how.into())
+        };
+        let lines = column![leaf, how];
+        let content: Element<'a, Message> = match row.colour {
+            Some(colour) => {
+                let swatch = container(space())
+                    .width(Length::Fixed(line))
+                    .height(Length::Fixed(line))
+                    .style(move |_theme: &Theme| container::Style {
+                        background: Some(iced::Background::Color(colour)),
+                        border: frame,
+                        ..container::Style::default()
+                    });
+                let swatch: Element<'a, Message> = if first {
+                    tagged("chrome.info.row_1.swatch", swatch).into()
+                } else {
+                    swatch.into()
+                };
+                row![swatch, lines].spacing(widget_gap).into()
+            }
+            None => lines.into(),
+        };
+        body = body.push(space().height(widget_gap));
+        body = body.push(if first {
+            tagged("chrome.info.row_1", content).into()
+        } else {
+            content
+        });
+    }
+    if !info.not_themeable.is_empty() {
+        body = body.push(space().height(section_gap)).push(info_text(
+            state,
+            "Not themeable",
+            HEADING_WEIGHT,
+            ink,
+        ));
+        for line in info.not_themeable {
+            body = body
+                .push(space().height(widget_gap))
+                .push(info_text(state, line, regular, muted));
+        }
+    }
+    body.into()
+}
+
+/// Widget Info's Copy button: flat, `ghost` (a [`ghost_button`]), its label
+/// the side panel's text colour at rest, `sidebar.font.color`, where the
+/// other flat buttons' is `button.font.color`.
+fn copy_button(
+    ghost: impl Fn(&Theme, button::Status) -> button::Style,
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, button::Status) -> button::Style {
+    let label = to_color(resolved.sidebar.font.color);
+    move |theme, status| {
+        let style = ghost(theme, status);
+        match status {
+            button::Status::Active => button::Style {
+                text_color: label,
+                ..style
+            },
+            _ => style,
+        }
+    }
+}
+
+/// How iced applies `leaf` to `element`: the connector's style function or
+/// helper and the field or setter it reaches, or why it cannot. One muted
+/// line of Widget Info.
+fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
+    let id = element.id.as_str();
+    let under = |prefix: &str| id.starts_with(prefix);
+    // The flat buttons, drawn in `ghost_button`: the toolbar's, the Basic
+    // page's icon buttons, the page tabs' menu, the side-panel toggle and
+    // Widget Info's Copy.
+    let ghost = under("chrome.toolbar.")
+        || under("basic.icon_buttons.")
+        || under("chrome.page_tabs.menu")
+        || under("chrome.status_bar.toggle")
+        || id == "chrome.info.copy";
+    let toggle_on = under("basic.toggle_buttons.on");
+    let class = if ghost {
+        "ghost_button"
+    } else if toggle_on {
+        "toggle_on (styles::button's Pressed look)"
+    } else if under("basic.buttons.primary") {
+        "styles::button_primary"
+    } else {
+        "styles::button"
+    };
+    let (table, field) = leaf.split_once('.').unwrap_or((leaf, ""));
+    let side = |field: &str| {
+        ["top", "right", "bottom", "left"]
+            .into_iter()
+            .find(|s| field == format!("border.padding_{s}_px"))
+    };
+    let line: Cow<'static, str> = match (table, field) {
+        // ---- button ----
+        ("button", "background_color") => {
+            format!("{class}: button::Style::background at rest").into()
+        }
+        ("button", "font") => "the label's Text::size and theme_font (family, weight)".into(),
+        ("button", "font.color") if ghost => {
+            "the icon's colour where the set is a bundled one (chrome_icon); an OS icon theme's keep theirs"
+                .into()
+        }
+        ("button", "font.color") => format!("{class}: button::Style::text_color at rest").into(),
+        ("button", "min_width_px" | "min_height_px") => {
+            "at_least(label, button_content_min_size): the minimum less button_padding".into()
+        }
+        ("button", "hover_background") if ghost => "ghost_button: the Hovered fill".into(),
+        ("button", "hover_background") => {
+            format!("{class}: the Hovered fill, composited over the rest fill").into()
+        }
+        ("button", "hover_text_color") => format!("{class}: the Hovered text_color").into(),
+        ("button", "active_background") if toggle_on => {
+            "toggle_on: the fill at rest, composited over button.background_color".into()
+        }
+        ("button", "active_background") if ghost => {
+            "ghost_button: the Pressed fill, and the fill while selected".into()
+        }
+        ("button", "active_background") => {
+            format!("{class}: the Pressed fill, composited over the rest fill").into()
+        }
+        ("button", "active_text_color") if toggle_on => "toggle_on: text_color at rest".into(),
+        ("button", "active_text_color") => format!("{class}: the Pressed text_color").into(),
+        ("button", "primary_background") => {
+            "styles::button_primary: button::Style::background at rest".into()
+        }
+        ("button", "primary_text_color") => {
+            "styles::button_primary: button::Style::text_color at rest".into()
+        }
+        ("button", "disabled_background") => {
+            "styles::button: the Disabled fill (a button with no on_press)".into()
+        }
+        ("button", "disabled_text_color") => "styles::button: the Disabled text_color".into(),
+        ("button", "disabled_opacity") => {
+            "styles::button: the Disabled colours' alpha times it (iced has no widget opacity)"
+                .into()
+        }
+        ("button", "border.color") => format!("{class}: button::Style::border.color").into(),
+        ("button", "border.corner_radius_px") => {
+            format!("{class}: button::Style::border.radius").into()
+        }
+        ("button", "border.line_width_px") => {
+            format!("{class}: button::Style::border.width, painted over the padding").into()
+        }
+        ("button", f) if side(f).is_some() && id == "chrome.info.copy" => {
+            "Button::padding, the side as stated (none where unstated)".into()
+        }
+        ("button", f) if side(f).is_some() && ghost => {
+            "ghost_padding: Button::padding, the side as stated (a flat button draws no border)"
+                .into()
+        }
+        ("button", f) if side(f).is_some() => {
+            "button_padding: Button::padding, the side plus button.border.line_width".into()
+        }
+        // ---- input, text area ----
+        ("input", "background_color") => "styles::text_input: text_input::Style::background".into(),
+        ("input", "font") => "Text input size and theme_font (family, weight)".into(),
+        ("input", "font.color") => "styles::text_input: text_input::Style::value".into(),
+        ("input", "placeholder_color") => "styles::text_input: text_input::Style::placeholder".into(),
+        ("input", "caret_color") => {
+            "not reachable: text_input::Style has no caret colour; iced draws it in the value colour"
+                .into()
+        }
+        ("input", "min_height_px") => {
+            "control_line_height: the line box that fills it inside the padding".into()
+        }
+        ("input", "hover_border_color") => "styles::text_input: the Hovered border.color".into(),
+        ("input", "focus_border_color") => "styles::text_input: the Focused border.color".into(),
+        ("input", "disabled_background") => {
+            "styles::text_input: the Disabled background (a field with no on_input)".into()
+        }
+        ("input", "disabled_text_color") => "styles::text_input: the Disabled value colour".into(),
+        ("input", "disabled_opacity") => {
+            "styles::text_input: the Disabled colours' alpha times it".into()
+        }
+        ("input", "border.color") => "styles::text_input: text_input::Style::border.color".into(),
+        ("input", "border.corner_radius_px") => {
+            "styles::text_input: text_input::Style::border.radius".into()
+        }
+        ("input", "border.line_width_px") => {
+            "styles::text_input: text_input::Style::border.width".into()
+        }
+        ("input", f) if side(f).is_some() => {
+            "input_padding: TextInput::padding, the side plus the line width".into()
+        }
+        ("text_area", "border.color") => "styles::text_editor: text_editor::Style::border.color".into(),
+        ("text_area", "border.corner_radius_px") => {
+            "styles::text_editor: text_editor::Style::border.radius".into()
+        }
+        ("text_area", "border.line_width_px") => {
+            "styles::text_editor: text_editor::Style::border.width".into()
+        }
+        ("text_area", f) if side(f).is_some() => {
+            "text_area_padding: TextEditor::padding, the side plus the line width".into()
+        }
+        (
+            "button" | "input" | "text_area" | "combo_box" | "tooltip" | "card",
+            "border.shadow_enabled",
+        ) => {
+            "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
+        }
+        // ---- checkbox and radio ----
+        ("checkbox", "background_color") if under("basic.radios.") => {
+            "styles::radio: radio::Style::background".into()
+        }
+        ("checkbox", "background_color") => "styles::checkbox: checkbox::Style::background".into(),
+        ("checkbox", "font") => "Checkbox/Radio text_size and font (theme_font)".into(),
+        ("checkbox", "font.color") => "styles::checkbox / styles::radio: the label's text_color".into(),
+        ("checkbox", "indicator_color") if under("basic.radios.") => {
+            "native_theme_iced::radio: the dot's fill".into()
+        }
+        ("checkbox", "indicator_color") => "the check mark's stroke colour (CheckMark canvas)".into(),
+        ("checkbox", "indicator_width_px") => "Checkbox/Radio::size".into(),
+        ("checkbox", "check_mark_stroke_width_px") => {
+            "CheckMark: the mark's stroke width, over iced's glyph made transparent".into()
+        }
+        ("checkbox", "radio_dot_diameter_px") => {
+            "native_theme_iced::radio: the dot's diameter, over iced's own dot".into()
+        }
+        ("checkbox", "label_gap_px") => "Checkbox/Radio::spacing".into(),
+        ("checkbox", "hover_background") => {
+            "styles::checkbox / styles::radio: the Hovered unchecked fill".into()
+        }
+        ("checkbox", "unchecked_background") => {
+            "styles::checkbox / styles::radio: the unchecked fill".into()
+        }
+        ("checkbox", "unchecked_border_color") => {
+            "styles::checkbox / styles::radio: the unchecked border colour".into()
+        }
+        ("checkbox", "checked_background") => {
+            "styles::checkbox / styles::radio: the checked fill".into()
+        }
+        ("checkbox", "disabled_background") => "styles::checkbox: the Disabled fill".into(),
+        ("checkbox", "disabled_text_color") => "styles::checkbox: the Disabled label and mark".into(),
+        ("checkbox", "disabled_opacity") => {
+            "styles::checkbox: the Disabled colours' alpha times it".into()
+        }
+        ("checkbox", "border.color") => {
+            "styles::checkbox / styles::radio: the checked border colour".into()
+        }
+        ("checkbox", "border.corner_radius_px") => "styles::checkbox: checkbox::Style::border.radius".into(),
+        ("checkbox", "border.line_width_px") => {
+            "styles::checkbox / styles::radio: the border width".into()
+        }
+        ("checkbox", f) if side(f).is_some() => {
+            "CheckMark: the mark's box, inside the border and this side".into()
+        }
+        // ---- switch ----
+        ("switch", "track_width_px" | "track_height_px") => {
+            "native_theme_iced::switch: the track button's width and height".into()
+        }
+        ("switch", "thumb_diameter_px") => {
+            "native_theme_iced::switch: the thumb container, inset by half the height difference"
+                .into()
+        }
+        ("switch", "track_radius_px") => "styles::toggler: border_radius of track and thumb".into(),
+        ("switch", "checked_background" | "unchecked_background") => {
+            "styles::toggler: the track's background".into()
+        }
+        ("switch", "hover_checked_background" | "hover_unchecked_background") => {
+            "styles::toggler: the Hovered track background".into()
+        }
+        ("switch", "thumb_background") => "styles::toggler: the thumb's foreground".into(),
+        ("switch", "disabled_checked_background") => {
+            "styles::toggler: the Disabled track background".into()
+        }
+        ("switch", "disabled_thumb_color") => "styles::toggler: the Disabled foreground".into(),
+        ("switch", "disabled_opacity") => {
+            "styles::toggler: the Disabled colours' alpha times it; the label faded alike".into()
+        }
+        // ---- combo box (drop-down) ----
+        ("combo_box", "background_color") => "styles::pick_list: pick_list::Style::background".into(),
+        ("combo_box", "font") => "PickList text_size and font (theme_font)".into(),
+        ("combo_box", "font.color") if under("basic.drop_down.trigger.arrow") => {
+            "styles::pick_list: pick_list::Style::handle_color".into()
+        }
+        ("combo_box", "font.color") => "styles::pick_list: pick_list::Style::text_color".into(),
+        ("combo_box", "min_height_px") => {
+            "control_line_height: the line box that fills it inside combo_box_padding".into()
+        }
+        ("combo_box", "min_width_px") => {
+            "not reachable: PickList takes a width, not a minimum; the page's own width".into()
+        }
+        ("combo_box", "arrow_icon_size_px") => {
+            "pick_list_handle: the chevron glyph's size".into()
+        }
+        ("combo_box", "arrow_area_width_px") => {
+            "not reachable: PickList lays the handle inside its right padding".into()
+        }
+        ("combo_box", "hover_background") => "styles::pick_list: the Hovered background".into(),
+        ("combo_box", "border.color") => "styles::pick_list: pick_list::Style::border.color".into(),
+        ("combo_box", "border.corner_radius_px") => {
+            "styles::pick_list: pick_list::Style::border.radius".into()
+        }
+        ("combo_box", "border.line_width_px") => {
+            "styles::pick_list: pick_list::Style::border.width".into()
+        }
+        ("combo_box", f) if side(f).is_some() => {
+            "combo_box_padding: PickList::padding, the side plus the line width".into()
+        }
+        // ---- menu and popover ----
+        ("menu", "background_color") => "menu_bar_style: menu_background".into(),
+        ("menu", "font") => "the row's text size and theme_font".into(),
+        ("menu", "font.color") => "menu_row: text_color at rest".into(),
+        ("menu", "hover_background") => "menu_row: the Hovered fill; menu_bar_style: path".into(),
+        ("menu", "hover_text_color") => "menu_row: the Hovered text_color".into(),
+        ("menu", "row_height_px") => "the row button's height, where stated".into(),
+        ("menu", "separator_color") => "line_style: the rule's colour".into(),
+        ("menu", f) if side(f).is_some() => "Button::padding, iced's own on an unstated side".into(),
+        ("popover", "border.color") => "menu_bar_style: menu_border.color".into(),
+        ("popover", "border.corner_radius_px") => "menu_bar_style: menu_border.radius".into(),
+        ("popover", "border.line_width_px") => "menu_bar_style: menu_border.width".into(),
+        ("popover", "border.shadow_enabled") => {
+            "not reachable: the model states no shadow geometry; iced_aw's menu_shadow".into()
+        }
+        ("popover", f) if side(f).is_some() => {
+            "not reachable: iced_aw's Menu has no padding around its rows".into()
+        }
+        // ---- toolbar ----
+        ("toolbar", "bar_height_px") => "the bar container's height, where stated".into(),
+        ("toolbar", "item_gap_px") => {
+            "the buttons' Row::spacing; layout.widget_gap where unstated".into()
+        }
+        ("toolbar", "background_color") => "surface: the bar container's background".into(),
+        ("toolbar", "border.color" | "border.line_width_px") => {
+            "not drawn: the bar draws no edge (platform-facts §2.13)".into()
+        }
+        ("toolbar", f) if side(f).is_some() => {
+            "the bar container's padding; layout.container_margin where unstated".into()
+        }
+        ("toolbar", "font") => "the button's text, where the icon set has no icon".into(),
+        ("toolbar", "icon_size_px") => "the svg or image's width and height".into(),
+        // ---- side panel, status bar, splitter, separator ----
+        ("sidebar", "background_color") => "surface: the panel container's background".into(),
+        ("sidebar", f) if side(f).is_some() => {
+            "not drawn: the panel's sections are padded by layout.container_margin".into()
+        }
+        ("sidebar", "font") => "the text's size and theme_font".into(),
+        ("sidebar", "font.color") => "the text's colour".into(),
+        ("status_bar", "background_color") => "surface: the bar container's background".into(),
+        ("status_bar", "border.color") => "line_style: the top edge's colour".into(),
+        ("status_bar", "border.line_width_px") => {
+            "the top edge rule's height, painted inside the bar".into()
+        }
+        ("status_bar", f) if side(f).is_some() => {
+            "the bar container's padding; layout.container_margin where unstated".into()
+        }
+        ("status_bar", "font") => "the text's size and theme_font".into(),
+        ("status_bar", "font.color") => "surface: the bar's text_color".into(),
+        ("splitter", "divider_width_px") => "the line container's width".into(),
+        ("splitter", "divider_color") => "the line container's background".into(),
+        ("splitter", "hover_color") => "the line's background under the pointer and while dragged".into(),
+        ("separator", "line_color") if under("chrome.menu.") => "not drawn here".into(),
+        ("separator", "line_color") => "styles::rule: rule::Style::color".into(),
+        ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
+        // ---- tabs ----
+        ("tab", "bar_background") if under("basic.tabs.") => {
+            "styles::aw::tab_bar: tab_bar::Style::background".into()
+        }
+        ("tab", "bar_background") => "surface: the strip container's background".into(),
+        ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
+        ("tab", "active_background") => "the open tab's background".into(),
+        ("tab", "active_text_color") => "the open tab's text colour".into(),
+        ("tab", "background_color") => "a tab's background at rest".into(),
+        ("tab", "hover_background") => "a tab's background under the pointer".into(),
+        ("tab", "hover_text_color") => "a tab's text colour under the pointer".into(),
+        ("tab", "font") => "the label's size and theme_font".into(),
+        ("tab", "font.color") => "a tab's text colour at rest".into(),
+        ("tab", "min_width_px" | "min_height_px") if under("basic.tabs.") => {
+            "TabBar::tab_width and height, fixed: iced_aw takes no minimum".into()
+        }
+        ("tab", "min_width_px" | "min_height_px") => {
+            "at_least(label, ..): the minimum less the padding".into()
+        }
+        ("tab", "border.color") => "the open tab's border colour".into(),
+        ("tab", "border.corner_radius_px") => "the open tab's top corners".into(),
+        ("tab", "border.line_width_px") => "the open tab's border width".into(),
+        ("tab", f) if side(f).is_some() && under("basic.tabs.") => {
+            "TabBar::padding, where every side is stated".into()
+        }
+        ("tab", f) if side(f).is_some() => {
+            "padding_inside_border: the button's padding, the side plus the line width".into()
+        }
+        // ---- slider, progress bar, spinner ----
+        ("slider", "fill_color") => "styles::slider: the rail's filled colour".into(),
+        ("slider", "track_color") => "styles::slider: the rail's remaining colour".into(),
+        ("slider", "thumb_color") => "styles::slider: the handle's background".into(),
+        ("slider", "thumb_hover_color") => "styles::slider: the Hovered handle".into(),
+        ("slider", "track_height_px") => "styles::slider: the rail's width".into(),
+        ("slider", "thumb_diameter_px") => "styles::slider: a circle handle of half of it".into(),
+        ("progress_bar", "fill_color") => "styles::progress_bar: progress_bar::Style::bar".into(),
+        ("progress_bar", "track_color") => {
+            "styles::progress_bar: progress_bar::Style::background".into()
+        }
+        ("progress_bar", "track_height_px") => "ProgressBar::girth".into(),
+        ("progress_bar", "min_width_px") => {
+            "not reachable: ProgressBar takes a length, not a minimum; the page's own width".into()
+        }
+        ("progress_bar", "border.color") => "styles::progress_bar: border.color".into(),
+        ("progress_bar", "border.corner_radius_px") => "styles::progress_bar: border.radius".into(),
+        ("progress_bar", "border.line_width_px") => "styles::progress_bar: border.width".into(),
+        ("spinner", "diameter_px") => "native_theme_iced::Spinner: its width and height".into(),
+        ("spinner", "min_diameter_px") => {
+            "not reachable: the spinner is drawn at spinner.diameter".into()
+        }
+        ("spinner", "stroke_width_px") => {
+            "native_theme_iced::Spinner: the arc's stroke, where the icon set has no indicator"
+                .into()
+        }
+        ("spinner", "fill_color") => {
+            "native_theme_iced::Spinner: the arc, or a bundled set's indicator".into()
+        }
+        // ---- segmented control ----
+        ("segmented_control", "background_color") => "styles::segment: a segment's fill".into(),
+        ("segmented_control", "font") => "the label's size and theme_font".into(),
+        ("segmented_control", "font.color") => "styles::segment: text_color at rest".into(),
+        ("segmented_control", "active_background") => {
+            "styles::segment: the selected segment's fill".into()
+        }
+        ("segmented_control", "active_text_color") => {
+            "styles::segment: the selected segment's text_color".into()
+        }
+        ("segmented_control", "hover_background") => "styles::segment: the Hovered fill".into(),
+        ("segmented_control", "segment_height_px") => {
+            "at_least(label, ..): the outer height less outline and padding".into()
+        }
+        ("segmented_control", "separator_width_px") => {
+            "the segments' Row::spacing, over the outline colour".into()
+        }
+        ("segmented_control", "border.color") => {
+            "styles::segmented_control: the outline, showing between segments".into()
+        }
+        ("segmented_control", "border.corner_radius_px") => {
+            "styles::segmented_control and styles::segment: the outer corners".into()
+        }
+        ("segmented_control", "border.line_width_px") => {
+            "styles::segmented_control: the outline, the container's padding".into()
+        }
+        ("segmented_control", f) if side(f).is_some() => {
+            "Button::padding of each segment, iced's own on an unstated side".into()
+        }
+        // ---- list and table ----
+        ("list", "background_color") if under("basic.table.") => {
+            "the table container's background".into()
+        }
+        ("list", "background_color") => "the list container's background".into(),
+        ("list", "item_font") => "the row label's size and theme_font".into(),
+        ("list", "item_font.color") if under("basic.table.") => "a cell's text colour".into(),
+        ("list", "item_font.color") => "list_row: text_color at rest".into(),
+        ("list", "alternate_row_background") => "the alternate row container's background".into(),
+        ("list", "selection_background") if under("basic.table.") => {
+            "the selected row container's background".into()
+        }
+        ("list", "selection_background") => "list_row: the selected row's fill".into(),
+        ("list", "selection_text_color") if under("basic.table.") => {
+            "the selected row's text colour".into()
+        }
+        ("list", "selection_text_color") => "list_row: the selected row's text_color".into(),
+        ("list", "header_font") => "the header cells' size and theme_font".into(),
+        ("list", "header_font.color") => "the header cells' text colour".into(),
+        ("list", "header_background") => "the header row container's background".into(),
+        ("list", "grid_color") => "the grid lines' colour (rules between the cells)".into(),
+        ("list", "row_height_px") => {
+            "a row's height; the label's line box and padding where unstated".into()
+        }
+        ("list", "hover_background") if under("basic.table.") => {
+            "not reachable: the table's rows are containers, not hoverable".into()
+        }
+        ("list", "hover_text_color") if under("basic.table.") => {
+            "not reachable: the table's rows are containers, not hoverable".into()
+        }
+        ("list", "hover_background") => "list_row: the Hovered fill".into(),
+        ("list", "hover_text_color") => "list_row: the Hovered text_color".into(),
+        ("list", "border.color") => "the frame container's border.color".into(),
+        ("list", "border.corner_radius_px") => "the frame container's border.radius".into(),
+        ("list", "border.line_width_px") => {
+            "the frame container's border.width and padding".into()
+        }
+        ("list", f) if side(f).is_some() => {
+            "a row's padding; iced_aw's list's 5 px where unstated".into()
+        }
+        // ---- scrollbar ----
+        ("scrollbar", "track_color") => "styles::scrollable: the rail's background".into(),
+        ("scrollbar", "thumb_color") => "styles::scrollable: the scroller's background".into(),
+        ("scrollbar", "thumb_hover_color") => "styles::scrollable: the Hovered scroller".into(),
+        ("scrollbar", "thumb_active_color") => "styles::scrollable: the Dragged scroller".into(),
+        ("scrollbar", "groove_width_px") => "styles::scrollbar: Scrollbar::width".into(),
+        ("scrollbar", "thumb_width_px") => "styles::scrollbar: Scrollbar::scroller_width".into(),
+        ("scrollbar", "min_thumb_length_px") => {
+            "not reachable: iced's scroller has no minimum length setter".into()
+        }
+        ("scrollbar", "overlay_mode") => "styles::scrollbar: no spacing beside the content".into(),
+        // ---- expander ----
+        ("expander", "font") => "the title's size and theme_font".into(),
+        ("expander", "font.color") => "styles::expander: text_color".into(),
+        ("expander", "header_height_px") => {
+            "at_least(title row, ..): the height less the padding".into()
+        }
+        ("expander", "arrow_icon_size_px") => "the DisclosureArrow canvas's size".into(),
+        ("expander", "hover_background") => "styles::expander: the Hovered fill".into(),
+        ("expander", "arrow_color") => {
+            "expander_arrow_color: the DisclosureArrow's fill".into()
+        }
+        ("expander", "arrow_side") => "the arrow before or after the title".into(),
+        ("expander", "arrow_gap_px") => {
+            "the header row's spacing; layout.widget_gap where unstated".into()
+        }
+        ("expander", "content_indent_px") => {
+            "the body's left padding; under the title where unstated".into()
+        }
+        ("expander", "frame_enabled") => {
+            "one frame round header and body, or none; each header framed where unstated".into()
+        }
+        ("expander", "border.color") => "styles::expander / the frame: border.color".into(),
+        ("expander", "border.corner_radius_px") => "styles::expander / the frame: border.radius".into(),
+        ("expander", "border.line_width_px") => "styles::expander / the frame: border.width".into(),
+        ("expander", f) if side(f).is_some() => {
+            "padding_inside_border: the header's padding, the side plus the line width".into()
+        }
+        // ---- card ----
+        ("card", "background_color") => "styles::container_card: container::Style::background".into(),
+        ("card", "border.color") => "styles::container_card: border.color".into(),
+        ("card", "border.corner_radius_px") => "styles::container_card: border.radius".into(),
+        ("card", "border.line_width_px") => "styles::container_card: border.width".into(),
+        ("card", f) if side(f).is_some() => {
+            "the card container's padding; layout.container_margin where unstated".into()
+        }
+        // ---- tooltip ----
+        ("tooltip", "background_color") => "styles::tooltip: container::Style::background".into(),
+        ("tooltip", "font") => "the tip's text size and theme_font".into(),
+        ("tooltip", "font.color") => "styles::tooltip: container::Style::text_color".into(),
+        ("tooltip", "max_width_px") => "the tip container's max_width".into(),
+        ("tooltip", "border.color") => "styles::tooltip: border.color".into(),
+        ("tooltip", "border.corner_radius_px") => "styles::tooltip: border.radius".into(),
+        ("tooltip", "border.line_width_px") => "styles::tooltip: border.width".into(),
+        ("tooltip", f) if side(f).is_some() => {
+            "Tooltip::padding where all four sides are equal; iced's own otherwise".into()
+        }
+        // ---- link ----
+        ("link", "font") => "the span's size and theme_font".into(),
+        ("link", "font.color") => "styles::button_link: text_color at rest".into(),
+        ("link", "underline_enabled") => "the span's underline".into(),
+        ("link", "background_color") => "styles::button_link: the background".into(),
+        ("link", "hover_background") => "styles::button_link: the Hovered background".into(),
+        ("link", "hover_text_color") => "styles::button_link: the Hovered text_color".into(),
+        ("link", "active_text_color") => "styles::button_link: the Pressed text_color".into(),
+        // ---- window, layout ----
+        ("window", "background_color") if id == "chrome.window" => {
+            "surface: the window container's background".into()
+        }
+        ("window", "background_color") => "the window's fill, which shows through".into(),
+        ("layout", "widget_gap_px") => "Row/Column::spacing between the items".into(),
+        ("layout", "container_margin_px") => "the container's padding".into(),
+        ("layout", "window_margin_px") => "the page's padding".into(),
+        ("layout", "section_gap_px") => "Column::spacing between the groups".into(),
+        // ---- defaults, text scale, icons ----
+        ("defaults", "line_height") => {
+            "the text's LineHeight::Relative (line_height_multiplier)".into()
+        }
+        ("defaults", "font") => "the text's size and theme_font".into(),
+        ("defaults", "font.color") => "the text's colour: the palette's text".into(),
+        ("defaults", "font.family") => "theme_font: the role's family".into(),
+        ("defaults", "mono_font") => "theme_mono_font: the text's size and family".into(),
+        ("defaults", "mono_font.color") => "the text's colour".into(),
+        ("defaults", "muted_color") => "the text's colour".into(),
+        ("defaults", "disabled_text_color") => {
+            "the label's colour, times switch.disabled_opacity".into()
+        }
+        ("defaults", "focus_ring_color" | "focus_ring_width_px" | "focus_ring_offset_px") => {
+            "not reachable: iced draws no focus ring; the Focused border is the input's".into()
+        }
+        ("defaults", "border.color") => "the swatch container's border.color".into(),
+        ("defaults", "border.corner_radius_px") => "the swatch container's border.radius".into(),
+        ("defaults", "border.line_width_px") => "the swatch container's border.width".into(),
+        ("defaults", "icon_sizes.small_px" | "icon_sizes.toolbar_px" | "icon_sizes.large_px") => {
+            "the svg or image's width and height".into()
+        }
+        ("defaults", "icon_theme") => {
+            "the icon loaders' theme: native_theme's FreedesktopLoader".into()
+        }
+        ("theme_variant", "icon_set") => {
+            "the icon loader of the set: IconSetChoice::effective_icon_set".into()
+        }
+        ("text_scale", _) => "Typeset::role: the text's size, line height and weight".into(),
+        _ => Cow::Owned(format!("{leaf}: no route recorded")),
+    };
+    if line.starts_with("not reachable") || line.starts_with("not drawn") {
+        line.into_owned()
+    } else {
+        format!("iced: {line}")
+    }
+}
+
+/// What iced draws for `element` that the theme states nothing for: the
+/// "Not themeable" lines of its Widget Info.
+fn iced_not_themeable(element: &ShowcaseElement) -> Vec<&'static str> {
+    match element.name.as_str() {
+        "Switch" => vec!["label gap: iced's toggler's, Toggler::DEFAULT_SIZE / 2"],
+        "Spinner" => vec!["sweep and speed of the arc: egui's Spinner's, 240° a turn a second"],
+        "Expander" => vec!["arrow shape: a filled triangle on a canvas"],
+        "Menu" => vec![
+            "menu width: the showcase's AW_MENU_WIDTH",
+            "shadows: iced_aw's own",
+        ],
+        "Menu shortcut" => vec!["shortcut colour: the row's label colour"],
+        "Tooltip" => vec!["gap to its control: the showcase's"],
+        "Number input" => vec!["step buttons: iced_aw's, in the field's text colour"],
+        _ => Vec::new(),
+    }
+}
+
+/// The inspector's Widget tab: the hint before any hover; after a hover of
+/// an element of the list, [`element_info_view`]; after one of another
+/// page's widget, the title with a flat Copy button flush right, then the
+/// text's sections as `widget_tooltip` writes them -- a heading per section,
+/// a swatch line per colour, a name over its value per other line.
 fn inspector_widget(state: &State) -> Element<'_, Message> {
+    if let Some(element) = state.hovered_element.and_then(listed) {
+        return element_info_view(state, element);
+    }
     let resolved = &state.current_resolved;
     let gap = Gaps::from_layout(&state.layout);
     let muted = to_color(resolved.defaults.muted_color);
     let text_color = to_color(resolved.sidebar.font.color);
     let Some(title) = info_title(&state.widget_info) else {
-        return caption_text(
-            state,
-            "Hover any widget to see what the theme sets on it.",
-            muted,
+        return tagged(
+            "chrome.info.hint",
+            info_text(
+                state,
+                "Hover any widget to see what the theme sets on it.",
+                resolved.sidebar.font.weight,
+                muted,
+            ),
         )
         .into();
     };
@@ -4199,6 +5491,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
             padding: Padding::ZERO.left(pad.left).right(pad.right),
             selected: false,
             action: Message::CloseOverlay,
+            tags: None,
         },
     );
     let head = row![
@@ -4544,6 +5837,88 @@ const BASIC_LIST_ITEMS: usize = 8;
 const BASIC_LIST_SELECTED: usize = 1;
 const BASIC_LIST_VISIBLE: f32 = 4.0;
 
+/// The Basic tab's number input: its value, stepped by 1 (R11 §D).
+const BASIC_NUMBER: i32 = 42;
+
+/// The `widget::Id` of the Basic tab's focused input, which `boot` focuses.
+const FOCUSED_INPUT_ID: &str = "showcase-basic-focused-input";
+
+/// The Basic tab's table (R11 §D): each row's id in the list, its name and
+/// its size; the row selected, and the row on the alternate background.
+const BASIC_TABLE_ROWS: [(&str, &str, &str); 3] = [
+    ("basic.table.row_1", "a.txt", "1 KB"),
+    ("basic.table.row_2", "b.png", "20 KB"),
+    ("basic.table.row_3", "c.rs", "3 KB"),
+];
+const BASIC_TABLE_SELECTED: usize = 1;
+const BASIC_TABLE_ALTERNATE: usize = 2;
+
+/// How the table's width is shared between its Name and Size columns. The
+/// model states no column width; the name gets twice the size's.
+const BASIC_TABLE_SHARES: [u16; 2] = [2, 1];
+
+/// The padding iced gives a tooltip's bubble where the showcase sets none:
+/// `Tooltip::DEFAULT_PADDING` (iced_widget 0.14.2 `src/tooltip.rs:89`),
+/// which iced keeps private. The layout dump reads the bubble's rectangle
+/// with it.
+const ICED_TOOLTIP_PADDING: f32 = 5.0;
+
+/// How a push button of the Basic page is dressed: the plain button, the
+/// primary one, or a toggle button that is on.
+#[derive(Clone, Copy)]
+enum Push {
+    Plain,
+    Primary,
+    On,
+}
+
+/// A toggle button that is on, in the button's own colours: its pressed
+/// look, `button.active_background` and `.active_text_color`, at rest and
+/// under the pointer, as a checked button holds its pressed look (the model
+/// states no checked colour of its own). Disabled stays `style`'s.
+fn toggle_on(
+    style: impl Fn(&Theme, button::Status) -> button::Style,
+) -> impl Fn(&Theme, button::Status) -> button::Style {
+    move |theme, status| match status {
+        button::Status::Disabled => style(theme, status),
+        _ => style(theme, button::Status::Pressed),
+    }
+}
+
+/// The list's ids of a checkbox or a radio button and of its parts: the
+/// indicator, the label, and the mark (a check mark, a radio dot) where the
+/// list names one.
+struct CheckIds {
+    id: &'static str,
+    indicator: &'static str,
+    label: &'static str,
+    mark: Option<&'static str>,
+}
+
+/// The step buttons of the Basic page's number input: no fill of their own,
+/// their arrows in the field's text colour, `input.font.color`, and in
+/// `input.disabled_text_color` faded by `input.disabled_opacity` disabled.
+/// The model states no number input (docs/property-registry.toml), so its
+/// buttons take the field's own colours, where iced_aw's default class paints
+/// them in the palette's primary (iced_aw 0.14.1
+/// `src/style/number_input.rs`, `primary`).
+#[cfg(feature = "iced_aw")]
+fn number_steps(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, iced_aw::style::Status) -> iced_aw::style::number_input::Style + use<> {
+    let i = &resolved.input;
+    let ink = to_color(i.font.color);
+    let mut disabled = to_color(i.disabled_text_color);
+    disabled.a *= i.disabled_opacity;
+    move |_theme, status| iced_aw::style::number_input::Style {
+        button_background: None,
+        icon_color: match status {
+            iced_aw::style::Status::Disabled => disabled,
+            _ => ink,
+        },
+    }
+}
+
 /// A list row's padding on a side `list.border.padding` leaves unstated:
 /// iced has no list, and this is the row padding `iced_aw` gives its
 /// `SelectionList` built without one, `padding: 5.0.into()` (iced_aw 0.14.1
@@ -4597,57 +5972,111 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let c = &resolved.checkbox;
-    let heading = |label: &'a str| text(label).role(section_title(ts), resolved, a11y);
-    let group = |label: &'a str, info: String, controls: Element<'a, Message>| {
-        hoverable(
-            info,
-            column![heading(label), controls].spacing(gap.widget).into(),
-        )
+    // A group: its heading, tagged `<group>.heading`, over its controls,
+    // each of which carries its own tags.
+    let group = |id: &'static str, label: &'a str, controls: Element<'a, Message>| {
+        let heading = text(label).role(section_title(ts), resolved, a11y);
+        Element::from(column![tagged(id, heading), controls].spacing(gap.widget))
     };
     let font = &resolved.button.font;
     // `button.min_width` and `button.min_height`, as a floor under the label.
     let btn_min = native_theme_iced::button_content_min_size(resolved);
-    let tip = tooltip(
-        button(at_least(text("Tooltip").typeset(font, a11y), btn_min))
-            .on_press(Message::ButtonPressed)
+    // A push button of the page: the label tagged `<id>.label`, the button
+    // `id`.
+    let push = |id: &'static str,
+                label_id: &'static str,
+                label: &'a str,
+                kind: Push,
+                on_press: Option<Message>| {
+        let pushed = match kind {
+            Push::Plain => button(at_least(
+                tagged(label_id, text(label).typeset(font, a11y)),
+                btn_min,
+            ))
             .style(styles::button(resolved))
             .padding(btn_pad),
+            Push::Primary => button(at_least(
+                tagged(label_id, text(label).typeset(font, a11y)),
+                btn_min,
+            ))
+            .style(styles::button_primary(resolved))
+            .padding(btn_pad),
+            Push::On => button(at_least(
+                tagged(label_id, text(label).typeset(font, a11y)),
+                btn_min,
+            ))
+            .style(toggle_on(styles::button(resolved)))
+            .padding(btn_pad),
+        };
+        tagged(id, pushed.on_press_maybe(on_press))
+    };
+    // The tip's padding: `tooltip_padding` where iced can carry it, iced's
+    // own otherwise.
+    let tip_padding = tooltip_padding(resolved);
+    let tip = tooltip(
+        push(
+            "basic.buttons.tooltip",
+            "basic.buttons.tooltip.label",
+            "Tooltip",
+            Push::Plain,
+            Some(Message::ButtonPressed),
+        ),
         // `tooltip.max_width` is no `Style` field: iced wraps the tip's own
         // element, so the element is given the width.
-        container(text("A tooltip").typeset(&resolved.tooltip.font, a11y))
-            .max_width(resolved.tooltip.max_width),
+        tagged(
+            "basic.buttons.tooltip.bubble.text",
+            container(text("A tooltip").typeset(&resolved.tooltip.font, a11y))
+                .max_width(resolved.tooltip.max_width),
+        )
+        .part("basic.buttons.tooltip.bubble", move |layout| {
+            Some(
+                layout
+                    .bounds()
+                    .expand(tip_padding.unwrap_or(ICED_TOOLTIP_PADDING)),
+            )
+        }),
         tooltip::Position::Bottom,
     )
     .gap(sp.xs)
     .style(styles::tooltip(resolved));
-    let tip = match tooltip_padding(resolved) {
+    let tip = match tip_padding {
         Some(padding) => tip.padding(padding),
         None => tip,
     };
 
     let buttons = group(
+        "basic.buttons.heading",
         "Buttons",
-        button_info(state, true),
         column![
             row![
                 probe(
                     probes::BASIC_BUTTON,
                     Length::Shrink,
-                    button(at_least(text("Button").typeset(font, a11y), btn_min))
-                        .on_press(Message::ButtonPressed)
-                        .style(styles::button(resolved))
-                        .padding(btn_pad),
+                    push(
+                        "basic.buttons.default",
+                        "basic.buttons.default.label",
+                        "Button",
+                        Push::Plain,
+                        Some(Message::ButtonPressed),
+                    ),
                 ),
-                button(at_least(text("Primary").typeset(font, a11y), btn_min))
-                    .on_press(Message::ButtonPressed)
-                    .style(styles::button_primary(resolved))
-                    .padding(btn_pad),
+                push(
+                    "basic.buttons.primary",
+                    "basic.buttons.primary.label",
+                    "Primary",
+                    Push::Primary,
+                    Some(Message::ButtonPressed),
+                ),
             ]
             .spacing(gap.widget),
             row![
-                button(at_least(text("Disabled").typeset(font, a11y), btn_min))
-                    .style(styles::button(resolved))
-                    .padding(btn_pad),
+                push(
+                    "basic.buttons.disabled",
+                    "basic.buttons.disabled.label",
+                    "Disabled",
+                    Push::Plain,
+                    None,
+                ),
                 tip,
             ]
             .spacing(gap.widget),
@@ -4656,140 +6085,221 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
-    let check = |checked: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
-        let stated = c.check_mark_stroke_width;
-        let boxed = checkbox(checked)
-            .label(label)
-            .spacing(c.label_gap)
-            .size(c.indicator_width)
-            .text_size(scaled_text_size(c.font.size, a11y))
-            .font(theme_font(&c.font))
-            .style(glyphless_when_stated(styles::checkbox(resolved), stated));
-        // A box with no `on_toggle` is a disabled one (checkbox.rs:154).
-        let boxed = if enabled {
-            boxed.on_toggle(|_| Message::BasicHeld)
-        } else {
-            boxed
+    let check =
+        |ids: CheckIds, checked: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
+            let stated = c.check_mark_stroke_width;
+            let boxed = checkbox(checked)
+                .label(label)
+                .spacing(c.label_gap)
+                .size(c.indicator_width)
+                .text_size(scaled_text_size(c.font.size, a11y))
+                .font(theme_font(&c.font))
+                .style(glyphless_when_stated(styles::checkbox(resolved), stated));
+            // A box with no `on_toggle` is a disabled one (checkbox.rs:154).
+            let boxed = if enabled {
+                boxed.on_toggle(|_| Message::BasicHeld)
+            } else {
+                boxed
+            };
+            // The mark box: inside the border and the padding where the theme
+            // states the padding (GNOME's 3, docs/platform-facts.md §2.5), and
+            // egui's own share of the box, centred, where it does not.
+            let inset = |side: Option<f32>| match side {
+                Some(pad) => c.border.line_width + pad.max(0.0),
+                None => c.indicator_width * (1.0 - EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH) / 2.0,
+            };
+            let (inset_x, inset_y) = (inset(c.border.padding.left), inset(c.border.padding.top));
+            // The box and the label are the checkbox's two layout nodes
+            // (`layout::next_to_each_other`, iced_widget 0.14.2
+            // `src/checkbox.rs:280`), under the stack's first layer where the
+            // mark is laid over it.
+            let tag =
+                |content: Element<'a, Message>, at: &'static [usize], label: &'static [usize]| {
+                    let tagged = tagged(ids.id, content)
+                        .node(ids.indicator, at)
+                        .node(ids.label, label);
+                    match ids.mark {
+                        Some(mark) => tagged.part(mark, move |layout| {
+                            node_at(layout, at)
+                                .map(|b| b.bounds().shrink(Padding::from([inset_y, inset_x])))
+                        }),
+                        None => tagged,
+                    }
+                };
+            let Some(stroke) = stated else {
+                return tag(boxed.into(), &[0], &[1]).into();
+            };
+            // The mark the theme states a line for, over iced's glyph made
+            // transparent: laid out whether checked or not, so the box keeps its
+            // place in the widget tree as it toggles.
+            let status = if enabled {
+                checkbox::Status::Active {
+                    is_checked: checked,
+                }
+            } else {
+                checkbox::Status::Disabled {
+                    is_checked: checked,
+                }
+            };
+            let colour = styles::checkbox(resolved)(&Theme::Light, status).icon_color;
+            let mark = canvas(CheckMark {
+                checked,
+                color: colour,
+                stroke,
+                inset: (inset_x, inset_y),
+            })
+            .width(Length::Fixed(c.indicator_width))
+            .height(Length::Fixed(c.indicator_width));
+            let seat = container(mark)
+                .height(Length::Fill)
+                .align_y(iced::alignment::Vertical::Center);
+            tag(
+                iced::widget::Stack::new().push(boxed).push(seat).into(),
+                &[0, 0],
+                &[0, 1],
+            )
+            .into()
         };
-        let Some(stroke) = stated else {
-            return boxed.into();
-        };
-        // The mark the theme states a line for, over iced's glyph made
-        // transparent: laid out whether checked or not, so the box keeps its
-        // place in the widget tree as it toggles.
-        let status = if enabled {
-            checkbox::Status::Active {
-                is_checked: checked,
-            }
-        } else {
-            checkbox::Status::Disabled {
-                is_checked: checked,
-            }
-        };
-        let colour = styles::checkbox(resolved)(&Theme::Light, status).icon_color;
-        // The mark box: inside the border and the padding where the theme
-        // states the padding (GNOME's 3, docs/platform-facts.md §2.5), and
-        // egui's own share of the box, centred, where it does not.
-        let inset = |side: Option<f32>| match side {
-            Some(pad) => c.border.line_width + pad.max(0.0),
-            None => c.indicator_width * (1.0 - EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH) / 2.0,
-        };
-        let mark = canvas(CheckMark {
-            checked,
-            color: colour,
-            stroke,
-            inset: (inset(c.border.padding.left), inset(c.border.padding.top)),
-        })
-        .width(Length::Fixed(c.indicator_width))
-        .height(Length::Fixed(c.indicator_width));
-        let seat = container(mark)
-            .height(Length::Fill)
-            .align_y(iced::alignment::Vertical::Center);
-        iced::widget::Stack::new().push(boxed).push(seat).into()
-    };
     let checkboxes = group(
+        "basic.checkboxes.heading",
         "Checkboxes",
-        checkbox_info(resolved),
         column![
-            check(false, "Unchecked", true),
-            check(true, "Checked", true),
-            check(true, "Disabled", false),
+            check(
+                CheckIds {
+                    id: "basic.checkboxes.unchecked",
+                    indicator: "basic.checkboxes.unchecked.indicator",
+                    label: "basic.checkboxes.unchecked.label",
+                    mark: None,
+                },
+                false,
+                "Unchecked",
+                true
+            ),
+            check(
+                CheckIds {
+                    id: "basic.checkboxes.checked",
+                    indicator: "basic.checkboxes.checked.indicator",
+                    label: "basic.checkboxes.checked.label",
+                    mark: Some("basic.checkboxes.checked.mark"),
+                },
+                true,
+                "Checked",
+                true
+            ),
+            check(
+                CheckIds {
+                    id: "basic.checkboxes.disabled",
+                    indicator: "basic.checkboxes.disabled.indicator",
+                    label: "basic.checkboxes.disabled.label",
+                    mark: Some("basic.checkboxes.disabled.mark"),
+                },
+                true,
+                "Disabled",
+                false
+            ),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
-    let option = |label: &'a str, value: usize| {
-        native_theme_iced::radio(
-            resolved,
-            radio(
-                label,
-                value,
-                Some(state.basic_radio),
-                Message::BasicRadioSelected,
-            )
-            .text_size(scaled_text_size(c.font.size, a11y))
-            .font(theme_font(&c.font)),
-            state.basic_radio == value,
+    // `native_theme_iced::radio` lays its dot over the radio in a stack
+    // where the theme states the dot's size, and leaves the radio as it is
+    // where it does not (src/lib.rs, `radio`): the radio's circle and label
+    // are its two layout nodes (`layout::next_to_each_other`, iced_widget
+    // 0.14.2 `src/radio.rs`), under the stack's first layer.
+    let dot = c.radio_dot_diameter.filter(|d| d.is_finite() && *d >= 0.0);
+    let radio_nodes: (&'static [usize], &'static [usize]) = match dot {
+        Some(_) => (&[0, 0], &[0, 1]),
+        None => (&[0], &[1]),
+    };
+    let option = |ids: CheckIds, label: &'a str, value: usize| {
+        let (circle, text_node) = radio_nodes;
+        let option = tagged(
+            ids.id,
+            native_theme_iced::radio(
+                resolved,
+                radio(
+                    label,
+                    value,
+                    Some(state.basic_radio),
+                    Message::BasicRadioSelected,
+                )
+                .text_size(scaled_text_size(c.font.size, a11y))
+                .font(theme_font(&c.font)),
+                state.basic_radio == value,
+            ),
         )
+        .node(ids.indicator, circle)
+        .node(ids.label, text_node);
+        match ids.mark {
+            // The dot, centred in the circle: the theme's diameter, or iced's
+            // own, half the circle (iced_widget 0.14.2 `src/radio.rs:409-433`).
+            Some(mark) => option.part(mark, move |layout| {
+                node_at(layout, circle).map(|b| {
+                    let side = dot.unwrap_or(b.bounds().width / 2.0);
+                    let centre = b.bounds().center();
+                    iced::Rectangle::new(
+                        iced::Point::new(centre.x - side / 2.0, centre.y - side / 2.0),
+                        iced::Size::new(side, side),
+                    )
+                })
+            }),
+            None => option,
+        }
     };
     let radios = group(
+        "basic.radios.heading",
         "Radio buttons",
-        radio_info(resolved),
         column![
-            option("Option A", 0),
-            probe(probes::BASIC_RADIO_B, Length::Shrink, option("Option B", 1)),
+            option(
+                CheckIds {
+                    id: "basic.radios.option_a",
+                    indicator: "basic.radios.option_a.indicator",
+                    label: "basic.radios.option_a.label",
+                    mark: Some("basic.radios.option_a.dot"),
+                },
+                "Option A",
+                0
+            ),
+            probe(
+                probes::BASIC_RADIO_B,
+                Length::Shrink,
+                option(
+                    CheckIds {
+                        id: "basic.radios.option_b",
+                        indicator: "basic.radios.option_b.indicator",
+                        label: "basic.radios.option_b.label",
+                        mark: None,
+                    },
+                    "Option B",
+                    1
+                )
+            ),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
     let link = &resolved.link;
-    let text_info = widget_tooltip(
-        "Text and link",
-        &[
-            (
-                "text",
-                "defaults.text_color",
-                to_color(resolved.defaults.text_color),
-            ),
-            ("link", "link.font.color", to_color(link.font.color)),
-            (
-                "hovered link",
-                "link.hover_text_color",
-                to_color(link.hover_text_color),
-            ),
-        ],
-        &[
-            (
-                "text",
-                font_row("defaults.font", &resolved.defaults.font).as_str(),
-            ),
-            ("link", font_row("link.font", &link.font).as_str()),
-        ],
-        &[(
-            "link",
-            "iced has no link widget: a button in styles::button_link \
-             with no padding, as LinkTheme states none, its label a \
-             rich-text span underlined where link.underline_enabled",
-        )],
-    );
     let texts = group(
+        "basic.text.heading",
         "Text",
-        text_info,
         column![
-            text("Body text").body(resolved, a11y),
+            tagged("basic.text.body", text("Body text").body(resolved, a11y)),
             // `link.underline_enabled`, which a text button cannot carry: the
             // label is a span, which iced underlines in its own colour, the
             // colour `styles::button_link` gives the button's text.
-            button(
-                rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
-                    .size(scaled_text_size(link.font.size, a11y))
-                    .font(theme_font(&link.font))
-            )
-            .on_press(Message::ButtonPressed)
-            .style(styles::button_link(resolved))
-            .padding(LINK_PADDING),
+            tagged(
+                "basic.text.link",
+                button(
+                    rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
+                        .size(scaled_text_size(link.font.size, a11y))
+                        .font(theme_font(&link.font))
+                )
+                .on_press(Message::ButtonPressed)
+                .style(styles::button_link(resolved))
+                .padding(LINK_PADDING)
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -4807,70 +6317,196 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .padding(inp_pad)
             .width(Length::Fixed(BASIC_WIDTH))
     };
+    // A field and its text: the text is the field's first layout node, the
+    // line inside its padding (iced_widget 0.14.2 `src/text_input.rs`,
+    // `layout`).
+    let fielded = |id: &'static str, field: text_input::TextInput<'a, Message>| {
+        let field = tagged(id, field);
+        match listed_part(id, "text") {
+            Some(text_id) => field.node(text_id, &[0]),
+            None => field,
+        }
+    };
     // A field with no `on_input` is a disabled one (text_input.rs:170).
     let inputs = group(
+        "basic.text_inputs.heading",
         "Text inputs",
-        text_input_info(state, true),
         column![
             probe(
                 probes::BASIC_TEXT_INPUT,
                 Length::Shrink,
-                field("Placeholder", &state.basic_hint).on_input(Message::BasicHintChanged),
+                fielded(
+                    "basic.text_inputs.placeholder",
+                    field("Placeholder", &state.basic_hint).on_input(Message::BasicHintChanged)
+                ),
             ),
-            field("", &state.basic_text).on_input(Message::BasicTextChanged),
-            field("", "Disabled"),
+            fielded(
+                "basic.text_inputs.filled",
+                field("", &state.basic_text).on_input(Message::BasicTextChanged)
+            ),
+            fielded("basic.text_inputs.disabled", field("", "Disabled")),
         ]
         .spacing(gap.widget)
         .into(),
     );
 
+    // The number input: the field and its text only (the list's note), the
+    // field iced_aw's `NumberInput` in the input's style, its text the
+    // field's text node (`NumberInput::layout` lays the text input out
+    // first, iced_aw 0.14.1 `src/widget/number_input.rs:584`).
+    #[cfg(feature = "iced_aw")]
+    let number: Element<'a, Message> = tagged(
+        "basic.number_input.field",
+        iced_aw::NumberInput::new(&state.basic_number, .., Message::BasicNumberChanged)
+            .step(1)
+            .set_size(input_size)
+            .line_height(input_line)
+            .font(theme_font(&resolved.input.font))
+            .padding(inp_pad)
+            .input_style(styles::text_input(resolved))
+            .style(number_steps(resolved))
+            .width(Length::Fixed(BASIC_WIDTH)),
+    )
+    .node("basic.number_input.field.text", &[0, 0])
+    .into();
+    // Without iced_aw, the value in a plain field.
+    #[cfg(not(feature = "iced_aw"))]
+    let number: Element<'a, Message> = fielded(
+        "basic.number_input.field",
+        field("", &state.basic_number_text),
+    )
+    .into();
+    let number = group("basic.number_input.heading", "Number input", number);
+
+    // A field holding the keyboard focus from the start (`boot` focuses it),
+    // so its Focused border shows.
+    let focused = group(
+        "basic.focused_input.heading",
+        "Focused input",
+        fielded(
+            "basic.focused_input.field",
+            field("", &state.basic_focused)
+                .id(FOCUSED_INPUT_ID)
+                .on_input(Message::BasicFocusedChanged),
+        )
+        .into(),
+    );
+
     let combo_size = scaled_text_size(resolved.combo_box.font.size, a11y);
     let combo_pad = combo_box_padding(resolved);
+    let arrow_size = resolved.combo_box.arrow_icon_size;
     let drop_down = group(
+        "basic.drop_down.heading",
         "Drop-down",
-        pick_list_info(resolved, true),
         probe(
             probes::BASIC_PICK_LIST,
             Length::Shrink,
-            pick_list(
-                BASIC_FRUITS,
-                Some(state.basic_fruit),
-                Message::BasicFruitSelected,
+            tagged(
+                "basic.drop_down.trigger",
+                pick_list(
+                    BASIC_FRUITS,
+                    Some(state.basic_fruit),
+                    Message::BasicFruitSelected,
+                )
+                .handle(arrow_handle(resolved))
+                .padding(combo_pad)
+                // `combo_box.min_height`, as the line box that fills it inside the padding.
+                .text_line_height(control_line_height(
+                    resolved,
+                    combo_size,
+                    resolved.combo_box.min_height,
+                    combo_pad,
+                ))
+                .text_size(combo_size)
+                .font(theme_font(&resolved.combo_box.font))
+                .style(styles::pick_list(resolved))
+                .menu_style(styles::menu(resolved))
+                .width(Length::Fixed(BASIC_WIDTH)),
             )
-            .handle(arrow_handle(resolved))
-            .padding(combo_pad)
-            // `combo_box.min_height`, as the line box that fills it inside the padding.
-            .text_line_height(control_line_height(
-                resolved,
-                combo_size,
-                resolved.combo_box.min_height,
-                combo_pad,
-            ))
-            .text_size(combo_size)
-            .font(theme_font(&resolved.combo_box.font))
-            .style(styles::pick_list(resolved))
-            .menu_style(styles::menu(resolved))
-            .width(Length::Fixed(BASIC_WIDTH)),
+            // The text inside the padding, left of the arrow; the arrow
+            // right-aligned at the right padding's inner edge, centred
+            // (iced_widget 0.14.2 `src/pick_list.rs:636-660`).
+            .part("basic.drop_down.trigger.text", move |layout| {
+                Some(layout.bounds().shrink(combo_pad)).map(|inner| iced::Rectangle {
+                    width: (inner.width - arrow_size).max(0.0),
+                    ..inner
+                })
+            })
+            .part("basic.drop_down.trigger.arrow", move |layout| {
+                let inner = layout.bounds().shrink(combo_pad);
+                Some(iced::Rectangle::new(
+                    iced::Point::new(
+                        inner.x + inner.width - arrow_size,
+                        inner.center_y() - arrow_size / 2.0,
+                    ),
+                    iced::Size::new(arrow_size, arrow_size),
+                ))
+            }),
         ),
     );
 
+    // The slider's rail and handle as iced draws them (iced_widget 0.14.2
+    // `src/slider.rs:446-515`): the rail `slider.track_height` tall across
+    // the width, centred; the handle a circle `slider.thumb_diameter` across
+    // at the value's offset; the filled rail from the start to the handle's
+    // centre.
+    let sl = &resolved.slider;
+    let (rail, handle) = (sl.track_height, sl.thumb_diameter);
+    let slider_value = state.basic_slider / 100.0;
+    let rail_rect = move |b: iced::Rectangle| {
+        iced::Rectangle::new(
+            iced::Point::new(b.x, b.center_y() - rail / 2.0),
+            iced::Size::new(b.width, rail),
+        )
+    };
+    let handle_at = move |b: iced::Rectangle| (b.width - handle) * slider_value;
     let slider_group = group(
+        "basic.slider.heading",
         "Slider",
-        slider_info(resolved),
-        slider(0.0..=100.0, state.basic_slider, Message::BasicSliderChanged)
-            .style(styles::slider(resolved))
-            .width(Length::Fixed(BASIC_WIDTH))
-            .into(),
+        tagged(
+            "basic.slider.control",
+            slider(0.0..=100.0, state.basic_slider, Message::BasicSliderChanged)
+                .style(styles::slider(resolved))
+                .width(Length::Fixed(BASIC_WIDTH)),
+        )
+        .part("basic.slider.control.track", move |l| {
+            Some(rail_rect(l.bounds()))
+        })
+        .part("basic.slider.control.fill", move |l| {
+            let b = l.bounds();
+            Some(iced::Rectangle {
+                width: handle_at(b) + handle / 2.0,
+                ..rail_rect(b)
+            })
+        })
+        .part("basic.slider.control.thumb", move |l| {
+            let b = l.bounds();
+            Some(iced::Rectangle::new(
+                iced::Point::new(b.x + handle_at(b), b.center_y() - handle / 2.0),
+                iced::Size::new(handle, handle),
+            ))
+        })
+        .into(),
     );
 
     let progress = group(
+        "basic.progress_bar.heading",
         "Progress bar",
-        progress_bar_info(resolved),
-        progress_bar(0.0..=100.0, BASIC_PROGRESS)
-            .length(Length::Fixed(BASIC_WIDTH))
-            .girth(Length::Fixed(resolved.progress_bar.track_height))
-            .style(styles::progress_bar(resolved))
-            .into(),
+        tagged(
+            "basic.progress_bar.bar",
+            progress_bar(0.0..=100.0, BASIC_PROGRESS)
+                .length(Length::Fixed(BASIC_WIDTH))
+                .girth(Length::Fixed(resolved.progress_bar.track_height))
+                .style(styles::progress_bar(resolved)),
+        )
+        .part("basic.progress_bar.bar.fill", |l| {
+            let b = l.bounds();
+            Some(iced::Rectangle {
+                width: b.width * BASIC_PROGRESS / 100.0,
+                ..b
+            })
+        })
+        .into(),
     );
 
     // The connector's switch, whose track takes `switch.track_width`: iced's
@@ -4884,12 +6520,27 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         c.a *= resolved.switch.disabled_opacity;
         c
     };
-    let switch =
-        |id: &'static str, on: bool, label: &'a str, enabled: bool| -> Element<'a, Message> {
-            let label = text(label).body(resolved, a11y);
+    // The thumb inside the track as `native_theme_iced::switch` seats it:
+    // inset by half the difference of the two heights, at the track's right
+    // end while on.
+    let sw = &resolved.switch;
+    let (thumb, thumb_inset) = (
+        sw.thumb_diameter,
+        ((sw.track_height - sw.thumb_diameter) / 2.0).max(0.0),
+    );
+    let switch = |id: &'static str,
+                  probe_id: &'static str,
+                  on: bool,
+                  label: &'a str,
+                  enabled: bool|
+     -> Element<'a, Message> {
+        let label = text(label).body(resolved, a11y);
+        let parts = |name: &str| listed_part(id, name);
+        let mut control = tagged(
+            id,
             row![
                 probe(
-                    id,
+                    probe_id,
                     Length::Shrink,
                     native_theme_iced::switch(resolved, on, enabled.then_some(Message::BasicHeld)),
                 ),
@@ -4900,16 +6551,57 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 },
             ]
             .spacing(TOGGLER_LABEL_GAP)
-            .align_y(iced::Alignment::Center)
-            .into()
-        };
+            .align_y(iced::Alignment::Center),
+        );
+        if let Some(track) = parts("track") {
+            control = control.node(track, &[0]);
+        }
+        if let Some(label) = parts("label") {
+            control = control.node(label, &[1]);
+        }
+        if let Some(thumb_id) = parts("thumb") {
+            control = control.part(thumb_id, move |layout| {
+                node_at(layout, &[0]).map(|track| {
+                    let t = track.bounds();
+                    let x = if on {
+                        t.x + t.width - thumb_inset - thumb
+                    } else {
+                        t.x + thumb_inset
+                    };
+                    iced::Rectangle::new(
+                        iced::Point::new(x, t.center_y() - thumb / 2.0),
+                        iced::Size::new(thumb, thumb),
+                    )
+                })
+            });
+        }
+        control.into()
+    };
     let switches = group(
+        "basic.switches.heading",
         "Switches",
-        switch_info(resolved),
         column![
-            switch(probes::BASIC_SWITCH_OFF, false, "Off", true),
-            switch(probes::BASIC_SWITCH_ON, true, "On", true),
-            switch(probes::BASIC_SWITCH_DISABLED, true, "Disabled", false),
+            switch(
+                "basic.switches.off",
+                probes::BASIC_SWITCH_OFF,
+                false,
+                "Off",
+                true
+            ),
+            switch(
+                "basic.switches.on",
+                probes::BASIC_SWITCH_ON,
+                true,
+                "On",
+                true
+            ),
+            switch(
+                "basic.switches.disabled",
+                probes::BASIC_SWITCH_DISABLED,
+                true,
+                "Disabled",
+                false
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -4920,35 +6612,46 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let area_line = input_size * resolved.defaults.line_height;
     let area_pad = native_theme_iced::text_area_padding(resolved);
     let text_area = group(
+        "basic.text_area.heading",
         "Text area",
-        text_area_info(resolved),
         probe(
             probes::BASIC_TEXT_AREA,
             Length::Shrink,
-            text_editor(&state.basic_text_area)
-                .on_action(Message::BasicTextAreaAction)
-                .size(input_size)
-                .line_height(iced::Pixels(area_line))
-                .font(theme_font(&resolved.input.font))
-                .style(styles::text_editor(resolved))
-                .padding(area_pad)
-                .width(BASIC_WIDE)
-                .height(Length::Fixed(
-                    BASIC_TEXT_AREA_LINES * area_line + area_pad.y(),
-                )),
+            tagged(
+                "basic.text_area.field",
+                text_editor(&state.basic_text_area)
+                    .on_action(Message::BasicTextAreaAction)
+                    .size(input_size)
+                    .line_height(iced::Pixels(area_line))
+                    .font(theme_font(&resolved.input.font))
+                    .style(styles::text_editor(resolved))
+                    .padding(area_pad)
+                    .width(BASIC_WIDE)
+                    .height(Length::Fixed(
+                        BASIC_TEXT_AREA_LINES * area_line + area_pad.y(),
+                    )),
+            )
+            // The text: the three lines inside the padding.
+            .part("basic.text_area.field.text", move |l| {
+                Some(l.bounds().shrink(area_pad))
+            }),
         ),
     );
 
     let spinner = probe(
         probes::BASIC_SPINNER,
         Length::Shrink,
-        state
-            .basic_spinner
-            .view(state.animation_start.elapsed(), state.motion_reduced()),
+        tagged(
+            "basic.spinner.indicator",
+            state
+                .basic_spinner
+                .view(state.animation_start.elapsed(), state.motion_reduced()),
+        ),
     );
-    let spinner_group = group("Spinner", spinner_info(state), spinner);
+    let spinner_group = group("basic.spinner.heading", "Spinner", spinner);
 
     let tab_t = &resolved.tab;
+    #[cfg(not(feature = "iced_aw"))]
     let tab_pad = native_theme_iced::padding_or(&tab_t.border.padding, button::DEFAULT_PADDING);
     #[cfg(feature = "iced_aw")]
     let tab_row: Element<'a, Message> = {
@@ -4972,27 +6675,41 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         };
         // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
         // and takes a padding whole.
-        match native_theme_iced::stated_padding(&tab_t.border.padding) {
-            Some(padding) => bar.padding(padding).into(),
-            None => bar.into(),
-        }
+        let bar: Element<'a, Message> =
+            match native_theme_iced::stated_padding(&tab_t.border.padding) {
+                Some(padding) => bar.padding(padding).into(),
+                None => bar.into(),
+            };
+        // The tabs are the bar's row's nodes, one per label
+        // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
+        tagged("basic.tabs.bar", bar)
+            .node("basic.tabs.one", &[0])
+            .node("basic.tabs.two", &[1])
+            .node("basic.tabs.three", &[2])
+            .into()
     };
     // Without iced_aw, the page tab strip's tabs: buttons padded like the
     // platform's tabs, the open one the call to action.
     #[cfg(not(feature = "iced_aw"))]
-    let tab_row: Element<'a, Message> = row(BASIC_TABS.iter().enumerate().map(|(i, label)| {
-        let tab = button(text(*label).typeset(&tab_t.font, a11y))
-            .padding(tab_pad)
-            .on_press(Message::ButtonPressed);
-        if i == 0 {
-            tab.style(styles::button_primary(resolved)).into()
-        } else {
-            tab.style(styles::button(resolved)).into()
-        }
-    }))
-    .spacing(tab_t.item_gap.unwrap_or(sp.xs))
+    let tab_row: Element<'a, Message> = tagged(
+        "basic.tabs.bar",
+        row(BASIC_TABS.iter().enumerate().map(|(i, label)| {
+            let tab = button(text(*label).typeset(&tab_t.font, a11y))
+                .padding(tab_pad)
+                .on_press(Message::ButtonPressed);
+            if i == 0 {
+                tab.style(styles::button_primary(resolved)).into()
+            } else {
+                tab.style(styles::button(resolved)).into()
+            }
+        }))
+        .spacing(tab_t.item_gap.unwrap_or(sp.xs)),
+    )
+    .node("basic.tabs.one", &[0])
+    .node("basic.tabs.two", &[1])
+    .node("basic.tabs.three", &[2])
     .into();
-    let tabs = group("Tabs", tabs_info(resolved, tab_pad), tab_row);
+    let tabs = group("basic.tabs.heading", "Tabs", tab_row);
 
     let sc = &resolved.segmented_control;
     // A segment has no border of its own (the control's outline is the
@@ -5015,15 +6732,37 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .on_press(Message::BasicSegmentSelected(i))
             .into()
     });
+    // A divider: the gap between two segments, where the outline shows
+    // through, `segmented_control.separator_width` wide.
+    let divider = |before: usize| {
+        move |layout: iced::advanced::Layout<'_>| {
+            node_at(layout, &[0, before]).map(|segment| {
+                let s = segment.bounds();
+                iced::Rectangle {
+                    x: s.x + s.width,
+                    width: sc.separator_width,
+                    ..s
+                }
+            })
+        }
+    };
     let segmented = group(
+        "basic.segmented.heading",
         "Segmented control",
-        segmented_info(resolved),
         probe(
             probes::BASIC_SEGMENTED,
             Length::Shrink,
-            container(row(segments).spacing(sc.separator_width))
-                .padding(sc.border.line_width)
-                .style(styles::segmented_control(resolved)),
+            tagged(
+                "basic.segmented.control",
+                container(row(segments).spacing(sc.separator_width))
+                    .padding(sc.border.line_width)
+                    .style(styles::segmented_control(resolved)),
+            )
+            .node("basic.segmented.day", &[0, 0])
+            .node("basic.segmented.week", &[0, 1])
+            .node("basic.segmented.month", &[0, 2])
+            .part("basic.segmented.divider_1", divider(0))
+            .part("basic.segmented.divider_2", divider(1)),
         ),
     );
 
@@ -5039,8 +6778,14 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // the theme states above and below it.
     let label_line = label * resolved.defaults.line_height;
     let row_height = list_t.row_height.unwrap_or(label_line + row_pad.y());
+    const LIST_ROW_IDS: [&str; 4] = [
+        "basic.list.row_1",
+        "basic.list.row_2",
+        "basic.list.row_3",
+        "basic.list.row_4",
+    ];
     let rows = (0..BASIC_LIST_ITEMS).map(|i| {
-        button(
+        let item = button(
             text(format!("Item {}", i + 1))
                 .typeset(&list_t.item_font, a11y)
                 .line_height(iced::Pixels(label_line)),
@@ -5049,9 +6794,29 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .width(Fill)
         .height(Length::Fixed(row_height))
         .style(list_row(resolved, state.basic_list_selected == Some(i)))
-        .on_press(Message::BasicListSelected(i))
-        .into()
+        .on_press(Message::BasicListSelected(i));
+        match LIST_ROW_IDS.get(i) {
+            Some(id) => tagged(id, item).into(),
+            None => item.into(),
+        }
     });
+    // The scrollbar and its thumb as iced lays them out (iced_widget 0.14.2
+    // `src/scrollable.rs:1957-2015`): the groove `scrollbar.groove_width`
+    // wide at the right edge, the thumb `scrollbar.thumb_width` wide centred
+    // in it, as tall as the part of the rows shown, at the top.
+    let (groove, scroller) = (
+        resolved.scrollbar.groove_width,
+        resolved.scrollbar.thumb_width,
+    );
+    let shown = BASIC_LIST_VISIBLE / BASIC_LIST_ITEMS as f32;
+    let groove_rect = move |b: iced::Rectangle| {
+        let total = groove.max(scroller);
+        iced::Rectangle {
+            x: b.x + b.width - total / 2.0 - groove / 2.0,
+            width: groove,
+            ..b
+        }
+    };
     let frame = iced::Border {
         color: to_color(list_t.border.color),
         width: list_t.border.line_width,
@@ -5063,21 +6828,38 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         Length::Shrink,
         // The rows inside the frame's line, which iced paints over the
         // container's padding.
-        container(
-            scrollable(column(rows))
-                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-                .style(styles::scrollable(resolved))
-                .height(Length::Fixed(BASIC_LIST_VISIBLE * row_height)),
+        tagged(
+            "basic.list.frame",
+            container(
+                scrollable(column(rows))
+                    .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+                    .style(styles::scrollable(resolved))
+                    .height(Length::Fixed(BASIC_LIST_VISIBLE * row_height)),
+            )
+            .padding(list_t.border.line_width)
+            .width(Length::Fixed(BASIC_WIDE))
+            .style(move |_theme: &Theme| container::Style {
+                background: Some(iced::Background::Color(list_fill)),
+                border: frame,
+                ..container::Style::default()
+            }),
         )
-        .padding(list_t.border.line_width)
-        .width(Length::Fixed(BASIC_WIDE))
-        .style(move |_theme: &Theme| container::Style {
-            background: Some(iced::Background::Color(list_fill)),
-            border: frame,
-            ..container::Style::default()
+        .part("basic.list.scrollbar", move |l| {
+            node_at(l, &[0]).map(|s| groove_rect(s.bounds()))
+        })
+        .part("basic.list.scrollbar.thumb", move |l| {
+            node_at(l, &[0]).map(|s| {
+                let g = groove_rect(s.bounds());
+                iced::Rectangle {
+                    x: g.center_x() - scroller / 2.0,
+                    width: scroller,
+                    height: (g.height * shown).max(2.0),
+                    ..g
+                }
+            })
         }),
     );
-    let list_group = group("List", list_info(resolved), list);
+    let list_group = group("basic.list.heading", "List", list);
 
     let x = &resolved.expander;
     let x_pad = native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING);
@@ -5089,24 +6871,38 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // under the title, and each header framed by `styles::expander`.
     let trailing = x.arrow_side == Some(ArrowSide::Trailing);
     let arrow_gap = x.arrow_gap.unwrap_or(gap.widget);
-    let header = move |title: &'a str, expanded: bool, toggle: Message| {
+    // A header, tagged `<id>.header`, its arrow `<id>.arrow` and its title
+    // `<id>.title`.
+    let header = move |id: &'static str, title: &'a str, expanded: bool, toggle: Message| {
         let arrow = || {
-            canvas(DisclosureArrow {
+            let arrow = canvas(DisclosureArrow {
                 expanded,
                 trailing,
                 color: arrow_color,
             })
             .width(Length::Fixed(x.arrow_icon_size))
-            .height(Length::Fixed(x.arrow_icon_size))
+            .height(Length::Fixed(x.arrow_icon_size));
+            match listed_part(id, "arrow") {
+                Some(arrow_id) => Element::from(tagged(arrow_id, arrow)),
+                None => arrow.into(),
+            }
         };
-        button(at_least(
+        let tag_title = |title: text::Text<'a>| -> Element<'a, Message> {
+            match listed_part(id, "title") {
+                Some(title_id) => tagged(title_id, title).into(),
+                None => title.into(),
+            }
+        };
+        let head = button(at_least(
             row![]
                 .push((!trailing).then(arrow))
-                .push(text(title).typeset(&x.font, a11y).width(if trailing {
-                    Fill
-                } else {
-                    Length::Shrink
-                }))
+                .push(tag_title(
+                    text(title).typeset(&x.font, a11y).width(if trailing {
+                        Fill
+                    } else {
+                        Length::Shrink
+                    }),
+                ))
                 .push(trailing.then(arrow))
                 .spacing(arrow_gap)
                 .align_y(iced::Center),
@@ -5118,7 +6914,11 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             styles::expander(resolved),
             x.frame_enabled,
         ))
-        .on_press(toggle)
+        .on_press(toggle);
+        match listed_part(id, "header") {
+            Some(header_id) => Element::from(tagged(header_id, head)),
+            None => head.into(),
+        }
     };
     // The body sits content_indent in, or under the title, past the arrow
     // and its gap, where the theme states no indent.
@@ -5130,14 +6930,20 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         width: x.border.line_width,
         radius: x.border.corner_radius.into(),
     };
-    let item = move |head: Element<'a, Message>, body: Option<&'a str>| -> Element<'a, Message> {
+    let item = move |id: &'static str,
+                     head: Element<'a, Message>,
+                     body: Option<&'a str>|
+          -> Element<'a, Message> {
         let mut item = column![head].spacing(gap.widget);
         if let Some(body) = body {
-            item = item.push(
-                container(text(body).body(resolved, a11y)).padding(Padding::ZERO.left(body_inset)),
-            );
+            let body = text(body).body(resolved, a11y);
+            let body: Element<'a, Message> = match listed_part(id, "body") {
+                Some(body_id) => tagged(body_id, body).into(),
+                None => body.into(),
+            };
+            item = item.push(container(body).padding(Padding::ZERO.left(body_inset)));
         }
-        match x.frame_enabled {
+        let item: Element<'a, Message> = match x.frame_enabled {
             Some(true) => container(item)
                 .padding(x.border.line_width)
                 .width(Length::Fixed(BASIC_WIDE))
@@ -5147,13 +6953,16 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 })
                 .into(),
             _ => container(item).width(Length::Fixed(BASIC_WIDE)).into(),
-        }
+        };
+        tagged(id, item).into()
     };
     let details = item(
+        "basic.expander.details",
         probe(
             probes::BASIC_EXPANDER,
             Fill,
             header(
+                "basic.expander.details",
                 "Details",
                 state.basic_details_open,
                 Message::BasicDetailsToggled,
@@ -5162,12 +6971,18 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         state.basic_details_open.then_some("Expanded content"),
     );
     let more = item(
-        header("More", state.basic_more_open, Message::BasicMoreToggled).into(),
+        "basic.expander.more",
+        header(
+            "basic.expander.more",
+            "More",
+            state.basic_more_open,
+            Message::BasicMoreToggled,
+        ),
         state.basic_more_open.then_some("More content"),
     );
     let expanders = group(
+        "basic.expander.heading",
         "Expander",
-        expander_info(resolved),
         column![details, more].spacing(gap.widget).into(),
     );
 
@@ -5177,8 +6992,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // (`widget/card.rs`, `draw_head`, `draw_body`), where the theme rounds all
     // four.
     let card_group = group(
+        "basic.card.heading",
         "Card",
-        card_info(resolved),
         // A side `card.border.padding` leaves unstated -- every side on the
         // Linux presets, whose cards leave the padding to their content
         // (platform-facts §2.26) -- is `layout.container_margin`, the
@@ -5186,39 +7001,331 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         probe(
             probes::BASIC_CARD,
             Length::Shrink,
-            container(text("Card content").body(resolved, a11y))
+            tagged(
+                "basic.card.frame",
+                container(tagged(
+                    "basic.card.text",
+                    text("Card content").body(resolved, a11y),
+                ))
                 .padding(native_theme_iced::padding_or(
                     &resolved.card.border.padding,
                     Padding::from(gap.container),
                 ))
                 .width(Length::Fixed(BASIC_WIDE))
                 .style(styles::container_card(resolved)),
+            ),
         ),
     );
 
     let separator = group(
+        "basic.separator.heading",
         "Separator",
-        separator_info(resolved),
-        container(rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)))
-            .width(Length::Fixed(BASIC_WIDE))
-            .into(),
+        container(tagged(
+            "basic.separator.line",
+            rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        ))
+        .width(Length::Fixed(BASIC_WIDE))
+        .into(),
     );
 
-    row![
-        column![buttons, checkboxes, radios, switches]
-            .spacing(gap.section)
-            .width(Fill),
-        column![inputs, text_area, drop_down, texts]
-            .spacing(gap.section)
-            .width(Fill),
-        column![slider_group, progress, spinner_group, tabs, segmented]
-            .spacing(gap.section)
-            .width(Fill),
-        column![list_group, expanders, card_group, separator]
-            .spacing(gap.section)
-            .width(Fill),
-    ]
-    .spacing(gap.section)
+    // Basic v3: a toggle button off and on, beside each other.
+    let toggles = group(
+        "basic.toggle_buttons.heading",
+        "Toggle button",
+        row![
+            push(
+                "basic.toggle_buttons.off",
+                "basic.toggle_buttons.off.label",
+                "Off",
+                Push::Plain,
+                Some(Message::ButtonPressed),
+            ),
+            push(
+                "basic.toggle_buttons.on",
+                "basic.toggle_buttons.on.label",
+                "On",
+                Push::On,
+                Some(Message::ButtonPressed),
+            ),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    // Three icon-only tool buttons, as the toolbar's: flat, their icons the
+    // shown set's Copy, Paste and Delete at `toolbar.icon_size`, the
+    // toolbar's item gap apart.
+    let icons = &state.chrome_icons;
+    let tool = |tags, icon, label| {
+        icon_button(
+            state,
+            IconButton {
+                icon,
+                size: resolved.toolbar.icon_size,
+                label,
+                key: None,
+                font: &resolved.toolbar.font,
+                padding: ghost_padding(resolved),
+                selected: false,
+                action: Message::ButtonPressed,
+                tags: Some(tags),
+            },
+        )
+    };
+    let icon_buttons = group(
+        "basic.icon_buttons.heading",
+        "Icon buttons",
+        row![
+            tool(
+                ("basic.icon_buttons.copy", "basic.icon_buttons.copy.icon"),
+                &icons.copy,
+                "Copy"
+            ),
+            tool(
+                ("basic.icon_buttons.paste", "basic.icon_buttons.paste.icon"),
+                &icons.paste,
+                "Paste"
+            ),
+            tool(
+                (
+                    "basic.icon_buttons.delete",
+                    "basic.icon_buttons.delete.icon"
+                ),
+                &icons.delete,
+                "Delete"
+            ),
+        ]
+        .spacing(resolved.toolbar.item_gap.unwrap_or(gap.widget))
+        .align_y(iced::Center)
+        .into(),
+    );
+
+    // The text scale, a line per role, each in its own size, line height
+    // and weight, in the body font's family; the monospace font last.
+    let mono = &resolved.defaults.mono_font;
+    let typography = group(
+        "basic.typography.heading",
+        "Typography",
+        column![
+            tagged(
+                "basic.typography.caption",
+                text("Caption").role(&ts.caption, resolved, a11y)
+            ),
+            tagged("basic.typography.body", text("Body").body(resolved, a11y)),
+            tagged(
+                "basic.typography.section_heading",
+                text("Section heading").role(&ts.section_heading, resolved, a11y)
+            ),
+            tagged(
+                "basic.typography.dialog_title",
+                text("Dialog title").role(&ts.dialog_title, resolved, a11y)
+            ),
+            tagged(
+                "basic.typography.display",
+                text("Display").role(&ts.display, resolved, a11y)
+            ),
+            tagged(
+                "basic.typography.monospace",
+                text("Monospace")
+                    .themed(mono, resolved, a11y)
+                    .font(theme_mono_font(resolved))
+            ),
+        ]
+        .spacing(gap.widget)
+        .into(),
+    );
+
+    let table = group("basic.table.heading", "Table", basic_table(state));
+
+    // One icon of the shown set, `IconRole::FolderOpen`, at each size the
+    // theme states for small, toolbar and large icons; none where the set
+    // has no such icon.
+    let folder = |id: &'static str, size: f32| -> Element<'a, Message> {
+        icons
+            .folder
+            .as_ref()
+            .and_then(|icon| {
+                chrome_icon(
+                    icon,
+                    size,
+                    icons.system,
+                    to_color(resolved.defaults.text_color),
+                )
+            })
+            .map_or_else(|| space().into(), |icon| tagged(id, icon).into())
+    };
+    let sizes = &resolved.defaults.icon_sizes;
+    let icon_row = group(
+        "basic.icons.heading",
+        "Icons",
+        row![
+            folder("basic.icons.small", sizes.small),
+            folder("basic.icons.toolbar", sizes.toolbar),
+            folder("basic.icons.large", sizes.large),
+        ]
+        .spacing(gap.widget)
+        .align_y(iced::Center)
+        .into(),
+    );
+
+    let column_of = |id: &'static str, groups: Vec<Element<'a, Message>>| {
+        tagged(id, column(groups).spacing(gap.section).width(Fill))
+    };
+    tagged(
+        "basic.page",
+        row![
+            column_of(
+                "basic.column_1",
+                vec![buttons, checkboxes, radios, switches, toggles, icon_buttons]
+            ),
+            column_of(
+                "basic.column_2",
+                vec![inputs, text_area, drop_down, texts, number, focused]
+            ),
+            column_of(
+                "basic.column_3",
+                vec![
+                    slider_group,
+                    progress,
+                    spinner_group,
+                    tabs,
+                    segmented,
+                    typography
+                ]
+            ),
+            column_of(
+                "basic.column_4",
+                vec![
+                    list_group, expanders, card_group, separator, table, icon_row
+                ]
+            ),
+        ]
+        .spacing(gap.section),
+    )
+    .into()
+}
+
+/// The Basic page's table (Basic v3), built from containers: iced_widget's
+/// `table` has no style setter (iced_widget 0.14.2 `src/table.rs:149-196`),
+/// so its separators, header and rows could not take `list.*`. A header row
+/// `Name | Size` on `list.header_background` in `list.header_font`, three
+/// rows in `list.item_font` -- the second selected, in
+/// `list.selection_background` and `.selection_text_color`, the third on
+/// `list.alternate_row_background` -- each `list.row_height` tall, or its
+/// line box and padding where unstated; the cells padded by
+/// `list.border.padding` (iced_aw's list's padding on a side it leaves
+/// unstated, as the list's rows); a `list.grid_color` line between the
+/// columns and under the header, `separator.line_width` thick (the theme
+/// states no grid width); the frame `list.border` on
+/// `list.background_color`.
+fn basic_table(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let l = &resolved.list;
+    let line = resolved.separator.line_width;
+    let pad = native_theme_iced::padding_or(&l.border.padding, Padding::from(AW_LIST_PADDING));
+    let height = |font: &ResolvedFontSpec| {
+        l.row_height
+            .unwrap_or(scaled_text_size(font.size, a11y) * resolved.defaults.line_height + pad.y())
+    };
+    let grid = to_color(l.grid_color);
+    let rule_v = move |h: f32| {
+        container(space())
+            .width(Length::Fixed(line))
+            .height(Length::Fixed(h))
+            .style(move |_: &Theme| container::Style {
+                background: Some(iced::Background::Color(grid)),
+                ..container::Style::default()
+            })
+    };
+    let cell =
+        |content: &'static str, font: &ResolvedFontSpec, color: Color, share: u16, h: f32| {
+            container(
+                text(content)
+                    .themed(font, resolved, a11y)
+                    .color(color)
+                    .wrapping(text::Wrapping::None),
+            )
+            .padding(pad)
+            .width(Length::FillPortion(share))
+            .height(Length::Fixed(h))
+            .align_y(iced::Center)
+        };
+    let [name_share, size_share] = BASIC_TABLE_SHARES;
+    let head_h = height(&l.header_font);
+    let head_ink = to_color(l.header_font.color);
+    let head_fill = to_color(l.header_background);
+    let header = tagged(
+        "basic.table.header",
+        container(row![
+            cell("Name", &l.header_font, head_ink, name_share, head_h),
+            rule_v(head_h),
+            cell("Size", &l.header_font, head_ink, size_share, head_h),
+        ])
+        .style(move |_: &Theme| container::Style {
+            background: Some(iced::Background::Color(head_fill)),
+            ..container::Style::default()
+        }),
+    )
+    .node("basic.table.header.name", &[0, 0])
+    .node("basic.table.header.size", &[0, 2]);
+    let under_header = container(space())
+        .width(Fill)
+        .height(Length::Fixed(line))
+        .style(move |_: &Theme| container::Style {
+            background: Some(iced::Background::Color(grid)),
+            ..container::Style::default()
+        });
+    let row_h = height(&l.item_font);
+    let rows = BASIC_TABLE_ROWS
+        .iter()
+        .enumerate()
+        .map(|(i, (id, name, size))| {
+            let selected = i == BASIC_TABLE_SELECTED;
+            let (fill, ink) = if selected {
+                (
+                    Some(to_color(l.selection_background)),
+                    to_color(l.selection_text_color),
+                )
+            } else if i == BASIC_TABLE_ALTERNATE {
+                (
+                    Some(to_color(l.alternate_row_background)),
+                    to_color(l.item_font.color),
+                )
+            } else {
+                (None, to_color(l.item_font.color))
+            };
+            tagged(
+                id,
+                container(row![
+                    cell(name, &l.item_font, ink, name_share, row_h),
+                    rule_v(row_h),
+                    cell(size, &l.item_font, ink, size_share, row_h),
+                ])
+                .style(move |_: &Theme| container::Style {
+                    background: fill.map(iced::Background::Color),
+                    ..container::Style::default()
+                }),
+            )
+            .into()
+        });
+    let frame = iced::Border {
+        color: to_color(l.border.color),
+        width: l.border.line_width,
+        radius: l.border.corner_radius.into(),
+    };
+    let fill = to_color(l.background_color);
+    tagged(
+        "basic.table.frame",
+        container(column![header, under_header].extend(rows))
+            .padding(l.border.line_width)
+            .width(Length::Fixed(BASIC_WIDE))
+            .style(move |_: &Theme| container::Style {
+                background: Some(iced::Background::Color(fill)),
+                border: frame,
+                ..container::Style::default()
+            }),
+    )
     .into()
 }
 
@@ -5422,332 +7529,6 @@ fn switch_info(resolved: &ResolvedTheme) -> String {
             ),
             ("label gap", "the model states none: iced's toggler's"),
         ],
-    )
-}
-
-/// The Widget Info of the Basic page's text area.
-fn text_area_info(resolved: &ResolvedTheme) -> String {
-    let i = &resolved.input;
-    widget_tooltip(
-        "Text area (text_editor)",
-        &[
-            (
-                "field",
-                "input.background_color",
-                to_color(i.background_color),
-            ),
-            ("text", "input.font.color", to_color(i.font.color)),
-            ("border", "input.border.color", to_color(i.border.color)),
-        ],
-        &[
-            ("text", font_row("input.font", &i.font).as_str()),
-            ("line box", "input.font.size x defaults.line_height"),
-            (
-                "padding",
-                "text_area_padding: text_area.border.padding + line width",
-            ),
-            ("height", "three line boxes and the padding"),
-        ],
-        &[(
-            "caret",
-            "text_editor::Style has no caret colour: input.caret_color has no receiver",
-        )],
-    )
-}
-
-/// The Widget Info of the Basic page's spinner.
-fn spinner_info(state: &State) -> String {
-    let s = &state.current_resolved.spinner;
-    let fill = to_color(s.fill_color);
-    let set = state
-        .icon_set_choice
-        .effective_icon_set(state.current_icon_set);
-    if !state.basic_spinner.is_indicator() {
-        return widget_tooltip(
-            "Spinner (native_theme_iced::Spinner: an arc, the icon set has no indicator)",
-            &[("arc", "spinner.fill_color", fill)],
-            &[
-                ("diameter", "spinner.diameter"),
-                ("stroke", "spinner.stroke_width"),
-            ],
-            &[(
-                "sweep and speed",
-                "the model states none: egui's Spinner's widest, 240°, turning a turn a second",
-            )],
-        );
-    }
-    let name = format!(
-        "Spinner (native_theme_iced::Spinner: the {} icon set's animated indicator)",
-        set.name()
-    );
-    if matches!(set, IconSet::Material | IconSet::Lucide) {
-        widget_tooltip(
-            &name,
-            &[("indicator", "spinner.fill_color", fill)],
-            &[("diameter", "spinner.diameter")],
-            &[("motion", "the icon set's own frames and timing")],
-        )
-    } else {
-        widget_tooltip(
-            &name,
-            &[],
-            &[("diameter", "spinner.diameter")],
-            &[
-                ("colour", "the icon theme's own"),
-                ("motion", "the icon set's own frames and timing"),
-            ],
-        )
-    }
-}
-
-/// The Widget Info of the Basic page's tab bar; `padding` is the padding the
-/// tabs are given.
-fn tabs_info(resolved: &ResolvedTheme, padding: Padding) -> String {
-    let t = &resolved.tab;
-    let pad = format!(
-        "{:.0} {:.0} {:.0} {:.0} (t r b l): tab.border.padding",
-        padding.top, padding.right, padding.bottom, padding.left
-    );
-    widget_tooltip(
-        "Tab bar (iced_aw TabBar)",
-        &[
-            ("strip", "tab.bar_background", to_color(t.bar_background)),
-            (
-                "selected tab",
-                "tab.active_background",
-                to_color(t.active_background),
-            ),
-            (
-                "selected label",
-                "tab.active_text_color",
-                to_color(t.active_text_color),
-            ),
-            ("tab", "tab.background_color", to_color(t.background_color)),
-            (
-                "tab under the pointer",
-                "tab.hover_background",
-                to_color(t.hover_background.unwrap_or(t.background_color)),
-            ),
-            (
-                "selected tab frame",
-                "tab.border.color",
-                to_color(t.border.color),
-            ),
-        ],
-        &[
-            ("label", font_row("tab.font", &t.font).as_str()),
-            (
-                "selected tab frame",
-                "tab.border.line_width, its top corners tab.border.corner_radius; other tabs none",
-            ),
-            ("tab width", "tab.min_width, as a fixed width"),
-            ("bar height", "tab.min_height, as a fixed height"),
-            ("padding", pad.as_str()),
-        ],
-        &[(
-            "minimum sizes",
-            "iced_aw takes fixed lengths only, so a tab is exactly its minimum",
-        )],
-    )
-}
-
-/// The Widget Info of the Basic page's segmented control.
-fn segmented_info(resolved: &ResolvedTheme) -> String {
-    let s = &resolved.segmented_control;
-    widget_tooltip(
-        "Segmented control (buttons in a container)",
-        &[
-            (
-                "segment",
-                "segmented_control.background_color",
-                to_color(s.background_color),
-            ),
-            (
-                "selected",
-                "segmented_control.active_background",
-                to_color(s.active_background),
-            ),
-            (
-                "selected label",
-                "segmented_control.active_text_color",
-                to_color(s.active_text_color),
-            ),
-            (
-                "outline, separators",
-                "segmented_control.border.color",
-                to_color(s.border.color),
-            ),
-        ],
-        &[
-            (
-                "label",
-                font_row("segmented_control.font", &s.font).as_str(),
-            ),
-            ("height", "segmented_control.segment_height, outer"),
-            ("separators", "segmented_control.separator_width"),
-            ("radius", "segmented_control.border.corner_radius"),
-        ],
-        &[(
-            "widget",
-            "iced has none: styles::segmented_control frames buttons in styles::segment",
-        )],
-    )
-}
-
-/// The Widget Info of the Basic page's list.
-fn list_info(resolved: &ResolvedTheme) -> String {
-    let l = &resolved.list;
-    widget_tooltip(
-        "List (list rows in a scrollable)",
-        &[
-            (
-                "list",
-                "list.background_color",
-                to_color(l.background_color),
-            ),
-            (
-                "selected row",
-                "list.selection_background",
-                to_color(l.selection_background),
-            ),
-            (
-                "selected label",
-                "list.selection_text_color",
-                to_color(l.selection_text_color),
-            ),
-            (
-                "row under the pointer",
-                "list.hover_background",
-                to_color(l.hover_background),
-            ),
-            (
-                "label under the pointer",
-                "list.hover_text_color",
-                to_color(l.hover_text_color),
-            ),
-            ("label", "list.item_font.color", to_color(l.item_font.color)),
-            ("border", "list.border.color", to_color(l.border.color)),
-        ],
-        &[
-            ("label", font_row("list.item_font", &l.item_font).as_str()),
-            (
-                "row height",
-                "list.row_height, or the label's line box and list.border.padding \
-                 above and below it",
-            ),
-            (
-                "row padding",
-                "list.border.padding's stated sides, iced_aw's list's 5px for the others",
-            ),
-            ("frame", "list.border's width and corner radius"),
-            ("scrollbar", "styles::scrollable and styles::scrollbar"),
-            ("height", "four rows inside the frame's line"),
-        ],
-        &[(
-            "widget",
-            "iced has no list: buttons in list_row in a scrollable; iced_aw's \
-             SelectionList draws its labels at the row's edge",
-        )],
-    )
-}
-
-/// The Widget Info of the Basic page's expanders.
-fn expander_info(resolved: &ResolvedTheme) -> String {
-    let x = &resolved.expander;
-    let hover = x.hover_background.map_or(Color::TRANSPARENT, to_color);
-    widget_tooltip(
-        "Expander (a button and its body)",
-        &[
-            ("title", "expander.font.color", to_color(x.font.color)),
-            (
-                "arrow",
-                "expander.arrow_color",
-                native_theme_iced::expander_arrow_color(resolved),
-            ),
-            ("hovered header", "expander.hover_background", hover),
-            ("border", "expander.border.color", to_color(x.border.color)),
-        ],
-        &[
-            ("title", font_row("expander.font", &x.font).as_str()),
-            ("header height", "expander.header_height"),
-            ("arrow size", "expander.arrow_icon_size"),
-            (
-                "arrow side",
-                if x.arrow_side.is_some() {
-                    "expander.arrow_side"
-                } else {
-                    "not stated: before the title"
-                },
-            ),
-            (
-                "arrow gap",
-                if x.arrow_gap.is_some() {
-                    "expander.arrow_gap"
-                } else {
-                    "not stated: layout.widget_gap"
-                },
-            ),
-            (
-                "body indent",
-                if x.content_indent.is_some() {
-                    "expander.content_indent"
-                } else {
-                    "not stated: under the title"
-                },
-            ),
-            (
-                "frame",
-                match x.frame_enabled {
-                    Some(true) => "expander.frame_enabled: header and body in one expander.border",
-                    Some(false) => "expander.frame_enabled: none",
-                    None => "not stated: each header framed by expander.border",
-                },
-            ),
-        ],
-        &[(
-            "arrow shape",
-            "the model states none: a filled triangle drawn on a canvas",
-        )],
-    )
-}
-
-/// The Widget Info of the Basic page's card.
-fn card_info(resolved: &ResolvedTheme) -> String {
-    let c = &resolved.card;
-    widget_tooltip(
-        "Card (container in styles::container_card)",
-        &[
-            (
-                "surface",
-                "card.background_color",
-                to_color(c.background_color),
-            ),
-            ("border", "card.border.color", to_color(c.border.color)),
-            (
-                "label",
-                "defaults.text_color",
-                to_color(resolved.defaults.text_color),
-            ),
-        ],
-        &[
-            ("radius", "card.border.corner_radius"),
-            (
-                "padding",
-                "card.border.padding's stated sides; layout.container_margin for the others",
-            ),
-        ],
-        &[],
-    )
-}
-
-/// The Widget Info of the Basic page's separator.
-fn separator_info(resolved: &ResolvedTheme) -> String {
-    let s = &resolved.separator;
-    widget_tooltip(
-        "Separator (rule)",
-        &[("line", "separator.line_color", to_color(s.line_color))],
-        &[("thickness", "separator.line_width")],
-        &[],
     )
 }
 
@@ -9761,12 +11542,19 @@ fn main() -> iced::Result {
         eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
         std::process::exit(1);
     }
+    if let Err(error) = ELEMENTS.get_or_init(showcase_elements) {
+        eprintln!("ERROR: docs/showcase-elements.toml: {error}");
+        std::process::exit(1);
+    }
     let _ = CLI_ARGS.set(cli);
     let capturing = CLI_ARGS
         .get()
         .is_some_and(|cli| cli.capture || cli.screenshot.is_some());
 
-    let application = iced::application(State::default, update, view)
+    // iced_aw draws its glyphs (the number input's step arrows) in a font of
+    // its own, which the application loads (iced_aw 0.14.1 `src/lib.rs:174`).
+    let application = iced::application(boot, update, view)
+        .font(iced_aw::ICED_AW_FONT_BYTES)
         .title(|_: &State| WINDOW_TITLE.to_string())
         .theme(theme)
         .subscription(subscription)
@@ -9777,6 +11565,16 @@ fn main() -> iced::Result {
     } else {
         application.run()
     }
+}
+
+/// The showcase as it starts: its state, and the Basic page's focused input
+/// holding the keyboard focus, so its Focused border shows from the first
+/// frame.
+fn boot() -> (State, iced::Task<Message>) {
+    (
+        State::default(),
+        iced::widget::operation::focus(FOCUSED_INPUT_ID),
+    )
 }
 
 /// The window settings of a run that is captured (`--screenshot` or
@@ -9973,7 +11771,9 @@ mod tests {
             .filter(|message| {
                 !matches!(
                     message,
-                    Message::WidgetHovered(_) | Message::WidgetUnhovered
+                    Message::WidgetHovered(_)
+                        | Message::WidgetUnhovered
+                        | Message::ElementHovered(_)
                 )
             })
             .collect()
@@ -12242,10 +14042,197 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+    /// docs/showcase-elements.toml parses, and Widget Info has a route for
+    /// every leaf the list names: a line saying how iced applies it, or why
+    /// it cannot.
+    #[test]
+    fn the_element_list_parses_and_every_leaf_has_a_route() {
+        let list = match showcase_elements() {
+            Ok(list) => list,
+            Err(error) => panic!("docs/showcase-elements.toml: {error}"),
+        };
+        assert!(!list.is_empty(), "the element list is empty");
+        let mut unrouted = Vec::new();
+        for element in &list {
+            for leaf in &element.leaves {
+                let route = iced_route(element, leaf);
+                if route.contains("no route recorded") {
+                    unrouted.push(format!("{}: {leaf}", element.id));
+                }
+            }
+        }
+        assert!(unrouted.is_empty(), "leaves with no route: {unrouted:#?}");
+    }
+
+    /// The layout dump holds what the Basic page and the chrome draw: every
+    /// id it records is an element of the list, a part's with it, and every
+    /// element of the list on screen at rest is recorded -- all but the ones
+    /// shown only under a condition (`when`) and the icons, which the icon
+    /// theme on the test machine may not have.
+    #[test]
+    fn the_layout_dump_records_the_listed_elements() {
+        let state = State::default();
+        let theme = theme(&state);
+        let mut ui: Simulator<'_, Message> =
+            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+        for _ in 0..2 {
+            if let Err(error) = ui.snapshot(&theme) {
+                panic!("the interface did not draw: {error}");
+            }
+        }
+        let drawn = drawn_layout();
+        let unknown: Vec<_> = drawn.keys().filter(|id| listed(id).is_none()).collect();
+        assert!(
+            unknown.is_empty(),
+            "recorded ids the list has not: {unknown:?}"
+        );
+        let missing: Vec<_> = elements()
+            .iter()
+            .filter(|e| e.when.is_none())
+            .filter(|e| !e.id.ends_with(".icon") && !e.id.starts_with("basic.icons."))
+            .filter(|e| !drawn.contains_key(e.id.as_str()))
+            .map(|e| e.id.as_str())
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "listed elements not recorded: {missing:?}"
+        );
+        for (id, rect) in &drawn {
+            let parent = listed(id).map(|e| e.parent.as_str());
+            assert!(
+                parent == Some("window") || parent.is_some_and(|p| listed(p).is_some()),
+                "{id}: its parent is not in the list"
+            );
+            assert!(
+                rect.width >= 0.0 && rect.height >= 0.0,
+                "{id}: a negative size {rect:?}"
+            );
+        }
+    }
+
+    /// The pointer over an element shows that element in Widget Info: over
+    /// the Basic page's plain button its title is "Button · Normal", not the
+    /// primary button's; over the primary one, "Button · Primary". Its rows
+    /// are the list's leaves in the list's order, each with a value, and the
+    /// status bar shows the same title.
+    #[test]
+    fn widget_info_names_the_hovered_element() {
+        for (id, title) in [
+            ("basic.buttons.default", "Button · Normal"),
+            ("basic.buttons.primary", "Button · Primary"),
+            ("basic.checkboxes.checked", "Checkbox · Checked"),
+        ] {
+            let mut state = State::default();
+            let at = {
+                let theme = theme(&state);
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+                let _ = ui.snapshot(&theme);
+                match drawn_layout().get(id) {
+                    Some(rect) => rect.center(),
+                    None => panic!("{id} is not drawn"),
+                }
+            };
+            let messages = {
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                ui.point_at(at);
+                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                ui.into_messages().collect::<Vec<_>>()
+            };
+            for message in messages {
+                let _ = update(&mut state, message);
+            }
+            assert_eq!(state.hovered_element, Some(id), "the pointer at {at:?}");
+            let element = match listed(id) {
+                Some(element) => element,
+                None => panic!("{id} is not in the list"),
+            };
+            let info = ElementInfo::of(&state, element);
+            assert_eq!(info.title, title);
+            assert_eq!(shown_title(&state).as_deref(), Some(title));
+            let leaves: Vec<&str> = info.rows.iter().map(|row| row.leaf).collect();
+            let listed_leaves: Vec<&str> = element.leaves.iter().map(String::as_str).collect();
+            assert_eq!(leaves, listed_leaves, "{id}: rows out of the list's order");
+            assert!(
+                info.rows.iter().all(|row| !row.value.is_empty()),
+                "{id}: a row with no value"
+            );
+        }
+    }
+
+    /// A leaf's value reads as the resolved theme holds it, in the
+    /// registry's spelling: a padding side in px, a font as its family, the
+    /// size its source stated and its weight, a colour as its hex, a layout
+    /// gap from the theme's layout, and what the theme leaves unset as not
+    /// stated.
+    #[test]
+    fn leaf_values_read_the_resolved_theme() {
+        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        let layout = match native_theme::theme::Theme::preset("kde-breeze") {
+            Ok(preset) => preset.layout,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        let r = resolved.clone();
+        let state = State {
+            current_theme: theme,
+            current_resolved: resolved,
+            layout: layout.clone(),
+            ..State::default()
+        };
+        let values = match toml::Value::try_from(&state.current_resolved) {
+            Ok(values) => values,
+            Err(error) => panic!("the resolved theme as TOML: {error}"),
+        };
+        let value = |leaf: &str| leaf_value(&state, &values, leaf);
+        let side = r.button.border.padding.top.map(|v| format!("{v} px"));
+        assert_eq!(Some(value("button.border.padding_top_px").0), side);
+        let (colour, swatch) = value("button.background_color");
+        assert_eq!(colour, r.button.background_color.to_string());
+        assert_eq!(swatch, Some(to_color(r.button.background_color)));
+        let font = &r.button.font;
+        let size = match font.defined_size {
+            Some(native_theme::theme::FontSize::Pt(v)) => format!("{v} pt"),
+            Some(native_theme::theme::FontSize::Px(v)) => format!("{v} px"),
+            None => format!("{} px", font.size),
+        };
+        assert_eq!(
+            value("button.font").0,
+            format!("{} {size} {}", font.family, font.weight)
+        );
+        assert_eq!(
+            value("layout.widget_gap_px").0,
+            layout
+                .widget_gap
+                .map_or(NOT_STATED.to_string(), |v| format!("{v} px"))
+        );
+        let heading = &r.text_scale.section_heading;
+        assert_eq!(
+            value("text_scale.section_heading").0,
+            format!("{} px {}", heading.size, heading.weight)
+        );
+        assert_eq!(
+            value("defaults.line_height").0,
+            format!("{}", r.defaults.line_height)
+        );
+    }
+
     /// The Basic page fits the window without scrolling under every Linux
     /// preset the captures take: its content, laid out in the page area of a
     /// 1280 x 720 window, ends inside the window.
+    ///
+    /// Basic v3 (round 11, section D) does not: its first and fourth columns
+    /// run past the page area under kde-breeze (by 3 and 38 px), which the
+    /// brief says to report rather than shrink the theme's sizes for. Run it
+    /// with `--ignored` to see where.
     #[test]
+    #[ignore = "Basic v3 overflows the 1280 x 720 window (round 11, section D: reported, theme sizes kept)"]
     fn the_basic_page_fits_the_window() {
         for preset in ["kde-breeze", "material", "catppuccin-mocha"] {
             for dark in [false, true] {
@@ -12320,7 +14307,8 @@ mod tests {
         };
         let live = hover(view(&state));
         assert!(
-            live.iter().any(|m| matches!(m, Message::WidgetHovered(_))),
+            live.iter()
+                .any(|m| matches!(m, Message::ElementHovered("basic.buttons.default"))),
             "the page as it is reports no hover over the Basic button, so the \
              capture half of this test proves nothing: {live:?}"
         );
@@ -12968,6 +14956,12 @@ mod tests {
                 .strip_prefix("at_least(")
                 .unwrap_or(label)
                 .trim_start();
+            // A label tagged for the layout dump (`tagged(id, ..)`) is the
+            // label it wraps.
+            let label = label
+                .strip_prefix("tagged(")
+                .and_then(|rest| rest.split_once(','))
+                .map_or(label, |(_, wrapped)| wrapped.trim_start());
             let composite = label.starts_with("row![") && label.contains("text(");
             // A chrome icon button's content is its icon (`chrome_icon`), and
             // the page tabs' menu button's is its caret icon, or where the

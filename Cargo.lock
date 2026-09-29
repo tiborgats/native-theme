@@ -4153,6 +4153,8 @@ dependencies = [
  "iced_core",
  "iced_fonts",
  "iced_widget",
+ "num-format",
+ "num-traits",
  "web-time",
 ]
 
@@ -5716,6 +5718,7 @@ dependencies = [
  "native-theme",
  "objc2 0.6.4",
  "serde_json",
+ "toml 1.1.5+spec-1.1.0",
  "windows 0.62.2",
 ]
 
@@ -5731,6 +5734,8 @@ dependencies = [
  "image",
  "native-theme",
  "objc2 0.6.4",
+ "serde_json",
+ "toml 1.1.5+spec-1.1.0",
  "windows 0.62.2",
 ]
 
@@ -5971,6 +5976,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "num-format"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a652d9771a63711fd3c3deb670acfbe5c30a4072e664d7a3bf5a9e1056ac72c3"
+dependencies = [
+ "arrayvec",
+ "itoa",
 ]
 
 [[package]]
