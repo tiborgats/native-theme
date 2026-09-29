@@ -95,6 +95,12 @@ impl Action {
     }
 }
 
+/// No minimum height for the menu bar's panel: egui gives a top or bottom panel a 20-point one
+/// (`egui/src/containers/panel.rs:287-290`), a size no theme states, which would hold a bar of
+/// shorter titles (Adwaita's) above their height. Not a style value.
+#[cfg(not(all(target_os = "macos", not(test))))]
+const NO_MINIMUM: f32 = 0.0;
+
 /// The Theme menu's rows in `docs/showcase-elements.toml`, in `Action::MENUS`'s order.
 #[cfg(not(all(target_os = "macos", not(test))))]
 const THEME_MENU_ROWS: [&str; 7] = [
@@ -169,6 +175,7 @@ fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
         ));
     let out = egui::Panel::top("menu-bar")
         .frame(frame)
+        .min_size(NO_MINIMUM)
         .show_separator_line(false)
         .show(ui, |ui| {
             // The bar is as tall as its titles (`demo::menu_bar`).
@@ -199,7 +206,8 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
             bar.ui(ui, |ui| {
                 for (menu, items) in Action::MENUS {
                     let key = menu.to_lowercase();
-                    let response = ui.menu_button(*menu, |ui| {
+                    let title = demo::lined(ui, *menu, egui::TextStyle::Button);
+                    let response = ui.menu_button(title, |ui| {
                         let open = demo::styled(registry, ui, Role::Menu, normal, "Menu");
                         // The Theme menu's rows, the one menu the three showcases share.
                         let ids: &[&str] = if key == "theme" {
@@ -577,14 +585,15 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 // `status_bar`'s (§10.4).
                 let Some(bar) = bar else { return };
                 let label = bar.add(registry, ui, "Label · environment", |ui| {
-                    ui.label(environment)
+                    ui.label(demo::lined(ui, environment, egui::TextStyle::Body))
                 });
                 registry.tag("chrome.status_bar.environment", &label);
                 // The shown Widget Info's title, flush right (§10.4).
                 if !title.is_empty() {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        let label =
-                            bar.add(registry, ui, "Label · shown info", |ui| ui.label(title));
+                        let label = bar.add(registry, ui, "Label · shown info", |ui| {
+                            ui.label(demo::lined(ui, title, egui::TextStyle::Body))
+                        });
                         registry.tag("chrome.status_bar.shown", &label);
                     });
                 }
@@ -800,7 +809,9 @@ fn setting_label(
     body: demo::Applied,
     text: &'static str,
 ) -> egui::Response {
-    body.add(reg, ui, "Label · theme setting", |ui| ui.label(text))
+    body.add(reg, ui, "Label · theme setting", |ui| {
+        ui.label(demo::lined(ui, text, egui::TextStyle::Body))
+    })
 }
 
 /// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
@@ -940,7 +951,11 @@ fn setting<T: Clone + PartialEq>(
         |ui, modifier, row, registry| {
             let mut combo = ComboBox::from_id_salt(setting.label)
                 .width(ui.available_width())
-                .selected_text(setting.current_text);
+                .selected_text(demo::lined(
+                    ui,
+                    setting.current_text,
+                    egui::TextStyle::Button,
+                ));
             if let Some(modifier) = modifier {
                 combo = combo.popup_style(modifier);
             }

@@ -460,7 +460,28 @@ pub(crate) fn framed<R>(
     kind: &'static str,
     add: impl FnOnce(&mut egui::Ui, &mut Registry) -> R,
 ) -> egui::InnerResponse<R> {
-    let frame = ui.native_frame(surface);
+    framed_with(
+        reg,
+        ui,
+        (surface, |_: &mut egui::Frame| {}),
+        body,
+        kind,
+        add,
+    )
+}
+
+/// [`framed`] with the surface's frame as `adjust` changes it: a card's padding the theme
+/// leaves unstated, say.
+pub(crate) fn framed_with<R>(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    (surface, adjust): (Surface, impl FnOnce(&mut egui::Frame)),
+    body: Option<(Role, RoleVariant)>,
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, &mut Registry) -> R,
+) -> egui::InnerResponse<R> {
+    let mut frame = ui.native_frame(surface);
+    adjust(&mut frame);
     let out = frame.show(ui, |ui| {
         if let Some((role, variant)) = body {
             ui.native_set_style(role, variant);
@@ -973,6 +994,31 @@ pub(crate) fn heading_text(ui: &egui::Ui, text: impl Into<String>) -> egui::Rich
     role_text(ui, native_theme_egui::TextRole::SectionHeading, text)
 }
 
+/// `text` one line box tall: the size of the font `ui` sets a widget's text in (its
+/// `override_font_id`, else `style`'s) times `defaults.line_height`, the platform's line box, per
+/// call. The connector writes the line box only where it is taller than the font's own row
+/// (`Spacing::extra_text_line_spacing`, which egui adds between rows, never above the first); a
+/// `TextStyle` is a font and nothing more, so a line box shorter than the row — Adwaita's 1.21 of
+/// a Cantarell-sized font — is reachable only per text, `RichText::line_height`
+/// (`egui/src/widget_text.rs:174`). Without an installed atlas, the text as it is.
+pub(crate) fn lined(
+    ui: &egui::Ui,
+    text: impl Into<String>,
+    style: egui::TextStyle,
+) -> egui::RichText {
+    let text = egui::RichText::new(text);
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+        return text;
+    };
+    let size = ui
+        .style()
+        .override_font_id
+        .as_ref()
+        .map_or_else(|| style.resolve(ui.style()).size, |font| font.size);
+    let multiplier = atlas.resolved_for(ui.ctx().theme()).defaults.line_height;
+    text.line_height(Some(size * multiplier))
+}
+
 /// Text in one of the theme's text-scale roles (`text_scale.*`): its size and line height
 /// through `text_role_font` and `text_role_line_height`, its weight through
 /// [`weighted_family`], in the text colour. Without an installed atlas, egui's `Body` text.
@@ -1074,10 +1120,11 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                         egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
                     for (index, (value, label)) in bar.tabs.iter().enumerate() {
                         let selected = *value == bar.current;
-                        let mut button = egui::Button::new(*label)
-                            .selected(selected)
-                            .min_size(egui::Vec2::X * min_width)
-                            .corner_radius(top);
+                        let mut button =
+                            egui::Button::new(lined(ui, *label, egui::TextStyle::Button))
+                                .selected(selected)
+                                .min_size(egui::Vec2::X * min_width)
+                                .corner_radius(top);
                         if !selected {
                             button = button.stroke(no_pen);
                         }

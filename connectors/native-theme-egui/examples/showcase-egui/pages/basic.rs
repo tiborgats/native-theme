@@ -8,7 +8,7 @@
 use egui::Button;
 use egui::widget_style::{Classes, WidgetState};
 use native_theme::theme::{IconRole, IconSet};
-use native_theme_egui::convert::{to_color32, to_corner_radius, to_stroke};
+use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
     Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, text_area_frame,
 };
@@ -165,8 +165,12 @@ fn heading(reg: &mut Registry, ui: &mut egui::Ui, id: &str, text: &str) {
 
 /// `text` as a widget of `ui` lays it out (`egui/src/atomics/atom_kind.rs:134-135`): on one
 /// line, in `font`.
-fn text_size(ui: &egui::Ui, text: &str, font: egui::FontSelection) -> egui::Vec2 {
-    egui::WidgetText::from(text)
+fn text_size(
+    ui: &egui::Ui,
+    text: impl Into<egui::WidgetText>,
+    font: egui::FontSelection,
+) -> egui::Vec2 {
+    text.into()
         .into_galley(ui, Some(egui::TextWrapMode::Extend), f32::INFINITY, font)
         .size()
 }
@@ -175,7 +179,11 @@ fn text_size(ui: &egui::Ui, text: &str, font: egui::FontSelection) -> egui::Vec2
 /// placed in the button less its frame's margin by the layout's alignment
 /// (`egui/src/widgets/button.rs:325-367`, `egui/src/widget_style.rs:146-171`,
 /// `egui/src/atomics/atom_layout.rs:340-342`, `:619`).
-fn button_label(ui: &egui::Ui, button: &egui::Response, text: &str) -> egui::Rect {
+fn button_label(
+    ui: &egui::Ui,
+    button: &egui::Response,
+    text: impl Into<egui::WidgetText>,
+) -> egui::Rect {
     let style = ui
         .style()
         .button_style(&Classes::default(), WidgetState::Inactive);
@@ -197,7 +205,7 @@ fn button_label(ui: &egui::Ui, button: &egui::Response, text: &str) -> egui::Rec
 fn checkbox_parts(
     ui: &egui::Ui,
     control: &egui::Response,
-    text: &str,
+    text: egui::RichText,
     checked: bool,
 ) -> Vec<(&'static str, egui::Rect)> {
     let style = ui
@@ -251,18 +259,20 @@ fn place_parts(
 }
 
 /// A text-only button in the button role's `variant`, the element `id`, its label placed as
-/// `<id>.label`: `make` builds it, `text` its label, at least `min` large.
+/// `<id>.label`: `make` builds it from its label `text`, one line box tall (`demo::lined`), at
+/// least `min` large.
 fn text_button(
     reg: &mut Registry,
     ui: &mut egui::Ui,
     (id, kind, variant): (&str, &'static str, RoleVariant),
     (text, min): (&str, egui::Vec2),
-    make: impl FnOnce(&str) -> Button<'static>,
+    make: impl FnOnce(egui::RichText) -> Button<'static>,
     enabled: bool,
 ) -> egui::Response {
     let mut label = None;
     let response = demo::scoped(reg, ui, Role::Button, variant, kind, |ui| {
-        let r = ui.add_enabled(enabled, make(text).min_size(min));
+        let text = demo::lined(ui, text, egui::TextStyle::Button);
+        let r = ui.add_enabled(enabled, make(text.clone()).min_size(min));
         label = Some(button_label(ui, &r, text));
         r
     });
@@ -291,14 +301,14 @@ fn column_1(
     // height, to `interact_size.y` (`button.min_height` in the button scope), so the width is
     // the application's, per call (connector spec §5.3, `Button::min_size`).
     let min = egui::vec2(t.button.min_width, t.button.min_height);
-    let plain = |text: &str| Button::new(text.to_string());
+    let plain = |text: egui::RichText| Button::new(text);
 
     heading(reg, ui, "basic.buttons.heading", "Buttons");
     ui.horizontal(|ui| {
         let kind = ("basic.buttons.default", "button (enabled)", normal);
         text_button(reg, ui, kind, ("Button", min), plain, true);
         let kind = ("basic.buttons.primary", "button (suggested action)", normal);
-        let primary = |text: &str| Button::new(text.to_string()).selected(true);
+        let primary = |text: egui::RichText| Button::new(text).selected(true);
         text_button(reg, ui, kind, ("Primary", min), primary, true);
     });
     ui.horizontal(|ui| {
@@ -325,7 +335,7 @@ fn column_1(
                 }
                 tip.show(|ui| {
                     let text = demo::scoped(reg, ui, Role::Tooltip, normal, "tooltip text", |ui| {
-                        ui.label("A tooltip")
+                        ui.label(demo::lined(ui, "A tooltip", egui::TextStyle::Body))
                     });
                     reg.tag("basic.buttons.tooltip.bubble.text", &text);
                 })
@@ -378,8 +388,9 @@ fn column_1(
         let mut value = checked;
         let mut parts = Vec::new();
         let response = demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
-            let r = ui.add_enabled(enabled, egui::Checkbox::new(&mut value, label));
-            parts = checkbox_parts(ui, &r, label, checked);
+            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            let r = ui.add_enabled(enabled, egui::Checkbox::new(&mut value, text.clone()));
+            parts = checkbox_parts(ui, &r, text, checked);
             r
         });
         reg.tag(id, &response);
@@ -406,7 +417,8 @@ fn column_1(
             normal
         };
         let r = demo::widget(reg, ui, Role::Checkbox, variant, "RadioButton", |ui| {
-            ui.add(RadioButton::new(selected, label))
+            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            ui.add(RadioButton::new(selected, text))
         });
         reg.tag(id, &r);
         let names = [
@@ -442,7 +454,8 @@ fn column_1(
         };
         let mut value = on;
         let r = demo::widget(reg, ui, Role::Switch, variant, kind, |ui| {
-            ui.add(Switch::new(&mut value).label(label).enabled(enabled))
+            let text = demo::lined(ui, label, egui::TextStyle::Body);
+            ui.add(Switch::new(&mut value).label(text).enabled(enabled))
         });
         reg.tag(id, &r);
         let names = [("track", "track"), ("thumb", "thumb"), ("label", "label")];
@@ -464,9 +477,7 @@ fn column_1(
         let kind = ("basic.toggle_buttons.off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
         let kind = ("basic.toggle_buttons.on", "toggle button (on)", normal);
-        let held = |text: &str| {
-            Button::new(egui::RichText::new(text.to_string()).color(on_text)).fill(on_fill)
-        };
+        let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
         text_button(reg, ui, kind, ("On", min), held, true);
     });
 
@@ -655,7 +666,7 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         "ComboBox",
         |ui, modifier, row, reg| {
             let mut combo = ComboBox::from_id_salt("basic/combo")
-                .selected_text(current)
+                .selected_text(demo::lined(ui, current, egui::TextStyle::Button))
                 .width(BASIC_WIDTH);
             if let Some(modifier) = modifier {
                 combo = combo.popup_style(modifier);
@@ -676,14 +687,16 @@ fn column_2(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     place_parts(reg, ui, "basic.drop_down.trigger", &combo, &names);
 
     heading(reg, ui, "basic.text.heading", "Text");
-    let body = demo::base(reg, ui, "Label (body text)", |ui| ui.label("Body text"));
+    let body = demo::base(reg, ui, "Label (body text)", |ui| {
+        ui.label(demo::lined(ui, "Body text", egui::TextStyle::Body))
+    });
     reg.tag("basic.text.body", &body);
     // The companion crate's link (docs/todo_egui-widgets-spec.md §4.5): egui's `Link` in the
     // link scope, its text in `link.*`'s rest, hover, pressed and disabled colours and
     // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
     // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
     let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
-        let link = wrap::link(ui, "Link");
+        let link = wrap::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
         ui.add(link)
     });
     reg.amend_last(|i| {
@@ -815,7 +828,10 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
         Role::SegmentedControl,
         normal,
         "segmented control",
-        |ui| ui.add(SegmentedControl::new(&mut state.basic_segment, SEGMENTS)),
+        |ui| {
+            let segments = SEGMENTS.map(|s| demo::lined(ui, s, egui::TextStyle::Button));
+            ui.add(SegmentedControl::new(&mut state.basic_segment, segments))
+        },
     );
     reg.tag("basic.segmented.control", &control);
     if let Some(parts) = Parts::of(&control) {
@@ -861,7 +877,7 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     ] {
         let line = demo::base(reg, ui, "Label (typography)", |ui| match role {
             Some(role) => ui.label(demo::role_text(ui, role, text)),
-            None => ui.label(text),
+            None => ui.label(demo::lined(ui, text, egui::TextStyle::Body)),
         });
         reg.tag(id, &line);
     }
@@ -917,10 +933,12 @@ fn column_4(
         ] {
             let mut shown = None;
             let header = demo::scoped(reg, ui, Role::Expander, normal, kind, |ui| {
-                let out = Expander::new(title)
+                let out = Expander::new(demo::lined(ui, title, egui::TextStyle::Button))
                     .id_salt(("basic/expander", title))
                     .default_open(open)
-                    .show(ui, |ui| ui.label(body));
+                    .show(ui, |ui| {
+                        ui.label(demo::lined(ui, body, egui::TextStyle::Body))
+                    });
                 shown = out.body_returned;
                 out.header_response
             });
@@ -951,19 +969,37 @@ fn column_4(
     // The card surface's frame (`card.background_color`, `card.border.*`), `BASIC_WIDE` across
     // its border.
     heading(reg, ui, "basic.card.heading", "Card");
+    // A side of the card's padding the theme leaves unstated is the container margin, inside
+    // its border (R11, D-card: KDE and macOS state no card padding, the card pads by the
+    // container margin), where the surface's frame would keep egui's own.
+    let margin = atlas.layout().container_margin;
+    let b = &t.card.border;
+    let pad_unstated = |frame: &mut egui::Frame| {
+        let Some(margin) = margin else {
+            return;
+        };
+        let side = |stated: Option<f32>| stated.is_none().then_some(margin + b.line_width);
+        let unstated = native_theme::theme::ResolvedPadding {
+            top: side(b.padding.top),
+            right: side(b.padding.right),
+            bottom: side(b.padding.bottom),
+            left: side(b.padding.left),
+        };
+        frame.inner_margin = to_margin(frame.inner_margin, &unstated);
+    };
     ui.scope(|ui| {
         ui.set_max_width(BASIC_WIDE);
-        let card = demo::framed(
+        let card = demo::framed_with(
             reg,
             ui,
-            Surface::Card,
+            (Surface::Card, pad_unstated),
             Some((Role::Card, normal)),
             "card",
             |ui, reg| {
                 // The room inside the frame: `BASIC_WIDE` less its margins and border.
                 ui.set_min_width(ui.available_width());
                 let text = demo::scoped(reg, ui, Role::Card, normal, "card label", |ui| {
-                    ui.label("Card content")
+                    ui.label(demo::lined(ui, "Card content", egui::TextStyle::Body))
                 });
                 reg.tag("basic.card.text", &text);
             },
