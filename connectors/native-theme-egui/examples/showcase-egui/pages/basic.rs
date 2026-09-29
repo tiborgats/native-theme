@@ -103,16 +103,15 @@ pub(crate) fn show(
     let page_width = ui.available_width();
     let width = ((page_width - gap * (columns - 1.0)) / columns).max(0.0);
     let mut used = egui::Rect::NOTHING;
+    let pixels = ui.pixels_per_point();
     for column in 0..COLUMNS {
-        // On a whole pixel, so a one-pixel border the column draws is one pixel wide, not two
-        // half-covered ones.
-        let left = egui::emath::GuiRounding::round_to_pixels(
-            origin.x + column as f32 * (width + gap),
-            ui.pixels_per_point(),
-        );
-        let rect = egui::Rect::from_min_size(
-            egui::pos2(left, origin.y),
-            egui::vec2(width, ui.available_height()),
+        // Both edges on whole pixels, so a one-pixel border the column draws is one pixel wide,
+        // not two half-covered ones, and the column is the room between the edges it paints.
+        let left = origin.x + column as f32 * (width + gap);
+        let snap = |x: f32| egui::emath::GuiRounding::round_to_pixels(x, pixels);
+        let rect = egui::Rect::from_x_y_ranges(
+            snap(left)..=snap(left + width),
+            origin.y..=origin.y + ui.available_height(),
         );
         let mut child = ui.new_child(
             egui::UiBuilder::new()
@@ -131,7 +130,7 @@ pub(crate) fn show(
         reg.place(
             ui,
             &format!("basic.column_{}", column + 1),
-            egui::Rect::from_min_size(rect.min, egui::vec2(width, content.height())),
+            egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), content.height())),
         );
         used = used.union(content);
     }
@@ -225,6 +224,33 @@ fn checkbox_parts(
     }
     parts.push(("label", label));
     parts
+}
+
+/// Disables `ui` for a check box faded as one, as the platform fades a disabled widget where the
+/// theme states no disabled colours: `filter: Opacity(var(--disabled-opacity))` on the whole
+/// widget, which keeps its normal colours (docs/platform-facts.md §2.1.6, GNOME), so its mark is
+/// drawn on its fill and the pair fades over the page. egui fades each shape on its own
+/// (`Ui::disable` multiplies the painter's opacity by `disabled_alpha`,
+/// `egui/src/ui.rs:497-503`), which would fade the mark over the faded fill; here each colour
+/// the box paints is composed over what lies under it (its fill over `ground`, the border and
+/// the mark over the fill, the label over `ground`) and faded by `disabled_alpha` over `ground`,
+/// and the painter keeps its opacity.
+fn fade_as_one(ui: &mut egui::Ui, ground: egui::Color32) {
+    let alpha = ui.visuals().disabled_alpha();
+    let opacity = ui.opacity();
+    let fade = |colour: egui::Color32| ground.lerp_to_gamma(colour, alpha);
+    let text = ui.visuals().override_text_color;
+    let visuals = ui.visuals_mut();
+    let widgets = &mut visuals.widgets;
+    for cell in [&mut widgets.noninteractive, &mut widgets.inactive] {
+        let fill = ground.blend(cell.bg_fill);
+        cell.bg_fill = fade(fill);
+        cell.bg_stroke.color = fade(fill.blend(cell.bg_stroke.color));
+        cell.fg_stroke.color = fade(fill.blend(cell.fg_stroke.color));
+    }
+    visuals.override_text_color = text.map(|colour| fade(ground.blend(colour)));
+    ui.disable();
+    ui.set_opacity(opacity);
 }
 
 /// A companion-crate widget's `Parts`, each placed as `<id>.<element part>`: `names` pairs the
@@ -397,7 +423,16 @@ fn column_1(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
                 widgets.inactive.bg_stroke.color = border;
             }
             let text = demo::lined(ui, label, egui::TextStyle::Body);
-            let r = ui.add_enabled(enabled, egui::Checkbox::new(&mut value, text.clone()));
+            let r = if !enabled && variant == RoleVariant::Selected {
+                let ground = to_color32(t.defaults.background_color);
+                ui.scope(|ui| {
+                    fade_as_one(ui, ground);
+                    ui.add(egui::Checkbox::new(&mut value, text.clone()))
+                })
+                .inner
+            } else {
+                ui.add_enabled(enabled, egui::Checkbox::new(&mut value, text.clone()))
+            };
             parts = checkbox_parts(ui, &r, text, checked);
             r
         });

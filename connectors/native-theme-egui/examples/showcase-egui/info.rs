@@ -864,7 +864,7 @@ impl InfoText {
     }
 
     /// `text` at the cursor, one line tall and as wide as it is, clipped at the room there is;
-    /// its rectangle.
+    /// the rectangle it paints (`painted`).
     fn line(
         &self,
         ui: &mut egui::Ui,
@@ -876,11 +876,26 @@ impl InfoText {
         let size = egui::vec2(galley.size().x.min(ui.available_width()), self.line);
         let (rect, response) = ui.allocate_exact_size(size, egui::Sense::hover());
         response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, text));
+        let shown = painted(ui, rect, &galley);
         ui.painter()
             .with_clip_rect(rect)
             .galley(rect.min, galley, colour);
-        rect
+        shown
     }
+}
+
+/// The rectangle `galley` paints when drawn at `rect`'s corner and clipped to its width: epaint
+/// draws a galley on the pixel its corner rounds to (`round_text_to_pixels`, on by default,
+/// `epaint/src/tessellator.rs:2024-2025`) and lays each row out a whole number of pixels tall
+/// (`epaint/src/text/text_layout.rs:971`), so a line one line box tall where that box is a
+/// fraction of a pixel (`sidebar.font`'s size × `defaults.line_height`) paints the whole row
+/// from the rounded corner.
+fn painted(ui: &egui::Ui, rect: egui::Rect, galley: &egui::Galley) -> egui::Rect {
+    use egui::emath::GuiRounding as _;
+    egui::Rect::from_min_size(
+        rect.min.round_to_pixels(ui.pixels_per_point()),
+        egui::vec2(rect.width(), galley.size().y),
+    )
 }
 
 /// The Widget tab (R11 §B), laid out as the three showcases lay it out: the title flush left
@@ -937,8 +952,9 @@ pub(crate) fn widget_tab(
         egui::pos2(row.left(), row.center().y - 0.5 * text.line),
         egui::vec2(title.size().x, text.line),
     );
+    let title_shown = painted(ui, title_rect, &title);
     ui.painter().galley(title_rect.min, title, text.colour);
-    reg.place(ui, "chrome.info.title", title_rect);
+    reg.place(ui, "chrome.info.title", title_shown);
     let copy_rect = egui::Rect::from_min_size(
         egui::pos2(
             row.right() - copy_size.x,
@@ -1017,6 +1033,7 @@ pub(crate) fn widget_tab(
             egui::pos2(x, rect.top()),
             egui::vec2(line.size().x.min(room), text.line),
         );
+        let line_shown = painted(ui, line_rect, &line);
         ui.painter()
             .with_clip_rect(line_rect)
             .galley(line_rect.min, line, text.colour);
@@ -1025,16 +1042,23 @@ pub(crate) fn widget_tab(
             egui::pos2(x, line_rect.bottom()),
             egui::vec2(how.size().x.min(room), text.line),
         );
+        let how_shown = painted(ui, how_rect, &how);
         ui.painter()
             .with_clip_rect(how_rect)
             .galley(how_rect.min, how, text.muted);
         if index == 0 {
-            reg.place(ui, "chrome.info.row_1", rect);
+            // The row across the panel's text column, from the top of what it paints (its
+            // swatch and its first line) to the foot of its second line.
+            let top = swatch.map_or(line_shown.top(), |square| {
+                square.top().min(line_shown.top())
+            });
+            let shown = egui::Rect::from_x_y_ranges(rect.x_range(), top..=how_shown.bottom());
+            reg.place(ui, "chrome.info.row_1", shown);
             if let Some(square) = swatch {
                 reg.place(ui, "chrome.info.row_1.swatch", square);
             }
-            reg.place(ui, "chrome.info.row_1.text", line_rect);
-            reg.place(ui, "chrome.info.row_1.how", how_rect);
+            reg.place(ui, "chrome.info.row_1.text", line_shown);
+            reg.place(ui, "chrome.info.row_1.how", how_shown);
         }
     }
     if !view.not_themeable.is_empty() {
