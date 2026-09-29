@@ -339,11 +339,6 @@ const LONG_TOOLTIP: &str = "This popup carries the platform's max width, padding
 const SHORT_TOOLTIP: &str = "Save";
 /// The debug selector on the element the application hands the tooltip.
 const TOOLTIP_TEXT: &str = "tooltip-text";
-/// Upstream draws the bubble with a one-pixel border on every side
-/// (`src/tooltip.rs:117`, `border_1()`), which the platform's outer width pays
-/// for along with the two paddings.
-const TOOLTIP_BORDER: f32 = 1.0;
-
 /// An application-built tooltip: `geometry::tooltip` on the bubble, and
 /// `geometry::tooltip_content` on the element the application itself passes to
 /// `Tooltip::element` — reached through the installed theme, the way an
@@ -462,7 +457,10 @@ fn tooltip_text_keeps_inside_the_bubble(cx: &mut TestAppContext) {
             "{TOOLTIP_PRESET} no longer states both horizontal tooltip sides; pick another preset"
         );
     };
-    let inner = px(t.max_width - left - right - 2.0 * TOOLTIP_BORDER);
+    // The bubble's edge, `tooltip.border.line_width` on each side
+    // (`geometry::tooltip`), which the platform's outer width pays for along
+    // with the two paddings.
+    let inner = px(t.max_width - left - right - 2.0 * t.border.line_width);
     let style = native_style(TOOLTIP_PRESET, geometry::tooltip);
 
     let [text, probe] = laid_out(

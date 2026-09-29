@@ -852,7 +852,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "defaults.line_height",
-        "gpui: not applied — Kbd sets line height 1 on itself (kbd.rs:249)",
+        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; kbd.rs:229-231)",
     ),
     (
         "chrome.menu.",
@@ -984,7 +984,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.number_input",
         "input.background_color",
-        "gpui: not applied — the NumberInput keeps upstream's input_background (input/input.rs:639-650)",
+        "gpui: the frame's fill (demo::number_input)",
     ),
     (
         "basic.text_area",
@@ -999,7 +999,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.number_input",
         "input.border.color",
-        "gpui: ThemeColor input (colors.rs): the NumberInput's edge",
+        "gpui: the frame's edge (demo::number_input)",
     ),
     (
         "",
@@ -1019,22 +1019,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.number_input",
         "input.border.padding_top_px",
-        "gpui: not applied — cleared on the frame; the inner Input pads itself (demo::number_input)",
+        "gpui: pads the value's Input between the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_right_px",
-        "gpui: not applied — cleared on the frame; the inner Input pads itself (demo::number_input)",
+        "gpui: pads the value's Input between the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_bottom_px",
-        "gpui: not applied — cleared on the frame; the inner Input pads itself (demo::number_input)",
+        "gpui: pads the value's Input between the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_left_px",
-        "gpui: not applied — cleared on the frame; the inner Input pads itself (demo::number_input)",
+        "gpui: pads the value's Input between the step buttons (demo::number_input)",
     ),
     (
         "",
@@ -1104,7 +1104,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.number_input",
         "input.hover_border_color",
-        "gpui: not applied — the NumberInput keeps its edge under the pointer",
+        "gpui: the frame's edge under the pointer (demo::number_input)",
     ),
     (
         "basic.text_area",
@@ -1297,12 +1297,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "list.hover_background",
-        "gpui: not applied — the table's rows do not hover (demo::files_table)",
+        "gpui: an unselected row's fill under the pointer (demo::files_table)",
     ),
     (
         "basic.table",
         "list.hover_text_color",
-        "gpui: not applied — the table's rows do not hover (demo::files_table)",
+        "gpui: an unselected row's text under the pointer (demo::files_table)",
     ),
     (
         "basic.table",
@@ -1434,7 +1434,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "menu.font",
-        "gpui: not applied — the shortcut's Kbd sets text_xs on itself (kbd.rs:250)",
+        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; kbd.rs:229-231)",
     ),
     (
         "chrome.menu_bar.",
@@ -1494,7 +1494,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "menu.font",
-        "gpui: size and weight from MenuLook (demo::MenuTitle, MenuBar::popup); family: the window's",
+        "gpui: family, size and weight from MenuLook (demo::MenuTitle, MenuBar::popup)",
     ),
     (
         "",
@@ -1540,27 +1540,27 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "popover.border.padding_top_px",
-        "gpui: not applied — the popup pads by MENU_POPUP_PADDING, 0.25 rem (demo.rs)",
+        "gpui: pads the popup's rows; upstream's p_1 where unstated (MenuLook, MenuBar::popup)",
     ),
     (
         "",
         "popover.border.padding_right_px",
-        "gpui: not applied — the popup pads by MENU_POPUP_PADDING, 0.25 rem (demo.rs)",
+        "gpui: pads the popup's rows; upstream's p_1 where unstated (MenuLook, MenuBar::popup)",
     ),
     (
         "",
         "popover.border.padding_bottom_px",
-        "gpui: not applied — the popup pads by MENU_POPUP_PADDING, 0.25 rem (demo.rs)",
+        "gpui: pads the popup's rows; upstream's p_1 where unstated (MenuLook, MenuBar::popup)",
     ),
     (
         "",
         "popover.border.padding_left_px",
-        "gpui: not applied — the popup pads by MENU_POPUP_PADDING, 0.25 rem (demo.rs)",
+        "gpui: pads the popup's rows; upstream's p_1 where unstated (MenuLook, MenuBar::popup)",
     ),
     (
         "",
         "popover.border.shadow_enabled",
-        "gpui: not applied — popover_style's shadow stands whatever it says (styled.rs:193-200)",
+        "gpui: the popup's shadow in defaults.shadow_color, upstream's layers, or none (MenuLook)",
     ),
     // --- progress_bar: widgets::ProgressBar -------------------------------------
     (
@@ -1750,22 +1750,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.border.padding_top_px",
-        "gpui: not applied — demo::side_panel pads by layout.container_margin",
+        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_right_px",
-        "gpui: not applied — demo::side_panel pads by layout.container_margin",
+        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_bottom_px",
-        "gpui: not applied — demo::side_panel pads by layout.container_margin",
+        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_left_px",
-        "gpui: not applied — demo::side_panel pads by layout.container_margin",
+        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
     ),
     (
         "chrome.info",
@@ -2203,7 +2203,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tooltip.border.line_width_px",
-        "gpui: not applied — the bubble keeps upstream's border_1 (tooltip.rs:117)",
+        "gpui: geometry::tooltip's border width",
     ),
     (
         "",
@@ -2228,7 +2228,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tooltip.border.shadow_enabled",
-        "gpui: not applied — the bubble keeps upstream's shadow_md (tooltip.rs:119)",
+        "gpui: geometry::tooltip's shadow: shadow_md's layers in defaults.shadow_color, or none",
     ),
     (
         "",

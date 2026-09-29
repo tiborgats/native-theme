@@ -19,7 +19,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     pub(crate) fn render_inputs_page(
         &self,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
@@ -129,6 +129,7 @@ impl Showcase {
                 demo::number_input(
                     ui,
                     cx,
+                    window,
                     "inputs-number-input",
                     &self.number_input_state,
                     px(200.0),

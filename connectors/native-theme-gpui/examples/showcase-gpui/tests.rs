@@ -162,11 +162,15 @@ fn ids_drawn_twice(cx: &mut VisualTestContext) -> Vec<String> {
     })
 }
 
-/// Switch to `page` and draw the frame that shows it.
+/// Switch to `page` and draw the frame that shows it, then the frame a
+/// scroll area asks for when the page's overflow changed its scrollbar's
+/// strip (`support::gutter_scroll`).
 fn show(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, page: Page) {
     cx.update(|_window, cx| {
         showcase.update(cx, |this, cx| this.show_page(page, cx));
     });
+    cx.run_until_parked();
+    draw(cx);
     cx.run_until_parked();
     draw(cx);
 }
@@ -311,6 +315,33 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
             content.right(),
         );
     }
+}
+
+/// A page that fits its pane keeps no strip for a scrollbar: gpui-base
+/// draws none while the content fits (gpui-base src/scrollbar.rs:1402-1406),
+/// so the Basic page takes the pane's whole width under kde-breeze, whose
+/// scrollbars are not overlays.
+#[gpui::test]
+fn a_page_that_fits_keeps_no_scrollbar_strip(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+    assert!(
+        !overlay && groove > px(0.),
+        "kde-breeze must draw a non-overlay groove"
+    );
+    let content = bounds_of(&mut cx, CONTENT_SCROLL);
+    let page = bounds_of(&mut cx, PAGE_ROOT);
+    assert!(
+        page.size.height <= content.size.height,
+        "the Basic page does not fit its pane, so this proves nothing"
+    );
+    assert_eq!(
+        content.right(),
+        page.right(),
+        "the Basic page fits, yet keeps a strip for a scrollbar that is not drawn"
+    );
 }
 
 /// A Settings row keeps off the page's scrollbar.
@@ -2639,9 +2670,10 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                 tab.left() - panel.left()
             );
             let tabs = bounds_of(&mut cx, selector);
-            // The page row alone has a rule under it (demo::native_tab_bar),
-            // as docs/showcase-elements.toml's `chrome.page_tabs.rule`.
-            if bar == "page" {
+            // The page row alone has a rule under it (demo::native_tab_bar,
+            // the theme-drawn tab row of the `widgets` feature), as
+            // docs/showcase-elements.toml's `chrome.page_tabs.rule`.
+            if cfg!(feature = "widgets") && bar == "page" {
                 let rule = read(&mut cx, &showcase, |this, cx| {
                     this.info_ui
                         .read(cx)
@@ -2668,6 +2700,13 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                         panel.right()
                     );
                 }
+                // The menu Button shows the icon set's ChevronDown, which a
+                // build with no icon set does not have.
+                None if !cfg!(any(
+                    feature = "material-icons",
+                    feature = "lucide-icons",
+                    feature = "system-icons"
+                )) => {}
                 None => {
                     let menu = hover_box(
                         &mut cx,
@@ -8279,6 +8318,7 @@ fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
 /// drawn inside a gpui-component widget that reports no bounds of its parts,
 /// or its bounds come from the field's state once laid out
 /// (`Showcase::field_text_bounds`, which the layout dump reads).
+#[cfg(feature = "widgets")]
 const NOT_RECORDED: &[(&str, &str)] = &[
     (
         "basic.text_inputs.placeholder.text",
@@ -8325,6 +8365,9 @@ fn the_element_list_parses() {
 /// Every id the showcase records is an element of the list, none is
 /// recorded twice in one frame, and every element of the list the Basic
 /// page and the chrome show at rest is recorded, but for [`NOT_RECORDED`].
+/// The parts are recorded by the theme-drawn controls of the `widgets`
+/// feature (`elements::PARTS`), so the test is that feature's.
+#[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_layout_dump_holds_every_element_drawn(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -8342,11 +8385,18 @@ fn the_layout_dump_holds_every_element_drawn(cx: &mut TestAppContext) {
         );
     }
     // Shown only under a condition: an open menu, a hover, a scrollbar at
-    // rest -- which the gpui List draws inside itself (list/list.rs).
+    // rest -- which the gpui List draws inside itself (list/list.rs). A
+    // build with no icon set draws no icon.
+    let icons = cfg!(any(
+        feature = "material-icons",
+        feature = "lucide-icons",
+        feature = "system-icons"
+    ));
     let missing: Vec<&str> = list
         .iter()
         .filter(|e| e.when.is_none())
         .map(|e| e.id.as_str())
+        .filter(|id| icons || !id.ends_with(".icon"))
         .filter(|id| !drawn.contains_key(id))
         .filter(|id| !NOT_RECORDED.iter().any(|(n, _)| n == id))
         .collect();
@@ -8357,6 +8407,61 @@ fn the_layout_dump_holds_every_element_drawn(cx: &mut TestAppContext) {
             "NOT_RECORDED names {id}, no element of the list"
         );
     }
+}
+
+/// The side panel's settings are padded by `layout.container_margin` where
+/// the theme states no `sidebar.border.padding`, and by the stated sides of
+/// it where it states them, the content then adding none.
+#[gpui::test]
+fn the_side_panel_takes_the_sidebars_padding(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let place = |cx: &mut VisualTestContext| {
+        let drawn = read(cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).layout_drawn()
+        });
+        let panel = drawn.get("chrome.side_panel").copied();
+        let settings = drawn.get("chrome.side_panel.settings").copied();
+        panel
+            .zip(settings)
+            .map(|(p, s)| (s.left() - p.left(), s.top() - p.top()))
+    };
+    let margin = read(&mut cx, &showcase, |this, _| {
+        geometry::container_margin(&this.layout)
+    });
+    assert!(margin.is_some(), "kde-breeze states no container_margin");
+    assert_eq!(
+        place(&mut cx),
+        margin.map(|m| (m, m)),
+        "unstated sidebar padding: the settings are not container_margin in"
+    );
+    let resolved = native_theme::theme::Theme::preset("kde-breeze")
+        .ok()
+        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
+        .and_then(|v| {
+            v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                .ok()
+        });
+    assert!(resolved.is_some(), "kde-breeze light does not resolve");
+    let Some(mut resolved) = resolved else { return };
+    resolved.sidebar.border.padding.top = Some(3.0);
+    resolved.sidebar.border.padding.left = Some(7.0);
+    cx.update(|_window, cx| {
+        let prefs = native_theme::AccessibilityPreferences::default();
+        native_theme_gpui::apply(
+            native_theme_gpui::to_theme(&resolved, "kde-breeze", false, &prefs),
+            &resolved,
+            &prefs,
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        place(&mut cx),
+        Some((px(7.), px(3.))),
+        "stated sidebar padding: the settings are not that padding in"
+    );
 }
 
 /// `--open-menu theme` opens the Theme menu, so the layout dump holds its

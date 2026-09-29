@@ -14,7 +14,6 @@ use gpui_component::{
     button::{Button, ButtonVariants as _},
     h_flex,
     label::Label,
-    scroll::ScrollableElement,
     v_flex, window_paddings,
 };
 use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
@@ -70,6 +69,8 @@ pub(crate) struct Inspector {
     /// The title of what the last frame drew under the TabBar; `None` for
     /// the hint shown before any hover.
     pub(crate) title_drawn: Option<SharedString>,
+    /// Where its content is scrolled (`support::gutter_scroll`).
+    scroll: gpui::ScrollHandle,
     _registry: Subscription,
 }
 
@@ -86,6 +87,7 @@ impl Inspector {
             showcase,
             tab: InspectorTab::Widget,
             title_drawn: None,
+            scroll: gpui::ScrollHandle::new(),
             _registry,
         }
     }
@@ -518,8 +520,11 @@ fn listed_info(
                     .border_color(frame)
                     .rounded(radius)
             });
+            // The row is the panel's text column; a line longer than it runs
+            // on under the panel's clip.
             h_flex()
                 .relative()
+                .w_full()
                 .items_start()
                 .gap(look.row_gap)
                 .mt(look.row_gap)
@@ -661,7 +666,7 @@ impl Render for Inspector {
             .map(|showcase| showcase.read(cx).layout.clone())
             .unwrap_or_default();
         let gap = geometry::widget_gap(&layout);
-        let margin = geometry::container_margin(&layout);
+        let margin = demo::side_panel_content_margin(cx, geometry::container_margin(&layout));
         let tabs = demo::tab_bar(
             &self.ui,
             cx,
@@ -687,17 +692,25 @@ impl Render for Inspector {
             .debug_selector(|| INSPECTOR_PANEL.into())
             .child(tabs)
             .child(
-                div()
-                    .id("inspector-scroll")
-                    .relative()
-                    .flex_1()
-                    .min_h_0()
-                    .child(elements::record(&self.ui, "chrome.side_panel.inspector"))
-                    .overflow_y_scrollbar()
-                    // The bar is drawn over the right edge of the scroll
-                    // area, as on the content panel.
-                    .native(cx, geometry::scrollbar_gutter)
-                    .child(with_padding(v_flex(), margin).child(body)),
+                // The bar is drawn over the right edge of the scroll area, as
+                // on the content panel (`gutter_scroll`).
+                crate::support::gutter_scroll(
+                    "inspector-scroll",
+                    &self.scroll,
+                    div()
+                        .relative()
+                        .child(elements::record(&self.ui, "chrome.side_panel.inspector"))
+                        .child(with_padding(v_flex(), margin).child(body)),
+                    {
+                        let this = cx.entity().downgrade();
+                        move |cx: &mut gpui::App| {
+                            this.update(cx, |_, cx| cx.notify()).ok();
+                        }
+                    },
+                    cx,
+                )
+                .flex_1()
+                .min_h_0(),
             )
     }
 }

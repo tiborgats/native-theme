@@ -17,7 +17,6 @@ use gpui_component::{
     list::ListState,
     message_scroller::MessageScrollerState,
     resizable_panel,
-    scroll::ScrollableElement,
     select::{SearchableVec, SelectEvent, SelectState},
     slider::{SliderEvent, SliderState},
     table::{Column, TableEvent, TableState},
@@ -52,9 +51,9 @@ use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::Inspector;
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DialogIcons, EDITOR_SAMPLE, IconEntry, IconSource,
-    NativeStyled, PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate,
-    SharedDialogIcons, default_label, initial_chat_messages, load_all_icons, load_gpui_icons,
-    parse_icon_set_choice, release_sources,
+    PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate, SharedDialogIcons,
+    default_label, initial_chat_messages, load_all_icons, load_gpui_icons, parse_icon_set_choice,
+    release_sources,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT,
@@ -225,6 +224,8 @@ pub(crate) struct Showcase {
     /// The application's menus as the showcase draws them, with their
     /// keyboard (`demo::MenuBar`).
     pub(crate) menus: Entity<demo::MenuBar>,
+    /// Where the content panel's page is scrolled (`support::gutter_scroll`).
+    pub(crate) content_scroll: gpui::ScrollHandle,
     /// The inspector, in the side panel, which shows the info the registry
     /// settles on.
     pub(crate) inspector: Entity<Inspector>,
@@ -1447,6 +1448,7 @@ impl Showcase {
             side_panel_width: LEFT_PANEL_WIDTH,
             info_ui,
             menus,
+            content_scroll: gpui::ScrollHandle::new(),
             inspector,
             status_title_drawn: None,
             #[cfg(test)]
@@ -1964,69 +1966,77 @@ impl Render for Showcase {
                 .debug_selector(|| CONTENT_ALERT.into())
             }))
             .child(
-                div()
-                    .id("content-scroll-outer")
-                    .flex_1()
-                    .overflow_y_scrollbar()
-                    // The bar is drawn over the right edge of the scroll area,
-                    // so the page keeps that width free; the page roots' own
-                    // padding is untouched.
-                    .native(cx, geometry::scrollbar_gutter)
-                    .debug_selector(|| CONTENT_SCROLL.into())
-                    // PAGE_ROOT is what `every_page_lays_out` looks the page up
-                    // by, and it goes on each arm rather than on one wrapper
-                    // around the match: the test asserts the page's own root
-                    // has a size, and a wrapper would report this scroll
-                    // container's size for every page -- including a page that
-                    // rendered nothing. That is what makes the ten
-                    // `impl IntoElement + InteractiveElement` signatures worth
-                    // their noise.
-                    .child(match active_page {
-                        Page::Basic => self
-                            .render_basic_page(window, cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Buttons => self
-                            .render_buttons_page(window, cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Inputs => self
-                            .render_inputs_page(window, cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Data => self
-                            .render_data_page(window, cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Feedback => self
-                            .render_feedback_page(window, cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Typography => self
-                            .render_typography_page(cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Layout => self
-                            .render_layout_page(window, cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Overlays => self
-                            .render_overlays_page(window, cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Charts => self
-                            .render_charts_page(cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::Icons => self
-                            .render_icons_page(cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                        Page::ThemeMap => self
-                            .render_theme_map_page(cx)
-                            .debug_selector(|| PAGE_ROOT.into())
-                            .into_any_element(),
-                    }),
+                // The bar is drawn over the right edge of the scroll area, so
+                // while the page overflows it the page keeps that width free
+                // (`gutter_scroll`); the page roots' own padding is untouched.
+                crate::support::gutter_scroll(
+                    "content-scroll-outer",
+                    &self.content_scroll,
+                    div()
+                        .debug_selector(|| CONTENT_SCROLL.into())
+                        // PAGE_ROOT is what `every_page_lays_out` looks the page up
+                        // by, and it goes on each arm rather than on one wrapper
+                        // around the match: the test asserts the page's own root
+                        // has a size, and a wrapper would report this scroll
+                        // container's size for every page -- including a page that
+                        // rendered nothing. That is what makes the ten
+                        // `impl IntoElement + InteractiveElement` signatures worth
+                        // their noise.
+                        .child(match active_page {
+                            Page::Basic => self
+                                .render_basic_page(window, cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Buttons => self
+                                .render_buttons_page(window, cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Inputs => self
+                                .render_inputs_page(window, cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Data => self
+                                .render_data_page(window, cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Feedback => self
+                                .render_feedback_page(window, cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Typography => self
+                                .render_typography_page(cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Layout => self
+                                .render_layout_page(window, cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Overlays => self
+                                .render_overlays_page(window, cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Charts => self
+                                .render_charts_page(cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::Icons => self
+                                .render_icons_page(cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                            Page::ThemeMap => self
+                                .render_theme_map_page(cx)
+                                .debug_selector(|| PAGE_ROOT.into())
+                                .into_any_element(),
+                        }),
+                    {
+                        let this = cx.entity().downgrade();
+                        move |cx: &mut gpui::App| {
+                            this.update(cx, |_, cx| cx.notify()).ok();
+                        }
+                    },
+                    cx,
+                )
+                .flex_1(),
             );
 
         // The body: the side panel | content, one resizable group (spec S1).

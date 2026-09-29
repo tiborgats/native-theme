@@ -88,7 +88,7 @@
 //! Upstream citations in this module are verified against gpui-component 0.6.6,
 //! gpui-base 0.6.6 and gpui-pre 0.3.6.
 
-use gpui::{FontWeight, Pixels, StyleRefinement, Styled, px, relative};
+use gpui::{BoxShadow, FontWeight, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
 use native_theme::theme::{LayoutTheme, ResolvedFontSpec, ResolvedPadding};
 
@@ -340,27 +340,50 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 /// bundled preset/mode combinations state a different text colour for a
 /// tooltip than for a popover, and more a different fill: kde-breeze's
 /// tooltip is `#f7f7f7` on a white popover, adwaita's dark on a light one.
+///
+/// The edge is `tooltip.border.line_width` wide, over upstream's `border_1`
+/// (`:117`). The drop shadow is upstream's `shadow_md` (`:119`) where
+/// `tooltip.border.shadow_enabled` holds -- its two layers
+/// ([`TOOLTIP_SHADOW`]), the model stating no shadow geometry -- in
+/// `defaults.shadow_color`, and none where it does not.
 #[must_use]
 pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
-    with_coloured_text(
+    let shadow = if t.border.shadow_enabled {
+        let ink = rgba_to_hsla(n.resolved.defaults.shadow_color);
+        TOOLTIP_SHADOW
+            .iter()
+            .map(|&(y, blur, spread)| {
+                BoxShadow::new(px(0.), px(y), ink)
+                    .blur_radius(px(blur))
+                    .spread_radius(px(spread))
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
+    let mut r = with_coloured_text(
         with_padding(StyleRefinement::default(), &t.border.padding)
             .rounded(px(t.border.corner_radius.max(0.0)))
             .bg(rgba_to_hsla(t.background_color))
+            .border(px(t.border.line_width.max(0.0)))
             .border_color(rgba_to_hsla(t.border.color)),
         &t.font,
         n,
-    )
+    );
+    r.box_shadow = Some(shadow);
+    r
 }
 
-/// Upstream draws the bubble with a one-pixel border on every side
-/// (`src/tooltip.rs:117`, `border_1()`), which the platform's outer width pays
-/// for along with the two paddings.
-const TOOLTIP_BORDER: f32 = 1.0;
+/// The layers of gpui's `shadow_md`, which upstream gives a tooltip
+/// (`src/tooltip.rs:119`), as (y offset, blur radius, spread radius) in
+/// pixels (gpui-pre-macros 0.3.6 `src/styles.rs:445-448`).
+const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 
 /// The element an application passes to `Tooltip::element`
 /// (`src/tooltip.rs:128-131`): `tooltip.max_width` less the bubble's own
-/// horizontal paddings and border, which is the inner box the text wraps in.
+/// horizontal paddings and its edge, `tooltip.border.line_width` on each
+/// side ([`tooltip`]), which is the inner box the text wraps in.
 ///
 /// The width has to land here and not on the bubble. The tooltip's content
 /// sits in a bare `div()` inside upstream's `h_flex()`, so it is a flex item
@@ -392,7 +415,7 @@ pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
         * text_scale_factor(n.accessibility);
     let left = t.border.padding.left.unwrap_or(upstream_side);
     let right = t.border.padding.right.unwrap_or(upstream_side);
-    let inner = t.max_width - left - right - 2.0 * TOOLTIP_BORDER;
+    let inner = t.max_width - left - right - 2.0 * t.border.line_width.max(0.0);
     StyleRefinement::default().max_w(px(inner.max(0.0)))
 }
 
@@ -1307,7 +1330,7 @@ mod tests {
                 len((t.max_width
                     - t.border.padding.left.unwrap_or(upstream)
                     - t.border.padding.right.unwrap_or(upstream)
-                    - 2.0 * TOOLTIP_BORDER)
+                    - 2.0 * t.border.line_width)
                     .max(0.0))
             );
             stated.padding(&out, &t.border.padding, "tooltip");
@@ -1322,6 +1345,23 @@ mod tests {
                 "the tooltip's own fill, not the popover's"
             );
             assert_eq!(out.border_color, Some(rgba_to_hsla(t.border.color)));
+            assert_eq!(out.border_widths.top, abs(t.border.line_width));
+            let shadow = out.box_shadow.clone().unwrap_or_default();
+            assert_eq!(
+                shadow.len(),
+                if t.border.shadow_enabled {
+                    TOOLTIP_SHADOW.len()
+                } else {
+                    0
+                },
+                "tooltip.border.shadow_enabled"
+            );
+            assert!(
+                shadow
+                    .iter()
+                    .all(|l| l.color == rgba_to_hsla(r.defaults.shadow_color)),
+                "the tooltip's shadow is not defaults.shadow_color"
+            );
 
             let p = &r.popover;
             let out = popover(n);
@@ -1993,7 +2033,7 @@ mod tests {
             let rem = r.defaults.font.size * s;
             assert_eq!(
                 tooltip_content(n).max_size.width,
-                len(r.tooltip.max_width - 3.0 - 0.5 * rem - 2.0 * TOOLTIP_BORDER),
+                len(r.tooltip.max_width - 3.0 - 0.5 * rem - 2.0 * r.tooltip.border.line_width),
                 "at s = {s}"
             );
         }

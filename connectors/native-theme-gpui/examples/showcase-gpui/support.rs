@@ -286,6 +286,66 @@ pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
     }
 }
 
+/// A box `id` that scrolls `content` vertically: the structure
+/// gpui-component's `Scrollable` builds (scroll/scrollable.rs:147-196, a
+/// root the caller sizes, a scroll area filling it, the content at least the
+/// area's height, the scrollbar laid over the root), on the application's
+/// own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
+/// free only while it overflows the area. gpui-base hides the bar while the
+/// content fits (gpui-base src/scrollbar.rs:1402-1406), and the platform's
+/// bar then takes no room either. The strip follows the last layout's
+/// overflow; a frame whose layout changes it calls `relayout`, which asks
+/// the view for another frame.
+pub(crate) fn gutter_scroll(
+    id: &'static str,
+    handle: &gpui::ScrollHandle,
+    content: Div,
+    relayout: impl Fn(&mut App) + 'static,
+    cx: &App,
+) -> Stateful<Div> {
+    use gpui::{InteractiveElement as _, ParentElement as _, StatefulInteractiveElement as _};
+    use gpui_component::{InteractiveElementExt as _, scroll::ScrollableElement as _};
+    let overflows = |h: &gpui::ScrollHandle| h.max_offset().y > px(0.);
+    let reserved = overflows(handle);
+    let content = if reserved {
+        content.native(cx, native_theme_gpui::geometry::scrollbar_gutter)
+    } else {
+        content
+    };
+    let watched = handle.clone();
+    // Clipped on the scrolled axis, as upstream's root (scrollable.rs:227-262):
+    // a flex item that is not keeps its content's height as its minimum and
+    // grows to it instead of scrolling.
+    gpui::div()
+        .id(id)
+        .relative()
+        .overflow_y_hidden()
+        .child(
+            gpui::div()
+                .id("scroll-area")
+                .size_full()
+                .flex()
+                .flex_col()
+                .track_scroll(handle)
+                .overflow_y_scroll()
+                .lock_scroll_axis()
+                .child(content.flex_none().h_auto().min_h_full()),
+        )
+        .vertical_scrollbar(handle)
+        .child(
+            gpui::canvas(
+                move |_, _, cx| {
+                    if overflows(&watched) != reserved {
+                        relayout(cx);
+                    }
+                },
+                |_, _, _, _| {},
+            )
+            .absolute()
+            .size_0(),
+        )
+}
+
 pub(crate) fn with_padding<W: Styled>(widget: W, padding: Option<Pixels>) -> W {
     match padding {
         Some(p) => widget.p(p),

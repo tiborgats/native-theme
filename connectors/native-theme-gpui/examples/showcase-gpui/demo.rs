@@ -215,6 +215,15 @@ const MENU_SHORTCUT_GAP: Rems = rems(0.75);
 /// With one, it is `separator.line_width`.
 const MENU_SEPARATOR: Pixels = px(2.);
 
+/// The two blurred layers of the popup's drop shadow where
+/// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
+/// radius), drawn in `defaults.shadow_color`: the model states no shadow
+/// geometry, so these are gpui-component's popup surface shadow's
+/// (gpui-component 0.6.6 src/styled.rs:66-71, `popover_shadow`), without its
+/// ring (:63-65), whose place the frame in `popover.border` takes.
+const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
+    [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
+
 /// The model's menu, as the showcase draws a menu title and a menu row:
 /// `menu.font`, `menu.hover_background` and `hover_text_color`,
 /// `menu.border`'s padding sides and corner radius (platform-facts §2.6: the
@@ -223,6 +232,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// border is §2.16's).
 #[derive(Clone)]
 struct MenuLook {
+    family: SharedString,
     font_size: Pixels,
     weight: FontWeight,
     /// `defaults.line_height`, the platform's line box, as the connector's
@@ -240,6 +250,11 @@ struct MenuLook {
     frame: Hsla,
     frame_width: Pixels,
     frame_radius: Pixels,
+    /// `popover.border.padding`: round the popup's rows.
+    popup_padding: ResolvedPadding,
+    /// The popup's drop shadow ([`MENU_POPUP_SHADOW`]), none where
+    /// `popover.border.shadow_enabled` does not hold.
+    popup_shadow: Vec<gpui::BoxShadow>,
 }
 
 impl MenuLook {
@@ -247,6 +262,7 @@ impl MenuLook {
         let m = &n.resolved.menu;
         let p = &n.resolved.popover.border;
         Self {
+            family: SharedString::from(m.font.family.to_string()),
             font_size: px(native_theme_gpui::scaled_text_size(
                 m.font.size,
                 n.accessibility,
@@ -265,6 +281,20 @@ impl MenuLook {
             frame: info::stated(p.color),
             frame_width: px(p.line_width),
             frame_radius: px(p.corner_radius.max(0.0)),
+            popup_padding: p.padding,
+            popup_shadow: if p.shadow_enabled {
+                let ink = info::stated(n.resolved.defaults.shadow_color);
+                MENU_POPUP_SHADOW
+                    .iter()
+                    .map(|&(y, blur, spread)| {
+                        gpui::BoxShadow::new(px(0.), y, ink)
+                            .blur_radius(blur)
+                            .spread_radius(spread)
+                    })
+                    .collect()
+            } else {
+                Vec::new()
+            },
         }
     }
 }
@@ -338,6 +368,7 @@ impl RenderOnce for MenuTitle {
                     MENU_TITLE_PADDING_X,
                     Some(MENU_TITLE_PADDING_Y),
                 )
+                .font_family(look.family.clone())
                 .text_size(look.font_size)
                 .line_height(look.line_height)
                 .font_weight(look.weight)
@@ -563,8 +594,16 @@ impl MenuBar {
                 .filter(|&open| open == THEME_MENU)
                 .and_then(|_| THEME_MENU_ROWS.get(ix).copied())
         };
-        let body = v_flex()
-            .p(MENU_POPUP_PADDING)
+        let body = match look {
+            Some(look) => padded(
+                v_flex(),
+                &look.popup_padding,
+                MENU_POPUP_PADDING,
+                Some(MENU_POPUP_PADDING),
+            ),
+            None => v_flex().p(MENU_POPUP_PADDING),
+        };
+        let body = body
             .gap(MENU_POPUP_ROW_GAP)
             .min_w(MENU_POPUP_MIN_WIDTH)
             .children(rows.iter().enumerate().map(|(ix, row)| {
@@ -611,7 +650,11 @@ impl MenuBar {
                             }));
                         let row = match look {
                             Some(look) => {
+                                // The shortcut is the plain text of a Kbd
+                                // without its appearance (kbd.rs:229-231),
+                                // which takes the row's font and line box.
                                 let row = padded(row, &look.padding, MENU_ROW_PADDING_X, None)
+                                    .font_family(look.family.clone())
                                     .text_size(look.font_size)
                                     .line_height(look.line_height)
                                     .font_weight(look.weight)
@@ -653,7 +696,8 @@ impl MenuBar {
                 .bg(look.background)
                 .border(look.frame_width)
                 .border_color(look.frame)
-                .rounded(look.frame_radius),
+                .rounded(look.frame_radius)
+                .shadow(look.popup_shadow.clone()),
             None => frame,
         };
         match self.open {
@@ -1312,6 +1356,8 @@ pub(crate) fn side_panel(
     if container_margin.is_some() {
         panel_info = panel_info.geometry("container_margin");
     }
+    let own = sidebar_padding(cx);
+    let side = |stated: Option<f32>| stated.map(px).or(container_margin);
     // The model's sidebar: `sidebar.background_color` and `sidebar.font`'s
     // colour, which the connector installs as the `sidebar` and
     // `sidebar_foreground` tokens.
@@ -1319,11 +1365,50 @@ pub(crate) fn side_panel(
         .size_full()
         .bg(cx.theme().sidebar)
         .text_color(cx.theme().sidebar_foreground)
-        .child(with_padding(div().w_full(), container_margin).child(settings))
+        .when_some(own, |panel, p| {
+            panel
+                .when_some(side(p.top), |el, v| el.pt(v))
+                .when_some(side(p.right), |el, v| el.pr(v))
+                .when_some(side(p.bottom), |el, v| el.pb(v))
+                .when_some(side(p.left), |el, v| el.pl(v))
+        })
+        .child(
+            with_padding(
+                div().w_full(),
+                side_panel_content_margin(cx, container_margin),
+            )
+            .child(settings),
+        )
         .child(separator)
         .child(div().w_full().flex_1().min_h_0().child(inspector))
         .info(ui, CHROME_SIDE_PANEL, panel_info)
         .size_full()
+}
+
+/// `sidebar.border.padding`, where the theme states any side of it: the
+/// side panel's own padding. It then pads the whole panel, a side it leaves
+/// unstated by `layout.container_margin`, and the panel's content adds none
+/// ([`side_panel_content_margin`]), as the egui showcase's side panel takes
+/// it. `None` where it states no side.
+pub(crate) fn sidebar_padding(cx: &App) -> Option<ResolvedPadding> {
+    native_value(cx, |n| n.resolved.sidebar.border.padding).filter(|p| {
+        [p.top, p.right, p.bottom, p.left]
+            .iter()
+            .any(Option::is_some)
+    })
+}
+
+/// The padding of the side panel's settings and of the inspector's content:
+/// `layout.container_margin`, or none where the theme states the panel's own
+/// padding ([`sidebar_padding`]), which pads them already.
+pub(crate) fn side_panel_content_margin(
+    cx: &App,
+    container_margin: Option<Pixels>,
+) -> Option<Pixels> {
+    match sidebar_padding(cx) {
+        Some(_) => None,
+        None => container_margin,
+    }
 }
 
 /// One of the Layout page's `Sidebar` samples (spec S5).
@@ -2878,7 +2963,9 @@ pub(crate) fn text_input(
                 .flatten();
             if let Some(r) = surface {
                 input_info = info::inputs::input_surface(input_info, r);
-                return input_surface(cx, r, input, width)
+                let none = cx.theme().transparent;
+                return input_surface(r, &r.input.border, input.bg(none).border_color(none))
+                    .w(width)
                     .info(ui, id, input_info)
                     .debug_selector(move || id.into());
             }
@@ -2902,9 +2989,11 @@ pub(crate) fn text_input(
 /// The group an enabled field's surface takes its hover from.
 const INPUT_GROUP: &str = "input-surface";
 
-/// An enabled, refined `input` `width` wide over its surface, drawn from
-/// `r`: `input.background_color` framed by `input.border.color`, and by
-/// `input.hover_border_color` under the pointer.
+/// An enabled, refined `field` over its surface, drawn from `r`:
+/// `input.background_color` framed by `border` (`input.border`, or a text
+/// area's `text_area.border`), and by `input.hover_border_color` under the
+/// pointer. The caller leaves the field without a fill or an edge colour of
+/// its own, in upstream's `transparent` token (theme/schema.rs).
 ///
 /// `Input` is `Styled` only (input/input.rs:481) and its root's one state is
 /// `focused` (:677-684), so it has no hover edge of its own: the field is
@@ -2912,32 +3001,27 @@ const INPUT_GROUP: &str = "input-surface";
 /// own, :719) and an absolute box under it, the field's size, paints them.
 /// Focused, the field's own edge in `ring` shows over the surface's.
 fn input_surface(
-    cx: &App,
     r: &native_theme_gpui::ResolvedTheme,
-    input: Input,
-    width: Pixels,
+    border: &native_theme::theme::ResolvedWidgetBorder,
+    field: impl IntoElement,
 ) -> Div {
     let i = &r.input;
-    // Upstream's own `transparent` token (theme/schema.rs): no fill or edge
-    // colour of the field's own.
-    let none = cx.theme().transparent;
     // A soft option the theme leaves unstated keeps the edge it would cover.
-    let hover = info::stated(i.hover_border_color.unwrap_or(i.border.color));
+    let hover = info::stated(i.hover_border_color.unwrap_or(border.color));
     div()
         .relative()
-        .w(width)
         .group(INPUT_GROUP)
         .child(
             div()
                 .absolute()
                 .inset_0()
-                .rounded(px(i.border.corner_radius.max(0.0)))
+                .rounded(px(border.corner_radius.max(0.0)))
                 .bg(info::stated(i.background_color))
-                .border(px(i.border.line_width))
-                .border_color(info::stated(i.border.color))
+                .border(px(border.line_width))
+                .border_color(info::stated(border.color))
                 .group_hover(INPUT_GROUP, move |style| style.border_color(hover)),
         )
-        .child(input.bg(none).border_color(none))
+        .child(field)
 }
 
 /// A `Textarea` over `state`, `width` by `height`, refined by
@@ -2999,6 +3083,16 @@ pub(crate) fn rows_textarea(
     let style = Styled::style(&mut textarea);
     style.size.height = None;
     style.min_size.height = None;
+    // The frame the theme states for a text area, `text_area.border`, with
+    // the text field's hover edge, over a surface as an enabled text input
+    // takes it ([`input_surface`]).
+    if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        let none = cx.theme().transparent;
+        return input_surface(r, &r.text_area.border, textarea.bg(none).border_color(none))
+            .w(width)
+            .info(ui, id, textarea_info)
+            .debug_selector(move || id.into());
+    }
     textarea
         .info(ui, id, textarea_info)
         .debug_selector(move || id.into())
@@ -3119,32 +3213,111 @@ pub(crate) fn input_groups(
         .debug_selector(move || id.into())
 }
 
-/// A `NumberInput` over `state`, `width` wide, refined by `geometry::input`.
+/// A number field over `state`, `width` wide.
+///
+/// Under a native theme, gpui-component's `NumberInput` rebuilt over the
+/// unstyled spin button it composes (`gpui_base::NumberInput`,
+/// input/number_input.rs:113-201), with what the theme states for a text
+/// field where upstream sets literals no caller reaches: the frame is
+/// `input.background_color` edged by `input.border` (colour, width, radius)
+/// at `geometry::input`'s height, in `input.hover_border_color` under the
+/// pointer and `input.focus_border_color` while focused; the value is an
+/// `Input` padded by `input.border.padding` in `input.font`. Upstream's
+/// fills its frame with its `input_background` (:113-114) and pads its value
+/// by its Size (:158-165). The theme states no spin-box layout: the value
+/// starts at the field's padding and the step buttons stack at its right
+/// end (gpui-base's `controls_right`), as the desktops' spin boxes lay them
+/// out (Qt's QSpinBox, GTK's GtkSpinButton), where upstream's centres the
+/// value between − and + (:158-165); the buttons are upstream's otherwise
+/// (:116-156). Without a native theme, upstream's `NumberInput`.
 pub(crate) fn number_input(
     ui: &Entity<InfoRegistry>,
     cx: &App,
+    window: &Window,
     id: &'static str,
     state: &Entity<InputState>,
     width: Pixels,
 ) -> Stateful<Div> {
     let mut number_info = info::inputs::number_input(cx.theme());
-    let mut number = native_info(
-        NumberInput::new(state),
-        cx,
-        geometry::input,
-        "input",
-        &mut number_info,
-    );
-    // Without geometry::input's padding: the refinement lands on the frame
-    // round the buttons (input/number_input.rs, NumberInput::render), not on
-    // the Input inside it, which keeps its own padding.
-    Styled::style(&mut number).padding = StyleRefinement::default().padding;
-    let number = number
-        .placeholder("Enter a number")
-        .with_size(Size::Medium)
-        .w(width);
-    number.info(ui, id, number_info)
+    let native = cx.native_theme().and_then(|nt| nt.native(cx));
+    let Some(n) = native else {
+        return NumberInput::new(state)
+            .placeholder("Enter a number")
+            .with_size(Size::Medium)
+            .w(width)
+            .info(ui, id, number_info);
+    };
+    number_info = number_info.geometry("input");
+    let i = &n.resolved.input;
+    let focused = gpui::Focusable::focus_handle(state.read(cx), cx).is_focused(window);
+    // A soft option the theme leaves unstated keeps the edge it would cover.
+    let edge = info::stated(match (focused, i.focus_border_color) {
+        (true, Some(focus)) => focus,
+        _ => i.border.color,
+    });
+    let hover = info::stated(i.hover_border_color.unwrap_or(i.border.color));
+    let field = geometry::input(n);
+    // The frame: the field's height, radius and edge width, no padding --
+    // that is the value's, inside the buttons.
+    let mut frame = field.clone();
+    frame.padding = StyleRefinement::default().padding;
+    // The value: the field's padding and text, in the frame's height.
+    let mut value = field;
+    value.size = StyleRefinement::default().size;
+    value.min_size = StyleRefinement::default().min_size;
+    value.border_widths = StyleRefinement::default().border_widths;
+    value.corner_radii = StyleRefinement::default().corner_radii;
+    // Upstream's step buttons (input/number_input.rs:116-121, :137-156,
+    // :172-189): transparent, tinted with the frame's edge colour under the
+    // pointer and while pressed, a pixel tighter at the outer corners, as
+    // wide as upstream's at the field's Size (:147-151, `min_w_8`); stacked,
+    // each half the field's height, with its chevron at the Size upstream
+    // gives a Small field's icons.
+    let foreground = cx.theme().secondary_foreground;
+    let tint = cx.theme().input;
+    let radius = (px(i.border.corner_radius.max(0.0)) - px(i.border.line_width)).max(px(0.));
+    let step = move |button: gpui_base::Button, label: &'static str, icon: IconName| {
+        button
+            .accessibility_label(label)
+            .flex()
+            .items_center()
+            .justify_center()
+            .text_color(foreground)
+            .hover(move |this| this.bg(tint.opacity(NUMBER_STEP_HOVER)))
+            .active(move |this| this.bg(tint.opacity(NUMBER_STEP_ACTIVE)))
+            .min_w_8()
+            .child(Icon::new(icon).with_size(Size::Small))
+    };
+    let spin = gpui_base::NumberInput::new(state)
+        .size_full()
+        .controls_right()
+        .increment_button(move |b| step(b, "Increment", IconName::ChevronUp).rounded_tr(radius))
+        .input(
+            Input::new(state)
+                .appearance(false)
+                .with_size(Size::Medium)
+                .h_full()
+                .gap_0()
+                .rounded_none()
+                .refine_style(&value),
+        )
+        .decrement_button(move |b| step(b, "Decrement", IconName::ChevronDown).rounded_br(radius));
+    div()
+        .id("number-frame")
+        .w(width)
+        .bg(info::stated(i.background_color))
+        .refine_style(&frame)
+        .border_color(edge)
+        .when(!focused, |el| el.hover(move |s| s.border_color(hover)))
+        .child(spin)
+        .info(ui, id, number_info)
 }
+
+/// The opacity of the frame's edge colour a step button of the number field
+/// is tinted with under the pointer and while pressed: upstream's
+/// (input/number_input.rs:120-121, `input.opacity(0.4)`, `(0.6)`).
+const NUMBER_STEP_HOVER: f32 = 0.4;
+const NUMBER_STEP_ACTIVE: f32 = 0.6;
 
 /// A `Checkbox` reading `label`, `checked` or not, refined by
 /// `geometry::checkbox`. A disabled one takes no `on_click`.
@@ -7831,12 +8004,19 @@ pub(crate) fn files_table(
         } else {
             (None, colour(l.item_font.color))
         };
+        // Under the pointer, a row that is not the selected one takes the
+        // list's hover fill and text colour.
+        let (hover, hover_text) = (colour(l.hover_background), colour(l.hover_text_color));
         row(TableLine {
             cells: *cells,
             listed: [None, None],
             font: font(&l.item_font, text),
             fill,
             closed: false,
+        })
+        .id(("table-row", ix))
+        .when(ix != selected, |row| {
+            row.hover(move |s| s.bg(hover).text_color(hover_text))
         })
         .info(
             ui,

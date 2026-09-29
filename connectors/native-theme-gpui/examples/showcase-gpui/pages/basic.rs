@@ -419,8 +419,15 @@ impl Showcase {
             group(
                 number,
                 vec![
-                    demo::number_input(ui, cx, "basic-number", &self.basic_number_state, width)
-                        .into_any_element(),
+                    demo::number_input(
+                        ui,
+                        cx,
+                        window,
+                        "basic-number",
+                        &self.basic_number_state,
+                        width,
+                    )
+                    .into_any_element(),
                 ],
             ),
             group(
