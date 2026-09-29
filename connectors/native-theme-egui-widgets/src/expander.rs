@@ -123,9 +123,10 @@ fn own<R>(
     } = expander;
     // Where egui lays the header out (`egui/src/containers/collapsing_header.rs:512-590`): the
     // title `indent` in, in the button font, centred on the row; the arrow's box
-    // `icon_width_inner` square, centred half an indent in.
+    // `icon_width_inner` square, centred half an indent in, the arrow `EGUI_ARROW_SHARE` of it
+    // (`paint_default_icon`, `:336-357`).
     let indent = ui.spacing().indent;
-    let arrow = ui.spacing().icon_width_inner;
+    let arrow = EGUI_ARROW_SHARE * ui.spacing().icon_width_inner;
     let title_size = title
         .clone()
         .into_galley(
@@ -220,10 +221,14 @@ fn painted<R>(
         if let Some(body) = &body {
             parts.push("body", body.response.rect);
         }
-        parts.store(ui.ctx(), header.id);
-        (header, body.map(|b| b.inner))
+        (header, body.map(|b| b.inner), parts)
     });
-    let (header_response, body_returned) = out.inner;
+    let (header_response, body_returned, mut parts) = out.inner;
+    // The frame around header and body, where `frame_enabled` draws one.
+    if e.frame_enabled == Some(true) {
+        parts.push("frame", out.response.rect);
+    }
+    parts.store(ui.ctx(), header_response.id);
     ExpanderResponse {
         header_response,
         body_returned,

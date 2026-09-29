@@ -14,7 +14,7 @@ use native_theme_egui::egui;
 /// | [`RadioButton`](crate::radio_button::RadioButton) | `indicator`, `dot` (when checked), `label` |
 /// | [`ProgressBar`](crate::progress_bar::ProgressBar) | `fill` |
 /// | [`SegmentedControl`](crate::segmented_control::SegmentedControl) | `segment_<n>` from 0, `divider_<n>` between segment `n` and the next |
-/// | [`Expander`](crate::expander::Expander) | `header`, `arrow`, `title`, `body` (when open) |
+/// | [`Expander`](crate::expander::Expander) | `header`, `arrow`, `title`, `body` (when open), `frame` (when `frame_enabled` draws one) |
 /// | [`ComboBox`](crate::combo_box::ComboBox) | `text`, `arrow` |
 ///
 /// A widget drawn with egui's own counterpart, where no atlas is installed or a size is not
