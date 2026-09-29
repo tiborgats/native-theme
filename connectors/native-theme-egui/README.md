@@ -355,6 +355,11 @@ another tool, it opens at that size whatever size the desktop remembers for it.
 and `--press` holds the primary button down there, so a capture shows the
 control under it hovered or pressed where nothing can move the real pointer,
 as in a nested compositor; the gpui and iced showcases take the same flags.
+The elements the three showcases share are listed once, in
+`docs/showcase-elements.toml`: `--dump-layout FILE` writes their rectangles
+for `scripts/check_showcase_parity.py`, and `--open-menu theme` opens the
+Theme menu before the first settled frame, so the capture and the dump hold
+its popup and rows.
 
 ## Gallery
 
