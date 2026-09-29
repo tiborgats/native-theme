@@ -326,7 +326,7 @@ fn listed_part(id: &str, part: &str) -> Option<&'static str> {
 /// The listed elements that are layout boxes rather than something drawn to
 /// be looked at: the pointer over the space between controls keeps what
 /// Widget Info shows, as it does over a part of the page no element covers.
-const LAYOUT_BOXES: [&str; 7] = [
+const LAYOUT_BOXES: [&str; 8] = [
     "chrome.window",
     "chrome.content",
     "basic.page",
@@ -334,6 +334,7 @@ const LAYOUT_BOXES: [&str; 7] = [
     "basic.column_2",
     "basic.column_3",
     "basic.column_4",
+    "basic.column_5",
 ];
 
 /// Whether the pointer over `id` makes Widget Info show it: every listed
@@ -371,6 +372,9 @@ struct Tagged<'a> {
     texts: Vec<(&'static str, MeasuredText, PartOrigin<'a>)>,
     root: bool,
     loose: bool,
+    /// The element that clips this one, where one does: the rectangle is
+    /// recorded as the part of it inside that element's.
+    within: Option<&'static str>,
 }
 
 /// The box a measured text part sits in, found from the element's layout.
@@ -426,6 +430,7 @@ fn tagged<'a>(id: &'static str, content: impl Into<Element<'a, Message>>) -> Tag
         texts: Vec::new(),
         root: false,
         loose: false,
+        within: None,
     }
 }
 
@@ -447,6 +452,14 @@ impl<'a> Tagged<'a> {
     /// is, rather than squeezed.
     fn loose(mut self) -> Self {
         self.loose = true;
+        self
+    }
+
+    /// The element recorded as the part of it inside the element `outer`,
+    /// which clips it: `outer` encloses it, so it is recorded first, in
+    /// the same frame and the same survey.
+    fn within(mut self, outer: &'static str) -> Self {
+        self.within = Some(outer);
         self
     }
 
@@ -475,7 +488,15 @@ impl<'a> Tagged<'a> {
 
     /// The element's rectangle and its parts', into `rects`.
     fn record(&self, layout: iced::advanced::Layout<'_>, rects: &mut ElementRects) {
-        rects.insert(self.id, layout.bounds());
+        let bounds = layout.bounds();
+        let shown = match self.within.and_then(|outer| rects.get(outer)) {
+            Some(outer) => bounds.intersection(outer).unwrap_or(iced::Rectangle {
+                width: 0.0,
+                ..bounds
+            }),
+            None => bounds,
+        };
+        rects.insert(self.id, shown);
         for (id, rect) in &self.parts {
             if let Some(bounds) = rect(layout) {
                 rects.insert(id, bounds);
@@ -801,6 +822,11 @@ struct CliArgs {
     /// written to FILE as JSON ([`write_layout_dump`]), and again whenever it
     /// changes; without `--capture` the showcase then exits.
     dump_layout: Option<String>,
+    /// `--open-menu NAME`: the menu bar's menu `NAME` is open from the first
+    /// frame and held open ([`HeldMenu`]), so a capture and the layout dump
+    /// show it with its rows. `theme`, the Theme menu, is the one menu the
+    /// three showcases share (docs/showcase-elements.toml).
+    open_menu: Option<String>,
 }
 
 /// `X,Y` as two whole logical pixels, or `None`.
@@ -857,6 +883,10 @@ impl CliArgs {
                     }
                 }
                 "--press" => args.press = true,
+                "--open-menu" => {
+                    i += 1;
+                    args.open_menu = Some(argv.get(i).map_or("", String::as_str).to_lowercase());
+                }
                 "--pointer" => {
                     i += 1;
                     let value = argv.get(i).map_or("", String::as_str);
@@ -3086,6 +3116,347 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
 }
 
 // ---------------------------------------------------------------------------
+// Held menu (`--open-menu`)
+// ---------------------------------------------------------------------------
+
+/// The one menu `--open-menu` opens: the Theme menu's name on the command
+/// line.
+const OPEN_MENU_THEME: &str = "theme";
+
+/// A menu bar with one of its menus opened on the first frame and held open,
+/// for `--open-menu`: a capture and the layout dump show the menu with its
+/// rows.
+///
+/// `iced_aw`'s `MenuBar` opens a menu only on a click of its title and
+/// offers no way to open one otherwise (iced_aw 0.14.1
+/// `src/widget/menu/menu_bar.rs:430-470`, `MenuBarTask::OpenOnClick`), so on
+/// the first redraw this delivers a press and a release of the primary button
+/// at the centre of the title `root` (the bar's roots are its layout's first
+/// child's children, `menu_bar.rs:400`). The open menu is an overlay, which
+/// iced hands the window's own pointer and events; [`HeldOverlay`] hands it
+/// none, so the real pointer, wherever it is, neither closes it nor hovers a
+/// row.
+struct HeldMenu<'a> {
+    content: Element<'a, Message>,
+    /// The index of the menu's title among the bar's.
+    root: usize,
+    /// The list's id of the menu's panel.
+    popup: &'static str,
+    /// The panel's padding round its rows, as the menu is given it.
+    padding: Padding,
+}
+
+/// Whether [`HeldMenu`] has opened its menu.
+#[derive(Default)]
+struct HeldMenuState {
+    opened: bool,
+}
+
+impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldMenu<'_> {
+    fn tag(&self) -> iced::advanced::widget::tree::Tag {
+        iced::advanced::widget::tree::Tag::of::<HeldMenuState>()
+    }
+
+    fn state(&self) -> iced::advanced::widget::tree::State {
+        iced::advanced::widget::tree::State::new(HeldMenuState::default())
+    }
+
+    fn children(&self) -> Vec<iced::advanced::widget::Tree> {
+        vec![iced::advanced::widget::Tree::new(&self.content)]
+    }
+
+    fn diff(&self, tree: &mut iced::advanced::widget::Tree) {
+        tree.diff_children(std::slice::from_ref(&self.content));
+    }
+
+    fn size(&self) -> iced::Size<Length> {
+        self.content.as_widget().size()
+    }
+
+    fn size_hint(&self) -> iced::Size<Length> {
+        self.content.as_widget().size_hint()
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        renderer: &iced::Renderer,
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
+        match tree.children.first_mut() {
+            Some(child) => self.content.as_widget_mut().layout(child, renderer, limits),
+            None => iced::advanced::layout::Node::new(iced::Size::ZERO),
+        }
+    }
+
+    fn draw(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+    ) {
+        if let Some(child) = tree.children.first() {
+            self.content
+                .as_widget()
+                .draw(child, renderer, theme, style, layout, cursor, viewport);
+        }
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        if let Some(child) = tree.children.first_mut() {
+            self.content
+                .as_widget_mut()
+                .operate(child, layout, renderer, operation);
+        }
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        event: &iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+        viewport: &iced::Rectangle,
+    ) {
+        // `State::downcast_mut` panics on a state of another type; this cannot.
+        let iced::advanced::widget::tree::State::Some(any) = &mut tree.state else {
+            return;
+        };
+        let Some(state) = any.downcast_mut::<HeldMenuState>() else {
+            return;
+        };
+        let Some(child) = tree.children.first_mut() else {
+            return;
+        };
+        let content = self.content.as_widget_mut();
+        if !state.opened
+            && matches!(
+                event,
+                iced::Event::Window(iced::window::Event::RedrawRequested(_))
+            )
+            && let Some(title) = node_at(layout, &[0, self.root])
+        {
+            let at = iced::mouse::Cursor::Available(title.bounds().center());
+            for click in [
+                iced::mouse::Event::ButtonPressed(iced::mouse::Button::Left),
+                iced::mouse::Event::ButtonReleased(iced::mouse::Button::Left),
+            ] {
+                uncaptured(shell, |held| {
+                    content.update(
+                        child,
+                        &iced::Event::Mouse(click),
+                        layout,
+                        at,
+                        renderer,
+                        clipboard,
+                        held,
+                        viewport,
+                    );
+                });
+            }
+            state.opened = true;
+            shell.request_redraw();
+        }
+        content.update(
+            child, event, layout, cursor, renderer, clipboard, shell, viewport,
+        );
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+        renderer: &iced::Renderer,
+    ) -> iced::mouse::Interaction {
+        match tree.children.first() {
+            Some(child) => self
+                .content
+                .as_widget()
+                .mouse_interaction(child, layout, cursor, viewport, renderer),
+            None => iced::mouse::Interaction::None,
+        }
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &iced::Rectangle,
+        translation: iced::Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        let child = tree.children.first_mut()?;
+        let inner =
+            self.content
+                .as_widget_mut()
+                .overlay(child, layout, renderer, viewport, translation)?;
+        Some(iced::advanced::overlay::Element::new(Box::new(
+            HeldOverlay {
+                inner,
+                popup: self.popup,
+                padding: self.padding,
+            },
+        )))
+    }
+}
+
+/// The overlay of a [`HeldMenu`]: the open menu, drawn and updated with no
+/// pointer and handed no pointer event and no resize, so it stays open and no
+/// row shows hovered. What it does with any other event it does, but it
+/// captures none
+/// of them: `iced_aw`'s open menu captures every event while the pointer is
+/// off it (iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:606-611`), and iced
+/// hands the rest of the window no event an overlay captured (iced_runtime
+/// 0.14 `src/user_interface.rs:310-316`), so the page would see no redraw.
+///
+/// It records the menu's panel under the list's id `popup`: the rows
+/// `padding` out on each side, where `iced_aw` fills and frames it
+/// (`pad_rectangle(items_bounds, padding)`, iced_aw 0.14.1
+/// `src/widget/menu/menu_tree.rs:764-780`); the open menu's layout is the
+/// bar's, its titles', then its menus', each of which is its rows' slice
+/// and then the rows' bounds (`src/widget/menu/menu_bar_overlay.rs:171-181`,
+/// `menu_tree.rs:363-372`).
+struct HeldOverlay<'a> {
+    inner: iced::advanced::overlay::Element<'a, Message, Theme, iced::Renderer>,
+    popup: &'static str,
+    padding: Padding,
+}
+
+impl HeldOverlay<'_> {
+    /// The menu's panel, where the menu is open.
+    fn panel(&self, layout: iced::advanced::Layout<'_>) -> Option<iced::Rectangle> {
+        let rows = node_at(layout, &[2, 0, 1])?.bounds();
+        Some(iced::Rectangle {
+            x: rows.x - self.padding.left,
+            y: rows.y - self.padding.top,
+            width: rows.width + self.padding.x(),
+            height: rows.height + self.padding.y(),
+        })
+    }
+}
+
+impl iced::advanced::Overlay<Message, Theme, iced::Renderer> for HeldOverlay<'_> {
+    fn layout(
+        &mut self,
+        renderer: &iced::Renderer,
+        bounds: iced::Size,
+    ) -> iced::advanced::layout::Node {
+        self.inner.as_overlay_mut().layout(renderer, bounds)
+    }
+
+    fn draw(
+        &self,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        _cursor: iced::mouse::Cursor,
+    ) {
+        if let Some(panel) = self.panel(layout) {
+            DRAWING.with_borrow_mut(|drawing| drawing.insert(self.popup, panel));
+        }
+        self.inner.as_overlay().draw(
+            renderer,
+            theme,
+            style,
+            layout,
+            iced::mouse::Cursor::Unavailable,
+        );
+    }
+
+    fn operate(
+        &mut self,
+        layout: iced::advanced::Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        if let Some(panel) = self.panel(layout) {
+            SURVEYED.with_borrow_mut(|surveyed| surveyed.insert(self.popup, panel));
+        }
+        self.inner
+            .as_overlay_mut()
+            .operate(layout, renderer, operation);
+    }
+
+    fn update(
+        &mut self,
+        event: &iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        _cursor: iced::mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+    ) {
+        // No pointer event, and no resize, on which `iced_aw` closes the
+        // menu (iced_aw 0.14.1 `src/widget/menu/menu_bar_overlay.rs:239-242`):
+        // the window is resized as the compositor maps it.
+        if matches!(
+            event,
+            iced::Event::Mouse(_) | iced::Event::Window(iced::window::Event::Resized(_))
+        ) {
+            return;
+        }
+        let inner = self.inner.as_overlay_mut();
+        uncaptured(shell, |held| {
+            inner.update(
+                event,
+                layout,
+                iced::mouse::Cursor::Unavailable,
+                renderer,
+                clipboard,
+                held,
+            );
+        });
+    }
+
+    fn index(&self) -> f32 {
+        self.inner.as_overlay().index()
+    }
+}
+
+/// Runs `update` on a shell of its own and hands `shell` what it asked for
+/// -- its messages, a redraw, a new layout, a rebuild of the widgets -- but
+/// not the capture of the event, so the event still reaches the rest of the
+/// window.
+fn uncaptured(
+    shell: &mut iced::advanced::Shell<'_, Message>,
+    update: impl FnOnce(&mut iced::advanced::Shell<'_, Message>),
+) {
+    let mut messages = Vec::new();
+    let mut held = iced::advanced::Shell::new(&mut messages);
+    update(&mut held);
+    let redraw = held.redraw_request();
+    let relayout = held.is_layout_invalid();
+    let rebuild = held.are_widgets_invalid();
+    drop(held);
+    for message in messages {
+        shell.publish(message);
+    }
+    shell.request_redraw_at(redraw);
+    if relayout {
+        shell.invalidate_layout();
+    }
+    if rebuild {
+        shell.invalidate_widgets();
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Chrome: the menu bar, toolbar, side panel, splitter, page tabs, status bar
 // and dialogs, laid out as the gpui and egui showcases lay theirs out
 // (parity inventory items 1-21, 25-27), every visual property from the theme
@@ -3683,7 +4054,13 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
             None => line.into(),
         })
     };
-    let drop = |items| Menu::new(items).max_width(AW_MENU_WIDTH).offset(0.0);
+    let popup_pad = menu_popup_padding(resolved);
+    let drop = |items| {
+        Menu::new(items)
+            .max_width(AW_MENU_WIDTH)
+            .offset(0.0)
+            .padding(popup_pad)
+    };
 
     let mut pages: Vec<Item<'_, Message, Theme, iced::Renderer>> = Tab::ALL
         .iter()
@@ -3747,6 +4124,16 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         ),
     ])
     .style(menu_bar_style(resolved));
+    // `--open-menu theme`: the Theme menu, the bar's third, held open.
+    let bar: Element<'_, Message> = match CLI_ARGS.get().and_then(|cli| cli.open_menu.as_deref()) {
+        Some(OPEN_MENU_THEME) => Element::new(HeldMenu {
+            content: bar.into(),
+            root: 2,
+            popup: "chrome.menu.theme",
+            padding: popup_pad,
+        }),
+        _ => bar.into(),
+    };
     tagged(
         "chrome.menu_bar",
         container(bar)
@@ -4187,7 +4574,10 @@ fn page_menu(state: &State) -> Element<'_, Message> {
                 .style(ghost_button(resolved, false))
                 .on_press(Message::MenuOpened),
         ),
-        Menu::new(rows).max_width(AW_MENU_WIDTH).offset(0.0),
+        Menu::new(rows)
+            .max_width(AW_MENU_WIDTH)
+            .offset(0.0)
+            .padding(menu_popup_padding(resolved)),
     )])
     .style(menu_bar_style(resolved))
     .into()
@@ -4197,10 +4587,11 @@ fn page_menu(state: &State) -> Element<'_, Message> {
 /// model's leaves: the bar is the window's `window.background_color` with no
 /// frame; a menu's panel `menu.background_color`, framed by the popover's
 /// border (platform-facts §2.6: the popup border is §2.16's); the open
-/// title's highlight `menu.hover_background`. The shadows and the
-/// highlight's border have no source -- the model has a shadow colour but no
-/// shadow geometry, and no border round a highlighted row -- and are
-/// `iced_aw`'s own (`menu_bar::primary`).
+/// title's highlight `menu.hover_background`. The panel casts a shadow only
+/// where `popover.border.shadow_enabled` states one; its geometry, the
+/// bar's shadow and the highlight's border have no source -- the model has
+/// a shadow colour but no shadow geometry, and no border round a highlighted
+/// row -- and are `iced_aw`'s own (`menu_bar::primary`).
 ///
 /// Not the connector's `styles::aw::menu`, which the Extra page shows: that
 /// one fills the bar as a menu and frames the popup with `menu.border`,
@@ -4217,6 +4608,7 @@ fn menu_bar_style(
         width: popup.line_width,
         radius: popup.corner_radius.into(),
     };
+    let shadow = popup.shadow_enabled;
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
         iced_aw::style::menu_bar::Style {
@@ -4225,7 +4617,11 @@ fn menu_bar_style(
             bar_shadow: iced.bar_shadow,
             menu_background: iced::Background::Color(panel),
             menu_border: frame,
-            menu_shadow: iced.menu_shadow,
+            menu_shadow: if shadow {
+                iced.menu_shadow
+            } else {
+                iced::Shadow::default()
+            },
             path: iced::Background::Color(highlight),
             path_border: iced.path_border,
         }
@@ -4749,9 +5145,16 @@ fn element_info_view<'a>(
         let (leaf, how): (Element<'a, Message>, Element<'a, Message>) = if first {
             (
                 // At the lines' own width, past the panel's edge, which
-                // clips them.
-                tagged("chrome.info.row_1.text", leaf).loose().into(),
-                tagged("chrome.info.row_1.how", how).loose().into(),
+                // clips them: each recorded as the part of it inside the
+                // row, what the panel shows of it.
+                tagged("chrome.info.row_1.text", leaf)
+                    .loose()
+                    .within("chrome.info.row_1")
+                    .into(),
+                tagged("chrome.info.row_1.how", how)
+                    .loose()
+                    .within("chrome.info.row_1")
+                    .into(),
             )
         } else {
             (leaf.into(), how.into())
@@ -4829,11 +5232,13 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
     // page's icon buttons, the page tabs' menu, the side-panel toggle and
     // Widget Info's Copy.
     let ghost = under("chrome.toolbar.")
-        || under("basic.icon_buttons.")
+        || under("basic.icons.copy")
+        || under("basic.icons.paste")
+        || under("basic.icons.delete")
         || under("chrome.page_tabs.menu")
         || under("chrome.status_bar.toggle")
         || id == "chrome.info.copy";
-    let toggle_on = under("basic.toggle_buttons.on");
+    let toggle_on = under("basic.buttons.toggle_on");
     let class = if ghost {
         "ghost_button"
     } else if toggle_on {
@@ -5949,10 +6354,11 @@ const BASIC_FRUITS: [Fruit; 3] = [Fruit::Apple, Fruit::Banana, Fruit::Cherry];
 /// The Basic tab's slider value, on 0 to 100: the datum on display.
 const BASIC_SLIDER: f32 = 40.0;
 
-/// The width of the Basic tab's text area, list, expanders, card and
-/// separator. The model states no such width; it is the Basic page's own, the
-/// gpui and egui showcases' `BASIC_WIDE` too.
-const BASIC_WIDE: f32 = 200.0;
+/// The width of the Basic tab's text area, list, expanders, card, separator
+/// and table. The model states no such width; it is the Basic page's own, the
+/// gpui and egui showcases' `BASIC_WIDE` too (Basic v4: 170, so five columns
+/// fit the page).
+const BASIC_WIDE: f32 = 170.0;
 
 /// The Basic tab's text area: its text, and how many lines tall it is.
 const BASIC_TEXT_AREA: &str = "Line one\nLine two\nLine three";
@@ -5962,8 +6368,8 @@ const BASIC_TEXT_AREA_LINES: f32 = 3.0;
 const BASIC_SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
 const BASIC_SEGMENT: usize = 1;
 
-/// The Basic tab's tab bar.
-const BASIC_TABS: [&str; 3] = ["One", "Two", "Three"];
+/// The Basic tab's tab bar: two tabs, the first selected.
+const BASIC_TABS: [&str; 2] = ["One", "Two"];
 
 /// The Basic tab's list: how many rows it has (`Item 1` to `Item 8`), the one
 /// selected (`Item 2`), and how many rows it shows, fewer than it has, so its
@@ -6083,11 +6489,14 @@ fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
 
 /// The controls the three showcases all draw, in the same order, with the
 /// same labels, values and states, packed onto one screen so the gpui, iced
-/// and egui captures compare control by control, in four equal columns:
-/// buttons, checkboxes, radio buttons and switches; text inputs, a text area,
-/// a drop-down and text; a slider, a progress bar, a spinner, tabs and a
-/// segmented control; a list, expanders, a card and a separator. Each group
-/// is one hover target, with its widget's info.
+/// and egui captures compare control by control, in five equal columns
+/// (Basic v4): buttons (the toggle buttons their third row), checkboxes,
+/// radio buttons and switches; text inputs (the focused one their fourth
+/// row), a text area and a drop-down; a number input, a slider, a progress
+/// bar, a spinner, tabs and a segmented control; typography (the link among
+/// its lines), icons (the icon buttons their first row), a card and a
+/// separator; a list, expanders and a table. Each control is one hover
+/// target, with its widget's info.
 ///
 /// iced has no segmented control and no expander: they are built from
 /// buttons in the connector's `styles::segmented_control`, `styles::segment`
@@ -6209,6 +6618,24 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     None,
                 ),
                 tip,
+            ]
+            .spacing(gap.widget),
+            // The toggle buttons, off and on (Basic v4's third row).
+            row![
+                push(
+                    "basic.buttons.toggle_off",
+                    "basic.buttons.toggle_off.label",
+                    "Off",
+                    Push::Plain,
+                    Some(Message::ButtonPressed),
+                ),
+                push(
+                    "basic.buttons.toggle_on",
+                    "basic.buttons.toggle_on.label",
+                    "On",
+                    Push::On,
+                    Some(Message::ButtonPressed),
+                ),
             ]
             .spacing(gap.widget),
         ]
@@ -6413,32 +6840,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
-    let link = &resolved.link;
-    let texts = group(
-        "basic.text.heading",
-        "Text",
-        column![
-            tagged("basic.text.body", text("Body text").body(resolved, a11y)),
-            // `link.underline_enabled`, which a text button cannot carry: the
-            // label is a span, which iced underlines in its own colour, the
-            // colour `styles::button_link` gives the button's text.
-            tagged(
-                "basic.text.link",
-                button(
-                    rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
-                        .size(scaled_text_size(link.font.size, a11y))
-                        .line_height(native_theme_iced::line_height_multiplier(resolved))
-                        .font(theme_font(&link.font))
-                )
-                .on_press(Message::ButtonPressed)
-                .style(styles::button_link(resolved))
-                .padding(LINK_PADDING)
-            ),
-        ]
-        .spacing(gap.widget)
-        .into(),
-    );
-
     let input_size = scaled_text_size(resolved.input.font.size, a11y);
     // `input.min_height`, as the line box that fills it inside the padding.
     let input_line = control_line_height(resolved, input_size, resolved.input.min_height, inp_pad);
@@ -6499,6 +6900,16 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 field("", "Disabled"),
                 "Disabled"
             ),
+            // A field holding the keyboard focus from the start (`boot`
+            // focuses it), so its Focused border shows (Basic v4's fourth
+            // row).
+            fielded(
+                "basic.text_inputs.focused",
+                field("", &state.basic_focused)
+                    .id(FOCUSED_INPUT_ID)
+                    .on_input(Message::BasicFocusedChanged),
+                &state.basic_focused,
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -6536,21 +6947,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     )
     .into();
     let number = group("basic.number_input.heading", "Number input", number);
-
-    // A field holding the keyboard focus from the start (`boot` focuses it),
-    // so its Focused border shows.
-    let focused = group(
-        "basic.focused_input.heading",
-        "Focused input",
-        fielded(
-            "basic.focused_input.field",
-            field("", &state.basic_focused)
-                .id(FOCUSED_INPUT_ID)
-                .on_input(Message::BasicFocusedChanged),
-            &state.basic_focused,
-        )
-        .into(),
-    );
 
     let combo_size = scaled_text_size(resolved.combo_box.font.size, a11y);
     let combo_pad = combo_box_padding(resolved);
@@ -6830,11 +7226,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let tab_pad = native_theme_iced::padding_or(&tab_t.border.padding, button::DEFAULT_PADDING);
     #[cfg(feature = "iced_aw")]
     let tab_row: Element<'a, Message> = {
-        let [one, two, three] = BASIC_TABS;
+        let [one, two] = BASIC_TABS;
         let bar = TabBar::new(Message::BasicTabSelected)
             .push(0, TabLabel::Text(one.to_string()))
             .push(1, TabLabel::Text(two.to_string()))
-            .push(2, TabLabel::Text(three.to_string()))
             .set_active_tab(&state.basic_tab)
             .text_size(scaled_text_size(tab_t.font.size, a11y))
             .text_font(theme_font(&tab_t.font))
@@ -6861,7 +7256,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .loose()
             .node("basic.tabs.one", &[0])
             .node("basic.tabs.two", &[1])
-            .node("basic.tabs.three", &[2])
             .into()
     };
     // Without iced_aw, the page tab strip's tabs: buttons padded like the
@@ -6884,7 +7278,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     .loose()
     .node("basic.tabs.one", &[0])
     .node("basic.tabs.two", &[1])
-    .node("basic.tabs.three", &[2])
     .into();
     let tabs = group("basic.tabs.heading", "Tabs", tab_row);
 
@@ -7203,30 +7596,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         .into(),
     );
 
-    // Basic v3: a toggle button off and on, beside each other.
-    let toggles = group(
-        "basic.toggle_buttons.heading",
-        "Toggle button",
-        row![
-            push(
-                "basic.toggle_buttons.off",
-                "basic.toggle_buttons.off.label",
-                "Off",
-                Push::Plain,
-                Some(Message::ButtonPressed),
-            ),
-            push(
-                "basic.toggle_buttons.on",
-                "basic.toggle_buttons.on.label",
-                "On",
-                Push::On,
-                Some(Message::ButtonPressed),
-            ),
-        ]
-        .spacing(gap.widget)
-        .into(),
-    );
-
     // Three icon-only tool buttons, as the toolbar's: flat, their icons the
     // shown set's Copy, Paste and Delete at `toolbar.icon_size`, the
     // toolbar's item gap apart.
@@ -7247,37 +7616,31 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             },
         )
     };
-    let icon_buttons = group(
-        "basic.icon_buttons.heading",
-        "Icon buttons",
-        row![
-            tool(
-                ("basic.icon_buttons.copy", "basic.icon_buttons.copy.icon"),
-                &icons.copy,
-                "Copy"
-            ),
-            tool(
-                ("basic.icon_buttons.paste", "basic.icon_buttons.paste.icon"),
-                &icons.paste,
-                "Paste"
-            ),
-            tool(
-                (
-                    "basic.icon_buttons.delete",
-                    "basic.icon_buttons.delete.icon"
-                ),
-                &icons.delete,
-                "Delete"
-            ),
-        ]
-        .spacing(resolved.toolbar.item_gap.unwrap_or(gap.widget))
-        .align_y(iced::Center)
-        .into(),
-    );
+    let icon_buttons = row![
+        tool(
+            ("basic.icons.copy", "basic.icons.copy.icon"),
+            &icons.copy,
+            "Copy"
+        ),
+        tool(
+            ("basic.icons.paste", "basic.icons.paste.icon"),
+            &icons.paste,
+            "Paste"
+        ),
+        tool(
+            ("basic.icons.delete", "basic.icons.delete.icon"),
+            &icons.delete,
+            "Delete"
+        ),
+    ]
+    .spacing(resolved.toolbar.item_gap.unwrap_or(gap.widget))
+    .align_y(iced::Center);
 
     // The text scale, a line per role, each in its own size, line height
-    // and weight, in the body font's family; the monospace font last.
+    // and weight, in the body font's family, the link after the body text
+    // (Basic v4); the monospace font last.
     let mono = &resolved.defaults.mono_font;
+    let link = &resolved.link;
     let typography = group(
         "basic.typography.heading",
         "Typography",
@@ -7287,6 +7650,21 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 text("Caption").role(&ts.caption, resolved, a11y)
             ),
             tagged("basic.typography.body", text("Body").body(resolved, a11y)),
+            // `link.underline_enabled`, which a text button cannot carry: the
+            // label is a span, which iced underlines in its own colour, the
+            // colour `styles::button_link` gives the button's text.
+            tagged(
+                "basic.typography.link",
+                button(
+                    rich_text([span::<(), _>("Link").underline(link.underline_enabled)])
+                        .size(scaled_text_size(link.font.size, a11y))
+                        .line_height(native_theme_iced::line_height_multiplier(resolved))
+                        .font(theme_font(&link.font))
+                )
+                .on_press(Message::ButtonPressed)
+                .style(styles::button_link(resolved))
+                .padding(LINK_PADDING)
+            ),
             tagged(
                 "basic.typography.section_heading",
                 text("Section heading").role(&ts.section_heading, resolved, a11y)
@@ -7330,16 +7708,21 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .map_or_else(|| space().into(), |icon| tagged(id, icon).into())
     };
     let sizes = &resolved.defaults.icon_sizes;
-    let icon_row = group(
+    // The icon buttons over the icons at their sizes (Basic v4).
+    let icon_group = group(
         "basic.icons.heading",
         "Icons",
-        row![
-            folder("basic.icons.small", sizes.small),
-            folder("basic.icons.toolbar", sizes.toolbar),
-            folder("basic.icons.large", sizes.large),
+        column![
+            icon_buttons,
+            row![
+                folder("basic.icons.small", sizes.small),
+                folder("basic.icons.toolbar", sizes.toolbar),
+                folder("basic.icons.large", sizes.large),
+            ]
+            .spacing(gap.widget)
+            .align_y(iced::Center),
         ]
         .spacing(gap.widget)
-        .align_y(iced::Center)
         .into(),
     );
 
@@ -7351,29 +7734,25 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         row![
             column_of(
                 "basic.column_1",
-                vec![buttons, checkboxes, radios, switches, toggles, icon_buttons]
+                vec![buttons, checkboxes, radios, switches]
             ),
-            column_of(
-                "basic.column_2",
-                vec![inputs, text_area, drop_down, texts, number, focused]
-            ),
+            column_of("basic.column_2", vec![inputs, text_area, drop_down]),
             column_of(
                 "basic.column_3",
                 vec![
+                    number,
                     slider_group,
                     progress,
                     spinner_group,
                     tabs,
-                    segmented,
-                    typography
+                    segmented
                 ]
             ),
             column_of(
                 "basic.column_4",
-                vec![
-                    list_group, expanders, card_group, separator, table, icon_row
-                ]
+                vec![typography, icon_group, card_group, separator]
             ),
+            column_of("basic.column_5", vec![list_group, expanders, table]),
         ]
         .spacing(gap.section),
     )
@@ -9899,6 +10278,24 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
 /// number, like `LEFT_PANEL_WIDTH`.
 const AW_MENU_WIDTH: f32 = 220.0;
 
+/// The padding `iced_aw` gives a menu's panel round its rows where the
+/// application sets none: `Padding::new(5.0)` in `Menu::new` (iced_aw 0.14.1
+/// `src/widget/menu/menu_tree.rs:161`), which it keeps in no constant.
+const AW_MENU_PADDING: f32 = 5.0;
+
+/// The padding of a menu's panel round its rows: the popup's,
+/// `popover.border.padding` (platform-facts §2.6: the popup border is
+/// §2.16's), inside `popover.border.line_width`, which iced_aw paints over
+/// the panel's padding (`pad_rectangle` round the rows, one quad with its
+/// border, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:764-780`);
+/// [`AW_MENU_PADDING`] on a side the theme leaves unstated.
+fn menu_popup_padding(resolved: &ResolvedTheme) -> Padding {
+    native_theme_iced::padding_inside_border(
+        &resolved.popover.border,
+        Padding::new(AW_MENU_PADDING),
+    )
+}
+
 /// A drop-down of the `MenuBar`, with the gap `iced_aw` leaves around it.
 #[cfg(feature = "iced_aw")]
 fn aw_menu<'a>(
@@ -11727,6 +12124,12 @@ fn main() -> iced::Result {
     let cli = CliArgs::parse();
     if let Some(value) = &cli.bad_pointer {
         eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
+        std::process::exit(1);
+    }
+    if let Some(menu) = &cli.open_menu
+        && menu != OPEN_MENU_THEME
+    {
+        eprintln!("ERROR: --open-menu {menu:?}: the menu that opens is {OPEN_MENU_THEME:?}");
         std::process::exit(1);
     }
     if let Err(error) = ELEMENTS.get_or_init(showcase_elements) {
@@ -13743,7 +14146,7 @@ mod tests {
             (title - heading).abs() < 0.01,
             "a section title is {title}px tall, section_heading.line_height is {heading}px"
         );
-        let text = height_of(&mut ui, "Body text");
+        let text = height_of(&mut ui, "Body");
         assert!(
             (text - body).abs() < 0.01,
             "body text is {text}px tall, the theme's line box is {body}px"
@@ -13890,22 +14293,24 @@ mod tests {
         found
     }
 
-    /// The Basic page is BASIC2's: its four columns hold their groups in
-    /// order, each group under its heading, and every control label the spec
-    /// names is on the page.
+    /// The Basic page is Basic v4 (round 12): its five columns hold their
+    /// groups in order, each group under its heading, and every control label
+    /// the spec names is on the page.
     #[test]
     fn the_basic_page_has_every_group_in_its_column() {
-        const COLUMNS: [&[&str]; 4] = [
+        const COLUMNS: [&[&str]; 5] = [
             &["Buttons", "Checkboxes", "Radio buttons", "Switches"],
-            &["Text inputs", "Text area", "Drop-down", "Text"],
+            &["Text inputs", "Text area", "Drop-down"],
             &[
+                "Number input",
                 "Slider",
                 "Progress bar",
                 "Spinner",
                 "Tabs",
                 "Segmented control",
             ],
-            &["List", "Expander", "Card", "Separator"],
+            &["Typography", "Icons", "Card", "Separator"],
+            &["List", "Expander", "Table"],
         ];
         let state = State::default();
         let mut ui = interface(&state);
@@ -13947,7 +14352,9 @@ mod tests {
         // Not the radio buttons', the switches' and the drop-down's labels,
         // nor the text area's lines: `radio`, `toggler`, `pick_list` and
         // `text_editor` implement no `Widget::operate`, so no selector sees
-        // them ([`probe`]); their probes are found instead.
+        // them ([`probe`]); their probes are found instead. Nor the link, a
+        // rich text, which no text selector matches; the layout dump's test
+        // finds it.
         for id in [
             probes::BASIC_RADIO_B,
             probes::BASIC_PICK_LIST,
@@ -13962,7 +14369,14 @@ mod tests {
             "Tooltip",
             "Unchecked",
             "Checked",
-            "Body text",
+            "Off",
+            "On",
+            "Caption",
+            "Body",
+            "Section heading",
+            "Dialog title",
+            "Display",
+            "Monospace",
             "Day",
             "Week",
             "Month",
@@ -13972,7 +14386,7 @@ mod tests {
             "Card content",
         ];
         if cfg!(feature = "iced_aw") {
-            labels.extend(["One", "Two", "Three", "Item 1", "Item 2"]);
+            labels.extend(["One", "Two", "Item 1", "Item 2"]);
         }
         for label in labels {
             let _ = ui
@@ -14288,7 +14702,15 @@ mod tests {
         let missing: Vec<_> = elements()
             .iter()
             .filter(|e| e.when.is_none())
-            .filter(|e| !e.id.ends_with(".icon") && !e.id.starts_with("basic.icons."))
+            .filter(|e| {
+                !e.id.ends_with(".icon")
+                    && ![
+                        "basic.icons.small",
+                        "basic.icons.toolbar",
+                        "basic.icons.large",
+                    ]
+                    .contains(&e.id.as_str())
+            })
             .filter(|e| !drawn.contains_key(e.id.as_str()))
             .map(|e| e.id.as_str())
             .collect();
@@ -14422,32 +14844,22 @@ mod tests {
         );
     }
 
-    /// The Basic page fits the window without scrolling under every Linux
-    /// preset the captures take: its content, laid out in the page area of a
-    /// 1280 x 720 window, ends inside the window.
-    ///
-    /// Basic v3 (round 11, section D) does not: under kde-breeze its first,
-    /// second and fourth columns run past the page area by about 16, 8 and
-    /// 49 px, under adwaita the first and fourth by 7 and 51, under material
-    /// all four by 50 to 164 (its 56 px fields and 48 px tabs), which the
-    /// brief says to report rather than shrink the theme's sizes for. Run it
-    /// with `--ignored` to see where.
+    /// The Basic page fits the window without scrolling under every preset
+    /// and mode the captures take (kde-breeze, material, catppuccin-mocha and
+    /// adwaita, light and dark): its content, laid out in the page area of a
+    /// 1280 x 720 window with the preset's own layout gaps, ends inside the
+    /// window.
     #[test]
-    #[ignore = "Basic v3 overflows the 1280 x 720 window (round 11, section D: reported, theme sizes kept)"]
     fn the_basic_page_fits_the_window() {
-        for preset in ["kde-breeze", "material", "catppuccin-mocha"] {
+        for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
             for dark in [false, true] {
-                let (theme, resolved) = match native_theme_iced::from_preset(preset, dark) {
-                    Ok(installed) => installed,
-                    Err(error) => panic!("{preset}: {error}"),
-                };
-                let state = State {
-                    current_theme: theme,
-                    current_resolved: resolved,
+                let mut state = State {
                     accessibility: native_theme_iced::AccessibilityPreferences::default(),
                     active_tab: Tab::Basic,
                     ..State::default()
                 };
+                let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), dark);
+                assert!(loaded.is_ok(), "{preset}: {loaded:?}");
                 let mut ui: Simulator<'_, Message> =
                     Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
                 // The page's scrollable is the rightmost one as tall as half
