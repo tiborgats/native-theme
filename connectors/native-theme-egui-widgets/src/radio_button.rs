@@ -25,8 +25,12 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 /// `EGUI_DOT_DIVISOR · 0.5 · radio_dot_diameter` for this radio alone, and the dot is that
 /// many pixels across, in the cell's `fg_stroke`, `checkbox.indicator_color`. Where the theme
 /// states none (macOS publishes none, `docs/platform-facts.md:1220`) or a size that is not
-/// finite, the dot is egui's own. Everything else is egui's: layout, interaction and
-/// accessibility (`WidgetType::RadioButton`).
+/// finite, the dot is egui's own. And the circle's outline lies inside
+/// `checkbox.indicator_width`, as the check box's square's does: egui's circle is half the
+/// icon's width plus the state's `expansion` in radius and epaint strokes it outside that
+/// (`epaint/src/tessellator.rs:1531`), so this radio's `expansion` gives back the stroke's
+/// width. Everything else is egui's: layout, interaction and accessibility
+/// (`WidgetType::RadioButton`).
 ///
 /// Like egui's, it holds no value: a click is `Response::clicked`, and the caller selects it.
 ///
@@ -106,6 +110,21 @@ impl egui::Widget for RadioButton {
         scope::open_selected(ui, Role::Checkbox, checked, enabled, |ui| {
             if let Some(dot) = dot {
                 ui.spacing_mut().icon_width_inner = clamp_length(EGUI_DOT_DIVISOR * 0.5 * dot);
+            }
+            // The circle's outline inside the indicator's width, as the check box's is: egui
+            // gives the circle half the icon's width plus the state's `expansion` as its radius
+            // (`egui/src/widgets/radio_button.rs`) and epaint strokes a circle outside its radius
+            // (`epaint/src/tessellator.rs:1531`), so each state's expansion gives back its
+            // stroke's width.
+            let widgets = &mut ui.style_mut().visuals.widgets;
+            for state in [
+                &mut widgets.noninteractive,
+                &mut widgets.inactive,
+                &mut widgets.hovered,
+                &mut widgets.active,
+                &mut widgets.open,
+            ] {
+                state.expansion -= state.bg_stroke.width;
             }
             let label = text
                 .clone()

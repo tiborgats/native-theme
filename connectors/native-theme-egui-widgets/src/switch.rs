@@ -30,6 +30,8 @@ use crate::scope;
 ///   track's axis and inset `0.5 · (track_height − thumb_diameter)` from its ends; a thumb
 ///   larger than its track overhangs it, as those numbers state. It moves over the scope's
 ///   `Style::animation_time`, which the connector sets to `0.0` under reduced motion.
+/// * The label is text of no widget font of its own, so in `defaults.font.color`: the switch
+///   role's cell carries no text colour of the switch's.
 /// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`
 ///   and `disabled_thumb_color` (a `None` copies the colour it stands for) and the label in
 ///   `defaults.disabled_text_color`, faded by `switch.disabled_opacity` (the crate's
@@ -97,6 +99,7 @@ impl Geometry {
 struct Paint {
     geometry: Geometry,
     sw: ResolvedSwitchTheme,
+    text: Rgba,
     disabled_text: Rgba,
 }
 
@@ -107,6 +110,7 @@ impl egui::Widget for Switch<'_> {
             Geometry::of(&t.switch).map(|geometry| Paint {
                 geometry,
                 sw: t.switch.clone(),
+                text: t.defaults.font.color,
                 disabled_text: t.defaults.disabled_text_color,
             })
         });
@@ -135,6 +139,7 @@ fn switch_ui(
     let Paint {
         geometry: g,
         sw,
+        text: label_text,
         disabled_text,
     } = paint;
     // The state of the previous pass, as `Checkbox` reads it (`egui/src/widgets/checkbox.rs:72-74`).
@@ -204,11 +209,7 @@ fn switch_ui(
     let position = ui
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
-    prepared.fallback_text_color = if enabled {
-        style.text_style.color
-    } else {
-        to_color32(*disabled_text)
-    };
+    prepared.fallback_text_color = to_color32(if enabled { *label_text } else { *disabled_text });
     let laid = prepared.paint(ui);
     let Some(atom_rect) = laid.rect(rect_id) else {
         return laid.response;

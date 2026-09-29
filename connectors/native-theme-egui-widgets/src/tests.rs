@@ -426,8 +426,9 @@ fn every_widget_reports_its_role() {
 }
 
 /// The radio button's dot is `checkbox.radio_dot_diameter` across, in `indicator_color`, on
-/// the checked circle `indicator_width` across in `checked_background`; where the theme states
-/// no dot size it is egui's own.
+/// the checked circle `indicator_width` across its outline in `checked_background` (epaint
+/// strokes a circle outside its radius, `epaint/src/tessellator.rs:1531`, as a check box's
+/// square is its outline's outer edge); where the theme states no dot size it is egui's own.
 #[test]
 fn the_radio_dot_is_the_themes() {
     let t = kde();
@@ -439,7 +440,10 @@ fn the_radio_dot_is_the_themes() {
         .iter()
         .find(|c| c.fill == to_color32(t.checkbox.checked_background))
         .unwrap();
-    assert_eq!(2.0 * circle.radius, t.checkbox.indicator_width);
+    assert_eq!(
+        2.0 * (circle.radius + circle.stroke.width),
+        t.checkbox.indicator_width
+    );
     let dot = shapes
         .iter()
         .find(|c| c.fill == to_color32(t.checkbox.indicator_color))
@@ -460,7 +464,15 @@ fn the_radio_dot_is_the_themes() {
         )
         .inner
     });
-    assert_eq!(flat(&out.shapes), flat(&egui_out.shapes), "egui's own dot");
+    // egui's own dot, on the circle drawn inside the indicator's width.
+    let dots = |out: &egui::FullOutput| {
+        circles(out)
+            .into_iter()
+            .filter(|c| c.fill == to_color32(unstated.checkbox.indicator_color))
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(dots(&out), dots(&egui_out), "egui's own dot");
+    assert!(!dots(&out).is_empty(), "the checked radio draws a dot");
 }
 
 /// The expander lays out what `expander.*` states. KDE: the arrow before the title,
