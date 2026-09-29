@@ -277,6 +277,21 @@ pub(crate) fn tool_button(ui: &mut egui::Ui, padding: &native_theme::theme::Reso
     }
 }
 
+/// A toolbar row's items `toolbar.item_gap` apart, which the toolbar scope's
+/// `item_spacing.x` carries, and `layout.widget_gap` apart where the theme states no item gap,
+/// as the other two showcases space theirs.
+pub(crate) fn toolbar_gap(
+    ui: &mut egui::Ui,
+    t: &native_theme::theme::ResolvedTheme,
+    layout: &native_theme::theme::LayoutTheme,
+) {
+    if t.toolbar.item_gap.is_none()
+        && let Some(gap) = layout.widget_gap
+    {
+        ui.spacing_mut().item_spacing.x = gap;
+    }
+}
+
 pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
     InstanceInfo {
         kind,
@@ -1118,6 +1133,13 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     };
                     let no_pen =
                         egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
+                    // Where the theme states neither side of `tab.border.padding`, a tab is its
+                    // text and border, at least `tab.min_width` wide, as the other two
+                    // showcases' tabs are: no padding stands in for the unstated one.
+                    let padding = &t.tab.border.padding;
+                    if padding.left.is_none() && padding.right.is_none() {
+                        ui.spacing_mut().button_padding.x = idle.bg_stroke.width;
+                    }
                     for (index, (value, label)) in bar.tabs.iter().enumerate() {
                         let selected = *value == bar.current;
                         let mut button =

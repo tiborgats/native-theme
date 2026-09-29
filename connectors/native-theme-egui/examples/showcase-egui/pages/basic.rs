@@ -388,6 +388,15 @@ fn column_1(
         let mut value = checked;
         let mut parts = Vec::new();
         let response = demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
+            // A checked box is bordered in `checkbox.border.color`, disabled too: egui's
+            // `Disabled` cell serves a checked and an unchecked box alike and carries the
+            // unchecked border, so the disabled checked box takes the checked one per call.
+            if checked && !enabled && variant == RoleVariant::Disabled {
+                let border = to_color32(t.checkbox.border.color);
+                let widgets = &mut ui.visuals_mut().widgets;
+                widgets.noninteractive.bg_stroke.color = border;
+                widgets.inactive.bg_stroke.color = border;
+            }
             let text = demo::lined(ui, label, egui::TextStyle::Body);
             let r = ui.add_enabled(enabled, egui::Checkbox::new(&mut value, text.clone()));
             parts = checkbox_parts(ui, &r, text, checked);
@@ -494,6 +503,7 @@ fn column_1(
         "icon buttons",
         |ui, bar, reg| {
             ui.horizontal(|ui| {
+                demo::toolbar_gap(ui, t, atlas.layout());
                 for (role, label, id) in [
                     (IconRole::ActionCopy, "Copy", "basic.icon_buttons.copy"),
                     (IconRole::ActionPaste, "Paste", "basic.icon_buttons.paste"),

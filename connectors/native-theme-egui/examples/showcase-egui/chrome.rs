@@ -132,12 +132,31 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
     #[cfg(not(all(target_os = "macos", not(test))))]
     menu_panel(app, ui);
     let toolbar_role = Some((Role::Toolbar, RoleVariant::Normal));
-    let seams = PanelSeams::apply(
+    let mut seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Top),
         toolbar_role,
         toolbar_role,
     );
+    // A side of `toolbar.border.padding` the theme leaves unstated is `layout.container_margin`,
+    // as the other two showcases pad their toolbars, where the panel frame would keep egui's own.
+    if let Some(margin) = app.atlas.layout().container_margin {
+        let stated = &app
+            .atlas
+            .resolved_for(ui.ctx().theme())
+            .toolbar
+            .border
+            .padding;
+        let side = |side: Option<f32>| side.is_none().then_some(margin);
+        let unstated = native_theme::theme::ResolvedPadding {
+            top: side(stated.top),
+            right: side(stated.right),
+            bottom: side(stated.bottom),
+            left: side(stated.left),
+        };
+        seams.frame.inner_margin =
+            native_theme_egui::convert::to_margin(seams.frame.inner_margin, &unstated);
+    }
     // The line under the bar is the panel's own, in `toolbar.border`'s colour and width (the
     // toolbar scope's `noninteractive.bg_stroke`, `egui/src/containers/panel.rs:909-911`), as
     // the status bar's line above it is `status_bar.border`'s.
@@ -369,8 +388,10 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui) {
     } = app;
     let t = atlas.resolved_for(theme);
     let icon_size = t.toolbar.icon_size;
+    let layout = atlas.layout();
     let toolbar_row = |ui: &mut egui::Ui, bar: demo::Applied, registry: &mut Registry| {
         ui.horizontal(|ui| {
+            demo::toolbar_gap(ui, t, layout);
             for (icon, label, action, id) in [
                 (
                     ChromeButtonIcon::Named(demo::ChromeIcon::SquareTerminal),
