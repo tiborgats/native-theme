@@ -1084,10 +1084,12 @@ fn every_widget_reports_itself() {
                 let own = shown.id.accesskit_id() == id;
                 // Else the info of a non-container widget whose rect contains the node's; for a
                 // node egui creates itself (and no helper records), the innermost record's,
-                // container or not (§13.2).
+                // container or not (§13.2). A record is clipped to what is shown and the node is
+                // not: the last node of a page scrolled to its end may reach a fraction of a
+                // pixel past the page's clip, so the rects compare within half a pixel.
                 let by_record = records.iter().any(|r| {
                     r.id == shown.id
-                        && r.rect.contains_rect(rect)
+                        && r.rect.expand(0.5).contains_rect(rect)
                         && (!r.container || (egui_own && !node_recorded))
                 });
                 assert!(

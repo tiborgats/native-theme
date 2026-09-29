@@ -900,9 +900,10 @@ pub(crate) struct Semibold {
 }
 
 impl Semibold {
-    /// After `atlas.install(ctx)`: the faces of the family the theme's light variant names, the
-    /// one the connector's font plan registers (§4.6), where the OS has them; none otherwise,
-    /// and the text keeps the regular face.
+    /// After `atlas.install(ctx)`: the faces of the family the connector's font plan registers
+    /// for the theme's light variant (§4.6) — the family it names, or the platform's substitute
+    /// where the OS lacks it — where the OS has them; none otherwise, and the text keeps the
+    /// regular face.
     pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &ThemeAtlas) {
         #[cfg(feature = "system-fonts")]
         {
@@ -931,8 +932,19 @@ impl Semibold {
                     }
                 }
             }
+            // The family the connector's font plan draws the body in: the theme's where the OS
+            // has it, else the platform's substitute (`native_theme::fonts::substitute_family`,
+            // fontconfig's on Linux), as `FontPlan::from_system` takes it.
+            let drawn = if native_theme::fonts::system_face(&body.family, body.weight, body.style)
+                .is_some()
+            {
+                body.family.to_string()
+            } else {
+                native_theme::fonts::substitute_family(&body.family)
+                    .unwrap_or_else(|| body.family.to_string())
+            };
             for (weight, family) in families {
-                let Some(face) = native_theme::fonts::system_face(&body.family, weight, body.style)
+                let Some(face) = native_theme::fonts::system_face(&drawn, weight, body.style)
                 else {
                     continue;
                 };
