@@ -275,6 +275,28 @@ is populated.
 python3 scripts/check_widget_coverage.py
 ```
 
+## check_showcase_parity.py
+
+Compares the gpui, iced and egui showcases element by element, for the
+elements `docs/showcase-elements.toml` lists. Reads a directory of layout dumps
+(`<kind>-<preset>-<variant>.json`, written by a showcase's `--dump-layout`) and,
+beside them, the captures (`<kind>-<preset>-<variant>.png`, the content alone or
+framed with a `.offset` file or `--content-offset X,Y`), and compares sizes,
+positions relative to each element's parent, and the colours at the list's
+sample points. Every difference must be listed with a reason in the `[parity]`
+table of `docs/showcase-exceptions.toml`. Exits 0 when clean, 1 on an
+unexcepted difference, 2 on an input it cannot read. `--check-list` validates
+the list against `docs/property-registry.toml` and the exceptions against the
+list; `--self-test` runs its built-in scenarios.
+
+Requires Python 3.11+ (for `tomllib`) and Pillow.
+
+```sh
+python3 scripts/check_showcase_parity.py DUMP_DIR
+python3 scripts/check_showcase_parity.py --check-list
+python3 scripts/check_showcase_parity.py --self-test
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
