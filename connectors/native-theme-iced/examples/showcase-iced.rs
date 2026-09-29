@@ -373,16 +373,17 @@ struct Tagged<'a> {
     loose: bool,
 }
 
-/// Where a measured text part starts, found from the element's layout.
-type PartOrigin<'a> = Box<dyn Fn(iced::advanced::Layout<'_>) -> Option<iced::Point> + 'a>;
+/// The box a measured text part sits in, found from the element's layout.
+type PartOrigin<'a> = Box<dyn Fn(iced::advanced::Layout<'_>) -> Option<iced::Rectangle> + 'a>;
 
 /// A text a widget draws inside itself, which the layout dump records at its
 /// own extent -- the list's "a label's is its text box" -- measured as iced
-/// shapes it: its widest line by its lines' height.
+/// shapes it: its widest line, by its lines on the theme's line box `line`
+/// (the font size times `defaults.line_height`).
 struct MeasuredText {
     content: String,
     size: f32,
-    line_height: text::LineHeight,
+    line: f32,
     font: iced::Font,
 }
 
@@ -394,7 +395,7 @@ impl MeasuredText {
                 content: self.content.as_str(),
                 bounds: iced::Size::INFINITE,
                 size: iced::Pixels(self.size),
-                line_height: self.line_height,
+                line_height: text::LineHeight::Absolute(iced::Pixels(self.line)),
                 font: self.font,
                 align_x: text::Alignment::Default,
                 align_y: iced::alignment::Vertical::Top,
@@ -403,6 +404,16 @@ impl MeasuredText {
             },
         );
         paragraph.min_bounds()
+    }
+
+    /// The text's rectangle in `room`: at its left edge, centred
+    /// vertically, as the widgets set their text.
+    fn placed(&self, room: iced::Rectangle) -> iced::Rectangle {
+        let size = self.extent();
+        iced::Rectangle::new(
+            iced::Point::new(room.x, room.center_y() - size.height / 2.0),
+            size,
+        )
     }
 }
 
@@ -419,13 +430,13 @@ fn tagged<'a>(id: &'static str, content: impl Into<Element<'a, Message>>) -> Tag
 }
 
 impl<'a> Tagged<'a> {
-    /// A text part of the element, `id`: `text` as iced shapes it, from the
-    /// point `origin` finds.
+    /// A text part of the element, `id`: `text` as iced shapes it, in the
+    /// box `origin` finds ([`MeasuredText::placed`]).
     fn text_part(
         mut self,
         id: &'static str,
         text: MeasuredText,
-        origin: impl Fn(iced::advanced::Layout<'_>) -> Option<iced::Point> + 'a,
+        origin: impl Fn(iced::advanced::Layout<'_>) -> Option<iced::Rectangle> + 'a,
     ) -> Self {
         self.texts.push((id, text, Box::new(origin)));
         self
@@ -460,6 +471,21 @@ impl<'a> Tagged<'a> {
     fn root(mut self) -> Self {
         self.root = true;
         self
+    }
+
+    /// The element's rectangle and its parts', into `rects`.
+    fn record(&self, layout: iced::advanced::Layout<'_>, rects: &mut ElementRects) {
+        rects.insert(self.id, layout.bounds());
+        for (id, rect) in &self.parts {
+            if let Some(bounds) = rect(layout) {
+                rects.insert(id, bounds);
+            }
+        }
+        for (id, measured, origin) in &self.texts {
+            if let Some(room) = origin(layout) {
+                rects.insert(id, measured.placed(room));
+            }
+        }
     }
 }
 
@@ -499,6 +525,30 @@ thread_local! {
     /// The rectangles the layout dump last wrote.
     static DUMPED: std::cell::RefCell<Option<ElementRects>> =
         const { std::cell::RefCell::new(None) };
+    /// The rectangles of every element laid out, drawn or not, as the last
+    /// operation over the tree found them ([`Survey`]).
+    static SURVEYED: std::cell::RefCell<ElementRects> =
+        const { std::cell::RefCell::new(BTreeMap::new()) };
+}
+
+/// The operation the layout dump runs over the whole tree: it does nothing
+/// but go everywhere, so each [`Tagged`] records itself as it is operated on
+/// (`Tagged::operate`), in view or scrolled off.
+struct Survey;
+
+impl iced::advanced::widget::Operation for Survey {
+    fn traverse(&mut self, operate: &mut dyn FnMut(&mut dyn iced::advanced::widget::Operation)) {
+        operate(self);
+    }
+
+    fn finish(&self) -> iced::advanced::widget::operation::Outcome<()> {
+        iced::advanced::widget::operation::Outcome::Some(())
+    }
+}
+
+/// The rectangles of every element the last [`Survey`] found.
+fn surveyed_layout() -> ElementRects {
+    SURVEYED.with_borrow(Clone::clone)
 }
 
 /// How long after the window's first frame the layout dump waits before it
@@ -570,24 +620,16 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
                 DRAWN.set(frame);
             }
         }
-        DRAWING.with_borrow_mut(|drawing| {
-            drawing.insert(self.id, layout.bounds());
-            for (id, rect) in &self.parts {
-                if let Some(bounds) = rect(layout) {
-                    drawing.insert(id, bounds);
-                }
-            }
-            for (id, measured, origin) in &self.texts {
-                if let Some(at) = origin(layout) {
-                    drawing.insert(id, iced::Rectangle::new(at, measured.extent()));
-                }
-            }
-        });
+        DRAWING.with_borrow_mut(|drawing| self.record(layout, drawing));
         self.content
             .as_widget()
             .draw(tree, renderer, theme, style, layout, cursor, viewport);
     }
 
+    /// Every operation goes through the whole tree, whether a widget is in
+    /// view or not, so the element records itself for the layout dump here
+    /// too: the dump's [`Survey`] finds what a scrolled-off part of the page
+    /// lays out, which iced does not draw.
     fn operate(
         &mut self,
         tree: &mut iced::advanced::widget::Tree,
@@ -595,6 +637,10 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
         renderer: &iced::Renderer,
         operation: &mut dyn iced::advanced::widget::Operation,
     ) {
+        if self.root {
+            SURVEYED.with_borrow_mut(BTreeMap::clear);
+        }
+        SURVEYED.with_borrow_mut(|surveyed| self.record(layout, surveyed));
         self.content
             .as_widget_mut()
             .operate(tree, layout, renderer, operation);
@@ -690,12 +736,13 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
     }
 }
 
-/// The layout dump `--dump-layout` writes: the rectangles of the last frame
-/// drawn whole, in logical pixels of the window's content, by element id,
+/// The layout dump `--dump-layout` writes: the rectangles the last
+/// [`Survey`] found, every element laid out, the ones scrolled out of view
+/// too, in logical pixels of the window's content, by element id,
 /// with the theme and the scale factor, in the list's schema
 /// (docs/showcase-elements.toml, "The layout dump").
 fn write_layout_dump(state: &State, path: &str, scale: f32) -> Result<(), String> {
-    let elements: serde_json::Map<String, serde_json::Value> = drawn_layout()
+    let elements: serde_json::Map<String, serde_json::Value> = surveyed_layout()
         .into_iter()
         .map(|(id, r)| {
             (
@@ -2462,9 +2509,10 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
             return iced::exit();
         }
         Message::Quit => return iced::exit(),
+        // The whole tree surveyed, then the scale factor read, then written.
         Message::LayoutSettled => {
-            return iced::window::latest()
-                .and_then(iced::window::scale_factor)
+            return iced::advanced::widget::operate(Survey)
+                .then(|()| iced::window::latest().and_then(iced::window::scale_factor))
                 .map(Message::LayoutScaled);
         }
         Message::LayoutScaled(scale) => {
@@ -3715,8 +3763,12 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
 /// padded by `toolbar.border.padding` where the theme states a side and by
 /// `layout.container_margin` where it does not, its items `toolbar.item_gap`
 /// apart, or `layout.widget_gap` apart where that is unstated, at least
-/// `toolbar.bar_height` tall where the theme states one. No line under it:
-/// §2.13 states none.
+/// `toolbar.bar_height` tall where the theme states one. Under its padding a
+/// `toolbar.border.line_width` line in `toolbar.border.color`, as the
+/// resolved theme states it. §2.13 has no row for that border: on the
+/// presets it is `defaults.border`'s, which docs/inheritance-rules.toml hands
+/// the toolbar, where Breeze draws no toolbar frame (`ToolBar_FrameWidth` 0,
+/// cited in §2.13's padding row); the showcase draws what the theme holds.
 fn toolbar(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let gap = Gaps::from_layout(&state.layout);
@@ -3784,11 +3836,20 @@ fn toolbar(state: &State) -> Element<'_, Message> {
             to_color(t.background_color),
             to_color(t.font.color),
         ));
+    // `toolbar.bar_height` is the outer height, the line included.
     let bar = match t.bar_height {
-        Some(h) => bar.height(Length::Fixed(h)),
+        Some(h) => bar.height(Length::Fixed((h - t.border.line_width).max(0.0))),
         None => bar,
     };
-    tagged("chrome.toolbar", bar).into()
+    tagged(
+        "chrome.toolbar",
+        column![
+            bar,
+            rule::horizontal(t.border.line_width)
+                .style(line_style(resolved, to_color(t.border.color)))
+        ],
+    )
+    .into()
 }
 
 /// One of the theme settings: `label`, in `sidebar.font`, above `control`,
@@ -3920,12 +3981,9 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         ),
     ]
     .spacing(gap.widget);
-    let settings = tagged(
-        "chrome.side_panel.settings",
-        container(settings)
-            .padding(Padding::from(gap.container))
-            .width(Fill),
-    );
+    let settings = container(tagged("chrome.side_panel.settings", settings))
+        .padding(Padding::from(gap.container))
+        .width(Fill);
     let body = match state.inspector_tab {
         InspectorTab::Widget => inspector_widget(state),
         InspectorTab::Theme => inspector_theme(state),
@@ -5020,8 +5078,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "the buttons' Row::spacing; layout.widget_gap where unstated".into()
         }
         ("toolbar", "background_color") => "surface: the bar container's background".into(),
-        ("toolbar", "border.color" | "border.line_width_px") => {
-            "not drawn: the bar draws no edge (platform-facts §2.13)".into()
+        ("toolbar", "border.color") => "line_style: the bar's bottom line's colour".into(),
+        ("toolbar", "border.line_width_px") => {
+            "the bottom line rule's height, under the bar's padding".into()
         }
         ("toolbar", f) if side(f).is_some() => {
             "the bar container's padding; layout.container_margin where unstated".into()
@@ -6395,17 +6454,17 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let input_text = |shown: &str| MeasuredText {
         content: shown.to_string(),
         size: input_size,
-        line_height: input_line,
+        line: input_size * resolved.defaults.line_height,
         font: theme_font(&resolved.input.font),
     };
-    // A field and its text: the text starts where the field's first layout
-    // node does, the line inside its padding (iced_widget 0.14.2
-    // `src/text_input.rs`, `layout`).
+    // A field and its text: the text sits in the field's first layout node,
+    // the line inside its padding (iced_widget 0.14.2 `src/text_input.rs`,
+    // `layout`).
     let fielded = |id: &'static str, field: text_input::TextInput<'a, Message>, shown: &str| {
         let field = tagged(id, field);
         match listed_part(id, "text") {
             Some(text_id) => field.text_part(text_id, input_text(shown), |layout| {
-                node_at(layout, &[0]).map(|node| node.bounds().position())
+                node_at(layout, &[0]).map(|node| node.bounds())
             }),
             None => field,
         }
@@ -6463,7 +6522,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     .text_part(
         "basic.number_input.field.text",
         input_text(&state.basic_number.to_string()),
-        |layout| node_at(layout, &[0, 0]).map(|node| node.bounds().position()),
+        |layout| node_at(layout, &[0, 0]).map(|node| node.bounds()),
     )
     .into();
     // Without iced_aw, the value in a plain field.
@@ -6530,15 +6589,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 MeasuredText {
                     content: state.basic_fruit.to_string(),
                     size: combo_size,
-                    line_height: control_line_height(
-                        resolved,
-                        combo_size,
-                        resolved.combo_box.min_height,
-                        combo_pad,
-                    ),
+                    line: combo_size * resolved.defaults.line_height,
                     font: theme_font(&resolved.combo_box.font),
                 },
-                move |layout| Some(layout.bounds().shrink(combo_pad).position()),
+                move |layout| Some(layout.bounds().shrink(combo_pad)),
             )
             .part("basic.drop_down.trigger.arrow", move |layout| {
                 let inner = layout.bounds().shrink(combo_pad);
@@ -6749,10 +6803,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 MeasuredText {
                     content: state.basic_text_area.text(),
                     size: input_size,
-                    line_height: text::LineHeight::Absolute(iced::Pixels(area_line)),
+                    line: area_line,
                     font: theme_font(&resolved.input.font),
                 },
-                move |l| Some(l.bounds().shrink(area_pad).position()),
+                move |l| Some(l.bounds().shrink(area_pad)),
             ),
         ),
     );
@@ -7019,11 +7073,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         let head = button(at_least(
             row![]
                 .push((!trailing).then(arrow))
-                .push(tag_title(
-                    text(title)
-                        .themed(&x.font, resolved, a11y)
-                        .width(if trailing { Fill } else { Length::Shrink }),
-                ))
+                .push(tag_title(text(title).themed(&x.font, resolved, a11y)))
+                // A trailing arrow at the header's far end.
+                .push(trailing.then(|| space().width(Fill)))
                 .push(trailing.then(arrow))
                 .spacing(arrow_gap)
                 .align_y(iced::Center),
@@ -14217,7 +14269,15 @@ mod tests {
                 panic!("the interface did not draw: {error}");
             }
         }
-        let drawn = drawn_layout();
+        let on_screen = drawn_layout();
+        let unknown: Vec<_> = on_screen.keys().filter(|id| listed(id).is_none()).collect();
+        assert!(
+            unknown.is_empty(),
+            "drawn ids the list has not: {unknown:?}"
+        );
+        // A selector goes through the whole tree, as the dump's `Survey` does.
+        let _ = texts(&mut ui);
+        let drawn = surveyed_layout();
         let unknown: Vec<_> = drawn.keys().filter(|id| listed(id).is_none()).collect();
         assert!(
             unknown.is_empty(),
