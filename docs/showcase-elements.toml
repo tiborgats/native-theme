@@ -218,7 +218,8 @@ states = ["Normal"]
 sample = { text = "glyph" }
 
 # The Theme menu, open: Reload System Theme, a separator, System, Light, Dark, a separator,
-# Preferences… with its shortcut.
+# Preferences… with its shortcut. A showcase run with `--open-menu theme` opens it before its
+# capture and its layout dump, so the dump holds these rows.
 
 [[element]]
 id = "chrome.menu.theme"
@@ -226,7 +227,7 @@ name = "Menu"
 parent = "chrome.menu_bar.theme"
 leaves = ["menu.background_color", "popover.border.color", "popover.border.corner_radius_px", "popover.border.line_width_px", "popover.border.shadow_enabled", "popover.border.padding_top_px", "popover.border.padding_right_px", "popover.border.padding_bottom_px", "popover.border.padding_left_px"]
 states = ["Open"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
 [[element]]
@@ -235,7 +236,7 @@ name = "Menu item"
 parent = "chrome.menu.theme"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
 
 [[element]]
@@ -244,7 +245,7 @@ name = "Menu separator"
 parent = "chrome.menu.theme.reload"
 leaves = ["menu.separator_color", "separator.line_width_px"]
 states = ["Normal"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { line = [0.5, 0.5] }
 
 [[element]]
@@ -253,7 +254,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.separator_1"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
 
 [[element]]
@@ -262,7 +263,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.system"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
 
 [[element]]
@@ -271,7 +272,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.light"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { fill = [0.95, 0.5], text = { glyph = [0.0, 0.0, 0.8, 1.0] } }
 
 [[element]]
@@ -280,7 +281,7 @@ name = "Menu separator"
 parent = "chrome.menu.theme.dark"
 leaves = ["menu.separator_color", "separator.line_width_px"]
 states = ["Normal"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { line = [0.5, 0.5] }
 
 [[element]]
@@ -289,7 +290,7 @@ name = "Menu item"
 parent = "chrome.menu.theme.separator_2"
 leaves = ["menu.font", "menu.font.color", "menu.row_height_px", "menu.hover_background", "menu.hover_text_color", "menu.border.padding_top_px", "menu.border.padding_right_px", "menu.border.padding_bottom_px", "menu.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 sample = { text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
 
 [[element]]
@@ -299,7 +300,7 @@ parent = "chrome.menu.theme.preferences"
 leaves = ["menu.font", "defaults.line_height"]
 states = ["Normal"]
 part = true
-when = "the Theme menu is open"
+when = "the Theme menu is open (--open-menu theme)"
 
 # --- Toolbar ---------------------------------------------------------------------------------
 
@@ -652,7 +653,7 @@ when = "a widget is hovered"
 sample = { text = "glyph" }
 
 # =============================================================================================
-# The Basic page: four columns, each a stack of groups; a group is its heading over its rows.
+# The Basic page (v4): five columns, each a stack of groups; a group is its heading over its rows.
 # A heading is measured against the element above it in its column (the column for the
 # first); a control against its heading or the control before it.
 # =============================================================================================
@@ -689,6 +690,13 @@ states = ["Normal"]
 id = "basic.column_4"
 name = "Column"
 parent = "basic.column_3"
+leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
+states = ["Normal"]
+
+[[element]]
+id = "basic.column_5"
+name = "Column"
+parent = "basic.column_4"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
 states = ["Normal"]
 
@@ -789,12 +797,50 @@ part = true
 when = "the Tooltip button is hovered"
 sample = { text = "glyph" }
 
+# The third row: the toggle button, off and on.
+
+[[element]]
+id = "basic.buttons.toggle_off"
+name = "Toggle button"
+parent = "basic.buttons.disabled"
+leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+states = ["Off"]
+sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
+
+[[element]]
+id = "basic.buttons.toggle_off.label"
+name = "Button label"
+parent = "basic.buttons.toggle_off"
+leaves = ["button.font", "button.font.color", "defaults.line_height"]
+states = ["Off"]
+part = true
+sample = { text = "glyph" }
+
+# The model has no checked-button colour; the pressed colours are listed until the maintainer
+# settles it (as for chrome.status_bar.toggle).
+[[element]]
+id = "basic.buttons.toggle_on"
+name = "Toggle button"
+parent = "basic.buttons.toggle_off"
+leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
+states = ["On"]
+sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
+
+[[element]]
+id = "basic.buttons.toggle_on.label"
+name = "Button label"
+parent = "basic.buttons.toggle_on"
+leaves = ["button.font", "button.active_text_color", "defaults.line_height"]
+states = ["On"]
+part = true
+sample = { text = "glyph" }
+
 # --- Column 1: Checkboxes ---------------------------------------------------------------------
 
 [[element]]
 id = "basic.checkboxes.heading"
 name = "Section heading"
-parent = "basic.buttons.disabled"
+parent = "basic.buttons.toggle_off"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1073,108 +1119,6 @@ states = ["On, disabled"]
 part = true
 sample = { text = "glyph" }
 
-# --- Column 1 (Basic v3): Toggle button, Icon buttons ---------------------------------------
-
-[[element]]
-id = "basic.toggle_buttons.heading"
-name = "Section heading"
-parent = "basic.switches.disabled"
-leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.toggle_buttons.off"
-name = "Toggle button"
-parent = "basic.toggle_buttons.heading"
-leaves = ["button.background_color", "button.font", "button.font.color", "button.min_width_px", "button.min_height_px", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
-states = ["Off"]
-sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
-
-[[element]]
-id = "basic.toggle_buttons.off.label"
-name = "Button label"
-parent = "basic.toggle_buttons.off"
-leaves = ["button.font", "button.font.color", "defaults.line_height"]
-states = ["Off"]
-part = true
-sample = { text = "glyph" }
-
-# The model has no checked-button colour; the pressed colours are listed until the maintainer
-# settles it (as for chrome.status_bar.toggle).
-[[element]]
-id = "basic.toggle_buttons.on"
-name = "Toggle button"
-parent = "basic.toggle_buttons.off"
-leaves = ["button.font", "button.min_width_px", "button.min_height_px", "button.active_background", "button.active_text_color", "button.border.color", "button.border.corner_radius_px", "button.border.line_width_px", "button.border.shadow_enabled", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.line_height"]
-states = ["On"]
-sample = { fill = [0.5, 0.0, 0.0, 2.5], border = [0.5, 0.0, 0.0, 0.5] }
-
-[[element]]
-id = "basic.toggle_buttons.on.label"
-name = "Button label"
-parent = "basic.toggle_buttons.on"
-leaves = ["button.font", "button.active_text_color", "defaults.line_height"]
-states = ["On"]
-part = true
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.icon_buttons.heading"
-name = "Section heading"
-parent = "basic.toggle_buttons.off"
-leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.icon_buttons.copy"
-name = "Tool button"
-parent = "basic.icon_buttons.heading"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-states = ["Normal"]
-sample = { fill = [0.0, 0.5, 1.5, 0.0] }
-
-[[element]]
-id = "basic.icon_buttons.copy.icon"
-name = "Icon"
-parent = "basic.icon_buttons.copy"
-leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-states = ["Normal"]
-part = true
-
-[[element]]
-id = "basic.icon_buttons.paste"
-name = "Tool button"
-parent = "basic.icon_buttons.copy"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-states = ["Normal"]
-sample = { fill = [0.0, 0.5, 1.5, 0.0] }
-
-[[element]]
-id = "basic.icon_buttons.paste.icon"
-name = "Icon"
-parent = "basic.icon_buttons.paste"
-leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-states = ["Normal"]
-part = true
-
-[[element]]
-id = "basic.icon_buttons.delete"
-name = "Tool button"
-parent = "basic.icon_buttons.paste"
-leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-states = ["Normal"]
-sample = { fill = [0.0, 0.5, 1.5, 0.0] }
-
-[[element]]
-id = "basic.icon_buttons.delete.icon"
-name = "Icon"
-parent = "basic.icon_buttons.delete"
-leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
-states = ["Normal"]
-part = true
-
 # --- Column 2: Text inputs ---------------------------------------------------------------------
 
 [[element]]
@@ -1236,12 +1180,29 @@ states = ["Disabled"]
 part = true
 sample = { text = "glyph" }
 
+[[element]]
+id = "basic.text_inputs.focused"
+name = "Text input"
+parent = "basic.text_inputs.disabled"
+leaves = ["input.background_color", "input.caret_color", "input.font", "input.font.color", "input.min_height_px", "input.focus_border_color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height", "defaults.focus_ring_color", "defaults.focus_ring_width_px", "defaults.focus_ring_offset_px"]
+states = ["Focused"]
+sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
+
+[[element]]
+id = "basic.text_inputs.focused.text"
+name = "Input text"
+parent = "basic.text_inputs.focused"
+leaves = ["input.font", "input.font.color", "defaults.line_height"]
+states = ["Focused"]
+part = true
+sample = { text = "glyph" }
+
 # --- Column 2: Text area ----------------------------------------------------------------------
 
 [[element]]
 id = "basic.text_area.heading"
 name = "Section heading"
-parent = "basic.text_inputs.disabled"
+parent = "basic.text_inputs.focused"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1299,33 +1260,7 @@ states = ["Normal"]
 part = true
 sample = { mark = "glyph" }
 
-# --- Column 2: Text ---------------------------------------------------------------------------
-
-[[element]]
-id = "basic.text.heading"
-name = "Section heading"
-parent = "basic.drop_down.trigger"
-leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.text.body"
-name = "Label"
-parent = "basic.text.heading"
-leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.text.link"
-name = "Link"
-parent = "basic.text.body"
-leaves = ["link.font", "link.font.color", "link.underline_enabled", "link.background_color", "link.hover_background", "link.hover_text_color", "link.active_text_color", "defaults.line_height"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-# --- Column 2 (Basic v3): Number input, Focused input ---------------------------------------
+# --- Column 3: Number input -------------------------------------------------------------------
 
 # The field and its text only: the step buttons are drawn differently by each toolkit (gpui's
 # NumberInput, iced_aw's NumberInput, egui's DragValue, which has none), so no part of them is
@@ -1333,7 +1268,7 @@ sample = { text = "glyph" }
 [[element]]
 id = "basic.number_input.heading"
 name = "Section heading"
-parent = "basic.text.link"
+parent = "basic.column_3"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1355,37 +1290,12 @@ states = ["Normal"]
 part = true
 sample = { text = "glyph" }
 
-[[element]]
-id = "basic.focused_input.heading"
-name = "Section heading"
-parent = "basic.number_input.field"
-leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.focused_input.field"
-name = "Text input"
-parent = "basic.focused_input.heading"
-leaves = ["input.background_color", "input.caret_color", "input.font", "input.font.color", "input.min_height_px", "input.focus_border_color", "input.border.corner_radius_px", "input.border.line_width_px", "input.border.shadow_enabled", "input.border.padding_top_px", "input.border.padding_right_px", "input.border.padding_bottom_px", "input.border.padding_left_px", "defaults.line_height", "defaults.focus_ring_color", "defaults.focus_ring_width_px", "defaults.focus_ring_offset_px"]
-states = ["Focused"]
-sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
-
-[[element]]
-id = "basic.focused_input.field.text"
-name = "Input text"
-parent = "basic.focused_input.field"
-leaves = ["input.font", "input.font.color", "defaults.line_height"]
-states = ["Focused"]
-part = true
-sample = { text = "glyph" }
-
 # --- Column 3: Slider -------------------------------------------------------------------------
 
 [[element]]
 id = "basic.slider.heading"
 name = "Section heading"
-parent = "basic.column_3"
+parent = "basic.number_input.field"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1502,14 +1412,6 @@ leaves = ["tab.background_color", "tab.min_width_px", "tab.min_height_px", "tab.
 states = ["Normal"]
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
-[[element]]
-id = "basic.tabs.three"
-name = "Tab"
-parent = "basic.tabs.two"
-leaves = ["tab.background_color", "tab.min_width_px", "tab.min_height_px", "tab.hover_background", "tab.hover_text_color", "tab.font", "tab.font.color", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "defaults.line_height"]
-states = ["Normal"]
-sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
-
 # --- Column 3: Segmented control --------------------------------------------------------------
 
 [[element]]
@@ -1573,12 +1475,12 @@ states = ["Normal"]
 part = true
 sample = { fill = [0.5, 0.0, 0.0, 2.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
-# --- Column 3 (Basic v3): Typography --------------------------------------------------------
+# --- Column 4: Typography ---------------------------------------------------------------------
 
 [[element]]
 id = "basic.typography.heading"
 name = "Section heading"
-parent = "basic.segmented.control"
+parent = "basic.column_4"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1600,9 +1502,17 @@ states = ["Body"]
 sample = { text = "glyph" }
 
 [[element]]
+id = "basic.typography.link"
+name = "Link"
+parent = "basic.typography.body"
+leaves = ["link.font", "link.font.color", "link.underline_enabled", "link.background_color", "link.hover_background", "link.hover_text_color", "link.active_text_color", "defaults.line_height"]
+states = ["Normal"]
+sample = { text = "glyph" }
+
+[[element]]
 id = "basic.typography.section_heading"
 name = "Text"
-parent = "basic.typography.body"
+parent = "basic.typography.link"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Section heading"]
 sample = { text = "glyph" }
@@ -1631,13 +1541,138 @@ leaves = ["defaults.line_height", "defaults.mono_font", "defaults.mono_font.colo
 states = ["Monospace"]
 sample = { text = "glyph" }
 
-# --- Column 4: List ---------------------------------------------------------------------------
+# --- Column 4: Icons --------------------------------------------------------------------------
+# The first row: three icon buttons. The second: one icon of the shown set at each size
+# `defaults.icon_sizes` states for small, toolbar and large.
+
+[[element]]
+id = "basic.icons.heading"
+name = "Section heading"
+parent = "basic.typography.monospace"
+leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+states = ["Normal"]
+sample = { text = "glyph" }
+
+[[element]]
+id = "basic.icons.copy"
+name = "Tool button"
+parent = "basic.icons.heading"
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+states = ["Normal"]
+sample = { fill = [0.0, 0.5, 1.5, 0.0] }
+
+[[element]]
+id = "basic.icons.copy.icon"
+name = "Icon"
+parent = "basic.icons.copy"
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+states = ["Normal"]
+part = true
+
+[[element]]
+id = "basic.icons.paste"
+name = "Tool button"
+parent = "basic.icons.copy"
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+states = ["Normal"]
+sample = { fill = [0.0, 0.5, 1.5, 0.0] }
+
+[[element]]
+id = "basic.icons.paste.icon"
+name = "Icon"
+parent = "basic.icons.paste"
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+states = ["Normal"]
+part = true
+
+[[element]]
+id = "basic.icons.delete"
+name = "Tool button"
+parent = "basic.icons.paste"
+leaves = ["button.font.color", "button.hover_background", "button.hover_text_color", "button.active_background", "button.active_text_color", "button.border.corner_radius_px", "button.border.padding_top_px", "button.border.padding_right_px", "button.border.padding_bottom_px", "button.border.padding_left_px", "defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+states = ["Normal"]
+sample = { fill = [0.0, 0.5, 1.5, 0.0] }
+
+[[element]]
+id = "basic.icons.delete.icon"
+name = "Icon"
+parent = "basic.icons.delete"
+leaves = ["defaults.icon_theme", "theme_variant.icon_set", "toolbar.icon_size_px"]
+states = ["Normal"]
+part = true
+
+[[element]]
+id = "basic.icons.small"
+name = "Icon"
+parent = "basic.icons.copy"
+leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
+states = ["Small"]
+
+[[element]]
+id = "basic.icons.toolbar"
+name = "Icon"
+parent = "basic.icons.small"
+leaves = ["defaults.icon_sizes.toolbar_px", "defaults.icon_theme", "theme_variant.icon_set"]
+states = ["Toolbar"]
+
+[[element]]
+id = "basic.icons.large"
+name = "Icon"
+parent = "basic.icons.toolbar"
+leaves = ["defaults.icon_sizes.large_px", "defaults.icon_theme", "theme_variant.icon_set"]
+states = ["Large"]
+
+# --- Column 4: Card ---------------------------------------------------------------------------
+
+[[element]]
+id = "basic.card.heading"
+name = "Section heading"
+parent = "basic.icons.small"
+leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+states = ["Normal"]
+sample = { text = "glyph" }
+
+[[element]]
+id = "basic.card.frame"
+name = "Card"
+parent = "basic.card.heading"
+leaves = ["card.background_color", "card.border.color", "card.border.corner_radius_px", "card.border.line_width_px", "card.border.shadow_enabled", "card.border.padding_top_px", "card.border.padding_right_px", "card.border.padding_bottom_px", "card.border.padding_left_px", "layout.container_margin_px"]
+states = ["Normal"]
+sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
+
+[[element]]
+id = "basic.card.text"
+name = "Label"
+parent = "basic.card.frame"
+leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
+states = ["Normal"]
+sample = { text = "glyph" }
+
+# --- Column 4: Separator ----------------------------------------------------------------------
+
+[[element]]
+id = "basic.separator.heading"
+name = "Section heading"
+parent = "basic.card.frame"
+leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
+states = ["Normal"]
+sample = { text = "glyph" }
+
+[[element]]
+id = "basic.separator.line"
+name = "Separator"
+parent = "basic.separator.heading"
+leaves = ["separator.line_color", "separator.line_width_px"]
+states = ["Normal"]
+sample = { line = [0.5, 0.5] }
+
+# --- Column 5: List ---------------------------------------------------------------------------
 # Eight rows, four shown, "Item 2" selected.
 
 [[element]]
 id = "basic.list.heading"
 name = "Section heading"
-parent = "basic.column_4"
+parent = "basic.column_5"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1707,7 +1742,7 @@ part = true
 when = "the scrollbar is shown at rest"
 sample = { fill = [0.5, 0.5] }
 
-# --- Column 4: Expander -----------------------------------------------------------------------
+# --- Column 5: Expander -----------------------------------------------------------------------
 # "Details" open over "Expanded content", "More" closed.
 
 [[element]]
@@ -1794,57 +1829,13 @@ states = ["Collapsed"]
 part = true
 sample = { text = "glyph" }
 
-# --- Column 4: Card ---------------------------------------------------------------------------
-
-[[element]]
-id = "basic.card.heading"
-name = "Section heading"
-parent = "basic.expander.more"
-leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.card.frame"
-name = "Card"
-parent = "basic.card.heading"
-leaves = ["card.background_color", "card.border.color", "card.border.corner_radius_px", "card.border.line_width_px", "card.border.shadow_enabled", "card.border.padding_top_px", "card.border.padding_right_px", "card.border.padding_bottom_px", "card.border.padding_left_px", "layout.container_margin_px"]
-states = ["Normal"]
-sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.5, 1.0, 0.0, -0.5] }
-
-[[element]]
-id = "basic.card.text"
-name = "Label"
-parent = "basic.card.frame"
-leaves = ["defaults.font", "defaults.font.color", "defaults.line_height"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-# --- Column 4: Separator ----------------------------------------------------------------------
-
-[[element]]
-id = "basic.separator.heading"
-name = "Section heading"
-parent = "basic.card.frame"
-leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.separator.line"
-name = "Separator"
-parent = "basic.separator.heading"
-leaves = ["separator.line_color", "separator.line_width_px"]
-states = ["Normal"]
-sample = { line = [0.5, 0.5] }
-
-# --- Column 4 (Basic v3): Table ---------------------------------------------------------------
+# --- Column 5: Table --------------------------------------------------------------------------
 # Header "Name | Size"; rows "a.txt | 1 KB", "b.png | 20 KB" (selected), "c.rs | 3 KB".
 
 [[element]]
 id = "basic.table.heading"
 name = "Section heading"
-parent = "basic.separator.line"
+parent = "basic.expander.more"
 leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
 states = ["Normal"]
 sample = { text = "glyph" }
@@ -1910,36 +1901,3 @@ leaves = ["list.background_color", "list.item_font", "list.item_font.color", "li
 states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5], text = { glyph = [0.0, 0.0, 0.4, 1.0] } }
-
-# --- Column 4 (Basic v3): Icons ---------------------------------------------------------------
-# One icon of the shown set at each size `defaults.icon_sizes` states for small, toolbar and
-# large.
-
-[[element]]
-id = "basic.icons.heading"
-name = "Section heading"
-parent = "basic.table.frame"
-leaves = ["text_scale.section_heading", "defaults.font.family", "defaults.font.color"]
-states = ["Normal"]
-sample = { text = "glyph" }
-
-[[element]]
-id = "basic.icons.small"
-name = "Icon"
-parent = "basic.icons.heading"
-leaves = ["defaults.icon_sizes.small_px", "defaults.icon_theme", "theme_variant.icon_set"]
-states = ["Small"]
-
-[[element]]
-id = "basic.icons.toolbar"
-name = "Icon"
-parent = "basic.icons.small"
-leaves = ["defaults.icon_sizes.toolbar_px", "defaults.icon_theme", "theme_variant.icon_set"]
-states = ["Toolbar"]
-
-[[element]]
-id = "basic.icons.large"
-name = "Icon"
-parent = "basic.icons.toolbar"
-leaves = ["defaults.icon_sizes.large_px", "defaults.icon_theme", "theme_variant.icon_set"]
-states = ["Large"]
