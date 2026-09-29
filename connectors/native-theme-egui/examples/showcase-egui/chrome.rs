@@ -772,8 +772,8 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
                     padded(ui, margin, |ui| inspector_content(app, ui))
                 });
             ui.advance_cursor_after_rect(room);
-            app.registry
-                .place(ui, "chrome.side_panel.inspector", area.inner_rect);
+            // The inspector is the room below the tabs, its scroll bar's included.
+            app.registry.place(ui, "chrome.side_panel.inspector", room);
             // The content records nothing and is Widget Info's hold zone (§10.4).
             app.hold_zone = Some(area.inner_rect);
             #[cfg(test)]
