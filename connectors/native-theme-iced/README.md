@@ -89,6 +89,26 @@ use native_theme_iced::from_system;
 let (theme, resolved, is_dark, accessibility) = from_system()?;
 ```
 
+## Kerning
+
+Qt, GTK (Pango), WinUI and AppKit kern every text. iced 0.14 does not by
+default: its default shaping, `Shaping::Auto`, shapes text that is all ASCII
+with `Shaping::Basic`, which sets each glyph at its own advance, with no
+kerning, so pairs like "AV", "To" and "Wa" stand further apart than the
+platform sets them.
+
+This crate's `advanced-shaping` feature, on by default, turns on `iced_core`'s
+feature of that name, which makes `Shaping::Advanced` the default. Cargo
+builds one `iced_core` for your application and this crate, so depending on
+this crate is enough: every text that sets no shaping of its own is kerned —
+`text`, and the labels of checkboxes, radios, togglers, pick lists and combo
+boxes (text inputs and text editors shape with `Shaping::Advanced` already).
+A text stays unkerned where you set `.shaping(Shaping::Basic)` or
+`.shaping(Shaping::Auto)` on it, and everywhere with `default-features = false`
+unless you list `advanced-shaping`. iced's docs call advanced shaping the
+costlier of the two; it is what the platforms do for every text. The crate
+docs' *Kerning* section cites the sources.
+
 ## Core concepts
 
 - **`from_preset(name, is_dark)`** — load a bundled preset. `is_dark` is explicit because some presets (`solarized`, `gruvbox`) have ambiguous lightness.
@@ -204,8 +224,8 @@ that needs dismissing a themed button of its own instead.
 |---|---|
 | everything iced itself offers (the default) | nothing |
 | the `iced_aw` widgets too | `features = ["iced_aw"]` |
-| the palette only, no `iced_widget` | `default-features = false` |
-| the palette plus icons, no `iced_widget` | `default-features = false, features = ["lucide-icons"]` |
+| the palette only, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping"]` |
+| the palette plus icons, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping", "lucide-icons"]` |
 
 `widgets` (default) enables `styles` and the `button_padding`,
 `input_padding`, `combo_box_padding`, `button_content_min_size` and
@@ -216,7 +236,9 @@ crate with its own release cadence and an embedded icon font. The icon
 features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
 — are on by default. `system-fonts` (default) enables
 `system_font_family`, the family iced's font database holds for a theme font — on macOS the
-system UI font's `.SF NS` for the stated "SF Pro". Every feature adds coverage; `default-features = false`
+system UI font's `.SF NS` for the stated "SF Pro". `advanced-shaping` (default)
+kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
+`default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
 is the way to narrow.
 
 ## Common recipes

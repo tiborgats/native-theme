@@ -20,7 +20,13 @@ targets = [
 ]
 
 [features]
-default = ["widgets", "spinner", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
+default = ["widgets", "spinner", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts", "advanced-shaping"]
+
+# Every text of the application shaped with the font's kerning, as the
+# platforms' own toolkits shape theirs: `iced_core`'s feature makes
+# `Shaping::Advanced` the default of every text that sets none, and cargo
+# turns it on for the one `iced_core` the application and this crate share.
+advanced-shaping = ["iced_core/advanced-shaping"]
 
 # Which iced crates this connector covers. Additive, never subtractive.
 widgets = ["dep:iced_widget"]            # enables `styles`
@@ -50,13 +56,14 @@ iced_aw = { version = "0.14", optional = true, default-features = false, feature
 ] }
 
 # The showcase calls `styles::*`, which `widgets` gates, `Spinner`, which
-# `spinner` gates, and `system_font_family`, which `system-fonts` gates. All are default
+# `spinner` gates, and `system_font_family`, which `system-fonts` gates, and draws its
+# text kerned, as `advanced-shaping` has iced shape it. All are default
 # features, so `cargo test -p native-theme-iced` and the screenshot scripts
 # build the example as before; `--no-default-features` skips it, and the
 # `iced_aw` sections inside it are `#[cfg(feature = "iced_aw")]`.
 [[example]]
 name = "showcase-iced"
-required-features = ["widgets", "spinner", "system-fonts"]
+required-features = ["widgets", "spinner", "system-fonts", "advanced-shaping"]
 # The showcase's own `#[cfg(test)]` module (spec §6.2) then runs under a plain
 # `cargo test`, so CI and the dependency canary pick it up unchanged.
 test = true
@@ -72,10 +79,6 @@ iced = { version = "0.14", features = [
     # `advanced` reaches the font database iced draws text from, which the
     # showcase reads to build fonts iced can draw (`drawable_font`).
     "advanced",
-    # Every text shaped, with the font's kerning, as GTK (Pango) and Qt shape
-    # theirs: iced's default shapes ASCII text with the glyphs' advances alone
-    # (`Shaping::Auto` picks `Basic`, iced_core 0.14.0 `src/text.rs:135-175`).
-    "advanced-shaping",
 ] }
 iced_aw = { version = "0.14", default-features = false, features = [
     "card",

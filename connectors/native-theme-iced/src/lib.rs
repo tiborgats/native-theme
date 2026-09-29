@@ -31,6 +31,28 @@
 //! let theme = to_theme(&resolved, "My App");
 //! ```
 //!
+//! # Kerning
+//!
+//! Qt, GTK (Pango), WinUI and AppKit shape every text with the font's
+//! kerning. iced 0.14 does not by default: its default, `Shaping::Auto`,
+//! shapes text that is all ASCII with `Shaping::Basic` (`iced_graphics`
+//! 0.14.0 `src/text.rs:325-337`), which sets each glyph at its own advance,
+//! with no kerning and no font fallback (cosmic-text 0.15.0 `shape_skip`,
+//! `src/shape.rs:475-515`), so pairs like "AV", "To" and "Wa" stand further
+//! apart than the platform sets them.
+//!
+//! The `advanced-shaping` feature, on by default, turns on `iced_core`'s
+//! feature of that name, which makes `Shaping::Advanced` the default
+//! (`iced_core` 0.14.0 `src/text.rs:167-177`). Cargo builds one `iced_core`
+//! for the application and this crate, so depending on this crate is enough:
+//! every text that sets no shaping of its own is kerned -- `text`, and the
+//! labels of checkboxes, radios, togglers, pick lists and combo boxes. (Text
+//! inputs and text editors shape with `Shaping::Advanced` already.) Two
+//! things keep a text unkerned: `.shaping(Shaping::Basic)` or
+//! `.shaping(Shaping::Auto)` set on it, and `default-features = false`
+//! without `advanced-shaping`. iced's own docs call advanced shaping the
+//! costlier of the two; it is what the platforms do for every text.
+//!
 //! # Two layers of colour
 //!
 //! [`to_theme()`] builds an iced `Theme` whose `Palette` and `Extended`
@@ -68,6 +90,7 @@
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
 //! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, through `native-theme/system-fonts` |
+//! | `advanced-shaping` | yes | kerned text in the whole application: `iced_core`'s `advanced-shaping`, which makes `Shaping::Advanced` every text's default (see [Kerning](#kerning)) |
 //!
 //! Every feature adds coverage. `default-features = false` leaves the palette
 //! and the metric helpers that need `iced_core` only; `button_padding`,
@@ -1050,6 +1073,19 @@ pub fn to_iced_weight(css_weight: u16) -> iced_core::font::Weight {
 mod tests {
     use super::*;
     use native_theme::theme::{ColorMode, Theme};
+
+    /// With `advanced-shaping`, a text that sets no shaping of its own is
+    /// shaped with the font's kerning: the default is `Shaping::Advanced`,
+    /// not `Auto`, which shapes ASCII text without it. The dev-dependencies
+    /// do not turn `iced_core`'s feature on, so this is the connector's.
+    #[cfg(feature = "advanced-shaping")]
+    #[test]
+    fn text_is_kerned_by_default() {
+        assert_eq!(
+            iced_core::text::Shaping::default(),
+            iced_core::text::Shaping::Advanced
+        );
+    }
 
     fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::theme::ResolvedTheme {
         Theme::preset(name)
