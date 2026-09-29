@@ -1089,7 +1089,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "not reachable: a disabled Input's text is muted_foreground (input/input.rs:99-103)",
+        "not reachable: gpui-base halves a disabled Input's text colour (input/base/element.rs:1820)",
     ),
     (
         "",

@@ -584,8 +584,10 @@ fn listed_info(
         .on_click(move |_, _, cx| {
             cx.write_to_clipboard(ClipboardItem::new_string(copy_text.clone()))
         });
+    // Every text its own width, the title row the panel's.
     let panel = v_flex()
         .w_full()
+        .items_start()
         .overflow_hidden()
         .child(
             h_flex()
