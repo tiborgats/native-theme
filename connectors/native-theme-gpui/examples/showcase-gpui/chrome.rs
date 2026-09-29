@@ -221,6 +221,7 @@ pub(crate) fn page_tabs(app: &Showcase, cx: &App) -> impl IntoElement {
         geometry::container_margin(&app.layout),
         Page::ALL.map(|page| (page.label(), page.tab())),
         app.active_page.index(),
+        Some(&app.sample_icon(IconName::ChevronDown)),
         |ix: &usize, window: &mut Window, cx: &mut App| {
             window.dispatch_action(Box::new(ShowPage(*ix)), cx)
         },
@@ -266,6 +267,7 @@ pub(crate) fn status_bar(
         toggle,
         status_environment(app, cx).join(" · "),
         shown,
+        geometry::widget_gap(&app.layout),
     )
     .debug_selector(|| CHROME_STATUS_BAR.into())
 }

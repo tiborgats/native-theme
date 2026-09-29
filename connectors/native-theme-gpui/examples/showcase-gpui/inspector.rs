@@ -21,7 +21,8 @@ use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
 
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
-use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex};
+use crate::elements;
+use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex, leaves, stated, values};
 use crate::support::{NativeStyled, defined_size, with_gap, with_padding};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
@@ -92,26 +93,44 @@ impl Inspector {
     /// The title of what the Widget tab shows, `None` for the hint: the
     /// status bar names the widget by this, so the two never disagree.
     pub(crate) fn shown_title(&self, cx: &gpui::App) -> Option<String> {
-        self.ui.read(cx).shown().map(|info| info.title())
+        self.ui.read(cx).shown().map(|info| shown_title(info))
     }
 
     /// The Widget tab: the shown info's title, a Copy button and its
-    /// sections, or one line of hint before anything was hovered. With no
-    /// native theme installed, a note says the swatches may not be what is
-    /// painted.
+    /// sections, or one line of hint before anything was hovered. An element
+    /// of docs/showcase-elements.toml, under a native theme, shows in the
+    /// list's form, as the iced and egui showcases show it
+    /// ([`listed_info`]). With no native theme installed, a note says the
+    /// swatches may not be what is painted.
     fn widget_tab(&mut self, gap: Option<gpui::Pixels>, cx: &mut Context<Self>) -> gpui::Div {
         let theme = cx.theme().clone();
         let muted = theme.muted_foreground;
         let shown = self.ui.read(cx).shown().cloned();
+        let look = PanelLook::of(&self.showcase, cx);
+        let listed = shown.as_ref().and_then(|info| {
+            let element = elements::element(info.listed?)?;
+            Some((element, info))
+        });
+        if let (Some(look), Some((element, info))) = (&look, listed) {
+            let (panel, title) = listed_info(&self.ui, look, element, info);
+            self.title_drawn = Some(title);
+            return panel;
+        }
         let (title, copied, body) = match shown {
             Some(info) => (info.title(), info.to_text(), info_sections(&info, gap, cx)),
             None => {
                 self.title_drawn = None;
-                return v_flex().child(
-                    Label::new("Hover any widget to see what the theme sets on it.")
-                        .text_sm()
-                        .text_color(muted),
-                );
+                // Clipped to the panel's width, as the other rows are.
+                let hint = div()
+                    .relative()
+                    .w_full()
+                    .overflow_hidden()
+                    .child(INFO_HINT)
+                    .child(elements::record(&self.ui, "chrome.info.hint"));
+                return v_flex().items_start().child(match &look {
+                    Some(look) => look.text(hint).text_color(look.muted),
+                    None => hint.text_sm().text_color(muted),
+                });
             }
         };
         let title = SharedString::from(title);
@@ -348,6 +367,261 @@ fn swatch(name: &str, color: gpui::Hsla, frame: &gpui::StyleRefinement) -> gpui:
         .child(Label::new(label).text_sm())
 }
 
+/// The Widget tab's line before anything was hovered, the iced and egui
+/// showcases' too.
+pub(crate) const INFO_HINT: &str = "Hover any widget to see what the theme sets on it.";
+
+/// The title Widget Info and the status bar name `info` by: the element's
+/// name and state where it is one of docs/showcase-elements.toml, else the
+/// widget's own.
+pub(crate) fn shown_title(info: &WidgetInfo) -> String {
+    info.listed
+        .and_then(elements::element)
+        .map_or_else(|| info.title(), elements::ShowcaseElement::title)
+}
+
+/// The route line of a leaf `info::leaves` has none for:
+/// `every_listed_leaf_has_a_route` keeps it off screen.
+const NO_ROUTE: &str = "gpui: no route recorded";
+
+/// The approved semibold (R2): the weight of Widget Info's title and
+/// section names, in all three showcases.
+const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
+
+/// What Widget Info is drawn in under a native theme, the same in the three
+/// showcases (docs/showcase-elements.toml, "The Widget Info format"): every
+/// text in `sidebar.font`'s family and size, one line of it tall
+/// (`defaults.line_height`), in `sidebar.font.color`, a route in
+/// `defaults.muted_color`; `layout.widget_gap` before each row and
+/// `layout.section_gap` before each section, none where the layout states
+/// none; a swatch framed as `defaults.border` frames a control; the Copy
+/// button padded by `button.border`'s sides and rounded by its radius,
+/// `button.hover_background` and `active_background` under the pointer.
+pub(crate) struct PanelLook {
+    family: SharedString,
+    size: gpui::Pixels,
+    line: gpui::Pixels,
+    weight: gpui::FontWeight,
+    text: gpui::Hsla,
+    pub(crate) muted: gpui::Hsla,
+    row_gap: gpui::Pixels,
+    section_gap: gpui::Pixels,
+    frame: (gpui::Hsla, gpui::Pixels, gpui::Pixels),
+    copy_padding: [gpui::Pixels; 4],
+    copy_radius: gpui::Pixels,
+    copy_hover: Option<gpui::Hsla>,
+    copy_active: Option<gpui::Hsla>,
+    resolved: serde_json::Value,
+    layout: native_theme::theme::LayoutTheme,
+    icon_set: Option<native_theme::theme::IconSet>,
+}
+
+impl PanelLook {
+    /// The look under the installed native theme, with the layout and icon
+    /// set `showcase` installed; `None` before `apply` ran.
+    fn of(showcase: &WeakEntity<Showcase>, cx: &gpui::App) -> Option<Self> {
+        let n = cx.native_theme()?.native(cx)?;
+        let r = n.resolved;
+        let (layout, icon_set) = showcase
+            .upgrade()
+            .map(|s| {
+                let s = s.read(cx);
+                (s.layout.clone(), Some(s.current_icon_set))
+            })
+            .unwrap_or_default();
+        let size = native_theme_gpui::scaled_text_size(r.sidebar.font.size, n.accessibility);
+        let side = |v: Option<f32>| v.map_or(gpui::px(0.), gpui::px);
+        let p = &r.button.border.padding;
+        Some(Self {
+            family: SharedString::from(r.sidebar.font.family.to_string()),
+            size: gpui::px(size),
+            line: gpui::px(size * r.defaults.line_height),
+            weight: gpui::FontWeight(f32::from(r.sidebar.font.weight)),
+            text: stated(r.sidebar.font.color),
+            muted: stated(r.defaults.muted_color),
+            row_gap: side(layout.widget_gap),
+            section_gap: side(layout.section_gap),
+            frame: (
+                stated(r.defaults.border.color),
+                gpui::px(r.defaults.border.line_width),
+                gpui::px(r.defaults.border.corner_radius.max(0.)),
+            ),
+            copy_padding: [side(p.top), side(p.right), side(p.bottom), side(p.left)],
+            copy_radius: gpui::px(r.button.border.corner_radius.max(0.)),
+            copy_hover: Some(stated(r.button.hover_background)),
+            copy_active: r.button.active_background.map(stated),
+            resolved: serde_json::to_value(r).unwrap_or_default(),
+            layout,
+            icon_set,
+        })
+    }
+
+    /// `text` in the panel's type: `sidebar.font` at its line height.
+    pub(crate) fn text(&self, text: gpui::Div) -> gpui::Div {
+        text.font_family(self.family.clone())
+            .text_size(self.size)
+            .line_height(self.line)
+            .font_weight(self.weight)
+            .text_color(self.text)
+            .whitespace_nowrap()
+    }
+}
+
+/// Widget Info for `element` of docs/showcase-elements.toml, whose widget
+/// reported `info`, in the list's form: the title row -- its name and state,
+/// Copy at the end -- then the "Theme" section, a row per leaf the list
+/// names: a swatch where the value is a colour, `<leaf> <value>`, and under
+/// it how gpui applies the leaf (`info::leaves`); then "Not themeable",
+/// where the widget's info says what the theme states nothing for. The
+/// title, the Copy button, the section name and the first row record where
+/// they were laid out. Copy copies the text the panel shows. Also the
+/// title.
+fn listed_info(
+    ui: &Entity<InfoRegistry>,
+    look: &PanelLook,
+    element: &elements::ShowcaseElement,
+    info: &WidgetInfo,
+) -> (gpui::Div, SharedString) {
+    let title = SharedString::from(element.title());
+    let mut copied = format!("{title}\n\nTheme\n");
+    let rows: Vec<gpui::AnyElement> = element
+        .leaves
+        .iter()
+        .enumerate()
+        .map(|(ix, leaf)| {
+            let value = values::leaf_value(leaf, &look.resolved, &look.layout, look.icon_set);
+            let route = leaves::how(&element.id, leaf).unwrap_or(NO_ROUTE);
+            copied.push_str(&format!("{leaf} {}\n  {route}\n", value.text));
+            let first = ix == 0;
+            let recorded = |id: &'static str| first.then(|| elements::record(ui, id));
+            let lines = v_flex()
+                .items_start()
+                .child(
+                    look.text(div().relative())
+                        .child(format!("{leaf} {}", value.text))
+                        .children(recorded("chrome.info.row_1.text")),
+                )
+                .child(
+                    look.text(div().relative())
+                        .text_color(look.muted)
+                        .child(route)
+                        .children(recorded("chrome.info.row_1.how")),
+                );
+            let (frame, width, radius) = look.frame;
+            let swatch = value.colour.map(|colour| {
+                div()
+                    .relative()
+                    .flex_none()
+                    .size(look.line)
+                    .bg(colour)
+                    .border(width)
+                    .border_color(frame)
+                    .rounded(radius)
+            });
+            h_flex()
+                .relative()
+                .items_start()
+                .gap(look.row_gap)
+                .mt(look.row_gap)
+                .when_some(swatch, |row, swatch| {
+                    row.child(swatch.children(first.then(|| {
+                        // Out over the swatch's frame: an absolute child is
+                        // laid out inside it.
+                        div()
+                            .absolute()
+                            .top(-width)
+                            .left(-width)
+                            .right(-width)
+                            .bottom(-width)
+                            .child(elements::record(ui, "chrome.info.row_1.swatch"))
+                    })))
+                })
+                .child(lines)
+                .children(recorded("chrome.info.row_1"))
+                .into_any_element()
+        })
+        .collect();
+    let notes: Vec<String> = info
+        .not_themeable
+        .iter()
+        .map(|note| format!("{}: {}", note.what, note.text))
+        .collect();
+    if !notes.is_empty() {
+        copied.push_str("\nNot themeable\n");
+        for note in &notes {
+            copied.push_str(&format!("{note}\n"));
+        }
+    }
+    let not_themeable: Vec<gpui::AnyElement> = notes
+        .into_iter()
+        .map(|note| {
+            look.text(div())
+                .text_color(look.muted)
+                .mt(look.row_gap)
+                .child(note)
+                .into_any_element()
+        })
+        .collect();
+    let copy_text = copied;
+    let [top, right, bottom, left] = look.copy_padding;
+    let copy = div()
+        .id("inspector-copy")
+        .relative()
+        .cursor_pointer()
+        .pt(top)
+        .pr(right)
+        .pb(bottom)
+        .pl(left)
+        .rounded(look.copy_radius)
+        .when_some(look.copy_hover, |copy, hover| {
+            copy.hover(move |style| style.bg(hover))
+        })
+        .when_some(look.copy_active, |copy, active| {
+            copy.active(move |style| style.bg(active))
+        })
+        .child(look.text(div()).child("Copy"))
+        .child(elements::record(ui, "chrome.info.copy"))
+        .on_click(move |_, _, cx| {
+            cx.write_to_clipboard(ClipboardItem::new_string(copy_text.clone()))
+        });
+    let panel = v_flex()
+        .w_full()
+        .overflow_hidden()
+        .child(
+            h_flex()
+                .w_full()
+                .justify_between()
+                .items_center()
+                .child(
+                    look.text(div().relative())
+                        .font_weight(SEMIBOLD)
+                        .debug_selector(|| INSPECTOR_TITLE.into())
+                        .child(title.clone())
+                        .child(elements::record(ui, "chrome.info.title")),
+                )
+                .child(probe(INSPECTOR_COPY, copy)),
+        )
+        .child(
+            look.text(div().relative())
+                .font_weight(SEMIBOLD)
+                .mt(look.section_gap)
+                .child("Theme")
+                .child(elements::record(ui, "chrome.info.section.theme")),
+        )
+        .children(rows)
+        .when(!not_themeable.is_empty(), |panel| {
+            panel
+                .child(
+                    look.text(div())
+                        .font_weight(SEMIBOLD)
+                        .mt(look.section_gap)
+                        .child("Not themeable"),
+                )
+                .children(not_themeable)
+        });
+    (panel, title)
+}
+
 /// The four sections of `info` (spec §2.6), each only where it has lines.
 fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -> gpui::Div {
     let muted = cx.theme().muted_foreground;
@@ -393,6 +667,7 @@ impl Render for Inspector {
             margin,
             InspectorTab::ALL.map(|tab| (tab.label(), tab.tab())),
             self.tab.index(),
+            None,
             cx.listener(|this, ix: &usize, _window, cx| {
                 if let Some(&tab) = InspectorTab::ALL.get(*ix) {
                     this.tab = tab;
@@ -412,8 +687,10 @@ impl Render for Inspector {
             .child(
                 div()
                     .id("inspector-scroll")
+                    .relative()
                     .flex_1()
                     .min_h_0()
+                    .child(elements::record(&self.ui, "chrome.side_panel.inspector"))
                     .overflow_y_scrollbar()
                     // The bar is drawn over the right edge of the scroll
                     // area, as on the content panel.

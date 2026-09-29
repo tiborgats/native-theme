@@ -100,6 +100,7 @@ use native_theme_gpui::{
 };
 
 use crate::app::{Quit, ShowPage};
+use crate::elements::{self, ListedExt as _};
 use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
@@ -423,6 +424,8 @@ fn next_row(menu: &[MenuRow], from: Option<usize>, forward: bool) -> Option<usiz
 /// would not reach them. The row that holds it reports it
 /// ([`app_menus`]).
 pub(crate) struct MenuBar {
+    /// Where the titles and the Theme menu's rows report their layout.
+    ui: Entity<InfoRegistry>,
     open: Option<usize>,
     highlighted: Option<usize>,
     focus: gpui::FocusHandle,
@@ -430,8 +433,9 @@ pub(crate) struct MenuBar {
 }
 
 impl MenuBar {
-    pub(crate) fn new(cx: &mut Context<Self>) -> Self {
+    pub(crate) fn new(ui: Entity<InfoRegistry>, cx: &mut Context<Self>) -> Self {
         Self {
+            ui,
             open: None,
             highlighted: None,
             focus: cx.focus_handle(),
@@ -526,6 +530,12 @@ impl MenuBar {
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
         let highlighted = self.highlighted;
+        let ui = &self.ui;
+        let listed = |ix: usize| {
+            self.open
+                .filter(|&open| open == THEME_MENU)
+                .and_then(|_| THEME_MENU_ROWS.get(ix).copied())
+        };
         let body = v_flex()
             .p(MENU_POPUP_PADDING)
             .gap(MENU_POPUP_ROW_GAP)
@@ -536,10 +546,17 @@ impl MenuBar {
                         .h(look.map_or(MENU_SEPARATOR, |l| l.separator_width))
                         .w_full()
                         .bg(look.map_or(cx.theme().border, |l| l.separator))
+                        .children(listed(ix).map(|id| elements::record(ui, id)))
                         .into_any_element(),
                     MenuRow::Action(name, action) => {
                         let shortcut = Kbd::global_binding_for_action(action.as_ref(), window)
-                            .map(|kbd| kbd.appearance(false));
+                            .map(|kbd| kbd.appearance(false))
+                            .map(|kbd| match listed(ix) {
+                                Some(THEME_MENU_PREFERENCES) => kbd
+                                    .listed(ui, THEME_MENU_PREFERENCES_SHORTCUT)
+                                    .into_any_element(),
+                                _ => kbd.into_any_element(),
+                            });
                         let dispatched = action.boxed_clone();
                         let lit = highlighted == Some(ix);
                         let row = h_flex()
@@ -555,6 +572,7 @@ impl MenuBar {
                             })
                             .child(name.clone())
                             .children(shortcut)
+                            .children(listed(ix).map(|id| elements::record(ui, id)))
                             .on_hover(cx.listener(move |this, hovered: &bool, _, cx| {
                                 if *hovered && this.highlighted != Some(ix) {
                                     this.highlighted = Some(ix);
@@ -603,16 +621,48 @@ impl MenuBar {
             .p_0()
             .on_mouse_down_out(cx.listener(|this, _, window, cx| this.close(window, cx)))
             .child(body);
-        match look {
+        let frame = match look {
             Some(look) => frame
                 .bg(look.background)
                 .border(look.frame_width)
                 .border_color(look.frame)
                 .rounded(look.frame_radius),
             None => frame,
+        };
+        match self.open {
+            Some(THEME_MENU) => frame.listed(ui, THEME_MENU_FRAME).into_any_element(),
+            _ => frame.into_any_element(),
         }
     }
 }
+
+/// The Theme menu's index in `chrome::menus`: the one menu whose rows the
+/// three showcases share (docs/showcase-elements.toml).
+const THEME_MENU: usize = 2;
+
+/// The Theme menu's popup and its rows, in `chrome::menus` order, as the
+/// elements of docs/showcase-elements.toml they are.
+const THEME_MENU_FRAME: &str = "chrome.menu.theme";
+const THEME_MENU_ROWS: [&str; 7] = [
+    "chrome.menu.theme.reload",
+    "chrome.menu.theme.separator_1",
+    "chrome.menu.theme.system",
+    "chrome.menu.theme.light",
+    "chrome.menu.theme.dark",
+    "chrome.menu.theme.separator_2",
+    THEME_MENU_PREFERENCES,
+];
+const THEME_MENU_PREFERENCES: &str = "chrome.menu.theme.preferences";
+const THEME_MENU_PREFERENCES_SHORTCUT: &str = "chrome.menu.theme.preferences.shortcut";
+
+/// The menu titles, in `chrome::menus` order, as the elements of
+/// docs/showcase-elements.toml they are.
+const MENU_TITLES: [&str; 4] = [
+    "chrome.menu_bar.file",
+    "chrome.menu_bar.view",
+    "chrome.menu_bar.theme",
+    "chrome.menu_bar.help",
+];
 
 impl Render for MenuBar {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
@@ -624,6 +674,7 @@ impl Render for MenuBar {
             self.popup(rows, look.as_ref(), window, cx)
                 .into_any_element()
         });
+        let ui = self.ui.clone();
         h_flex()
             .id("app-menus")
             .track_focus(&self.focus)
@@ -639,6 +690,7 @@ impl Render for MenuBar {
                         look: look.clone(),
                         selected,
                     })
+                    .children(MENU_TITLES.get(ix).map(|id| elements::record(&ui, id)))
                     .on_mouse_down(
                         MouseButton::Left,
                         cx.listener(move |this, _, window, cx| {
@@ -812,7 +864,18 @@ pub(crate) fn toolbar(
     let row = h_flex()
         .p(container_margin.unwrap_or(TOOLBAR_PADDING))
         .gap(widget_gap.unwrap_or(TOOLBAR_GAP));
-    let row = native_info(row, cx, geometry::toolbar, "toolbar", &mut row_info).children(items);
+    // Its bottom edge `toolbar.border.line_width` thick in
+    // `toolbar.border.color`, inside the bar, as the status bar's top edge
+    // is (`status_bar`).
+    let edge = native_value(cx, |n| {
+        let b = &n.resolved.toolbar.border;
+        (px(b.line_width), info::stated(b.color))
+    });
+    let row = native_info(row, cx, geometry::toolbar, "toolbar", &mut row_info)
+        .when_some(edge, |row, (width, colour)| {
+            row.border_b(width).border_color(colour)
+        })
+        .children(items);
     row.info(ui, "chrome-toolbar", row_info)
 }
 
@@ -825,10 +888,12 @@ pub(crate) fn status_bar(
     toggle: impl IntoElement,
     environment: impl Into<SharedString>,
     shown: Option<SharedString>,
+    widget_gap: Option<Pixels>,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
     let mut bar_info = info::status_bar(cx.theme(), styled);
+    let text_line = native_value(cx, |n| line_height_of(&n, &n.resolved.status_bar.font));
     // Its top edge `status_bar.border.line_width` thick, over upstream's
     // `border_t_1` (status_bar.rs, `RenderOnce for StatusBar`), which the
     // bar's style is refined over.
@@ -850,19 +915,36 @@ pub(crate) fn status_bar(
         &mut bar_info,
     )
     .when_some(edge, |bar, edge| bar.border_t(edge))
-    .left(toggle)
+    // Its text one line of `status_bar.font` tall (`line_height_of`).
+    .when_some(text_line, |bar, line| bar.line_height(line))
+    // The toggle and the environment as one left item, `layout.widget_gap`
+    // apart: the left region spaces its items by a `gap_2` of its own
+    // (status_bar.rs, `RenderOnce for StatusBar`), which no style reaches.
     // Plain text, not Labels, as in the title bar: a Label would paint
     // foreground over the colour `geometry::status_bar` gives the bar.
     .left(
-        div()
-            .debug_selector(|| STATUS_ENVIRONMENT.into())
-            .child(environment.into()),
+        with_gap(h_flex(), widget_gap)
+            .items_center()
+            .child(toggle)
+            .child(
+                div()
+                    .relative()
+                    .debug_selector(|| STATUS_ENVIRONMENT.into())
+                    .child(environment.into())
+                    .child(elements::record(ui, "chrome.status_bar.environment")),
+            ),
     )
     // The middle region holds nothing; this empty box fills it, so its
     // edges are where the two ends stop.
     .child(div().flex_1().debug_selector(|| STATUS_MIDDLE.into()))
     .when_some(shown, |bar, title| {
-        bar.right(div().debug_selector(|| STATUS_HOVERED.into()).child(title))
+        bar.right(
+            div()
+                .relative()
+                .debug_selector(|| STATUS_HOVERED.into())
+                .child(title)
+                .child(elements::record(ui, "chrome.status_bar.shown")),
+        )
     });
     bar.info(ui, "chrome-status-bar", bar_info)
 }
@@ -988,13 +1070,15 @@ pub(crate) fn toolbar_button(
         button_info = button_info.geometry("icon_size_toolbar");
     }
     let dispatched = action.boxed_clone();
-    let button = ButtonKind::Ghost
-        .apply(Button::new(id), cx)
-        .map(|button| match icon {
-            Some(icon) => button.child(icon),
-            None => button.label(tooltip),
-        })
-        .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
+    let button = refined(
+        ButtonKind::Ghost.apply(Button::new(id), cx),
+        tool_button_box(cx).as_ref(),
+    )
+    .map(|button| match icon {
+        Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
+        None => button.label(tooltip),
+    })
+    .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(
         button,
@@ -1094,16 +1178,17 @@ pub(crate) fn panel_toggle(
         button_info = button_info.geometry("icon_size_small");
     }
     let dispatched = action.boxed_clone();
-    let button = ButtonKind::Ghost
-        .apply(Button::new(id), cx)
-        .small()
-        .selected(open)
-        .toggled(open)
-        .map(|button| match icon {
-            Some(icon) => button.child(icon),
-            None => button.label(tooltip),
-        })
-        .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
+    let button = refined(
+        ButtonKind::Ghost.apply(Button::new(id), cx).small(),
+        tool_button_box(cx).as_ref(),
+    )
+    .selected(open)
+    .toggled(open)
+    .map(|button| match icon {
+        Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
+        None => button.label(tooltip),
+    })
+    .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
     InfoExt::info(
         button,
@@ -1379,6 +1464,7 @@ pub(crate) enum TabBarKind {
 /// absolute child at the bar's full size (tab_bar.rs:497-507), so it still
 /// runs from edge to edge. Where the layout states no margin, upstream's
 /// none stands.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn tab_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -1386,8 +1472,12 @@ pub(crate) fn tab_bar(
     container_margin: Option<Pixels>,
     tabs: impl IntoIterator<Item = (&'static str, &'static str)>,
     selected: usize,
+    menu_icon: Option<&SampleIcon>,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    let menu_icon = menu_icon.and_then(SampleIcon::icon);
+    #[cfg(not(feature = "widgets"))]
+    let _ = &menu_icon;
     let (id, info_id, menu, bar_info) = match kind {
         TabBarKind::Inspector => (
             "inspector-tabs",
@@ -1406,7 +1496,17 @@ pub(crate) fn tab_bar(
     let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
     #[cfg(feature = "widgets")]
     if let Some(n) = &native {
-        return native_tab_bar(ui, n, kind, container_margin, tabs, selected, on_click);
+        return native_tab_bar(
+            ui,
+            cx,
+            n,
+            kind,
+            container_margin,
+            tabs,
+            selected,
+            menu_icon,
+            on_click,
+        );
     }
     let mut bar_info = info::tab_font(bar_info, native.as_ref().map(|n| n.resolved))
         .instance("padding", info::tab_bar_padding(container_margin));
@@ -1486,29 +1586,30 @@ fn native_tabs(tabs: &[(&'static str, &'static str)]) -> Vec<widgets::Tab> {
 }
 
 /// A tab row under a native theme: the connector's `widgets::TabBar`, which
-/// draws exactly what `tab.*` states (ISSUES D7), parted from what follows
-/// by the theme's `separator.*` line, the model stating no tab-bar rule of
-/// its own.
+/// draws exactly what `tab.*` states (ISSUES D7). The model states no
+/// tab-bar rule; the page row alone is parted from the page by the theme's
+/// `separator.*` line, under it (`native_tab_bar`), as the iced and egui
+/// showcases part theirs.
 #[cfg(feature = "widgets")]
-fn native_tab_strip(n: &Native<'_>, id: &'static str) -> widgets::TabBar {
-    let s = &n.resolved.separator;
+fn native_tab_strip(_n: &Native<'_>, id: &'static str) -> widgets::TabBar {
     widgets::TabBar::new(id)
-        .border_b(px(s.line_width))
-        .border_color(info::stated(s.line_color))
 }
 
 /// [`tab_bar`] under a native theme: a [`native_tab_strip`], inset by
 /// `container_margin` as upstream's bar is (the rule runs its full width),
 /// the page row's tabs scrolling sideways where they do not fit, with the
-/// menu of every page after them.
+/// menu of every page after them, showing `menu_icon`.
 #[cfg(feature = "widgets")]
+#[allow(clippy::too_many_arguments)]
 fn native_tab_bar(
     ui: &Entity<InfoRegistry>,
+    cx: &App,
     n: &Native<'_>,
     kind: TabBarKind,
     container_margin: Option<Pixels>,
     tabs: Vec<(&'static str, &'static str)>,
     selected: usize,
+    menu_icon: Option<Icon>,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let (id, info_id, menu, variant) = match kind {
@@ -1528,34 +1629,72 @@ fn native_tab_bar(
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click: TabClick = Rc::new(on_click);
     let on_tab = on_click.clone();
+    let tool_box = Some(tool_box_of(*n));
+    let ghost = variants::ghost_button(cx);
     let menu = menu.then(|| {
-        Button::new("page-tabs-menu")
-            .xsmall()
-            .ghost()
-            .dropdown_caret(true)
-            .dropdown_menu(move |menu, _, _| {
-                labels
-                    .iter()
-                    .enumerate()
-                    .fold(menu.scrollable(true), |menu, (ix, &label)| {
-                        let on_click = on_click.clone();
-                        menu.item(
-                            PopupMenuItem::new(label)
-                                .checked(selected == ix)
-                                .on_click(move |_, window, cx| on_click(&ix, window, cx)),
-                        )
-                    })
-            })
-            .anchor(gpui::Anchor::TopRight)
+        // The chosen set's ChevronDown at `defaults.icon_sizes.small`, where
+        // the set has one, in place of upstream's caret, which draws
+        // gpui-component's own glyph at a size of its own (button/button.rs,
+        // `Caret`); upstream's caret where the set has none, the button
+        // otherwise empty.
+        refined(
+            Button::new("page-tabs-menu").xsmall().custom(ghost),
+            tool_box.as_ref(),
+        )
+        .accessibility_label("Pages")
+        .map(|button| match menu_icon {
+            Some(icon) => button.child(listed_icon(
+                ui,
+                icon.with_size(px(n.resolved.defaults.icon_sizes.small)),
+                Some("chrome.page_tabs.menu.icon"),
+            )),
+            None => button.dropdown_caret(true),
+        })
+        .dropdown_menu(move |menu, _, _| {
+            labels
+                .iter()
+                .enumerate()
+                .fold(menu.scrollable(true), |menu, (ix, &label)| {
+                    let on_click = on_click.clone();
+                    menu.item(
+                        PopupMenuItem::new(label)
+                            .checked(selected == ix)
+                            .on_click(move |_, window, cx| on_click(&ix, window, cx)),
+                    )
+                })
+        })
+        .anchor(gpui::Anchor::TopRight)
     });
     native_tab_strip(n, id)
         .w_full()
         .when_some(container_margin, |bar, margin| bar.px(margin))
+        .when_some(elements::part_observer(ui, info_id), |bar, observer| {
+            bar.on_part_bounds(observer)
+        })
         .children(native_tabs(&tabs))
         .selected_index(selected)
         .on_click(move |ix, window, cx| on_tab(ix, window, cx))
-        .when_some(menu, |bar, menu| bar.suffix(menu))
+        .when_some(menu, |bar, menu| {
+            bar.suffix(menu.listed(ui, "chrome.page_tabs.menu"))
+        })
         .info(ui, info_id, bar_info)
+        // The page row's rule, `separator.line_width` thick in
+        // `separator.line_color`, under the strip: the wrapper keeps the room
+        // below it, where the rule is laid.
+        .when(kind == TabBarKind::Pages, |bar| {
+            let s = &n.resolved.separator;
+            let width = px(s.line_width);
+            bar.mb(width).child(
+                div()
+                    .absolute()
+                    .left_0()
+                    .right_0()
+                    .bottom(-width)
+                    .h(width)
+                    .bg(info::stated(s.line_color))
+                    .child(elements::record(ui, "chrome.page_tabs.rule")),
+            )
+        })
 }
 
 /// The variant a theme-drawn tab row's info names.
@@ -1569,12 +1708,27 @@ pub(crate) const NATIVE_TAB_BAR_MENU: &str = "widgets::TabBar, menu";
 /// label a widget's own text size would otherwise set, as its child.
 fn font_text(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static str) -> Div {
     div()
-        .text_size(px(native_theme_gpui::scaled_text_size(
-            font.size,
-            n.accessibility,
-        )))
+        .text_size(text_size_of(n, font))
+        .line_height(line_height_of(n, font))
         .font_weight(FontWeight(f32::from(font.weight)))
         .child(text)
+}
+
+/// `font`'s size, scaled by the text-scaling factor, as the connector's
+/// builders scale theirs.
+fn text_size_of(n: &Native<'_>, font: &ResolvedFontSpec) -> Pixels {
+    px(native_theme_gpui::scaled_text_size(
+        font.size,
+        n.accessibility,
+    ))
+}
+
+/// One line of `font`: its scaled size by `defaults.line_height`, the line
+/// box the model states for text (docs/property-registry.toml,
+/// `defaults.line_height`), in place of gpui's own, which is the golden
+/// ratio (gpui-pre style.rs, `phi`).
+fn line_height_of(n: &Native<'_>, font: &ResolvedFontSpec) -> Pixels {
+    text_size_of(n, font) * n.resolved.defaults.line_height
 }
 
 /// A `TabBar` of upstream's default variant, `TabVariant::Tab`, over
@@ -1605,6 +1759,9 @@ pub(crate) fn tab_row(
             .instance("selected", shown)
             .instance("click", "selects the tab; the showcase keeps the state");
         return native_tab_strip(n, id)
+            .when_some(elements::part_observer(ui, id), |bar, observer| {
+                bar.on_part_bounds(observer)
+            })
             .children(native_tabs(&tabs))
             .selected_index(selected)
             .on_click(on_click)
@@ -1712,6 +1869,24 @@ pub(crate) fn segmented(
                 (false, None) => segment.text_color(colour(s.font.color)),
             })
             .child(font_text(&n, &s.font, label))
+            // The segment inside its dividing line -- an absolute child is
+            // laid out inside the border -- and the line, the segment's left
+            // border, `separator_width` wide, out over it.
+            .children(elements::segment_of(id, ix).map(|(segment, divider)| {
+                div()
+                    .absolute()
+                    .inset_0()
+                    .child(elements::record(ui, segment))
+                    .children(divider.map(|divider| {
+                        div()
+                            .absolute()
+                            .top_0()
+                            .bottom_0()
+                            .left(-px(s.separator_width))
+                            .w(px(s.separator_width))
+                            .child(elements::record(ui, divider))
+                    }))
+            }))
             .on_click(move |_, window, cx| on_click(&ix, window, cx))
     });
     h_flex()
@@ -1733,7 +1908,7 @@ const HANDLE_PADDING: Pixels = px(4.);
 /// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:12): the width a
 /// resize handle is given and its line is drawn at, `pub(crate)` upstream as
 /// well.
-const HANDLE_SIZE: Pixels = px(1.);
+pub(crate) const HANDLE_SIZE: Pixels = px(1.);
 
 /// The room the side panel keeps clear at its right edge for the splitter's
 /// line: `splitter.divider_width` beyond the `HANDLE_SIZE` the handle's own
@@ -1829,7 +2004,8 @@ pub(crate) fn resize_handles(
                         line.group_hover("handle", move |style| style.bg(hover))
                     }),
                 None => div().size_full().bg(line),
-            };
+            }
+            .child(elements::record(&ui, "chrome.splitter"));
             Some(
                 div()
                     .flex_none()
@@ -2495,8 +2671,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
     if disabled_pair.is_some() {
         button_info = button_info.geometry("button_disabled");
     }
-    let button = refined(button, disabled_pair.as_ref())
-        .label(label)
+    let button = labelled(ui, refined(button, disabled_pair.as_ref()), id, label)
         .when_some(drawn, |button, icon| match state {
             ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
             ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
@@ -2965,6 +3140,9 @@ pub(crate) fn checkbox(
             .checked(checked)
             .disabled(disabled)
             .when_some(on_click, |checkbox, on_click| checkbox.on_change(on_click))
+            .when_some(elements::part_observer(ui, id), |checkbox, observer| {
+                checkbox.on_part_bounds(observer)
+            })
             .info(ui, id, checkbox_info)
             .debug_selector(move || id.into());
     }
@@ -3068,20 +3246,41 @@ pub(crate) fn radio_column(
             group_info = group_info.geometry("widget_gap");
         }
         let on_click = Rc::new(on_click);
-        return with_gap(
-            widgets::RadioGroup::new(id)
-                .items_start()
-                .children(labels.iter().enumerate().map(|(ix, &label)| {
-                    let on_click = on_click.clone();
-                    widgets::Radio::new((id, ix))
-                        .label(label)
-                        .checked(selected == Some(ix))
-                        .on_change(move |_, window, cx| on_click(&ix, window, cx))
-                })),
-            gap,
-        )
-        .info(ui, id, group_info)
-        .debug_selector(move || id.into());
+        let total = labels.len();
+        // gpui-base's headless group, as `widgets::RadioGroup` builds its
+        // own (the role and the arrow keys), round Radios that each report
+        // themselves: a `widgets::RadioGroup` takes Radios alone, no box
+        // round one.
+        return gpui_base::RadioGroup::new(id)
+            .axis(Axis::Vertical)
+            .child(
+                with_gap(v_flex(), gap)
+                    .items_start()
+                    .children(labels.iter().enumerate().map(|(ix, &label)| {
+                        let on_click = on_click.clone();
+                        let checked = selected == Some(ix);
+                        let item = format!("{id}-{ix}");
+                        widgets::Radio::new((id, ix))
+                            .label(label)
+                            .checked(checked)
+                            .set_position(ix.saturating_add(1), total)
+                            .on_change(move |_, window, cx| on_click(&ix, window, cx))
+                            .when_some(elements::part_observer(ui, &item), |radio, observer| {
+                                radio.on_part_bounds(observer)
+                            })
+                            .info(
+                                ui,
+                                SharedString::from(item),
+                                info::inputs::native_radio_column(
+                                    r,
+                                    &[label],
+                                    checked.then_some(0),
+                                ),
+                            )
+                    })),
+            )
+            .info(ui, id, group_info)
+            .debug_selector(move || id.into());
     }
     let mut group_info = info::inputs::radio_column(cx.theme(), labels, selected);
     let row = native_info(
@@ -3129,6 +3328,9 @@ pub(crate) fn switch(
             .checked(checked)
             .disabled(disabled)
             .when_some(on_click, |switch, on_click| switch.on_change(on_click))
+            .when_some(elements::part_observer(ui, id), |switch, observer| {
+                switch.on_part_bounds(observer)
+            })
             .info(ui, id, switch_info)
             .debug_selector(move || id.into());
     }
@@ -3161,6 +3363,9 @@ pub(crate) fn slider(
     if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
         return widgets::Slider::new(state)
             .w(width)
+            .when_some(elements::part_observer(ui, id), |slider, observer| {
+                slider.on_part_bounds(observer)
+            })
             .info(ui, id, info::inputs::native_slider(r))
             .debug_selector(move || id.into());
     }
@@ -3682,6 +3887,17 @@ impl Selectable for ListRow {
 /// The group a list row's label takes its hover colour from.
 const LIST_ROW_GROUP: &str = "list-row";
 
+/// The room a List's row leaves for the scrollbar: its groove, where the
+/// theme's scrollbar is not an overlay (`geometry::scrollbar_gutter`'s
+/// width); `None` for an overlay, or before `apply` ran.
+fn list_gutter(cx: &App) -> Option<Pixels> {
+    native_value(cx, |n| {
+        (!n.resolved.scrollbar.overlay_mode)
+            .then(|| native_theme_gpui::base_layer::scrollbar_geometry(n.resolved).track_width)
+    })
+    .flatten()
+}
+
 impl RenderOnce for ListRow {
     fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
         let id = format!("{}-{}", self.prefix, self.ix);
@@ -3725,6 +3941,11 @@ impl RenderOnce for ListRow {
             &mut row_info,
         )
         .when_some(selected_text, |item, text| item.text_color(text))
+        // Clear of the List's scrollbar where the theme's is not an overlay:
+        // the List draws its bar over its rows (list/list.rs, `List::render`),
+        // where a scrollbar that is not an overlay takes the room beside them
+        // (`scrollbar.overlay_mode`, its `groove_width`).
+        .when_some(list_gutter(cx), |item, gutter| item.mr(gutter))
         .group(LIST_ROW_GROUP)
         // Plain text, not a Label: `Label::render` paints foreground on its
         // own element (label.rs:211) over the list font the row carries.
@@ -4139,6 +4360,9 @@ pub(crate) fn progress(
         return widgets::ProgressBar::new(id)
             .value(value)
             .accessibility_label(label)
+            .when_some(elements::part_observer(ui, id), |bar, observer| {
+                bar.on_part_bounds(observer)
+            })
             .info(ui, id, info::feedback::native_progress(r, label, value))
             .debug_selector(move || id.into());
     }
@@ -4613,8 +4837,8 @@ pub(crate) fn built_tooltip_button(
         geometry::button,
         "button",
         &mut tooltip_info,
-    )
-    .label(label);
+    );
+    let button = labelled(ui, button, id, label);
     if style.is_some() {
         tooltip_info = tooltip_info.geometry("tooltip");
     }
@@ -4996,6 +5220,8 @@ pub(crate) fn link(
     let mut link_info = info::typography::link(cx.theme())
         .instance("text", text)
         .instance("target", href);
+    // One line of `link.font` tall (`line_height_of`).
+    let line = native_value(cx, |n| line_height_of(&n, &n.resolved.link.font));
     native_info(
         Link::new(id).child(text).href(href),
         cx,
@@ -5003,6 +5229,7 @@ pub(crate) fn link(
         "link",
         &mut link_info,
     )
+    .when_some(line, |link, line| link.line_height(line))
     .info(ui, id, link_info)
     .debug_selector(move || id.into())
 }
@@ -5150,9 +5377,13 @@ pub(crate) fn separator(
     if kind == SeparatorKind::Horizontal
         && let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx))
     {
+        // A line of docs/showcase-elements.toml takes no room beyond its
+        // own, as the iced and egui showcases lay it out; the others keep
+        // some to point at.
+        let listed = elements::listed_for(id).is_some();
         return widgets::Separator::horizontal()
             .info(ui, id, info::layout::native_separator(r))
-            .py_1()
+            .when(!listed, |separator| separator.py_1())
             .debug_selector(move || id.into());
     }
     let separator = match kind {
@@ -5402,6 +5633,7 @@ pub(crate) fn accordion(
 /// and so do the lines between items their colour; the Accordion takes
 /// `expander.border`, which it refines its bordered card with last
 /// (accordion.rs, `RenderOnce for Accordion`).
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn expander(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -5409,11 +5641,19 @@ pub(crate) fn expander(
     items: [(&'static str, &'static str, &'static str); 2],
     open: [bool; 2],
     width: Pixels,
+    gap: Option<Pixels>,
     on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let native = cx.native_theme().and_then(|nt| nt.native(cx));
     if let Some(n) = &native {
-        return native_expander(ui, cx, n, id, items, open, width, Rc::new(on_toggle));
+        let spec = ExpanderSpec {
+            id,
+            items,
+            open,
+            width,
+            gap,
+        };
+        return native_expander(ui, cx, n, spec, Rc::new(on_toggle));
     }
     let mut expander_info = info::layout::expander(
         cx.theme(),
@@ -5482,6 +5722,18 @@ pub(crate) fn expander(
         .debug_selector(move || id.into())
 }
 
+/// What [`native_expander`] draws: the expander `id`, its two items as
+/// (title, body id, body), whether each is open, its width, and
+/// `layout.widget_gap`, which parts an unframed expander's items and a
+/// title from its body.
+struct ExpanderSpec {
+    id: &'static str,
+    items: [(&'static str, &'static str, &'static str); 2],
+    open: [bool; 2],
+    width: Pixels,
+    gap: Option<Pixels>,
+}
+
 /// An expander row's side padding, the space between its title and its
 /// arrow, and its body's side and bottom padding, none of which
 /// `expander.*` states: upstream's `AccordionItem`'s at the default Size
@@ -5507,17 +5759,20 @@ const EXPANDER_BODY_BOTTOM: Rems = rems(0.5);
 /// and the HIG draw a leading arrow (§2.27). Upstream builds its arrow's
 /// size and colour inline, where no caller reaches them
 /// (accordion.rs, `RenderOnce for AccordionItem`).
-#[allow(clippy::too_many_arguments)]
 fn native_expander(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     n: &Native<'_>,
-    id: &'static str,
-    items: [(&'static str, &'static str, &'static str); 2],
-    open: [bool; 2],
-    width: Pixels,
+    spec: ExpanderSpec,
     on_toggle: ExpanderToggle,
 ) -> Stateful<Div> {
+    let ExpanderSpec {
+        id,
+        items,
+        open,
+        width,
+        gap,
+    } = spec;
     let e = &n.resolved.expander;
     let colour = info::stated;
     let line = colour(e.border.color);
@@ -5545,14 +5800,15 @@ fn native_expander(
         Some(indent) => px(indent).into(),
         None => EXPANDER_PADDING_X.into(),
     };
-    v_flex()
+    let radius = px(e.border.corner_radius.max(0.0));
+    let last = items.len().saturating_sub(1);
+    // Framed, the frame is drawn by the items: each its sides and its bottom
+    // edge, the first its top, the first's top corners and the last's bottom
+    // ones rounded -- so an item's box is its part of the frame, its line
+    // included, and the line between two items the one above's bottom edge.
+    with_gap(v_flex(), if framed { None } else { gap })
         .w(width)
-        .when(framed, |frame| {
-            frame
-                .border(line_width)
-                .border_color(line)
-                .rounded(px(e.border.corner_radius.max(0.0)))
-        })
+        .when(framed, |frame| frame.rounded(radius))
         .overflow_hidden()
         .children(items.into_iter().zip(open).enumerate().map(
             |(ix, ((title, body_id, body), is_open))| {
@@ -5565,7 +5821,9 @@ fn native_expander(
                 } else {
                     (IconName::ChevronDown, if is_open { 0.5 } else { 0. })
                 };
+                let listed = elements::expander_item(id, ix);
                 let arrow = div()
+                    .relative()
                     .flex_none()
                     .debug_selector(move || format!("{id}-arrow-{ix}"))
                     .child(
@@ -5573,7 +5831,12 @@ fn native_expander(
                             .with_size(px(e.arrow_icon_size))
                             .text_color(arrow)
                             .rotate(gpui::percentage(turn)),
-                    );
+                    )
+                    .children(listed.map(|[_, _, arrow, _]| elements::record(ui, arrow)));
+                let title = div()
+                    .relative()
+                    .child(title)
+                    .children(listed.map(|[_, _, _, title]| elements::record(ui, title)));
                 let header = h_flex()
                     .id((id, ix))
                     .w_full()
@@ -5582,12 +5845,14 @@ fn native_expander(
                     .px(EXPANDER_PADDING_X)
                     .refine_style(&title_style)
                     .text_size(text_size)
+                    .line_height(line_height_of(n, &e.font))
                     .font_weight(FontWeight(f32::from(e.font.weight)))
                     .text_color(text)
                     .when_some(hover, |header, hover| {
                         header.hover(move |style| style.bg(hover))
                     })
                     .debug_selector(move || format!("{id}-header-{ix}"))
+                    .children(listed.map(|[_, header, _, _]| elements::record(ui, header)))
                     .map(|header| {
                         if leading {
                             header.child(arrow).child(title)
@@ -5602,21 +5867,44 @@ fn native_expander(
                         }
                         on_toggle(&next, window, cx);
                     });
-                v_flex()
+                // Unframed, the items stand apart as a layout's rows do,
+                // `layout.widget_gap` from each other and a title from its
+                // body, with no padding of their own; framed, they fill the
+                // frame and pad their body as upstream's AccordionItem does.
+                let spaced = if framed { None } else { gap };
+                with_gap(v_flex(), spaced)
                     .w_full()
-                    .when(framed && ix > 0, |item| {
-                        item.border_t(line_width).border_color(line)
+                    .when(framed, |item| {
+                        item.border_l(line_width)
+                            .border_r(line_width)
+                            .border_b(line_width)
+                            .border_color(line)
+                            .when(ix == 0, |item| item.border_t(line_width).rounded_t(radius))
+                            .when(ix == last, |item| item.rounded_b(radius))
                     })
                     .child(header)
                     .when(is_open, |item| {
-                        item.child(
-                            div()
-                                .pl(body_indent)
-                                .pr(EXPANDER_PADDING_X)
-                                .pb(EXPANDER_BODY_BOTTOM)
-                                .debug_selector(move || format!("{id}-body-{ix}"))
-                                .child(body_label(ui, cx, body_id, body)),
-                        )
+                        let body = h_flex()
+                            .pl(body_indent)
+                            .debug_selector(move || format!("{id}-body-{ix}"))
+                            .child(body_label(ui, cx, body_id, body));
+                        item.child(match spaced {
+                            Some(_) => body,
+                            None => body.pr(EXPANDER_PADDING_X).pb(EXPANDER_BODY_BOTTOM),
+                        })
+                    })
+                    // An item the list names reports itself as that
+                    // element, as the whole expander reports itself.
+                    .map(|item| match listed {
+                        Some([element, ..]) => item
+                            .info(
+                                ui,
+                                SharedString::from(format!("{id}-item-{ix}")),
+                                expander_info.clone().listed(element),
+                            )
+                            .w_full()
+                            .into_any_element(),
+                        None => item.into_any_element(),
                     })
             },
         ))
@@ -7081,3 +7369,469 @@ pub(crate) fn swatch(
         .info(ui, id.clone(), info::theme_map::swatch(t, token, native))
         .debug_selector(move || id.to_string())
 }
+
+// ---------------------------------------------------------------------------
+// The Basic page's own samples (Basic v3)
+// ---------------------------------------------------------------------------
+
+/// A Button's `label` as its child, in the box upstream puts its `label`
+/// in (button/button.rs, `RenderOnce for Button`: `min_w_0`,
+/// `whitespace_nowrap`, `text_ellipsis`), recording its bounds as the
+/// element `listed` of docs/showcase-elements.toml. The Button is named by
+/// the label as `Button::label` would name it.
+fn listed_label(
+    ui: &Entity<InfoRegistry>,
+    button: Button,
+    label: &'static str,
+    listed: &'static str,
+) -> Button {
+    button.accessibility_label(label).child(
+        div()
+            .relative()
+            .min_w_0()
+            .whitespace_nowrap()
+            .text_ellipsis()
+            .child(label)
+            .child(elements::record(ui, listed)),
+    )
+}
+
+/// `button` labelled `label`: as `Button::label` where the label is no
+/// element of docs/showcase-elements.toml, else as [`listed_label`].
+fn labelled(
+    ui: &Entity<InfoRegistry>,
+    button: Button,
+    id: &'static str,
+    label: &'static str,
+) -> Button {
+    match elements::label_of(id) {
+        Some(listed) => listed_label(ui, button, label, listed),
+        None => button.label(label),
+    }
+}
+
+/// `icon` in a box of its own size that records its bounds as the element
+/// `listed`, where it is one.
+fn listed_icon(ui: &Entity<InfoRegistry>, icon: Icon, listed: Option<&'static str>) -> AnyElement {
+    match listed {
+        Some(listed) => div()
+            .relative()
+            .flex_none()
+            .child(icon)
+            .child(elements::record(ui, listed))
+            .into_any_element(),
+        None => icon.into_any_element(),
+    }
+}
+
+/// A tool button's box where the theme states the button's padding: its
+/// icon and the `button.border.padding` sides the theme states round it, in
+/// place of the height and the side padding upstream gives a Button of its
+/// Size (button/button.rs, `RenderOnce for Button`: `h_6`/`h_8`,
+/// `px_2`/`px_2p5`); a side the theme leaves unstated keeps upstream's. It
+/// is rounded by `button.border.corner_radius` in place of the Theme's
+/// radius the Button takes (the same, `rounding`). A
+/// Ghost Button draws no border (the same, `border_l_1` and its siblings go
+/// to the Default and outline variants alone). `None` before `apply` ran.
+fn tool_button_box(cx: &App) -> Option<StyleRefinement> {
+    native_value(cx, tool_box_of)
+}
+
+/// [`tool_button_box`] under the native theme `n`.
+fn tool_box_of(n: Native<'_>) -> StyleRefinement {
+    let b = &n.resolved.button.border;
+    let p = &b.padding;
+    let style = StyleRefinement::default().rounded(px(b.corner_radius.max(0.)));
+    let style = if p.top.is_some() || p.bottom.is_some() {
+        style.h_auto()
+    } else {
+        style
+    };
+    let side = |style: StyleRefinement,
+                v: Option<f32>,
+                f: fn(StyleRefinement, Pixels) -> StyleRefinement| {
+        match v {
+            Some(v) => f(style, px(v)),
+            None => style,
+        }
+    };
+    let style = side(style, p.top, |s, v| s.pt(v));
+    let style = side(style, p.right, |s, v| s.pr(v));
+    let style = side(style, p.bottom, |s, v| s.pb(v));
+    side(style, p.left, |s, v| s.pl(v))
+}
+
+/// A toggle button that is on: a Default Button reading `label`, refined by
+/// `geometry::button`, shown selected, and filled with
+/// `button.active_background` and lettered in `button.active_text_color`
+/// where the theme states them -- the model's colours of a pressed button,
+/// for want of a checked one. Upstream's selected style would fill it with
+/// its `button_active` token and letter it in `button_foreground`
+/// (button/button.rs, `ButtonVariant::selected`); the Button replays the
+/// caller's style over that state (button/button.rs, `RenderOnce for
+/// Button`, `styles.selected`), so these win.
+pub(crate) fn toggle_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    label: &'static str,
+) -> Stateful<Div> {
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let mut button_info = info::buttons::button(
+        cx.theme(),
+        ButtonKind::Default,
+        ButtonState::Idle,
+        false,
+        None,
+        styled,
+    )
+    .instance(
+        "state",
+        "selected: on, in button.active_background and button.active_text_color",
+    );
+    let button = native_info(
+        Button::new(id),
+        cx,
+        geometry::button,
+        "button",
+        &mut button_info,
+    );
+    let fill = native_value(cx, |n| n.resolved.button.active_background).flatten();
+    let text = native_value(cx, |n| n.resolved.button.active_text_color);
+    let button = button
+        .selected(true)
+        .toggled(true)
+        .when_some(fill, |button, fill| button.bg(info::stated(fill)))
+        .when_some(text, |button, text| button.text_color(info::stated(text)));
+    InfoExt::info(labelled(ui, button, id, label), ui, id, button_info)
+        .debug_selector(move || id.into())
+}
+
+/// An icon-only button as the toolbar's (`toolbar_button`): the Ghost
+/// variant, its icon native-theme's for a role as the chosen set gives it
+/// (`Showcase::role_chrome_icon`), at `toolbar.icon_size`, the icon
+/// recording its bounds as the element `listed_icon`. Where the set has no
+/// icon for the role the button shows `name` instead -- never another set's
+/// icon.
+pub(crate) fn icon_button(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    name: &'static str,
+    drawn: &(ChromeIcon, Option<IconName>),
+    listed: &'static str,
+) -> Stateful<Div> {
+    let styled = cx.native_theme().and_then(|nt| nt.native(cx)).is_some();
+    let icon = role_icon_of(drawn);
+    let mut button_info = info::buttons::button(
+        cx.theme(),
+        ButtonKind::Ghost,
+        ButtonState::Idle,
+        icon.is_some(),
+        None,
+        styled,
+    )
+    .instance("icon", format!("{name}, at toolbar.icon_size"));
+    let icon = icon.map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
+    if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
+        button_info = button_info.geometry("icon_size_toolbar");
+    }
+    let button = refined(
+        ButtonKind::Ghost.apply(Button::new(id), cx),
+        tool_button_box(cx).as_ref(),
+    )
+    .accessibility_label(name);
+    let button = match icon {
+        Some(icon) => button.child(listed_icon(ui, icon, Some(listed))),
+        None => button.label(name),
+    };
+    InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
+}
+
+/// A line of text of the Basic page's Typography group.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum TypeRole {
+    Caption,
+    Body,
+    SectionHeading,
+    DialogTitle,
+    Display,
+    Monospace,
+}
+
+/// `text` in `role`'s type: a `text_scale` entry's size, weight and line
+/// height in `defaults.font`'s family and colour; `defaults.font` itself at
+/// `defaults.line_height`; or `defaults.mono_font` at `defaults.line_height`
+/// -- each size and line height scaled by the text-scaling factor, as the
+/// section headings are (`heading`). Without a native theme, the Label's own
+/// type.
+pub(crate) fn type_line(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    role: TypeRole,
+    text: &'static str,
+) -> Stateful<Div> {
+    let look = native_value(cx, |n| {
+        let r = n.resolved;
+        let scaled = |v: f32| px(native_theme_gpui::scaled_text_size(v, n.accessibility));
+        let entry = |e: &native_theme::theme::ResolvedTextScaleEntry| {
+            (scaled(e.size), scaled(e.line_height), e.weight)
+        };
+        let font = &r.defaults.font;
+        let lined = |f: &ResolvedFontSpec| {
+            (
+                scaled(f.size),
+                scaled(f.size * r.defaults.line_height),
+                f.weight,
+            )
+        };
+        let ((size, line_height, weight), family, colour) = match role {
+            TypeRole::Caption => (entry(&r.text_scale.caption), &font.family, font.color),
+            TypeRole::Body => (lined(font), &font.family, font.color),
+            TypeRole::SectionHeading => (
+                entry(&r.text_scale.section_heading),
+                &font.family,
+                font.color,
+            ),
+            TypeRole::DialogTitle => (entry(&r.text_scale.dialog_title), &font.family, font.color),
+            TypeRole::Display => (entry(&r.text_scale.display), &font.family, font.color),
+            TypeRole::Monospace => (
+                lined(&r.defaults.mono_font),
+                &r.defaults.mono_font.family,
+                r.defaults.mono_font.color,
+            ),
+        };
+        (
+            size,
+            line_height,
+            FontWeight(f32::from(weight)),
+            SharedString::from(family.to_string()),
+            info::stated(colour),
+        )
+    });
+    let label = Label::new(text);
+    let label = match look {
+        Some((size, line_height, weight, family, colour)) => label
+            .text_size(size)
+            .line_height(line_height)
+            .font_weight(weight)
+            .font_family(family)
+            .text_color(colour),
+        None => label,
+    };
+    label
+        .info(ui, id, info::text::label(cx.theme()).variant(text))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The `Icon` a role's `drawn` icon is (`Showcase::role_chrome_icon`):
+/// gpui-component's own where its built-in set is chosen, the chosen set's
+/// SVG otherwise, drawn as `chrome_icon` draws one; `None` where the set has
+/// none for the role.
+fn role_icon_of(drawn: &(ChromeIcon, Option<IconName>)) -> Option<Icon> {
+    match drawn {
+        (ChromeIcon::Builtin(_), Some(icon)) => Some(Icon::new(icon.clone())),
+        (ChromeIcon::Loaded(_, bytes), _) => Some(Icon::default().data(bytes)),
+        _ => None,
+    }
+}
+
+/// native-theme's icon for a role, `drawn`, of the chosen set, at the size
+/// `role` gives it (`geometry::icon_size_small`, `_toolbar`, `_large`),
+/// reporting itself as `variant`. Where the set has no icon for the role,
+/// nothing is drawn -- never another set's.
+pub(crate) fn sized_icon(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    drawn: &(ChromeIcon, Option<IconName>),
+    role: fn(Native<'_>) -> Size,
+    variant: &'static str,
+) -> Stateful<Div> {
+    let shown = role_icon_of(drawn).map(|icon| native_sized(cx, icon, role));
+    let info = WidgetInfo::new("Icon")
+        .variant(variant)
+        .instance("icon", "IconRole::FolderOpen, of the chosen set");
+    div()
+        .children(shown)
+        .info(ui, id, info)
+        .debug_selector(move || id.into())
+}
+
+/// One row of [`files_table`]: its two cells' texts, the elements of
+/// docs/showcase-elements.toml its cells are, where they are ones, its font
+/// as (size, weight, line height, colour), its fill, and whether the
+/// header's line closes it.
+struct TableLine {
+    cells: [&'static str; 2],
+    listed: [Option<&'static str>; 2],
+    font: (Pixels, FontWeight, Pixels, Hsla),
+    fill: Option<Hsla>,
+    closed: bool,
+}
+
+/// The Basic page's table, `width` wide across its outer border, laid out
+/// as the iced and egui showcases lay theirs out, a table none of the three
+/// toolkits' own tables can style so (gpui-component's `TableRow` draws a
+/// line of its own between rows, after the caller's style: table/table.rs,
+/// `TableRow::render`): two columns, each half the width inside the frame;
+/// a header row reading `head` over a row for each of `rows`; every cell
+/// padded by the four `list.border.padding` sides (none on a side the theme
+/// leaves unstated) and every row `list.row_height` tall where the theme
+/// states it, else its line -- its font's size by `defaults.line_height` --
+/// and that padding; the header in `list.header_background` and
+/// `list.header_font`, the rows in `list.item_font`, the row at `selected`
+/// in `list.selection_background` and `selection_text_color`, the third in
+/// `list.alternate_row_background` (docs/showcase-elements.toml,
+/// `basic.table.row_3`); a `list.grid_color` line `separator.line_width`
+/// wide inside the header's bottom edge and one down the first column's
+/// right edge through every row; the whole framed by `list.border` on
+/// `list.background_color`. The header, its two cells and every row report
+/// themselves. Without a native theme, the Data page's declarative `Table`.
+pub(crate) fn files_table(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    head: [(&'static str, &'static str); 2],
+    rows: &[[&'static str; 2]],
+    selected: usize,
+    width: Pixels,
+) -> Stateful<Div> {
+    let Some(n) = cx.native_theme().and_then(|nt| nt.native(cx)) else {
+        let [(first, _), (second, _)] = head;
+        return table(ui, cx, id, "Files", [first, second], rows);
+    };
+    let t = cx.theme();
+    let r = n.resolved;
+    let l = &r.list;
+    let colour = info::stated;
+    let grid = colour(l.grid_color);
+    let line = px(r.separator.line_width);
+    let pad = &l.border.padding;
+    let side = |v: Option<f32>| v.map_or(px(0.), px);
+    let font = |f: &ResolvedFontSpec, colour: Hsla| {
+        let size = native_theme_gpui::scaled_text_size(f.size, n.accessibility);
+        (
+            px(size),
+            FontWeight(f32::from(f.weight)),
+            px(size * r.defaults.line_height),
+            colour,
+        )
+    };
+    let height = |line_height: Pixels| {
+        l.row_height
+            .map_or(side(pad.top) + line_height + side(pad.bottom), px)
+    };
+    let row =
+        |spec: TableLine| {
+            let (size, weight, line_height, text) = spec.font;
+            let cells = spec.cells.into_iter().zip(spec.listed).enumerate().map(
+                |(ix, (content, listed))| {
+                    div()
+                        .relative()
+                        .w(relative(0.5))
+                        .h_full()
+                        .flex()
+                        .items_center()
+                        .pt(side(pad.top))
+                        .pr(side(pad.right))
+                        .pb(side(pad.bottom))
+                        .pl(side(pad.left))
+                        .child(content)
+                        .when(ix == 0, |cell| {
+                            cell.child(
+                                div()
+                                    .absolute()
+                                    .top_0()
+                                    .bottom_0()
+                                    .right_0()
+                                    .w(line)
+                                    .bg(grid),
+                            )
+                        })
+                        .children(listed.map(|listed| elements::record(ui, listed)))
+                },
+            );
+            h_flex()
+                .relative()
+                .w_full()
+                .h(height(line_height))
+                .text_size(size)
+                .font_weight(weight)
+                .line_height(line_height)
+                .text_color(text)
+                .when_some(spec.fill, |row, fill| row.bg(fill))
+                .children(cells)
+                .when(spec.closed, |row| {
+                    row.child(
+                        div()
+                            .absolute()
+                            .left_0()
+                            .right_0()
+                            .bottom_0()
+                            .h(line)
+                            .bg(grid),
+                    )
+                })
+        };
+    let [first, second] = head;
+    let header = row(TableLine {
+        cells: [first.0, second.0],
+        listed: [Some(first.1), Some(second.1)],
+        font: font(&l.header_font, colour(l.header_font.color)),
+        fill: Some(colour(l.header_background)),
+        closed: true,
+    })
+    .info(
+        ui,
+        SharedString::from(format!("{id}-header")),
+        info::data::table_header(t, &format!("{}, {}", first.0, second.0)),
+    )
+    .w_full();
+    let body = rows.iter().enumerate().map(|(ix, cells)| {
+        let (fill, text) = if ix == selected {
+            (
+                Some(colour(l.selection_background)),
+                colour(l.selection_text_color),
+            )
+        } else if ix == TABLE_ALTERNATE_ROW {
+            (
+                Some(colour(l.alternate_row_background)),
+                colour(l.item_font.color),
+            )
+        } else {
+            (None, colour(l.item_font.color))
+        };
+        row(TableLine {
+            cells: *cells,
+            listed: [None, None],
+            font: font(&l.item_font, text),
+            fill,
+            closed: false,
+        })
+        .info(
+            ui,
+            SharedString::from(format!("{id}-row-{ix}")),
+            info::data::table_row(t, ix == 0, &cells.join(", ")),
+        )
+        .w_full()
+    });
+    v_flex()
+        .w(width)
+        .bg(colour(l.background_color))
+        .border(px(l.border.line_width))
+        .border_color(colour(l.border.color))
+        .rounded(px(l.border.corner_radius.max(0.0)))
+        .overflow_hidden()
+        .child(header)
+        .children(body)
+        .info(ui, id, info::data::table(t, rows.len()))
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
+/// The index of the table row filled with `list.alternate_row_background`:
+/// the third, as docs/showcase-elements.toml has it (`basic.table.row_3`).
+const TABLE_ALTERNATE_ROW: usize = 2;

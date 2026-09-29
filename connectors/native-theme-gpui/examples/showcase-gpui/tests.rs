@@ -1987,15 +1987,16 @@ fn dragging_the_handle_resizes_both_panels(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let content = bounds_of(&mut cx, CONTENT_PANEL);
     let panel = bounds_of(&mut cx, CHROME_SIDE_PANEL);
+    let line = splitter_line(&mut cx);
     assert_eq!(
-        panel.right(),
+        panel.right() + line,
         content.left(),
-        "the side panel ends at {:?} and the content starts at {:?}",
+        "the side panel ends at {:?} and the content starts at {:?}, not past the {line:?} line",
         panel.right(),
         content.left()
     );
     let dragged = px(40.);
-    drag_handle(&mut cx, content.left(), content.center().y, dragged);
+    drag_handle(&mut cx, boundary(content), content.center().y, dragged);
     let content_after = bounds_of(&mut cx, CONTENT_PANEL);
     let panel_after = bounds_of(&mut cx, CHROME_SIDE_PANEL);
     let grew = panel_after.size.width - panel.size.width;
@@ -2068,10 +2069,11 @@ fn the_window_fits_the_side_panel_and_a_page(cx: &mut TestAppContext) {
         LEFT_PANEL_WIDTH,
         "the side panel does not open at LEFT_PANEL_WIDTH"
     );
+    let line = splitter_line(&mut cx);
     assert_eq!(
         bounds_of(&mut cx, CONTENT_PANEL).size.width,
-        px(PAGE_WIDTH_PX),
-        "the content panel does not open at the pages' width"
+        px(PAGE_WIDTH_PX) - line,
+        "the content panel does not open at the pages' width less the splitter's line"
     );
 }
 
@@ -2091,10 +2093,11 @@ fn the_body_is_two_panels(cx: &mut TestAppContext) {
         px(0.),
         "the side panel is not the body's first panel"
     );
+    let line = splitter_line(&mut cx);
     assert_eq!(
         content.left(),
-        panel.right(),
-        "the content panel does not follow the side panel"
+        panel.right() + line,
+        "the content panel does not follow the side panel past the splitter's line"
     );
     assert_eq!(
         content.right(),
@@ -2109,6 +2112,21 @@ fn the_body_is_two_panels(cx: &mut TestAppContext) {
         cx.debug_bounds(CHROME_HANDLE).is_some(),
         "the handle between the two panels was not laid out"
     );
+}
+
+/// How far past the side panel's edge the content starts: the splitter's
+/// line, which the handle draws back over the strip the side panel keeps for
+/// it (`demo::splitter_reserve`), and its own pixel (`demo::HANDLE_SIZE`).
+fn splitter_line(cx: &mut VisualTestContext) -> Pixels {
+    cx.update(|_, cx| {
+        crate::demo::splitter_reserve(cx).unwrap_or_default() + crate::demo::HANDLE_SIZE
+    })
+}
+
+/// The boundary a drag of the handle starts at: the handle's pixel, just
+/// before the content (app.rs, the content panel's `pl`).
+fn boundary(content: Bounds<Pixels>) -> Pixels {
+    content.left() - crate::demo::HANDLE_SIZE
 }
 
 /// Drag the handle whose line is at `x` by `by` along the row: the first move
@@ -2138,7 +2156,7 @@ fn the_dragged_width_survives_the_toggle(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let content = bounds_of(&mut cx, CONTENT_PANEL);
     let width = bounds_of(&mut cx, CHROME_SIDE_PANEL).size.width;
-    drag_handle(&mut cx, content.left(), content.center().y, px(30.));
+    drag_handle(&mut cx, boundary(content), content.center().y, px(30.));
     let dragged = bounds_of(&mut cx, CHROME_SIDE_PANEL).size.width;
     assert!(
         (dragged - width - px(30.)).abs() <= px(1.),
@@ -2156,10 +2174,11 @@ fn the_dragged_width_survives_the_toggle(cx: &mut TestAppContext) {
         dragged,
         "the side panel came back at another width than it was dragged to"
     );
+    let line = splitter_line(&mut cx);
     assert_eq!(
         bounds_of(&mut cx, CONTENT_PANEL).left(),
-        dragged,
-        "the content does not start where the side panel came back to"
+        dragged + line,
+        "the content does not start past the splitter's line where the side panel came back to"
     );
 }
 
@@ -2250,7 +2269,7 @@ fn the_splitter_line_keeps_off_both_panels(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_resize_handle_reports_itself(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let boundary = bounds_of(&mut cx, CONTENT_PANEL).left();
+    let boundary = boundary(bounds_of(&mut cx, CONTENT_PANEL));
     let title = "ResizeHandle · side panel | content";
     let target = bounds_of(&mut cx, CHROME_HANDLE);
     // The handle's hit area: 4px either side of the boundary, the line
@@ -2290,6 +2309,10 @@ fn the_resize_handle_reports_itself(cx: &mut TestAppContext) {
 const PAGE_TABS_TITLE: &str = "TabBar · widgets::TabBar, menu";
 #[cfg(not(feature = "widgets"))]
 const PAGE_TABS_TITLE: &str = "TabBar · Underline, small, menu";
+
+/// The title Widget Info shows for the page TabBar, an element of
+/// docs/showcase-elements.toml: its name and state there.
+const PAGE_TABS_LISTED_TITLE: &str = "Tab bar · Normal";
 
 /// The title the inspector's TabBar's info shows.
 #[cfg(feature = "widgets")]
@@ -2532,37 +2555,6 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
     }
 }
 
-/// The widest box painted inside `within` with a bottom border in the
-/// rule's colour: under a native theme a tab row's `separator.line_color`
-/// (demo.rs, `native_tab_strip`), without one an Underline TabBar's bottom
-/// rule in `border` (tab/tab_bar.rs:505-513).
-fn bottom_rule(cx: &mut VisualTestContext, within: Bounds<Pixels>) -> Option<Bounds<Pixels>> {
-    cx.update(|window, cx| {
-        #[cfg(feature = "widgets")]
-        let border = native_color(cx, |n| n.resolved.separator.line_color)
-            .unwrap_or(Theme::global(cx).border);
-        #[cfg(not(feature = "widgets"))]
-        let border = Theme::global(cx).border;
-        let scale = window.scale_factor();
-        let within = within.scale(scale);
-        window
-            .painted_quads()
-            .into_iter()
-            .filter(|q| {
-                q.border_widths.bottom.0 > 0.
-                    && q.border_color == border
-                    && q.bounds.top() >= within.top()
-                    && q.bounds.bottom() <= within.bottom()
-            })
-            .map(|q| q.bounds)
-            .max_by(|a, b| a.size.width.0.total_cmp(&b.size.width.0))
-            .map(|b| Bounds {
-                origin: point(px(b.origin.x.0 / scale), px(b.origin.y.0 / scale)),
-                size: size(px(b.size.width.0 / scale), px(b.size.height.0 / scale)),
-            })
-    })
-}
-
 /// The smallest box that hovering `at` paints and that was not painted
 /// before, and that holds `at`: the hovered element's hover fill.
 fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pixels>> {
@@ -2607,8 +2599,8 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
 ///
 /// On the right, the page TabBar's menu Button (tab/tab_bar.rs, `menu`)
 /// ends that far from the panel's right edge, and the inspector's last tab
-/// ends no nearer to it. The bar's bottom rule is drawn on the bar itself,
-/// under its padding, so it spans the panel's whole width.
+/// ends no nearer to it. The page row's rule is drawn under the bar, which
+/// spans the panel, so it spans the panel's whole width too.
 #[gpui::test]
 fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -2647,13 +2639,24 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                 tab.left() - panel.left()
             );
             let tabs = bounds_of(&mut cx, selector);
-            let rule = bottom_rule(&mut cx, tabs);
-            assert!(
-                rule.is_some_and(|rule| (rule.left() - panel.left()).abs() <= slack
-                    && (rule.right() - panel.right()).abs() <= slack),
-                "{preset}: the {bar} TabBar's bottom rule at {rule:?} does not span its panel \
-                 at {panel:?}"
-            );
+            // The page row alone has a rule under it (demo::native_tab_bar),
+            // as docs/showcase-elements.toml's `chrome.page_tabs.rule`.
+            if bar == "page" {
+                let rule = read(&mut cx, &showcase, |this, cx| {
+                    this.info_ui
+                        .read(cx)
+                        .layout_drawn()
+                        .get("chrome.page_tabs.rule")
+                        .copied()
+                });
+                assert!(
+                    rule.is_some_and(|rule| (rule.left() - panel.left()).abs() <= slack
+                        && (rule.right() - panel.right()).abs() <= slack
+                        && (rule.top() - tabs.bottom()).abs() <= slack),
+                    "{preset}: the {bar} TabBar's rule at {rule:?} does not span its panel \
+                     at {panel:?} under the bar at {tabs:?}"
+                );
+            }
             match last {
                 Some(last) => {
                     let last = bounds_of(&mut cx, last);
@@ -2716,7 +2719,7 @@ fn the_inspector_shows_the_settled_info(cx: &mut TestAppContext) {
     draw(&mut cx);
     assert_eq!(
         inspector_title(&mut cx, &showcase).as_deref(),
-        Some(PAGE_TABS_TITLE),
+        Some(PAGE_TABS_LISTED_TITLE),
         "the inspector does not show the page TabBar the pointer settled on"
     );
 }
@@ -2757,19 +2760,39 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
     hover(&mut cx, tab.center());
     settle(&mut cx);
     draw(&mut cx);
+    // The page TabBar is an element of docs/showcase-elements.toml: the panel
+    // shows its title and a row per leaf the list names, and Copy copies
+    // that text.
     let shown = read(&mut cx, &showcase, |this, cx| {
-        this.info_ui.read(cx).shown().map(|info| info.to_text())
+        this.info_ui
+            .read(cx)
+            .shown()
+            .map(|info| (crate::inspector::shown_title(info), info.listed))
     });
+    let element = shown
+        .as_ref()
+        .and_then(|(_, listed)| *listed)
+        .and_then(crate::elements::element);
     assert!(
-        shown.is_some(),
-        "nothing is shown, so nothing can be copied"
+        element.is_some(),
+        "the page TabBar is not shown as an element of the list: {shown:?}"
     );
     click(&mut cx, INSPECTOR_COPY);
-    assert_eq!(
-        cx.read_from_clipboard().and_then(|item| item.text()),
-        shown,
-        "the Copy button did not put the shown info on the clipboard"
+    let copied = cx
+        .read_from_clipboard()
+        .and_then(|item| item.text())
+        .unwrap_or_default();
+    let title = shown.map(|(title, _)| title).unwrap_or_default();
+    assert!(
+        copied.starts_with(&format!("{title}\n\nTheme\n")),
+        "the Copy button did not put the shown info on the clipboard: {copied:?}"
     );
+    for leaf in element.iter().flat_map(|e| e.leaves.iter()) {
+        assert!(
+            copied.contains(&format!("\n{leaf} ")),
+            "the copied info has no row for {leaf}: {copied:?}"
+        );
+    }
 }
 
 /// A page change keeps an info whose target is still drawn, as chrome is
@@ -3330,7 +3353,7 @@ fn the_status_bar_names_the_hovered_widget(cx: &mut TestAppContext) {
     draw(&mut cx);
     assert_eq!(
         status_title(&mut cx, &showcase).as_deref(),
-        Some("Button · Ghost, icon"),
+        Some("Tool button · Normal"),
         "the status bar does not name the toolbar button the pointer settled on"
     );
     assert_eq!(
@@ -3530,12 +3553,19 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
             );
             drawn.push(("shown title", label));
         }
-        for pair in drawn.windows(2) {
+        // The toggle and the environment are one item, `layout.widget_gap`
+        // apart (demo::status_bar); the bar's regions stay `gap_2` apart.
+        let widget_gap = read(&mut cx, &showcase, |this, _| {
+            geometry::widget_gap(&this.layout)
+        })
+        .unwrap_or(px(0.));
+        for (ix, pair) in drawn.windows(2).enumerate() {
             if let [(a, before), (b, after)] = pair {
+                let expected = if ix == 0 { widget_gap } else { gap };
                 assert!(
-                    (after.left() - before.right() - gap).abs() <= slack,
+                    (after.left() - before.right() - expected).abs() <= slack,
                     "the status bar draws something between its {a} at {before:?} and its {b} \
-                     at {after:?}, which are not gap_2 apart"
+                     at {after:?}, which are not {expected:?} apart"
                 );
             }
         }
@@ -3623,8 +3653,21 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
                 .text_system()
                 .shape_line(text, rems(0.875).to_pixels(rem), &[run], None)
                 .width()
-                + rems(0.5).to_pixels(rem) * 2.
         });
+        // Padded by the theme's button padding where it states a side, and
+        // by the Small Button's own `px_2` where not (demo::tool_button_box).
+        let sides = cx.update(|_, cx| {
+            native_value(cx, |n| {
+                let p = &n.resolved.button.border.padding;
+                (p.left, p.right)
+            })
+        });
+        let upstream = cx.update(|window, _| rems(0.5).to_pixels(window.rem_size()));
+        let side = |v: Option<f32>| v.map_or(upstream, px);
+        let expected = match sides {
+            Some((left, right)) => expected + side(left) + side(right),
+            None => expected + upstream * 2.,
+        };
         // gpui places elements on the device's pixel grid.
         assert!(
             (labelled.size.width - expected).abs() <= device_pixel(&mut cx),
@@ -3763,12 +3806,14 @@ fn the_chrome_bars_report_themselves(cx: &mut TestAppContext) {
     let status_bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
     let mut cases = vec![
         // The toolbar's items are packed at its start; its end is the row.
+        // Elements of docs/showcase-elements.toml, titled as the list names
+        // them.
         (
-            "Toolbar",
+            "Toolbar · Normal",
             point(toolbar.right() - px(8.), toolbar.center().y),
         ),
         // The middle region, which holds no item of this bar's.
-        ("StatusBar", status_bar.center()),
+        ("Status bar · Normal", status_bar.center()),
     ];
     if cfg!(not(target_os = "macos")) {
         let row = bounds_of(&mut cx, CHROME_MENU_BAR);
@@ -3779,7 +3824,7 @@ fn the_chrome_bars_report_themselves(cx: &mut TestAppContext) {
             menus.right() < at.x,
             "the menu bar at {menus:?} reaches the menu-bar row's end at {row:?}"
         );
-        cases.insert(1, ("Menu bar", at));
+        cases.insert(1, ("Menu bar · Normal", at));
     }
     for (title, at) in cases {
         hover(&mut cx, at);
@@ -4024,19 +4069,26 @@ fn the_basic_page_holds_every_group_in_its_column(cx: &mut TestAppContext) {
             "Checkboxes",
             "Radio buttons",
             "Switches",
+            "Toggle button",
+            "Icon buttons",
             "Text inputs",
             "Text area",
             "Drop-down",
             "Text",
+            "Number input",
+            "Focused input",
             "Slider",
             "Progress bar",
             "Spinner",
             "Tabs",
             "Segmented control",
+            "Typography",
             "List",
             "Expander",
             "Card",
             "Separator",
+            "Table",
+            "Icons",
         ],
         "the Basic page's groups are not the three showcases' groups"
     );
@@ -7730,10 +7782,19 @@ fn a_theme_error_is_an_alert(cx: &mut TestAppContext) {
         tabs, tabs_before,
         "the page TabBar moved when the Alert appeared"
     );
+    // Under the rule that parts the page TabBar from the page.
+    let under = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui
+            .read(cx)
+            .layout_drawn()
+            .get("chrome.page_tabs.rule")
+            .map(|rule| rule.bottom())
+    })
+    .unwrap_or(tabs.bottom());
     assert_eq!(
         alert.top(),
-        tabs.bottom(),
-        "the Alert at {alert:?} is not right under the page TabBar at {tabs:?}"
+        under,
+        "the Alert at {alert:?} is not right under the page TabBar at {tabs:?} and its rule"
     );
     assert!(
         alert.bottom() <= scroll.top(),
@@ -8203,4 +8264,196 @@ fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
     change_page(cx, &view, &ui, true);
     settle(cx);
     assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+}
+
+// ---------------------------------------------------------------------------
+// docs/showcase-elements.toml: the layout dump and Widget Info
+// ---------------------------------------------------------------------------
+
+/// The elements of docs/showcase-elements.toml the showcase draws but does
+/// not record while the frame is laid out, as (element id, why): each is
+/// drawn inside a gpui-component widget that reports no bounds of its parts,
+/// or its bounds come from the field's state once laid out
+/// (`Showcase::field_text_bounds`, which the layout dump reads).
+const NOT_RECORDED: &[(&str, &str)] = &[
+    (
+        "basic.text_inputs.placeholder.text",
+        "the Input's element draws the placeholder and reports no bounds of it (input/input.rs)",
+    ),
+    (
+        "basic.text_inputs.filled.text",
+        "Showcase::field_text_bounds",
+    ),
+    (
+        "basic.text_inputs.disabled.text",
+        "Showcase::field_text_bounds",
+    ),
+    (
+        "basic.focused_input.field.text",
+        "Showcase::field_text_bounds",
+    ),
+    (
+        "basic.number_input.field.text",
+        "Showcase::field_text_bounds",
+    ),
+    ("basic.text_area.field.text", "Showcase::field_text_bounds"),
+    (
+        "basic.drop_down.trigger.text",
+        "the Select draws its value inside its trigger and reports no bounds of it (select.rs)",
+    ),
+    (
+        "basic.drop_down.trigger.arrow",
+        "the Select draws its arrow inside its trigger and reports no bounds of it (select.rs)",
+    ),
+];
+
+/// The list parses, as the showcase reads it.
+#[test]
+fn the_element_list_parses() {
+    let list = crate::elements::showcase_elements().expect("docs/showcase-elements.toml parses");
+    assert!(
+        !list.is_empty(),
+        "docs/showcase-elements.toml lists nothing"
+    );
+    assert_eq!(crate::elements::elements().len(), list.len());
+}
+
+/// Every id the showcase records is an element of the list, none is
+/// recorded twice in one frame, and every element of the list the Basic
+/// page and the chrome show at rest is recorded, but for [`NOT_RECORDED`].
+#[gpui::test]
+fn the_layout_dump_holds_every_element_drawn(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let (drawn, twice) = read(&mut cx, &showcase, |this, cx| {
+        let ui = this.info_ui.read(cx);
+        (ui.layout_drawn(), ui.listed_twice.clone())
+    });
+    assert!(twice.is_empty(), "recorded twice in one frame: {twice:?}");
+    let list = crate::elements::elements();
+    for id in drawn.keys() {
+        assert!(
+            list.iter().any(|e| e.id == *id),
+            "{id} is recorded but is no element of docs/showcase-elements.toml"
+        );
+    }
+    // Shown only under a condition: an open menu, a hover, a scrollbar at
+    // rest -- which the gpui List draws inside itself (list/list.rs).
+    let missing: Vec<&str> = list
+        .iter()
+        .filter(|e| e.when.is_none())
+        .map(|e| e.id.as_str())
+        .filter(|id| !drawn.contains_key(id))
+        .filter(|id| !NOT_RECORDED.iter().any(|(n, _)| n == id))
+        .collect();
+    assert!(missing.is_empty(), "drawn but not recorded: {missing:?}");
+    for (id, _) in NOT_RECORDED {
+        assert!(
+            list.iter().any(|e| e.id == *id),
+            "NOT_RECORDED names {id}, no element of the list"
+        );
+    }
+}
+
+/// Every leaf of every element of the list has the line saying how gpui
+/// applies it (`info::leaves`), so Widget Info never shows the fallback.
+#[test]
+fn every_listed_leaf_has_a_route() {
+    let missing: Vec<String> = crate::elements::elements()
+        .iter()
+        .flat_map(|e| {
+            e.leaves
+                .iter()
+                .filter(|leaf| crate::info::leaves::how(&e.id, leaf).is_none())
+                .map(move |leaf| format!("{} {leaf}", e.id))
+        })
+        .collect();
+    assert!(missing.is_empty(), "no route: {missing:?}");
+}
+
+/// Every id the showcase's tables name is an element of the list.
+#[test]
+fn every_listed_id_is_in_the_list() {
+    let list = crate::elements::elements();
+    for id in crate::elements::named_ids() {
+        assert!(
+            list.iter().any(|e| e.id == id),
+            "{id} is named by the showcase but is no element of docs/showcase-elements.toml"
+        );
+    }
+}
+
+/// A leaf's value reads as the three showcases agreed: a colour as `Rgba`
+/// prints it, a length with ` px`, a font as family, stated size and weight,
+/// a text-scale entry as size and weight, a number as itself.
+#[test]
+fn a_leaf_value_reads_as_the_showcases_agreed() {
+    use crate::info::values::leaf_value;
+    let theme = native_theme::theme::Theme::preset("kde-breeze").expect("the preset loads");
+    let layout = theme.layout.clone();
+    let resolved = theme
+        .into_variant(native_theme::theme::ColorMode::Light)
+        .expect("the preset has the variant")
+        .into_resolved(&native_theme::ResolutionContext::for_tests())
+        .expect("the preset resolves");
+    let json = serde_json::to_value(&resolved).expect("the resolved theme serialises");
+    let value = |leaf: &str| leaf_value(leaf, &json, &layout, None).text;
+    let font = &resolved.button.font;
+    let stated = match font.defined_size {
+        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v} pt"),
+        Some(native_theme::theme::FontSize::Px(v)) => format!("{v} px"),
+        None => format!("{} px", font.size),
+    };
+    assert_eq!(
+        value("button.font"),
+        format!("{} {stated} {}", font.family, font.weight)
+    );
+    assert_eq!(
+        value("button.font.color"),
+        resolved.button.font.color.to_string()
+    );
+    assert_eq!(
+        value("defaults.line_height"),
+        format!("{}", resolved.defaults.line_height)
+    );
+    assert_eq!(
+        value("button.border.corner_radius_px"),
+        format!("{} px", resolved.button.border.corner_radius)
+    );
+    assert_eq!(
+        value("defaults.icon_sizes.small_px"),
+        format!("{} px", resolved.defaults.icon_sizes.small)
+    );
+    assert_eq!(
+        value("text_scale.section_heading"),
+        format!(
+            "{} px {}",
+            resolved.text_scale.section_heading.size, resolved.text_scale.section_heading.weight
+        )
+    );
+    assert_eq!(value("theme_variant.icon_set"), "not stated");
+    match layout.widget_gap {
+        Some(gap) => assert_eq!(value("layout.widget_gap_px"), format!("{gap} px")),
+        None => assert_eq!(value("layout.widget_gap_px"), "not stated"),
+    }
+    match resolved.button.border.padding.top {
+        Some(top) => assert_eq!(value("button.border.padding_top_px"), format!("{top} px")),
+        None => assert_eq!(value("button.border.padding_top_px"), "not stated"),
+    }
+    assert!(
+        leaf_value("button.background_color", &json, &layout, None)
+            .colour
+            .is_some(),
+        "a colour leaf has no swatch"
+    );
+    for e in crate::elements::elements() {
+        for leaf in &e.leaves {
+            let shown = value(leaf);
+            assert!(
+                !shown.starts_with('{') && !shown.starts_with('['),
+                "{} {leaf} shows raw JSON: {shown}",
+                e.id
+            );
+        }
+    }
 }

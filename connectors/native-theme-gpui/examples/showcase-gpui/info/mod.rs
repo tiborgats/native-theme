@@ -13,11 +13,13 @@ pub mod feedback;
 pub mod icons;
 pub mod inputs;
 pub mod layout;
+pub mod leaves;
 pub mod overlays;
 pub mod registry;
 pub mod text;
 pub mod theme_map;
 pub mod typography;
+pub mod values;
 pub use chrome::*;
 pub use registry::*;
 
@@ -61,6 +63,11 @@ pub struct WidgetInfo {
     pub config: Vec<Note>,
     pub not_themeable: Vec<Note>,
     pub instance: Vec<Note>,
+    /// The element of docs/showcase-elements.toml the widget is, if it is
+    /// one: Widget Info then shows it in the list's form
+    /// (`crate::inspector::listed_sections`), and the layout dump records
+    /// where it was drawn.
+    pub listed: Option<&'static str>,
 }
 
 impl WidgetInfo {
@@ -72,6 +79,11 @@ impl WidgetInfo {
     }
     pub fn variant(mut self, variant: impl Into<String>) -> Self {
         self.variant = Some(variant.into());
+        self
+    }
+    /// The widget is the element `id` of docs/showcase-elements.toml.
+    pub fn listed(mut self, id: &'static str) -> Self {
+        self.listed = Some(id);
         self
     }
     pub fn color(mut self, claim: ColorClaim) -> Self {

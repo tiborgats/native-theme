@@ -5,7 +5,7 @@ use std::{collections::HashMap, rc::Rc, time::Duration};
 use gpui::{
     App, Bounds, Context, Div, ElementId, Entity, InteractiveElement as _, IntoElement,
     ParentElement as _, Pixels, Stateful, StatefulInteractiveElement as _, Styled as _, Window,
-    canvas, div,
+    canvas, div, prelude::FluentBuilder as _,
 };
 
 use super::WidgetInfo;
@@ -34,6 +34,12 @@ pub struct InfoRegistry {
     /// read this after every frame they draw.
     #[cfg(test)]
     pub drawn_twice: std::collections::BTreeSet<String>,
+    /// Where each element of docs/showcase-elements.toml was laid out, and
+    /// in which frame (`crate::elements`).
+    layout: HashMap<&'static str, (Bounds<Pixels>, u64)>,
+    /// Every element id recorded twice in one frame; the tests read it.
+    #[cfg(test)]
+    pub listed_twice: std::collections::BTreeSet<&'static str>,
 }
 
 impl InfoRegistry {
@@ -45,6 +51,27 @@ impl InfoRegistry {
     }
     pub fn shown(&self) -> Option<&Rc<WidgetInfo>> {
         self.shown.as_ref().map(|(_, info)| info)
+    }
+    /// The element `id` of the list was laid out at `bounds` in the frame
+    /// being drawn.
+    pub fn record_layout(&mut self, id: &'static str, bounds: Bounds<Pixels>) {
+        #[cfg(test)]
+        if self
+            .layout
+            .get(id)
+            .is_some_and(|(_, epoch)| *epoch == self.epoch)
+        {
+            self.listed_twice.insert(id);
+        }
+        self.layout.insert(id, (bounds, self.epoch));
+    }
+    /// Every element of the list the last frame drew, and where.
+    pub fn layout_drawn(&self) -> std::collections::BTreeMap<&'static str, Bounds<Pixels>> {
+        self.layout
+            .iter()
+            .filter(|(_, (_, epoch))| *epoch == self.epoch)
+            .map(|(id, (bounds, _))| (*id, *bounds))
+            .collect()
     }
     /// The active page changed, or a theme was installed. Once the next
     /// frame is drawn, what is shown goes back to the hint unless that frame
@@ -214,11 +241,24 @@ pub trait InfoExt: IntoElement + Sized {
         info: WidgetInfo,
     ) -> Stateful<Div> {
         let id: ElementId = id.into();
-        let info = Rc::new(info);
-        let (on_bounds, on_hover) = (ui.clone(), ui.clone());
+        let listed = info.listed.or(match &id {
+            ElementId::Name(name) => crate::elements::listed_for(name),
+            _ => None,
+        });
+        let info = Rc::new(WidgetInfo { listed, ..info });
+        let (on_bounds, on_hover, on_layout) = (ui.clone(), ui.clone(), ui.clone());
         let (bounds_id, hover_id) = (id.clone(), id.clone());
         let bounds_info = info.clone();
         div()
+            // The element's own bounds, its first child's, for the layout
+            // dump: the wrapper can be wider where its parent stretches it.
+            .when_some(listed, |wrapper, listed| {
+                wrapper.on_children_prepainted(move |bounds, _window, cx| {
+                    if let Some(bounds) = bounds.first() {
+                        on_layout.update(cx, |r, _| r.record_layout(listed, *bounds));
+                    }
+                })
+            })
             .id(id)
             .relative()
             .child(self)

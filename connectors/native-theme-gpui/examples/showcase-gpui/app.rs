@@ -6,7 +6,7 @@ use gpui::{
     actions, div, prelude::*,
 };
 use gpui_component::{
-    ActiveTheme, IconName, ResizableState, Root,
+    ActiveTheme, IconName, IconNamed as _, ResizableState, Root,
     attachment::AttachmentStatus,
     carousel::CarouselState,
     color_picker::ColorPickerState,
@@ -47,6 +47,7 @@ use native_theme_gpui::to_theme;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
 
 use crate::chrome;
+use crate::elements;
 use crate::info::{InfoRegistry, epoch_marker};
 use crate::inspector::Inspector;
 use crate::support::{
@@ -301,6 +302,10 @@ pub(crate) struct Showcase {
     pub(crate) basic_segment: usize,
     /// Whether each of the Basic page's two expanders is open.
     pub(crate) basic_expanded: [bool; 2],
+    /// The Basic page's number field, at `BASIC_NUMBER`, stepping by one.
+    pub(crate) basic_number_state: Entity<InputState>,
+    /// The Basic page's text field that holds the keyboard focus at start.
+    pub(crate) basic_focused_state: Entity<InputState>,
 
     // Inputs page
     pub(crate) input_state: Entity<InputState>,
@@ -440,6 +445,11 @@ pub(crate) const GPUI_BUILTIN_ROW: &str = "gpui-component built-in (Lucide)";
 /// The Basic page's slider value, on 0 to 100: the datum on display, as the
 /// page's `BASIC_PROGRESS` is.
 const BASIC_SLIDER: f32 = 40.0;
+
+/// The Basic page's number field: the value it opens at and its step, the
+/// iced and egui showcases' too.
+const BASIC_NUMBER: i64 = 42;
+const BASIC_NUMBER_STEP: i64 = 1;
 
 /// The rows the Basic page's text area is tall, and the text it holds: one
 /// line per row.
@@ -704,6 +714,78 @@ impl Showcase {
         ChromeIcon::of(&self.gpui_icons, self.icon_set_enum.is_none(), icon)
     }
 
+    /// Where the Basic page's fields laid their text out, as the elements of
+    /// docs/showcase-elements.toml the text is: each value's box as the
+    /// field's state reports it (`range_to_bounds`, gpui-base
+    /// input/base/state.rs), one line tall; the text area's as the box round
+    /// its lines. A field whose text is not laid out, or empty, reports
+    /// nothing: the placeholder is drawn by the field's element, which
+    /// reports no bounds of it.
+    pub(crate) fn field_text_bounds(
+        &self,
+        cx: &gpui::App,
+    ) -> Vec<(&'static str, gpui::Bounds<Pixels>)> {
+        let line = |state: &Entity<InputState>| {
+            let state = state.read(cx);
+            let len = state.value().len();
+            (len > 0)
+                .then(|| state.range_to_bounds(&(0..len)))
+                .flatten()
+        };
+        let fields = [
+            ("basic.text_inputs.filled.text", &self.basic_text_state),
+            (
+                "basic.text_inputs.disabled.text",
+                &self.basic_disabled_state,
+            ),
+            ("basic.focused_input.field.text", &self.basic_focused_state),
+            ("basic.number_input.field.text", &self.basic_number_state),
+        ];
+        let mut found: Vec<(&'static str, gpui::Bounds<Pixels>)> = fields
+            .into_iter()
+            .filter_map(|(id, state)| line(state).map(|b| (id, b)))
+            .collect();
+        let area = self.basic_textarea.read(cx);
+        let text = area.value();
+        let mut start = 0;
+        let mut lines: Option<gpui::Bounds<Pixels>> = None;
+        for piece in text.split('\n') {
+            let end = start + piece.len();
+            if let Some(b) = area.range_to_bounds(&(start..end)) {
+                lines = Some(lines.map_or(b, |so_far| so_far.union(&b)));
+            }
+            start = end + 1;
+        }
+        found.extend(lines.map(|b| ("basic.text_area.field.text", b)));
+        found
+    }
+
+    /// The chrome's icon for native-theme's `role`, from the chosen icon set
+    /// as the Icons page loaded it (`loaded_icons`): gpui-component's own
+    /// icon for the role where its built-in set is chosen, with the IconName
+    /// to draw; the set's SVG otherwise; `Missing` where the set has none
+    /// for the role, or only pixels -- never another set's.
+    pub(crate) fn role_chrome_icon(&self, role: IconRole) -> (ChromeIcon, Option<IconName>) {
+        if self.icon_set_enum.is_none() {
+            return match native_theme_gpui::icons::icon_name(role) {
+                Some(icon) => (ChromeIcon::Builtin(icon.clone().path()), Some(icon)),
+                None => (ChromeIcon::Missing(role.name()), None),
+            };
+        }
+        let svg = self
+            .loaded_icons
+            .iter()
+            .find(|(loaded, ..)| *loaded == role)
+            .and_then(|(_, data, _)| match data {
+                Some(IconData::Svg(bytes)) => Some(bytes.clone()),
+                _ => None,
+            });
+        match svg {
+            Some(bytes) => (ChromeIcon::Loaded(role.name(), bytes), None),
+            None => (ChromeIcon::Missing(role.name()), None),
+        }
+    }
+
     /// A page sample's icon for gpui-component's `icon`: the chosen icon
     /// theme's, found as the chrome's are (`chrome_icon`), with the name the
     /// sample's info gives that theme.
@@ -917,6 +999,25 @@ impl Showcase {
                 .auto_grow(BASIC_TEXTAREA_ROWS, BASIC_TEXTAREA_ROWS)
                 .default_value(BASIC_TEXTAREA_TEXT)
         });
+        let basic_number_state =
+            cx.new(|cx| InputState::new(window, cx).default_value(BASIC_NUMBER.to_string()));
+        cx.subscribe_in(
+            &basic_number_state,
+            window,
+            |_this: &mut Self, input, event: &NumberInputEvent, window, cx| {
+                let NumberInputEvent::Step(action) = event;
+                input.update(cx, |input, cx| {
+                    let value = input.value().parse().unwrap_or(BASIC_NUMBER);
+                    let value = match action {
+                        StepAction::Increment => value.saturating_add(BASIC_NUMBER_STEP),
+                        StepAction::Decrement => value.saturating_sub(BASIC_NUMBER_STEP),
+                    };
+                    input.set_value(SharedString::from(value.to_string()), window, cx);
+                });
+            },
+        )
+        .detach();
+        let basic_focused_state = cx.new(|cx| InputState::new(window, cx).default_value("Focused"));
 
         let input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
@@ -1197,7 +1298,7 @@ impl Showcase {
         // What the inspector shows. Created before the Data page's states:
         // their delegates build rows that report themselves to it.
         let info_ui = cx.new(|_| InfoRegistry::new());
-        let menus = cx.new(demo::MenuBar::new);
+        let menus = cx.new(|cx| demo::MenuBar::new(info_ui.clone(), cx));
 
         // Table state with sample data
         let table_state = cx.new(|cx| {
@@ -1299,6 +1400,10 @@ impl Showcase {
         cx.set_menus(chrome::menus());
         let focus_handle = cx.focus_handle();
         focus_handle.focus(window, cx);
+        // The Basic page's focused field holds the keyboard focus at start,
+        // so its focus border shows; it is inside the view, whose actions
+        // it still reaches.
+        basic_focused_state.update(cx, |state, cx| state.focus(window, cx));
         let _refocus = cx.on_focus_lost(window, |this: &mut Self, window, cx| {
             this.focus_handle.focus(window, cx)
         });
@@ -1368,6 +1473,8 @@ impl Showcase {
             basic_tab: 0,
             basic_segment: 1,
             basic_expanded: [true, false],
+            basic_number_state,
+            basic_focused_state,
             input_state,
             input_height_state,
             textarea_demo,
@@ -1843,6 +1950,7 @@ impl Render for Showcase {
             .size_full()
             .overflow_hidden()
             .debug_selector(|| CONTENT_PANEL.into())
+            .child(elements::record(&self.info_ui, "chrome.content"))
             .child(chrome::page_tabs(self, cx))
             .children(self.error_message.clone().map(|message| {
                 demo::alert(
@@ -1926,8 +2034,12 @@ impl Render for Showcase {
         let side_panel = self.side_panel_visible.then(|| {
             // The splitter's line is painted back from the boundary over the
             // strip the panel keeps clear for it (`demo::splitter_reserve`).
+            // As wide as the side panel and the strip it keeps clear for the
+            // splitter's line, so the side panel keeps its width whatever
+            // the line's.
+            let reserve = demo::splitter_reserve(cx).unwrap_or_default();
             resizable_panel()
-                .size(self.side_panel_width)
+                .size(self.side_panel_width + reserve)
                 .flex_none()
                 .child(
                     div()
@@ -1945,9 +2057,18 @@ impl Render for Showcase {
             .then_some((CHROME_HANDLE, "side panel | content"))
             .into_iter()
             .collect();
+        // The content starts after the splitter's line, which the handle
+        // draws over the content panel's leading edge (`demo::HANDLE_SIZE`
+        // wide; gpui-base resizable/panel.rs, `ResizablePanel::render`).
+        let after_line = side_panel.is_some();
         let panels: Vec<_> = side_panel
             .into_iter()
-            .chain([resizable_panel().child(content)])
+            .chain([resizable_panel().child(
+                div()
+                    .size_full()
+                    .when(after_line, |panel| panel.pl(demo::HANDLE_SIZE))
+                    .child(content),
+            )])
             .collect();
         let body = h_resizable("body")
             .with_state(&self.body_layout)
@@ -1986,6 +2107,7 @@ impl Render for Showcase {
             // First, so its prepaint opens the frame for every target
             // (info/registry.rs, epoch_marker).
             .child(epoch_marker(&self.info_ui))
+            .child(elements::record(&self.info_ui, "chrome.window"))
             .child(
                 v_flex()
                     .size_full()

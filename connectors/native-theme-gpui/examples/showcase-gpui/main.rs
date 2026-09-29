@@ -39,6 +39,7 @@
 mod app;
 mod chrome;
 mod demo;
+mod elements;
 mod info;
 mod inspector;
 mod pages;
@@ -689,6 +690,11 @@ struct CliArgs {
     /// `--press`: with `--pointer`, the primary button is held down there,
     /// so a capture shows the control pressed.
     press: bool,
+    /// `--dump-layout <file.json>`: once the window's layout has settled,
+    /// where each element of docs/showcase-elements.toml was drawn is
+    /// written there (`dump_layout`); with `--capture` the window stays
+    /// open for the capture, without it the showcase quits.
+    dump_layout: Option<String>,
 }
 
 /// `X,Y` as two whole logical pixels, or `None`.
@@ -757,6 +763,76 @@ fn hold_pointer(cx: &mut App, window: AnyWindowHandle, at: (u16, u16), press: bo
     .detach();
 }
 
+/// How often `dump_layout` reads where the last frame drew the list's
+/// elements. The showcase's own period, as `HELD_POINTER_PERIOD` is.
+const DUMP_POLL: Duration = Duration::from_millis(250);
+
+/// How many readings in a row `dump_layout` must find the same before it
+/// takes the layout as settled: a second's worth, long enough for the icons
+/// and fonts loaded after the first frame to have taken their place.
+const DUMP_SETTLED_READINGS: usize = 4;
+
+/// `--dump-layout`: once `DUMP_SETTLED_READINGS` readings in a row find the
+/// last frame's layout of the list's elements unchanged, writes it to
+/// `path` as docs/showcase-elements.toml's "The layout dump" describes, then
+/// quits when `quit`. A write that fails is reported and exits with 1, as a
+/// failed `--screenshot` does.
+fn dump_layout(
+    cx: &mut App,
+    window: AnyWindowHandle,
+    showcase: gpui::Entity<Showcase>,
+    path: String,
+    quit: bool,
+) {
+    cx.spawn(async move |cx| {
+        let mut last = None;
+        let mut same = 0;
+        loop {
+            cx.background_executor().timer(DUMP_POLL).await;
+            let reading = cx.update_window(window, |_view, window, cx| {
+                let s = showcase.read(cx);
+                let mut drawn = s.info_ui.read(cx).layout_drawn();
+                // The fields' text, which their states report
+                // (`Showcase::field_text_bounds`), on the Basic page.
+                if s.active_page == Page::Basic {
+                    drawn.extend(s.field_text_bounds(cx));
+                }
+                let variant = if s.is_dark { "dark" } else { "light" };
+                (
+                    drawn,
+                    s.current_theme_name.clone(),
+                    variant,
+                    window.scale_factor(),
+                )
+            });
+            let Ok(reading) = reading else { break };
+            if reading.0.is_empty() || last.as_ref() != Some(&reading) {
+                last = Some(reading);
+                same = 0;
+                continue;
+            }
+            same += 1;
+            if same + 1 < DUMP_SETTLED_READINGS {
+                continue;
+            }
+            let (drawn, preset, variant, scale) = reading;
+            let json = elements::dump_json(&preset, variant, scale, &drawn);
+            let written = serde_json::to_string_pretty(&json)
+                .map_err(|e| e.to_string())
+                .and_then(|text| std::fs::write(&path, text).map_err(|e| e.to_string()));
+            if let Err(error) = written {
+                eprintln!("ERROR: --dump-layout {path}: {error}");
+                std::process::exit(1);
+            }
+            if quit {
+                cx.update(|cx| cx.quit());
+            }
+            break;
+        }
+    })
+    .detach();
+}
+
 impl CliArgs {
     /// Whether the window is captured with the pointer kept off every
     /// widget (`Showcase::pointer_shield`): a capture, by an outside tool
@@ -810,6 +886,12 @@ impl CliArgs {
                     }
                 }
                 "--capture" => args.capture = true,
+                "--dump-layout" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.dump_layout = Some(argv[i].clone());
+                    }
+                }
                 "--press" => args.press = true,
                 "--pointer" => {
                     i += 1;
@@ -1380,6 +1462,15 @@ fn main() {
             window_handle
                 .update(cx, |_, window, _| name_window(window))
                 .ok();
+            if let (Some(path), Some(showcase)) = (&cli_args.dump_layout, &showcase_entity) {
+                dump_layout(
+                    cx,
+                    *window_handle,
+                    showcase.clone(),
+                    path.clone(),
+                    !cli_args.capture,
+                );
+            }
             if let Some(at) = cli_args.pointer {
                 hold_pointer(cx, *window_handle, at, cli_args.press);
             }

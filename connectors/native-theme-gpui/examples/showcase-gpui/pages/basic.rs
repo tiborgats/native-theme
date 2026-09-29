@@ -4,7 +4,9 @@
 //! control is built by the helper its own page builds it with.
 //!
 //! Four equal columns, each a stack of groups; a group is its heading over
-//! its rows of controls.
+//! its rows of controls. The groups and their elements are
+//! docs/showcase-elements.toml's; the page, its columns and every element
+//! record where they were laid out (`crate::elements`).
 
 use gpui::{
     AnyElement, AvailableSpace, Context, IntoElement, ParentElement, Pixels, Styled, Window, div,
@@ -12,12 +14,14 @@ use gpui::{
 };
 use gpui_component::{h_flex, v_flex};
 
+use native_theme::theme::IconRole;
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{
-    self, ButtonKind, ButtonState, DemoButton, InputField, SeparatorKind, SpinnerKind,
+    self, ButtonKind, ButtonState, DemoButton, InputField, SeparatorKind, SpinnerKind, TypeRole,
 };
+use crate::elements;
 use crate::support::{native_value, with_gap, with_padding};
 
 /// The width, in logical pixels, of the Basic page's text fields, drop-down,
@@ -27,8 +31,8 @@ use crate::support::{native_value, with_gap, with_padding};
 const BASIC_WIDTH: f32 = 140.0;
 
 /// The width, in logical pixels, of the Basic page's text area, list,
-/// expander, card and separator: the Basic page's own, as `BASIC_WIDTH` is,
-/// and the iced and egui showcases' `BASIC_WIDE` too.
+/// expander, card, separator and table: the Basic page's own, as
+/// `BASIC_WIDTH` is, and the iced and egui showcases' `BASIC_WIDE` too.
 const BASIC_WIDE: f32 = 200.0;
 
 /// The progress bar's value, in percent: the datum on display.
@@ -65,34 +69,123 @@ const DISABLED_BUTTON: BasicButton = (
     ButtonState::Disabled,
 );
 
+/// The toggle button that is off: a plain Button.
+const TOGGLE_OFF: BasicButton = (
+    "basic-toggle-off",
+    "Off",
+    ButtonKind::Default,
+    ButtonState::Idle,
+);
+
+/// The icon buttons, as (id, the role whose icon it shows, its name, the
+/// element of docs/showcase-elements.toml its icon is).
+const ICON_BUTTONS: [(&str, IconRole, &str, &str); 3] = [
+    (
+        "basic-icon-copy",
+        IconRole::ActionCopy,
+        "Copy",
+        "basic.icon_buttons.copy.icon",
+    ),
+    (
+        "basic-icon-paste",
+        IconRole::ActionPaste,
+        "Paste",
+        "basic.icon_buttons.paste.icon",
+    ),
+    (
+        "basic-icon-delete",
+        IconRole::ActionDelete,
+        "Delete",
+        "basic.icon_buttons.delete.icon",
+    ),
+];
+
+/// The Typography group's lines, as (id, role, text).
+const TYPE_LINES: [(&str, TypeRole, &str); 6] = [
+    ("basic-type-caption", TypeRole::Caption, "Caption"),
+    ("basic-type-body", TypeRole::Body, "Body"),
+    (
+        "basic-type-section-heading",
+        TypeRole::SectionHeading,
+        "Section heading",
+    ),
+    (
+        "basic-type-dialog-title",
+        TypeRole::DialogTitle,
+        "Dialog title",
+    ),
+    ("basic-type-display", TypeRole::Display, "Display"),
+    ("basic-type-monospace", TypeRole::Monospace, "Monospace"),
+];
+
+/// The Table's header, as (text, the element of docs/showcase-elements.toml
+/// its cell is), and its rows; the second row is selected.
+const TABLE_HEAD: [(&str, &str); 2] = [
+    ("Name", "basic.table.header.name"),
+    ("Size", "basic.table.header.size"),
+];
+const TABLE_ROWS: [[&str; 2]; 3] = [["a.txt", "1 KB"], ["b.png", "20 KB"], ["c.rs", "3 KB"]];
+const TABLE_SELECTED: usize = 1;
+
+/// The Icons group's icons, as (id, the size builder, what it is), each
+/// native-theme's `IconRole::FolderOpen` of the shown set, the iced and
+/// egui showcases' too.
+type SizedIcon = (
+    &'static str,
+    fn(native_theme_gpui::Native<'_>) -> gpui_component::Size,
+    &'static str,
+);
+const ICONS: [SizedIcon; 3] = [
+    ("basic-icon-small", geometry::icon_size_small, "Small"),
+    ("basic-icon-toolbar", geometry::icon_size_toolbar, "Toolbar"),
+    ("basic-icon-large", geometry::icon_size_large, "Large"),
+];
+
 /// A group of the page, as `(heading id, heading)`.
 pub(crate) type BasicGroup = (&'static str, &'static str);
 
 /// The groups of each column, top to bottom.
-pub(crate) const BASIC_COLUMN_1: [BasicGroup; 4] = [
+pub(crate) const BASIC_COLUMN_1: [BasicGroup; 6] = [
     ("basic-heading-buttons", "Buttons"),
     ("basic-heading-checkboxes", "Checkboxes"),
     ("basic-heading-radio", "Radio buttons"),
     ("basic-heading-switches", "Switches"),
+    ("basic-heading-toggle", "Toggle button"),
+    ("basic-heading-icon-buttons", "Icon buttons"),
 ];
-pub(crate) const BASIC_COLUMN_2: [BasicGroup; 4] = [
+pub(crate) const BASIC_COLUMN_2: [BasicGroup; 6] = [
     ("basic-heading-inputs", "Text inputs"),
     ("basic-heading-textarea", "Text area"),
     ("basic-heading-select", "Drop-down"),
     ("basic-heading-text", "Text"),
+    ("basic-heading-number", "Number input"),
+    ("basic-heading-focused", "Focused input"),
 ];
-pub(crate) const BASIC_COLUMN_3: [BasicGroup; 5] = [
+pub(crate) const BASIC_COLUMN_3: [BasicGroup; 6] = [
     ("basic-heading-slider", "Slider"),
     ("basic-heading-progress", "Progress bar"),
     ("basic-heading-spinner", "Spinner"),
     ("basic-heading-tabs", "Tabs"),
     ("basic-heading-segmented", "Segmented control"),
+    ("basic-heading-typography", "Typography"),
 ];
-pub(crate) const BASIC_COLUMN_4: [BasicGroup; 4] = [
+pub(crate) const BASIC_COLUMN_4: [BasicGroup; 6] = [
     ("basic-heading-list", "List"),
     ("basic-heading-expander", "Expander"),
     ("basic-heading-card", "Card"),
     ("basic-heading-separator", "Separator"),
+    ("basic-heading-table", "Table"),
+    ("basic-heading-icons", "Icons"),
+];
+
+/// The elements of docs/showcase-elements.toml the page and its four
+/// columns are.
+const PAGE: &str = "basic.page";
+const COLUMNS: [&str; 4] = [
+    "basic.column_1",
+    "basic.column_2",
+    "basic.column_3",
+    "basic.column_4",
 ];
 
 /// A control held in the one state it shows: a click changes nothing.
@@ -117,6 +210,9 @@ impl Showcase {
         let section_gap = geometry::section_gap(&self.layout);
         let window_margin = geometry::window_margin(&self.layout);
         let width = px(BASIC_WIDTH);
+        let tool_gap = native_value(cx, |n| n.resolved.toolbar.item_gap)
+            .flatten()
+            .map(px);
 
         let on_radio = cx.listener(|this, ix: &usize, _w, _cx| {
             this.basic_radio = Some(*ix);
@@ -156,10 +252,10 @@ impl Showcase {
                 },
             )
         };
-        let [buttons, checkboxes, radios, switches] = BASIC_COLUMN_1;
-        let [inputs, textarea, select, text] = BASIC_COLUMN_2;
-        let [slider, progress, spinner, tabs, segmented] = BASIC_COLUMN_3;
-        let [list, expander, card, separator] = BASIC_COLUMN_4;
+        let [buttons, checkboxes, radios, switches, toggle, icon_buttons] = BASIC_COLUMN_1;
+        let [inputs, textarea, select, text, number, focused] = BASIC_COLUMN_2;
+        let [slider, progress, spinner, tabs, segmented, typography] = BASIC_COLUMN_3;
+        let [list, expander, card, separator, table, icons] = BASIC_COLUMN_4;
         let no_click = None::<fn(&bool, &mut Window, &mut gpui::App)>;
 
         let column1 = vec![
@@ -241,6 +337,35 @@ impl Showcase {
                         .into_any_element(),
                 ],
             ),
+            group(
+                toggle,
+                vec![
+                    row()
+                        .child(button(TOGGLE_OFF))
+                        .child(demo::toggle_button(ui, cx, "basic-toggle-on", "On"))
+                        .into_any_element(),
+                ],
+            ),
+            group(
+                icon_buttons,
+                vec![
+                    // As the toolbar's buttons are spaced: `toolbar.item_gap`,
+                    // `layout.widget_gap` where the theme states none.
+                    with_gap(h_flex(), tool_gap.or(widget_gap))
+                        .items_center()
+                        .children(ICON_BUTTONS.map(|(id, role, name, listed)| {
+                            demo::icon_button(
+                                ui,
+                                cx,
+                                id,
+                                name,
+                                &self.role_chrome_icon(role),
+                                listed,
+                            )
+                        }))
+                        .into_any_element(),
+                ],
+            ),
         ];
 
         let column2 = vec![
@@ -314,6 +439,28 @@ impl Showcase {
                     .into_any_element(),
                 ],
             ),
+            group(
+                number,
+                vec![
+                    demo::number_input(ui, cx, "basic-number", &self.basic_number_state, width)
+                        .into_any_element(),
+                ],
+            ),
+            group(
+                focused,
+                vec![
+                    demo::text_input(
+                        ui,
+                        cx,
+                        "basic-input-focused",
+                        &self.basic_focused_state,
+                        InputField::Refined,
+                        false,
+                        width,
+                    )
+                    .into_any_element(),
+                ],
+            ),
         ];
 
         let column3 = vec![
@@ -380,8 +527,17 @@ impl Showcase {
                     .into_any_element(),
                 ],
             ),
+            group(
+                typography,
+                TYPE_LINES
+                    .map(|(id, role, text)| {
+                        demo::type_line(ui, cx, id, role, text).into_any_element()
+                    })
+                    .into(),
+            ),
         ];
 
+        let folder = self.role_chrome_icon(IconRole::FolderOpen);
         let column4 = vec![
             group(
                 list,
@@ -411,6 +567,7 @@ impl Showcase {
                         ],
                         self.basic_expanded,
                         wide,
+                        widget_gap,
                         on_expander,
                     )
                     .into_any_element(),
@@ -445,22 +602,55 @@ impl Showcase {
                         .into_any_element(),
                 ],
             ),
+            group(
+                table,
+                vec![
+                    demo::files_table(
+                        ui,
+                        cx,
+                        "basic-table",
+                        TABLE_HEAD,
+                        &TABLE_ROWS,
+                        TABLE_SELECTED,
+                        wide,
+                    )
+                    .into_any_element(),
+                ],
+            ),
+            group(
+                icons,
+                vec![
+                    row()
+                        .children(ICONS.map(|(id, size, what)| {
+                            demo::sized_icon(ui, cx, id, &folder, size, what)
+                        }))
+                        .into_any_element(),
+                ],
+            ),
         ];
 
-        let column = |groups: Vec<gpui::Div>| {
+        let column = |listed: &'static str, groups: Vec<gpui::Div>| {
             with_gap(v_flex(), section_gap)
+                .relative()
                 .flex_1()
                 .min_w_0()
                 .items_start()
+                .child(elements::record(ui, listed))
                 .children(groups)
         };
-        with_padding(with_gap(h_flex(), section_gap), window_margin)
-            .items_start()
-            .flex_1()
-            .child(column(column1))
-            .child(column(column2))
-            .child(column(column3))
-            .child(column(column4))
+        let [c1, c2, c3, c4] = COLUMNS;
+        // The page is the columns' row, inside the window margin.
+        with_padding(div(), window_margin).flex_1().child(
+            with_gap(h_flex(), section_gap)
+                .relative()
+                .w_full()
+                .items_start()
+                .child(elements::record(ui, PAGE))
+                .child(column(c1, column1))
+                .child(column(c2, column2))
+                .child(column(c3, column3))
+                .child(column(c4, column4)),
+        )
     }
 
     /// The Basic List's height: `BASIC_LIST_VISIBLE` rows and the List's

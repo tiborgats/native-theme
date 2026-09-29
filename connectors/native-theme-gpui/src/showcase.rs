@@ -34,6 +34,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
     ),
     ("demo.rs", include_str!("../examples/showcase-gpui/demo.rs")),
     (
+        "elements.rs",
+        include_str!("../examples/showcase-gpui/elements.rs"),
+    ),
+    (
         "info/buttons.rs",
         include_str!("../examples/showcase-gpui/info/buttons.rs"),
     ),
@@ -66,6 +70,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
         include_str!("../examples/showcase-gpui/info/layout.rs"),
     ),
     (
+        "info/leaves.rs",
+        include_str!("../examples/showcase-gpui/info/leaves.rs"),
+    ),
+    (
         "info/mod.rs",
         include_str!("../examples/showcase-gpui/info/mod.rs"),
     ),
@@ -88,6 +96,10 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
     (
         "info/typography.rs",
         include_str!("../examples/showcase-gpui/info/typography.rs"),
+    ),
+    (
+        "info/values.rs",
+        include_str!("../examples/showcase-gpui/info/values.rs"),
     ),
     (
         "inspector.rs",
