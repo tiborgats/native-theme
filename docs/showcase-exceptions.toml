@@ -97,8 +97,12 @@ wrap = "native-theme models no wrapping layout (spec §3a); the feature is not e
 #
 # `scripts/check_showcase_parity.py` compares the three showcases' layout dumps and captures
 # element by element, preset by preset, and fails on every difference not listed here. The key
-# is `<element id>.<property>`: the property is `present`, `x`, `y`, `w`, `h` or one of the
-# element's sample names. The reason is a toolkit limit with its upstream citation (file and
-# line, at the version Cargo.lock holds), or a detail the theme leaves unstated; an entry holds
-# for every preset and variant.
+# is `[<run>@][<preset>[/<variant>]:]<element id>.<property>`: the property is `present`, `x`,
+# `y`, `w`, `h` or one of the element's sample names. The reason is a toolkit limit with its
+# upstream citation (file and line, at the version Cargo.lock holds), or a detail the theme
+# leaves unstated. `<preset>:` or `<preset>/<variant>:` scopes an entry to that preset (a
+# theme's silence is per preset, so its entry is too); `<run>@` (`rest`, `hover`, `menu`) to
+# that run of the showcases. An unscoped entry holds for every preset, variant and run: it is
+# for a toolkit limit that holds under every theme. Two entries for one property may not
+# overlap. `check_showcase_parity.py --merge` computes the minimal scoped set from proposals.
 [parity]

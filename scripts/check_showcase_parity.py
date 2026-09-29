@@ -13,15 +13,17 @@ cover.
 
 Run from the repository root:
 
-    python3 scripts/check_showcase_parity.py DUMP_DIR [--content-offset X,Y]
+    python3 scripts/check_showcase_parity.py [RUN=]DUMP_DIR... [--content-offset X,Y]
     python3 scripts/check_showcase_parity.py --check-list
     python3 scripts/check_showcase_parity.py --self-test
+    python3 scripts/check_showcase_parity.py --merge OUT --proposal FILE... [RUN=]DUMP_DIR...
 
 Requires: Python 3.11+ (tomllib) and Pillow.
 
 Inputs
 ------
-DUMP_DIR holds, for each showcase kind, preset and variant it was run under:
+A DUMP_DIR holds, for each showcase kind, preset and variant it was run
+under, directly or in a subdirectory one level down (`<dir>/adwaita-light/`):
 
     <kind>-<preset>-<variant>.json   the layout dump (required)
     <kind>-<preset>-<variant>.png    the capture (optional)
@@ -30,6 +32,13 @@ DUMP_DIR holds, for each showcase kind, preset and variant it was run under:
 
 `kind` is `gpui`, `iced` or `egui`; `variant` is `light` or `dark`; the
 preset is the rest of the name (`kde-breeze`, `adwaita`, ...).
+
+Each DUMP_DIR is one run of the showcases. A run is `rest` (the window as
+it opens, no pointer over it) unless the directory is given as
+`hover=DIR` (the pointer held over an element) or `menu=DIR` (a menu open,
+the showcases' `--open-menu`); an exception can be scoped to a run (see
+Exceptions). Several directories are compared in one call, each on its
+own; a kind, preset and variant given twice in one run is an error.
 
 The layout dump, written by a showcase run with `--dump-layout <file>` after
 its first settled frame, is one JSON object:
@@ -67,7 +76,10 @@ For each preset and variant, across the three kinds:
   an id no list element has is an error. An element the list marks with
   `when` (on screen only under a condition: an open menu, a hover) is
   compared only where some dump holds it; one no dump holds is listed at the
-  end of the report, not counted as a difference;
+  end of the report, not counted as a difference. So is an element without
+  `when` that no dump holds: the three agree it is not there, which is no
+  difference between them, and the listing shows it for the list to be
+  fixed;
 - size: `w` and `h`;
 - position: `x` and `y` relative to the element's parent, the element the
   list names in `parent`; for `parent = "window"` the content origin;
@@ -124,7 +136,13 @@ R-snap -- geometry is compared on edges rounded to the pixel grid.
     bottom - top, x and y as the rounded left and top edges minus the
     parent's. A 0.4 px difference in an edge passes unless the two edges
     fall on the two sides of a pixel's middle, where they paint a pixel
-    apart.
+    apart. Widths and offsets are never rounded themselves: two boxes whose
+    edges land on the same pixels agree even where their fractional widths
+    round apart (19.6 + 200.5 against 20.4 + 199.4), and a child agrees
+    with itself wherever its parent's fractions put the parent's edge. In
+    the report, a geometry value R-snap moved shows the rounded value with
+    the dump's in parentheses, `223 (222.25)`: the rounded one is what was
+    compared.
 
 R-shape -- a text run's width may differ by up to max(1 px, 2 %).
     Each toolkit shapes text with its own shaper -- gpui with cosmic-text
@@ -160,15 +178,56 @@ entry per element property, with its reason: a toolkit limit with its
 upstream citation, or a detail the theme leaves unstated.
 
     [parity]
-    "basic.spinner.present" = "..."
     "chrome.splitter.w" = "..."
-    "basic.checkbox.checked.label.text" = "..."
+    "material:basic.expander.details.header.y" = "..."
+    "adwaita/dark:basic.checkboxes.checked.label.text" = "..."
+    "menu@kde-breeze:chrome.menu_bar.theme.h" = "..."
 
-The key is `<element id>.<property>`, where the property is `present`, `x`,
-`y`, `w`, `h` or the name of one of the element's samples. An exception holds
-for every preset and variant. A key naming no element or property of the list
-is an error; an exception that matched no difference in the run is listed at
-the end, so a stale one is seen.
+The key is `[<run>@][<preset>[/<variant>]:]<element id>.<property>`:
+
+- `<element id>.<property>`, the property `present`, `x`, `y`, `w`, `h` or
+  the name of one of the element's samples, is the difference excepted;
+- `<preset>:` or `<preset>/<variant>:` scopes the exception to that preset,
+  or to that preset in that variant; without it the exception holds under
+  every preset and variant. A theme's silence (a size or a colour the
+  preset leaves unstated, each toolkit keeping its own default) is per
+  preset, and so is its exception; an unscoped key is for a toolkit limit
+  that holds under every theme;
+- `<run>@` (`rest`, `hover` or `menu`) scopes it to that run (see Inputs);
+  without it the exception holds in every run.
+
+The preset is a file name of native-theme/src/presets/ without `.toml`. Two
+keys for the same element property whose scopes overlap (`x.w` and
+`material:x.w`; `hover@x.w` and `material:x.w`) are an error, so at most one
+exception holds for a difference; so is a key naming no element, property,
+preset, variant or run. An exception whose scope the run compared but that
+matched no difference is listed at the end, so a stale one is seen.
+
+Merging proposals
+-----------------
+`--merge OUT --proposal FILE...` writes the minimal `[parity]` table the
+dumps need to OUT, from proposed exceptions: each FILE holds keys of the
+form above (at its top level or in a `[parity]` table), and the
+`--exceptions` file's `[parity]` table is read as one more proposal. The
+dumps are compared with no exception; then, for each element property that
+differs somewhere:
+
+- a proposed key no difference in its scope needs is dropped (listed), and
+  so is one naming no element or property of the list;
+- the differences the proposals' scopes cover are excepted by the fewest
+  keys that hold exactly where the property differs among the runs, presets
+  and variants compared (among those where the element is compared at all:
+  a menu row differing in every menu run gets an unscoped key): unscoped
+  when it differs everywhere, else `<preset>:` where it differs in both
+  variants, `<preset>/<variant>:` where in one, each with a `<run>@` where
+  it differs in some runs and not in others;
+- each key's reason is the proposals' reasons for it, each once, joined
+  with ` | `.
+
+So feed the merge every run and every preset the gate will compare, or its
+keys are scoped to the ones it saw. A difference no proposal covers is
+listed and the exit status is 1; OUT is written either way, never the
+exceptions file itself.
 
 Exit status: 0 when every difference is excepted, 1 when one is not (or a dump
 or capture is missing), 2 when an input cannot be read or is malformed.
@@ -195,9 +254,13 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 ELEMENTS = os.path.join(PROJECT_ROOT, "docs", "showcase-elements.toml")
 EXCEPTIONS = os.path.join(PROJECT_ROOT, "docs", "showcase-exceptions.toml")
 REGISTRY = os.path.join(PROJECT_ROOT, "docs", "property-registry.toml")
+PRESETS = os.path.join(PROJECT_ROOT, "native-theme", "src", "presets")
 
 KINDS = ("gpui", "iced", "egui")
 VARIANTS = ("light", "dark")
+# The runs a dump directory can be (see the module's docstring); the first is
+# a bare DUMP_DIR's.
+RUNS = ("rest", "hover", "menu")
 # The parent of a top-level element: the window's content area.
 WINDOW = "window"
 # The showcase window's content size in logical pixels
@@ -248,6 +311,9 @@ ID = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z0-9_]+)*$")
 SAMPLE = re.compile(r"^[a-z][a-z0-9_]*$")
 DUMP_NAME = re.compile(r"^(gpui|iced|egui)-(.+)-(light|dark)\.json$")
 OFFSET = re.compile(r"^\s*\+?(\d+)\s*[+,]\s*(\d+)\s*$")
+# An exception key: [<run>@][<preset>[/<variant>]:]<element id>.<property>.
+KEY = re.compile(r"^(?:([a-z]+)@)?(?:([a-z0-9-]+)(?:/([a-z]+))?:)?([^@:/]+)$")
+RUN_DIR = re.compile(r"^(" + "|".join(RUNS) + r")=(.+)$")
 
 
 class Failure(Exception):
@@ -395,8 +461,61 @@ def load_elements(path, leaves_known):
     return elements
 
 
-def load_parity_exceptions(path, elements):
-    """The `[parity]` table: "<id>.<property>" -> reason."""
+def preset_names(directory=PRESETS):
+    """The presets native-theme ships: its presets directory's TOML files."""
+    try:
+        names = os.listdir(directory)
+    except OSError as err:
+        raise Failure(f"could not read {directory}: {err}") from err
+    return {name[: -len(".toml")] for name in names if name.endswith(".toml")}
+
+
+class BadKey(Exception):
+    """An exception key that names no element, property, preset, variant or run."""
+
+
+def parse_key(key, elements, presets):
+    """An exception key as (scope, target): scope = (run, preset, variant),
+    each None where the key leaves it open, target = "<id>.<property>"."""
+    match = KEY.match(key)
+    if not match:
+        raise BadKey("expected [<run>@][<preset>[/<variant>]:]<element id>.<property>")
+    run, preset, variant, target = match.groups()
+    if run is not None and run not in RUNS:
+        raise BadKey(f"`{run}` is not a run ({', '.join(RUNS)})")
+    if preset is not None and preset not in presets:
+        raise BadKey(f"`{preset}` is not a preset of native-theme/src/presets")
+    if variant is not None and variant not in VARIANTS:
+        raise BadKey(f"`{variant}` is not a variant ({', '.join(VARIANTS)})")
+    ident, _, prop = target.rpartition(".")
+    element = elements.get(ident)
+    if element is None:
+        raise BadKey(f"`{ident}` is not an element of the list")
+    if prop not in GEOMETRY and prop not in element["samples"]:
+        raise BadKey(f"`{prop}` is neither one of {', '.join(GEOMETRY)} nor a sample of {ident}")
+    return (run, preset, variant), target
+
+
+def key_text(scope, target):
+    run, preset, variant = scope
+    prefix = f"{run}@" if run is not None else ""
+    if preset is not None:
+        prefix += f"{preset}/{variant}:" if variant is not None else f"{preset}:"
+    return prefix + target
+
+
+def holds(scope, group):
+    """Whether an exception of `scope` holds in `group` = (run, preset, variant)."""
+    return all(s is None or s == g for s, g in zip(scope, group))
+
+
+def overlaps(a, b):
+    """Whether two scopes hold together somewhere."""
+    return all(x is None or y is None or x == y for x, y in zip(a, b))
+
+
+def load_parity_exceptions(path, elements, presets):
+    """The `[parity]` table: key -> {"scope", "target", "reason"}."""
     data = load_toml(path)
     table = data.get("parity", {})
     if not isinstance(table, dict):
@@ -405,17 +524,23 @@ def load_parity_exceptions(path, elements):
     for key, reason in table.items():
         if not isinstance(reason, str) or not reason.strip():
             raise Failure(f"{path}: [parity] {key}: an exception needs a non-empty reason")
-        ident, _, prop = key.rpartition(".")
-        element = elements.get(ident)
-        if element is None:
-            raise Failure(f"{path}: [parity] {key}: `{ident}` is not an element of the list")
-        if prop not in GEOMETRY and prop not in element["samples"]:
-            raise Failure(
-                f"{path}: [parity] {key}: `{prop}` is neither one of {', '.join(GEOMETRY)} "
-                f"nor a sample of {ident}"
-            )
-        exceptions[key] = reason
+        try:
+            scope, target = parse_key(key, elements, presets)
+        except BadKey as err:
+            raise Failure(f"{path}: [parity] {key}: {err}") from err
+        for other, entry in exceptions.items():
+            if entry["target"] == target and overlaps(entry["scope"], scope):
+                raise Failure(f"{path}: [parity] {key}: its scope overlaps `{other}`'s")
+        exceptions[key] = {"scope": scope, "target": target, "reason": reason}
     return exceptions
+
+
+def find_exception(exceptions, target, group):
+    """The key of the exception that holds for `target` in `group`, or None."""
+    for key, entry in exceptions.items():
+        if entry["target"] == target and holds(entry["scope"], group):
+            return key
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -495,26 +620,45 @@ def load_capture(png, scale, offset_file, cli_offset):
     return {"image": image, "pixels": image.load(), "offset": offset}
 
 
-def load_run(directory, kinds, cli_offset):
-    """(preset, variant) -> kind -> {"scale", "elements", "capture"}."""
+def parse_run_dir(text):
+    """A DUMP_DIR argument as (run, directory)."""
+    match = RUN_DIR.match(text)
+    if match and not os.path.isdir(text):
+        return match.group(1), match.group(2)
+    return RUNS[0], text
+
+
+def load_run(directory, kinds, cli_offset, run=RUNS[0], groups=None):
+    """(run, preset, variant) -> kind -> {"scale", "elements", "capture"},
+    from the dumps in `directory` and in its subdirectories, added to
+    `groups` when given."""
     if not os.path.isdir(directory):
         raise Failure(f"not a directory: {directory}")
-    groups = {}
-    for name in sorted(os.listdir(directory)):
-        match = DUMP_NAME.match(name)
-        if not match or match.group(1) not in kinds:
-            continue
-        kind, preset, variant = match.groups()
-        stem = os.path.join(directory, name[: -len(".json")])
-        dump = load_dump(stem + ".json", kind, preset, variant)
-        png = stem + ".png"
-        dump["capture"] = (
-            load_capture(png, dump["scale"], stem + ".offset", cli_offset)
-            if os.path.isfile(png)
-            else None
-        )
-        groups.setdefault((preset, variant), {})[kind] = dump
-    if not groups:
+    groups = {} if groups is None else groups
+    found = 0
+    folders = [directory] + sorted(
+        path for path in (os.path.join(directory, n) for n in os.listdir(directory)) if os.path.isdir(path)
+    )
+    for folder in folders:
+        for name in sorted(os.listdir(folder)):
+            match = DUMP_NAME.match(name)
+            if not match or match.group(1) not in kinds:
+                continue
+            kind, preset, variant = match.groups()
+            stem = os.path.join(folder, name[: -len(".json")])
+            group = groups.setdefault((run, preset, variant), {})
+            if kind in group:
+                raise Failure(f"{stem}.json: a second {kind} dump of {run}@{preset}/{variant}")
+            dump = load_dump(stem + ".json", kind, preset, variant)
+            png = stem + ".png"
+            dump["capture"] = (
+                load_capture(png, dump["scale"], stem + ".offset", cli_offset)
+                if os.path.isfile(png)
+                else None
+            )
+            group[kind] = dump
+            found += 1
+    if not found:
         raise Failure(f"{directory}: no <kind>-<preset>-<variant>.json dumps")
     return groups
 
@@ -638,21 +782,32 @@ def covered(element, prop, raw, ruled, samples, rules):
     return "R-glyph (point)" if within_channels(raw.values(), POINT_CHANNEL) else None
 
 
+def group_label(group):
+    run, preset, variant = group
+    return f"{preset}/{variant}" if run == RUNS[0] else f"{run}@{preset}/{variant}"
+
+
 def compare(groups, elements, exceptions, kinds, rules=RULES):
-    """Every difference, as (group, key, {kind: value}, reason or None);
-    a reason of None is an unexcepted difference. Also the exception keys
-    that matched, the conditional elements no kind drew, per group, and how
-    many differences each rule covered."""
-    rows, used, unseen, ruled_out = [], set(), {}, {}
+    """Every difference, as (group, key, {kind: value}, reason or None,
+    exceptable); a reason of None is an unexcepted difference. Also the
+    exception keys that matched, the elements no kind drew, per group, how
+    many differences each rule covered, and every (group, "<id>.<property>")
+    compared."""
+    rows, used, unseen, ruled_out, compared = [], set(), {}, {}, set()
+    by_target = {}
+    for key, entry in exceptions.items():
+        by_target.setdefault(entry["target"], {})[key] = entry
 
     def differ(group, key, values, exceptable=True):
-        reason = exceptions.get(key) if exceptable else None
-        if reason is not None:
-            used.add(key)
-        rows.append((group, key, values, reason))
+        reason = None
+        if exceptable:
+            match = find_exception(by_target.get(key, {}), key, group)
+            if match is not None:
+                used.add(match)
+                reason = exceptions[match]["reason"]
+        rows.append((group, key, values, reason, exceptable))
 
-    for (preset, variant), dumps in sorted(groups.items()):
-        group = f"{preset}/{variant}"
+    for group, dumps in sorted(groups.items()):
         missing = [k for k in kinds if k not in dumps]
         if missing:
             differ(group, "(dump)", {k: ("yes" if k in dumps else "missing") for k in kinds}, False)
@@ -666,9 +821,10 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
                     differ(group, f"{ident} (not in the list)", {kind: "drawn"}, False)
         for ident, element in elements.items():
             drawn = [k for k in present if ident in dumps[k]["elements"]]
-            if not drawn and element["when"] is not None:
+            if not drawn:
                 unseen.setdefault(group, []).append(ident)
                 continue
+            compared.add((group, f"{ident}.present"))
             if len(drawn) != len(present):
                 differ(
                     group,
@@ -690,6 +846,7 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
                 raw = {k: v[prop] for k, v in measured.items() if prop in v}
                 if len(raw) < 2:
                     continue
+                compared.add((group, f"{ident}.{prop}"))
                 shown = {k: number(v) if is_number(v) else v for k, v in raw.items()}
                 if len(set(shown.values())) == 1:
                     continue
@@ -698,20 +855,149 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
                 if rule is not None:
                     ruled_out[rule] = ruled_out.get(rule, 0) + 1
                     continue
+                if "snap" in rules:
+                    for k, value in ruled.items():
+                        if number(value) != shown[k]:
+                            shown[k] = f"{number(value)} ({shown[k]})"
                 differ(group, f"{ident}.{prop}", shown)
-    return rows, used, unseen, ruled_out
+    return rows, used, unseen, ruled_out, compared
 
 
 def print_table(rows, kinds):
     header = ("preset/variant", "element.property", *kinds, "status")
     table = [header]
-    for group, key, values, reason in rows:
+    for group, key, values, reason, _ in rows:
         status = f"excepted: {reason}" if reason is not None else "DIFFERS"
-        table.append((group, key, *(values.get(k, "-") for k in kinds), status))
+        table.append((group_label(group), key, *(values.get(k, "-") for k in kinds), status))
     widths = [max(len(r[i]) for r in table) for i in range(len(header) - 1)]
     for r in table:
         cells = [c.ljust(w) for c, w in zip(r, widths)]
         print("  ".join(cells + [r[-1]]).rstrip())
+
+
+# ---------------------------------------------------------------------------
+# Merging proposals
+# ---------------------------------------------------------------------------
+
+
+def load_proposals(path, parity_only=False):
+    """The (key, reason) pairs a proposal file holds: its top-level strings
+    (unless `parity_only`) and its `[parity]` table."""
+    data = load_toml(path)
+    table = data.get("parity", {})
+    if not isinstance(table, dict):
+        raise Failure(f"{path}: [parity] must be a table")
+    pairs = [] if parity_only else [(k, v) for k, v in data.items() if not isinstance(v, dict)]
+    pairs += list(table.items())
+    for key, reason in pairs:
+        if not isinstance(reason, str) or not reason.strip():
+            raise Failure(f"{path}: {key}: a proposal needs a non-empty reason")
+    return pairs
+
+
+def minimal_scopes(occurs, universe):
+    """The fewest non-overlapping scopes that together hold in every group of
+    `occurs` and in no other group of `universe` (broadest first, greedy)."""
+
+    def cover(scope):
+        return {g for g in universe if holds(scope, g)}
+
+    candidates = set()
+    for run, preset, variant in occurs:
+        for r in (None, run):
+            candidates.update({(r, None, None), (r, preset, None), (r, preset, variant)})
+    ranked = sorted(
+        ((scope, cover(scope)) for scope in candidates),
+        key=lambda sc: (sum(v is not None for v in sc[0]), -len(sc[1]), key_text(sc[0], "")),
+    )
+    chosen, remaining = [], set(occurs)
+    for scope, covering in ranked:
+        if not covering or not covering <= occurs or not covering & remaining:
+            continue
+        if any(overlaps(scope, other) for other in chosen):
+            continue
+        chosen.append(scope)
+        remaining -= covering
+    return chosen
+
+
+def merge(groups, elements, presets, sources, kinds, out):
+    """Write the minimal `[parity]` table the dumps need, from the proposals
+    in `sources` (path, [(key, reason)]), to `out`; see the module's
+    docstring. Returns the exit status."""
+    rows, _, _, _, compared = compare(groups, elements, {}, kinds)
+    occurs, universe, loose = {}, {}, []
+    for group, target in compared:
+        universe.setdefault(target, set()).add(group)
+    for row in rows:
+        group, key, _, _, exceptable = row
+        if exceptable:
+            occurs.setdefault(key, set()).add(group)
+        else:
+            loose.append(row)
+    proposals, dropped = {}, []
+    for path, pairs in sources:
+        for key, reason in pairs:
+            try:
+                scope, target = parse_key(key, elements, presets)
+            except BadKey as err:
+                dropped.append((path, key, str(err)))
+                continue
+            proposals.setdefault(target, []).append((scope, reason.strip(), path, key))
+    order = {ident: n for n, ident in enumerate(elements)}
+
+    def sort_key(target):
+        ident, _, prop = target.rpartition(".")
+        props = [*GEOMETRY, *elements[ident]["samples"]]
+        return order[ident], props.index(prop)
+
+    table, excepted = [], {}
+    for target in sorted(proposals, key=sort_key):
+        found = occurs.get(target, set())
+        needed = set()
+        for scope, _, path, key in proposals[target]:
+            mine = {g for g in found if holds(scope, g)}
+            if not mine:
+                dropped.append((path, key, "no difference in its scope needs it"))
+            needed |= mine
+        if not needed:
+            continue
+        for scope in minimal_scopes(needed, universe[target]):
+            reasons = []
+            for their_scope, reason, _, _ in proposals[target]:
+                meets = any(holds(scope, g) and holds(their_scope, g) for g in needed)
+                if meets and reason not in reasons:
+                    reasons.append(reason)
+            table.append((key_text(scope, target), " | ".join(reasons)))
+        excepted[target] = needed
+    uncovered = loose + [row for row in rows if row[4] and row[0] not in excepted.get(row[1], set())]
+
+    lines = [
+        "# The minimal [parity] table, written by scripts/check_showcase_parity.py --merge from",
+        *(f"#   {path}" for path, _ in sources),
+        "# against the dumps of the runs " + ", ".join(r for r in RUNS if any(g[0] == r for g in groups)),
+        "# under " + ", ".join(sorted({f"{preset}/{variant}" for _, preset, variant in groups})) + ".",
+        "[parity]",
+        *(f"{json.dumps(key)} = {json.dumps(reason, ensure_ascii=False)}" for key, reason in table),
+    ]
+    try:
+        with open(out, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+    except OSError as err:
+        raise Failure(f"could not write {out}: {err}") from err
+    load_parity_exceptions(out, elements, presets)
+
+    if dropped:
+        print("Proposed keys dropped:")
+        print("\n".join(f"  {key}  ({why}; {path})" for path, key, why in dropped))
+    if uncovered:
+        print("\nDifferences no proposal covers:")
+        print_table(uncovered, kinds)
+    print(
+        f"\n{out}: {len(table)} key(s) for {len(excepted)} element properties; "
+        f"{len(dropped)} proposal(s) dropped, {len(uncovered)} difference(s) no proposal covers."
+    )
+    return 1 if uncovered else 0
 
 
 # ---------------------------------------------------------------------------
@@ -757,12 +1043,19 @@ def self_test_capture(path, scale, panel, label, fill=FILL, frame=None, ink=INK)
     w, h = round(WINDOW_SIZE[0] * scale), round(WINDOW_SIZE[1] * scale)
     content = Image.new("RGB", (w, h), BACKGROUND)
     draw = ImageDraw.Draw(content)
-    x, y, pw, ph = (round(v * scale) for v in (panel["x"], panel["y"], panel["w"], panel["h"]))
-    draw.rectangle((x, y, x + pw - 1, y + ph - 1), fill=fill, outline=LINE, width=max(1, round(scale)))
-    lx, ly, lw, lh = (round(v * scale) for v in (label["x"], label["y"], label["w"], label["h"]))
+
+    def painted(rect):
+        # Where a renderer that snaps edges paints the rectangle (R-snap).
+        left, top = rect["x"], rect["y"]
+        edges = (left, top, left + rect["w"], top + rect["h"])
+        return tuple(math.floor(v * scale + 0.5) for v in edges)
+
+    x, y, right, bottom = painted(panel)
+    draw.rectangle((x, y, right - 1, bottom - 1), fill=fill, outline=LINE, width=max(1, round(scale)))
+    lx, ly, _, lbottom = painted(label)
     # An anti-aliased edge, then the solid stem.
-    draw.line((lx + 1, ly + 1, lx + 1, ly + lh - 2), fill=(120, 122, 123))
-    draw.line((lx + 2, ly + 1, lx + 2, ly + lh - 2), fill=ink)
+    draw.line((lx + 1, ly + 1, lx + 1, lbottom - 2), fill=(120, 122, 123))
+    draw.line((lx + 2, ly + 1, lx + 2, lbottom - 2), fill=ink)
     if frame is None:
         content.save(path)
         return
@@ -775,123 +1068,211 @@ def self_test():
     if Image is None:
         raise Failure("Pillow is required (pip install Pillow)")
     known = registry_paths(load_toml(REGISTRY))
+    presets = {"test-preset", "other-preset"}
     panel = {"x": 20.0, "y": 30.0, "w": 200.0, "h": 60.0}
     label = {"x": 32.0, "y": 40.0, "w": 60.0, "h": 16.0}
     failures = []
 
-    def scenario(
-        name, expect_unexcepted, expect_keys=(), change=None, exceptions="", frame=None, absent_keys=()
-    ):
-        with tempfile.TemporaryDirectory() as tmp:
-            elements_path = os.path.join(tmp, "elements.toml")
-            with open(elements_path, "w", encoding="utf-8") as f:
-                f.write(SELF_TEST_ELEMENTS)
-            exceptions_path = os.path.join(tmp, "exceptions.toml")
-            with open(exceptions_path, "w", encoding="utf-8") as f:
-                f.write("[parity]\n" + exceptions)
-            elements = load_elements(elements_path, known)
-            excepted = load_parity_exceptions(exceptions_path, elements)
-            run = os.path.join(tmp, "run")
-            os.mkdir(run)
+    def report(name, ok, rows=()):
+        print(f"  {'pass' if ok else 'FAIL'}: {name}")
+        if not ok:
+            failures.append(name)
+            if rows:
+                print_table(rows, KINDS)
+
+    def write_file(path, text):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+
+    def write_run(directory, change=None, frame=None, combos=(("test-preset", "light"),)):
+        """Dumps and captures of every kind under each (preset, variant) of
+        `combos`, each in a subdirectory of its own, as the capture scripts
+        write them; `change(kind, rects, preset, variant)` alters them."""
+        for preset, variant in combos:
+            folder = os.path.join(directory, f"{preset}-{variant}")
+            os.makedirs(folder)
             for kind in KINDS:
                 rects = {"t.panel": dict(panel), "t.panel.label": dict(label)}
-                paint = (change(kind, rects) if change is not None else None) or {}
-                stem = os.path.join(run, f"{kind}-test-preset-light")
-                dump = {
-                    "kind": kind,
-                    "preset": "test-preset",
-                    "variant": "light",
-                    "scale": 1.0,
-                    "elements": rects,
-                }
-                with open(stem + ".json", "w", encoding="utf-8") as f:
-                    json.dump(dump, f)
-                shown_panel = rects.get("t.panel", panel)
-                shown_label = rects.get("t.panel.label", label)
+                paint = (change(kind, rects, preset, variant) if change is not None else None) or {}
+                stem = os.path.join(folder, f"{kind}-{preset}-{variant}")
+                dump = {"kind": kind, "preset": preset, "variant": variant, "scale": 1.0, "elements": rects}
+                write_file(stem + ".json", json.dumps(dump))
                 self_test_capture(
                     stem + ".png",
                     1.0,
-                    shown_panel,
-                    shown_label,
+                    rects.get("t.panel", panel),
+                    rects.get("t.panel.label", label),
                     paint.get("fill", FILL),
                     frame,
                     paint.get("ink", INK),
                 )
                 if frame is not None:
-                    with open(stem + ".offset", "w", encoding="utf-8") as f:
-                        f.write(f"+{frame[0]}+{frame[1]}\n")
-            groups = load_run(run, KINDS, None)
-            rows, _, _, _ = compare(groups, elements, excepted, KINDS)
-        unexcepted = [key for _, key, _, reason in rows if reason is None]
+                    write_file(stem + ".offset", f"+{frame[0]}+{frame[1]}\n")
+
+    def load_test_elements(tmp):
+        path = os.path.join(tmp, "elements.toml")
+        write_file(path, SELF_TEST_ELEMENTS)
+        return load_elements(path, known)
+
+    def scenario(
+        name,
+        expect_unexcepted,
+        expect_keys=(),
+        change=None,
+        exceptions="",
+        frame=None,
+        absent_keys=(),
+        run=RUNS[0],
+        combos=(("test-preset", "light"),),
+    ):
+        with tempfile.TemporaryDirectory() as tmp:
+            elements = load_test_elements(tmp)
+            exceptions_path = os.path.join(tmp, "exceptions.toml")
+            write_file(exceptions_path, "[parity]\n" + exceptions)
+            excepted = load_parity_exceptions(exceptions_path, elements, presets)
+            directory = os.path.join(tmp, "run")
+            write_run(directory, change, frame, combos)
+            groups = load_run(directory, KINDS, None, run)
+            rows = compare(groups, elements, excepted, KINDS)[0]
+        unexcepted = [row[1] for row in rows if row[3] is None]
         ok = (
             bool(unexcepted) == expect_unexcepted
             and all(k in unexcepted for k in expect_keys)
             and not any(k in unexcepted for k in absent_keys)
         )
-        if not expect_unexcepted:
-            ok = ok and not unexcepted
-        print(f"  {'pass' if ok else 'FAIL'}: {name}")
-        if not ok:
-            failures.append(name)
-            print_table(rows, KINDS)
+        report(name, ok, rows)
 
-    def wider(kind, rects):
+    def rejected(name, exceptions):
+        """An exceptions table `--check-list` must refuse."""
+        with tempfile.TemporaryDirectory() as tmp:
+            elements = load_test_elements(tmp)
+            path = os.path.join(tmp, "exceptions.toml")
+            write_file(path, "[parity]\n" + exceptions)
+            try:
+                load_parity_exceptions(path, elements, presets)
+            except Failure:
+                report(name, True)
+                return
+        report(name, False)
+
+    def merged(name, proposals, expect, change, runs, combos):
+        """--merge's table from `proposals` against dumps of `runs` x `combos`
+        must be exactly `expect` (key -> reason)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            elements = load_test_elements(tmp)
+            groups = {}
+            for run in runs:
+                directory = os.path.join(tmp, run)
+                write_run(directory, lambda *a, run=run: change(run, *a), None, combos)
+                load_run(directory, KINDS, None, run, groups)
+            sources = []
+            for n, text in enumerate(proposals):
+                path = os.path.join(tmp, f"proposal-{n}.toml")
+                write_file(path, text)
+                sources.append((path, load_proposals(path)))
+            out = os.path.join(tmp, "merged.toml")
+            with open(os.devnull, "w", encoding="utf-8") as quiet:
+                stdout, sys.stdout = sys.stdout, quiet
+                try:
+                    merge(groups, elements, presets, sources, KINDS, out)
+                finally:
+                    sys.stdout = stdout
+            got = load_toml(out).get("parity", {})
+        report(name, got == expect)
+        if got != expect:
+            print(f"    expected {expect}\n    got      {got}")
+
+    def wider(kind, rects, *_):
         if kind == "egui":
             rects["t.panel"]["w"] += 1.0
 
-    def recoloured(kind, rects):
+    def recoloured(kind, rects, *_):
         return {"fill": (250, 250, 250)} if kind == "iced" else None
 
     def edge_off(by):
-        def change(kind, rects):
+        def change(kind, rects, *_):
             if kind == "egui":
                 rects["t.panel"]["w"] += by
 
         return change
 
+    def straddling(kind, rects, *_):
+        # Left edges 20, 20.4, 19.6 and right edges 220, 219.8, 220.1: all
+        # round to 20 and 220, while the widths 200, 199.4 and 200.5 would
+        # round to 200, 199 and 201.
+        rects["t.panel"]["x"], rects["t.panel"]["w"] = {
+            "gpui": (20.0, 200.0),
+            "iced": (20.4, 199.4),
+            "egui": (19.6, 200.5),
+        }[kind]
+
+    def parent_fraction(kind, rects, *_):
+        # The parent's left edge 19.6 rounds to 20; the child's 32.4 to 32:
+        # 12 from the parent, as in gpui, though 32.4 - 19.6 = 12.8 would
+        # round to 13.
+        if kind == "iced":
+            rects["t.panel"]["x"], rects["t.panel"]["w"] = 19.6, 200.4
+            rects["t.panel.label"]["x"] = 32.4
+
     def text_wider(share):
-        def change(kind, rects):
+        def change(kind, rects, *_):
             rects["t.panel.label"]["w"] = 150.0
             if kind == "iced":
                 rects["t.panel.label"]["w"] *= 1 + share
 
         return change
 
-    def text_moved(kind, rects):
+    def text_moved(kind, rects, *_):
         if kind == "iced":
             rects["t.panel.label"]["x"] += 1.2
 
     def ink_off(by):
-        def change(kind, rects):
+        def change(kind, rects, *_):
             return {"ink": tuple(c + by for c in INK)} if kind == "gpui" else None
 
         return change
 
     def fill_off(by):
-        def change(kind, rects):
+        def change(kind, rects, *_):
             return {"fill": tuple(c - by for c in FILL)} if kind == "egui" else None
 
         return change
 
-    def dropped(kind, rects):
+    def dropped(kind, rects, *_):
         if kind == "iced":
             del rects["t.panel.label"]
 
-    def moved_together(kind, rects):
+    def dropped_everywhere(kind, rects, *_):
+        del rects["t.panel.label"]
+
+    def moved_together(kind, rects, *_):
         if kind == "gpui":
             for rect in rects.values():
                 rect["x"] += 5.0
 
-    def moved_child(kind, rects):
+    def moved_child(kind, rects, *_):
         if kind == "gpui":
             rects["t.panel.label"]["y"] += 1.0
 
-    def tip_in_one(kind, rects):
+    def tip_in_one(kind, rects, *_):
         if kind == "egui":
             rects["t.panel.tip"] = {"x": 40.0, "y": 95.0, "w": 80.0, "h": 24.0}
 
-    def tip_in_all(kind, rects):
+    def tip_in_all(kind, rects, *_):
         rects["t.panel.tip"] = {"x": 40.0, "y": 95.0, "w": 80.0, "h": 24.0}
+
+    def wider_in(*where):
+        """egui's panel 1 px wider where (run, preset, variant) matches one of
+        `where`, None matching any."""
+
+        def change(run, kind, rects, preset, variant):
+            if any(holds(scope, (run, preset, variant)) for scope in where):
+                wider(kind, rects)
+
+        return change
+
+    both = (("test-preset", "light"), ("test-preset", "dark"))
+    three = (*both, ("other-preset", "light"))
 
     print("check_showcase_parity self-test:")
     scenario("identical dumps and captures pass", False)
@@ -915,8 +1296,15 @@ def self_test():
     scenario("a child moved inside its parent fails", True, ("t.panel.label.y",), moved_child)
     scenario("a conditional element drawn by every kind is compared and passes", False, change=tip_in_all)
     scenario("a conditional element drawn by one kind only fails", True, ("t.panel.tip.present",), tip_in_one)
+    scenario("an element no kind draws, though the list has no `when` for it, passes", False, change=dropped_everywhere)
     scenario("R-snap: an edge 0.4 px off passes", False, change=edge_off(0.4))
     scenario("R-snap: an edge 1.2 px off fails", True, ("t.panel.w",), edge_off(1.2))
+    scenario("R-snap: edges that round alike pass, though the widths round apart", False, change=straddling)
+    scenario(
+        "R-snap: a child whose edges round alike passes, though its parent's fractions differ",
+        False,
+        change=parent_fraction,
+    )
     scenario("R-shape: a text run 1.5 % wider passes", False, change=text_wider(0.015))
     scenario("R-shape: a text run 3 % wider fails", True, ("t.panel.label.w",), text_wider(0.03))
     scenario("R-shape: a text run's left edge 1.2 px off fails", True, ("t.panel.label.x",), text_moved)
@@ -924,6 +1312,110 @@ def self_test():
     scenario("R-glyph: a glyph sample 9 per channel off fails", True, ("t.panel.label.text",), ink_off(9))
     scenario("R-glyph: a fill 1 per channel off passes", False, change=fill_off(1))
     scenario("R-glyph: a fill 2 per channel off fails", True, ("t.panel.fill",), fill_off(2))
+
+    scenario(
+        "a preset-scoped exception passes under its preset",
+        False,
+        change=wider,
+        exceptions='"test-preset:t.panel.w" = "self-test reason"\n',
+        combos=both,
+    )
+    scenario(
+        "a preset-scoped exception does not hide the difference under another preset",
+        True,
+        ("t.panel.w",),
+        wider,
+        '"other-preset:t.panel.w" = "self-test reason"\n',
+    )
+    scenario(
+        "a preset/variant-scoped exception passes in its variant",
+        False,
+        change=wider,
+        exceptions='"test-preset/light:t.panel.w" = "self-test reason"\n',
+    )
+    scenario(
+        "a preset/variant-scoped exception does not hide the difference in the other variant",
+        True,
+        ("t.panel.w",),
+        wider,
+        '"test-preset/light:t.panel.w" = "self-test reason"\n',
+        combos=both,
+    )
+    scenario(
+        "a run-scoped exception passes in its run",
+        False,
+        change=wider,
+        exceptions='"hover@t.panel.w" = "self-test reason"\n',
+        run="hover",
+    )
+    scenario(
+        "a run-scoped exception does not hide the difference in another run",
+        True,
+        ("t.panel.w",),
+        wider,
+        '"hover@t.panel.w" = "self-test reason"\n',
+    )
+    scenario(
+        "a run- and preset-scoped exception passes in its run under its preset",
+        False,
+        change=wider,
+        exceptions='"menu@test-preset/light:t.panel.w" = "self-test reason"\n',
+        run="menu",
+    )
+    rejected("--check-list refuses an unknown preset", '"no-such-preset:t.panel.w" = "r"\n')
+    rejected("--check-list refuses an unknown variant", '"test-preset/dim:t.panel.w" = "r"\n')
+    rejected("--check-list refuses an unknown run", '"drag@t.panel.w" = "r"\n')
+    rejected("--check-list refuses a variant without its preset", '"light:t.panel.w" = "r"\n')
+    rejected("--check-list refuses an unknown property", '"test-preset:t.panel.colour" = "r"\n')
+    rejected(
+        "--check-list refuses overlapping scopes of one property",
+        '"t.panel.w" = "r"\n"test-preset:t.panel.w" = "r"\n',
+    )
+    rejected(
+        "--check-list refuses a run scope overlapping a preset scope",
+        '"hover@t.panel.w" = "r"\n"test-preset:t.panel.w" = "r"\n',
+    )
+
+    merged(
+        "--merge drops a key no difference needs and scopes a kept one to its preset/variant",
+        ['"t.panel.w" = "wider"\n"t.panel.h" = "taller"\n'],
+        {"test-preset/light:t.panel.w": "wider"},
+        wider_in((None, "test-preset", "light")),
+        (RUNS[0],),
+        three,
+    )
+    merged(
+        "--merge scopes to a preset where both variants differ and joins duplicate reasons",
+        ['"t.panel.w" = "wider"\n', '[parity]\n"test-preset:t.panel.w" = "one more"\n"t.panel.w" = "wider"\n'],
+        {"test-preset:t.panel.w": "wider | one more"},
+        wider_in((None, "test-preset", None)),
+        (RUNS[0],),
+        three,
+    )
+    merged(
+        "--merge leaves a difference found everywhere unscoped",
+        ['"test-preset:t.panel.w" = "wider"\n', '"other-preset:t.panel.w" = "wider"\n'],
+        {"t.panel.w": "wider"},
+        wider_in((None, None, None)),
+        (RUNS[0], "hover"),
+        three,
+    )
+    merged(
+        "--merge scopes a difference found in one run only to that run",
+        ['"t.panel.w" = "wider"\n'],
+        {"hover@t.panel.w": "wider"},
+        wider_in(("hover", None, None)),
+        (RUNS[0], "hover"),
+        three,
+    )
+    merged(
+        "--merge keeps a proposal's scope: a difference outside it stays uncovered",
+        ['"other-preset:t.panel.w" = "wider"\n'],
+        {"other-preset:t.panel.w": "wider"},
+        wider_in((None, None, None)),
+        (RUNS[0],),
+        three,
+    )
     if failures:
         print(f"self-test FAILED: {len(failures)} scenario(s)")
         return 1
@@ -945,7 +1437,13 @@ def parse_offset(text):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("dump_dir", nargs="?", help="directory of <kind>-<preset>-<variant>.json/.png")
+    parser.add_argument(
+        "dump_dirs",
+        nargs="*",
+        metavar="[RUN=]DUMP_DIR",
+        help=f"directory of <kind>-<preset>-<variant>.json/.png; RUN is one of {', '.join(RUNS)} "
+        f"(default {RUNS[0]})",
+    )
     parser.add_argument(
         "--content-offset",
         type=parse_offset,
@@ -961,6 +1459,18 @@ def main():
     parser.add_argument("--exceptions", default=EXCEPTIONS, help="the exceptions file")
     parser.add_argument("--check-list", action="store_true", help="validate the list and exceptions only")
     parser.add_argument("--self-test", action="store_true", help="run the built-in scenarios")
+    parser.add_argument(
+        "--merge",
+        metavar="OUT",
+        help="write the minimal [parity] table the dumps need, from the --proposal files, to OUT",
+    )
+    parser.add_argument(
+        "--proposal",
+        action="append",
+        default=[],
+        metavar="FILE",
+        help="a TOML file of proposed exceptions, for --merge (repeatable)",
+    )
     args = parser.parse_args()
 
     if args.self_test:
@@ -968,30 +1478,58 @@ def main():
     kinds = tuple(k for k in args.kinds.split(",") if k)
     if not kinds or any(k not in KINDS for k in kinds) or len(set(kinds)) != len(kinds):
         raise Failure(f"--kinds takes names from {', '.join(KINDS)}")
+    presets = preset_names()
     elements = load_elements(args.elements, registry_paths(load_toml(REGISTRY)))
-    exceptions = load_parity_exceptions(args.exceptions, elements)
+    exceptions = load_parity_exceptions(args.exceptions, elements, presets)
     names = {element["name"] for element in elements.values()}
     stale_runs = sorted(TEXT_RUNS - names)
     if stale_runs:
         raise Failure(f"TEXT_RUNS names what no element of {args.elements} is named: {', '.join(stale_runs)}")
     if args.check_list:
         runs = sum(1 for element in elements.values() if element["name"] in TEXT_RUNS)
-        print(f"{len(elements)} elements ({runs} text runs), {len(exceptions)} parity exceptions: valid")
+        scoped = sum(1 for entry in exceptions.values() if entry["scope"] != (None, None, None))
+        print(
+            f"{len(elements)} elements ({runs} text runs), {len(exceptions)} parity exceptions "
+            f"({scoped} scoped): valid"
+        )
         return 0
-    if args.dump_dir is None:
+    if not args.dump_dirs:
         parser.error("a dump directory is required (or --check-list / --self-test)")
     if len(kinds) < 2:
         raise Failure("comparing needs at least two kinds")
+    if args.proposal and args.merge is None:
+        parser.error("--proposal is read by --merge")
 
-    groups = load_run(args.dump_dir, kinds, args.content_offset)
-    rows, used, unseen, ruled_out = compare(groups, elements, exceptions, kinds)
+    groups = {}
+    for text in args.dump_dirs:
+        run, directory = parse_run_dir(text)
+        load_run(directory, kinds, args.content_offset, run, groups)
+    if args.merge is not None:
+        if not args.proposal:
+            parser.error("--merge needs at least one --proposal file")
+        out = os.path.realpath(args.merge)
+        if out in (os.path.realpath(EXCEPTIONS), os.path.realpath(args.exceptions)):
+            raise Failure(f"--merge writes a proposal, never the exceptions file {args.merge} itself")
+        sources = [(path, load_proposals(path)) for path in args.proposal]
+        sources.append((args.exceptions, load_proposals(args.exceptions, parity_only=True)))
+        return merge(groups, elements, presets, sources, kinds, args.merge)
+
+    rows, used, unseen, ruled_out, _ = compare(groups, elements, exceptions, kinds)
     if rows:
         print_table(rows, kinds)
     for group, idents in sorted(unseen.items()):
-        print(f"\n{group}: {len(idents)} conditional element(s) no kind drew (their `when` did not hold):")
-        print("\n".join(f"  {ident}  [{elements[ident]['when']}]" for ident in idents))
+        print(f"\n{group_label(group)}: {len(idents)} element(s) no kind drew:")
+        print(
+            "\n".join(
+                f"  {ident}  [{elements[ident]['when'] or 'no `when`: the list says it is always drawn'}]"
+                for ident in idents
+            )
+        )
     unexcepted = sum(1 for row in rows if row[3] is None)
-    stale = sorted(set(exceptions) - used)
+    applicable = {
+        key for key, entry in exceptions.items() if any(holds(entry["scope"], group) for group in groups)
+    }
+    stale = sorted(applicable - used)
     if stale:
         print("\nParity exceptions that matched no difference in this run:")
         print("\n".join("  " + key for key in stale))

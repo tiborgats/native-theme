@@ -288,17 +288,26 @@ docstring, cover what the renderers alone make differ: edges are compared
 rounded to the pixel grid (R-snap), a text run's width within max(1 px, 2 %)
 (R-shape), a glyph sample within 8 and a fill or border within 1 per channel
 (R-glyph). Every other difference must be listed with a reason in the
-`[parity]` table of `docs/showcase-exceptions.toml`. Exits 0 when clean, 1 on an
-unexcepted difference, 2 on an input it cannot read. `--check-list` validates
-the list against `docs/property-registry.toml` and the exceptions against the
-list; `--self-test` runs its built-in scenarios.
+`[parity]` table of `docs/showcase-exceptions.toml`, whose keys may be scoped
+to a preset (`material:<id>.<property>`), a preset in one variant
+(`adwaita/dark:...`) or a run (`hover@...`, `menu@...`). A dump directory
+holds the dumps directly or one subdirectory down; `hover=DIR` or `menu=DIR`
+names the run it is (a bare `DIR` is the `rest` run). Exits 0 when clean, 1 on
+an unexcepted difference, 2 on an input it cannot read. `--check-list`
+validates the list against `docs/property-registry.toml` and the exceptions
+against the list and the presets; `--self-test` runs its built-in scenarios.
+`--merge OUT --proposal FILE...` writes to OUT the minimal scoped `[parity]`
+table the dumps need from proposed exceptions and the current table (never the
+exceptions file itself), listing the proposals it dropped and the differences
+none covers.
 
 Requires Python 3.11+ (for `tomllib`) and Pillow.
 
 ```sh
-python3 scripts/check_showcase_parity.py DUMP_DIR
+python3 scripts/check_showcase_parity.py DUMP_DIR [hover=HOVER_DIR] [menu=MENU_DIR]
 python3 scripts/check_showcase_parity.py --check-list
 python3 scripts/check_showcase_parity.py --self-test
+python3 scripts/check_showcase_parity.py --merge OUT.toml --proposal A.toml --proposal B.toml DUMP_DIR
 ```
 
 ## update_icons.sh
