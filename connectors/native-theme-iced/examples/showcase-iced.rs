@@ -4021,6 +4021,15 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
             }
             _ => shortcut.into(),
         };
+        // A row `menu.row_height` tall holds its line centred in it, as the
+        // gpui and egui showcases' rows do, where iced's button would lay it
+        // out from the top: the model states the row's height ("height of a
+        // single item row", docs/platform-facts.md §2 dimension rules), and
+        // a menu item's label sits in the middle of it.
+        let line_height = match m.row_height {
+            Some(_) => Fill,
+            None => Length::Shrink,
+        };
         let entry = button(
             row![
                 text(label).themed(&m.font, resolved, a11y),
@@ -4028,7 +4037,8 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                 shortcut,
             ]
             .spacing(gap.widget)
-            .align_y(iced::Center),
+            .align_y(iced::Center)
+            .height(line_height),
         )
         .padding(pad)
         .width(Fill)
@@ -4055,10 +4065,12 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         })
     };
     let popup_pad = menu_popup_padding(resolved);
+    // The rows `popup_pad.top` under the title, so the panel, which
+    // iced_aw pads out from the rows, starts at the title's foot.
     let drop = |items| {
         Menu::new(items)
             .max_width(AW_MENU_WIDTH)
-            .offset(0.0)
+            .offset(popup_pad.top)
             .padding(popup_pad)
     };
 
@@ -4576,7 +4588,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
         ),
         Menu::new(rows)
             .max_width(AW_MENU_WIDTH)
-            .offset(0.0)
+            .offset(menu_popup_padding(resolved).top)
             .padding(menu_popup_padding(resolved)),
     )])
     .style(menu_bar_style(resolved))
@@ -6548,7 +6560,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .style(toggle_on(styles::button(resolved)))
             .padding(btn_pad),
         };
-        tagged(id, pushed.on_press_maybe(on_press))
+        // At its own width even where its row runs past the column, as the
+        // gpui and egui buttons are, rather than squeezed under its label.
+        tagged(id, pushed.on_press_maybe(on_press)).loose()
     };
     // The tip's padding: `tooltip_padding` where iced can carry it, iced's
     // own otherwise.
@@ -6660,11 +6674,13 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             } else {
                 boxed
             };
-            // The mark box: inside the border and the padding where the theme
-            // states the padding (GNOME's 3, docs/platform-facts.md §2.5), and
-            // egui's own share of the box, centred, where it does not.
+            // The mark box: inside the padding where the theme states the
+            // padding (GNOME's 3, docs/platform-facts.md §2.5: the 20 px
+            // indicator is the 14 px box plus 3 on each side, its outline an
+            // inset box-shadow that takes no room), and egui's own share of
+            // the box, centred, where it does not.
             let inset = |side: Option<f32>| match side {
-                Some(pad) => c.border.line_width + pad.max(0.0),
+                Some(pad) => pad.max(0.0),
                 None => c.indicator_width * (1.0 - EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH) / 2.0,
             };
             let (inset_x, inset_y) = (inset(c.border.padding.left), inset(c.border.padding.top));
@@ -6700,7 +6716,17 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     is_checked: checked,
                 }
             };
-            let colour = styles::checkbox(resolved)(&Theme::Light, status).icon_color;
+            // The style's mark colour over the box's fill over the page, one
+            // opaque colour: a translucent one (a disabled box's, faded by
+            // `checkbox.disabled_opacity`) comes out of iced's mesh pipeline
+            // darker than the same colour on a quad, where the box's fill
+            // blends as the connector composites (`styles::composite_over`).
+            let style = styles::checkbox(resolved)(&Theme::Light, status);
+            let page = to_color(resolved.window.background_color);
+            let colour = match style.background {
+                iced::Background::Color(fill) => over(style.icon_color, over(fill, page)),
+                _ => style.icon_color,
+            };
             let mark = canvas(CheckMark {
                 checked,
                 color: colour,
@@ -7954,6 +7980,18 @@ const EGUI_ICON_WIDTH_INNER: f32 = 8.0;
 /// edge through the middle of its bottom edge to its top-right corner, the mark
 /// box being the indicator inside `inset` on each side: its border and the
 /// stated padding, or egui's share of the box where the theme states none.
+/// `top` over an opaque `bottom`, blended in sRGB as the connector blends a
+/// translucent layer (`styles::composite_over`) and as iced's quads show one:
+/// an opaque colour.
+fn over(top: Color, bottom: Color) -> Color {
+    let mix = |t: f32, b: f32| t * top.a + b * (1.0 - top.a);
+    Color::from_rgb(
+        mix(top.r, bottom.r),
+        mix(top.g, bottom.g),
+        mix(top.b, bottom.b),
+    )
+}
+
 struct CheckMark {
     checked: bool,
     color: Color,
