@@ -345,29 +345,55 @@ fn indicator_and_label(
         }
         None => mark,
     };
-    let indicator = div()
-        .flex()
-        .flex_none()
-        .items_center()
-        .justify_center()
-        .size(look.indicator)
-        .border(look.border_width)
-        .border_color(look.border)
-        .bg(look.fill)
-        .map(|box_| {
-            if round {
-                box_.rounded_full()
-            } else {
-                box_.rounded(look.radius)
-            }
-        })
-        .when_some(look.hover_fill, |box_, hover| {
-            box_.group_hover(HOVER_GROUP, move |style| style.bg(hover))
-        })
-        .debug_selector(|| "native-checkbox-indicator".into())
-        .child(mark)
-        .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))
-        .into_any_element();
+    let rounded = |box_: gpui::Div, radius: Pixels| {
+        if round {
+            box_.rounded_full()
+        } else {
+            box_.rounded(radius)
+        }
+    };
+    // Faded, the fill is a box of its own inside the edge rather than the
+    // indicator's own background: gpui fades each quad it paints on its own
+    // (gpui-pre src/window.rs:4513-4521, `paint_quad`) and draws a quad's
+    // border over its own background (gpui-pre-wgpu src/shaders.wgsl:887,
+    // `fs_quad`), so the faded fill would show through the faded edge, where
+    // a platform fades the control as one. Unfaded, both are opaque and one
+    // quad draws them.
+    let inner_fill = (look.opacity < 1.).then(|| {
+        let inset = look.border_width;
+        rounded(
+            div()
+                .absolute()
+                .top(inset)
+                .left(inset)
+                .right(inset)
+                .bottom(inset)
+                .bg(look.fill),
+            px((f32::from(look.radius) - f32::from(inset)).max(0.)),
+        )
+        .into_any_element()
+    });
+    let indicator = rounded(
+        div()
+            .relative()
+            .flex()
+            .flex_none()
+            .items_center()
+            .justify_center()
+            .size(look.indicator)
+            .border(look.border_width)
+            .border_color(look.border)
+            .when(inner_fill.is_none(), |box_| box_.bg(look.fill)),
+        look.radius,
+    )
+    .when_some(look.hover_fill, |box_, hover| {
+        box_.group_hover(HOVER_GROUP, move |style| style.bg(hover))
+    })
+    .debug_selector(|| "native-checkbox-indicator".into())
+    .children(inner_fill)
+    .child(mark)
+    .children(observer.map(|o| part_bounds(Part::Indicator, o, look.border_width)))
+    .into_any_element();
     let (size, weight, line_height) = font;
     let label = parts.label.clone().map(|label| {
         div()
