@@ -477,18 +477,32 @@ pub fn text_area_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_
 /// iced's own pick-list padding where it does not, the button's
 /// `iced_widget::button::DEFAULT_PADDING` (iced_widget 0.14.2
 /// `src/pick_list.rs:204`). The arrow is drawn right-aligned at the right
-/// padding's inner edge (`src/pick_list.rs:636-660`), so a stated right side
-/// measured to the platform's arrow column (`combo_box.arrow_area_width`)
-/// puts the arrow's box in that column.
+/// padding's inner edge (`src/pick_list.rs:636-660`), and the platform
+/// centres it in its arrow column, `combo_box.arrow_area_width` wide
+/// (`docs/platform-facts.md` §2.24: Breeze's 10px arrow centred in the 20px
+/// `MenuButton_IndicatorWidth` column), which a stated right side measures
+/// to: where the theme states both, the right side also holds half the
+/// column the arrow leaves, `(arrow_area_width - arrow_icon_size) / 2`.
 ///
 /// Requires the `widgets` feature (on by default).
 #[cfg(feature = "widgets")]
 #[must_use]
 pub fn combo_box_padding(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Padding {
-    padding_inside_border(
-        &resolved.combo_box.border,
-        iced_widget::button::DEFAULT_PADDING,
-    )
+    let c = &resolved.combo_box;
+    let pad = padding_inside_border(&c.border, iced_widget::button::DEFAULT_PADDING);
+    match (c.border.padding.right, c.arrow_area_width) {
+        (Some(_), Some(column)) => {
+            pad.right(pad.right + arrow_column_margin(column, c.arrow_icon_size))
+        }
+        _ => pad,
+    }
+}
+
+/// The room either side of an arrow `arrow` wide centred in a column
+/// `column` wide; none where the arrow fills it.
+#[cfg(feature = "widgets")]
+fn arrow_column_margin(column: f32, arrow: f32) -> f32 {
+    ((column - arrow) / 2.0).max(0.0)
 }
 
 /// Returns the line height for a single-line control's text that makes the
@@ -1236,6 +1250,20 @@ mod tests {
         );
     }
 
+    /// kde-breeze's arrow is centred in its 20px column
+    /// (`combo_box.arrow_area_width`) at the right inner edge, which the
+    /// theme's right side (0) measures to: 5px either side of the 10px
+    /// arrow, so the right padding is the line, 1, and those 5.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn combo_box_padding_centres_the_arrow_in_its_column() {
+        let r = make_resolved_preset("kde-breeze", false);
+        let c = &r.combo_box;
+        assert_eq!(c.border.padding.right, Some(0.0));
+        assert_eq!((c.arrow_area_width, c.arrow_icon_size), (Some(20.0), 10.0));
+        assert_eq!(combo_box_padding(&r).right, c.border.line_width + 5.0);
+    }
+
     #[cfg(feature = "widgets")]
     #[test]
     fn combo_box_padding_fills_unstated_sides_from_iceds_default() {
@@ -1411,9 +1439,17 @@ mod tests {
             ),
         ] {
             let inside = |side: Option<f32>| side.map(|v| v + border.line_width);
+            // The combo box's right side also centres its arrow in the
+            // arrow column (`combo_box_padding`).
+            let column = match (what, resolved.combo_box.arrow_area_width) {
+                ("combo box", Some(column)) => {
+                    arrow_column_margin(column, resolved.combo_box.arrow_icon_size)
+                }
+                _ => 0.0,
+            };
             let stated = native_theme::theme::ResolvedPadding {
                 top: inside(border.padding.top),
-                right: inside(border.padding.right),
+                right: inside(border.padding.right).map(|v| v + column),
                 bottom: inside(border.padding.bottom),
                 left: inside(border.padding.left),
             };

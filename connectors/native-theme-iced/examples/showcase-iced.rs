@@ -5041,7 +5041,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "pick_list_handle: the chevron glyph's size".into()
         }
         ("combo_box", "arrow_area_width_px") => {
-            "not reachable: PickList lays the handle inside its right padding".into()
+            "combo_box_padding: the right padding holds half the column the arrow leaves".into()
         }
         ("combo_box", "hover_background") => "styles::pick_list: the Hovered background".into(),
         ("combo_box", "border.color") => "styles::pick_list: pick_list::Style::border.color".into(),
