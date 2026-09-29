@@ -359,17 +359,12 @@ fn indicator_and_label(
     // `fs_quad`), so the faded fill would show through the faded edge, where
     // a platform fades the control as one. Unfaded, both are opaque and one
     // quad draws them.
+    // An absolute child is placed inside its parent's border, so `inset_0`
+    // is the box inside the edge.
     let inner_fill = (look.opacity < 1.).then(|| {
-        let inset = look.border_width;
         rounded(
-            div()
-                .absolute()
-                .top(inset)
-                .left(inset)
-                .right(inset)
-                .bottom(inset)
-                .bg(look.fill),
-            px((f32::from(look.radius) - f32::from(inset)).max(0.)),
+            div().absolute().inset_0().bg(look.fill),
+            px((f32::from(look.radius) - f32::from(look.border_width)).max(0.)),
         )
         .into_any_element()
     });
