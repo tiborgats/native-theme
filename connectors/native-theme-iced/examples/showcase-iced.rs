@@ -14424,8 +14424,10 @@ mod tests {
     /// preset the captures take: its content, laid out in the page area of a
     /// 1280 x 720 window, ends inside the window.
     ///
-    /// Basic v3 (round 11, section D) does not: its first and fourth columns
-    /// run past the page area under kde-breeze (by 3 and 38 px), which the
+    /// Basic v3 (round 11, section D) does not: under kde-breeze its first,
+    /// second and fourth columns run past the page area by about 16, 8 and
+    /// 49 px, under adwaita the first and fourth by 7 and 51, under material
+    /// all four by 50 to 164 (its 56 px fields and 48 px tabs), which the
     /// brief says to report rather than shrink the theme's sizes for. Run it
     /// with `--ignored` to see where.
     #[test]

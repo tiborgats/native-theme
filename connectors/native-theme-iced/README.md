@@ -233,7 +233,8 @@ let radius  = border_radius(&resolved);
 ```
 
 Full helper list: `button_padding`, `input_padding`, `text_area_padding`
-(a multi-line field's own padding, `text_area.border`), `combo_box_padding`,
+(a multi-line field's own padding, `text_area.border`), `combo_box_padding`
+(whose right side also centres the arrow in `combo_box.arrow_area_width`),
 `padding_or`, `padding_inside_border`, `stated_padding`,
 `control_line_height`, `button_content_min_size`, `at_least`,
 `border_radius`, `border_radius_lg`, `scrollbar_width`,
@@ -470,11 +471,14 @@ cargo run -p native-theme-iced --example showcase-iced
 Displays every widget iced has, each styled through `styles::*`, with live
 theme switching, a colour map, and an inspector that says which native field
 every part of a widget comes from — and which parts iced still decides. It
-opens on the Basic tab, the controls all three showcases draw — buttons,
-checkboxes, radio buttons, text, text fields, a drop-down, a slider and a
-progress bar — in the same order and states, packed onto one screen, so the
-three showcases' captures compare control by control. Add
-`--features iced_aw` for the tab with the `iced_aw` widgets:
+opens on the Basic tab, the controls all three showcases draw, in the same
+order and states, packed onto one screen, so the three showcases' captures
+compare control by control. The elements the three share are listed once, in
+`docs/showcase-elements.toml`: hovering one shows its leaves in Widget Info,
+each with its value and how iced applies it, and `--dump-layout FILE` writes
+their rectangles for `scripts/check_showcase_parity.py`. Add
+`--features iced_aw` for the tab with the `iced_aw` widgets and the Basic
+tab's number input:
 
 ```sh
 cargo run -p native-theme-iced --example showcase-iced --features iced_aw
