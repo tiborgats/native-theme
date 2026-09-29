@@ -879,6 +879,7 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     printf "      ${DIM}cargo publish -p native-theme-iced${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-gpui${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-egui${NC}\n"
+    printf "      ${DIM}cargo publish -p native-theme-egui-widgets${NC}\n"
     echo
     exit 0
 else

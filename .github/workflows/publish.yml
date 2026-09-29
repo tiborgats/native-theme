@@ -55,6 +55,8 @@ jobs:
           cargo clippy -p native-theme-iced --all-targets --features iced_aw
           cargo clippy -p native-theme-egui --all-targets
           cargo clippy -p native-theme-egui --all-targets --all-features
+          cargo clippy -p native-theme-egui-widgets --all-targets
+          cargo clippy -p native-theme-egui-widgets --all-targets --all-features
 
       - name: Clippy native-theme-gpui
         env:
@@ -87,6 +89,12 @@ jobs:
           cargo test -p native-theme-egui --no-default-features
           cargo test -p native-theme-egui --all-features
 
+      - name: Test native-theme-egui-widgets
+        run: |
+          cargo test -p native-theme-egui-widgets
+          cargo test -p native-theme-egui-widgets --no-default-features
+          cargo test -p native-theme-egui-widgets --all-features
+
       # Fails when an upstream release adds a widget that no showcase
       # renders or docs/showcase-exceptions.toml excepts. ubuntu-latest ships
       # Python 3.12, above the 3.11 the script's `tomllib` import requires.
@@ -108,6 +116,7 @@ jobs:
           cargo doc -p native-theme-egui --no-deps
           # docs.rs builds native-theme-egui with every feature.
           cargo doc -p native-theme-egui --no-deps --all-features
+          cargo doc -p native-theme-egui-widgets --no-deps --all-features
 
       - name: Documentation native-theme-gpui
         env:
@@ -169,6 +178,7 @@ jobs:
       #   native-theme-iced    (depends on native-theme)
       #   native-theme-gpui    (depends on native-theme)
       #   native-theme-egui    (depends on native-theme)
+      #   native-theme-egui-widgets (depends on native-theme-egui)
       #
       # Waits between publishes let the crates.io sparse index settle so the
       # next `cargo publish` can resolve the prior crate from the registry.
@@ -252,6 +262,22 @@ jobs:
           OUTPUT=$(cargo publish -p native-theme-egui 2>&1) || {
             if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
               echo "::notice::native-theme-egui already published, skipping"
+            else
+              echo "$OUTPUT"
+              exit 1
+            fi
+          }
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+      - name: Wait for index (native-theme-egui)
+        run: sleep 45
+
+      - name: Publish native-theme-egui-widgets
+        run: |
+          OUTPUT=$(cargo publish -p native-theme-egui-widgets 2>&1) || {
+            if echo "$OUTPUT" | grep -qiE "already exists on crates.io index|already.*uploaded|already.*published"; then
+              echo "::notice::native-theme-egui-widgets already published, skipping"
             else
               echo "$OUTPUT"
               exit 1
