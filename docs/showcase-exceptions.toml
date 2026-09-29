@@ -64,10 +64,12 @@ shader = "a custom shader widget for wgpu applications: it needs a rendering pip
 themer = "replaces the theme of a subtree; it paints nothing of its own (themer.rs)"
 
 # `iced_aw` widgets the showcase does not render. The connector's `iced_aw`
-# dependency enables none of these features, so they are not compiled either.
-# Most are widgets native-theme models no counterpart for (spec §3a), so there
-# is no style to give them and inventing one is forbidden; the last two are
-# the wrappers §3a's table does not mention, each with the reason its own
+# dependency enables none of these features, so they are not compiled either,
+# except `typed_input`: the connector enables `number_input`, whose feature
+# enables `typed_input` (iced_aw 0.14.1 Cargo.toml.orig:29). Most are widgets
+# native-theme models no counterpart for (spec §3a), so there is no style to
+# give them and inventing one is forbidden; `custom_layout` and `typed_input`
+# are wrappers §3a's table does not mention, each with the reason its own
 # source gives.
 [iced_aw]
 badge = "native-theme models no badge (spec §3a); the feature is not enabled"
@@ -79,7 +81,7 @@ labeled_frame = "native-theme models no labelled frame (spec §3a); the feature 
 quad = "native-theme models no bare quad primitive (spec §3a); the feature is not enabled"
 slide_bar = "native-theme models no slide bar (spec §3a); the feature is not enabled"
 time_picker = "native-theme models no time picker (spec §3a); the feature is not enabled"
-typed_input = "a wrapper with no visual surface: it is a `TextInput` that parses its value into a type and delegates its whole `draw` to that input, which `styles::text_input` already covers (widget/typed_input.rs:38-46, :341-361); the feature is not enabled"
+typed_input = "a wrapper with no visual surface: it is a `TextInput` that parses its value into a type and delegates its whole `draw` to that input, which `styles::text_input` already covers (widget/typed_input.rs:39-47, :341-361). The connector does not enable the feature itself; `number_input` does (Cargo.toml.orig:29), and the showcase's `NumberInput` draws its field through one (widget/number_input.rs:80, :134)"
 wrap = "native-theme models no wrapping layout (spec §3a); the feature is not enabled"
 
 # The `Ui` layout methods of egui 0.36.2 no page of the egui showcase calls
