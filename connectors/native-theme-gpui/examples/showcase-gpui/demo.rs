@@ -1147,7 +1147,7 @@ pub(crate) fn toolbar_button(
     )
     .map(|button| match icon {
         Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
-        None => button.label(tooltip),
+        None => tool_label(cx, button, tooltip),
     })
     .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
@@ -1158,6 +1158,35 @@ pub(crate) fn toolbar_button(
         button_info,
     )
     .tooltip(tip)
+}
+
+/// `button` labelled `text`, a chrome button whose icon theme has no icon
+/// for it: `text` in `button.font`'s size and weight, one line of it tall
+/// (`line_height_of`), where a native theme is installed. The Button's
+/// content sets its own text size by the Button's Size (`button_text_size`,
+/// button/button.rs, `RenderOnce for Button`: `text_sm` for a small one),
+/// which a style on the Button does not reach; the label is a child that
+/// sets its own. Without a native theme, `Button::label`.
+fn tool_label(cx: &App, button: Button, text: &'static str) -> Button {
+    let font = native_value(cx, |n| {
+        let f = &n.resolved.button.font;
+        (
+            text_size_of(&n, f),
+            line_height_of(&n, f),
+            FontWeight(f32::from(f.weight)),
+        )
+    });
+    match font {
+        Some((size, line, weight)) => button.accessibility_label(text).child(
+            div()
+                .whitespace_nowrap()
+                .text_size(size)
+                .line_height(line)
+                .font_weight(weight)
+                .child(text),
+        ),
+        None => button.label(text),
+    }
 }
 
 /// A tooltip reading `text` and the key binding of `action`, built by the
@@ -1257,7 +1286,7 @@ pub(crate) fn panel_toggle(
     .toggled(open)
     .map(|button| match icon {
         Some(icon) => button.child(listed_icon(ui, icon, elements::icon_of(id))),
-        None => button.label(tooltip),
+        None => tool_label(cx, button, tooltip),
     })
     .on_click(move |_, window, cx| window.dispatch_action(dispatched.boxed_clone(), cx));
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
@@ -2783,15 +2812,50 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
     if disabled_pair.is_some() {
         button_info = button_info.geometry("button_disabled");
     }
-    let button = labelled(ui, refined(button, disabled_pair.as_ref()), id, label)
+    // A disabled Default Button, the variant upstream draws an edge round
+    // (button/button.rs, `RenderOnce for Button`: `border_l_1` and its
+    // siblings), under a native theme: its fill and its fade go on a surface
+    // under it that draws its edge too (`faded_surface`), and the rest of the
+    // pair on the Button, which is left without a fill or an edge colour.
+    let resolved = cx.native_theme().and_then(|nt| nt.resolved(cx));
+    let surface = match (&disabled_pair, resolved) {
+        (Some(pair), Some(r)) if kind == ButtonKind::Default => {
+            Some((pair.clone(), &r.button.border))
+        }
+        _ => None,
+    };
+    let on_button = match &surface {
+        Some((pair, _)) => {
+            let mut rest = pair.clone();
+            rest.background = None;
+            rest.opacity = None;
+            Some(rest)
+        }
+        None => disabled_pair,
+    };
+    if surface.is_some() {
+        button_info = button_info.config("surface", "geometry::button_disabled's fill inside button.border.color's line, drawn by the showcase under the Button, which it leaves without a fill or an edge of its own, the whole faded by button.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line");
+    }
+    let button = labelled(ui, refined(button, on_button.as_ref()), id, label)
         .when_some(drawn, |button, icon| match state {
             ButtonState::Loading => button.loading_icon(icon.clone()).icon(icon),
             ButtonState::Idle | ButtonState::Disabled => button.icon(icon),
         })
         .disabled(state == ButtonState::Disabled)
         .loading(state == ButtonState::Loading);
+    let none = cx.theme().transparent;
+    let button = match surface {
+        Some(_) => button.bg(none).border_color(none),
+        None => button,
+    };
     // `InfoExt::info` by path: `ButtonVariants::info` picks the Info variant.
-    InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into())
+    let button = InfoExt::info(button, ui, id, button_info).debug_selector(move || id.into());
+    match surface {
+        Some((fill, border)) => faded_surface(border, &fill, button)
+            .flex_none()
+            .id(SharedString::from(format!("{id}-surface"))),
+        None => button,
+    }
 }
 
 /// A Default Button at `size`, left without `geometry::button`: this row
@@ -2957,11 +3021,17 @@ pub(crate) fn text_input(
             if fill.is_some() {
                 input_info = input_info.geometry("input_fill");
             }
+            let resolved = cx.native_theme().and_then(|nt| nt.resolved(cx));
+            if let (true, Some(r), Some(fill)) = (disabled, resolved, &fill) {
+                input_info = info::inputs::disabled_input_surface(input_info);
+                let none = cx.theme().transparent;
+                return faded_surface(&r.input.border, fill, input.bg(none).border_color(none))
+                    .w(width)
+                    .info(ui, id, input_info)
+                    .debug_selector(move || id.into());
+            }
             let input = refined(input, fill.as_ref());
-            let surface = (!disabled)
-                .then(|| cx.native_theme().and_then(|nt| nt.resolved(cx)))
-                .flatten();
-            if let Some(r) = surface {
+            if let (false, Some(r)) = (disabled, resolved) {
                 input_info = info::inputs::input_surface(input_info, r);
                 let none = cx.theme().transparent;
                 return input_surface(r, &r.input.border, input.bg(none).border_color(none))
@@ -3020,6 +3090,52 @@ fn input_surface(
                 .border(px(border.line_width))
                 .border_color(info::stated(border.color))
                 .group_hover(INPUT_GROUP, move |style| style.border_color(hover)),
+        )
+        .child(field)
+}
+
+/// A disabled control over its surface: the fill `fill` gives (a disabled
+/// field's `geometry::input_fill`, a disabled Button's
+/// `geometry::button_disabled`) inside `border`'s line, the line in
+/// `border.color`, and the whole faded by `fill`'s opacity. The caller
+/// leaves the control without a fill or an edge colour of its own, and
+/// unfaded.
+///
+/// The fill is a box of its own inside the line, not under it: gpui fades
+/// each primitive it paints on its own (gpui-pre src/window.rs:4513-4521,
+/// `paint_quad`), and a quad draws its border over its own background
+/// (gpui-pre-wgpu src/shaders.wgsl:887, `fs_quad`), so a faded control whose
+/// fill lay under its line would show the fill through the faded line,
+/// where a platform fades the control as one.
+fn faded_surface(
+    border: &native_theme::theme::ResolvedWidgetBorder,
+    fill: &gpui::StyleRefinement,
+    field: impl IntoElement,
+) -> Div {
+    let line = border.line_width.max(0.0);
+    let radius = border.corner_radius.max(0.0);
+    let inner = div()
+        .absolute()
+        .top(px(line))
+        .left(px(line))
+        .right(px(line))
+        .bottom(px(line))
+        .rounded(px((radius - line).max(0.0)));
+    let inner = match fill.background.clone() {
+        Some(background) => inner.bg(background),
+        None => inner,
+    };
+    div()
+        .relative()
+        .when_some(fill.opacity, |surface, fade| surface.opacity(fade))
+        .child(inner)
+        .child(
+            div()
+                .absolute()
+                .inset_0()
+                .rounded(px(radius))
+                .border(px(line))
+                .border_color(info::stated(border.color)),
         )
         .child(field)
 }

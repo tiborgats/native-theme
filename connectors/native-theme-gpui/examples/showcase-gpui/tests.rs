@@ -3637,9 +3637,10 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
 /// Where the chosen icon theme has no `PanelLeft`, the side-panel toggle
 /// shows its tooltip's text as its label, never another icon theme's icon
 /// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
-/// is as wide as its tooltip's text at a Small Button's `text_sm`
-/// (sizing.rs:322) plus the `px_2` on either side (button/button.rs:629-631),
-/// and says why in its info.
+/// is as wide as its tooltip's text in `button.font` (a Small Button's
+/// `text_sm`, sizing.rs:322, without a native theme) plus the theme's button
+/// padding, or the `px_2` on either side (button/button.rs:629-631) where it
+/// states none, and says why in its info.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
@@ -3684,13 +3685,32 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
             ChromeIcon::Missing(name)
         );
         let labelled = bounds_of(&mut cx, selector);
+        // In `button.font`'s size and weight where a native theme is
+        // installed (demo::tool_label), else in a Small Button's `text_sm`.
+        let font = read(&mut cx, &showcase, |_this, cx| {
+            native_value(cx, |n| {
+                let f = &n.resolved.button.font;
+                (
+                    px(native_theme_gpui::scaled_text_size(f.size, n.accessibility)),
+                    gpui::FontWeight(f32::from(f.weight)),
+                )
+            })
+        });
         let expected = cx.update(|window, _| {
             let rem = window.rem_size();
             let text = gpui::SharedString::from(tooltip);
-            let run = window.text_style().to_run(text.len());
+            let mut style = window.text_style();
+            let size = match font {
+                Some((size, weight)) => {
+                    style.font_weight = weight;
+                    size
+                }
+                None => rems(0.875).to_pixels(rem),
+            };
+            let run = style.to_run(text.len());
             window
                 .text_system()
-                .shape_line(text, rems(0.875).to_pixels(rem), &[run], None)
+                .shape_line(text, size, &[run], None)
                 .width()
         });
         // Padded by the theme's button padding where it states a side, and

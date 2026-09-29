@@ -24,6 +24,11 @@ pub fn input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
     info.config("surface", "input.background_color framed by input.border.color, and by input.hover_border_color (where stated) under the pointer, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface")
 }
 
+/// `info` of a disabled field over its surface (`demo::disabled_input_surface`).
+pub fn disabled_input_surface(info: WidgetInfo) -> WidgetInfo {
+    info.config("surface", "geometry::input_fill's fill inside input.border.color's line, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
+}
+
 /// A single-line `Input` taking the refinement `field` names. `styled` is
 /// whether a native theme is installed, so whether `geometry::input` refined
 /// a `Refined` field and `geometry::input_height` sized a `HeightOnly` one.
