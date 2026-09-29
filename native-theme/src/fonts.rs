@@ -7,7 +7,10 @@
 //! it over the system font database, loaded once per process, and returns
 //! the chosen face's bytes; on macOS the system UI font is found by its file
 //! through Core Text, because no font database files it under the name the
-//! platform documents.
+//! platform documents. `system_face` substitutes no family; `substitute_family`,
+//! behind the same feature, names the family the platform draws in place of
+//! one it has no face of — on Linux and the other fontconfig platforms,
+//! fontconfig's best match, which `system_face` then finds by name.
 
 use crate::theme::FontStyle;
 
@@ -220,7 +223,9 @@ fn face_in(
 /// each call runs [`select_face`] over its faces and copies the chosen
 /// face's file into the returned [`SystemFace`], so call it when a theme
 /// changes, not per frame. A family the system has no face of is `None`:
-/// nothing is substituted. On macOS a `family` that names the system UI
+/// nothing is substituted here; [`substitute_family`] names the family the
+/// platform draws in its place, to ask this function for next. On macOS a
+/// `family` that names the system UI
 /// font — [`is_macos_system_ui_family`], or caselessly Core Text's own
 /// family name for it — is found by its file instead: fontdb files that
 /// font under `.SF NS`, not under the platform's name, so Core Text is
@@ -256,6 +261,94 @@ fn face_in_file(path: &std::path::Path, weight: u16, style: FontStyle) -> Option
     db.load_font_file(path).ok()?;
     let recorded = db.faces().next()?.families.first()?.0.clone();
     face_in(&db, &recorded, weight, style)
+}
+
+/// The family the platform draws in place of `family`, or `None` where the
+/// platform has that family, gives no answer, or its fallback is not
+/// implemented here.
+///
+/// On Linux and the other fontconfig platforms — Unix other than macOS, iOS
+/// and Android — fontconfig is asked through its own `fc-match` tool, run as
+/// `fc-match --format=%{family[0]} <pattern>`: `fc-match` parses the pattern
+/// with `FcNameParse`, runs `FcConfigSubstitute` and `FcDefaultSubstitute`
+/// on it and prints `FcFontMatch`'s best match (fontconfig 2.15.0
+/// `fc-match/fc-match.c` lines 169, 188–189 and 218), which is the font
+/// every native application of the system gets for that family, and
+/// `%{family[0]}` is that match's first family name (`FcPatternFormat(3)`).
+/// The pattern is `family` with the characters fontconfig's name syntax
+/// reserves in a family — `\`, `-`, `:` and `,` — each preceded by a `\`
+/// (fontconfig user's guide, "Font Names"). `None` when `fc-match` cannot be run or fails,
+/// prints nothing, or prints a family caselessly equal to `family`: the
+/// system has that family, and [`system_face`] finds it by name. Each call
+/// starts a process, so call it when a theme changes, not per frame.
+///
+/// macOS, Windows and every other platform: `None`. Their own fallback for a
+/// missing family is not implemented: no code path of this crate reads it.
+#[cfg(feature = "system-fonts")]
+#[must_use]
+pub fn substitute_family(family: &str) -> Option<String> {
+    platform_substitute(family)
+}
+
+#[cfg(all(
+    feature = "system-fonts",
+    unix,
+    not(target_os = "macos"),
+    not(target_os = "ios"),
+    not(target_os = "android")
+))]
+fn platform_substitute(family: &str) -> Option<String> {
+    let output = std::process::Command::new("fc-match")
+        .arg("--format=%{family[0]}")
+        .arg(fontconfig_family(family))
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let printed = String::from_utf8(output.stdout).ok()?;
+    let matched = printed.trim();
+    if matched.is_empty() || unicase::UniCase::new(matched) == unicase::UniCase::new(family) {
+        return None;
+    }
+    Some(matched.to_owned())
+}
+
+#[cfg(all(
+    feature = "system-fonts",
+    not(all(
+        unix,
+        not(target_os = "macos"),
+        not(target_os = "ios"),
+        not(target_os = "android")
+    ))
+))]
+fn platform_substitute(_family: &str) -> Option<String> {
+    None
+}
+
+/// `family` as a fontconfig pattern's family: "The '\\', '-', ':' and ','
+/// characters in family names must be preceded by a '\\' character to avoid
+/// having them misinterpreted" (fontconfig user's guide, "Font Names";
+/// `FcNameParse` reads the families up to an unescaped `-`, `,` or `:`, and
+/// takes the character after a `\` as it is, fontconfig 2.15.0
+/// `src/fcname.c` lines 415–443 and 467).
+#[cfg(all(
+    feature = "system-fonts",
+    unix,
+    not(target_os = "macos"),
+    not(target_os = "ios"),
+    not(target_os = "android")
+))]
+fn fontconfig_family(family: &str) -> String {
+    let mut pattern = String::with_capacity(family.len());
+    for c in family.chars() {
+        if matches!(c, '\\' | '-' | ':' | ',') {
+            pattern.push('\\');
+        }
+        pattern.push(c);
+    }
+    pattern
 }
 
 #[cfg(test)]
@@ -401,9 +494,66 @@ mod tests {
         assert!(!is_macos_system_ui_family("Inter"));
     }
 
+    /// fontconfig's name-syntax specials in a family — `\`, `-`, `:` and `,` —
+    /// are each preceded by a `\`; every other character, a space included,
+    /// is kept as it is (fontconfig user's guide, "Font Names").
+    #[cfg(all(
+        feature = "system-fonts",
+        unix,
+        not(target_os = "macos"),
+        not(target_os = "ios"),
+        not(target_os = "android")
+    ))]
+    #[test]
+    fn a_fontconfig_family_escapes_the_name_syntax_specials() {
+        assert_eq!(fontconfig_family("JetBrains Mono"), "JetBrains Mono");
+        assert_eq!(fontconfig_family("sans-serif"), r"sans\-serif");
+        assert_eq!(fontconfig_family(r"a\b:c,d-e"), r"a\\b\:c\,d\-e");
+        assert_eq!(fontconfig_family(r"\\"), r"\\\\");
+        assert_eq!(fontconfig_family(""), "");
+        assert_eq!(
+            fontconfig_family("Noto Sans CJK 日本"),
+            "Noto Sans CJK 日本"
+        );
+    }
+
     #[cfg(feature = "system-fonts")]
     mod system {
         use super::super::*;
+
+        /// A family no system has is drawn in fontconfig's best match, a
+        /// family the system has, so its substitute is itself `None`. On a
+        /// fontconfig platform where `fc-match` cannot be run, and on every
+        /// other platform, there is no substitute.
+        #[test]
+        fn a_missing_family_has_a_substitute_the_system_has() {
+            let missing = format!("native-theme-no-such-family-{}", std::process::id());
+            let substitute = substitute_family(&missing);
+            let fontconfig_platform = cfg!(all(
+                unix,
+                not(target_os = "macos"),
+                not(target_os = "ios"),
+                not(target_os = "android")
+            ));
+            let fc_match_runs = std::process::Command::new("fc-match")
+                .arg("--version")
+                .output()
+                .is_ok_and(|output| output.status.success());
+            if !(fontconfig_platform && fc_match_runs) {
+                println!(
+                    "a_missing_family_has_a_substitute_the_system_has: fc-match not run here, \
+                     substitute {substitute:?}"
+                );
+                assert_eq!(substitute, None);
+                return;
+            }
+            let substitute = substitute.expect("fc-match names a substitute");
+            assert!(
+                system_face(&substitute, 400, FontStyle::Normal).is_some(),
+                "the substitute {substitute:?} has a system face"
+            );
+            assert_eq!(substitute_family(&substitute), None);
+        }
 
         /// Never substituted: a family no system has is `None`.
         #[test]
