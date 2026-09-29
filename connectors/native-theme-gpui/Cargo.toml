@@ -24,7 +24,7 @@ description = "gpui toolkit connector for native-theme"
 all-features = true
 
 [features]
-default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+default = ["widgets", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts"]
 # `widgets`: the theme-drawn checkbox, radio, switch, slider, progress bar,
 # spinner, tab bar and separator (docs/todo_gpui-widgets-spec.md), for the
 # parts gpui-component draws from literals of its own.
@@ -33,6 +33,10 @@ material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
 system-icons = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
+# `system-fonts`: a theme font family the system lacks is drawn in the family
+# the platform substitutes for it (`native_theme::fonts::substitute_family`,
+# fontconfig on Linux), not in gpui's own fallback list.
+system-fonts = ["native-theme/system-fonts"]
 
 [dependencies]
 # GPUI under the package name gpui-component uses, so both edges unify.

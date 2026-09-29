@@ -53,6 +53,15 @@ pub struct CheckboxLook {
     /// checkbox then draws gpui-component's own `Check` icon, at its own
     /// stroke.
     pub mark_stroke: Option<Pixels>,
+    /// The side of the square a checkbox's mark is drawn in: the indicator
+    /// inside `checkbox.border.padding` where the theme states it, and
+    /// inside its border on a side it leaves unstated -- "checkmark fills
+    /// indicator" (docs/platform-facts.md:1216, §2.5).
+    pub mark_size: Pixels,
+    /// Whether the theme states any side of `checkbox.border.padding`: the
+    /// mark's box is then that square, where it is otherwise the box its
+    /// line paints.
+    pub mark_padded: bool,
     /// The label's colour.
     pub label: Hsla,
     /// `checkbox.label_gap`.
@@ -108,16 +117,31 @@ impl CheckboxLook {
             (false, _) => (color(c.indicator_color), color(c.font.color)),
         };
         let opacity = super::disabled_opacity(disabled, c.disabled_opacity);
+        let indicator = length(c.indicator_width)?;
+        let border_width = length(c.border.line_width)?;
+        let p = &c.border.padding;
+        let inset = |side: Option<f32>| {
+            side.filter(|v| v.is_finite() && *v >= 0.0)
+                .unwrap_or(c.border.line_width)
+        };
+        let across = c.indicator_width - inset(p.left) - inset(p.right);
+        let down = c.indicator_width - inset(p.top) - inset(p.bottom);
+        let mark_size = length(across.min(down).max(0.0))?;
+        let mark_padded = [p.top, p.right, p.bottom, p.left]
+            .iter()
+            .any(Option::is_some);
         Some(Self {
-            indicator: length(c.indicator_width)?,
+            indicator,
             dot: c.radio_dot_diameter.and_then(length),
             radius: length(c.border.corner_radius)?,
-            border_width: length(c.border.line_width)?,
+            border_width,
             fill,
             hover_fill,
             border,
             mark,
             mark_stroke: c.check_mark_stroke_width.and_then(length),
+            mark_size,
+            mark_padded,
             label,
             label_gap: length(c.label_gap)?,
             opacity,
@@ -269,10 +293,10 @@ fn indicator_and_label(
             .when(opacity > 0., |mark| mark.bg(look.mark).opacity(opacity))
             .debug_selector(|| "native-radio-dot".into())
             .into_any_element(),
-        // The mark fills the indicator inside its border: "checkmark fills
-        // indicator" (docs/platform-facts.md:1216, §2.5).
+        // The mark fills the indicator inside its padding, or its border:
+        // "checkmark fills indicator" (docs/platform-facts.md:1216, §2.5).
         None => {
-            let inner = px(f32::from(look.indicator) - f32::from(look.border_width) * 2.);
+            let inner = look.mark_size;
             match look.mark_stroke {
                 // gpui-component's own glyph, stroked as the theme states
                 // (docs/platform-facts.md:1221, §2.5).
@@ -294,13 +318,12 @@ fn indicator_and_label(
     // the dot's and the icon's their whole box.
     let mark = match observer {
         Some(observer) => {
+            // The box its line paints; the whole square where the theme
+            // states the padding round it.
             let stroked = look
                 .mark_stroke
-                .filter(|_| !(round && look.dot.is_some()))
-                .map(|stroke| {
-                    let inner = f32::from(look.indicator) - f32::from(look.border_width) * 2.;
-                    stroked_check_bounds(inner, f32::from(stroke))
-                });
+                .filter(|_| !(round && look.dot.is_some()) && !look.mark_padded)
+                .map(|stroke| stroked_check_bounds(f32::from(look.mark_size), f32::from(stroke)));
             let reported = part_bounds(Part::Mark, observer, px(0.)).into_any_element();
             let reported = match stroked {
                 Some((left, top, width, height)) => div()

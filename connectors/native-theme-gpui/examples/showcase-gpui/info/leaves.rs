@@ -444,22 +444,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.border.padding_top_px",
-        "gpui: not applied — widgets::Checkbox pads nothing round its box and label",
+        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_right_px",
-        "gpui: not applied — widgets::Checkbox pads nothing round its box and label",
+        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_bottom_px",
-        "gpui: not applied — widgets::Checkbox pads nothing round its box and label",
+        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
     ),
     (
         "",
         "checkbox.border.padding_left_px",
-        "gpui: not applied — widgets::Checkbox pads nothing round its box and label",
+        "gpui: insets the check mark in the box (widgets::Checkbox, CheckboxLook::mark_size)",
     ),
     (
         "",
@@ -933,22 +933,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "expander.border.padding_top_px",
-        "gpui: not applied — the header pads its sides by EXPANDER_PADDING_X (demo.rs)",
+        "gpui: pads the header where stated; upstream's px_3 across where not (demo::native_expander)",
     ),
     (
         "",
         "expander.border.padding_right_px",
-        "gpui: not applied — the header pads its sides by EXPANDER_PADDING_X (demo.rs)",
+        "gpui: pads the header where stated; upstream's px_3 across where not (demo::native_expander)",
     ),
     (
         "",
         "expander.border.padding_bottom_px",
-        "gpui: not applied — the header pads its sides by EXPANDER_PADDING_X (demo.rs)",
+        "gpui: pads the header where stated; upstream's px_3 across where not (demo::native_expander)",
     ),
     (
         "",
         "expander.border.padding_left_px",
-        "gpui: not applied — the header pads its sides by EXPANDER_PADDING_X (demo.rs)",
+        "gpui: pads the header where stated; upstream's px_3 across where not (demo::native_expander)",
     ),
     (
         "",

@@ -386,7 +386,7 @@ Non-finite or non-positive scaling factors count as 1.0.
 
 ## Features
 
-All five are on by default; `default-features = false` is the way to narrow.
+All six are on by default; `default-features = false` is the way to narrow.
 
 | Feature | Enables |
 |---|---|
@@ -395,6 +395,7 @@ All five are on by default; `default-features = false` is the way to narrow.
 | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
 | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
+| `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it (`native-theme/system-fonts`; fontconfig on Linux), not in gpui's own fallback list |
 
 Without `svg-rasterize` an SVG icon is still an icon: the `icons` module hands
 gpui the SVG bytes (colorized first when a colour is given) as an

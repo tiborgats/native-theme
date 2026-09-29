@@ -435,7 +435,7 @@ impl PanelLook {
         let side = |v: Option<f32>| v.map_or(gpui::px(0.), gpui::px);
         let p = &r.button.border.padding;
         Some(Self {
-            family: SharedString::from(r.sidebar.font.family.to_string()),
+            family: native_theme_gpui::font_family(&r.sidebar.font.family),
             size: gpui::px(size),
             line: gpui::px(size * r.defaults.line_height),
             weight: gpui::FontWeight(f32::from(r.sidebar.font.weight)),
@@ -496,15 +496,22 @@ fn listed_info(
             copied.push_str(&format!("{leaf} {}\n  {route}\n", value.text));
             let first = ix == 0;
             let recorded = |id: &'static str| first.then(|| elements::record(ui, id));
+            // Each line its own width, clipped at the row's end.
             let lines = v_flex()
+                .flex_1()
+                .min_w_0()
                 .items_start()
                 .child(
                     look.text(div().relative())
+                        .max_w_full()
+                        .overflow_hidden()
                         .child(format!("{leaf} {}", value.text))
                         .children(recorded("chrome.info.row_1.text")),
                 )
                 .child(
                     look.text(div().relative())
+                        .max_w_full()
+                        .overflow_hidden()
                         .text_color(look.muted)
                         .child(route)
                         .children(recorded("chrome.info.row_1.how")),
@@ -697,10 +704,7 @@ impl Render for Inspector {
                 crate::support::gutter_scroll(
                     "inspector-scroll",
                     &self.scroll,
-                    div()
-                        .relative()
-                        .child(elements::record(&self.ui, "chrome.side_panel.inspector"))
-                        .child(with_padding(v_flex(), margin).child(body)),
+                    div().child(with_padding(v_flex(), margin).child(body)),
                     {
                         let this = cx.entity().downgrade();
                         move |cx: &mut gpui::App| {
@@ -710,7 +714,9 @@ impl Render for Inspector {
                     cx,
                 )
                 .flex_1()
-                .min_h_0(),
+                .min_h_0()
+                // The room below the tabs, its scroll bar's included.
+                .child(elements::record(&self.ui, "chrome.side_panel.inspector")),
             )
     }
 }

@@ -131,6 +131,23 @@ fn the_checkbox_look_is_the_presets_values() {
     assert_eq!(md.mark_stroke, None, "material states none: the icon's own");
 }
 
+/// The check mark fills the indicator inside `checkbox.border.padding`
+/// where the theme states it (adwaita's 3), and inside its border where it
+/// does not (kde-breeze).
+#[test]
+fn the_check_mark_fills_the_indicator_inside_its_padding() {
+    let adw = CheckboxLook::of(&resolved("adwaita", ColorMode::Light), true, false);
+    assert_eq!(
+        adw.map(|l| (l.mark_size, l.mark_padded)),
+        Some((px(20. - 3. - 3.), true))
+    );
+    let kbl = CheckboxLook::of(&resolved("kde-breeze", ColorMode::Light), true, false);
+    assert_eq!(
+        kbl.map(|l| (l.mark_size, l.mark_padded)),
+        Some((px(20. - 1. - 1.), false))
+    );
+}
+
 #[test]
 fn a_switch_paints_switch_theme() {
     for (preset, mode) in PRESETS {

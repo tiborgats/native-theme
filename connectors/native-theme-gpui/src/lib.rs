@@ -92,7 +92,7 @@
 //!
 //! # Features
 //!
-//! All five are on by default.
+//! All six are on by default.
 //!
 //! | Feature | Enables |
 //! |---------|---------|
@@ -101,6 +101,7 @@
 //! | `lucide-icons` | the bundled Lucide set (`native-theme/lucide-icons`) |
 //! | `system-icons` | the platform's own icons (`native-theme/system-icons`) |
 //! | `svg-rasterize` | SVG icons rasterized by this crate (`native-theme/svg-rasterize`) |
+//! | `system-fonts` | a theme family the system lacks is drawn in the family the platform substitutes for it ([`font_family`]; `native-theme/system-fonts`) |
 //!
 //! Without `svg-rasterize` an SVG icon is still converted: [`icons`] hands
 //! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
@@ -167,10 +168,11 @@ use std::rc::Rc;
 /// Note: `is_dark` is an explicit parameter here, unlike the iced connector
 /// which derives it from background luminance. Planned for unification in v0.6.0.
 ///
-/// On macOS the stated family of the system UI font, "SF Pro", is passed to
-/// gpui as its own alias `.SystemUIFont`, so Core Text supplies the system
-/// font itself; `mono_font_family` and every other family are passed as
-/// stated (`ui_font_family`).
+/// The families are [`font_family`]'s: on macOS the stated family of the
+/// system UI font, "SF Pro", is passed to gpui as its own alias
+/// `.SystemUIFont`, so Core Text supplies the system font itself; a family
+/// the system lacks is the one the platform substitutes for it (feature
+/// `system-fonts`); every other family is passed as stated.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
     resolved: &ResolvedTheme,
@@ -192,12 +194,12 @@ pub fn to_theme(
     // Hsla::transparent_black() and is intentionally left unchanged.
     // It's used internally by gpui-component for transparent overlays.
     theme.mode = mode;
-    theme.font_family = ui_font_family(&d.font.family, cfg!(target_os = "macos"));
+    theme.font_family = font_family(&d.font.family);
     // §3.4: Root sets the window rem to font_size (gpui-component
     // src/root.rs:582), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
     theme.font_size = px(d.font.size * s);
-    theme.mono_font_family = SharedString::from(d.mono_font.family.clone());
+    theme.mono_font_family = font_family(&d.mono_font.family);
     theme.mono_font_size = px(d.mono_font.size * s);
     // Issue 14: clamp radius to non-negative
     theme.radius = px(d.border.corner_radius.max(0.0));
@@ -489,6 +491,51 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
     } else {
         SharedString::from(family.clone())
     }
+}
+
+/// The family gpui is asked to draw a theme's `family` in: the macOS alias
+/// of [`ui_font_family`]; with feature `system-fonts`, where the system
+/// lacks `family`, the family the platform substitutes for it
+/// (`native_theme::fonts::substitute_family`: fontconfig's match on Linux,
+/// the font every native application of the system gets); else `family` as
+/// stated. gpui's own answer to a family its text system cannot find is a
+/// list of its own, `.ZedMono` first (gpui-pre 0.3.6 `src/text_system.rs`
+/// lines 255-266, 370-379), not the platform's. The platform is asked once
+/// per family and the answer kept, so a caller may ask every frame.
+#[must_use]
+pub fn font_family(family: &std::sync::Arc<str>) -> SharedString {
+    let alias = ui_font_family(family, cfg!(target_os = "macos"));
+    if alias.as_ref() != family.as_ref() {
+        return alias;
+    }
+    match substituted_family(family) {
+        Some(substitute) => SharedString::from(substitute),
+        None => alias,
+    }
+}
+
+/// [`font_family`]'s substitute for `family`, asked of the platform once.
+#[cfg(feature = "system-fonts")]
+fn substituted_family(family: &str) -> Option<String> {
+    use std::collections::HashMap;
+    use std::sync::{Mutex, OnceLock, PoisonError};
+    static ASKED: OnceLock<Mutex<HashMap<String, Option<String>>>> = OnceLock::new();
+    let mut asked = ASKED
+        .get_or_init(Mutex::default)
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    if let Some(answer) = asked.get(family) {
+        return answer.clone();
+    }
+    let answer = native_theme::fonts::substitute_family(family);
+    asked.insert(family.to_owned(), answer.clone());
+    answer
+}
+
+/// Without feature `system-fonts`, no family is substituted.
+#[cfg(not(feature = "system-fonts"))]
+fn substituted_family(_family: &str) -> Option<String> {
+    None
 }
 
 // --- Issue 36: Line height multiplier ---
@@ -1088,6 +1135,25 @@ mod tests {
             .expect("resolved preset must validate")
     }
 
+    /// A family the system lacks is drawn in the family the platform
+    /// substitutes for it, where feature `system-fonts` asks it; the answer
+    /// is kept, so asking again gives the same family.
+    #[test]
+    fn a_missing_family_is_the_platforms_substitute() {
+        let family = std::sync::Arc::<str>::from("native-theme: no such family");
+        let drawn = font_family(&family);
+        let platform = if cfg!(feature = "system-fonts") {
+            substituted_family(&family)
+        } else {
+            None
+        };
+        match platform {
+            Some(substitute) => assert_eq!(drawn.as_ref(), substitute),
+            None => assert_eq!(drawn.as_ref(), family.as_ref()),
+        }
+        assert_eq!(font_family(&family), drawn, "asked again, another family");
+    }
+
     /// On macOS the system UI font's stated family becomes gpui's own alias
     /// for it, `.SystemUIFont`; every other family, and every family on
     /// another platform, stays as stated (egui spec §8.8). The platform is
@@ -1157,13 +1223,13 @@ mod tests {
         );
 
         assert_eq!(
-            theme.font_family.as_ref(),
-            resolved.defaults.font.family.as_ref()
+            theme.font_family,
+            font_family(&resolved.defaults.font.family)
         );
         assert_eq!(theme.font_size, px(resolved.defaults.font.size));
         assert_eq!(
-            theme.mono_font_family.as_ref(),
-            resolved.defaults.mono_font.family.as_ref()
+            theme.mono_font_family,
+            font_family(&resolved.defaults.mono_font.family)
         );
         assert_eq!(theme.mono_font_size, px(resolved.defaults.mono_font.size));
         assert_eq!(

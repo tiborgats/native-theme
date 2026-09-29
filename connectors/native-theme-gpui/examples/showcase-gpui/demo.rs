@@ -262,7 +262,7 @@ impl MenuLook {
         let m = &n.resolved.menu;
         let p = &n.resolved.popover.border;
         Self {
-            family: SharedString::from(m.font.family.to_string()),
+            family: native_theme_gpui::font_family(&m.font.family),
             font_size: px(native_theme_gpui::scaled_text_size(
                 m.font.size,
                 n.accessibility,
@@ -5934,9 +5934,10 @@ struct ExpanderSpec {
     gap: Option<Pixels>,
 }
 
-/// An expander row's side padding, the space between its title and its
-/// arrow, and its body's side and bottom padding, none of which
-/// `expander.*` states: upstream's `AccordionItem`'s at the default Size
+/// An expander row's side padding where `expander.border.padding` states no
+/// side, the space between its title and its arrow where `arrow_gap` is
+/// unstated, and its body's side and bottom padding in a frame the theme
+/// does not state: upstream's `AccordionItem`'s at the default Size
 /// (accordion.rs, `RenderOnce for AccordionItem`: the trigger's `px_3` and
 /// `gap_3`, the panel's `pb_2` and `px_3`).
 const EXPANDER_PADDING_X: Rems = rems(0.75);
@@ -5944,10 +5945,11 @@ const EXPANDER_ARROW_GAP: Rems = rems(0.75);
 const EXPANDER_BODY_BOTTOM: Rems = rems(0.5);
 
 /// [`expander`] under a native theme, drawn by the showcase as `expander.*`
-/// states it (ISSUES D8): where `frame_enabled` is not `false`, the whole
-/// framed by `expander.border` and the items parted by its line, as
-/// upstream's bordered `Accordion` frames them, and none of either where it
-/// is (KDE's `KCollapsibleGroupBox` draws neither, docs/platform-facts.md
+/// states it (ISSUES D8): where `frame_enabled` is true, each item framed by
+/// `expander.border` on its own, `layout.widget_gap` from the next; where it
+/// is unstated, the whole framed and the items parted by its line, as
+/// upstream's bordered `Accordion` frames them; and none of either where it
+/// is false (KDE's `KCollapsibleGroupBox` draws neither, docs/platform-facts.md
 /// §2.27); each title row `header_height` tall (`geometry::accordion_title`)
 /// in `expander.font`, `hover_background` under the pointer; its arrow
 /// `arrow_icon_size` in `arrow_color` (the title's colour where that is
@@ -6002,13 +6004,19 @@ fn native_expander(
     };
     let radius = px(e.border.corner_radius.max(0.0));
     let last = items.len().saturating_sub(1);
-    // Framed, the frame is drawn by the items: each its sides and its bottom
-    // edge, the first its top, the first's top corners and the last's bottom
-    // ones rounded -- so an item's box is its part of the frame, its line
-    // included, and the line between two items the one above's bottom edge.
-    with_gap(v_flex(), if framed { None } else { gap })
+    // Framed where the theme states the frame, each item is an expander of
+    // its own, framed on its own and `layout.widget_gap` from the next, as
+    // the rows of a layout stand. Framed where it states nothing, the frame
+    // is upstream's Accordion's, one for all items, drawn by the items: each
+    // its sides and its bottom edge, the first its top, the first's top
+    // corners and the last's bottom ones rounded -- so an item's box is its
+    // part of the frame, its line included, and the line between two items
+    // the one above's bottom edge.
+    let own_frames = e.frame_enabled == Some(true);
+    let shared_frame = framed && !own_frames;
+    with_gap(v_flex(), if shared_frame { None } else { gap })
         .w(width)
-        .when(framed, |frame| frame.rounded(radius))
+        .when(shared_frame, |frame| frame.rounded(radius))
         .overflow_hidden()
         .children(items.into_iter().zip(open).enumerate().map(
             |(ix, ((title, body_id, body), is_open))| {
@@ -6037,44 +6045,56 @@ fn native_expander(
                     .relative()
                     .child(title)
                     .children(listed.map(|[_, _, _, title]| elements::record(ui, title)));
-                let header = h_flex()
-                    .id((id, ix))
-                    .w_full()
-                    .items_center()
-                    .gap(arrow_gap)
-                    .px(EXPANDER_PADDING_X)
-                    .refine_style(&title_style)
-                    .text_size(text_size)
-                    .line_height(line_height_of(n, &e.font))
-                    .font_weight(FontWeight(f32::from(e.font.weight)))
-                    .text_color(text)
-                    .when_some(hover, |header, hover| {
-                        header.hover(move |style| style.bg(hover))
-                    })
-                    .debug_selector(move || format!("{id}-header-{ix}"))
-                    .children(listed.map(|[_, header, _, _]| elements::record(ui, header)))
-                    .map(|header| {
-                        if leading {
-                            header.child(arrow).child(title)
-                        } else {
-                            header.justify_between().child(title).child(arrow)
-                        }
-                    })
-                    .on_click(move |_, window, cx| {
-                        let mut next = open;
-                        if let Some(item) = next.get_mut(ix) {
-                            *item = !*item;
-                        }
-                        on_toggle(&next, window, cx);
-                    });
+                let header = padded(
+                    h_flex().id((id, ix)).w_full().items_center().gap(arrow_gap),
+                    &e.border.padding,
+                    EXPANDER_PADDING_X,
+                    None,
+                )
+                .refine_style(&title_style)
+                .text_size(text_size)
+                .line_height(line_height_of(n, &e.font))
+                .font_weight(FontWeight(f32::from(e.font.weight)))
+                .text_color(text)
+                .when_some(hover, |header, hover| {
+                    header.hover(move |style| style.bg(hover))
+                })
+                .debug_selector(move || format!("{id}-header-{ix}"))
+                .children(listed.map(|[_, header, _, _]| elements::record(ui, header)))
+                .map(|header| {
+                    if leading {
+                        header.child(arrow).child(title)
+                    } else {
+                        header.justify_between().child(title).child(arrow)
+                    }
+                })
+                .on_click(move |_, window, cx| {
+                    let mut next = open;
+                    if let Some(item) = next.get_mut(ix) {
+                        *item = !*item;
+                    }
+                    on_toggle(&next, window, cx);
+                });
                 // Unframed, the items stand apart as a layout's rows do,
                 // `layout.widget_gap` from each other and a title from its
-                // body, with no padding of their own; framed, they fill the
-                // frame and pad their body as upstream's AccordionItem does.
-                let spaced = if framed { None } else { gap };
+                // body, with no padding of their own. Framed where the theme
+                // states the frame, they fill it, a title `layout.widget_gap`
+                // above its body, as a layout spaces rows; framed where it
+                // states nothing, they pad their body as upstream's
+                // AccordionItem does.
+                let spaced = match e.frame_enabled {
+                    Some(true) | Some(false) => gap,
+                    None => None,
+                };
                 with_gap(v_flex(), spaced)
                     .w_full()
-                    .when(framed, |item| {
+                    .when(own_frames, |item| {
+                        item.border(line_width)
+                            .border_color(line)
+                            .rounded(radius)
+                            .overflow_hidden()
+                    })
+                    .when(shared_frame, |item| {
                         item.border_l(line_width)
                             .border_r(line_width)
                             .border_b(line_width)
@@ -7806,7 +7826,7 @@ pub(crate) fn type_line(
             size,
             line_height,
             FontWeight(f32::from(weight)),
-            SharedString::from(family.to_string()),
+            native_theme_gpui::font_family(family),
             info::stated(colour),
         )
     });
