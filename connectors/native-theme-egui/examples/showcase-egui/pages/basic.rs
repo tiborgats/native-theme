@@ -650,6 +650,26 @@ fn column_3(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &
     let mut text = None;
     let number = demo::scoped(reg, ui, Role::Input, normal, "DragValue", |ui| {
         ui.spacing_mut().interact_size = egui::vec2(BASIC_WIDTH, t.input.min_height);
+        // The field's frame as a text field's (`input_frame`): `DragValue` is a `Button`, which
+        // fills with the state's `weak_bg_fill` and pads by `button_padding` less its stroke
+        // (`egui/src/widget_style.rs:151-165`), where a `TextEdit` fills with
+        // `text_edit_bg_color` and pads by `input_margin`; a `Vec2` pads a pair of sides alike,
+        // so each pair is their mean.
+        let margin = native_theme_egui::input_margin(t);
+        let pair = |a: i8, b: i8| f32::midpoint(f32::from(a), f32::from(b));
+        ui.spacing_mut().button_padding = egui::vec2(
+            pair(margin.left, margin.right),
+            pair(margin.top, margin.bottom),
+        );
+        let fill = ui.visuals().text_edit_bg_color();
+        let widgets = &mut ui.visuals_mut().widgets;
+        for state in [
+            &mut widgets.inactive,
+            &mut widgets.hovered,
+            &mut widgets.active,
+        ] {
+            state.weak_bg_fill = fill;
+        }
         let r = ui.add(egui::DragValue::new(&mut state.basic_number).speed(NUMBER_STEP));
         text = Some(button_label(ui, &r, &shown));
         r

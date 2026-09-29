@@ -277,7 +277,11 @@ fn open_default() -> Harness<'static, App> {
 /// space (`egui/src/atomics/atoms.rs:51-62`).
 fn menu_item_label(ctx: &egui::Context, action: Action) -> String {
     match action.shortcut() {
-        Some(shortcut) => format!("{} {}", action.label(), ctx.format_shortcut(&shortcut)),
+        Some(shortcut) => format!(
+            "{} {}",
+            action.label(),
+            crate::chrome::shortcut_text(ctx, &shortcut)
+        ),
         None => action.label().to_string(),
     }
 }

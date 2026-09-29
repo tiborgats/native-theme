@@ -230,7 +230,11 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                     let key = menu.to_lowercase();
                     let title = demo::lined(ui, *menu, egui::TextStyle::Button);
                     let response = ui.menu_button(title, |ui| {
-                        let open = demo::styled(registry, ui, Role::Menu, normal, "Menu");
+                        // The popup's frame, built from the menu's modifier before the body's
+                        // cell style replaces it (`egui/src/containers/popup.rs:602-603`).
+                        let (margin, stroke) =
+                            (ui.spacing().menu_margin, ui.visuals().window_stroke.width);
+                        let open = demo::styled_menu(registry, ui, Role::Menu, normal);
                         // The Theme menu's rows, the one menu the three showcases share.
                         let ids: &[&str] = if key == "theme" {
                             &THEME_MENU_ROWS
@@ -245,13 +249,17 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                                         ui.separator()
                                     });
                                     if let Some(id) = id {
-                                        registry.tag(id, &r);
+                                        // The element is the line, not the room around it.
+                                        let width =
+                                            ui.visuals().widgets.noninteractive.bg_stroke.width;
+                                        registry.name(id, &r);
+                                        registry.place(ui, id, separator_line(&r, width));
                                     }
                                 }
                                 Some(action) => {
                                     let mut button = egui::Button::new(action.label());
                                     let shortcut =
-                                        action.shortcut().map(|s| ui.ctx().format_shortcut(&s));
+                                        action.shortcut().map(|s| shortcut_text(ui.ctx(), &s));
                                     if let Some(shortcut) = &shortcut {
                                         button = button.shortcut_text(shortcut.as_str());
                                     }
@@ -291,10 +299,7 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                             }
                         }
                         if key == "theme" {
-                            // The popup's frame around its rows: the menu scope's margin and
-                            // the popup's stroke.
-                            let margin = ui.spacing().menu_margin;
-                            let stroke = ui.visuals().window_stroke.width;
+                            // The popup's frame around its rows: its margin and its stroke.
                             let rect = (ui.min_rect() + margin).expand(stroke);
                             registry.place(ui, "chrome.menu.theme", rect);
                         }
@@ -483,7 +488,7 @@ pub(crate) fn place_icon(
 /// `Tooltip::for_enabled`, its `popup` given the tooltip surface's frame and the `Role::Tooltip`
 /// modifier through `demo::surfaced`, the Overlays page's spelling (§10.4;
 /// `Response::on_hover_text` takes neither): `text`, then the action's shortcut in the
-/// platform's spelling (`Context::format_shortcut`), weak, as gpui's `tooltip_with_action`
+/// menus' spelling (`shortcut_text`), weak, as gpui's `tooltip_with_action`
 /// shows the key binding (`showcase-gpui/demo.rs:479`).
 fn tooltip(
     reg: &mut Registry,
@@ -493,7 +498,7 @@ fn tooltip(
     shortcut: Option<egui::KeyboardShortcut>,
 ) {
     let tooltip_role = Some((Role::Tooltip, RoleVariant::Normal));
-    let shortcut = shortcut.map(|s| ui.ctx().format_shortcut(&s));
+    let shortcut = shortcut.map(|s| shortcut_text(ui.ctx(), &s));
     demo::surfaced(
         reg,
         ui,
@@ -822,6 +827,22 @@ pub(crate) fn separator_line(separator: &egui::Response, width: f32) -> egui::Re
         separator.rect.center(),
         egui::vec2(separator.rect.width(), width),
     )
+}
+
+/// A key binding as the menus and tooltips print it: the modifiers' names and the key's
+/// symbol, `Ctrl+,`, as the iced and gpui showcases print theirs (`showcase-iced.rs:3588-3595`,
+/// `showcase-gpui/chrome.rs:152`). `Context::format_shortcut` spells a key by its name outside
+/// macOS (`Ctrl+Comma`: `ModifierNames::NAMES` is not short,
+/// `egui/src/data/input/keyboard_shortcut.rs:30-34`); on macOS it is kept, its symbols short.
+pub(crate) fn shortcut_text(ctx: &egui::Context, shortcut: &egui::KeyboardShortcut) -> String {
+    if ctx.os().is_mac() {
+        return ctx.format_shortcut(shortcut);
+    }
+    let names = egui::ModifierNames {
+        is_short: true,
+        ..egui::ModifierNames::NAMES
+    };
+    shortcut.format(&names, false)
 }
 
 /// `add` padded by `margin`, `layout.container_margin`, where the theme states one, and not at

@@ -312,6 +312,31 @@ fn role_modifier(
     ThemeAtlas::from_ctx(ui.ctx()).map(|atlas| atlas.role_modifier(theme, role, variant))
 }
 
+/// `role`'s modifier for an open menu (`MenuConfig::style`): the popup padded inside its border
+/// by `popover.border.padding` on each side the theme states, where egui pads by its own
+/// `menu_margin` (`Frame::popup`, `egui/src/containers/frame.rs:220-230`, a frame whose total
+/// margin is that margin and its stroke), and its rows one under another, `menu.row_height`
+/// apart where the theme states it: the theme states no gap between two menu rows, where egui
+/// would put `item_spacing.y` between them.
+fn menu_modifier(
+    ui: &egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+) -> Option<egui::style::StyleModifier> {
+    let theme = ui.ctx().theme();
+    let atlas = ThemeAtlas::from_ctx(ui.ctx())?;
+    let role_style = atlas.role_modifier(theme, role, variant);
+    let padding = atlas.resolved_for(theme).popover.border.padding;
+    Some(egui::style::StyleModifier::new(
+        move |style: &mut egui::Style| {
+            role_style.apply(style);
+            style.spacing.menu_margin =
+                native_theme_egui::convert::to_margin(style.spacing.menu_margin, &padding);
+            style.spacing.item_spacing.y = 0.0;
+        },
+    ))
+}
+
 /// A widget inside `ui.native_scope(role, variant, ..)`: the closure adds it and
 /// returns its `Response`, which is recorded with the role seam.
 pub(crate) fn scoped(
@@ -594,9 +619,10 @@ pub(crate) fn menu_bar(
             style.spacing.item_spacing.x = 0.0;
             style.spacing.interact_size.y = 0.0;
         });
-        bar = bar
-            .style(bar_style)
-            .config(egui::containers::menu::MenuConfig::new().style(modifier));
+        bar = bar.style(bar_style);
+    }
+    if let Some(menus) = menu_modifier(ui, role, variant) {
+        bar = bar.config(egui::containers::menu::MenuConfig::new().style(menus));
     }
     let seam = Seam::Role(role, variant);
     let response = add(ui, bar, Applied(seam), reg);
@@ -619,11 +645,11 @@ pub(crate) fn menu_button(
 ) -> egui::Response {
     let (role, variant) = menu;
     let mut menu_button = egui::containers::menu::MenuButton::from_button(button);
-    if let Some(modifier) = role_modifier(ui, role, variant) {
+    if let Some(modifier) = menu_modifier(ui, role, variant) {
         menu_button = menu_button.config(egui::containers::menu::MenuConfig::new().style(modifier));
     }
     let (response, _) = menu_button.ui(ui, |ui| {
-        let open = styled(reg, ui, role, variant, "Menu");
+        let open = styled_menu(reg, ui, role, variant);
         add(ui, open, reg);
     });
     seam.record(reg, &response, kind);
@@ -646,6 +672,19 @@ pub(crate) fn styled(
     let response = ui.response();
     reg.record(&response, info(kind, vec![seam]), true);
     Applied(seam)
+}
+
+/// [`styled`] for an open menu's `Ui`, its rows one under another as [`menu_modifier`] lays
+/// them: `native_set_style` puts back the cell's `item_spacing`.
+pub(crate) fn styled_menu(
+    reg: &mut Registry,
+    ui: &mut egui::Ui,
+    role: Role,
+    variant: RoleVariant,
+) -> Applied {
+    let applied = styled(reg, ui, role, variant, "Menu");
+    ui.spacing_mut().item_spacing.y = 0.0;
+    applied
 }
 
 /// A chrome panel's seams, each taken once (§10.4's chrome table): `live` set on the parent
