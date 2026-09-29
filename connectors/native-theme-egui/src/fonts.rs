@@ -144,7 +144,12 @@ impl FontPlan {
     /// gets the theme's weight as a coordinate (§8.3); a face whose weight differs from the
     /// theme's and has no `wght` axis renders at its own weight and is a
     /// [`crate::Note::FontWeightAxisUnsupported`]; a family the OS has no face of is a
-    /// [`crate::Note::FontFamilyUnavailable`] and keeps egui's own face. The plan carries
+    /// [`crate::Note::FontFamilyUnavailable`]: it is drawn in the face `system_face` gives for
+    /// the family the platform draws in its place, `native_theme::fonts::substitute_family`
+    /// (fontconfig's best match on Linux, what every native application there gets), which the
+    /// note names, and keeps egui's own face where there is no such family or face. The
+    /// substitute's face is registered as a direct one is: under the family the theme asked
+    /// for, at the face's own weight and style. The plan carries
     /// these lookup notes, and [`font_definitions`] returns them with its own, so they reach
     /// [`crate::ThemeAtlas::notes`] through [`crate::Builder::build`]. Feature
     /// `system-fonts`, which enables native-theme's own `system-fonts` feature. That the names
@@ -157,26 +162,36 @@ impl FontPlan {
     pub fn from_system(t: &ResolvedTheme) -> Self {
         let mut plan = Self::new();
         for spec in [&t.defaults.font, &t.defaults.mono_font] {
-            match native_theme::fonts::system_face(&spec.family, spec.weight, spec.style) {
-                // Registered under the family the theme asked for — `system_face` already
-                // matched it — at the face's own weight and style (§8.2), so
-                // `font_definitions`' `select_face` pass finds it again; fontdb's own name for
-                // the face (`.SF NS` for "SF Pro") need not equal the theme's.
-                Some(face) => {
-                    plan = plan.face_at(
-                        &spec.family,
-                        Some(face.weight),
-                        face.style,
-                        FontBytes::Shared(face.data),
-                        face.index,
+            let face = match native_theme::fonts::system_face(&spec.family, spec.weight, spec.style)
+            {
+                Some(face) => Some(face),
+                None => {
+                    let substituted = native_theme::fonts::substitute_family(&spec.family)
+                        .and_then(|substitute| {
+                            native_theme::fonts::system_face(&substitute, spec.weight, spec.style)
+                        });
+                    push_note(
+                        &mut plan.notes,
+                        Note::FontFamilyUnavailable {
+                            family: Arc::clone(&spec.family),
+                            substitute: substituted.as_ref().map(|face| Arc::clone(&face.family)),
+                        },
                     );
+                    substituted
                 }
-                None => push_note(
-                    &mut plan.notes,
-                    Note::FontFamilyUnavailable {
-                        family: Arc::clone(&spec.family),
-                    },
-                ),
+            };
+            // Registered under the family the theme asked for — `system_face` already
+            // matched it, or its substitute — at the face's own weight and style (§8.2), so
+            // `font_definitions`' `select_face` pass finds it again and reports no second note;
+            // fontdb's own name for the face (`.SF NS` for "SF Pro") need not equal the theme's.
+            if let Some(face) = face {
+                plan = plan.face_at(
+                    &spec.family,
+                    Some(face.weight),
+                    face.style,
+                    FontBytes::Shared(face.data),
+                    face.index,
+                );
             }
         }
         plan
@@ -289,11 +304,13 @@ pub fn font_definitions(theme: &ResolvedTheme, plan: &FontPlan) -> (FontDefiniti
     ] {
         if select(&all, spec).is_none() {
             // `push_note`: a `from_system` plan already carries this note for a family the OS
-            // has no face of (§4.9); it is reported once.
+            // has no face of and no substitute for (§4.9); it is reported once. A family drawn
+            // in a substitute never gets here: its face is registered under the family's name.
             push_note(
                 &mut notes,
                 Note::FontFamilyUnavailable {
                     family: Arc::clone(&spec.family),
+                    substitute: None,
                 },
             );
             continue;
@@ -484,7 +501,7 @@ mod tests {
             let unavailable: Vec<Arc<str>> = notes
                 .iter()
                 .filter_map(|n| match n {
-                    Note::FontFamilyUnavailable { family } => Some(Arc::clone(family)),
+                    Note::FontFamilyUnavailable { family, .. } => Some(Arc::clone(family)),
                     _ => None,
                 })
                 .collect();

@@ -1212,27 +1212,89 @@ mod t6_fonts {
         }
     }
 
-    /// T6 (c): a family the OS has no face of is reported, never replaced.
+    /// T6 (c): a family the OS has no face of is reported, and drawn in the family the
+    /// platform draws in its place — `native_theme::fonts::substitute_family`, fontconfig's
+    /// best match — whose face heads the chain; where `fc-match` cannot be run, and on macOS
+    /// and Windows, there is no substitute and egui's own faces stay.
     #[cfg(feature = "system-fonts")]
     #[test]
-    fn t6_c_a_family_no_system_has_is_reported_never_replaced() {
+    fn t6_c_a_family_no_system_has_is_reported_and_drawn_in_the_platform_substitute() {
         let mut t = resolved("adwaita", ColorMode::Light);
         let pid = std::process::id();
         let sans: Arc<str> = Arc::from(format!("native-theme-egui-no-such-sans-{pid}"));
         let mono: Arc<str> = Arc::from(format!("native-theme-egui-no-such-mono-{pid}"));
         t.defaults.font.family = Arc::clone(&sans);
         t.defaults.mono_font.family = Arc::clone(&mono);
+        let substituted = |spec: &native_theme::theme::ResolvedFontSpec| {
+            native_theme::fonts::substitute_family(&spec.family).and_then(|substitute| {
+                native_theme::fonts::system_face(&substitute, spec.weight, spec.style)
+            })
+        };
+        let sans_face = substituted(&t.defaults.font);
+        let mono_face = substituted(&t.defaults.mono_font);
         let plan = FontPlan::from_system(&t);
-        assert_eq!(plan.face_count(), 0);
         let (defs, notes) = font_definitions(&t, &plan);
+        let unavailable: Vec<&Note> = notes
+            .iter()
+            .filter(|n| matches!(n, Note::FontFamilyUnavailable { .. }))
+            .collect();
         assert_eq!(
-            notes,
+            unavailable,
             vec![
-                Note::FontFamilyUnavailable { family: sans },
-                Note::FontFamilyUnavailable { family: mono },
+                &Note::FontFamilyUnavailable {
+                    family: sans,
+                    substitute: sans_face.as_ref().map(|face| Arc::clone(&face.family)),
+                },
+                &Note::FontFamilyUnavailable {
+                    family: mono,
+                    substitute: mono_face.as_ref().map(|face| Arc::clone(&face.family)),
+                },
             ]
         );
-        assert_eq!(defs, FontDefinitions::default());
+        let fontconfig_platform = cfg!(all(
+            unix,
+            not(target_os = "macos"),
+            not(target_os = "ios"),
+            not(target_os = "android")
+        ));
+        let fc_match_runs = std::process::Command::new("fc-match")
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success());
+        if !(fontconfig_platform && fc_match_runs) {
+            println!("t6_c: fc-match not run here; egui's own faces stay");
+            assert_eq!(plan.face_count(), 0);
+            assert_eq!(notes.len(), 2);
+            assert_eq!(defs, FontDefinitions::default());
+            return;
+        }
+        let sans_face = sans_face.expect("fontconfig's substitute for the sans family has a face");
+        let mono_face = mono_face.expect("fontconfig's substitute for the mono family has a face");
+        assert_eq!(plan.face_count(), 2);
+        for (family, key, face) in [
+            (
+                FontFamily::Proportional,
+                "native-theme-egui/proportional",
+                &sans_face,
+            ),
+            (
+                FontFamily::Monospace,
+                "native-theme-egui/monospace",
+                &mono_face,
+            ),
+        ] {
+            let data = defs.font_data.get(key).expect("the substitute's face");
+            assert_eq!(data.font.as_ref(), face.data.as_ref(), "{family}");
+            assert_eq!(data.index, face.index, "{family}");
+            assert_eq!(
+                defs.families
+                    .get(&family)
+                    .and_then(|chain| chain.first())
+                    .map(String::as_str),
+                Some(key),
+                "{family}: the substitute's face heads the chain"
+            );
+        }
     }
 
     /// T6 (d): the face `select_face` picks heads its chain, at the theme's `wght`.

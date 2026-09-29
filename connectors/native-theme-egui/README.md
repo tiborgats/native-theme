@@ -226,9 +226,13 @@ the head of egui's `Proportional` and `Monospace` families. An
 application with fonts of its own passes them as the base:
 `FontPlan::from_system(&light).with_base(its_definitions)` into
 `Builder::fonts`. This crate never emits a `FontFamily::Name`. A family the
-platform does not have, or a face epaint could not read, leaves egui's own and
-is reported in `ThemeAtlas::notes` (`Note::FontFamilyUnavailable`,
-`Note::FontDataInvalid`).
+platform does not have is drawn in the family the platform draws in its place
+(`native_theme::fonts::substitute_family`: fontconfig's best match on Linux,
+what every native application there gets; none yet on macOS and Windows) and
+is reported in `ThemeAtlas::notes` as `Note::FontFamilyUnavailable`, whose
+`substitute` names it. A family with no substitute the platform has a face of,
+or a face epaint could not read, leaves egui's own and is reported too
+(`Note::FontFamilyUnavailable` with no `substitute`, `Note::FontDataInvalid`).
 
 ## Icons
 

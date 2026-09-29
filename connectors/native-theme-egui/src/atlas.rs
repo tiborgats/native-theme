@@ -43,11 +43,17 @@ pub enum Note {
     /// The theme asked for a font family for which the plan holds no bytes — or, from
     /// `fonts::FontPlan::from_system`, which the OS has no face of under that name (compared
     /// case-insensitively, §8.2).
-    /// egui's own face stays in that family's place.
+    /// From `from_system`, the family the platform draws in its place —
+    /// `native_theme::fonts::substitute_family`, fontconfig's best match on Linux — is drawn
+    /// instead where the OS has a face of it, and named in `substitute`; otherwise egui's own
+    /// face stays in that family's place.
     #[non_exhaustive]
     FontFamilyUnavailable {
         /// The family the theme asked for.
         family: std::sync::Arc<str>,
+        /// The family drawn in its place, as fontdb records the face drawn
+        /// (`native_theme::fonts::SystemFace::family`); `None` where egui's own face stays.
+        substitute: Option<std::sync::Arc<str>>,
     },
     /// The face chosen for a family has no `wght` axis — `FontData::variation_axes()`
     /// (`epaint/src/text/fonts.rs:153-173`) reports none — and either its own weight differs
