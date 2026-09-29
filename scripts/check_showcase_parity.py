@@ -699,9 +699,13 @@ def sample_colour(capture, scale, rect, spec):
         if not (0 <= px < content_w and 0 <= py < content_h):
             return "outside"
         return hex_colour(pixels[ox + px, oy + py])
-    # A glyph sample: the pixel of the box that differs most from the box's
-    # most frequent colour (the ground the text is drawn on); the first such
-    # pixel in raster order.
+    # A glyph sample: the pixel of the box that differs most from the ground
+    # the text is drawn on; the first such pixel in raster order. The ground is
+    # the most frequent colour of the box's outermost ring of pixels, where a
+    # line box or icon box shows what lies behind its glyph: in a tight box a
+    # filled glyph (an expander's 12x12 triangle) can cover as many pixels as
+    # its ground, so the whole box's most frequent colour could be the glyph.
+    # Where the ring ties, the whole box's count decides.
     _, x0, y0, x1, y1 = spec
     left, top, right, bottom = (
         max(0, math.floor((left + x0 * w) * scale)),
@@ -715,9 +719,16 @@ def sample_colour(capture, scale, rect, spec):
     counts = box.getcolors(maxcolors=box.size[0] * box.size[1])
     if not counts:
         return "outside"
-    ground = max(counts, key=lambda c: (c[0], c[1]))[1]
-    best, best_distance = None, 0
     data = box.load()
+    bw, bh = box.size
+    ring = {}
+    for y in range(bh):
+        for x in range(bw):
+            if x in (0, bw - 1) or y in (0, bh - 1):
+                ring[data[x, y]] = ring.get(data[x, y], 0) + 1
+    whole = {colour: count for count, colour in counts}
+    ground = max(ring, key=lambda c: (ring[c], whole.get(c, 0), c))
+    best, best_distance = None, 0
     for y in range(box.size[1]):
         for x in range(box.size[0]):
             p = data[x, y]
@@ -1362,6 +1373,16 @@ def self_test():
         "glyph",
         INK,
         ((32, 40, 91, 55, LINE), (40, 43, 40, 52, FILL)),
+        hex_colour(FILL),
+    )
+    # A 12x12 icon box whose filled glyph covers 100 of its 144 pixels: the
+    # box's most frequent colour is the glyph, its outer ring the ground.
+    sampled(
+        "R-glyph: a glyph covering most of a tight box is the sample, its ring the ground",
+        {"x": 100.0, "y": 100.0, "w": 12.0, "h": 12.0},
+        "glyph",
+        BACKGROUND,
+        ((101, 101, 110, 110, FILL),),
         hex_colour(FILL),
     )
     # A framed panel painted from (20, 30) to (219, 89), its edges 19.6,
