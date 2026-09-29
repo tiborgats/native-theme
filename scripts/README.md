@@ -288,7 +288,8 @@ docstring, cover what the renderers alone make differ: edges are compared,
 and samples taken, rounded to the pixel grid (R-snap), a text run's width within max(1 px, 2 %)
 (R-shape), a glyph sample within 8 and a fill or border within 1 per channel
 (R-glyph). Every other difference must be listed with a reason in the
-`[parity]` table of `docs/showcase-exceptions.toml`, whose keys may be scoped
+`[parity]` section of `docs/showcase-exceptions.toml`, in `[[parity.group]]`
+entries that each state a `reason` once for their `keys`; a key may be scoped
 to a preset (`material:<id>.<property>`), a preset in one variant
 (`adwaita/dark:...`) or a run (`hover@...`, `menu@...`). A dump directory
 holds the dumps directly or one subdirectory down; `hover=DIR` or `menu=DIR`
@@ -297,9 +298,12 @@ an unexcepted difference, 2 on an input it cannot read. `--check-list`
 validates the list against `docs/property-registry.toml` and the exceptions
 against the list and the presets; `--self-test` runs its built-in scenarios.
 `--merge OUT --proposal FILE...` writes to OUT the minimal scoped `[parity]`
-table the dumps need from proposed exceptions and the current table (never the
-exceptions file itself), listing the proposals it dropped and the differences
-none covers.
+groups the dumps need from proposed exceptions (flat `key = reason` pairs or
+groups) and the current groups, one group per set of reasons, listing the
+proposals it dropped and the differences none covers. With `--write` it also
+rewrites the exceptions file's `[parity]` section, from its `[parity]` line to
+the end, with those groups, every byte above that line unchanged; a second run
+over the same inputs changes nothing.
 
 Requires Python 3.11+ (for `tomllib`) and Pillow.
 
@@ -308,6 +312,7 @@ python3 scripts/check_showcase_parity.py DUMP_DIR [hover=HOVER_DIR] [menu=MENU_D
 python3 scripts/check_showcase_parity.py --check-list
 python3 scripts/check_showcase_parity.py --self-test
 python3 scripts/check_showcase_parity.py --merge OUT.toml --proposal A.toml --proposal B.toml DUMP_DIR
+python3 scripts/check_showcase_parity.py --merge OUT.toml --write --proposal A.toml DUMP_DIR [hover=HOVER_DIR] [menu=MENU_DIR]
 ```
 
 ## update_icons.sh

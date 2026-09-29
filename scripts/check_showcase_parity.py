@@ -7,7 +7,7 @@ element out alike and paint it in the same colours, because all three follow
 the theme data. This script is the mechanical gate for that: it reads what the
 showcases report about their own layout, and what their captures show, and
 fails on every difference not recorded, with its reason, in the `[parity]`
-table of docs/showcase-exceptions.toml. The only tolerances are the three
+section of docs/showcase-exceptions.toml. The only tolerances are the three
 rules below, each documented with its sources, and the run counts what they
 cover.
 
@@ -16,7 +16,7 @@ Run from the repository root:
     python3 scripts/check_showcase_parity.py [RUN=]DUMP_DIR... [--content-offset X,Y]
     python3 scripts/check_showcase_parity.py --check-list
     python3 scripts/check_showcase_parity.py --self-test
-    python3 scripts/check_showcase_parity.py --merge OUT --proposal FILE... [RUN=]DUMP_DIR...
+    python3 scripts/check_showcase_parity.py --merge OUT [--write] --proposal FILE... [RUN=]DUMP_DIR...
 
 Requires: Python 3.11+ (tomllib) and Pillow.
 
@@ -184,15 +184,34 @@ R-glyph -- colour samples within a per-channel tolerance.
 
 Exceptions
 ----------
-docs/showcase-exceptions.toml's `[parity]` table lists what may differ, one
-entry per element property, with its reason: a toolkit limit with its
-upstream citation, or a detail the theme leaves unstated.
+docs/showcase-exceptions.toml's `[parity]` section lists what may differ, in
+groups: each `[[parity.group]]` states a reason once -- a toolkit limit with
+its upstream citation, or a detail the theme leaves unstated -- and the keys
+of the element properties it excepts.
 
     [parity]
-    "chrome.splitter.w" = "..."
-    "material:basic.expander.details.header.y" = "..."
-    "adwaita/dark:basic.checkboxes.checked.label.text" = "..."
-    "menu@kde-breeze:chrome.menu_bar.theme.h" = "..."
+
+    [[parity.group]]
+    reason = "..."
+    keys = [
+        "chrome.splitter.w",
+        "material:basic.expander.details.header.y",
+    ]
+
+    [[parity.group]]
+    reason = "... | ..."
+    keys = [
+        "adwaita/dark:basic.checkboxes.checked.label.text",
+        "menu@kde-breeze:chrome.menu_bar.theme.h",
+    ]
+
+A reason may join several with ` | ` (a key several proposals gave different
+reasons, see Merging proposals), so no single reason contains ` | `. The
+section holds groups only: the flat `key = reason` form, one reason repeated
+per key, is refused there (it is read in proposal files alone), so the file
+has one form, the one --merge --write writes. A group with no keys, a key
+listed twice (in one group or two) and a group holding anything but `reason`
+and `keys` are errors.
 
 The key is `[<run>@][<preset>[/<variant>]:]<element id>.<property>`:
 
@@ -216,12 +235,12 @@ matched no difference is listed at the end, so a stale one is seen.
 
 Merging proposals
 -----------------
-`--merge OUT --proposal FILE...` writes the minimal `[parity]` table the
+`--merge OUT --proposal FILE...` writes the minimal `[parity]` groups the
 dumps need to OUT, from proposed exceptions: each FILE holds keys of the
-form above (at its top level or in a `[parity]` table), and the
-`--exceptions` file's `[parity]` table is read as one more proposal. The
-dumps are compared with no exception; then, for each element property that
-differs somewhere:
+form above as `key = reason` pairs (at its top level or in a `[parity]`
+table) or in `[[parity.group]]` entries, and the `--exceptions` file's
+groups are read as one more proposal. The dumps are compared with no
+exception; then, for each element property that differs somewhere:
 
 - a proposed key no difference in its scope needs is dropped (listed), and
   so is one naming no element or property of the list;
@@ -232,13 +251,24 @@ differs somewhere:
   when it differs everywhere, else `<preset>:` where it differs in both
   variants, `<preset>/<variant>:` where in one, each with a `<run>@` where
   it differs in some runs and not in others;
-- each key's reason is the proposals' reasons for it, each once, joined
-  with ` | `.
+- each key's reasons are the proposals' reasons for it, a proposal's
+  ` | `-joined reason read as the reasons it joins, each once, sorted;
+- keys with the same reasons form one group, whose reason joins them with
+  ` | `. The groups follow the element list's order of their first key,
+  and a group's keys the list's order of elements and properties, then
+  the key's text.
 
 So feed the merge every run and every preset the gate will compare, or its
 keys are scoped to the ones it saw. A difference no proposal covers is
 listed and the exit status is 1; OUT is written either way, never the
 exceptions file itself.
+
+`--write` (with --merge) also writes the groups into the `--exceptions` file:
+it replaces everything from the file's `[parity]` line to its end, which must
+be the file's last section, with the same groups under a comment naming the
+command, and leaves every byte above that line as it is. The file's groups
+are proposals to the merge, and a merge's reasons are sorted, so a second run
+over the same inputs writes the same bytes.
 
 Exit status: 0 when every difference is excepted, 1 when one is not (or a dump
 or capture is missing), 2 when an input cannot be read or is malformed.
@@ -325,6 +355,10 @@ OFFSET = re.compile(r"^\s*\+?(\d+)\s*[+,]\s*(\d+)\s*$")
 # An exception key: [<run>@][<preset>[/<variant>]:]<element id>.<property>.
 KEY = re.compile(r"^(?:([a-z]+)@)?(?:([a-z0-9-]+)(?:/([a-z]+))?:)?([^@:/]+)$")
 RUN_DIR = re.compile(r"^(" + "|".join(RUNS) + r")=(.+)$")
+# The line the exceptions file's generated section starts at (--merge --write).
+PARITY_HEADER = re.compile(r"^\[parity\][ \t]*(?:#[^\n]*)?$", re.MULTILINE)
+# What joins the reasons of one key several proposals gave.
+REASON_SEPARATOR = " | "
 
 
 class Failure(Exception):
@@ -525,24 +559,58 @@ def overlaps(a, b):
     return all(x is None or y is None or x == y for x, y in zip(a, b))
 
 
-def load_parity_exceptions(path, elements, presets):
-    """The `[parity]` table: key -> {"scope", "target", "reason"}."""
-    data = load_toml(path)
+def parity_entries(path, data, flat):
+    """The (key, reason, where) entries of a file's `[parity]` table: those of
+    its `[[parity.group]]` entries, each key with its group's reason, and,
+    with `flat`, its `key = reason` pairs too."""
     table = data.get("parity", {})
     if not isinstance(table, dict):
         raise Failure(f"{path}: [parity] must be a table")
-    exceptions = {}
+    groups = table.get("group", [])
+    if not isinstance(groups, list):
+        raise Failure(f"{path}: [parity] group must be [[parity.group]] entries")
+    entries = []
+    for n, group in enumerate(groups, 1):
+        where = f"[[parity.group]] #{n}"
+        if not isinstance(group, dict) or set(group) != {"reason", "keys"}:
+            raise Failure(f"{path}: {where}: a group holds `reason` and `keys`, nothing else")
+        reason, keys = group["reason"], group["keys"]
+        if not isinstance(reason, str) or not reason.strip():
+            raise Failure(f"{path}: {where}: a group needs a non-empty reason")
+        if not isinstance(keys, list) or not all(isinstance(k, str) for k in keys):
+            raise Failure(f"{path}: {where}: `keys` must be a list of exception keys")
+        if not keys:
+            raise Failure(f"{path}: {where}: the group has no keys")
+        entries += [(key, reason, where) for key in keys]
     for key, reason in table.items():
+        if key == "group":
+            continue
+        if not flat:
+            raise Failure(
+                f"{path}: [parity] {key}: exceptions are listed in [[parity.group]] entries "
+                "(reason, keys), not as key = reason"
+            )
         if not isinstance(reason, str) or not reason.strip():
             raise Failure(f"{path}: [parity] {key}: an exception needs a non-empty reason")
+        entries.append((key, reason, "[parity]"))
+    return entries
+
+
+def load_parity_exceptions(path, elements, presets):
+    """The `[[parity.group]]` entries: key -> {"scope", "target", "reason",
+    "group"}, `group` the entry's `[[parity.group]] #n`."""
+    exceptions = {}
+    for key, reason, where in parity_entries(path, load_toml(path), flat=False):
+        if key in exceptions:
+            raise Failure(f"{path}: {where}: `{key}` is listed twice (also in {exceptions[key]['group']})")
         try:
             scope, target = parse_key(key, elements, presets)
         except BadKey as err:
-            raise Failure(f"{path}: [parity] {key}: {err}") from err
+            raise Failure(f"{path}: {where}: {key}: {err}") from err
         for other, entry in exceptions.items():
             if entry["target"] == target and overlaps(entry["scope"], scope):
-                raise Failure(f"{path}: [parity] {key}: its scope overlaps `{other}`'s")
-        exceptions[key] = {"scope": scope, "target": target, "reason": reason}
+                raise Failure(f"{path}: {where}: {key}: its scope overlaps `{other}`'s ({entry['group']})")
+        exceptions[key] = {"scope": scope, "target": target, "reason": reason, "group": where}
     return exceptions
 
 
@@ -920,17 +988,71 @@ def print_table(rows, kinds):
 
 def load_proposals(path, parity_only=False):
     """The (key, reason) pairs a proposal file holds: its top-level strings
-    (unless `parity_only`) and its `[parity]` table."""
+    (unless `parity_only`), its `[parity]` table's `key = reason` pairs and
+    its `[[parity.group]]` entries."""
     data = load_toml(path)
-    table = data.get("parity", {})
-    if not isinstance(table, dict):
-        raise Failure(f"{path}: [parity] must be a table")
     pairs = [] if parity_only else [(k, v) for k, v in data.items() if not isinstance(v, dict)]
-    pairs += list(table.items())
     for key, reason in pairs:
         if not isinstance(reason, str) or not reason.strip():
             raise Failure(f"{path}: {key}: a proposal needs a non-empty reason")
+    pairs += [(key, reason) for key, reason, _ in parity_entries(path, data, flat=True)]
     return pairs
+
+
+def reason_parts(reason):
+    """The reasons a reason text joins with REASON_SEPARATOR, each stripped."""
+    return [part.strip() for part in reason.split(REASON_SEPARATOR) if part.strip()]
+
+
+def group_text(reason, keys):
+    lines = ["[[parity.group]]", f"reason = {json.dumps(reason, ensure_ascii=False)}", "keys = ["]
+    lines += [f"    {json.dumps(key)}," for key in keys]
+    return "\n".join(lines + ["]"])
+
+
+def parity_section(grouped, runs, labels):
+    """The generated `[parity]` section: `grouped` = [(reason, [key])], in
+    order, compared in `runs` under `labels` (preset/variant)."""
+    head = [
+        "[parity]",
+        "# Generated by `python3 scripts/check_showcase_parity.py --merge OUT --write --proposal FILE...",
+        "# [RUN=]DUMP_DIR...` against the runs " + ", ".join(runs) + " under",
+        "# " + ", ".join(labels) + ".",
+        "# Everything from the [parity] line down is rewritten by the next such run; the groups here are",
+        "# one more proposal to it, so a group a difference still needs is kept.",
+    ]
+    return "\n\n".join(["\n".join(head), *(group_text(reason, keys) for reason, keys in grouped)]) + "\n"
+
+
+def rewrite_parity_section(path, section):
+    """Replace everything from the `[parity]` line of `path` down with
+    `section`, the text above it unchanged. Returns whether the file changed."""
+    try:
+        with open(path, encoding="utf-8", newline="") as f:
+            text = f.read()
+    except OSError as err:
+        raise Failure(f"could not read {path}: {err}") from err
+    headers = list(PARITY_HEADER.finditer(text))
+    if len(headers) != 1:
+        raise Failure(f"{path}: expected one `[parity]` line to rewrite from, found {len(headers)}")
+    prefix = text[: headers[0].start()]
+    try:
+        before, whole = tomllib.loads(prefix), tomllib.loads(text)
+    except tomllib.TOMLDecodeError as err:
+        raise Failure(f"{path} is not valid TOML: {err}") from err
+    if {k: v for k, v in whole.items() if k != "parity"} != before:
+        raise Failure(f"{path}: the [parity] section is not the file's last; --write rewrites it to the end")
+    new = prefix + section
+    if new == text:
+        return False
+    tmp = path + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8", newline="") as f:
+            f.write(new)
+        os.replace(tmp, path)
+    except OSError as err:
+        raise Failure(f"could not write {path}: {err}") from err
+    return True
 
 
 def minimal_scopes(occurs, universe):
@@ -959,10 +1081,11 @@ def minimal_scopes(occurs, universe):
     return chosen
 
 
-def merge(groups, elements, presets, sources, kinds, out):
-    """Write the minimal `[parity]` table the dumps need, from the proposals
-    in `sources` (path, [(key, reason)]), to `out`; see the module's
-    docstring. Returns the exit status."""
+def merge(groups, elements, presets, sources, kinds, out, write=None):
+    """Write the minimal `[parity]` groups the dumps need, from the proposals
+    in `sources` (path, [(key, reason)]), to `out` and, with `write`, as the
+    `[parity]` section of that exceptions file; see the module's docstring.
+    Returns the exit status."""
     rows, _, _, _, compared = compare(groups, elements, {}, kinds)
     occurs, universe, loose = {}, {}, []
     for group, target in compared:
@@ -989,7 +1112,7 @@ def merge(groups, elements, presets, sources, kinds, out):
         props = [*GEOMETRY, *elements[ident]["samples"]]
         return order[ident], props.index(prop)
 
-    table, excepted = [], {}
+    by_reasons, excepted, count = {}, {}, 0
     for target in sorted(proposals, key=sort_key):
         found = occurs.get(target, set())
         needed = set()
@@ -1000,30 +1123,34 @@ def merge(groups, elements, presets, sources, kinds, out):
             needed |= mine
         if not needed:
             continue
-        for scope in minimal_scopes(needed, universe[target]):
-            reasons = []
+        scopes = minimal_scopes(needed, universe[target])
+        for scope in sorted(scopes, key=lambda s: key_text(s, target)):
+            parts = set()
             for their_scope, reason, _, _ in proposals[target]:
-                meets = any(holds(scope, g) and holds(their_scope, g) for g in needed)
-                if meets and reason not in reasons:
-                    reasons.append(reason)
-            table.append((key_text(scope, target), " | ".join(reasons)))
+                if any(holds(scope, g) and holds(their_scope, g) for g in needed):
+                    parts.update(reason_parts(reason))
+            by_reasons.setdefault(REASON_SEPARATOR.join(sorted(parts)), []).append(key_text(scope, target))
+            count += 1
         excepted[target] = needed
     uncovered = loose + [row for row in rows if row[4] and row[0] not in excepted.get(row[1], set())]
 
-    lines = [
-        "# The minimal [parity] table, written by scripts/check_showcase_parity.py --merge from",
+    runs = [r for r in RUNS if any(g[0] == r for g in groups)]
+    labels = sorted({f"{preset}/{variant}" for _, preset, variant in groups})
+    section = parity_section(list(by_reasons.items()), runs, labels)
+    provenance = [
+        "# The minimal [parity] groups, written by scripts/check_showcase_parity.py --merge from",
         *(f"#   {path}" for path, _ in sources),
-        "# against the dumps of the runs " + ", ".join(r for r in RUNS if any(g[0] == r for g in groups)),
-        "# under " + ", ".join(sorted({f"{preset}/{variant}" for _, preset, variant in groups})) + ".",
-        "[parity]",
-        *(f"{json.dumps(key)} = {json.dumps(reason, ensure_ascii=False)}" for key, reason in table),
     ]
     try:
         with open(out, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines) + "\n")
+            f.write("\n".join(provenance) + "\n" + section)
     except OSError as err:
         raise Failure(f"could not write {out}: {err}") from err
     load_parity_exceptions(out, elements, presets)
+    changed = None
+    if write is not None:
+        changed = rewrite_parity_section(write, section)
+        load_parity_exceptions(write, elements, presets)
 
     if dropped:
         print("Proposed keys dropped:")
@@ -1032,9 +1159,11 @@ def merge(groups, elements, presets, sources, kinds, out):
         print("\nDifferences no proposal covers:")
         print_table(uncovered, kinds)
     print(
-        f"\n{out}: {len(table)} key(s) for {len(excepted)} element properties; "
+        f"\n{out}: {count} key(s) in {len(by_reasons)} group(s) for {len(excepted)} element properties; "
         f"{len(dropped)} proposal(s) dropped, {len(uncovered)} difference(s) no proposal covers."
     )
+    if write is not None:
+        print(f"{write}: [parity] section {'rewritten' if changed else 'unchanged'}.")
     return 1 if uncovered else 0
 
 
@@ -1152,12 +1281,16 @@ def self_test():
         write_file(path, SELF_TEST_ELEMENTS)
         return load_elements(path, known)
 
+    def parity(*grouped):
+        """A `[parity]` section of the groups (reason, [key])."""
+        return "[parity]\n" + "".join(group_text(reason, keys) + "\n" for reason, keys in grouped)
+
     def scenario(
         name,
         expect_unexcepted,
         expect_keys=(),
         change=None,
-        exceptions="",
+        exceptions=(),
         frame=None,
         absent_keys=(),
         run=RUNS[0],
@@ -1166,7 +1299,7 @@ def self_test():
         with tempfile.TemporaryDirectory() as tmp:
             elements = load_test_elements(tmp)
             exceptions_path = os.path.join(tmp, "exceptions.toml")
-            write_file(exceptions_path, "[parity]\n" + exceptions)
+            write_file(exceptions_path, parity(*exceptions))
             excepted = load_parity_exceptions(exceptions_path, elements, presets)
             directory = os.path.join(tmp, "run")
             write_run(directory, change, frame, combos)
@@ -1194,12 +1327,13 @@ def self_test():
         if got != expect:
             print(f"    expected {expect}\n    got      {got}")
 
-    def rejected(name, exceptions):
-        """An exceptions table `--check-list` must refuse."""
+    def rejected(name, exceptions, grouped=True):
+        """An exceptions section `--check-list` must refuse: groups
+        (reason, keys) or, with `grouped` false, the text after `[parity]`."""
         with tempfile.TemporaryDirectory() as tmp:
             elements = load_test_elements(tmp)
             path = os.path.join(tmp, "exceptions.toml")
-            write_file(path, "[parity]\n" + exceptions)
+            write_file(path, parity(*exceptions) if grouped else "[parity]\n" + exceptions)
             try:
                 load_parity_exceptions(path, elements, presets)
             except Failure:
@@ -1207,32 +1341,44 @@ def self_test():
                 return
         report(name, False)
 
-    def merged(name, proposals, expect, change, runs, combos):
-        """--merge's table from `proposals` against dumps of `runs` x `combos`
-        must be exactly `expect` (key -> reason)."""
-        with tempfile.TemporaryDirectory() as tmp:
-            elements = load_test_elements(tmp)
-            groups = {}
-            for run in runs:
-                directory = os.path.join(tmp, run)
+    def merge_quietly(tmp, proposals, change, runs, combos, write=None):
+        """--merge from `proposals` against dumps of `runs` x `combos` made
+        in `tmp` (once), to tmp/merged.toml; its groups as [(reason, keys)]."""
+        elements = load_test_elements(tmp)
+        groups = {}
+        for run in runs:
+            directory = os.path.join(tmp, run)
+            if not os.path.isdir(directory):
                 write_run(directory, lambda *a, run=run: change(run, *a), None, combos)
-                load_run(directory, KINDS, None, run, groups)
-            sources = []
-            for n, text in enumerate(proposals):
-                path = os.path.join(tmp, f"proposal-{n}.toml")
-                write_file(path, text)
-                sources.append((path, load_proposals(path)))
-            out = os.path.join(tmp, "merged.toml")
-            with open(os.devnull, "w", encoding="utf-8") as quiet:
-                stdout, sys.stdout = sys.stdout, quiet
-                try:
-                    merge(groups, elements, presets, sources, KINDS, out)
-                finally:
-                    sys.stdout = stdout
-            got = load_toml(out).get("parity", {})
+            load_run(directory, KINDS, None, run, groups)
+        sources = []
+        for n, text in enumerate(proposals):
+            path = os.path.join(tmp, f"proposal-{n}.toml")
+            write_file(path, text)
+            sources.append((path, load_proposals(path)))
+        if write is not None:
+            sources.append((write, load_proposals(write, parity_only=True)))
+        out = os.path.join(tmp, "merged.toml")
+        with open(os.devnull, "w", encoding="utf-8") as quiet:
+            stdout, sys.stdout = sys.stdout, quiet
+            try:
+                merge(groups, elements, presets, sources, KINDS, out, write)
+            finally:
+                sys.stdout = stdout
+        return [(g["reason"], g["keys"]) for g in load_toml(out).get("parity", {}).get("group", [])]
+
+    def merged(name, proposals, expect, change, runs, combos):
+        """--merge's groups from `proposals` against dumps of `runs` x
+        `combos` must be exactly `expect`, [(reason, keys)] in order."""
+        with tempfile.TemporaryDirectory() as tmp:
+            got = merge_quietly(tmp, proposals, change, runs, combos)
         report(name, got == expect)
         if got != expect:
             print(f"    expected {expect}\n    got      {got}")
+
+    def read_file(path):
+        with open(path, encoding="utf-8", newline="") as f:
+            return f.read()
 
     def wider(kind, rects, *_):
         if kind == "egui":
@@ -1335,7 +1481,7 @@ def self_test():
         "an excepted difference passes",
         False,
         change=wider,
-        exceptions='"t.panel.w" = "self-test reason"\n',
+        exceptions=(("self-test reason", ["t.panel.w"]),),
     )
     scenario("an element missing in one kind fails", True, ("t.panel.label.present",), dropped)
     scenario(
@@ -1418,7 +1564,7 @@ def self_test():
         "a preset-scoped exception passes under its preset",
         False,
         change=wider,
-        exceptions='"test-preset:t.panel.w" = "self-test reason"\n',
+        exceptions=(("self-test reason", ["test-preset:t.panel.w"]),),
         combos=both,
     )
     scenario(
@@ -1426,27 +1572,27 @@ def self_test():
         True,
         ("t.panel.w",),
         wider,
-        '"other-preset:t.panel.w" = "self-test reason"\n',
+        (("self-test reason", ["other-preset:t.panel.w"]),),
     )
     scenario(
         "a preset/variant-scoped exception passes in its variant",
         False,
         change=wider,
-        exceptions='"test-preset/light:t.panel.w" = "self-test reason"\n',
+        exceptions=(("self-test reason", ["test-preset/light:t.panel.w"]),),
     )
     scenario(
         "a preset/variant-scoped exception does not hide the difference in the other variant",
         True,
         ("t.panel.w",),
         wider,
-        '"test-preset/light:t.panel.w" = "self-test reason"\n',
+        (("self-test reason", ["test-preset/light:t.panel.w"]),),
         combos=both,
     )
     scenario(
         "a run-scoped exception passes in its run",
         False,
         change=wider,
-        exceptions='"hover@t.panel.w" = "self-test reason"\n',
+        exceptions=(("self-test reason", ["hover@t.panel.w"]),),
         run="hover",
     )
     scenario(
@@ -1454,41 +1600,63 @@ def self_test():
         True,
         ("t.panel.w",),
         wider,
-        '"hover@t.panel.w" = "self-test reason"\n',
+        (("self-test reason", ["hover@t.panel.w"]),),
     )
     scenario(
         "a run- and preset-scoped exception passes in its run under its preset",
         False,
         change=wider,
-        exceptions='"menu@test-preset/light:t.panel.w" = "self-test reason"\n',
+        exceptions=(("self-test reason", ["menu@test-preset/light:t.panel.w"]),),
         run="menu",
     )
-    rejected("--check-list refuses an unknown preset", '"no-such-preset:t.panel.w" = "r"\n')
-    rejected("--check-list refuses an unknown variant", '"test-preset/dim:t.panel.w" = "r"\n')
-    rejected("--check-list refuses an unknown run", '"drag@t.panel.w" = "r"\n')
-    rejected("--check-list refuses a variant without its preset", '"light:t.panel.w" = "r"\n')
-    rejected("--check-list refuses an unknown property", '"test-preset:t.panel.colour" = "r"\n')
+    scenario(
+        "a group's keys each except their own difference",
+        False,
+        change=lambda *a: wider(*a) or recoloured(*a),
+        exceptions=(("self-test reason", ["t.panel.w", "t.panel.fill"]),),
+    )
+    rejected("--check-list refuses an unknown preset", (("r", ["no-such-preset:t.panel.w"]),))
+    rejected("--check-list refuses an unknown variant", (("r", ["test-preset/dim:t.panel.w"]),))
+    rejected("--check-list refuses an unknown run", (("r", ["drag@t.panel.w"]),))
+    rejected("--check-list refuses a variant without its preset", (("r", ["light:t.panel.w"]),))
+    rejected("--check-list refuses an unknown element", (("r", ["t.panel.frame.w"]),))
+    rejected("--check-list refuses an unknown property", (("r", ["test-preset:t.panel.colour"]),))
     rejected(
-        "--check-list refuses overlapping scopes of one property",
-        '"t.panel.w" = "r"\n"test-preset:t.panel.w" = "r"\n',
+        "--check-list refuses overlapping scopes of one property in one group",
+        (("r", ["t.panel.w", "test-preset:t.panel.w"]),),
     )
     rejected(
-        "--check-list refuses a run scope overlapping a preset scope",
-        '"hover@t.panel.w" = "r"\n"test-preset:t.panel.w" = "r"\n',
+        "--check-list refuses overlapping scopes of one property across groups",
+        (("r", ["t.panel.w"]), ("s", ["test-preset/light:t.panel.w"])),
     )
+    rejected(
+        "--check-list refuses a run scope overlapping a preset scope across groups",
+        (("r", ["hover@t.panel.w"]), ("s", ["test-preset:t.panel.w"])),
+    )
+    rejected("--check-list refuses a key listed twice in one group", (("r", ["t.panel.w", "t.panel.w"]),))
+    rejected("--check-list refuses a key listed in two groups", (("r", ["t.panel.w"]), ("s", ["t.panel.w"])))
+    rejected("--check-list refuses a group with no keys", (("r", []),))
+    rejected("--check-list refuses a group with a blank reason", ((" ", ["t.panel.w"]),))
+    rejected("--check-list refuses a group without a reason", '[[parity.group]]\nkeys = ["t.panel.w"]\n', False)
+    rejected(
+        "--check-list refuses a group with a field other than reason and keys",
+        '[[parity.group]]\nreason = "r"\nkeys = ["t.panel.w"]\nnote = "n"\n',
+        False,
+    )
+    rejected("--check-list refuses a flat key = reason in the exceptions file", '"t.panel.w" = "r"\n', False)
 
     merged(
         "--merge drops a key no difference needs and scopes a kept one to its preset/variant",
         ['"t.panel.w" = "wider"\n"t.panel.h" = "taller"\n'],
-        {"test-preset/light:t.panel.w": "wider"},
+        [("wider", ["test-preset/light:t.panel.w"])],
         wider_in((None, "test-preset", "light")),
         (RUNS[0],),
         three,
     )
     merged(
-        "--merge scopes to a preset where both variants differ and joins duplicate reasons",
+        "--merge scopes to a preset where both variants differ and joins distinct reasons, sorted",
         ['"t.panel.w" = "wider"\n', '[parity]\n"test-preset:t.panel.w" = "one more"\n"t.panel.w" = "wider"\n'],
-        {"test-preset:t.panel.w": "wider | one more"},
+        [("one more | wider", ["test-preset:t.panel.w"])],
         wider_in((None, "test-preset", None)),
         (RUNS[0],),
         three,
@@ -1496,7 +1664,7 @@ def self_test():
     merged(
         "--merge leaves a difference found everywhere unscoped",
         ['"test-preset:t.panel.w" = "wider"\n', '"other-preset:t.panel.w" = "wider"\n'],
-        {"t.panel.w": "wider"},
+        [("wider", ["t.panel.w"])],
         wider_in((None, None, None)),
         (RUNS[0], "hover"),
         three,
@@ -1504,7 +1672,7 @@ def self_test():
     merged(
         "--merge scopes a difference found in one run only to that run",
         ['"t.panel.w" = "wider"\n'],
-        {"hover@t.panel.w": "wider"},
+        [("wider", ["hover@t.panel.w"])],
         wider_in(("hover", None, None)),
         (RUNS[0], "hover"),
         three,
@@ -1512,11 +1680,67 @@ def self_test():
     merged(
         "--merge keeps a proposal's scope: a difference outside it stays uncovered",
         ['"other-preset:t.panel.w" = "wider"\n'],
-        {"other-preset:t.panel.w": "wider"},
+        [("wider", ["other-preset:t.panel.w"])],
         wider_in((None, None, None)),
         (RUNS[0],),
         three,
     )
+
+    def moved_and_wider(run, kind, rects, *_):
+        if kind == "egui":
+            for prop in ("w", "h"):
+                rects["t.panel"][prop] += 1.0
+            for prop in ("x", "y"):
+                rects["t.panel.label"][prop] += 1.0
+
+    merged(
+        "--merge groups the keys of one reason set, whatever order and form the proposals gave it in",
+        [
+            '"t.panel.w" = "shared"\n"t.panel.h" = "shared"\n"t.panel.label.y" = "b"\n"t.panel.label.x" = "a"\n',
+            '[parity]\n"t.panel.label.x" = "b | a"\n\n[[parity.group]]\nreason = "a"\nkeys = ["t.panel.label.y"]\n',
+        ],
+        [("shared", ["t.panel.w", "t.panel.h"]), ("a | b", ["t.panel.label.x", "t.panel.label.y"])],
+        moved_and_wider,
+        (RUNS[0],),
+        three,
+    )
+
+    prefix = (
+        "# Head comment.\n[gpui]\nFoo = \"bar\"   # odd  spacing, kept\r\n\n[egui]\n\n"
+        "# The parity section's own documentation, kept.\n"
+    )
+    stale = parity(("wider", ["t.panel.w"]), ("stale", ["t.panel.x"]))
+    with tempfile.TemporaryDirectory() as tmp:
+        exceptions_path = os.path.join(tmp, "exceptions.toml")
+        write_file(exceptions_path, prefix + stale)
+        proposals = ['"t.panel.w" = "more"\n"t.panel.h" = "taller"\n']
+        change = wider_in((None, None, None))
+        got = merge_quietly(tmp, proposals, change, (RUNS[0],), three, exceptions_path)
+        first = read_file(exceptions_path)
+        merge_quietly(tmp, proposals, change, (RUNS[0],), three, exceptions_path)
+        second = read_file(exceptions_path)
+        written = [(g["reason"], g["keys"]) for g in load_toml(exceptions_path)["parity"]["group"]]
+        out = read_file(os.path.join(tmp, "merged.toml"))
+    expect = [("more | wider", ["t.panel.w"])]
+    report(
+        "--merge --write rewrites only the [parity] section, the text above it byte for byte",
+        first.startswith(prefix + "[parity]\n") and written == expect and got == expect,
+    )
+    report("--merge --write run twice changes nothing", first == second and out.endswith(first[len(prefix) :]))
+
+    def refused_rewrite(name, text):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "exceptions.toml")
+            write_file(path, text)
+            try:
+                rewrite_parity_section(path, parity())
+            except Failure:
+                report(name, read_file(path) == text)
+                return
+        report(name, False)
+
+    refused_rewrite("--write refuses a file whose [parity] section is not the last", stale + '\n[gpui]\nX = "y"\n')
+    refused_rewrite("--write refuses a file with no [parity] line", prefix)
     if failures:
         print(f"self-test FAILED: {len(failures)} scenario(s)")
         return 1
@@ -1563,7 +1787,7 @@ def main():
     parser.add_argument(
         "--merge",
         metavar="OUT",
-        help="write the minimal [parity] table the dumps need, from the --proposal files, to OUT",
+        help="write the minimal [parity] groups the dumps need, from the --proposal files, to OUT",
     )
     parser.add_argument(
         "--proposal",
@@ -1571,6 +1795,11 @@ def main():
         default=[],
         metavar="FILE",
         help="a TOML file of proposed exceptions, for --merge (repeatable)",
+    )
+    parser.add_argument(
+        "--write",
+        action="store_true",
+        help="with --merge: also rewrite the [parity] section of the exceptions file in place",
     )
     args = parser.parse_args()
 
@@ -1589,9 +1818,10 @@ def main():
     if args.check_list:
         runs = sum(1 for element in elements.values() if element["name"] in TEXT_RUNS)
         scoped = sum(1 for entry in exceptions.values() if entry["scope"] != (None, None, None))
+        groups = len({entry["group"] for entry in exceptions.values()})
         print(
             f"{len(elements)} elements ({runs} text runs), {len(exceptions)} parity exceptions "
-            f"({scoped} scoped): valid"
+            f"({scoped} scoped) in {groups} group(s): valid"
         )
         return 0
     if not args.dump_dirs:
@@ -1600,6 +1830,8 @@ def main():
         raise Failure("comparing needs at least two kinds")
     if args.proposal and args.merge is None:
         parser.error("--proposal is read by --merge")
+    if args.write and args.merge is None:
+        parser.error("--write rewrites the exceptions file from --merge's result")
 
     groups = {}
     for text in args.dump_dirs:
@@ -1613,7 +1845,9 @@ def main():
             raise Failure(f"--merge writes a proposal, never the exceptions file {args.merge} itself")
         sources = [(path, load_proposals(path)) for path in args.proposal]
         sources.append((args.exceptions, load_proposals(args.exceptions, parity_only=True)))
-        return merge(groups, elements, presets, sources, kinds, args.merge)
+        return merge(
+            groups, elements, presets, sources, kinds, args.merge, args.exceptions if args.write else None
+        )
 
     rows, used, unseen, ruled_out, _ = compare(groups, elements, exceptions, kinds)
     if rows:
