@@ -4219,17 +4219,23 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     // A row of a menu, tagged `id` where the list names it (the Theme
     // menu's rows, the one menu the three showcases share), its key binding
     // tagged `<id>.shortcut` where it has one.
+    // The label and the shortcut are one line each: the menu is as wide as
+    // its widest row ([`menu_width`]), so a row never wraps.
     let tagged_entry = |id: Option<&'static str>,
                         label: &'static str,
                         key: Option<&'static str>,
                         action: Message| {
-        let shortcut = text(key.map(binding).unwrap_or_default()).themed(&m.font, resolved, a11y);
-        let shortcut: Element<'_, Message> = match (id, key) {
-            (Some("chrome.menu.theme.preferences"), Some(_)) => {
-                tagged("chrome.menu.theme.preferences.shortcut", shortcut).into()
+        let shortcut = key.map(|key| {
+            let shortcut = text(binding(key))
+                .themed(&m.font, resolved, a11y)
+                .wrapping(text::Wrapping::None);
+            match id {
+                Some("chrome.menu.theme.preferences") => {
+                    Element::from(tagged("chrome.menu.theme.preferences.shortcut", shortcut))
+                }
+                _ => shortcut.into(),
             }
-            _ => shortcut.into(),
-        };
+        });
         // A row `menu.row_height` tall holds its line centred in it, as the
         // gpui and egui showcases' rows do, where iced's button would lay it
         // out from the top: the model states the row's height ("height of a
@@ -4239,13 +4245,17 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
             Some(_) => Fill,
             None => Length::Shrink,
         };
+        // The shortcut flush right, at least `layout.widget_gap` from the
+        // label: the space between them fills the rest of the row, which is
+        // that gap in the widest row.
         let entry = button(
             row![
-                text(label).themed(&m.font, resolved, a11y),
+                text(label)
+                    .themed(&m.font, resolved, a11y)
+                    .wrapping(text::Wrapping::None),
                 space().width(Fill),
                 shortcut,
             ]
-            .spacing(gap.widget)
             .align_y(iced::Center)
             .height(line_height),
         )
@@ -4262,9 +4272,6 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
             None => entry.into(),
         })
     };
-    let entry = |label: &'static str, key: Option<&'static str>, action: Message| {
-        tagged_entry(None, label, key, action)
-    };
     let separator = |id: Option<&'static str>| {
         let line = rule::horizontal(resolved.separator.line_width)
             .style(line_style(resolved, to_color(m.separator_color)));
@@ -4274,20 +4281,52 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         })
     };
     let popup_pad = menu_popup_padding(resolved);
-    // The rows `popup_pad.top` under the title, so the panel, which
-    // iced_aw pads out from the rows, starts at the title's foot.
-    let drop = |items| {
+    // A menu of `entries`, as wide as its widest row, its rows
+    // `popup_pad.top` under the title, so the panel, which iced_aw pads out
+    // from the rows, starts at the title's foot.
+    let drop = |entries: Vec<MenuEntry>| {
+        let width = menu_width(
+            entries.iter().filter_map(MenuEntry::texts),
+            theme_font(&m.font),
+            scaled_text_size(m.font.size, a11y),
+            pad,
+            gap.widget,
+        );
+        let items = entries
+            .into_iter()
+            .map(|entry| match entry {
+                MenuEntry::Row {
+                    id,
+                    label,
+                    key,
+                    action,
+                } => tagged_entry(id, label, key, action),
+                MenuEntry::Separator(id) => separator(id),
+            })
+            .collect();
         Menu::new(items)
-            .max_width(AW_MENU_WIDTH)
+            .width(width)
             .offset(popup_pad.top)
             .padding(popup_pad)
     };
+    let entry = |label, key, action| MenuEntry::Row {
+        id: None,
+        label,
+        key,
+        action,
+    };
+    let theme_row = |id, label, action| MenuEntry::Row {
+        id: Some(id),
+        label,
+        key: None,
+        action,
+    };
 
-    let mut pages: Vec<Item<'_, Message, Theme, iced::Renderer>> = Tab::ALL
+    let mut pages: Vec<MenuEntry> = Tab::ALL
         .iter()
         .map(|&tab| entry(tab.label(), None, Message::TabSelected(tab)))
         .collect();
-    pages.push(separator(None));
+    pages.push(MenuEntry::Separator(None));
     pages.push(entry(
         "Toggle Side Panel",
         Some("B"),
@@ -4299,7 +4338,6 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         Message::Open(Overlay::CommandPalette),
     ));
 
-    let theme_row = |id, label, action| tagged_entry(Some(id), label, None, action);
     let bar = MenuBar::new(vec![
         Item::with_menu(
             title(0, "chrome.menu_bar.file", "File"),
@@ -4314,7 +4352,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                     "Reload System Theme",
                     Message::ReloadSystemTheme,
                 ),
-                separator(Some("chrome.menu.theme.separator_1")),
+                MenuEntry::Separator(Some("chrome.menu.theme.separator_1")),
                 theme_row(
                     "chrome.menu.theme.system",
                     "System",
@@ -4330,13 +4368,13 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
                     "Dark",
                     Message::ColorModeSelected(AppColorMode::Dark),
                 ),
-                separator(Some("chrome.menu.theme.separator_2")),
-                tagged_entry(
-                    Some("chrome.menu.theme.preferences"),
-                    "Preferences…",
-                    Some(","),
-                    Message::Open(Overlay::Preferences),
-                ),
+                MenuEntry::Separator(Some("chrome.menu.theme.separator_2")),
+                MenuEntry::Row {
+                    id: Some("chrome.menu.theme.preferences"),
+                    label: "Preferences…",
+                    key: Some(","),
+                    action: Message::Open(Overlay::Preferences),
+                },
             ]),
         ),
         Item::with_menu(
@@ -4782,14 +4820,25 @@ fn page_menu(state: &State) -> Element<'_, Message> {
         .iter()
         .map(|&tab| {
             Item::new(
-                button(text(tab.label()).themed(&m.font, resolved, a11y))
-                    .padding(pad)
-                    .width(Fill)
-                    .style(menu_row(resolved))
-                    .on_press(Message::TabSelected(tab)),
+                button(
+                    text(tab.label())
+                        .themed(&m.font, resolved, a11y)
+                        .wrapping(text::Wrapping::None),
+                )
+                .padding(pad)
+                .width(Fill)
+                .style(menu_row(resolved))
+                .on_press(Message::TabSelected(tab)),
             )
         })
         .collect();
+    let width = menu_width(
+        Tab::ALL.iter().map(|tab| (tab.label(), None)),
+        theme_font(&m.font),
+        scaled_text_size(m.font.size, a11y),
+        pad,
+        Gaps::from_layout(&state.layout).widget,
+    );
     MenuBar::new(vec![Item::with_menu(
         tagged(
             "chrome.page_tabs.menu",
@@ -4799,7 +4848,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
                 .on_press(Message::MenuOpened),
         ),
         Menu::new(rows)
-            .max_width(AW_MENU_WIDTH)
+            .width(width)
             .offset(menu_popup_padding(resolved).top)
             .padding(menu_popup_padding(resolved)),
     )])
@@ -5992,7 +6041,8 @@ fn iced_not_themeable(element: &ShowcaseElement) -> Vec<&'static str> {
         "Spinner" => vec!["sweep and speed of the arc: egui's Spinner's, 240° a turn a second"],
         "Expander" => vec!["arrow shape: a filled triangle on a canvas"],
         "Menu" => vec![
-            "menu width: the showcase's AW_MENU_WIDTH",
+            "menu width: its widest row, the label and the shortcut \
+             layout.widget_gap apart inside the row's padding",
             "shadows: iced_aw's own",
         ],
         "Menu shortcut" => vec!["shortcut colour: the row's label colour"],
@@ -10556,12 +10606,65 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
 // Tab: Extra widgets (iced_aw)
 // ---------------------------------------------------------------------------
 
-/// How wide a drop-down menu of a `MenuBar` is allowed to grow: the
-/// window's menus', the page tabs' and the Extra page's.
+/// An entry of a window menu ([`menu_bar`]): a row, tagged `id` where the
+/// element list names it, with its label, its key binding and what it does;
+/// or a separator.
+enum MenuEntry {
+    Row {
+        id: Option<&'static str>,
+        label: &'static str,
+        key: Option<&'static str>,
+        action: Message,
+    },
+    Separator(Option<&'static str>),
+}
+
+impl MenuEntry {
+    /// A row's label and key binding as the row spells them; none for a
+    /// separator.
+    fn texts(&self) -> Option<(&'static str, Option<String>)> {
+        match self {
+            Self::Row { label, key, .. } => Some((label, key.map(binding))),
+            Self::Separator(_) => None,
+        }
+    }
+}
+
+/// How wide a drop-down menu of a `MenuBar` is, as the gpui and egui
+/// showcases size theirs: its widest row -- the label, then `gap` and the
+/// shortcut where the row has one -- inside the row's padding `pad`. Each
+/// text is measured as iced shapes it in `font` at `size`.
 ///
-/// `MenuTheme` states no menu width, so this is the showcase's own layout
-/// number, like `LEFT_PANEL_WIDTH`.
-const AW_MENU_WIDTH: f32 = 220.0;
+/// `MenuTheme` states no menu width, and iced_aw lays a menu's rows out at
+/// one width, the `Menu`'s (`Menu::new` fills the width its limits give,
+/// iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:151-165`), which the
+/// showcase sets to this.
+fn menu_width<'a>(
+    rows: impl IntoIterator<Item = (&'a str, Option<String>)>,
+    font: iced::Font,
+    size: f32,
+    pad: Padding,
+    gap: f32,
+) -> f32 {
+    let width = |content: &str| {
+        MeasuredText {
+            content: content.to_owned(),
+            size,
+            line: size,
+            font,
+        }
+        .extent()
+        .width
+    };
+    let widest = rows
+        .into_iter()
+        .map(|(label, shortcut)| match shortcut {
+            Some(shortcut) => width(label) + gap + width(&shortcut),
+            None => width(label),
+        })
+        .fold(0.0, f32::max);
+    pad.left + widest + pad.right
+}
 
 /// The padding `iced_aw` gives a menu's panel round its rows where the
 /// application sets none: `Padding::new(5.0)` in `Menu::new` (iced_aw 0.14.1
@@ -10581,16 +10684,15 @@ fn menu_popup_padding(resolved: &ResolvedTheme) -> Padding {
     )
 }
 
-/// A drop-down of the `MenuBar`, with the gap `iced_aw` leaves around it.
+/// A drop-down of the `MenuBar`, `width` wide ([`menu_width`]), with the
+/// gap `iced_aw` leaves around it.
 #[cfg(feature = "iced_aw")]
 fn aw_menu<'a>(
     items: Vec<Item<'a, Message, Theme, iced::Renderer>>,
+    width: f32,
     gap: f32,
 ) -> Menu<'a, Message, Theme, iced::Renderer> {
-    Menu::new(items)
-        .max_width(AW_MENU_WIDTH)
-        .offset(gap)
-        .spacing(gap)
+    Menu::new(items).width(width).offset(gap).spacing(gap)
 }
 
 /// The six `styles::aw::*` functions, on the eight `iced_aw` widgets the
@@ -10715,11 +10817,15 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // its own height.
     let item_pad = native_theme_iced::padding_or(&menu_t.border.padding, button::DEFAULT_PADDING);
     let menu_entry = move |label: &'static str| -> Element<'_, Message> {
-        let entry = button(text(label).typeset(&menu_t.font, a11y))
-            .on_press(Message::AwActionChosen(format!("Menu: {label}")))
-            .style(styles::button(resolved))
-            .width(Fill)
-            .padding(item_pad);
+        let entry = button(
+            text(label)
+                .typeset(&menu_t.font, a11y)
+                .wrapping(text::Wrapping::None),
+        )
+        .on_press(Message::AwActionChosen(format!("Menu: {label}")))
+        .style(styles::button(resolved))
+        .width(Fill)
+        .padding(item_pad);
         match menu_t.row_height {
             Some(h) => entry.height(Length::Fixed(h)),
             None => entry,
@@ -10732,29 +10838,47 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             .style(styles::button(resolved))
             .padding(item_pad)
     };
-    let drop = |items| aw_menu(items, sp.xxs);
+    // A menu of the rows `entries`, each with the menu it opens where it
+    // opens one, as wide as its widest row.
+    let drop = |entries: Vec<(&'static str, Option<_>)>| {
+        let width = menu_width(
+            entries.iter().map(|&(label, _)| (label, None)),
+            theme_font(&menu_t.font),
+            scaled_text_size(menu_t.font.size, a11y),
+            item_pad,
+            gap.widget,
+        );
+        let items = entries
+            .into_iter()
+            .map(|(label, menu)| match menu {
+                Some(menu) => Item::with_menu(menu_entry(label), menu),
+                None => Item::new(menu_entry(label)),
+            })
+            .collect();
+        aw_menu(items, width, sp.xxs)
+    };
 
     let menu_bar = MenuBar::new(vec![
         Item::with_menu(
             menu_root("File"),
             drop(vec![
-                Item::new(menu_entry("New window")),
-                Item::new(menu_entry("Open preset")),
-                Item::with_menu(
-                    menu_entry("Recent"),
-                    drop(vec![
-                        Item::new(menu_entry("adwaita.toml")),
-                        Item::new(menu_entry("kde-breeze.toml")),
-                    ]),
+                ("New window", None),
+                ("Open preset", None),
+                (
+                    "Recent",
+                    Some(drop(vec![
+                        ("adwaita.toml", None),
+                        ("kde-breeze.toml", None),
+                    ])),
                 ),
             ]),
         ),
         Item::with_menu(
             menu_root("View"),
             drop(vec![
-                Item::new(menu_entry("Light")),
-                Item::new(menu_entry("Dark")),
-                Item::new(menu_entry("Follow the system")),
+                ("Light", None),
+                ("Dark", None),
+                ("Follow the system", None),
             ]),
         ),
     ])
@@ -10807,7 +10931,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     "shadows",
                     "the model has no shadow geometry — iced_aw's own",
                 ),
-                ("menu width", "MenuTheme states none — the showcase's own"),
+                (
+                    "menu width",
+                    "MenuTheme states none — its widest row inside the item padding",
+                ),
             ],
         ),
         column![
@@ -14954,6 +15081,85 @@ mod tests {
             }
         }
         assert!(unrouted.is_empty(), "leaves with no route: {unrouted:#?}");
+    }
+
+    /// A window menu is as wide as its widest row, as the gpui and egui
+    /// showcases' are: opened, the Theme menu's rows are each the widest
+    /// row's label, and its shortcut `layout.widget_gap` after it, inside
+    /// the row's padding, measured as iced shapes them; Preferences' shortcut
+    /// sits flush right in its row, inside the padding.
+    #[test]
+    fn a_menu_is_as_wide_as_its_widest_row() {
+        let state = State::default();
+        let theme = theme(&state);
+        let resolved = &state.current_resolved;
+        let m = &resolved.menu;
+        let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+        let font = theme_font(&m.font);
+        let size = scaled_text_size(m.font.size, &state.accessibility);
+        let measured = |content: &str| {
+            MeasuredText {
+                content: content.to_owned(),
+                size,
+                line: size,
+                font,
+            }
+            .extent()
+            .width
+        };
+        let widest = ["Reload System Theme", "System", "Light", "Dark"]
+            .into_iter()
+            .map(measured)
+            .chain([measured("Preferences…")
+                + Gaps::from_layout(&state.layout).widget
+                + measured(&binding(","))])
+            .fold(0.0, f32::max);
+        let mut ui: Simulator<'_, Message> =
+            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+        for _ in 0..2 {
+            let drew = ui.snapshot(&theme);
+            assert!(drew.is_ok(), "the interface did not draw: {drew:?}");
+        }
+        let title = match drawn_layout().get("chrome.menu_bar.theme") {
+            Some(rect) => rect.center(),
+            None => panic!("the Theme menu's title is not drawn"),
+        };
+        ui.point_at(title);
+        let _ = ui.simulate([
+            Event::Mouse(mouse::Event::CursorMoved { position: title }),
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)),
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)),
+        ]);
+        for _ in 0..2 {
+            if let Err(error) = ui.snapshot(&theme) {
+                panic!("the interface did not draw: {error}");
+            }
+        }
+        let drawn = drawn_layout();
+        let rect = |id: &str| match drawn.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn with the Theme menu open"),
+        };
+        let expected = pad.left + widest + pad.right;
+        for id in [
+            "chrome.menu.theme.reload",
+            "chrome.menu.theme.system",
+            "chrome.menu.theme.light",
+            "chrome.menu.theme.dark",
+            "chrome.menu.theme.preferences",
+        ] {
+            let width = rect(id).width;
+            assert!(
+                (width - expected).abs() < 0.01,
+                "{id}: {width} wide, the widest row is {expected}"
+            );
+        }
+        let row = rect("chrome.menu.theme.preferences");
+        let shortcut = rect("chrome.menu.theme.preferences.shortcut");
+        assert!(
+            (shortcut.x + shortcut.width - (row.x + row.width - pad.right)).abs() < 0.01,
+            "the shortcut {shortcut:?} is not flush right in {row:?} inside {pad:?}"
+        );
     }
 
     /// The layout dump holds what the Basic page and the chrome draw: every
